@@ -15,19 +15,16 @@ import {
 } from 'three'
 
 /**
- * Procedural F-35A silhouette.
- * Body: light aircraft grey. Glass / tires / voids / details: black.
- * Nose = +Z. Length ~15.6 m, span ~10.7 m.
+ * Procedural F-35A — top-down planform matched to the real jet.
+ * Grey airframe, black glass / tires / voids. Nose = +Z.
  */
 export function createPlaceholderF35(): Group {
   const root = new Group()
   root.name = 'F35'
 
-  // --- Palette ---
-  const grey = makeGrey(0x9aa3ad) // main airframe
-  const greyMid = makeGrey(0x7e8792) // secondary panels
-  const greyDark = makeGrey(0x5c6570) // edges / LERX (still grey, not black)
-  const black = solid(0x0a0c0e, 0.35, 0.55) // details
+  const grey = makeGrey(0x9aa3ad)
+  const greyMid = makeGrey(0x7e8792)
+  const black = solid(0x0a0c0e, 0.35, 0.55)
   const glass = new MeshStandardMaterial({
     color: 0x05080c,
     metalness: 0.95,
@@ -46,38 +43,30 @@ export function createPlaceholderF35(): Group {
   })
 
   root.add(buildFuselage(grey))
-
-  // Upper spine (mid grey)
-  const spine = new Mesh(new BoxGeometry(0.5, 0.2, 7.2), greyMid)
-  spine.position.set(0, 0.52, 0.35)
-  root.add(spine)
-
-  // Chin EOTS (dark detail)
-  const eots = new Mesh(new SphereGeometry(0.26, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), black)
-  eots.scale.set(0.85, 0.5, 1.05)
-  eots.position.set(0, -0.36, 5.1)
-  root.add(eots)
-
   root.add(buildCanopy(glass, black))
-  root.add(buildIntake(1, grey, greyMid, black))
-  root.add(buildIntake(-1, grey, greyMid, black))
-  root.add(buildWing(1, grey, greyDark))
-  root.add(buildWing(-1, grey, greyDark))
-  root.add(buildHStab(1, grey))
-  root.add(buildHStab(-1, grey))
+  root.add(buildWingPair(grey)) // single continuous wing mesh (L+R)
+  root.add(buildHStabPair(grey))
   root.add(buildVStab(1, grey, black))
   root.add(buildVStab(-1, grey, black))
+  root.add(buildIntake(1, grey, greyMid, black))
+  root.add(buildIntake(-1, grey, greyMid, black))
   root.add(buildNozzle(nozzleOuter, black, glowMat))
 
-  // Belly bay panel
-  const bay = new Mesh(new BoxGeometry(1.1, 0.07, 4.6), greyMid)
-  bay.position.set(0, -0.56, 0.25)
+  // Chin EOTS
+  const eots = new Mesh(new SphereGeometry(0.24, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), black)
+  eots.scale.set(0.9, 0.48, 1.0)
+  eots.position.set(0, -0.34, 5.0)
+  root.add(eots)
+
+  // Belly
+  const bay = new Mesh(new BoxGeometry(1.05, 0.06, 4.4), greyMid)
+  bay.position.set(0, -0.54, 0.2)
   root.add(bay)
 
   addGear(root, black, tire)
-  addNavLight(root, -5.15, 0.02, -0.35, 0xff2020)
-  addNavLight(root, 5.15, 0.02, -0.35, 0x20ff40)
-  addNavLight(root, 0, 1.55, -5.45, 0xfff5e0)
+  addNavLight(root, -5.35, 0.02, -0.5, 0xff2020)
+  addNavLight(root, 5.35, 0.02, -0.5, 0x20ff40)
+  addNavLight(root, 0, 1.5, -5.5, 0xfff5e0)
 
   root.traverse((obj: Object3D) => {
     const mesh = obj as Mesh
@@ -91,6 +80,8 @@ export function createPlaceholderF35(): Group {
 }
 
 // ---------------------------------------------------------------------------
+// Materials
+// ---------------------------------------------------------------------------
 
 function solid(color: number, metalness: number, roughness: number): MeshStandardMaterial {
   return new MeshStandardMaterial({ color, metalness, roughness })
@@ -100,8 +91,8 @@ function makeGrey(color: number): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color,
     map: panelTexture(),
-    metalness: 0.42,
-    roughness: 0.5,
+    metalness: 0.4,
+    roughness: 0.52,
   })
 }
 
@@ -110,17 +101,14 @@ function panelTexture(): CanvasTexture {
   c.width = 512
   c.height = 512
   const ctx = c.getContext('2d')!
-
   ctx.fillStyle = '#a0a8b0'
   ctx.fillRect(0, 0, 512, 512)
-
-  for (let i = 0; i < 3500; i++) {
-    const v = 140 + Math.random() * 40
-    ctx.fillStyle = `rgba(${v},${v + 2},${v + 4},0.06)`
+  for (let i = 0; i < 3000; i++) {
+    const v = 145 + Math.random() * 35
+    ctx.fillStyle = `rgba(${v},${v + 2},${v + 4},0.05)`
     ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2)
   }
-
-  ctx.strokeStyle = 'rgba(40,45,50,0.2)'
+  ctx.strokeStyle = 'rgba(40,45,50,0.18)'
   ctx.lineWidth = 1
   for (let i = 0; i <= 512; i += 64) {
     ctx.beginPath()
@@ -132,15 +120,6 @@ function panelTexture(): CanvasTexture {
     ctx.lineTo(512, i)
     ctx.stroke()
   }
-
-  ctx.strokeStyle = 'rgba(30,35,40,0.12)'
-  for (let i = -512; i < 512; i += 56) {
-    ctx.beginPath()
-    ctx.moveTo(i, 0)
-    ctx.lineTo(i + 180, 512)
-    ctx.stroke()
-  }
-
   const tex = new CanvasTexture(c)
   tex.wrapS = tex.wrapT = RepeatWrapping
   tex.repeat.set(3, 3)
@@ -148,130 +127,156 @@ function panelTexture(): CanvasTexture {
 }
 
 // ---------------------------------------------------------------------------
+// Fuselage / canopy
+// ---------------------------------------------------------------------------
 
 function buildFuselage(mat: MeshStandardMaterial): Mesh {
+  // Stations along body; nose tip at +Z after lathe rot
   const pts: Vector2[] = [
-    new Vector2(0.01, 7.2),
-    new Vector2(0.2, 6.75),
-    new Vector2(0.4, 5.95),
-    new Vector2(0.54, 5.05),
-    new Vector2(0.66, 3.85),
-    new Vector2(0.76, 2.2),
-    new Vector2(0.82, 0.6),
-    new Vector2(0.84, -0.8),
-    new Vector2(0.8, -2.4),
-    new Vector2(0.7, -4.0),
-    new Vector2(0.56, -5.4),
-    new Vector2(0.46, -6.2),
-    new Vector2(0.4, -6.7),
+    new Vector2(0.01, 7.15),
+    new Vector2(0.18, 6.7),
+    new Vector2(0.38, 5.9),
+    new Vector2(0.52, 5.0),
+    new Vector2(0.64, 3.8),
+    new Vector2(0.74, 2.2),
+    new Vector2(0.8, 0.5),
+    new Vector2(0.82, -1.0),
+    new Vector2(0.76, -2.6),
+    new Vector2(0.66, -4.1),
+    new Vector2(0.52, -5.5),
+    new Vector2(0.44, -6.25),
+    new Vector2(0.4, -6.75),
   ]
-  const geo = new LatheGeometry(pts, 32)
-  const mesh = new Mesh(geo, mat)
+  const mesh = new Mesh(new LatheGeometry(pts, 36), mat)
   mesh.rotation.x = Math.PI / 2
-  mesh.scale.set(1.08, 0.78, 1)
+  mesh.scale.set(1.06, 0.76, 1)
   return mesh
 }
 
 function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): Group {
   const g = new Group()
-
-  const bubble = new Mesh(new SphereGeometry(0.72, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), glass)
-  bubble.scale.set(0.78, 0.62, 1.45)
-  bubble.position.set(0, 0.52, 2.85)
+  const bubble = new Mesh(new SphereGeometry(0.7, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), glass)
+  bubble.scale.set(0.76, 0.58, 1.4)
+  bubble.position.set(0, 0.5, 2.75)
   g.add(bubble)
 
-  const sill = new Mesh(new BoxGeometry(1.05, 0.07, 2.5), frame)
-  sill.position.set(0, 0.32, 2.85)
+  const sill = new Mesh(new BoxGeometry(0.98, 0.06, 2.35), frame)
+  sill.position.set(0, 0.3, 2.75)
   g.add(sill)
 
-  const fairing = new Mesh(new BoxGeometry(0.68, 0.16, 0.85), frame)
-  fairing.position.set(0, 0.46, 1.55)
-  fairing.rotation.x = 0.22
-  g.add(fairing)
-
   return g
 }
 
-function buildWing(side: 1 | -1, skin: MeshStandardMaterial, edge: MeshStandardMaterial): Group {
-  const g = new Group()
-
-  const shape = new Shape()
-  shape.moveTo(0.55, 2.0)
-  shape.lineTo(5.2, 0.15)
-  shape.lineTo(5.05, -0.55)
-  shape.lineTo(4.85, -1.35)
-  shape.lineTo(0.65, -2.55)
-  shape.lineTo(0.55, 2.0)
-
-  const geo = new ExtrudeGeometry(shape, {
-    depth: 0.12,
-    bevelEnabled: true,
-    bevelThickness: 0.025,
-    bevelSize: 0.03,
-    bevelSegments: 2,
-  })
-  const wing = new Mesh(geo, skin)
-  wing.rotation.x = -Math.PI / 2
-  wing.position.set(0, -0.02, -0.15)
-  wing.rotation.z = side * 0.03
-  if (side < 0) wing.scale.x = -1
-  g.add(wing)
-
-  const lerxShape = new Shape()
-  lerxShape.moveTo(0, 0)
-  lerxShape.lineTo(1.8, 1.6)
-  lerxShape.lineTo(1.5, 2.4)
-  lerxShape.lineTo(0.15, 1.1)
-  lerxShape.closePath()
-  const lerx = new Mesh(new ExtrudeGeometry(lerxShape, { depth: 0.08, bevelEnabled: false }), edge)
-  lerx.rotation.x = -Math.PI / 2
-  lerx.position.set(side * 0.5, 0.02, 1.4)
-  if (side < 0) lerx.scale.x = -1
-  g.add(lerx)
-
-  const flap = new Mesh(new BoxGeometry(2.4, 0.05, 0.48), edge)
-  flap.position.set(side * 3.0, -0.1, -2.05)
-  g.add(flap)
-
-  return g
-}
-
-function buildHStab(side: 1 | -1, skin: MeshStandardMaterial): Mesh {
-  const shape = new Shape()
-  shape.moveTo(0.15, 0.85)
-  shape.lineTo(2.15, 0.1)
-  shape.lineTo(2.05, -0.5)
-  shape.lineTo(0.2, -0.75)
-  shape.closePath()
-  const m = new Mesh(
-    new ExtrudeGeometry(shape, {
-      depth: 0.09,
-      bevelEnabled: true,
-      bevelThickness: 0.015,
-      bevelSize: 0.02,
-      bevelSegments: 1,
-    }),
-    skin,
-  )
-  m.rotation.x = -Math.PI / 2
-  m.position.set(side * 0.4, 0.18, -4.85)
-  if (side < 0) m.scale.x = -1
-  return m
-}
+// ---------------------------------------------------------------------------
+// Wings — ONE shape, mirrored, F-35 clipped-delta planform
+// ---------------------------------------------------------------------------
 
 /**
- * Vertical stabilizers — upright plate (Y=up, X=chord along body after rot),
- * canted outward. Rudder is parented to the fin so it never floats free.
+ * Top-down F-35 wing (half):
+ *   span tip ≈ 5.35 m from centerline
+ *   LE sweep, clipped tip, straight-ish TE with flaperon integrated in outline
+ *   LERX blended into root LE (no separate floating box)
+ *
+ * Shape coords (before extrude): X = outboard, Y = forward (+ toward nose)
+ * Extrude depth = thickness, then lay flat.
  */
+function buildWingPair(mat: MeshStandardMaterial): Group {
+  const g = new Group()
+  g.add(buildWingHalf(1, mat))
+  g.add(buildWingHalf(-1, mat))
+  return g
+}
+
+function buildWingHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
+  // Real F-35-ish half-planform (meters), Y forward, X outboard
+  const shape = new Shape()
+  // Root LE (at fuselage side, forward — LERX start)
+  shape.moveTo(0.55, 2.6)
+  // LERX curve out then into main LE
+  shape.lineTo(1.15, 2.35)
+  shape.lineTo(1.7, 1.7)
+  // Main LE to tip
+  shape.lineTo(5.35, 0.05)
+  // Clipped tip
+  shape.lineTo(5.35, -0.55)
+  shape.lineTo(5.05, -1.15)
+  // Trailing edge back to root (slight crank like flaperon hinge line)
+  shape.lineTo(3.2, -1.85)
+  shape.lineTo(1.4, -2.35)
+  shape.lineTo(0.6, -2.45)
+  // Root TE → close along fuselage
+  shape.lineTo(0.55, 2.6)
+
+  const geo = new ExtrudeGeometry(shape, {
+    depth: 0.14,
+    bevelEnabled: true,
+    bevelThickness: 0.03,
+    bevelSize: 0.035,
+    bevelSegments: 2,
+  })
+  // Center thickness
+  geo.translate(0, 0, -0.07)
+
+  const mesh = new Mesh(geo, mat)
+  // Lay flat: shape XY → XZ plane (Y of shape = forward Z)
+  mesh.rotation.x = -Math.PI / 2
+  if (side < 0) mesh.scale.x = -1
+  mesh.position.set(0, 0.0, -0.1)
+  // Tiny anhedral/dihedral
+  mesh.rotation.z = side * 0.025
+  return mesh
+}
+
+// ---------------------------------------------------------------------------
+// Horizontal tails — aft only, paired, clear of main wing
+// ---------------------------------------------------------------------------
+
+function buildHStabPair(mat: MeshStandardMaterial): Group {
+  const g = new Group()
+  g.add(buildHStabHalf(1, mat))
+  g.add(buildHStabHalf(-1, mat))
+  return g
+}
+
+function buildHStabHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
+  // Smaller all-moving tail, sits behind main wing TE
+  const shape = new Shape()
+  shape.moveTo(0.35, 0.55) // root LE
+  shape.lineTo(2.05, 0.05) // tip LE
+  shape.lineTo(1.95, -0.45) // tip TE
+  shape.lineTo(0.35, -0.7) // root TE
+  shape.closePath()
+
+  const geo = new ExtrudeGeometry(shape, {
+    depth: 0.09,
+    bevelEnabled: true,
+    bevelThickness: 0.015,
+    bevelSize: 0.02,
+    bevelSegments: 1,
+  })
+  geo.translate(0, 0, -0.045)
+
+  const mesh = new Mesh(geo, mat)
+  mesh.rotation.x = -Math.PI / 2
+  if (side < 0) mesh.scale.x = -1
+  // Aft of main wing TE (~-2.4), on sides of rear fuse
+  mesh.position.set(0, 0.2, -4.7)
+  return mesh
+}
+
+// ---------------------------------------------------------------------------
+// Vertical tails — upright, canted, attached
+// ---------------------------------------------------------------------------
+
 function buildVStab(side: 1 | -1, skin: MeshStandardMaterial, detail: MeshStandardMaterial): Group {
   const g = new Group()
 
-  // Shape in XY before placement: +Y up, +X toward nose, TE negative X
+  // XY shape: +Y up, +X toward nose
   const shape = new Shape()
-  shape.moveTo(0.35, 0.0) // root LE
-  shape.lineTo(0.12, 2.05) // tip LE (swept)
-  shape.lineTo(-0.78, 1.82) // tip TE
-  shape.lineTo(-0.72, 0.0) // root TE
+  shape.moveTo(0.4, 0.0) // root LE
+  shape.lineTo(0.08, 2.0) // tip LE
+  shape.lineTo(-0.85, 1.7) // tip TE
+  shape.lineTo(-0.75, 0.0) // root TE
   shape.closePath()
 
   const fin = new Mesh(
@@ -284,26 +289,28 @@ function buildVStab(side: 1 | -1, skin: MeshStandardMaterial, detail: MeshStanda
     }),
     skin,
   )
-  fin.geometry.translate(0, 0, -0.05) // center thickness on origin
+  fin.geometry.translate(0, 0, -0.05)
 
-  // Black rudder strip on trailing edge (child of fin = always attached)
-  const rudder = new Mesh(new BoxGeometry(0.26, 0.95, 0.07), detail)
-  rudder.position.set(-0.8, 0.95, 0)
+  // Rudder on TE (child)
+  const rudder = new Mesh(new BoxGeometry(0.24, 0.9, 0.06), detail)
+  rudder.position.set(-0.82, 0.9, 0)
   fin.add(rudder)
 
-  // Map shape +X → aircraft +Z (forward), thickness → lateral
+  // Chord → aircraft Z
   fin.rotation.y = -Math.PI / 2
 
   const pivot = new Group()
   pivot.add(fin)
-  // Root sits on rear fuselage deck
-  pivot.position.set(side * 0.72, 0.45, -4.4)
-  // Outward cant ~23°
-  pivot.rotation.z = side * -0.4
-
+  // Closer together / further aft — classic F-35 twin-tail stance
+  pivot.position.set(side * 0.68, 0.42, -4.55)
+  pivot.rotation.z = side * -0.38 // ~22° cant
   g.add(pivot)
   return g
 }
+
+// ---------------------------------------------------------------------------
+// Intakes / nozzle
+// ---------------------------------------------------------------------------
 
 function buildIntake(
   side: 1 | -1,
@@ -313,28 +320,28 @@ function buildIntake(
 ): Group {
   const g = new Group()
 
-  const body = new Mesh(new BoxGeometry(0.72, 0.58, 2.3), mid)
-  body.position.set(side * 0.92, -0.12, 1.15)
-  body.rotation.y = side * 0.08
+  const body = new Mesh(new BoxGeometry(0.65, 0.52, 2.1), mid)
+  body.position.set(side * 0.88, -0.1, 1.2)
+  body.rotation.y = side * 0.06
   g.add(body)
 
-  const cheek = new Mesh(new BoxGeometry(0.35, 0.45, 1.8), skin)
-  cheek.position.set(side * 1.25, -0.05, 1.0)
-  cheek.rotation.y = side * 0.18
+  const cheek = new Mesh(new BoxGeometry(0.28, 0.4, 1.6), skin)
+  cheek.position.set(side * 1.18, -0.02, 1.05)
+  cheek.rotation.y = side * 0.15
   g.add(cheek)
 
-  const bump = new Mesh(new SphereGeometry(0.38, 12, 8, 0, Math.PI), skin)
-  bump.scale.set(0.55, 0.38, 1.15)
+  const bump = new Mesh(new SphereGeometry(0.34, 12, 8, 0, Math.PI), skin)
+  bump.scale.set(0.5, 0.35, 1.05)
   bump.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2
-  bump.position.set(side * 0.78, 0.12, 1.35)
+  bump.position.set(side * 0.72, 0.1, 1.4)
   g.add(bump)
 
-  const lip = new Mesh(new BoxGeometry(0.78, 0.1, 0.28), black)
-  lip.position.set(side * 0.92, 0.12, 2.25)
+  const lip = new Mesh(new BoxGeometry(0.7, 0.08, 0.22), black)
+  lip.position.set(side * 0.88, 0.1, 2.2)
   g.add(lip)
 
-  const inlet = new Mesh(new BoxGeometry(0.5, 0.38, 0.15), black)
-  inlet.position.set(side * 0.92, -0.08, 2.35)
+  const inlet = new Mesh(new BoxGeometry(0.45, 0.34, 0.12), black)
+  inlet.position.set(side * 0.88, -0.06, 2.28)
   g.add(inlet)
 
   return g
@@ -347,56 +354,60 @@ function buildNozzle(
 ): Group {
   const g = new Group()
 
-  const housing = new Mesh(new CylinderGeometry(0.5, 0.46, 1.15, 20), outer)
+  const housing = new Mesh(new CylinderGeometry(0.48, 0.44, 1.05, 20), outer)
   housing.rotation.x = Math.PI / 2
   housing.position.set(0, 0.02, -6.55)
   g.add(housing)
 
-  const petal = new Mesh(new CylinderGeometry(0.52, 0.44, 0.22, 16), black)
+  const petal = new Mesh(new CylinderGeometry(0.5, 0.42, 0.2, 16), black)
   petal.rotation.x = Math.PI / 2
-  petal.position.set(0, 0.02, -7.05)
+  petal.position.set(0, 0.02, -7.0)
   g.add(petal)
 
-  const inner = new Mesh(new CylinderGeometry(0.34, 0.38, 0.4, 16), black)
+  const inner = new Mesh(new CylinderGeometry(0.32, 0.36, 0.35, 16), black)
   inner.rotation.x = Math.PI / 2
-  inner.position.set(0, 0.02, -7.15)
+  inner.position.set(0, 0.02, -7.12)
   g.add(inner)
 
-  const core = new Mesh(new CylinderGeometry(0.32, 0.32, 0.06, 16), glow)
+  const core = new Mesh(new CylinderGeometry(0.3, 0.3, 0.05, 16), glow)
   core.rotation.x = Math.PI / 2
-  core.position.set(0, 0.02, -7.28)
+  core.position.set(0, 0.02, -7.22)
   g.add(core)
 
   return g
 }
 
+// ---------------------------------------------------------------------------
+// Gear / lights
+// ---------------------------------------------------------------------------
+
 function addGear(root: Group, strutMat: MeshStandardMaterial, tireMat: MeshStandardMaterial): void {
   const makeLeg = (x: number, z: number, tall: number, dual = false) => {
-    const door = new Mesh(new BoxGeometry(0.35, 0.04, 0.7), strutMat)
-    door.position.set(x, -0.52, z)
+    const door = new Mesh(new BoxGeometry(0.32, 0.035, 0.65), strutMat)
+    door.position.set(x, -0.5, z)
     root.add(door)
 
-    const leg = new Mesh(new CylinderGeometry(0.045, 0.055, tall, 8), strutMat)
-    leg.position.set(x, -0.52 - tall / 2, z)
+    const leg = new Mesh(new CylinderGeometry(0.04, 0.05, tall, 8), strutMat)
+    leg.position.set(x, -0.5 - tall / 2, z)
     root.add(leg)
 
     const wheel = (ox: number) => {
-      const w = new Mesh(new CylinderGeometry(0.18, 0.18, 0.12, 14), tireMat)
+      const w = new Mesh(new CylinderGeometry(0.17, 0.17, 0.11, 14), tireMat)
       w.rotation.z = Math.PI / 2
-      w.position.set(x + ox, -0.52 - tall, z)
+      w.position.set(x + ox, -0.5 - tall, z)
       root.add(w)
     }
     if (dual) {
-      wheel(-0.12)
-      wheel(0.12)
+      wheel(-0.11)
+      wheel(0.11)
     } else {
       wheel(0)
     }
   }
 
-  makeLeg(0, 3.35, 0.95, false)
-  makeLeg(-1.05, -0.65, 0.88, true)
-  makeLeg(1.05, -0.65, 0.88, true)
+  makeLeg(0, 3.3, 0.92, false)
+  makeLeg(-1.0, -0.6, 0.85, true)
+  makeLeg(1.0, -0.6, 0.85, true)
 }
 
 function addNavLight(root: Group, x: number, y: number, z: number, color: number): void {
@@ -407,7 +418,7 @@ function addNavLight(root: Group, x: number, y: number, z: number, color: number
     metalness: 0.2,
     roughness: 0.4,
   })
-  const light = new Mesh(new SphereGeometry(0.055, 8, 8), mat)
+  const light = new Mesh(new SphereGeometry(0.05, 8, 8), mat)
   light.position.set(x, y, z)
   root.add(light)
 }
