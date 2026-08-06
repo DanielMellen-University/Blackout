@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blackout</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+      <div id="overlay">
+        <header id="title-bar">
+          <h1>BLACKOUT</h1>
+          <span id="phase-badge">Phase 0 · Skeleton</span>
+        </header>
+        <div id="hud">
+          <div class="hud-row">
+            <span class="label">POS</span>
+            <span id="hud-pos">0, 0, 0</span>
+          </div>
+          <div class="hud-row">
+            <span class="label">SPD</span>
+            <span id="hud-spd">0</span>
+          </div>
+          <div class="hud-row">
+            <span class="label">CAM</span>
+            <span id="hud-cam">orbit</span>
+          </div>
+        </div>
+        <aside id="help">
+          <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move · <kbd>Q</kbd><kbd>E</kbd> up/down · <kbd>Shift</kbd> boost</p>
+          <p><kbd>LMB</kbd> + drag orbit · scroll zoom · <kbd>C</kbd> follow cam · <kbd>R</kbd> reset</p>
+        </aside>
+        <div id="fps"><span id="hud-fps">—</span> fps</div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

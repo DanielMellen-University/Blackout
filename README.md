@@ -291,38 +291,37 @@ Layout sketch:
 
 ---
 
-## Project Structure (Planned)
-
-Scaffolding is not in the repo yet. Target layout once Vite + TS is added:
+## Project Structure
 
 ```
-blackout/
+Blackout/
 ├── public/
-│   └── models/              # F-35.glb, runway, etc.
+│   ├── favicon.svg
+│   └── models/                 # drop f35.glb here (optional)
+│       └── ATTRIBUTION.md
 ├── src/
-│   ├── main.ts              # bootstrap, rAF loop
-│   ├── styles.css
+│   ├── main.ts                 # bootstrap, rAF + fixed timestep loop
+│   ├── style.css
 │   ├── core/
 │   │   ├── InputManager.ts
-│   │   ├── Time.ts          # fixed timestep accumulator
+│   │   ├── Time.ts             # fixed timestep accumulator
 │   │   └── types.ts
 │   ├── aircraft/
 │   │   ├── Aircraft.ts
-│   │   └── FlightModel.ts
+│   │   ├── FlightModel.ts      # stub for Phase 1
+│   │   └── createPlaceholderF35.ts
 │   ├── world/
-│   │   ├── World.ts
-│   │   ├── Terrain.ts
+│   │   ├── World.ts            # scene, lights, terrain, runway
 │   │   └── Runway.ts
 │   ├── camera/
-│   │   └── CameraSystem.ts
+│   │   └── CameraSystem.ts     # orbit + follow
 │   ├── ui/
 │   │   └── HUD.ts
 │   └── systems/
-│       └── Collision.ts
+│       └── Collision.ts        # stub for Phase 2
 ├── index.html
 ├── package.json
 ├── tsconfig.json
-├── vite.config.ts
 └── README.md
 ```
 
@@ -330,14 +329,15 @@ blackout/
 
 ## Development Phases
 
-### Phase 0 – Skeleton
+### Phase 0 – Skeleton ✅
 
 - Vite + TypeScript + Three.js scene  
-- Load F-35 model  
-- Free / orbit camera  
-- Basic translation or “move along axes” smoke test  
+- Procedural F-35 placeholder (optional GLB load from `public/models/f35.glb`)  
+- Orbit + follow camera  
+- Free-fly WASD / QE movement smoke test  
+- Minimal HUD (position, speed, camera, fps)  
 
-**Exit:** Model visible, scene renders at 60 fps.
+**Exit:** Model visible, scene renders at ~60 fps, jet movable from keyboard.
 
 ### Phase 1 – Flight
 
@@ -395,43 +395,46 @@ That is the primary metric for Blackout. Secondary: stable frame rate, restartab
 
 ## Getting Started
 
-> Project scaffolding is **not created yet**. The steps below are the planned bootstrap.
-
 ### Prerequisites
 
 - Node.js 20+ (LTS recommended)  
 - npm, pnpm, or yarn  
 - A modern browser (Chrome, Firefox, Edge, Safari)
 
-### Planned bootstrap
+### Install & run
 
 ```bash
-# From repo root (once scaffolded)
 npm install
 npm run dev
 ```
 
 Open the local URL Vite prints (typically `http://localhost:5173`).
 
-### Planned first-time create (reference only)
+### Phase 0 controls
 
-```bash
-npm create vite@latest . -- --template vanilla-ts
-npm install three
-npm install -D @types/three
-npm run dev
-```
+| Input | Action |
+|-------|--------|
+| **W A S D** | Move forward / strafe / back |
+| **Q / E** | Down / up |
+| **Shift** | Boost |
+| **1 / 2** | Throttle down / up (free-fly speed scale) |
+| **LMB drag** | Orbit camera |
+| **Scroll** | Zoom |
+| **C** | Toggle orbit ↔ follow camera |
+| **R** | Reset to spawn |
+
+### Optional F-35 model
+
+Drop a GLB at `public/models/f35.glb`. On boot, Blackout tries to load it and falls back to a procedural jet silhouette if missing. See `public/models/ATTRIBUTION.md`.
 
 ---
 
 ## Scripts
 
-Once the app is scaffolded, expect:
-
 | Script | Purpose |
 |--------|---------|
 | `npm run dev` | Dev server + HMR |
-| `npm run build` | Production bundle |
+| `npm run build` | Typecheck + production bundle |
 | `npm run preview` | Preview production build |
 
 ---
@@ -468,9 +471,10 @@ TBD — decide before shipping public builds or third-party assets.
 
 | Item | State |
 |------|--------|
-| Design / vision README | **Current** |
-| Vite + Three.js scaffold | Not started |
-| Flight model | Not started |
+| Design / vision README | Done |
+| Vite + Three.js scaffold | **Done (Phase 0)** |
+| Free-fly + orbit/follow cam | **Done (Phase 0)** |
+| Flight model | Not started (Phase 1) |
 | Playable MVP | Not started |
 
-**Next concrete step:** scaffold the Vite + TypeScript + Three.js app and land Phase 0 (model in scene, rendering at 60 fps).
+**Next concrete step:** Phase 1 — hook up `FlightModel` (thrust, gravity, lift/drag, damping) and take off from the runway.
