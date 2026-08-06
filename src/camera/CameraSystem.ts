@@ -70,11 +70,14 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
   },
 }
 
-/** Pitch limits (radians). Negative = camera below subject (look up from under). */
-const PITCH_MIN = -0.55
-const PITCH_MAX = 1.4
-const FREELOOK_PITCH_MIN = -1.25
-const FREELOOK_PITCH_MAX = 1.25
+/**
+ * Full spherical look:
+ * - Pitch ±180° (full vertical orbit over/under the jet)
+ * - Yaw unrestricted (360° horizontal)
+ * Tiny epsilon avoids exact pole flips in freelook forward vector.
+ */
+const PITCH_LIMIT = Math.PI // 180°
+const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02 // look up/down without flipping
 
 /**
  * Multi-mode flight camera (Roblox-style RMB look + ground occlusion).
@@ -344,16 +347,20 @@ export class CameraSystem {
     this.lastX = e.clientX
     this.lastY = e.clientY
 
-    // Horizontal → yaw; vertical → pitch (mouse down = look more downward / cam rises)
+    // Horizontal → yaw (free 360°); vertical → pitch (±180° third-person)
     this.yaw -= dx * this.lookSensitivity
     this.pitch += dy * this.lookSensitivity
 
+    // Keep yaw in (-π, π] for numeric stability — still full 360° freedom
+    this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
+
     const cfg = MODE_CONFIG[this.mode]
     if (cfg.freelook) {
-      this.pitch = MathUtils.clamp(this.pitch, FREELOOK_PITCH_MIN, FREELOOK_PITCH_MAX)
+      // Cockpit: ±90° look (full up/down without rolling the horizon)
+      this.pitch = MathUtils.clamp(this.pitch, -FREELOOK_PITCH_LIMIT, FREELOOK_PITCH_LIMIT)
     } else {
-      // Allow below-horizon pitch; ground occlusion handles terrain
-      this.pitch = MathUtils.clamp(this.pitch, PITCH_MIN, PITCH_MAX)
+      // Third-person: full ±180° so you can go under, over, and around
+      this.pitch = MathUtils.clamp(this.pitch, -PITCH_LIMIT, PITCH_LIMIT)
     }
   }
 
