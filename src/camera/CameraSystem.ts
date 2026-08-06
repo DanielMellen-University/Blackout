@@ -88,6 +88,8 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
   },
 }
 
+/** Third-person pitch locks at ±180° — no wrap, no auto yaw. */
+const PITCH_LIMIT = Math.PI
 const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
 
 /** Seconds without camera input before auto-return starts (~2/3 of original 10s). */
@@ -368,35 +370,20 @@ export class CameraSystem {
 
     if (dx === 0 && dy === 0) return
 
+    // Horizontal: user-only (never auto-rotated by vertical pan)
     this.yaw += dx * this.lookSensitivity
-    this.pitch += dy * this.lookSensitivity
+    this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
 
+    // Vertical: free until ±180°, then hard lock (no wrap / no yaw flip)
+    this.pitch += dy * this.lookSensitivity
     const cfg = MODE_CONFIG[this.mode]
     if (cfg.freelook) {
       this.pitch = MathUtils.clamp(this.pitch, -FREELOOK_PITCH_LIMIT, FREELOOK_PITCH_LIMIT)
     } else {
-      // Past ±180° vertical: wrap pitch and spin yaw 180° so pan never hard-stops
-      this.wrapPitchWithYawFlip()
+      this.pitch = MathUtils.clamp(this.pitch, -PITCH_LIMIT, PITCH_LIMIT)
     }
 
-    this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
     this.bumpInput()
-  }
-
-  /**
-   * When pitch crosses ±180°, continue the orbit by flipping to the other
-   * hemisphere and rotating 180° horizontally (seamless over-the-top pan).
-   */
-  private wrapPitchWithYawFlip(): void {
-    // May cross more than once if sensitivity is high
-    while (this.pitch > Math.PI) {
-      this.pitch = -Math.PI + (this.pitch - Math.PI)
-      this.yaw += Math.PI
-    }
-    while (this.pitch < -Math.PI) {
-      this.pitch = Math.PI + (this.pitch + Math.PI)
-      this.yaw += Math.PI
-    }
   }
 
   private onWheel = (e: WheelEvent): void => {
