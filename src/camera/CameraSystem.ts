@@ -1,4 +1,4 @@
-import { MathUtils, PerspectiveCamera, Spherical, Vector3 } from 'three'
+import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import {
   CAMERA_MODE_LABELS,
@@ -9,7 +9,6 @@ import {
 const _offsetWorld = new Vector3()
 const _look = new Vector3()
 const _velLead = new Vector3()
-const _spherical = new Spherical()
 const _pivot = new Vector3()
 const _desired = new Vector3()
 const _toCam = new Vector3()
@@ -21,6 +20,10 @@ interface ModeConfig {
   lookLead: number
   minDist: number
   maxDist: number
+  /** Rest pose for this mode (auto-return target). */
+  defaultYaw: number
+  defaultPitch: number
+  defaultDistance: number
   hideAircraft?: boolean
   freelook?: boolean
 }
@@ -33,6 +36,9 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookLead: 0.06,
     minDist: 6,
     maxDist: 50,
+    defaultYaw: 0,
+    defaultPitch: 0.28,
+    defaultDistance: 19,
   },
   close: {
     offset: new Vector3(0, 2.6, -8.5),
@@ -41,6 +47,9 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookLead: 0.04,
     minDist: 3.5,
     maxDist: 24,
+    defaultYaw: 0,
+    defaultPitch: 0.22,
+    defaultDistance: 9,
   },
   cockpit: {
     offset: new Vector3(0, 1.05, 2.35),
@@ -49,6 +58,9 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookLead: 0,
     minDist: 1,
     maxDist: 1,
+    defaultYaw: 0,
+    defaultPitch: 0,
+    defaultDistance: 1,
     hideAircraft: true,
     freelook: true,
   },
@@ -59,6 +71,9 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookLead: 0.04,
     minDist: 8,
     maxDist: 40,
+    defaultYaw: -0.9,
+    defaultPitch: 0.2,
+    defaultDistance: 15,
   },
   orbit: {
     offset: new Vector3(12, 8, -16),
@@ -67,28 +82,28 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookLead: 0,
     minDist: 6,
     maxDist: 160,
+    defaultYaw: 0.6,
+    defaultPitch: 0.45,
+    defaultDistance: 22,
   },
 }
 
-/**
- * Full spherical look:
- * - Pitch ±180° (full vertical orbit over/under the jet)
- * - Yaw unrestricted (360° horizontal)
- * Tiny epsilon avoids exact pole flips in freelook forward vector.
- */
-const PITCH_LIMIT = Math.PI // 180°
-const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02 // look up/down without flipping
+const PITCH_LIMIT = Math.PI
+const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
+
+/** Seconds without camera input before auto-return starts. */
+const AUTO_RETURN_DELAY = 10
+/** How quickly the camera eases home once idle (higher = snappier). */
+const AUTO_RETURN_RATE = 1.35
 
 /**
- * Multi-mode flight camera (Roblox-style RMB look + ground occlusion).
+ * Multi-mode flight camera (Roblox-style RMB look + ground occlusion + idle recenter).
  */
 export class CameraSystem {
   readonly camera: PerspectiveCamera
   mode: CameraMode = 'chase'
 
-  /** Flat world ground height (terrain y). */
   groundY = 0
-  /** Keep lens this far above terrain (Roblox pop). */
   groundClearance = 1.15
 
   private yaw = 0
@@ -100,6 +115,9 @@ export class CameraSystem {
   private lastY = 0
   private initialized = false
   private lastVisibilityMode: CameraMode | null = null
+
+  /** performance.now() of last user camera adjust (look / zoom / mode change). */
+  private lastInputMs = performance.now()
 
   private readonly lookSensitivity = 0.005
   private readonly canvas: HTMLCanvasElement
@@ -118,6 +136,7 @@ export class CameraSystem {
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
     this.mode = mode
     this.applyModeDefaults(mode)
+    this.bumpInput()
     if (aircraft) {
       this.applyRig(aircraft)
       this.applyAircraftVisibility(aircraft, true)
@@ -131,12 +150,14 @@ export class CameraSystem {
     return this.mode
   }
 
-  update(aircraft: Aircraft, _dt: number): void {
+  update(aircraft: Aircraft, dt: number): void {
     if (!this.initialized) {
       this.setMode(this.mode, aircraft)
       this.initialized = true
       return
     }
+
+    this.updateAutoReturn(dt)
     this.applyRig(aircraft)
   }
 
@@ -155,43 +176,57 @@ export class CameraSystem {
     document.removeEventListener('contextmenu', this.onContextMenu)
   }
 
+  private bumpInput(): void {
+    this.lastInputMs = performance.now()
+  }
+
+  /**
+   * After AUTO_RETURN_DELAY with no look/zoom, ease yaw/pitch/distance
+   * toward this mode's default framing.
+   */
+  private updateAutoReturn(dt: number): void {
+    if (this.rmbDown || dt <= 0) return
+
+    const idleSec = (performance.now() - this.lastInputMs) / 1000
+    if (idleSec < AUTO_RETURN_DELAY) return
+
+    const cfg = MODE_CONFIG[this.mode]
+    const alpha = 1 - Math.exp(-AUTO_RETURN_RATE * dt)
+
+    this.yaw = lerpAngle(this.yaw, cfg.defaultYaw, alpha)
+    this.pitch = MathUtils.lerp(this.pitch, cfg.defaultPitch, alpha)
+    this.distance = MathUtils.lerp(this.distance, cfg.defaultDistance, alpha)
+
+    // Snap when close enough to avoid endless micro-drift
+    if (
+      Math.abs(deltaAngle(this.yaw, cfg.defaultYaw)) < 0.002 &&
+      Math.abs(this.pitch - cfg.defaultPitch) < 0.002 &&
+      Math.abs(this.distance - cfg.defaultDistance) < 0.02
+    ) {
+      this.yaw = cfg.defaultYaw
+      this.pitch = cfg.defaultPitch
+      this.distance = cfg.defaultDistance
+    }
+  }
+
   private applyModeDefaults(mode: CameraMode): void {
     const cfg = MODE_CONFIG[mode]
     this.camera.fov = cfg.fov
     this.camera.updateProjectionMatrix()
-
-    _spherical.setFromVector3(cfg.offset)
-    this.distance = MathUtils.clamp(_spherical.radius, cfg.minDist, cfg.maxDist)
-    this.yaw = 0
-    this.pitch = mode === 'cockpit' ? 0 : 0.25
-
-    if (mode === 'wingman') {
-      this.yaw = -0.9
-      this.pitch = 0.2
-    } else if (mode === 'orbit') {
-      this.yaw = 0.6
-      this.pitch = 0.45
-      this.distance = 22
-    } else if (mode === 'close') {
-      this.distance = 9
-      this.pitch = 0.22
-    } else if (mode === 'chase') {
-      this.distance = 19
-      this.pitch = 0.28
-    }
+    this.yaw = cfg.defaultYaw
+    this.pitch = cfg.defaultPitch
+    this.distance = cfg.defaultDistance
   }
 
   private applyRig(aircraft: Aircraft): void {
     const cfg = MODE_CONFIG[this.mode]
 
-    // Focus / subject pivot (slightly above aircraft origin)
     _pivot.copy(aircraft.position)
     _pivot.y += 1.2
 
     if (cfg.freelook) {
       _offsetWorld.copy(cfg.offset).applyQuaternion(aircraft.orientation)
       this.camera.position.copy(aircraft.position).add(_offsetWorld)
-      // Keep cockpit cam above ground if jet is low
       this.clampAboveGround(this.camera.position)
 
       const lookDist = 20
@@ -205,8 +240,6 @@ export class CameraSystem {
       _look.add(this.camera.position)
       this.camera.lookAt(_look)
     } else {
-      // Ideal third-person position from yaw / pitch / distance (local → world)
-      // pitch 0 = level behind, +pitch = above, -pitch = below
       const cp = Math.cos(this.pitch)
       const sp = Math.sin(this.pitch)
       const cy = Math.cos(this.yaw)
@@ -220,7 +253,6 @@ export class CameraSystem {
       _offsetWorld.applyQuaternion(aircraft.orientation)
       _desired.copy(_pivot).add(_offsetWorld)
 
-      // Roblox-style: if the line of sight hits terrain, pull camera in
       this.resolveGroundOcclusion(_pivot, _desired, this.camera.position)
 
       _look.copy(cfg.lookOffset).applyQuaternion(aircraft.orientation)
@@ -242,11 +274,6 @@ export class CameraSystem {
     this.applyAircraftVisibility(aircraft)
   }
 
-  /**
-   * If the ideal camera is underground or the segment from pivot→cam
-   * crosses the ground plane, place the camera at the intersection
-   * (shorten zoom) so terrain "blocks" the view like Roblox.
-   */
   private resolveGroundOcclusion(
     pivot: Vector3,
     desired: Vector3,
@@ -255,36 +282,28 @@ export class CameraSystem {
     const minY = this.groundY + this.groundClearance
     out.copy(desired)
 
-    // Fast path: entire segment clear above ground
     if (pivot.y >= minY && desired.y >= minY) {
       return
     }
 
-    // Desired is below clearance — intersect ray with plane y = minY
     _toCam.subVectors(desired, pivot)
     const dy = _toCam.y
 
     if (Math.abs(dy) < 1e-6) {
-      // Horizontal ray — just lift
       out.y = minY
       return
     }
 
-    // t where pivot + t*(desired-pivot) has y = minY
     const t = (minY - pivot.y) / dy
 
     if (t >= 0 && t <= 1) {
-      // Hit between pivot and desired → stop at surface
       out.copy(pivot).addScaledVector(_toCam, t)
-      // Nudge slightly toward pivot so we sit just above the plane
       out.lerp(pivot, 0.015)
       out.y = Math.max(out.y, minY)
     } else if (desired.y < minY) {
-      // Desired underground but no valid segment hit (pivot also low)
       out.y = minY
     }
 
-    // Never sit closer than a tiny min distance to pivot (avoid camera flip)
     const minSep = 1.5
     _toCam.subVectors(out, pivot)
     const sep = _toCam.length()
@@ -331,6 +350,7 @@ export class CameraSystem {
     this.lastX = e.clientX
     this.lastY = e.clientY
     this.canvas.style.cursor = 'grabbing'
+    this.bumpInput()
   }
 
   private onMouseUp = (e: MouseEvent): void => {
@@ -347,21 +367,20 @@ export class CameraSystem {
     this.lastX = e.clientX
     this.lastY = e.clientY
 
-    // Horizontal → yaw (free 360°, inverted for natural drag); vertical → pitch
+    if (dx === 0 && dy === 0) return
+
     this.yaw += dx * this.lookSensitivity
     this.pitch += dy * this.lookSensitivity
-
-    // Keep yaw in (-π, π] for numeric stability — still full 360° freedom
     this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
 
     const cfg = MODE_CONFIG[this.mode]
     if (cfg.freelook) {
-      // Cockpit: ±90° look (full up/down without rolling the horizon)
       this.pitch = MathUtils.clamp(this.pitch, -FREELOOK_PITCH_LIMIT, FREELOOK_PITCH_LIMIT)
     } else {
-      // Third-person: full ±180° so you can go under, over, and around
       this.pitch = MathUtils.clamp(this.pitch, -PITCH_LIMIT, PITCH_LIMIT)
     }
+
+    this.bumpInput()
   }
 
   private onWheel = (e: WheelEvent): void => {
@@ -371,5 +390,16 @@ export class CameraSystem {
 
     const zoom = Math.exp(e.deltaY * 0.0012)
     this.distance = MathUtils.clamp(this.distance * zoom, cfg.minDist, cfg.maxDist)
+    this.bumpInput()
   }
+}
+
+/** Shortest-path angle difference in (-π, π]. */
+function deltaAngle(from: number, to: number): number {
+  return MathUtils.euclideanModulo(to - from + Math.PI, Math.PI * 2) - Math.PI
+}
+
+/** Lerp angles along the shortest arc. */
+function lerpAngle(from: number, to: number, t: number): number {
+  return from + deltaAngle(from, to) * t
 }
