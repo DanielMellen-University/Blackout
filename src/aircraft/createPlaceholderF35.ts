@@ -25,12 +25,15 @@ export function createPlaceholderF35(): Group {
   const grey = makeGrey(0x9aa3ad)
   const greyMid = makeGrey(0x7e8792)
   const black = solid(0x0a0c0e, 0.35, 0.55)
+  // Opaque glossy glass — transparent materials skip depth writes and make
+  // the whole jet look X-ray / see-through behind the canopy.
   const glass = new MeshStandardMaterial({
-    color: 0x05080c,
-    metalness: 0.95,
-    roughness: 0.06,
-    transparent: true,
-    opacity: 0.82,
+    color: 0x0a1018,
+    metalness: 0.92,
+    roughness: 0.08,
+    transparent: false,
+    opacity: 1,
+    envMapIntensity: 1.2,
   })
   const tire = solid(0x0c0c0e, 0.05, 0.95)
   const nozzleOuter = solid(0x1a1c20, 0.85, 0.35)
@@ -157,16 +160,59 @@ function buildFuselage(mat: MeshStandardMaterial): Mesh {
   return mesh
 }
 
+/**
+ * F-35-style single-piece bubble canopy — elongated, sits in a frame
+ * on the spine (not a floating dome). Opaque glass so it doesn't
+ * break depth sorting on the airframe.
+ */
 function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): Group {
   const g = new Group()
-  const bubble = new Mesh(new SphereGeometry(0.7, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.5), glass)
-  bubble.scale.set(0.76, 0.58, 1.4)
-  bubble.position.set(0, 0.5, 2.75)
+
+  // Main bubble: hemisphere stretched along the fuselage
+  const bubble = new Mesh(
+    new SphereGeometry(0.62, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.48),
+    glass,
+  )
+  bubble.scale.set(0.72, 0.55, 1.55) // narrow, low, long — jet canopy not UFO
+  bubble.position.set(0, 0.42, 2.55)
   g.add(bubble)
 
-  const sill = new Mesh(new BoxGeometry(0.98, 0.06, 2.35), frame)
-  sill.position.set(0, 0.3, 2.75)
+  // Forward windshield rake (flat-ish panel blended into bubble)
+  const windscreen = new Mesh(
+    new SphereGeometry(0.5, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.4),
+    glass,
+  )
+  windscreen.scale.set(0.68, 0.42, 0.7)
+  windscreen.position.set(0, 0.38, 3.55)
+  windscreen.rotation.x = -0.35
+  g.add(windscreen)
+
+  // Side rails / canopy frame (black)
+  const leftRail = new Mesh(new BoxGeometry(0.06, 0.1, 2.4), frame)
+  leftRail.position.set(-0.42, 0.28, 2.55)
+  leftRail.rotation.z = 0.35
+  g.add(leftRail)
+
+  const rightRail = new Mesh(new BoxGeometry(0.06, 0.1, 2.4), frame)
+  rightRail.position.set(0.42, 0.28, 2.55)
+  rightRail.rotation.z = -0.35
+  g.add(rightRail)
+
+  // Sill plate under the glass
+  const sill = new Mesh(new BoxGeometry(0.95, 0.08, 2.6), frame)
+  sill.position.set(0, 0.24, 2.6)
   g.add(sill)
+
+  // Rear arch (where canopy meets spine)
+  const arch = new Mesh(new BoxGeometry(0.85, 0.14, 0.35), frame)
+  arch.position.set(0, 0.4, 1.4)
+  arch.rotation.x = 0.4
+  g.add(arch)
+
+  // Tiny HUD coaming / glare shield in front of pilot
+  const coaming = new Mesh(new BoxGeometry(0.45, 0.06, 0.35), frame)
+  coaming.position.set(0, 0.32, 3.75)
+  g.add(coaming)
 
   return g
 }
