@@ -1,7 +1,6 @@
 import {
   Box3,
   Group,
-  Object3D,
   Quaternion,
   Vector3,
   type Camera,
@@ -12,15 +11,13 @@ import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
 
 const SPAWN = new Vector3(0, 8, 0)
-const _lookHelper = new Object3D()
 const _flat = new Vector3()
 const _move = new Vector3()
-const _camFwd = new Vector3()
-const _camRight = new Vector3()
+const _forward = new Vector3()
 const _up = new Vector3(0, 1, 0)
+const _nose = new Vector3(0, 0, 1)
 const _targetQuat = new Quaternion()
-const _fixYaw = new Quaternion().setFromAxisAngle(_up, Math.PI)
-const _lookAt = new Vector3()
+const _yawQuat = new Quaternion()
 
 /**
  * Aircraft entity: simulation state + Three.js mesh.
@@ -104,36 +101,39 @@ export class Aircraft {
   }
 
   /**
-   * Phase 0 free-fly: camera-relative WASD, QE vertical.
-   * W = into view, S = toward camera, A/D strafe, E up / Q down.
+   * Phase 0 free-fly: body-relative (nose-first), not camera-relative.
+   * W/S = along the nose, A/D = yaw turn, Q/E = down/up, Shift = boost.
+   * This avoids the “slides backwards” feel of camera-relative orbit freefly.
    */
-  freeFlyStep(dt: number, camera?: Camera): void {
+  freeFlyStep(dt: number, _camera?: Camera): void {
     const baseSpeed = 28
     const boostMul = this.controls.boost ? 2.4 : 1
     const speed = baseSpeed * (0.35 + this.controls.throttle) * boostMul
+    const yawSpeed = 1.8 // rad/s
 
-    const inputFwd = this.controls.pitch // W = +1
-    const inputStrafe = this.controls.roll // D = +1
-    const inputUp = this.controls.yaw // E = +1
+    const inputFwd = this.controls.pitch // W = +1, S = -1
+    const inputYaw = this.controls.roll // D = +1 (yaw right), A = -1
+    const inputUp = this.controls.yaw // E = +1, Q = -1
 
-    if (camera) {
-      camera.getWorldDirection(_camFwd)
-      _camFwd.y = 0
-      if (_camFwd.lengthSq() < 1e-6) {
-        _camFwd.set(0, 0, -1)
-      } else {
-        _camFwd.normalize()
-      }
-      _camRight.crossVectors(_camFwd, _up).normalize()
-
-      _move.set(0, 0, 0)
-      _move.addScaledVector(_camFwd, inputFwd)
-      _move.addScaledVector(_camRight, inputStrafe)
-      _move.y = inputUp
-    } else {
-      // World axes fallback: W = -Z (three.js "into scene" convention)
-      _move.set(inputStrafe, inputUp, -inputFwd)
+    // Yaw around world up (A/D turn the jet)
+    if (inputYaw !== 0) {
+      _yawQuat.setFromAxisAngle(_up, -inputYaw * yawSpeed * dt)
+      this.orientation.premultiply(_yawQuat)
+      this.orientation.normalize()
     }
+
+    // Local nose (+Z) and right (+X) on the horizontal plane
+    _forward.copy(_nose).applyQuaternion(this.orientation)
+    _forward.y = 0
+    if (_forward.lengthSq() < 1e-6) {
+      _forward.set(0, 0, 1)
+    } else {
+      _forward.normalize()
+    }
+
+    _move.set(0, 0, 0)
+    _move.addScaledVector(_forward, inputFwd)
+    _move.y = inputUp
 
     if (_move.lengthSq() > 0) {
       _move.normalize().multiplyScalar(speed)
@@ -149,16 +149,13 @@ export class Aircraft {
       this.velocity.y = Math.max(0, this.velocity.y)
     }
 
-    // Point nose along horizontal velocity (mesh +Z = nose)
+    // Keep nose aligned with horizontal travel when moving forward/back
     _flat.set(this.velocity.x, 0, this.velocity.z)
-    if (_flat.lengthSq() > 0.4) {
-      _lookHelper.position.copy(this.position)
-      _lookHelper.up.copy(_up)
-      _lookAt.copy(this.position).add(_flat)
-      _lookHelper.lookAt(_lookAt)
-      // lookAt aims -Z at target; rotate 180° so +Z (nose) faces travel
-      _targetQuat.copy(_lookHelper.quaternion).multiply(_fixYaw)
-      this.orientation.slerp(_targetQuat, 1 - Math.exp(-8 * dt))
+    if (_flat.lengthSq() > 0.4 && Math.abs(inputFwd) > 0.1) {
+      _flat.normalize()
+      // Map model +Z (nose) → travel direction
+      _targetQuat.setFromUnitVectors(_nose, _flat)
+      this.orientation.slerp(_targetQuat, 1 - Math.exp(-10 * dt))
     }
 
     this.syncMesh()
