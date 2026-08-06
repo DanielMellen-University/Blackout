@@ -51,7 +51,7 @@ async function boot(): Promise<void> {
     const dt = time.fixedDt
 
     if (input.consumeCameraToggle()) {
-      cameras.toggleMode()
+      cameras.toggleMode(aircraft)
     }
     if (input.consumeReset()) {
       aircraft.reset()
@@ -72,7 +72,7 @@ async function boot(): Promise<void> {
       y: aircraft.position.y,
       z: aircraft.position.z,
       speed: aircraft.speed,
-      cameraMode: cameras.mode,
+      cameraMode: cameras.modeLabel,
       fps: time.fps,
     })
   }

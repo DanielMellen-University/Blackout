@@ -30,7 +30,7 @@ export class HUD {
       this.spdEl.textContent = opts.speed.toFixed(1)
     }
     if (this.camEl) {
-      this.camEl.textContent = opts.cameraMode
+      this.camEl.textContent = opts.cameraMode.toUpperCase()
     }
     if (this.fpsEl) {
       this.fpsEl.textContent = String(Math.round(opts.fps))

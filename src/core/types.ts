@@ -20,7 +20,24 @@ export interface AircraftState {
   mass: number
 }
 
-export type CameraMode = 'orbit' | 'follow'
+/** Cycle order for C key — see CameraSystem. */
+export type CameraMode = 'chase' | 'close' | 'cockpit' | 'wingman' | 'orbit'
+
+export const CAMERA_MODES: readonly CameraMode[] = [
+  'chase',
+  'close',
+  'cockpit',
+  'wingman',
+  'orbit',
+] as const
+
+export const CAMERA_MODE_LABELS: Record<CameraMode, string> = {
+  chase: 'chase',
+  close: 'close chase',
+  cockpit: 'cockpit',
+  wingman: 'wingman',
+  orbit: 'orbit',
+}
 
 export function createDefaultControls(): ControlState {
   return {
