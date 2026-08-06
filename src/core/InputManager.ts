@@ -24,7 +24,7 @@ export class InputManager {
     this.keys.clear()
   }
 
-  /** Current control snapshot (reused object — copy if you need to stash it). */
+  /** Current control snapshot (reused object - copy if you need to stash it). */
   sample(): ControlState {
     // Phase 0 free-fly: pitch=W/S, roll=A/D turn, yaw=Q/E vertical
     this.controls.pitch = this.axis('KeyW', 'KeyS')

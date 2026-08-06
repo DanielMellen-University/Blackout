@@ -10,17 +10,19 @@ Place aircraft and environment models here.
 
 ## Built-in procedural model
 
-The default aircraft is a **code-generated F-35A-inspired mesh** (not a licensed 3D scan). Proportions approximate a real F-35A (~15.7 m length, ~11 m span) with diverterless intakes, canted twin tails, clipped-delta wings, and RAM-gray panel texturing.
+The default aircraft is a **code-generated F-35A-inspired mesh** (not a licensed 3D scan). Proportions approximate a real F-35A (about 15.7 m length, about 11 m span) with diverterless intakes, canted twin tails, clipped-delta wings, and RAM-gray panel texturing.
+
+Visual polish is still in progress. A real GLB is the best path to a convincing look.
 
 ## Optional: drop in a real GLB
 
-1. Download a GLB/GLTF you have rights to use (e.g. Sketchfab CC models for personal projects).
+1. Download a GLB/GLTF you have rights to use (for example Sketchfab CC models for personal projects).
 2. Save as `public/models/f35.glb`.
-3. Reload the app — Blackout auto-loads and scales it.
+3. Reload the app. Blackout auto-loads and scales it.
 
-Example personal-use model (CC BY-NC-SA, **not bundled** — download yourself):
+Example personal-use model (CC BY-NC-SA, **not bundled**; download yourself):
 
-- [F-35 Lightning II – bohmerang on Sketchfab](https://sketchfab.com/3d-models/f-35-lightning-ii-fighter-jet-free-b1ab1c0090e34b0fbfe667e706023e6d)
+- [F-35 Lightning II by bohmerang on Sketchfab](https://sketchfab.com/3d-models/f-35-lightning-ii-fighter-jet-free-b1ab1c0090e34b0fbfe667e706023e6d)
 
 ## License notes
 

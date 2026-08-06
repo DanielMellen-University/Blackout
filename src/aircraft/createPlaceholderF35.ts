@@ -14,7 +14,7 @@ import {
 } from 'three'
 
 /**
- * Procedural F-35A — top-down planform matched to the real jet.
+ * Procedural F-35A - top-down planform matched to the real jet.
  * Grey airframe, black glass / tires / voids. Nose = +Z.
  */
 export function createPlaceholderF35(): Group {
@@ -153,13 +153,13 @@ function buildFuselage(mat: MeshStandardMaterial): Mesh {
   const mesh = new Mesh(new LatheGeometry(pts, 36), mat)
   mesh.rotation.x = Math.PI / 2
   // Local X = width, Y = length (→ world Z), Z = height (→ world -Y)
-  // Mild oval only — was 0.78 height and looked unnaturally thin
+  // Mild oval only - was 0.78 height and looked unnaturally thin
   mesh.scale.set(1.12, 1, 0.95)
   return mesh
 }
 
 /**
- * Closed solid canopy — full ellipsoid (not open hemisphere).
+ * Closed solid canopy - full ellipsoid (not open hemisphere).
  * Bottom is buried in the black sill so you never see a hollow shell.
  */
 function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): Group {
@@ -196,7 +196,7 @@ function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): 
 }
 
 // ---------------------------------------------------------------------------
-// Wings — ONE shape, mirrored, F-35 clipped-delta planform
+// Wings - ONE shape, mirrored, F-35 clipped-delta planform
 // ---------------------------------------------------------------------------
 
 /**
@@ -218,7 +218,7 @@ function buildWingPair(mat: MeshStandardMaterial): Group {
 function buildWingHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
   // Real F-35-ish half-planform (meters), Y forward, X outboard
   const shape = new Shape()
-  // Root LE (at fuselage side, forward — LERX start)
+  // Root LE (at fuselage side, forward - LERX start)
   shape.moveTo(0.55, 2.6)
   // LERX curve out then into main LE
   shape.lineTo(1.15, 2.35)
@@ -256,7 +256,7 @@ function buildWingHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
 }
 
 // ---------------------------------------------------------------------------
-// Horizontal tails — aft only, paired, clear of main wing
+// Horizontal tails - aft only, paired, clear of main wing
 // ---------------------------------------------------------------------------
 
 function buildHStabPair(mat: MeshStandardMaterial): Group {
@@ -293,11 +293,11 @@ function buildHStabHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
 }
 
 // ---------------------------------------------------------------------------
-// Vertical tails — upright, canted, attached
+// Vertical tails - upright, canted, attached
 // ---------------------------------------------------------------------------
 
 /**
- * Vertical stabilizers — upright plates (X=thickness, Y=height, Z=chord).
+ * Vertical stabilizers - upright plates (X=thickness, Y=height, Z=chord).
  * Base fairing sits on the rear deck; no extrude/rotation chain that
  * produced floating slabs.
  */
@@ -372,7 +372,7 @@ function buildNozzle(
   glow: MeshStandardMaterial,
 ): Group {
   const g = new Group()
-  // Fuselage rear ~ z=-6.45 — sleeve starts inside the taper so there is no gap
+  // Fuselage rear ~ z=-6.45 - sleeve starts inside the taper so there is no gap
   const zJoin = -6.2
 
   // Slightly larger to match the fuller rear fuselage

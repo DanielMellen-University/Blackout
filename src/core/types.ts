@@ -1,4 +1,4 @@
-/** Normalized control axes in [-1, 1] (throttle is 0–1). */
+/** Normalized control axes in [-1, 1] (throttle is 0-1). */
 export interface ControlState {
   /**
    * Phase 0 free-fly: forward/back (W/S).
@@ -15,13 +15,13 @@ export interface ControlState {
    * Phase 1+: yaw stick / rudder.
    */
   yaw: number
-  /** 0–1. Free-fly speed scale; later real throttle. */
+  /** 0-1. Free-fly speed scale; later real throttle. */
   throttle: number
   gearDown: boolean
   boost: boolean
 }
 
-/** Cycle order for the C key — see CameraSystem. */
+/** Cycle order for the C key - see CameraSystem. */
 export type CameraMode = 'chase' | 'close' | 'cockpit' | 'wingman' | 'orbit'
 
 export const CAMERA_MODES: readonly CameraMode[] = [

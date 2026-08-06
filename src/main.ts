@@ -55,7 +55,7 @@ async function boot(): Promise<void> {
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
     if (input.consumeReset()) aircraft.reset()
 
-    // Live reference — InputManager owns the ControlState object
+    // Live reference - InputManager owns the ControlState object
     aircraft.controls = input.sample()
     aircraft.freeFlyStep(dt)
     cameras.update(aircraft, dt)

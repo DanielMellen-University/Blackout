@@ -1,7 +1,7 @@
 import type { Aircraft } from './Aircraft'
 
 /**
- * Arcade flight model — Phase 1 (not wired yet).
+ * Arcade flight model - Phase 1 (not wired yet).
  * Phase 0 uses Aircraft.freeFlyStep.
  */
 export class FlightModel {

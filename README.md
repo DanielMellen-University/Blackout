@@ -1,24 +1,25 @@
 # Blackout
 
-**Browser-based arcade flight simulator** — jump in a realistic-looking F-35, take off, fly hard, and either land or crash in style.
+**Browser-based arcade flight simulator.** Jump in a realistic-looking F-35, take off, fly hard, and either land or crash in style.
 
-Built for **vibe coding**: fast to get flying, fun to iterate on, no pretensions of being Microsoft Flight Simulator. Open a page, hit a key, and within ~30 seconds you’re airborne.
+Built for **vibe coding**: fast to get flying, fun to iterate on, no pretensions of being Microsoft Flight Simulator. Open a page, hit a key, and within about 30 seconds you are airborne.
 
 ---
 
 ## Table of Contents
 
 - [Vision](#vision)
-- [Goals & Non-Goals](#goals--non-goals)
+- [Goals and Non-Goals](#goals-and-non-goals)
+- [Current Status](#current-status)
 - [Core Features (MVP)](#core-features-mvp)
 - [Tech Stack](#tech-stack)
 - [Flight Model Philosophy](#flight-model-philosophy)
 - [Architecture](#architecture)
 - [Key Modules](#key-modules)
-- [Controls (Planned)](#controls-planned)
+- [Controls](#controls)
 - [HUD](#hud)
 - [Asset Plan](#asset-plan)
-- [Project Structure (Planned)](#project-structure-planned)
+- [Project Structure](#project-structure)
 - [Development Phases](#development-phases)
 - [Tuning Knobs](#tuning-knobs)
 - [Success Criteria](#success-criteria)
@@ -37,7 +38,7 @@ Blackout prioritizes **feel and presence** over aerospace accuracy. The model sh
 
 ---
 
-## Goals & Non-Goals
+## Goals and Non-Goals
 
 ### Goals
 
@@ -45,41 +46,62 @@ Blackout prioritizes **feel and presence** over aerospace accuracy. The model sh
 |------|----------------|
 | Feel good to fly on night one | Momentum over perfection |
 | Convincing F-35 look | The fantasy sells on first glance |
-| Lightweight & browser-native | No install, share a URL, stay fast |
+| Lightweight and browser-native | No install, share a URL, stay fast |
 | Expandable core | Add sound, particles, gear later without rewrite |
 
 ### Non-Goals (for now)
 
-- Full aerodynamic fidelity / real stability derivatives  
-- Global real-world terrain streaming  
-- Multiplayer / networking  
-- Complex systems (radar, weapons employment, fuel management, FMC, etc.)  
-- Multi-aircraft fleet or mission editor  
+- Full aerodynamic fidelity / real stability derivatives
+- Global real-world terrain streaming
+- Multiplayer / networking
+- Complex systems (radar, weapons employment, fuel management, FMC, etc.)
+- Multi-aircraft fleet or mission editor
 
 These may be revisited after the MVP feels great to fly.
 
 ---
 
+## Current Status
+
+| Item | State |
+|------|--------|
+| Vite + TypeScript + Three.js app | **Done** |
+| Procedural F-35 mesh (placeholder) | **Done** (visual polish still in progress) |
+| Optional GLB load (`public/models/f35.glb`) | **Done** |
+| Free-fly movement (body-relative) | **Done** (Phase 0 smoke test) |
+| Multi-mode camera (C to cycle) | **Done** |
+| RMB look / pan, scroll zoom | **Done** |
+| Camera auto-return after idle | **Done** (~6.7s) |
+| Terrain ground occlusion for camera | **Done** (flat ground) |
+| Debug HUD (pos, speed, cam, fps) | **Done** |
+| `FlightModel` (real flight physics) | Not started (Phase 1) |
+| Ground collision / crash / land | Soft floor only (Phase 2) |
+| Sound, particles, polish | Not started (Phase 3) |
+
+**Next concrete step:** Phase 1. Wire `FlightModel` (thrust, gravity, lift/drag, damping) and take off from the runway for real.
+
+---
+
 ## Core Features (MVP)
 
-- [ ] Flyable F-35 with a realistic GLTF/GLB model  
-- [ ] Arcade-leaning flight model (thrust, gravity, basic lift/drag, simple stall, damping)  
-- [ ] Keyboard + mouse controls (gamepad later)  
-- [ ] Chase camera and cockpit camera  
-- [ ] Basic HUD: airspeed, altitude, attitude, throttle, gear  
-- [ ] Simple terrain + runway  
-- [ ] Ground collision → crash + restart  
-- [ ] Solid **60 fps** target in modern browsers  
+- [x] Scene renders in browser at solid frame rate
+- [x] Flyable jet mesh (procedural placeholder; optional realistic GLB)
+- [x] Keyboard free-fly + multi-mode camera
+- [x] Simple terrain + runway
+- [ ] Arcade-leaning flight model (thrust, gravity, basic lift/drag, simple stall, damping)
+- [ ] Basic flight HUD: airspeed, altitude, attitude, throttle, gear
+- [ ] Ground collision, crash, and restart
+- [ ] Solid **60 fps** target in modern browsers under load
 
 ### Nice-to-have after MVP
 
-- Gear animation and landing gear physics  
-- Afterburner / engine particles  
-- Crash VFX and camera shake  
-- Audio (engine loop, wind, touchdown, explosion)  
-- Better terrain (heightmap or light procedural)  
-- Gamepad support  
-- Simple mission: takeoff → fly through gates → land  
+- Gear animation and landing gear physics
+- Afterburner / engine particles
+- Crash VFX and camera shake
+- Audio (engine loop, wind, touchdown, explosion)
+- Better terrain (heightmap or light procedural)
+- Gamepad support
+- Simple mission: takeoff, fly through gates, land
 
 ---
 
@@ -87,14 +109,14 @@ These may be revisited after the MVP feels great to fly.
 
 | Layer | Choice | Notes |
 |-------|--------|--------|
-| Rendering | **Three.js** (WebGL; WebGPU path later if useful) | Full control, huge ecosystem, easy high-quality aircraft models |
+| Rendering | **Three.js** (WebGL) | Full control, large ecosystem |
 | Language | **TypeScript** | Safer iteration on flight math and scene graph |
 | Build / dev | **Vite** | Instant HMR, simple static deploy |
-| Physics | **Custom simplified forces** | No full engine required for MVP |
-| Models | **GLTF / GLB** | Industry standard for Three.js |
+| Physics | Custom simplified forces (Phase 1) | Free-fly in Phase 0; no full physics engine required |
+| Models | Procedural mesh + optional **GLTF / GLB** | Drop-in path at `public/models/f35.glb` |
 | Optional later | **Rapier** | Only if rigid-body collisions outgrow raycasts |
 
-**Why Three.js over a game engine?** Blackout is a focused flight toy, not a multi-scene RPG. Three.js keeps the stack thin, debuggable, and friendly to “open the repo and change a number” vibe coding.
+**Why Three.js over a game engine?** Blackout is a focused flight toy, not a multi-scene RPG. Three.js keeps the stack thin, debuggable, and friendly to "open the repo and change a number" vibe coding.
 
 ---
 
@@ -102,28 +124,28 @@ These may be revisited after the MVP feels great to fly.
 
 **Arcade with a light coat of realism.**
 
-Every simulation tick we roughly apply:
+Phase 0 uses body-relative free-fly (smoke test). Phase 1 will apply each simulation tick roughly:
 
-1. **Thrust** along the aircraft forward vector (scaled by throttle)  
-2. **Gravity**  
-3. **Speed-dependent lift and drag**  
-4. **Simple stall** — nose drops when angle of attack gets too high  
-5. **Angular damping** — so it doesn’t feel like a spaceship  
-6. **Control rates** — pitch / roll / yaw inputs map to angular rates (not full control-surface CFD)
+1. **Thrust** along the aircraft forward vector (scaled by throttle)
+2. **Gravity**
+3. **Speed-dependent lift and drag**
+4. **Simple stall**: nose drops when angle of attack gets too high
+5. **Angular damping** so it does not feel like a spaceship
+6. **Control rates**: pitch / roll / yaw inputs map to angular rates (not full control-surface CFD)
 
 **No** coefficient tables. **No** high-fidelity stability derivatives. Just tunable constants until it feels right.
 
-### Integration approach (planned)
+### Integration approach
 
-- `requestAnimationFrame` outer loop  
-- **Fixed timestep** for physics (e.g. 1/60 or 1/120 s) with accumulator  
-- Render interpolation optional if we substep physics  
+- `requestAnimationFrame` outer loop
+- Phase 0: variable frame `dt` (clamped) for free-fly
+- Phase 1+: fixed timestep for physics (e.g. 1/60 s) with accumulator when needed
 
-Pseudo-flow:
+Pseudo-flow (Phase 1 target):
 
 ```
-inputs → FlightModel.step(state, dt) → integrate position/orientation
-       → collision check → camera update → HUD update → render
+inputs -> FlightModel.step(state, dt) -> integrate position/orientation
+       -> collision check -> camera update -> HUD update -> render
 ```
 
 ---
@@ -131,31 +153,28 @@ inputs → FlightModel.step(state, dt) → integrate position/orientation
 ## Architecture
 
 ```
-Main Loop (rAF + fixed timestep)
-├── InputManager          # keyboard / mouse / later gamepad
-├── Aircraft              # state + Three.js mesh
-├── FlightModel           # forces, torques, integration
-├── World / Terrain       # ground, runway, sky
-├── CameraSystem          # chase + cockpit
-├── HUD                   # overlay readouts
-└── Collision / Crash     # ground hits, reset
+Main Loop (rAF)
+├── InputManager          # keyboard (gamepad later)
+├── Aircraft              # state + Three.js mesh + free-fly
+├── FlightModel           # forces, torques, integration (Phase 1 stub)
+├── World / Terrain       # ground, runway, sky, lights
+├── CameraSystem          # chase / close / cockpit / wingman / orbit
+├── HUD                   # HTML overlay readouts
+└── Collision / Crash     # Phase 2 stub (soft floor in free-fly for now)
 ```
 
-### Data flow
+### Data flow (Phase 0)
 
 ```
-User Input ──► InputManager ──► Aircraft.controls
-                                      │
-                                      ▼
-                              FlightModel.step()
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    ▼                 ▼                 ▼
+User Input --> InputManager --> Aircraft.controls
+                                      |
+                                      v
+                              Aircraft.freeFlyStep()
+                                      |
+                    +-----------------+-----------------+
+                    v                 v                 v
               Aircraft mesh     CameraSystem          HUD
-              (position/quat)   (chase/cockpit)   (speed/alt/…)
-                    │
-                    ▼
-              Collision → CrashHandler → reset spawn
+              (position/quat)   (modes + RMB look)  (debug readouts)
 ```
 
 Keep modules **small and replaceable**. The flight model should not know about Three.js materials; the HUD should not integrate physics.
@@ -166,84 +185,95 @@ Keep modules **small and replaceable**. The flight model should not know about T
 
 ### InputManager
 
-Maps devices to a neutral control state:
+Maps keyboard to a neutral `ControlState`. Phase 0 free-fly reuses axes as:
 
-| Action | Typical binding |
-|--------|-----------------|
-| Pitch | W/S or mouse Y |
-| Roll | A/D or mouse X |
-| Yaw | Q/E |
-| Throttle | Shift/Ctrl or 1–0 / wheel |
-| Gear toggle | G |
-| Camera switch | C |
-| Restart | R |
+| Axis field | Phase 0 free-fly meaning | Binding |
+|------------|--------------------------|---------|
+| `pitch` | Forward / back | W / S |
+| `roll` | Yaw turn | A / D |
+| `yaw` | Vertical | E / Q |
+| `throttle` | Speed scale | 1 / 2 |
+| `boost` | Speed multiplier | Shift |
+| gear toggle | Toggle gear flag | G |
+| camera | Queue mode cycle | C |
+| reset | Queue respawn | R |
 
-Output: normalized axes in `[-1, 1]` and buttons/toggles. No raw `KeyboardEvent` leakage into the flight model.
+Output: normalized axes and toggles. No raw `KeyboardEvent` leakage into physics later.
 
 ### Aircraft
 
 Holds simulation + presentation glue:
 
-- Position (`Vector3`), velocity, orientation (`Quaternion`)  
-- Angular velocity  
-- Current control inputs  
-- Throttle (0–1), gear state  
-- Reference to the Three.js F-35 mesh  
-- Mass, reference area, and other scalar params used by the flight model  
+- Position (`Vector3`), velocity, orientation (`Quaternion`)
+- Angular velocity and mass (reserved for Phase 1)
+- Current control inputs
+- Three.js mesh (procedural F-35 or optional GLB)
+- Soft floor until real collision lands
 
 ### FlightModel
 
-Pure-ish function of state + inputs + `dt` → updated state (or force/torque then integrate). Easy to unit-test with no WebGL.
+Stub for Phase 1. Pure-ish function of state + inputs + `dt`. Easy to unit-test with no WebGL.
 
 ### CameraSystem
 
-- **Chase**: spring-follow, slightly above and behind; lag that sells speed  
-- **Cockpit**: first-person, locked to aircraft (optional slight head bob later)  
+| Mode | Behavior |
+|------|----------|
+| **chase** | Behind and above, hard-locked to the jet |
+| **close** | Tighter chase |
+| **cockpit** | First-person freelook; airframe hidden |
+| **wingman** | Side formation angle |
+| **orbit** | Free spherical orbit (same RMB controls) |
+
+Also: hold **RMB** to look/pan, scroll to zoom, pitch clamped to +/-90 degrees, ground occlusion on flat terrain, idle auto-return to mode default after ~6.7s.
 
 ### HUD
 
-Canvas 2D or lightweight HTML/CSS overlay. Minimal and clean — no cluttered glass cockpit for MVP.
-
-Suggested readouts:
-
-- Airspeed (knots or m/s — pick one and stick to it)  
-- Altitude (AGL or MSL simplified)  
-- Attitude (horizon / pitch ladder lite)  
-- Throttle %  
-- Gear up/down  
-- Optional: AoA warning, “STALL”, crash banner  
+Lightweight HTML/CSS overlay. Phase 0 shows debug: position, speed, camera mode, fps.
 
 ### World
 
-- Flat or lightly procedurally generated terrain  
-- One solid runway for takeoff/landing  
-- Sky: Three.js `Sky` shader, or gradient + directional light sun  
-- Fog for scale and performance  
+- Flat textured terrain + fog
+- Runway with centerline, thresholds, edge lights
+- Hemisphere + directional lights
 
-### Collision / Crash
+### Collision
 
-- Raycast or simple AABB/height vs ground  
-- On hard impact: freeze or tumble briefly → “CRASH” → respawn at runway threshold with reset state  
+Stub for Phase 2. Phase 0 soft floor lives in `Aircraft.freeFlyStep`.
 
 ---
 
-## Controls (Planned)
+## Controls
 
-Defaults (subject to change once playable):
+### Phase 0 (current)
 
 | Input | Action |
 |-------|--------|
-| **W / S** | Pitch down / up *(or inverted option)* |
-| **A / D** | Roll left / right |
-| **Q / E** | Yaw left / right |
-| **Shift / Ctrl** | Throttle up / down |
-| **Mouse** | Optional look / secondary pitch-roll |
-| **G** | Toggle landing gear |
-| **C** | Toggle chase ↔ cockpit |
-| **R** | Restart after crash (or anytime) |
-| **Esc** | Pause / pointer unlock |
+| **W / S** | Forward / back along nose |
+| **A / D** | Turn left / right |
+| **E / Q** | Up / down |
+| **Shift** | Boost |
+| **1 / 2** | Throttle down / up (free-fly speed scale) |
+| **Hold RMB + drag** | Look / pan camera |
+| **Scroll** | Zoom (not in cockpit) |
+| **C** | Cycle camera mode |
+| **R** | Reset to spawn |
+| **G** | Toggle gear flag (visual systems later) |
 
-Gamepad mapping can mirror a dual-stick layout later (left stick pitch/roll, triggers throttle, face buttons gear/camera).
+Right-click context menu is disabled so RMB is free for the camera.
+
+### Phase 1+ (planned flight)
+
+| Input | Action |
+|-------|--------|
+| **W / S** | Pitch |
+| **A / D** | Roll |
+| **Q / E** | Yaw |
+| **Shift / Ctrl** | Throttle |
+| **G** | Landing gear |
+| **C** | Camera mode |
+| **R** | Restart after crash |
+
+Gamepad mapping can mirror dual-stick layout later.
 
 ---
 
@@ -251,20 +281,20 @@ Gamepad mapping can mirror a dual-stick layout later (left stick pitch/roll, tri
 
 Design principles:
 
-1. **Readable at a glance** while flying  
-2. **Non-diegetic is fine** for MVP (classic corner instruments OK)  
-3. Prefer high-contrast, monochrome / muted military UI accents  
+1. Readable at a glance while flying
+2. Non-diegetic is fine for MVP
+3. Prefer high-contrast, muted military UI accents
 
-Layout sketch:
+Phase 0 layout is debug corners. Phase 2 target sketch:
 
 ```
-┌──────────────────────────────────────────┐
-│  SPD  240    ALT  1200    thr  85%  GEAR │
-│                                          │
-│              [ attitude / horizon ]      │
-│                                          │
-│                     ·                    │
-└──────────────────────────────────────────┘
++------------------------------------------+
+|  SPD  240    ALT  1200    thr  85%  GEAR |
+|                                          |
+|              [ attitude / horizon ]      |
+|                                          |
+|                     .                    |
++------------------------------------------+
 ```
 
 ---
@@ -273,21 +303,21 @@ Layout sketch:
 
 | Asset | Priority | Notes |
 |-------|----------|--------|
-| F-35 GLTF/GLB | **P0** | Realistic at chase/cockpit distances; watch polycount & texture size |
-| Runway mesh / markings | **P0** | Clear centerline + thresholds for landings |
-| Terrain / ground | **P0** | Flat plane + texture or low-poly hills |
-| Sky / lighting | **P0** | Daytime first |
+| F-35 GLTF/GLB | **P0** | Optional drop-in; procedural mesh is default |
+| Runway mesh / markings | **P0** | In code today |
+| Terrain / ground | **P0** | Flat plane + texture |
+| Sky / lighting | **P0** | Daytime + fog |
 | Afterburner particles | P2 | Visual throttle feedback |
 | Crash FX | P2 | Smoke, debris optional |
 | Audio | P2 | Engine, wind, touchdown, bang |
 
-**Licensing:** Prefer CC0 / clear commercial-friendly or self-authored assets. Document sources in `assets/ATTRIBUTION.md` when added.
+**Licensing:** Prefer CC0 / clear commercial-friendly or self-authored assets. Document sources in `public/models/ATTRIBUTION.md` when added.
 
 **Performance budget (soft):**
 
-- Keep main aircraft under a sensible triangle count for mid-range laptops  
-- Compress textures (KTX2 / basis later if needed)  
-- Avoid huge env maps on day one  
+- Keep main aircraft under a sensible triangle count for mid-range laptops
+- Compress textures (KTX2 / basis later if needed)
+- Avoid huge env maps on day one
 
 ---
 
@@ -297,28 +327,28 @@ Layout sketch:
 Blackout/
 ├── public/
 │   ├── favicon.svg
-│   └── models/                 # drop f35.glb here (optional)
+│   └── models/                 # optional f35.glb
 │       └── ATTRIBUTION.md
 ├── src/
-│   ├── main.ts                 # bootstrap, rAF + fixed timestep loop
+│   ├── main.ts                 # bootstrap, rAF loop
 │   ├── style.css
 │   ├── core/
 │   │   ├── InputManager.ts
-│   │   ├── Time.ts             # fixed timestep accumulator
+│   │   ├── Time.ts             # frame dt + fps
 │   │   └── types.ts
 │   ├── aircraft/
-│   │   ├── Aircraft.ts
-│   │   ├── FlightModel.ts      # stub for Phase 1
+│   │   ├── Aircraft.ts         # state + free-fly
+│   │   ├── FlightModel.ts      # Phase 1 stub
 │   │   └── createPlaceholderF35.ts
 │   ├── world/
-│   │   ├── World.ts            # scene, lights, terrain, runway
+│   │   ├── World.ts
 │   │   └── Runway.ts
 │   ├── camera/
-│   │   └── CameraSystem.ts     # orbit + follow
+│   │   └── CameraSystem.ts
 │   ├── ui/
 │   │   └── HUD.ts
 │   └── systems/
-│       └── Collision.ts        # stub for Phase 2
+│       └── Collision.ts        # Phase 2 stub
 ├── index.html
 ├── package.json
 ├── tsconfig.json
@@ -329,67 +359,65 @@ Blackout/
 
 ## Development Phases
 
-### Phase 0 – Skeleton ✅
+### Phase 0: Skeleton (largely done)
 
-- Vite + TypeScript + Three.js scene  
-- Procedural F-35 placeholder (optional GLB load from `public/models/f35.glb`)  
-- Orbit + follow camera  
-- Free-fly WASD / QE movement smoke test  
-- Minimal HUD (position, speed, camera, fps)  
+- Vite + TypeScript + Three.js scene
+- Procedural F-35 placeholder (optional GLB)
+- Multi-mode camera + free-fly movement
+- Minimal HUD
 
-**Exit:** Model visible, scene renders at ~60 fps, jet movable from keyboard.
+**Exit:** Model visible, scene runs smoothly, jet movable from keyboard.
 
-### Phase 1 – Flight
+### Phase 1: Flight
 
-- Hook up `FlightModel` + `InputManager`  
-- Thrust, gravity, lift/drag, damping  
-- Get airborne and controllable from the runway  
+- Hook up `FlightModel` + real control mapping
+- Thrust, gravity, lift/drag, damping
+- Takeoff and circuit from the runway
 
 **Exit:** You can take off and fly a circuit by feel.
 
-### Phase 2 – Feel
+### Phase 2: Feel
 
-- Chase + cockpit cameras  
-- HUD  
-- Ground collision, stall behavior, basic landing  
-- Tune until “feels like a jet toy,” not a physics paper  
+- Flight HUD instruments
+- Ground collision, stall, basic landing
+- Tune until it feels like a jet toy, not a physics paper
 
 **Exit:** Land or crash and restart without opening the console.
 
-### Phase 3 – Polish
+### Phase 3: Polish
 
-- Better terrain and lighting  
-- Sound, particles, gear animation  
-- Visual polish and juice  
+- Better terrain and lighting
+- Sound, particles, gear animation
+- Visual polish (including a stronger aircraft mesh or real GLB)
 
-**Exit:** Something you’d proudly send a friend a link to.
+**Exit:** Something you would proudly send a friend a link to.
 
 ---
 
 ## Tuning Knobs
 
-Expect these constants to live in one place (e.g. `FlightModel` config or `tuning.ts`) so iteration is painless:
+Expect flight constants to live in one place (e.g. `FlightModel` or `tuning.ts`):
 
 | Parameter | Effect |
 |-----------|--------|
 | `maxThrust` | Acceleration / climb authority |
 | `mass` | Inertia feel |
-| `liftCoeff` / `dragCoeff` | Cruise speed & glide |
+| `liftCoeff` / `dragCoeff` | Cruise speed and glide |
 | `stallAoA` | When the nose falls off |
 | `pitchRate` / `rollRate` / `yawRate` | Responsiveness |
 | `angularDamping` | Stops spaceship spin |
-| `cameraLag` / `cameraOffset` | Chase cam drama |
-| `crashSpeedThreshold` | What counts as a landing vs crash |
+| `cameraLag` / `cameraOffset` | Chase cam drama (if springs return) |
+| `crashSpeedThreshold` | Landing vs crash |
 
-**Rule of thumb:** If a tweak needs a PR description longer than one sentence, the architecture is fighting you — simplify the knob.
+**Rule of thumb:** If a tweak needs a PR description longer than one sentence, the architecture is fighting you. Simplify the knob.
 
 ---
 
 ## Success Criteria
 
-> You open the page, hit a key, and within **20–30 seconds** you are flying an F-35 that **looks the part** and **feels responsive**.
+> You open the page, hit a key, and within **20 to 30 seconds** you are flying an F-35 that **looks the part** and **feels responsive**.
 
-That is the primary metric for Blackout. Secondary: stable frame rate, restartable crashes, and a codebase a future-you can still enjoy editing at 1 a.m.
+That is the primary metric for Blackout. Secondary: stable frame rate, restartable crashes, and a codebase a future you can still enjoy editing late at night.
 
 ---
 
@@ -397,11 +425,11 @@ That is the primary metric for Blackout. Secondary: stable frame rate, restartab
 
 ### Prerequisites
 
-- Node.js 20+ (LTS recommended)  
-- npm, pnpm, or yarn  
+- Node.js 20+ (LTS recommended)
+- npm, pnpm, or yarn
 - A modern browser (Chrome, Firefox, Edge, Safari)
 
-### Install & run
+### Install and run
 
 ```bash
 npm install
@@ -410,22 +438,9 @@ npm run dev
 
 Open the local URL Vite prints (typically `http://localhost:5173`).
 
-### Phase 0 controls
-
-| Input | Action |
-|-------|--------|
-| **W A S D** | Move forward / strafe / back |
-| **Q / E** | Down / up |
-| **Shift** | Boost |
-| **1 / 2** | Throttle down / up (free-fly speed scale) |
-| **LMB drag** | Orbit camera |
-| **Scroll** | Zoom |
-| **C** | Toggle orbit ↔ follow camera |
-| **R** | Reset to spawn |
-
 ### Optional F-35 model
 
-Drop a GLB at `public/models/f35.glb`. On boot, Blackout tries to load it and falls back to a procedural jet silhouette if missing. See `public/models/ATTRIBUTION.md`.
+Drop a GLB at `public/models/f35.glb`. On boot, Blackout tries to load it and falls back to the procedural silhouette if missing. See `public/models/ATTRIBUTION.md`.
 
 ---
 
@@ -443,11 +458,11 @@ Drop a GLB at `public/models/f35.glb`. On boot, Blackout tries to load it and fa
 
 This project is optimized for **fast, enjoyable iteration**:
 
-1. **Play first, optimize second** — get airborne before refactoring abstractions.  
-2. **Tune constants in one file** — flight feel should be a slider culture, not a scavenger hunt.  
-3. **Keep modules honest** — input ≠ physics ≠ render.  
-4. **Commit small, descriptive chunks** — especially while the core is forming.  
-5. **Don’t invent systems sim** — if it doesn’t help “feel good to fly,” defer it.
+1. **Play first, optimize second.** Get airborne before refactoring abstractions.
+2. **Tune constants in one file.** Flight feel should be a slider culture, not a scavenger hunt.
+3. **Keep modules honest.** Input is not physics is not render.
+4. **Commit small, descriptive chunks.** Especially while the core is forming.
+5. **Do not invent systems sim.** If it does not help "feel good to fly," defer it.
 
 ### Suggested commit style
 
@@ -463,18 +478,4 @@ Wire chase camera spring follow
 
 ## License
 
-TBD — decide before shipping public builds or third-party assets.
-
----
-
-## Status
-
-| Item | State |
-|------|--------|
-| Design / vision README | Done |
-| Vite + Three.js scaffold | **Done (Phase 0)** |
-| Free-fly + orbit/follow cam | **Done (Phase 0)** |
-| Flight model | Not started (Phase 1) |
-| Playable MVP | Not started |
-
-**Next concrete step:** Phase 1 — hook up `FlightModel` (thrust, gravity, lift/drag, damping) and take off from the runway.
+TBD. Decide before shipping public builds or third-party assets.
