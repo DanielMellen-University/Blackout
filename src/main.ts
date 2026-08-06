@@ -7,6 +7,7 @@ import {
 import { Aircraft } from './aircraft/Aircraft'
 import { CameraSystem } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
+import { suppressBrowserUi } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { HUD } from './ui/HUD'
 import { World } from './world/World'
@@ -14,6 +15,9 @@ import { World } from './world/World'
 async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null
   if (!canvas) throw new Error('#game canvas not found')
+
+  // First: kill native context menu / RMB chrome before game handlers attach
+  suppressBrowserUi(canvas)
 
   const renderer = new WebGLRenderer({
     canvas,

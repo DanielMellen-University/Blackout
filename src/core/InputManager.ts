@@ -30,7 +30,8 @@ export class InputManager {
     this.controls.pitch = this.axis('KeyW', 'KeyS')
     this.controls.roll = this.axis('KeyD', 'KeyA')
     this.controls.yaw = this.axis('KeyE', 'KeyQ')
-    this.controls.boost = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')
+    // Space for boost (not Shift) so Shift+RMB never pairs with look
+    this.controls.boost = this.keys.has('Space')
 
     if (this.keys.has('Digit1')) {
       this.controls.throttle = Math.max(0, this.controls.throttle - 0.01)

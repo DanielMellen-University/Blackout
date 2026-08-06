@@ -161,17 +161,11 @@ export class CameraSystem {
 
   dispose(): void {
     const c = this.canvas
-    const opts: AddEventListenerOptions = { capture: true }
-    window.removeEventListener('contextmenu', this.onContextMenu, opts)
-    document.removeEventListener('contextmenu', this.onContextMenu, opts)
-    c.removeEventListener('contextmenu', this.onContextMenu, opts)
-    c.removeEventListener('mousedown', this.onMouseDown, opts)
-    window.removeEventListener('mousedown', this.onMouseDown, opts)
-    window.removeEventListener('mouseup', this.onMouseUp)
-    window.removeEventListener('mousemove', this.onMouseMove)
+    c.removeEventListener('pointerdown', this.onPointerDown)
+    window.removeEventListener('pointerup', this.onPointerUp)
+    window.removeEventListener('pointercancel', this.onPointerUp)
+    window.removeEventListener('pointermove', this.onPointerMove)
     c.removeEventListener('wheel', this.onWheel)
-    window.removeEventListener('auxclick', this.onAuxClick, opts)
-    window.removeEventListener('keydown', this.onBlockContextKeys, opts)
   }
 
   private bumpInput(): void {
@@ -327,62 +321,46 @@ export class CameraSystem {
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
-    // Capture phase so Shift+RMB / modifier combos cannot open the browser menu
-    const cap: AddEventListenerOptions = { capture: true }
-    window.addEventListener('contextmenu', this.onContextMenu, cap)
-    document.addEventListener('contextmenu', this.onContextMenu, cap)
-    canvas.addEventListener('contextmenu', this.onContextMenu, cap)
-    // Block native RMB before contextmenu fires (helps with Shift held for boost)
-    window.addEventListener('mousedown', this.onMouseDown, cap)
-    canvas.addEventListener('mousedown', this.onMouseDown, cap)
-    window.addEventListener('mouseup', this.onMouseUp)
-    window.addEventListener('mousemove', this.onMouseMove)
+    // Pointer events: capture so look keeps working if cursor leaves the canvas
+    canvas.addEventListener('pointerdown', this.onPointerDown)
+    window.addEventListener('pointerup', this.onPointerUp)
+    window.addEventListener('pointercancel', this.onPointerUp)
+    window.addEventListener('pointermove', this.onPointerMove)
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
-    window.addEventListener('auxclick', this.onAuxClick, cap)
-    window.addEventListener('keydown', this.onBlockContextKeys, cap)
   }
 
-  private onContextMenu = (e: Event): void => {
-    e.preventDefault()
-    e.stopPropagation()
-  }
-
-  /** Some browsers fire auxclick for middle/right; block right-button menu path. */
-  private onAuxClick = (e: MouseEvent): void => {
-    if (e.button === 2) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-  }
-
-  /** Shift+F10 / ContextMenu key can open the browser menu without a mouse. */
-  private onBlockContextKeys = (e: KeyboardEvent): void => {
-    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
-  }
-
-  private onMouseDown = (e: MouseEvent): void => {
-    if (e.button !== 2) return
-    // Always kill native RMB (including while Shift is held for boost)
+  /** RMB (2) or MMB (1) hold to look - MMB avoids any residual RMB menu issues. */
+  private onPointerDown = (e: PointerEvent): void => {
+    if (e.button !== 2 && e.button !== 1) return
     e.preventDefault()
     e.stopPropagation()
     this.rmbDown = true
     this.lastX = e.clientX
     this.lastY = e.clientY
     this.canvas.style.cursor = 'grabbing'
+    try {
+      this.canvas.setPointerCapture(e.pointerId)
+    } catch {
+      // ignore if capture unsupported
+    }
     this.bumpInput()
   }
 
-  private onMouseUp = (e: MouseEvent): void => {
-    if (e.button === 2 || e.buttons === 0) {
+  private onPointerUp = (e: PointerEvent): void => {
+    if (e.button === 2 || e.button === 1 || e.buttons === 0) {
       this.rmbDown = false
       this.canvas.style.cursor = ''
+      try {
+        if (this.canvas.hasPointerCapture(e.pointerId)) {
+          this.canvas.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // ignore
+      }
     }
   }
 
-  private onMouseMove = (e: MouseEvent): void => {
+  private onPointerMove = (e: PointerEvent): void => {
     if (!this.rmbDown) return
     const dx = e.clientX - this.lastX
     const dy = e.clientY - this.lastY
@@ -391,11 +369,9 @@ export class CameraSystem {
 
     if (dx === 0 && dy === 0) return
 
-    // Horizontal: user-only (never auto-rotated by vertical pan)
     this.yaw += dx * this.lookSensitivity
     this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
 
-    // Vertical: free until ±90°, then hard lock (no wrap / no yaw flip)
     this.pitch += dy * this.lookSensitivity
     const cfg = MODE_CONFIG[this.mode]
     if (cfg.freelook) {

@@ -55,15 +55,15 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **W / S** | Forward / back |
 | **A / D** | Turn left / right |
 | **E / Q** | Up / down |
-| **Shift** | Boost |
+| **Space** | Boost |
 | **1 / 2** | Throttle down / up |
-| **Hold RMB + drag** | Look / pan |
+| **Hold RMB or MMB + drag** | Look / pan |
 | **Scroll** | Zoom |
 | **C** | Cycle camera mode |
 | **R** | Reset to spawn |
 | **G** | Toggle gear flag |
 
-Right-click context menu is disabled so RMB is available for the camera.
+Browser context menu is suppressed on the game page so mouse look is not interrupted.
 
 ## Optional aircraft model
 
