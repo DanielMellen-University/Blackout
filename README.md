@@ -55,7 +55,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **W / S** | Forward / back |
 | **A / D** | Turn left / right |
 | **E / Q** | Up / down |
-| **Shift** | Boost |
+| **Space** | Boost |
 | **1 / 2** | Throttle down / up |
 | **Hold RMB + drag** | Look / pan |
 | **Scroll** | Zoom |
