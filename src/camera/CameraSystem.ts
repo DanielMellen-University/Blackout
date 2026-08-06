@@ -103,7 +103,10 @@ export class CameraSystem {
   private pitch = 0.28
   private distance = 20
 
-  private rmbDown = false
+  /** True while user is holding look button (RMB/MMB). */
+  private looking = false
+  /** Which pointer button started look (for matching pointerup). */
+  private lookButton = -1
   private lastX = 0
   private lastY = 0
   private initialized = false
@@ -165,7 +168,11 @@ export class CameraSystem {
     window.removeEventListener('pointerup', this.onPointerUp)
     window.removeEventListener('pointercancel', this.onPointerUp)
     window.removeEventListener('pointermove', this.onPointerMove)
+    document.removeEventListener('pointerlockchange', this.onPointerLockChange)
     c.removeEventListener('wheel', this.onWheel)
+    if (document.pointerLockElement === c) {
+      document.exitPointerLock()
+    }
   }
 
   private bumpInput(): void {
@@ -177,7 +184,7 @@ export class CameraSystem {
    * toward this mode's default framing.
    */
   private updateAutoReturn(dt: number): void {
-    if (this.rmbDown || dt <= 0) return
+    if (this.looking || dt <= 0) return
 
     const idleSec = (performance.now() - this.lastInputMs) / 1000
     if (idleSec < AUTO_RETURN_DELAY) return
@@ -321,51 +328,104 @@ export class CameraSystem {
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
-    // Pointer events: capture so look keeps working if cursor leaves the canvas
     canvas.addEventListener('pointerdown', this.onPointerDown)
     window.addEventListener('pointerup', this.onPointerUp)
     window.addEventListener('pointercancel', this.onPointerUp)
     window.addEventListener('pointermove', this.onPointerMove)
+    document.addEventListener('pointerlockchange', this.onPointerLockChange)
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
   }
 
-  /** RMB (2) or MMB (1) hold to look - MMB avoids any residual RMB menu issues. */
+  /**
+   * Hold RMB (or MMB) to look - with or without Shift (boost).
+   * Pointer lock hides the OS cursor and stops the browser context menu
+   * from winning over Shift+RMB in Chrome/Firefox.
+   */
   private onPointerDown = (e: PointerEvent): void => {
     if (e.button !== 2 && e.button !== 1) return
     e.preventDefault()
     e.stopPropagation()
-    this.rmbDown = true
+    e.stopImmediatePropagation()
+
+    this.looking = true
+    this.lookButton = e.button
     this.lastX = e.clientX
     this.lastY = e.clientY
-    this.canvas.style.cursor = 'grabbing'
+    this.canvas.style.cursor = 'none'
+    this.bumpInput()
+
+    // Request lock while the user gesture is active (works with Shift held)
+    if (document.pointerLockElement !== this.canvas) {
+      const lock = this.canvas.requestPointerLock as (
+        options?: PointerLockOptions,
+      ) => Promise<void> | void
+      try {
+        const result = lock.call(this.canvas, { unadjustedMovement: true })
+        if (result && typeof (result as Promise<void>).catch === 'function') {
+          ;(result as Promise<void>).catch(() => {
+            // Fallback: unlocked drag still works via clientX/Y
+          })
+        }
+      } catch {
+        try {
+          this.canvas.requestPointerLock()
+        } catch {
+          // ignore
+        }
+      }
+    }
+
     try {
       this.canvas.setPointerCapture(e.pointerId)
     } catch {
-      // ignore if capture unsupported
+      // ignore
     }
-    this.bumpInput()
   }
 
   private onPointerUp = (e: PointerEvent): void => {
-    if (e.button === 2 || e.button === 1 || e.buttons === 0) {
-      this.rmbDown = false
-      this.canvas.style.cursor = ''
-      try {
-        if (this.canvas.hasPointerCapture(e.pointerId)) {
-          this.canvas.releasePointerCapture(e.pointerId)
-        }
-      } catch {
-        // ignore
+    if (!this.looking) return
+    if (e.button !== this.lookButton && e.buttons !== 0) return
+
+    this.endLook()
+    try {
+      if (this.canvas.hasPointerCapture(e.pointerId)) {
+        this.canvas.releasePointerCapture(e.pointerId)
       }
+    } catch {
+      // ignore
+    }
+  }
+
+  private onPointerLockChange = (): void => {
+    // If lock is lost externally, stop looking
+    if (document.pointerLockElement !== this.canvas && this.looking) {
+      // Keep looking until button release if still holding button via buttons mask
+      // (some UAs fire lock change mid-drag); only clear cursor state
+      if (!this.looking) this.canvas.style.cursor = ''
+    }
+  }
+
+  private endLook(): void {
+    this.looking = false
+    this.lookButton = -1
+    this.canvas.style.cursor = 'crosshair'
+    if (document.pointerLockElement === this.canvas) {
+      document.exitPointerLock()
     }
   }
 
   private onPointerMove = (e: PointerEvent): void => {
-    if (!this.rmbDown) return
-    const dx = e.clientX - this.lastX
-    const dy = e.clientY - this.lastY
-    this.lastX = e.clientX
-    this.lastY = e.clientY
+    if (!this.looking) return
+
+    // Prefer movementX/Y under pointer lock (immune to menu / edge clamping)
+    let dx = e.movementX
+    let dy = e.movementY
+    if (document.pointerLockElement !== this.canvas) {
+      dx = e.clientX - this.lastX
+      dy = e.clientY - this.lastY
+      this.lastX = e.clientX
+      this.lastY = e.clientY
+    }
 
     if (dx === 0 && dy === 0) return
 

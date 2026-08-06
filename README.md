@@ -55,9 +55,9 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **W / S** | Forward / back |
 | **A / D** | Turn left / right |
 | **E / Q** | Up / down |
-| **Space** | Boost |
+| **Shift** or **Space** | Boost |
 | **1 / 2** | Throttle down / up |
-| **Hold RMB or MMB + drag** | Look / pan |
+| **Hold RMB + drag** | Look / pan (works while holding Shift) |
 | **Scroll** | Zoom |
 | **C** | Cycle camera mode |
 | **R** | Reset to spawn |
