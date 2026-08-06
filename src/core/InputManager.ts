@@ -1,48 +1,43 @@
 import { createDefaultControls, type ControlState } from './types'
 
 /**
- * Maps keyboard (and later mouse/gamepad) into a neutral ControlState.
- * Phase 0: free-fly axes (WASD + QE altitude) rather than true flight surfaces.
+ * Maps keyboard into a neutral ControlState.
+ * Phase 0 free-fly reuses pitch/roll/yaw as move / turn / vertical axes.
  */
 export class InputManager {
-  private keys = new Set<string>()
+  private readonly keys = new Set<string>()
   private readonly controls: ControlState = createDefaultControls()
+  private readonly target: Window
 
-  /** One-shot actions consumed by the main loop. */
   cameraToggleQueued = false
   resetQueued = false
 
   constructor(target: Window = window) {
+    this.target = target
     target.addEventListener('keydown', this.onKeyDown)
     target.addEventListener('keyup', this.onKeyUp)
-    // Prevent page scroll on space / arrows when focused on game
-    target.addEventListener('keydown', (e) => {
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-        e.preventDefault()
-      }
-    })
   }
 
-  dispose(target: Window = window): void {
-    target.removeEventListener('keydown', this.onKeyDown)
-    target.removeEventListener('keyup', this.onKeyUp)
+  dispose(): void {
+    this.target.removeEventListener('keydown', this.onKeyDown)
+    this.target.removeEventListener('keyup', this.onKeyUp)
+    this.keys.clear()
   }
 
-  /** Read current control snapshot (mutates internal state for axes). */
+  /** Current control snapshot (reused object — copy if you need to stash it). */
   sample(): ControlState {
-    const forward = this.axis('KeyW', 'KeyS')
-    const strafe = this.axis('KeyD', 'KeyA')
-    const vertical = this.axis('KeyE', 'KeyQ')
-
-    // Phase 0 free-fly mapping: pitch/roll/yaw double as move intents
-    this.controls.pitch = forward
-    this.controls.roll = strafe
-    this.controls.yaw = vertical
+    // Phase 0 free-fly: pitch=W/S, roll=A/D turn, yaw=Q/E vertical
+    this.controls.pitch = this.axis('KeyW', 'KeyS')
+    this.controls.roll = this.axis('KeyD', 'KeyA')
+    this.controls.yaw = this.axis('KeyE', 'KeyQ')
     this.controls.boost = this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')
 
-    // Throttle nudge with 1 / 2 (optional fine control)
-    if (this.keys.has('Digit1')) this.controls.throttle = Math.max(0, this.controls.throttle - 0.01)
-    if (this.keys.has('Digit2')) this.controls.throttle = Math.min(1, this.controls.throttle + 0.01)
+    if (this.keys.has('Digit1')) {
+      this.controls.throttle = Math.max(0, this.controls.throttle - 0.01)
+    }
+    if (this.keys.has('Digit2')) {
+      this.controls.throttle = Math.min(1, this.controls.throttle + 0.01)
+    }
 
     return this.controls
   }
@@ -60,17 +55,16 @@ export class InputManager {
   }
 
   private axis(positive: string, negative: string): number {
-    const p = this.keys.has(positive) ? 1 : 0
-    const n = this.keys.has(negative) ? 1 : 0
-    return p - n
+    return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    if (e.repeat) {
-      this.keys.add(e.code)
-      return
+    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+      e.preventDefault()
     }
+
     this.keys.add(e.code)
+    if (e.repeat) return
 
     if (e.code === 'KeyC') this.cameraToggleQueued = true
     if (e.code === 'KeyR') this.resetQueued = true

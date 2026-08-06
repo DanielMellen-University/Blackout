@@ -28,7 +28,7 @@ export function createRunway(): Group {
   asphalt.receiveShadow = true
   root.add(asphalt)
 
-  // Centerline dashes
+  // Shared materials/geometries (many instances, one GPU program each)
   const dashMat = new MeshStandardMaterial({ color: 0xf0f0e8, roughness: 0.85 })
   const dashGeo = new BoxGeometry(0.35, 0.04, 4)
   for (let z = -length / 2 + 6; z < length / 2 - 4; z += 10) {
@@ -37,18 +37,17 @@ export function createRunway(): Group {
     root.add(dash)
   }
 
-  // Threshold bars
   const barMat = new MeshStandardMaterial({ color: 0xf5f5f0 })
+  const barGeo = new BoxGeometry(0.9, 0.04, 2.5)
   for (const z of [-length / 2 + 4, length / 2 - 4] as const) {
     for (let i = -3; i <= 3; i++) {
       if (i === 0) continue
-      const bar = new Mesh(new BoxGeometry(0.9, 0.04, 2.5), barMat)
+      const bar = new Mesh(barGeo, barMat)
       bar.position.set(i * 1.15, 0.03, z)
       root.add(bar)
     }
   }
 
-  // Edge lights (static emissive dots)
   const lightMat = new MeshStandardMaterial({
     color: 0xffffff,
     emissive: 0xaaccff,

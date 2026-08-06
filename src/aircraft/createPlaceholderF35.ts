@@ -11,7 +11,6 @@ import {
   Shape,
   SphereGeometry,
   Vector2,
-  type Object3D,
 } from 'three'
 
 /**
@@ -22,19 +21,13 @@ export function createPlaceholderF35(): Group {
   const root = new Group()
   root.name = 'F35'
 
-  // Low metalness so base color reads correctly without an env map
-  // (high metalness + no reflections = pure black “X-ray / hollow” look).
-  const grey = makeGrey(0xb0b8c0)
-  const greyMid = makeGrey(0x8e97a1)
+  // Low metalness so base color reads without an env map
+  // (high metalness + no reflections = pure black / hollow look).
+  const panel = panelTexture()
+  const grey = makeGrey(0xb0b8c0, panel)
+  const greyMid = makeGrey(0x8e97a1, panel)
   const black = solid(0x111418, 0.15, 0.65)
-  const glass = new MeshStandardMaterial({
-    color: 0x1a2838,
-    metalness: 0.25,
-    roughness: 0.15,
-    transparent: false,
-    opacity: 1,
-    depthWrite: true,
-  })
+  const glass = solid(0x1a2838, 0.25, 0.15)
   const tire = solid(0x0c0c0e, 0.05, 0.95)
   const nozzleOuter = solid(0x2a2e34, 0.35, 0.45)
   const glowMat = new MeshStandardMaterial({
@@ -47,7 +40,7 @@ export function createPlaceholderF35(): Group {
 
   root.add(buildFuselage(grey))
   root.add(buildCanopy(glass, black))
-  root.add(buildWingPair(grey)) // single continuous wing mesh (L+R)
+  root.add(buildWingPair(grey))
   root.add(buildHStabPair(grey))
   root.add(buildVStab(1, grey, black))
   root.add(buildVStab(-1, grey, black))
@@ -55,13 +48,11 @@ export function createPlaceholderF35(): Group {
   root.add(buildIntake(-1, grey, greyMid, black))
   root.add(buildNozzle(nozzleOuter, black, glowMat))
 
-  // Chin EOTS
   const eots = new Mesh(new SphereGeometry(0.24, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), black)
   eots.scale.set(0.9, 0.48, 1.0)
   eots.position.set(0, -0.34, 5.0)
   root.add(eots)
 
-  // Belly
   const bay = new Mesh(new BoxGeometry(1.05, 0.06, 4.4), greyMid)
   bay.position.set(0, -0.54, 0.2)
   root.add(bay)
@@ -71,11 +62,10 @@ export function createPlaceholderF35(): Group {
   addNavLight(root, 5.35, 0.02, -0.5, 0x20ff40)
   addNavLight(root, 0, 1.5, -5.5, 0xfff5e0)
 
-  root.traverse((obj: Object3D) => {
-    const mesh = obj as Mesh
-    if (mesh.isMesh) {
-      mesh.castShadow = true
-      mesh.receiveShadow = true
+  root.traverse((obj) => {
+    if (obj instanceof Mesh) {
+      obj.castShadow = true
+      obj.receiveShadow = true
     }
   })
 
@@ -96,11 +86,10 @@ function solid(color: number, metalness: number, roughness: number): MeshStandar
   })
 }
 
-function makeGrey(color: number): MeshStandardMaterial {
+function makeGrey(color: number, map: CanvasTexture): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color,
-    map: panelTexture(),
-    // Paint, not chrome — shows grey under scene lights
+    map,
     metalness: 0.12,
     roughness: 0.62,
     transparent: false,
@@ -170,62 +159,37 @@ function buildFuselage(mat: MeshStandardMaterial): Mesh {
 }
 
 /**
- * Closed solid canopy (not an open hemisphere — those look hollow/X-ray).
- * Lathe a bubble profile, lay it on the spine with a proper black frame.
+ * Closed solid canopy — full ellipsoid (not open hemisphere).
+ * Bottom is buried in the black sill so you never see a hollow shell.
  */
 function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): Group {
   const g = new Group()
 
-  // Profile: x = radius from centerline, y = height of canopy
-  // Closed at both ends so the mesh is a solid shell with no open hole.
-  const profile: Vector2[] = [
-    new Vector2(0.02, 0.0),
-    new Vector2(0.28, 0.02),
-    new Vector2(0.42, 0.12),
-    new Vector2(0.48, 0.28),
-    new Vector2(0.46, 0.42),
-    new Vector2(0.38, 0.5),
-    new Vector2(0.22, 0.52),
-    new Vector2(0.08, 0.48),
-    new Vector2(0.01, 0.35),
-  ]
-  const bubbleGeo = new LatheGeometry(profile, 28)
-  // Lathe around Y → rotate so length runs along +Z, dome points +Y
-  const bubble = new Mesh(bubbleGeo, glass)
-  bubble.rotation.z = Math.PI / 2 // Y axis of lathe → world X… wrong
-  // Better: lathe is around Y. We want long axis = Z, up = Y.
-  // Rotate lathe 90° around X so local Y → -Z? Actually:
-  // Keep lathe Y as UP. Scale X/Z for width and length of bubble.
-  bubble.rotation.set(0, 0, 0)
-  bubble.scale.set(0.95, 1, 2.4) // wider? lathe radius is XZ, Y is height
-  // Wait — LatheGeometry spins profile around Y, so X of profile = radial.
-  // Height of canopy = profile Y. Length along fuselage needs non-uniform scale on Z.
-  bubble.scale.set(0.85, 0.95, 2.35)
-  bubble.position.set(0, 0.28, 2.65)
+  // Full sphere → solid shell; non-uniform scale = long jet bubble
+  const bubble = new Mesh(new SphereGeometry(0.55, 28, 20), glass)
+  bubble.scale.set(0.78, 0.62, 1.85)
+  bubble.position.set(0, 0.22, 2.7) // lower so bottom sits in sill/fuse
   g.add(bubble)
 
-  // Black frame / sill that the glass sits in
-  const sill = new Mesh(new BoxGeometry(1.0, 0.1, 2.55), frame)
-  sill.position.set(0, 0.22, 2.65)
+  // Thick black sill hides the lower half of the sphere
+  const sill = new Mesh(new BoxGeometry(1.05, 0.18, 2.85), frame)
+  sill.position.set(0, 0.18, 2.7)
   g.add(sill)
 
-  // Side rails
   for (const s of [-1, 1] as const) {
-    const rail = new Mesh(new BoxGeometry(0.07, 0.12, 2.3), frame)
-    rail.position.set(s * 0.48, 0.32, 2.65)
-    rail.rotation.z = s * -0.45
+    const rail = new Mesh(new BoxGeometry(0.08, 0.14, 2.5), frame)
+    rail.position.set(s * 0.52, 0.32, 2.7)
+    rail.rotation.z = s * -0.35
     g.add(rail)
   }
 
-  // Rear fairing into spine
-  const rear = new Mesh(new BoxGeometry(0.75, 0.16, 0.45), frame)
-  rear.position.set(0, 0.36, 1.45)
-  rear.rotation.x = 0.35
+  const rear = new Mesh(new BoxGeometry(0.8, 0.18, 0.5), frame)
+  rear.position.set(0, 0.34, 1.45)
+  rear.rotation.x = 0.3
   g.add(rear)
 
-  // Forward coaming
-  const coaming = new Mesh(new BoxGeometry(0.55, 0.08, 0.4), frame)
-  coaming.position.set(0, 0.28, 3.85)
+  const coaming = new Mesh(new BoxGeometry(0.5, 0.1, 0.45), frame)
+  coaming.position.set(0, 0.26, 4.0)
   g.add(coaming)
 
   return g

@@ -1,6 +1,7 @@
 import {
-  SRGBColorSpace,
   ACESFilmicToneMapping,
+  PCFSoftShadowMap,
+  SRGBColorSpace,
   WebGLRenderer,
 } from 'three'
 import { Aircraft } from './aircraft/Aircraft'
@@ -24,6 +25,7 @@ async function boot(): Promise<void> {
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.2
   renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = PCFSoftShadowMap
 
   const world = new World()
   const aircraft = new Aircraft()
@@ -32,37 +34,30 @@ async function boot(): Promise<void> {
 
   const cameras = new CameraSystem(canvas)
   const input = new InputManager()
-  const time = new Time(60)
+  const time = new Time()
   const hud = new HUD()
 
-  const resize = (): void => {
+  const onResize = (): void => {
     const w = window.innerWidth
     const h = window.innerHeight
     renderer.setSize(w, h, false)
     cameras.resize(w, h)
   }
-  window.addEventListener('resize', resize)
-  resize()
+  window.addEventListener('resize', onResize)
+  onResize()
 
   const tick = (nowMs: number): void => {
     requestAnimationFrame(tick)
 
     const { frameDt } = time.beginFrame(nowMs)
-    // Integrate every visual frame with clamped dt — avoids fixed-step
-    // stutter (0-step frames) that makes the model feel laggy.
     const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
 
-    if (input.consumeCameraToggle()) {
-      cameras.toggleMode(aircraft)
-    }
-    if (input.consumeReset()) {
-      aircraft.reset()
-    }
+    if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
+    if (input.consumeReset()) aircraft.reset()
 
-    aircraft.controls = { ...input.sample() }
+    // Live reference — InputManager owns the ControlState object
+    aircraft.controls = input.sample()
     aircraft.freeFlyStep(dt)
-
-    // Camera hard-follows aircraft after sim update (same frame)
     cameras.update(aircraft, dt)
 
     renderer.render(world.scene, cameras.camera)
@@ -78,7 +73,6 @@ async function boot(): Promise<void> {
   }
 
   requestAnimationFrame(tick)
-  console.info('[Blackout] Phase 0 skeleton running')
 }
 
 boot().catch((err) => {

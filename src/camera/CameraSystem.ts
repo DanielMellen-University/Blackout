@@ -1,4 +1,4 @@
-import { MathUtils, PerspectiveCamera, Vector3 } from 'three'
+import { MathUtils, Mesh, PerspectiveCamera, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import {
   CAMERA_MODE_LABELS,
@@ -14,13 +14,13 @@ const _desired = new Vector3()
 const _toCam = new Vector3()
 
 interface ModeConfig {
-  offset: Vector3
+  /** Local seat offset for cockpit freelook only. */
+  seatOffset?: Vector3
   lookOffset: Vector3
   fov: number
   lookLead: number
   minDist: number
   maxDist: number
-  /** Rest pose for this mode (auto-return target). */
   defaultYaw: number
   defaultPitch: number
   defaultDistance: number
@@ -30,7 +30,6 @@ interface ModeConfig {
 
 const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
   chase: {
-    offset: new Vector3(0, 5.5, -18),
     lookOffset: new Vector3(0, 1.2, 6),
     fov: 62,
     lookLead: 0.06,
@@ -41,7 +40,6 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     defaultDistance: 19,
   },
   close: {
-    offset: new Vector3(0, 2.6, -8.5),
     lookOffset: new Vector3(0, 1.0, 5),
     fov: 70,
     lookLead: 0.04,
@@ -52,7 +50,7 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     defaultDistance: 9,
   },
   cockpit: {
-    offset: new Vector3(0, 1.05, 2.35),
+    seatOffset: new Vector3(0, 1.05, 2.35),
     lookOffset: new Vector3(0, 0.95, 14),
     fov: 78,
     lookLead: 0,
@@ -65,7 +63,6 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     freelook: true,
   },
   wingman: {
-    offset: new Vector3(14, 3.5, -4),
     lookOffset: new Vector3(0, 1.0, 2),
     fov: 58,
     lookLead: 0.04,
@@ -76,7 +73,6 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     defaultDistance: 15,
   },
   orbit: {
-    offset: new Vector3(12, 8, -16),
     lookOffset: new Vector3(0, 1.5, 0),
     fov: 60,
     lookLead: 0,
@@ -88,13 +84,9 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
   },
 }
 
-/** Third-person pitch locks at ±90° — no wrap, no auto yaw. */
 const PITCH_LIMIT = Math.PI / 2
 const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
-
-/** Seconds without camera input before auto-return starts (~2/3 of original 10s). */
 const AUTO_RETURN_DELAY = 10 * (2 / 3)
-/** How quickly the camera eases home once idle (higher = snappier). */
 const AUTO_RETURN_RATE = 1.35
 
 /**
@@ -225,8 +217,8 @@ export class CameraSystem {
     _pivot.copy(aircraft.position)
     _pivot.y += 1.2
 
-    if (cfg.freelook) {
-      _offsetWorld.copy(cfg.offset).applyQuaternion(aircraft.orientation)
+    if (cfg.freelook && cfg.seatOffset) {
+      _offsetWorld.copy(cfg.seatOffset).applyQuaternion(aircraft.orientation)
       this.camera.position.copy(aircraft.position).add(_offsetWorld)
       this.clampAboveGround(this.camera.position)
 
@@ -325,9 +317,7 @@ export class CameraSystem {
     this.lastVisibilityMode = this.mode
     const hide = MODE_CONFIG[this.mode].hideAircraft === true
     aircraft.mesh.traverse((obj) => {
-      if ((obj as { isMesh?: boolean }).isMesh) {
-        obj.visible = !hide
-      }
+      if (obj instanceof Mesh) obj.visible = !hide
     })
   }
 
