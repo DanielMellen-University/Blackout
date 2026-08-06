@@ -132,27 +132,28 @@ function panelTexture(): CanvasTexture {
 
 function buildFuselage(mat: MeshStandardMaterial): Mesh {
   // Lathe along local +Y; after rotX(90°) that becomes world +Z (nose).
-  // Rear taper meets the nozzle — keep length unscaled so parts line up.
+  // Length stays unscaled so the nozzle stays attached.
+  // Profile radii are a bit fuller so the body isn't a skinny tube.
   const pts: Vector2[] = [
     new Vector2(0.01, 7.15),
-    new Vector2(0.18, 6.7),
-    new Vector2(0.38, 5.9),
-    new Vector2(0.52, 5.0),
-    new Vector2(0.64, 3.8),
-    new Vector2(0.74, 2.2),
-    new Vector2(0.8, 0.5),
-    new Vector2(0.82, -1.0),
-    new Vector2(0.76, -2.6),
-    new Vector2(0.66, -4.1),
-    new Vector2(0.55, -5.3),
-    new Vector2(0.48, -6.0),
-    new Vector2(0.45, -6.45), // mates with nozzle
+    new Vector2(0.28, 6.65),
+    new Vector2(0.5, 5.85),
+    new Vector2(0.68, 4.9),
+    new Vector2(0.82, 3.7),
+    new Vector2(0.94, 2.1),
+    new Vector2(1.0, 0.4),
+    new Vector2(1.02, -1.0),
+    new Vector2(0.96, -2.5),
+    new Vector2(0.84, -4.0),
+    new Vector2(0.7, -5.2),
+    new Vector2(0.58, -5.95),
+    new Vector2(0.52, -6.45), // mates with nozzle
   ]
   const mesh = new Mesh(new LatheGeometry(pts, 36), mat)
   mesh.rotation.x = Math.PI / 2
   // Local X = width, Y = length (→ world Z), Z = height (→ world -Y)
-  // Flatten height only — do NOT scale length or the tail/nozzle float apart
-  mesh.scale.set(1.1, 1, 0.78)
+  // Mild oval only — was 0.78 height and looked unnaturally thin
+  mesh.scale.set(1.12, 1, 0.95)
   return mesh
 }
 
@@ -350,27 +351,28 @@ function buildNozzle(
   // Fuselage rear ~ z=-6.45 — sleeve starts inside the taper so there is no gap
   const zJoin = -6.2
 
-  const sleeve = new Mesh(new CylinderGeometry(0.5, 0.48, 0.55, 20), outer)
+  // Slightly larger to match the fuller rear fuselage
+  const sleeve = new Mesh(new CylinderGeometry(0.58, 0.55, 0.55, 20), outer)
   sleeve.rotation.x = Math.PI / 2
   sleeve.position.set(0, 0.02, zJoin)
   g.add(sleeve)
 
-  const housing = new Mesh(new CylinderGeometry(0.48, 0.44, 0.7, 20), outer)
+  const housing = new Mesh(new CylinderGeometry(0.55, 0.5, 0.7, 20), outer)
   housing.rotation.x = Math.PI / 2
   housing.position.set(0, 0.02, zJoin - 0.55)
   g.add(housing)
 
-  const petal = new Mesh(new CylinderGeometry(0.5, 0.42, 0.18, 16), black)
+  const petal = new Mesh(new CylinderGeometry(0.56, 0.48, 0.18, 16), black)
   petal.rotation.x = Math.PI / 2
   petal.position.set(0, 0.02, zJoin - 0.95)
   g.add(petal)
 
-  const inner = new Mesh(new CylinderGeometry(0.32, 0.36, 0.3, 16), black)
+  const inner = new Mesh(new CylinderGeometry(0.36, 0.4, 0.3, 16), black)
   inner.rotation.x = Math.PI / 2
   inner.position.set(0, 0.02, zJoin - 1.05)
   g.add(inner)
 
-  const core = new Mesh(new CylinderGeometry(0.3, 0.3, 0.05, 16), glow)
+  const core = new Mesh(new CylinderGeometry(0.34, 0.34, 0.05, 16), glow)
   core.rotation.x = Math.PI / 2
   core.position.set(0, 0.02, zJoin - 1.15)
   g.add(core)
