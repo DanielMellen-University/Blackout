@@ -29,13 +29,14 @@ export class World {
   }
 
   private addLights(): void {
-    const hemi = new HemisphereLight(0xb8d0e8, 0x3a4035, 0.55)
+    // Brighter fill so grey airframe reads as grey, not black metal
+    const hemi = new HemisphereLight(0xd0e4f8, 0x4a5540, 0.85)
     this.scene.add(hemi)
 
-    const ambient = new AmbientLight(0xffffff, 0.25)
+    const ambient = new AmbientLight(0xffffff, 0.45)
     this.scene.add(ambient)
 
-    const sun = new DirectionalLight(0xfff2dd, 1.35)
+    const sun = new DirectionalLight(0xfff5e6, 1.65)
     sun.position.set(120, 200, 80)
     sun.castShadow = true
     sun.shadow.mapSize.set(2048, 2048)
@@ -47,6 +48,11 @@ export class World {
     sun.shadow.camera.bottom = -150
     sun.shadow.bias = -0.0002
     this.scene.add(sun)
+
+    // Soft fill from opposite side so the jet isn’t half-silhouette
+    const fill = new DirectionalLight(0xb8d0ff, 0.45)
+    fill.position.set(-80, 60, -40)
+    this.scene.add(fill)
   }
 
   private addTerrain(): void {

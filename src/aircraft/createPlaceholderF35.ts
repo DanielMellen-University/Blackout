@@ -22,27 +22,27 @@ export function createPlaceholderF35(): Group {
   const root = new Group()
   root.name = 'F35'
 
-  const grey = makeGrey(0x9aa3ad)
-  const greyMid = makeGrey(0x7e8792)
-  const black = solid(0x0a0c0e, 0.35, 0.55)
-  // Opaque glossy glass — transparent materials skip depth writes and make
-  // the whole jet look X-ray / see-through behind the canopy.
+  // Low metalness so base color reads correctly without an env map
+  // (high metalness + no reflections = pure black “X-ray / hollow” look).
+  const grey = makeGrey(0xb0b8c0)
+  const greyMid = makeGrey(0x8e97a1)
+  const black = solid(0x111418, 0.15, 0.65)
   const glass = new MeshStandardMaterial({
-    color: 0x0a1018,
-    metalness: 0.92,
-    roughness: 0.08,
+    color: 0x1a2838,
+    metalness: 0.25,
+    roughness: 0.15,
     transparent: false,
     opacity: 1,
-    envMapIntensity: 1.2,
+    depthWrite: true,
   })
   const tire = solid(0x0c0c0e, 0.05, 0.95)
-  const nozzleOuter = solid(0x1a1c20, 0.85, 0.35)
+  const nozzleOuter = solid(0x2a2e34, 0.35, 0.45)
   const glowMat = new MeshStandardMaterial({
     color: 0xff5500,
     emissive: 0xff3300,
     emissiveIntensity: 1.5,
-    metalness: 0.1,
-    roughness: 0.55,
+    metalness: 0.05,
+    roughness: 0.6,
   })
 
   root.add(buildFuselage(grey))
@@ -87,15 +87,24 @@ export function createPlaceholderF35(): Group {
 // ---------------------------------------------------------------------------
 
 function solid(color: number, metalness: number, roughness: number): MeshStandardMaterial {
-  return new MeshStandardMaterial({ color, metalness, roughness })
+  return new MeshStandardMaterial({
+    color,
+    metalness,
+    roughness,
+    transparent: false,
+    depthWrite: true,
+  })
 }
 
 function makeGrey(color: number): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color,
     map: panelTexture(),
-    metalness: 0.4,
-    roughness: 0.52,
+    // Paint, not chrome — shows grey under scene lights
+    metalness: 0.12,
+    roughness: 0.62,
+    transparent: false,
+    depthWrite: true,
   })
 }
 
@@ -161,57 +170,62 @@ function buildFuselage(mat: MeshStandardMaterial): Mesh {
 }
 
 /**
- * F-35-style single-piece bubble canopy — elongated, sits in a frame
- * on the spine (not a floating dome). Opaque glass so it doesn't
- * break depth sorting on the airframe.
+ * Closed solid canopy (not an open hemisphere — those look hollow/X-ray).
+ * Lathe a bubble profile, lay it on the spine with a proper black frame.
  */
 function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): Group {
   const g = new Group()
 
-  // Main bubble: hemisphere stretched along the fuselage
-  const bubble = new Mesh(
-    new SphereGeometry(0.62, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.48),
-    glass,
-  )
-  bubble.scale.set(0.72, 0.55, 1.55) // narrow, low, long — jet canopy not UFO
-  bubble.position.set(0, 0.42, 2.55)
+  // Profile: x = radius from centerline, y = height of canopy
+  // Closed at both ends so the mesh is a solid shell with no open hole.
+  const profile: Vector2[] = [
+    new Vector2(0.02, 0.0),
+    new Vector2(0.28, 0.02),
+    new Vector2(0.42, 0.12),
+    new Vector2(0.48, 0.28),
+    new Vector2(0.46, 0.42),
+    new Vector2(0.38, 0.5),
+    new Vector2(0.22, 0.52),
+    new Vector2(0.08, 0.48),
+    new Vector2(0.01, 0.35),
+  ]
+  const bubbleGeo = new LatheGeometry(profile, 28)
+  // Lathe around Y → rotate so length runs along +Z, dome points +Y
+  const bubble = new Mesh(bubbleGeo, glass)
+  bubble.rotation.z = Math.PI / 2 // Y axis of lathe → world X… wrong
+  // Better: lathe is around Y. We want long axis = Z, up = Y.
+  // Rotate lathe 90° around X so local Y → -Z? Actually:
+  // Keep lathe Y as UP. Scale X/Z for width and length of bubble.
+  bubble.rotation.set(0, 0, 0)
+  bubble.scale.set(0.95, 1, 2.4) // wider? lathe radius is XZ, Y is height
+  // Wait — LatheGeometry spins profile around Y, so X of profile = radial.
+  // Height of canopy = profile Y. Length along fuselage needs non-uniform scale on Z.
+  bubble.scale.set(0.85, 0.95, 2.35)
+  bubble.position.set(0, 0.28, 2.65)
   g.add(bubble)
 
-  // Forward windshield rake (flat-ish panel blended into bubble)
-  const windscreen = new Mesh(
-    new SphereGeometry(0.5, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.4),
-    glass,
-  )
-  windscreen.scale.set(0.68, 0.42, 0.7)
-  windscreen.position.set(0, 0.38, 3.55)
-  windscreen.rotation.x = -0.35
-  g.add(windscreen)
-
-  // Side rails / canopy frame (black)
-  const leftRail = new Mesh(new BoxGeometry(0.06, 0.1, 2.4), frame)
-  leftRail.position.set(-0.42, 0.28, 2.55)
-  leftRail.rotation.z = 0.35
-  g.add(leftRail)
-
-  const rightRail = new Mesh(new BoxGeometry(0.06, 0.1, 2.4), frame)
-  rightRail.position.set(0.42, 0.28, 2.55)
-  rightRail.rotation.z = -0.35
-  g.add(rightRail)
-
-  // Sill plate under the glass
-  const sill = new Mesh(new BoxGeometry(0.95, 0.08, 2.6), frame)
-  sill.position.set(0, 0.24, 2.6)
+  // Black frame / sill that the glass sits in
+  const sill = new Mesh(new BoxGeometry(1.0, 0.1, 2.55), frame)
+  sill.position.set(0, 0.22, 2.65)
   g.add(sill)
 
-  // Rear arch (where canopy meets spine)
-  const arch = new Mesh(new BoxGeometry(0.85, 0.14, 0.35), frame)
-  arch.position.set(0, 0.4, 1.4)
-  arch.rotation.x = 0.4
-  g.add(arch)
+  // Side rails
+  for (const s of [-1, 1] as const) {
+    const rail = new Mesh(new BoxGeometry(0.07, 0.12, 2.3), frame)
+    rail.position.set(s * 0.48, 0.32, 2.65)
+    rail.rotation.z = s * -0.45
+    g.add(rail)
+  }
 
-  // Tiny HUD coaming / glare shield in front of pilot
-  const coaming = new Mesh(new BoxGeometry(0.45, 0.06, 0.35), frame)
-  coaming.position.set(0, 0.32, 3.75)
+  // Rear fairing into spine
+  const rear = new Mesh(new BoxGeometry(0.75, 0.16, 0.45), frame)
+  rear.position.set(0, 0.36, 1.45)
+  rear.rotation.x = 0.35
+  g.add(rear)
+
+  // Forward coaming
+  const coaming = new Mesh(new BoxGeometry(0.55, 0.08, 0.4), frame)
+  coaming.position.set(0, 0.28, 3.85)
   g.add(coaming)
 
   return g
