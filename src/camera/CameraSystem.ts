@@ -11,18 +11,17 @@ const _look = new Vector3()
 const _velLead = new Vector3()
 const _spherical = new Spherical()
 const _pivot = new Vector3()
+const _desired = new Vector3()
+const _toCam = new Vector3()
 
 interface ModeConfig {
-  /** Default local offset when look yaw/pitch are zero (X right, Y up, Z nose). */
   offset: Vector3
   lookOffset: Vector3
   fov: number
   lookLead: number
-  /** Min/max orbit distance (meters). */
   minDist: number
   maxDist: number
   hideAircraft?: boolean
-  /** Cockpit: freelook from pilot seat instead of orbiting around jet. */
   freelook?: boolean
 }
 
@@ -32,7 +31,7 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookOffset: new Vector3(0, 1.2, 6),
     fov: 62,
     lookLead: 0.06,
-    minDist: 8,
+    minDist: 6,
     maxDist: 50,
   },
   close: {
@@ -40,7 +39,7 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookOffset: new Vector3(0, 1.0, 5),
     fov: 70,
     lookLead: 0.04,
-    minDist: 4,
+    minDist: 3.5,
     maxDist: 24,
   },
   cockpit: {
@@ -58,7 +57,7 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     lookOffset: new Vector3(0, 1.0, 2),
     fov: 58,
     lookLead: 0.04,
-    minDist: 10,
+    minDist: 8,
     maxDist: 40,
   },
   orbit: {
@@ -71,20 +70,25 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
   },
 }
 
+/** Pitch limits (radians). Negative = camera below subject (look up from under). */
+const PITCH_MIN = -0.55
+const PITCH_MAX = 1.4
+const FREELOOK_PITCH_MIN = -1.25
+const FREELOOK_PITCH_MAX = 1.25
+
 /**
- * Multi-mode flight camera.
- * - C cycles modes
- * - Hold RMB + drag = Roblox-style look / pan around the jet
- * - Scroll = zoom (chase/close/wingman/orbit)
- * - Context menu is suppressed so RMB is free for the game
+ * Multi-mode flight camera (Roblox-style RMB look + ground occlusion).
  */
 export class CameraSystem {
   readonly camera: PerspectiveCamera
   mode: CameraMode = 'chase'
 
-  /** Radians — horizontal orbit (Roblox-style). */
+  /** Flat world ground height (terrain y). */
+  groundY = 0
+  /** Keep lens this far above terrain (Roblox pop). */
+  groundClearance = 1.15
+
   private yaw = 0
-  /** Radians — vertical orbit. */
   private pitch = 0.28
   private distance = 20
 
@@ -153,27 +157,22 @@ export class CameraSystem {
     this.camera.fov = cfg.fov
     this.camera.updateProjectionMatrix()
 
-    // Seed spherical from default offset
     _spherical.setFromVector3(cfg.offset)
     this.distance = MathUtils.clamp(_spherical.radius, cfg.minDist, cfg.maxDist)
-    // Three.js spherical: phi from +Y, theta around Y
-    // offset (0, y, -z) → behind aircraft
     this.yaw = 0
     this.pitch = mode === 'cockpit' ? 0 : 0.25
+
     if (mode === 'wingman') {
       this.yaw = -0.9
       this.pitch = 0.2
-    }
-    if (mode === 'orbit') {
+    } else if (mode === 'orbit') {
       this.yaw = 0.6
       this.pitch = 0.45
       this.distance = 22
-    }
-    if (mode === 'close') {
+    } else if (mode === 'close') {
       this.distance = 9
       this.pitch = 0.22
-    }
-    if (mode === 'chase') {
+    } else if (mode === 'chase') {
       this.distance = 19
       this.pitch = 0.28
     }
@@ -181,15 +180,17 @@ export class CameraSystem {
 
   private applyRig(aircraft: Aircraft): void {
     const cfg = MODE_CONFIG[this.mode]
+
+    // Focus / subject pivot (slightly above aircraft origin)
     _pivot.copy(aircraft.position)
     _pivot.y += 1.2
 
     if (cfg.freelook) {
-      // Cockpit: seat position + look direction from yaw/pitch
       _offsetWorld.copy(cfg.offset).applyQuaternion(aircraft.orientation)
       this.camera.position.copy(aircraft.position).add(_offsetWorld)
+      // Keep cockpit cam above ground if jet is low
+      this.clampAboveGround(this.camera.position)
 
-      // Look dir in local space: start +Z, apply pitch then yaw
       const lookDist = 20
       const cp = Math.cos(this.pitch)
       _look.set(
@@ -201,22 +202,23 @@ export class CameraSystem {
       _look.add(this.camera.position)
       this.camera.lookAt(_look)
     } else {
-      // Third-person: spherical orbit in aircraft local space, then to world
-      // yaw 0, pitch 0 → behind and slightly above (local -Z)
+      // Ideal third-person position from yaw / pitch / distance (local → world)
+      // pitch 0 = level behind, +pitch = above, -pitch = below
       const cp = Math.cos(this.pitch)
       const sp = Math.sin(this.pitch)
       const cy = Math.cos(this.yaw)
       const sy = Math.sin(this.yaw)
 
-      // Local offset: x right, y up, z forward (nose)
-      // Behind = -Z when yaw=0
       _offsetWorld.set(
         sy * cp * this.distance,
-        sp * this.distance + 1.2,
+        sp * this.distance,
         -cy * cp * this.distance,
       )
       _offsetWorld.applyQuaternion(aircraft.orientation)
-      this.camera.position.copy(aircraft.position).add(_offsetWorld)
+      _desired.copy(_pivot).add(_offsetWorld)
+
+      // Roblox-style: if the line of sight hits terrain, pull camera in
+      this.resolveGroundOcclusion(_pivot, _desired, this.camera.position)
 
       _look.copy(cfg.lookOffset).applyQuaternion(aircraft.orientation)
       _look.add(aircraft.position)
@@ -237,6 +239,64 @@ export class CameraSystem {
     this.applyAircraftVisibility(aircraft)
   }
 
+  /**
+   * If the ideal camera is underground or the segment from pivot→cam
+   * crosses the ground plane, place the camera at the intersection
+   * (shorten zoom) so terrain "blocks" the view like Roblox.
+   */
+  private resolveGroundOcclusion(
+    pivot: Vector3,
+    desired: Vector3,
+    out: Vector3,
+  ): void {
+    const minY = this.groundY + this.groundClearance
+    out.copy(desired)
+
+    // Fast path: entire segment clear above ground
+    if (pivot.y >= minY && desired.y >= minY) {
+      return
+    }
+
+    // Desired is below clearance — intersect ray with plane y = minY
+    _toCam.subVectors(desired, pivot)
+    const dy = _toCam.y
+
+    if (Math.abs(dy) < 1e-6) {
+      // Horizontal ray — just lift
+      out.y = minY
+      return
+    }
+
+    // t where pivot + t*(desired-pivot) has y = minY
+    const t = (minY - pivot.y) / dy
+
+    if (t >= 0 && t <= 1) {
+      // Hit between pivot and desired → stop at surface
+      out.copy(pivot).addScaledVector(_toCam, t)
+      // Nudge slightly toward pivot so we sit just above the plane
+      out.lerp(pivot, 0.015)
+      out.y = Math.max(out.y, minY)
+    } else if (desired.y < minY) {
+      // Desired underground but no valid segment hit (pivot also low)
+      out.y = minY
+    }
+
+    // Never sit closer than a tiny min distance to pivot (avoid camera flip)
+    const minSep = 1.5
+    _toCam.subVectors(out, pivot)
+    const sep = _toCam.length()
+    if (sep < minSep && sep > 1e-6) {
+      _toCam.multiplyScalar(minSep / sep)
+      out.copy(pivot).add(_toCam)
+      if (out.y < minY) out.y = minY
+    }
+  }
+
+  private clampAboveGround(pos: Vector3): void {
+    const minY = this.groundY + this.groundClearance
+    if (pos.y < minY) pos.y = minY
+  }
+
   private applyAircraftVisibility(aircraft: Aircraft, force = false): void {
     if (!force && this.lastVisibilityMode === this.mode) return
     this.lastVisibilityMode = this.mode
@@ -249,7 +309,6 @@ export class CameraSystem {
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
-    // Block browser context menu everywhere so RMB is for camera
     document.addEventListener('contextmenu', this.onContextMenu)
     canvas.addEventListener('contextmenu', this.onContextMenu)
     canvas.addEventListener('mousedown', this.onMouseDown)
@@ -272,7 +331,6 @@ export class CameraSystem {
   }
 
   private onMouseUp = (e: MouseEvent): void => {
-    if (e.button !== 2 && this.rmbDown === false) return
     if (e.button === 2 || e.buttons === 0) {
       this.rmbDown = false
       this.canvas.style.cursor = ''
@@ -286,16 +344,16 @@ export class CameraSystem {
     this.lastX = e.clientX
     this.lastY = e.clientY
 
-    // Roblox-like: horizontal drag yaws, vertical drag pitches
+    // Horizontal → yaw; vertical → pitch (mouse down = look more downward / cam rises)
     this.yaw -= dx * this.lookSensitivity
     this.pitch += dy * this.lookSensitivity
 
     const cfg = MODE_CONFIG[this.mode]
     if (cfg.freelook) {
-      this.pitch = MathUtils.clamp(this.pitch, -1.2, 1.2)
-      // wrap yaw freely
+      this.pitch = MathUtils.clamp(this.pitch, FREELOOK_PITCH_MIN, FREELOOK_PITCH_MAX)
     } else {
-      this.pitch = MathUtils.clamp(this.pitch, 0.05, 1.35)
+      // Allow below-horizon pitch; ground occlusion handles terrain
+      this.pitch = MathUtils.clamp(this.pitch, PITCH_MIN, PITCH_MAX)
     }
   }
 
