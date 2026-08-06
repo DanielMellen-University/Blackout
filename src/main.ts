@@ -60,7 +60,7 @@ async function boot(): Promise<void> {
     aircraft.controls = { ...input.sample() }
 
     for (let i = 0; i < steps; i++) {
-      aircraft.freeFlyStep(dt)
+      aircraft.freeFlyStep(dt, cameras.camera)
     }
 
     cameras.update(aircraft, frameDt || dt)

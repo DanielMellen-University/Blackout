@@ -1,8 +1,10 @@
 import {
+  Box3,
   Group,
   Object3D,
   Quaternion,
   Vector3,
+  type Camera,
   type Scene,
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -13,6 +15,8 @@ const SPAWN = new Vector3(0, 8, 0)
 const _lookHelper = new Object3D()
 const _flat = new Vector3()
 const _move = new Vector3()
+const _camFwd = new Vector3()
+const _camRight = new Vector3()
 const _up = new Vector3(0, 1, 0)
 const _targetQuat = new Quaternion()
 const _fixYaw = new Quaternion().setFromAxisAngle(_up, Math.PI)
@@ -31,7 +35,6 @@ export class Aircraft {
   controls: ControlState = createDefaultControls()
 
   mass = 15_000
-  /** Using placeholder until a GLB loads successfully. */
   usingPlaceholder = true
 
   private readonly spawnPosition = SPAWN.clone()
@@ -51,7 +54,7 @@ export class Aircraft {
 
   /**
    * Try to load a real F-35 GLB from `/models/f35.glb`.
-   * Falls back silently to the procedural placeholder.
+   * Falls back silently to the procedural F-35.
    */
   async tryLoadModel(url = '/models/f35.glb'): Promise<boolean> {
     const loader = new GLTFLoader()
@@ -59,6 +62,19 @@ export class Aircraft {
       const gltf = await loader.loadAsync(url)
       const model = gltf.scene
       model.name = 'model'
+
+      // Normalize: center, scale to ~15 m length
+      const box = new Box3().setFromObject(model)
+      const size = box.getSize(new Vector3())
+      const maxDim = Math.max(size.x, size.y, size.z)
+      if (maxDim > 0.001) {
+        model.scale.multiplyScalar(15.7 / maxDim)
+      }
+      box.setFromObject(model)
+      model.position.sub(box.getCenter(new Vector3()))
+      box.setFromObject(model)
+      model.position.y -= box.min.y
+
       model.traverse((obj) => {
         if ((obj as { isMesh?: boolean }).isMesh) {
           obj.castShadow = true
@@ -73,7 +89,7 @@ export class Aircraft {
       console.info('[Blackout] Loaded aircraft model:', url)
       return true
     } catch {
-      console.info('[Blackout] No GLB at', url, '— using procedural F-35 placeholder')
+      console.info('[Blackout] No GLB at', url, '— using procedural F-35')
       return false
     }
   }
@@ -88,16 +104,36 @@ export class Aircraft {
   }
 
   /**
-   * Phase 0 free-fly: WASD horizontal, QE vertical.
-   * Replaced by FlightModel.step in Phase 1.
+   * Phase 0 free-fly: camera-relative WASD, QE vertical.
+   * W = into view, S = toward camera, A/D strafe, E up / Q down.
    */
-  freeFlyStep(dt: number): void {
+  freeFlyStep(dt: number, camera?: Camera): void {
     const baseSpeed = 28
     const boostMul = this.controls.boost ? 2.4 : 1
     const speed = baseSpeed * (0.35 + this.controls.throttle) * boostMul
 
-    // pitch = forward/back (+Z), roll = strafe (X), yaw = vertical (Y)
-    _move.set(this.controls.roll, this.controls.yaw, this.controls.pitch)
+    const inputFwd = this.controls.pitch // W = +1
+    const inputStrafe = this.controls.roll // D = +1
+    const inputUp = this.controls.yaw // E = +1
+
+    if (camera) {
+      camera.getWorldDirection(_camFwd)
+      _camFwd.y = 0
+      if (_camFwd.lengthSq() < 1e-6) {
+        _camFwd.set(0, 0, -1)
+      } else {
+        _camFwd.normalize()
+      }
+      _camRight.crossVectors(_camFwd, _up).normalize()
+
+      _move.set(0, 0, 0)
+      _move.addScaledVector(_camFwd, inputFwd)
+      _move.addScaledVector(_camRight, inputStrafe)
+      _move.y = inputUp
+    } else {
+      // World axes fallback: W = -Z (three.js "into scene" convention)
+      _move.set(inputStrafe, inputUp, -inputFwd)
+    }
 
     if (_move.lengthSq() > 0) {
       _move.normalize().multiplyScalar(speed)
@@ -108,20 +144,19 @@ export class Aircraft {
 
     this.position.addScaledVector(this.velocity, dt)
 
-    // Soft floor until real collision exists
     if (this.position.y < 1.5) {
       this.position.y = 1.5
       this.velocity.y = Math.max(0, this.velocity.y)
     }
 
-    // Point nose along horizontal velocity when moving
+    // Point nose along horizontal velocity (mesh +Z = nose)
     _flat.set(this.velocity.x, 0, this.velocity.z)
     if (_flat.lengthSq() > 0.4) {
       _lookHelper.position.copy(this.position)
       _lookHelper.up.copy(_up)
       _lookAt.copy(this.position).add(_flat)
       _lookHelper.lookAt(_lookAt)
-      // lookAt faces -Z; rotate 180° so mesh +Z (nose) is forward
+      // lookAt aims -Z at target; rotate 180° so +Z (nose) faces travel
       _targetQuat.copy(_lookHelper.quaternion).multiply(_fixYaw)
       this.orientation.slerp(_targetQuat, 1 - Math.exp(-8 * dt))
     }
