@@ -162,10 +162,11 @@ export class CameraSystem {
 
   dispose(): void {
     const c = this.canvas
-    c.removeEventListener('pointerdown', this.onPointerDown)
-    window.removeEventListener('pointerup', this.onPointerUp)
-    window.removeEventListener('pointercancel', this.onPointerUp)
-    window.removeEventListener('pointermove', this.onPointerMove)
+    const cap: AddEventListenerOptions = { capture: true }
+    c.removeEventListener('pointerdown', this.onPointerDown, cap)
+    window.removeEventListener('pointerup', this.onPointerUp, cap)
+    window.removeEventListener('pointercancel', this.onPointerUp, cap)
+    window.removeEventListener('pointermove', this.onPointerMove, cap)
     c.removeEventListener('wheel', this.onWheel)
   }
 
@@ -322,18 +323,18 @@ export class CameraSystem {
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
-    // Hold RMB + drag to pan (with or without Shift). No MMB, no pointer lock.
-    canvas.addEventListener('pointerdown', this.onPointerDown)
-    window.addEventListener('pointerup', this.onPointerUp)
-    window.addEventListener('pointercancel', this.onPointerUp)
-    window.addEventListener('pointermove', this.onPointerMove)
+    // Capture phase so we still receive RMB after menu suppressors run
+    const cap: AddEventListenerOptions = { capture: true }
+    canvas.addEventListener('pointerdown', this.onPointerDown, cap)
+    window.addEventListener('pointerup', this.onPointerUp, cap)
+    window.addEventListener('pointercancel', this.onPointerUp, cap)
+    window.addEventListener('pointermove', this.onPointerMove, cap)
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
   }
 
   private onPointerDown = (e: PointerEvent): void => {
     if (e.button !== 2) return
     e.preventDefault()
-    e.stopPropagation()
     this.rmbDown = true
     this.lastX = e.clientX
     this.lastY = e.clientY
@@ -347,7 +348,8 @@ export class CameraSystem {
   }
 
   private onPointerUp = (e: PointerEvent): void => {
-    if (e.button === 2 || (this.rmbDown && (e.buttons & 2) === 0)) {
+    if (!this.rmbDown) return
+    if (e.button === 2 || (e.buttons & 2) === 0) {
       this.rmbDown = false
       this.canvas.style.cursor = 'crosshair'
       try {
@@ -362,7 +364,6 @@ export class CameraSystem {
 
   private onPointerMove = (e: PointerEvent): void => {
     if (!this.rmbDown) return
-    // Also accept buttons mask bit 2 in case pointerup was missed
     if ((e.buttons & 2) === 0) {
       this.rmbDown = false
       this.canvas.style.cursor = 'crosshair'

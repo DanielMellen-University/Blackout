@@ -1,51 +1,46 @@
 /**
- * Hard-block native browser UI that fights game input (context menu, etc.).
- * Must run as early as possible. Capture phase + stopImmediatePropagation.
+ * Block the browser context menu so hold-RMB camera pan can work
+ * (including while Shift is held for boost).
  *
- * Note: Some browsers (notably Firefox) intentionally show the native menu on
- * Shift+Right-Click as an accessibility escape hatch. Avoid binding gameplay
- * to Shift+RMB simultaneously (boost is Space, not Shift).
+ * Important: only kill the `contextmenu` event hard. Do NOT stopPropagation
+ * on pointerdown/mousedown for button 2, or the camera handler never runs.
  */
 export function suppressBrowserUi(canvas: HTMLCanvasElement): void {
-  const block = (e: Event): void => {
+  const blockMenu = (e: Event): void => {
     e.preventDefault()
     e.stopPropagation()
-    e.stopImmediatePropagation()
   }
 
   const cap: AddEventListenerOptions = { capture: true }
 
   for (const target of [window, document, document.documentElement, document.body, canvas]) {
     if (!target) continue
-    target.addEventListener('contextmenu', block, cap)
+    target.addEventListener('contextmenu', blockMenu, cap)
   }
 
-  // Kill right-button path before contextmenu is synthesized
-  const blockRightPointer = (e: PointerEvent | MouseEvent): void => {
-    if ('button' in e && e.button === 2) {
-      block(e)
+  // preventDefault on RMB press helps some UAs; do not stopImmediatePropagation
+  const softenRightButton = (e: MouseEvent | PointerEvent): void => {
+    if (e.button === 2) e.preventDefault()
+  }
+  window.addEventListener('pointerdown', softenRightButton, cap)
+  window.addEventListener('mousedown', softenRightButton, cap)
+  window.addEventListener('auxclick', (e: MouseEvent) => {
+    if (e.button === 2) {
+      e.preventDefault()
+      e.stopPropagation()
     }
-  }
+  }, cap)
 
-  window.addEventListener('pointerdown', blockRightPointer, cap)
-  window.addEventListener('mousedown', blockRightPointer, cap)
-  window.addEventListener('mouseup', blockRightPointer, cap)
-  window.addEventListener('auxclick', blockRightPointer, cap)
-  canvas.addEventListener('pointerdown', blockRightPointer, cap)
-  canvas.addEventListener('mousedown', blockRightPointer, cap)
-
-  // Keyboard ways to open a context menu
   window.addEventListener(
     'keydown',
     (e: KeyboardEvent) => {
       if (e.key === 'ContextMenu' || (e.shiftKey && (e.key === 'F10' || e.code === 'F10'))) {
-        block(e)
+        e.preventDefault()
       }
     },
     cap,
   )
 
-  // Property hooks (older path some UAs still honor)
   document.oncontextmenu = () => false
   window.oncontextmenu = () => false
   canvas.oncontextmenu = () => false
