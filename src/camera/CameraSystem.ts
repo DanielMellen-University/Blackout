@@ -91,8 +91,8 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
 const PITCH_LIMIT = Math.PI
 const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
 
-/** Seconds without camera input before auto-return starts. */
-const AUTO_RETURN_DELAY = 10
+/** Seconds without camera input before auto-return starts (~2/3 of original 10s). */
+const AUTO_RETURN_DELAY = 10 * (2 / 3)
 /** How quickly the camera eases home once idle (higher = snappier). */
 const AUTO_RETURN_RATE = 1.35
 
