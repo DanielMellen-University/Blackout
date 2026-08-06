@@ -3,7 +3,6 @@ import {
   Group,
   Quaternion,
   Vector3,
-  type Camera,
   type Scene,
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -11,17 +10,15 @@ import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
 
 const SPAWN = new Vector3(0, 8, 0)
-const _flat = new Vector3()
 const _move = new Vector3()
 const _forward = new Vector3()
 const _up = new Vector3(0, 1, 0)
 const _nose = new Vector3(0, 0, 1)
-const _targetQuat = new Quaternion()
 const _yawQuat = new Quaternion()
 
 /**
  * Aircraft entity: simulation state + Three.js mesh.
- * Phase 0 uses free-fly translation; FlightModel hooks in at Phase 1.
+ * Phase 0 free-fly is intentionally snappy — no soft accel/orientation lag.
  */
 export class Aircraft {
   readonly mesh: Group
@@ -49,10 +46,6 @@ export class Aircraft {
     scene.add(this.mesh)
   }
 
-  /**
-   * Try to load a real F-35 GLB from `/models/f35.glb`.
-   * Falls back silently to the procedural F-35.
-   */
   async tryLoadModel(url = '/models/f35.glb'): Promise<boolean> {
     const loader = new GLTFLoader()
     try {
@@ -60,7 +53,6 @@ export class Aircraft {
       const model = gltf.scene
       model.name = 'model'
 
-      // Normalize: center, scale to ~15 m length
       const box = new Box3().setFromObject(model)
       const size = box.getSize(new Vector3())
       const maxDim = Math.max(size.x, size.y, size.z)
@@ -101,28 +93,29 @@ export class Aircraft {
   }
 
   /**
-   * Phase 0 free-fly: body-relative (nose-first), not camera-relative.
-   * W/S = along the nose, A/D = yaw turn, Q/E = down/up, Shift = boost.
-   * This avoids the “slides backwards” feel of camera-relative orbit freefly.
+   * Phase 0 free-fly — body-relative, responsive.
+   * W/S along nose, A/D yaw, Q/E vertical, Shift boost.
    */
-  freeFlyStep(dt: number, _camera?: Camera): void {
-    const baseSpeed = 28
+  freeFlyStep(dt: number): void {
+    if (dt <= 0) return
+
+    const baseSpeed = 36
     const boostMul = this.controls.boost ? 2.4 : 1
     const speed = baseSpeed * (0.35 + this.controls.throttle) * boostMul
-    const yawSpeed = 1.8 // rad/s
+    const yawSpeed = 2.4 // rad/s
 
-    const inputFwd = this.controls.pitch // W = +1, S = -1
-    const inputYaw = this.controls.roll // D = +1 (yaw right), A = -1
-    const inputUp = this.controls.yaw // E = +1, Q = -1
+    const inputFwd = this.controls.pitch
+    const inputYaw = this.controls.roll
+    const inputUp = this.controls.yaw
 
-    // Yaw around world up (A/D turn the jet)
+    // Instant yaw response
     if (inputYaw !== 0) {
       _yawQuat.setFromAxisAngle(_up, -inputYaw * yawSpeed * dt)
       this.orientation.premultiply(_yawQuat)
       this.orientation.normalize()
     }
 
-    // Local nose (+Z) and right (+X) on the horizontal plane
+    // Horizontal forward from current nose
     _forward.copy(_nose).applyQuaternion(this.orientation)
     _forward.y = 0
     if (_forward.lengthSq() < 1e-6) {
@@ -131,15 +124,19 @@ export class Aircraft {
       _forward.normalize()
     }
 
+    // Target velocity from input — snappy, not floaty
     _move.set(0, 0, 0)
-    _move.addScaledVector(_forward, inputFwd)
-    _move.y = inputUp
+    _move.addScaledVector(_forward, inputFwd * speed)
+    _move.y = inputUp * speed
 
     if (_move.lengthSq() > 0) {
-      _move.normalize().multiplyScalar(speed)
-      this.velocity.lerp(_move, 1 - Math.exp(-6 * dt))
+      // Very fast blend (~18) so it feels locked to input, not delayed
+      const a = 1 - Math.exp(-18 * dt)
+      this.velocity.lerp(_move, a)
     } else {
-      this.velocity.multiplyScalar(Math.exp(-3 * dt))
+      // Quick stop when keys released
+      this.velocity.multiplyScalar(Math.exp(-10 * dt))
+      if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0)
     }
 
     this.position.addScaledVector(this.velocity, dt)
@@ -149,15 +146,7 @@ export class Aircraft {
       this.velocity.y = Math.max(0, this.velocity.y)
     }
 
-    // Keep nose aligned with horizontal travel when moving forward/back
-    _flat.set(this.velocity.x, 0, this.velocity.z)
-    if (_flat.lengthSq() > 0.4 && Math.abs(inputFwd) > 0.1) {
-      _flat.normalize()
-      // Map model +Z (nose) → travel direction
-      _targetQuat.setFromUnitVectors(_nose, _flat)
-      this.orientation.slerp(_targetQuat, 1 - Math.exp(-10 * dt))
-    }
-
+    // Mesh always matches sim state this frame (no deferred lag)
     this.syncMesh()
   }
 

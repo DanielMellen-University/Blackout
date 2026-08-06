@@ -47,8 +47,10 @@ async function boot(): Promise<void> {
   const tick = (nowMs: number): void => {
     requestAnimationFrame(tick)
 
-    const { steps, frameDt } = time.beginFrame(nowMs)
-    const dt = time.fixedDt
+    const { frameDt } = time.beginFrame(nowMs)
+    // Integrate every visual frame with clamped dt — avoids fixed-step
+    // stutter (0-step frames) that makes the model feel laggy.
+    const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
 
     if (input.consumeCameraToggle()) {
       cameras.toggleMode(aircraft)
@@ -58,12 +60,10 @@ async function boot(): Promise<void> {
     }
 
     aircraft.controls = { ...input.sample() }
+    aircraft.freeFlyStep(dt)
 
-    for (let i = 0; i < steps; i++) {
-      aircraft.freeFlyStep(dt, cameras.camera)
-    }
-
-    cameras.update(aircraft, frameDt || dt)
+    // Camera hard-follows aircraft after sim update (same frame)
+    cameras.update(aircraft, dt)
 
     renderer.render(world.scene, cameras.camera)
 
