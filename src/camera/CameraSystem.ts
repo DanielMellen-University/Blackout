@@ -347,8 +347,8 @@ export class CameraSystem {
     this.lastX = e.clientX
     this.lastY = e.clientY
 
-    // Horizontal → yaw (free 360°); vertical → pitch (±180° third-person)
-    this.yaw -= dx * this.lookSensitivity
+    // Horizontal → yaw (free 360°, inverted for natural drag); vertical → pitch
+    this.yaw += dx * this.lookSensitivity
     this.pitch += dy * this.lookSensitivity
 
     // Keep yaw in (-π, π] for numeric stability — still full 360° freedom
