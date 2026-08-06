@@ -271,42 +271,33 @@ function buildHStabHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
 // Vertical tails — upright, canted, attached
 // ---------------------------------------------------------------------------
 
+/**
+ * Vertical stabilizers — upright plates (X=thickness, Y=height, Z=chord).
+ * Base fairing sits on the rear deck; no extrude/rotation chain that
+ * produced floating slabs.
+ */
 function buildVStab(side: 1 | -1, skin: MeshStandardMaterial, detail: MeshStandardMaterial): Group {
   const g = new Group()
 
-  // XY shape: +Y up, +X toward nose
-  const shape = new Shape()
-  shape.moveTo(0.4, 0.0) // root LE
-  shape.lineTo(0.08, 2.0) // tip LE
-  shape.lineTo(-0.85, 1.7) // tip TE
-  shape.lineTo(-0.75, 0.0) // root TE
-  shape.closePath()
+  const fin = new Mesh(new BoxGeometry(0.1, 1.95, 1.2), skin)
+  fin.position.set(0, 0.975, -0.05)
 
-  const fin = new Mesh(
-    new ExtrudeGeometry(shape, {
-      depth: 0.1,
-      bevelEnabled: true,
-      bevelThickness: 0.012,
-      bevelSize: 0.012,
-      bevelSegments: 1,
-    }),
-    skin,
-  )
-  fin.geometry.translate(0, 0, -0.05)
+  const le = new Mesh(new BoxGeometry(0.09, 1.85, 0.35), skin)
+  le.position.set(0, 0.95, 0.55)
+  le.rotation.x = -0.12
 
-  // Rudder on TE (child)
-  const rudder = new Mesh(new BoxGeometry(0.24, 0.9, 0.06), detail)
-  rudder.position.set(-0.82, 0.9, 0)
-  fin.add(rudder)
+  const rudder = new Mesh(new BoxGeometry(0.08, 1.1, 0.28), detail)
+  rudder.position.set(0, 0.85, -0.7)
 
-  // Chord → aircraft Z
-  fin.rotation.y = -Math.PI / 2
+  const fairing = new Mesh(new BoxGeometry(0.28, 0.22, 0.9), skin)
+  fairing.position.set(0, 0.08, 0.0)
 
   const pivot = new Group()
-  pivot.add(fin)
-  // Closer together / further aft — classic F-35 twin-tail stance
-  pivot.position.set(side * 0.68, 0.42, -4.55)
-  pivot.rotation.z = side * -0.38 // ~22° cant
+  pivot.add(fin, le, rudder, fairing)
+  pivot.position.set(side * 0.62, 0.38, -5.15)
+  pivot.rotation.z = side * -0.42
+  pivot.rotation.y = side * 0.08
+
   g.add(pivot)
   return g
 }
