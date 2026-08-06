@@ -88,8 +88,8 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
   },
 }
 
-/** Third-person pitch locks at ±180° — no wrap, no auto yaw. */
-const PITCH_LIMIT = Math.PI
+/** Third-person pitch locks at ±90° — no wrap, no auto yaw. */
+const PITCH_LIMIT = Math.PI / 2
 const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
 
 /** Seconds without camera input before auto-return starts (~2/3 of original 10s). */
@@ -374,7 +374,7 @@ export class CameraSystem {
     this.yaw += dx * this.lookSensitivity
     this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
 
-    // Vertical: free until ±180°, then hard lock (no wrap / no yaw flip)
+    // Vertical: free until ±90°, then hard lock (no wrap / no yaw flip)
     this.pitch += dy * this.lookSensitivity
     const cfg = MODE_CONFIG[this.mode]
     if (cfg.freelook) {
