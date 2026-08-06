@@ -161,12 +161,17 @@ export class CameraSystem {
 
   dispose(): void {
     const c = this.canvas
-    c.removeEventListener('contextmenu', this.onContextMenu)
-    c.removeEventListener('mousedown', this.onMouseDown)
+    const opts: AddEventListenerOptions = { capture: true }
+    window.removeEventListener('contextmenu', this.onContextMenu, opts)
+    document.removeEventListener('contextmenu', this.onContextMenu, opts)
+    c.removeEventListener('contextmenu', this.onContextMenu, opts)
+    c.removeEventListener('mousedown', this.onMouseDown, opts)
+    window.removeEventListener('mousedown', this.onMouseDown, opts)
     window.removeEventListener('mouseup', this.onMouseUp)
     window.removeEventListener('mousemove', this.onMouseMove)
     c.removeEventListener('wheel', this.onWheel)
-    document.removeEventListener('contextmenu', this.onContextMenu)
+    window.removeEventListener('auxclick', this.onAuxClick, opts)
+    window.removeEventListener('keydown', this.onBlockContextKeys, opts)
   }
 
   private bumpInput(): void {
@@ -322,21 +327,47 @@ export class CameraSystem {
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
-    document.addEventListener('contextmenu', this.onContextMenu)
-    canvas.addEventListener('contextmenu', this.onContextMenu)
-    canvas.addEventListener('mousedown', this.onMouseDown)
+    // Capture phase so Shift+RMB / modifier combos cannot open the browser menu
+    const cap: AddEventListenerOptions = { capture: true }
+    window.addEventListener('contextmenu', this.onContextMenu, cap)
+    document.addEventListener('contextmenu', this.onContextMenu, cap)
+    canvas.addEventListener('contextmenu', this.onContextMenu, cap)
+    // Block native RMB before contextmenu fires (helps with Shift held for boost)
+    window.addEventListener('mousedown', this.onMouseDown, cap)
+    canvas.addEventListener('mousedown', this.onMouseDown, cap)
     window.addEventListener('mouseup', this.onMouseUp)
     window.addEventListener('mousemove', this.onMouseMove)
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
+    window.addEventListener('auxclick', this.onAuxClick, cap)
+    window.addEventListener('keydown', this.onBlockContextKeys, cap)
   }
 
   private onContextMenu = (e: Event): void => {
     e.preventDefault()
+    e.stopPropagation()
+  }
+
+  /** Some browsers fire auxclick for middle/right; block right-button menu path. */
+  private onAuxClick = (e: MouseEvent): void => {
+    if (e.button === 2) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  /** Shift+F10 / ContextMenu key can open the browser menu without a mouse. */
+  private onBlockContextKeys = (e: KeyboardEvent): void => {
+    if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
   }
 
   private onMouseDown = (e: MouseEvent): void => {
     if (e.button !== 2) return
+    // Always kill native RMB (including while Shift is held for boost)
     e.preventDefault()
+    e.stopPropagation()
     this.rmbDown = true
     this.lastX = e.clientX
     this.lastY = e.clientY
