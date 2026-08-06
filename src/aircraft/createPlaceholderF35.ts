@@ -1,7 +1,6 @@
 import {
   BoxGeometry,
   CanvasTexture,
-  ConeGeometry,
   CylinderGeometry,
   ExtrudeGeometry,
   Group,
@@ -16,125 +15,97 @@ import {
 } from 'three'
 
 /**
- * Procedural F-35A-inspired mesh (approx. real proportions).
- * Units: 1 unit ≈ 1 m. Nose points +Z. Length ~15.7 m, span ~11 m.
+ * Cleaner procedural F-35A silhouette.
+ * Units ≈ meters. Nose = +Z. Length ~15.6 m, span ~10.7 m.
  *
- * Drop a real GLB at `public/models/f35.glb` to replace this.
+ * Drop `public/models/f35.glb` to replace with a real asset.
  */
 export function createPlaceholderF35(): Group {
   const root = new Group()
   root.name = 'F35'
 
-  const skin = makeSkinMaterial(0x6a727a)
-  const skinDark = makeSkinMaterial(0x4a525a)
-  const skinEdge = makeSkinMaterial(0x3a424a)
-  const intakeMat = makeSkinMaterial(0x1a1e22)
+  const ram = makeRamMaterial(0x5c646c)
+  const ramDark = makeRamMaterial(0x3a424a)
+  const ramDeep = makeRamMaterial(0x252b32)
+  const metal = new MeshStandardMaterial({
+    color: 0x1c1e22,
+    metalness: 0.9,
+    roughness: 0.28,
+  })
   const nozzleMat = new MeshStandardMaterial({
-    color: 0x1a1816,
-    metalness: 0.85,
-    roughness: 0.35,
-    emissive: 0x331100,
-    emissiveIntensity: 0.15,
+    color: 0x141210,
+    metalness: 0.92,
+    roughness: 0.3,
+    emissive: 0x221100,
+    emissiveIntensity: 0.2,
   })
   const canopyMat = new MeshStandardMaterial({
-    color: 0x0a1520,
-    metalness: 0.95,
-    roughness: 0.05,
+    color: 0x0c1824,
+    metalness: 1,
+    roughness: 0.04,
     transparent: true,
-    opacity: 0.72,
+    opacity: 0.78,
+    envMapIntensity: 1.4,
   })
-  const canopyFrame = makeSkinMaterial(0x2a3038)
   const gearMat = new MeshStandardMaterial({
-    color: 0x22262a,
-    metalness: 0.7,
-    roughness: 0.4,
+    color: 0x2a2e34,
+    metalness: 0.75,
+    roughness: 0.35,
   })
-  const lightMat = new MeshStandardMaterial({
-    color: 0xffffff,
-    emissive: 0xfff2cc,
-    emissiveIntensity: 0.9,
+  const tireMat = new MeshStandardMaterial({
+    color: 0x111114,
+    metalness: 0.1,
+    roughness: 0.9,
   })
 
-  root.add(buildFuselage(skin))
+  // --- Main body (nose integrated — no floating cone) ---
+  root.add(buildFuselage(ram))
 
-  const nose = new Mesh(new ConeGeometry(0.48, 2.6, 16), skin)
-  nose.rotation.x = -Math.PI / 2
-  nose.position.z = 6.35
-  root.add(nose)
+  // Slightly faceted upper spine (stealth blend)
+  const spine = new Mesh(new BoxGeometry(0.55, 0.22, 7.5), ramDark)
+  spine.position.set(0, 0.55, 0.4)
+  root.add(spine)
 
-  const eots = new Mesh(new SphereGeometry(0.22, 12, 10, 0, Math.PI * 2, 0, Math.PI / 2), skinDark)
-  eots.rotation.x = Math.PI
-  eots.position.set(0, -0.42, 5.4)
+  // Chin EOTS fairing (small, blended)
+  const eots = new Mesh(new SphereGeometry(0.28, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), ramDark)
+  eots.scale.set(0.85, 0.55, 1.1)
+  eots.position.set(0, -0.38, 5.15)
   root.add(eots)
 
-  const canopy = new Mesh(new SphereGeometry(0.62, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), canopyMat)
-  canopy.scale.set(0.85, 0.72, 1.35)
-  canopy.position.set(0, 0.55, 2.55)
-  root.add(canopy)
+  // Canopy bubble + frame
+  root.add(buildCanopy(canopyMat, ramDeep))
 
-  const frame = new Mesh(new BoxGeometry(1.15, 0.08, 2.4), canopyFrame)
-  frame.position.set(0, 0.38, 2.5)
-  root.add(frame)
+  // DSI intakes (blended side scoops, not boxes)
+  root.add(buildIntake(1, ram, ramDeep, metal))
+  root.add(buildIntake(-1, ram, ramDeep, metal))
 
-  root.add(buildIntake(-1, intakeMat, skinDark))
-  root.add(buildIntake(1, intakeMat, skinDark))
+  // Wings + control surfaces
+  root.add(buildWing(1, ram, ramDark))
+  root.add(buildWing(-1, ram, ramDark))
 
-  root.add(buildWing(1, skin, skinEdge))
-  root.add(buildWing(-1, skin, skinEdge))
+  // Horizontal tails
+  root.add(buildHStab(1, ram))
+  root.add(buildHStab(-1, ram))
 
-  root.add(buildHStab(1, skin))
-  root.add(buildHStab(-1, skin))
+  // Twin canted vertical tails (signature F-35 look)
+  root.add(buildVStab(1, ram, ramDark))
+  root.add(buildVStab(-1, ram, ramDark))
 
-  root.add(buildVStab(1, skinDark, skinEdge))
-  root.add(buildVStab(-1, skinDark, skinEdge))
+  // Engine / nozzle
+  root.add(buildNozzle(nozzleMat, metal, ramDeep))
 
-  const nozzle = new Mesh(new CylinderGeometry(0.52, 0.46, 1.1, 16), nozzleMat)
-  nozzle.rotation.x = Math.PI / 2
-  nozzle.position.set(0, 0.05, -6.45)
-  root.add(nozzle)
+  // Weapons bay outline (subtle belly panel)
+  const bay = new Mesh(new BoxGeometry(1.15, 0.08, 4.8), ramDeep)
+  bay.position.set(0, -0.58, 0.3)
+  root.add(bay)
 
-  const nozzleInner = new Mesh(new CylinderGeometry(0.38, 0.42, 0.35, 12), intakeMat)
-  nozzleInner.rotation.x = Math.PI / 2
-  nozzleInner.position.set(0, 0.05, -6.95)
-  root.add(nozzleInner)
+  // Landing gear
+  addGear(root, gearMat, tireMat)
 
-  const glow = new Mesh(
-    new CylinderGeometry(0.36, 0.36, 0.05, 12),
-    new MeshStandardMaterial({
-      color: 0xff6600,
-      emissive: 0xff4400,
-      emissiveIntensity: 1.4,
-      metalness: 0.2,
-      roughness: 0.6,
-    }),
-  )
-  glow.rotation.x = Math.PI / 2
-  glow.position.set(0, 0.05, -7.05)
-  root.add(glow)
-
-  const belly = new Mesh(new BoxGeometry(1.3, 0.12, 5.5), skinDark)
-  belly.position.set(0, -0.55, 0.2)
-  root.add(belly)
-
-  addGear(root, gearMat)
-
-  const navL = new Mesh(
-    new SphereGeometry(0.06, 8, 8),
-    new MeshStandardMaterial({ color: 0xff2222, emissive: 0xff0000, emissiveIntensity: 1.2 }),
-  )
-  navL.position.set(-5.3, 0.05, -0.2)
-  root.add(navL)
-
-  const navR = new Mesh(
-    new SphereGeometry(0.06, 8, 8),
-    new MeshStandardMaterial({ color: 0x22ff44, emissive: 0x00ff22, emissiveIntensity: 1.2 }),
-  )
-  navR.position.set(5.3, 0.05, -0.2)
-  root.add(navR)
-
-  const tailLight = new Mesh(new SphereGeometry(0.05, 8, 8), lightMat)
-  tailLight.position.set(0, 0.9, -5.8)
-  root.add(tailLight)
+  // Nav lights (wingtips)
+  addNavLight(root, -5.15, 0.02, -0.35, 0xff2020)
+  addNavLight(root, 5.15, 0.02, -0.35, 0x20ff40)
+  addNavLight(root, 0, 1.55, -5.5, 0xfff5e0)
 
   root.traverse((obj: Object3D) => {
     const mesh = obj as Mesh
@@ -147,103 +118,177 @@ export function createPlaceholderF35(): Group {
   return root
 }
 
-function makeSkinMaterial(color: number): MeshStandardMaterial {
-  const tex = panelTexture()
+// ---------------------------------------------------------------------------
+// Materials
+// ---------------------------------------------------------------------------
+
+function makeRamMaterial(color: number): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color,
-    map: tex,
-    metalness: 0.55,
-    roughness: 0.42,
+    map: panelTexture(),
+    metalness: 0.48,
+    roughness: 0.46,
+    flatShading: false,
   })
 }
 
 function panelTexture(): CanvasTexture {
   const c = document.createElement('canvas')
-  c.width = 256
-  c.height = 256
+  c.width = 512
+  c.height = 512
   const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#808890'
-  ctx.fillRect(0, 0, 256, 256)
-  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
-  ctx.lineWidth = 1
-  for (let i = 0; i <= 256; i += 32) {
+
+  // Base RAM gray
+  ctx.fillStyle = '#6a727c'
+  ctx.fillRect(0, 0, 512, 512)
+
+  // Soft noise
+  for (let i = 0; i < 4000; i++) {
+    const v = 90 + Math.random() * 50
+    ctx.fillStyle = `rgba(${v},${v + 3},${v + 6},${0.04 + Math.random() * 0.06})`
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 1 + Math.random() * 2, 1 + Math.random() * 2)
+  }
+
+  // Panel seams
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)'
+  ctx.lineWidth = 1.2
+  for (let i = 0; i <= 512; i += 64) {
     ctx.beginPath()
     ctx.moveTo(i, 0)
-    ctx.lineTo(i, 256)
+    ctx.lineTo(i, 512)
     ctx.stroke()
     ctx.beginPath()
     ctx.moveTo(0, i)
-    ctx.lineTo(256, i)
+    ctx.lineTo(512, i)
     ctx.stroke()
   }
-  ctx.strokeStyle = 'rgba(0,0,0,0.12)'
-  for (let i = -256; i < 256; i += 48) {
+
+  // Sawtooth stealth seams
+  ctx.strokeStyle = 'rgba(0,0,0,0.14)'
+  ctx.lineWidth = 1
+  for (let i = -512; i < 512; i += 56) {
     ctx.beginPath()
     ctx.moveTo(i, 0)
-    ctx.lineTo(i + 128, 256)
+    ctx.lineTo(i + 180, 512)
     ctx.stroke()
   }
-  for (let i = 0; i < 800; i++) {
-    const v = 100 + Math.random() * 40
-    ctx.fillStyle = `rgba(${v},${v + 4},${v + 8},0.15)`
-    ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2)
+
+  // Edge highlight
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+  for (let i = 32; i < 512; i += 64) {
+    ctx.beginPath()
+    ctx.moveTo(i + 1, 0)
+    ctx.lineTo(i + 1, 512)
+    ctx.stroke()
   }
+
   const tex = new CanvasTexture(c)
   tex.wrapS = tex.wrapT = RepeatWrapping
-  tex.repeat.set(4, 4)
+  tex.repeat.set(3, 3)
+  tex.anisotropy = 4
   return tex
 }
 
+// ---------------------------------------------------------------------------
+// Body
+// ---------------------------------------------------------------------------
+
 function buildFuselage(mat: MeshStandardMaterial): Mesh {
+  // Profile: x = radius, y = station along length (lathe around Y, then rot to +Z)
+  // Pointed nose at high y → becomes +Z after rotation
   const pts: Vector2[] = [
-    new Vector2(0.02, -6.2),
-    new Vector2(0.45, -5.8),
-    new Vector2(0.62, -4.5),
-    new Vector2(0.72, -2.5),
-    new Vector2(0.78, 0.0),
-    new Vector2(0.74, 1.5),
-    new Vector2(0.68, 3.0),
-    new Vector2(0.55, 4.5),
-    new Vector2(0.42, 5.5),
-    new Vector2(0.08, 6.0),
+    new Vector2(0.01, 7.2), // sharp nose tip
+    new Vector2(0.22, 6.7),
+    new Vector2(0.42, 5.9),
+    new Vector2(0.55, 5.0),
+    new Vector2(0.68, 3.8),
+    new Vector2(0.78, 2.2),
+    new Vector2(0.84, 0.6),
+    new Vector2(0.86, -0.8),
+    new Vector2(0.82, -2.4),
+    new Vector2(0.72, -4.0),
+    new Vector2(0.58, -5.4),
+    new Vector2(0.48, -6.2),
+    new Vector2(0.42, -6.7), // nozzle station
   ]
-  const geo = new LatheGeometry(pts, 24)
+  const geo = new LatheGeometry(pts, 32)
   const mesh = new Mesh(geo, mat)
   mesh.rotation.x = Math.PI / 2
-  mesh.scale.set(1.05, 0.82, 1)
+  // Flatten slightly for stealth oval cross-section
+  mesh.scale.set(1.08, 0.78, 1)
   return mesh
 }
 
+function buildCanopy(glass: MeshStandardMaterial, frameMat: MeshStandardMaterial): Group {
+  const g = new Group()
+
+  // Bubble
+  const bubble = new Mesh(new SphereGeometry(0.72, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.52), glass)
+  bubble.scale.set(0.78, 0.62, 1.45)
+  bubble.position.set(0, 0.52, 2.85)
+  g.add(bubble)
+
+  // Sill / frame ring
+  const sill = new Mesh(new BoxGeometry(1.05, 0.07, 2.5), frameMat)
+  sill.position.set(0, 0.32, 2.85)
+  g.add(sill)
+
+  // Rear canopy fairing blend
+  const fairing = new Mesh(new BoxGeometry(0.7, 0.18, 0.9), frameMat)
+  fairing.position.set(0, 0.48, 1.55)
+  fairing.rotation.x = 0.25
+  g.add(fairing)
+
+  return g
+}
+
+// ---------------------------------------------------------------------------
+// Wings / tails
+// ---------------------------------------------------------------------------
+
 function buildWing(side: 1 | -1, skin: MeshStandardMaterial, edge: MeshStandardMaterial): Group {
   const g = new Group()
+
+  // F-35 clipped-diamond planform (top view: +X outboard, +Y toward nose)
   const shape = new Shape()
-  shape.moveTo(0.6, 2.2)
-  shape.lineTo(5.4, 0.35)
-  shape.lineTo(5.2, -1.4)
-  shape.lineTo(0.7, -2.6)
-  shape.lineTo(0.6, 2.2)
+  shape.moveTo(0.55, 2.0) // root LE
+  shape.lineTo(5.2, 0.15) // tip LE
+  shape.lineTo(5.05, -0.55) // tip mid
+  shape.lineTo(4.85, -1.35) // tip TE (clipped)
+  shape.lineTo(0.65, -2.55) // root TE
+  shape.lineTo(0.55, 2.0)
 
   const geo = new ExtrudeGeometry(shape, {
-    depth: 0.14,
+    depth: 0.12,
     bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.04,
-    bevelSegments: 1,
+    bevelThickness: 0.025,
+    bevelSize: 0.03,
+    bevelSegments: 2,
   })
   const wing = new Mesh(geo, skin)
   wing.rotation.x = -Math.PI / 2
-  wing.position.set(0, -0.05, -0.3)
-  wing.rotation.z = side * 0.04
+  wing.position.set(0, -0.02, -0.15)
+  wing.rotation.z = side * 0.03 // tiny dihedral
   if (side < 0) wing.scale.x = -1
   g.add(wing)
 
-  const lerx = new Mesh(new BoxGeometry(1.6, 0.1, 2.2), edge)
-  lerx.position.set(side * 1.3, -0.02, 1.1)
-  lerx.rotation.y = side * -0.45
+  // LERX / leading-edge root extension blend
+  const lerxShape = new Shape()
+  lerxShape.moveTo(0, 0)
+  lerxShape.lineTo(1.8, 1.6)
+  lerxShape.lineTo(1.5, 2.4)
+  lerxShape.lineTo(0.15, 1.1)
+  lerxShape.closePath()
+  const lerxGeo = new ExtrudeGeometry(lerxShape, { depth: 0.08, bevelEnabled: false })
+  const lerx = new Mesh(lerxGeo, edge)
+  lerx.rotation.x = -Math.PI / 2
+  lerx.position.set(side * 0.5, 0.02, 1.4)
+  if (side < 0) lerx.scale.x = -1
   g.add(lerx)
 
-  const flap = new Mesh(new BoxGeometry(2.2, 0.06, 0.55), edge)
-  flap.position.set(side * 3.2, -0.08, -2.0)
+  // Flaperon strip
+  const flap = new Mesh(new BoxGeometry(2.4, 0.05, 0.48), edge)
+  flap.position.set(side * 3.0, -0.1, -2.05)
   g.add(flap)
 
   return g
@@ -251,71 +296,189 @@ function buildWing(side: 1 | -1, skin: MeshStandardMaterial, edge: MeshStandardM
 
 function buildHStab(side: 1 | -1, skin: MeshStandardMaterial): Mesh {
   const shape = new Shape()
-  shape.moveTo(0.2, 0.9)
-  shape.lineTo(2.3, 0.15)
-  shape.lineTo(2.2, -0.55)
-  shape.lineTo(0.25, -0.85)
+  shape.moveTo(0.15, 0.85)
+  shape.lineTo(2.15, 0.1)
+  shape.lineTo(2.05, -0.5)
+  shape.lineTo(0.2, -0.75)
   shape.closePath()
-  const geo = new ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false })
+  const geo = new ExtrudeGeometry(shape, {
+    depth: 0.09,
+    bevelEnabled: true,
+    bevelThickness: 0.015,
+    bevelSize: 0.02,
+    bevelSegments: 1,
+  })
   const m = new Mesh(geo, skin)
   m.rotation.x = -Math.PI / 2
-  m.position.set(side * 0.35, 0.12, -4.7)
+  m.position.set(side * 0.4, 0.18, -4.85)
   if (side < 0) m.scale.x = -1
   return m
 }
 
 function buildVStab(side: 1 | -1, skin: MeshStandardMaterial, edge: MeshStandardMaterial): Group {
   const g = new Group()
+
+  // Canted twin tails — trapezoid in local plane
   const shape = new Shape()
-  shape.moveTo(0, 0)
-  shape.lineTo(0.15, 2.15)
-  shape.lineTo(-1.35, 1.85)
-  shape.lineTo(-1.1, 0)
+  shape.moveTo(0.0, 0.0) // root front
+  shape.lineTo(0.25, 2.05) // tip front
+  shape.lineTo(-1.15, 1.75) // tip rear
+  shape.lineTo(-1.0, 0.0) // root rear
   shape.closePath()
-  const geo = new ExtrudeGeometry(shape, { depth: 0.1, bevelEnabled: false })
+
+  const geo = new ExtrudeGeometry(shape, {
+    depth: 0.09,
+    bevelEnabled: true,
+    bevelThickness: 0.012,
+    bevelSize: 0.015,
+    bevelSegments: 1,
+  })
   const fin = new Mesh(geo, skin)
+  // Stand up, chord along -Z
   fin.rotation.y = Math.PI / 2
-  fin.position.set(side * 0.95, 0.35, -4.5)
+  fin.position.set(side * 0.88, 0.42, -4.55)
+  // Outward cant ~24°
   fin.rotation.z = side * -0.42
   g.add(fin)
 
-  const rudder = new Mesh(new BoxGeometry(0.08, 1.2, 0.45), edge)
-  rudder.position.set(side * 1.35, 1.2, -5.15)
+  // Rudder tab
+  const rudder = new Mesh(new BoxGeometry(0.07, 1.05, 0.38), edge)
+  rudder.position.set(side * 1.28, 1.15, -5.25)
   rudder.rotation.z = side * -0.42
   g.add(rudder)
+
   return g
 }
 
-function buildIntake(side: 1 | -1, dark: MeshStandardMaterial, lip: MeshStandardMaterial): Group {
+// ---------------------------------------------------------------------------
+// Intakes / nozzle
+// ---------------------------------------------------------------------------
+
+function buildIntake(
+  side: 1 | -1,
+  skin: MeshStandardMaterial,
+  dark: MeshStandardMaterial,
+  metal: MeshStandardMaterial,
+): Group {
   const g = new Group()
-  const body = new Mesh(new BoxGeometry(0.85, 0.7, 2.6), dark)
-  body.position.set(side * 0.95, -0.15, 1.0)
-  body.rotation.y = side * 0.12
+
+  // Main DSI body — tapered box (less brick-like)
+  const body = new Mesh(new BoxGeometry(0.72, 0.58, 2.3), dark)
+  body.position.set(side * 0.92, -0.12, 1.15)
+  body.rotation.y = side * 0.08
+  body.scale.set(1, 1, 1)
   g.add(body)
 
-  const lipMesh = new Mesh(new BoxGeometry(0.95, 0.12, 0.35), lip)
-  lipMesh.position.set(side * 0.95, 0.15, 2.2)
-  g.add(lipMesh)
+  // Outer blend cheek
+  const cheek = new Mesh(new BoxGeometry(0.35, 0.45, 1.8), skin)
+  cheek.position.set(side * 1.25, -0.05, 1.0)
+  cheek.rotation.y = side * 0.18
+  g.add(cheek)
 
-  const bump = new Mesh(new SphereGeometry(0.45, 10, 8, 0, Math.PI), lip)
-  bump.scale.set(0.7, 0.45, 1.1)
-  bump.rotation.y = Math.PI / 2
-  bump.position.set(side * 0.75, 0.15, 1.3)
+  // Upper diverter bump
+  const bump = new Mesh(new SphereGeometry(0.38, 12, 8, 0, Math.PI), skin)
+  bump.scale.set(0.55, 0.38, 1.15)
+  bump.rotation.y = side > 0 ? Math.PI / 2 : -Math.PI / 2
+  bump.position.set(side * 0.78, 0.12, 1.35)
   g.add(bump)
+
+  // Lip
+  const lip = new Mesh(new BoxGeometry(0.78, 0.1, 0.28), metal)
+  lip.position.set(side * 0.92, 0.12, 2.25)
+  g.add(lip)
+
+  // Dark inlet void
+  const voidMesh = new Mesh(new BoxGeometry(0.5, 0.38, 0.15), metal)
+  voidMesh.position.set(side * 0.92, -0.08, 2.35)
+  g.add(voidMesh)
+
   return g
 }
 
-function addGear(root: Group, mat: MeshStandardMaterial): void {
-  const strut = (x: number, z: number, tall: number) => {
-    const leg = new Mesh(new CylinderGeometry(0.05, 0.06, tall, 6), mat)
-    leg.position.set(x, -0.55 - tall / 2, z)
+function buildNozzle(
+  nozzleMat: MeshStandardMaterial,
+  metal: MeshStandardMaterial,
+  dark: MeshStandardMaterial,
+): Group {
+  const g = new Group()
+
+  const housing = new Mesh(new CylinderGeometry(0.5, 0.46, 1.15, 20), nozzleMat)
+  housing.rotation.x = Math.PI / 2
+  housing.position.set(0, 0.02, -6.55)
+  g.add(housing)
+
+  // Serrated look — ring of small wedges (simple dark ring)
+  const petal = new Mesh(new CylinderGeometry(0.52, 0.44, 0.22, 16), dark)
+  petal.rotation.x = Math.PI / 2
+  petal.position.set(0, 0.02, -7.05)
+  g.add(petal)
+
+  const inner = new Mesh(new CylinderGeometry(0.34, 0.38, 0.4, 16), metal)
+  inner.rotation.x = Math.PI / 2
+  inner.position.set(0, 0.02, -7.15)
+  g.add(inner)
+
+  const glow = new Mesh(
+    new CylinderGeometry(0.32, 0.32, 0.06, 16),
+    new MeshStandardMaterial({
+      color: 0xff5500,
+      emissive: 0xff3300,
+      emissiveIntensity: 1.6,
+      metalness: 0.15,
+      roughness: 0.55,
+    }),
+  )
+  glow.rotation.x = Math.PI / 2
+  glow.position.set(0, 0.02, -7.28)
+  g.add(glow)
+
+  return g
+}
+
+// ---------------------------------------------------------------------------
+// Gear / lights
+// ---------------------------------------------------------------------------
+
+function addGear(root: Group, strutMat: MeshStandardMaterial, tireMat: MeshStandardMaterial): void {
+  const makeLeg = (x: number, z: number, tall: number, dual = false) => {
+    const door = new Mesh(new BoxGeometry(0.35, 0.04, 0.7), strutMat)
+    door.position.set(x, -0.52, z)
+    root.add(door)
+
+    const leg = new Mesh(new CylinderGeometry(0.045, 0.055, tall, 8), strutMat)
+    leg.position.set(x, -0.52 - tall / 2, z)
     root.add(leg)
-    const wheel = new Mesh(new CylinderGeometry(0.2, 0.2, 0.14, 12), mat)
-    wheel.rotation.z = Math.PI / 2
-    wheel.position.set(x, -0.55 - tall, z)
-    root.add(wheel)
+
+    const wheel = (ox: number) => {
+      const w = new Mesh(new CylinderGeometry(0.18, 0.18, 0.12, 14), tireMat)
+      w.rotation.z = Math.PI / 2
+      w.position.set(x + ox, -0.52 - tall, z)
+      root.add(w)
+    }
+    if (dual) {
+      wheel(-0.12)
+      wheel(0.12)
+    } else {
+      wheel(0)
+    }
   }
-  strut(0, 3.2, 0.95)
-  strut(-1.15, -0.8, 0.85)
-  strut(1.15, -0.8, 0.85)
+
+  // Nose gear
+  makeLeg(0, 3.35, 0.95, false)
+  // Mains
+  makeLeg(-1.05, -0.65, 0.88, true)
+  makeLeg(1.05, -0.65, 0.88, true)
+}
+
+function addNavLight(root: Group, x: number, y: number, z: number, color: number): void {
+  const mat = new MeshStandardMaterial({
+    color,
+    emissive: color,
+    emissiveIntensity: 1.1,
+    metalness: 0.2,
+    roughness: 0.4,
+  })
+  const light = new Mesh(new SphereGeometry(0.055, 8, 8), mat)
+  light.position.set(x, y, z)
+  root.add(light)
 }
