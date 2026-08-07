@@ -10,7 +10,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Multi-mode camera: chase, close chase, cockpit, wingman, orbit
 - Right-mouse look / pan, scroll zoom, idle camera recenter
 - Keyboard controls with optional throttle boost
-- Runway, terrain, and basic debug HUD
+- Runway, terrain, mountains, trees, and basic debug HUD
 - Soft ground clamp (full collision and flight physics planned)
 
 ## Tech stack

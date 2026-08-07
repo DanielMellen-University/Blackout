@@ -12,20 +12,22 @@ import {
   Scene,
 } from 'three'
 import { createRunway } from './Runway'
+import { createScenery } from './Scenery'
 
 /**
- * Scene graph for terrain, runway, sky, and lighting.
+ * Scene graph for terrain, runway, scenery, sky, and lighting.
  */
 export class World {
   readonly scene = new Scene()
 
   constructor() {
     this.scene.background = new Color(0x87a0b8)
-    this.scene.fog = new Fog(0x87a0b8, 200, 1400)
+    this.scene.fog = new Fog(0x87a0b8, 280, 1600)
 
     this.addLights()
     this.addTerrain()
     this.addRunway()
+    this.scene.add(createScenery())
   }
 
   private addLights(): void {
@@ -41,11 +43,11 @@ export class World {
     sun.castShadow = true
     sun.shadow.mapSize.set(2048, 2048)
     sun.shadow.camera.near = 10
-    sun.shadow.camera.far = 500
-    sun.shadow.camera.left = -150
-    sun.shadow.camera.right = 150
-    sun.shadow.camera.top = 150
-    sun.shadow.camera.bottom = -150
+    sun.shadow.camera.far = 900
+    sun.shadow.camera.left = -400
+    sun.shadow.camera.right = 400
+    sun.shadow.camera.top = 400
+    sun.shadow.camera.bottom = -400
     sun.shadow.bias = -0.0002
     this.scene.add(sun)
 
