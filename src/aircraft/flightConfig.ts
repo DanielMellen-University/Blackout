@@ -39,8 +39,8 @@ export const flightConfig = {
    * Pitch is intentionally lower than roll - W/S was too twitchy.
    */
   pitchRate: 0.55,
-  rollRate: 2.2,
-  yawRate: 0.95,
+  rollRate: 2.35,
+  yawRate: 1.1,
 
   /** Pitch responds slower than roll/yaw for smoother elevator. */
   pitchResponse: 4.5,
@@ -49,7 +49,20 @@ export const flightConfig = {
 
   airControlFullSpeed: 30,
 
-  weathervaneRate: 0.45,
+  /**
+   * Soft path-follow (Sketchbook-style): bend velocity toward the nose so
+   * yaw/roll actually change the flight path. Too high = sticky; 0 = pure slip.
+   */
+  pathFollowRate: 1.65,
+
+  /**
+   * Coordinated-turn assist: when banked, curve the path about world-up
+   * (arcade stand-in for banked-lift turning). rad/s scale at full bank.
+   */
+  bankTurnRate: 1.35,
+
+  /** Mild weathervane: ease nose toward velocity when stick is quiet. */
+  weathervaneRate: 0.32,
 
   stallAoA: 0.4,
   stallLiftMul: 0.4,
@@ -62,6 +75,9 @@ export const flightConfig = {
   rollingDecel: 0.7,
   rotateClimb: 8,
   groundSteer: 1.45,
+
+  /** Throttle spool rate (0-1 per second). Shift up / Ctrl down. */
+  throttleRate: 0.65,
 
   crashVy: -14,
   softLandingVy: -6,

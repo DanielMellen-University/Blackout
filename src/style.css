@@ -152,3 +152,267 @@ body,
   color: #6b8499;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- Speedometer + Engine power gauges ---- */
+#gauges {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.gauge-panel {
+  position: relative;
+  background: rgba(8, 12, 18, 0.62);
+  border: 1px solid rgba(80, 120, 160, 0.28);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+#speedo-panel {
+  width: 148px;
+  height: 148px;
+  padding: 4px;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gauge-face {
+  fill: rgba(12, 20, 30, 0.85);
+  stroke: rgba(90, 130, 170, 0.35);
+  stroke-width: 1.5;
+}
+
+.gauge-track {
+  stroke: rgba(60, 90, 120, 0.45);
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+
+.gauge-arc.spd {
+  stroke: url(#spd-arc-grad);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-dasharray: 0.5 100;
+  transition: stroke-dasharray 0.06s linear;
+}
+
+.gauge-ticks .tick {
+  stroke: #6a8aa8;
+  stroke-width: 1.2;
+}
+
+.gauge-ticks .tick.major {
+  stroke: #9ec4e0;
+  stroke-width: 1.8;
+}
+
+.gauge-needle {
+  stroke: #f0f6fc;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(120, 200, 255, 0.55));
+}
+
+.gauge-hub {
+  fill: #1a2836;
+  stroke: #7ab0d8;
+  stroke-width: 1.5;
+}
+
+.gauge-readout {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  text-align: center;
+  line-height: 1.05;
+  pointer-events: none;
+}
+
+.gauge-value {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #e8f2fc;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 12px rgba(100, 180, 255, 0.4);
+}
+
+.gauge-unit {
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: #6b8aa4;
+  font-weight: 600;
+}
+
+.gauge-title {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  color: #5a7a94;
+  font-weight: 700;
+}
+
+/* Engine power vertical gauge */
+#eng-panel {
+  width: 72px;
+  height: 148px;
+  padding: 10px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#eng-panel.boost {
+  border-color: rgba(255, 140, 70, 0.55);
+  box-shadow: 0 0 18px rgba(255, 100, 40, 0.25);
+}
+
+#eng-panel.spooled:not(.boost) {
+  border-color: rgba(90, 200, 140, 0.4);
+}
+
+.eng-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px;
+}
+
+#eng-panel .gauge-title {
+  position: static;
+  transform: none;
+}
+
+.eng-pct {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #c8e0f4;
+  letter-spacing: 0.04em;
+}
+
+.eng-bar-wrap {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+  min-height: 0;
+}
+
+.eng-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  color: #5a7488;
+  font-weight: 600;
+  padding: 2px 0;
+}
+
+.eng-track {
+  position: relative;
+  flex: 1;
+  border-radius: 4px;
+  background: linear-gradient(
+    to top,
+    rgba(40, 70, 90, 0.5) 0%,
+    rgba(30, 50, 70, 0.55) 100%
+  );
+  border: 1px solid rgba(80, 120, 160, 0.3);
+  overflow: hidden;
+}
+
+.eng-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  background: linear-gradient(
+    to top,
+    #2a7a4a 0%,
+    #3ecf7a 45%,
+    #5ee0a0 80%,
+    #a8f0c8 100%
+  );
+  box-shadow: 0 0 10px rgba(60, 220, 140, 0.35);
+  transition: height 0.05s linear;
+}
+
+.eng-fill.boost {
+  background: linear-gradient(
+    to top,
+    #8a3a18 0%,
+    #e07030 40%,
+    #ff9a40 75%,
+    #ffd080 100%
+  );
+  box-shadow: 0 0 14px rgba(255, 120, 40, 0.5);
+}
+
+.eng-marker {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  bottom: 0%;
+  height: 2px;
+  background: #f0f6fc;
+  box-shadow: 0 0 4px rgba(200, 230, 255, 0.8);
+  transform: translateY(50%);
+  transition: bottom 0.05s linear;
+}
+
+.eng-hint {
+  font-size: 0.55rem;
+  color: #5a7488;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.eng-hint kbd {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 0.52rem;
+  padding: 0 3px;
+  border-radius: 2px;
+  border: 1px solid #3a4e62;
+  background: rgba(30, 42, 56, 0.9);
+  color: #a8c0d4;
+}
+
+.eng-ab {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffb060;
+  text-shadow: 0 0 8px rgba(255, 120, 40, 0.7);
+  animation: ab-pulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes ab-pulse {
+  from {
+    opacity: 0.7;
+  }
+  to {
+    opacity: 1;
+  }
+}

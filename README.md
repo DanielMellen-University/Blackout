@@ -11,7 +11,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash / soft landing detection with restart
 - Multi-mode camera: chase, close chase, cockpit, wingman, orbit
 - Middle-mouse look / pan, scroll zoom, idle camera recenter
-- Flight HUD: speed, altitude, throttle, gear, air/ground
+- Flight HUD: speedometer (IAS), engine power gauge (min–max), altitude, gear, air/ground
 - Procedural F-35 mesh (optional custom GLB)
 - Runway, terrain, mountains, and trees
 
@@ -57,9 +57,9 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **W / S** | Pitch up / down |
 | **A / D** | Yaw left / right |
 | **Q / E** | Roll (Q right, E left) |
-| **Shift** | Throttle up |
-| **Ctrl** or **1** | Throttle down |
-| **2** | Throttle up |
+| **Shift** | Engine power up (min → max) |
+| **Ctrl** or **1** | Engine power down (max → min) |
+| **2** | Engine power up |
 | **Space** | Afterburner boost |
 | **G** | Toggle landing gear |
 | **Hold MMB + drag** | Look / pan |

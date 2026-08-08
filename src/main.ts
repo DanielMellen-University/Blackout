@@ -107,6 +107,7 @@ async function boot(): Promise<void> {
       cameraMode: cameras.modeLabel,
       fps: time.fps,
       throttle: aircraft.controls.throttle,
+      boost: aircraft.controls.boost,
       gearDown: aircraft.controls.gearDown,
       onGround: aircraft.onGround,
       banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,

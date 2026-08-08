@@ -21,9 +21,9 @@ const _targetQ = new Quaternion()
  *  2) Integrate orientation from angular velocity
  *  3) Thrust along forward into velocity
  *  4) Drag opposing velocity; lift along body up from airspeed
- *  5) Mild weathervane: nose eases toward the velocity vector at speed
- *
- * Does not pin airspeed to the nose with a hard velocity lerp (that felt stuck in turns).
+ *  5) Soft path-follow: bend velocity toward the nose (turns change path)
+ *  6) Banked-turn assist: curve path about world-up when wings banked
+ *  7) Mild weathervane: nose eases toward velocity when stick is quiet
  */
 export class FlightModel {
   step(aircraft: Aircraft, dt: number): void {
@@ -119,6 +119,7 @@ export class FlightModel {
         velocity.addScaledVector(_flatFwd, thrustAccel * dt)
       }
     } else {
+      // Sketchbook-style: thrust always along nose so path tracks attitude
       velocity.addScaledVector(_forward, thrustAccel * dt)
     }
 
@@ -157,6 +158,42 @@ export class FlightModel {
         }
       } else {
         velocity.addScaledVector(_up, liftAccel * dt)
+      }
+    }
+
+    // Soft path-follow: gently bend velocity toward the nose so A/D yaw and
+    // attitude changes actually turn the flight path (not a hard pin).
+    if (!onGround && airspeed > 4 && airInfluence > 0.1) {
+      const spd = velocity.length()
+      if (spd > 1e-4) {
+        _velDir.copy(velocity).normalize()
+        const follow =
+          C.pathFollowRate * airInfluence * (0.55 + MathUtils.clamp(stick * 0.35, 0, 0.45))
+        const t = 1 - Math.exp(-follow * dt)
+        _velDir.lerp(_forward, t).normalize()
+        velocity.copy(_velDir).multiplyScalar(spd)
+      }
+    }
+
+    // Banked-turn assist: when wings banked, curve path about world-up
+    // (arcade coordinated turn — OSS sims rely on bank + path for turning)
+    if (!onGround && airspeed > 8) {
+      // Bank from body-right's vertical component: +right.y => left wing down? 
+      // right.y > 0 means right wing is higher (rolled left in our axes...)
+      // roll right (Q) banks right wing down => _right.y negative
+      const bank = Math.asin(MathUtils.clamp(-_right.y, -1, 1))
+      if (Math.abs(bank) > 0.04) {
+        const turn =
+          C.bankTurnRate *
+          Math.sin(bank) *
+          airInfluence *
+          MathUtils.clamp(airspeed / 40, 0.35, 1.25)
+        const c = Math.cos(turn * dt)
+        const s = Math.sin(turn * dt)
+        const vx = velocity.x
+        const vz = velocity.z
+        velocity.x = vx * c + vz * s
+        velocity.z = -vx * s + vz * c
       }
     }
 
@@ -206,7 +243,7 @@ export class FlightModel {
       onGround = false
     }
 
-    // Mild weathervane: ease nose toward velocity (not the other way around)
+    // Mild weathervane: ease nose toward velocity when stick is quiet
     if (!onGround && airspeed > 6 && airInfluence > 0.15) {
       _velDir.copy(velocity).normalize()
       this.readBodyAxes(orientation)
@@ -216,7 +253,7 @@ export class FlightModel {
         _alignQ.setFromUnitVectors(_forward, _velDir)
         _targetQ.copy(_alignQ).multiply(orientation).normalize()
         const vane =
-          C.weathervaneRate * airInfluence * (1 - MathUtils.clamp(stick * 0.55, 0, 0.85))
+          C.weathervaneRate * airInfluence * (1 - MathUtils.clamp(stick * 0.7, 0, 0.92))
         const t = 1 - Math.exp(-vane * dt)
         orientation.slerp(_targetQ, t).normalize()
       }
