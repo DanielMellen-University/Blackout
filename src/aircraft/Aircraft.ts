@@ -10,9 +10,10 @@ const _size = new Vector3()
 const _center = new Vector3()
 const _spawnQuat = new Quaternion()
 
+export type AircraftStatus = 'ok' | 'crashed' | 'landed'
+
 /**
  * Aircraft entity: sim state + Three.js mesh.
- * Integrates via FlightModel (arcade flight).
  */
 export class Aircraft {
   readonly mesh: Group
@@ -24,6 +25,7 @@ export class Aircraft {
 
   mass = flightConfig.mass
   usingPlaceholder = true
+  status: AircraftStatus = 'ok'
 
   private readonly flight = new FlightModel()
 
@@ -40,9 +42,6 @@ export class Aircraft {
     scene.add(this.mesh)
   }
 
-  /**
-   * Optional real GLB at `/models/f35.glb`. Falls back to procedural mesh.
-   */
   async tryLoadModel(url = '/models/f35.glb'): Promise<boolean> {
     try {
       const gltf = await new GLTFLoader().loadAsync(url)
@@ -72,7 +71,6 @@ export class Aircraft {
     }
   }
 
-  /** Respawn on runway threshold, gear down, engines idle. */
   reset(): void {
     const s = flightConfig.spawn
     this.position.set(s.position.x, s.position.y, s.position.z)
@@ -83,17 +81,26 @@ export class Aircraft {
     this.controls = createDefaultControls()
     this.controls.gearDown = true
     this.controls.throttle = s.throttle
+    this.status = 'ok'
+    this.mesh.visible = true
     this.syncMesh()
   }
 
-  /** Arcade flight integration step. */
   step(dt: number): void {
+    if (this.status === 'crashed') return
     this.flight.step(this, dt)
   }
 
-  /** @deprecated use step() - free-fly removed in Phase 1 */
-  freeFlyStep(dt: number): void {
-    this.step(dt)
+  crash(): void {
+    this.status = 'crashed'
+    this.velocity.set(0, 0, 0)
+    this.angularVelocity.set(0, 0, 0)
+    this.controls.throttle = 0
+    this.controls.boost = false
+  }
+
+  markLanded(): void {
+    if (this.status === 'ok') this.status = 'landed'
   }
 
   syncMesh(): void {

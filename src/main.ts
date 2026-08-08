@@ -9,6 +9,7 @@ import { CameraSystem } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
 import { suppressBrowserUi } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
+import { CollisionSystem } from './systems/Collision'
 import { HUD } from './ui/HUD'
 import { World } from './world/World'
 
@@ -39,6 +40,11 @@ async function boot(): Promise<void> {
   const input = new InputManager()
   const time = new Time()
   const hud = new HUD()
+  const collision = new CollisionSystem()
+
+  let banner: string | null = null
+  let bannerUntil = 0
+  let wasAirborne = false
 
   const onResize = (): void => {
     const w = window.innerWidth
@@ -49,6 +55,11 @@ async function boot(): Promise<void> {
   window.addEventListener('resize', onResize)
   onResize()
 
+  const showBanner = (text: string, ms = 2800): void => {
+    banner = text
+    bannerUntil = performance.now() + ms
+  }
+
   const tick = (nowMs: number): void => {
     requestAnimationFrame(tick)
 
@@ -56,17 +67,41 @@ async function boot(): Promise<void> {
     const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
 
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
-    if (input.consumeReset()) aircraft.reset()
+    if (input.consumeReset()) {
+      aircraft.reset()
+      banner = null
+      wasAirborne = false
+    }
 
     aircraft.controls = input.sampleWithDt(dt)
     aircraft.step(dt)
-    cameras.update(aircraft, dt)
 
+    const touch = collision.check(aircraft)
+    if (aircraft.status === 'ok') {
+      if (!aircraft.onGround && aircraft.position.y > flightAltThreshold()) {
+        wasAirborne = true
+      }
+      if (touch === 'crash') {
+        aircraft.crash()
+        showBanner('CRASH - press R')
+      } else if (touch === 'landed' && wasAirborne) {
+        aircraft.markLanded()
+        showBanner('LANDED')
+        wasAirborne = false
+      }
+    }
+
+    if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
+      banner = null
+    }
+
+    cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
 
+    const alt = Math.max(0, aircraft.position.y - 1.4)
     hud.update({
       x: aircraft.position.x,
-      y: aircraft.position.y,
+      y: alt,
       z: aircraft.position.z,
       speed: aircraft.speed,
       cameraMode: cameras.modeLabel,
@@ -74,10 +109,15 @@ async function boot(): Promise<void> {
       throttle: aircraft.controls.throttle,
       gearDown: aircraft.controls.gearDown,
       onGround: aircraft.onGround,
+      banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
     })
   }
 
   requestAnimationFrame(tick)
+}
+
+function flightAltThreshold(): number {
+  return 8
 }
 
 boot().catch((err) => {

@@ -3,52 +3,48 @@
  * Units: meters, seconds, Newtons, kg (loose arcade scale).
  */
 export const flightConfig = {
-  mass: 15_000,
+  mass: 12_000,
 
   /** Max thrust at full throttle (N). */
-  maxThrust: 220_000,
+  maxThrust: 280_000,
   /** Extra thrust multiplier while Space boost held. */
-  boostThrustMul: 1.45,
+  boostThrustMul: 1.5,
 
-  /** Lift ~ 0.5 * rho * v^2 * Cl * S (bundled). */
-  liftCoeff: 0.55,
-  /** Parasite + induced drag bundle. */
-  dragCoeff: 0.045,
-  /** Extra drag when gear down. */
-  gearDrag: 0.012,
+  liftCoeff: 0.72,
+  dragCoeff: 0.038,
+  gearDrag: 0.01,
 
   gravity: 9.81,
 
-  /** Max pitch/roll/yaw rates (rad/s) at full stick. */
-  pitchRate: 1.35,
-  rollRate: 2.4,
-  yawRate: 0.75,
+  pitchRate: 1.5,
+  rollRate: 2.6,
+  yawRate: 0.85,
 
-  /** How fast angular velocity tracks stick (1/s). */
-  angularResponse: 6,
-  /** Passive rate damping when stick released (1/s). */
-  angularDamping: 3.2,
+  angularResponse: 7,
+  angularDamping: 2.8,
 
-  /** AoA (rad) where lift peaks then falls off. */
-  stallAoA: 0.32,
-  /** Extra nose-down pitch rate when stalled. */
-  stallPitchDown: 1.1,
+  stallAoA: 0.34,
+  stallPitchDown: 1.0,
 
-  /** Wheel reference height (aircraft origin above ground when parked). */
-  gearHeight: 1.35,
-  /** Belly height if gear up. */
-  bellyHeight: 0.85,
+  /** Aircraft origin height above y=0 with gear down (wheels on pavement). */
+  gearHeight: 1.4,
+  bellyHeight: 0.95,
 
-  /** Min speed (m/s) to rotate nose up off runway. */
-  rotateSpeed: 38,
-  /** Ground rolling friction (1/s velocity bleed). */
-  groundFriction: 0.8,
-  /** Max taxi speed contribution from thrust on ground is automatic via drag. */
+  /** Min ground speed (m/s) to allow full pitch-up rotation. */
+  rotateSpeed: 28,
+  /**
+   * Rolling resistance (m/s^2 deceleration along ground track).
+   * Keep low so you can accelerate to rotate speed.
+   */
+  rollingDecel: 1.2,
 
-  /** Align spawn on runway. */
+  /** Vertical impact speed (m/s, negative down) that counts as a crash. */
+  crashVy: -14,
+  /** Soft landing max |vy| when gear down. */
+  softLandingVy: -6,
+
   spawn: {
-    position: { x: 0, y: 1.35, z: -45 },
-    /** Facing +Z down the runway. */
+    position: { x: 0, y: 1.4, z: -45 },
     yaw: 0,
     throttle: 0.0,
   },

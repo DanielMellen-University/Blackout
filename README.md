@@ -8,9 +8,10 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 - Arcade flight model (thrust, lift, drag, stall lite, gear drag)
 - Runway spawn and takeoff (throttle up, gain speed, pull nose)
+- Crash / soft landing detection with restart
 - Multi-mode camera: chase, close chase, cockpit, wingman, orbit
-- Right-mouse look / pan, scroll zoom, idle camera recenter
-- Flight HUD: speed, altitude/position, throttle, gear, air/ground
+- Middle-mouse look / pan, scroll zoom, idle camera recenter
+- Flight HUD: speed, altitude, throttle, gear, air/ground
 - Procedural F-35 mesh (optional custom GLB)
 - Runway, terrain, mountains, and trees
 
@@ -54,21 +55,21 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | Input | Action |
 |-------|--------|
 | **W / S** | Pitch up / down |
-| **A / D** | Roll left / right |
-| **Q / E** | Yaw left / right |
+| **A / D** | Yaw left / right |
+| **Q / E** | Roll left / right |
 | **Shift** | Throttle up |
 | **Ctrl** or **1** | Throttle down |
 | **2** | Throttle up |
 | **Space** | Afterburner boost |
 | **G** | Toggle landing gear |
-| **Hold RMB + drag** | Look / pan |
+| **Hold MMB + drag** | Look / pan |
 | **Scroll** | Zoom |
 | **C** | Cycle camera mode |
 | **R** | Reset to runway |
 
 **Takeoff:** Hold Shift to spool throttle, build speed down the runway, then pull **W** to rotate. Raise gear with **G** after liftoff.
 
-Browser context menu is suppressed so RMB look is not interrupted.
+Hold middle mouse to look. Landing is gentle with gear down; hard impacts crash (press R).
 
 ## Optional aircraft model
 

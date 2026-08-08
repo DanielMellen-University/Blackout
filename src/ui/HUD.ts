@@ -1,5 +1,5 @@
 /**
- * HTML overlay HUD - flight + debug readouts.
+ * HTML overlay HUD - flight readouts + event banner.
  */
 export class HUD {
   private readonly posEl: HTMLElement | null
@@ -9,6 +9,7 @@ export class HUD {
   private readonly thrEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
   private readonly stateEl: HTMLElement | null
+  private readonly bannerEl: HTMLElement | null
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
@@ -18,6 +19,7 @@ export class HUD {
     this.thrEl = root.getElementById('hud-thr')
     this.gearEl = root.getElementById('hud-gear')
     this.stateEl = root.getElementById('hud-state')
+    this.bannerEl = root.getElementById('hud-banner')
   }
 
   update(opts: {
@@ -30,12 +32,12 @@ export class HUD {
     throttle?: number
     gearDown?: boolean
     onGround?: boolean
+    banner?: string | null
   }): void {
     if (this.posEl) {
-      this.posEl.textContent = `${opts.x.toFixed(0)}, ${opts.y.toFixed(0)}, ${opts.z.toFixed(0)}`
+      this.posEl.textContent = `${opts.y.toFixed(0)} m`
     }
     if (this.spdEl) {
-      // m/s -> rough knots for flavor
       const kts = opts.speed * 1.94384
       this.spdEl.textContent = `${kts.toFixed(0)} kts`
     }
@@ -53,6 +55,15 @@ export class HUD {
     }
     if (this.stateEl && opts.onGround !== undefined) {
       this.stateEl.textContent = opts.onGround ? 'GND' : 'AIR'
+    }
+    if (this.bannerEl) {
+      if (opts.banner) {
+        this.bannerEl.textContent = opts.banner
+        this.bannerEl.hidden = false
+      } else {
+        this.bannerEl.textContent = ''
+        this.bannerEl.hidden = true
+      }
     }
   }
 }

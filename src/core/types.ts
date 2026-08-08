@@ -2,9 +2,9 @@
 export interface ControlState {
   /** Pitch stick: +W = nose up, -S = nose down. */
   pitch: number
-  /** Roll stick: +D = roll right, -A = roll left. */
+  /** Roll stick: +E = roll right, -Q = roll left. */
   roll: number
-  /** Yaw / rudder: +E = yaw right, -Q = yaw left. */
+  /** Yaw / rudder: +D = yaw right, -A = yaw left. */
   yaw: number
   /** 0-1 throttle. Shift raises, Ctrl/1 lowers. */
   throttle: number

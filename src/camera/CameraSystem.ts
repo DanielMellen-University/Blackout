@@ -103,8 +103,8 @@ export class CameraSystem {
   private pitch = 0.28
   private distance = 20
 
-  /** True while holding RMB to pan the camera. */
-  private rmbDown = false
+  /** True while holding MMB to pan the camera. */
+  private panDown = false
   private lastX = 0
   private lastY = 0
   private initialized = false
@@ -168,6 +168,8 @@ export class CameraSystem {
     window.removeEventListener('pointercancel', this.onPointerUp, cap)
     window.removeEventListener('pointermove', this.onPointerMove, cap)
     c.removeEventListener('wheel', this.onWheel)
+    c.removeEventListener('auxclick', this.onAuxClick, cap)
+    c.removeEventListener('mousedown', this.onMouseDownBlock, cap)
   }
 
   private bumpInput(): void {
@@ -179,7 +181,7 @@ export class CameraSystem {
    * toward this mode's default framing.
    */
   private updateAutoReturn(dt: number): void {
-    if (this.rmbDown || dt <= 0) return
+    if (this.panDown || dt <= 0) return
 
     const idleSec = (performance.now() - this.lastInputMs) / 1000
     if (idleSec < AUTO_RETURN_DELAY) return
@@ -323,19 +325,34 @@ export class CameraSystem {
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
-    // Capture phase so we still receive RMB after menu suppressors run
+    // Middle mouse button pan (button 1, buttons mask bit 4)
     const cap: AddEventListenerOptions = { capture: true }
     canvas.addEventListener('pointerdown', this.onPointerDown, cap)
     window.addEventListener('pointerup', this.onPointerUp, cap)
     window.addEventListener('pointercancel', this.onPointerUp, cap)
     window.addEventListener('pointermove', this.onPointerMove, cap)
     canvas.addEventListener('wheel', this.onWheel, { passive: false })
+    // Prevent default autoscroll on MMB
+    canvas.addEventListener('auxclick', this.onAuxClick, cap)
+    canvas.addEventListener('mousedown', this.onMouseDownBlock, cap)
+  }
+
+  private onMouseDownBlock = (e: MouseEvent): void => {
+    if (e.button === 1) e.preventDefault()
+  }
+
+  private onAuxClick = (e: MouseEvent): void => {
+    if (e.button === 1) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
   }
 
   private onPointerDown = (e: PointerEvent): void => {
-    if (e.button !== 2) return
+    if (e.button !== 1) return // middle mouse only
     e.preventDefault()
-    this.rmbDown = true
+    e.stopPropagation()
+    this.panDown = true
     this.lastX = e.clientX
     this.lastY = e.clientY
     this.canvas.style.cursor = 'grabbing'
@@ -348,9 +365,10 @@ export class CameraSystem {
   }
 
   private onPointerUp = (e: PointerEvent): void => {
-    if (!this.rmbDown) return
-    if (e.button === 2 || (e.buttons & 2) === 0) {
-      this.rmbDown = false
+    if (!this.panDown) return
+    // button 1 released, or middle bit clear (buttons & 4)
+    if (e.button === 1 || (e.buttons & 4) === 0) {
+      this.panDown = false
       this.canvas.style.cursor = 'crosshair'
       try {
         if (this.canvas.hasPointerCapture(e.pointerId)) {
@@ -363,9 +381,9 @@ export class CameraSystem {
   }
 
   private onPointerMove = (e: PointerEvent): void => {
-    if (!this.rmbDown) return
-    if ((e.buttons & 2) === 0) {
-      this.rmbDown = false
+    if (!this.panDown) return
+    if ((e.buttons & 4) === 0) {
+      this.panDown = false
       this.canvas.style.cursor = 'crosshair'
       return
     }
