@@ -25,8 +25,8 @@ import { createVegetationFactory, vegetationDensity } from './vegetation'
 export const CHUNK_SIZE = 400
 export const VIEW_RADIUS = 12
 const PROP_RADIUS = 5
-/** Slightly denser mesh so steep mountains / badlands hold their shape. */
-const CHUNK_SEGS = 20
+/** Denser mesh so broad mountain slopes shade smoothly. */
+const CHUNK_SEGS = 28
 /** Max chunk builds per frame (props count as heavier). */
 const BUILDS_PER_FRAME = 2
 export const FOG_NEAR = 1400
@@ -73,7 +73,8 @@ export class TerrainSystem {
       vertexColors: true,
       roughness: 0.94,
       metalness: 0.04,
-      flatShading: true,
+      // Smooth shading — flat faces made mountains look like knife edges
+      flatShading: false,
     })
     this.vegFactory = createVegetationFactory()
     this.applyFog()
