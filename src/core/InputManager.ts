@@ -37,7 +37,7 @@ export class InputManager {
     this.controls.boost = this.keys.has('Space')
 
     // Engine power: Shift min→max, Ctrl (or 1) max→min, hold for continuous spool
-    const thrRate = 0.65
+    const thrRate = 0.4
     if (this.keys.has('Digit1') || this.keys.has('ControlLeft') || this.keys.has('ControlRight')) {
       this.controls.throttle = Math.max(0, this.controls.throttle - thrRate * dt)
     }
