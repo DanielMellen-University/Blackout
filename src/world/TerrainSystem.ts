@@ -16,7 +16,12 @@ import {
   Vector3,
 } from 'three'
 import { hash2 } from './noise'
-import { biomeColor, sampleClimate, type Biome } from './terrainSample'
+import {
+  applySlopeShading,
+  biomeColor,
+  sampleClimate,
+  type Biome,
+} from './terrainSample'
 
 /**
  * Streaming envelope.
@@ -26,7 +31,8 @@ import { biomeColor, sampleClimate, type Biome } from './terrainSample'
 export const CHUNK_SIZE = 400
 export const VIEW_RADIUS = 12
 const PROP_RADIUS = 5
-const CHUNK_SEGS = 16
+/** Slightly denser mesh so steep mountains / badlands hold their shape. */
+const CHUNK_SEGS = 20
 /** Max chunk builds per frame (props count as heavier). */
 const BUILDS_PER_FRAME = 2
 export const FOG_NEAR = 1400
@@ -318,16 +324,20 @@ export class TerrainSystem {
     const pos = geo.attributes.position as BufferAttribute
     const colors = new Float32Array(pos.count * 3)
     const half = CHUNK_SIZE * 0.5
+    const stride = CHUNK_SEGS + 1
+    const cell = CHUNK_SIZE / CHUNK_SEGS
 
+    // Pass 1: heights + base biome colors
+    const biomes: Biome[] = new Array(pos.count)
     for (let i = 0; i < pos.count; i++) {
       const wx = originX + half + pos.getX(i)
       const wz = originZ + half + pos.getZ(i)
-      // One climate sample per vertex (height + biome + color)
       const climate = sampleClimate(wx, wz)
       let h = climate.height
       if (climate.biome === 'water') h = Math.min(h, 0.35)
       if (climate.biome === 'ocean') h = 0
       pos.setY(i, h)
+      biomes[i] = climate.biome
       const [r, g, b] = biomeColor(
         climate.biome,
         h,
@@ -335,10 +345,37 @@ export class TerrainSystem {
         wx,
         wz,
         climate.features,
+        climate.coastal,
+        climate.land,
       )
       colors[i * 3] = r
       colors[i * 3 + 1] = g
       colors[i * 3 + 2] = b
+    }
+
+    // Pass 2: slope from finite differences → cliff / wall shading (no extra noise samples)
+    for (let iz = 0; iz < stride; iz++) {
+      for (let ix = 0; ix < stride; ix++) {
+        const i = iz * stride + ix
+        const h = pos.getY(i)
+        const hl = pos.getY(iz * stride + Math.max(0, ix - 1))
+        const hr = pos.getY(iz * stride + Math.min(stride - 1, ix + 1))
+        const hd = pos.getY(Math.max(0, iz - 1) * stride + ix)
+        const hu = pos.getY(Math.min(stride - 1, iz + 1) * stride + ix)
+        const dx = (hr - hl) / (2 * cell)
+        const dz = (hu - hd) / (2 * cell)
+        // 0 flat → 1 very steep
+        const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
+        const shaded = applySlopeShading(
+          [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
+          slope,
+          biomes[i]!,
+          h,
+        )
+        colors[i * 3] = shaded[0]
+        colors[i * 3 + 1] = shaded[1]
+        colors[i * 3 + 2] = shaded[2]
+      }
     }
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))

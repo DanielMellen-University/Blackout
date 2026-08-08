@@ -1,8 +1,8 @@
 import { clamp01, fbm, ridged, smoothstep } from './noise'
 
 /**
- * Half-scale biomes (~0.5–1.2 km), long mountain ranges, carved water features
- * (rivers, streams, ravines, lakes, ponds). sampleClimate is the mesh path.
+ * Half-scale biomes, tall ranges, carved water features, coasts, and slope cues.
+ * sampleClimate is the single-pass mesh / contact path.
  */
 
 export const RUNWAY_FLAT_INNER = 100
@@ -40,6 +40,8 @@ export interface Climate {
   river: number
   land: number
   features: TerrainFeatures
+  /** 1 on beach shelf between land and open sea. */
+  coastal: number
 }
 
 function warp(x: number, z: number): [number, number] {
@@ -298,14 +300,22 @@ function heightFromFields(
   if (flatMask <= 0) return 0
 
   if (land < 0.42) {
-    const deep = (0.42 - land) * 40
-    return (SEA_LEVEL - 0.4 - deep * 0.02) * flatMask
+    // Continental shelf: shallows near coast, deeper offshore
+    const deep = (0.42 - land) * 55
+    const waves = (fbm(x * 0.02, z * 0.02, 2) - 0.5) * 0.15
+    return (SEA_LEVEL - 0.15 - deep * 0.04 + waves) * flatMask
   }
 
   let base = landElevation(x, z, land)
   // Mild climate bias, keep strong relief
   base += (0.5 - moisture) * 10
   base += (temperature - 0.5) * 6
+
+  // Soft beach ramp (land 0.42–0.58) so coasts aren't cliffs into the sea
+  const beach = smoothstep(0.42, 0.58, land)
+  base = base * beach + (1 + fbm(x * 0.03, z * 0.03, 2) * 2) * (1 - beach) * 0.35
+    + base * (1 - beach) * 0.15
+
   let h = base
 
   // Deeper lake/pond bowls so basins read against hills
@@ -415,6 +425,7 @@ export function sampleClimate(x: number, z: number): Climate {
       river: 0,
       land: 1,
       features: { river: 0, ravine: 0, pond: 0, lake: 0, stream: 0 },
+      coastal: 0,
     }
   }
 
@@ -432,6 +443,11 @@ export function sampleClimate(x: number, z: number): Climate {
     dist,
   )
   const biome = classifyBiome(height, moisture, temperature, features, land, dist)
+  // Beach band: landward side of the coast mask
+  const coastal =
+    land > 0.4 && land < 0.62
+      ? (1 - Math.abs(land - 0.5) / 0.12) * (height < 18 ? 1 : 0.35)
+      : 0
   return {
     height,
     moisture,
@@ -440,6 +456,7 @@ export function sampleClimate(x: number, z: number): Climate {
     river: features.river,
     land,
     features,
+    coastal: clamp01(coastal),
   }
 }
 
@@ -454,6 +471,8 @@ export function biomeColor(
   x: number,
   z: number,
   features?: TerrainFeatures,
+  coastal = 0,
+  land = 1,
 ): [number, number, number] {
   const n = fbm(x * 0.05, z * 0.05, 2)
   const speck = (n - 0.5) * 0.05
@@ -465,8 +484,9 @@ export function biomeColor(
     return [rock, rock * 0.95, rock * 0.9]
   }
 
+  // River floodplain: darker wet soil / green banks
   if (river > 0.4 && biome !== 'desert' && biome !== 'mesa' && biome !== 'ocean') {
-    return [0.18, 0.32 + n * 0.05, 0.26]
+    return [0.16 + speck, 0.34 + n * 0.06, 0.22]
   }
 
   if ((features?.lake ?? 0) > 0.45 || (features?.pond ?? 0) > 0.65) {
@@ -475,50 +495,136 @@ export function biomeColor(
     }
   }
 
+  let col: [number, number, number]
+
   switch (biome) {
     case 'runway':
-      return [0.24 + speck, 0.3 + speck, 0.2]
+      col = [0.24 + speck, 0.3 + speck, 0.2]
+      break
     case 'ocean': {
-      const deep = clamp01((-height + 0.5) * 0.15)
-      return [0.05 + deep * 0.02, 0.18 + n * 0.06, 0.38 + n * 0.08 + deep * 0.1]
+      // Turquoise shallows near coast, deep blue offshore
+      const shallow = clamp01((land - 0.25) / 0.2)
+      const deep = 1 - shallow
+      col = [
+        0.04 + shallow * 0.12 + n * 0.02,
+        0.16 + shallow * 0.22 + n * 0.05,
+        0.28 + shallow * 0.12 + deep * 0.2 + n * 0.04,
+      ]
+      break
     }
     case 'water':
-      return [0.1, 0.3 + n * 0.08, 0.44 + n * 0.06]
+      col = [0.1, 0.3 + n * 0.08, 0.44 + n * 0.06]
+      break
     case 'desert':
-      return [0.78 + speck, 0.66 + speck * 0.4, 0.38 + speck]
+      col = [0.78 + speck, 0.66 + speck * 0.4, 0.38 + speck]
+      break
     case 'mesa': {
       // Badlands: reddish-orange strata, darker in valleys
       const band = Math.sin(height * 0.55) * 0.06
       const depth = smoothstep(5, 80, height)
-      // High ground: bright rust/orange; low washes: deeper red-brown
       const r = 0.72 + band + speck * 0.5 + depth * 0.12
       const g = 0.28 + band * 0.35 + depth * 0.14 + speck * 0.2
       const b = 0.12 + depth * 0.06
-      return [
-        Math.min(0.95, r),
-        Math.min(0.55, g),
-        Math.min(0.28, b),
-      ]
+      col = [Math.min(0.95, r), Math.min(0.55, g), Math.min(0.28, b)]
+      break
     }
     case 'swamp':
-      return [0.2 + speck, 0.3 + moisture * 0.08, 0.16]
+      col = [0.2 + speck, 0.3 + moisture * 0.08, 0.16]
+      break
     case 'forest':
-      return [0.15 + speck, 0.36 + moisture * 0.1, 0.14]
+      col = [0.15 + speck, 0.36 + moisture * 0.1, 0.14]
+      break
     case 'rainforest':
-      return [0.07 + speck, 0.3 + moisture * 0.1, 0.1]
-    case 'hills':
-      return [0.32 + speck, 0.44 + speck, 0.22]
+      col = [0.07 + speck, 0.3 + moisture * 0.1, 0.1]
+      break
+    case 'hills': {
+      // Rockier as it climbs toward mountain country
+      const rockBlend = smoothstep(70, 180, height)
+      const grass: [number, number, number] = [0.3 + speck, 0.42 + speck, 0.2]
+      const rock: [number, number, number] = [0.4 + n * 0.08, 0.38, 0.34]
+      col = [
+        grass[0] + (rock[0] - grass[0]) * rockBlend,
+        grass[1] + (rock[1] - grass[1]) * rockBlend,
+        grass[2] + (rock[2] - grass[2]) * rockBlend,
+      ]
+      break
+    }
     case 'mountain': {
-      const rock = 0.42 + n * 0.1
-      return [rock, rock * 0.97, rock * 0.94]
+      // Grey rock with alpine snow dust high up
+      const rock = 0.4 + n * 0.1
+      const snowAmt = smoothstep(350, 700, height)
+      const c = rock + (0.92 - rock) * snowAmt
+      col = [c, c * (1 - snowAmt * 0.02), c + snowAmt * 0.02]
+      break
     }
     case 'snow': {
-      const t = smoothstep(400, 900, height)
-      const c = 0.45 + t * 0.48
-      return [c, c, c + 0.02]
+      const t = smoothstep(400, 1000, height)
+      const c = 0.5 + t * 0.45
+      col = [c, c, c + 0.02]
+      break
     }
     case 'plains':
     default:
-      return [0.28 + speck, 0.44 + speck + moisture * 0.04, 0.18]
+      col = [0.28 + speck, 0.44 + speck + moisture * 0.04, 0.18]
+      break
   }
+
+  // Sandy beach tint on coastal land
+  if (coastal > 0.15 && biome !== 'ocean' && biome !== 'water' && biome !== 'mesa') {
+    const sand: [number, number, number] = [0.82 + speck, 0.72 + speck * 0.5, 0.48]
+    const t = clamp01(coastal)
+    col = [
+      col[0] + (sand[0] - col[0]) * t,
+      col[1] + (sand[1] - col[1]) * t,
+      col[2] + (sand[2] - col[2]) * t,
+    ]
+  }
+
+  return col
+}
+
+/**
+ * Post-shade: cliff faces go rocky/darker; steep badlands get deeper red.
+ * slope01 is 0 flat → 1 vertical-ish (from mesh finite differences).
+ */
+export function applySlopeShading(
+  col: [number, number, number],
+  slope01: number,
+  biome: Biome,
+  height: number,
+): [number, number, number] {
+  const s = clamp01(slope01)
+  if (s < 0.12) return col
+
+  if (biome === 'mesa') {
+    // Steep badlands walls: darker burnt orange
+    const wall: [number, number, number] = [0.45, 0.16, 0.08]
+    const t = smoothstep(0.15, 0.7, s)
+    return [
+      col[0] + (wall[0] - col[0]) * t,
+      col[1] + (wall[1] - col[1]) * t,
+      col[2] + (wall[2] - col[2]) * t,
+    ]
+  }
+
+  if (biome === 'mountain' || biome === 'snow' || biome === 'hills') {
+    const rock: [number, number, number] = [0.32, 0.3, 0.28]
+    const t = smoothstep(0.18, 0.75, s) * (biome === 'hills' ? 0.7 : 1)
+    // Keep snow on high gentle slopes
+    const snowKeep = biome === 'snow' || height > 500 ? smoothstep(0.5, 0.15, s) * 0.4 : 0
+    const t2 = Math.max(0, t - snowKeep)
+    return [
+      col[0] + (rock[0] - col[0]) * t2,
+      col[1] + (rock[1] - col[1]) * t2,
+      col[2] + (rock[2] - col[2]) * t2,
+    ]
+  }
+
+  // Mild rock bleed on any steep face
+  const t = smoothstep(0.35, 0.85, s) * 0.45
+  return [
+    col[0] * (1 - t) + 0.35 * t,
+    col[1] * (1 - t) + 0.32 * t,
+    col[2] * (1 - t) + 0.28 * t,
+  ]
 }
