@@ -8,7 +8,7 @@ export const flightConfig = {
   mass: 10_000,
 
   /** Peak dry thrust (N). Accel = thrust / mass, then clamped by maxAccel. */
-  maxThrust: 280_000,
+  maxThrust: 490_000,
   boostThrustMul: 1.45,
 
   /**
@@ -17,12 +17,12 @@ export const flightConfig = {
    * maxSpeed: hard cap on airspeed (dry); boost can slightly exceed via maxSpeedBoost.
    */
   minSpeed: 35,
-  maxSpeed: 95,
+  maxSpeed: 110,
   /** Absolute cap with afterburner (m/s). */
-  maxSpeedBoost: 120,
+  maxSpeedBoost: 145,
 
   /** Peak forward acceleration from thrust (m/s^2), after mass. */
-  maxAccel: 18,
+  maxAccel: 32,
   /** Peak speed bleed from drag/brakes feel (m/s^2 scale). */
   maxDecel: 22,
 
