@@ -14,8 +14,9 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Flight HUD: speedometer (IAS), engine power gauge (min–max), altitude, gear, air/ground
 - Procedural F-35 mesh (optional custom GLB)
 - Infinite streaming terrain (~6 km) with soft fog (no chunk pop)
-- Large biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountains, snow, water
-- Geographic features: rivers, canyons, dunes, mesa plateaus, mountain ridges
+- Balanced biomes (no single type dominates): plains, forest, rainforest, desert, mesa, swamp, hills, rare mountains/snow, lakes, seas/oceans
+- Random world seed on every load and R reset
+- Features: rivers, canyons, dunes, mesa plateaus, sparse mountain belts, coasts
 
 ## Tech stack
 

@@ -4,6 +4,7 @@ import {
   HemisphereLight,
   Scene,
 } from 'three'
+import { getWorldSeed, randomizeWorldSeed } from './noise'
 import { createRunway } from './Runway'
 import { FOG_FAR, TerrainSystem } from './TerrainSystem'
 
@@ -14,6 +15,7 @@ export class World {
   readonly scene = new Scene()
   readonly terrain: TerrainSystem
   readonly sun: DirectionalLight
+  private seed = 0
 
   constructor() {
     this.sun = this.createSun()
@@ -21,9 +23,27 @@ export class World {
     this.scene.add(this.sun.target)
     this.addFillLights()
     this.terrain = new TerrainSystem(this.scene)
-    // Seed chunks around spawn immediately
-    this.terrain.update(0, 0)
+    this.reseed(true)
     this.addRunway()
+  }
+
+  get worldSeed(): number {
+    return this.seed
+  }
+
+  /**
+   * New random world seed, rebuild terrain around origin.
+   * Call on boot and when the player resets (R).
+   */
+  reseed(force = false): number {
+    this.seed = randomizeWorldSeed()
+    this.terrain.clearAll()
+    this.terrain.update(0, 0)
+    if (force) {
+      // ensure seed field tracks noise module
+      this.seed = getWorldSeed()
+    }
+    return this.seed
   }
 
   /** Stream terrain around the aircraft each frame. */

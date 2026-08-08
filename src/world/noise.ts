@@ -1,13 +1,29 @@
 /**
  * Deterministic 2D value noise + FBM for infinite terrain.
- * No external deps; stable across reloads for a given seed.
+ * Seed is mutable so each spawn can roll a new world.
  */
 
-const SEED = 1337.9182
+let worldSeed = 1337.9182
 
-/** Hash two floats → 0..1 */
+/** Current world seed (for debug / HUD later). */
+export function getWorldSeed(): number {
+  return worldSeed
+}
+
+/** Set an explicit seed and invalidate any cached noise assumptions. */
+export function setWorldSeed(seed: number): void {
+  worldSeed = seed === 0 ? 0.001 : seed
+}
+
+/** Fresh random seed for a new world (call before rebuilding chunks). */
+export function randomizeWorldSeed(): number {
+  worldSeed = Math.random() * 1_000_000 + Math.random() * 999.731
+  return worldSeed
+}
+
+/** Hash two floats → 0..1 (seeded). */
 export function hash2(x: number, z: number): number {
-  let n = Math.sin(x * 127.1 + z * 311.7 + SEED) * 43758.5453123
+  let n = Math.sin(x * 127.1 + z * 311.7 + worldSeed) * 43758.5453123
   n = n - Math.floor(n)
   return n
 }
@@ -56,7 +72,7 @@ export function fbm(
   return norm > 0 ? sum / norm : 0
 }
 
-/** Ridged multifractal for mountain spines (0..1). */
+/** Ridged multifractal for sparse mountain spines (0..1). */
 export function ridged(x: number, z: number, octaves = 4): number {
   let amp = 0.5
   let freq = 1
@@ -75,4 +91,8 @@ export function ridged(x: number, z: number, octaves = 4): number {
 export function smoothstep(edge0: number, edge1: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - edge0) / (edge1 - edge0)))
   return t * t * (3 - 2 * t)
+}
+
+export function clamp01(v: number): number {
+  return v < 0 ? 0 : v > 1 ? 1 : v
 }

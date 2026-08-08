@@ -168,6 +168,17 @@ export class TerrainSystem {
     this.scene.fog = new Fog(fogColor, near, far)
   }
 
+  /** Drop every chunk (call after world seed changes). */
+  clearAll(): void {
+    for (const chunk of this.chunks.values()) {
+      this.root.remove(chunk.root)
+      this.disposeChunk(chunk)
+    }
+    this.chunks.clear()
+    this.lastCx = Number.NaN
+    this.lastCz = Number.NaN
+  }
+
   /**
    * Stream chunks around world position. Cheap when cell unchanged.
    */
@@ -231,6 +242,8 @@ export class TerrainSystem {
       const climate = sampleClimate(wx, wz)
       let h = climate.height
       if (climate.biome === 'water') h = Math.min(h, 0.35)
+      // Ocean: flat sea surface so it reads as water, not terrain mesh spikes
+      if (climate.biome === 'ocean') h = 0
       pos.setY(i, h)
       const [r, g, b] = biomeColor(
         climate.biome,
@@ -312,7 +325,12 @@ export class TerrainSystem {
 
       const climate = sampleClimate(wx, wz)
       const h = climate.height
-      if (climate.biome === 'water' || climate.biome === 'runway') continue
+      if (
+        climate.biome === 'water' ||
+        climate.biome === 'ocean' ||
+        climate.biome === 'runway'
+      )
+        continue
       if (climate.river > 0.7) continue
 
       const density = propDensity(climate.biome, climate.moisture)

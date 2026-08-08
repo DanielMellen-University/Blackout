@@ -8,7 +8,9 @@ import { sampleTerrainHeight } from './terrainSample'
 
 /** World ground surface Y at horizontal position (infinite heightfield). */
 export function sampleGroundHeight(x: number, z: number): number {
-  return sampleTerrainHeight(x, z)
+  const h = sampleTerrainHeight(x, z)
+  // Treat open ocean as a flat sea surface for contact / AGL
+  return h < 0 ? 0 : h
 }
 
 /** Gear or belly clearance above the surface (meters). */

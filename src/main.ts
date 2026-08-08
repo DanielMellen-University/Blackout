@@ -69,6 +69,8 @@ async function boot(): Promise<void> {
 
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
     if (input.consumeReset()) {
+      // New random world every respawn
+      world.reseed()
       aircraft.reset()
       input.resetFlightControls(0)
       banner = null
