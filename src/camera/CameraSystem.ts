@@ -146,8 +146,8 @@ export class CameraSystem {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    // Far plane past fog horizon so streaming terrain does not pop at edges
-    this.camera = new PerspectiveCamera(62, 1, 0.15, 7000)
+    // Far plane past fog horizon (fog hides stream edge; no chunk pop)
+    this.camera = new PerspectiveCamera(62, 1, 0.2, 12000)
     this.bindInput(canvas)
     this.applyModeDefaults('chase')
   }
