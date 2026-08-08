@@ -76,10 +76,15 @@ export class TerrainSystem {
   private readonly cactusMat: MeshStandardMaterial
   private readonly snowTreeMat: MeshStandardMaterial
   private readonly reedMat: MeshStandardMaterial
+  private readonly bushMat: MeshStandardMaterial
+  private readonly grassMat: MeshStandardMaterial
+  private readonly deadMat: MeshStandardMaterial
 
   private readonly trunkGeo: CylinderGeometry
   private readonly leafGeo: ConeGeometry
   private readonly bigLeafGeo: ConeGeometry
+  private readonly bushGeo: ConeGeometry
+  private readonly grassGeo: CylinderGeometry
   private readonly rockGeo: ConeGeometry
   private readonly cactusGeo: CylinderGeometry
   private readonly reedGeo: CylinderGeometry
@@ -156,10 +161,30 @@ export class TerrainSystem {
       metalness: 0.02,
       flatShading: true,
     })
+    this.bushMat = new MeshStandardMaterial({
+      color: 0x3d6b2e,
+      roughness: 0.88,
+      metalness: 0.02,
+      flatShading: true,
+    })
+    this.grassMat = new MeshStandardMaterial({
+      color: 0x4a8a38,
+      roughness: 0.9,
+      metalness: 0.02,
+      flatShading: true,
+    })
+    this.deadMat = new MeshStandardMaterial({
+      color: 0x5a4a38,
+      roughness: 0.92,
+      metalness: 0.05,
+      flatShading: true,
+    })
 
     this.trunkGeo = new CylinderGeometry(0.28, 0.42, 1, 5)
     this.leafGeo = new ConeGeometry(1.5, 3.4, 6)
     this.bigLeafGeo = new ConeGeometry(2.2, 5.2, 6)
+    this.bushGeo = new ConeGeometry(1.1, 1.4, 5)
+    this.grassGeo = new CylinderGeometry(0.08, 0.2, 0.9, 4)
     this.rockGeo = new ConeGeometry(1.2, 1.8, 5)
     this.cactusGeo = new CylinderGeometry(0.35, 0.4, 2.4, 6)
     this.reedGeo = new CylinderGeometry(0.12, 0.18, 2.2, 4)
@@ -308,7 +333,7 @@ export class TerrainSystem {
         climate.moisture,
         wx,
         wz,
-        climate.river,
+        climate.features,
       )
       colors[i * 3] = r
       colors[i * 3 + 1] = g
@@ -330,13 +355,16 @@ export class TerrainSystem {
     const group = new Group()
     group.name = 'Props'
 
-    const maxTrees = 36
-    const maxRF = 24
-    const maxRocks = 14
-    const maxCactus = 18
-    const maxReed = 22
+    const maxTrees = 40
+    const maxRF = 28
+    const maxRocks = 18
+    const maxCactus = 20
+    const maxReed = 28
+    const maxBush = 32
+    const maxGrass = 40
+    const maxDead = 12
 
-    const trunks = new InstancedMesh(this.trunkGeo, this.trunkMat, maxTrees + maxRF)
+    const trunks = new InstancedMesh(this.trunkGeo, this.trunkMat, maxTrees + maxRF + maxDead)
     const foliage = this.leafMats.map(
       (m) => new InstancedMesh(this.leafGeo, m, maxTrees),
     )
@@ -346,6 +374,9 @@ export class TerrainSystem {
     const mesaRocks = new InstancedMesh(this.rockGeo, this.mesaRockMat, maxRocks)
     const cacti = new InstancedMesh(this.cactusGeo, this.cactusMat, maxCactus)
     const reeds = new InstancedMesh(this.reedGeo, this.reedMat, maxReed)
+    const bushes = new InstancedMesh(this.bushGeo, this.bushMat, maxBush)
+    const grass = new InstancedMesh(this.grassGeo, this.grassMat, maxGrass)
+    const deadTrunks = new InstancedMesh(this.trunkGeo, this.deadMat, maxDead)
 
     const allMeshes = [
       trunks,
@@ -355,6 +386,9 @@ export class TerrainSystem {
       cacti,
       reeds,
       rfFoliage,
+      bushes,
+      grass,
+      deadTrunks,
       ...foliage,
     ]
     for (const m of allMeshes) {
@@ -370,8 +404,11 @@ export class TerrainSystem {
     let mi = 0
     let ci = 0
     let rdi = 0
+    let bi = 0
+    let gi = 0
+    let di = 0
 
-    const samples = 72
+    const samples = 96
     for (let i = 0; i < samples; i++) {
       const u = hash2(cx * 31 + i, cz * 17 + i * 3)
       const v = hash2(cz * 13 + i * 7, cx * 19 - i)
@@ -382,97 +419,140 @@ export class TerrainSystem {
 
       const climate = sampleClimate(wx, wz)
       const h = climate.height
-      if (
-        climate.biome === 'water' ||
-        climate.biome === 'ocean' ||
-        climate.biome === 'runway'
-      )
-        continue
-      if (climate.river > 0.7) continue
+      const f = climate.features
+      if (climate.biome === 'ocean' || climate.biome === 'runway') continue
+      // Keep surface of open water clear; denser edge vegetation nearby
+      if (climate.biome === 'water' && f.river < 0.5 && f.lake < 0.5) continue
+      if (f.river > 0.82) continue
+      if (f.ravine > 0.55) continue
 
-      const density = propDensity(climate.biome, climate.moisture)
+      const density = propDensity(climate.biome, climate.moisture, f)
       if (hash2(i + cx, cz - i) > density) continue
 
       const rot = hash2(i, 3) * Math.PI * 2
+      const roll = hash2(i, 14)
+
+      // Shoreline reeds: lakes, ponds, riverbanks
+      const nearWater =
+        f.lake > 0.35 || f.pond > 0.5 || (f.river > 0.25 && f.river < 0.75) || f.stream > 0.5
+      if (nearWater && rdi < maxReed && roll < 0.55) {
+        const s = 0.8 + hash2(i, 8) * 1.5
+        _pos.set(wx, h + s * 1.0, wz)
+        _quat.setFromAxisAngle(_Y, rot)
+        _scale.set(s * 0.45, s, s * 0.45)
+        _mat.compose(_pos, _quat, _scale)
+        reeds.setMatrixAt(rdi, _mat)
+        rdi++
+        continue
+      }
 
       switch (climate.biome) {
         case 'rainforest':
           if (rfi < maxRF) {
-            const s = 1.4 + hash2(i, 9) * 2.0
+            const s = 1.5 + hash2(i, 9) * 2.2
             placeSimpleTree(trunks, ti + rfi, wx, h, wz, s, rot)
             _pos.set(wx, h + s * 0.5 + s * 2.1, wz)
             _quat.setFromAxisAngle(_Y, rot)
-            _scale.set(s * 1.15, s * 1.1, s * 1.15)
+            _scale.set(s * 1.2, s * 1.15, s * 1.2)
             _mat.compose(_pos, _quat, _scale)
             rfFoliage.setMatrixAt(rfi, _mat)
             rfi++
+          } else if (bi < maxBush) {
+            placeBush(bushes, bi++, wx, h, wz, 0.9 + roll * 1.2, rot)
           }
           break
         case 'forest':
+          if (ti < maxTrees && roll < 0.75) {
+            const s = 0.8 + hash2(i, 9) * 1.7
+            placeTree(trunks, foliage, snowTrees, false, ti, wx, h, wz, s, rot)
+            ti++
+          } else if (bi < maxBush) {
+            placeBush(bushes, bi++, wx, h, wz, 0.7 + roll, rot)
+          } else if (di < maxDead && roll > 0.9) {
+            placeSimpleTree(deadTrunks, di, wx, h, wz, 0.6 + roll * 0.8, rot)
+            di++
+          }
+          break
         case 'plains':
-        case 'hills':
-          if (ti < maxTrees) {
-            const s = 0.75 + hash2(i, 9) * 1.6
+          if (gi < maxGrass && roll < 0.55) {
+            placeGrass(grass, gi++, wx, h, wz, 0.7 + roll * 1.1, rot)
+          } else if (bi < maxBush && roll < 0.75) {
+            placeBush(bushes, bi++, wx, h, wz, 0.5 + roll * 0.8, rot)
+          } else if (ti < maxTrees && roll > 0.85) {
+            const s = 0.55 + hash2(i, 9) * 1.1
             placeTree(trunks, foliage, snowTrees, false, ti, wx, h, wz, s, rot)
             ti++
           }
           break
+        case 'hills':
+          if (ti < maxTrees && roll < 0.45) {
+            const s = 0.7 + hash2(i, 9) * 1.4
+            placeTree(trunks, foliage, snowTrees, false, ti, wx, h, wz, s, rot)
+            ti++
+          } else if (ri < maxRocks && roll > 0.7) {
+            placeRock(rocks, ri++, wx, h, wz, 1.0 + roll * 2.5, rot)
+          } else if (bi < maxBush) {
+            placeBush(bushes, bi++, wx, h, wz, 0.6 + roll, rot)
+          }
+          break
         case 'swamp':
           if (rdi < maxReed) {
-            const s = 0.9 + hash2(i, 8) * 1.3
+            const s = 0.9 + hash2(i, 8) * 1.4
             _pos.set(wx, h + s * 1.0, wz)
             _quat.setFromAxisAngle(_Y, rot)
             _scale.set(s * 0.5, s, s * 0.5)
             _mat.compose(_pos, _quat, _scale)
             reeds.setMatrixAt(rdi, _mat)
             rdi++
-          } else if (ti < maxTrees && hash2(i, 4) > 0.65) {
-            const s = 0.55 + hash2(i, 9) * 0.9
+          } else if (ti < maxTrees && roll > 0.55) {
+            const s = 0.5 + hash2(i, 9) * 1.0
             placeTree(trunks, foliage, snowTrees, false, ti, wx, h, wz, s, rot)
             ti++
+          } else if (di < maxDead) {
+            placeSimpleTree(deadTrunks, di, wx, h, wz, 0.5 + roll * 0.7, rot)
+            di++
           }
           break
         case 'snow':
-          if (ti < maxTrees && hash2(i, 4) > 0.55) {
-            const s = 0.55 + hash2(i, 8) * 1.1
+          if (ti < maxTrees && roll > 0.4) {
+            const s = 0.5 + hash2(i, 8) * 1.15
             placeTree(trunks, foliage, snowTrees, true, ti, wx, h, wz, s, rot)
             ti++
+          } else if (ri < maxRocks) {
+            placeRock(rocks, ri++, wx, h, wz, 1.2 + roll * 3, rot)
           }
           break
         case 'mountain':
           if (ri < maxRocks) {
-            const s = 1.3 + hash2(i, 5) * 3.5
-            _pos.set(wx, h + s * 0.35, wz)
-            _quat.setFromAxisAngle(_Y, rot)
-            _scale.set(s, s * (0.65 + hash2(i, 1)), s)
-            _mat.compose(_pos, _quat, _scale)
-            rocks.setMatrixAt(ri, _mat)
-            ri++
+            placeRock(rocks, ri++, wx, h, wz, 1.4 + roll * 4.5, rot)
+          } else if (ti < maxTrees && h < 120 && roll > 0.7) {
+            const s = 0.45 + hash2(i, 8) * 0.9
+            placeTree(trunks, foliage, snowTrees, h > 110, ti, wx, h, wz, s, rot)
+            ti++
           }
           break
         case 'mesa':
           if (mi < maxRocks) {
-            const s = 1.4 + hash2(i, 5) * 4
-            _pos.set(wx, h + s * 0.3, wz)
-            _quat.setFromAxisAngle(_Y, rot)
-            _scale.set(s, s * 0.55, s)
-            _mat.compose(_pos, _quat, _scale)
-            mesaRocks.setMatrixAt(mi, _mat)
-            mi++
+            placeRock(mesaRocks, mi++, wx, h, wz, 1.5 + roll * 5, rot)
+          } else if (bi < maxBush && roll > 0.8) {
+            placeBush(bushes, bi++, wx, h, wz, 0.4 + roll * 0.5, rot)
           }
           break
         case 'desert':
           if (ci < maxCactus) {
-            const s = 0.85 + hash2(i, 11) * 1.4
+            const s = 0.85 + hash2(i, 11) * 1.5
             _pos.set(wx, h + s * 1.1, wz)
             _quat.setFromAxisAngle(_Y, rot)
             _scale.set(s * 0.7, s, s * 0.7)
             _mat.compose(_pos, _quat, _scale)
             cacti.setMatrixAt(ci, _mat)
             ci++
+          } else if (ri < maxRocks && roll > 0.75) {
+            placeRock(rocks, ri++, wx, h, wz, 0.8 + roll * 2, rot)
           }
           break
         default:
+          if (gi < maxGrass) placeGrass(grass, gi++, wx, h, wz, 0.6 + roll, rot)
           break
       }
     }
@@ -485,6 +565,9 @@ export class TerrainSystem {
     mesaRocks.count = mi
     cacti.count = ci
     reeds.count = rdi
+    bushes.count = bi
+    grass.count = gi
+    deadTrunks.count = di
 
     for (const m of allMeshes) {
       m.instanceMatrix.needsUpdate = true
@@ -504,29 +587,95 @@ export class TerrainSystem {
   }
 }
 
-function propDensity(biome: Biome, moisture: number): number {
+function propDensity(
+  biome: Biome,
+  moisture: number,
+  f: { river: number; lake: number; pond: number; stream: number },
+): number {
+  let d = 0.15
   switch (biome) {
     case 'rainforest':
-      return 0.8
+      d = 0.88
+      break
     case 'forest':
-      return 0.65 + moisture * 0.1
+      d = 0.72 + moisture * 0.1
+      break
     case 'swamp':
-      return 0.5
+      d = 0.62
+      break
     case 'plains':
-      return 0.18
+      d = 0.42
+      break
     case 'hills':
-      return 0.26
+      d = 0.4
+      break
     case 'desert':
-      return 0.28
+      d = 0.34
+      break
     case 'mesa':
-      return 0.32
+      d = 0.36
+      break
     case 'mountain':
-      return 0.36
+      d = 0.42
+      break
     case 'snow':
-      return 0.18
+      d = 0.28
+      break
     default:
-      return 0.1
+      d = 0.2
   }
+  // Denser scrub along water edges
+  if (f.lake > 0.3 || f.pond > 0.4 || f.stream > 0.4) d = Math.min(1, d + 0.2)
+  if (f.river > 0.2 && f.river < 0.7) d = Math.min(1, d + 0.15)
+  return d
+}
+
+function placeBush(
+  mesh: InstancedMesh,
+  index: number,
+  x: number,
+  y: number,
+  z: number,
+  s: number,
+  rotY: number,
+): void {
+  _quat.setFromAxisAngle(_Y, rotY)
+  _pos.set(x, y + s * 0.45, z)
+  _scale.set(s, s * 0.85, s)
+  _mat.compose(_pos, _quat, _scale)
+  mesh.setMatrixAt(index, _mat)
+}
+
+function placeGrass(
+  mesh: InstancedMesh,
+  index: number,
+  x: number,
+  y: number,
+  z: number,
+  s: number,
+  rotY: number,
+): void {
+  _quat.setFromAxisAngle(_Y, rotY)
+  _pos.set(x, y + s * 0.4, z)
+  _scale.set(s * 0.8, s, s * 0.8)
+  _mat.compose(_pos, _quat, _scale)
+  mesh.setMatrixAt(index, _mat)
+}
+
+function placeRock(
+  mesh: InstancedMesh,
+  index: number,
+  x: number,
+  y: number,
+  z: number,
+  s: number,
+  rotY: number,
+): void {
+  _quat.setFromAxisAngle(_Y, rotY)
+  _pos.set(x, y + s * 0.32, z)
+  _scale.set(s, s * (0.55 + hash2(index, 1) * 0.4), s)
+  _mat.compose(_pos, _quat, _scale)
+  mesh.setMatrixAt(index, _mat)
 }
 
 function placeSimpleTree(
