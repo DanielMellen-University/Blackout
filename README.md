@@ -56,7 +56,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 |-------|--------|
 | **W / S** | Pitch up / down |
 | **A / D** | Yaw left / right |
-| **Q / E** | Roll left / right |
+| **Q / E** | Roll (Q right, E left) |
 | **Shift** | Throttle up |
 | **Ctrl** or **1** | Throttle down |
 | **2** | Throttle up |

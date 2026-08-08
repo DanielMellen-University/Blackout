@@ -31,9 +31,9 @@ export class InputManager {
 
   sampleWithDt(dt: number): ControlState {
     this.controls.pitch = this.axis('KeyW', 'KeyS')
-    // A/D yaw, Q/E roll (swapped from classic flight layout)
+    // A/D yaw, Q/E roll (inverted: Q roll right, E roll left)
     this.controls.yaw = this.axis('KeyD', 'KeyA')
-    this.controls.roll = this.axis('KeyE', 'KeyQ')
+    this.controls.roll = this.axis('KeyQ', 'KeyE')
     this.controls.boost = this.keys.has('Space')
 
     const thrRate = 0.55
