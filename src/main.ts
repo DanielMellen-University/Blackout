@@ -16,7 +16,6 @@ async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null
   if (!canvas) throw new Error('#game canvas not found')
 
-  // First: kill native context menu / RMB chrome before game handlers attach
   suppressBrowserUi(canvas)
 
   const renderer = new WebGLRenderer({
@@ -59,9 +58,8 @@ async function boot(): Promise<void> {
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
     if (input.consumeReset()) aircraft.reset()
 
-    // Live reference - InputManager owns the ControlState object
-    aircraft.controls = input.sample()
-    aircraft.freeFlyStep(dt)
+    aircraft.controls = input.sampleWithDt(dt)
+    aircraft.step(dt)
     cameras.update(aircraft, dt)
 
     renderer.render(world.scene, cameras.camera)
@@ -73,6 +71,9 @@ async function boot(): Promise<void> {
       speed: aircraft.speed,
       cameraMode: cameras.modeLabel,
       fps: time.fps,
+      throttle: aircraft.controls.throttle,
+      gearDown: aircraft.controls.gearDown,
+      onGround: aircraft.onGround,
     })
   }
 

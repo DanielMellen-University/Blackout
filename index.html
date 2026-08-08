@@ -13,16 +13,28 @@
       <div id="overlay">
         <header id="title-bar">
           <h1>BLACKOUT</h1>
-          <span id="phase-badge">Phase 0 · Skeleton</span>
+          <span id="phase-badge">Phase 1 · Flight</span>
         </header>
         <div id="hud">
           <div class="hud-row">
-            <span class="label">POS</span>
+            <span class="label">SPD</span>
+            <span id="hud-spd">0 kts</span>
+          </div>
+          <div class="hud-row">
+            <span class="label">ALT</span>
             <span id="hud-pos">0, 0, 0</span>
           </div>
           <div class="hud-row">
-            <span class="label">SPD</span>
-            <span id="hud-spd">0</span>
+            <span class="label">THR</span>
+            <span id="hud-thr">0%</span>
+          </div>
+          <div class="hud-row">
+            <span class="label">GEAR</span>
+            <span id="hud-gear">DOWN</span>
+          </div>
+          <div class="hud-row">
+            <span class="label">STATE</span>
+            <span id="hud-state">GND</span>
           </div>
           <div class="hud-row">
             <span class="label">CAM</span>
@@ -30,8 +42,8 @@
           </div>
         </div>
         <aside id="help">
-          <p><kbd>W</kbd><kbd>S</kbd> forward/back · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>E</kbd> up · <kbd>Q</kbd> down · <kbd>Space</kbd> boost</p>
-          <p><kbd>C</kbd> camera · hold <kbd>RMB</kbd> look/pan · scroll zoom · <kbd>R</kbd> reset</p>
+          <p><kbd>W</kbd><kbd>S</kbd> pitch · <kbd>A</kbd><kbd>D</kbd> roll · <kbd>Q</kbd><kbd>E</kbd> yaw · <kbd>Shift</kbd> thr+ · <kbd>Ctrl</kbd> thr- · <kbd>Space</kbd> AB</p>
+          <p><kbd>G</kbd> gear · <kbd>C</kbd> camera · hold <kbd>RMB</kbd> look · <kbd>R</kbd> reset · takeoff: thr up, speed, pull <kbd>W</kbd></p>
         </aside>
         <div id="fps"><span id="hud-fps">-</span> fps</div>
       </div>

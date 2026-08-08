@@ -1,8 +1,8 @@
 import { createDefaultControls, type ControlState } from './types'
 
 /**
- * Maps keyboard into a neutral ControlState.
- * Phase 0 free-fly reuses pitch/roll/yaw as move / turn / vertical axes.
+ * Maps keyboard into ControlState for arcade flight.
+ * W/S pitch, A/D roll, Q/E yaw, Space boost, Shift/Ctrl throttle, G gear.
  */
 export class InputManager {
   private readonly keys = new Set<string>()
@@ -24,19 +24,23 @@ export class InputManager {
     this.keys.clear()
   }
 
-  /** Current control snapshot (reused object - copy if you need to stash it). */
+  /** Prefer sampleWithDt for smooth throttle. */
   sample(): ControlState {
-    // Phase 0 free-fly: pitch=W/S, roll=A/D turn, yaw=Q/E vertical
+    return this.sampleWithDt(1 / 60)
+  }
+
+  sampleWithDt(dt: number): ControlState {
     this.controls.pitch = this.axis('KeyW', 'KeyS')
     this.controls.roll = this.axis('KeyD', 'KeyA')
     this.controls.yaw = this.axis('KeyE', 'KeyQ')
     this.controls.boost = this.keys.has('Space')
 
-    if (this.keys.has('Digit1')) {
-      this.controls.throttle = Math.max(0, this.controls.throttle - 0.01)
+    const thrRate = 0.55
+    if (this.keys.has('Digit1') || this.keys.has('ControlLeft') || this.keys.has('ControlRight')) {
+      this.controls.throttle = Math.max(0, this.controls.throttle - thrRate * dt)
     }
-    if (this.keys.has('Digit2')) {
-      this.controls.throttle = Math.min(1, this.controls.throttle + 0.01)
+    if (this.keys.has('Digit2') || this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')) {
+      this.controls.throttle = Math.min(1, this.controls.throttle + thrRate * dt)
     }
 
     return this.controls

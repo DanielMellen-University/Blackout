@@ -6,12 +6,13 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 ## Features
 
-- Free-fly F-35 (procedural mesh; optional custom GLB)
+- Arcade flight model (thrust, lift, drag, stall lite, gear drag)
+- Runway spawn and takeoff (throttle up, gain speed, pull nose)
 - Multi-mode camera: chase, close chase, cockpit, wingman, orbit
 - Right-mouse look / pan, scroll zoom, idle camera recenter
-- Keyboard controls with optional throttle boost
-- Runway, terrain, mountains, trees, and basic debug HUD
-- Soft ground clamp (full collision and flight physics planned)
+- Flight HUD: speed, altitude/position, throttle, gear, air/ground
+- Procedural F-35 mesh (optional custom GLB)
+- Runway, terrain, mountains, and trees
 
 ## Tech stack
 
@@ -21,7 +22,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 | Language | TypeScript |
 | Build | Vite |
 | Models | Procedural mesh + optional GLTF/GLB |
-| Physics | Custom arcade model (in progress) |
+| Physics | Custom arcade flight model |
 
 ## Getting started
 
@@ -52,18 +53,22 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 
 | Input | Action |
 |-------|--------|
-| **W / S** | Forward / back |
-| **A / D** | Turn left / right |
-| **E / Q** | Up / down |
-| **Space** | Boost |
-| **1 / 2** | Throttle down / up |
+| **W / S** | Pitch up / down |
+| **A / D** | Roll left / right |
+| **Q / E** | Yaw left / right |
+| **Shift** | Throttle up |
+| **Ctrl** or **1** | Throttle down |
+| **2** | Throttle up |
+| **Space** | Afterburner boost |
+| **G** | Toggle landing gear |
 | **Hold RMB + drag** | Look / pan |
 | **Scroll** | Zoom |
 | **C** | Cycle camera mode |
-| **R** | Reset to spawn |
-| **G** | Toggle gear flag |
+| **R** | Reset to runway |
 
-Browser context menu is suppressed on the game page so mouse look is not interrupted.
+**Takeoff:** Hold Shift to spool throttle, build speed down the runway, then pull **W** to rotate. Raise gear with **G** after liftoff.
+
+Browser context menu is suppressed so RMB look is not interrupted.
 
 ## Optional aircraft model
 

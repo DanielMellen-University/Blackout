@@ -1,23 +1,15 @@
 /** Normalized control axes in [-1, 1] (throttle is 0-1). */
 export interface ControlState {
-  /**
-   * Phase 0 free-fly: forward/back (W/S).
-   * Phase 1+: pitch stick.
-   */
+  /** Pitch stick: +W = nose up, -S = nose down. */
   pitch: number
-  /**
-   * Phase 0 free-fly: yaw turn (A/D).
-   * Phase 1+: roll stick.
-   */
+  /** Roll stick: +D = roll right, -A = roll left. */
   roll: number
-  /**
-   * Phase 0 free-fly: vertical (E/Q).
-   * Phase 1+: yaw stick / rudder.
-   */
+  /** Yaw / rudder: +E = yaw right, -Q = yaw left. */
   yaw: number
-  /** 0-1. Free-fly speed scale; later real throttle. */
+  /** 0-1 throttle. Shift raises, Ctrl/1 lowers. */
   throttle: number
   gearDown: boolean
+  /** Afterburner / thrust boost (Space). */
   boost: boolean
 }
 
@@ -45,7 +37,7 @@ export function createDefaultControls(): ControlState {
     pitch: 0,
     roll: 0,
     yaw: 0,
-    throttle: 0.35,
+    throttle: 0,
     gearDown: true,
     boost: false,
   }
