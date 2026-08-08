@@ -2,35 +2,30 @@ import { Box3, Group, Mesh, Quaternion, Vector3, type Object3D, type Scene } fro
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
+import { flightConfig } from './flightConfig'
+import { FlightModel } from './FlightModel'
 
-const SPAWN = new Vector3(0, 8, 0)
-const _move = new Vector3()
-const _forward = new Vector3()
-const _up = new Vector3(0, 1, 0)
-const _nose = new Vector3(0, 0, 1)
-const _yawQuat = new Quaternion()
 const _box = new Box3()
 const _size = new Vector3()
 const _center = new Vector3()
+const _spawnQuat = new Quaternion()
 
 /**
  * Aircraft entity: sim state + Three.js mesh.
- * Phase 0 free-fly is snappy; FlightModel takes over in Phase 1.
+ * Integrates via FlightModel (arcade flight).
  */
 export class Aircraft {
   readonly mesh: Group
-  readonly position = SPAWN.clone()
+  readonly position = new Vector3()
   readonly velocity = new Vector3()
   readonly orientation = new Quaternion()
-  /** Reserved for Phase 1 flight model. */
   readonly angularVelocity = new Vector3()
   controls: ControlState = createDefaultControls()
 
-  /** Reserved for Phase 1 flight model. */
-  mass = 15_000
+  mass = flightConfig.mass
   usingPlaceholder = true
 
-  private readonly spawnPosition = SPAWN.clone()
+  private readonly flight = new FlightModel()
 
   constructor() {
     this.mesh = new Group()
@@ -38,7 +33,7 @@ export class Aircraft {
     const placeholder = createPlaceholderF35()
     placeholder.name = 'model'
     this.mesh.add(placeholder)
-    this.syncMesh()
+    this.reset()
   }
 
   addTo(scene: Scene): void {
@@ -77,63 +72,28 @@ export class Aircraft {
     }
   }
 
+  /** Respawn on runway threshold, gear down, engines idle. */
   reset(): void {
-    this.position.copy(this.spawnPosition)
+    const s = flightConfig.spawn
+    this.position.set(s.position.x, s.position.y, s.position.z)
     this.velocity.set(0, 0, 0)
-    this.orientation.identity()
     this.angularVelocity.set(0, 0, 0)
+    _spawnQuat.setFromAxisAngle(new Vector3(0, 1, 0), s.yaw)
+    this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
+    this.controls.gearDown = true
+    this.controls.throttle = s.throttle
     this.syncMesh()
   }
 
-  /**
-   * Phase 0 free-fly: body-relative W/S, A/D yaw, Q/E vertical, Shift boost.
-   */
+  /** Arcade flight integration step. */
+  step(dt: number): void {
+    this.flight.step(this, dt)
+  }
+
+  /** @deprecated use step() - free-fly removed in Phase 1 */
   freeFlyStep(dt: number): void {
-    if (dt <= 0) return
-
-    const baseSpeed = 36
-    const boostMul = this.controls.boost ? 2.4 : 1
-    const speed = baseSpeed * (0.35 + this.controls.throttle) * boostMul
-    const yawSpeed = 2.4
-
-    const inputFwd = this.controls.pitch
-    const inputYaw = this.controls.roll
-    const inputUp = this.controls.yaw
-
-    if (inputYaw !== 0) {
-      _yawQuat.setFromAxisAngle(_up, -inputYaw * yawSpeed * dt)
-      this.orientation.premultiply(_yawQuat).normalize()
-    }
-
-    _forward.copy(_nose).applyQuaternion(this.orientation)
-    _forward.y = 0
-    if (_forward.lengthSq() < 1e-6) {
-      _forward.set(0, 0, 1)
-    } else {
-      _forward.normalize()
-    }
-
-    _move.set(0, 0, 0)
-    _move.addScaledVector(_forward, inputFwd * speed)
-    _move.y = inputUp * speed
-
-    if (_move.lengthSq() > 0) {
-      this.velocity.lerp(_move, 1 - Math.exp(-18 * dt))
-    } else {
-      this.velocity.multiplyScalar(Math.exp(-10 * dt))
-      if (this.velocity.lengthSq() < 0.01) this.velocity.set(0, 0, 0)
-    }
-
-    this.position.addScaledVector(this.velocity, dt)
-
-    // Soft floor until CollisionSystem is live
-    if (this.position.y < 1.5) {
-      this.position.y = 1.5
-      this.velocity.y = Math.max(0, this.velocity.y)
-    }
-
-    this.syncMesh()
+    this.step(dt)
   }
 
   syncMesh(): void {
@@ -143,6 +103,10 @@ export class Aircraft {
 
   get speed(): number {
     return this.velocity.length()
+  }
+
+  get onGround(): boolean {
+    return this.flight.isOnGround(this)
   }
 }
 
