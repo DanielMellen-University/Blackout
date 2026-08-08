@@ -19,7 +19,7 @@ export class HUD {
   private readonly engPanel: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
-  private readonly maxKts = 420
+  private readonly maxKts = 350
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
