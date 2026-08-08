@@ -94,6 +94,15 @@ function temperatureAt(wx: number, wz: number, z: number): number {
   return clamp01(lat * 0.22 + fbm(wx * 0.00048 - 50, wz * 0.00048 + 20, 2) * 0.78)
 }
 
+/**
+ * Large-scale badlands province (~3–6 km). Higher = more likely mesa country.
+ */
+function mesaProvince(wx: number, wz: number): number {
+  const a = fbm(wx * 0.00014 + 90, wz * 0.00014 - 40, 3)
+  const b = fbm(wx * 0.00032 + 12, wz * 0.00032 - 8, 2)
+  return clamp01(a * 0.7 + b * 0.3)
+}
+
 /** Cheap feature pack from already-warped coords (one river/ravine/lake each). */
 function featuresAt(wx: number, wz: number): TerrainFeatures {
   const pathR = Math.abs(fbm(wx * 0.00085, wz * 0.00085, 2) - 0.5) * 2
@@ -221,24 +230,41 @@ function landElevationW(wx: number, wz: number, land: number): number {
   return Math.max(h, 0.5)
 }
 
+/**
+ * Badlands: rolling red hills + buttes/mesas and arroyos (not pure flat tablelands).
+ */
 function mesaHeightW(base: number, wx: number, wz: number): number {
-  const stepNoise = fbm(wx * 0.0014, wz * 0.0014, 2)
-  const stepH = 18 + stepNoise * 22
-  const stacked = Math.floor(Math.max(20, base * 0.85 + 55) / stepH) * stepH
-  const plateau = stacked + (fbm(wx * 0.02, wz * 0.02, 2) - 0.5) * 3
-  const cliff = smoothstep(0.28, 0.62, ridged(wx * 0.004, wz * 0.004, 2))
+  // Rolling badland hills (main body of the province)
+  const hillRoll =
+    (fbm(wx * 0.0016, wz * 0.0016, 3) - 0.38) * 70 +
+    (fbm(wx * 0.0038 + 5, wz * 0.0038, 2) - 0.5) * 38
+  const knolls = ridged(wx * 0.0024 + 11, wz * 0.0024, 2) * 42
+
+  // Layered butte tops rising above the hills
+  const stepNoise = fbm(wx * 0.0011, wz * 0.0011, 2)
+  const stepH = 20 + stepNoise * 26
+  const stacked = Math.floor(Math.max(25, base * 0.7 + hillRoll + 50) / stepH) * stepH
+  const plateau = stacked + (fbm(wx * 0.018, wz * 0.018, 2) - 0.5) * 4
+  const cliff = smoothstep(0.32, 0.7, ridged(wx * 0.0032, wz * 0.0032, 2))
+
+  // Arroyos / washes cut into the hills (less dense than pure slot canyons)
   const arroyoA =
-    1 - smoothstep(0.02, 0.11, Math.abs(fbm(wx * 0.0035, wz * 0.0035, 2) - 0.5) * 2)
+    1 - smoothstep(0.03, 0.14, Math.abs(fbm(wx * 0.0028, wz * 0.0028, 2) - 0.5) * 2)
   const gully = clamp01(
-    arroyoA * smoothstep(0.4, 0.75, ridged(wx * 0.0022, wz * 0.0022, 2)),
+    arroyoA * 0.85 * smoothstep(0.42, 0.78, ridged(wx * 0.0018, wz * 0.0018, 2)),
   )
-  const canyon = smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 2))
-  const floor = Math.min(base * 0.25, 12)
-  const rim = plateau + 18
-  let h = floor + (rim - floor) * (1 - cliff * 0.92)
-  h -= canyon * canyon * (55 + plateau * 0.25)
-  h -= gully * gully * (40 + plateau * 0.2)
-  return Math.max(h, 1)
+  const canyon = smoothstep(0.58, 0.88, ridged(wx * 0.0016 + 200, wz * 0.0016 - 100, 2))
+
+  // Blend: hills as default, buttes where cliff mask is high
+  const hillBase = Math.max(8, base * 0.45 + 22 + hillRoll + knolls)
+  const butte = plateau + 14
+  let h = hillBase + (butte - hillBase) * (1 - cliff * 0.88) * 0.55
+  // Stronger butte contribution on rims
+  h += (butte - h) * (1 - cliff) * 0.4
+
+  h -= canyon * canyon * (48 + Math.max(0, h) * 0.18)
+  h -= gully * gully * (32 + Math.max(0, h) * 0.12)
+  return Math.max(h, 2)
 }
 
 function duneHeightW(base: number, wx: number, wz: number): number {
@@ -261,6 +287,8 @@ export function classifyBiome(
   features: TerrainFeatures,
   land: number,
   distFromOrigin: number,
+  /** Large-scale badlands province 0..1 (optional, defaults to 0). */
+  mesaProv = 0,
 ): Biome {
   if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway' // dist = ops center
   if (land < 0.42) return 'ocean'
@@ -274,15 +302,24 @@ export function classifyBiome(
   if (elev > 520) return 'snow'
   if (elev > 220) return 'mountain'
 
-  if (temperature > 0.58 && moisture < 0.36) {
-    if (elev > 40 && elev < 160 && moisture < 0.3) return 'mesa'
-    return 'desert'
+  // --- Mesa / badlands: larger provinces + looser climate gate ---
+  // Big contiguous regions when mesaProv is high; also classic arid mid-elev.
+  const aridish = moisture < 0.5 && temperature > 0.42
+  const inMesaElev = elev > 12 && elev < 300
+  if (inMesaElev && aridish) {
+    // Large province: most of the arid mid-band becomes mesa
+    if (mesaProv > 0.36 && moisture < 0.52) return 'mesa'
+    // Classic hot/dry mid elevation
+    if (temperature > 0.48 && moisture < 0.44 && elev > 18) return 'mesa'
   }
+  // Remaining very dry low flats stay sand desert
+  if (temperature > 0.55 && moisture < 0.34 && elev < 48) return 'desert'
+
   if (temperature > 0.52 && moisture > 0.62 && elev < 100) return 'rainforest'
   if (moisture > 0.58 && elev < 30 && temperature < 0.58) return 'swamp'
   if (moisture > 0.46 && elev < 110 && temperature > 0.28) return 'forest'
-  // Rolling / highland hills (common mid band)
-  if (elev > 45 && elev <= 160) return 'hills'
+  // Rolling / highland hills (common mid band) — not in strong mesa province
+  if (elev > 45 && elev <= 160 && mesaProv < 0.4) return 'hills'
   return 'plains'
 }
 
@@ -321,7 +358,22 @@ function heightFromFieldsW(
     h -= features.pond * features.pond * 16
   }
 
-  const rough = classifyBiome(h, moisture, temperature, features, land, dist)
+  const mesaProv = mesaProvince(wx, wz)
+  // Bias base height upward in mesa provinces so elev gate lands in mid band
+  if (mesaProv > 0.35 && moisture < 0.5) {
+    h += mesaProv * 28
+    base += mesaProv * 22
+  }
+
+  const rough = classifyBiome(
+    h,
+    moisture,
+    temperature,
+    features,
+    land,
+    dist,
+    mesaProv,
+  )
 
   switch (rough) {
     case 'ocean':
@@ -333,9 +385,9 @@ function heightFromFieldsW(
         smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 2)) * 40
       break
     case 'mesa':
-      h = mesaHeightW(Math.max(h, base * 0.7), wx, wz)
-      if (features.ravine > 0.15) {
-        h -= features.ravine * features.ravine * (70 + Math.max(0, h) * 0.45)
+      h = mesaHeightW(Math.max(h, base * 0.75), wx, wz)
+      if (features.ravine > 0.2) {
+        h -= features.ravine * features.ravine * (50 + Math.max(0, h) * 0.35)
       }
       break
     case 'swamp':
@@ -418,6 +470,7 @@ export function sampleClimate(x: number, z: number): Climate {
   const moisture = moistureAt(wx, wz)
   const temperature = temperatureAt(wx, wz, z)
   const features = featuresAt(wx, wz)
+  const mesaProv = mesaProvince(wx, wz)
   const height = heightFromFieldsW(
     wx,
     wz,
@@ -427,7 +480,15 @@ export function sampleClimate(x: number, z: number): Climate {
     features,
     dist,
   )
-  const biome = classifyBiome(height, moisture, temperature, features, land, dist)
+  const biome = classifyBiome(
+    height,
+    moisture,
+    temperature,
+    features,
+    land,
+    dist,
+    mesaProv,
+  )
   const coastal =
     land > 0.4 && land < 0.62
       ? (1 - Math.abs(land - 0.5) / 0.12) * (height < 18 ? 1 : 0.35)
