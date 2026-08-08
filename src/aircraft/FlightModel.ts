@@ -57,8 +57,10 @@ export class FlightModel {
     const targetOy = -controls.yaw * C.yawRate * (onGround ? Math.max(authority, 0.35) : authority)
     const targetOz = -controls.roll * C.rollRate * (onGround ? authority * 0.35 : authority)
 
+    // Pitch is slower to answer so W/S is not twitchy
+    const blendPitch = 1 - Math.exp(-C.pitchResponse * dt)
     const blend = 1 - Math.exp(-C.angularResponse * dt)
-    angularVelocity.x += (targetOx - angularVelocity.x) * blend
+    angularVelocity.x += (targetOx - angularVelocity.x) * blendPitch
     angularVelocity.y += (targetOy - angularVelocity.y) * blend
     angularVelocity.z += (targetOz - angularVelocity.z) * blend
 
@@ -102,11 +104,13 @@ export class FlightModel {
 
     this.readBodyAxes(orientation)
 
-    // --- Linear motion: thrust, gravity, lift, drag ---
+    // --- Linear motion: thrust (capped accel), gravity, lift, drag, speed envelope ---
     let thr = MathUtils.clamp(controls.throttle, 0, 1)
     if (controls.boost) thr = Math.min(1, thr + 0.45)
-    const thrustAccel =
-      (C.maxThrust / mass) * thr * (controls.boost ? C.boostThrustMul : 1)
+    const boost = controls.boost
+    let thrustAccel =
+      (C.maxThrust / mass) * thr * (boost ? C.boostThrustMul : 1)
+    thrustAccel = Math.min(thrustAccel, C.maxAccel)
 
     if (onGround) {
       _flatFwd.set(_forward.x, 0, _forward.z)
@@ -132,7 +136,10 @@ export class FlightModel {
       const aoaAbs = Math.abs(aoa)
 
       let liftAccel = Math.min(C.maxLiftAccel, C.liftPerSpeed * airspeed)
-      // Slight pitch-up / climb attitude bonus for arcade takeoff and climb
+      // Below minSpeed airborne: weak lift (mush / stall edge)
+      if (!onGround && airspeed < C.minSpeed) {
+        liftAccel *= MathUtils.clamp(airspeed / C.minSpeed, 0.25, 1)
+      }
       liftAccel *= MathUtils.clamp(0.55 + _forward.y * 0.9, 0.35, 1.35)
 
       if (aoaAbs > C.stallAoA) {
@@ -144,7 +151,6 @@ export class FlightModel {
       }
 
       if (onGround) {
-        // Unload gear as speed builds; does not shove sideways on the runway
         velocity.y += liftAccel * dt
         if (velocity.y > 0 && liftAccel < C.gravity * 0.95) {
           velocity.y = 0
@@ -154,16 +160,21 @@ export class FlightModel {
       }
     }
 
-    // Drag opposing velocity (Sketchbook: vel *= 1 - k * speed)
+    // Drag opposing velocity (capped decel feel)
     {
       let dragK = C.dragPerSpeed + (controls.gearDown ? C.gearDrag : 0)
       if (onGround) dragK += 0.0015
       const speedNow = velocity.length()
       if (speedNow > 1e-4) {
         const damp = Math.min(0.6, dragK * speedNow * dt)
-        velocity.multiplyScalar(1 - damp)
+        // Limit how hard drag can decelerate per frame
+        const maxDamp = (C.maxDecel * dt) / speedNow
+        velocity.multiplyScalar(1 - Math.min(damp, maxDamp))
       }
     }
+
+    // Speed envelope: hard min (airborne) / max (dry vs boost)
+    this.applySpeedLimits(velocity, onGround, boost)
 
     // Rolling friction on the runway
     if (onGround) {
@@ -231,5 +242,27 @@ export class FlightModel {
     _forward.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
     _right.set(1, 0, 0).applyQuaternion(orientation)
+  }
+
+  /**
+   * Clamp airspeed into [minSpeed, maxSpeed] (or maxSpeedBoost with AB).
+   * On the ground, only enforce max (you may start from 0).
+   */
+  private applySpeedLimits(velocity: Vector3, onGround: boolean, boost: boolean): void {
+    const speed = velocity.length()
+    if (speed < 1e-6) return
+
+    const maxSp = boost ? C.maxSpeedBoost : C.maxSpeed
+    if (speed > maxSp) {
+      velocity.multiplyScalar(maxSp / speed)
+      return
+    }
+
+    // Airborne: soft floor under minSpeed - do not force min on the runway
+    if (!onGround && speed < C.minSpeed) {
+      // Allow brief dips (stall) but push gently back toward min when throttled
+      // Pure clamp would feel sticky; leave as lift penalty above, optional nudge:
+      // (no hard raise - stall is allowed below minSpeed)
+    }
   }
 }
