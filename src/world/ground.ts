@@ -1,15 +1,14 @@
 import { flightConfig } from '../aircraft/flightConfig'
+import { sampleTerrainHeight } from './terrainSample'
 
 /**
  * Single source of truth for terrain height and aircraft contact height.
- *
- * Phase 2 world is a flat plane at y = 0 (runway asphalt sits on this plane).
- * Later: sample heightmap / raycast here without changing callers.
+ * Height comes from the same pure function used to build streaming chunks.
  */
 
-/** World ground surface Y at horizontal position (flat 0 for now). */
-export function sampleGroundHeight(_x: number, _z: number): number {
-  return 0
+/** World ground surface Y at horizontal position (infinite heightfield). */
+export function sampleGroundHeight(x: number, z: number): number {
+  return sampleTerrainHeight(x, z)
 }
 
 /** Gear or belly clearance above the surface (meters). */

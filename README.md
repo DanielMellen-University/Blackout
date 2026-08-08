@@ -13,7 +13,8 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Middle-mouse look / pan, scroll zoom, idle camera recenter
 - Flight HUD: speedometer (IAS), engine power gauge (min–max), altitude, gear, air/ground
 - Procedural F-35 mesh (optional custom GLB)
-- Runway, terrain, mountains, and trees
+- Infinite streaming terrain with biomes (plains, forest, desert, hills, mountains, snow, water)
+- Long fog horizon and large render distance
 
 ## Tech stack
 

@@ -98,6 +98,7 @@ async function boot(): Promise<void> {
       banner = null
     }
 
+    world.update(aircraft.position.x, aircraft.position.z)
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
 
