@@ -10,11 +10,16 @@ const _velDir = new Vector3()
 const _spin = new Quaternion()
 const _flatFwd = new Vector3()
 const _worldUp = new Vector3(0, 1, 0)
+const _prevQ = new Quaternion()
+const _deltaQ = new Quaternion()
+const _aligned = new Vector3()
 
 /**
  * Arcade flight model.
  * Body: +X right, +Y up, +Z nose.
- * Ground roll keeps thrust horizontal; rotate + speed triggers liftoff assist.
+ *
+ * Velocity is rotated with the jet when you turn, then sideslip is damped,
+ * so you move the way you are facing instead of sliding sideways.
  */
 export class FlightModel {
   step(aircraft: Aircraft, dt: number): void {
@@ -25,6 +30,9 @@ export class FlightModel {
     const minY = controls.gearDown ? C.gearHeight : C.bellyHeight
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
     let onGround = position.y <= minY + 0.15 && velocity.y < 2
+
+    // Snapshot attitude so we can rotate velocity with the turn
+    _prevQ.copy(orientation)
 
     // --- Rates from stick ---
     // W (+pitch) = nose up = negative omega.x
@@ -44,10 +52,11 @@ export class FlightModel {
     }
 
     if (onGround) {
-      // No digging nose into the pavement
       if (angularVelocity.x > 0) angularVelocity.x = 0
-      // Allow pitch-up earlier (from ~50% rotate speed), scale in
-      const rotAllow = Math.min(1, Math.max(0, (groundSpeed - C.rotateSpeed * 0.4) / (C.rotateSpeed * 0.6)))
+      const rotAllow = Math.min(
+        1,
+        Math.max(0, (groundSpeed - C.rotateSpeed * 0.4) / (C.rotateSpeed * 0.6)),
+      )
       angularVelocity.x *= rotAllow
       if (groundSpeed < 12) angularVelocity.z *= 0.25
     }
@@ -63,13 +72,52 @@ export class FlightModel {
       .normalize()
     orientation.multiply(_spin).normalize()
 
+    // Ground steering (world yaw) - also turns the jet
+    if (onGround && groundSpeed > 0.4 && groundSpeed < 50) {
+      const steer = -controls.yaw * (1.2 + groundSpeed * 0.025) * dt
+      orientation.premultiply(_spin.setFromAxisAngle(_worldUp, steer)).normalize()
+    }
+
+    // --- Velocity follows facing ---
+    // 1) Rotate world velocity by the same attitude change as the airframe
+    _deltaQ.copy(orientation).multiply(_prevQ.clone().invert())
+    _aligned.copy(velocity).applyQuaternion(_deltaQ)
+    // Blend so it feels solid, not 100% glued on the first frame of a turn
+    const follow = 1 - Math.exp(-C.velocityFollow * dt)
+    velocity.lerp(_aligned, follow)
+
+    // 2) Kill remaining sideslip (body-right component) so you don't skate
     _forward.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
     _right.set(1, 0, 0).applyQuaternion(orientation)
 
+    const vFwd = velocity.dot(_forward)
+    const vRight = velocity.dot(_right)
+    const vUp = velocity.dot(_up)
+    const slipKill = Math.exp(-C.sideslipDamp * dt)
+    // Rebuild velocity in body axes with damped lateral slip
+    velocity.set(0, 0, 0)
+    velocity.addScaledVector(_forward, vFwd)
+    velocity.addScaledVector(_right, vRight * slipKill)
+    velocity.addScaledVector(_up, vUp)
+
+    // On ground: keep motion in the horizontal plane along the nose
+    if (onGround) {
+      _flatFwd.set(_forward.x, 0, _forward.z)
+      if (_flatFwd.lengthSq() > 1e-6) {
+        _flatFwd.normalize()
+        const gs = Math.hypot(velocity.x, velocity.z)
+        // Point ground track at the nose
+        const align = 1 - Math.exp(-8 * dt)
+        velocity.x += (_flatFwd.x * gs - velocity.x) * align
+        velocity.z += (_flatFwd.z * gs - velocity.z) * align
+      }
+      velocity.y = Math.max(0, velocity.y)
+    }
+
     const speed = velocity.length()
 
-    // AoA
+    // AoA from velocity vs nose
     let aoa = 0
     if (speed > 2) {
       _velDir.copy(velocity).normalize()
@@ -83,7 +131,6 @@ export class FlightModel {
     if (controls.boost) thr = Math.min(1, thr + 0.45)
     const thrustN = C.maxThrust * thr * (controls.boost ? C.boostThrustMul : 1)
 
-    // On ground: thrust stays horizontal so we accelerate, not push into dirt
     if (onGround) {
       _flatFwd.set(_forward.x, 0, _forward.z)
       if (_flatFwd.lengthSq() > 1e-6) {
@@ -91,17 +138,15 @@ export class FlightModel {
         _force.addScaledVector(_flatFwd, thrustN)
       }
     } else {
+      // Thrust always along the nose so acceleration matches facing
       _force.addScaledVector(_forward, thrustN)
     }
 
-    // Gravity
     _force.y -= mass * C.gravity
-    // Normal force while rolling (cancel weight)
     if (onGround) {
       _force.y += mass * C.gravity
     }
 
-    // Aero
     const qDyn = speed * speed
     const aeroK = 0.0055
     if (speed > 1) {
@@ -113,12 +158,11 @@ export class FlightModel {
         liftFactor *= Math.max(0.15, 1 - (aoaAbs - C.stallAoA) * 2)
         angularVelocity.x += Math.sign(aoa || 1) * C.stallPitchDown * dt
       }
-      // Attitude helps lift (nose up)
       liftFactor += Math.max(0, _forward.y) * 0.5
 
       const liftAccel = C.liftCoeff * aeroK * qDyn * liftFactor
+      // Lift mostly against gravity / along body up - perpendicular to flight path-ish
       if (onGround) {
-        // World-up lift so the jet leaves the runway cleanly
         _force.y += liftAccel * mass
       } else {
         _force.addScaledVector(_up, liftAccel * mass)
@@ -126,25 +170,26 @@ export class FlightModel {
 
       let cd = C.dragCoeff + (controls.gearDown ? C.gearDrag : 0)
       if (aoaAbs > C.stallAoA) cd += 0.02
+      // Drag opposite velocity (and thus mostly opposite nose after alignment)
       _force.addScaledVector(_velDir, -cd * aeroK * qDyn * mass)
-    }
-
-    // Ground steering
-    if (onGround && groundSpeed > 0.4 && groundSpeed < 50) {
-      const steer = -controls.yaw * (1.2 + groundSpeed * 0.025) * dt
-      orientation.premultiply(_spin.setFromAxisAngle(_worldUp, steer)).normalize()
-      _flatFwd.set(_forward.x, 0, _forward.z)
-      if (_flatFwd.lengthSq() > 1e-6) {
-        _flatFwd.normalize()
-        const gs = Math.hypot(velocity.x, velocity.z)
-        velocity.x = velocity.x * 0.8 + _flatFwd.x * gs * 0.2
-        velocity.z = velocity.z * 0.8 + _flatFwd.z * gs * 0.2
-      }
     }
 
     velocity.addScaledVector(_force, dt / mass)
 
-    // Rolling resistance (light)
+    // Second sideslip pass after forces so thrust/lift don't reintroduce skate
+    if (!onGround && velocity.lengthSq() > 1) {
+      _forward.set(0, 0, 1).applyQuaternion(orientation)
+      _right.set(1, 0, 0).applyQuaternion(orientation)
+      _up.set(0, 1, 0).applyQuaternion(orientation)
+      const f = velocity.dot(_forward)
+      const r = velocity.dot(_right) * Math.exp(-C.sideslipDamp * dt)
+      const u = velocity.dot(_up)
+      velocity.set(0, 0, 0)
+      velocity.addScaledVector(_forward, f)
+      velocity.addScaledVector(_right, r)
+      velocity.addScaledVector(_up, u)
+    }
+
     if (onGround) {
       const gs = Math.hypot(velocity.x, velocity.z)
       if (gs > 0.08) {
@@ -158,20 +203,16 @@ export class FlightModel {
       if (velocity.y < 0) velocity.y = 0
     }
 
-    // --- Arcade takeoff assist ---
-    // Hold W with enough speed: pop the nose and climb off the runway
+    // Takeoff assist
     const wantRotate = controls.pitch > 0.25 && groundSpeed >= C.rotateSpeed * 0.85
     if (onGround && wantRotate) {
-      // Ensure positive climb
       velocity.y = Math.max(velocity.y, C.rotateClimb * Math.min(1, controls.pitch))
-      // Nudge off the pad so we are not re-clamped forever
       position.y = Math.max(position.y, minY + 0.35)
       onGround = false
     }
 
     position.addScaledVector(velocity, dt)
 
-    // Ground contact (only when not climbing out)
     if (position.y < minY) {
       position.y = minY
       if (velocity.y < 0) velocity.y = 0

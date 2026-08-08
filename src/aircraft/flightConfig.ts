@@ -5,7 +5,6 @@
 export const flightConfig = {
   mass: 10_000,
 
-  /** Max thrust at full throttle (N) - strong for easy takeoff. */
   maxThrust: 320_000,
   boostThrustMul: 1.55,
 
@@ -25,16 +24,19 @@ export const flightConfig = {
   stallAoA: 0.38,
   stallPitchDown: 0.9,
 
-  /** Aircraft origin height above y=0 with gear down. */
+  /**
+   * How hard velocity tracks the nose (1/s).
+   * High = you go where you point; low = ice-skate / sideways slide.
+   */
+  velocityFollow: 4.5,
+  /** Extra kill on body-right (sideslip) velocity (1/s). */
+  sideslipDamp: 6,
+
   gearHeight: 1.4,
   bellyHeight: 0.95,
 
-  /** Ground speed (m/s) to allow rotate / liftoff assist. */
   rotateSpeed: 22,
-  /** Mild rolling resistance (m/s^2). */
   rollingDecel: 0.6,
-
-  /** Climb rate added when rotating for takeoff (m/s). */
   rotateClimb: 8,
 
   crashVy: -14,
