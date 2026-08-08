@@ -16,7 +16,7 @@ export const flightConfig = {
 
   pitchRate: 1.65,
   rollRate: 2.6,
-  yawRate: 0.9,
+  yawRate: 1.15,
 
   angularResponse: 8,
   angularDamping: 2.5,
@@ -25,12 +25,13 @@ export const flightConfig = {
   stallPitchDown: 0.9,
 
   /**
-   * How hard velocity tracks the nose (1/s).
-   * High = you go where you point; low = ice-skate / sideways slide.
+   * How fast airspeed direction snaps to the nose (1/s).
+   * Higher = turn keys immediately change where you go.
    */
-  velocityFollow: 4.5,
-  /** Extra kill on body-right (sideslip) velocity (1/s). */
-  sideslipDamp: 6,
+  velocityFollow: 10,
+
+  /** Banked-turn strength: how hard roll tilts the path (arcade). */
+  bankTurn: 1.35,
 
   gearHeight: 1.4,
   bellyHeight: 0.95,
