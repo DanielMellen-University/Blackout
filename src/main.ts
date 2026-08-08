@@ -11,6 +11,7 @@ import { suppressBrowserUi } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
 import { HUD } from './ui/HUD'
+import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 
 async function boot(): Promise<void> {
@@ -100,7 +101,11 @@ async function boot(): Promise<void> {
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
 
-    const alt = Math.max(0, aircraft.position.y - 1.4)
+    const alt = altitudeAgl(
+      aircraft.position.x,
+      aircraft.position.y,
+      aircraft.position.z,
+    )
     hud.update({
       x: aircraft.position.x,
       y: alt,

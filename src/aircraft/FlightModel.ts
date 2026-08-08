@@ -1,4 +1,5 @@
 import { MathUtils, Quaternion, Vector3 } from 'three'
+import { contactMinY } from '../world/ground'
 import type { Aircraft } from './Aircraft'
 import { flightConfig as C } from './flightConfig'
 
@@ -31,7 +32,8 @@ export class FlightModel {
 
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
     const mass = C.mass
-    const minY = controls.gearDown ? C.gearHeight : C.bellyHeight
+    // Shared ground query: surface Y + gear/belly clearance
+    const minY = contactMinY(position.x, position.z, controls.gearDown)
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
     let onGround = position.y <= minY + 0.15 && velocity.y < 2
 
@@ -271,7 +273,11 @@ export class FlightModel {
   }
 
   isOnGround(aircraft: Aircraft): boolean {
-    const minY = aircraft.controls.gearDown ? C.gearHeight : C.bellyHeight
+    const minY = contactMinY(
+      aircraft.position.x,
+      aircraft.position.z,
+      aircraft.controls.gearDown,
+    )
     return aircraft.position.y <= minY + 0.2 && aircraft.velocity.y < 1.5
   }
 

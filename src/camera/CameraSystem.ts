@@ -5,6 +5,7 @@ import {
   CAMERA_MODES,
   type CameraMode,
 } from '../core/types'
+import { cameraMinY } from '../world/ground'
 
 const _offsetWorld = new Vector3()
 const _look = new Vector3()
@@ -118,7 +119,7 @@ export class CameraSystem {
   readonly camera: PerspectiveCamera
   mode: CameraMode = 'chase'
 
-  groundY = 0
+  /** Extra clearance above ground surface for the lens (meters). */
   groundClearance = 1.15
 
   /** Orbit yaw relative to aircraft heading (chase) or world (orbit). */
@@ -348,7 +349,8 @@ export class CameraSystem {
     desired: Vector3,
     out: Vector3,
   ): void {
-    const minY = this.groundY + this.groundClearance
+    // Shared ground query under the desired camera XY
+    const minY = cameraMinY(desired.x, desired.z, this.groundClearance)
     out.copy(desired)
 
     if (pivot.y >= minY && desired.y >= minY) {
@@ -379,12 +381,13 @@ export class CameraSystem {
     if (sep < minSep && sep > 1e-6) {
       _toCam.multiplyScalar(minSep / sep)
       out.copy(pivot).add(_toCam)
-      if (out.y < minY) out.y = minY
+      const floor = cameraMinY(out.x, out.z, this.groundClearance)
+      if (out.y < floor) out.y = floor
     }
   }
 
   private clampAboveGround(pos: Vector3): void {
-    const minY = this.groundY + this.groundClearance
+    const minY = cameraMinY(pos.x, pos.z, this.groundClearance)
     if (pos.y < minY) pos.y = minY
   }
 
