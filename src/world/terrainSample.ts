@@ -127,7 +127,7 @@ function mountainBelt(x: number, z: number): number {
 
 /**
  * High-relief land height (meters).
- * Typical plains 5–40, hills 40–140, mountain ranges 150–550+, peaks to ~700.
+ * Plains/hills as before; mountain ranges often 300–900 m, big peaks ~1000–1400 m.
  */
 function landElevation(x: number, z: number, land: number): number {
   const [wx, wz] = warp(x, z)
@@ -150,16 +150,23 @@ function landElevation(x: number, z: number, land: number): number {
   const miniRidge = ridged(wx * 0.0009 + 40, wz * 0.0009 - 15, 3)
   const ridges = smoothstep(0.5, 0.82, miniRidge) * 75
 
-  // Major mountain chain
+  // Major mountain chain — ~2x prior peak scale, multi-octave jaggedness
   const belt = mountainBelt(x, z)
-  const foothills = belt * 120
-  const peakNoise = ridged(wx * 0.0009, wz * 0.0009, 4)
-  // Peaks scale hard with belt: full range ~250–700 m above base
-  const peaks = Math.pow(belt, 1.35) * (220 + peakNoise * 380)
+  const foothills = belt * 200
+  // Layered peak noise: main crest + secondary summits + cliff/saddle mix
+  const crest = ridged(wx * 0.00075, wz * 0.00075, 5)
+  const summits = ridged(wx * 0.0018 + 12, wz * 0.0018 - 8, 4)
+  const crags = ridged(wx * 0.0045 - 5, wz * 0.0045 + 3, 3)
+  const saddle = fbm(wx * 0.0012 + 90, wz * 0.0012, 3) // dips between peaks
+  const peakBody =
+    crest * 0.55 + summits * 0.3 + crags * 0.15 - (saddle - 0.45) * 0.2
+  // Full belt peaks roughly 400–1100 m extra; partial belt = foothill scale
+  const peaks =
+    Math.pow(Math.max(0, belt), 1.2) * (400 + clamp01(peakBody) * 700)
 
   // Occasional deep valleys between high ground
   const basin = fbm(wx * 0.0008 + 100, wz * 0.0008 - 50, 3)
-  const valleys = -smoothstep(0.62, 0.88, basin) * 45
+  const valleys = -smoothstep(0.62, 0.88, basin) * 55
 
   let h =
     18 +
@@ -231,9 +238,9 @@ export function classifyBiome(
   if (features.river > 0.74 && elev < 55) return 'water'
   if (elev < 1.2 && moisture > 0.55) return 'water'
 
-  // High alpine / big peaks
-  if (elev > 280) return 'snow'
-  if (elev > 160) return 'mountain'
+  // High alpine / big peaks (thresholds match taller ranges)
+  if (elev > 520) return 'snow'
+  if (elev > 220) return 'mountain'
 
   if (temperature > 0.58 && moisture < 0.36) {
     if (elev > 40 && elev < 160 && moisture < 0.3) return 'mesa'
@@ -310,14 +317,25 @@ function heightFromFields(
       h = h * 1.05 + (fbm(x * 0.0045, z * 0.0045, 3) - 0.4) * 45
       h += ridged(x * 0.0025, z * 0.0025, 2) * 35
       break
-    case 'mountain':
-      // Jagged major peaks on top of the range base
-      h = h * 1.08 + ridged(x * 0.0012, z * 0.0012, 4) * 140
-      h += ridged(x * 0.0035 + 5, z * 0.0035, 2) * 50
+    case 'mountain': {
+      // Extra jagged massif variation: crests, shoulders, cliff faces
+      const massif = ridged(x * 0.0009, z * 0.0009, 4)
+      const teeth = ridged(x * 0.0028 + 5, z * 0.0028 - 2, 3)
+      const spires = ridged(x * 0.006 + 1, z * 0.006, 2)
+      h =
+        h * 1.12 +
+        massif * 220 +
+        teeth * 140 +
+        spires * 70 +
+        (fbm(x * 0.003, z * 0.003, 2) - 0.5) * 60
       break
-    case 'snow':
-      h = h * 1.1 + ridged(x * 0.001, z * 0.001, 4) * 180
+    }
+    case 'snow': {
+      const massif = ridged(x * 0.0008, z * 0.0008, 4)
+      const teeth = ridged(x * 0.0022 + 3, z * 0.0022, 3)
+      h = h * 1.15 + massif * 280 + teeth * 160 + ridged(x * 0.005, z * 0.005, 2) * 80
       break
+    }
     case 'water':
       h = Math.min(h * 0.12, 0.35)
       break
@@ -449,7 +467,7 @@ export function biomeColor(
       return [rock, rock * 0.97, rock * 0.94]
     }
     case 'snow': {
-      const t = smoothstep(220, 420, height)
+      const t = smoothstep(400, 900, height)
       const c = 0.45 + t * 0.48
       return [c, c, c + 0.02]
     }
