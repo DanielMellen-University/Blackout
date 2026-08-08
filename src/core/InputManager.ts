@@ -3,6 +3,9 @@ import { createDefaultControls, type ControlState } from './types'
 /**
  * Maps keyboard into ControlState for arcade flight.
  * W/S pitch, A/D roll, Q/E yaw, Space boost, Shift/Ctrl throttle, G gear.
+ *
+ * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
+ * every frame so the ENG bar can track live.
  */
 export class InputManager {
   private readonly keys = new Set<string>()
@@ -16,11 +19,13 @@ export class InputManager {
     this.target = target
     target.addEventListener('keydown', this.onKeyDown)
     target.addEventListener('keyup', this.onKeyUp)
+    target.addEventListener('blur', this.onBlur)
   }
 
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown)
     this.target.removeEventListener('keyup', this.onKeyUp)
+    this.target.removeEventListener('blur', this.onBlur)
     this.keys.clear()
   }
 
@@ -30,22 +35,41 @@ export class InputManager {
   }
 
   sampleWithDt(dt: number): ControlState {
+    const step = Math.max(0, Math.min(dt, 0.05))
+
     this.controls.pitch = this.axis('KeyW', 'KeyS')
     // A/D yaw, Q/E roll (inverted: Q roll right, E roll left)
     this.controls.yaw = this.axis('KeyD', 'KeyA')
     this.controls.roll = this.axis('KeyQ', 'KeyE')
     this.controls.boost = this.keys.has('Space')
 
-    // Engine power: Shift min→max, Ctrl (or 1) max→min, hold for continuous spool
+    // Engine power setpoint: hold Shift → rise to 1, hold Ctrl → fall to 0
     const thrRate = 0.4
+    let thr = this.controls.throttle
     if (this.keys.has('Digit1') || this.keys.has('ControlLeft') || this.keys.has('ControlRight')) {
-      this.controls.throttle = Math.max(0, this.controls.throttle - thrRate * dt)
+      thr -= thrRate * step
     }
     if (this.keys.has('Digit2') || this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')) {
-      this.controls.throttle = Math.min(1, this.controls.throttle + thrRate * dt)
+      thr += thrRate * step
     }
+    this.controls.throttle = thr < 0 ? 0 : thr > 1 ? 1 : thr
 
     return this.controls
+  }
+
+  /** Current engine power setpoint 0–1 (same object the HUD samples). */
+  get throttle(): number {
+    return this.controls.throttle
+  }
+
+  /** Sync throttle/gear when the aircraft is reset to the runway. */
+  resetFlightControls(throttle = 0): void {
+    this.controls.throttle = throttle
+    this.controls.boost = false
+    this.controls.pitch = 0
+    this.controls.roll = 0
+    this.controls.yaw = 0
+    this.controls.gearDown = true
   }
 
   consumeCameraToggle(): boolean {
@@ -65,7 +89,17 @@ export class InputManager {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+    if (
+      e.code === 'Space' ||
+      e.code === 'ArrowUp' ||
+      e.code === 'ArrowDown' ||
+      e.code === 'ArrowLeft' ||
+      e.code === 'ArrowRight' ||
+      e.code === 'ShiftLeft' ||
+      e.code === 'ShiftRight' ||
+      e.code === 'ControlLeft' ||
+      e.code === 'ControlRight'
+    ) {
       e.preventDefault()
     }
 
@@ -79,5 +113,9 @@ export class InputManager {
 
   private onKeyUp = (e: KeyboardEvent): void => {
     this.keys.delete(e.code)
+  }
+
+  private onBlur = (): void => {
+    this.keys.clear()
   }
 }

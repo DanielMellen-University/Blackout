@@ -113,25 +113,32 @@ export class HUD {
     }
   }
 
+  /**
+   * Drive ENG bar + % from commanded throttle every frame (Shift/Ctrl spool).
+   * Uses scaleY so the fill tracks the setpoint live without flex % height bugs.
+   */
   private updateEngine(throttle: number, boost: boolean): void {
-    const pct = Math.round(Math.min(1, Math.max(0, throttle)) * 100)
+    const level = Math.min(1, Math.max(0, throttle))
+    const pct = Math.round(level * 100)
     if (this.thrEl) {
       this.thrEl.textContent = `${pct}%`
     }
-    // Vertical bar: fill from bottom (MIN) to top (MAX)
+    // Continuous 0–1: bar and marker follow the live setpoint, not stepped %
     if (this.engFill) {
-      this.engFill.style.height = `${pct}%`
+      this.engFill.style.transform = `scaleY(${level})`
       this.engFill.classList.toggle('boost', boost)
+      this.engFill.setAttribute('aria-valuenow', String(pct))
     }
     if (this.engMarker) {
-      this.engMarker.style.bottom = `${pct}%`
+      this.engMarker.style.bottom = `${level * 100}%`
     }
     if (this.engAb) {
       this.engAb.hidden = !boost
     }
     if (this.engPanel) {
       this.engPanel.classList.toggle('boost', boost)
-      this.engPanel.classList.toggle('spooled', pct >= 95)
+      this.engPanel.classList.toggle('spooled', level >= 0.95)
+      this.engPanel.style.setProperty('--eng-level', String(level))
     }
   }
 

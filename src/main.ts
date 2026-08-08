@@ -69,10 +69,12 @@ async function boot(): Promise<void> {
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
     if (input.consumeReset()) {
       aircraft.reset()
+      input.resetFlightControls(0)
       banner = null
       wasAirborne = false
     }
 
+    // Shared live controls — throttle setpoint updates every frame while Shift/Ctrl held
     aircraft.controls = input.sampleWithDt(dt)
     aircraft.step(dt)
 
