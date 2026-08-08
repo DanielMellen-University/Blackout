@@ -9,6 +9,23 @@ export const RUNWAY_FLAT_INNER = 100
 export const RUNWAY_FLAT_OUTER = 280
 export const SEA_LEVEL = 0
 
+/** Airfield / ops center — terrain is forced flat around this point. */
+let opsX = 0
+let opsZ = 0
+
+export function setOpsCenter(x: number, z: number): void {
+  opsX = x
+  opsZ = z
+}
+
+export function getOpsCenter(): { x: number; z: number } {
+  return { x: opsX, z: opsZ }
+}
+
+function opsDist(x: number, z: number): number {
+  return Math.hypot(x - opsX, z - opsZ)
+}
+
 export type Biome =
   | 'runway'
   | 'plains'
@@ -51,9 +68,9 @@ function warp(x: number, z: number): [number, number] {
   return [wx, wz]
 }
 
-function landAt(wx: number, wz: number, dist: number): number {
-  if (dist < RUNWAY_FLAT_OUTER) {
-    return Math.max(0.92, 1 - dist / (RUNWAY_FLAT_OUTER * 4))
+function landAt(wx: number, wz: number, distFromOps: number): number {
+  if (distFromOps < RUNWAY_FLAT_OUTER) {
+    return Math.max(0.92, 1 - distFromOps / (RUNWAY_FLAT_OUTER * 4))
   }
   const continent = fbm(wx * 0.00032, wz * 0.00032, 3)
   const detail = fbm(wx * 0.0009 + 40, wz * 0.0009 - 20, 2)
@@ -99,7 +116,7 @@ function featuresAt(wx: number, wz: number): TerrainFeatures {
 
 export function sampleLand(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  return landAt(wx, wz, Math.hypot(x, z))
+  return landAt(wx, wz, opsDist(x, z))
 }
 
 export function sampleMoisture(x: number, z: number): number {
@@ -245,7 +262,7 @@ export function classifyBiome(
   land: number,
   distFromOrigin: number,
 ): Biome {
-  if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway'
+  if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway' // dist = ops center
   if (land < 0.42) return 'ocean'
 
   if (features.lake > 0.55 && elev < 55) return 'water'
@@ -278,6 +295,7 @@ function heightFromFieldsW(
   features: TerrainFeatures,
   dist: number,
 ): number {
+  // dist = distance from airfield ops center
   const flatMask = smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
   if (flatMask <= 0) return 0
 
@@ -380,7 +398,7 @@ function heightFromFieldsW(
 }
 
 export function sampleClimate(x: number, z: number): Climate {
-  const dist = Math.hypot(x, z)
+  const dist = opsDist(x, z)
   if (dist < RUNWAY_FLAT_INNER * 0.9) {
     return {
       height: 0,
@@ -424,6 +442,96 @@ export function sampleClimate(x: number, z: number): Climate {
     features,
     coastal: clamp01(coastal),
   }
+}
+
+/** Biomes allowed for airfield spawn (flat / flyable pads). */
+const FLAT_SPAWN_BIOMES: ReadonlySet<Biome> = new Set([
+  'plains',
+  'swamp',
+  'desert',
+  'forest',
+])
+
+export interface FlatSpawn {
+  x: number
+  z: number
+  /** Surface height before ops flatten (usually ~0 after ops set). */
+  y: number
+  yaw: number
+  biome: Biome
+}
+
+/**
+ * Search for a flat spawn candidate. Call AFTER setWorldSeed / randomizeWorldSeed
+ * and BEFORE setOpsCenter so samples see natural terrain (ops still at old center).
+ */
+export function findFlatSpawn(maxRadius = 9000): FlatSpawn {
+  let best: FlatSpawn | null = null
+  let bestScore = -1e9
+
+  // Spiral-ish polar search for a flat pad large enough for a runway
+  for (let ring = 0; ring <= maxRadius; ring += 280) {
+    const steps = ring < 1 ? 1 : Math.min(24, 6 + ((ring / 280) | 0) * 2)
+    for (let i = 0; i < steps; i++) {
+      const ang = (i / steps) * Math.PI * 2 + ring * 0.01
+      const x = Math.cos(ang) * ring
+      const z = Math.sin(ang) * ring
+      const score = scoreFlatPad(x, z)
+      if (score > bestScore) {
+        bestScore = score
+        const c = sampleClimate(x, z)
+        best = {
+          x,
+          z,
+          y: c.height,
+          yaw: ang + Math.PI, // face roughly outward / along search ray
+          biome: c.biome,
+        }
+      }
+      // Good enough early exit
+      if (bestScore > 80) {
+        return best!
+      }
+    }
+  }
+
+  // Fallback: origin plains-ish (ops flatten will fix it)
+  return best ?? { x: 0, z: 0, y: 0, yaw: 0, biome: 'plains' }
+}
+
+/** Higher is better. Negative = reject. */
+function scoreFlatPad(x: number, z: number): number {
+  const c = sampleClimate(x, z)
+  if (!FLAT_SPAWN_BIOMES.has(c.biome)) return -1e6
+  if (c.land < 0.55) return -1e6
+  if (c.features.river > 0.45 || c.features.lake > 0.45) return -1e6
+  if (c.features.ravine > 0.25) return -1e6
+  // Prefer low absolute relief
+  if (c.height > 45) return -1e5
+  if (c.height > 28 && c.biome !== 'plains') return -5e4
+
+  // Slope: check neighbors
+  const d = 40
+  const h0 = c.height
+  const hx = sampleClimate(x + d, z).height
+  const hz = sampleClimate(x, z + d).height
+  const hxm = sampleClimate(x - d, z).height
+  const hzm = sampleClimate(x, z - d).height
+  const slope =
+    (Math.abs(hx - h0) + Math.abs(hz - h0) + Math.abs(hxm - h0) + Math.abs(hzm - h0)) / 4
+  if (slope > 6) return -1e5
+
+  // Prefer plains over other flat biomes
+  let score = 100 - c.height * 0.8 - slope * 8
+  if (c.biome === 'plains') score += 40
+  else if (c.biome === 'forest') score += 10
+  else if (c.biome === 'desert') score += 15
+  else if (c.biome === 'swamp') score += 5
+
+  // Prefer somewhat near origin for shorter first load (optional mild bias)
+  const r = Math.hypot(x, z)
+  score -= r * 0.002
+  return score
 }
 
 export function sampleTerrainHeight(x: number, z: number): number {

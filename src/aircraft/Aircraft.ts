@@ -71,12 +71,19 @@ export class Aircraft {
     }
   }
 
-  reset(): void {
+  /**
+   * Reset to runway. Pass world spawn pose so airfield can move with flat-biome search.
+   */
+  reset(spawn?: { x: number; y: number; z: number; yaw: number }): void {
     const s = flightConfig.spawn
-    this.position.set(s.position.x, s.position.y, s.position.z)
+    const x = spawn?.x ?? s.position.x
+    const y = spawn?.y ?? s.position.y
+    const z = spawn?.z ?? s.position.z
+    const yaw = spawn?.yaw ?? s.yaw
+    this.position.set(x, y, z)
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
-    _spawnQuat.setFromAxisAngle(new Vector3(0, 1, 0), s.yaw)
+    _spawnQuat.setFromAxisAngle(new Vector3(0, 1, 0), yaw)
     this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
     this.controls.gearDown = true

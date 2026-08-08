@@ -35,6 +35,8 @@ async function boot(): Promise<void> {
   const world = new World()
   const aircraft = new Aircraft()
   aircraft.addTo(world.scene)
+  // Place jet on the flat-biome airfield chosen at world reseed
+  aircraft.reset(world.spawn)
   await aircraft.tryLoadModel('/models/f35.glb')
 
   const cameras = new CameraSystem(canvas)
@@ -69,9 +71,9 @@ async function boot(): Promise<void> {
 
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
     if (input.consumeReset()) {
-      // New random world every respawn
+      // New random world + flat-biome airfield each respawn
       world.reseed()
-      aircraft.reset()
+      aircraft.reset(world.spawn)
       input.resetFlightControls(0)
       banner = null
       wasAirborne = false
