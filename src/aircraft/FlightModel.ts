@@ -12,8 +12,9 @@ const _flatFwd = new Vector3()
 const _worldUp = new Vector3(0, 1, 0)
 
 /**
- * Arcade flight model: thrust, gravity, lift/drag, stall lite, rate controls.
- * Body axes: +X right, +Y up, +Z nose.
+ * Arcade flight model.
+ * Body: +X right, +Y up, +Z nose.
+ * Ground roll keeps thrust horizontal; rotate + speed triggers liftoff assist.
  */
 export class FlightModel {
   step(aircraft: Aircraft, dt: number): void {
@@ -22,43 +23,36 @@ export class FlightModel {
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
     const mass = C.mass
     const minY = controls.gearDown ? C.gearHeight : C.bellyHeight
-    let onGround = position.y <= minY + 0.12
-    const speed = velocity.length()
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
+    let onGround = position.y <= minY + 0.15 && velocity.y < 2
 
-    // --- Stick to body rates ---
-    // +pitch (W) = nose up = negative omega.x
+    // --- Rates from stick ---
+    // W (+pitch) = nose up = negative omega.x
     const targetOx = -controls.pitch * C.pitchRate
     const targetOy = -controls.yaw * C.yawRate
     const targetOz = -controls.roll * C.rollRate
 
-    const k = 1 - Math.exp(-C.angularResponse * dt)
-    angularVelocity.x += (targetOx - angularVelocity.x) * k
-    angularVelocity.y += (targetOy - angularVelocity.y) * k
-    angularVelocity.z += (targetOz - angularVelocity.z) * k
+    const blend = 1 - Math.exp(-C.angularResponse * dt)
+    angularVelocity.x += (targetOx - angularVelocity.x) * blend
+    angularVelocity.y += (targetOy - angularVelocity.y) * blend
+    angularVelocity.z += (targetOz - angularVelocity.z) * blend
 
     const stick =
       Math.abs(controls.pitch) + Math.abs(controls.roll) + Math.abs(controls.yaw)
-    if (stick < 0.12) {
+    if (stick < 0.1) {
       angularVelocity.multiplyScalar(Math.exp(-C.angularDamping * dt))
     }
 
     if (onGround) {
-      // Level roll when slow
-      if (groundSpeed < 15) {
-        angularVelocity.z *= 0.2
-      }
-      // Pitch-up only after rotate speed; scale in with groundspeed
-      const rotAllow = Math.min(1, groundSpeed / C.rotateSpeed)
-      if (angularVelocity.x > 0) angularVelocity.x = 0 // no nose-down into pavement
+      // No digging nose into the pavement
+      if (angularVelocity.x > 0) angularVelocity.x = 0
+      // Allow pitch-up earlier (from ~50% rotate speed), scale in
+      const rotAllow = Math.min(1, Math.max(0, (groundSpeed - C.rotateSpeed * 0.4) / (C.rotateSpeed * 0.6)))
       angularVelocity.x *= rotAllow
-      // Keep aircraft from banking into the runway when parked
-      if (groundSpeed < 5) {
-        this.levelWings(orientation, dt)
-      }
+      if (groundSpeed < 12) angularVelocity.z *= 0.25
     }
 
-    // Body-frame angular integration
+    // Integrate attitude (body frame)
     _spin
       .set(
         angularVelocity.x * dt * 0.5,
@@ -67,114 +61,120 @@ export class FlightModel {
         1,
       )
       .normalize()
-    orientation.multiply(_spin)
-    orientation.normalize()
+    orientation.multiply(_spin).normalize()
 
     _forward.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
     _right.set(1, 0, 0).applyQuaternion(orientation)
 
+    const speed = velocity.length()
+
     // AoA
     let aoa = 0
     if (speed > 2) {
-      _velDir.copy(velocity).multiplyScalar(1 / speed)
-      const vf = _velDir.dot(_forward)
-      const vu = _velDir.dot(_up)
-      aoa = Math.atan2(vu, Math.max(0.05, vf))
+      _velDir.copy(velocity).normalize()
+      aoa = Math.atan2(_velDir.dot(_up), Math.max(0.05, _velDir.dot(_forward)))
     }
 
     // --- Forces ---
     _force.set(0, 0, 0)
 
     let thr = Math.max(0, Math.min(1, controls.throttle))
-    if (controls.boost) thr = Math.min(1, thr + 0.4)
-    const thrust = C.maxThrust * thr * (controls.boost ? C.boostThrustMul : 1)
-    _force.addScaledVector(_forward, thrust)
+    if (controls.boost) thr = Math.min(1, thr + 0.45)
+    const thrustN = C.maxThrust * thr * (controls.boost ? C.boostThrustMul : 1)
 
-    // Gravity always
+    // On ground: thrust stays horizontal so we accelerate, not push into dirt
+    if (onGround) {
+      _flatFwd.set(_forward.x, 0, _forward.z)
+      if (_flatFwd.lengthSq() > 1e-6) {
+        _flatFwd.normalize()
+        _force.addScaledVector(_flatFwd, thrustN)
+      }
+    } else {
+      _force.addScaledVector(_forward, thrustN)
+    }
+
+    // Gravity
     _force.y -= mass * C.gravity
-
-    // On ground: normal force cancels gravity so we are not "fighting" into the floor
+    // Normal force while rolling (cancel weight)
     if (onGround) {
       _force.y += mass * C.gravity
     }
 
+    // Aero
     const qDyn = speed * speed
-    const aeroK = 0.0042
-
+    const aeroK = 0.0055
     if (speed > 1) {
-      _velDir.copy(velocity).multiplyScalar(1 / speed)
+      _velDir.copy(velocity).normalize()
 
-      let liftFactor = Math.max(0.05, Math.cos(aoa * 0.85))
+      let liftFactor = Math.max(0.1, Math.cos(aoa * 0.8))
       const aoaAbs = Math.abs(aoa)
       if (aoaAbs > C.stallAoA) {
-        liftFactor *= Math.max(0.12, 1 - (aoaAbs - C.stallAoA) * 2.2)
+        liftFactor *= Math.max(0.15, 1 - (aoaAbs - C.stallAoA) * 2)
         angularVelocity.x += Math.sign(aoa || 1) * C.stallPitchDown * dt
       }
-
-      // Extra lift from pitch attitude when moving (helps rotate off runway)
-      const pitchUp = Math.max(0, _forward.y)
-      liftFactor += pitchUp * 0.35
+      // Attitude helps lift (nose up)
+      liftFactor += Math.max(0, _forward.y) * 0.5
 
       const liftAccel = C.liftCoeff * aeroK * qDyn * liftFactor
-      // Prefer world-up lift contribution when mostly upright so we leave the runway
       if (onGround) {
+        // World-up lift so the jet leaves the runway cleanly
         _force.y += liftAccel * mass
       } else {
         _force.addScaledVector(_up, liftAccel * mass)
       }
 
       let cd = C.dragCoeff + (controls.gearDown ? C.gearDrag : 0)
-      if (aoaAbs > C.stallAoA) cd += 0.025
-      const dragAccel = cd * aeroK * qDyn
-      _force.addScaledVector(_velDir, -dragAccel * mass)
+      if (aoaAbs > C.stallAoA) cd += 0.02
+      _force.addScaledVector(_velDir, -cd * aeroK * qDyn * mass)
     }
 
-    // Ground steering (world yaw)
-    if (onGround && groundSpeed > 0.5 && groundSpeed < 45) {
-      const steer = -controls.yaw * (1.1 + groundSpeed * 0.02) * dt
+    // Ground steering
+    if (onGround && groundSpeed > 0.4 && groundSpeed < 50) {
+      const steer = -controls.yaw * (1.2 + groundSpeed * 0.025) * dt
       orientation.premultiply(_spin.setFromAxisAngle(_worldUp, steer)).normalize()
-      // Align horizontal velocity with nose a bit when steering
       _flatFwd.set(_forward.x, 0, _forward.z)
-      if (_flatFwd.lengthSq() > 1e-4) {
+      if (_flatFwd.lengthSq() > 1e-6) {
         _flatFwd.normalize()
-        const gs = groundSpeed
-        velocity.x = velocity.x * 0.85 + _flatFwd.x * gs * 0.15
-        velocity.z = velocity.z * 0.85 + _flatFwd.z * gs * 0.15
+        const gs = Math.hypot(velocity.x, velocity.z)
+        velocity.x = velocity.x * 0.8 + _flatFwd.x * gs * 0.2
+        velocity.z = velocity.z * 0.8 + _flatFwd.z * gs * 0.2
       }
     }
 
     velocity.addScaledVector(_force, dt / mass)
 
-    // Rolling resistance (linear, not exponential velocity kill)
+    // Rolling resistance (light)
     if (onGround) {
       const gs = Math.hypot(velocity.x, velocity.z)
-      if (gs > 0.05) {
+      if (gs > 0.08) {
         const decel = Math.min(gs, C.rollingDecel * dt)
         velocity.x -= (velocity.x / gs) * decel
         velocity.z -= (velocity.z / gs) * decel
-      } else if (thr < 0.05) {
+      } else if (thr < 0.04) {
         velocity.x = 0
         velocity.z = 0
       }
-      // No sinking
       if (velocity.y < 0) velocity.y = 0
+    }
+
+    // --- Arcade takeoff assist ---
+    // Hold W with enough speed: pop the nose and climb off the runway
+    const wantRotate = controls.pitch > 0.25 && groundSpeed >= C.rotateSpeed * 0.85
+    if (onGround && wantRotate) {
+      // Ensure positive climb
+      velocity.y = Math.max(velocity.y, C.rotateClimb * Math.min(1, controls.pitch))
+      // Nudge off the pad so we are not re-clamped forever
+      position.y = Math.max(position.y, minY + 0.35)
+      onGround = false
     }
 
     position.addScaledVector(velocity, dt)
 
-    // Contact resolve: only pin to ground if not lifting off
-    const liftOff =
-      velocity.y > 0.5 || (onGround && _forward.y > 0.08 && groundSpeed > C.rotateSpeed * 0.85)
-
+    // Ground contact (only when not climbing out)
     if (position.y < minY) {
       position.y = minY
-      if (!liftOff && velocity.y < 0) velocity.y = 0
-    }
-
-    // If we have clear upward speed and pitch, allow leaving the pad
-    if (position.y <= minY + 0.05 && velocity.y > 1.5 && groundSpeed > C.rotateSpeed * 0.7) {
-      position.y = minY + 0.2
+      if (velocity.y < 0) velocity.y = 0
     }
 
     aircraft.syncMesh()
@@ -182,27 +182,6 @@ export class FlightModel {
 
   isOnGround(aircraft: Aircraft): boolean {
     const minY = aircraft.controls.gearDown ? C.gearHeight : C.bellyHeight
-    return aircraft.position.y <= minY + 0.15 && aircraft.velocity.y <= 1.2
-  }
-
-  /** Softly level roll (and slight pitch) when parked. */
-  private levelWings(orientation: Quaternion, dt: number): void {
-    _up.set(0, 1, 0).applyQuaternion(orientation)
-    // If nearly upright, slerp toward identity yaw-preserving level
-    if (_up.y > 0.85) {
-      _forward.set(0, 0, 1).applyQuaternion(orientation)
-      _flatFwd.set(_forward.x, 0, _forward.z)
-      if (_flatFwd.lengthSq() < 1e-4) return
-      _flatFwd.normalize()
-      // Build level orientation looking along flat forward
-      const level = _spin // reuse
-      // lookAt style: open a matrix - simpler slerp to flatten pitch/roll
-      const flatten = 1 - Math.exp(-4 * dt)
-      // Extract and damp pitch/roll by slerping up toward world up in orientation
-      _right.set(1, 0, 0).applyQuaternion(orientation)
-      // Small corrective roll/pitch rates handled by zeroing omega already
-      void level
-      void flatten
-    }
+    return aircraft.position.y <= minY + 0.2 && aircraft.velocity.y < 1.5
   }
 }
