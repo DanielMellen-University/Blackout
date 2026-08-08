@@ -22,9 +22,9 @@ export const flightConfig = {
   maxSpeedBoost: 218,
 
   /** Peak forward acceleration from thrust (m/s^2), after mass. Lower = slower spool-up. */
-  maxAccel: 16,
+  maxAccel: 24,
   /** Peak speed bleed from drag/brakes feel (m/s^2 scale). Lower = slower bleed-off. */
-  maxDecel: 11,
+  maxDecel: 16.5,
 
   liftPerSpeed: 0.125,
   maxLiftAccel: 28,
