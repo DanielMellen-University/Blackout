@@ -113,55 +113,96 @@ export function sampleLake(x: number, z: number): number {
   return smoothstep(0.72, 0.88, fbm(wx * 0.0011 + 200, wz * 0.0011 - 90, 4))
 }
 
-/** Long continuous ranges: low-frequency spine, wider soft belt. */
+/**
+ * Long mountain ranges. Soft wide belt so you fly along a real chain,
+ * not isolated spikes.
+ */
 function mountainBelt(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  const spine = ridged(wx * 0.00028 - 2, wz * 0.00028 + 6, 4)
-  const gate = fbm(wx * 0.00018 + 70, wz * 0.00018 - 30, 3)
-  return smoothstep(0.52, 0.78, spine) * smoothstep(0.42, 0.68, gate)
+  const spine = ridged(wx * 0.00024 - 2, wz * 0.00024 + 6, 5)
+  const gate = fbm(wx * 0.00015 + 70, wz * 0.00015 - 30, 3)
+  // Wider range footprint
+  return smoothstep(0.42, 0.72, spine) * smoothstep(0.35, 0.62, gate)
 }
 
+/**
+ * High-relief land height (meters).
+ * Typical plains 5–40, hills 40–140, mountain ranges 150–550+, peaks to ~700.
+ */
 function landElevation(x: number, z: number, land: number): number {
   const [wx, wz] = warp(x, z)
-  const shelf = 12 + (fbm(wx * 0.0005, wz * 0.0005, 4) - 0.35) * 34
-  const roll = (fbm(wx * 0.0022 + 11, wz * 0.0022 - 7, 3) - 0.5) * 22
-  const detail = (fbm(wx * 0.012, wz * 0.012, 2) - 0.5) * 4
-  const hillN = fbm(wx * 0.0028 + 20, wz * 0.0028, 2)
-  const hills = smoothstep(0.54, 0.8, hillN) * 30
 
+  // Continental undulation: broad valleys and high ground
+  const continental = (fbm(wx * 0.00035, wz * 0.00035, 5) - 0.32) * 95
+
+  // Multi-scale rolling relief (always some height change)
+  const rollA = (fbm(wx * 0.0011 + 11, wz * 0.0011 - 7, 4) - 0.48) * 48
+  const rollB = (fbm(wx * 0.0035 - 3, wz * 0.0035 + 9, 3) - 0.5) * 28
+  const detail = (fbm(wx * 0.014, wz * 0.014, 2) - 0.5) * 8
+
+  // Hill country: common mid-elevation mounds (not rare)
+  const hillN = fbm(wx * 0.0016 + 20, wz * 0.0016, 4)
+  const hills =
+    smoothstep(0.38, 0.72, hillN) * 55 +
+    smoothstep(0.55, 0.85, hillN) * 50
+
+  // Secondary ridgelines (foothill / highland spines)
+  const miniRidge = ridged(wx * 0.0009 + 40, wz * 0.0009 - 15, 3)
+  const ridges = smoothstep(0.5, 0.82, miniRidge) * 75
+
+  // Major mountain chain
   const belt = mountainBelt(x, z)
-  const foothills = belt * 55
-  const peaks = belt * belt * (120 + ridged(wx * 0.0011, wz * 0.0011, 3) * 160)
+  const foothills = belt * 120
+  const peakNoise = ridged(wx * 0.0009, wz * 0.0009, 4)
+  // Peaks scale hard with belt: full range ~250–700 m above base
+  const peaks = Math.pow(belt, 1.35) * (220 + peakNoise * 380)
 
-  let h = shelf + roll + detail + hills + foothills + peaks
-  h *= smoothstep(0.35, 0.75, land)
+  // Occasional deep valleys between high ground
+  const basin = fbm(wx * 0.0008 + 100, wz * 0.0008 - 50, 3)
+  const valleys = -smoothstep(0.62, 0.88, basin) * 45
+
+  let h =
+    18 +
+    continental +
+    rollA +
+    rollB +
+    detail +
+    hills +
+    ridges +
+    foothills +
+    peaks +
+    valleys
+
+  h *= smoothstep(0.32, 0.78, land)
   return Math.max(h, 0.5)
 }
 
 function sampleCanyon(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  return smoothstep(0.6, 0.88, ridged(wx * 0.0022 + 200, wz * 0.0022 - 100, 2))
+  return smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 3))
 }
 
 function mesaHeight(base: number, x: number, z: number): number {
   const [wx, wz] = warp(x, z)
   const stepNoise = fbm(wx * 0.0012, wz * 0.0012, 2)
-  const stepH = 14 + stepNoise * 16
-  const plateau = Math.floor(Math.max(8, base + 18) / stepH) * stepH
-  const edge = ridged(wx * 0.004, wz * 0.004, 2)
-  const cliff = smoothstep(0.4, 0.75, edge)
-  const top = plateau + 5 + (fbm(wx * 0.014, wz * 0.014, 2) - 0.5) * 2
-  const wall = base * 0.4
-  return wall + (top - wall) * (1 - cliff * 0.8)
+  const stepH = 22 + stepNoise * 28
+  const plateau = Math.floor(Math.max(15, base + 40) / stepH) * stepH
+  const edge = ridged(wx * 0.0035, wz * 0.0035, 2)
+  const cliff = smoothstep(0.35, 0.72, edge)
+  const top = plateau + 10 + (fbm(wx * 0.014, wz * 0.014, 2) - 0.5) * 4
+  const wall = base * 0.45
+  return wall + (top - wall) * (1 - cliff * 0.85)
 }
 
 function duneHeight(base: number, x: number, z: number): number {
   const [wx, wz] = warp(x, z)
   const dunes =
-    Math.sin(wx * 0.016 + fbm(wx * 0.004, wz * 0.004, 2) * 3) *
-    Math.cos(wz * 0.012) *
-    6
-  return Math.max(2, base * 0.55 + 8 + dunes)
+    Math.sin(wx * 0.014 + fbm(wx * 0.0035, wz * 0.0035, 2) * 3.5) *
+    Math.cos(wz * 0.011) *
+    12
+  const mega =
+    Math.sin(wx * 0.004 + wz * 0.003) * 8 * fbm(wx * 0.001, wz * 0.001, 2)
+  return Math.max(3, base * 0.65 + 14 + dunes + mega)
 }
 
 export function sampleFeatures(x: number, z: number): TerrainFeatures {
@@ -185,22 +226,24 @@ export function classifyBiome(
   if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway'
   if (land < 0.42) return 'ocean'
 
-  if (features.lake > 0.55 && elev < 45) return 'water'
-  if (features.pond > 0.72 && elev < 35) return 'water'
-  if (features.river > 0.74 && elev < 45) return 'water'
+  if (features.lake > 0.55 && elev < 55) return 'water'
+  if (features.pond > 0.72 && elev < 40) return 'water'
+  if (features.river > 0.74 && elev < 55) return 'water'
   if (elev < 1.2 && moisture > 0.55) return 'water'
 
-  if (elev > 155) return 'snow'
-  if (elev > 100) return 'mountain'
+  // High alpine / big peaks
+  if (elev > 280) return 'snow'
+  if (elev > 160) return 'mountain'
 
   if (temperature > 0.58 && moisture < 0.36) {
-    if (elev > 32 && elev < 90 && moisture < 0.3) return 'mesa'
+    if (elev > 40 && elev < 160 && moisture < 0.3) return 'mesa'
     return 'desert'
   }
-  if (temperature > 0.52 && moisture > 0.62 && elev < 70) return 'rainforest'
-  if (moisture > 0.58 && elev < 22 && temperature < 0.58) return 'swamp'
-  if (moisture > 0.46 && elev < 75 && temperature > 0.28) return 'forest'
-  if (elev > 40 && elev <= 100) return 'hills'
+  if (temperature > 0.52 && moisture > 0.62 && elev < 100) return 'rainforest'
+  if (moisture > 0.58 && elev < 30 && temperature < 0.58) return 'swamp'
+  if (moisture > 0.46 && elev < 110 && temperature > 0.28) return 'forest'
+  // Rolling / highland hills (common mid band)
+  if (elev > 45 && elev <= 160) return 'hills'
   return 'plains'
 }
 
@@ -222,15 +265,17 @@ function heightFromFields(
   }
 
   let base = landElevation(x, z, land)
-  base += (0.5 - moisture) * 6
-  base += (temperature - 0.5) * 4
+  // Mild climate bias, keep strong relief
+  base += (0.5 - moisture) * 10
+  base += (temperature - 0.5) * 6
   let h = base
 
+  // Deeper lake/pond bowls so basins read against hills
   if (features.lake > 0.35 && moisture > 0.35) {
-    h -= features.lake * features.lake * (14 + Math.max(0, h) * 0.15)
+    h -= features.lake * features.lake * (22 + Math.max(0, h) * 0.22)
   }
   if (features.pond > 0.55) {
-    h -= features.pond * features.pond * 10
+    h -= features.pond * features.pond * 16
   }
 
   const rough = classifyBiome(h, moisture, temperature, features, land, dist)
@@ -240,48 +285,55 @@ function heightFromFields(
       h = SEA_LEVEL - 0.4
       break
     case 'desert':
-      h = duneHeight(Math.max(h, base * 0.5), x, z) - sampleCanyon(x, z) * 24
+      h = duneHeight(Math.max(h, base * 0.55), x, z) - sampleCanyon(x, z) * 40
       break
     case 'mesa':
-      h = mesaHeight(Math.max(h, base * 0.5), x, z) - sampleCanyon(x, z) * 30
+      h = mesaHeight(Math.max(h, base * 0.6), x, z) - sampleCanyon(x, z) * 48
       break
     case 'swamp':
-      h = Math.min(h * 0.35, 5) + (fbm(x * 0.012, z * 0.012, 2) - 0.5) * 1.2
+      // Low but not pancake-flat
+      h = Math.min(h * 0.4, 12) + (fbm(x * 0.01, z * 0.01, 2) - 0.5) * 3
       h = Math.max(h, 0.25)
       break
     case 'plains':
-      h = Math.max(1, h * 0.55 + (fbm(x * 0.0035, z * 0.0035, 2) - 0.5) * 9)
+      // Keep more of the base relief so plains still roll
+      h = Math.max(1, h * 0.72 + (fbm(x * 0.003, z * 0.003, 3) - 0.5) * 18)
       break
     case 'forest':
-      h = h * 0.65 + (fbm(x * 0.004, z * 0.004, 2) - 0.5) * 14
+      h = h * 0.85 + (fbm(x * 0.0035, z * 0.0035, 3) - 0.5) * 24
       break
     case 'rainforest':
-      h = h * 0.6 + (fbm(x * 0.0045, z * 0.0045, 2) - 0.5) * 16
+      h = h * 0.8 + (fbm(x * 0.004, z * 0.004, 3) - 0.5) * 28
       break
     case 'hills':
-      h = h * 0.9 + (fbm(x * 0.0055, z * 0.0055, 2) - 0.45) * 26
+      // Amplify rolling high ground
+      h = h * 1.05 + (fbm(x * 0.0045, z * 0.0045, 3) - 0.4) * 45
+      h += ridged(x * 0.0025, z * 0.0025, 2) * 35
       break
     case 'mountain':
-      h = h + ridged(x * 0.0015, z * 0.0015, 3) * 70
+      // Jagged major peaks on top of the range base
+      h = h * 1.08 + ridged(x * 0.0012, z * 0.0012, 4) * 140
+      h += ridged(x * 0.0035 + 5, z * 0.0035, 2) * 50
       break
     case 'snow':
-      h = h + ridged(x * 0.0012, z * 0.0012, 3) * 90
+      h = h * 1.1 + ridged(x * 0.001, z * 0.001, 4) * 180
       break
     case 'water':
-      h = Math.min(h * 0.15, 0.35)
+      h = Math.min(h * 0.12, 0.35)
       break
     default:
       break
   }
 
   if (features.river > 0.12 && rough !== 'snow' && rough !== 'ocean') {
-    h -= features.river * features.river * (16 + Math.max(0, h) * 0.12)
+    h -= features.river * features.river * (22 + Math.max(0, h) * 0.14)
   }
   if (features.stream > 0.35 && rough !== 'ocean' && rough !== 'desert') {
-    h -= features.stream * features.stream * 5
+    h -= features.stream * features.stream * 8
   }
-  if (features.ravine > 0.2 && rough !== 'ocean') {
-    h -= features.ravine * features.ravine * (35 + Math.max(0, h) * 0.35)
+  // Deep ravines for vertical drama
+  if (features.ravine > 0.18 && rough !== 'ocean') {
+    h -= features.ravine * features.ravine * (55 + Math.max(0, h) * 0.4)
   }
 
   if (
@@ -397,7 +449,7 @@ export function biomeColor(
       return [rock, rock * 0.97, rock * 0.94]
     }
     case 'snow': {
-      const t = smoothstep(100, 180, height)
+      const t = smoothstep(220, 420, height)
       const c = 0.45 + t * 0.48
       return [c, c, c + 0.02]
     }
