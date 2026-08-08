@@ -38,11 +38,9 @@ export class World {
   reseed(force = false): number {
     this.seed = randomizeWorldSeed()
     this.terrain.clearAll()
+    // Queue chunks around origin; they build over subsequent frames (no hitch)
     this.terrain.update(0, 0)
-    if (force) {
-      // ensure seed field tracks noise module
-      this.seed = getWorldSeed()
-    }
+    if (force) this.seed = getWorldSeed()
     return this.seed
   }
 

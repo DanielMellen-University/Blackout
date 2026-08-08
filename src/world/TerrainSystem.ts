@@ -20,19 +20,17 @@ import { biomeColor, sampleClimate, type Biome } from './terrainSample'
 
 /**
  * Streaming envelope.
- * Fog far is well inside the stream radius so chunks fade out before unload
- * (no hard pop-in/out at the horizon).
+ * Fog fully covers the stream edge; chunk builds are budgeted per frame
+ * so crossing a cell boundary never freezes the main thread.
  */
-export const CHUNK_SIZE = 420
-/** Chunks loaded around the player (radius). ~5.9 km. */
-export const VIEW_RADIUS = 14
-/** Props only in near ring (performance); outer ring is mesh-only. */
-const PROP_RADIUS = 7
-const CHUNK_SEGS = 24
-/** Linear fog: start soft haze, fully fogged before stream edge. */
-export const FOG_NEAR = 1600
-export const FOG_FAR = 5600
-/** Stream radius in meters (for docs / camera). */
+export const CHUNK_SIZE = 400
+export const VIEW_RADIUS = 12
+const PROP_RADIUS = 5
+const CHUNK_SEGS = 16
+/** Max chunk builds per frame (props count as heavier). */
+const BUILDS_PER_FRAME = 2
+export const FOG_NEAR = 1400
+export const FOG_FAR = 4800
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 
 const _pos = new Vector3()
@@ -48,15 +46,26 @@ interface Chunk {
   root: Group
 }
 
+interface PendingChunk {
+  cx: number
+  cz: number
+  withProps: boolean
+  dist: number
+}
+
 /**
- * Infinite streaming terrain: large biomes, height variation, soft fog horizon.
+ * Infinite streaming terrain with amortized chunk generation.
  */
 export class TerrainSystem {
   readonly root = new Group()
   private readonly chunks = new Map<string, Chunk>()
+  private readonly pending: PendingChunk[] = []
+  private readonly pendingKeys = new Set<string>()
   private readonly scene: Scene
   private lastCx = Number.NaN
   private lastCz = Number.NaN
+  private focusX = 0
+  private focusZ = 0
 
   private readonly groundMat: MeshStandardMaterial
   private readonly trunkMat: MeshStandardMaterial
@@ -158,39 +167,47 @@ export class TerrainSystem {
     this.applyFog()
   }
 
-  /**
-   * Soft atmospheric fog: terrain is fully fogged before the stream edge,
-   * so chunks never visibly pop in or out.
-   */
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {
     const fogColor = 0x8eabc4
     this.scene.background = new Color(fogColor)
     this.scene.fog = new Fog(fogColor, near, far)
   }
 
-  /** Drop every chunk (call after world seed changes). */
   clearAll(): void {
     for (const chunk of this.chunks.values()) {
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
     }
     this.chunks.clear()
+    this.pending.length = 0
+    this.pendingKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
   }
 
   /**
-   * Stream chunks around world position. Cheap when cell unchanged.
+   * Call every frame. Schedules needed chunks when the cell changes,
+   * then builds a small budget so freefall never freezes.
    */
   update(worldX: number, worldZ: number): void {
+    this.focusX = worldX
+    this.focusZ = worldZ
     const cx = Math.floor(worldX / CHUNK_SIZE)
     const cz = Math.floor(worldZ / CHUNK_SIZE)
-    if (cx === this.lastCx && cz === this.lastCz) return
-    this.lastCx = cx
-    this.lastCz = cz
 
+    if (cx !== this.lastCx || cz !== this.lastCz) {
+      this.lastCx = cx
+      this.lastCz = cz
+      this.scheduleAround(cx, cz)
+    }
+
+    this.drainBuildQueue()
+  }
+
+  private scheduleAround(cx: number, cz: number): void {
     const needed = new Set<string>()
     const r2 = VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS
+
     for (let dz = -VIEW_RADIUS; dz <= VIEW_RADIUS; dz++) {
       for (let dx = -VIEW_RADIUS; dx <= VIEW_RADIUS; dx++) {
         if (dx * dx + dz * dz > r2) continue
@@ -198,19 +215,60 @@ export class TerrainSystem {
         const kz = cz + dz
         const key = `${kx},${kz}`
         needed.add(key)
-        if (!this.chunks.has(key)) {
+        if (!this.chunks.has(key) && !this.pendingKeys.has(key)) {
           const dist = Math.hypot(dx, dz)
-          this.chunks.set(key, this.buildChunk(kx, kz, dist <= PROP_RADIUS))
+          this.pending.push({
+            cx: kx,
+            cz: kz,
+            withProps: dist <= PROP_RADIUS,
+            dist,
+          })
+          this.pendingKeys.add(key)
         }
       }
     }
 
+    // Near chunks first so the player always has ground under them
+    this.pending.sort((a, b) => a.dist - b.dist)
+
+    // Drop far chunks immediately (cheap)
     for (const [key, chunk] of this.chunks) {
       if (!needed.has(key)) {
         this.root.remove(chunk.root)
         this.disposeChunk(chunk)
         this.chunks.delete(key)
       }
+    }
+
+    // Drop pending that left the ring
+    for (let i = this.pending.length - 1; i >= 0; i--) {
+      const p = this.pending[i]!
+      const key = `${p.cx},${p.cz}`
+      if (!needed.has(key)) {
+        this.pending.splice(i, 1)
+        this.pendingKeys.delete(key)
+      }
+    }
+  }
+
+  private drainBuildQueue(): void {
+    let built = 0
+    while (built < BUILDS_PER_FRAME && this.pending.length > 0) {
+      const job = this.pending.shift()!
+      const key = `${job.cx},${job.cz}`
+      this.pendingKeys.delete(key)
+      if (this.chunks.has(key)) continue
+
+      // Skip if player already left this far behind
+      const pcx = Math.floor(this.focusX / CHUNK_SIZE)
+      const pcz = Math.floor(this.focusZ / CHUNK_SIZE)
+      const ddx = job.cx - pcx
+      const ddz = job.cz - pcz
+      if (ddx * ddx + ddz * ddz > VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS) continue
+
+      this.chunks.set(key, this.buildChunk(job.cx, job.cz, job.withProps))
+      // Prop chunks cost more; count as full budget after one
+      built += job.withProps ? BUILDS_PER_FRAME : 1
     }
   }
 
@@ -233,16 +291,15 @@ export class TerrainSystem {
 
     const pos = geo.attributes.position as BufferAttribute
     const colors = new Float32Array(pos.count * 3)
+    const half = CHUNK_SIZE * 0.5
 
     for (let i = 0; i < pos.count; i++) {
-      const lx = pos.getX(i)
-      const lz = pos.getZ(i)
-      const wx = originX + CHUNK_SIZE * 0.5 + lx
-      const wz = originZ + CHUNK_SIZE * 0.5 + lz
+      const wx = originX + half + pos.getX(i)
+      const wz = originZ + half + pos.getZ(i)
+      // One climate sample per vertex (height + biome + color)
       const climate = sampleClimate(wx, wz)
       let h = climate.height
       if (climate.biome === 'water') h = Math.min(h, 0.35)
-      // Ocean: flat sea surface so it reads as water, not terrain mesh spikes
       if (climate.biome === 'ocean') h = 0
       pos.setY(i, h)
       const [r, g, b] = biomeColor(
@@ -262,7 +319,7 @@ export class TerrainSystem {
     geo.computeVertexNormals()
 
     const mesh = new Mesh(geo, this.groundMat)
-    mesh.position.set(originX + CHUNK_SIZE * 0.5, 0, originZ + CHUNK_SIZE * 0.5)
+    mesh.position.set(originX + half, 0, originZ + half)
     mesh.receiveShadow = true
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
@@ -273,11 +330,11 @@ export class TerrainSystem {
     const group = new Group()
     group.name = 'Props'
 
-    const maxTrees = 56
-    const maxRF = 40
-    const maxRocks = 22
-    const maxCactus = 28
-    const maxReed = 36
+    const maxTrees = 36
+    const maxRF = 24
+    const maxRocks = 14
+    const maxCactus = 18
+    const maxReed = 22
 
     const trunks = new InstancedMesh(this.trunkGeo, this.trunkMat, maxTrees + maxRF)
     const foliage = this.leafMats.map(
@@ -302,8 +359,8 @@ export class TerrainSystem {
     ]
     for (const m of allMeshes) {
       m.instanceMatrix.setUsage(DynamicDrawUsage)
-      m.castShadow = true
-      m.receiveShadow = true
+      m.castShadow = false
+      m.receiveShadow = false
       m.count = 0
     }
 
@@ -314,7 +371,7 @@ export class TerrainSystem {
     let ci = 0
     let rdi = 0
 
-    const samples = 130
+    const samples = 72
     for (let i = 0; i < samples; i++) {
       const u = hash2(cx * 31 + i, cz * 17 + i * 3)
       const v = hash2(cz * 13 + i * 7, cx * 19 - i)
@@ -341,7 +398,7 @@ export class TerrainSystem {
       switch (climate.biome) {
         case 'rainforest':
           if (rfi < maxRF) {
-            const s = 1.4 + hash2(i, 9) * 2.2
+            const s = 1.4 + hash2(i, 9) * 2.0
             placeSimpleTree(trunks, ti + rfi, wx, h, wz, s, rot)
             _pos.set(wx, h + s * 0.5 + s * 2.1, wz)
             _quat.setFromAxisAngle(_Y, rot)
@@ -355,36 +412,36 @@ export class TerrainSystem {
         case 'plains':
         case 'hills':
           if (ti < maxTrees) {
-            const s = 0.75 + hash2(i, 9) * 1.7
+            const s = 0.75 + hash2(i, 9) * 1.6
             placeTree(trunks, foliage, snowTrees, false, ti, wx, h, wz, s, rot)
             ti++
           }
           break
         case 'swamp':
           if (rdi < maxReed) {
-            const s = 0.9 + hash2(i, 8) * 1.4
+            const s = 0.9 + hash2(i, 8) * 1.3
             _pos.set(wx, h + s * 1.0, wz)
             _quat.setFromAxisAngle(_Y, rot)
             _scale.set(s * 0.5, s, s * 0.5)
             _mat.compose(_pos, _quat, _scale)
             reeds.setMatrixAt(rdi, _mat)
             rdi++
-          } else if (ti < maxTrees && hash2(i, 4) > 0.6) {
-            const s = 0.55 + hash2(i, 9) * 1.0
+          } else if (ti < maxTrees && hash2(i, 4) > 0.65) {
+            const s = 0.55 + hash2(i, 9) * 0.9
             placeTree(trunks, foliage, snowTrees, false, ti, wx, h, wz, s, rot)
             ti++
           }
           break
         case 'snow':
-          if (ti < maxTrees && hash2(i, 4) > 0.5) {
-            const s = 0.55 + hash2(i, 8) * 1.15
+          if (ti < maxTrees && hash2(i, 4) > 0.55) {
+            const s = 0.55 + hash2(i, 8) * 1.1
             placeTree(trunks, foliage, snowTrees, true, ti, wx, h, wz, s, rot)
             ti++
           }
           break
         case 'mountain':
           if (ri < maxRocks) {
-            const s = 1.4 + hash2(i, 5) * 4
+            const s = 1.3 + hash2(i, 5) * 3.5
             _pos.set(wx, h + s * 0.35, wz)
             _quat.setFromAxisAngle(_Y, rot)
             _scale.set(s, s * (0.65 + hash2(i, 1)), s)
@@ -395,7 +452,7 @@ export class TerrainSystem {
           break
         case 'mesa':
           if (mi < maxRocks) {
-            const s = 1.5 + hash2(i, 5) * 5
+            const s = 1.4 + hash2(i, 5) * 4
             _pos.set(wx, h + s * 0.3, wz)
             _quat.setFromAxisAngle(_Y, rot)
             _scale.set(s, s * 0.55, s)
@@ -406,7 +463,7 @@ export class TerrainSystem {
           break
         case 'desert':
           if (ci < maxCactus) {
-            const s = 0.85 + hash2(i, 11) * 1.5
+            const s = 0.85 + hash2(i, 11) * 1.4
             _pos.set(wx, h + s * 1.1, wz)
             _quat.setFromAxisAngle(_Y, rot)
             _scale.set(s * 0.7, s, s * 0.7)
@@ -450,23 +507,23 @@ export class TerrainSystem {
 function propDensity(biome: Biome, moisture: number): number {
   switch (biome) {
     case 'rainforest':
-      return 0.85
+      return 0.8
     case 'forest':
-      return 0.7 + moisture * 0.12
+      return 0.65 + moisture * 0.1
     case 'swamp':
-      return 0.55
+      return 0.5
     case 'plains':
-      return 0.2
+      return 0.18
     case 'hills':
-      return 0.3
+      return 0.26
     case 'desert':
-      return 0.32
+      return 0.28
     case 'mesa':
-      return 0.38
+      return 0.32
     case 'mountain':
-      return 0.42
+      return 0.36
     case 'snow':
-      return 0.22
+      return 0.18
     default:
       return 0.1
   }

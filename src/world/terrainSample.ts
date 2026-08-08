@@ -1,17 +1,14 @@
 import { clamp01, fbm, ridged, smoothstep } from './noise'
 
 /**
- * Balanced multi-biome world: land is the default, oceans are coastal/sea
- * pockets (~15-25% of area), mountains are rare belts. No single biome dominates.
+ * Balanced multi-biome world with mid-scale biomes (~1–2.5 km cells).
+ * Land dominates; oceans are seas/coasts; mountains stay rare.
  *
- * Approximate land mix (of land cells): plains ~22%, forest ~16%, rainforest ~10%,
- * desert ~12%, mesa ~7%, swamp ~8%, hills ~14%, mountain ~6%, snow ~3%, lakes ~2%.
- * Ocean covers a minority of the map via a continent mask.
+ * sampleClimate is the cheap-once path used by meshes; height reuses the same fields.
  */
 
 export const RUNWAY_FLAT_INNER = 100
-export const RUNWAY_FLAT_OUTER = 300
-/** Sea surface height (mesh / contact for ocean). */
+export const RUNWAY_FLAT_OUTER = 280
 export const SEA_LEVEL = 0
 
 export type Biome =
@@ -34,38 +31,31 @@ export interface Climate {
   temperature: number
   biome: Biome
   river: number
-  /** 0 = deep ocean, 1 = solid land. */
   land: number
 }
 
+/** Smaller warp = tighter biome patches. */
 function warp(x: number, z: number): [number, number] {
-  const wx = x + (fbm(x * 0.00006 + 2, z * 0.00006 - 1, 3) - 0.5) * 1100
-  const wz = z + (fbm(x * 0.00006 - 4, z * 0.00006 + 8, 3) - 0.5) * 1100
+  const wx = x + (fbm(x * 0.00014 + 2, z * 0.00014 - 1, 2) - 0.5) * 420
+  const wz = z + (fbm(x * 0.00014 - 4, z * 0.00014 + 8, 2) - 0.5) * 420
   return [wx, wz]
 }
 
-/**
- * Continent / land mask. Tuned so most area is land; oceans form seas and
- * coasts, not a global flood. Spawn island always solid land.
- */
 export function sampleLand(x: number, z: number): number {
   const dist = Math.hypot(x, z)
-  // Always land near runway
   if (dist < RUNWAY_FLAT_OUTER) {
     return Math.max(0.92, 1 - dist / (RUNWAY_FLAT_OUTER * 4))
   }
 
   const [wx, wz] = warp(x, z)
-  // Large continents: threshold low → more land (~0.7-0.8 land fraction)
-  const continent = fbm(wx * 0.000055, wz * 0.000055, 5)
-  const detail = fbm(wx * 0.0002 + 40, wz * 0.0002 - 20, 3)
-  // Shift up so land dominates (raw mean ~0.5 → land if > 0.38)
-  let land = clamp01((continent * 0.75 + detail * 0.25 - 0.28) / 0.55)
+  // ~2–4 km seas/coasts, not planet-scale oceans
+  const continent = fbm(wx * 0.00016, wz * 0.00016, 4)
+  const detail = fbm(wx * 0.00045 + 40, wz * 0.00045 - 20, 2)
+  let land = clamp01((continent * 0.72 + detail * 0.28 - 0.26) / 0.52)
 
-  // Occasional inland seas (not oceans everywhere): punch holes where basin is high
-  const inlandSea = fbm(wx * 0.00012 + 300, wz * 0.00012 - 150, 4)
-  if (inlandSea > 0.78 && land > 0.5) {
-    land *= smoothstep(0.92, 0.78, inlandSea)
+  const inlandSea = fbm(wx * 0.00035 + 300, wz * 0.00035 - 150, 3)
+  if (inlandSea > 0.8 && land > 0.5) {
+    land *= smoothstep(0.93, 0.8, inlandSea)
   }
 
   return land
@@ -73,74 +63,61 @@ export function sampleLand(x: number, z: number): number {
 
 export function sampleMoisture(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  const a = fbm(wx * 0.00007, wz * 0.00007, 5)
-  const b = fbm(wx * 0.00025 + 30, wz * 0.00025 - 10, 3)
-  return clamp01(a * 0.7 + b * 0.3)
+  // ~1.2–2 km biome cells
+  const a = fbm(wx * 0.00022, wz * 0.00022, 4)
+  const b = fbm(wx * 0.0007 + 30, wz * 0.0007 - 10, 2)
+  return clamp01(a * 0.68 + b * 0.32)
 }
 
 export function sampleTemperature(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  // Mild N/S + large warm/cool cells for desert vs forest belts
-  const lat = 0.5 + z * 0.00004
-  const cells = fbm(wx * 0.00008 - 50, wz * 0.00008 + 20, 4)
-  return clamp01(lat * 0.3 + cells * 0.7)
+  const lat = 0.5 + z * 0.00005
+  const cells = fbm(wx * 0.00024 - 50, wz * 0.00024 + 20, 3)
+  return clamp01(lat * 0.25 + cells * 0.75)
 }
 
 export function sampleRiver(x: number, z: number): number {
   const [wx, wz] = warp(x * 1.05, z * 1.05)
-  const path = Math.abs(fbm(wx * 0.00038, wz * 0.00038, 3) - 0.5) * 2
-  const channel = 1 - smoothstep(0.02, 0.1, path)
-  const valley = smoothstep(0.6, 0.9, ridged(wx * 0.0005 + 90, wz * 0.0005 - 40, 3))
-  return clamp01(channel * valley * 1.2)
+  const path = Math.abs(fbm(wx * 0.0007, wz * 0.0007, 2) - 0.5) * 2
+  const channel = 1 - smoothstep(0.025, 0.12, path)
+  const valley = smoothstep(0.62, 0.9, ridged(wx * 0.0009 + 90, wz * 0.0009 - 40, 2))
+  return clamp01(channel * valley * 1.15)
 }
 
-/** Rare mountain belt strength 0..1 (most of the map is ~0). */
 function mountainBelt(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  // Very sparse: only extreme ridged + a second gate
-  const spine = ridged(wx * 0.00028 - 2, wz * 0.00028 + 6, 4)
-  const gate = fbm(wx * 0.00015 + 70, wz * 0.00015 - 30, 3)
-  // Both must be high → ~ few % of land
-  return smoothstep(0.72, 0.9, spine) * smoothstep(0.55, 0.8, gate)
+  const spine = ridged(wx * 0.00055 - 2, wz * 0.00055 + 6, 3)
+  const gate = fbm(wx * 0.00035 + 70, wz * 0.00035 - 30, 2)
+  return smoothstep(0.74, 0.92, spine) * smoothstep(0.58, 0.82, gate)
 }
 
-/**
- * Land elevation in meters. Mostly low plains/hills; peaks only on rare belts.
- */
 function landElevation(x: number, z: number, land: number): number {
   const [wx, wz] = warp(x, z)
-  // Broad gentle base (typically 8–45 m)
-  const shelf = 12 + (fbm(wx * 0.00012, wz * 0.00012, 5) - 0.35) * 38
-  const roll = (fbm(wx * 0.0007 + 11, wz * 0.0007 - 7, 4) - 0.5) * 28
-  const detail = (fbm(wx * 0.008, wz * 0.008, 2) - 0.5) * 5
-
-  // Hills layer (moderate)
-  const hillN = fbm(wx * 0.0009 + 20, wz * 0.0009, 3)
-  const hills = smoothstep(0.52, 0.78, hillN) * 35
-
-  // Rare mountains
+  const shelf = 12 + (fbm(wx * 0.00028, wz * 0.00028, 4) - 0.35) * 36
+  const roll = (fbm(wx * 0.0014 + 11, wz * 0.0014 - 7, 3) - 0.5) * 24
+  const detail = (fbm(wx * 0.01, wz * 0.01, 2) - 0.5) * 4
+  const hillN = fbm(wx * 0.0018 + 20, wz * 0.0018, 2)
+  const hills = smoothstep(0.54, 0.8, hillN) * 32
   const belt = mountainBelt(x, z)
-  const peaks = belt * belt * (90 + ridged(wx * 0.0012, wz * 0.0012, 3) * 120)
-
+  const peaks = belt * belt * (85 + ridged(wx * 0.002, wz * 0.002, 2) * 100)
   let h = shelf + roll + detail + hills + peaks
-  // Coast: ramp down toward sea
   h *= smoothstep(0.35, 0.75, land)
   return Math.max(h, 0.5)
 }
 
 function sampleCanyon(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  return smoothstep(0.62, 0.9, ridged(wx * 0.0011 + 200, wz * 0.0011 - 100, 3))
+  return smoothstep(0.64, 0.9, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 2))
 }
 
 function mesaHeight(base: number, x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  const stepNoise = fbm(wx * 0.0004, wz * 0.0004, 3)
-  const stepH = 14 + stepNoise * 18
-  const plateau = Math.floor(Math.max(8, base + 20) / stepH) * stepH
-  const edge = ridged(wx * 0.0022, wz * 0.0022, 3)
+  const stepNoise = fbm(wx * 0.0008, wz * 0.0008, 2)
+  const stepH = 14 + stepNoise * 16
+  const plateau = Math.floor(Math.max(8, base + 18) / stepH) * stepH
+  const edge = ridged(wx * 0.0035, wz * 0.0035, 2)
   const cliff = smoothstep(0.4, 0.75, edge)
-  const top = plateau + 6 + (fbm(wx * 0.01, wz * 0.01, 2) - 0.5) * 2
+  const top = plateau + 5 + (fbm(wx * 0.012, wz * 0.012, 2) - 0.5) * 2
   const wall = base * 0.4
   return wall + (top - wall) * (1 - cliff * 0.8)
 }
@@ -148,16 +125,12 @@ function mesaHeight(base: number, x: number, z: number): number {
 function duneHeight(base: number, x: number, z: number): number {
   const [wx, wz] = warp(x, z)
   const dunes =
-    Math.sin(wx * 0.011 + fbm(wx * 0.002, wz * 0.002, 2) * 3) *
-    Math.cos(wz * 0.008) *
-    6
+    Math.sin(wx * 0.014 + fbm(wx * 0.003, wz * 0.003, 2) * 3) *
+    Math.cos(wz * 0.01) *
+    5.5
   return Math.max(2, base * 0.55 + 8 + dunes)
 }
 
-/**
- * Biome pick biased for variety: elevation gates mountains/snow/ocean only;
- * on ordinary land, moisture×temperature partitions the rest.
- */
 export function classifyBiome(
   elev: number,
   moisture: number,
@@ -167,62 +140,39 @@ export function classifyBiome(
   distFromOrigin: number,
 ): Biome {
   if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway'
-
-  // Ocean / sea (minority of map via land mask)
   if (land < 0.42) return 'ocean'
-
-  // Small lakes / river water
   if (elev < 1.5 && moisture > 0.55 && land > 0.5) return 'water'
   if (river > 0.78 && elev < 40) return 'water'
-
-  // Rare highlands only (elev itself is sparse because peaks are gated)
   if (elev > 140) return 'snow'
   if (elev > 95) return 'mountain'
 
-  // --- Land biomes by climate (primary variety) ---
-  // Use slightly different thresholds so no single band eats the map
-
-  // Hot + dry
   if (temperature > 0.58 && moisture < 0.36) {
     if (elev > 32 && elev < 85 && moisture < 0.3) return 'mesa'
     return 'desert'
   }
-
-  // Hot + wet → rainforest
   if (temperature > 0.52 && moisture > 0.62 && elev < 70) return 'rainforest'
-
-  // Cool/wet low → swamp
   if (moisture > 0.58 && elev < 22 && temperature < 0.58) return 'swamp'
-
-  // Moderate wet → forest
   if (moisture > 0.46 && elev < 75 && temperature > 0.28) return 'forest'
-
-  // Mid elevation → hills (not mountain)
   if (elev > 42 && elev <= 95) return 'hills'
-
-  // Default majority: plains
   return 'plains'
 }
 
-/**
- * Height sample. Oceans sit at SEA_LEVEL; land is mostly low with rare peaks.
- */
-export function sampleTerrainHeight(x: number, z: number): number {
-  const dist = Math.hypot(x, z)
+/** Build height from already-sampled climate fields (no re-noise). */
+function heightFromFields(
+  x: number,
+  z: number,
+  land: number,
+  moisture: number,
+  temperature: number,
+  river: number,
+  dist: number,
+): number {
   const flatMask = smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
   if (flatMask <= 0) return 0
 
-  const land = sampleLand(x, z)
-  const moisture = sampleMoisture(x, z)
-  const temperature = sampleTemperature(x, z)
-  const river = sampleRiver(x, z)
-
-  // Ocean body
   if (land < 0.42) {
-    // Gentle waves under the surface for visual; contact uses SEA_LEVEL
     const deep = (0.42 - land) * 40
-    const h = SEA_LEVEL - 0.4 - deep * 0.02
-    return h * flatMask
+    return (SEA_LEVEL - 0.4 - deep * 0.02) * flatMask
   }
 
   let base = landElevation(x, z, land)
@@ -230,42 +180,39 @@ export function sampleTerrainHeight(x: number, z: number): number {
   base += (temperature - 0.5) * 4
 
   const rough = classifyBiome(base, moisture, temperature, river, land, dist)
-
   let h = base
+
   switch (rough) {
     case 'ocean':
       h = SEA_LEVEL - 0.4
       break
     case 'desert':
-      h = duneHeight(base, x, z)
-      h -= sampleCanyon(x, z) * 22
+      h = duneHeight(base, x, z) - sampleCanyon(x, z) * 22
       break
     case 'mesa':
-      h = mesaHeight(base, x, z)
-      h -= sampleCanyon(x, z) * 28
+      h = mesaHeight(base, x, z) - sampleCanyon(x, z) * 28
       break
     case 'swamp':
-      h = Math.min(base * 0.3, 6) + (fbm(x * 0.008, z * 0.008, 2) - 0.5) * 1.2
+      h = Math.min(base * 0.3, 6) + (fbm(x * 0.01, z * 0.01, 2) - 0.5) * 1.2
       h = Math.max(h, 0.3)
       break
     case 'plains':
-      h = base * 0.55 + (fbm(x * 0.0014, z * 0.0014, 3) - 0.5) * 10
-      h = Math.max(h, 1)
+      h = Math.max(1, base * 0.55 + (fbm(x * 0.0025, z * 0.0025, 2) - 0.5) * 10)
       break
     case 'forest':
-      h = base * 0.65 + (fbm(x * 0.0018, z * 0.0018, 3) - 0.5) * 16
+      h = base * 0.65 + (fbm(x * 0.003, z * 0.003, 2) - 0.5) * 16
       break
     case 'rainforest':
-      h = base * 0.6 + (fbm(x * 0.002, z * 0.002, 3) - 0.5) * 20
+      h = base * 0.6 + (fbm(x * 0.0032, z * 0.0032, 2) - 0.5) * 18
       break
     case 'hills':
-      h = base * 0.9 + (fbm(x * 0.003, z * 0.003, 3) - 0.45) * 32
+      h = base * 0.9 + (fbm(x * 0.0045, z * 0.0045, 2) - 0.45) * 28
       break
     case 'mountain':
-      h = base + ridged(x * 0.0014, z * 0.0014, 3) * 55
+      h = base + ridged(x * 0.002, z * 0.002, 2) * 50
       break
     case 'snow':
-      h = base + ridged(x * 0.0011, z * 0.0011, 4) * 70
+      h = base + ridged(x * 0.0016, z * 0.0016, 2) * 65
       break
     case 'water':
       h = Math.min(base * 0.2, 0.4)
@@ -278,13 +225,12 @@ export function sampleTerrainHeight(x: number, z: number): number {
     h -= river * river * (12 + Math.max(0, h) * 0.08)
   }
 
-  // Inland ponds, small
   if (
     moisture > 0.72 &&
     h < 5 &&
     rough !== 'desert' &&
     rough !== 'mesa' &&
-    fbm(x * 0.004, z * 0.004, 2) > 0.72
+    fbm(x * 0.005, z * 0.005, 2) > 0.72
   ) {
     h = Math.min(h, 0.35)
   }
@@ -293,6 +239,7 @@ export function sampleTerrainHeight(x: number, z: number): number {
   return h * flatMask
 }
 
+/** Single-pass climate (preferred for mesh generation). */
 export function sampleClimate(x: number, z: number): Climate {
   const dist = Math.hypot(x, z)
   if (dist < RUNWAY_FLAT_INNER * 0.9) {
@@ -310,9 +257,13 @@ export function sampleClimate(x: number, z: number): Climate {
   const moisture = sampleMoisture(x, z)
   const temperature = sampleTemperature(x, z)
   const river = sampleRiver(x, z)
-  const height = sampleTerrainHeight(x, z)
+  const height = heightFromFields(x, z, land, moisture, temperature, river, dist)
   const biome = classifyBiome(height, moisture, temperature, river, land, dist)
   return { height, moisture, temperature, biome, river, land }
+}
+
+export function sampleTerrainHeight(x: number, z: number): number {
+  return sampleClimate(x, z).height
 }
 
 export function biomeColor(
@@ -323,7 +274,7 @@ export function biomeColor(
   z: number,
   river = 0,
 ): [number, number, number] {
-  const n = fbm(x * 0.04, z * 0.04, 2)
+  const n = fbm(x * 0.05, z * 0.05, 2)
   const speck = (n - 0.5) * 0.05
 
   if (river > 0.5 && biome !== 'desert' && biome !== 'mesa' && biome !== 'ocean') {
@@ -334,7 +285,6 @@ export function biomeColor(
     case 'runway':
       return [0.24 + speck, 0.3 + speck, 0.2]
     case 'ocean': {
-      // Deep blue-green seas
       const deep = clamp01((-height + 0.5) * 0.15)
       return [0.05 + deep * 0.02, 0.18 + n * 0.06, 0.38 + n * 0.08 + deep * 0.1]
     }
