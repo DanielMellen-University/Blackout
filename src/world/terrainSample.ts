@@ -72,12 +72,14 @@ function landAt(wx: number, wz: number, distFromOps: number): number {
   if (distFromOps < RUNWAY_FLAT_OUTER) {
     return Math.max(0.92, 1 - distFromOps / (RUNWAY_FLAT_OUTER * 4))
   }
-  const continent = fbm(wx * 0.00032, wz * 0.00032, 3)
-  const detail = fbm(wx * 0.0009 + 40, wz * 0.0009 - 20, 2)
-  let land = clamp01((continent * 0.72 + detail * 0.28 - 0.26) / 0.52)
-  const inlandSea = fbm(wx * 0.0007 + 300, wz * 0.0007 - 150, 2)
-  if (inlandSea > 0.8 && land > 0.5) {
-    land *= smoothstep(0.93, 0.8, inlandSea)
+  // Larger landmasses (lower freq) + strong land bias → oceans less common/smaller
+  const continent = fbm(wx * 0.0002, wz * 0.0002, 3)
+  const detail = fbm(wx * 0.00065 + 40, wz * 0.00065 - 20, 2)
+  let land = clamp01((continent * 0.78 + detail * 0.22 - 0.12) / 0.5)
+  // Rare inland seas only (was punching too many holes in the continents)
+  const inlandSea = fbm(wx * 0.00095 + 300, wz * 0.00095 - 150, 2)
+  if (inlandSea > 0.9 && land > 0.6) {
+    land *= smoothstep(0.97, 0.9, inlandSea)
   }
   return land
 }
@@ -291,7 +293,8 @@ export function classifyBiome(
   mesaProv = 0,
 ): Biome {
   if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway' // dist = ops center
-  if (land < 0.42) return 'ocean'
+  // Deep ocean only — higher bar so seas are less common
+  if (land < 0.3) return 'ocean'
 
   if (features.lake > 0.55 && elev < 55) return 'water'
   if (features.pond > 0.72 && elev < 40) return 'water'
@@ -336,8 +339,8 @@ function heightFromFieldsW(
   const flatMask = smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
   if (flatMask <= 0) return 0
 
-  if (land < 0.42) {
-    const deep = (0.42 - land) * 55
+  if (land < 0.3) {
+    const deep = (0.3 - land) * 70
     return (SEA_LEVEL - 0.15 - deep * 0.04) * flatMask
   }
 
@@ -345,8 +348,8 @@ function heightFromFieldsW(
   base += (0.5 - moisture) * 10
   base += (temperature - 0.5) * 6
 
-  const beach = smoothstep(0.42, 0.58, land)
-  // Cheap beach ramp (no extra fbm)
+  // Beach ramp between deep ocean and solid land
+  const beach = smoothstep(0.3, 0.5, land)
   base = base * beach + (1.5 + base * 0.15) * (1 - beach)
 
   let h = base
@@ -490,8 +493,8 @@ export function sampleClimate(x: number, z: number): Climate {
     mesaProv,
   )
   const coastal =
-    land > 0.4 && land < 0.62
-      ? (1 - Math.abs(land - 0.5) / 0.12) * (height < 18 ? 1 : 0.35)
+    land > 0.28 && land < 0.52
+      ? (1 - Math.abs(land - 0.4) / 0.12) * (height < 18 ? 1 : 0.35)
       : 0
   return {
     height,
