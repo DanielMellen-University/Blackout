@@ -116,93 +116,108 @@ export function sampleLake(x: number, z: number): number {
 }
 
 /**
- * Long mountain ranges. Wide soft falloff so massifs rise from foothills
- * instead of punching out of flat ground.
+ * Mountain-range mask. Soft outer ramp into foothills, firmer core.
  */
 function mountainBelt(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  // Low-frequency spine only (no high-freq noise → no knife edges)
-  const spine = ridged(wx * 0.0002 - 2, wz * 0.0002 + 6, 4)
-  const gate = fbm(wx * 0.00012 + 70, wz * 0.00012 - 30, 3)
-  // Very soft mask: long approach into the range
-  const raw = smoothstep(0.32, 0.78, spine) * smoothstep(0.28, 0.65, gate)
-  // Extra smoothstep so outer foothills are gradual
-  return smoothstep(0.0, 1.0, raw)
+  const spine = ridged(wx * 0.00022 - 2, wz * 0.00022 + 6, 4)
+  const gate = fbm(wx * 0.00014 + 70, wz * 0.00014 - 30, 3)
+  // Soft outer, solid core so ranges read as real chains
+  return (
+    smoothstep(0.34, 0.72, spine) *
+    smoothstep(0.3, 0.62, gate)
+  )
 }
 
 /**
- * Broad massif profile: tall, rounded ranges with peaks and cols —
- * not needle ridges. Driven continuously by belt 0..1.
+ * Real-looking massifs: clear ridge spine, distinct summits & cols,
+ * rocky mid-slopes. Steep but coherent — not soft domes or needle spikes.
  */
 function mountainMassif(base: number, x: number, z: number, belt: number): number {
   if (belt < 0.001) return base
   const [wx, wz] = warp(x, z)
+  const t = belt
 
-  // Soft envelope (smoothstep-like on belt)
-  const env = belt * belt * (3 - 2 * belt)
+  // Primary + secondary ridge spines (medium-low frequency)
+  const r1 = ridged(wx * 0.00048, wz * 0.00048, 4)
+  const r2 = ridged(wx * 0.00072 + 40, wz * 0.00072 - 15, 3)
+  const ridge = Math.max(r1, r2 * 0.82)
 
-  // Main ridge body — low frequency only
-  const dome = fbm(wx * 0.00038, wz * 0.00038, 5)
-  const ridge = ridged(wx * 0.00032, wz * 0.00032, 3)
-  // Peaks vs mountain passes along the chain
-  const along = fbm(wx * 0.00048 + 25, wz * 0.00048 - 10, 4)
-  const peakScale = 0.45 + 0.55 * smoothstep(0.3, 0.85, along)
-  const passDip = 1 - smoothstep(0.15, 0.5, along) * 0.38
+  // Summit chain along the range (peaks vs passes)
+  const chain = fbm(wx * 0.00055 + 12, wz * 0.00055 - 8, 4)
+  const summit = Math.pow(smoothstep(0.38, 0.92, chain), 1.35)
+  const col = 1 - 0.42 * (1 - smoothstep(0.22, 0.52, chain))
 
-  // Shoulders / mid-slope rolling (medium freq, mild amp)
-  const shoulder = (fbm(wx * 0.0011 + 8, wz * 0.0011, 3) - 0.4) * 70
+  // Cross-section: power on ridge → steeper flanks than a dome, rounded enough to mesh
+  const crest = Math.pow(ridge, 1.65)
+  const flank = Math.pow(ridge, 1.12)
 
-  // Gentle crest detail only (no 0.004+ ridged needles)
-  const crestDetail = (fbm(wx * 0.0022, wz * 0.0022, 2) - 0.5) * 35
+  // Foothill apron (wide)
+  const apron =
+    t *
+    flank *
+    (200 + fbm(wx * 0.00055, wz * 0.00055, 3) * 140)
 
-  // Height stack: broad body + big soft peaks
-  const body = env * (320 + dome * 220 + ridge * 180)
-  const peaks = Math.pow(env, 1.35) * peakScale * passDip * (480 + along * 420)
+  // Main ridge wall + crest
+  const wall = t * t * crest * col * (560 + summit * 380)
+  // Extra summit knobs (defined peaks without ultra-fine noise)
+  const peaks = t * t * crest * summit * (320 + chain * 260)
 
-  // Keep some of the land base under foothills; full massif replaces up high
-  const baseKeep = base * (1 - env * 0.75)
-  return baseKeep + body + peaks + shoulder * env + crestDetail * env
+  // Rocky mid-slope texture (strongest on flanks, weaker on crest/floor)
+  const slopeProxy = clamp01(ridge * (1 - ridge) * 4)
+  const rockA = (fbm(wx * 0.0024 + 3, wz * 0.0024, 3) - 0.5) * 100 * slopeProxy * t
+  const rockB = ridged(wx * 0.0019 - 5, wz * 0.0019, 2) * 55 * crest * t
+  // Mild high-mid crags on upper ridge only
+  const crag = ridged(wx * 0.0028, wz * 0.0028, 2) * 45 * summit * crest * t
+
+  const baseKeep = base * (1 - t * 0.88)
+  return baseKeep + apron + wall + peaks + rockA + rockB + crag
 }
 
 /**
  * High-relief land height (meters).
- * Hills roll naturally; mountains are separate soft massifs (see mountainMassif).
+ * Bumpier hills; mountains are ridged massifs (see mountainMassif).
  */
 function landElevation(x: number, z: number, land: number): number {
   const [wx, wz] = warp(x, z)
 
-  // Continental undulation: broad valleys and high ground
+  // Continental undulation
   const continental = (fbm(wx * 0.00035, wz * 0.00035, 5) - 0.32) * 95
 
-  // Multi-scale rolling relief (always some height change)
-  const rollA = (fbm(wx * 0.0011 + 11, wz * 0.0011 - 7, 4) - 0.48) * 48
-  const rollB = (fbm(wx * 0.0035 - 3, wz * 0.0035 + 9, 3) - 0.5) * 28
-  // Softer micro-detail so slopes don't stair-step
-  const detail = (fbm(wx * 0.01, wz * 0.01, 2) - 0.5) * 5
+  // Multi-scale rolling — stronger mid frequencies for hill country
+  const rollA = (fbm(wx * 0.0011 + 11, wz * 0.0011 - 7, 4) - 0.48) * 52
+  const rollB = (fbm(wx * 0.0038 - 3, wz * 0.0038 + 9, 3) - 0.5) * 42
+  const rollC = (fbm(wx * 0.007 + 5, wz * 0.007 - 2, 2) - 0.5) * 18
+  const detail = (fbm(wx * 0.014, wz * 0.014, 2) - 0.5) * 9
 
-  // Hill country: common mid-elevation mounds (not rare)
-  const hillN = fbm(wx * 0.0016 + 20, wz * 0.0016, 4)
+  // Hill mounds + local knolls (more variation)
+  const hillN = fbm(wx * 0.0017 + 20, wz * 0.0017, 4)
   const hills =
-    smoothstep(0.38, 0.72, hillN) * 55 +
-    smoothstep(0.55, 0.85, hillN) * 50
+    smoothstep(0.34, 0.7, hillN) * 70 +
+    smoothstep(0.5, 0.82, hillN) * 58
+  // Extra knolls / gullies inside hill regions
+  const knolls =
+    smoothstep(0.4, 0.75, hillN) *
+    ((fbm(wx * 0.0045, wz * 0.0045, 3) - 0.5) * 38 +
+      ridged(wx * 0.0032 + 7, wz * 0.0032, 2) * 32)
 
-  // Secondary ridgelines (foothill / highland spines) — soft
-  const miniRidge = ridged(wx * 0.00075 + 40, wz * 0.00075 - 15, 3)
-  const ridges = smoothstep(0.48, 0.85, miniRidge) * 65
+  // Highland spines (not full mountains)
+  const miniRidge = ridged(wx * 0.00085 + 40, wz * 0.00085 - 15, 3)
+  const ridges = smoothstep(0.45, 0.82, miniRidge) * 80
 
-  // Mountain contribution (continuous soft blend, not a hard plug-in)
   const belt = mountainBelt(x, z)
   let h =
-    18 + continental + rollA + rollB + detail + hills + ridges
+    18 + continental + rollA + rollB + rollC + detail + hills + knolls + ridges
 
-  // Occasional broad valleys (soft bowls, not slots)
+  // Broad valleys (softer away from mountains)
   const basin = fbm(wx * 0.0008 + 100, wz * 0.0008 - 50, 3)
-  h -= smoothstep(0.62, 0.9, basin) * 40 * (1 - belt * 0.7)
+  h -= smoothstep(0.6, 0.88, basin) * 42 * (1 - belt * 0.75)
 
-  // Morph toward massif where the belt is strong
+  // Continuous mountain morph
   if (belt > 0.02) {
     const mtn = mountainMassif(h, x, z, belt)
-    const w = smoothstep(0.06, 0.5, belt)
+    // Keep a bit of outer softness, firm core
+    const w = smoothstep(0.08, 0.42, belt)
     h = h * (1 - w) + mtn * w
   }
 
@@ -383,20 +398,25 @@ function heightFromFields(
       h = h * 0.8 + (fbm(x * 0.004, z * 0.004, 3) - 0.5) * 28
       break
     case 'hills':
-      // Mild hill polish only (already rolling from base)
-      h = h * 1.02 + (fbm(x * 0.0035, z * 0.0035, 3) - 0.42) * 32
+      // Extra local relief so hills aren't soft pillows
+      h =
+        h * 1.06 +
+        (fbm(x * 0.004, z * 0.004, 3) - 0.42) * 48 +
+        ridged(x * 0.0026, z * 0.0026, 2) * 42 +
+        (fbm(x * 0.009, z * 0.009, 2) - 0.5) * 16
       break
     case 'mountain':
     case 'snow': {
-      // Massif already built in landElevation; only soft crest polish.
-      // No high-frequency ridged spikes (those read as razor edges in-game).
+      // Reinforce ridge character already in massif (still no ultra-fine needles)
       const belt = mountainBelt(x, z)
-      const polish = (fbm(x * 0.0015, z * 0.0015, 3) - 0.45) * 55 * belt
-      const crest = ridged(x * 0.00055, z * 0.00055, 2) * 40 * belt
-      h = h + polish + crest
-      if (rough === 'snow') {
-        h += smoothstep(0.5, 0.9, belt) * 60
-      }
+      const r = ridged(x * 0.0007, z * 0.0007, 3)
+      const peak = fbm(x * 0.0009 + 4, z * 0.0009, 3)
+      h +=
+        belt *
+        (r * r * 90 +
+          Math.pow(smoothstep(0.45, 0.9, peak), 1.3) * r * 110 +
+          (fbm(x * 0.002, z * 0.002, 2) - 0.5) * 40)
+      if (rough === 'snow') h += smoothstep(0.45, 0.85, belt) * 80
       break
     }
     case 'water':
