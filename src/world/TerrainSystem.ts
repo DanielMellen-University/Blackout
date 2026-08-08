@@ -22,15 +22,16 @@ import { createVegetationFactory, vegetationDensity } from './vegetation'
  * Fog fully covers the stream edge; chunk builds are budgeted per frame
  * so crossing a cell boundary never freezes the main thread.
  */
-export const CHUNK_SIZE = 400
-export const VIEW_RADIUS = 12
-const PROP_RADIUS = 5
-/** Denser mesh so broad mountain slopes shade smoothly. */
-const CHUNK_SEGS = 28
+export const CHUNK_SIZE = 420
+/** Slightly tighter stream ring for fewer live chunks. */
+export const VIEW_RADIUS = 10
+const PROP_RADIUS = 4
+/** Balanced segs: smooth enough slopes, cheaper builds. */
+const CHUNK_SEGS = 18
 /** Max chunk builds per frame (props count as heavier). */
-const BUILDS_PER_FRAME = 2
-export const FOG_NEAR = 1400
-export const FOG_FAR = 4800
+const BUILDS_PER_FRAME = 1
+export const FOG_NEAR = 1200
+export const FOG_FAR = 4000
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 
 interface Chunk {
@@ -186,22 +187,28 @@ export class TerrainSystem {
     const originX = cx * CHUNK_SIZE
     const originZ = cz * CHUNK_SIZE
 
-    root.add(this.buildHeightMesh(originX, originZ))
+    root.add(this.buildHeightMesh(originX, originZ, withProps))
     if (withProps) root.add(this.buildProps(originX, originZ, cx, cz))
 
     this.root.add(root)
     return { key: `${cx},${cz}`, cx, cz, root }
   }
 
-  private buildHeightMesh(originX: number, originZ: number): Mesh {
-    const geo = new PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SEGS, CHUNK_SEGS)
+  private buildHeightMesh(
+    originX: number,
+    originZ: number,
+    detailed: boolean,
+  ): Mesh {
+    // Outer ring: fewer segs (still matches height function at verts)
+    const segs = detailed ? CHUNK_SEGS : Math.max(10, (CHUNK_SEGS * 0.55) | 0)
+    const geo = new PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE, segs, segs)
     geo.rotateX(-Math.PI / 2)
 
     const pos = geo.attributes.position as BufferAttribute
     const colors = new Float32Array(pos.count * 3)
     const half = CHUNK_SIZE * 0.5
-    const stride = CHUNK_SEGS + 1
-    const cell = CHUNK_SIZE / CHUNK_SEGS
+    const stride = segs + 1
+    const cell = CHUNK_SIZE / segs
 
     const biomes: Biome[] = new Array(pos.count)
     for (let i = 0; i < pos.count; i++) {
@@ -228,26 +235,29 @@ export class TerrainSystem {
       colors[i * 3 + 2] = b
     }
 
-    for (let iz = 0; iz < stride; iz++) {
-      for (let ix = 0; ix < stride; ix++) {
-        const i = iz * stride + ix
-        const h = pos.getY(i)
-        const hl = pos.getY(iz * stride + Math.max(0, ix - 1))
-        const hr = pos.getY(iz * stride + Math.min(stride - 1, ix + 1))
-        const hd = pos.getY(Math.max(0, iz - 1) * stride + ix)
-        const hu = pos.getY(Math.min(stride - 1, iz + 1) * stride + ix)
-        const dx = (hr - hl) / (2 * cell)
-        const dz = (hu - hd) / (2 * cell)
-        const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
-        const shaded = applySlopeShading(
-          [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
-          slope,
-          biomes[i]!,
-          h,
-        )
-        colors[i * 3] = shaded[0]
-        colors[i * 3 + 1] = shaded[1]
-        colors[i * 3 + 2] = shaded[2]
+    // Slope cliff shading only on near/detailed chunks
+    if (detailed) {
+      for (let iz = 0; iz < stride; iz++) {
+        for (let ix = 0; ix < stride; ix++) {
+          const i = iz * stride + ix
+          const h = pos.getY(i)
+          const hl = pos.getY(iz * stride + Math.max(0, ix - 1))
+          const hr = pos.getY(iz * stride + Math.min(stride - 1, ix + 1))
+          const hd = pos.getY(Math.max(0, iz - 1) * stride + ix)
+          const hu = pos.getY(Math.min(stride - 1, iz + 1) * stride + ix)
+          const dx = (hr - hl) / (2 * cell)
+          const dz = (hu - hd) / (2 * cell)
+          const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
+          const shaded = applySlopeShading(
+            [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
+            slope,
+            biomes[i]!,
+            h,
+          )
+          colors[i * 3] = shaded[0]
+          colors[i * 3 + 1] = shaded[1]
+          colors[i * 3 + 2] = shaded[2]
+        }
       }
     }
 
@@ -264,7 +274,7 @@ export class TerrainSystem {
 
   private buildProps(originX: number, originZ: number, cx: number, cz: number): Group {
     const veg = this.vegFactory.createBuckets()
-    const samples = 100
+    const samples = 56
 
     for (let i = 0; i < samples; i++) {
       const u = hash2(cx * 31 + i, cz * 17 + i * 3)

@@ -1,8 +1,8 @@
-import { clamp01, fbm, ridged, smoothstep } from './noise'
+import { clamp01, fbm, hash2, ridged, smoothstep } from './noise'
 
 /**
  * Half-scale biomes, tall ranges, carved water features, coasts, and slope cues.
- * sampleClimate is the single-pass mesh / contact path.
+ * sampleClimate is the hot path — one warp, fewer noise octaves.
  */
 
 export const RUNWAY_FLAT_INNER = 100
@@ -44,179 +44,158 @@ export interface Climate {
   coastal: number
 }
 
+/** Single domain warp used by the hot climate path. */
 function warp(x: number, z: number): [number, number] {
   const wx = x + (fbm(x * 0.00028 + 2, z * 0.00028 - 1, 2) - 0.5) * 280
   const wz = z + (fbm(x * 0.00028 - 4, z * 0.00028 + 8, 2) - 0.5) * 280
   return [wx, wz]
 }
 
-export function sampleLand(x: number, z: number): number {
-  const dist = Math.hypot(x, z)
+function landAt(wx: number, wz: number, dist: number): number {
   if (dist < RUNWAY_FLAT_OUTER) {
     return Math.max(0.92, 1 - dist / (RUNWAY_FLAT_OUTER * 4))
   }
-
-  const [wx, wz] = warp(x, z)
-  const continent = fbm(wx * 0.00032, wz * 0.00032, 4)
+  const continent = fbm(wx * 0.00032, wz * 0.00032, 3)
   const detail = fbm(wx * 0.0009 + 40, wz * 0.0009 - 20, 2)
   let land = clamp01((continent * 0.72 + detail * 0.28 - 0.26) / 0.52)
-
-  const inlandSea = fbm(wx * 0.0007 + 300, wz * 0.0007 - 150, 3)
+  const inlandSea = fbm(wx * 0.0007 + 300, wz * 0.0007 - 150, 2)
   if (inlandSea > 0.8 && land > 0.5) {
     land *= smoothstep(0.93, 0.8, inlandSea)
   }
-
   return land
+}
+
+function moistureAt(wx: number, wz: number): number {
+  return clamp01(
+    fbm(wx * 0.00044, wz * 0.00044, 3) * 0.72 +
+      fbm(wx * 0.0014 + 30, wz * 0.0014 - 10, 2) * 0.28,
+  )
+}
+
+function temperatureAt(wx: number, wz: number, z: number): number {
+  const lat = 0.5 + z * 0.00006
+  return clamp01(lat * 0.22 + fbm(wx * 0.00048 - 50, wz * 0.00048 + 20, 2) * 0.78)
+}
+
+/** Cheap feature pack from already-warped coords (one river/ravine/lake each). */
+function featuresAt(wx: number, wz: number): TerrainFeatures {
+  const pathR = Math.abs(fbm(wx * 0.00085, wz * 0.00085, 2) - 0.5) * 2
+  const river = clamp01(
+    (1 - smoothstep(0.018, 0.14, pathR)) *
+      smoothstep(0.5, 0.88, ridged(wx * 0.0007 + 90, wz * 0.0007 - 40, 2)) *
+      1.25,
+  )
+  const pathV = Math.abs(fbm(wx * 0.0011 - 40, wz * 0.0011 + 55, 2) - 0.48) * 2
+  const ravine = clamp01(
+    (1 - smoothstep(0.01, 0.07, pathV)) *
+      smoothstep(0.45, 0.78, ridged(wx * 0.0009 + 15, wz * 0.0009, 2)),
+  )
+  const lake = smoothstep(0.72, 0.9, fbm(wx * 0.0011 + 200, wz * 0.0011 - 90, 2))
+  const pond = smoothstep(0.8, 0.93, fbm(wx * 0.0045 + 8, wz * 0.0045 - 3, 2))
+  const pathS = Math.abs(fbm(wx * 0.0018 + 12, wz * 0.0018 - 7, 2) - 0.5) * 2
+  const stream = clamp01(1 - smoothstep(0.015, 0.06, pathS))
+  return { river, ravine, pond, lake, stream }
+}
+
+export function sampleLand(x: number, z: number): number {
+  const [wx, wz] = warp(x, z)
+  return landAt(wx, wz, Math.hypot(x, z))
 }
 
 export function sampleMoisture(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  const a = fbm(wx * 0.00044, wz * 0.00044, 4)
-  const b = fbm(wx * 0.0014 + 30, wz * 0.0014 - 10, 2)
-  return clamp01(a * 0.68 + b * 0.32)
+  return moistureAt(wx, wz)
 }
 
 export function sampleTemperature(x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  const lat = 0.5 + z * 0.00006
-  const cells = fbm(wx * 0.00048 - 50, wz * 0.00048 + 20, 3)
-  return clamp01(lat * 0.22 + cells * 0.78)
+  return temperatureAt(wx, wz, z)
 }
 
 export function sampleRiver(x: number, z: number): number {
-  const [wx, wz] = warp(x * 1.08, z * 1.08)
-  const path = Math.abs(fbm(wx * 0.00085, wz * 0.00085, 3) - 0.5) * 2
-  const channel = 1 - smoothstep(0.018, 0.14, path)
-  const valley = smoothstep(0.5, 0.88, ridged(wx * 0.0007 + 90, wz * 0.0007 - 40, 3))
-  return clamp01(channel * valley * 1.35)
+  return featuresAt(...warp(x, z)).river
 }
 
 export function sampleStream(x: number, z: number): number {
-  const [wx, wz] = warp(x * 1.3, z * 0.9)
-  const path = Math.abs(fbm(wx * 0.0018 + 12, wz * 0.0018 - 7, 2) - 0.5) * 2
-  return clamp01((1 - smoothstep(0.01, 0.055, path)) * 1.1)
+  return featuresAt(...warp(x, z)).stream
 }
 
 export function sampleRavine(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  const path = Math.abs(fbm(wx * 0.0011 - 40, wz * 0.0011 + 55, 3) - 0.48) * 2
-  const slot = 1 - smoothstep(0.008, 0.06, path)
-  const depthGate = smoothstep(0.45, 0.78, ridged(wx * 0.0009 + 15, wz * 0.0009, 2))
-  return clamp01(slot * depthGate * 1.25)
+  return featuresAt(...warp(x, z)).ravine
 }
 
 export function samplePond(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  return smoothstep(0.78, 0.92, fbm(wx * 0.0045 + 8, wz * 0.0045 - 3, 3))
+  return featuresAt(...warp(x, z)).pond
 }
 
 export function sampleLake(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  return smoothstep(0.72, 0.88, fbm(wx * 0.0011 + 200, wz * 0.0011 - 90, 4))
+  return featuresAt(...warp(x, z)).lake
 }
 
 /**
  * Mountain-range mask. Soft outer ramp into foothills, firmer core.
  */
-function mountainBelt(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  const spine = ridged(wx * 0.00022 - 2, wz * 0.00022 + 6, 4)
-  const gate = fbm(wx * 0.00014 + 70, wz * 0.00014 - 30, 3)
-  // Soft outer, solid core so ranges read as real chains
-  return (
-    smoothstep(0.34, 0.72, spine) *
-    smoothstep(0.3, 0.62, gate)
-  )
+function mountainBeltW(wx: number, wz: number): number {
+  const spine = ridged(wx * 0.00022 - 2, wz * 0.00022 + 6, 3)
+  const gate = fbm(wx * 0.00014 + 70, wz * 0.00014 - 30, 2)
+  return smoothstep(0.34, 0.72, spine) * smoothstep(0.3, 0.62, gate)
 }
 
 /**
- * Real-looking massifs: clear ridge spine, distinct summits & cols,
- * rocky mid-slopes. Steep but coherent — not soft domes or needle spikes.
+ * Ridged massifs from pre-warped coords (avoids re-warp in hot path).
  */
-function mountainMassif(base: number, x: number, z: number, belt: number): number {
+function mountainMassifW(
+  base: number,
+  wx: number,
+  wz: number,
+  belt: number,
+): number {
   if (belt < 0.001) return base
-  const [wx, wz] = warp(x, z)
   const t = belt
-
-  // Primary + secondary ridge spines (medium-low frequency)
-  const r1 = ridged(wx * 0.00048, wz * 0.00048, 4)
-  const r2 = ridged(wx * 0.00072 + 40, wz * 0.00072 - 15, 3)
+  const r1 = ridged(wx * 0.00048, wz * 0.00048, 3)
+  const r2 = ridged(wx * 0.00072 + 40, wz * 0.00072 - 15, 2)
   const ridge = Math.max(r1, r2 * 0.82)
-
-  // Summit chain along the range (peaks vs passes)
-  const chain = fbm(wx * 0.00055 + 12, wz * 0.00055 - 8, 4)
+  const chain = fbm(wx * 0.00055 + 12, wz * 0.00055 - 8, 3)
   const summit = Math.pow(smoothstep(0.38, 0.92, chain), 1.35)
   const col = 1 - 0.42 * (1 - smoothstep(0.22, 0.52, chain))
-
-  // Cross-section: power on ridge → steeper flanks than a dome, rounded enough to mesh
   const crest = Math.pow(ridge, 1.65)
   const flank = Math.pow(ridge, 1.12)
-
-  // Foothill apron (wide)
-  const apron =
-    t *
-    flank *
-    (200 + fbm(wx * 0.00055, wz * 0.00055, 3) * 140)
-
-  // Main ridge wall + crest
+  const apron = t * flank * (200 + fbm(wx * 0.00055, wz * 0.00055, 2) * 140)
   const wall = t * t * crest * col * (560 + summit * 380)
-  // Extra summit knobs (defined peaks without ultra-fine noise)
   const peaks = t * t * crest * summit * (320 + chain * 260)
-
-  // Rocky mid-slope texture (strongest on flanks, weaker on crest/floor)
   const slopeProxy = clamp01(ridge * (1 - ridge) * 4)
-  const rockA = (fbm(wx * 0.0024 + 3, wz * 0.0024, 3) - 0.5) * 100 * slopeProxy * t
+  const rockA =
+    (fbm(wx * 0.0024 + 3, wz * 0.0024, 2) - 0.5) * 100 * slopeProxy * t
   const rockB = ridged(wx * 0.0019 - 5, wz * 0.0019, 2) * 55 * crest * t
-  // Mild high-mid crags on upper ridge only
   const crag = ridged(wx * 0.0028, wz * 0.0028, 2) * 45 * summit * crest * t
-
-  const baseKeep = base * (1 - t * 0.88)
-  return baseKeep + apron + wall + peaks + rockA + rockB + crag
+  return base * (1 - t * 0.88) + apron + wall + peaks + rockA + rockB + crag
 }
 
-/**
- * High-relief land height (meters).
- * Bumpier hills; mountains are ridged massifs (see mountainMassif).
- */
-function landElevation(x: number, z: number, land: number): number {
-  const [wx, wz] = warp(x, z)
+function landElevationW(wx: number, wz: number, land: number): number {
+  const continental = (fbm(wx * 0.00035, wz * 0.00035, 3) - 0.32) * 95
+  const rollA = (fbm(wx * 0.0011 + 11, wz * 0.0011 - 7, 3) - 0.48) * 52
+  const rollB = (fbm(wx * 0.0038 - 3, wz * 0.0038 + 9, 2) - 0.5) * 42
+  const detail = (fbm(wx * 0.012, wz * 0.012, 2) - 0.5) * 8
 
-  // Continental undulation
-  const continental = (fbm(wx * 0.00035, wz * 0.00035, 5) - 0.32) * 95
-
-  // Multi-scale rolling — stronger mid frequencies for hill country
-  const rollA = (fbm(wx * 0.0011 + 11, wz * 0.0011 - 7, 4) - 0.48) * 52
-  const rollB = (fbm(wx * 0.0038 - 3, wz * 0.0038 + 9, 3) - 0.5) * 42
-  const rollC = (fbm(wx * 0.007 + 5, wz * 0.007 - 2, 2) - 0.5) * 18
-  const detail = (fbm(wx * 0.014, wz * 0.014, 2) - 0.5) * 9
-
-  // Hill mounds + local knolls (more variation)
-  const hillN = fbm(wx * 0.0017 + 20, wz * 0.0017, 4)
+  const hillN = fbm(wx * 0.0017 + 20, wz * 0.0017, 3)
   const hills =
-    smoothstep(0.34, 0.7, hillN) * 70 +
-    smoothstep(0.5, 0.82, hillN) * 58
-  // Extra knolls / gullies inside hill regions
+    smoothstep(0.34, 0.7, hillN) * 70 + smoothstep(0.5, 0.82, hillN) * 58
   const knolls =
     smoothstep(0.4, 0.75, hillN) *
-    ((fbm(wx * 0.0045, wz * 0.0045, 3) - 0.5) * 38 +
+    ((fbm(wx * 0.0045, wz * 0.0045, 2) - 0.5) * 38 +
       ridged(wx * 0.0032 + 7, wz * 0.0032, 2) * 32)
 
-  // Highland spines (not full mountains)
-  const miniRidge = ridged(wx * 0.00085 + 40, wz * 0.00085 - 15, 3)
+  const miniRidge = ridged(wx * 0.00085 + 40, wz * 0.00085 - 15, 2)
   const ridges = smoothstep(0.45, 0.82, miniRidge) * 80
 
-  const belt = mountainBelt(x, z)
-  let h =
-    18 + continental + rollA + rollB + rollC + detail + hills + knolls + ridges
+  const belt = mountainBeltW(wx, wz)
+  let h = 18 + continental + rollA + rollB + detail + hills + knolls + ridges
 
-  // Broad valleys (softer away from mountains)
-  const basin = fbm(wx * 0.0008 + 100, wz * 0.0008 - 50, 3)
+  const basin = fbm(wx * 0.0008 + 100, wz * 0.0008 - 50, 2)
   h -= smoothstep(0.6, 0.88, basin) * 42 * (1 - belt * 0.75)
 
-  // Continuous mountain morph
-  if (belt > 0.02) {
-    const mtn = mountainMassif(h, x, z, belt)
-    // Keep a bit of outer softness, firm core
+  if (belt > 0.04) {
+    const mtn = mountainMassifW(h, wx, wz, belt)
     const w = smoothstep(0.08, 0.42, belt)
     h = h * (1 - w) + mtn * w
   }
@@ -225,73 +204,37 @@ function landElevation(x: number, z: number, land: number): number {
   return Math.max(h, 0.5)
 }
 
-function sampleCanyon(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  return smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 3))
-}
-
-/**
- * Badlands / mesa country: layered buttes, sharp arroyos, steep-walled valleys.
- * Not gentle hills — flat tops and hard drops.
- */
-function mesaHeight(base: number, x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-
-  // Layered sedimentary steps (butte/mesa tops)
-  const stepNoise = fbm(wx * 0.0014, wz * 0.0014, 3)
+function mesaHeightW(base: number, wx: number, wz: number): number {
+  const stepNoise = fbm(wx * 0.0014, wz * 0.0014, 2)
   const stepH = 18 + stepNoise * 22
   const stacked = Math.floor(Math.max(20, base * 0.85 + 55) / stepH) * stepH
-  const topJitter = (fbm(wx * 0.02, wz * 0.02, 2) - 0.5) * 3
-  const plateau = stacked + topJitter
-
-  // Cliff edges around plateaus
-  const edge = ridged(wx * 0.004, wz * 0.004, 3)
-  const cliff = smoothstep(0.28, 0.62, edge)
-
-  // Dense network of steep arroyos / washes (badlands signature)
-  const arroyoA = 1 - smoothstep(0.02, 0.11, Math.abs(fbm(wx * 0.0035, wz * 0.0035, 3) - 0.5) * 2)
-  const arroyoB = 1 - smoothstep(0.015, 0.09, Math.abs(fbm(wx * 0.006 + 40, wz * 0.006 - 20, 2) - 0.48) * 2)
-  const gully = clamp01(Math.max(arroyoA * 0.85, arroyoB) * smoothstep(0.4, 0.75, ridged(wx * 0.0022, wz * 0.0022, 2)))
-
-  // Deep canyon corridors
-  const canyon = sampleCanyon(x, z)
-  const deepCut = canyon * canyon * (55 + plateau * 0.25)
-  const arroyoCut = gully * gully * (40 + plateau * 0.2)
-
-  // Floor of valleys stays low; rims stay high → steep walls
+  const plateau = stacked + (fbm(wx * 0.02, wz * 0.02, 2) - 0.5) * 3
+  const cliff = smoothstep(0.28, 0.62, ridged(wx * 0.004, wz * 0.004, 2))
+  const arroyoA =
+    1 - smoothstep(0.02, 0.11, Math.abs(fbm(wx * 0.0035, wz * 0.0035, 2) - 0.5) * 2)
+  const gully = clamp01(
+    arroyoA * smoothstep(0.4, 0.75, ridged(wx * 0.0022, wz * 0.0022, 2)),
+  )
+  const canyon = smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 2))
   const floor = Math.min(base * 0.25, 12)
   const rim = plateau + 18
   let h = floor + (rim - floor) * (1 - cliff * 0.92)
-  h -= deepCut
-  h -= arroyoCut
-
-  // Secondary hoodoo-scale nubs on remaining high ground
-  if (gully < 0.35 && cliff < 0.45) {
-    h += ridged(wx * 0.012, wz * 0.012, 2) * 12
-  }
-
+  h -= canyon * canyon * (55 + plateau * 0.25)
+  h -= gully * gully * (40 + plateau * 0.2)
   return Math.max(h, 1)
 }
 
-function duneHeight(base: number, x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
+function duneHeightW(base: number, wx: number, wz: number): number {
   const dunes =
     Math.sin(wx * 0.014 + fbm(wx * 0.0035, wz * 0.0035, 2) * 3.5) *
     Math.cos(wz * 0.011) *
     12
-  const mega =
-    Math.sin(wx * 0.004 + wz * 0.003) * 8 * fbm(wx * 0.001, wz * 0.001, 2)
+  const mega = Math.sin(wx * 0.004 + wz * 0.003) * 8 * fbm(wx * 0.001, wz * 0.001, 2)
   return Math.max(3, base * 0.65 + 14 + dunes + mega)
 }
 
 export function sampleFeatures(x: number, z: number): TerrainFeatures {
-  return {
-    river: sampleRiver(x, z),
-    ravine: sampleRavine(x, z),
-    pond: samplePond(x, z),
-    lake: sampleLake(x, z),
-    stream: sampleStream(x, z),
-  }
+  return featuresAt(...warp(x, z))
 }
 
 export function classifyBiome(
@@ -326,9 +269,9 @@ export function classifyBiome(
   return 'plains'
 }
 
-function heightFromFields(
-  x: number,
-  z: number,
+function heightFromFieldsW(
+  wx: number,
+  wz: number,
   land: number,
   moisture: number,
   temperature: number,
@@ -339,25 +282,20 @@ function heightFromFields(
   if (flatMask <= 0) return 0
 
   if (land < 0.42) {
-    // Continental shelf: shallows near coast, deeper offshore
     const deep = (0.42 - land) * 55
-    const waves = (fbm(x * 0.02, z * 0.02, 2) - 0.5) * 0.15
-    return (SEA_LEVEL - 0.15 - deep * 0.04 + waves) * flatMask
+    return (SEA_LEVEL - 0.15 - deep * 0.04) * flatMask
   }
 
-  let base = landElevation(x, z, land)
-  // Mild climate bias, keep strong relief
+  let base = landElevationW(wx, wz, land)
   base += (0.5 - moisture) * 10
   base += (temperature - 0.5) * 6
 
-  // Soft beach ramp (land 0.42–0.58) so coasts aren't cliffs into the sea
   const beach = smoothstep(0.42, 0.58, land)
-  base = base * beach + (1 + fbm(x * 0.03, z * 0.03, 2) * 2) * (1 - beach) * 0.35
-    + base * (1 - beach) * 0.15
+  // Cheap beach ramp (no extra fbm)
+  base = base * beach + (1.5 + base * 0.15) * (1 - beach)
 
   let h = base
 
-  // Deeper lake/pond bowls so basins read against hills
   if (features.lake > 0.35 && moisture > 0.35) {
     h -= features.lake * features.lake * (22 + Math.max(0, h) * 0.22)
   }
@@ -372,50 +310,41 @@ function heightFromFields(
       h = SEA_LEVEL - 0.4
       break
     case 'desert':
-      h = duneHeight(Math.max(h, base * 0.55), x, z) - sampleCanyon(x, z) * 40
+      h =
+        duneHeightW(Math.max(h, base * 0.55), wx, wz) -
+        smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 2)) * 40
       break
     case 'mesa':
-      // Full badlands reshape (steep valleys baked into mesaHeight)
-      h = mesaHeight(Math.max(h, base * 0.7), x, z)
-      // Extra ravine cuts for sheer gorges
+      h = mesaHeightW(Math.max(h, base * 0.7), wx, wz)
       if (features.ravine > 0.15) {
         h -= features.ravine * features.ravine * (70 + Math.max(0, h) * 0.45)
       }
       break
     case 'swamp':
-      // Low but not pancake-flat
-      h = Math.min(h * 0.4, 12) + (fbm(x * 0.01, z * 0.01, 2) - 0.5) * 3
+      h = Math.min(h * 0.4, 12) + (fbm(wx * 0.01, wz * 0.01, 2) - 0.5) * 3
       h = Math.max(h, 0.25)
       break
     case 'plains':
-      // Keep more of the base relief so plains still roll
-      h = Math.max(1, h * 0.72 + (fbm(x * 0.003, z * 0.003, 3) - 0.5) * 18)
+      h = Math.max(1, h * 0.72 + (fbm(wx * 0.003, wz * 0.003, 2) - 0.5) * 18)
       break
     case 'forest':
-      h = h * 0.85 + (fbm(x * 0.0035, z * 0.0035, 3) - 0.5) * 24
+      h = h * 0.85 + (fbm(wx * 0.0035, wz * 0.0035, 2) - 0.5) * 24
       break
     case 'rainforest':
-      h = h * 0.8 + (fbm(x * 0.004, z * 0.004, 3) - 0.5) * 28
+      h = h * 0.8 + (fbm(wx * 0.004, wz * 0.004, 2) - 0.5) * 28
       break
     case 'hills':
-      // Extra local relief so hills aren't soft pillows
       h =
         h * 1.06 +
-        (fbm(x * 0.004, z * 0.004, 3) - 0.42) * 48 +
-        ridged(x * 0.0026, z * 0.0026, 2) * 42 +
-        (fbm(x * 0.009, z * 0.009, 2) - 0.5) * 16
+        (fbm(wx * 0.004, wz * 0.004, 2) - 0.42) * 48 +
+        ridged(wx * 0.0026, wz * 0.0026, 2) * 42
       break
     case 'mountain':
     case 'snow': {
-      // Reinforce ridge character already in massif (still no ultra-fine needles)
-      const belt = mountainBelt(x, z)
-      const r = ridged(x * 0.0007, z * 0.0007, 3)
-      const peak = fbm(x * 0.0009 + 4, z * 0.0009, 3)
-      h +=
-        belt *
-        (r * r * 90 +
-          Math.pow(smoothstep(0.45, 0.9, peak), 1.3) * r * 110 +
-          (fbm(x * 0.002, z * 0.002, 2) - 0.5) * 40)
+      // Massif already applied; light polish only
+      const belt = mountainBeltW(wx, wz)
+      const r = ridged(wx * 0.0007, wz * 0.0007, 2)
+      h += belt * (r * r * 100 + (fbm(wx * 0.002, wz * 0.002, 2) - 0.5) * 35)
       if (rough === 'snow') h += smoothstep(0.45, 0.85, belt) * 80
       break
     }
@@ -432,7 +361,6 @@ function heightFromFields(
   if (features.stream > 0.35 && rough !== 'ocean' && rough !== 'desert') {
     h -= features.stream * features.stream * 8
   }
-  // Deep ravines for vertical drama
   if (features.ravine > 0.18 && rough !== 'ocean') {
     h -= features.ravine * features.ravine * (55 + Math.max(0, h) * 0.4)
   }
@@ -466,13 +394,15 @@ export function sampleClimate(x: number, z: number): Climate {
     }
   }
 
-  const land = sampleLand(x, z)
-  const moisture = sampleMoisture(x, z)
-  const temperature = sampleTemperature(x, z)
-  const features = sampleFeatures(x, z)
-  const height = heightFromFields(
-    x,
-    z,
+  // One warp for the entire sample — biggest CPU win on the mesh path
+  const [wx, wz] = warp(x, z)
+  const land = landAt(wx, wz, dist)
+  const moisture = moistureAt(wx, wz)
+  const temperature = temperatureAt(wx, wz, z)
+  const features = featuresAt(wx, wz)
+  const height = heightFromFieldsW(
+    wx,
+    wz,
     land,
     moisture,
     temperature,
@@ -480,7 +410,6 @@ export function sampleClimate(x: number, z: number): Climate {
     dist,
   )
   const biome = classifyBiome(height, moisture, temperature, features, land, dist)
-  // Beach band: landward side of the coast mask
   const coastal =
     land > 0.4 && land < 0.62
       ? (1 - Math.abs(land - 0.5) / 0.12) * (height < 18 ? 1 : 0.35)
@@ -511,7 +440,8 @@ export function biomeColor(
   coastal = 0,
   land = 1,
 ): [number, number, number] {
-  const n = fbm(x * 0.05, z * 0.05, 2)
+  // Cheap speck (no fbm) — hash is enough for vertex fleck
+  const n = hash2(Math.floor(x * 0.5), Math.floor(z * 0.5))
   const speck = (n - 0.5) * 0.05
   const river = features?.river ?? 0
   const ravine = features?.ravine ?? 0
