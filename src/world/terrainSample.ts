@@ -189,16 +189,47 @@ function sampleCanyon(x: number, z: number): number {
   return smoothstep(0.55, 0.86, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 3))
 }
 
+/**
+ * Badlands / mesa country: layered buttes, sharp arroyos, steep-walled valleys.
+ * Not gentle hills — flat tops and hard drops.
+ */
 function mesaHeight(base: number, x: number, z: number): number {
   const [wx, wz] = warp(x, z)
-  const stepNoise = fbm(wx * 0.0012, wz * 0.0012, 2)
-  const stepH = 22 + stepNoise * 28
-  const plateau = Math.floor(Math.max(15, base + 40) / stepH) * stepH
-  const edge = ridged(wx * 0.0035, wz * 0.0035, 2)
-  const cliff = smoothstep(0.35, 0.72, edge)
-  const top = plateau + 10 + (fbm(wx * 0.014, wz * 0.014, 2) - 0.5) * 4
-  const wall = base * 0.45
-  return wall + (top - wall) * (1 - cliff * 0.85)
+
+  // Layered sedimentary steps (butte/mesa tops)
+  const stepNoise = fbm(wx * 0.0014, wz * 0.0014, 3)
+  const stepH = 18 + stepNoise * 22
+  const stacked = Math.floor(Math.max(20, base * 0.85 + 55) / stepH) * stepH
+  const topJitter = (fbm(wx * 0.02, wz * 0.02, 2) - 0.5) * 3
+  const plateau = stacked + topJitter
+
+  // Cliff edges around plateaus
+  const edge = ridged(wx * 0.004, wz * 0.004, 3)
+  const cliff = smoothstep(0.28, 0.62, edge)
+
+  // Dense network of steep arroyos / washes (badlands signature)
+  const arroyoA = 1 - smoothstep(0.02, 0.11, Math.abs(fbm(wx * 0.0035, wz * 0.0035, 3) - 0.5) * 2)
+  const arroyoB = 1 - smoothstep(0.015, 0.09, Math.abs(fbm(wx * 0.006 + 40, wz * 0.006 - 20, 2) - 0.48) * 2)
+  const gully = clamp01(Math.max(arroyoA * 0.85, arroyoB) * smoothstep(0.4, 0.75, ridged(wx * 0.0022, wz * 0.0022, 2)))
+
+  // Deep canyon corridors
+  const canyon = sampleCanyon(x, z)
+  const deepCut = canyon * canyon * (55 + plateau * 0.25)
+  const arroyoCut = gully * gully * (40 + plateau * 0.2)
+
+  // Floor of valleys stays low; rims stay high → steep walls
+  const floor = Math.min(base * 0.25, 12)
+  const rim = plateau + 18
+  let h = floor + (rim - floor) * (1 - cliff * 0.92)
+  h -= deepCut
+  h -= arroyoCut
+
+  // Secondary hoodoo-scale nubs on remaining high ground
+  if (gully < 0.35 && cliff < 0.45) {
+    h += ridged(wx * 0.012, wz * 0.012, 2) * 12
+  }
+
+  return Math.max(h, 1)
 }
 
 function duneHeight(base: number, x: number, z: number): number {
@@ -295,7 +326,12 @@ function heightFromFields(
       h = duneHeight(Math.max(h, base * 0.55), x, z) - sampleCanyon(x, z) * 40
       break
     case 'mesa':
-      h = mesaHeight(Math.max(h, base * 0.6), x, z) - sampleCanyon(x, z) * 48
+      // Full badlands reshape (steep valleys baked into mesaHeight)
+      h = mesaHeight(Math.max(h, base * 0.7), x, z)
+      // Extra ravine cuts for sheer gorges
+      if (features.ravine > 0.15) {
+        h -= features.ravine * features.ravine * (70 + Math.max(0, h) * 0.45)
+      }
       break
     case 'swamp':
       // Low but not pancake-flat
@@ -451,8 +487,18 @@ export function biomeColor(
     case 'desert':
       return [0.78 + speck, 0.66 + speck * 0.4, 0.38 + speck]
     case 'mesa': {
-      const band = Math.sin(height * 0.4) * 0.05
-      return [0.58 + band + speck, 0.34 + band * 0.4, 0.22 + speck]
+      // Badlands: reddish-orange strata, darker in valleys
+      const band = Math.sin(height * 0.55) * 0.06
+      const depth = smoothstep(5, 80, height)
+      // High ground: bright rust/orange; low washes: deeper red-brown
+      const r = 0.72 + band + speck * 0.5 + depth * 0.12
+      const g = 0.28 + band * 0.35 + depth * 0.14 + speck * 0.2
+      const b = 0.12 + depth * 0.06
+      return [
+        Math.min(0.95, r),
+        Math.min(0.55, g),
+        Math.min(0.28, b),
+      ]
     }
     case 'swamp':
       return [0.2 + speck, 0.3 + moisture * 0.08, 0.16]

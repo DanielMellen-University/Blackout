@@ -138,8 +138,9 @@ export class TerrainSystem {
       flatShading: true,
     })
     this.mesaRockMat = new MeshStandardMaterial({
-      color: 0x8a4a32,
-      roughness: 0.9,
+      // Badlands red-orange rock
+      color: 0xc45a28,
+      roughness: 0.88,
       metalness: 0.04,
       flatShading: true,
     })
@@ -532,10 +533,11 @@ export class TerrainSystem {
           }
           break
         case 'mesa':
-          if (mi < maxRocks) {
-            placeRock(mesaRocks, mi++, wx, h, wz, 1.5 + roll * 5, rot)
-          } else if (bi < maxBush && roll > 0.8) {
-            placeBush(bushes, bi++, wx, h, wz, 0.4 + roll * 0.5, rot)
+          // Sparse hoodoo rocks only on high ground; barren washes
+          if (h > 25 && mi < maxRocks) {
+            placeRock(mesaRocks, mi++, wx, h, wz, 1.8 + roll * 6, rot)
+          } else if (h > 40 && bi < maxBush && roll > 0.88) {
+            placeBush(bushes, bi++, wx, h, wz, 0.35 + roll * 0.4, rot)
           }
           break
         case 'desert':
