@@ -72,14 +72,14 @@ function landAt(wx: number, wz: number, distFromOps: number): number {
   if (distFromOps < RUNWAY_FLAT_OUTER) {
     return Math.max(0.92, 1 - distFromOps / (RUNWAY_FLAT_OUTER * 4))
   }
-  // Larger landmasses (lower freq) + strong land bias → oceans less common/smaller
-  const continent = fbm(wx * 0.0002, wz * 0.0002, 3)
-  const detail = fbm(wx * 0.00065 + 40, wz * 0.00065 - 20, 2)
-  let land = clamp01((continent * 0.78 + detail * 0.22 - 0.12) / 0.5)
-  // Rare inland seas only (was punching too many holes in the continents)
-  const inlandSea = fbm(wx * 0.00095 + 300, wz * 0.00095 - 150, 2)
-  if (inlandSea > 0.9 && land > 0.6) {
-    land *= smoothstep(0.97, 0.9, inlandSea)
+  // Land-heavy but with room for modest seas (middle ground)
+  const continent = fbm(wx * 0.00024, wz * 0.00024, 3)
+  const detail = fbm(wx * 0.00075 + 40, wz * 0.00075 - 20, 2)
+  let land = clamp01((continent * 0.76 + detail * 0.24 - 0.18) / 0.52)
+  // Occasional inland seas (not rare voids, not swiss cheese)
+  const inlandSea = fbm(wx * 0.0008 + 300, wz * 0.0008 - 150, 2)
+  if (inlandSea > 0.84 && land > 0.55) {
+    land *= smoothstep(0.94, 0.84, inlandSea)
   }
   return land
 }
@@ -293,8 +293,8 @@ export function classifyBiome(
   mesaProv = 0,
 ): Biome {
   if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway' // dist = ops center
-  // Deep ocean only — higher bar so seas are less common
-  if (land < 0.3) return 'ocean'
+  // Ocean / sea (land still dominates; modest water coverage)
+  if (land < 0.36) return 'ocean'
 
   if (features.lake > 0.55 && elev < 55) return 'water'
   if (features.pond > 0.72 && elev < 40) return 'water'
@@ -339,8 +339,8 @@ function heightFromFieldsW(
   const flatMask = smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
   if (flatMask <= 0) return 0
 
-  if (land < 0.3) {
-    const deep = (0.3 - land) * 70
+  if (land < 0.36) {
+    const deep = (0.36 - land) * 60
     return (SEA_LEVEL - 0.15 - deep * 0.04) * flatMask
   }
 
@@ -348,8 +348,8 @@ function heightFromFieldsW(
   base += (0.5 - moisture) * 10
   base += (temperature - 0.5) * 6
 
-  // Beach ramp between deep ocean and solid land
-  const beach = smoothstep(0.3, 0.5, land)
+  // Beach ramp between ocean and solid land
+  const beach = smoothstep(0.36, 0.54, land)
   base = base * beach + (1.5 + base * 0.15) * (1 - beach)
 
   let h = base
@@ -493,8 +493,8 @@ export function sampleClimate(x: number, z: number): Climate {
     mesaProv,
   )
   const coastal =
-    land > 0.28 && land < 0.52
-      ? (1 - Math.abs(land - 0.4) / 0.12) * (height < 18 ? 1 : 0.35)
+    land > 0.32 && land < 0.55
+      ? (1 - Math.abs(land - 0.43) / 0.12) * (height < 18 ? 1 : 0.35)
       : 0
   return {
     height,
