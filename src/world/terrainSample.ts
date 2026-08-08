@@ -97,12 +97,14 @@ function temperatureAt(wx: number, wz: number, z: number): number {
 }
 
 /**
- * Large-scale badlands province (~3–6 km). Higher = more likely mesa country.
+ * Large-scale badlands province. Higher = more likely mesa country.
+ * Tuned so mesa is present but not dominant.
  */
 function mesaProvince(wx: number, wz: number): number {
-  const a = fbm(wx * 0.00014 + 90, wz * 0.00014 - 40, 3)
-  const b = fbm(wx * 0.00032 + 12, wz * 0.00032 - 8, 2)
-  return clamp01(a * 0.7 + b * 0.3)
+  const a = fbm(wx * 0.00016 + 90, wz * 0.00016 - 40, 3)
+  const b = fbm(wx * 0.00036 + 12, wz * 0.00036 - 8, 2)
+  // Slight downward bias so provinces are a bit rarer / smaller
+  return clamp01(a * 0.7 + b * 0.3 - 0.06)
 }
 
 /** Cheap feature pack from already-warped coords (one river/ravine/lake each). */
@@ -305,15 +307,14 @@ export function classifyBiome(
   if (elev > 520) return 'snow'
   if (elev > 220) return 'mountain'
 
-  // --- Mesa / badlands: larger provinces + looser climate gate ---
-  // Big contiguous regions when mesaProv is high; also classic arid mid-elev.
-  const aridish = moisture < 0.5 && temperature > 0.42
-  const inMesaElev = elev > 12 && elev < 300
+  // --- Mesa / badlands: present but a bit rarer than peak expansion ---
+  const aridish = moisture < 0.46 && temperature > 0.46
+  const inMesaElev = elev > 22 && elev < 260
   if (inMesaElev && aridish) {
-    // Large province: most of the arid mid-band becomes mesa
-    if (mesaProv > 0.36 && moisture < 0.52) return 'mesa'
-    // Classic hot/dry mid elevation
-    if (temperature > 0.48 && moisture < 0.44 && elev > 18) return 'mesa'
+    // Need a clearer province signal (was 0.36)
+    if (mesaProv > 0.48 && moisture < 0.46) return 'mesa'
+    // Classic hot/dry mid elevation (stricter than before)
+    if (temperature > 0.54 && moisture < 0.38 && elev > 28 && elev < 200) return 'mesa'
   }
   // Remaining very dry low flats stay sand desert
   if (temperature > 0.55 && moisture < 0.34 && elev < 48) return 'desert'
@@ -322,7 +323,7 @@ export function classifyBiome(
   if (moisture > 0.58 && elev < 30 && temperature < 0.58) return 'swamp'
   if (moisture > 0.46 && elev < 110 && temperature > 0.28) return 'forest'
   // Rolling / highland hills (common mid band) — not in strong mesa province
-  if (elev > 45 && elev <= 160 && mesaProv < 0.4) return 'hills'
+  if (elev > 45 && elev <= 160 && mesaProv < 0.5) return 'hills'
   return 'plains'
 }
 
@@ -362,10 +363,10 @@ function heightFromFieldsW(
   }
 
   const mesaProv = mesaProvince(wx, wz)
-  // Bias base height upward in mesa provinces so elev gate lands in mid band
-  if (mesaProv > 0.35 && moisture < 0.5) {
-    h += mesaProv * 28
-    base += mesaProv * 22
+  // Mild elev bias only in strong mesa provinces
+  if (mesaProv > 0.48 && moisture < 0.46) {
+    h += mesaProv * 22
+    base += mesaProv * 16
   }
 
   const rough = classifyBiome(
