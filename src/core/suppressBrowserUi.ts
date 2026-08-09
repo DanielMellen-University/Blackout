@@ -222,19 +222,7 @@ export function suppressBrowserUi(canvas: HTMLCanvasElement): void {
   })
 }
 
-/**
- * Enter fullscreen + Keyboard Lock so Chrome actually swallows Ctrl+W/T/N.
- * Safe to call from the Play button (user gesture required).
- */
-export async function lockGameKeyboard(): Promise<void> {
-  try {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen()
-    }
-  } catch {
-    // Fullscreen denied — still try lock / rely on preventDefault
-  }
-
+async function lockKeysOnly(): Promise<void> {
   try {
     const kb = (
       navigator as Navigator & {
@@ -265,7 +253,7 @@ export async function lockGameKeyboard(): Promise<void> {
         'ArrowLeft',
         'ArrowRight',
         'Tab',
-        // Escape intentionally NOT locked — browser + game use it to exit fullscreen
+        // Escape intentionally NOT locked — used to toggle fullscreen
         'F5',
       ])
     }
@@ -274,8 +262,7 @@ export async function lockGameKeyboard(): Promise<void> {
   }
 }
 
-/** Release keyboard lock + leave fullscreen (optional, e.g. future menu). */
-export async function unlockGameKeyboard(): Promise<void> {
+function unlockKeysOnly(): void {
   try {
     const kb = (
       navigator as Navigator & {
@@ -286,9 +273,38 @@ export async function unlockGameKeyboard(): Promise<void> {
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Enter fullscreen + Keyboard Lock so Chrome actually swallows Ctrl+W/T/N.
+ * Safe to call from the Play button (user gesture required).
+ */
+export async function lockGameKeyboard(): Promise<void> {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen()
+    }
+  } catch {
+    // Fullscreen denied — still try lock / rely on preventDefault
+  }
+  await lockKeysOnly()
+}
+
+/** Release keyboard lock + leave fullscreen. */
+export async function unlockGameKeyboard(): Promise<void> {
+  unlockKeysOnly()
   try {
     if (document.fullscreenElement) await document.exitFullscreen()
   } catch {
     /* ignore */
+  }
+}
+
+/** Esc toggle: enter fullscreen (+ key lock) or exit. */
+export async function toggleGameFullscreen(): Promise<void> {
+  if (document.fullscreenElement) {
+    await unlockGameKeyboard()
+  } else {
+    await lockGameKeyboard()
   }
 }

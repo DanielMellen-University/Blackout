@@ -13,7 +13,7 @@ import { InputManager } from './core/InputManager'
 import {
   lockGameKeyboard,
   suppressBrowserUi,
-  unlockGameKeyboard,
+  toggleGameFullscreen,
 } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
@@ -88,16 +88,24 @@ async function boot(): Promise<void> {
       if (e.code === 'Space') e.preventDefault()
       startGame()
     }
-    // Esc: leave fullscreen + release keyboard lock (game keeps running)
+    // Esc: toggle fullscreen (enter + key lock / exit + unlock)
     if (playing && e.code === 'Escape') {
       e.preventDefault()
-      void unlockGameKeyboard()
+      void toggleGameFullscreen()
     }
   })
   // If the user exits fullscreen via browser UI, drop the key lock too
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) {
-      void unlockGameKeyboard()
+      // Don't call exitFullscreen again — only unlock keys
+      try {
+        const kb = (
+          navigator as Navigator & { keyboard?: { unlock: () => void } }
+        ).keyboard
+        kb?.unlock?.()
+      } catch {
+        /* ignore */
+      }
     }
   })
 
