@@ -16,6 +16,7 @@ import {
   Scene,
   Vector3,
 } from 'three'
+import { SkyDome } from './SkyDome'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 
 /**
@@ -215,9 +216,11 @@ const WEATHER: Record<WeatherId, WeatherProfile> = {
 const _c = new Color()
 const _c2 = new Color()
 const _v = new Vector3()
+const _sunDir = new Vector3()
+const _horizon = new Color()
 
 /**
- * Day/night cycle + weather: sky, fog, lights, clouds, rain/snow.
+ * Day/night cycle + weather: sky dome (sun/moon/stars), fog, lights, clouds, rain/snow.
  * Full day ~8 real minutes. Time fully random on reseed.
  */
 export class Atmosphere {
@@ -233,12 +236,14 @@ export class Atmosphere {
 
   private autoWeatherTimer = 0
   private readonly autoWeatherInterval = 75
+  private elapsed = 0
 
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
   private readonly sun: DirectionalLight
   private readonly fill: DirectionalLight
   private readonly scene: Scene
+  private readonly sky: SkyDome
 
   private readonly precipRoot = new Group()
   private readonly rain: Points
@@ -284,6 +289,11 @@ export class Atmosphere {
     this.weatherFrom = 'clear'
     this.weatherTo = 'clear'
     this.weatherT = 1
+
+    // Shader sky: gradient + sun/moon discs + stars
+    this.sky = new SkyDome(scene)
+    // Let the dome paint the backdrop (clear color stays dark night base)
+    this.scene.background = new Color(0x02040a)
 
     // --- Precipitation ---
     const rainCount = 3200
@@ -439,6 +449,7 @@ export class Atmosphere {
 
   update(dt: number, ax: number, ay: number, az: number): void {
     this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
+    this.elapsed += dt
     this.cloudWindT += dt
 
     this.autoWeatherTimer += dt
@@ -482,6 +493,7 @@ export class Atmosphere {
 
   private apply(ax: number, ay: number, az: number, dt: number): void {
     const t = this.timeOfDay
+    // Sun elevation: -1 midnight-side, +1 noon
     const elev = Math.sin((t - 0.25) * Math.PI * 2)
     // Three.js: smoothstep(x, min, max)
     const dayFactor = MathUtils.smoothstep(elev, -0.12, 0.28)
@@ -492,41 +504,68 @@ export class Atmosphere {
 
     const w = this.blendedProfile()
 
-    const daySky = new Color(0x6eb4d8)
-    const noonSky = new Color(0x87c4e8)
-    const nightSky = new Color(0x060a14)
-    const duskSky = new Color(0xc47848)
-    const dawnSky = new Color(0xd4a070)
-
+    // Zenith color (top of sky dome)
+    const daySky = new Color(0x4a9fd4)
+    const noonSky = new Color(0x5eb0e8)
+    const nightSky = new Color(0x040812)
+    const duskZenith = new Color(0x2a3a68)
     _c.copy(nightSky).lerp(daySky, dayFactor)
-    if (t > 0.2 && t < 0.35) _c.lerp(dawnSky, dusk * 0.85)
-    if (t > 0.65 && t < 0.85) _c.lerp(duskSky, dusk * 0.9)
     if (dayFactor > 0.7) _c.lerp(noonSky, (dayFactor - 0.7) / 0.3)
+    if (dusk > 0.15) _c.lerp(duskZenith, dusk * 0.55)
+
+    // Horizon band (warmer at dawn/dusk)
+    const dayHoriz = new Color(0xa8d0ea)
+    const nightHoriz = new Color(0x0a1020)
+    const dawnHoriz = new Color(0xffb070)
+    const duskHoriz = new Color(0xff7a40)
+    _horizon.copy(nightHoriz).lerp(dayHoriz, dayFactor)
+    if (t > 0.18 && t < 0.38) _horizon.lerp(dawnHoriz, dusk * 0.9)
+    if (t > 0.62 && t < 0.88) _horizon.lerp(duskHoriz, dusk * 0.95)
 
     // Haze / snow sky pull
     _c2.setHex(w.snow > 0.3 ? 0x9aabbc : 0x6a7888)
-    _c.lerp(_c2, w.haze * 0.55 + w.snow * 0.15)
-    if (w.rain > 0.5) _c.multiplyScalar(1 - w.rain * 0.18)
-    if (w.snow > 0.7) _c.lerp(new Color(0xc8d4e0), 0.25)
+    _c.lerp(_c2, w.haze * 0.4 + w.snow * 0.12)
+    _horizon.lerp(_c2, w.haze * 0.55 + w.snow * 0.18)
+    if (w.rain > 0.5) {
+      _c.multiplyScalar(1 - w.rain * 0.18)
+      _horizon.multiplyScalar(1 - w.rain * 0.14)
+    }
+    if (w.snow > 0.7) {
+      _c.lerp(new Color(0xc8d4e0), 0.2)
+      _horizon.lerp(new Color(0xd0dce8), 0.25)
+    }
 
     const fogNear = this.baseFogNear * w.fogNearMul
     const fogFar = this.baseFogFar * w.fogFarMul
-    this.scene.background = _c.clone()
+    // Fog matches horizon so the stream edge blends into the sky
     if (this.scene.fog instanceof Fog) {
-      this.scene.fog.color.copy(_c)
+      this.scene.fog.color.copy(_horizon)
       this.scene.fog.near = fogNear
       this.scene.fog.far = fogFar
     } else {
-      this.scene.fog = new Fog(_c.getHex(), fogNear, fogFar)
+      this.scene.fog = new Fog(_horizon.getHex(), fogNear, fogFar)
     }
 
-    // Sun / moon
+    // Orbital sun direction (full arc, including under horizon)
     const azim = (t - 0.25) * Math.PI * 2
-    const sunDist = 420
-    const sunY = Math.max(-80, elev * 320)
-    const sunX = Math.cos(azim) * sunDist
-    const sunZ = Math.sin(azim) * sunDist * 0.85
-    this.sun.position.set(ax + sunX, ay + sunY, az + sunZ)
+    _sunDir.set(Math.cos(azim), elev, Math.sin(azim) * 0.85).normalize()
+
+    // Directional light sits far along sun dir (and opposite for moonlight)
+    const lightDist = 800
+    if (elev > -0.05) {
+      this.sun.position.set(
+        ax + _sunDir.x * lightDist,
+        ay + _sunDir.y * lightDist,
+        az + _sunDir.z * lightDist,
+      )
+    } else {
+      // Moonlight from opposite sky
+      this.sun.position.set(
+        ax - _sunDir.x * lightDist,
+        ay - _sunDir.y * lightDist,
+        az - _sunDir.z * lightDist,
+      )
+    }
     this.sun.target.position.set(ax, ay * 0.2, az)
     this.sun.target.updateMatrixWorld()
 
@@ -537,8 +576,9 @@ export class Atmosphere {
       this.sun.intensity = (0.4 + dayFactor * 1.4) * w.sunMul
       this.sun.castShadow = elev > 0.12 && w.clouds < 0.85
     } else {
-      this.sun.color.setHex(0x8899bb)
-      this.sun.intensity = 0.14 * w.sunMul
+      // Cool moon light
+      this.sun.color.setHex(0xa8b8e0)
+      this.sun.intensity = (0.12 + nightFactor * 0.18) * w.sunMul
       this.sun.castShadow = false
     }
 
@@ -552,7 +592,26 @@ export class Atmosphere {
     this.ambient.intensity = (0.18 + dayFactor * 0.32) * w.ambientMul
 
     this.fill.intensity = (0.15 + dayFactor * 0.28) * w.sunMul
-    this.fill.position.set(ax - sunX * 0.3, ay + 80, az - sunZ * 0.3)
+    this.fill.position.set(
+      ax - _sunDir.x * lightDist * 0.3,
+      ay + 80,
+      az - _sunDir.z * lightDist * 0.3,
+    )
+
+    // Shader sky dome: sun, moon, stars, gradient
+    this.sky.update(
+      ax,
+      ay,
+      az,
+      _sunDir,
+      dayFactor,
+      dusk,
+      _c,
+      _horizon,
+      w.haze,
+      w.clouds,
+      this.elapsed,
+    )
 
     // World-space clouds (fly past them) + local precip FX
     this.updateClouds(ax, ay, az, dt, w.clouds, dayFactor, w.snow)
