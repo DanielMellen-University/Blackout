@@ -415,6 +415,8 @@ export class TerrainSystem {
         climate.features,
         climate.coastal,
         climate.land,
+        climate.biomeB,
+        climate.biomeMix,
       )
       colors[i * 3] = r
       colors[i * 3 + 1] = g

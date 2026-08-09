@@ -53,6 +53,10 @@ export interface Climate {
   moisture: number
   temperature: number
   biome: Biome
+  /** Second biome for seamless color/height cross-fade. */
+  biomeB: Biome
+  /** 0 = full primary, 1 = full secondary. */
+  biomeMix: number
   /** Convenience: features.river */
   river: number
   land: number
@@ -61,10 +65,10 @@ export interface Climate {
   coastal: number
 }
 
-/** Single domain warp used by the hot climate path. */
+/** Single domain warp — larger warp = softer large-scale biome edges. */
 function warp(x: number, z: number): [number, number] {
-  const wx = x + (fbm(x * 0.00028 + 2, z * 0.00028 - 1, 2) - 0.5) * 280
-  const wz = z + (fbm(x * 0.00028 - 4, z * 0.00028 + 8, 2) - 0.5) * 280
+  const wx = x + (fbm(x * 0.00018 + 2, z * 0.00018 - 1, 2) - 0.5) * 420
+  const wz = z + (fbm(x * 0.00018 - 4, z * 0.00018 + 8, 2) - 0.5) * 420
   return [wx, wz]
 }
 
@@ -72,39 +76,54 @@ function landAt(wx: number, wz: number, distFromOps: number): number {
   if (distFromOps < RUNWAY_FLAT_OUTER) {
     return Math.max(0.92, 1 - distFromOps / (RUNWAY_FLAT_OUTER * 4))
   }
-  // Land-heavy but with room for modest seas (middle ground)
-  const continent = fbm(wx * 0.00024, wz * 0.00024, 3)
-  const detail = fbm(wx * 0.00075 + 40, wz * 0.00075 - 20, 2)
-  let land = clamp01((continent * 0.76 + detail * 0.24 - 0.18) / 0.52)
-  // Occasional inland seas (not rare voids, not swiss cheese)
-  const inlandSea = fbm(wx * 0.0008 + 300, wz * 0.0008 - 150, 2)
-  if (inlandSea > 0.84 && land > 0.55) {
-    land *= smoothstep(0.94, 0.84, inlandSea)
+  // Slightly larger continents + seas
+  const continent = fbm(wx * 0.00016, wz * 0.00016, 3)
+  const detail = fbm(wx * 0.00055 + 40, wz * 0.00055 - 20, 2)
+  let land = clamp01((continent * 0.78 + detail * 0.22 - 0.16) / 0.54)
+  const inlandSea = fbm(wx * 0.00055 + 300, wz * 0.00055 - 150, 2)
+  if (inlandSea > 0.86 && land > 0.55) {
+    land *= smoothstep(0.95, 0.86, inlandSea)
   }
   return land
 }
 
 function moistureAt(wx: number, wz: number): number {
+  // Larger wet/dry provinces (+ mid-scale variety)
   return clamp01(
-    fbm(wx * 0.00044, wz * 0.00044, 3) * 0.72 +
-      fbm(wx * 0.0014 + 30, wz * 0.0014 - 10, 2) * 0.28,
+    fbm(wx * 0.00028, wz * 0.00028, 3) * 0.68 +
+      fbm(wx * 0.0009 + 30, wz * 0.0009 - 10, 2) * 0.24 +
+      fbm(wx * 0.0022 - 15, wz * 0.0022 + 9, 2) * 0.08,
   )
 }
 
 function temperatureAt(wx: number, wz: number, z: number): number {
-  const lat = 0.5 + z * 0.00006
-  return clamp01(lat * 0.22 + fbm(wx * 0.00048 - 50, wz * 0.00048 + 20, 2) * 0.78)
+  const lat = 0.5 + z * 0.000045
+  // Broader climate bands
+  return clamp01(
+    lat * 0.2 +
+      fbm(wx * 0.0003 - 50, wz * 0.0003 + 20, 2) * 0.68 +
+      fbm(wx * 0.0009 + 8, wz * 0.0009 - 4, 2) * 0.12,
+  )
 }
 
 /**
  * Large-scale badlands province. Higher = more likely mesa country.
- * Tuned so mesa is present but not dominant.
  */
 function mesaProvince(wx: number, wz: number): number {
-  const a = fbm(wx * 0.00016 + 90, wz * 0.00016 - 40, 3)
-  const b = fbm(wx * 0.00036 + 12, wz * 0.00036 - 8, 2)
-  // Slight downward bias so provinces are a bit rarer / smaller
-  return clamp01(a * 0.7 + b * 0.3 - 0.06)
+  const a = fbm(wx * 0.00011 + 90, wz * 0.00011 - 40, 3)
+  const b = fbm(wx * 0.00026 + 12, wz * 0.00026 - 8, 2)
+  return clamp01(a * 0.72 + b * 0.28 - 0.04)
+}
+
+/** Extra province masks for biome variety (large, soft). */
+function wetProvince(wx: number, wz: number): number {
+  return smoothstep(0.42, 0.72, fbm(wx * 0.00014 + 200, wz * 0.00014 - 80, 3))
+}
+function aridProvince(wx: number, wz: number): number {
+  return smoothstep(0.48, 0.78, fbm(wx * 0.00013 - 120, wz * 0.00013 + 60, 3))
+}
+function coldProvince(wx: number, wz: number): number {
+  return smoothstep(0.5, 0.8, fbm(wx * 0.00012 + 40, wz * 0.00012 + 180, 2))
 }
 
 /** Cheap feature pack from already-warped coords (one river/ravine/lake each). */
@@ -163,18 +182,16 @@ export function sampleLake(x: number, z: number): number {
 }
 
 /**
- * Mountain-range mask. Wide soft ramp into foothills (less knife-edge belts).
+ * Mountain-range mask — soft wide foothills, firm core for real peaks.
  */
 function mountainBeltW(wx: number, wz: number): number {
-  const spine = ridged(wx * 0.00022 - 2, wz * 0.00022 + 6, 3)
-  const gate = fbm(wx * 0.00014 + 70, wz * 0.00014 - 30, 2)
-  // Wider smoothsteps = gentler range margins
-  return smoothstep(0.28, 0.78, spine) * smoothstep(0.24, 0.68, gate)
+  const spine = ridged(wx * 0.00018 - 2, wz * 0.00018 + 6, 3)
+  const gate = fbm(wx * 0.00011 + 70, wz * 0.00011 - 30, 2)
+  return smoothstep(0.26, 0.76, spine) * smoothstep(0.22, 0.66, gate)
 }
 
 /**
- * Ridged massifs from pre-warped coords (avoids re-warp in hot path).
- * Lower crest powers / wider flanks so slopes ease instead of cliffs.
+ * Ridged massifs: soft flanks / aprons, but sharp summits where crest is high.
  */
 function mountainMassifW(
   base: number,
@@ -184,59 +201,62 @@ function mountainMassifW(
 ): number {
   if (belt < 0.001) return base
   const t = belt
-  const r1 = ridged(wx * 0.00048, wz * 0.00048, 3)
-  const r2 = ridged(wx * 0.00072 + 40, wz * 0.00072 - 15, 2)
-  // Soft max: blend ridges instead of hard max (reduces sharp creases)
-  const ridge = r1 > r2 * 0.82 ? r1 * 0.72 + r2 * 0.82 * 0.28 : r2 * 0.82 * 0.72 + r1 * 0.28
-  const chain = fbm(wx * 0.00055 + 12, wz * 0.00055 - 8, 3)
-  const summit = Math.pow(smoothstep(0.32, 0.94, chain), 1.12)
-  const col = 1 - 0.35 * (1 - smoothstep(0.18, 0.58, chain))
-  // Gentler exponents → rounded shoulders, not razor crests
-  const crest = Math.pow(ridge, 1.28)
-  const flank = Math.pow(ridge, 0.95)
-  const apron = t * flank * (220 + fbm(wx * 0.00055, wz * 0.00055, 2) * 150)
-  const wall = t * t * crest * col * (420 + summit * 280)
-  const peaks = t * t * crest * summit * (240 + chain * 200)
+  const r1 = ridged(wx * 0.00042, wz * 0.00042, 3)
+  const r2 = ridged(wx * 0.00065 + 40, wz * 0.00065 - 15, 2)
+  const ridge = Math.max(r1, r2 * 0.85)
+  const chain = fbm(wx * 0.00048 + 12, wz * 0.00048 - 8, 3)
+  const summit = Math.pow(smoothstep(0.4, 0.93, chain), 1.4)
+  const col = 1 - 0.4 * (1 - smoothstep(0.2, 0.55, chain))
+  // Flanks soft; crest sharp only near true ridgelines
+  const crestSoft = Math.pow(ridge, 1.15)
+  const crestSharp = Math.pow(ridge, 1.85)
+  const crest = crestSoft * (1 - summit * 0.65) + crestSharp * (summit * 0.65 + 0.15)
+  const flank = Math.pow(ridge, 0.9)
+  const apron = t * flank * (240 + fbm(wx * 0.0005, wz * 0.0005, 2) * 160)
+  const wall = t * t * crest * col * (480 + summit * 340)
+  // Peaks punch up hard when summit mask is on
+  const peaks = t * t * crestSharp * summit * (380 + chain * 280)
   const slopeProxy = clamp01(ridge * (1 - ridge) * 4)
   const rockA =
-    (fbm(wx * 0.0024 + 3, wz * 0.0024, 2) - 0.5) * 70 * slopeProxy * t
-  const rockB = ridged(wx * 0.0019 - 5, wz * 0.0019, 2) * 38 * crest * t
-  const crag = ridged(wx * 0.0028, wz * 0.0028, 2) * 28 * summit * crest * t
-  return base * (1 - t * 0.82) + apron + wall + peaks + rockA + rockB + crag
+    (fbm(wx * 0.0022 + 3, wz * 0.0022, 2) - 0.5) * 85 * slopeProxy * t
+  const rockB = ridged(wx * 0.0017 - 5, wz * 0.0017, 2) * 48 * crest * t
+  const crag =
+    ridged(wx * 0.0026, wz * 0.0026, 2) * 40 * summit * crestSharp * t
+  return base * (1 - t * 0.85) + apron + wall + peaks + rockA + rockB + crag
 }
 
 function landElevationW(wx: number, wz: number, land: number): number {
-  const continental = (fbm(wx * 0.00035, wz * 0.00035, 3) - 0.32) * 95
-  const rollA = (fbm(wx * 0.0011 + 11, wz * 0.0011 - 7, 3) - 0.48) * 52
-  const rollB = (fbm(wx * 0.0038 - 3, wz * 0.0038 + 9, 2) - 0.5) * 38
-  // Softer micro detail (was a source of glittery spikes)
-  const detail = (fbm(wx * 0.01, wz * 0.01, 2) - 0.5) * 5
+  // Stronger multi-scale height variation
+  const continental = (fbm(wx * 0.00026, wz * 0.00026, 3) - 0.3) * 120
+  const rollA = (fbm(wx * 0.00085 + 11, wz * 0.00085 - 7, 3) - 0.48) * 62
+  const rollB = (fbm(wx * 0.0028 - 3, wz * 0.0028 + 9, 2) - 0.5) * 48
+  const detail = (fbm(wx * 0.009, wz * 0.009, 2) - 0.5) * 10
 
-  const hillN = fbm(wx * 0.0017 + 20, wz * 0.0017, 3)
+  const hillN = fbm(wx * 0.00125 + 20, wz * 0.00125, 3)
   const hills =
-    smoothstep(0.3, 0.75, hillN) * 68 + smoothstep(0.46, 0.88, hillN) * 52
+    smoothstep(0.28, 0.72, hillN) * 82 + smoothstep(0.44, 0.86, hillN) * 64
   const knolls =
-    smoothstep(0.36, 0.8, hillN) *
-    ((fbm(wx * 0.0045, wz * 0.0045, 2) - 0.5) * 32 +
-      ridged(wx * 0.0032 + 7, wz * 0.0032, 2) * 24)
+    smoothstep(0.34, 0.78, hillN) *
+    ((fbm(wx * 0.0038, wz * 0.0038, 2) - 0.5) * 40 +
+      ridged(wx * 0.0028 + 7, wz * 0.0028, 2) * 30)
 
-  const miniRidge = ridged(wx * 0.00085 + 40, wz * 0.00085 - 15, 2)
-  const ridges = smoothstep(0.38, 0.88, miniRidge) * 64
+  const miniRidge = ridged(wx * 0.0007 + 40, wz * 0.0007 - 15, 2)
+  const ridges = smoothstep(0.36, 0.86, miniRidge) * 78
 
   const belt = mountainBeltW(wx, wz)
-  let h = 18 + continental + rollA + rollB + detail + hills + knolls + ridges
+  let h = 16 + continental + rollA + rollB + detail + hills + knolls + ridges
 
-  const basin = fbm(wx * 0.0008 + 100, wz * 0.0008 - 50, 2)
-  h -= smoothstep(0.55, 0.92, basin) * 38 * (1 - belt * 0.75)
+  const basin = fbm(wx * 0.0006 + 100, wz * 0.0006 - 50, 2)
+  h -= smoothstep(0.52, 0.9, basin) * 48 * (1 - belt * 0.75)
 
   if (belt > 0.03) {
     const mtn = mountainMassifW(h, wx, wz, belt)
-    // Wider blend into massif
-    const w = smoothstep(0.05, 0.55, belt)
+    // Soft foothill blend; core takes over fully at high belt
+    const w = smoothstep(0.04, 0.5, belt)
     h = h * (1 - w) + mtn * w
   }
 
-  h *= smoothstep(0.3, 0.82, land)
+  h *= smoothstep(0.3, 0.8, land)
   return Math.max(h, 0.5)
 }
 
@@ -301,6 +321,159 @@ export function sampleFeatures(x: number, z: number): TerrainFeatures {
   return featuresAt(...warp(x, z))
 }
 
+/** Land biomes that participate in soft height/color blending. */
+const BLEND_BIOMES: readonly Biome[] = [
+  'plains',
+  'forest',
+  'rainforest',
+  'desert',
+  'mesa',
+  'swamp',
+  'hills',
+  'mountain',
+  'snow',
+] as const
+
+type BiomeWeightMap = Partial<Record<Biome, number>>
+
+/**
+ * Soft fitness scores for each land biome — used for seamless height + color.
+ * Scores are unnormalized; caller normalizes / picks top two.
+ */
+function biomeFitness(
+  elev: number,
+  moisture: number,
+  temperature: number,
+  features: TerrainFeatures,
+  land: number,
+  mesaProv: number,
+  wet: number,
+  arid: number,
+  cold: number,
+): BiomeWeightMap {
+  const w: BiomeWeightMap = {}
+
+  // Snow / mountain — elevation driven, cold province helps snow lower
+  w.snow =
+    smoothstep(380, 620, elev) * (0.55 + cold * 0.55) +
+    smoothstep(280, 480, elev) * cold * 0.45
+  w.mountain =
+    smoothstep(140, 280, elev) * (1 - smoothstep(520, 720, elev) * 0.7) +
+    smoothstep(100, 200, elev) * mountainBeltHint(elev) * 0.35
+
+  // Mesa / desert — arid provinces + elevation band
+  const aridish = clamp01((0.5 - moisture) * 2.2) * clamp01((temperature - 0.38) * 2)
+  w.mesa =
+    smoothstep(18, 50, elev) *
+    (1 - smoothstep(220, 300, elev)) *
+    aridish *
+    (0.35 + mesaProv * 0.9 + arid * 0.45)
+  w.desert =
+    smoothstep(0.34, 0.55, land) *
+    (1 - smoothstep(55, 95, elev)) *
+    clamp01((0.42 - moisture) * 3) *
+    clamp01((temperature - 0.42) * 2.2) *
+    (0.4 + arid * 0.7) *
+    (1 - mesaProv * 0.55)
+
+  // Wet biomes
+  w.rainforest =
+    smoothstep(0.48, 0.72, moisture) *
+    smoothstep(0.42, 0.65, temperature) *
+    (1 - smoothstep(90, 140, elev)) *
+    (0.4 + wet * 0.75)
+  w.swamp =
+    smoothstep(0.5, 0.72, moisture) *
+    (1 - smoothstep(22, 48, elev)) *
+    (1 - smoothstep(0.62, 0.78, temperature)) *
+    (0.45 + wet * 0.5)
+  w.forest =
+    smoothstep(0.38, 0.58, moisture) *
+    (1 - smoothstep(130, 190, elev)) *
+    smoothstep(0.22, 0.4, temperature) *
+    (0.5 + wet * 0.35 + (1 - arid) * 0.2)
+
+  // Hills mid band
+  w.hills =
+    smoothstep(35, 70, elev) *
+    (1 - smoothstep(150, 210, elev)) *
+    (1 - mesaProv * 0.55) *
+    (0.55 + (1 - Math.abs(moisture - 0.45) * 1.2) * 0.35)
+
+  // Plains fill low/mid dry-ish temperate
+  w.plains =
+    (1 - smoothstep(70, 120, elev)) *
+    (1 - clamp01(moisture - 0.55) * 1.4) *
+    (0.4 + (1 - wet * 0.3) * 0.35) *
+    (1 - aridish * 0.5)
+
+  // Inland water depression (soft, rarely dominates land)
+  const waterFit =
+    Math.max(features.lake, features.pond * 0.9, features.river * 0.85) *
+    (1 - smoothstep(40, 80, elev))
+  if (waterFit > 0.2) w.water = waterFit * 1.1
+
+  // Kill tiny noise
+  for (const k of Object.keys(w) as Biome[]) {
+    if ((w[k] ?? 0) < 0.04) delete w[k]
+  }
+  return w
+}
+
+function mountainBeltHint(elev: number): number {
+  return smoothstep(120, 240, elev)
+}
+
+/** Normalize weights; return primary, secondary, mix t, and full map. */
+function resolveBiomeBlend(weights: BiomeWeightMap): {
+  primary: Biome
+  secondary: Biome
+  mix: number
+  weights: BiomeWeightMap
+} {
+  let best: Biome = 'plains'
+  let bestV = -1
+  let second: Biome = 'plains'
+  let secondV = -1
+  let sum = 0
+  for (const b of BLEND_BIOMES) {
+    const v = weights[b] ?? 0
+    if (v <= 0) continue
+    sum += v
+    if (v > bestV) {
+      second = best
+      secondV = bestV
+      best = b
+      bestV = v
+    } else if (v > secondV) {
+      second = b
+      secondV = v
+    }
+  }
+  if (weights.water && (weights.water ?? 0) > bestV) {
+    second = best
+    secondV = bestV
+    best = 'water'
+    bestV = weights.water
+    sum += weights.water
+  }
+  // Normalize retained weights
+  const norm: BiomeWeightMap = {}
+  if (sum <= 1e-6) {
+    norm.plains = 1
+    return { primary: 'plains', secondary: 'plains', mix: 0, weights: norm }
+  }
+  for (const b of Object.keys(weights) as Biome[]) {
+    norm[b] = (weights[b] ?? 0) / sum
+  }
+  // Mix toward secondary when close (seamless boundary)
+  const mix =
+    bestV > 0 && secondV > 0
+      ? clamp01((secondV / bestV) * 0.55)
+      : 0
+  return { primary: best, secondary: second, mix, weights: norm }
+}
+
 export function classifyBiome(
   elev: number,
   moisture: number,
@@ -308,52 +481,105 @@ export function classifyBiome(
   features: TerrainFeatures,
   land: number,
   distFromOrigin: number,
-  /** Large-scale badlands province 0..1 (optional, defaults to 0). */
   mesaProv = 0,
+  wx = 0,
+  wz = 0,
 ): Biome {
-  if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway' // dist = ops center
-  // Ocean / sea (land still dominates; modest water coverage)
+  if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway'
   if (land < 0.36) return 'ocean'
+  if (features.lake > 0.62 && elev < 50) return 'water'
+  if (features.pond > 0.78 && elev < 35) return 'water'
+  if (features.river > 0.78 && elev < 50) return 'water'
+  if (elev < 1.0 && moisture > 0.55) return 'water'
 
-  if (features.lake > 0.55 && elev < 55) return 'water'
-  if (features.pond > 0.72 && elev < 40) return 'water'
-  if (features.river > 0.74 && elev < 55) return 'water'
-  if (elev < 1.2 && moisture > 0.55) return 'water'
-
-  // High alpine / big peaks (thresholds match taller ranges)
-  if (elev > 520) return 'snow'
-  if (elev > 220) return 'mountain'
-
-  // --- Mesa / badlands: present but a bit rarer than peak expansion ---
-  const aridish = moisture < 0.46 && temperature > 0.46
-  const inMesaElev = elev > 22 && elev < 260
-  if (inMesaElev && aridish) {
-    // Need a clearer province signal (was 0.36)
-    if (mesaProv > 0.48 && moisture < 0.46) return 'mesa'
-    // Classic hot/dry mid elevation (stricter than before)
-    if (temperature > 0.54 && moisture < 0.38 && elev > 28 && elev < 200) return 'mesa'
-  }
-  // Remaining very dry low flats stay sand desert
-  if (temperature > 0.55 && moisture < 0.34 && elev < 48) return 'desert'
-
-  if (temperature > 0.52 && moisture > 0.62 && elev < 100) return 'rainforest'
-  if (moisture > 0.58 && elev < 30 && temperature < 0.58) return 'swamp'
-  if (moisture > 0.46 && elev < 110 && temperature > 0.28) return 'forest'
-  // Rolling / highland hills (common mid band) — not in strong mesa province
-  if (elev > 45 && elev <= 160 && mesaProv < 0.5) return 'hills'
-  return 'plains'
+  const wet = wetProvince(wx, wz)
+  const arid = aridProvince(wx, wz)
+  const cold = coldProvince(wx, wz)
+  const fit = biomeFitness(
+    elev,
+    moisture,
+    temperature,
+    features,
+    land,
+    mesaProv,
+    wet,
+    arid,
+    cold,
+  )
+  return resolveBiomeBlend(fit).primary
 }
 
 /**
- * How much to blend each sample toward its 4-neighbor average (0–1).
- * Higher = softer ridges / valleys; kept moderate for silhouette + cost.
+ * Spatial smooth weight for foothills/valleys.
+ * Peaks keep sharp silhouettes (smooth falls off with elevation / ridge).
  */
-const HEIGHT_SMOOTH = 0.38
-/** Neighbor offset in warped metres for the spatial smooth. */
-const HEIGHT_SMOOTH_D = 30
+const HEIGHT_SMOOTH = 0.34
+const HEIGHT_SMOOTH_D = 28
+
+function shapedHeightForBiome(
+  biome: Biome,
+  base: number,
+  h: number,
+  wx: number,
+  wz: number,
+  features: TerrainFeatures,
+): number {
+  switch (biome) {
+    case 'desert':
+      return (
+        duneHeightW(Math.max(h, base * 0.55), wx, wz) -
+        smoothstep(0.5, 0.9, ridged(wx * 0.0018 + 200, wz * 0.0018 - 100, 2)) * 36
+      )
+    case 'mesa': {
+      let mh = mesaHeightW(Math.max(h, base * 0.75), wx, wz)
+      if (features.ravine > 0.2) {
+        mh -= Math.pow(features.ravine, 1.45) * (38 + Math.max(0, mh) * 0.28)
+      }
+      return mh
+    }
+    case 'swamp':
+      return Math.max(
+        0.25,
+        Math.min(h * 0.4, 12) + (fbm(wx * 0.009, wz * 0.009, 2) - 0.5) * 3.5,
+      )
+    case 'plains':
+      return Math.max(
+        1,
+        h * 0.7 + (fbm(wx * 0.0024, wz * 0.0024, 2) - 0.5) * 22,
+      )
+    case 'forest':
+      return h * 0.84 + (fbm(wx * 0.0028, wz * 0.0028, 2) - 0.5) * 26
+    case 'rainforest':
+      return h * 0.78 + (fbm(wx * 0.0032, wz * 0.0032, 2) - 0.5) * 30
+    case 'hills':
+      return (
+        h * 1.08 +
+        (fbm(wx * 0.003, wz * 0.003, 2) - 0.42) * 52 +
+        ridged(wx * 0.0019, wz * 0.0019, 2) * 38
+      )
+    case 'mountain':
+    case 'snow': {
+      const belt = mountainBeltW(wx, wz)
+      const r = ridged(wx * 0.00058, wz * 0.00058, 2)
+      // Sharp ridgeline polish on peaks
+      let out =
+        h +
+        belt *
+          (Math.pow(r, 1.7) * 95 +
+            Math.pow(r, 1.1) * 40 +
+            (fbm(wx * 0.0016, wz * 0.0016, 2) - 0.5) * 32)
+      if (biome === 'snow') out += smoothstep(0.38, 0.88, belt) * 90
+      return out
+    }
+    case 'water':
+      return Math.min(h * 0.12, 0.35)
+    default:
+      return h
+  }
+}
 
 /**
- * Raw height at warped coords (no spatial smooth). Used by the 4-tap blend.
+ * Raw height at warped coords (no spatial smooth). Soft-blends biome shapes.
  */
 function heightCoreW(
   wx: number,
@@ -364,7 +590,6 @@ function heightCoreW(
   features: TerrainFeatures,
   dist: number,
 ): number {
-  // dist = distance from airfield ops center
   const flatMask = smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
   if (flatMask <= 0) return 0
 
@@ -374,17 +599,15 @@ function heightCoreW(
   }
 
   let base = landElevationW(wx, wz, land)
-  base += (0.5 - moisture) * 10
-  base += (temperature - 0.5) * 6
+  base += (0.5 - moisture) * 12
+  base += (temperature - 0.5) * 8
 
-  // Wider beach ramp between ocean and solid land
   const beach = smoothstep(0.34, 0.58, land)
   base = base * beach + (1.5 + base * 0.15) * (1 - beach)
 
   let h = base
 
   if (features.lake > 0.35 && moisture > 0.35) {
-    // Soft lake bowls (less ^2 punch)
     h -= Math.pow(features.lake, 1.4) * (18 + Math.max(0, h) * 0.18)
   }
   if (features.pond > 0.55) {
@@ -392,93 +615,61 @@ function heightCoreW(
   }
 
   const mesaProv = mesaProvince(wx, wz)
-  if (mesaProv > 0.48 && moisture < 0.46) {
-    h += mesaProv * 22
-    base += mesaProv * 16
+  const wet = wetProvince(wx, wz)
+  const arid = aridProvince(wx, wz)
+  const cold = coldProvince(wx, wz)
+  if (mesaProv > 0.4 && moisture < 0.48) {
+    h += mesaProv * 28
+    base += mesaProv * 18
   }
 
-  const rough = classifyBiome(
+  const fit = biomeFitness(
     h,
     moisture,
     temperature,
     features,
     land,
-    dist,
     mesaProv,
+    wet,
+    arid,
+    cold,
   )
+  const { weights, primary } = resolveBiomeBlend(fit)
 
-  switch (rough) {
-    case 'ocean':
-      h = SEA_LEVEL - 0.4
-      break
-    case 'desert':
-      h =
-        duneHeightW(Math.max(h, base * 0.55), wx, wz) -
-        smoothstep(0.5, 0.9, ridged(wx * 0.002 + 200, wz * 0.002 - 100, 2)) * 32
-      break
-    case 'mesa':
-      h = mesaHeightW(Math.max(h, base * 0.75), wx, wz)
-      if (features.ravine > 0.2) {
-        h -= Math.pow(features.ravine, 1.45) * (38 + Math.max(0, h) * 0.28)
-      }
-      break
-    case 'swamp':
-      h = Math.min(h * 0.4, 12) + (fbm(wx * 0.01, wz * 0.01, 2) - 0.5) * 3
-      h = Math.max(h, 0.25)
-      break
-    case 'plains':
-      h = Math.max(1, h * 0.72 + (fbm(wx * 0.003, wz * 0.003, 2) - 0.5) * 16)
-      break
-    case 'forest':
-      h = h * 0.85 + (fbm(wx * 0.0035, wz * 0.0035, 2) - 0.5) * 20
-      break
-    case 'rainforest':
-      h = h * 0.8 + (fbm(wx * 0.004, wz * 0.004, 2) - 0.5) * 24
-      break
-    case 'hills':
-      h =
-        h * 1.04 +
-        (fbm(wx * 0.0036, wz * 0.0036, 2) - 0.42) * 40 +
-        ridged(wx * 0.0022, wz * 0.0022, 2) * 30
-      break
-    case 'mountain':
-    case 'snow': {
-      const belt = mountainBeltW(wx, wz)
-      const r = ridged(wx * 0.00065, wz * 0.00065, 2)
-      // Softer peak polish
-      h += belt * (Math.pow(r, 1.25) * 72 + (fbm(wx * 0.0018, wz * 0.0018, 2) - 0.5) * 28)
-      if (rough === 'snow') h += smoothstep(0.4, 0.88, belt) * 70
-      break
-    }
-    case 'water':
-      h = Math.min(h * 0.12, 0.35)
-      break
-    default:
-      break
+  // Weighted height from top biomes (seamless across province edges)
+  let hBlend = 0
+  let wSum = 0
+  for (const b of Object.keys(weights) as Biome[]) {
+    const wt = weights[b] ?? 0
+    if (wt < 0.03) continue
+    hBlend += wt * shapedHeightForBiome(b, base, h, wx, wz, features)
+    wSum += wt
   }
+  if (wSum > 1e-6) h = hBlend / wSum
+  else h = shapedHeightForBiome(primary, base, h, wx, wz, features)
 
-  // Water / canyon carves — wider, less squared so banks slope
-  if (features.river > 0.12 && rough !== 'snow' && rough !== 'ocean') {
+  // Shared soft carves (all land)
+  if (features.river > 0.12 && primary !== 'snow' && primary !== 'ocean') {
     h -= Math.pow(features.river, 1.45) * (18 + Math.max(0, h) * 0.12)
   }
-  if (features.stream > 0.35 && rough !== 'ocean' && rough !== 'desert') {
+  if (features.stream > 0.35 && primary !== 'ocean' && primary !== 'desert') {
     h -= Math.pow(features.stream, 1.4) * 6
   }
-  if (features.ravine > 0.18 && rough !== 'ocean') {
+  if (features.ravine > 0.18 && primary !== 'ocean') {
     h -= Math.pow(features.ravine, 1.45) * (42 + Math.max(0, h) * 0.32)
   }
 
   if (
     (features.lake > 0.55 || features.pond > 0.72 || features.river > 0.75) &&
     h < 4 &&
-    rough !== 'desert' &&
-    rough !== 'mesa' &&
-    rough !== 'ocean'
+    primary !== 'desert' &&
+    primary !== 'mesa' &&
+    primary !== 'ocean'
   ) {
     h = Math.min(h, 0.3)
   }
 
-  h = Math.max(h, rough === 'ocean' ? SEA_LEVEL - 2 : -2)
+  h = Math.max(h, primary === 'ocean' ? SEA_LEVEL - 2 : -2)
   return h * flatMask
 }
 
@@ -493,9 +684,7 @@ function heightAtWarped(wx: number, wz: number, dist: number): number {
 }
 
 /**
- * Height with gradual spatial smoothing: blend toward 4-neighbor average
- * so ridges, mesa lips, and river banks ease instead of knife-edges.
- * Deterministic (same at shared chunk seams).
+ * Height with peak-preserving spatial smooth: foothills ease, summits stay sharp.
  */
 function heightFromFieldsW(
   wx: number,
@@ -507,7 +696,6 @@ function heightFromFieldsW(
   dist: number,
 ): number {
   const h0 = heightCoreW(wx, wz, land, moisture, temperature, features, dist)
-  // Skip expensive neighbors over open ocean / runway pad
   if (land < 0.34 || dist < RUNWAY_FLAT_INNER) return h0
 
   const d = HEIGHT_SMOOTH_D
@@ -518,7 +706,10 @@ function heightFromFieldsW(
       heightAtWarped(wx, wz - d, dist)) *
     0.25
 
-  return h0 * (1 - HEIGHT_SMOOTH) + avg * HEIGHT_SMOOTH
+  // High peaks: almost no smooth (keep sharp silhouettes)
+  const peakKeep = smoothstep(200, 480, h0)
+  const w = HEIGHT_SMOOTH * (1 - peakKeep * 0.9)
+  return h0 * (1 - w) + avg * w
 }
 
 export function sampleClimate(x: number, z: number): Climate {
@@ -529,6 +720,8 @@ export function sampleClimate(x: number, z: number): Climate {
       moisture: 0.42,
       temperature: 0.55,
       biome: 'runway',
+      biomeB: 'runway',
+      biomeMix: 0,
       river: 0,
       land: 1,
       features: { river: 0, ravine: 0, pond: 0, lake: 0, stream: 0 },
@@ -536,7 +729,6 @@ export function sampleClimate(x: number, z: number): Climate {
     }
   }
 
-  // One warp for the entire sample — biggest CPU win on the mesh path
   const [wx, wz] = warp(x, z)
   const land = landAt(wx, wz, dist)
   const moisture = moistureAt(wx, wz)
@@ -552,15 +744,48 @@ export function sampleClimate(x: number, z: number): Climate {
     features,
     dist,
   )
-  const biome = classifyBiome(
-    height,
-    moisture,
-    temperature,
-    features,
-    land,
-    dist,
-    mesaProv,
-  )
+
+  let biome: Biome
+  let biomeB: Biome
+  let biomeMix = 0
+  if (land < 0.36) {
+    biome = 'ocean'
+    biomeB = 'ocean'
+  } else if (dist < RUNWAY_FLAT_INNER) {
+    biome = 'runway'
+    biomeB = 'runway'
+  } else {
+    const wet = wetProvince(wx, wz)
+    const arid = aridProvince(wx, wz)
+    const cold = coldProvince(wx, wz)
+    const fit = biomeFitness(
+      height,
+      moisture,
+      temperature,
+      features,
+      land,
+      mesaProv,
+      wet,
+      arid,
+      cold,
+    )
+    // Water overrides when strong
+    if (
+      (features.lake > 0.62 && height < 50) ||
+      (features.pond > 0.78 && height < 35) ||
+      (features.river > 0.78 && height < 50)
+    ) {
+      biome = 'water'
+      biomeB = resolveBiomeBlend(fit).primary
+      biomeMix = 0.2
+    } else {
+      const blend = resolveBiomeBlend(fit)
+      biome = blend.primary
+      biomeB = blend.secondary
+      biomeMix = blend.mix
+    }
+  }
+
   const coastal =
     land > 0.32 && land < 0.55
       ? (1 - Math.abs(land - 0.43) / 0.12) * (height < 18 ? 1 : 0.35)
@@ -570,6 +795,8 @@ export function sampleClimate(x: number, z: number): Climate {
     moisture,
     temperature,
     biome,
+    biomeB,
+    biomeMix,
     river: features.river,
     land,
     features,
@@ -671,6 +898,71 @@ export function sampleTerrainHeight(x: number, z: number): number {
   return sampleClimate(x, z).height
 }
 
+function biomeColorSolid(
+  biome: Biome,
+  height: number,
+  moisture: number,
+  n: number,
+  speck: number,
+  land: number,
+): [number, number, number] {
+  switch (biome) {
+    case 'runway':
+      return [0.24 + speck, 0.3 + speck, 0.2]
+    case 'ocean': {
+      const shallow = clamp01((land - 0.25) / 0.2)
+      const deep = 1 - shallow
+      return [
+        0.04 + shallow * 0.12 + n * 0.02,
+        0.16 + shallow * 0.22 + n * 0.05,
+        0.28 + shallow * 0.12 + deep * 0.2 + n * 0.04,
+      ]
+    }
+    case 'water':
+      return [0.1, 0.3 + n * 0.08, 0.44 + n * 0.06]
+    case 'desert':
+      return [0.78 + speck, 0.66 + speck * 0.4, 0.38 + speck]
+    case 'mesa': {
+      const band = Math.sin(height * 0.55) * 0.06
+      const depth = smoothstep(5, 80, height)
+      const r = 0.72 + band + speck * 0.5 + depth * 0.12
+      const g = 0.28 + band * 0.35 + depth * 0.14 + speck * 0.2
+      const b = 0.12 + depth * 0.06
+      return [Math.min(0.95, r), Math.min(0.55, g), Math.min(0.28, b)]
+    }
+    case 'swamp':
+      return [0.2 + speck, 0.3 + moisture * 0.08, 0.16]
+    case 'forest':
+      return [0.15 + speck, 0.36 + moisture * 0.1, 0.14]
+    case 'rainforest':
+      return [0.07 + speck, 0.3 + moisture * 0.1, 0.1]
+    case 'hills': {
+      const rockBlend = smoothstep(70, 180, height)
+      const grass: [number, number, number] = [0.3 + speck, 0.42 + speck, 0.2]
+      const rock: [number, number, number] = [0.4 + n * 0.08, 0.38, 0.34]
+      return [
+        grass[0] + (rock[0] - grass[0]) * rockBlend,
+        grass[1] + (rock[1] - grass[1]) * rockBlend,
+        grass[2] + (rock[2] - grass[2]) * rockBlend,
+      ]
+    }
+    case 'mountain': {
+      const rock = 0.4 + n * 0.1
+      const snowAmt = smoothstep(350, 700, height)
+      const c = rock + (0.92 - rock) * snowAmt
+      return [c, c * (1 - snowAmt * 0.02), c + snowAmt * 0.02]
+    }
+    case 'snow': {
+      const t = smoothstep(400, 1000, height)
+      const c = 0.5 + t * 0.45
+      return [c, c, c + 0.02]
+    }
+    case 'plains':
+    default:
+      return [0.28 + speck, 0.44 + speck + moisture * 0.04, 0.18]
+  }
+}
+
 export function biomeColor(
   biome: Biome,
   height: number,
@@ -680,8 +972,9 @@ export function biomeColor(
   features?: TerrainFeatures,
   coastal = 0,
   land = 1,
+  biomeB: Biome = biome,
+  biomeMix = 0,
 ): [number, number, number] {
-  // Cheap speck (no fbm) — hash is enough for vertex fleck
   const n = hash2(Math.floor(x * 0.5), Math.floor(z * 0.5))
   const speck = (n - 0.5) * 0.05
   const river = features?.river ?? 0
@@ -691,93 +984,27 @@ export function biomeColor(
     const rock = 0.22 + n * 0.08
     return [rock, rock * 0.95, rock * 0.9]
   }
-
-  // River floodplain: darker wet soil / green banks
   if (river > 0.4 && biome !== 'desert' && biome !== 'mesa' && biome !== 'ocean') {
     return [0.16 + speck, 0.34 + n * 0.06, 0.22]
   }
-
   if ((features?.lake ?? 0) > 0.45 || (features?.pond ?? 0) > 0.65) {
     if (biome === 'water' || height < 1.5) {
       return [0.1, 0.28 + n * 0.08, 0.4 + n * 0.06]
     }
   }
 
-  let col: [number, number, number]
-
-  switch (biome) {
-    case 'runway':
-      col = [0.24 + speck, 0.3 + speck, 0.2]
-      break
-    case 'ocean': {
-      // Turquoise shallows near coast, deep blue offshore
-      const shallow = clamp01((land - 0.25) / 0.2)
-      const deep = 1 - shallow
-      col = [
-        0.04 + shallow * 0.12 + n * 0.02,
-        0.16 + shallow * 0.22 + n * 0.05,
-        0.28 + shallow * 0.12 + deep * 0.2 + n * 0.04,
-      ]
-      break
-    }
-    case 'water':
-      col = [0.1, 0.3 + n * 0.08, 0.44 + n * 0.06]
-      break
-    case 'desert':
-      col = [0.78 + speck, 0.66 + speck * 0.4, 0.38 + speck]
-      break
-    case 'mesa': {
-      // Badlands: reddish-orange strata, darker in valleys
-      const band = Math.sin(height * 0.55) * 0.06
-      const depth = smoothstep(5, 80, height)
-      const r = 0.72 + band + speck * 0.5 + depth * 0.12
-      const g = 0.28 + band * 0.35 + depth * 0.14 + speck * 0.2
-      const b = 0.12 + depth * 0.06
-      col = [Math.min(0.95, r), Math.min(0.55, g), Math.min(0.28, b)]
-      break
-    }
-    case 'swamp':
-      col = [0.2 + speck, 0.3 + moisture * 0.08, 0.16]
-      break
-    case 'forest':
-      col = [0.15 + speck, 0.36 + moisture * 0.1, 0.14]
-      break
-    case 'rainforest':
-      col = [0.07 + speck, 0.3 + moisture * 0.1, 0.1]
-      break
-    case 'hills': {
-      // Rockier as it climbs toward mountain country
-      const rockBlend = smoothstep(70, 180, height)
-      const grass: [number, number, number] = [0.3 + speck, 0.42 + speck, 0.2]
-      const rock: [number, number, number] = [0.4 + n * 0.08, 0.38, 0.34]
-      col = [
-        grass[0] + (rock[0] - grass[0]) * rockBlend,
-        grass[1] + (rock[1] - grass[1]) * rockBlend,
-        grass[2] + (rock[2] - grass[2]) * rockBlend,
-      ]
-      break
-    }
-    case 'mountain': {
-      // Grey rock with alpine snow dust high up
-      const rock = 0.4 + n * 0.1
-      const snowAmt = smoothstep(350, 700, height)
-      const c = rock + (0.92 - rock) * snowAmt
-      col = [c, c * (1 - snowAmt * 0.02), c + snowAmt * 0.02]
-      break
-    }
-    case 'snow': {
-      const t = smoothstep(400, 1000, height)
-      const c = 0.5 + t * 0.45
-      col = [c, c, c + 0.02]
-      break
-    }
-    case 'plains':
-    default:
-      col = [0.28 + speck, 0.44 + speck + moisture * 0.04, 0.18]
-      break
+  let col = biomeColorSolid(biome, height, moisture, n, speck, land)
+  // Seamless cross-fade into neighboring biome color
+  if (biomeMix > 0.04 && biomeB !== biome) {
+    const colB = biomeColorSolid(biomeB, height, moisture, n, speck, land)
+    const t = clamp01(biomeMix)
+    col = [
+      col[0] + (colB[0] - col[0]) * t,
+      col[1] + (colB[1] - col[1]) * t,
+      col[2] + (colB[2] - col[2]) * t,
+    ]
   }
 
-  // Sandy beach tint on coastal land
   if (coastal > 0.15 && biome !== 'ocean' && biome !== 'water' && biome !== 'mesa') {
     const sand: [number, number, number] = [0.82 + speck, 0.72 + speck * 0.5, 0.48]
     const t = clamp01(coastal)
