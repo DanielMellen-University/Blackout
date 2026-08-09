@@ -151,11 +151,11 @@ export class Aircraft {
 
     if (!ab.visible) return
 
-    // Stretch plume aft with power; gentle pulse on AB
+    // Stretch plume aft with power (group origin is nozzle lip — scale keeps flame at tail)
     const pulse =
       boost && dt > 0 ? 1 + Math.sin(performance.now() * 0.028) * 0.08 : 1
-    const len = (0.35 + power * 1.65) * pulse
-    const fat = 0.55 + power * 0.7
+    const len = (0.45 + power * 1.55) * pulse
+    const fat = 0.65 + power * 0.55
     ab.scale.set(fat, fat, len)
 
     ab.traverse((obj) => {

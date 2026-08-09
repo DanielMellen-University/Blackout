@@ -448,13 +448,16 @@ function buildGear(strutMat: MeshStandardMaterial, tireMat: MeshStandardMaterial
 }
 
 /**
- * Afterburner plume behind the nozzle. Aircraft scales / lights by throttle+boost.
- * Additive basic mats = cheap and always readable.
+ * Afterburner plume behind the nozzle. Group origin = nozzle lip so
+ * scale (from Aircraft) grows aft instead of dragging the flame forward.
+ * Nose = +Z, exhaust = −Z.
  */
 function buildAfterburner(): Group {
   const ab = new Group()
   ab.name = 'afterburner'
   ab.visible = false
+  // Nozzle core sits at zJoin - 1.15 ≈ -7.35 (see buildNozzle)
+  ab.position.set(0, 0.02, -7.35)
 
   const coreMat = new MeshBasicMaterial({
     color: 0xfff0c0,
@@ -481,25 +484,26 @@ function buildAfterburner(): Group {
   })
   outerMat.name = 'abOuter'
 
-  // Nozzle lip ~ z=-7.35; plume extends aft (-Z)
-  const zBase = -7.2
-  const core = new Mesh(new ConeGeometry(0.22, 1.4, 12, 1, true), coreMat)
-  core.rotation.x = -Math.PI / 2
-  core.position.set(0, 0.02, zBase - 0.7)
-  core.name = 'abCoreMesh'
-  ab.add(core)
+  // Cone tip = +Y by default. rot.x = −π/2 → tip points −Z (aft).
+  // Center each cone so the base sits at the nozzle (local z≈0) and tip extends aft.
+  const placeCone = (
+    radius: number,
+    height: number,
+    mat: MeshBasicMaterial,
+    name: string,
+  ): Mesh => {
+    const mesh = new Mesh(new ConeGeometry(radius, height, 12, 1, true), mat)
+    mesh.rotation.x = -Math.PI / 2
+    // After rot: tip at local z = −height/2 relative to mesh origin → put origin at −height/2
+    // so base ≈ 0 and tip ≈ −height
+    mesh.position.set(0, 0, -height * 0.5)
+    mesh.name = name
+    return mesh
+  }
 
-  const mid = new Mesh(new ConeGeometry(0.38, 2.2, 12, 1, true), midMat)
-  mid.rotation.x = -Math.PI / 2
-  mid.position.set(0, 0.02, zBase - 1.1)
-  mid.name = 'abMidMesh'
-  ab.add(mid)
-
-  const outer = new Mesh(new ConeGeometry(0.55, 3.2, 12, 1, true), outerMat)
-  outer.rotation.x = -Math.PI / 2
-  outer.position.set(0, 0.02, zBase - 1.6)
-  outer.name = 'abOuterMesh'
-  ab.add(outer)
+  ab.add(placeCone(0.2, 1.5, coreMat, 'abCoreMesh'))
+  ab.add(placeCone(0.36, 2.4, midMat, 'abMidMesh'))
+  ab.add(placeCone(0.52, 3.4, outerMat, 'abOuterMesh'))
 
   return ab
 }
