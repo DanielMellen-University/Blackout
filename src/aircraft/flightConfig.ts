@@ -8,8 +8,8 @@ export const flightConfig = {
   mass: 10_000,
 
   /** Peak dry thrust (N). Accel = thrust / mass, then clamped by maxAccel. */
-  maxThrust: 735_000,
-  boostThrustMul: 1.45,
+  maxThrust: 900_000,
+  boostThrustMul: 1.55,
 
   /**
    * Speed envelope (m/s).
@@ -22,16 +22,26 @@ export const flightConfig = {
   /** Absolute cap with afterburner (~365 kts). */
   maxSpeedBoost: 187.78,
 
-  /** Peak forward acceleration from thrust (m/s^2), after mass. Lower = slower spool-up. */
-  maxAccel: 24,
-  /** Peak speed bleed from drag/brakes feel (m/s^2 scale). Lower = slower bleed-off. */
-  maxDecel: 16.5,
+  /** Peak forward acceleration from thrust (m/s^2). */
+  maxAccel: 42,
+  /**
+   * Peak coasting drag (m/s^2) at mid throttle.
+   * Idle uses maxBrakeDecel via airbrake (see FlightModel).
+   */
+  maxDecel: 28,
+  /** Airbrake / reverse-bleed at zero throttle (m/s^2). */
+  maxBrakeDecel: 58,
+  /** How hard idle throttle acts as airbrake (0–1 thr maps to this). */
+  airbrakeStrength: 52,
+  /** Extra wheel brakes on ground when throttle near idle. */
+  wheelBrakeDecel: 38,
 
   liftPerSpeed: 0.125,
   maxLiftAccel: 28,
 
-  dragPerSpeed: 0.0055,
-  gearDrag: 0.0035,
+  /** Light aero drag coefficient (speed-scaled). */
+  dragPerSpeed: 0.004,
+  gearDrag: 0.0045,
 
   gravity: 9.81,
 
@@ -73,12 +83,12 @@ export const flightConfig = {
   bellyHeight: 0.95,
 
   rotateSpeed: 22,
-  rollingDecel: 0.7,
+  rollingDecel: 1.4,
   rotateClimb: 8,
   groundSteer: 1.45,
 
   /** Throttle spool rate (0-1 per second). Shift up / Ctrl down. */
-  throttleRate: 0.4,
+  throttleRate: 0.9,
 
   crashVy: -14,
   softLandingVy: -6,

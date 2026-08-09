@@ -106,13 +106,17 @@ export class FlightModel {
 
     this.readBodyAxes(orientation)
 
-    // --- Linear motion: thrust (capped accel), gravity, lift, drag, speed envelope ---
+    // --- Linear motion: thrust (capped accel), gravity, lift, drag/brake, envelope ---
     let thr = MathUtils.clamp(controls.throttle, 0, 1)
     if (controls.boost) thr = Math.min(1, thr + 0.45)
     const boost = controls.boost
-    let thrustAccel =
-      (C.maxThrust / mass) * thr * (boost ? C.boostThrustMul : 1)
-    thrustAccel = Math.min(thrustAccel, C.maxAccel)
+    // Thrust only when throttle is up (idle = no push, airbrake handles bleed)
+    let thrustAccel = 0
+    if (thr > 0.02) {
+      thrustAccel =
+        (C.maxThrust / mass) * thr * (boost ? C.boostThrustMul : 1)
+      thrustAccel = Math.min(thrustAccel, C.maxAccel * (0.35 + thr * 0.65))
+    }
 
     if (onGround) {
       _flatFwd.set(_forward.x, 0, _forward.z)
@@ -199,38 +203,53 @@ export class FlightModel {
       }
     }
 
-    // Drag opposing velocity (capped decel feel)
+    // Drag + airbrake: low throttle = real braking (was nearly inert before)
     {
-      let dragK = C.dragPerSpeed + (controls.gearDown ? C.gearDrag : 0)
-      if (onGround) dragK += 0.0015
       const speedNow = velocity.length()
       if (speedNow > 1e-4) {
-        const damp = Math.min(0.6, dragK * speedNow * dt)
-        // Limit how hard drag can decelerate per frame
-        const maxDamp = (C.maxDecel * dt) / speedNow
-        velocity.multiplyScalar(1 - Math.min(damp, maxDamp))
+        _velDir.copy(velocity).multiplyScalar(1 / speedNow)
+
+        // Base aero + gear
+        let decel =
+          C.dragPerSpeed * speedNow * speedNow * 0.08 +
+          (controls.gearDown ? C.gearDrag * speedNow * 2.5 : 0)
+
+        // Airbrake: idle throttle bleeds hard; full thr almost none
+        const idle = MathUtils.clamp(1 - thr, 0, 1)
+        const airbrake = idle * idle * C.airbrakeStrength
+        decel += airbrake
+
+        // Ground: wheel brakes when throttle near idle
+        if (onGround && thr < 0.12) {
+          decel += C.wheelBrakeDecel * (1 - thr / 0.12)
+        } else if (onGround) {
+          decel += C.rollingDecel * 0.35
+        }
+
+        // Cap: stronger cap when intentionally braking
+        const brakeCap = thr < 0.15 ? C.maxBrakeDecel : C.maxDecel
+        decel = Math.min(decel, brakeCap)
+
+        velocity.addScaledVector(_velDir, -decel * dt)
+        // Never reverse from drag alone
+        if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)
       }
     }
 
     // Speed envelope: hard min (airborne) / max (dry vs boost)
     this.applySpeedLimits(velocity, onGround, boost)
 
-    // Rolling friction on the runway
+    // Keep path under nose while rolling; strong stop when fully braked
     if (onGround) {
       const gs = Math.hypot(velocity.x, velocity.z)
       if (gs > 0.08) {
-        const decel = Math.min(gs, C.rollingDecel * dt)
-        velocity.x -= (velocity.x / gs) * decel
-        velocity.z -= (velocity.z / gs) * decel
-        // Keep path roughly under the nose while taxiing / rolling
         _flatFwd.set(_forward.x, 0, _forward.z)
         if (_flatFwd.lengthSq() > 1e-6) {
           _flatFwd.normalize()
-          const gs2 = Math.hypot(velocity.x, velocity.z)
-          velocity.x = _flatFwd.x * gs2
-          velocity.z = _flatFwd.z * gs2
+          velocity.x = _flatFwd.x * gs
+          velocity.z = _flatFwd.z * gs
         }
-      } else if (thr < 0.04) {
+      } else if (thr < 0.05) {
         velocity.x = 0
         velocity.z = 0
       }

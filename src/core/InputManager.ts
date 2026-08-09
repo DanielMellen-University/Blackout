@@ -43,8 +43,8 @@ export class InputManager {
     this.controls.roll = this.axis('KeyQ', 'KeyE')
     this.controls.boost = this.keys.has('Space')
 
-    // Engine power setpoint: hold Shift → rise to 1, hold Ctrl → fall to 0
-    const thrRate = 0.4
+    // Engine power: Shift up, Ctrl down (fast spool so airbrake engages quickly)
+    const thrRate = 0.95
     let thr = this.controls.throttle
     if (this.keys.has('Digit1') || this.keys.has('ControlLeft') || this.keys.has('ControlRight')) {
       thr -= thrRate * step
