@@ -146,8 +146,8 @@ export class CameraSystem {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    // Far plane past fog horizon (fog hides stream edge; no chunk pop)
-    this.camera = new PerspectiveCamera(62, 1, 0.2, 12000)
+    // Far plane past stream + sky (~8.4 km terrain, fog wall earlier)
+    this.camera = new PerspectiveCamera(62, 1, 0.2, 20000)
     this.bindInput(canvas)
     this.applyModeDefaults('chase')
   }

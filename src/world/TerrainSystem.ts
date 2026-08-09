@@ -21,16 +21,25 @@ import { createVegetationFactory, vegetationDensity } from './vegetation'
 
 /**
  * Streaming envelope.
- * Fog fully covers the stream edge; chunk builds are budgeted per frame
- * so crossing a cell boundary never freezes the main thread.
- * Chunks + props fade in/out instead of hard pop.
+ * Terrain is generated past the fog wall so new chunks never appear
+ * in clear view. Fog fully covers ~2 chunk rings before the stream edge.
+ * Chunk builds are budgeted per frame; tiles fade in/out softly.
  */
 export const CHUNK_SIZE = 420
-/** Slightly tighter stream ring for fewer live chunks. */
-export const VIEW_RADIUS = 10
-const PROP_RADIUS = 4
-/** Soft edge: start distance-fading this many cells before unload. */
-const FADE_CELLS = 2.2
+/**
+ * Stream half-width in chunks (diameter ~2× this).
+ * Doubled from 10 → 20 for longer sight lines.
+ */
+export const VIEW_RADIUS = 20
+/**
+ * Chunk rings kept past the fog horizon. Generation / fade happens
+ * inside this hidden margin so you never watch tiles pop in.
+ */
+export const FOG_MARGIN_CHUNKS = 2
+/** Detailed props only near the jet (cells). */
+const PROP_RADIUS = 5
+/** Soft opacity fade across the fog margin. */
+const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Seconds-ish ease for spawn/despawn opacity. */
 const FADE_RATE = 1.6
 /**
@@ -44,10 +53,15 @@ const CHUNK_SEGS = 22
  */
 const SKIRT_DEPTH = 220
 /** Max chunk builds per frame (props count as heavier). */
-const BUILDS_PER_FRAME = 1
-export const FOG_NEAR = 1200
-export const FOG_FAR = 4000
+const BUILDS_PER_FRAME = 2
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
+/**
+ * Fog fully opaque at this range — two chunks inside the stream edge
+ * (VIEW_RADIUS - FOG_MARGIN) * CHUNK_SIZE.
+ */
+export const FOG_FAR = (VIEW_RADIUS - FOG_MARGIN_CHUNKS) * CHUNK_SIZE
+/** Clear air near the jet; linear fog ramps out to FOG_FAR. */
+export const FOG_NEAR = Math.round(FOG_FAR * 0.34)
 
 interface Chunk {
   key: string

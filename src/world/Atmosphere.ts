@@ -23,11 +23,11 @@ import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
  * Cloud streaming envelope — match terrain load radius.
  * Spawn near the fog rim; despawn at the same distance chunks unload.
  */
-const CLOUD_DESPAWN = STREAM_RADIUS_M // ~4200 m (terrain stream edge)
-const CLOUD_SPAWN_MIN = FOG_FAR * 0.78 // ~3120 m — appear deep in fog
-const CLOUD_SPAWN_MAX = FOG_FAR * 0.98 // ~3920 m
+const CLOUD_DESPAWN = STREAM_RADIUS_M // match terrain stream edge
+const CLOUD_SPAWN_MIN = FOG_FAR * 0.82 // appear inside fog wall
+const CLOUD_SPAWN_MAX = FOG_FAR * 0.98
 /** Full opacity inside this range; fade 1→0 from here to despawn. */
-const CLOUD_FADE_FULL = FOG_FAR * 0.55 // ~2200 m
+const CLOUD_FADE_FULL = FOG_FAR * 0.5
 const CLOUD_FADE_OUT = CLOUD_DESPAWN
 
 /**
