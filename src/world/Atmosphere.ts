@@ -158,8 +158,8 @@ export class Atmosphere {
     this.baseFogNear = fogNear
     this.baseFogFar = fogFar
 
-    // Start mid-morning, clear
-    this.timeOfDay = 0.34
+    // Start mid-morning, clear (0.35 ≈ 08:24)
+    this.timeOfDay = 0.35
     this.weather = 'clear'
     this.weatherFrom = 'clear'
     this.weatherTo = 'clear'
@@ -212,23 +212,22 @@ export class Atmosphere {
 
   /** Pick weather from seed (on world reseed). */
   randomizeWeather(seed: number): void {
-    const pick = WEATHER_ORDER[Math.abs(seed | 0) % WEATHER_ORDER.length]!
     // Bias clear/cloudy a bit more than storm
     const roll = Math.abs(Math.sin(seed * 12.9898)) % 1
     let w: WeatherId = 'clear'
-    if (roll < 0.35) w = 'clear'
-    else if (roll < 0.55) w = 'cloudy'
-    else if (roll < 0.7) w = 'overcast'
-    else if (roll < 0.82) w = 'fog'
-    else if (roll < 0.93) w = 'rain'
+    if (roll < 0.4) w = 'clear'
+    else if (roll < 0.62) w = 'cloudy'
+    else if (roll < 0.76) w = 'overcast'
+    else if (roll < 0.86) w = 'fog'
+    else if (roll < 0.95) w = 'rain'
     else w = 'storm'
-    void pick
     this.weatherFrom = w
     this.weatherTo = w
     this.weatherT = 1
     this.weather = w
-    // Random time of day too
-    this.timeOfDay = (Math.abs(Math.sin(seed * 78.233)) % 1)
+    // Bias toward daytime (roughly 07:00–17:00) so reseeds aren't always night
+    const dayRoll = Math.abs(Math.sin(seed * 78.233)) % 1
+    this.timeOfDay = 0.28 + dayRoll * 0.4
   }
 
   get clockLabel(): string {
@@ -298,11 +297,12 @@ export class Atmosphere {
     const t = this.timeOfDay
     // Sun elevation: -1 night, +1 noon
     const elev = Math.sin((t - 0.25) * Math.PI * 2)
-    const dayFactor = MathUtils.smoothstep(-0.15, 0.35, elev)
+    // Three.js API: smoothstep(x, min, max) — value first (NOT edge0, edge1, x)
+    const dayFactor = MathUtils.smoothstep(elev, -0.12, 0.28)
     const nightFactor = 1 - dayFactor
     const dusk =
-      MathUtils.smoothstep(0.18, 0.28, t) * (1 - MathUtils.smoothstep(0.28, 0.38, t)) +
-      MathUtils.smoothstep(0.68, 0.78, t) * (1 - MathUtils.smoothstep(0.78, 0.88, t))
+      MathUtils.smoothstep(t, 0.18, 0.28) * (1 - MathUtils.smoothstep(t, 0.28, 0.38)) +
+      MathUtils.smoothstep(t, 0.68, 0.78) * (1 - MathUtils.smoothstep(t, 0.78, 0.88))
 
     const w = this.blendedProfile()
 
