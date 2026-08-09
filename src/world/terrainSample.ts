@@ -87,40 +87,51 @@ function landAt(wx: number, wz: number, distFromOps: number): number {
   return land
 }
 
+/**
+ * Large-scale arid / desert provinces (declared early so climate can dry out).
+ * Wider ramp than before so deserts show up as big sand seas, not crumbs.
+ */
+function aridProvince(wx: number, wz: number): number {
+  return smoothstep(0.36, 0.68, fbm(wx * 0.00012 - 120, wz * 0.00012 + 60, 3))
+}
+
 function moistureAt(wx: number, wz: number): number {
-  // Larger wet/dry provinces (+ mid-scale variety)
-  return clamp01(
-    fbm(wx * 0.00028, wz * 0.00028, 3) * 0.68 +
-      fbm(wx * 0.0009 + 30, wz * 0.0009 - 10, 2) * 0.24 +
-      fbm(wx * 0.0022 - 15, wz * 0.0022 + 9, 2) * 0.08,
-  )
+  // Slight dry bias so sand/mesa aren't fighting mid-wet noise forever
+  let m =
+    fbm(wx * 0.00028, wz * 0.00028, 3) * 0.66 +
+    fbm(wx * 0.0009 + 30, wz * 0.0009 - 10, 2) * 0.24 +
+    fbm(wx * 0.0022 - 15, wz * 0.0022 + 9, 2) * 0.1
+  m -= 0.04
+  // Arid provinces pull moisture down hard → real desert belts
+  const arid = aridProvince(wx, wz)
+  m -= arid * 0.28
+  return clamp01(m)
 }
 
 function temperatureAt(wx: number, wz: number, z: number): number {
   const lat = 0.5 + z * 0.000045
-  // Broader climate bands
-  return clamp01(
-    lat * 0.2 +
-      fbm(wx * 0.0003 - 50, wz * 0.0003 + 20, 2) * 0.68 +
-      fbm(wx * 0.0009 + 8, wz * 0.0009 - 4, 2) * 0.12,
-  )
+  let t =
+    lat * 0.18 +
+    fbm(wx * 0.0003 - 50, wz * 0.0003 + 20, 2) * 0.68 +
+    fbm(wx * 0.0009 + 8, wz * 0.0009 - 4, 2) * 0.14
+  // Arid belts run hotter (classic desert heat)
+  t += aridProvince(wx, wz) * 0.12
+  return clamp01(t)
 }
 
 /**
  * Large-scale badlands province. Higher = more likely mesa country.
+ * Slightly less common so flat desert can win low arid land.
  */
 function mesaProvince(wx: number, wz: number): number {
   const a = fbm(wx * 0.00011 + 90, wz * 0.00011 - 40, 3)
   const b = fbm(wx * 0.00026 + 12, wz * 0.00026 - 8, 2)
-  return clamp01(a * 0.72 + b * 0.28 - 0.04)
+  return clamp01(a * 0.7 + b * 0.3 - 0.08)
 }
 
 /** Extra province masks for biome variety (large, soft). */
 function wetProvince(wx: number, wz: number): number {
   return smoothstep(0.42, 0.72, fbm(wx * 0.00014 + 200, wz * 0.00014 - 80, 3))
-}
-function aridProvince(wx: number, wz: number): number {
-  return smoothstep(0.48, 0.78, fbm(wx * 0.00013 - 120, wz * 0.00013 + 60, 3))
 }
 function coldProvince(wx: number, wz: number): number {
   return smoothstep(0.5, 0.8, fbm(wx * 0.00012 + 40, wz * 0.00012 + 180, 2))
@@ -361,51 +372,59 @@ function biomeFitness(
     smoothstep(140, 280, elev) * (1 - smoothstep(520, 720, elev) * 0.7) +
     smoothstep(100, 200, elev) * mountainBeltHint(elev) * 0.35
 
-  // Mesa / desert — arid provinces + elevation band
-  const aridish = clamp01((0.5 - moisture) * 2.2) * clamp01((temperature - 0.38) * 2)
+  // Mesa / desert — arid provinces. Desert owns low flats; mesa owns mid/high badlands.
+  const aridish =
+    clamp01((0.55 - moisture) * 2.4) * clamp01((temperature - 0.32) * 2.1)
+  // Mesa prefers some relief / province signal, not pure flats
   w.mesa =
-    smoothstep(18, 50, elev) *
-    (1 - smoothstep(220, 300, elev)) *
+    smoothstep(28, 70, elev) *
+    (1 - smoothstep(240, 320, elev)) *
     aridish *
-    (0.35 + mesaProv * 0.9 + arid * 0.45)
+    (0.25 + mesaProv * 1.05 + arid * 0.35)
+  // Desert: low–mid elev sand seas; much stronger when arid province is on
   w.desert =
-    smoothstep(0.34, 0.55, land) *
-    (1 - smoothstep(55, 95, elev)) *
-    clamp01((0.42 - moisture) * 3) *
-    clamp01((temperature - 0.42) * 2.2) *
-    (0.4 + arid * 0.7) *
-    (1 - mesaProv * 0.55)
+    smoothstep(0.32, 0.5, land) *
+    (1 - smoothstep(90, 160, elev)) * // allow taller dunes / scrub flats
+    clamp01((0.52 - moisture) * 2.6) *
+    clamp01((temperature - 0.34) * 2.0) *
+    (0.55 + arid * 1.15 + aridish * 0.45) *
+    (1 - mesaProv * 0.35) // mesa no longer steals most dry land
 
-  // Wet biomes
+  // Wet biomes (slightly weaker so they don't blanket everything)
   w.rainforest =
-    smoothstep(0.48, 0.72, moisture) *
+    smoothstep(0.5, 0.74, moisture) *
     smoothstep(0.42, 0.65, temperature) *
     (1 - smoothstep(90, 140, elev)) *
-    (0.4 + wet * 0.75)
+    (0.35 + wet * 0.7) *
+    (1 - arid * 0.85)
   w.swamp =
-    smoothstep(0.5, 0.72, moisture) *
+    smoothstep(0.52, 0.74, moisture) *
     (1 - smoothstep(22, 48, elev)) *
     (1 - smoothstep(0.62, 0.78, temperature)) *
-    (0.45 + wet * 0.5)
+    (0.4 + wet * 0.5) *
+    (1 - arid)
   w.forest =
-    smoothstep(0.38, 0.58, moisture) *
+    smoothstep(0.4, 0.6, moisture) *
     (1 - smoothstep(130, 190, elev)) *
     smoothstep(0.22, 0.4, temperature) *
-    (0.5 + wet * 0.35 + (1 - arid) * 0.2)
+    (0.45 + wet * 0.35 + (1 - arid) * 0.2) *
+    (1 - arid * 0.75)
 
-  // Hills mid band
+  // Hills mid band — weaker in arid belts
   w.hills =
     smoothstep(35, 70, elev) *
     (1 - smoothstep(150, 210, elev)) *
     (1 - mesaProv * 0.55) *
+    (1 - arid * 0.55) *
     (0.55 + (1 - Math.abs(moisture - 0.45) * 1.2) * 0.35)
 
-  // Plains fill low/mid dry-ish temperate
+  // Plains: step back hard in arid provinces so sand can win
   w.plains =
     (1 - smoothstep(70, 120, elev)) *
     (1 - clamp01(moisture - 0.55) * 1.4) *
     (0.4 + (1 - wet * 0.3) * 0.35) *
-    (1 - aridish * 0.5)
+    (1 - aridish * 0.75) *
+    (1 - arid * 0.85)
 
   // Inland water depression (soft, rarely dominates land)
   const waterFit =
