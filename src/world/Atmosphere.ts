@@ -16,6 +16,18 @@ import {
   Scene,
   Vector3,
 } from 'three'
+import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
+
+/**
+ * Cloud streaming envelope — match terrain load radius.
+ * Spawn near the fog rim; despawn at the same distance chunks unload.
+ */
+const CLOUD_DESPAWN = STREAM_RADIUS_M // ~4200 m (terrain stream edge)
+const CLOUD_SPAWN_MIN = FOG_FAR * 0.78 // ~3120 m — appear deep in fog
+const CLOUD_SPAWN_MAX = FOG_FAR * 0.98 // ~3920 m
+/** Full opacity inside this range; fade 1→0 from here to despawn. */
+const CLOUD_FADE_FULL = FOG_FAR * 0.55 // ~2200 m
+const CLOUD_FADE_OUT = CLOUD_DESPAWN
 
 export type WeatherId =
   | 'clear'
@@ -192,6 +204,8 @@ export class Atmosphere {
   private readonly cloudClusters: Group[] = []
   /** Absolute world positions (clouds do NOT follow the jet). */
   private readonly cloudWorld: Vector3[] = []
+  /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
+  private readonly cloudAlpha: number[] = []
   private cloudWindT = 0
 
   private baseFogNear = 1200
@@ -273,26 +287,31 @@ export class Atmosphere {
     this.precipRoot.add(this.rain, this.snow)
     scene.add(this.precipRoot)
 
-    // --- Cloud puffs in world space (you fly past them; they do not follow) ---
+    // --- Cloud puffs in world space (stream like terrain; fly past them) ---
     this.cloudRoot.name = 'Clouds'
     const puffGeo = new IcosahedronGeometry(1, 1)
     const puffMat = new MeshBasicMaterial({
       color: 0xe8f0f8,
       transparent: true,
-      opacity: 0.55,
+      opacity: 0,
       depthWrite: false,
     })
-    const clusterCount = 48
+    // Wider stream ring needs more clusters than the old near-bubble
+    const clusterCount = 64
     for (let c = 0; c < clusterCount; c++) {
       const cluster = new Group()
-      // Initial world placement in a large area (respawn when far away)
+      // Uniform disk out to terrain stream radius
+      const ang = Math.random() * Math.PI * 2
+      const r = Math.sqrt(Math.random()) * CLOUD_DESPAWN * 0.92
       this.cloudWorld.push(
         new Vector3(
-          (Math.random() - 0.5) * 2400,
+          Math.cos(ang) * r,
           160 + Math.random() * 280,
-          (Math.random() - 0.5) * 2400,
+          Math.sin(ang) * r,
         ),
       )
+      // Start faded; first frames will lerp toward distance target
+      this.cloudAlpha.push(0)
       const nPuffs = 4 + ((Math.random() * 4) | 0)
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, puffMat.clone())
@@ -504,9 +523,10 @@ export class Atmosphere {
   }
 
   /**
-   * Clouds are fixed in world space and only drift slowly with wind.
-   * When a cluster gets too far from the jet, recycle it to a new world
-   * position nearby — same streaming idea as terrain, not parenting to the aircraft.
+   * World-space clouds, streamed like terrain:
+   * - Live far out (spawn near fog rim ~3–4 km, despawn at STREAM_RADIUS)
+   * - Soft fade in when entering the ring, fade out before unload
+   * - Slow wind only — never parented to the jet
    */
   private updateClouds(
     ax: number,
@@ -517,16 +537,15 @@ export class Atmosphere {
     dayFactor: number,
     snowAmt: number,
   ): void {
-    this.cloudRoot.visible = cover > 0.05
-    if (!this.cloudRoot.visible) return
-
     const brightness = 0.45 + dayFactor * 0.5 - snowAmt * 0.1
-    const opacity = MathUtils.clamp(0.2 + cover * 0.55, 0.15, 0.78)
-    // Slow absolute wind (m/s) — clouds crawl across the sky, not with the jet
+    const baseOpacity = MathUtils.clamp(0.22 + cover * 0.52, 0.15, 0.78)
+    // Slow absolute wind (m/s)
     const windX = 3.5 * dt
     const windZ = 1.4 * dt
-    const maxDist = 1600
-    const maxDistSq = maxDist * maxDist
+    const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
+    // ~0.8s ease for opacity (smooth appear / disappear)
+    const fadeK = 1 - Math.exp(-dt * 1.4)
+    let anyVisible = false
 
     for (let i = 0; i < this.cloudClusters.length; i++) {
       const cluster = this.cloudClusters[i]!
@@ -535,29 +554,55 @@ export class Atmosphere {
       wpos.x += windX
       wpos.z += windZ
 
-      // Recycle far clusters into a ring around the aircraft (still absolute coords)
-      const dx = wpos.x - ax
-      const dz = wpos.z - az
-      if (dx * dx + dz * dz > maxDistSq) {
+      let dx = wpos.x - ax
+      let dz = wpos.z - az
+      let distSq = dx * dx + dz * dz
+
+      // Past terrain unload range → recycle onto far spawn ring (in the fog)
+      if (distSq > despawnSq) {
         const ang = Math.random() * Math.PI * 2
-        const r = 500 + Math.random() * 1000
+        const r =
+          CLOUD_SPAWN_MIN + Math.random() * (CLOUD_SPAWN_MAX - CLOUD_SPAWN_MIN)
         wpos.x = ax + Math.cos(ang) * r
         wpos.z = az + Math.sin(ang) * r
         wpos.y = 140 + Math.random() * 300
+        this.cloudAlpha[i] = 0 // start invisible, fade in
+        dx = wpos.x - ax
+        dz = wpos.z - az
+        distSq = dx * dx + dz * dz
       }
 
       cluster.position.set(wpos.x, wpos.y, wpos.z)
 
-      const show = i / this.cloudClusters.length < cover * 1.05
-      cluster.visible = show
-      if (!show) continue
+      const dist = Math.sqrt(distSq)
+      // Distance fade: solid inside ~2.2 km, soft 1→0 out to stream edge
+      const distFade =
+        1 - MathUtils.smoothstep(dist, CLOUD_FADE_FULL, CLOUD_FADE_OUT)
+
+      // Weather cover gates how many clusters are "active"
+      const coverOn =
+        cover > 0.05 && i / this.cloudClusters.length < cover * 1.05
+      const target = coverOn ? distFade : 0
+      this.cloudAlpha[i] = MathUtils.lerp(this.cloudAlpha[i]!, target, fadeK)
+      const a = this.cloudAlpha[i]!
+
+      if (a < 0.01) {
+        cluster.visible = false
+        continue
+      }
+      cluster.visible = true
+      anyVisible = true
+
+      const op = baseOpacity * a * (0.75 + (i % 5) * 0.05)
       for (const child of cluster.children) {
         const m = child as Mesh
         const mat = m.material as MeshBasicMaterial
-        mat.opacity = opacity * (0.75 + (i % 5) * 0.05)
+        mat.opacity = op
         mat.color.setRGB(brightness, brightness * 1.02, brightness * 1.05)
       }
     }
+
+    this.cloudRoot.visible = anyVisible
   }
 
   /** Rain/snow particles stay local to the jet (weather FX, not scenery). */
