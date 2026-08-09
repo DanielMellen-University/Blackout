@@ -19,6 +19,13 @@ const _up = new Vector3()
 const _vel = new Vector3()
 
 /**
+ * Temporary kill-switches until warnings are retuned.
+ * Flip back to true to restore STALL / LOW ALT cautions.
+ */
+const ENABLE_STALL_WARNING = false
+const ENABLE_LOW_ALT_WARNING = false
+
+/**
  * Arcade flight cautions: stall (AoA / low speed), low altitude, gear up on approach.
  * Priority: STALL > GEAR > LOW ALT.
  */
@@ -51,10 +58,11 @@ export function evaluateWarnings(
   // Stall: high AoA or mushy low airspeed while airborne
   const stallAoA = aoaAbs > C.stallAoA * 0.88
   const stallSpeed = speed < C.minSpeed * 0.92 && altAgl > 6
-  const stall = stallAoA || stallSpeed
+  const stall = ENABLE_STALL_WARNING && (stallAoA || stallSpeed)
 
   // Low alt: close to ground after leaving the runway environment
-  const lowAlt = altAgl < 45 && altAgl > 1.5 && speed > 8
+  const lowAlt =
+    ENABLE_LOW_ALT_WARNING && altAgl < 45 && altAgl > 1.5 && speed > 8
 
   // Gear: low and fast-ish with gear still up
   const gear =
