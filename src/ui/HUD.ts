@@ -23,6 +23,9 @@ export class HUD {
   private readonly adiRollEl: HTMLElement | null
   private readonly warnEl: HTMLElement | null
   private readonly warnTextEl: HTMLElement | null
+  private readonly clockEl: HTMLElement | null
+  private readonly weatherEl: HTMLElement | null
+  private readonly phaseEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
   private readonly maxKts = 350
@@ -50,6 +53,9 @@ export class HUD {
     this.adiRollEl = root.getElementById('adi-roll')
     this.warnEl = root.getElementById('hud-warn')
     this.warnTextEl = root.getElementById('hud-warn-text')
+    this.clockEl = root.getElementById('hud-clock')
+    this.weatherEl = root.getElementById('hud-weather')
+    this.phaseEl = root.getElementById('hud-phase')
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
@@ -73,6 +79,9 @@ export class HUD {
     /** Active caution / warning (STALL, LOW ALT, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
+    clock?: string
+    weather?: string
+    dayPhase?: string
     banner?: string | null
   }): void {
     if (this.posEl) {
@@ -90,6 +99,15 @@ export class HUD {
     }
     if (this.fpsEl) {
       this.fpsEl.textContent = String(Math.round(opts.fps))
+    }
+    if (this.clockEl && opts.clock) {
+      this.clockEl.textContent = opts.clock
+    }
+    if (this.weatherEl && opts.weather) {
+      this.weatherEl.textContent = opts.weather
+    }
+    if (this.phaseEl && opts.dayPhase) {
+      this.phaseEl.textContent = opts.dayPhase
     }
 
     if (opts.throttle !== undefined) {

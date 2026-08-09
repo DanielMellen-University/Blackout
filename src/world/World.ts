@@ -6,6 +6,7 @@ import {
   Scene,
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
+import { Atmosphere, type WeatherId } from './Atmosphere'
 import { getWorldSeed, randomizeWorldSeed } from './noise'
 import { createRunway } from './Runway'
 import {
@@ -13,7 +14,7 @@ import {
   setOpsCenter,
   type FlatSpawn,
 } from './terrainSample'
-import { FOG_FAR, TerrainSystem } from './TerrainSystem'
+import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
 
 export interface SpawnPose {
   x: number
@@ -24,14 +25,19 @@ export interface SpawnPose {
 }
 
 /**
- * Scene graph: lights, runway, infinite streaming terrain + biomes.
+ * Scene graph: lights, runway, atmosphere, infinite terrain.
  */
 export class World {
   readonly scene = new Scene()
   readonly terrain: TerrainSystem
   readonly sun: DirectionalLight
+  readonly atmosphere: Atmosphere
   private seed = 0
   private readonly runway: Group
+  private readonly hemi: HemisphereLight
+  private readonly ambient: AmbientLight
+  private readonly fill: DirectionalLight
+
   /** Current airfield spawn (flat biome pad). */
   spawn: SpawnPose = {
     x: 0,
@@ -45,8 +51,30 @@ export class World {
     this.sun = this.createSun()
     this.scene.add(this.sun)
     this.scene.add(this.sun.target)
-    this.addFillLights()
+
+    this.hemi = new HemisphereLight(0xd0e4f8, 0x4a5540, 0.85)
+    this.scene.add(this.hemi)
+
+    this.ambient = new AmbientLight(0xffffff, 0.42)
+    this.scene.add(this.ambient)
+
+    this.fill = new DirectionalLight(0xb8d0ff, 0.4)
+    this.fill.position.set(-100, 80, -60)
+    this.scene.add(this.fill)
+
     this.terrain = new TerrainSystem(this.scene)
+    this.atmosphere = new Atmosphere(
+      this.scene,
+      {
+        sun: this.sun,
+        hemi: this.hemi,
+        ambient: this.ambient,
+        fill: this.fill,
+      },
+      FOG_NEAR,
+      FOG_FAR,
+    )
+
     this.runway = createRunway()
     this.scene.add(this.runway)
     this.reseed(true)
@@ -63,31 +91,32 @@ export class World {
     this.seed = randomizeWorldSeed()
     if (force) this.seed = getWorldSeed()
 
-    // Search natural terrain (ops center still at previous / 0,0)
     const pad = findFlatSpawn()
     this.applySpawn(pad)
 
     this.terrain.clearAll()
     this.terrain.update(this.spawn.x, this.spawn.z)
+    this.atmosphere.randomizeWeather(this.seed)
     return this.seed
   }
 
-  /** Stream terrain around the aircraft each frame. */
-  update(x: number, z: number): void {
+  cycleWeather(): WeatherId {
+    return this.atmosphere.cycleWeather()
+  }
+
+  /**
+   * Stream terrain + advance day/night and weather.
+   */
+  update(x: number, y: number, z: number, dt: number): void {
     this.terrain.update(x, z)
-    this.sun.position.set(x + 180, 280, z + 120)
-    this.sun.target.position.set(x, 0, z)
-    this.sun.target.updateMatrixWorld()
+    this.atmosphere.update(dt, x, y, z)
   }
 
   private applySpawn(pad: FlatSpawn): void {
-    // Flatten terrain around the airfield and force solid land
     setOpsCenter(pad.x, pad.z)
 
-    // After ops center is set, surface under runway is y ≈ 0 (flat pad)
     const gearY = flightConfig.gearHeight
     const yaw = pad.yaw
-    // Runway model is long on local +Z; place jet at threshold (behind center)
     const back = 45
     const fx = Math.sin(yaw)
     const fz = Math.cos(yaw)
@@ -117,17 +146,5 @@ export class World {
     sun.shadow.bias = -0.0002
     void FOG_FAR
     return sun
-  }
-
-  private addFillLights(): void {
-    const hemi = new HemisphereLight(0xd0e4f8, 0x4a5540, 0.85)
-    this.scene.add(hemi)
-
-    const ambient = new AmbientLight(0xffffff, 0.42)
-    this.scene.add(ambient)
-
-    const fill = new DirectionalLight(0xb8d0ff, 0.4)
-    fill.position.set(-100, 80, -60)
-    this.scene.add(fill)
   }
 }

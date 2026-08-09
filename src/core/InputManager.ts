@@ -14,6 +14,7 @@ export class InputManager {
 
   cameraToggleQueued = false
   resetQueued = false
+  weatherCycleQueued = false
 
   constructor(target: Window = window) {
     this.target = target
@@ -84,6 +85,12 @@ export class InputManager {
     return true
   }
 
+  consumeWeatherCycle(): boolean {
+    if (!this.weatherCycleQueued) return false
+    this.weatherCycleQueued = false
+    return true
+  }
+
   private axis(positive: string, negative: string): number {
     return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
@@ -108,6 +115,7 @@ export class InputManager {
 
     if (e.code === 'KeyC') this.cameraToggleQueued = true
     if (e.code === 'KeyR') this.resetQueued = true
+    if (e.code === 'KeyN') this.weatherCycleQueued = true
     if (e.code === 'KeyG') this.controls.gearDown = !this.controls.gearDown
   }
 

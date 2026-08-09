@@ -74,6 +74,7 @@ async function boot(): Promise<void> {
     const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
 
     if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
+    if (input.consumeWeatherCycle()) world.cycleWeather()
     if (input.consumeReset()) {
       // New random world + flat-biome airfield each respawn
       world.reseed()
@@ -106,7 +107,17 @@ async function boot(): Promise<void> {
       banner = null
     }
 
-    world.update(aircraft.position.x, aircraft.position.z)
+    world.update(
+      aircraft.position.x,
+      aircraft.position.y,
+      aircraft.position.z,
+      dt,
+    )
+    // Night exposure slightly lower so instruments stay readable
+    const phase = world.atmosphere.phaseLabel
+    renderer.toneMappingExposure =
+      phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
+
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
 
@@ -132,6 +143,9 @@ async function boot(): Promise<void> {
       roll,
       warning: warn.text,
       warningLevel: warn.level,
+      clock: world.atmosphere.clockLabel,
+      weather: world.atmosphere.weatherLabel,
+      dayPhase: world.atmosphere.phaseLabel,
       banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
     })
   }
