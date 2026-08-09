@@ -95,7 +95,7 @@ export class World {
     this.applySpawn(pad)
 
     this.terrain.clearAll()
-    this.terrain.update(this.spawn.x, this.spawn.z)
+    this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
     this.atmosphere.randomizeWeather(this.seed)
     return this.seed
   }
@@ -108,7 +108,7 @@ export class World {
    * Stream terrain + advance day/night and weather.
    */
   update(x: number, y: number, z: number, dt: number): void {
-    this.terrain.update(x, z)
+    this.terrain.update(x, z, dt)
     this.atmosphere.update(dt, x, y, z)
   }
 

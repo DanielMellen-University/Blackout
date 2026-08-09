@@ -3,6 +3,7 @@ import {
   Color,
   Fog,
   Group,
+  MathUtils,
   Mesh,
   MeshStandardMaterial,
   PlaneGeometry,
@@ -21,11 +22,16 @@ import { createVegetationFactory, vegetationDensity } from './vegetation'
  * Streaming envelope.
  * Fog fully covers the stream edge; chunk builds are budgeted per frame
  * so crossing a cell boundary never freezes the main thread.
+ * Chunks + props fade in/out instead of hard pop.
  */
 export const CHUNK_SIZE = 420
 /** Slightly tighter stream ring for fewer live chunks. */
 export const VIEW_RADIUS = 10
 const PROP_RADIUS = 4
+/** Soft edge: start distance-fading this many cells before unload. */
+const FADE_CELLS = 2.2
+/** Seconds-ish ease for spawn/despawn opacity. */
+const FADE_RATE = 1.6
 /** Balanced segs: smooth enough slopes, cheaper builds. */
 const CHUNK_SEGS = 18
 /** Max chunk builds per frame (props count as heavier). */
@@ -39,6 +45,12 @@ interface Chunk {
   cx: number
   cz: number
   root: Group
+  /** Current opacity 0–1 (lerped each frame). */
+  alpha: number
+  /** Desired opacity (distance fade or 0 while unloading). */
+  targetAlpha: number
+  /** Marked for removal after fade-out completes. */
+  fadingOut: boolean
 }
 
 interface PendingChunk {
@@ -101,9 +113,9 @@ export class TerrainSystem {
 
   /**
    * Call every frame. Schedules needed chunks when the cell changes,
-   * then builds a small budget so freefall never freezes.
+   * builds a small budget, and eases chunk/prop opacity in and out.
    */
-  update(worldX: number, worldZ: number): void {
+  update(worldX: number, worldZ: number, dt = 1 / 60): void {
     this.focusX = worldX
     this.focusZ = worldZ
     const cx = Math.floor(worldX / CHUNK_SIZE)
@@ -116,6 +128,7 @@ export class TerrainSystem {
     }
 
     this.drainBuildQueue()
+    this.updateFades(cx, cz, dt)
   }
 
   private scheduleAround(cx: number, cz: number): void {
@@ -129,7 +142,11 @@ export class TerrainSystem {
         const kz = cz + dz
         const key = `${kx},${kz}`
         needed.add(key)
-        if (!this.chunks.has(key) && !this.pendingKeys.has(key)) {
+        const existing = this.chunks.get(key)
+        if (existing) {
+          // Came back into range while fading out — keep and fade back in
+          existing.fadingOut = false
+        } else if (!this.pendingKeys.has(key)) {
           const dist = Math.hypot(dx, dz)
           this.pending.push({
             cx: kx,
@@ -144,11 +161,11 @@ export class TerrainSystem {
 
     this.pending.sort((a, b) => a.dist - b.dist)
 
+    // Soft unload: mark out-of-range chunks to fade, don't hard-delete
     for (const [key, chunk] of this.chunks) {
       if (!needed.has(key)) {
-        this.root.remove(chunk.root)
-        this.disposeChunk(chunk)
-        this.chunks.delete(key)
+        chunk.fadingOut = true
+        chunk.targetAlpha = 0
       }
     }
 
@@ -181,6 +198,66 @@ export class TerrainSystem {
     }
   }
 
+  /**
+   * Lerp opacity toward targets; dispose only after fade-out finishes.
+   * Outer ring also distance-fades so the stream edge ghosts into fog.
+   */
+  private updateFades(pcx: number, pcz: number, dt: number): void {
+    const fadeK = 1 - Math.exp(-dt * FADE_RATE)
+    const fadeStart = VIEW_RADIUS - FADE_CELLS
+    const toRemove: string[] = []
+
+    for (const [key, chunk] of this.chunks) {
+      if (!chunk.fadingOut) {
+        const cellDist = Math.hypot(chunk.cx - pcx, chunk.cz - pcz)
+        // 1 inside fadeStart, 0 at VIEW_RADIUS
+        chunk.targetAlpha =
+          1 - MathUtils.smoothstep(cellDist, fadeStart, VIEW_RADIUS + 0.35)
+      } else {
+        chunk.targetAlpha = 0
+      }
+
+      chunk.alpha = MathUtils.lerp(chunk.alpha, chunk.targetAlpha, fadeK)
+      // Snap ends so we hit fully opaque / fully gone cleanly
+      if (Math.abs(chunk.alpha - chunk.targetAlpha) < 0.008) {
+        chunk.alpha = chunk.targetAlpha
+      }
+
+      this.applyChunkAlpha(chunk)
+
+      if (chunk.fadingOut && chunk.alpha <= 0.01) {
+        toRemove.push(key)
+      }
+    }
+
+    for (const key of toRemove) {
+      const chunk = this.chunks.get(key)
+      if (!chunk) continue
+      this.root.remove(chunk.root)
+      this.disposeChunk(chunk)
+      this.chunks.delete(key)
+    }
+  }
+
+  private applyChunkAlpha(chunk: Chunk): void {
+    const a = MathUtils.clamp(chunk.alpha, 0, 1)
+    chunk.root.visible = a > 0.005
+    if (!chunk.root.visible) return
+
+    chunk.root.traverse((obj) => {
+      if (!(obj instanceof Mesh)) return
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      for (const mat of mats) {
+        if (!(mat instanceof MeshStandardMaterial)) continue
+        const transparent = a < 0.995
+        mat.transparent = transparent
+        mat.opacity = a
+        // Keep depth writes while mostly solid to reduce sort flicker
+        mat.depthWrite = a > 0.35
+      }
+    })
+  }
+
   private buildChunk(cx: number, cz: number, withProps: boolean): Chunk {
     const root = new Group()
     root.name = `chunk_${cx}_${cz}`
@@ -190,8 +267,38 @@ export class TerrainSystem {
     root.add(this.buildHeightMesh(originX, originZ, withProps))
     if (withProps) root.add(this.buildProps(originX, originZ, cx, cz))
 
+    // Per-chunk material clones so opacity fade doesn't affect other tiles
+    root.traverse((obj) => {
+      if (!(obj instanceof Mesh)) return
+      if (Array.isArray(obj.material)) {
+        obj.material = obj.material.map((m) => {
+          const c = m.clone()
+          c.transparent = true
+          c.opacity = 0
+          c.depthWrite = false
+          return c
+        })
+      } else {
+        const c = obj.material.clone()
+        c.transparent = true
+        c.opacity = 0
+        if (c instanceof MeshStandardMaterial) c.depthWrite = false
+        obj.material = c
+      }
+    })
+
     this.root.add(root)
-    return { key: `${cx},${cz}`, cx, cz, root }
+    const chunk: Chunk = {
+      key: `${cx},${cz}`,
+      cx,
+      cz,
+      root,
+      alpha: 0,
+      targetAlpha: 1,
+      fadingOut: false,
+    }
+    this.applyChunkAlpha(chunk)
+    return chunk
   }
 
   private buildHeightMesh(
@@ -310,9 +417,14 @@ export class TerrainSystem {
 
   private disposeChunk(chunk: Chunk): void {
     chunk.root.traverse((obj) => {
-      if (obj instanceof Mesh && obj.name === 'TerrainChunk') {
+      if (!(obj instanceof Mesh)) return
+      // Terrain geometry is unique; vegetation geos are factory-shared — don't dispose those
+      if (obj.name === 'TerrainChunk') {
         obj.geometry.dispose()
       }
+      // Materials were cloned per chunk for fade — free them
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      for (const m of mats) m.dispose()
     })
     chunk.root.clear()
   }
