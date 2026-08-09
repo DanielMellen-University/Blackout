@@ -241,6 +241,7 @@ export class Atmosphere {
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
   private readonly sun: DirectionalLight
+  private readonly moon: DirectionalLight
   private readonly fill: DirectionalLight
   private readonly scene: Scene
   private readonly sky: SkyDome
@@ -269,6 +270,7 @@ export class Atmosphere {
     scene: Scene,
     lights: {
       sun: DirectionalLight
+      moon: DirectionalLight
       hemi: HemisphereLight
       ambient: AmbientLight
       fill: DirectionalLight
@@ -278,6 +280,7 @@ export class Atmosphere {
   ) {
     this.scene = scene
     this.sun = lights.sun
+    this.moon = lights.moon
     this.hemi = lights.hemi
     this.ambient = lights.ambient
     this.fill = lights.fill
@@ -550,55 +553,70 @@ export class Atmosphere {
     const azim = (t - 0.25) * Math.PI * 2
     _sunDir.set(Math.cos(azim), elev, Math.sin(azim) * 0.85).normalize()
 
-    // Directional light sits far along sun dir (and opposite for moonlight)
-    const lightDist = 800
-    if (elev > -0.05) {
-      this.sun.position.set(
-        ax + _sunDir.x * lightDist,
-        ay + _sunDir.y * lightDist,
-        az + _sunDir.z * lightDist,
-      )
-    } else {
-      // Moonlight from opposite sky
-      this.sun.position.set(
-        ax - _sunDir.x * lightDist,
-        ay - _sunDir.y * lightDist,
-        az - _sunDir.z * lightDist,
-      )
-    }
-    this.sun.target.position.set(ax, ay * 0.2, az)
+    // --- Sun + moon key lights (terrain MeshStandardMaterials receive both) ---
+    // Cheap: one extra directional, moon never casts shadows.
+    const lightDist = 900
+    const clearMul = 1 - w.clouds * 0.55 - w.haze * 0.25
+    const sunUp = MathUtils.smoothstep(elev, -0.08, 0.18)
+    const moonUp = MathUtils.smoothstep(-elev, -0.06, 0.22)
+
+    // Sun always from solar direction; fades under horizon
+    this.sun.position.set(
+      ax + _sunDir.x * lightDist,
+      ay + _sunDir.y * lightDist,
+      az + _sunDir.z * lightDist,
+    )
+    this.sun.target.position.set(ax, ay * 0.15, az)
     this.sun.target.updateMatrixWorld()
+    _c2.setHex(0xfff4e0)
+    if (dusk > 0.15) _c2.lerp(new Color(0xff7a38), dusk * 0.85)
+    if (elev < 0.12) _c2.lerp(new Color(0xffaa66), 1 - sunUp)
+    this.sun.color.copy(_c2)
+    this.sun.intensity =
+      (0.25 + dayFactor * 1.55) * sunUp * clearMul * w.sunMul
+    this.sun.castShadow = elev > 0.1 && w.clouds < 0.85 && sunUp > 0.35
 
-    if (elev > 0.05) {
-      _c2.setHex(0xfff2d8)
-      if (dusk > 0.2) _c2.lerp(new Color(0xff8844), dusk)
-      this.sun.color.copy(_c2)
-      this.sun.intensity = (0.4 + dayFactor * 1.4) * w.sunMul
-      this.sun.castShadow = elev > 0.12 && w.clouds < 0.85
-    } else {
-      // Cool moon light
-      this.sun.color.setHex(0xa8b8e0)
-      this.sun.intensity = (0.12 + nightFactor * 0.18) * w.sunMul
-      this.sun.castShadow = false
-    }
+    // Moon opposite the sun — cool fill that actually lights the world at night
+    this.moon.position.set(
+      ax - _sunDir.x * lightDist,
+      ay - _sunDir.y * lightDist,
+      az - _sunDir.z * lightDist,
+    )
+    this.moon.target.position.set(ax, ay * 0.1, az)
+    this.moon.target.updateMatrixWorld()
+    this.moon.color.setHex(0xb8c8f0)
+    this.moon.intensity =
+      (0.06 + nightFactor * 0.48) * moonUp * clearMul * (0.65 + w.sunMul * 0.35)
 
-    const hemiSky = new Color().copy(_c).lerp(new Color(0xd0e8ff), 0.25)
-    const hemiGround = new Color(0x3a4a38).lerp(new Color(0x1a2030), nightFactor)
+    // Sky-ish ambient: warm day, deep blue night (reads as atmospheric scatter)
+    const hemiSky = new Color()
+      .copy(_c)
+      .lerp(new Color(0xd8ecff), dayFactor * 0.3)
+      .lerp(new Color(0x1a2848), nightFactor * 0.45)
+    const hemiGround = new Color(0x3a4a38).lerp(new Color(0x0c1018), nightFactor)
     this.hemi.color.copy(hemiSky)
     this.hemi.groundColor.copy(hemiGround)
-    this.hemi.intensity = (0.35 + dayFactor * 0.55) * w.hemiMul
+    this.hemi.intensity = (0.28 + dayFactor * 0.52 + nightFactor * 0.12) * w.hemiMul
 
-    this.ambient.color.setHex(dayFactor > 0.3 ? 0xffffff : 0x6688aa)
-    this.ambient.intensity = (0.18 + dayFactor * 0.32) * w.ambientMul
+    this.ambient.color.setRGB(
+      MathUtils.lerp(0.35, 1, dayFactor),
+      MathUtils.lerp(0.42, 1, dayFactor),
+      MathUtils.lerp(0.62, 1, dayFactor),
+    )
+    this.ambient.intensity =
+      (0.1 + dayFactor * 0.28 + nightFactor * 0.06) * w.ambientMul
 
-    this.fill.intensity = (0.15 + dayFactor * 0.28) * w.sunMul
+    // Soft bounce opposite the stronger key
+    this.fill.color.setHex(dayFactor > 0.35 ? 0xc8e0ff : 0x6a7aaa)
+    this.fill.intensity =
+      (0.1 + dayFactor * 0.22 + moonUp * nightFactor * 0.12) * w.sunMul
     this.fill.position.set(
-      ax - _sunDir.x * lightDist * 0.3,
-      ay + 80,
-      az - _sunDir.z * lightDist * 0.3,
+      ax - _sunDir.x * lightDist * 0.35,
+      ay + 90,
+      az - _sunDir.z * lightDist * 0.35,
     )
 
-    // Shader sky dome: sun, moon, stars, gradient
+    // Shader sky dome: sun, moon, stars, scatter gradient
     this.sky.update(
       ax,
       ay,

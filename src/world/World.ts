@@ -31,6 +31,8 @@ export class World {
   readonly scene = new Scene()
   readonly terrain: TerrainSystem
   readonly sun: DirectionalLight
+  /** Cool moonlight — no shadows (cheap second key light). */
+  readonly moon: DirectionalLight
   readonly atmosphere: Atmosphere
   private seed = 0
   private readonly runway: Group
@@ -52,6 +54,10 @@ export class World {
     this.scene.add(this.sun)
     this.scene.add(this.sun.target)
 
+    this.moon = this.createMoon()
+    this.scene.add(this.moon)
+    this.scene.add(this.moon.target)
+
     this.hemi = new HemisphereLight(0xd0e4f8, 0x4a5540, 0.85)
     this.scene.add(this.hemi)
 
@@ -67,6 +73,7 @@ export class World {
       this.scene,
       {
         sun: this.sun,
+        moon: this.moon,
         hemi: this.hemi,
         ambient: this.ambient,
         fill: this.fill,
@@ -134,6 +141,7 @@ export class World {
 
   private createSun(): DirectionalLight {
     const sun = new DirectionalLight(0xfff5e6, 1.65)
+    sun.name = 'SunLight'
     sun.position.set(180, 280, 120)
     sun.castShadow = true
     sun.shadow.mapSize.set(1024, 1024)
@@ -146,5 +154,14 @@ export class World {
     sun.shadow.bias = -0.0002
     void FOG_FAR
     return sun
+  }
+
+  /** Moon key light — directional only, no shadow map (keeps night cheap). */
+  private createMoon(): DirectionalLight {
+    const moon = new DirectionalLight(0xc8d4ff, 0)
+    moon.name = 'MoonLight'
+    moon.position.set(-180, 200, -120)
+    moon.castShadow = false
+    return moon
   }
 }

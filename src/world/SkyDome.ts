@@ -107,31 +107,40 @@ export class SkyDome {
             col += vec3(0.85, 0.9, 1.0) * starVis;
           }
 
-          // --- Sun disc + atmospheric glow ---
-          float sunDot = max(0.0, dot(dir, normalize(uSunDir)));
-          // Core disc
+          // --- Sun disc + atmospheric scatter (cheap rayleigh-ish) ---
+          vec3 sunD = normalize(uSunDir);
+          vec3 moonD = normalize(uMoonDir);
+          float sunDot = max(0.0, dot(dir, sunD));
           float sunCore = smoothstep(0.9994, 0.99992, sunDot);
-          // Soft corona
-          float sunHalo = pow(sunDot, 48.0) * 0.9 + pow(sunDot, 12.0) * 0.35 + pow(sunDot, 4.0) * 0.12;
-          // Horizon scatter when sun is low
-          float lowSun = 1.0 - smoothstep(0.0, 0.35, uSunDir.y);
-          vec3 sunCol = mix(vec3(1.0, 0.55, 0.2), vec3(1.0, 0.96, 0.85), smoothstep(-0.1, 0.4, uSunDir.y));
-          sunCol = mix(sunCol, vec3(1.0, 0.35, 0.1), lowSun * 0.55 * uDusk);
-          col += sunCol * (sunCore * 2.4 + sunHalo * 1.1) * uSunIntensity;
-          // Warm horizon wash around sun azimuth during dusk
-          float sunAz = max(0.0, dot(normalize(vec3(dir.x, 0.0, dir.z) + 1e-4),
-                                      normalize(vec3(uSunDir.x, 0.0, uSunDir.z) + 1e-4)));
-          float duskWash = pow(sunAz, 3.0) * smoothstep(0.25, -0.05, elev) * uDusk * uSunIntensity;
-          col += vec3(1.0, 0.35, 0.12) * duskWash * 0.45;
+          float sunHalo =
+            pow(sunDot, 56.0) * 1.0 +
+            pow(sunDot, 14.0) * 0.4 +
+            pow(sunDot, 3.5) * 0.18;
+          // Broad sky wash from the sun (lights the sky dome, not the world)
+          float sunScatter = pow(sunDot, 1.6) * 0.22 + pow(sunDot, 0.65) * 0.08;
+          float lowSun = 1.0 - smoothstep(0.0, 0.35, sunD.y);
+          vec3 sunCol = mix(vec3(1.0, 0.55, 0.2), vec3(1.0, 0.97, 0.88), smoothstep(-0.1, 0.4, sunD.y));
+          sunCol = mix(sunCol, vec3(1.0, 0.32, 0.08), lowSun * 0.6 * uDusk);
+          col += sunCol * (sunCore * 2.6 + sunHalo * 1.15 + sunScatter) * uSunIntensity;
 
-          // --- Moon disc + soft glow ---
-          float moonDot = max(0.0, dot(dir, normalize(uMoonDir)));
+          float sunAz = max(0.0, dot(normalize(vec3(dir.x, 0.0, dir.z) + 1e-4),
+                                      normalize(vec3(sunD.x, 0.0, sunD.z) + 1e-4)));
+          float duskWash = pow(sunAz, 2.5) * smoothstep(0.28, -0.08, elev) * uDusk * uSunIntensity;
+          col += vec3(1.0, 0.32, 0.1) * duskWash * 0.55;
+
+          // --- Moon disc + cool night scatter ---
+          float moonDot = max(0.0, dot(dir, moonD));
           float moonCore = smoothstep(0.99955, 0.9999, moonDot);
-          float moonHalo = pow(moonDot, 80.0) * 0.55 + pow(moonDot, 20.0) * 0.18;
-          vec3 moonCol = vec3(0.82, 0.88, 1.0);
-          // Subtle lunar shading (fake phase via gradient across disc)
-          float phase = moonCore * (0.7 + 0.3 * sunDot);
-          col += moonCol * (phase * 1.35 + moonHalo) * uMoonIntensity;
+          float moonHalo = pow(moonDot, 90.0) * 0.65 + pow(moonDot, 22.0) * 0.22;
+          float moonScatter = pow(moonDot, 2.2) * 0.16 + pow(moonDot, 0.8) * 0.05;
+          vec3 moonCol = vec3(0.78, 0.86, 1.0);
+          float phase = moonCore * (0.65 + 0.35 * sunDot);
+          col += moonCol * (phase * 1.5 + moonHalo + moonScatter) * uMoonIntensity;
+          // Cool night horizon wash under the moon
+          float moonAz = max(0.0, dot(normalize(vec3(dir.x, 0.0, dir.z) + 1e-4),
+                                       normalize(vec3(moonD.x, 0.0, moonD.z) + 1e-4)));
+          col += vec3(0.25, 0.35, 0.65) * pow(moonAz, 2.0) *
+            smoothstep(0.2, -0.15, elev) * uMoonIntensity * 0.35;
 
           // Haze / overcast: flatten sky + mute celestial bodies a bit
           col = mix(col, uHorizonColor * 0.85, uHaze * 0.45);
