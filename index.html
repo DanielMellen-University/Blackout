@@ -30,13 +30,36 @@
           </div>
         </div>
 
-        <!-- Top-right: altitude + fps -->
+        <!-- Top-right: altitude + attitude + fps -->
         <div id="hud-top-right">
           <div id="alt-meter" aria-label="Altitude">
             <span class="alt-label">ALT</span>
             <span id="hud-pos" class="alt-value">0</span>
             <span class="alt-unit">m</span>
           </div>
+
+          <div id="attitude" aria-label="Attitude indicator">
+            <div id="adi-mask">
+              <div id="adi-ball">
+                <div id="adi-sky"></div>
+                <div id="adi-ground"></div>
+                <div id="adi-horizon"></div>
+                <div id="adi-ladder"></div>
+              </div>
+            </div>
+            <div id="adi-fixed" aria-hidden="true">
+              <div class="adi-wing left"></div>
+              <div class="adi-wing right"></div>
+              <div class="adi-dot"></div>
+            </div>
+            <div id="adi-bank-marks" aria-hidden="true"></div>
+            <div id="adi-bank-ptr" aria-hidden="true"></div>
+            <div id="adi-readout">
+              <span id="adi-pitch">0°</span>
+              <span id="adi-roll">0°</span>
+            </div>
+          </div>
+
           <div id="fps"><span id="hud-fps">-</span> fps</div>
         </div>
 
@@ -104,30 +127,7 @@
           </div>
         </div>
 
-        <!-- Center: attitude indicator (pitch ladder + bank) -->
-        <div id="attitude" aria-label="Attitude indicator">
-          <div id="adi-mask">
-            <div id="adi-ball">
-              <div id="adi-sky"></div>
-              <div id="adi-ground"></div>
-              <div id="adi-horizon"></div>
-              <div id="adi-ladder"></div>
-            </div>
-          </div>
-          <div id="adi-fixed" aria-hidden="true">
-            <div class="adi-wing left"></div>
-            <div class="adi-wing right"></div>
-            <div class="adi-dot"></div>
-          </div>
-          <div id="adi-bank-marks" aria-hidden="true"></div>
-          <div id="adi-bank-ptr" aria-hidden="true"></div>
-          <div id="adi-readout">
-            <span id="adi-pitch">0°</span>
-            <span id="adi-roll">0°</span>
-          </div>
-        </div>
-
-        <!-- Flight cautions (stall / low alt / gear) -->
+        <!-- Flight cautions (stall / low alt / gear) — top center -->
         <div id="hud-warn" class="warn" hidden>
           <span id="hud-warn-text">—</span>
         </div>

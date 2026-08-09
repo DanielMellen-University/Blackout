@@ -181,11 +181,11 @@ body,
   backdrop-filter: blur(10px);
 }
 
-/* Flight warnings strip (above ADI) */
+/* Flight warnings strip (top center) */
 .warn {
   position: absolute;
   left: 50%;
-  top: calc(50% - 118px);
+  top: 56px;
   transform: translateX(-50%);
   min-width: 120px;
   padding: 7px 20px;
@@ -224,7 +224,7 @@ body,
   }
 }
 
-/* Top-right: altitude meter + fps */
+/* Top-right: altitude + attitude + fps */
 #hud-top-right {
   position: absolute;
   top: 16px;
@@ -232,7 +232,7 @@ body,
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 10px;
   pointer-events: none;
 }
 
@@ -276,28 +276,26 @@ body,
   padding-right: 2px;
 }
 
-/* ---- Attitude indicator (ADI) ---- */
+/* ---- Attitude indicator (ADI) — top-right under ALT ---- */
 #attitude {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 168px;
-  height: 168px;
-  transform: translate(-50%, -50%);
+  position: relative;
+  width: 148px;
+  height: 148px;
+  flex-shrink: 0;
   pointer-events: none;
 }
 
 #adi-mask {
   position: absolute;
-  inset: 10px;
+  inset: 8px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid rgba(61, 206, 168, 0.45);
+  border: 2px solid rgba(61, 206, 168, 0.5);
   box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(61, 206, 168, 0.12),
-    0 0 24px rgba(0, 0, 0, 0.4);
-  background: #0c1218;
+    0 0 20px rgba(0, 0, 0, 0.45);
+  background: #05080c;
 }
 
 #adi-ball {
@@ -312,13 +310,14 @@ body,
   will-change: transform;
 }
 
+/* Sky = near-black, ground = deep turquoise (scheme match) */
 #adi-sky {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   height: 50%;
-  background: linear-gradient(180deg, #1e4a72 0%, #3d7eb5 55%, #5a9fd0 100%);
+  background: linear-gradient(180deg, #05080c 0%, #0a1218 55%, #0e1a20 100%);
 }
 
 #adi-ground {
@@ -327,7 +326,7 @@ body,
   right: 0;
   bottom: 0;
   height: 50%;
-  background: linear-gradient(180deg, #8a5c2e 0%, #5a3a1c 45%, #2e1e10 100%);
+  background: linear-gradient(180deg, #1a6a52 0%, #0f4034 50%, #0a2820 100%);
 }
 
 #adi-horizon {
@@ -337,8 +336,8 @@ body,
   top: 50%;
   height: 2px;
   margin-top: -1px;
-  background: #eef6fc;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.45);
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 #adi-ladder {
@@ -354,59 +353,59 @@ body,
   position: absolute;
   left: 50%;
   height: 1px;
-  background: rgba(236, 246, 255, 0.7);
+  background: rgba(120, 220, 190, 0.55);
   transform: translateX(-50%);
 }
 
 .adi-ladder-line.major {
   height: 2px;
-  background: rgba(248, 252, 255, 0.92);
+  background: rgba(160, 240, 210, 0.85);
 }
 
 .adi-ladder-line .lbl {
   position: absolute;
   top: -7px;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 600;
-  color: rgba(236, 248, 255, 0.88);
+  color: rgba(180, 240, 220, 0.85);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.75);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .adi-ladder-line .lbl.l {
-  right: calc(100% + 4px);
+  right: calc(100% + 3px);
 }
 
 .adi-ladder-line .lbl.r {
-  left: calc(100% + 4px);
+  left: calc(100% + 3px);
 }
 
 #adi-fixed {
   position: absolute;
-  inset: 10px;
+  inset: 8px;
   pointer-events: none;
 }
 
 .adi-wing {
   position: absolute;
   top: 50%;
-  width: 28px;
+  width: 24px;
   height: 3px;
   margin-top: -1.5px;
-  background: var(--amber);
-  box-shadow: 0 0 6px rgba(240, 180, 41, 0.55);
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
 }
 
 .adi-wing.left {
   right: 50%;
-  margin-right: 14px;
+  margin-right: 12px;
   border-radius: 1px 0 0 1px;
 }
 
 .adi-wing.right {
   left: 50%;
-  margin-left: 14px;
+  margin-left: 12px;
   border-radius: 0 1px 1px 0;
 }
 
@@ -414,12 +413,12 @@ body,
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
   border-radius: 50%;
-  background: var(--amber);
-  box-shadow: 0 0 6px rgba(240, 180, 41, 0.55);
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
 }
 
 #adi-bank-marks {
@@ -433,39 +432,40 @@ body,
   left: 50%;
   top: 2px;
   width: 2px;
-  height: 8px;
+  height: 7px;
   margin-left: -1px;
-  background: rgba(180, 220, 210, 0.7);
-  transform-origin: 50% 82px;
+  background: rgba(100, 200, 170, 0.65);
+  /* 148/2 = 74px center */
+  transform-origin: 50% 72px;
 }
 
 #adi-bank-marks .tick.major {
-  height: 11px;
-  background: rgba(200, 240, 230, 0.9);
+  height: 10px;
+  background: rgba(140, 230, 200, 0.9);
 }
 
 #adi-bank-ptr {
   position: absolute;
   left: 50%;
-  top: 8px;
+  top: 6px;
   width: 0;
   height: 0;
   margin-left: -5px;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 8px solid var(--amber);
-  transform-origin: 50% 76px;
-  filter: drop-shadow(0 0 3px rgba(240, 180, 41, 0.5));
+  border-top: 7px solid var(--accent);
+  transform-origin: 50% 68px;
+  filter: drop-shadow(0 0 4px var(--accent-glow));
 }
 
 #adi-readout {
   position: absolute;
   left: 50%;
-  bottom: -18px;
+  bottom: -2px;
   transform: translateX(-50%);
   display: flex;
-  gap: 12px;
-  font-size: 0.62rem;
+  gap: 10px;
+  font-size: 0.58rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--ink-dim);
@@ -474,7 +474,7 @@ body,
 }
 
 #adi-readout span {
-  min-width: 3.2em;
+  min-width: 3em;
   text-align: center;
 }
 
