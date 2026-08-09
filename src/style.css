@@ -187,13 +187,61 @@ body,
   }
 }
 
-#fps {
+/* Top-right: altitude meter + fps */
+#hud-top-right {
   position: absolute;
-  top: 18px;
-  right: 20px;
+  top: 16px;
+  right: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#alt-meter {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 120px;
+  padding: 10px 14px;
+  background: rgba(8, 12, 18, 0.62);
+  border: 1px solid rgba(80, 120, 160, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  font-variant-numeric: tabular-nums;
+}
+
+#alt-meter .alt-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #5a7a94;
+}
+
+#alt-meter .alt-value {
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: #e8f2fc;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 12px rgba(100, 180, 255, 0.35);
+  min-width: 2.5ch;
+  text-align: right;
+}
+
+#alt-meter .alt-unit {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #6b8aa4;
+}
+
+#fps {
   font-size: 0.75rem;
   color: #6b8499;
   font-variant-numeric: tabular-nums;
+  padding-right: 2px;
 }
 
 /* ---- Attitude indicator (ADI) ---- */

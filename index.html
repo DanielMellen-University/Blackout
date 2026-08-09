@@ -17,10 +17,6 @@
         </header>
         <div id="hud">
           <div class="hud-row">
-            <span class="label">ALT</span>
-            <span id="hud-pos">0 m</span>
-          </div>
-          <div class="hud-row">
             <span class="label">GEAR</span>
             <span id="hud-gear">DOWN</span>
           </div>
@@ -32,6 +28,16 @@
             <span class="label">CAM</span>
             <span id="hud-cam">chase</span>
           </div>
+        </div>
+
+        <!-- Top-right: altitude + fps -->
+        <div id="hud-top-right">
+          <div id="alt-meter" aria-label="Altitude">
+            <span class="alt-label">ALT</span>
+            <span id="hud-pos" class="alt-value">0</span>
+            <span class="alt-unit">m</span>
+          </div>
+          <div id="fps"><span id="hud-fps">-</span> fps</div>
         </div>
 
         <!-- Bottom-left: speedometer + engine power (min↔max) -->
@@ -130,7 +136,6 @@
           <p><kbd>W</kbd><kbd>S</kbd> pitch · <kbd>A</kbd><kbd>D</kbd> yaw · <kbd>Q</kbd> roll right · <kbd>E</kbd> roll left · <kbd>Shift</kbd> ENG+ · <kbd>Ctrl</kbd> ENG− · <kbd>Space</kbd> AB</p>
           <p><kbd>G</kbd> gear · <kbd>C</kbd> camera · hold <kbd>MMB</kbd> look · <kbd>R</kbd> reset · takeoff: <kbd>Shift</kbd> thr, then <kbd>W</kbd> at speed</p>
         </aside>
-        <div id="fps"><span id="hud-fps">-</span> fps</div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
