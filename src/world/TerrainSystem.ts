@@ -37,6 +37,11 @@ export const VIEW_RADIUS = 20
  * inside this hidden margin so you never watch tiles pop in.
  */
 export const FOG_MARGIN_CHUNKS = 2
+/**
+ * Temporary: disable trees/rocks/props until we redo vegetation.
+ * Flip to true later to restore placement.
+ */
+const ENABLE_VEGETATION = false
 /** Detailed props only near the jet (cells). */
 const PROP_RADIUS = 4
 /** Soft opacity fade across the fog margin. */
@@ -205,7 +210,7 @@ export class TerrainSystem {
           this.pending.push({
             cx: kx,
             cz: kz,
-            withProps: dist <= PROP_RADIUS,
+            withProps: ENABLE_VEGETATION && dist <= PROP_RADIUS,
             dist,
           })
           this.pendingKeys.add(key)

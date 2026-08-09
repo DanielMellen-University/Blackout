@@ -22,6 +22,10 @@ async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null
   if (!canvas) throw new Error('#game canvas not found')
 
+  const titleScreen = document.getElementById('title-screen')
+  const playBtn = document.getElementById('btn-play')
+  const overlay = document.getElementById('overlay')
+
   suppressBrowserUi(canvas)
 
   const renderer = new WebGLRenderer({
@@ -49,9 +53,33 @@ async function boot(): Promise<void> {
   const hud = new HUD()
   const collision = new CollisionSystem()
 
+  let playing = false
   let banner: string | null = null
   let bannerUntil = 0
   let wasAirborne = false
+
+  const startGame = (): void => {
+    if (playing) return
+    playing = true
+    titleScreen?.classList.add('is-hidden')
+    if (overlay) {
+      overlay.hidden = false
+      overlay.classList.remove('overlay-hidden')
+    }
+    // Clear any stuck keys from menu
+    input.resetFlightControls(0)
+    wasAirborne = false
+    banner = null
+  }
+
+  playBtn?.addEventListener('click', startGame)
+  window.addEventListener('keydown', (e) => {
+    if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
+      // Space starts from title; once playing Space is afterburner
+      if (e.code === 'Space') e.preventDefault()
+      startGame()
+    }
+  })
 
   const onResize = (): void => {
     const w = window.innerWidth
@@ -73,38 +101,42 @@ async function boot(): Promise<void> {
     const { frameDt } = time.beginFrame(nowMs)
     const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
 
-    if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
-    if (input.consumeWeatherCycle()) world.cycleWeather()
-    if (input.consumeReset()) {
-      // New random world + flat-biome airfield each respawn
-      world.reseed()
-      aircraft.reset(world.spawn)
-      input.resetFlightControls(0)
-      banner = null
-      wasAirborne = false
-    }
-
-    // Shared live controls — throttle setpoint updates every frame while Shift/Ctrl held
-    aircraft.controls = input.sampleWithDt(dt)
-    aircraft.step(dt)
-
-    const touch = collision.check(aircraft)
-    if (aircraft.status === 'ok') {
-      if (!aircraft.onGround && aircraft.position.y > flightAltThreshold()) {
-        wasAirborne = true
-      }
-      if (touch === 'crash') {
-        aircraft.crash()
-        showBanner('CRASH - press R')
-      } else if (touch === 'landed' && wasAirborne) {
-        aircraft.markLanded()
-        showBanner('LANDED')
+    if (playing) {
+      if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
+      if (input.consumeWeatherCycle()) world.cycleWeather()
+      if (input.consumeReset()) {
+        world.reseed()
+        aircraft.reset(world.spawn)
+        input.resetFlightControls(0)
+        banner = null
         wasAirborne = false
       }
-    }
 
-    if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
-      banner = null
+      aircraft.controls = input.sampleWithDt(dt)
+      aircraft.step(dt)
+
+      const touch = collision.check(aircraft)
+      if (aircraft.status === 'ok') {
+        if (!aircraft.onGround && aircraft.position.y > flightAltThreshold()) {
+          wasAirborne = true
+        }
+        if (touch === 'crash') {
+          aircraft.crash()
+          showBanner('CRASH - press R')
+        } else if (touch === 'landed' && wasAirborne) {
+          aircraft.markLanded()
+          showBanner('LANDED')
+          wasAirborne = false
+        }
+      }
+
+      if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
+        banner = null
+      }
+    } else {
+      // Idle on title: hold jet still, still advance sky/terrain ambience a little
+      aircraft.controls = input.sampleWithDt(0)
+      input.resetFlightControls(0)
     }
 
     world.update(
@@ -113,7 +145,6 @@ async function boot(): Promise<void> {
       aircraft.position.z,
       dt,
     )
-    // Night exposure slightly lower so instruments stay readable
     const phase = world.atmosphere.phaseLabel
     renderer.toneMappingExposure =
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
@@ -121,33 +152,35 @@ async function boot(): Promise<void> {
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
 
-    const alt = altitudeAgl(
-      aircraft.position.x,
-      aircraft.position.y,
-      aircraft.position.z,
-    )
-    const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
-    const warn = evaluateWarnings(aircraft, alt)
-    hud.update({
-      x: aircraft.position.x,
-      y: alt,
-      z: aircraft.position.z,
-      speed: aircraft.speed,
-      cameraMode: cameras.modeLabel,
-      fps: time.fps,
-      throttle: aircraft.controls.throttle,
-      boost: aircraft.controls.boost,
-      gearDown: aircraft.controls.gearDown,
-      onGround: aircraft.onGround,
-      pitch,
-      roll,
-      warning: warn.text,
-      warningLevel: warn.level,
-      clock: world.atmosphere.clockLabel,
-      weather: world.atmosphere.weatherLabel,
-      dayPhase: world.atmosphere.phaseLabel,
-      banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
-    })
+    if (playing) {
+      const alt = altitudeAgl(
+        aircraft.position.x,
+        aircraft.position.y,
+        aircraft.position.z,
+      )
+      const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
+      const warn = evaluateWarnings(aircraft, alt)
+      hud.update({
+        x: aircraft.position.x,
+        y: alt,
+        z: aircraft.position.z,
+        speed: aircraft.speed,
+        cameraMode: cameras.modeLabel,
+        fps: time.fps,
+        throttle: aircraft.controls.throttle,
+        boost: aircraft.controls.boost,
+        gearDown: aircraft.controls.gearDown,
+        onGround: aircraft.onGround,
+        pitch,
+        roll,
+        warning: warn.text,
+        warningLevel: warn.level,
+        clock: world.atmosphere.clockLabel,
+        weather: world.atmosphere.weatherLabel,
+        dayPhase: world.atmosphere.phaseLabel,
+        banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
+      })
+    }
   }
 
   requestAnimationFrame(tick)
@@ -174,7 +207,6 @@ function attitudeFromOrientation(orientation: Quaternion): {
 
   _inv.copy(orientation).invert()
   _localUp.set(0, 1, 0).applyQuaternion(_inv)
-  // Bank from body-frame world-up; right wing down = positive
   const roll = Math.atan2(-_localUp.x, _localUp.y)
 
   return { pitch, roll }

@@ -10,7 +10,53 @@
   <body oncontextmenu="return false;">
     <div id="app">
       <canvas id="game" oncontextmenu="return false;"></canvas>
-      <div id="overlay">
+
+      <!-- Title / menu — shown before flight -->
+      <div id="title-screen" class="title-screen">
+        <div class="title-panel">
+          <p class="title-kicker">Arcade Flight</p>
+          <h1 class="title-logo">BLACKOUT</h1>
+          <p class="title-tag">F-35 · free flight over infinite terrain</p>
+
+          <div class="title-grid">
+            <section class="title-card">
+              <h2>How to play</h2>
+              <ul>
+                <li>You spawn on a flat airfield. Spool the engine, build speed, then rotate.</li>
+                <li>Stay airborne, explore biomes, and watch the day/night cycle and weather.</li>
+                <li>Crash? Press <kbd>R</kbd> for a new world and runway.</li>
+                <li>Cycle weather with <kbd>N</kbd>. Switch cameras with <kbd>C</kbd>.</li>
+              </ul>
+              <div class="title-takeoff">
+                <strong>Takeoff</strong>
+                <span><kbd>Shift</kbd> throttle up → accelerate → <kbd>W</kbd> pitch at speed · gear <kbd>G</kbd></span>
+              </div>
+            </section>
+
+            <section class="title-card">
+              <h2>Controls</h2>
+              <div class="ctrl-table">
+                <div><kbd>W</kbd><kbd>S</kbd></div><div>Pitch</div>
+                <div><kbd>A</kbd><kbd>D</kbd></div><div>Yaw</div>
+                <div><kbd>Q</kbd><kbd>E</kbd></div><div>Roll</div>
+                <div><kbd>Shift</kbd></div><div>Engine +</div>
+                <div><kbd>Ctrl</kbd></div><div>Engine − / brake</div>
+                <div><kbd>Space</kbd></div><div>Afterburner</div>
+                <div><kbd>G</kbd></div><div>Landing gear</div>
+                <div><kbd>C</kbd></div><div>Camera mode</div>
+                <div><kbd>N</kbd></div><div>Weather</div>
+                <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
+                <div><kbd>R</kbd></div><div>Reset / new world</div>
+              </div>
+            </section>
+          </div>
+
+          <button type="button" id="btn-play" class="btn-play">PLAY</button>
+          <p class="title-hint">Press <kbd>Enter</kbd> or click Play</p>
+        </div>
+      </div>
+
+      <div id="overlay" class="overlay-hidden" hidden>
         <header id="title-bar">
           <h1>BLACKOUT</h1>
           <span id="phase-badge">Phase 3 · Instruments</span>
@@ -146,10 +192,6 @@
         </div>
 
         <div id="hud-banner" class="banner" hidden></div>
-        <aside id="help">
-          <p><kbd>W</kbd><kbd>S</kbd> pitch · <kbd>A</kbd><kbd>D</kbd> yaw · <kbd>Q</kbd> roll right · <kbd>E</kbd> roll left · <kbd>Shift</kbd> ENG+ · <kbd>Ctrl</kbd> ENG− · <kbd>Space</kbd> AB</p>
-          <p><kbd>G</kbd> gear · <kbd>C</kbd> camera · <kbd>N</kbd> weather · hold <kbd>MMB</kbd> look · <kbd>R</kbd> reset · takeoff: <kbd>Shift</kbd> thr, then <kbd>W</kbd> at speed</p>
-        </aside>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
