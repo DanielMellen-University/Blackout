@@ -21,6 +21,8 @@ export class HUD {
   private readonly adiBankPtr: HTMLElement | null
   private readonly adiPitchEl: HTMLElement | null
   private readonly adiRollEl: HTMLElement | null
+  private readonly warnEl: HTMLElement | null
+  private readonly warnTextEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
   private readonly maxKts = 350
@@ -46,6 +48,8 @@ export class HUD {
     this.adiBankPtr = root.getElementById('adi-bank-ptr')
     this.adiPitchEl = root.getElementById('adi-pitch')
     this.adiRollEl = root.getElementById('adi-roll')
+    this.warnEl = root.getElementById('hud-warn')
+    this.warnTextEl = root.getElementById('hud-warn-text')
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
@@ -66,6 +70,9 @@ export class HUD {
     pitch?: number
     /** Aircraft roll (rad), right wing down positive. */
     roll?: number
+    /** Active caution / warning (STALL, LOW ALT, GEAR). */
+    warning?: string | null
+    warningLevel?: 'none' | 'caution' | 'warning'
     banner?: string | null
   }): void {
     if (this.posEl) {
@@ -100,6 +107,8 @@ export class HUD {
       this.updateAttitude(opts.pitch, opts.roll)
     }
 
+    this.updateWarning(opts.warning ?? null, opts.warningLevel ?? 'none')
+
     if (this.bannerEl) {
       if (opts.banner) {
         this.bannerEl.textContent = opts.banner
@@ -109,6 +118,23 @@ export class HUD {
         this.bannerEl.hidden = true
       }
     }
+  }
+
+  private updateWarning(
+    text: string | null,
+    level: 'none' | 'caution' | 'warning',
+  ): void {
+    if (!this.warnEl || !this.warnTextEl) return
+    if (!text || level === 'none') {
+      this.warnEl.hidden = true
+      this.warnEl.classList.remove('caution', 'warning')
+      this.warnTextEl.textContent = ''
+      return
+    }
+    this.warnEl.hidden = false
+    this.warnTextEl.textContent = text
+    this.warnEl.classList.toggle('caution', level === 'caution')
+    this.warnEl.classList.toggle('warning', level === 'warning')
   }
 
   /**

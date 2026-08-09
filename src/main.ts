@@ -13,6 +13,7 @@ import { InputManager } from './core/InputManager'
 import { suppressBrowserUi } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
+import { evaluateWarnings } from './systems/FlightWarnings'
 import { HUD } from './ui/HUD'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
@@ -115,6 +116,7 @@ async function boot(): Promise<void> {
       aircraft.position.z,
     )
     const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
+    const warn = evaluateWarnings(aircraft, alt)
     hud.update({
       x: aircraft.position.x,
       y: alt,
@@ -128,6 +130,8 @@ async function boot(): Promise<void> {
       onGround: aircraft.onGround,
       pitch,
       roll,
+      warning: warn.text,
+      warningLevel: warn.level,
       banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
     })
   }
