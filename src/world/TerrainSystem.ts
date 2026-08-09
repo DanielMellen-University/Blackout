@@ -1,6 +1,7 @@
 import {
   BufferAttribute,
   Color,
+  DoubleSide,
   Fog,
   Group,
   MathUtils,
@@ -32,8 +33,16 @@ const PROP_RADIUS = 4
 const FADE_CELLS = 2.2
 /** Seconds-ish ease for spawn/despawn opacity. */
 const FADE_RATE = 1.6
-/** Balanced segs: smooth enough slopes, cheaper builds. */
-const CHUNK_SEGS = 18
+/**
+ * Grid resolution per chunk. Same for near/far so shared edges match
+ * (LOD mismatch was a major source of holes / paper gaps).
+ */
+const CHUNK_SEGS = 22
+/**
+ * Vertical skirt depth (m). Hides residual cracks and gives the surface
+ * real edge thickness instead of a paper-thin sheet.
+ */
+const SKIRT_DEPTH = 220
 /** Max chunk builds per frame (props count as heavier). */
 const BUILDS_PER_FRAME = 1
 export const FOG_NEAR = 1200
@@ -88,6 +97,8 @@ export class TerrainSystem {
       metalness: 0.04,
       // Smooth shading — flat faces made mountains look like knife edges
       flatShading: false,
+      // Both faces so steep cliffs / underside glances never punch a sky hole
+      side: DoubleSide,
     })
     this.vegFactory = createVegetationFactory()
     this.applyFog()
@@ -252,8 +263,8 @@ export class TerrainSystem {
         const transparent = a < 0.995
         mat.transparent = transparent
         mat.opacity = a
-        // Keep depth writes while mostly solid to reduce sort flicker
-        mat.depthWrite = a > 0.35
+        // Keep depth writes early so semi-transparent chunks don't "hole" the ground
+        mat.depthWrite = a > 0.12
       }
     })
   }
@@ -306,8 +317,8 @@ export class TerrainSystem {
     originZ: number,
     detailed: boolean,
   ): Mesh {
-    // Outer ring: fewer segs (still matches height function at verts)
-    const segs = detailed ? CHUNK_SEGS : Math.max(10, (CHUNK_SEGS * 0.55) | 0)
+    // Same segs near and far so shared edges land on identical world samples
+    const segs = CHUNK_SEGS
     const geo = new PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE, segs, segs)
     geo.rotateX(-Math.PI / 2)
 
@@ -319,6 +330,7 @@ export class TerrainSystem {
 
     const biomes: Biome[] = new Array(pos.count)
     for (let i = 0; i < pos.count; i++) {
+      // Snap to shared world grid so adjacent chunks share exact edge heights
       const wx = originX + half + pos.getX(i)
       const wz = originZ + half + pos.getZ(i)
       const climate = sampleClimate(wx, wz)
@@ -342,7 +354,7 @@ export class TerrainSystem {
       colors[i * 3 + 2] = b
     }
 
-    // Slope cliff shading only on near/detailed chunks
+    // Slope cliff shading (all chunks — same mesh density now)
     if (detailed) {
       for (let iz = 0; iz < stride; iz++) {
         for (let ix = 0; ix < stride; ix++) {
@@ -369,6 +381,8 @@ export class TerrainSystem {
     }
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))
+    // Drop vertical skirts so steep seams / stream edges aren't paper-thin holes
+    this.appendEdgeSkirts(geo, segs)
     geo.computeVertexNormals()
 
     const mesh = new Mesh(geo, this.groundMat)
@@ -377,6 +391,80 @@ export class TerrainSystem {
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
     return mesh
+  }
+
+  /**
+   * Extrude a deep skirt from every boundary vertex. Covers:
+   * - residual micro-cracks at chunk seams
+   * - paper-thin silhouette when looking along cliffs / under the lip
+   */
+  private appendEdgeSkirts(geo: PlaneGeometry, segs: number): void {
+    const posAttr = geo.attributes.position as BufferAttribute
+    const colAttr = geo.attributes.color as BufferAttribute
+    const stride = segs + 1
+    const nTop = posAttr.count
+
+    // Walk the boundary CCW (viewed from above): minZ → maxX → maxZ → minX
+    const edge: number[] = []
+    for (let ix = 0; ix < segs; ix++) edge.push(ix)
+    for (let iz = 0; iz < segs; iz++) edge.push(iz * stride + segs)
+    for (let ix = segs; ix > 0; ix--) edge.push(segs * stride + ix)
+    for (let iz = segs; iz > 0; iz--) edge.push(iz * stride)
+    const nEdge = edge.length
+
+    const nNew = nTop + nEdge
+    const pos = new Float32Array(nNew * 3)
+    const col = new Float32Array(nNew * 3)
+
+    for (let i = 0; i < nTop; i++) {
+      pos[i * 3] = posAttr.getX(i)
+      pos[i * 3 + 1] = posAttr.getY(i)
+      pos[i * 3 + 2] = posAttr.getZ(i)
+      col[i * 3] = colAttr.getX(i)
+      col[i * 3 + 1] = colAttr.getY(i)
+      col[i * 3 + 2] = colAttr.getZ(i)
+    }
+
+    for (let e = 0; e < nEdge; e++) {
+      const src = edge[e]!
+      const di = nTop + e
+      const y = posAttr.getY(src)
+      pos[di * 3] = posAttr.getX(src)
+      // Deep wall under the rim — reads as solid ground, not a sheet
+      pos[di * 3 + 1] = y - SKIRT_DEPTH
+      pos[di * 3 + 2] = posAttr.getZ(src)
+      // Darker rock face under the lip
+      col[di * 3] = colAttr.getX(src) * 0.42
+      col[di * 3 + 1] = colAttr.getY(src) * 0.4
+      col[di * 3 + 2] = colAttr.getZ(src) * 0.38
+    }
+
+    const oldIndex = geo.getIndex()
+    if (!oldIndex) return
+    const nOld = oldIndex.count
+    // 2 tris per edge segment
+    const idx = new Uint32Array(nOld + nEdge * 6)
+    for (let i = 0; i < nOld; i++) idx[i] = oldIndex.getX(i)
+
+    let w = nOld
+    for (let e = 0; e < nEdge; e++) {
+      const e2 = (e + 1) % nEdge
+      const a = edge[e]!
+      const b = edge[e2]!
+      const aS = nTop + e
+      const bS = nTop + e2
+      // Outward-facing quads (DoubleSide also covers interior glances)
+      idx[w++] = a
+      idx[w++] = b
+      idx[w++] = bS
+      idx[w++] = a
+      idx[w++] = bS
+      idx[w++] = aS
+    }
+
+    geo.setAttribute('position', new BufferAttribute(pos, 3))
+    geo.setAttribute('color', new BufferAttribute(col, 3))
+    geo.setIndex(new BufferAttribute(idx, 1))
   }
 
   private buildProps(originX: number, originZ: number, cx: number, cz: number): Group {
