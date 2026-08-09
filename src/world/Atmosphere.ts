@@ -29,6 +29,41 @@ const CLOUD_SPAWN_MAX = FOG_FAR * 0.98 // ~3920 m
 const CLOUD_FADE_FULL = FOG_FAR * 0.55 // ~2200 m
 const CLOUD_FADE_OUT = CLOUD_DESPAWN
 
+/**
+ * Cloud decks (altitude MSL, arcade-scaled but real-world-like order):
+ * - cumulus: fair-weather heaps, ~4–9k ft
+ * - stratus: broad mid decks / altostratus, ~7–14k ft
+ * - cirrus: thin high ice wisps, ~18–30k ft
+ */
+type CloudLayer = 'cumulus' | 'stratus' | 'cirrus'
+
+interface CloudLayerSpec {
+  yMin: number
+  yMax: number
+  /** Relative opacity vs base weather opacity. */
+  opacityMul: number
+  /** Wind speed multiplier (high clouds faster). */
+  windMul: number
+}
+
+const CLOUD_LAYER: Record<CloudLayer, CloudLayerSpec> = {
+  cumulus: { yMin: 1600, yMax: 3200, opacityMul: 0.95, windMul: 0.85 },
+  stratus: { yMin: 2800, yMax: 4800, opacityMul: 0.75, windMul: 1.1 },
+  cirrus: { yMin: 6200, yMax: 9800, opacityMul: 0.42, windMul: 1.8 },
+}
+
+function cloudAltitude(layer: CloudLayer): number {
+  const s = CLOUD_LAYER[layer]
+  return s.yMin + Math.random() * (s.yMax - s.yMin)
+}
+
+/** Horizontal spawn in stream disk around (0,0) or offset later. */
+function cloudSpawnXZ(radiusScale = 0.92): { x: number; z: number } {
+  const ang = Math.random() * Math.PI * 2
+  const r = Math.sqrt(Math.random()) * CLOUD_DESPAWN * radiusScale
+  return { x: Math.cos(ang) * r, z: Math.sin(ang) * r }
+}
+
 export type WeatherId =
   | 'clear'
   | 'cloudy'
@@ -206,6 +241,7 @@ export class Atmosphere {
   private readonly cloudWorld: Vector3[] = []
   /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
   private readonly cloudAlpha: number[] = []
+  private readonly cloudLayers: CloudLayer[] = []
   private cloudWindT = 0
 
   private baseFogNear = 1200
@@ -287,7 +323,7 @@ export class Atmosphere {
     this.precipRoot.add(this.rain, this.snow)
     scene.add(this.precipRoot)
 
-    // --- Cloud puffs in world space (stream like terrain; fly past them) ---
+    // --- Layered world-space clouds (real-world altitudes & scale) ---
     this.cloudRoot.name = 'Clouds'
     const puffGeo = new IcosahedronGeometry(1, 1)
     const puffMat = new MeshBasicMaterial({
@@ -296,38 +332,26 @@ export class Atmosphere {
       opacity: 0,
       depthWrite: false,
     })
-    // Wider stream ring needs more clusters than the old near-bubble
-    const clusterCount = 64
-    for (let c = 0; c < clusterCount; c++) {
-      const cluster = new Group()
-      // Uniform disk out to terrain stream radius
-      const ang = Math.random() * Math.PI * 2
-      const r = Math.sqrt(Math.random()) * CLOUD_DESPAWN * 0.92
-      this.cloudWorld.push(
-        new Vector3(
-          Math.cos(ang) * r,
-          160 + Math.random() * 280,
-          Math.sin(ang) * r,
-        ),
-      )
-      // Start faded; first frames will lerp toward distance target
+
+    // Mix: mostly mid/low heaps + broad decks + sparse high cirrus
+    const layerPlan: CloudLayer[] = [
+      ...Array(28).fill('cumulus' as CloudLayer),
+      ...Array(22).fill('stratus' as CloudLayer),
+      ...Array(14).fill('cirrus' as CloudLayer),
+    ]
+    for (let i = layerPlan.length - 1; i > 0; i--) {
+      const j = (Math.random() * (i + 1)) | 0
+      const tmp = layerPlan[i]!
+      layerPlan[i] = layerPlan[j]!
+      layerPlan[j] = tmp
+    }
+
+    for (const layer of layerPlan) {
+      const cluster = this.buildCloudCluster(layer, puffGeo, puffMat)
+      const xz = cloudSpawnXZ()
+      this.cloudWorld.push(new Vector3(xz.x, cloudAltitude(layer), xz.z))
       this.cloudAlpha.push(0)
-      const nPuffs = 4 + ((Math.random() * 4) | 0)
-      for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, puffMat.clone())
-        mesh.position.set(
-          (Math.random() - 0.5) * 48,
-          (Math.random() - 0.5) * 16,
-          (Math.random() - 0.5) * 48,
-        )
-        const s = 18 + Math.random() * 32
-        mesh.scale.set(
-          s * (0.9 + Math.random() * 0.5),
-          s * 0.45,
-          s * (0.9 + Math.random() * 0.5),
-        )
-        cluster.add(mesh)
-      }
+      this.cloudLayers.push(layer)
       this.cloudClusters.push(cluster)
       this.cloudRoot.add(cluster)
     }
@@ -523,10 +547,90 @@ export class Atmosphere {
   }
 
   /**
-   * World-space clouds, streamed like terrain:
-   * - Live far out (spawn near fog rim ~3–4 km, despawn at STREAM_RADIUS)
-   * - Soft fade in when entering the ring, fade out before unload
-   * - Slow wind only — never parented to the jet
+   * Build one formation at real-world-ish scale for the given deck.
+   * Multi-scale puffs: dense core + softer edges (or elongated streaks for cirrus).
+   */
+  private buildCloudCluster(
+    layer: CloudLayer,
+    puffGeo: IcosahedronGeometry,
+    baseMat: MeshBasicMaterial,
+  ): Group {
+    const cluster = new Group()
+    cluster.userData.layer = layer
+
+    if (layer === 'cumulus') {
+      // Fair-weather cumulus heaps — tall-ish, clumpy, ~300–600 m wide
+      const nPuffs = 10 + ((Math.random() * 8) | 0)
+      for (let p = 0; p < nPuffs; p++) {
+        const mesh = new Mesh(puffGeo, baseMat.clone())
+        const edge = p / nPuffs
+        // Core dense, outer fluff farther out
+        const radial = (0.15 + edge * 0.85) * (180 + Math.random() * 220)
+        const ang = Math.random() * Math.PI * 2
+        const elev = Math.random() * Math.PI
+        mesh.position.set(
+          Math.cos(ang) * Math.sin(elev) * radial,
+          Math.abs(Math.cos(elev)) * radial * 0.55 + Math.random() * 40,
+          Math.sin(ang) * Math.sin(elev) * radial,
+        )
+        // Core puffs larger
+        const s = (edge < 0.35 ? 110 : 70) + Math.random() * 90
+        mesh.scale.set(
+          s * (0.85 + Math.random() * 0.55),
+          s * (0.55 + Math.random() * 0.45),
+          s * (0.85 + Math.random() * 0.55),
+        )
+        cluster.add(mesh)
+      }
+    } else if (layer === 'stratus') {
+      // Broad mid-level deck / altostratus sheet — wide & flat
+      const nPuffs = 14 + ((Math.random() * 10) | 0)
+      for (let p = 0; p < nPuffs; p++) {
+        const mesh = new Mesh(puffGeo, baseMat.clone())
+        mesh.position.set(
+          (Math.random() - 0.5) * 700,
+          (Math.random() - 0.5) * 55,
+          (Math.random() - 0.5) * 700,
+        )
+        const s = 140 + Math.random() * 160
+        mesh.scale.set(
+          s * (1.1 + Math.random() * 0.7),
+          s * (0.22 + Math.random() * 0.18),
+          s * (1.1 + Math.random() * 0.7),
+        )
+        cluster.add(mesh)
+      }
+    } else {
+      // Cirrus: thin elongated ice streaks at high altitude
+      const nPuffs = 5 + ((Math.random() * 5) | 0)
+      const streakAng = Math.random() * Math.PI * 2
+      const dirX = Math.cos(streakAng)
+      const dirZ = Math.sin(streakAng)
+      for (let p = 0; p < nPuffs; p++) {
+        const mesh = new Mesh(puffGeo, baseMat.clone())
+        const along = (p / Math.max(1, nPuffs - 1) - 0.5) * 900
+        const side = (Math.random() - 0.5) * 80
+        mesh.position.set(
+          dirX * along - dirZ * side,
+          (Math.random() - 0.5) * 40,
+          dirZ * along + dirX * side,
+        )
+        const s = 90 + Math.random() * 120
+        // Stretch along streak direction
+        mesh.scale.set(s * 2.4, s * 0.12, s * 0.55)
+        mesh.rotation.y = -streakAng
+        cluster.add(mesh)
+      }
+    }
+
+    return cluster
+  }
+
+  /**
+   * World-space layered clouds, streamed like terrain:
+   * - High realistic altitudes (cumulus / stratus / cirrus decks)
+   * - Spawn near fog rim, despawn at STREAM_RADIUS
+   * - Soft distance fade; never parented to the jet
    */
   private updateClouds(
     ax: number,
@@ -537,22 +641,26 @@ export class Atmosphere {
     dayFactor: number,
     snowAmt: number,
   ): void {
-    const brightness = 0.45 + dayFactor * 0.5 - snowAmt * 0.1
-    const baseOpacity = MathUtils.clamp(0.22 + cover * 0.52, 0.15, 0.78)
-    // Slow absolute wind (m/s)
-    const windX = 3.5 * dt
-    const windZ = 1.4 * dt
+    const brightness = 0.5 + dayFactor * 0.48 - snowAmt * 0.08
+    const baseOpacity = MathUtils.clamp(0.28 + cover * 0.5, 0.18, 0.82)
     const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
     // ~0.8s ease for opacity (smooth appear / disappear)
     const fadeK = 1 - Math.exp(-dt * 1.4)
     let anyVisible = false
 
+    // Layer priority with cover: clear → cirrus only; storm → all decks
+    // Indices are shuffled so gate by fraction of total still works; also
+    // force cirrus more often in light cover, cumulus/stratus need more cover.
     for (let i = 0; i < this.cloudClusters.length; i++) {
       const cluster = this.cloudClusters[i]!
       const wpos = this.cloudWorld[i]!
+      const layer = this.cloudLayers[i]!
+      const spec = CLOUD_LAYER[layer]
 
-      wpos.x += windX
-      wpos.z += windZ
+      // Absolute wind (m/s) — high clouds drift faster
+      const windBase = 4.2 * spec.windMul
+      wpos.x += windBase * dt
+      wpos.z += windBase * 0.38 * dt
 
       let dx = wpos.x - ax
       let dz = wpos.z - az
@@ -565,7 +673,7 @@ export class Atmosphere {
           CLOUD_SPAWN_MIN + Math.random() * (CLOUD_SPAWN_MAX - CLOUD_SPAWN_MIN)
         wpos.x = ax + Math.cos(ang) * r
         wpos.z = az + Math.sin(ang) * r
-        wpos.y = 140 + Math.random() * 300
+        wpos.y = cloudAltitude(layer)
         this.cloudAlpha[i] = 0 // start invisible, fade in
         dx = wpos.x - ax
         dz = wpos.z - az
@@ -574,15 +682,24 @@ export class Atmosphere {
 
       cluster.position.set(wpos.x, wpos.y, wpos.z)
 
-      const dist = Math.sqrt(distSq)
-      // Distance fade: solid inside ~2.2 km, soft 1→0 out to stream edge
+      // 3D distance for high decks so they don't pop when you're under them
+      const dy = wpos.y - _ay
+      const dist3 = Math.sqrt(distSq + dy * dy)
       const distFade =
-        1 - MathUtils.smoothstep(dist, CLOUD_FADE_FULL, CLOUD_FADE_OUT)
+        1 - MathUtils.smoothstep(dist3, CLOUD_FADE_FULL, CLOUD_FADE_OUT)
 
-      // Weather cover gates how many clusters are "active"
-      const coverOn =
-        cover > 0.05 && i / this.cloudClusters.length < cover * 1.05
-      const target = coverOn ? distFade : 0
+      // Weather: more cover unlocks lower decks; cirrus can appear with little cover
+      let layerNeed = 0.08
+      if (layer === 'stratus') layerNeed = 0.35
+      if (layer === 'cumulus') layerNeed = 0.22
+      const coverOn = cover >= layerNeed && cover > 0.05
+      // Density: only a fraction of each deck for partial cloud cover
+      const densityGate =
+        layer === 'cirrus'
+          ? i / this.cloudClusters.length < 0.35 + cover * 0.5
+          : i / this.cloudClusters.length < cover * 1.1
+
+      const target = coverOn && densityGate ? distFade : 0
       this.cloudAlpha[i] = MathUtils.lerp(this.cloudAlpha[i]!, target, fadeK)
       const a = this.cloudAlpha[i]!
 
@@ -593,12 +710,26 @@ export class Atmosphere {
       cluster.visible = true
       anyVisible = true
 
-      const op = baseOpacity * a * (0.75 + (i % 5) * 0.05)
+      // Slightly denser near core of each cluster's opacity range
+      const op =
+        baseOpacity * a * spec.opacityMul * (0.78 + (i % 7) * 0.03)
+      // Cirrus colder / whiter; low cumulus warmer in day
+      let br = brightness
+      let bg = brightness * 1.02
+      let bb = brightness * 1.06
+      if (layer === 'cirrus') {
+        br = Math.min(1, brightness + 0.08)
+        bg = Math.min(1, brightness + 0.1)
+        bb = Math.min(1, brightness + 0.14)
+      } else if (layer === 'cumulus' && dayFactor > 0.4) {
+        br = Math.min(1, brightness + 0.04)
+      }
+
       for (const child of cluster.children) {
         const m = child as Mesh
         const mat = m.material as MeshBasicMaterial
         mat.opacity = op
-        mat.color.setRGB(brightness, brightness * 1.02, brightness * 1.05)
+        mat.color.setRGB(br, bg, bb)
       }
     }
 
