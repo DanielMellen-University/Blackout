@@ -265,9 +265,8 @@ export async function lockGameKeyboard(): Promise<void> {
         'ArrowLeft',
         'ArrowRight',
         'Tab',
-        'Escape',
+        // Escape intentionally NOT locked — browser + game use it to exit fullscreen
         'F5',
-        'F11',
       ])
     }
   } catch {

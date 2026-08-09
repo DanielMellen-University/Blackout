@@ -10,7 +10,11 @@ import {
 import { Aircraft } from './aircraft/Aircraft'
 import { CameraSystem } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
-import { lockGameKeyboard, suppressBrowserUi } from './core/suppressBrowserUi'
+import {
+  lockGameKeyboard,
+  suppressBrowserUi,
+  unlockGameKeyboard,
+} from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
 import { evaluateWarnings } from './systems/FlightWarnings'
@@ -83,6 +87,17 @@ async function boot(): Promise<void> {
       // Space starts from title; once playing Space is afterburner
       if (e.code === 'Space') e.preventDefault()
       startGame()
+    }
+    // Esc: leave fullscreen + release keyboard lock (game keeps running)
+    if (playing && e.code === 'Escape') {
+      e.preventDefault()
+      void unlockGameKeyboard()
+    }
+  })
+  // If the user exits fullscreen via browser UI, drop the key lock too
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      void unlockGameKeyboard()
     }
   })
 
