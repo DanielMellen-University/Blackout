@@ -189,9 +189,10 @@ export class Atmosphere {
   private readonly snowMat: PointsMaterial
 
   private readonly cloudRoot = new Group()
-  private readonly cloudPuffs: Mesh[] = []
-  private readonly cloudOffsets: Vector3[] = []
-  private cloudDrift = 0
+  private readonly cloudClusters: Group[] = []
+  /** Absolute world positions (clouds do NOT follow the jet). */
+  private readonly cloudWorld: Vector3[] = []
+  private cloudWindT = 0
 
   private baseFogNear = 1200
   private baseFogFar = 4000
@@ -272,7 +273,7 @@ export class Atmosphere {
     this.precipRoot.add(this.rain, this.snow)
     scene.add(this.precipRoot)
 
-    // --- Cloud puffs (soft low-poly blobs) ---
+    // --- Cloud puffs in world space (you fly past them; they do not follow) ---
     this.cloudRoot.name = 'Clouds'
     const puffGeo = new IcosahedronGeometry(1, 1)
     const puffMat = new MeshBasicMaterial({
@@ -281,13 +282,17 @@ export class Atmosphere {
       opacity: 0.55,
       depthWrite: false,
     })
-    const clusterCount = 28
+    const clusterCount = 48
     for (let c = 0; c < clusterCount; c++) {
       const cluster = new Group()
-      const ox = (Math.random() - 0.5) * 900
-      const oy = 180 + Math.random() * 220
-      const oz = (Math.random() - 0.5) * 900
-      this.cloudOffsets.push(new Vector3(ox, oy, oz))
+      // Initial world placement in a large area (respawn when far away)
+      this.cloudWorld.push(
+        new Vector3(
+          (Math.random() - 0.5) * 2400,
+          160 + Math.random() * 280,
+          (Math.random() - 0.5) * 2400,
+        ),
+      )
       const nPuffs = 4 + ((Math.random() * 4) | 0)
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, puffMat.clone())
@@ -297,10 +302,14 @@ export class Atmosphere {
           (Math.random() - 0.5) * 48,
         )
         const s = 18 + Math.random() * 32
-        mesh.scale.set(s * (0.9 + Math.random() * 0.5), s * 0.45, s * (0.9 + Math.random() * 0.5))
+        mesh.scale.set(
+          s * (0.9 + Math.random() * 0.5),
+          s * 0.45,
+          s * (0.9 + Math.random() * 0.5),
+        )
         cluster.add(mesh)
-        this.cloudPuffs.push(mesh)
       }
+      this.cloudClusters.push(cluster)
       this.cloudRoot.add(cluster)
     }
     scene.add(this.cloudRoot)
@@ -374,7 +383,7 @@ export class Atmosphere {
 
   update(dt: number, ax: number, ay: number, az: number): void {
     this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
-    this.cloudDrift += dt * 6
+    this.cloudWindT += dt
 
     this.autoWeatherTimer += dt
     if (this.autoWeatherTimer > this.autoWeatherInterval) {
@@ -489,17 +498,21 @@ export class Atmosphere {
     this.fill.intensity = (0.15 + dayFactor * 0.28) * w.sunMul
     this.fill.position.set(ax - sunX * 0.3, ay + 80, az - sunZ * 0.3)
 
-    // Clouds follow player + drift
-    this.updateClouds(ax, ay, az, w.clouds, dayFactor, w.snow)
-
-    // Rain / snow
+    // World-space clouds (fly past them) + local precip FX
+    this.updateClouds(ax, ay, az, dt, w.clouds, dayFactor, w.snow)
     this.updatePrecip(ax, ay, az, dt, w.rain, w.snow)
   }
 
+  /**
+   * Clouds are fixed in world space and only drift slowly with wind.
+   * When a cluster gets too far from the jet, recycle it to a new world
+   * position nearby — same streaming idea as terrain, not parenting to the aircraft.
+   */
   private updateClouds(
     ax: number,
-    ay: number,
+    _ay: number,
     az: number,
+    dt: number,
     cover: number,
     dayFactor: number,
     snowAmt: number,
@@ -509,20 +522,33 @@ export class Atmosphere {
 
     const brightness = 0.45 + dayFactor * 0.5 - snowAmt * 0.1
     const opacity = MathUtils.clamp(0.2 + cover * 0.55, 0.15, 0.78)
+    // Slow absolute wind (m/s) — clouds crawl across the sky, not with the jet
+    const windX = 3.5 * dt
+    const windZ = 1.4 * dt
+    const maxDist = 1600
+    const maxDistSq = maxDist * maxDist
 
-    for (let i = 0; i < this.cloudRoot.children.length; i++) {
-      const cluster = this.cloudRoot.children[i] as Group
-      const off = this.cloudOffsets[i]!
-      // Slow wind drift
-      const driftX = Math.sin(this.cloudDrift * 0.02 + i) * 40
-      const driftZ = Math.cos(this.cloudDrift * 0.015 + i * 0.7) * 40
-      cluster.position.set(
-        ax + off.x + driftX,
-        Math.max(ay + 40, off.y + ay * 0.05),
-        az + off.z + driftZ,
-      )
-      // Hide some clusters when cover is low
-      const show = i / this.cloudRoot.children.length < cover * 1.05
+    for (let i = 0; i < this.cloudClusters.length; i++) {
+      const cluster = this.cloudClusters[i]!
+      const wpos = this.cloudWorld[i]!
+
+      wpos.x += windX
+      wpos.z += windZ
+
+      // Recycle far clusters into a ring around the aircraft (still absolute coords)
+      const dx = wpos.x - ax
+      const dz = wpos.z - az
+      if (dx * dx + dz * dz > maxDistSq) {
+        const ang = Math.random() * Math.PI * 2
+        const r = 500 + Math.random() * 1000
+        wpos.x = ax + Math.cos(ang) * r
+        wpos.z = az + Math.sin(ang) * r
+        wpos.y = 140 + Math.random() * 300
+      }
+
+      cluster.position.set(wpos.x, wpos.y, wpos.z)
+
+      const show = i / this.cloudClusters.length < cover * 1.05
       cluster.visible = show
       if (!show) continue
       for (const child of cluster.children) {
@@ -534,6 +560,7 @@ export class Atmosphere {
     }
   }
 
+  /** Rain/snow particles stay local to the jet (weather FX, not scenery). */
   private updatePrecip(
     ax: number,
     ay: number,
@@ -575,8 +602,8 @@ export class Atmosphere {
         const iy = i * 3 + 1
         const iz = i * 3 + 2
         arr[iy]! -= this.snowVel[i]! * (0.7 + snowAmt * 0.8) * dt
-        arr[ix]! += Math.sin(this.cloudDrift * 0.4 + i * 0.3) * wind * dt
-        arr[iz]! += Math.cos(this.cloudDrift * 0.35 + i * 0.2) * wind * 0.7 * dt
+        arr[ix]! += Math.sin(this.cloudWindT * 0.4 + i * 0.3) * wind * dt
+        arr[iz]! += Math.cos(this.cloudWindT * 0.35 + i * 0.2) * wind * 0.7 * dt
         if (arr[iy]! < -20) {
           arr[iy] = 50 + Math.random() * 50
           arr[ix] = (Math.random() - 0.5) * 150
