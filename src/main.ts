@@ -10,7 +10,7 @@ import {
 import { Aircraft } from './aircraft/Aircraft'
 import { CameraSystem } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
-import { suppressBrowserUi } from './core/suppressBrowserUi'
+import { lockGameKeyboard, suppressBrowserUi } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
 import { evaluateWarnings } from './systems/FlightWarnings'
@@ -70,9 +70,14 @@ async function boot(): Promise<void> {
     input.resetFlightControls(0)
     wasAirborne = false
     banner = null
+    // Fullscreen + Keyboard Lock so Ctrl+W (brake+pitch) doesn't close the tab
+    void lockGameKeyboard()
+    canvas.focus({ preventScroll: true })
   }
 
-  playBtn?.addEventListener('click', startGame)
+  playBtn?.addEventListener('click', () => {
+    startGame()
+  })
   window.addEventListener('keydown', (e) => {
     if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
       // Space starts from title; once playing Space is afterburner

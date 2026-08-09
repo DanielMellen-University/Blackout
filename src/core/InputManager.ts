@@ -96,8 +96,13 @@ export class InputManager {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    // Block browser defaults for flight keys + any Ctrl/Cmd combo (Ctrl+W closes tab)
     if (
+      e.ctrlKey ||
+      e.metaKey ||
+      e.altKey ||
       e.code === 'Space' ||
+      e.code === 'Tab' ||
       e.code === 'ArrowUp' ||
       e.code === 'ArrowDown' ||
       e.code === 'ArrowLeft' ||
@@ -105,7 +110,18 @@ export class InputManager {
       e.code === 'ShiftLeft' ||
       e.code === 'ShiftRight' ||
       e.code === 'ControlLeft' ||
-      e.code === 'ControlRight'
+      e.code === 'ControlRight' ||
+      e.code === 'KeyW' ||
+      e.code === 'KeyA' ||
+      e.code === 'KeyS' ||
+      e.code === 'KeyD' ||
+      e.code === 'KeyQ' ||
+      e.code === 'KeyE' ||
+      e.code === 'KeyR' ||
+      e.code === 'KeyG' ||
+      e.code === 'KeyC' ||
+      e.code === 'KeyN' ||
+      e.code === 'F5'
     ) {
       e.preventDefault()
     }
