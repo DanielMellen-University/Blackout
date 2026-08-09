@@ -276,23 +276,57 @@ function unlockKeysOnly(): void {
 }
 
 /**
+ * After leaving fullscreen, the next canvas click can re-enter.
+ * (Chrome often blocks requestFullscreen from the Escape key itself.)
+ */
+let reenterFullscreenOnClick = false
+
+export function isReenterFullscreenArmed(): boolean {
+  return reenterFullscreenOnClick
+}
+
+export function clearReenterFullscreenArm(): void {
+  reenterFullscreenOnClick = false
+}
+
+/**
+ * Enter fullscreen from a user gesture. Call requestFullscreen
+ * synchronously in the event handler (no await before it) or activation is lost.
+ */
+export function enterGameFullscreenFromGesture(): void {
+  reenterFullscreenOnClick = false
+  if (document.fullscreenElement) {
+    void lockKeysOnly()
+    return
+  }
+  const el = document.documentElement
+  try {
+    const req = el.requestFullscreen()
+    if (req !== undefined) {
+      void req.then(() => lockKeysOnly()).catch(() => {
+        /* gesture not accepted — arm click fallback */
+        reenterFullscreenOnClick = true
+      })
+    } else {
+      void lockKeysOnly()
+    }
+  } catch {
+    reenterFullscreenOnClick = true
+  }
+}
+
+/**
  * Enter fullscreen + Keyboard Lock so Chrome actually swallows Ctrl+W/T/N.
  * Safe to call from the Play button (user gesture required).
  */
-export async function lockGameKeyboard(): Promise<void> {
-  try {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen()
-    }
-  } catch {
-    // Fullscreen denied — still try lock / rely on preventDefault
-  }
-  await lockKeysOnly()
+export function lockGameKeyboard(): void {
+  enterGameFullscreenFromGesture()
 }
 
 /** Release keyboard lock + leave fullscreen. */
 export async function unlockGameKeyboard(): Promise<void> {
   unlockKeysOnly()
+  reenterFullscreenOnClick = true
   try {
     if (document.fullscreenElement) await document.exitFullscreen()
   } catch {
@@ -300,11 +334,34 @@ export async function unlockGameKeyboard(): Promise<void> {
   }
 }
 
-/** Esc toggle: enter fullscreen (+ key lock) or exit. */
-export async function toggleGameFullscreen(): Promise<void> {
+/**
+ * Toggle fullscreen. Prefer calling from keydown/click with no prior await.
+ * Note: many Chromium builds refuse requestFullscreen() from the Escape key;
+ * we arm a canvas-click re-enter when that happens.
+ */
+export function toggleGameFullscreen(): void {
   if (document.fullscreenElement) {
-    await unlockGameKeyboard()
-  } else {
-    await lockGameKeyboard()
+    unlockKeysOnly()
+    reenterFullscreenOnClick = true
+    try {
+      const p = document.exitFullscreen()
+      void p?.catch(() => {
+        /* ignore */
+      })
+    } catch {
+      /* ignore */
+    }
+    return
   }
+  enterGameFullscreenFromGesture()
+}
+
+/** Canvas/pointer path: re-enter FS if armed after Esc exit. */
+export function tryReenterFullscreenFromClick(): void {
+  if (!reenterFullscreenOnClick) return
+  if (document.fullscreenElement) {
+    reenterFullscreenOnClick = false
+    return
+  }
+  enterGameFullscreenFromGesture()
 }

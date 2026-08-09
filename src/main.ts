@@ -14,6 +14,7 @@ import {
   lockGameKeyboard,
   suppressBrowserUi,
   toggleGameFullscreen,
+  tryReenterFullscreenFromClick,
 } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
@@ -82,22 +83,36 @@ async function boot(): Promise<void> {
   playBtn?.addEventListener('click', () => {
     startGame()
   })
-  window.addEventListener('keydown', (e) => {
-    if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
-      // Space starts from title; once playing Space is afterburner
-      if (e.code === 'Space') e.preventDefault()
-      startGame()
-    }
-    // Esc: toggle fullscreen (enter + key lock / exit + unlock)
-    if (playing && e.code === 'Escape') {
-      e.preventDefault()
-      void toggleGameFullscreen()
-    }
-  })
-  // If the user exits fullscreen via browser UI, drop the key lock too
+  window.addEventListener(
+    'keydown',
+    (e) => {
+      if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
+        if (e.code === 'Space') e.preventDefault()
+        startGame()
+        return
+      }
+      if (!playing) return
+
+      // Esc / F toggle fullscreen (must stay sync — no await before requestFullscreen)
+      if (e.code === 'Escape' || e.code === 'KeyF') {
+        e.preventDefault()
+        toggleGameFullscreen()
+      }
+    },
+    true, // capture so we run before anything else
+  )
+
+  // Chrome often blocks requestFullscreen from Escape; click canvas to re-enter
+  canvas.addEventListener(
+    'pointerdown',
+    () => {
+      if (playing) tryReenterFullscreenFromClick()
+    },
+    true,
+  )
+
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) {
-      // Don't call exitFullscreen again — only unlock keys
       try {
         const kb = (
           navigator as Navigator & { keyboard?: { unlock: () => void } }
