@@ -394,9 +394,11 @@ export class TerrainSystem {
   }
 
   /**
-   * Extrude a deep skirt from every boundary vertex. Covers:
-   * - residual micro-cracks at chunk seams
-   * - paper-thin silhouette when looking along cliffs / under the lip
+   * Extrude a deep skirt from every boundary — hides cracks / paper edges.
+   *
+   * Important: skirt uses *duplicated* rim verts, not the surface edge verts.
+   * Sharing those verts with computeVertexNormals() averaged vertical skirt
+   * normals into the ground and painted a dark grid along every chunk seam.
    */
   private appendEdgeSkirts(geo: PlaneGeometry, segs: number): void {
     const posAttr = geo.attributes.position as BufferAttribute
@@ -404,7 +406,7 @@ export class TerrainSystem {
     const stride = segs + 1
     const nTop = posAttr.count
 
-    // Walk the boundary CCW (viewed from above): minZ → maxX → maxZ → minX
+    // Boundary walk CCW (viewed from above): minZ → maxX → maxZ → minX
     const edge: number[] = []
     for (let ix = 0; ix < segs; ix++) edge.push(ix)
     for (let iz = 0; iz < segs; iz++) edge.push(iz * stride + segs)
@@ -412,7 +414,8 @@ export class TerrainSystem {
     for (let iz = segs; iz > 0; iz--) edge.push(iz * stride)
     const nEdge = edge.length
 
-    const nNew = nTop + nEdge
+    // Per edge sample: one rim copy + one bottom → 2 * nEdge extra verts
+    const nNew = nTop + nEdge * 2
     const pos = new Float32Array(nNew * 3)
     const col = new Float32Array(nNew * 3)
 
@@ -425,41 +428,58 @@ export class TerrainSystem {
       col[i * 3 + 2] = colAttr.getZ(i)
     }
 
+    // Outward nudge so coplanar skirts don't z-fight the neighbor chunk
+    const EPS = 0.35
     for (let e = 0; e < nEdge; e++) {
       const src = edge[e]!
-      const di = nTop + e
+      const x = posAttr.getX(src)
       const y = posAttr.getY(src)
-      pos[di * 3] = posAttr.getX(src)
-      // Deep wall under the rim — reads as solid ground, not a sheet
-      pos[di * 3 + 1] = y - SKIRT_DEPTH
-      pos[di * 3 + 2] = posAttr.getZ(src)
-      // Darker rock face under the lip
-      col[di * 3] = colAttr.getX(src) * 0.42
-      col[di * 3 + 1] = colAttr.getY(src) * 0.4
-      col[di * 3 + 2] = colAttr.getZ(src) * 0.38
+      const z = posAttr.getZ(src)
+      // Outward from chunk center (local origin is chunk center after mesh place)
+      const len = Math.hypot(x, z) || 1
+      const ox = (x / len) * EPS
+      const oz = (z / len) * EPS
+
+      const rim = nTop + e
+      const bot = nTop + nEdge + e
+      pos[rim * 3] = x + ox
+      pos[rim * 3 + 1] = y
+      pos[rim * 3 + 2] = z + oz
+      pos[bot * 3] = x + ox
+      pos[bot * 3 + 1] = y - SKIRT_DEPTH
+      pos[bot * 3 + 2] = z + oz
+
+      // Match surface color (slightly shaded rock — not black)
+      const cr = colAttr.getX(src)
+      const cg = colAttr.getY(src)
+      const cb = colAttr.getZ(src)
+      col[rim * 3] = cr * 0.88
+      col[rim * 3 + 1] = cg * 0.86
+      col[rim * 3 + 2] = cb * 0.84
+      col[bot * 3] = cr * 0.55
+      col[bot * 3 + 1] = cg * 0.52
+      col[bot * 3 + 2] = cb * 0.48
     }
 
     const oldIndex = geo.getIndex()
     if (!oldIndex) return
     const nOld = oldIndex.count
-    // 2 tris per edge segment
     const idx = new Uint32Array(nOld + nEdge * 6)
     for (let i = 0; i < nOld; i++) idx[i] = oldIndex.getX(i)
 
     let w = nOld
     for (let e = 0; e < nEdge; e++) {
       const e2 = (e + 1) % nEdge
-      const a = edge[e]!
-      const b = edge[e2]!
-      const aS = nTop + e
-      const bS = nTop + e2
-      // Outward-facing quads (DoubleSide also covers interior glances)
-      idx[w++] = a
-      idx[w++] = b
-      idx[w++] = bS
-      idx[w++] = a
-      idx[w++] = bS
-      idx[w++] = aS
+      const aR = nTop + e
+      const bR = nTop + e2
+      const aB = nTop + nEdge + e
+      const bB = nTop + nEdge + e2
+      idx[w++] = aR
+      idx[w++] = bR
+      idx[w++] = bB
+      idx[w++] = aR
+      idx[w++] = bB
+      idx[w++] = aB
     }
 
     geo.setAttribute('position', new BufferAttribute(pos, 3))
