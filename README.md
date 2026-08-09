@@ -6,17 +6,18 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 ## Features
 
+- Title screen with how-to-play and full controls
 - Arcade flight model (thrust, lift, drag, stall lite, gear drag)
-- Runway spawn and takeoff (throttle up, gain speed, pull nose)
-- Crash / soft landing detection with restart
-- Multi-mode camera: chase, close chase, cockpit, wingman, orbit
-- Middle-mouse look / pan, scroll zoom, idle camera recenter
-- Flight HUD: speedometer (IAS), engine power gauge (min–max), altitude, gear, air/ground
-- Procedural F-35 mesh (optional custom GLB)
-- Infinite streaming terrain (~6 km) with soft fog (no chunk pop)
-- Balanced biomes (no single type dominates): plains, forest, rainforest, desert, mesa, swamp, hills, rare mountains/snow, lakes, seas/oceans
-- Random world seed on every load and R reset
-- Features: rivers, canyons, dunes, mesa plateaus, sparse mountain belts, coasts
+- Runway spawn and takeoff; crash / soft landing; **R** new world + runway
+- Multi-mode camera (chase, close, cockpit, wingman, orbit) with speed FOV juice
+- Middle-mouse look / pan, scroll zoom
+- Flight HUD: IAS (to 1000 kts), engine power, altitude AGL, attitude (ADI), gear, weather/time
+- Procedural F-35 with afterburner plume and gear show/hide (optional GLB)
+- Infinite streaming terrain (~8 km) with LOD, fog wall, and fade-in tiles
+- Day/night cycle, weather (**N**), sun/moon lighting, layered clouds
+- Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
+- Terrain features: rivers, ravines, dunes, mesas, coasts
+- Fullscreen on Play (**Esc** / **F** toggle; click game if Esc cannot re-enter)
 
 ## Tech stack
 
@@ -68,7 +69,9 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Hold MMB + drag** | Look / pan |
 | **Scroll** | Zoom |
 | **C** | Cycle camera mode |
-| **R** | Reset to runway |
+| **N** | Cycle weather |
+| **R** | New world + runway |
+| **Esc** / **F** | Toggle fullscreen (in flight) |
 
 **Takeoff:** Hold Shift to spool throttle, build speed down the runway, then pull **W** to rotate. Raise gear with **G** after liftoff.
 
@@ -100,10 +103,15 @@ Blackout/
 
 ## Roadmap
 
-1. **Flight model** - thrust, gravity, lift/drag, stall, damping
-2. **Landing and crash** - ground collision, restart flow
-3. **Flight HUD** - airspeed, altitude, attitude, throttle, gear
-4. **Polish** - audio, particles, improved mesh or production GLB
+Shipped: arcade flight, landing/crash, HUD/ADI, streaming world, day/night and weather, title screen, afterburner and gear visuals.
+
+1. **Aircraft identity** - procedural mesh and material polish (optional GLB stays secondary)
+2. **Mission loop** - checkpoint gates, complete/fail state, restart integration
+3. **World dress** - budgeted vegetation v2, airfield landmarks
+4. **Juice** - engine/wind audio, event SFX, light crash VFX
+5. **Ship** - performance pass, README accuracy, warning retune, attribution
+
+Out of scope for now: radar, weapons, fuel systems.
 
 ## License
 
