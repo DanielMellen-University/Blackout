@@ -208,7 +208,8 @@ export class HUD {
       this.thrEl.textContent = `${pct}%`
     }
     if (this.engFill) {
-      this.engFill.style.transform = `scaleY(${level})`
+      // Height % (not scaleY) so the bar fills cleanly from MIN→MAX
+      this.engFill.style.height = `${level * 100}%`
       this.engFill.classList.toggle('boost', boost)
       this.engFill.setAttribute('aria-valuenow', String(pct))
     }
