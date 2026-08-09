@@ -17,10 +17,10 @@ export const flightConfig = {
    * maxSpeed: hard cap on airspeed (dry); boost can slightly exceed via maxSpeedBoost.
    */
   minSpeed: 35,
-  /** ~500 knots dry (m/s). */
-  maxSpeed: 257.22,
-  /** Absolute cap with afterburner (~520 kts). */
-  maxSpeedBoost: 267.51,
+  /** ~750 knots dry (m/s). */
+  maxSpeed: 385.83,
+  /** Absolute cap with afterburner (~780 kts). */
+  maxSpeedBoost: 401.26,
 
   /** Peak forward acceleration from thrust (m/s^2). */
   maxAccel: 42,
