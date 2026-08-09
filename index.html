@@ -13,7 +13,7 @@
       <div id="overlay">
         <header id="title-bar">
           <h1>BLACKOUT</h1>
-          <span id="phase-badge">Phase 2 · Flight</span>
+          <span id="phase-badge">Phase 3 · Instruments</span>
         </header>
         <div id="hud">
           <div class="hud-row">
@@ -94,6 +94,29 @@
             </div>
             <div class="eng-hint"><kbd>Shift</kbd> + · <kbd>Ctrl</kbd> −</div>
             <div id="eng-ab" class="eng-ab" hidden>AB</div>
+          </div>
+        </div>
+
+        <!-- Center: attitude indicator (pitch ladder + bank) -->
+        <div id="attitude" aria-label="Attitude indicator">
+          <div id="adi-mask">
+            <div id="adi-ball">
+              <div id="adi-sky"></div>
+              <div id="adi-ground"></div>
+              <div id="adi-horizon"></div>
+              <div id="adi-ladder"></div>
+            </div>
+          </div>
+          <div id="adi-fixed" aria-hidden="true">
+            <div class="adi-wing left"></div>
+            <div class="adi-wing right"></div>
+            <div class="adi-dot"></div>
+          </div>
+          <div id="adi-bank-marks" aria-hidden="true"></div>
+          <div id="adi-bank-ptr" aria-hidden="true"></div>
+          <div id="adi-readout">
+            <span id="adi-pitch">0°</span>
+            <span id="adi-roll">0°</span>
           </div>
         </div>
 

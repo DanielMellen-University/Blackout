@@ -1,6 +1,6 @@
 /**
- * HTML overlay HUD - flight readouts, speedometer, engine power, banner.
- * Speedo: 0–maxKts dial. ENG: 0–100% vertical bar (Shift up / Ctrl down).
+ * HTML overlay HUD - flight readouts, speedometer, engine power,
+ * attitude indicator (pitch ladder + bank), banner.
  */
 export class HUD {
   private readonly posEl: HTMLElement | null
@@ -17,9 +17,15 @@ export class HUD {
   private readonly engMarker: HTMLElement | null
   private readonly engAb: HTMLElement | null
   private readonly engPanel: HTMLElement | null
+  private readonly adiBall: HTMLElement | null
+  private readonly adiBankPtr: HTMLElement | null
+  private readonly adiPitchEl: HTMLElement | null
+  private readonly adiRollEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
   private readonly maxKts = 350
+  /** Pixels of ladder travel per degree of pitch. */
+  private readonly pxPerDeg = 2.4
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
@@ -36,7 +42,13 @@ export class HUD {
     this.engMarker = root.getElementById('eng-marker')
     this.engAb = root.getElementById('eng-ab')
     this.engPanel = root.getElementById('eng-panel')
+    this.adiBall = root.getElementById('adi-ball')
+    this.adiBankPtr = root.getElementById('adi-bank-ptr')
+    this.adiPitchEl = root.getElementById('adi-pitch')
+    this.adiRollEl = root.getElementById('adi-roll')
     this.buildSpeedTicks(root)
+    this.buildAttitudeLadder(root)
+    this.buildBankMarks(root)
   }
 
   update(opts: {
@@ -50,6 +62,10 @@ export class HUD {
     boost?: boolean
     gearDown?: boolean
     onGround?: boolean
+    /** Aircraft pitch (rad), nose up positive. */
+    pitch?: number
+    /** Aircraft roll (rad), right wing down positive. */
+    roll?: number
     banner?: string | null
   }): void {
     if (this.posEl) {
@@ -79,6 +95,11 @@ export class HUD {
     if (this.stateEl && opts.onGround !== undefined) {
       this.stateEl.textContent = opts.onGround ? 'GND' : 'AIR'
     }
+
+    if (opts.pitch !== undefined && opts.roll !== undefined) {
+      this.updateAttitude(opts.pitch, opts.roll)
+    }
+
     if (this.bannerEl) {
       if (opts.banner) {
         this.bannerEl.textContent = opts.banner
@@ -91,9 +112,33 @@ export class HUD {
   }
 
   /**
-   * Arc spans ~240° from lower-left (0 kts) to lower-right (maxKts).
-   * Needle angle: -120° at 0 → +120° at max (0° = straight up).
+   * Artificial horizon: ball banks with roll, shifts with pitch.
+   * Fixed yellow wings = aircraft reference.
    */
+  private updateAttitude(pitchRad: number, rollRad: number): void {
+    const pitchDeg = (pitchRad * 180) / Math.PI
+    const rollDeg = (rollRad * 180) / Math.PI
+    // Clamp visual pitch travel so ladder stays readable
+    const pitchVis = Math.max(-50, Math.min(50, pitchDeg))
+    const pitchPx = pitchVis * this.pxPerDeg
+
+    if (this.adiBall) {
+      // Nose up → horizon slides down (sky fills more of the mask)
+      this.adiBall.style.transform = `rotate(${-rollDeg}deg) translateY(${pitchPx}px)`
+    }
+    if (this.adiBankPtr) {
+      this.adiBankPtr.style.transform = `rotate(${-rollDeg}deg)`
+    }
+    if (this.adiPitchEl) {
+      const p = Math.round(pitchDeg)
+      this.adiPitchEl.textContent = `P ${p > 0 ? '+' : ''}${p}°`
+    }
+    if (this.adiRollEl) {
+      const r = Math.round(rollDeg)
+      this.adiRollEl.textContent = `B ${r > 0 ? '+' : ''}${r}°`
+    }
+  }
+
   private updateSpeedo(kts: number): void {
     const t = Math.min(1, kts / this.maxKts)
     const angleDeg = -120 + t * 240
@@ -106,24 +151,18 @@ export class HUD {
       this.spdNeedle.setAttribute('y2', String(cy - Math.cos(rad) * len))
     }
     if (this.spdArc) {
-      // stroke-dasharray pathLength=100: reveal arc by progress
       const shown = Math.max(0.5, t * 100)
       this.spdArc.style.strokeDasharray = `${shown} 100`
       this.spdArc.style.strokeDashoffset = '0'
     }
   }
 
-  /**
-   * Drive ENG bar + % from commanded throttle every frame (Shift/Ctrl spool).
-   * Uses scaleY so the fill tracks the setpoint live without flex % height bugs.
-   */
   private updateEngine(throttle: number, boost: boolean): void {
     const level = Math.min(1, Math.max(0, throttle))
     const pct = Math.round(level * 100)
     if (this.thrEl) {
       this.thrEl.textContent = `${pct}%`
     }
-    // Continuous 0–1: bar and marker follow the live setpoint, not stepped %
     if (this.engFill) {
       this.engFill.style.transform = `scaleY(${level})`
       this.engFill.classList.toggle('boost', boost)
@@ -142,6 +181,45 @@ export class HUD {
     }
   }
 
+  private buildAttitudeLadder(root: Document): void {
+    const ladder = root.getElementById('adi-ladder')
+    if (!ladder) return
+    // Lines every 10° from -40 to +40 (0 is the horizon band)
+    for (let deg = -40; deg <= 40; deg += 10) {
+      if (deg === 0) continue
+      const line = root.createElement('div')
+      const major = Math.abs(deg) % 20 === 0
+      line.className = 'adi-ladder-line' + (major ? ' major' : '')
+      const width = major ? 56 : 36
+      line.style.width = `${width}px`
+      // Negative pitch below horizon on ball; ball translate handles flight pitch
+      line.style.top = `calc(50% + ${-deg * this.pxPerDeg}px)`
+      if (major) {
+        const l = root.createElement('span')
+        l.className = 'lbl l'
+        l.textContent = String(Math.abs(deg))
+        const r = root.createElement('span')
+        r.className = 'lbl r'
+        r.textContent = String(Math.abs(deg))
+        line.appendChild(l)
+        line.appendChild(r)
+      }
+      ladder.appendChild(line)
+    }
+  }
+
+  private buildBankMarks(root: Document): void {
+    const marks = root.getElementById('adi-bank-marks')
+    if (!marks) return
+    // Bank ticks at ±10,20,30,45,60
+    for (const deg of [-60, -45, -30, -20, -10, 10, 20, 30, 45, 60]) {
+      const tick = root.createElement('div')
+      tick.className = 'tick' + (Math.abs(deg) % 30 === 0 ? ' major' : '')
+      tick.style.transform = `rotate(${deg}deg)`
+      marks.appendChild(tick)
+    }
+  }
+
   private buildSpeedTicks(root: Document): void {
     const g = root.getElementById('spd-ticks')
     if (!g) return
@@ -150,7 +228,6 @@ export class HUD {
     const rOuter = 52
     const rInnerMajor = 44
     const rInnerMinor = 47
-    // ticks every 20 kts major, 10 minor over 0..max
     const steps = this.maxKts / 10
     for (let i = 0; i <= steps; i++) {
       const kts = i * 10
