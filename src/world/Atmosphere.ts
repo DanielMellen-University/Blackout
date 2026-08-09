@@ -31,9 +31,9 @@ const CLOUD_FADE_OUT = CLOUD_DESPAWN
 
 /**
  * Cloud decks (altitude MSL, arcade-scaled but real-world-like order):
- * - cumulus: fair-weather heaps, ~4–9k ft
- * - stratus: broad mid decks / altostratus, ~7–14k ft
- * - cirrus: thin high ice wisps, ~18–30k ft
+ * - cumulus: fair-weather heaps ~1.1–2.4 km
+ * - stratus: broad mid decks ~2–3.6 km
+ * - cirrus: thin high ice wisps ~4.2–6.8 km
  */
 type CloudLayer = 'cumulus' | 'stratus' | 'cirrus'
 
@@ -47,9 +47,10 @@ interface CloudLayerSpec {
 }
 
 const CLOUD_LAYER: Record<CloudLayer, CloudLayerSpec> = {
-  cumulus: { yMin: 1600, yMax: 3200, opacityMul: 0.95, windMul: 0.85 },
-  stratus: { yMin: 2800, yMax: 4800, opacityMul: 0.75, windMul: 1.1 },
-  cirrus: { yMin: 6200, yMax: 9800, opacityMul: 0.42, windMul: 1.8 },
+  // Slightly lower decks (still high vs terrain, easier to fly among)
+  cumulus: { yMin: 1100, yMax: 2400, opacityMul: 0.95, windMul: 0.85 },
+  stratus: { yMin: 2000, yMax: 3600, opacityMul: 0.75, windMul: 1.1 },
+  cirrus: { yMin: 4200, yMax: 6800, opacityMul: 0.42, windMul: 1.8 },
 }
 
 function cloudAltitude(layer: CloudLayer): number {
