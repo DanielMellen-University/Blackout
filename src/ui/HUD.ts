@@ -28,7 +28,7 @@ export class HUD {
   private readonly phaseEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
-  private readonly maxKts = 350
+  private readonly maxKts = 500
   /** Pixels of ladder travel per degree of pitch. */
   private readonly pxPerDeg = 2.4
 
