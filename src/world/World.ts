@@ -136,7 +136,7 @@ export class World {
     const sun = new DirectionalLight(0xfff5e6, 1.65)
     sun.position.set(180, 280, 120)
     sun.castShadow = true
-    sun.shadow.mapSize.set(2048, 2048)
+    sun.shadow.mapSize.set(1024, 1024)
     sun.shadow.camera.near = 10
     sun.shadow.camera.far = 1200
     sun.shadow.camera.left = -450

@@ -3,6 +3,7 @@ import {
   Color,
   DoubleSide,
   Fog,
+  FrontSide,
   Group,
   MathUtils,
   Mesh,
@@ -23,7 +24,7 @@ import { createVegetationFactory, vegetationDensity } from './vegetation'
  * Streaming envelope.
  * Terrain is generated past the fog wall so new chunks never appear
  * in clear view. Fog fully covers ~2 chunk rings before the stream edge.
- * Chunk builds are budgeted per frame; tiles fade in/out softly.
+ * Distance LOD + cheap far tiles keep the wider ring affordable.
  */
 export const CHUNK_SIZE = 420
 /**
@@ -37,23 +38,28 @@ export const VIEW_RADIUS = 20
  */
 export const FOG_MARGIN_CHUNKS = 2
 /** Detailed props only near the jet (cells). */
-const PROP_RADIUS = 5
+const PROP_RADIUS = 4
 /** Soft opacity fade across the fog margin. */
 const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Seconds-ish ease for spawn/despawn opacity. */
 const FADE_RATE = 1.6
-/**
- * Grid resolution per chunk. Same for near/far so shared edges match
- * (LOD mismatch was a major source of holes / paper gaps).
- */
-const CHUNK_SEGS = 22
+/** Near-field mesh density (player ring). */
+const SEGS_NEAR = 16
+/** Mid ring — still readable through light fog. */
+const SEGS_MID = 9
+/** Far ring — silhouette only (heavy fog). */
+const SEGS_FAR = 5
+/** Skirts only where seams can be seen (not in the fog bank). */
+const SKIRT_DIST = 12
+/** Slope shading only up close. */
+const SLOPE_DIST = 5
 /**
  * Vertical skirt depth (m). Hides residual cracks and gives the surface
  * real edge thickness instead of a paper-thin sheet.
  */
 const SKIRT_DEPTH = 220
-/** Max chunk builds per frame (props count as heavier). */
-const BUILDS_PER_FRAME = 2
+/** Build cost budget per frame (props cost more, far LODs cost less). */
+const BUILD_BUDGET = 2.4
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /**
  * Fog fully opaque at this range — two chunks inside the stream edge
@@ -62,6 +68,19 @@ export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 export const FOG_FAR = (VIEW_RADIUS - FOG_MARGIN_CHUNKS) * CHUNK_SIZE
 /** Clear air near the jet; linear fog ramps out to FOG_FAR. */
 export const FOG_NEAR = Math.round(FOG_FAR * 0.34)
+
+function segsForDist(dist: number): number {
+  if (dist <= 5) return SEGS_NEAR
+  if (dist <= 11) return SEGS_MID
+  return SEGS_FAR
+}
+
+function buildCost(dist: number, withProps: boolean): number {
+  if (withProps) return 2.2
+  if (dist <= 5) return 1
+  if (dist <= 11) return 0.45
+  return 0.22
+}
 
 interface Chunk {
   key: string
@@ -74,6 +93,8 @@ interface Chunk {
   targetAlpha: number
   /** Marked for removal after fade-out completes. */
   fadingOut: boolean
+  /** Last applied opacity — skip material walks when unchanged. */
+  appliedAlpha: number
 }
 
 interface PendingChunk {
@@ -97,7 +118,10 @@ export class TerrainSystem {
   private focusX = 0
   private focusZ = 0
 
-  private readonly groundMat: MeshStandardMaterial
+  /** Near tiles: double-sided so steep cliffs don't punch holes. */
+  private readonly groundMatNear: MeshStandardMaterial
+  /** Mid/far tiles: single-sided (half the fill rate). */
+  private readonly groundMatFar: MeshStandardMaterial
   private readonly vegFactory: ReturnType<typeof createVegetationFactory>
 
   constructor(scene: Scene) {
@@ -105,14 +129,19 @@ export class TerrainSystem {
     this.root.name = 'TerrainSystem'
     scene.add(this.root)
 
-    this.groundMat = new MeshStandardMaterial({
-      vertexColors: true,
+    const matBase = {
+      vertexColors: true as const,
       roughness: 0.94,
       metalness: 0.04,
-      // Smooth shading — flat faces made mountains look like knife edges
       flatShading: false,
-      // Both faces so steep cliffs / underside glances never punch a sky hole
+    }
+    this.groundMatNear = new MeshStandardMaterial({
+      ...matBase,
       side: DoubleSide,
+    })
+    this.groundMatFar = new MeshStandardMaterial({
+      ...matBase,
+      side: FrontSide,
     })
     this.vegFactory = createVegetationFactory()
     this.applyFog()
@@ -205,8 +234,8 @@ export class TerrainSystem {
   }
 
   private drainBuildQueue(): void {
-    let built = 0
-    while (built < BUILDS_PER_FRAME && this.pending.length > 0) {
+    let spent = 0
+    while (spent < BUILD_BUDGET && this.pending.length > 0) {
       const job = this.pending.shift()!
       const key = `${job.cx},${job.cz}`
       this.pendingKeys.delete(key)
@@ -216,16 +245,17 @@ export class TerrainSystem {
       const pcz = Math.floor(this.focusZ / CHUNK_SIZE)
       const ddx = job.cx - pcx
       const ddz = job.cz - pcz
-      if (ddx * ddx + ddz * ddz > VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS) continue
+      const dist = Math.hypot(ddx, ddz)
+      if (dist * dist > VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS) continue
 
-      this.chunks.set(key, this.buildChunk(job.cx, job.cz, job.withProps))
-      built += job.withProps ? BUILDS_PER_FRAME : 1
+      this.chunks.set(key, this.buildChunk(job.cx, job.cz, job.withProps, dist))
+      spent += buildCost(dist, job.withProps)
     }
   }
 
   /**
    * Lerp opacity toward targets; dispose only after fade-out finishes.
-   * Outer ring also distance-fades so the stream edge ghosts into fog.
+   * Settled fully-opaque tiles skip material walks (big win with ~1k chunks).
    */
   private updateFades(pcx: number, pcz: number, dt: number): void {
     const fadeK = 1 - Math.exp(-dt * FADE_RATE)
@@ -235,20 +265,30 @@ export class TerrainSystem {
     for (const [key, chunk] of this.chunks) {
       if (!chunk.fadingOut) {
         const cellDist = Math.hypot(chunk.cx - pcx, chunk.cz - pcz)
-        // 1 inside fadeStart, 0 at VIEW_RADIUS
         chunk.targetAlpha =
           1 - MathUtils.smoothstep(cellDist, fadeStart, VIEW_RADIUS + 0.35)
       } else {
         chunk.targetAlpha = 0
       }
 
+      // Already stable fully opaque — no per-frame material work
+      if (
+        !chunk.fadingOut &&
+        chunk.alpha >= 0.995 &&
+        chunk.targetAlpha >= 0.995 &&
+        chunk.appliedAlpha >= 0.995
+      ) {
+        continue
+      }
+
       chunk.alpha = MathUtils.lerp(chunk.alpha, chunk.targetAlpha, fadeK)
-      // Snap ends so we hit fully opaque / fully gone cleanly
       if (Math.abs(chunk.alpha - chunk.targetAlpha) < 0.008) {
         chunk.alpha = chunk.targetAlpha
       }
 
-      this.applyChunkAlpha(chunk)
+      if (Math.abs(chunk.alpha - chunk.appliedAlpha) > 0.004) {
+        this.applyChunkAlpha(chunk)
+      }
 
       if (chunk.fadingOut && chunk.alpha <= 0.01) {
         toRemove.push(key)
@@ -266,6 +306,7 @@ export class TerrainSystem {
 
   private applyChunkAlpha(chunk: Chunk): void {
     const a = MathUtils.clamp(chunk.alpha, 0, 1)
+    chunk.appliedAlpha = a
     chunk.root.visible = a > 0.005
     if (!chunk.root.visible) return
 
@@ -277,19 +318,23 @@ export class TerrainSystem {
         const transparent = a < 0.995
         mat.transparent = transparent
         mat.opacity = a
-        // Keep depth writes early so semi-transparent chunks don't "hole" the ground
         mat.depthWrite = a > 0.12
       }
     })
   }
 
-  private buildChunk(cx: number, cz: number, withProps: boolean): Chunk {
+  private buildChunk(
+    cx: number,
+    cz: number,
+    withProps: boolean,
+    dist: number,
+  ): Chunk {
     const root = new Group()
     root.name = `chunk_${cx}_${cz}`
     const originX = cx * CHUNK_SIZE
     const originZ = cz * CHUNK_SIZE
 
-    root.add(this.buildHeightMesh(originX, originZ, withProps))
+    root.add(this.buildHeightMesh(originX, originZ, dist))
     if (withProps) root.add(this.buildProps(originX, originZ, cx, cz))
 
     // Per-chunk material clones so opacity fade doesn't affect other tiles
@@ -310,7 +355,12 @@ export class TerrainSystem {
         if (c instanceof MeshStandardMaterial) c.depthWrite = false
         obj.material = c
       }
+      obj.matrixAutoUpdate = false
+      obj.updateMatrix()
     })
+    root.matrixAutoUpdate = false
+    root.updateMatrix()
+    root.updateMatrixWorld(true)
 
     this.root.add(root)
     const chunk: Chunk = {
@@ -321,6 +371,7 @@ export class TerrainSystem {
       alpha: 0,
       targetAlpha: 1,
       fadingOut: false,
+      appliedAlpha: -1,
     }
     this.applyChunkAlpha(chunk)
     return chunk
@@ -329,10 +380,13 @@ export class TerrainSystem {
   private buildHeightMesh(
     originX: number,
     originZ: number,
-    detailed: boolean,
+    dist: number,
   ): Mesh {
-    // Same segs near and far so shared edges land on identical world samples
-    const segs = CHUNK_SEGS
+    const segs = segsForDist(dist)
+    const doSlope = dist <= SLOPE_DIST
+    const doSkirt = dist <= SKIRT_DIST
+    const near = dist <= SLOPE_DIST
+
     const geo = new PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE, segs, segs)
     geo.rotateX(-Math.PI / 2)
 
@@ -342,9 +396,8 @@ export class TerrainSystem {
     const stride = segs + 1
     const cell = CHUNK_SIZE / segs
 
-    const biomes: Biome[] = new Array(pos.count)
+    const biomes: Biome[] | null = doSlope ? new Array(pos.count) : null
     for (let i = 0; i < pos.count; i++) {
-      // Snap to shared world grid so adjacent chunks share exact edge heights
       const wx = originX + half + pos.getX(i)
       const wz = originZ + half + pos.getZ(i)
       const climate = sampleClimate(wx, wz)
@@ -352,7 +405,7 @@ export class TerrainSystem {
       if (climate.biome === 'water') h = Math.min(h, 0.35)
       if (climate.biome === 'ocean') h = 0
       pos.setY(i, h)
-      biomes[i] = climate.biome
+      if (biomes) biomes[i] = climate.biome
       const [r, g, b] = biomeColor(
         climate.biome,
         h,
@@ -368,8 +421,7 @@ export class TerrainSystem {
       colors[i * 3 + 2] = b
     }
 
-    // Slope cliff shading (all chunks — same mesh density now)
-    if (detailed) {
+    if (doSlope && biomes) {
       for (let iz = 0; iz < stride; iz++) {
         for (let ix = 0; ix < stride; ix++) {
           const i = iz * stride + ix
@@ -395,13 +447,13 @@ export class TerrainSystem {
     }
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))
-    // Drop vertical skirts so steep seams / stream edges aren't paper-thin holes
-    this.appendEdgeSkirts(geo, segs)
+    if (doSkirt) this.appendEdgeSkirts(geo, segs)
     geo.computeVertexNormals()
 
-    const mesh = new Mesh(geo, this.groundMat)
+    const mesh = new Mesh(geo, near ? this.groundMatNear : this.groundMatFar)
     mesh.position.set(originX + half, 0, originZ + half)
-    mesh.receiveShadow = true
+    // Shadows only matter up close (sun shadow camera is local)
+    mesh.receiveShadow = near
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
     return mesh
@@ -503,7 +555,7 @@ export class TerrainSystem {
 
   private buildProps(originX: number, originZ: number, cx: number, cz: number): Group {
     const veg = this.vegFactory.createBuckets()
-    const samples = 56
+    const samples = 40
 
     for (let i = 0; i < samples; i++) {
       const u = hash2(cx * 31 + i, cz * 17 + i * 3)

@@ -358,9 +358,9 @@ export class Atmosphere {
 
     // Mix: mostly mid/low heaps + broad decks + sparse high cirrus
     const layerPlan: CloudLayer[] = [
-      ...Array(28).fill('cumulus' as CloudLayer),
-      ...Array(22).fill('stratus' as CloudLayer),
-      ...Array(14).fill('cirrus' as CloudLayer),
+      ...Array(20).fill('cumulus' as CloudLayer),
+      ...Array(16).fill('stratus' as CloudLayer),
+      ...Array(10).fill('cirrus' as CloudLayer),
     ]
     for (let i = layerPlan.length - 1; i > 0; i--) {
       const j = (Math.random() * (i + 1)) | 0

@@ -142,7 +142,7 @@ export class SkyDome {
     })
 
     // Large dome; verts pushed to far plane in the vertex shader
-    const geo = new SphereGeometry(1, 48, 32)
+    const geo = new SphereGeometry(1, 24, 16)
     this.mesh = new Mesh(geo, this.mat)
     this.mesh.name = 'SkyDome'
     this.mesh.frustumCulled = false
