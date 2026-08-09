@@ -1,5 +1,6 @@
 import { MathUtils, Mesh, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
+import { flightConfig } from '../aircraft/flightConfig'
 import {
   CAMERA_MODE_LABELS,
   CAMERA_MODES,
@@ -111,6 +112,12 @@ const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
 const AUTO_RETURN_DELAY = 10 * (2 / 3)
 const AUTO_RETURN_RATE = 1.35
 const LOOK_STIFFNESS = 14
+/** Extra FOV (deg) at max airspeed. */
+const SPEED_FOV_BOOST = 14
+/** Chase distance stretch at max airspeed (1 = base). */
+const SPEED_DIST_STRETCH = 0.42
+/** How fast FOV/distance juice tracks airspeed. */
+const JUICE_STIFFNESS = 3.2
 
 /**
  * Multi-mode flight camera: spring chase, MMB orbit pan, ground occlusion, idle recenter.
@@ -118,6 +125,8 @@ const LOOK_STIFFNESS = 14
 export class CameraSystem {
   readonly camera: PerspectiveCamera
   mode: CameraMode = 'chase'
+  /** Smoothed 0–1 speed juice for FOV / pullback. */
+  private speedJuice = 0
 
   /** Extra clearance above ground surface for the lens (meters). */
   groundClearance = 1.15
@@ -266,6 +275,19 @@ export class CameraSystem {
   private applyRig(aircraft: Aircraft, dt: number, snap: boolean): void {
     const cfg = MODE_CONFIG[this.mode]
 
+    // --- Speed juice (chunk 3.4): wider FOV + longer chase as IAS climbs ---
+    const speedT = MathUtils.clamp(aircraft.speed / flightConfig.maxSpeed, 0, 1)
+    const targetJuice = speedT * speedT * (3 - 2 * speedT) // smoothstep
+    if (snap || dt <= 0) {
+      this.speedJuice = targetJuice
+    } else {
+      const jA = 1 - Math.exp(-JUICE_STIFFNESS * dt)
+      this.speedJuice = MathUtils.lerp(this.speedJuice, targetJuice, jA)
+    }
+    const juice = this.speedJuice
+    const distScale = 1 + juice * SPEED_DIST_STRETCH
+    const targetFov = cfg.fov + juice * SPEED_FOV_BOOST
+
     _pivot.copy(aircraft.position)
     _pivot.y += 1.2
 
@@ -288,7 +310,8 @@ export class CameraSystem {
       this.lookSmoothed.copy(_look)
       this.lookReady = true
     } else {
-      this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, this.distance)
+      const useDist = this.distance * (cfg.freelook ? 1 : distScale)
+      this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, useDist)
 
       if (cfg.yawOnly) {
         // Chase-style: rotate offset by heading only (no roll/pitch of the airframe)
@@ -320,7 +343,8 @@ export class CameraSystem {
       _look.add(aircraft.position)
 
       if (cfg.lookLead > 0) {
-        _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead)
+        // Slightly more lead at high speed so framing stays ahead of the jet
+        _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead * (1 + juice * 0.4))
         // Prefer horizontal lead so banking does not yank the look target skyward
         _velLead.y *= 0.35
         _look.add(_velLead)
@@ -337,8 +361,8 @@ export class CameraSystem {
       this.camera.lookAt(this.lookSmoothed)
     }
 
-    if (this.camera.fov !== cfg.fov) {
-      this.camera.fov = cfg.fov
+    if (Math.abs(this.camera.fov - targetFov) > 0.05) {
+      this.camera.fov = targetFov
       this.camera.updateProjectionMatrix()
     }
 

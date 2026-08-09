@@ -1,4 +1,15 @@
-import { Box3, Group, Mesh, Quaternion, Vector3, type Object3D, type Scene } from 'three'
+import {
+  Box3,
+  Group,
+  MathUtils,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  Quaternion,
+  Vector3,
+  type Object3D,
+  type Scene,
+} from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
@@ -94,8 +105,12 @@ export class Aircraft {
   }
 
   step(dt: number): void {
-    if (this.status === 'crashed') return
+    if (this.status === 'crashed') {
+      this.updateVisuals(dt)
+      return
+    }
     this.flight.step(this, dt)
+    this.updateVisuals(dt)
   }
 
   crash(): void {
@@ -104,6 +119,7 @@ export class Aircraft {
     this.angularVelocity.set(0, 0, 0)
     this.controls.throttle = 0
     this.controls.boost = false
+    this.updateVisuals(0)
   }
 
   markLanded(): void {
@@ -113,6 +129,56 @@ export class Aircraft {
   syncMesh(): void {
     this.mesh.position.copy(this.position)
     this.mesh.quaternion.copy(this.orientation)
+    this.updateVisuals(0)
+  }
+
+  /**
+   * Gear visibility + afterburner plume (placeholder model).
+   * Safe no-ops if nodes missing (GLB path).
+   */
+  private updateVisuals(dt: number): void {
+    const gear = this.mesh.getObjectByName('landingGear')
+    if (gear) gear.visible = this.controls.gearDown
+
+    const ab = this.mesh.getObjectByName('afterburner')
+    if (!ab) return
+
+    // Idle: tiny; throttle: glow; boost: full plume
+    const thr = this.controls.throttle
+    const boost = this.controls.boost && thr > 0.05
+    const power = this.status === 'crashed' ? 0 : boost ? 1 : thr * 0.22
+    ab.visible = power > 0.04
+
+    if (!ab.visible) return
+
+    // Stretch plume aft with power; gentle pulse on AB
+    const pulse =
+      boost && dt > 0 ? 1 + Math.sin(performance.now() * 0.028) * 0.08 : 1
+    const len = (0.35 + power * 1.65) * pulse
+    const fat = 0.55 + power * 0.7
+    ab.scale.set(fat, fat, len)
+
+    ab.traverse((obj) => {
+      if (!(obj instanceof Mesh)) return
+      const mat = obj.material
+      if (mat instanceof MeshBasicMaterial) {
+        if (mat.name === 'abCore') mat.opacity = 0.55 + power * 0.45
+        else if (mat.name === 'abMid') mat.opacity = 0.25 + power * 0.5
+        else if (mat.name === 'abOuter') mat.opacity = 0.12 + power * 0.35
+      }
+      if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
+        mat.emissiveIntensity = MathUtils.lerp(0.25, 2.8, power)
+      }
+    })
+
+    // Nozzle core on the airframe (sibling of afterburner group)
+    this.mesh.traverse((obj) => {
+      if (!(obj instanceof Mesh)) return
+      const mat = obj.material
+      if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
+        mat.emissiveIntensity = MathUtils.lerp(0.25, 3.2, power)
+      }
+    })
   }
 
   get speed(): number {

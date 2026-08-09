@@ -1,11 +1,14 @@
 import {
+  AdditiveBlending,
   BoxGeometry,
   CanvasTexture,
+  ConeGeometry,
   CylinderGeometry,
   ExtrudeGeometry,
   Group,
   LatheGeometry,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   RepeatWrapping,
   Shape,
@@ -33,10 +36,11 @@ export function createPlaceholderF35(): Group {
   const glowMat = new MeshStandardMaterial({
     color: 0xff5500,
     emissive: 0xff3300,
-    emissiveIntensity: 1.5,
+    emissiveIntensity: 0.4,
     metalness: 0.05,
     roughness: 0.6,
   })
+  glowMat.name = 'nozzleGlow'
 
   root.add(buildFuselage(grey))
   root.add(buildCanopy(glass, black))
@@ -47,6 +51,7 @@ export function createPlaceholderF35(): Group {
   root.add(buildIntake(1, grey, greyMid, black))
   root.add(buildIntake(-1, grey, greyMid, black))
   root.add(buildNozzle(nozzleOuter, black, glowMat))
+  root.add(buildAfterburner())
 
   const eots = new Mesh(new SphereGeometry(0.24, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), black)
   eots.scale.set(0.9, 0.48, 1.0)
@@ -57,7 +62,7 @@ export function createPlaceholderF35(): Group {
   bay.position.set(0, -0.54, 0.2)
   root.add(bay)
 
-  addGear(root, black, tire)
+  root.add(buildGear(black, tire))
   addNavLight(root, -5.35, 0.02, -0.5, 0xff2020)
   addNavLight(root, 5.35, 0.02, -0.5, 0x20ff40)
   addNavLight(root, 0, 1.5, -5.5, 0xfff5e0)
@@ -408,21 +413,25 @@ function buildNozzle(
 // Gear / lights
 // ---------------------------------------------------------------------------
 
-function addGear(root: Group, strutMat: MeshStandardMaterial, tireMat: MeshStandardMaterial): void {
+/** Landing gear group — Aircraft toggles visibility with gearDown. */
+function buildGear(strutMat: MeshStandardMaterial, tireMat: MeshStandardMaterial): Group {
+  const gear = new Group()
+  gear.name = 'landingGear'
+
   const makeLeg = (x: number, z: number, tall: number, dual = false) => {
     const door = new Mesh(new BoxGeometry(0.32, 0.035, 0.65), strutMat)
     door.position.set(x, -0.5, z)
-    root.add(door)
+    gear.add(door)
 
     const leg = new Mesh(new CylinderGeometry(0.04, 0.05, tall, 8), strutMat)
     leg.position.set(x, -0.5 - tall / 2, z)
-    root.add(leg)
+    gear.add(leg)
 
     const wheel = (ox: number) => {
       const w = new Mesh(new CylinderGeometry(0.17, 0.17, 0.11, 14), tireMat)
       w.rotation.z = Math.PI / 2
       w.position.set(x + ox, -0.5 - tall, z)
-      root.add(w)
+      gear.add(w)
     }
     if (dual) {
       wheel(-0.11)
@@ -435,6 +444,64 @@ function addGear(root: Group, strutMat: MeshStandardMaterial, tireMat: MeshStand
   makeLeg(0, 3.3, 0.92, false)
   makeLeg(-1.0, -0.6, 0.85, true)
   makeLeg(1.0, -0.6, 0.85, true)
+  return gear
+}
+
+/**
+ * Afterburner plume behind the nozzle. Aircraft scales / lights by throttle+boost.
+ * Additive basic mats = cheap and always readable.
+ */
+function buildAfterburner(): Group {
+  const ab = new Group()
+  ab.name = 'afterburner'
+  ab.visible = false
+
+  const coreMat = new MeshBasicMaterial({
+    color: 0xfff0c0,
+    transparent: true,
+    opacity: 0.95,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  })
+  coreMat.name = 'abCore'
+  const midMat = new MeshBasicMaterial({
+    color: 0xff6622,
+    transparent: true,
+    opacity: 0.65,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  })
+  midMat.name = 'abMid'
+  const outerMat = new MeshBasicMaterial({
+    color: 0xff2200,
+    transparent: true,
+    opacity: 0.35,
+    blending: AdditiveBlending,
+    depthWrite: false,
+  })
+  outerMat.name = 'abOuter'
+
+  // Nozzle lip ~ z=-7.35; plume extends aft (-Z)
+  const zBase = -7.2
+  const core = new Mesh(new ConeGeometry(0.22, 1.4, 12, 1, true), coreMat)
+  core.rotation.x = -Math.PI / 2
+  core.position.set(0, 0.02, zBase - 0.7)
+  core.name = 'abCoreMesh'
+  ab.add(core)
+
+  const mid = new Mesh(new ConeGeometry(0.38, 2.2, 12, 1, true), midMat)
+  mid.rotation.x = -Math.PI / 2
+  mid.position.set(0, 0.02, zBase - 1.1)
+  mid.name = 'abMidMesh'
+  ab.add(mid)
+
+  const outer = new Mesh(new ConeGeometry(0.55, 3.2, 12, 1, true), outerMat)
+  outer.rotation.x = -Math.PI / 2
+  outer.position.set(0, 0.02, zBase - 1.6)
+  outer.name = 'abOuterMesh'
+  ab.add(outer)
+
+  return ab
 }
 
 function addNavLight(root: Group, x: number, y: number, z: number, color: number): void {
