@@ -8,22 +8,50 @@ import { clamp01, fbm, hash2, ridged, smoothstep } from './noise'
 export const RUNWAY_FLAT_INNER = 100
 export const RUNWAY_FLAT_OUTER = 280
 export const SEA_LEVEL = 0
+/** Flatten this far ahead of the runway so takeoff isn’t into a wall. */
+const TAKEOFF_FLAT_AHEAD = 1050
+const TAKEOFF_FLAT_BEHIND = 80
+const TAKEOFF_FLAT_HALF_W = 90
 
 /** Airfield / ops center — terrain is forced flat around this point. */
 let opsX = 0
 let opsZ = 0
+/** Takeoff heading (same yaw as the jet: +Z rotated about Y). */
+let opsYaw = 0
 
-export function setOpsCenter(x: number, z: number): void {
+export function setOpsCenter(x: number, z: number, yaw = 0): void {
   opsX = x
   opsZ = z
+  opsYaw = yaw
 }
 
-export function getOpsCenter(): { x: number; z: number } {
-  return { x: opsX, z: opsZ }
+export function getOpsCenter(): { x: number; z: number; yaw: number } {
+  return { x: opsX, z: opsZ, yaw: opsYaw }
 }
 
 function opsDist(x: number, z: number): number {
   return Math.hypot(x - opsX, z - opsZ)
+}
+
+/** 1 = fully flattened (runway pad or takeoff corridor). */
+function opsFlatten(x: number, z: number): number {
+  const dist = opsDist(x, z)
+  const radial = 1 - smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
+
+  const dx = x - opsX
+  const dz = z - opsZ
+  const fx = Math.sin(opsYaw)
+  const fz = Math.cos(opsYaw)
+  const along = dx * fx + dz * fz
+  const lat = Math.abs(-dx * fz + dz * fx)
+  const alongW =
+    along < 0
+      ? smoothstep(-TAKEOFF_FLAT_BEHIND, -25, along)
+      : 1 - smoothstep(TAKEOFF_FLAT_AHEAD * 0.72, TAKEOFF_FLAT_AHEAD, along)
+  const latW = 1 - smoothstep(TAKEOFF_FLAT_HALF_W * 0.55, TAKEOFF_FLAT_HALF_W, lat)
+  const corridor = along > -TAKEOFF_FLAT_BEHIND && along < TAKEOFF_FLAT_AHEAD ? alongW * latW : 0
+
+  return Math.max(radial, corridor)
 }
 
 export type Biome =
@@ -72,8 +100,8 @@ function warp(x: number, z: number): [number, number] {
   return [wx, wz]
 }
 
-function landAt(wx: number, wz: number, distFromOps: number): number {
-  if (distFromOps < RUNWAY_FLAT_OUTER) {
+function landAt(wx: number, wz: number, distFromOps: number, flatten = 0): number {
+  if (distFromOps < RUNWAY_FLAT_OUTER || flatten > 0.35) {
     return Math.max(0.92, 1 - distFromOps / (RUNWAY_FLAT_OUTER * 4))
   }
   // Slightly larger continents + seas
@@ -607,9 +635,10 @@ function heightCoreW(
   moisture: number,
   temperature: number,
   features: TerrainFeatures,
-  dist: number,
+  _dist: number,
+  flatten: number,
 ): number {
-  const flatMask = smoothstep(RUNWAY_FLAT_INNER, RUNWAY_FLAT_OUTER, dist)
+  const flatMask = 1 - flatten
   if (flatMask <= 0) return 0
 
   if (land < 0.36) {
@@ -693,13 +722,12 @@ function heightCoreW(
 }
 
 /** Neighbor sample at offset warped coords (re-samples climate fields). */
-function heightAtWarped(wx: number, wz: number, dist: number): number {
-  const land = landAt(wx, wz, dist)
+function heightAtWarped(wx: number, wz: number, dist: number, flatten: number): number {
+  const land = landAt(wx, wz, dist, flatten)
   const moisture = moistureAt(wx, wz)
-  // temperatureAt uses world Z for latitude; wz is a fine proxy after warp
   const temperature = temperatureAt(wx, wz, wz)
   const features = featuresAt(wx, wz)
-  return heightCoreW(wx, wz, land, moisture, temperature, features, dist)
+  return heightCoreW(wx, wz, land, moisture, temperature, features, dist, flatten)
 }
 
 /**
@@ -713,16 +741,17 @@ function heightFromFieldsW(
   temperature: number,
   features: TerrainFeatures,
   dist: number,
+  flatten: number,
 ): number {
-  const h0 = heightCoreW(wx, wz, land, moisture, temperature, features, dist)
-  if (land < 0.34 || dist < RUNWAY_FLAT_INNER) return h0
+  const h0 = heightCoreW(wx, wz, land, moisture, temperature, features, dist, flatten)
+  if (land < 0.34 || flatten > 0.85) return h0
 
   const d = HEIGHT_SMOOTH_D
   const avg =
-    (heightAtWarped(wx + d, wz, dist) +
-      heightAtWarped(wx - d, wz, dist) +
-      heightAtWarped(wx, wz + d, dist) +
-      heightAtWarped(wx, wz - d, dist)) *
+    (heightAtWarped(wx + d, wz, dist, flatten) +
+      heightAtWarped(wx - d, wz, dist, flatten) +
+      heightAtWarped(wx, wz + d, dist, flatten) +
+      heightAtWarped(wx, wz - d, dist, flatten)) *
     0.25
 
   // High peaks: almost no smooth (keep sharp silhouettes)
@@ -733,13 +762,14 @@ function heightFromFieldsW(
 
 export function sampleClimate(x: number, z: number): Climate {
   const dist = opsDist(x, z)
-  if (dist < RUNWAY_FLAT_INNER * 0.9) {
+  const flatten = opsFlatten(x, z)
+  if (dist < RUNWAY_FLAT_INNER * 0.9 || flatten > 0.92) {
     return {
       height: 0,
       moisture: 0.42,
       temperature: 0.55,
-      biome: 'runway',
-      biomeB: 'runway',
+      biome: flatten > 0.92 && dist >= RUNWAY_FLAT_INNER ? 'plains' : 'runway',
+      biomeB: 'plains',
       biomeMix: 0,
       river: 0,
       land: 1,
@@ -749,7 +779,7 @@ export function sampleClimate(x: number, z: number): Climate {
   }
 
   const [wx, wz] = warp(x, z)
-  const land = landAt(wx, wz, dist)
+  const land = landAt(wx, wz, dist, flatten)
   const moisture = moistureAt(wx, wz)
   const temperature = temperatureAt(wx, wz, z)
   const features = featuresAt(wx, wz)
@@ -762,6 +792,7 @@ export function sampleClimate(x: number, z: number): Climate {
     temperature,
     features,
     dist,
+    flatten,
   )
 
   let biome: Biome
@@ -841,40 +872,34 @@ export interface FlatSpawn {
 }
 
 /**
- * Search for a flat spawn candidate. Call AFTER setWorldSeed / randomizeWorldSeed
- * and BEFORE setOpsCenter so samples see natural terrain (ops still at old center).
+ * Search for a flat spawn with a clear takeoff lane.
+ * Call AFTER setWorldSeed / BEFORE setOpsCenter (natural heights).
  */
 export function findFlatSpawn(maxRadius = 9000): FlatSpawn {
   let best: FlatSpawn | null = null
   let bestScore = -1e9
 
-  // Spiral-ish polar search for a flat pad large enough for a runway
   for (let ring = 0; ring <= maxRadius; ring += 280) {
     const steps = ring < 1 ? 1 : Math.min(24, 6 + ((ring / 280) | 0) * 2)
     for (let i = 0; i < steps; i++) {
       const ang = (i / steps) * Math.PI * 2 + ring * 0.01
       const x = Math.cos(ang) * ring
       const z = Math.sin(ang) * ring
-      const score = scoreFlatPad(x, z)
+      const pad = scoreFlatPad(x, z)
+      if (pad < 0) continue
+      const dep = bestDeparture(x, z)
+      if (dep.score < -2e5) continue
+      const score = pad + dep.score
       if (score > bestScore) {
         bestScore = score
         const c = sampleClimate(x, z)
-        best = {
-          x,
-          z,
-          y: c.height,
-          yaw: ang + Math.PI, // face roughly outward / along search ray
-          biome: c.biome,
-        }
+        best = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
       }
-      // Good enough early exit
-      if (bestScore > 80) {
-        return best!
-      }
+      // Need a decent pad AND a clear departure — don't early-out on pad alone
+      if (bestScore > 160 && dep.score > 20) return best!
     }
   }
 
-  // Fallback: origin plains-ish (ops flatten will fix it)
   return best ?? { x: 0, z: 0, y: 0, yaw: 0, biome: 'plains' }
 }
 
@@ -885,11 +910,9 @@ function scoreFlatPad(x: number, z: number): number {
   if (c.land < 0.55) return -1e6
   if (c.features.river > 0.45 || c.features.lake > 0.45) return -1e6
   if (c.features.ravine > 0.25) return -1e6
-  // Prefer low absolute relief
   if (c.height > 45) return -1e5
   if (c.height > 28 && c.biome !== 'plains') return -5e4
 
-  // Slope: check neighbors
   const d = 40
   const h0 = c.height
   const hx = sampleClimate(x + d, z).height
@@ -900,16 +923,55 @@ function scoreFlatPad(x: number, z: number): number {
     (Math.abs(hx - h0) + Math.abs(hz - h0) + Math.abs(hxm - h0) + Math.abs(hzm - h0)) / 4
   if (slope > 6) return -1e5
 
-  // Prefer plains over other flat biomes
   let score = 100 - c.height * 0.8 - slope * 8
   if (c.biome === 'plains') score += 40
   else if (c.biome === 'forest') score += 10
   else if (c.biome === 'desert') score += 15
   else if (c.biome === 'swamp') score += 5
 
-  // Prefer somewhat near origin for shorter first load (optional mild bias)
-  const r = Math.hypot(x, z)
-  score -= r * 0.002
+  score -= Math.hypot(x, z) * 0.002
+  return score
+}
+
+/**
+ * Pick a takeoff heading with the lowest rise ahead (no mountain in the face).
+ */
+function bestDeparture(x: number, z: number): { yaw: number; score: number } {
+  const h0 = sampleClimate(x, z).height
+  let bestYaw = 0
+  let best = -1e9
+  const dirs = 16
+  for (let i = 0; i < dirs; i++) {
+    const yaw = (i / dirs) * Math.PI * 2
+    const s = scoreDeparture(x, z, yaw, h0)
+    if (s > best) {
+      best = s
+      bestYaw = yaw
+    }
+  }
+  return { yaw: bestYaw, score: best }
+}
+
+function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
+  const fx = Math.sin(yaw)
+  const fz = Math.cos(yaw)
+  const rx = Math.cos(yaw)
+  const rz = -Math.sin(yaw)
+  let score = 0
+  const ranges = [90, 180, 320, 480, 680, 900, 1150]
+  for (const d of ranges) {
+    for (const lat of [0, -55, 55]) {
+      const h = sampleClimate(x + fx * d + rx * lat, z + fz * d + rz * lat).height
+      const rise = h - h0
+      // Wall in the near departure — reject
+      if (d <= 500 && rise > 55) return -1e6
+      if (d <= 900 && rise > 110) return -4e5
+      if (rise > 180) return -2e5
+      const near = 1 + 500 / d
+      score -= Math.max(0, rise) * 0.9 * near
+      score += Math.max(0, -rise) * 0.12
+    }
+  }
   return score
 }
 

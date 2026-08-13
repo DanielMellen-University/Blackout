@@ -124,7 +124,7 @@ export class World {
   }
 
   private applySpawn(pad: FlatSpawn): void {
-    setOpsCenter(pad.x, pad.z)
+    setOpsCenter(pad.x, pad.z, pad.yaw)
 
     const gearY = flightConfig.gearHeight
     const yaw = pad.yaw
