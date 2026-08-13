@@ -3,19 +3,23 @@ import { contactMinY } from '../world/ground'
 import type { Aircraft } from './Aircraft'
 import { flightConfig as C } from './flightConfig'
 
-const _forward = new Vector3()
+const _fwd = new Vector3()
 const _up = new Vector3()
 const _right = new Vector3()
 const _velDir = new Vector3()
 const _flatFwd = new Vector3()
 const _worldUp = new Vector3(0, 1, 0)
 const _spin = new Quaternion()
-const _alignQ = new Quaternion()
-const _targetQ = new Quaternion()
 
 /**
- * Arcade flight model with energy: thrust vs drag, lift from speed/AoA,
- * banked turns, q-feel, stall mush. Body +X right, +Y up, +Z nose.
+ * Arcade fighter model.
+ *
+ * One rule: the jet goes where the nose points.
+ * Roll/pitch/yaw aim the nose. Velocity is pulled onto +Z every frame.
+ * Gravity is always on; lift only cancels it when you have speed and
+ * aren't inverted. No weathervane, no extra bank-turn mixer.
+ *
+ * Body: +X right, +Y up, +Z nose.
  */
 export class FlightModel {
   step(aircraft: Aircraft, dt: number): void {
@@ -26,52 +30,43 @@ export class FlightModel {
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
     let onGround = position.y <= minY + 0.15 && velocity.y < 2
 
-    this.readBodyAxes(orientation)
-
+    this.axes(orientation)
     const airspeed = velocity.length()
-    const airInfluence = MathUtils.clamp(airspeed / C.airControlFullSpeed, 0, 1)
-    const speedNorm = MathUtils.clamp(airspeed / C.cruiseSpeed, 0, 2.8)
+    const air = MathUtils.clamp(airspeed / C.airControlFullSpeed, 0, 1)
 
-    // --- Stick rates: mushy when slow, q-feel (heavier pitch) when fast ---
-    let authority = airInfluence
+    // --- Aim the nose ---
+    let auth = air
     if (onGround) {
-      const rotAuth = MathUtils.clamp(
-        (groundSpeed - C.rotateSpeed * 0.35) / (C.rotateSpeed * 0.65),
-        0,
-        1,
+      auth = Math.max(
+        air,
+        MathUtils.clamp((groundSpeed - C.rotateSpeed * 0.3) / (C.rotateSpeed * 0.7), 0, 1),
       )
-      authority = Math.max(airInfluence, rotAuth)
     }
+    // Slightly heavier pitch only at extreme speed (still flyable)
+    const q = 1 / (1 + (airspeed / 420) ** 2 * 0.22)
 
-    const qFeel = 1 / (1 + (airspeed / (C.cruiseSpeed * 1.8)) ** 2 * 0.85)
-    const rollEase = MathUtils.clamp(0.45 + speedNorm * 0.4, 0.45, 1.15)
+    const tOx = -controls.pitch * C.pitchRate * auth * q
+    const tOy = -controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)
+    const tOz = -controls.roll * C.rollRate * (onGround ? auth * 0.28 : auth)
 
-    const targetOx = -controls.pitch * C.pitchRate * authority * qFeel
-    const targetOy =
-      -controls.yaw * C.yawRate * (onGround ? Math.max(authority, 0.4) : authority)
-    const targetOz =
-      -controls.roll * C.rollRate * (onGround ? authority * 0.32 : authority) * rollEase
-
-    const blendPitch = 1 - Math.exp(-C.pitchResponse * dt)
-    const blend = 1 - Math.exp(-C.angularResponse * dt)
-    angularVelocity.x += (targetOx - angularVelocity.x) * blendPitch
-    angularVelocity.y += (targetOy - angularVelocity.y) * blend
-    angularVelocity.z += (targetOz - angularVelocity.z) * blend
+    const kP = 1 - Math.exp(-C.pitchResponse * dt)
+    const kA = 1 - Math.exp(-C.angularResponse * dt)
+    angularVelocity.x += (tOx - angularVelocity.x) * kP
+    angularVelocity.y += (tOy - angularVelocity.y) * kA
+    angularVelocity.z += (tOz - angularVelocity.z) * kA
 
     const stick =
       Math.abs(controls.pitch) + Math.abs(controls.roll) + Math.abs(controls.yaw)
-    const damp = stick < 0.12 ? C.angularDamping : C.angularDamping * 0.28
-    angularVelocity.multiplyScalar(Math.exp(-damp * dt))
+    angularVelocity.multiplyScalar(
+      Math.exp(-(stick < 0.1 ? C.angularDamping : C.angularDamping * 0.22) * dt),
+    )
 
     if (onGround) {
       if (angularVelocity.x > 0) angularVelocity.x = 0
-      const rotAllow = MathUtils.clamp(
-        (groundSpeed - C.rotateSpeed * 0.4) / (C.rotateSpeed * 0.6),
-        0,
-        1,
-      )
-      angularVelocity.x *= rotAllow
-      if (groundSpeed < 12) angularVelocity.z *= 0.18
+      const rot =
+        MathUtils.clamp((groundSpeed - C.rotateSpeed * 0.35) / (C.rotateSpeed * 0.65), 0, 1)
+      angularVelocity.x *= rot
+      if (groundSpeed < 10) angularVelocity.z *= 0.15
     }
 
     _spin
@@ -84,190 +79,104 @@ export class FlightModel {
       .normalize()
     orientation.multiply(_spin).normalize()
 
-    if (onGround && groundSpeed > 0.4 && groundSpeed < 70) {
-      const steer = -controls.yaw * (C.groundSteer + groundSpeed * 0.022) * dt
+    if (onGround && groundSpeed > 0.5 && groundSpeed < 80) {
+      const steer = -controls.yaw * (C.groundSteer + groundSpeed * 0.02) * dt
       orientation.premultiply(_spin.setFromAxisAngle(_worldUp, steer)).normalize()
     }
 
-    this.readBodyAxes(orientation)
+    this.axes(orientation)
 
-    // --- Thrust: fades a bit at high Mach-arcade so top end needs AB ---
+    // --- Thrust along the nose ---
     let thr = MathUtils.clamp(controls.throttle, 0, 1)
     const boost = controls.boost
-    if (boost) thr = Math.min(1, thr + 0.4)
+    if (boost) thr = Math.min(1, thr + 0.35)
 
-    const speedFrac = airspeed / (boost ? C.maxSpeedBoost : C.maxSpeed)
-    const thrustFade = 1 - MathUtils.clamp(speedFrac, 0, 1) * 0.38
-    let thrustAccel = 0
+    const vmax = boost ? C.maxSpeedBoost : C.maxSpeed
+    const fade = 1 - MathUtils.clamp(airspeed / vmax, 0, 1) * 0.32
+    let accel = 0
     if (thr > 0.02) {
       const cap = boost ? C.maxAccelBoost : C.maxAccel
-      thrustAccel =
-        (C.maxThrust / C.mass) * thr * (boost ? C.boostThrustMul : 1) * thrustFade
-      thrustAccel = Math.min(thrustAccel, cap * (0.4 + thr * 0.6))
+      accel = Math.min((C.maxThrust / C.mass) * thr * (boost ? C.boostThrustMul : 1) * fade, cap)
     }
 
     if (onGround) {
-      _flatFwd.set(_forward.x, 0, _forward.z)
+      _flatFwd.set(_fwd.x, 0, _fwd.z)
       if (_flatFwd.lengthSq() > 1e-6) {
         _flatFwd.normalize()
-        velocity.addScaledVector(_flatFwd, thrustAccel * dt)
+        velocity.addScaledVector(_flatFwd, accel * dt)
       }
     } else {
-      velocity.addScaledVector(_forward, thrustAccel * dt)
+      velocity.addScaledVector(_fwd, accel * dt)
     }
 
+    // --- Gravity + simple lift (cancels g when fast and upright) ---
     if (!onGround) {
       velocity.y -= C.gravity * dt
+      const lift =
+        C.gravity *
+        MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1.25) *
+        MathUtils.clamp(_up.y, 0, 1)
+      velocity.y += lift * dt
     } else if (velocity.y < 0) {
       velocity.y = 0
     }
 
-    // --- Lift + stall + energy bleed ---
-    let aoa = 0
-    let aoaAbs = 0
-    if (airspeed > 1) {
-      _velDir.copy(velocity).normalize()
-      aoa = Math.atan2(_velDir.dot(_up), Math.max(0.05, _velDir.dot(_forward)))
-      aoaAbs = Math.abs(aoa)
-
-      const qBar = (airspeed / C.cruiseSpeed) ** 2
-      // Auto-trim: wings-level cruise mostly holds altitude
-      const wingsLevel = MathUtils.clamp(1 - Math.abs(_right.y) * 1.4, 0.15, 1)
-      const trim = C.autoLift * C.gravity * MathUtils.clamp(qBar, 0, 1.35) * wingsLevel
-
-      // Stick / AoA lift (pulling G)
-      const cl = MathUtils.clamp(aoa / C.stallAoA, -1.45, 1.45)
-      let pullLift = cl * C.liftAuthority * Math.min(qBar, 2.4)
-      pullLift = MathUtils.clamp(pullLift, -C.maxLiftAccel, C.maxLiftAccel)
-
-      let liftAccel = trim + pullLift
-      if (!onGround && airspeed < C.minSpeed) {
-        liftAccel *= MathUtils.clamp(airspeed / C.minSpeed, 0.2, 1)
-      }
-
-      if (aoaAbs > C.stallAoA) {
-        const over = aoaAbs - C.stallAoA
-        liftAccel *= Math.max(0.1, C.stallLiftMul - over * 1.6)
-        if (!onGround) {
-          angularVelocity.x += Math.sign(aoa || 1) * C.stallPitchDown * dt
-        }
-      }
-
-      if (onGround) {
-        velocity.y += Math.max(0, liftAccel) * dt
-        if (velocity.y > 0 && liftAccel < C.gravity * 0.92) velocity.y = 0
-      } else {
-        velocity.addScaledVector(_up, liftAccel * dt)
-      }
-    }
-
-    // Path-follow: attitude actually turns the jet
-    if (!onGround && airspeed > 5 && airInfluence > 0.1) {
-      const spd = velocity.length()
-      if (spd > 1e-4) {
-        _velDir.copy(velocity).normalize()
-        const follow =
-          C.pathFollowRate *
-          airInfluence *
-          (0.5 + MathUtils.clamp(stick * 0.4, 0, 0.5))
-        const t = 1 - Math.exp(-follow * dt)
-        _velDir.lerp(_forward, t).normalize()
-        velocity.copy(_velDir).multiplyScalar(spd)
-      }
-    }
-
-    // Coordinated bank turn (stronger at speed)
-    if (!onGround && airspeed > 10) {
-      const bank = Math.asin(MathUtils.clamp(-_right.y, -1, 1))
-      if (Math.abs(bank) > 0.035) {
-        const turn =
-          C.bankTurnRate *
-          Math.sin(bank) *
-          airInfluence *
-          MathUtils.clamp(0.4 + speedNorm * 0.45, 0.4, 1.45)
-        const c = Math.cos(turn * dt)
-        const s = Math.sin(turn * dt)
-        const vx = velocity.x
-        const vz = velocity.z
-        velocity.x = vx * c + vz * s
-        velocity.z = -vx * s + vz * c
-      }
-    }
-
-    // --- Drag: parasite (v^2) + induced (from pull) + airbrake / wheels ---
-    {
-      const speedNow = velocity.length()
-      if (speedNow > 1e-4) {
-        _velDir.copy(velocity).multiplyScalar(1 / speedNow)
-
-        let decel =
-          C.parasiteDrag * speedNow * speedNow +
-          C.inducedDrag * aoaAbs * aoaAbs * speedNow +
-          (controls.gearDown ? C.gearDrag * speedNow * 2.2 : 0)
-
-        // Pulling G / high AoA bleeds energy (loops and hard turns cost speed)
-        if (!onGround && aoaAbs > 0.08) {
-          decel += C.pullBleed * aoaAbs * MathUtils.clamp(speedNow / C.cruiseSpeed, 0.4, 2)
-        }
-
-        const idle = MathUtils.clamp(1 - thr, 0, 1)
-        decel += idle * idle * C.airbrakeStrength
-
-        if (onGround && thr < 0.12) {
-          decel += C.wheelBrakeDecel * (1 - thr / 0.12)
-        } else if (onGround) {
-          decel += C.rollingDecel * 0.4
-        }
-
-        const brakeCap = thr < 0.15 ? C.maxBrakeDecel : C.maxDecel
-        decel = Math.min(decel, brakeCap)
-
-        velocity.addScaledVector(_velDir, -decel * dt)
-        if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)
-      }
-    }
-
-    this.applySpeedLimits(velocity, onGround, boost)
-
-    if (onGround) {
+    // --- THE turn: snap velocity onto the nose ---
+    const spd = velocity.length()
+    if (!onGround && spd > 3) {
+      const align = C.alignRate * MathUtils.clamp(0.35 + air * 0.75, 0.35, 1)
+      const t = 1 - Math.exp(-align * dt)
+      _velDir.copy(velocity).normalize().lerp(_fwd, t).normalize()
+      velocity.copy(_velDir).multiplyScalar(spd)
+    } else if (onGround) {
       const gs = Math.hypot(velocity.x, velocity.z)
       if (gs > 0.08) {
-        _flatFwd.set(_forward.x, 0, _forward.z)
+        _flatFwd.set(_fwd.x, 0, _fwd.z)
         if (_flatFwd.lengthSq() > 1e-6) {
           _flatFwd.normalize()
           velocity.x = _flatFwd.x * gs
           velocity.z = _flatFwd.z * gs
         }
-      } else if (thr < 0.05) {
-        velocity.x = 0
-        velocity.z = 0
       }
-      if (velocity.y < 0) velocity.y = 0
     }
 
-    const wantRotate = controls.pitch > 0.25 && groundSpeed >= C.rotateSpeed * 0.85
-    if (onGround && wantRotate) {
+    // --- Drag / brakes ---
+    {
+      const s = velocity.length()
+      if (s > 1e-4) {
+        _velDir.copy(velocity).multiplyScalar(1 / s)
+        let decel = C.parasiteDrag * s * s
+        if (controls.gearDown) decel += C.gearDrag * s * 2.2
+        // Pulling or rolling hard costs a little energy
+        decel += stick * 3.2 * MathUtils.clamp(s / 120, 0.3, 2)
+        const idle = MathUtils.clamp(1 - thr, 0, 1)
+        decel += idle * idle * C.airbrakeStrength
+        if (onGround && thr < 0.12) decel += C.wheelBrakeDecel * (1 - thr / 0.12)
+        else if (onGround) decel += C.rollingDecel * 0.45
+        decel = Math.min(decel, thr < 0.15 ? C.maxBrakeDecel : C.maxDecel)
+        velocity.addScaledVector(_velDir, -decel * dt)
+        if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)
+      } else if (onGround && thr < 0.05) {
+        velocity.set(0, 0, 0)
+      }
+    }
+
+    // Envelope
+    {
+      const s = velocity.length()
+      if (s > vmax) velocity.multiplyScalar(vmax / s)
+    }
+
+    // Rotate off the runway
+    if (onGround && controls.pitch > 0.28 && groundSpeed >= C.rotateSpeed * 0.82) {
       velocity.y = Math.max(velocity.y, C.rotateClimb * Math.min(1, controls.pitch))
-      position.y = Math.max(position.y, minY + 0.35)
+      position.y = Math.max(position.y, minY + 0.4)
       onGround = false
     }
 
-    if (!onGround && airspeed > 6 && airInfluence > 0.15) {
-      _velDir.copy(velocity).normalize()
-      this.readBodyAxes(orientation)
-      const alignDot = MathUtils.clamp(_forward.dot(_velDir), -1, 1)
-      if (alignDot < 0.999 && alignDot > -0.9) {
-        _alignQ.setFromUnitVectors(_forward, _velDir)
-        _targetQ.copy(_alignQ).multiply(orientation).normalize()
-        const vane =
-          C.weathervaneRate * airInfluence * (1 - MathUtils.clamp(stick * 0.7, 0, 0.92))
-        const t = 1 - Math.exp(-vane * dt)
-        orientation.slerp(_targetQ, t).normalize()
-      }
-    }
+    if (onGround && velocity.y < 0) velocity.y = 0
 
     position.addScaledVector(velocity, dt)
-
     if (position.y < minY) {
       position.y = minY
       if (velocity.y < 0) velocity.y = 0
@@ -285,17 +194,9 @@ export class FlightModel {
     return aircraft.position.y <= minY + 0.2 && aircraft.velocity.y < 1.5
   }
 
-  private readBodyAxes(orientation: Quaternion): void {
-    _forward.set(0, 0, 1).applyQuaternion(orientation)
+  private axes(orientation: Quaternion): void {
+    _fwd.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
     _right.set(1, 0, 0).applyQuaternion(orientation)
-  }
-
-  private applySpeedLimits(velocity: Vector3, onGround: boolean, boost: boolean): void {
-    const speed = velocity.length()
-    if (speed < 1e-6) return
-    const maxSp = boost ? C.maxSpeedBoost : C.maxSpeed
-    if (speed > maxSp) velocity.multiplyScalar(maxSp / speed)
-    void onGround
   }
 }
