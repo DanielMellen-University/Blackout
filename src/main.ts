@@ -71,7 +71,8 @@ async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    // Clear any stuck keys from menu
+    // Space/Enter to start must not leak into AB / throttle
+    input.clearKeys()
     input.resetFlightControls(0)
     wasAirborne = false
     banner = null
@@ -150,6 +151,7 @@ async function boot(): Promise<void> {
       if (input.consumeReset()) {
         world.reseed()
         aircraft.reset(world.spawn)
+        input.clearKeys()
         input.resetFlightControls(0)
         banner = null
         wasAirborne = false

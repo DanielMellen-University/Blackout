@@ -208,7 +208,8 @@ export class HUD {
   }
 
   private updateEngine(throttle: number, boost: boolean): void {
-    const level = Math.min(1, Math.max(0, throttle))
+    // AB is full power + extra — bar at MAX, badge on
+    const level = boost ? 1 : Math.min(1, Math.max(0, throttle))
     const pct = Math.round(level * 100)
     if (this.thrEl) {
       this.thrEl.textContent = `${pct}%`

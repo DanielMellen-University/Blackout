@@ -87,9 +87,10 @@ export class FlightModel {
     this.axes(orientation)
 
     // --- Thrust along the nose ---
-    let thr = MathUtils.clamp(controls.throttle, 0, 1)
+    // Lever is what the ENG gauge shows. AB = full dry + extra, not +35% on idle.
+    const lever = MathUtils.clamp(controls.throttle, 0, 1)
     const boost = controls.boost
-    if (boost) thr = Math.min(1, thr + 0.35)
+    const thr = boost ? 1 : lever
 
     const vmax = boost ? C.maxSpeedBoost : C.maxSpeed
     const fade = 1 - MathUtils.clamp(airspeed / vmax, 0, 1) * 0.32
@@ -110,13 +111,19 @@ export class FlightModel {
     }
 
     // --- Gravity + simple lift (cancels g when fast and upright) ---
+    // Lift must not add energy: after applying it, keep |v| from growing.
     if (!onGround) {
       velocity.y -= C.gravity * dt
+      const spdBeforeLift = velocity.length()
       const lift =
         C.gravity *
-        MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1.25) *
+        MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1.15) *
         MathUtils.clamp(_up.y, 0, 1)
       velocity.y += lift * dt
+      const spdAfter = velocity.length()
+      if (spdAfter > spdBeforeLift && spdAfter > 1e-4) {
+        velocity.multiplyScalar(spdBeforeLift / spdAfter)
+      }
     } else if (velocity.y < 0) {
       velocity.y = 0
     }

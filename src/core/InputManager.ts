@@ -73,6 +73,15 @@ export class InputManager {
     this.controls.gearDown = true
   }
 
+  /** Drop held keys (e.g. Space used to start the game, or after reset). */
+  clearKeys(): void {
+    this.keys.clear()
+    this.controls.boost = false
+    this.controls.pitch = 0
+    this.controls.roll = 0
+    this.controls.yaw = 0
+  }
+
   consumeCameraToggle(): boolean {
     if (!this.cameraToggleQueued) return false
     this.cameraToggleQueued = false
