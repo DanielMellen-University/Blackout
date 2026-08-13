@@ -215,9 +215,27 @@ const WEATHER: Record<WeatherId, WeatherProfile> = {
 
 const _c = new Color()
 const _c2 = new Color()
-const _v = new Vector3()
 const _sunDir = new Vector3()
 const _horizon = new Color()
+const _hemiSky = new Color()
+const _hemiGround = new Color()
+const COL_DAY_SKY = new Color(0x4a9fd4)
+const COL_NOON_SKY = new Color(0x5eb0e8)
+const COL_NIGHT_SKY = new Color(0x040812)
+const COL_DUSK_ZENITH = new Color(0x2a3a68)
+const COL_DAY_HORIZ = new Color(0xa8d0ea)
+const COL_NIGHT_HORIZ = new Color(0x0a1020)
+const COL_DAWN_HORIZ = new Color(0xffb070)
+const COL_DUSK_HORIZ = new Color(0xff7a40)
+const COL_SNOW_SKY = new Color(0xc8d4e0)
+const COL_SNOW_HORIZ = new Color(0xd0dce8)
+const COL_SUN = new Color(0xfff4e0)
+const COL_SUN_DUSK = new Color(0xff7a38)
+const COL_SUN_LOW = new Color(0xffaa66)
+const COL_HEMI_DAY = new Color(0xd8ecff)
+const COL_HEMI_NIGHT = new Color(0x1a2848)
+const COL_GROUND_DAY = new Color(0x3a4a38)
+const COL_GROUND_NIGHT = new Color(0x0c1018)
 
 /**
  * Day/night cycle + weather: sky dome (sun/moon/stars), fog, lights, clouds, rain/snow.
@@ -422,7 +440,8 @@ export class Atmosphere {
 
     // Night slightly more fog/snow chance
     if ((this.timeOfDay < 0.2 || this.timeOfDay > 0.8) && roll > 0.55 && roll < 0.7) {
-      w = Math.random() < 0.5 ? 'fog' : 'snow'
+      const nightRoll = Math.abs(Math.sin(seed * 7.139)) % 1
+      w = nightRoll < 0.5 ? 'fog' : 'snow'
     }
 
     this.weatherFrom = w
@@ -508,22 +527,14 @@ export class Atmosphere {
     const w = this.blendedProfile()
 
     // Zenith color (top of sky dome)
-    const daySky = new Color(0x4a9fd4)
-    const noonSky = new Color(0x5eb0e8)
-    const nightSky = new Color(0x040812)
-    const duskZenith = new Color(0x2a3a68)
-    _c.copy(nightSky).lerp(daySky, dayFactor)
-    if (dayFactor > 0.7) _c.lerp(noonSky, (dayFactor - 0.7) / 0.3)
-    if (dusk > 0.15) _c.lerp(duskZenith, dusk * 0.55)
+    _c.copy(COL_NIGHT_SKY).lerp(COL_DAY_SKY, dayFactor)
+    if (dayFactor > 0.7) _c.lerp(COL_NOON_SKY, (dayFactor - 0.7) / 0.3)
+    if (dusk > 0.15) _c.lerp(COL_DUSK_ZENITH, dusk * 0.55)
 
     // Horizon band (warmer at dawn/dusk)
-    const dayHoriz = new Color(0xa8d0ea)
-    const nightHoriz = new Color(0x0a1020)
-    const dawnHoriz = new Color(0xffb070)
-    const duskHoriz = new Color(0xff7a40)
-    _horizon.copy(nightHoriz).lerp(dayHoriz, dayFactor)
-    if (t > 0.18 && t < 0.38) _horizon.lerp(dawnHoriz, dusk * 0.9)
-    if (t > 0.62 && t < 0.88) _horizon.lerp(duskHoriz, dusk * 0.95)
+    _horizon.copy(COL_NIGHT_HORIZ).lerp(COL_DAY_HORIZ, dayFactor)
+    if (t > 0.18 && t < 0.38) _horizon.lerp(COL_DAWN_HORIZ, dusk * 0.9)
+    if (t > 0.62 && t < 0.88) _horizon.lerp(COL_DUSK_HORIZ, dusk * 0.95)
 
     // Haze / snow sky pull
     _c2.setHex(w.snow > 0.3 ? 0x9aabbc : 0x6a7888)
@@ -534,8 +545,8 @@ export class Atmosphere {
       _horizon.multiplyScalar(1 - w.rain * 0.14)
     }
     if (w.snow > 0.7) {
-      _c.lerp(new Color(0xc8d4e0), 0.2)
-      _horizon.lerp(new Color(0xd0dce8), 0.25)
+      _c.lerp(COL_SNOW_SKY, 0.2)
+      _horizon.lerp(COL_SNOW_HORIZ, 0.25)
     }
 
     const fogNear = this.baseFogNear * w.fogNearMul
@@ -568,9 +579,9 @@ export class Atmosphere {
     )
     this.sun.target.position.set(ax, ay * 0.15, az)
     this.sun.target.updateMatrixWorld()
-    _c2.setHex(0xfff4e0)
-    if (dusk > 0.15) _c2.lerp(new Color(0xff7a38), dusk * 0.85)
-    if (elev < 0.12) _c2.lerp(new Color(0xffaa66), 1 - sunUp)
+    _c2.copy(COL_SUN)
+    if (dusk > 0.15) _c2.lerp(COL_SUN_DUSK, dusk * 0.85)
+    if (elev < 0.12) _c2.lerp(COL_SUN_LOW, 1 - sunUp)
     this.sun.color.copy(_c2)
     this.sun.intensity =
       (0.25 + dayFactor * 1.55) * sunUp * clearMul * w.sunMul
@@ -589,13 +600,10 @@ export class Atmosphere {
       (0.06 + nightFactor * 0.48) * moonUp * clearMul * (0.65 + w.sunMul * 0.35)
 
     // Sky-ish ambient: warm day, deep blue night (reads as atmospheric scatter)
-    const hemiSky = new Color()
-      .copy(_c)
-      .lerp(new Color(0xd8ecff), dayFactor * 0.3)
-      .lerp(new Color(0x1a2848), nightFactor * 0.45)
-    const hemiGround = new Color(0x3a4a38).lerp(new Color(0x0c1018), nightFactor)
-    this.hemi.color.copy(hemiSky)
-    this.hemi.groundColor.copy(hemiGround)
+    _hemiSky.copy(_c).lerp(COL_HEMI_DAY, dayFactor * 0.3).lerp(COL_HEMI_NIGHT, nightFactor * 0.45)
+    _hemiGround.copy(COL_GROUND_DAY).lerp(COL_GROUND_NIGHT, nightFactor)
+    this.hemi.color.copy(_hemiSky)
+    this.hemi.groundColor.copy(_hemiGround)
     this.hemi.intensity = (0.28 + dayFactor * 0.52 + nightFactor * 0.12) * w.hemiMul
 
     this.ambient.color.setRGB(
@@ -615,6 +623,8 @@ export class Atmosphere {
       ay + 90,
       az - _sunDir.z * lightDist * 0.35,
     )
+    this.fill.target.position.set(ax, ay * 0.15, az)
+    this.fill.target.updateMatrixWorld()
 
     // Shader sky dome: sun, moon, stars, scatter gradient
     this.sky.update(
@@ -889,7 +899,5 @@ export class Atmosphere {
       }
       pos.needsUpdate = true
     }
-
-    void _v
   }
 }

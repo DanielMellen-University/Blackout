@@ -71,8 +71,11 @@ async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    // Space/Enter to start must not leak into AB / throttle
-    input.clearKeys()
+    // Space/Enter started the game — do not eat still-held W/A/S/D
+    input.release('Space')
+    input.release('Enter')
+    input.release('NumpadEnter')
+    input.clearQueued()
     input.resetFlightControls(0)
     wasAirborne = false
     banner = null
@@ -151,7 +154,8 @@ async function boot(): Promise<void> {
       if (input.consumeReset()) {
         world.reseed()
         aircraft.reset(world.spawn)
-        input.clearKeys()
+        cameras.setMode(cameras.mode, aircraft)
+        input.clearQueued()
         input.resetFlightControls(0)
         banner = null
         wasAirborne = false
@@ -169,14 +173,15 @@ async function boot(): Promise<void> {
       if (event === 'complete') showBanner('CIRCUIT COMPLETE', 4200)
 
       const touch = collision.check(aircraft)
-      if (aircraft.status === 'ok') {
+      if (aircraft.status !== 'crashed') {
         if (!aircraft.onGround && aircraft.position.y > flightAltThreshold()) {
           wasAirborne = true
+          aircraft.clearLanded()
         }
         if (touch === 'crash') {
           aircraft.crash()
           showBanner('CRASH - press R')
-        } else if (touch === 'landed' && wasAirborne) {
+        } else if (touch === 'landed' && wasAirborne && aircraft.status === 'ok') {
           aircraft.markLanded()
           showBanner('LANDED')
           wasAirborne = false
@@ -214,9 +219,7 @@ async function boot(): Promise<void> {
       const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
       hud.update({
-        x: aircraft.position.x,
         y: alt,
-        z: aircraft.position.z,
         speed: aircraft.speed,
         cameraMode: cameras.modeLabel,
         fps: time.fps,

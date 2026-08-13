@@ -127,7 +127,7 @@ export class TerrainSystem {
   private readonly groundMatNear: MeshStandardMaterial
   /** Mid/far tiles: single-sided (half the fill rate). */
   private readonly groundMatFar: MeshStandardMaterial
-  private readonly vegFactory: ReturnType<typeof createVegetationFactory>
+  private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
 
   constructor(scene: Scene) {
     this.scene = scene
@@ -148,7 +148,6 @@ export class TerrainSystem {
       ...matBase,
       side: FrontSide,
     })
-    this.vegFactory = createVegetationFactory()
     this.applyFog()
   }
 
@@ -561,6 +560,7 @@ export class TerrainSystem {
   }
 
   private buildProps(originX: number, originZ: number, cx: number, cz: number): Group {
+    this.vegFactory ??= createVegetationFactory()
     const veg = this.vegFactory.createBuckets()
     const samples = 40
 

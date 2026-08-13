@@ -1,4 +1,4 @@
-import { MathUtils, Vector3 } from 'three'
+import { Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig as C } from '../aircraft/flightConfig'
 
@@ -82,14 +82,4 @@ export function evaluateWarnings(
   }
 
   return { text, level, stall, lowAlt, gear }
-}
-
-/** Degrees AoA for optional future HUD (debug). */
-export function sampleAoADeg(aircraft: Aircraft): number {
-  if (aircraft.speed < 2) return 0
-  _fwd.set(0, 0, 1).applyQuaternion(aircraft.orientation)
-  _up.set(0, 1, 0).applyQuaternion(aircraft.orientation)
-  _vel.copy(aircraft.velocity).normalize()
-  const aoa = Math.atan2(_vel.dot(_up), Math.max(0.05, _vel.dot(_fwd)))
-  return MathUtils.radToDeg(aoa)
 }

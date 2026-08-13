@@ -1,6 +1,7 @@
 /**
  * Block browser chrome that fights the flight game:
- * - Context menu (RMB look)
+ * - Context menu (right-click)
+ * - Middle-click autoscroll (MMB is chase look)
  * - Ctrl/Cmd+W (close tab) while holding brake + pitch, etc.
  * - Other common tab/window shortcuts
  *
@@ -280,14 +281,6 @@ function unlockKeysOnly(): void {
  * (Chrome often blocks requestFullscreen from the Escape key itself.)
  */
 let reenterFullscreenOnClick = false
-
-export function isReenterFullscreenArmed(): boolean {
-  return reenterFullscreenOnClick
-}
-
-export function clearReenterFullscreenArm(): void {
-  reenterFullscreenOnClick = false
-}
 
 /**
  * Enter fullscreen from a user gesture. Call requestFullscreen

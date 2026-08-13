@@ -25,10 +25,6 @@ export function setOpsCenter(x: number, z: number, yaw = 0): void {
   opsYaw = yaw
 }
 
-export function getOpsCenter(): { x: number; z: number; yaw: number } {
-  return { x: opsX, z: opsZ, yaw: opsYaw }
-}
-
 function opsDist(x: number, z: number): number {
   return Math.hypot(x - opsX, z - opsZ)
 }
@@ -185,41 +181,6 @@ function featuresAt(wx: number, wz: number): TerrainFeatures {
   return { river, ravine, pond, lake, stream }
 }
 
-export function sampleLand(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  return landAt(wx, wz, opsDist(x, z))
-}
-
-export function sampleMoisture(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  return moistureAt(wx, wz)
-}
-
-export function sampleTemperature(x: number, z: number): number {
-  const [wx, wz] = warp(x, z)
-  return temperatureAt(wx, wz, z)
-}
-
-export function sampleRiver(x: number, z: number): number {
-  return featuresAt(...warp(x, z)).river
-}
-
-export function sampleStream(x: number, z: number): number {
-  return featuresAt(...warp(x, z)).stream
-}
-
-export function sampleRavine(x: number, z: number): number {
-  return featuresAt(...warp(x, z)).ravine
-}
-
-export function samplePond(x: number, z: number): number {
-  return featuresAt(...warp(x, z)).pond
-}
-
-export function sampleLake(x: number, z: number): number {
-  return featuresAt(...warp(x, z)).lake
-}
-
 /**
  * Mountain-range mask — soft wide foothills, firm core for real peaks.
  */
@@ -354,10 +315,6 @@ function duneHeightW(base: number, wx: number, wz: number): number {
     12
   const mega = Math.sin(wx * 0.004 + wz * 0.003) * 8 * fbm(wx * 0.001, wz * 0.001, 2)
   return Math.max(3, base * 0.65 + 14 + dunes + mega)
-}
-
-export function sampleFeatures(x: number, z: number): TerrainFeatures {
-  return featuresAt(...warp(x, z))
 }
 
 /** Land biomes that participate in soft height/color blending. */
@@ -519,41 +476,6 @@ function resolveBiomeBlend(weights: BiomeWeightMap): {
       ? clamp01((secondV / bestV) * 0.55)
       : 0
   return { primary: best, secondary: second, mix, weights: norm }
-}
-
-export function classifyBiome(
-  elev: number,
-  moisture: number,
-  temperature: number,
-  features: TerrainFeatures,
-  land: number,
-  distFromOrigin: number,
-  mesaProv = 0,
-  wx = 0,
-  wz = 0,
-): Biome {
-  if (distFromOrigin < RUNWAY_FLAT_INNER) return 'runway'
-  if (land < 0.36) return 'ocean'
-  if (features.lake > 0.62 && elev < 50) return 'water'
-  if (features.pond > 0.78 && elev < 35) return 'water'
-  if (features.river > 0.78 && elev < 50) return 'water'
-  if (elev < 1.0 && moisture > 0.55) return 'water'
-
-  const wet = wetProvince(wx, wz)
-  const arid = aridProvince(wx, wz)
-  const cold = coldProvince(wx, wz)
-  const fit = biomeFitness(
-    elev,
-    moisture,
-    temperature,
-    features,
-    land,
-    mesaProv,
-    wet,
-    arid,
-    cold,
-  )
-  return resolveBiomeBlend(fit).primary
 }
 
 /**
@@ -894,9 +816,9 @@ export function findFlatSpawn(maxRadius = 9000): FlatSpawn {
         bestScore = score
         const c = sampleClimate(x, z)
         best = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+        // Early-out only for this candidate (not a previous pad + this dep).
+        if (bestScore > 160 && dep.score > 20) return best
       }
-      // Need a decent pad AND a clear departure — don't early-out on pad alone
-      if (bestScore > 160 && dep.score > 20) return best!
     }
   }
 

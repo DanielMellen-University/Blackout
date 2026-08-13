@@ -64,9 +64,7 @@ export class HUD {
   }
 
   update(opts: {
-    x: number
     y: number
-    z: number
     speed: number
     cameraMode: string
     fps: number

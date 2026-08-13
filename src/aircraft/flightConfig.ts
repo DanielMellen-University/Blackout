@@ -52,7 +52,7 @@ export const flightConfig = {
   /** Used by (currently disabled) stall warning HUD. */
   stallAoA: 0.4,
 
-  throttleRate: 0.9,
+  throttleRate: 0.95,
 
   crashVy: -14,
   softLandingVy: -6,

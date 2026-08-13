@@ -1,8 +1,9 @@
+import { flightConfig } from '../aircraft/flightConfig'
 import { createDefaultControls, type ControlState } from './types'
 
 /**
  * Maps keyboard into ControlState for arcade flight.
- * W/S pitch, A/D roll, Q/E yaw, Space boost, Shift/Ctrl throttle, G gear.
+ * W/S pitch, A/D yaw, Q/E roll, Space boost, Shift/Ctrl throttle, G gear.
  *
  * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
  * every frame so the ENG bar can track live.
@@ -30,22 +31,16 @@ export class InputManager {
     this.keys.clear()
   }
 
-  /** Prefer sampleWithDt for smooth throttle. */
-  sample(): ControlState {
-    return this.sampleWithDt(1 / 60)
-  }
-
   sampleWithDt(dt: number): ControlState {
     const step = Math.max(0, Math.min(dt, 0.05))
 
     this.controls.pitch = this.axis('KeyW', 'KeyS')
-    // A/D yaw, Q/E roll (inverted: Q roll right, E roll left)
     this.controls.yaw = this.axis('KeyD', 'KeyA')
     this.controls.roll = this.axis('KeyQ', 'KeyE')
     this.controls.boost = this.keys.has('Space')
 
     // Engine power: Shift up, Ctrl down (fast spool so airbrake engages quickly)
-    const thrRate = 0.95
+    const thrRate = flightConfig.throttleRate
     let thr = this.controls.throttle
     if (this.keys.has('Digit1') || this.keys.has('ControlLeft') || this.keys.has('ControlRight')) {
       thr -= thrRate * step
@@ -58,11 +53,6 @@ export class InputManager {
     return this.controls
   }
 
-  /** Current engine power setpoint 0–1 (same object the HUD samples). */
-  get throttle(): number {
-    return this.controls.throttle
-  }
-
   /** Sync throttle/gear when the aircraft is reset to the runway. */
   resetFlightControls(throttle = 0): void {
     this.controls.throttle = throttle
@@ -73,13 +63,26 @@ export class InputManager {
     this.controls.gearDown = true
   }
 
-  /** Drop held keys (e.g. Space used to start the game, or after reset). */
+  /** Forget one-shot C / R / N so the title screen cannot leak into Play. */
+  clearQueued(): void {
+    this.cameraToggleQueued = false
+    this.resetQueued = false
+    this.weatherCycleQueued = false
+  }
+
+  /** Drop a single code (e.g. Space used to start) without killing held stick. */
+  release(code: string): void {
+    this.keys.delete(code)
+  }
+
+  /** Full key wipe — window blur only. */
   clearKeys(): void {
     this.keys.clear()
     this.controls.boost = false
     this.controls.pitch = 0
     this.controls.roll = 0
     this.controls.yaw = 0
+    this.clearQueued()
   }
 
   consumeCameraToggle(): boolean {

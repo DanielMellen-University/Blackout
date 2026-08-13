@@ -92,11 +92,11 @@ Blackout/
 ├── src/
 │   ├── main.ts              # entry, render loop
 │   ├── core/                # input, time, types
-│   ├── aircraft/            # aircraft state, mesh, flight model stub
-│   ├── camera/              # multi-mode camera
-│   ├── world/               # scene, terrain, runway
+│   ├── aircraft/            # aircraft state, mesh, flight model
+│   ├── camera/              # chase / cockpit cameras
+│   ├── world/               # scene, terrain, sky, runway
 │   ├── ui/                  # HUD overlay
-│   └── systems/             # collision stub
+│   └── systems/             # collision, warnings, mission gates
 ├── index.html
 ├── package.json
 └── README.md

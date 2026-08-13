@@ -1,18 +1,9 @@
 /**
- * Frame timing helper.
- * Phase 0 integrates with variable frame dt; fixed-step fields remain
- * available for Phase 1 physics if needed.
+ * Frame timing helper. Variable dt, clamped after tab backgrounding.
  */
 export class Time {
-  /** Fixed step size reserved for future FlightModel integration. */
-  readonly fixedDt: number
-
   private lastMs: number | null = null
   private fpsSmoothed = 60
-
-  constructor(fixedHz = 60) {
-    this.fixedDt = 1 / fixedHz
-  }
 
   /**
    * Call once per animation frame.

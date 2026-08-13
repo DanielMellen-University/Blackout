@@ -7,7 +7,7 @@ import {
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
-import { getWorldSeed, randomizeWorldSeed } from './noise'
+import { randomizeWorldSeed } from './noise'
 import { createRunway } from './Runway'
 import {
   findFlatSpawn,
@@ -69,6 +69,7 @@ export class World {
     this.fill = new DirectionalLight(0xb8d0ff, 0.4)
     this.fill.position.set(-100, 80, -60)
     this.scene.add(this.fill)
+    this.scene.add(this.fill.target)
 
     this.terrain = new TerrainSystem(this.scene)
     this.atmosphere = new Atmosphere(
@@ -87,7 +88,7 @@ export class World {
     this.runway = createRunway()
     this.scene.add(this.runway)
     this.mission = new MissionSystem(this.scene)
-    this.reseed(true)
+    this.reseed()
   }
 
   get worldSeed(): number {
@@ -97,10 +98,11 @@ export class World {
   /**
    * New random world seed, pick a flat-biome airfield, rebuild terrain there.
    */
-  reseed(force = false): number {
+  reseed(): number {
     this.seed = randomizeWorldSeed()
-    if (force) this.seed = getWorldSeed()
-
+    // Search on natural heights — leftover ops flatten from the last world
+    // would otherwise punch a fake pad at the old airfield.
+    setOpsCenter(1e7, 1e7, 0)
     const pad = findFlatSpawn()
     this.applySpawn(pad)
 
@@ -156,7 +158,6 @@ export class World {
     sun.shadow.camera.top = 450
     sun.shadow.camera.bottom = -450
     sun.shadow.bias = -0.0002
-    void FOG_FAR
     return sun
   }
 

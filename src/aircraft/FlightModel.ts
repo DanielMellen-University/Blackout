@@ -5,7 +5,6 @@ import { flightConfig as C } from './flightConfig'
 
 const _fwd = new Vector3()
 const _up = new Vector3()
-const _right = new Vector3()
 const _velDir = new Vector3()
 const _flatFwd = new Vector3()
 const _worldUp = new Vector3(0, 1, 0)
@@ -28,9 +27,11 @@ export class FlightModel {
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
     const minY = contactMinY(position.x, position.z, controls.gearDown)
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
-    let onGround = position.y <= minY + 0.15 && velocity.y < 2
-
     this.axes(orientation)
+    let onGround = this.grounded(position.y, minY, velocity.y, _up.y)
+    const startedAirborne = !onGround
+    aircraft.impactVy = 0
+
     const airspeed = velocity.length()
     const air = MathUtils.clamp(airspeed / C.airControlFullSpeed, 0, 1)
 
@@ -41,6 +42,9 @@ export class FlightModel {
         air,
         MathUtils.clamp((groundSpeed - C.rotateSpeed * 0.3) / (C.rotateSpeed * 0.7), 0, 1),
       )
+    } else {
+      // Keep enough stick to push the nose down from a hover / stall
+      auth = Math.max(air, 0.28)
     }
     // Slightly heavier pitch only at extreme speed (still flyable)
     const q = 1 / (1 + (airspeed / 420) ** 2 * 0.22)
@@ -185,8 +189,20 @@ export class FlightModel {
 
     position.addScaledVector(velocity, dt)
     if (position.y < minY) {
+      const snap = minY - position.y
+      if (startedAirborne && velocity.y < 0) aircraft.impactVy = velocity.y
+      // Flying into a cliff / rising ridge — don't elevator onto the surface
+      if (startedAirborne && snap > 3.5) {
+        aircraft.impactVy = Math.min(aircraft.impactVy, C.crashVy - 1)
+      }
       position.y = minY
       if (velocity.y < 0) velocity.y = 0
+    } else if (
+      startedAirborne &&
+      position.y <= minY + 0.2 &&
+      velocity.y < 0
+    ) {
+      aircraft.impactVy = velocity.y
     }
 
     aircraft.syncMesh()
@@ -198,12 +214,16 @@ export class FlightModel {
       aircraft.position.z,
       aircraft.controls.gearDown,
     )
-    return aircraft.position.y <= minY + 0.2 && aircraft.velocity.y < 1.5
+    this.axes(aircraft.orientation)
+    return this.grounded(aircraft.position.y, minY, aircraft.velocity.y, _up.y)
+  }
+
+  private grounded(y: number, minY: number, vy: number, upY: number): boolean {
+    return y <= minY + 0.18 && vy < 1.8 && upY > 0.35
   }
 
   private axes(orientation: Quaternion): void {
     _fwd.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
-    _right.set(1, 0, 0).applyQuaternion(orientation)
   }
 }

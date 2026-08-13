@@ -20,6 +20,7 @@ const _box = new Box3()
 const _size = new Vector3()
 const _center = new Vector3()
 const _spawnQuat = new Quaternion()
+const _Y_UP = new Vector3(0, 1, 0)
 
 export type AircraftStatus = 'ok' | 'crashed' | 'landed'
 
@@ -32,6 +33,11 @@ export class Aircraft {
   readonly velocity = new Vector3()
   readonly orientation = new Quaternion()
   readonly angularVelocity = new Vector3()
+  /**
+   * Vertical speed at the moment we touched this frame (negative = downward).
+   * 0 if we did not newly contact. Collision reads this, not post-clamp vy.
+   */
+  impactVy = 0
   controls: ControlState = createDefaultControls()
 
   mass = flightConfig.mass
@@ -94,7 +100,8 @@ export class Aircraft {
     this.position.set(x, y, z)
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
-    _spawnQuat.setFromAxisAngle(new Vector3(0, 1, 0), yaw)
+    this.impactVy = 0
+    _spawnQuat.setFromAxisAngle(_Y_UP, yaw)
     this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
     this.controls.gearDown = true
@@ -117,6 +124,7 @@ export class Aircraft {
     this.status = 'crashed'
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
+    this.impactVy = 0
     this.controls.throttle = 0
     this.controls.boost = false
     this.updateVisuals(0)
@@ -124,6 +132,11 @@ export class Aircraft {
 
   markLanded(): void {
     if (this.status === 'ok') this.status = 'landed'
+  }
+
+  /** After a landing, going airborne again is a new flight. */
+  clearLanded(): void {
+    if (this.status === 'landed') this.status = 'ok'
   }
 
   syncMesh(): void {

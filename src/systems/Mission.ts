@@ -8,6 +8,7 @@ import {
   TorusGeometry,
   Vector3,
 } from 'three'
+import { sampleTerrainHeight } from '../world/terrainSample'
 
 export type MissionStatus = 'idle' | 'live' | 'complete'
 
@@ -45,6 +46,7 @@ export class MissionSystem {
   private readonly gates: Gate[] = []
   private next = 0
   private status: MissionStatus = 'idle'
+  private gateGeo: TorusGeometry | null = null
   private readonly liveMat: MeshBasicMaterial
   private readonly waitMat: MeshBasicMaterial
   private readonly doneMat: MeshBasicMaterial
@@ -83,17 +85,18 @@ export class MissionSystem {
     this.status = 'live'
     this.next = 0
 
-    const geo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
+    this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
     for (let i = 0; i < GATE_COUNT; i++) {
       const t = (i / GATE_COUNT) * Math.PI * 2 + spawnYaw + 0.55
       const x = spawnX + Math.sin(t) * CIRCUIT_R
       const z = spawnZ + Math.cos(t) * CIRCUIT_R
-      const y = spawnY + 72 + i * 18
+      const ground = sampleTerrainHeight(x, z)
+      const y = Math.max(spawnY + 72 + i * 18, ground + 80)
 
       // Tangent so you fly the circle
       const fwd = new Vector3(Math.cos(t), 0, -Math.sin(t)).normalize()
 
-      const ring = new Mesh(geo, this.waitMat)
+      const ring = new Mesh(this.gateGeo, this.waitMat)
       ring.name = `gate_${i}`
       // Torus lies in XY; stand it up and face along fwd
       ring.rotation.y = Math.atan2(fwd.x, fwd.z)
@@ -182,5 +185,7 @@ export class MissionSystem {
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
+    this.gateGeo?.dispose()
+    this.gateGeo = null
   }
 }

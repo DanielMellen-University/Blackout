@@ -1,4 +1,4 @@
-import { MathUtils, Mesh, PerspectiveCamera, Quaternion, Vector3 } from 'three'
+import { MathUtils, PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig } from '../aircraft/flightConfig'
 import {
@@ -7,6 +7,7 @@ import {
   type CameraMode,
 } from '../core/types'
 import { cameraMinY } from '../world/ground'
+import { CockpitMode } from './CockpitMode'
 
 const _offsetWorld = new Vector3()
 const _look = new Vector3()
@@ -18,9 +19,10 @@ const _forward = new Vector3()
 const _headingQuat = new Quaternion()
 const _Y_UP = new Vector3(0, 1, 0)
 
+/** External / chase-style modes only. Cockpit is `CockpitMode`. */
+type ChaseMode = Exclude<CameraMode, 'cockpit'>
+
 interface ModeConfig {
-  /** Local seat offset for cockpit freelook only. */
-  seatOffset?: Vector3
   lookOffset: Vector3
   fov: number
   lookLead: number
@@ -29,7 +31,6 @@ interface ModeConfig {
   defaultYaw: number
   defaultPitch: number
   defaultDistance: number
-  /** Spring stiffness for chase follow (higher = snappier). */
   followStiffness: number
   /**
    * When true, orbit offset is rotated only by aircraft heading (yaw).
@@ -37,11 +38,9 @@ interface ModeConfig {
    * Orbit mode uses world-space spherical offset instead.
    */
   yawOnly?: boolean
-  hideAircraft?: boolean
-  freelook?: boolean
 }
 
-const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
+const MODE_CONFIG: Record<ChaseMode, ModeConfig> = {
   chase: {
     lookOffset: new Vector3(0, 1.2, 8),
     fov: 62,
@@ -65,20 +64,6 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
     defaultDistance: 9,
     followStiffness: 12,
     yawOnly: true,
-  },
-  cockpit: {
-    seatOffset: new Vector3(0, 1.05, 2.35),
-    lookOffset: new Vector3(0, 0.95, 14),
-    fov: 78,
-    lookLead: 0,
-    minDist: 1,
-    maxDist: 1,
-    defaultYaw: 0,
-    defaultPitch: 0,
-    defaultDistance: 1,
-    followStiffness: 40,
-    hideAircraft: true,
-    freelook: true,
   },
   wingman: {
     lookOffset: new Vector3(0, 1.0, 4),
@@ -107,7 +92,6 @@ const MODE_CONFIG: Record<CameraMode, ModeConfig> = {
 }
 
 const PITCH_LIMIT = Math.PI / 2 - 0.05
-const FREELOOK_PITCH_LIMIT = Math.PI / 2 - 0.02
 /** ~6.67s idle before easing back to mode defaults. */
 const AUTO_RETURN_DELAY = 10 * (2 / 3)
 const AUTO_RETURN_RATE = 1.35
@@ -120,11 +104,13 @@ const SPEED_DIST_STRETCH = 0.42
 const JUICE_STIFFNESS = 3.2
 
 /**
- * Multi-mode flight camera: spring chase, MMB orbit pan, ground occlusion, idle recenter.
+ * Multi-mode flight camera: spring chase / orbit, plus a dedicated cockpit.
  */
 export class CameraSystem {
   readonly camera: PerspectiveCamera
   mode: CameraMode = 'chase'
+  readonly cockpit = new CockpitMode()
+
   /** Smoothed 0–1 speed juice for FOV / pullback. */
   private speedJuice = 0
 
@@ -141,7 +127,6 @@ export class CameraSystem {
   private lastX = 0
   private lastY = 0
   private initialized = false
-  private lastVisibilityMode: CameraMode | null = null
 
   /** Smoothed look-at target for stable framing. */
   private readonly lookSmoothed = new Vector3()
@@ -166,13 +151,22 @@ export class CameraSystem {
   }
 
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
+    const leavingCockpit = this.mode === 'cockpit' && mode !== 'cockpit'
     this.mode = mode
-    this.applyModeDefaults(mode)
     this.lookReady = false
     this.bumpInput()
+
+    if (mode === 'cockpit') {
+      this.cockpit.enter(this.camera)
+    } else {
+      if (leavingCockpit) this.cockpit.exit(this.camera)
+      this.applyModeDefaults(mode)
+    }
+
     if (aircraft) {
-      this.applyRig(aircraft, 0, true)
-      this.applyAircraftVisibility(aircraft, true)
+      if (mode === 'cockpit') this.cockpit.update(this.camera, aircraft)
+      else this.applyRig(aircraft, 0, true)
+      this.applyAircraftVisibility(aircraft)
     }
   }
 
@@ -187,6 +181,12 @@ export class CameraSystem {
     if (!this.initialized) {
       this.setMode(this.mode, aircraft)
       this.initialized = true
+      return
+    }
+
+    if (this.mode === 'cockpit') {
+      this.cockpit.update(this.camera, aircraft)
+      this.applyAircraftVisibility(aircraft)
       return
     }
 
@@ -220,7 +220,7 @@ export class CameraSystem {
    * toward this mode's default framing.
    */
   private updateAutoReturn(dt: number): void {
-    if (this.panDown || dt <= 0) return
+    if (this.mode === 'cockpit' || this.panDown || dt <= 0) return
 
     const idleSec = (performance.now() - this.lastInputMs) / 1000
     if (idleSec < AUTO_RETURN_DELAY) return
@@ -244,7 +244,7 @@ export class CameraSystem {
     }
   }
 
-  private applyModeDefaults(mode: CameraMode): void {
+  private applyModeDefaults(mode: ChaseMode): void {
     const cfg = MODE_CONFIG[mode]
     this.camera.fov = cfg.fov
     this.camera.updateProjectionMatrix()
@@ -273,6 +273,7 @@ export class CameraSystem {
   }
 
   private applyRig(aircraft: Aircraft, dt: number, snap: boolean): void {
+    if (this.mode === 'cockpit') return
     const cfg = MODE_CONFIG[this.mode]
 
     // --- Speed juice (chunk 3.4): wider FOV + longer chase as IAS climbs ---
@@ -291,75 +292,55 @@ export class CameraSystem {
     _pivot.copy(aircraft.position)
     _pivot.y += 1.2
 
-    if (cfg.freelook && cfg.seatOffset) {
-      // Cockpit: hard-attach seat, freelook via MMB yaw/pitch in aircraft frame
-      _offsetWorld.copy(cfg.seatOffset).applyQuaternion(aircraft.orientation)
-      this.camera.position.copy(aircraft.position).add(_offsetWorld)
-      this.clampAboveGround(this.camera.position)
+    this.camera.up.copy(_Y_UP)
+    this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, this.distance * distScale)
 
-      const lookDist = 20
-      const cp = Math.cos(this.pitch)
-      _look.set(
-        Math.sin(this.yaw) * cp * lookDist,
-        -Math.sin(this.pitch) * lookDist,
-        Math.cos(this.yaw) * cp * lookDist,
-      )
-      _look.applyQuaternion(aircraft.orientation)
-      _look.add(this.camera.position)
-      this.camera.lookAt(_look)
+    if (cfg.yawOnly) {
+      // Chase-style: rotate offset by heading only (no roll/pitch of the airframe)
+      const heading = this.aircraftHeading(aircraft)
+      _headingQuat.setFromAxisAngle(_Y_UP, heading)
+      _offsetWorld.applyQuaternion(_headingQuat)
+    }
+    // Orbit: leave offset in world spherical space around the pivot
+
+    _desired.copy(_pivot).add(_offsetWorld)
+    this.resolveGroundOcclusion(_pivot, _desired, _desired)
+
+    if (snap || dt <= 0) {
+      this.camera.position.copy(_desired)
+    } else {
+      const alpha = 1 - Math.exp(-cfg.followStiffness * dt)
+      this.camera.position.lerp(_desired, alpha)
+    }
+    this.clampAboveGround(this.camera.position)
+
+    // Look slightly ahead of the jet (yaw-only offset + velocity lead)
+    if (cfg.yawOnly) {
+      const heading = this.aircraftHeading(aircraft)
+      _headingQuat.setFromAxisAngle(_Y_UP, heading)
+      _look.copy(cfg.lookOffset).applyQuaternion(_headingQuat)
+    } else {
+      _look.copy(cfg.lookOffset)
+    }
+    _look.add(aircraft.position)
+
+    if (cfg.lookLead > 0) {
+      // Slightly more lead at high speed so framing stays ahead of the jet
+      _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead * (1 + juice * 0.4))
+      // Prefer horizontal lead so banking does not yank the look target skyward
+      _velLead.y *= 0.35
+      _look.add(_velLead)
+    }
+
+    if (snap || dt <= 0 || !this.lookReady) {
       this.lookSmoothed.copy(_look)
       this.lookReady = true
     } else {
-      const useDist = this.distance * (cfg.freelook ? 1 : distScale)
-      this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, useDist)
-
-      if (cfg.yawOnly) {
-        // Chase-style: rotate offset by heading only (no roll/pitch of the airframe)
-        const heading = this.aircraftHeading(aircraft)
-        _headingQuat.setFromAxisAngle(_Y_UP, heading)
-        _offsetWorld.applyQuaternion(_headingQuat)
-      }
-      // Orbit: leave offset in world spherical space around the pivot
-
-      _desired.copy(_pivot).add(_offsetWorld)
-      this.resolveGroundOcclusion(_pivot, _desired, _desired)
-
-      if (snap || dt <= 0) {
-        this.camera.position.copy(_desired)
-      } else {
-        const alpha = 1 - Math.exp(-cfg.followStiffness * dt)
-        this.camera.position.lerp(_desired, alpha)
-      }
-      this.clampAboveGround(this.camera.position)
-
-      // Look slightly ahead of the jet (yaw-only offset + velocity lead)
-      if (cfg.yawOnly) {
-        const heading = this.aircraftHeading(aircraft)
-        _headingQuat.setFromAxisAngle(_Y_UP, heading)
-        _look.copy(cfg.lookOffset).applyQuaternion(_headingQuat)
-      } else {
-        _look.copy(cfg.lookOffset)
-      }
-      _look.add(aircraft.position)
-
-      if (cfg.lookLead > 0) {
-        // Slightly more lead at high speed so framing stays ahead of the jet
-        _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead * (1 + juice * 0.4))
-        // Prefer horizontal lead so banking does not yank the look target skyward
-        _velLead.y *= 0.35
-        _look.add(_velLead)
-      }
-
-      if (snap || dt <= 0 || !this.lookReady) {
-        this.lookSmoothed.copy(_look)
-        this.lookReady = true
-      } else {
-        const lookAlpha = 1 - Math.exp(-LOOK_STIFFNESS * dt)
-        this.lookSmoothed.lerp(_look, lookAlpha)
-      }
-
-      this.camera.lookAt(this.lookSmoothed)
+      const lookAlpha = 1 - Math.exp(-LOOK_STIFFNESS * dt)
+      this.lookSmoothed.lerp(_look, lookAlpha)
     }
+
+    this.camera.lookAt(this.lookSmoothed)
 
     if (Math.abs(this.camera.fov - targetFov) > 0.05) {
       this.camera.fov = targetFov
@@ -416,13 +397,9 @@ export class CameraSystem {
     if (pos.y < minY) pos.y = minY
   }
 
-  private applyAircraftVisibility(aircraft: Aircraft, force = false): void {
-    if (!force && this.lastVisibilityMode === this.mode) return
-    this.lastVisibilityMode = this.mode
-    const hide = MODE_CONFIG[this.mode].hideAircraft === true
-    aircraft.mesh.traverse((obj) => {
-      if (obj instanceof Mesh) obj.visible = !hide
-    })
+  private applyAircraftVisibility(aircraft: Aircraft): void {
+    // Hide the whole group so gear / afterburner updates cannot unhide parts.
+    aircraft.mesh.visible = this.mode !== 'cockpit'
   }
 
   private bindInput(canvas: HTMLCanvasElement): void {
@@ -495,25 +472,19 @@ export class CameraSystem {
     this.lastY = e.clientY
     if (dx === 0 && dy === 0) return
 
+    if (this.mode === 'cockpit') return
+
     this.yaw += dx * this.lookSensitivity
     this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
-
-    this.pitch += dy * this.lookSensitivity
-    const cfg = MODE_CONFIG[this.mode]
-    if (cfg.freelook) {
-      this.pitch = MathUtils.clamp(this.pitch, -FREELOOK_PITCH_LIMIT, FREELOOK_PITCH_LIMIT)
-    } else {
-      this.pitch = MathUtils.clamp(this.pitch, -PITCH_LIMIT, PITCH_LIMIT)
-    }
-
+    this.pitch = MathUtils.clamp(this.pitch + dy * this.lookSensitivity, -PITCH_LIMIT, PITCH_LIMIT)
     this.bumpInput()
   }
 
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault()
-    const cfg = MODE_CONFIG[this.mode]
-    if (cfg.freelook) return
+    if (this.mode === 'cockpit') return
 
+    const cfg = MODE_CONFIG[this.mode]
     const zoom = Math.exp(e.deltaY * 0.0012)
     this.distance = MathUtils.clamp(this.distance * zoom, cfg.minDist, cfg.maxDist)
     this.bumpInput()
