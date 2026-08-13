@@ -1,93 +1,88 @@
 /**
- * Central arcade flight feel knobs - tune here first.
- * Units: meters, seconds, Newtons, kg (loose arcade scale).
+ * Arcade flight feel knobs. Tune here first.
+ * Units: meters, seconds (loose arcade scale).
  *
- * Physics style: Sketchbook-like arcade (not full aero).
+ * Not a coefficient sim. Energy + attitude should still read as a jet:
+ * pull hard = bleed speed, bank = turn, idle = brake, AB = kick.
  */
 export const flightConfig = {
   mass: 10_000,
 
-  /** Peak dry thrust (N). Accel = thrust / mass, then clamped by maxAccel. */
-  maxThrust: 900_000,
-  boostThrustMul: 1.55,
+  /** Peak dry thrust (N). Accel = thrust/mass then clamped. */
+  maxThrust: 620_000,
+  boostThrustMul: 1.72,
 
   /**
    * Speed envelope (m/s).
-   * minSpeed: below this airborne, extra sink / weak lift (stall edge).
-   * maxSpeed: hard cap on airspeed (dry); boost can slightly exceed via maxSpeedBoost.
+   * minSpeed: below this airborne, lift collapses (stall edge).
+   * maxSpeed: dry cap; boost uses maxSpeedBoost.
    */
-  minSpeed: 35,
-  /** ~1000 knots dry (m/s). */
+  minSpeed: 42,
+  /** ~1000 knots dry. */
   maxSpeed: 514.44,
-  /** Absolute cap with afterburner (~1040 kts). */
+  /** ~1040 knots AB. */
   maxSpeedBoost: 535.02,
+  /** Airspeed where 1G level flight is comfortable (~210 kts). */
+  cruiseSpeed: 108,
 
-  /** Peak forward acceleration from thrust (m/s^2). */
-  maxAccel: 42,
+  /** Peak forward acceleration from dry thrust (m/s^2). */
+  maxAccel: 22,
+  /** Extra accel budget with AB. */
+  maxAccelBoost: 34,
   /**
-   * Peak coasting drag (m/s^2) at mid throttle.
-   * Idle uses maxBrakeDecel via airbrake (see FlightModel).
+   * Parasite drag scale (quadratic). Higher = harder to reach top speed.
+   * Tuned so mid throttle cruises ~350–450 kts; 1000 kts wants AB.
    */
-  maxDecel: 28,
-  /** Airbrake / reverse-bleed at zero throttle (m/s^2). */
-  maxBrakeDecel: 58,
-  /** How hard idle throttle acts as airbrake (0–1 thr maps to this). */
-  airbrakeStrength: 52,
-  /** Extra wheel brakes on ground when throttle near idle. */
-  wheelBrakeDecel: 38,
+  parasiteDrag: 0.000048,
+  /** Induced drag when pulling lift (bleed in turns / loops). */
+  inducedDrag: 0.014,
+  /** Peak coasting decel cap (m/s^2) at mid throttle. */
+  maxDecel: 24,
+  /** Airbrake / reverse-bleed at idle (m/s^2). */
+  maxBrakeDecel: 52,
+  airbrakeStrength: 44,
+  wheelBrakeDecel: 36,
+  gearDrag: 0.0055,
 
-  liftPerSpeed: 0.125,
-  maxLiftAccel: 28,
-
-  /** Light aero drag coefficient (speed-scaled). */
-  dragPerSpeed: 0.004,
-  gearDrag: 0.0045,
+  /** Lift scale so cruiseSpeed ~ sustains 1G in level flight. */
+  liftAuthority: 11.2,
+  maxLiftAccel: 42,
+  /** Auto-trim: fraction of gravity cancelled when flying fast and wings level. */
+  autoLift: 0.88,
 
   gravity: 9.81,
 
   /**
-   * Peak body rates (rad/s) at full stick.
-   * Pitch is intentionally lower than roll - W/S was too twitchy.
+   * Peak body rates (rad/s) at full stick, mid speed.
+   * High speed damps pitch (q-feel); low speed is mushy.
    */
-  pitchRate: 0.55,
-  rollRate: 2.35,
-  yawRate: 1.1,
+  pitchRate: 0.72,
+  rollRate: 2.55,
+  yawRate: 0.95,
+  pitchResponse: 5.2,
+  angularResponse: 10,
+  angularDamping: 3.8,
+  /** Speed where full aero authority unlocks. */
+  airControlFullSpeed: 48,
 
-  /** Pitch responds slower than roll/yaw for smoother elevator. */
-  pitchResponse: 4.5,
-  angularResponse: 9,
-  angularDamping: 3.5,
+  pathFollowRate: 2.05,
+  bankTurnRate: 1.55,
+  weathervaneRate: 0.38,
 
-  airControlFullSpeed: 30,
-
-  /**
-   * Soft path-follow (Sketchbook-style): bend velocity toward the nose so
-   * yaw/roll actually change the flight path. Too high = sticky; 0 = pure slip.
-   */
-  pathFollowRate: 1.65,
-
-  /**
-   * Coordinated-turn assist: when banked, curve the path about world-up
-   * (arcade stand-in for banked-lift turning). rad/s scale at full bank.
-   */
-  bankTurnRate: 1.35,
-
-  /** Mild weathervane: ease nose toward velocity when stick is quiet. */
-  weathervaneRate: 0.32,
-
-  stallAoA: 0.4,
-  stallLiftMul: 0.4,
-  stallPitchDown: 0.75,
+  stallAoA: 0.36,
+  stallLiftMul: 0.38,
+  stallPitchDown: 0.95,
+  /** Extra speed bleed when |AoA| is high (pulling G). */
+  pullBleed: 9.5,
 
   gearHeight: 1.4,
   bellyHeight: 0.95,
 
-  rotateSpeed: 22,
-  rollingDecel: 1.4,
-  rotateClimb: 8,
-  groundSteer: 1.45,
+  rotateSpeed: 24,
+  rollingDecel: 1.5,
+  rotateClimb: 9,
+  groundSteer: 1.55,
 
-  /** Throttle spool rate (0-1 per second). Shift up / Ctrl down. */
   throttleRate: 0.9,
 
   crashVy: -14,
