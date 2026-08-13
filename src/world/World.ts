@@ -15,6 +15,7 @@ import {
   type FlatSpawn,
 } from './terrainSample'
 import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
+import { MissionSystem } from '../systems/Mission'
 
 export interface SpawnPose {
   x: number
@@ -34,6 +35,7 @@ export class World {
   /** Cool moonlight — no shadows (cheap second key light). */
   readonly moon: DirectionalLight
   readonly atmosphere: Atmosphere
+  readonly mission: MissionSystem
   private seed = 0
   private readonly runway: Group
   private readonly hemi: HemisphereLight
@@ -84,6 +86,7 @@ export class World {
 
     this.runway = createRunway()
     this.scene.add(this.runway)
+    this.mission = new MissionSystem(this.scene)
     this.reseed(true)
   }
 
@@ -104,6 +107,7 @@ export class World {
     this.terrain.clearAll()
     this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
     this.atmosphere.randomizeWeather(this.seed)
+    this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
     return this.seed
   }
 

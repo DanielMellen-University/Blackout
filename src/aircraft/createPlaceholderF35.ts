@@ -27,12 +27,20 @@ export function createPlaceholderF35(): Group {
   // Low metalness so base color reads without an env map
   // (high metalness + no reflections = pure black / hollow look).
   const panel = panelTexture()
-  const grey = makeGrey(0xb0b8c0, panel)
-  const greyMid = makeGrey(0x8e97a1, panel)
-  const black = solid(0x111418, 0.15, 0.65)
-  const glass = solid(0x1a2838, 0.25, 0.15)
+  const grey = makeGrey(0xb4bcc4, panel, 0.18, 0.48)
+  const greyMid = makeGrey(0x8a939d, panel, 0.16, 0.55)
+  const greyDark = makeGrey(0x6c7480, panel, 0.14, 0.58)
+  const black = solid(0x111418, 0.22, 0.55)
+  const glass = new MeshStandardMaterial({
+    color: 0x152028,
+    metalness: 0.08,
+    roughness: 0.08,
+    transparent: true,
+    opacity: 0.72,
+    depthWrite: true,
+  })
   const tire = solid(0x0c0c0e, 0.05, 0.95)
-  const nozzleOuter = solid(0x2a2e34, 0.35, 0.45)
+  const nozzleOuter = solid(0x2a2e34, 0.42, 0.38)
   const glowMat = new MeshStandardMaterial({
     color: 0xff5500,
     emissive: 0xff3300,
@@ -44,8 +52,8 @@ export function createPlaceholderF35(): Group {
 
   root.add(buildFuselage(grey))
   root.add(buildCanopy(glass, black))
-  root.add(buildWingPair(grey))
-  root.add(buildHStabPair(grey))
+  root.add(buildWingPair(grey, greyDark))
+  root.add(buildHStabPair(greyDark))
   root.add(buildVStab(1, grey, black))
   root.add(buildVStab(-1, grey, black))
   root.add(buildIntake(1, grey, greyMid, black))
@@ -62,10 +70,22 @@ export function createPlaceholderF35(): Group {
   bay.position.set(0, -0.54, 0.2)
   root.add(bay)
 
+  // Nose pitot + gun-port fairing (silhouette cues)
+  const pitot = new Mesh(new CylinderGeometry(0.018, 0.012, 0.55, 8), black)
+  pitot.rotation.x = Math.PI / 2
+  pitot.position.set(0.08, 0.06, 7.35)
+  root.add(pitot)
+
+  const gun = new Mesh(new BoxGeometry(0.22, 0.08, 0.55), greyDark)
+  gun.position.set(0.72, 0.18, 2.35)
+  gun.rotation.y = 0.08
+  root.add(gun)
+
   root.add(buildGear(black, tire))
   addNavLight(root, -5.35, 0.02, -0.5, 0xff2020)
   addNavLight(root, 5.35, 0.02, -0.5, 0x20ff40)
   addNavLight(root, 0, 1.5, -5.5, 0xfff5e0)
+  addNavLight(root, 0, 0.35, 6.4, 0xfff5e0)
 
   root.traverse((obj) => {
     if (obj instanceof Mesh) {
@@ -91,12 +111,20 @@ function solid(color: number, metalness: number, roughness: number): MeshStandar
   })
 }
 
-function makeGrey(color: number, map: CanvasTexture): MeshStandardMaterial {
+function makeGrey(
+  color: number,
+  map: CanvasTexture,
+  metalness = 0.16,
+  roughness = 0.5,
+): MeshStandardMaterial {
   return new MeshStandardMaterial({
     color,
     map,
-    metalness: 0.12,
-    roughness: 0.62,
+    metalness,
+    roughness,
+    // Tiny emissive keeps panels readable at night without an env map
+    emissive: 0x1a1e24,
+    emissiveIntensity: 0.12,
     transparent: false,
     depthWrite: true,
   })
@@ -107,28 +135,42 @@ function panelTexture(): CanvasTexture {
   c.width = 512
   c.height = 512
   const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#a0a8b0'
+  ctx.fillStyle = '#9aa3ac'
   ctx.fillRect(0, 0, 512, 512)
-  for (let i = 0; i < 3000; i++) {
-    const v = 145 + Math.random() * 35
-    ctx.fillStyle = `rgba(${v},${v + 2},${v + 4},0.05)`
-    ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2)
+  // Fine grit
+  for (let i = 0; i < 4000; i++) {
+    const v = 140 + Math.random() * 40
+    ctx.fillStyle = `rgba(${v},${v + 3},${v + 6},${0.04 + Math.random() * 0.04})`
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 1 + Math.random() * 2, 1)
   }
-  ctx.strokeStyle = 'rgba(40,45,50,0.18)'
-  ctx.lineWidth = 1
-  for (let i = 0; i <= 512; i += 64) {
+  // Irregular panel seams (not a uniform grid)
+  ctx.strokeStyle = 'rgba(28,32,38,0.28)'
+  ctx.lineWidth = 1.2
+  const xs = [0, 70, 140, 190, 280, 340, 410, 512]
+  const ys = [0, 55, 130, 200, 255, 330, 400, 470, 512]
+  for (const x of xs) {
     ctx.beginPath()
-    ctx.moveTo(i, 0)
-    ctx.lineTo(i, 512)
+    ctx.moveTo(x, 0)
+    ctx.lineTo(x + (Math.random() - 0.5) * 8, 512)
     ctx.stroke()
+  }
+  for (const y of ys) {
     ctx.beginPath()
-    ctx.moveTo(0, i)
-    ctx.lineTo(512, i)
+    ctx.moveTo(0, y)
+    ctx.lineTo(512, y + (Math.random() - 0.5) * 6)
     ctx.stroke()
+  }
+  // Fastener dots along some seams
+  ctx.fillStyle = 'rgba(50,55,60,0.35)'
+  for (let i = 0; i < 80; i++) {
+    ctx.beginPath()
+    ctx.arc(Math.random() * 512, Math.random() * 512, 1.1, 0, Math.PI * 2)
+    ctx.fill()
   }
   const tex = new CanvasTexture(c)
   tex.wrapS = tex.wrapT = RepeatWrapping
-  tex.repeat.set(3, 3)
+  tex.repeat.set(2.2, 2.2)
+  tex.anisotropy = 4
   return tex
 }
 
@@ -213,51 +255,54 @@ function buildCanopy(glass: MeshStandardMaterial, frame: MeshStandardMaterial): 
  * Shape coords (before extrude): X = outboard, Y = forward (+ toward nose)
  * Extrude depth = thickness, then lay flat.
  */
-function buildWingPair(mat: MeshStandardMaterial): Group {
+function buildWingPair(mat: MeshStandardMaterial, edge: MeshStandardMaterial): Group {
   const g = new Group()
-  g.add(buildWingHalf(1, mat))
-  g.add(buildWingHalf(-1, mat))
+  g.add(buildWingHalf(1, mat, edge))
+  g.add(buildWingHalf(-1, mat, edge))
   return g
 }
 
-function buildWingHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
+function buildWingHalf(
+  side: 1 | -1,
+  mat: MeshStandardMaterial,
+  edge: MeshStandardMaterial,
+): Group {
+  const g = new Group()
   // Real F-35-ish half-planform (meters), Y forward, X outboard
   const shape = new Shape()
-  // Root LE (at fuselage side, forward - LERX start)
   shape.moveTo(0.55, 2.6)
-  // LERX curve out then into main LE
   shape.lineTo(1.15, 2.35)
   shape.lineTo(1.7, 1.7)
-  // Main LE to tip
   shape.lineTo(5.35, 0.05)
-  // Clipped tip
   shape.lineTo(5.35, -0.55)
   shape.lineTo(5.05, -1.15)
-  // Trailing edge back to root (slight crank like flaperon hinge line)
   shape.lineTo(3.2, -1.85)
   shape.lineTo(1.4, -2.35)
   shape.lineTo(0.6, -2.45)
-  // Root TE → close along fuselage
   shape.lineTo(0.55, 2.6)
 
   const geo = new ExtrudeGeometry(shape, {
-    depth: 0.14,
+    depth: 0.13,
     bevelEnabled: true,
-    bevelThickness: 0.03,
-    bevelSize: 0.035,
-    bevelSegments: 2,
+    bevelThickness: 0.035,
+    bevelSize: 0.04,
+    bevelSegments: 3,
   })
-  // Center thickness
-  geo.translate(0, 0, -0.07)
+  geo.translate(0, 0, -0.065)
 
   const mesh = new Mesh(geo, mat)
-  // Lay flat: shape XY → XZ plane (Y of shape = forward Z)
   mesh.rotation.x = -Math.PI / 2
   if (side < 0) mesh.scale.x = -1
   mesh.position.set(0, 0.0, -0.1)
-  // Tiny anhedral/dihedral
   mesh.rotation.z = side * 0.025
-  return mesh
+  g.add(mesh)
+
+  // Sawtooth / flaperon hinge strip on TE
+  const te = new Mesh(new BoxGeometry(2.4, 0.035, 0.16), edge)
+  te.position.set(side * 2.6, 0.02, -1.85)
+  te.rotation.y = side * 0.12
+  g.add(te)
+  return g
 }
 
 // ---------------------------------------------------------------------------
@@ -309,21 +354,33 @@ function buildHStabHalf(side: 1 | -1, mat: MeshStandardMaterial): Mesh {
 function buildVStab(side: 1 | -1, skin: MeshStandardMaterial, detail: MeshStandardMaterial): Group {
   const g = new Group()
 
-  const fin = new Mesh(new BoxGeometry(0.1, 1.95, 1.2), skin)
-  fin.position.set(0, 0.975, -0.05)
+  // Swept fin planform (X = chord forward, Y = height) then stand up
+  const shape = new Shape()
+  shape.moveTo(0.05, 0.05)
+  shape.lineTo(0.85, 0.08)
+  shape.lineTo(0.55, 1.95)
+  shape.lineTo(-0.15, 1.85)
+  shape.lineTo(-0.35, 0.15)
+  shape.closePath()
+  const geo = new ExtrudeGeometry(shape, {
+    depth: 0.09,
+    bevelEnabled: true,
+    bevelThickness: 0.012,
+    bevelSize: 0.015,
+    bevelSegments: 1,
+  })
+  geo.translate(0, 0, -0.045)
+  const fin = new Mesh(geo, skin)
+  fin.rotation.y = Math.PI / 2
 
-  const le = new Mesh(new BoxGeometry(0.09, 1.85, 0.35), skin)
-  le.position.set(0, 0.95, 0.55)
-  le.rotation.x = -0.12
+  const rudder = new Mesh(new BoxGeometry(0.07, 0.95, 0.22), detail)
+  rudder.position.set(0, 0.95, -0.55)
 
-  const rudder = new Mesh(new BoxGeometry(0.08, 1.1, 0.28), detail)
-  rudder.position.set(0, 0.85, -0.7)
-
-  const fairing = new Mesh(new BoxGeometry(0.28, 0.22, 0.9), skin)
-  fairing.position.set(0, 0.08, 0.0)
+  const fairing = new Mesh(new BoxGeometry(0.3, 0.2, 0.95), skin)
+  fairing.position.set(0, 0.08, 0.05)
 
   const pivot = new Group()
-  pivot.add(fin, le, rudder, fairing)
+  pivot.add(fin, rudder, fairing)
   pivot.position.set(side * 0.62, 0.38, -5.15)
   pivot.rotation.z = side * -0.42
   pivot.rotation.y = side * 0.08

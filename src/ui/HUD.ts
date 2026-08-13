@@ -26,6 +26,7 @@ export class HUD {
   private readonly clockEl: HTMLElement | null
   private readonly weatherEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
+  private readonly missionEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
   private readonly maxKts = 1000
@@ -56,6 +57,7 @@ export class HUD {
     this.clockEl = root.getElementById('hud-clock')
     this.weatherEl = root.getElementById('hud-weather')
     this.phaseEl = root.getElementById('hud-phase')
+    this.missionEl = root.getElementById('hud-mission')
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
@@ -82,6 +84,7 @@ export class HUD {
     clock?: string
     weather?: string
     dayPhase?: string
+    mission?: string
     banner?: string | null
   }): void {
     if (this.posEl) {
@@ -108,6 +111,9 @@ export class HUD {
     }
     if (this.phaseEl && opts.dayPhase) {
       this.phaseEl.textContent = opts.dayPhase
+    }
+    if (this.missionEl && opts.mission) {
+      this.missionEl.textContent = opts.mission
     }
 
     if (opts.throttle !== undefined) {

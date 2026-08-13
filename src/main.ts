@@ -158,6 +158,14 @@ async function boot(): Promise<void> {
       aircraft.controls = input.sampleWithDt(dt)
       aircraft.step(dt)
 
+      const event = world.mission.update(
+        aircraft.position.x,
+        aircraft.position.y,
+        aircraft.position.z,
+      )
+      if (event === 'pass') showBanner('GATE CLEAR', 1200)
+      if (event === 'complete') showBanner('CIRCUIT COMPLETE', 4200)
+
       const touch = collision.check(aircraft)
       if (aircraft.status === 'ok') {
         if (!aircraft.onGround && aircraft.position.y > flightAltThreshold()) {
@@ -221,6 +229,11 @@ async function boot(): Promise<void> {
         clock: world.atmosphere.clockLabel,
         weather: world.atmosphere.weatherLabel,
         dayPhase: world.atmosphere.phaseLabel,
+        mission: world.mission.hud(
+          aircraft.position.x,
+          aircraft.position.y,
+          aircraft.position.z,
+        ).label,
         banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
       })
     }

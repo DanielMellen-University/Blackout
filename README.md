@@ -7,6 +7,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 ## Features
 
 - Title screen with how-to-play and full controls
+- Checkpoint circuit (5 rings around the airfield; HUD RUN)
 - Arcade flight model (thrust, lift, drag, stall lite, gear drag)
 - Runway spawn and takeoff; crash / soft landing; **R** new world + runway
 - Multi-mode camera (chase, close, cockpit, wingman, orbit) with speed FOV juice
