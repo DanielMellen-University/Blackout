@@ -19,8 +19,10 @@ export const flightConfig = {
 
   maxAccel: 26,
   maxAccelBoost: 38,
+  /** How hard IAS chases the ENG% target (1/s). */
+  speedSeek: 1.45,
 
-  /** Quadratic parasite drag. Mid throttle sits ~400 kts; top needs AB. */
+  /** Extra bleed only — cruise speed is set by ENG%, not this. */
   parasiteDrag: 0.000038,
   maxDecel: 26,
   maxBrakeDecel: 48,
@@ -52,7 +54,7 @@ export const flightConfig = {
   /** Used by (currently disabled) stall warning HUD. */
   stallAoA: 0.4,
 
-  throttleRate: 0.95,
+  throttleRate: 0.0792,
 
   crashVy: -14,
   softLandingVy: -6,

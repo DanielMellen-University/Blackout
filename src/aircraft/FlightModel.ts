@@ -90,29 +90,11 @@ export class FlightModel {
 
     this.axes(orientation)
 
-    // --- Thrust along the nose ---
-    // Lever is what the ENG gauge shows. AB = full dry + extra, not +35% on idle.
     const lever = MathUtils.clamp(controls.throttle, 0, 1)
     const boost = controls.boost
-    const thr = boost ? 1 : lever
-
+    // ENG% is a speed command: 50% → 500 kts, 100% → 1000 kts. AB = dry max + extra.
     const vmax = boost ? C.maxSpeedBoost : C.maxSpeed
-    const fade = 1 - MathUtils.clamp(airspeed / vmax, 0, 1) * 0.32
-    let accel = 0
-    if (thr > 0.02) {
-      const cap = boost ? C.maxAccelBoost : C.maxAccel
-      accel = Math.min((C.maxThrust / C.mass) * thr * (boost ? C.boostThrustMul : 1) * fade, cap)
-    }
-
-    if (onGround) {
-      _flatFwd.set(_fwd.x, 0, _fwd.z)
-      if (_flatFwd.lengthSq() > 1e-6) {
-        _flatFwd.normalize()
-        velocity.addScaledVector(_flatFwd, accel * dt)
-      }
-    } else {
-      velocity.addScaledVector(_fwd, accel * dt)
-    }
+    const target = boost ? C.maxSpeedBoost : lever * C.maxSpeed
 
     // --- Gravity + simple lift (cancels g when fast and upright) ---
     // Lift must not add energy: after applying it, keep |v| from growing.
@@ -151,31 +133,49 @@ export class FlightModel {
       }
     }
 
-    // --- Drag / brakes ---
+    // --- ENG% speed hold ---
     {
       const s = velocity.length()
-      if (s > 1e-4) {
+      const err = target - s
+      const capAccel = boost ? C.maxAccelBoost : C.maxAccel
+      const capDecel =
+        onGround && !boost && lever < 0.12 ? C.maxBrakeDecel : C.maxDecel
+      const along = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
+
+      if (along > 0.05) {
+        if (onGround) {
+          _flatFwd.set(_fwd.x, 0, _fwd.z)
+          if (_flatFwd.lengthSq() > 1e-6) {
+            _flatFwd.normalize()
+            velocity.addScaledVector(_flatFwd, along * dt)
+          }
+        } else {
+          velocity.addScaledVector(_fwd, along * dt)
+        }
+      } else if (along < -0.05 && s > 1e-4) {
         _velDir.copy(velocity).multiplyScalar(1 / s)
-        let decel = C.parasiteDrag * s * s
-        if (controls.gearDown) decel += C.gearDrag * s * 2.2
-        // Pulling or rolling hard costs a little energy
-        decel += stick * 3.2 * MathUtils.clamp(s / 120, 0.3, 2)
-        const idle = MathUtils.clamp(1 - thr, 0, 1)
-        decel += idle * idle * C.airbrakeStrength
-        if (onGround && thr < 0.12) decel += C.wheelBrakeDecel * (1 - thr / 0.12)
-        else if (onGround) decel += C.rollingDecel * 0.45
-        decel = Math.min(decel, thr < 0.15 ? C.maxBrakeDecel : C.maxDecel)
-        velocity.addScaledVector(_velDir, -decel * dt)
+        velocity.addScaledVector(_velDir, along * dt)
         if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)
-      } else if (onGround && thr < 0.05) {
+      } else if (onGround && target < 1 && s < 2) {
         velocity.set(0, 0, 0)
       }
-    }
 
-    // Envelope
-    {
-      const s = velocity.length()
-      if (s > vmax) velocity.multiplyScalar(vmax / s)
+      // Light extra bleed so gear / hard stick still cost a little
+      const s2 = velocity.length()
+      if (s2 > 1e-4) {
+        _velDir.copy(velocity).multiplyScalar(1 / s2)
+        let extra = 0
+        if (controls.gearDown) extra += C.gearDrag * s2 * 0.55
+        extra += stick * 1.4 * MathUtils.clamp(s2 / 160, 0.2, 1.2)
+        if (onGround && lever < 0.08 && !boost) extra += C.rollingDecel * 0.45
+        if (extra > 0) {
+          velocity.addScaledVector(_velDir, -extra * dt)
+          if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)
+        }
+      }
+
+      const s3 = velocity.length()
+      if (s3 > vmax) velocity.multiplyScalar(vmax / s3)
     }
 
     // Rotate off the runway
