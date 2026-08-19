@@ -13,6 +13,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
+import { sampleGroundHeight } from '../world/ground'
 import { flightConfig } from './flightConfig'
 import { FlightModel } from './FlightModel'
 
@@ -117,6 +118,7 @@ export class Aircraft {
       return
     }
     this.flight.step(this, dt)
+    this.autoGear()
     this.updateVisuals(dt)
   }
 
@@ -138,6 +140,14 @@ export class Aircraft {
   /** After a landing, going airborne again is a new flight. */
   clearLanded(): void {
     if (this.status === 'landed') this.status = 'ok'
+  }
+
+  /** Gear down near the surface, up once you have height. */
+  private autoGear(): void {
+    if (this.status === 'crashed') return
+    const agl = this.position.y - sampleGroundHeight(this.position.x, this.position.z)
+    if (this.onGround || agl < 16) this.controls.gearDown = true
+    else if (agl > 30) this.controls.gearDown = false
   }
 
   syncMesh(): void {

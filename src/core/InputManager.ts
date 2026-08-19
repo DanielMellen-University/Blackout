@@ -3,7 +3,7 @@ import { createDefaultControls, type ControlState } from './types'
 
 /**
  * Maps keyboard into ControlState for arcade flight.
- * W/S pitch, A/D yaw, Q/E roll, Space boost, Shift/Ctrl throttle, G gear.
+ * W/S pitch, A/D yaw, Q/E roll, Space boost, Shift/Ctrl throttle. Gear is automatic.
  *
  * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
  * every frame so the ENG bar can track live.
@@ -144,7 +144,6 @@ export class InputManager {
     if (e.code === 'KeyC') this.cameraToggleQueued = true
     if (e.code === 'KeyR') this.resetQueued = true
     if (e.code === 'KeyN') this.weatherCycleQueued = true
-    if (e.code === 'KeyG') this.controls.gearDown = !this.controls.gearDown
   }
 
   private onKeyUp = (e: KeyboardEvent): void => {

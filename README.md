@@ -65,7 +65,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Ctrl** or **1** | Engine power down |
 | **2** | Engine power up |
 | **Space** | Afterburner |
-| **G** | Landing gear |
+
 | **Hold MMB + drag** | Look / pan (not cockpit) |
 | **Scroll** | Zoom (not cockpit) |
 | **C** | Cycle camera |
@@ -73,7 +73,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **R** | New world + runway |
 | **Esc** | Pause menu |
 
-**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear **G** after liftoff. Engine percent is the speed you want (50% ~ 500 kts).
+**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear is automatic. Engine percent is the speed you want (50% ~ 500 kts).
 
 Landing is gentle with gear down. Hard impacts explode; press **R**. Fullscreen is a click toggle in the pause menu.
 

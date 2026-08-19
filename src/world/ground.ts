@@ -32,9 +32,8 @@ export function cameraMinY(x: number, z: number, clearance = 1.15): number {
 }
 
 /**
- * AGL-style altitude for HUD: height of aircraft above local ground,
- * minus typical gear height so runway reads ~0 m when parked.
+ * Altitude AGL: aircraft origin above the terrain sample at the same XZ.
  */
 export function altitudeAgl(x: number, y: number, z: number): number {
-  return Math.max(0, y - sampleGroundHeight(x, z) - flightConfig.gearHeight)
+  return Math.max(0, y - sampleGroundHeight(x, z))
 }

@@ -64,9 +64,8 @@ export function evaluateWarnings(
   const lowAlt =
     ENABLE_LOW_ALT_WARNING && altAgl < 45 && altAgl > 1.5 && speed > 8
 
-  // Gear: low and fast-ish with gear still up
-  const gear =
-    !aircraft.controls.gearDown && altAgl < 55 && altAgl > 2 && speed > 15
+  // Gear is automatic; no GEAR caution
+  const gear = false
 
   let text: string | null = null
   let level: WarningLevel = 'none'
