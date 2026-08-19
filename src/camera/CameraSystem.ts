@@ -137,6 +137,7 @@ export class CameraSystem {
 
   private readonly lookSensitivity = 0.005
   private readonly canvas: HTMLCanvasElement
+  private shake = 0
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -170,6 +171,11 @@ export class CameraSystem {
     }
   }
 
+  /** Brief view punch (crash boom). */
+  impulse(amount = 1): void {
+    this.shake = Math.max(this.shake, amount)
+  }
+
   toggleMode(aircraft?: Aircraft): CameraMode {
     const idx = CAMERA_MODES.indexOf(this.mode)
     const next = CAMERA_MODES[(idx + 1) % CAMERA_MODES.length]!
@@ -187,6 +193,7 @@ export class CameraSystem {
     if (this.mode === 'cockpit') {
       this.cockpit.update(this.camera, aircraft)
       this.applyAircraftVisibility(aircraft)
+      this.applyShake(dt)
       return
     }
 
@@ -313,6 +320,7 @@ export class CameraSystem {
       this.camera.position.lerp(_desired, alpha)
     }
     this.clampAboveGround(this.camera.position)
+    this.applyShake(dt)
 
     // Look slightly ahead of the jet (yaw-only offset + velocity lead)
     if (cfg.yawOnly) {
@@ -397,8 +405,23 @@ export class CameraSystem {
     if (pos.y < minY) pos.y = minY
   }
 
+  private applyShake(dt: number): void {
+    if (this.shake <= 0.002) {
+      this.shake = 0
+      return
+    }
+    const s = this.shake * this.shake
+    this.camera.position.x += (Math.random() - 0.5) * 2.4 * s
+    this.camera.position.y += (Math.random() - 0.5) * 1.6 * s
+    this.camera.position.z += (Math.random() - 0.5) * 2.4 * s
+    this.shake *= Math.exp(-7 * Math.max(dt, 0.008))
+  }
+
   private applyAircraftVisibility(aircraft: Aircraft): void {
-    // Hide the whole group so gear / afterburner updates cannot unhide parts.
+    if (aircraft.status === 'crashed') {
+      aircraft.mesh.visible = false
+      return
+    }
     aircraft.mesh.visible = this.mode !== 'cockpit'
   }
 

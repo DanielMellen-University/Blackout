@@ -127,6 +127,7 @@ export class Aircraft {
     this.impactVy = 0
     this.controls.throttle = 0
     this.controls.boost = false
+    this.mesh.visible = false
     this.updateVisuals(0)
   }
 

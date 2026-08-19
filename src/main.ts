@@ -18,6 +18,7 @@ import {
 } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
+import { CrashFx } from './systems/CrashFx'
 import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
@@ -59,6 +60,7 @@ async function boot(): Promise<void> {
   const time = new Time()
   const hud = new HUD()
   const collision = new CollisionSystem()
+  const crashFx = new CrashFx(world.scene)
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
   debug?.syncPad()
 
@@ -159,6 +161,7 @@ async function boot(): Promise<void> {
         world.reseed()
         aircraft.reset(world.spawn)
         cameras.setMode(cameras.mode, aircraft)
+        crashFx.reset()
         debug?.syncPad()
         input.clearQueued()
         input.resetFlightControls(0)
@@ -185,8 +188,13 @@ async function boot(): Promise<void> {
           aircraft.clearLanded()
         }
         if (touch === 'crash') {
+          const hit = aircraft.position.clone()
+          const v = aircraft.velocity.clone()
+          if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
           aircraft.crash()
-          showBanner('CRASH - press R')
+          crashFx.trigger(hit, v)
+          cameras.impulse(1)
+          showBanner('CRASH - press R', 4200)
         } else if (touch === 'landed' && wasAirborne && aircraft.status === 'ok') {
           aircraft.markLanded()
           showBanner('LANDED')
@@ -210,8 +218,10 @@ async function boot(): Promise<void> {
       dt,
     )
     const phase = world.atmosphere.phaseLabel
-    renderer.toneMappingExposure =
+    const baseExp =
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
+    renderer.toneMappingExposure = baseExp + crashFx.bloom * 1.35
+    crashFx.update(dt)
 
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
