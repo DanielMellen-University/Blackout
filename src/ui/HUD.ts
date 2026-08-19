@@ -15,7 +15,6 @@ export class HUD {
   private readonly spdArc: SVGPathElement | null
   private readonly engFill: HTMLElement | null
   private readonly engMarker: HTMLElement | null
-  private readonly engAb: HTMLElement | null
   private readonly engPanel: HTMLElement | null
   private readonly adiBall: HTMLElement | null
   private readonly adiBankPtr: HTMLElement | null
@@ -50,7 +49,6 @@ export class HUD {
     this.spdArc = root.getElementById('spd-arc') as SVGPathElement | null
     this.engFill = root.getElementById('eng-fill')
     this.engMarker = root.getElementById('eng-marker')
-    this.engAb = root.getElementById('eng-ab')
     this.engPanel = root.getElementById('eng-panel')
     this.adiBall = root.getElementById('adi-ball')
     this.adiBankPtr = root.getElementById('adi-bank-ptr')
@@ -263,9 +261,6 @@ export class HUD {
     }
     if (this.engMarker) {
       this.engMarker.style.bottom = `${level * 100}%`
-    }
-    if (this.engAb) {
-      this.engAb.hidden = !boost
     }
     if (this.engPanel) {
       this.engPanel.classList.toggle('boost', boost)
