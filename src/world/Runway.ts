@@ -6,6 +6,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
 } from 'three'
+import { createAirfieldLandmarks } from './Airfield'
 
 /** Simple asphalt strip with centerline and threshold markings. */
 export function createRunway(): Group {
@@ -62,5 +63,6 @@ export function createRunway(): Group {
     }
   }
 
+  root.add(createAirfieldLandmarks())
   return root
 }
