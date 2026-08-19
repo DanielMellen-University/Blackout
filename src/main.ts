@@ -19,6 +19,8 @@ import {
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
 import { evaluateWarnings } from './systems/FlightWarnings'
+import { isDebugEnabled } from './debug/debugFlags'
+import { DebugOverlay } from './debug/DebugOverlay'
 import { HUD } from './ui/HUD'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
@@ -57,6 +59,8 @@ async function boot(): Promise<void> {
   const time = new Time()
   const hud = new HUD()
   const collision = new CollisionSystem()
+  const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
+  debug?.syncPad()
 
   let playing = false
   let banner: string | null = null
@@ -155,6 +159,7 @@ async function boot(): Promise<void> {
         world.reseed()
         aircraft.reset(world.spawn)
         cameras.setMode(cameras.mode, aircraft)
+        debug?.syncPad()
         input.clearQueued()
         input.resetFlightControls(0)
         banner = null
@@ -210,6 +215,7 @@ async function boot(): Promise<void> {
 
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
+    debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
 
     if (playing) {
       const alt = altitudeAgl(

@@ -8,9 +8,9 @@ import { clamp01, fbm, hash2, ridged, smoothstep } from './noise'
 export const SEA_LEVEL = 0
 
 /** Fully level disk for the strip + hangar. Outside this, terrain is natural. */
-const PAD_INNER = 78
+export const OPS_PAD_INNER = 78
 /** Blend from pad height back to natural ground. */
-const PAD_OUTER = 118
+export const OPS_PAD_OUTER = 118
 
 let opsX = 0
 let opsZ = 0
@@ -33,9 +33,18 @@ export function setOpsPad(x: number, z: number, y: number): void {
 function padBlend(x: number, z: number): number {
   if (!opsOn) return 0
   const d = Math.hypot(x - opsX, z - opsZ)
-  if (d <= PAD_INNER) return 1
-  if (d >= PAD_OUTER) return 0
-  return 1 - smoothstep(PAD_INNER, PAD_OUTER, d)
+  if (d <= OPS_PAD_INNER) return 1
+  if (d >= OPS_PAD_OUTER) return 0
+  return 1 - smoothstep(OPS_PAD_INNER, OPS_PAD_OUTER, d)
+}
+
+export function getOpsPad(): { x: number; z: number; y: number } | null {
+  if (!opsOn) return null
+  return { x: opsX, z: opsZ, y: opsY }
+}
+
+export function opsPadBlend(x: number, z: number): number {
+  return padBlend(x, z)
 }
 
 export type Biome =
