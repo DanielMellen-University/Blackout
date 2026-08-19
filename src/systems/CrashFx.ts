@@ -1,6 +1,8 @@
 import {
   AdditiveBlending,
   BoxGeometry,
+  ConeGeometry,
+  CylinderGeometry,
   DoubleSide,
   Group,
   Mesh,
@@ -21,6 +23,7 @@ interface Bit {
   maxLife: number
   kind: 'fire' | 'smoke' | 'spark' | 'debris'
   size0: number
+  ember?: Mesh
 }
 
 /**
@@ -34,10 +37,16 @@ export class CrashFx {
   private readonly smokeMat: MeshBasicMaterial
   private readonly sparkMat: MeshBasicMaterial
   private readonly debrisMat: MeshStandardMaterial
+  private readonly debrisDarkMat: MeshStandardMaterial
+  private readonly debrisHotMat: MeshStandardMaterial
   private readonly ringMat: MeshBasicMaterial
   private readonly sphereGeo: SphereGeometry
   private readonly boxGeo: BoxGeometry
+  private readonly panelGeo: BoxGeometry
+  private readonly rodGeo: CylinderGeometry
+  private readonly shardGeo: ConeGeometry
   private readonly sparkGeo: BoxGeometry
+  private readonly emberGeo: SphereGeometry
   private readonly ring: Mesh
   private readonly flash: Mesh
   private alive = false
@@ -77,9 +86,21 @@ export class CrashFx {
       depthWrite: false,
     })
     this.debrisMat = new MeshStandardMaterial({
-      color: 0x8a9098,
-      roughness: 0.62,
-      metalness: 0.22,
+      color: 0x9aa2aa,
+      roughness: 0.55,
+      metalness: 0.28,
+    })
+    this.debrisDarkMat = new MeshStandardMaterial({
+      color: 0x2e3238,
+      roughness: 0.7,
+      metalness: 0.18,
+    })
+    this.debrisHotMat = new MeshStandardMaterial({
+      color: 0xff6a22,
+      emissive: 0xff3a08,
+      emissiveIntensity: 1.8,
+      roughness: 0.4,
+      metalness: 0.35,
     })
     this.ringMat = new MeshBasicMaterial({
       color: 0xffc070,
@@ -92,7 +113,11 @@ export class CrashFx {
 
     this.sphereGeo = new SphereGeometry(1, 10, 8)
     this.boxGeo = new BoxGeometry(1, 1, 1)
-    this.sparkGeo = new BoxGeometry(0.12, 0.12, 0.7)
+    this.panelGeo = new BoxGeometry(2.4, 0.08, 0.9)
+    this.rodGeo = new CylinderGeometry(0.06, 0.08, 2.1, 5)
+    this.shardGeo = new ConeGeometry(0.28, 1.4, 4)
+    this.sparkGeo = new BoxGeometry(0.12, 0.12, 0.9)
+    this.emberGeo = new SphereGeometry(0.22, 6, 5)
 
     this.ring = new Mesh(new RingGeometry(0.4, 1.1, 28), this.ringMat)
     this.ring.rotation.x = -Math.PI / 2
@@ -131,19 +156,19 @@ export class CrashFx {
     const flashMat = this.flash.material as MeshBasicMaterial
     flashMat.opacity = 1
 
-    const inherit = vel.clone().multiplyScalar(0.18)
+    const inherit = vel.clone().multiplyScalar(0.42)
 
-    for (let i = 0; i < 10; i++) {
-      this.spawnBit('fire', inherit, 0.8 + Math.random() * 1.8, 0.55 + Math.random() * 0.45)
-    }
-    for (let i = 0; i < 14; i++) {
-      this.spawnBit('smoke', inherit, 1.2 + Math.random() * 2.4, 1.6 + Math.random() * 1.4)
-    }
-    for (let i = 0; i < 22; i++) {
-      this.spawnBit('spark', inherit, 8 + Math.random() * 22, 0.35 + Math.random() * 0.45)
+    for (let i = 0; i < 12; i++) {
+      this.spawnBit('fire', inherit, 1.2 + Math.random() * 3.5, 0.7 + Math.random() * 0.55)
     }
     for (let i = 0; i < 16; i++) {
-      this.spawnBit('debris', inherit, 6 + Math.random() * 16, 2.2 + Math.random() * 2.5)
+      this.spawnBit('smoke', inherit, 1.6 + Math.random() * 3.2, 2.0 + Math.random() * 1.8)
+    }
+    for (let i = 0; i < 36; i++) {
+      this.spawnBit('spark', inherit, 14 + Math.random() * 38, 0.45 + Math.random() * 0.7)
+    }
+    for (let i = 0; i < 42; i++) {
+      this.spawnBit('debris', inherit, 16 + Math.random() * 42, 3.5 + Math.random() * 4.5)
     }
   }
 
@@ -171,25 +196,29 @@ export class CrashFx {
         continue
       }
       const u = 1 - b.life / b.maxLife
-      b.vel.y -= (b.kind === 'smoke' ? 2.2 : 18) * dt
+      const grav = b.kind === 'smoke' ? 2.2 : b.kind === 'debris' ? 22 : 18
+      b.vel.y -= grav * dt
       if (b.kind === 'smoke') {
         b.vel.multiplyScalar(Math.exp(-0.55 * dt))
         b.vel.y += 7 * dt
       } else if (b.kind === 'fire') {
         b.vel.multiplyScalar(Math.exp(-1.1 * dt))
         b.vel.y += 4 * dt
+      } else if (b.kind === 'debris') {
+        b.vel.multiplyScalar(Math.exp(-0.12 * dt))
       } else {
-        b.vel.multiplyScalar(Math.exp(-0.35 * dt))
+        b.vel.multiplyScalar(Math.exp(-0.28 * dt))
       }
 
       b.mesh.position.addScaledVector(b.vel, dt)
       const gy = sampleGroundHeight(this.root.position.x + b.mesh.position.x, this.root.position.z + b.mesh.position.z)
       const worldY = this.root.position.y + b.mesh.position.y
-      if (worldY < gy + 0.3) {
-        b.mesh.position.y = gy + 0.3 - this.root.position.y
-        if (b.vel.y < 0) b.vel.y *= b.kind === 'debris' ? -0.28 : -0.12
-        b.vel.x *= 0.7
-        b.vel.z *= 0.7
+      if (worldY < gy + 0.25) {
+        b.mesh.position.y = gy + 0.25 - this.root.position.y
+        if (b.vel.y < 0) b.vel.y *= b.kind === 'debris' ? -0.42 : -0.12
+        b.vel.x *= b.kind === 'debris' ? 0.82 : 0.7
+        b.vel.z *= b.kind === 'debris' ? 0.82 : 0.7
+        if (b.kind === 'debris') b.spin.multiplyScalar(0.65)
       }
 
       b.mesh.rotation.x += b.spin.x * dt
@@ -211,11 +240,20 @@ export class CrashFx {
         const s = b.size0 * (1 - u * 0.4)
         b.mesh.scale.set(s, s, s * (1.4 + u))
       } else {
-        mat.opacity = Math.max(0.15, 1 - u * 0.55)
+        mat.opacity = Math.max(0.2, 1 - u * 0.4)
+        if (mat instanceof MeshStandardMaterial && mat.emissiveIntensity > 0) {
+          mat.emissiveIntensity = 1.8 * (1 - u)
+        }
+        if (b.ember) {
+          const em = b.ember.material as MeshBasicMaterial
+          em.opacity = (1 - u) * 0.9
+          const es = 0.35 + (1 - u) * 0.55
+          b.ember.scale.setScalar(es)
+        }
       }
     }
 
-    if (this.age > 5.5) this.stop()
+    if (this.age > 9) this.stop()
   }
 
   reset(): void {
@@ -231,11 +269,21 @@ export class CrashFx {
 
   private spawnBit(kind: Bit['kind'], inherit: Vector3, speed: number, life: number): void {
     let mesh: Mesh
+    let ember: Mesh | undefined
     if (kind === 'debris') {
-      mesh = new Mesh(this.boxGeo, this.debrisMat.clone())
-      const s = 0.25 + Math.random() * 0.7
-      mesh.scale.set(s, s * (0.4 + Math.random()), s * (0.5 + Math.random() * 0.8))
+      const roll = Math.random()
+      const geo = roll < 0.38 ? this.panelGeo : roll < 0.68 ? this.shardGeo : roll < 0.88 ? this.rodGeo : this.boxGeo
+      const hot = Math.random() > 0.55
+      const mat = hot ? this.debrisHotMat.clone() : Math.random() > 0.5 ? this.debrisMat.clone() : this.debrisDarkMat.clone()
+      mesh = new Mesh(geo, mat)
+      const s = 0.55 + Math.random() * 1.35
+      mesh.scale.set(s * (0.7 + Math.random() * 0.8), s * (0.35 + Math.random() * 0.7), s)
       mesh.castShadow = true
+      if (hot) {
+        ember = new Mesh(this.emberGeo, this.fireHotMat.clone())
+        ember.position.set(0, 0.15, 0)
+        mesh.add(ember)
+      }
     } else if (kind === 'spark') {
       mesh = new Mesh(this.sparkGeo, this.sparkMat.clone())
     } else if (kind === 'smoke') {
@@ -244,13 +292,19 @@ export class CrashFx {
       mesh = new Mesh(this.sphereGeo, (Math.random() > 0.45 ? this.fireHotMat : this.fireMat).clone())
     }
     mesh.position.set(
-      (Math.random() - 0.5) * 2.2,
-      (Math.random() - 0.2) * 1.6,
-      (Math.random() - 0.5) * 2.2,
+      (Math.random() - 0.5) * (kind === 'debris' ? 4.5 : 2.2),
+      (Math.random() * 2.4),
+      (Math.random() - 0.5) * (kind === 'debris' ? 4.5 : 2.2),
     )
-    const dir = new Vector3(Math.random() - 0.5, Math.random() * 0.85 + 0.15, Math.random() - 0.5).normalize()
+    const upBias = kind === 'debris' ? 0.55 : 0.15
+    const dir = new Vector3(
+      Math.random() - 0.5,
+      Math.random() * 0.9 + upBias,
+      Math.random() - 0.5,
+    ).normalize()
     const vel = dir.multiplyScalar(speed).add(inherit)
     if (kind === 'smoke') vel.y += 3
+    if (kind === 'debris') vel.y += 8 + Math.random() * 14
     this.root.add(mesh)
     const size0 = kind === 'fire' ? 1.6 + Math.random() * 2.2 : kind === 'smoke' ? 2.2 + Math.random() * 2.8 : 1
     if (kind === 'fire' || kind === 'smoke') mesh.scale.setScalar(size0)
@@ -258,14 +312,15 @@ export class CrashFx {
       mesh,
       vel,
       spin: new Vector3(
-        (Math.random() - 0.5) * 8,
-        (Math.random() - 0.5) * 8,
-        (Math.random() - 0.5) * 8,
+        (Math.random() - 0.5) * (kind === 'debris' ? 18 : 8),
+        (Math.random() - 0.5) * (kind === 'debris' ? 18 : 8),
+        (Math.random() - 0.5) * (kind === 'debris' ? 18 : 8),
       ),
       life,
       maxLife: life,
       kind,
       size0,
+      ember,
     })
   }
 
@@ -273,7 +328,20 @@ export class CrashFx {
     for (const b of this.bits) {
       this.root.remove(b.mesh)
       const mat = b.mesh.material
-      if (mat && mat !== this.fireMat && mat !== this.fireHotMat && mat !== this.smokeMat && mat !== this.sparkMat && mat !== this.debrisMat) {
+      if (b.ember) {
+        const em = b.ember.material
+        if (em && em !== this.fireHotMat) (em as MeshBasicMaterial).dispose()
+      }
+      if (
+        mat &&
+        mat !== this.fireMat &&
+        mat !== this.fireHotMat &&
+        mat !== this.smokeMat &&
+        mat !== this.sparkMat &&
+        mat !== this.debrisMat &&
+        mat !== this.debrisDarkMat &&
+        mat !== this.debrisHotMat
+      ) {
         ;(mat as MeshBasicMaterial).dispose()
       }
     }
