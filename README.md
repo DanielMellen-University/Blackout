@@ -6,19 +6,18 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 ## Features
 
-- Title screen with Play, Controls, and Game info
-- Checkpoint circuit (5 rings; HUD RUN + next-gate arrow, range, and beacon)
-- Arcade flight model (thrust, lift, drag, stall lite, gear drag)
-- Spawn on naturally flat ground; hangar, tower, pad lights; crash boom / soft landing; **R** new world
-- Multi-mode camera (chase, close, cockpit, wingman, orbit) with speed FOV juice
-- Middle-mouse look / pan, scroll zoom
-- Flight HUD: IAS (to 1000 kts), engine power, altitude AGL, attitude (ADI), gear, weather/time
-- Procedural F-35 with afterburner plume and gear show/hide (optional GLB)
-- Infinite streaming terrain (~8 km) with LOD, fog wall, and fade-in tiles
-- Day/night cycle, weather (**N**), sun/moon lighting, layered clouds
+- Title screen: Play, Controls, Game info
+- Pause menu in flight (**Esc**): resume, fullscreen, quit to title
+- Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
+- Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 500 kts)
+- Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
+- Crash boom (arcing fireballs) or soft landing; **R** new world
+- Cameras: chase, close, cockpit (locked to the jet), wingman, orbit; speed FOV juice
+- Middle-mouse look / pan, scroll zoom (not in cockpit)
+- HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
+- Procedural F-35 with afterburner plume and gear (optional GLB)
+- Streaming terrain (~8 km), LOD, fog wall, day/night, weather (**N**), clouds
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
-- Terrain features: rivers, ravines, dunes, mesas, coasts
-- Fullscreen on Play (**Esc** / **F** toggle; click game if Esc cannot re-enter)
 
 ## Tech stack
 
@@ -62,21 +61,21 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **W / S** | Pitch up / down |
 | **A / D** | Yaw left / right |
 | **Q / E** | Roll (Q right, E left) |
-| **Shift** | Engine power up (min → max) |
-| **Ctrl** or **1** | Engine power down (max → min) |
+| **Shift** | Engine power up (speed target) |
+| **Ctrl** or **1** | Engine power down |
 | **2** | Engine power up |
-| **Space** | Afterburner boost |
-| **G** | Toggle landing gear |
-| **Hold MMB + drag** | Look / pan |
-| **Scroll** | Zoom |
-| **C** | Cycle camera mode |
-| **N** | Cycle weather |
+| **Space** | Afterburner |
+| **G** | Landing gear |
+| **Hold MMB + drag** | Look / pan (not cockpit) |
+| **Scroll** | Zoom (not cockpit) |
+| **C** | Cycle camera |
+| **N** | Weather |
 | **R** | New world + runway |
-| **Esc** | Pause menu (resume, fullscreen, quit) |
+| **Esc** | Pause menu |
 
-**Takeoff:** Hold Shift to spool throttle, build speed down the runway, then pull **W** to rotate. Raise gear with **G** after liftoff.
+**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear **G** after liftoff. Engine percent is the speed you want (50% ~ 500 kts).
 
-Hold middle mouse to look. Landing is gentle with gear down; hard impacts crash (press R).
+Landing is gentle with gear down. Hard impacts explode; press **R**. Fullscreen is a click toggle in the pause menu.
 
 ## Optional aircraft model
 
@@ -90,13 +89,14 @@ Blackout/
 │   ├── favicon.svg
 │   └── models/              # optional f35.glb
 ├── src/
-│   ├── main.ts              # entry, render loop
-│   ├── core/                # input, time, types
-│   ├── aircraft/            # aircraft state, mesh, flight model
-│   ├── camera/              # chase / cockpit cameras
-│   ├── world/               # scene, terrain, sky, runway
-│   ├── ui/                  # HUD overlay
-│   └── systems/             # collision, warnings, mission gates
+│   ├── main.ts
+│   ├── core/                # input, time, fullscreen lock
+│   ├── aircraft/            # state, mesh, flight model
+│   ├── camera/              # chase / cockpit
+│   ├── world/               # terrain, sky, airfield
+│   ├── ui/                  # HUD, menus
+│   └── systems/             # collision, mission, crash FX
+├── CHANGELOG.md
 ├── index.html
 ├── package.json
 └── README.md
@@ -104,15 +104,11 @@ Blackout/
 
 ## Roadmap
 
-Shipped: arcade flight, landing/crash, HUD/ADI, streaming world, day/night and weather, title screen, afterburner and gear visuals.
+Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-1. **Aircraft identity** - procedural mesh and material polish (optional GLB stays secondary)
-2. **Mission loop** - checkpoint gates, complete/fail state, restart integration
-3. **World dress** - budgeted vegetation v2, airfield landmarks
-4. **Juice** - engine/wind audio, event SFX, light crash VFX
-5. **Ship** - performance pass, README accuracy, warning retune, attribution
+Next: engine/wind audio, event SFX, vegetation v2, performance pass, warning retune.
 
-Out of scope for now: radar, weapons, fuel systems.
+Out of scope for now: radar, weapons, fuel.
 
 ## License
 
