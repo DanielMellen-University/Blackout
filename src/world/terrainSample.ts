@@ -727,10 +727,9 @@ export function sampleClimate(x: number, z: number): Climate {
   }
 }
 
-/** Biomes allowed for airfield spawn (flat / flyable pads). */
+/** Biomes allowed for airfield spawn (inland flats, never coast/ocean). */
 const FLAT_SPAWN_BIOMES: ReadonlySet<Biome> = new Set([
   'plains',
-  'swamp',
   'desert',
   'forest',
 ])
@@ -759,6 +758,7 @@ export function findFlatSpawn(maxRadius = 12000): FlatSpawn {
       const x = Math.cos(ang) * ring
       const z = Math.sin(ang) * ring
       const c = sampleClimate(x, z)
+      if (nearOcean(x, z)) continue
       const pad = scoreFlatPad(x, z, c)
       if (pad < 0) continue
       const dep = bestDeparture(x, z, c.height)
@@ -774,17 +774,34 @@ export function findFlatSpawn(maxRadius = 12000): FlatSpawn {
     }
   }
 
-  return best ?? { x: 0, z: 0, y: sampleClimate(0, 0).height, yaw: 0, biome: 'plains' }
+  if (best) return best
+  // Last resort: walk inland from origin until land is dry
+  for (let r = 400; r <= 16000; r += 400) {
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2
+      const x = Math.cos(a) * r
+      const z = Math.sin(a) * r
+      const c = sampleClimate(x, z)
+      if (nearOcean(x, z)) continue
+      if (scoreFlatPad(x, z, c) > 0) {
+        const dep = bestDeparture(x, z, c.height)
+        return { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+      }
+    }
+  }
+  return best ?? { x: 800, z: 800, y: Math.max(8, sampleClimate(800, 800).height), yaw: 0, biome: 'plains' }
 }
 
 /** Higher is better. Negative = reject. */
 function scoreFlatPad(x: number, z: number, c: Climate): number {
   if (!FLAT_SPAWN_BIOMES.has(c.biome)) return -1e6
-  if (c.land < 0.58) return -1e6
+  if (c.biome === 'ocean' || c.biome === 'water') return -1e6
+  if (c.land < 0.7) return -1e6
+  if (c.coastal > 0.08) return -1e6
   if (c.features.river > 0.35 || c.features.lake > 0.35) return -1e6
   if (c.features.ravine > 0.18) return -1e6
   if (c.height > 38) return -1e5
-  if (c.height < 1.5) return -8e4
+  if (c.height < 5) return -1e6
 
   const d = 28
   const h0 = c.height
@@ -800,7 +817,6 @@ function scoreFlatPad(x: number, z: number, c: Climate): number {
   if (c.biome === 'plains') score += 48
   else if (c.biome === 'desert') score += 22
   else if (c.biome === 'forest') score += 8
-  else if (c.biome === 'swamp') score += 2
 
   score -= Math.hypot(x, z) * 0.0018
   return score
@@ -838,8 +854,9 @@ function footprintRelief(
     const px = x + fx * along + rx * lat
     const pz = z + fz * along + rz * lat
     const s = sampleClimate(px, pz)
-    if (s.land < 0.5) return null
+    if (s.land < 0.62) return null
     if (s.biome === 'ocean' || s.biome === 'water') return null
+    if (s.coastal > 0.12) return null
     if (s.features.ravine > 0.22 || s.features.river > 0.55) return null
     if (s.height > minH + 8 && minH < 1e8) return null
     minH = Math.min(minH, s.height)
@@ -866,6 +883,22 @@ function bestDeparture(x: number, z: number, h0: number): { yaw: number; score: 
   return { yaw: bestYaw, score: best }
 }
 
+/** True if ocean/water sits inside ~450 m of the pad. */
+function nearOcean(x: number, z: number): boolean {
+  const c0 = sampleClimate(x, z)
+  if (c0.biome === 'ocean' || c0.biome === 'water' || c0.land < 0.7 || c0.coastal > 0.08) {
+    return true
+  }
+  for (const r of [140, 280, 450]) {
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2
+      const s = sampleClimate(x + Math.cos(a) * r, z + Math.sin(a) * r)
+      if (s.biome === 'ocean' || s.biome === 'water' || s.land < 0.42) return true
+    }
+  }
+  return false
+}
+
 function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
   const fx = Math.sin(yaw)
   const fz = Math.cos(yaw)
@@ -875,7 +908,9 @@ function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
   const ranges = [90, 180, 320, 480, 680, 900, 1150]
   for (const d of ranges) {
     for (const lat of [0, -55, 55]) {
-      const h = sampleClimate(x + fx * d + rx * lat, z + fz * d + rz * lat).height
+      const s = sampleClimate(x + fx * d + rx * lat, z + fz * d + rz * lat)
+      if (s.biome === 'ocean' || s.land < 0.4) return -1e6
+      const h = s.height
       const rise = h - h0
       // Wall in the near departure — reject
       if (d <= 500 && rise > 55) return -1e6
