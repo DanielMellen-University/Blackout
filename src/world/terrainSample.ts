@@ -7,6 +7,37 @@ import { clamp01, fbm, hash2, ridged, smoothstep } from './noise'
 
 export const SEA_LEVEL = 0
 
+/** Fully level disk for the strip + hangar. Outside this, terrain is natural. */
+const PAD_INNER = 78
+/** Blend from pad height back to natural ground. */
+const PAD_OUTER = 118
+
+let opsX = 0
+let opsZ = 0
+let opsY = 0
+let opsOn = false
+
+/** Disable pad leveling while searching for a natural flat. */
+export function clearOpsPad(): void {
+  opsOn = false
+}
+
+/** Level only the immediate airfield to this surface height (not a corridor). */
+export function setOpsPad(x: number, z: number, y: number): void {
+  opsX = x
+  opsZ = z
+  opsY = y
+  opsOn = true
+}
+
+function padBlend(x: number, z: number): number {
+  if (!opsOn) return 0
+  const d = Math.hypot(x - opsX, z - opsZ)
+  if (d <= PAD_INNER) return 1
+  if (d >= PAD_OUTER) return 0
+  return 1 - smoothstep(PAD_INNER, PAD_OUTER, d)
+}
+
 export type Biome =
   | 'runway'
   | 'plains'
@@ -636,7 +667,9 @@ export function sampleClimate(x: number, z: number): Climate {
   const temperature = temperatureAt(wx, wz, z)
   const features = featuresAt(wx, wz)
   const mesaProv = mesaProvince(wx, wz)
-  const height = heightFromFieldsW(wx, wz, land, moisture, temperature, features)
+  let height = heightFromFieldsW(wx, wz, land, moisture, temperature, features)
+  const padT = padBlend(x, z)
+  if (padT > 0) height = height * (1 - padT) + opsY * padT
 
   let biome: Biome
   let biomeB: Biome

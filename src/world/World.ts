@@ -10,8 +10,9 @@ import { Atmosphere, type WeatherId } from './Atmosphere'
 import { randomizeWorldSeed } from './noise'
 import { createRunway } from './Runway'
 import {
+  clearOpsPad,
   findFlatSpawn,
-  sampleTerrainHeight,
+  setOpsPad,
   type FlatSpawn,
 } from './terrainSample'
 import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
@@ -100,7 +101,9 @@ export class World {
    */
   reseed(): number {
     this.seed = randomizeWorldSeed()
+    clearOpsPad()
     const pad = findFlatSpawn()
+    setOpsPad(pad.x, pad.z, pad.y)
     this.applySpawn(pad)
 
     this.terrain.clearAll()
@@ -129,10 +132,9 @@ export class World {
     const fz = Math.cos(yaw)
     const x = pad.x - fx * back
     const z = pad.z - fz * back
-    const ground = sampleTerrainHeight(x, z)
     this.spawn = {
       x,
-      y: ground + flightConfig.gearHeight,
+      y: pad.y + flightConfig.gearHeight,
       z,
       yaw,
       biome: pad.biome,
