@@ -1,7 +1,10 @@
 import {
   AdditiveBlending,
+  ConeGeometry,
+  CylinderGeometry,
   DoubleSide,
   Group,
+  MathUtils,
   Mesh,
   MeshBasicMaterial,
   Scene,
@@ -18,6 +21,10 @@ export interface MissionHud {
   total: number
   /** Meters to the active gate, or 0 if complete. */
   dist: number
+  /** Radians, 0 = ahead, + = right of the nose. Null if no live gate. */
+  bearing: number | null
+  /** Gate altitude minus aircraft altitude (m). */
+  altDelta: number
   label: string
 }
 
@@ -47,9 +54,11 @@ export class MissionSystem {
   private next = 0
   private status: MissionStatus = 'idle'
   private gateGeo: TorusGeometry | null = null
+  private readonly beacon = new Group()
   private readonly liveMat: MeshBasicMaterial
   private readonly waitMat: MeshBasicMaterial
   private readonly doneMat: MeshBasicMaterial
+  private readonly beaconMat: MeshBasicMaterial
 
   constructor(scene: Scene) {
     this.root.name = 'MissionGates'
@@ -77,6 +86,15 @@ export class MissionSystem {
       side: DoubleSide,
       depthWrite: false,
     })
+    this.beaconMat = new MeshBasicMaterial({
+      color: 0x3dcea8,
+      transparent: true,
+      opacity: 0.55,
+      blending: AdditiveBlending,
+      depthWrite: false,
+    })
+    this.buildBeacon()
+    this.root.add(this.beacon)
   }
 
   /** Place a new circuit from the current runway spawn. */
@@ -116,6 +134,24 @@ export class MissionSystem {
       })
     }
     this.paint()
+    this.placeBeacon()
+  }
+
+  /** Pulse the live ring and hold the far-visible beacon on it. */
+  tick(): void {
+    if (this.status !== 'live' || this.next >= this.gates.length) {
+      this.beacon.visible = false
+      return
+    }
+    const g = this.gates[this.next]!
+    const ring = g.root.children[0]
+    if (ring) {
+      const s = 1.02 + Math.sin(performance.now() * 0.005) * 0.05
+      ring.scale.setScalar(s)
+    }
+    this.placeBeacon()
+    const pulse = 0.42 + (Math.sin(performance.now() * 0.006) + 1) * 0.18
+    this.beaconMat.opacity = pulse
   }
 
   update(px: number, py: number, pz: number): 'none' | 'pass' | 'complete' {
@@ -144,21 +180,43 @@ export class MissionSystem {
     return 'pass'
   }
 
-  hud(px: number, py: number, pz: number): MissionHud {
+  hud(px: number, py: number, pz: number, headingYaw = 0): MissionHud {
     const total = this.gates.length
     if (this.status === 'complete') {
-      return { status: 'complete', current: total, total, dist: 0, label: 'CIRCUIT DONE' }
+      return {
+        status: 'complete',
+        current: total,
+        total,
+        dist: 0,
+        bearing: null,
+        altDelta: 0,
+        label: 'CIRCUIT DONE',
+      }
     }
     if (this.status !== 'live' || total === 0) {
-      return { status: 'idle', current: 0, total, dist: 0, label: '—' }
+      return {
+        status: 'idle',
+        current: 0,
+        total,
+        dist: 0,
+        bearing: null,
+        altDelta: 0,
+        label: '—',
+      }
     }
     const g = this.gates[this.next]!
-    const dist = Math.hypot(px - g.pos.x, py - g.pos.y, pz - g.pos.z)
+    const dx = g.pos.x - px
+    const dz = g.pos.z - pz
+    const dist = Math.hypot(dx, g.pos.y - py, dz)
+    const gateBrg = Math.atan2(dx, dz)
+    const bearing = MathUtils.euclideanModulo(gateBrg - headingYaw + Math.PI, Math.PI * 2) - Math.PI
     return {
       status: 'live',
       current: this.next + 1,
       total,
       dist,
+      bearing,
+      altDelta: g.pos.y - py,
       label: `GATE ${this.next + 1}/${total}`,
     }
   }
@@ -174,10 +232,29 @@ export class MissionSystem {
       if (g.passed) ring.material = this.doneMat
       else if (i === this.next) ring.material = this.liveMat
       else ring.material = this.waitMat
-      // Pulse live gate
-      const s = i === this.next && !g.passed ? 1.04 : 1
-      g.root.scale.setScalar(s)
+      ring.scale.setScalar(1)
     }
+    this.placeBeacon()
+  }
+
+  private buildBeacon(): void {
+    this.beacon.name = 'GateBeacon'
+    const shaft = new Mesh(new CylinderGeometry(0.55, 0.55, 180, 6), this.beaconMat)
+    shaft.position.y = 90
+    const tip = new Mesh(new ConeGeometry(4.2, 10, 4), this.beaconMat)
+    tip.position.y = 188
+    this.beacon.add(shaft, tip)
+    this.beacon.visible = false
+  }
+
+  private placeBeacon(): void {
+    if (this.status !== 'live' || this.next >= this.gates.length) {
+      this.beacon.visible = false
+      return
+    }
+    const g = this.gates[this.next]!
+    this.beacon.position.copy(g.pos)
+    this.beacon.visible = true
   }
 
   private clear(): void {
@@ -185,6 +262,7 @@ export class MissionSystem {
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
+    this.beacon.visible = false
     this.gateGeo?.dispose()
     this.gateGeo = null
   }

@@ -27,6 +27,10 @@ export class HUD {
   private readonly weatherEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
+  private readonly navCueEl: HTMLElement | null
+  private readonly navArrowEl: HTMLElement | null
+  private readonly navRangeEl: HTMLElement | null
+  private readonly navAltEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
   private readonly maxKts = 1000
@@ -58,6 +62,10 @@ export class HUD {
     this.weatherEl = root.getElementById('hud-weather')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
+    this.navCueEl = root.getElementById('nav-cue')
+    this.navArrowEl = root.getElementById('nav-arrow')
+    this.navRangeEl = root.getElementById('nav-range')
+    this.navAltEl = root.getElementById('nav-alt')
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
@@ -83,6 +91,11 @@ export class HUD {
     weather?: string
     dayPhase?: string
     mission?: string
+    /** Next-gate range in meters; omit or 0 to hide. */
+    navDist?: number
+    /** Radians, 0 = ahead, + = right of nose. */
+    navBearing?: number | null
+    navAltDelta?: number
     banner?: string | null
   }): void {
     if (this.posEl) {
@@ -113,6 +126,7 @@ export class HUD {
     if (this.missionEl && opts.mission) {
       this.missionEl.textContent = opts.mission
     }
+    this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
@@ -138,6 +152,35 @@ export class HUD {
       } else {
         this.bannerEl.textContent = ''
         this.bannerEl.hidden = true
+      }
+    }
+  }
+
+  private updateNav(
+    bearing: number | null,
+    dist: number,
+    altDelta: number,
+  ): void {
+    if (!this.navCueEl) return
+    if (bearing === null) {
+      this.navCueEl.hidden = true
+      return
+    }
+    this.navCueEl.hidden = false
+    const deg = (bearing * 180) / Math.PI
+    if (this.navArrowEl) {
+      this.navArrowEl.style.transform = `rotate(${deg}deg)`
+    }
+    if (this.navRangeEl) {
+      this.navRangeEl.textContent =
+        dist >= 1000 ? `${(dist / 1000).toFixed(1)} KM` : `${Math.round(dist)} M`
+    }
+    if (this.navAltEl) {
+      if (Math.abs(altDelta) < 12) {
+        this.navAltEl.textContent = 'LVL'
+      } else {
+        const dir = altDelta > 0 ? '+' : ''
+        this.navAltEl.textContent = `${dir}${Math.round(altDelta)} M`
       }
     }
   }

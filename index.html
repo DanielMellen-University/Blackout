@@ -23,7 +23,7 @@
               <h2>How to play</h2>
               <ul>
                 <li>You spawn on a flat airfield. Spool the engine, build speed, then rotate.</li>
-                <li>Fly the glowing <strong>cyan rings</strong> in order (HUD RUN / GATE).</li>
+                <li>Fly the glowing <strong>cyan rings</strong> in order. The top arrow points at the next gate.</li>
                 <li>Crash? Press <kbd>R</kbd> for a new world, runway, and circuit.</li>
                 <li>Cycle weather with <kbd>N</kbd>. Switch cameras with <kbd>C</kbd>.</li>
               </ul>
@@ -187,6 +187,15 @@
               </div>
             </div>
             <div id="eng-ab" class="eng-ab" hidden>AB</div>
+          </div>
+        </div>
+
+        <!-- Next-gate cue: heading caret + range -->
+        <div id="nav-cue" hidden>
+          <div id="nav-arrow" aria-hidden="true">▲</div>
+          <div id="nav-meta">
+            <span id="nav-range">—</span>
+            <span id="nav-alt"></span>
           </div>
         </div>
 

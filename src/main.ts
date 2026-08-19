@@ -171,6 +171,7 @@ async function boot(): Promise<void> {
       )
       if (event === 'pass') showBanner('GATE CLEAR', 1200)
       if (event === 'complete') showBanner('CIRCUIT COMPLETE', 4200)
+      world.mission.tick()
 
       const touch = collision.check(aircraft)
       if (aircraft.status !== 'crashed') {
@@ -216,8 +217,14 @@ async function boot(): Promise<void> {
         aircraft.position.y,
         aircraft.position.z,
       )
-      const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
+      const { pitch, roll, heading } = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
+      const nav = world.mission.hud(
+        aircraft.position.x,
+        aircraft.position.y,
+        aircraft.position.z,
+        heading,
+      )
       hud.update({
         y: alt,
         speed: aircraft.speed,
@@ -234,11 +241,10 @@ async function boot(): Promise<void> {
         clock: world.atmosphere.clockLabel,
         weather: world.atmosphere.weatherLabel,
         dayPhase: world.atmosphere.phaseLabel,
-        mission: world.mission.hud(
-          aircraft.position.x,
-          aircraft.position.y,
-          aircraft.position.z,
-        ).label,
+        mission: nav.label,
+        navDist: nav.dist,
+        navBearing: nav.bearing,
+        navAltDelta: nav.altDelta,
         banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
       })
     }
@@ -262,15 +268,17 @@ const _localUp = new Vector3()
 function attitudeFromOrientation(orientation: Quaternion): {
   pitch: number
   roll: number
+  heading: number
 } {
   _fwd.set(0, 0, 1).applyQuaternion(orientation)
   const pitch = Math.asin(MathUtils.clamp(_fwd.y, -1, 1))
+  const heading = Math.atan2(_fwd.x, _fwd.z)
 
   _inv.copy(orientation).invert()
   _localUp.set(0, 1, 0).applyQuaternion(_inv)
   const roll = Math.atan2(-_localUp.x, _localUp.y)
 
-  return { pitch, roll }
+  return { pitch, roll, heading }
 }
 
 boot().catch((err) => {
