@@ -12,6 +12,7 @@ import { CameraSystem } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
 import {
   lockGameKeyboard,
+  lockKeysOnly,
   suppressBrowserUi,
   toggleGameFullscreen,
 } from './core/suppressBrowserUi'
@@ -139,6 +140,7 @@ async function boot(): Promise<void> {
     (e) => {
       if (e.code === 'Escape') {
         e.preventDefault()
+        e.stopPropagation()
         if (!playing) {
           if (menu.open) menu.handleEscape()
           return
@@ -158,15 +160,17 @@ async function boot(): Promise<void> {
 
   document.addEventListener('fullscreenchange', () => {
     menu.syncFullscreen()
-    if (!document.fullscreenElement) {
-      try {
-        const kb = (
-          navigator as Navigator & { keyboard?: { unlock: () => void } }
-        ).keyboard
-        kb?.unlock?.()
-      } catch {
-        /* ignore */
-      }
+    if (document.fullscreenElement) {
+      void lockKeysOnly()
+      return
+    }
+    try {
+      const kb = (
+        navigator as Navigator & { keyboard?: { unlock: () => void } }
+      ).keyboard
+      kb?.unlock?.()
+    } catch {
+      /* ignore */
     }
   })
 

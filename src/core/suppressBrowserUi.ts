@@ -5,9 +5,8 @@
  * - Ctrl/Cmd+W (close tab) while holding brake + pitch, etc.
  * - Other common tab/window shortcuts
  *
- * Note: Chrome only fully honors some shortcuts (esp. Ctrl+W/T/N) via the
- * Keyboard Lock API, which requires fullscreen. `lockGameKeyboard()` is
- * called when the player hits Play.
+ * Keyboard Lock (fullscreen) captures Ctrl+W and Escape so Esc opens
+ * the pause menu instead of leaving fullscreen. lockGameKeyboard() runs on Play.
  */
 
 /** Codes used by flight / menu — always suppress browser default. */
@@ -39,6 +38,7 @@ const GAME_CODES = new Set([
   'Backspace',
   'Slash',
   'Backslash',
+  'Escape',
 ])
 
 /** Single letters that form dangerous Ctrl/Cmd combos. */
@@ -223,7 +223,8 @@ export function suppressBrowserUi(canvas: HTMLCanvasElement): void {
   })
 }
 
-async function lockKeysOnly(): Promise<void> {
+/** Re-apply Keyboard Lock after entering fullscreen. */
+export async function lockKeysOnly(): Promise<void> {
   try {
     const kb = (
       navigator as Navigator & {
@@ -254,7 +255,7 @@ async function lockKeysOnly(): Promise<void> {
         'ArrowLeft',
         'ArrowRight',
         'Tab',
-        // Escape intentionally NOT locked — used to toggle fullscreen
+        'Escape',
         'F5',
       ])
     }
