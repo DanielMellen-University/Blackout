@@ -11,7 +11,7 @@ import { randomizeWorldSeed } from './noise'
 import { createRunway } from './Runway'
 import {
   findFlatSpawn,
-  setOpsCenter,
+  sampleTerrainHeight,
   type FlatSpawn,
 } from './terrainSample'
 import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
@@ -100,9 +100,6 @@ export class World {
    */
   reseed(): number {
     this.seed = randomizeWorldSeed()
-    // Search on natural heights — leftover ops flatten from the last world
-    // would otherwise punch a fake pad at the old airfield.
-    setOpsCenter(1e7, 1e7, 0)
     const pad = findFlatSpawn()
     this.applySpawn(pad)
 
@@ -126,22 +123,22 @@ export class World {
   }
 
   private applySpawn(pad: FlatSpawn): void {
-    setOpsCenter(pad.x, pad.z, pad.yaw)
-
-    const gearY = flightConfig.gearHeight
     const yaw = pad.yaw
     const back = 45
     const fx = Math.sin(yaw)
     const fz = Math.cos(yaw)
+    const x = pad.x - fx * back
+    const z = pad.z - fz * back
+    const ground = sampleTerrainHeight(x, z)
     this.spawn = {
-      x: pad.x - fx * back,
-      y: gearY,
-      z: pad.z - fz * back,
+      x,
+      y: ground + flightConfig.gearHeight,
+      z,
       yaw,
       biome: pad.biome,
     }
 
-    this.runway.position.set(pad.x, 0.04, pad.z)
+    this.runway.position.set(pad.x, pad.y + 0.05, pad.z)
     this.runway.rotation.y = yaw
   }
 
