@@ -97,7 +97,7 @@ export class HUD {
     banner?: string | null
   }): void {
     if (this.posEl) {
-      this.posEl.textContent = opts.y.toFixed(0)
+      this.posEl.textContent = String(Math.round(opts.y))
     }
 
     const kts = Math.max(0, opts.speed * 1.94384)

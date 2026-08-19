@@ -268,11 +268,14 @@ async function boot(): Promise<void> {
     debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
 
     if (playing) {
-      const alt = altitudeAgl(
-        aircraft.position.x,
-        aircraft.position.y,
-        aircraft.position.z,
-      )
+      const alt = aircraft.onGround
+        ? 0
+        : altitudeAgl(
+            aircraft.position.x,
+            aircraft.position.y,
+            aircraft.position.z,
+            aircraft.controls.gearDown,
+          )
       const { pitch, roll, heading } = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
       const nav = world.mission.hud(

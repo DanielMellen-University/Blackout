@@ -32,8 +32,14 @@ export function cameraMinY(x: number, z: number, clearance = 1.15): number {
 }
 
 /**
- * Altitude AGL: aircraft origin above the terrain sample at the same XZ.
+ * Radio altitude: gap between wheels/belly and the terrain under the jet.
+ * Parked on the strip this reads 0. Over a ridge or valley it tracks that surface.
  */
-export function altitudeAgl(x: number, y: number, z: number): number {
-  return Math.max(0, y - sampleGroundHeight(x, z))
+export function altitudeAgl(
+  x: number,
+  y: number,
+  z: number,
+  gearDown = true,
+): number {
+  return Math.max(0, y - contactMinY(x, z, gearDown))
 }
