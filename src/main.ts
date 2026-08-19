@@ -14,7 +14,6 @@ import {
   lockGameKeyboard,
   suppressBrowserUi,
   toggleGameFullscreen,
-  tryReenterFullscreenFromClick,
 } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
@@ -22,6 +21,7 @@ import { CrashFx } from './systems/CrashFx'
 import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
+import { GameMenu } from './ui/GameMenu'
 import { HUD } from './ui/HUD'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
@@ -33,6 +33,9 @@ async function boot(): Promise<void> {
   const titleScreen = document.getElementById('title-screen')
   const playBtn = document.getElementById('btn-play')
   const overlay = document.getElementById('overlay')
+  const menuEl = document.getElementById('menu')
+  if (!menuEl) throw new Error('#menu not found')
+  const menu = new GameMenu(menuEl)
 
   suppressBrowserUi(canvas)
 
@@ -72,12 +75,12 @@ async function boot(): Promise<void> {
   const startGame = (): void => {
     if (playing) return
     playing = true
+    menu.close()
     titleScreen?.classList.add('is-hidden')
     if (overlay) {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    // Space/Enter started the game — do not eat still-held W/A/S/D
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')
@@ -85,43 +88,76 @@ async function boot(): Promise<void> {
     input.resetFlightControls(0)
     wasAirborne = false
     banner = null
-    // Fullscreen + Keyboard Lock so Ctrl+W (brake+pitch) doesn't close the tab
     void lockGameKeyboard()
     canvas.focus({ preventScroll: true })
   }
 
-  playBtn?.addEventListener('click', () => {
-    startGame()
+  const quitToTitle = (): void => {
+    playing = false
+    menu.close()
+    titleScreen?.classList.remove('is-hidden')
+    if (overlay) {
+      overlay.hidden = true
+      overlay.classList.add('overlay-hidden')
+    }
+    crashFx.reset()
+    aircraft.reset(world.spawn)
+    cameras.setMode('chase', aircraft)
+    input.clearKeys()
+    input.resetFlightControls(0)
+    banner = null
+    wasAirborne = false
+  }
+
+  playBtn?.addEventListener('click', () => startGame())
+  document.getElementById('btn-controls')?.addEventListener('click', () => {
+    menu.showTitlePage('controls')
   })
+  document.getElementById('btn-info')?.addEventListener('click', () => {
+    menu.showTitlePage('info')
+  })
+  document.getElementById('menu-resume')?.addEventListener('click', () => menu.close())
+  document.getElementById('menu-quit')?.addEventListener('click', () => quitToTitle())
+  document.getElementById('menu-fullscreen')?.addEventListener('click', () => {
+    toggleGameFullscreen()
+  })
+  document.getElementById('menu-open-controls')?.addEventListener('click', () => {
+    menu.showView('controls')
+  })
+  document.getElementById('menu-open-info')?.addEventListener('click', () => {
+    menu.showView('info')
+  })
+  menuEl.querySelectorAll('[data-menu-close]').forEach((el) => {
+    el.addEventListener('click', () => menu.close())
+  })
+  menuEl.querySelectorAll('.menu-back').forEach((el) => {
+    el.addEventListener('click', () => menu.back())
+  })
+
   window.addEventListener(
     'keydown',
     (e) => {
+      if (e.code === 'Escape') {
+        e.preventDefault()
+        if (!playing) {
+          if (menu.open) menu.handleEscape()
+          return
+        }
+        menu.togglePause()
+        if (menu.paused) input.clearQueued()
+        return
+      }
+      if (menu.open) return
       if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
         if (e.code === 'Space') e.preventDefault()
         startGame()
-        return
       }
-      if (!playing) return
-
-      // Esc / F toggle fullscreen (must stay sync — no await before requestFullscreen)
-      if (e.code === 'Escape' || e.code === 'KeyF') {
-        e.preventDefault()
-        toggleGameFullscreen()
-      }
-    },
-    true, // capture so we run before anything else
-  )
-
-  // Chrome often blocks requestFullscreen from Escape; click canvas to re-enter
-  canvas.addEventListener(
-    'pointerdown',
-    () => {
-      if (playing) tryReenterFullscreenFromClick()
     },
     true,
   )
 
   document.addEventListener('fullscreenchange', () => {
+    menu.syncFullscreen()
     if (!document.fullscreenElement) {
       try {
         const kb = (
@@ -154,7 +190,7 @@ async function boot(): Promise<void> {
     const { frameDt } = time.beginFrame(nowMs)
     const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
 
-    if (playing) {
+    if (playing && !menu.paused) {
       if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
       if (input.consumeWeatherCycle()) world.cycleWeather()
       if (input.consumeReset()) {
@@ -206,9 +242,9 @@ async function boot(): Promise<void> {
         banner = null
       }
     } else {
-      // Idle on title: hold jet still, still advance sky/terrain ambience a little
+      // Title idle, or pause: hold the jet, still run sky/terrain
       aircraft.controls = input.sampleWithDt(0)
-      input.resetFlightControls(0)
+      if (!playing) input.resetFlightControls(0)
     }
 
     world.update(

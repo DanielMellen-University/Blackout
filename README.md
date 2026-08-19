@@ -6,7 +6,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 ## Features
 
-- Title screen with how-to-play and full controls
+- Title screen with Play, Controls, and Game info
 - Checkpoint circuit (5 rings; HUD RUN + next-gate arrow, range, and beacon)
 - Arcade flight model (thrust, lift, drag, stall lite, gear drag)
 - Spawn on naturally flat ground; hangar, tower, pad lights; crash boom / soft landing; **R** new world
@@ -72,7 +72,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **C** | Cycle camera mode |
 | **N** | Cycle weather |
 | **R** | New world + runway |
-| **Esc** / **F** | Toggle fullscreen (in flight) |
+| **Esc** | Pause menu (resume, fullscreen, quit) |
 
 **Takeoff:** Hold Shift to spool throttle, build speed down the runway, then pull **W** to rotate. Raise gear with **G** after liftoff.
 

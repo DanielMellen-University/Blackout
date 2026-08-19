@@ -18,41 +18,66 @@
           <h1 class="title-logo">BLACKOUT</h1>
           <p class="title-tag">F-35 · free flight over infinite terrain</p>
 
-          <div class="title-grid">
-            <section class="title-card">
-              <h2>How to play</h2>
-              <ul>
-                <li>You spawn on a flat airfield. Spool the engine, build speed, then rotate.</li>
-                <li>Fly the glowing <strong>cyan rings</strong> in order. The top arrow points at the next gate.</li>
-                <li>Crash? Press <kbd>R</kbd> for a new world, runway, and circuit.</li>
-                <li>Cycle weather with <kbd>N</kbd>. Switch cameras with <kbd>C</kbd>.</li>
-              </ul>
-              <div class="title-takeoff">
-                <strong>Takeoff</strong>
-                <span><kbd>Shift</kbd> throttle up → accelerate → <kbd>W</kbd> pitch at speed · gear <kbd>G</kbd></span>
-              </div>
-            </section>
+          <div class="title-actions">
+            <button type="button" id="btn-play" class="btn-play">PLAY</button>
+            <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
+            <button type="button" id="btn-info" class="btn-ghost">Game info</button>
+          </div>
+          <p class="title-hint">Press <kbd>Enter</kbd> to fly · <kbd>Esc</kbd> in flight opens the menu</p>
+        </div>
+      </div>
 
-            <section class="title-card">
-              <h2>Controls</h2>
-              <div class="ctrl-table">
-                <div><kbd>W</kbd><kbd>S</kbd></div><div>Pitch</div>
-                <div><kbd>A</kbd><kbd>D</kbd></div><div>Yaw</div>
-                <div><kbd>Q</kbd><kbd>E</kbd></div><div>Roll</div>
-                <div><kbd>Shift</kbd></div><div>Engine +</div>
-                <div><kbd>Ctrl</kbd></div><div>Engine − / brake</div>
-                <div><kbd>Space</kbd></div><div>Afterburner</div>
-                <div><kbd>G</kbd></div><div>Landing gear</div>
-                <div><kbd>C</kbd></div><div>Camera mode</div>
-                <div><kbd>N</kbd></div><div>Weather</div>
-                <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
-                <div><kbd>R</kbd></div><div>Reset / new world</div>
-              </div>
-            </section>
+      <div id="menu" class="menu" hidden>
+        <div class="menu-backdrop" data-menu-close></div>
+        <div class="menu-sheet">
+          <div id="menu-root" class="menu-panel">
+            <p class="menu-kicker">Blackout</p>
+            <h2 id="menu-heading">Settings</h2>
+            <div class="menu-stack">
+              <button type="button" id="menu-resume" class="btn-play" hidden>Resume</button>
+              <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">
+                Fullscreen <span id="menu-fs-state">OFF</span>
+              </button>
+              <button type="button" id="menu-open-controls" class="btn-ghost">Controls</button>
+              <button type="button" id="menu-open-info" class="btn-ghost">Game info</button>
+              <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>
+              <button type="button" id="menu-close" class="btn-ghost" data-menu-close>Back</button>
+            </div>
           </div>
 
-          <button type="button" id="btn-play" class="btn-play">PLAY</button>
-          <p class="title-hint">Press <kbd>Enter</kbd> or click Play · <kbd>Esc</kbd>/<kbd>F</kbd> toggles fullscreen · click game if Esc won’t re-enter</p>
+          <div id="menu-controls" class="menu-panel" hidden>
+            <p class="menu-kicker">Settings</p>
+            <h2>Controls</h2>
+            <div class="ctrl-table">
+              <div><kbd>W</kbd><kbd>S</kbd></div><div>Pitch</div>
+              <div><kbd>A</kbd><kbd>D</kbd></div><div>Yaw</div>
+              <div><kbd>Q</kbd><kbd>E</kbd></div><div>Roll</div>
+              <div><kbd>Shift</kbd></div><div>Engine +</div>
+              <div><kbd>Ctrl</kbd></div><div>Engine − / brake</div>
+              <div><kbd>Space</kbd></div><div>Afterburner</div>
+              <div><kbd>G</kbd></div><div>Landing gear</div>
+              <div><kbd>C</kbd></div><div>Camera mode</div>
+              <div><kbd>N</kbd></div><div>Weather</div>
+              <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
+              <div><kbd>R</kbd></div><div>Reset / new world</div>
+              <div><kbd>Esc</kbd></div><div>Pause menu</div>
+            </div>
+            <button type="button" class="btn-ghost menu-back">Back</button>
+          </div>
+
+          <div id="menu-info" class="menu-panel" hidden>
+            <p class="menu-kicker">Settings</p>
+            <h2>Game info</h2>
+            <ul class="menu-copy">
+              <li>Spawn on a flat airfield. Spool the engine, build speed, then rotate.</li>
+              <li>Fly the glowing cyan rings in order. The top arrow points at the next gate.</li>
+              <li>Takeoff: <kbd>Shift</kbd> to add power, then <kbd>W</kbd> at speed. Gear <kbd>G</kbd>.</li>
+              <li>Crash or land, then <kbd>R</kbd> for a new world and circuit.</li>
+              <li>Engine percent is a speed target: 50% holds about 500 kts.</li>
+            </ul>
+            <p class="menu-about">Blackout is a browser arcade F-35 toy. No fuel, radar, or weapons. Just fly.</p>
+            <button type="button" class="btn-ghost menu-back">Back</button>
+          </div>
         </div>
       </div>
 

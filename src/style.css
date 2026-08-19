@@ -248,6 +248,149 @@ body,
   transform: translateY(1px);
 }
 
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: min(320px, 100%);
+  margin: 0 auto;
+}
+
+.btn-ghost {
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(8, 14, 20, 0.65);
+  border: 1px solid rgba(61, 206, 168, 0.28);
+  transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.btn-ghost:hover {
+  transform: translateY(-1px);
+  border-color: rgba(61, 206, 168, 0.55);
+  background: rgba(61, 206, 168, 0.12);
+}
+
+.btn-ghost:active {
+  transform: translateY(1px);
+}
+
+.btn-danger {
+  border-color: rgba(255, 92, 77, 0.4);
+  color: #ffc8c0;
+}
+
+.btn-danger:hover {
+  border-color: rgba(255, 92, 77, 0.7);
+  background: rgba(255, 92, 77, 0.12);
+}
+
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.menu[hidden] {
+  display: none !important;
+}
+
+.menu-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 8, 14, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.menu-sheet {
+  position: relative;
+  width: min(420px, 100%);
+  pointer-events: auto;
+}
+
+.menu-panel {
+  padding: 22px 24px 20px;
+  background: rgba(6, 10, 16, 0.94);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 1px var(--panel-edge) inset,
+    0 24px 64px rgba(0, 0, 0, 0.55);
+  text-align: center;
+}
+
+.menu-kicker {
+  font-size: 0.65rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.menu-panel h2 {
+  font-size: 1.15rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.menu-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.menu-stack .btn-play {
+  width: 100%;
+}
+
+#menu-fs-state {
+  margin-left: 8px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+}
+
+.menu-panel .ctrl-table {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.menu-copy {
+  list-style: none;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  line-height: 1.55;
+  margin-bottom: 12px;
+}
+
+.menu-copy li {
+  margin-bottom: 8px;
+}
+
+.menu-about {
+  font-size: 0.75rem;
+  color: var(--ink-mute);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.menu-back {
+  width: 100%;
+}
+
 .title-hint {
   margin-top: 12px;
   font-size: 0.72rem;
