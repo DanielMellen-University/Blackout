@@ -6,8 +6,23 @@ import {
 } from './terrainSample'
 
 /**
+ * Optional sampler that returns the *rendered* heightfield (chunk triangle
+ * interpolation). Contact, AGL, and cameras use this when a tile exists so
+ * physics cannot float above or sink through visible triangles. Kind / biome
+ * still come from the procedural surface.
+ */
+export type MeshHeightSampler = (x: number, z: number) => number | null
+
+let meshHeightSampler: MeshHeightSampler | null = null
+
+export function setContactHeightSampler(sampler: MeshHeightSampler | null): void {
+  meshHeightSampler = sampler
+}
+
+/**
  * Single source of truth for terrain height and aircraft contact height.
- * Height comes from the same pure function used to build streaming chunks.
+ * Near the aircraft this is the visible chunk mesh; elsewhere it is the
+ * same procedural surface used to build tiles.
  */
 
 /** World ground surface Y at horizontal position (infinite heightfield). */
@@ -15,9 +30,13 @@ export function sampleGroundHeight(x: number, z: number): number {
   return sampleGroundSurface(x, z).height
 }
 
-/** The same resolved surface descriptor consumed by terrain rendering. */
+/** Procedural kind/biome, with height overridden by the visible mesh when present. */
 export function sampleGroundSurface(x: number, z: number): TerrainSurface {
-  return sampleTerrainSurface(x, z)
+  const surface = sampleTerrainSurface(x, z)
+  const meshH = meshHeightSampler?.(x, z)
+  if (meshH == null || !Number.isFinite(meshH)) return surface
+  if (meshH === surface.height) return surface
+  return { height: meshH, kind: surface.kind, biome: surface.biome }
 }
 
 /**

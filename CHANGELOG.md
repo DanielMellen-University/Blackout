@@ -6,6 +6,7 @@
 
 - Spawn search no longer throws; a missing pad falls back to a leveled origin disk, and a failed reseed keeps the live world.
 - Rendered water and collision now share one surface (ocean at sea level, inland water at 0.35 m).
+- Near the jet, contact/AGL sample the visible chunk triangles so physics cannot miss the mesh. Far tiles promote and demote LOD (with hysteresis) instead of staying at their spawn resolution.
 - Contact is swept along the motion path. Cliffs and ridges crash instead of elevating the jet. Water ditching and inverted/obstacle hits crash.
 - Gate passes require a forward plane crossing. The HUD arrow is projected through the active camera.
 - Simulation uses a fixed 60 Hz step with bounded catch-up. Pause, results, and a hidden tab freeze weather and daylight.

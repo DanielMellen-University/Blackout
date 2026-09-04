@@ -10,6 +10,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   Scene,
+  type Object3D,
 } from 'three'
 import { hash2 } from './noise'
 import {
@@ -20,6 +21,7 @@ import {
   type Biome,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity } from './vegetation'
+import { setContactHeightSampler } from './ground'
 
 /**
  * Streaming envelope.
@@ -75,9 +77,35 @@ export const FOG_FAR = (VIEW_RADIUS - FOG_MARGIN_CHUNKS) * CHUNK_SIZE
 /** Clear air near the jet; linear fog ramps out to FOG_FAR. */
 export const FOG_NEAR = Math.round(FOG_FAR * 0.34)
 
-function segsForDist(dist: number): number {
-  if (dist <= 5) return SEGS_NEAR
-  if (dist <= 11) return SEGS_MID
+/** 0 = near (player ring), 1 = mid, 2 = far silhouette. */
+export type TerrainLod = 0 | 1 | 2
+
+export function lodFromDist(dist: number): TerrainLod {
+  if (dist <= 5) return 0
+  if (dist <= 11) return 1
+  return 2
+}
+
+/**
+ * Promote as soon as the inner band is entered; demote only after leaving
+ * a wider outer band so tiles do not thrash on the 5/11 cell rings.
+ */
+export function lodWithHysteresis(dist: number, current: TerrainLod): TerrainLod {
+  const desired = lodFromDist(dist)
+  if (desired === current) return current
+  if (desired < current) {
+    if (current === 2 && dist <= 10) return desired
+    if (current === 1 && dist <= 4.5) return 0
+    return current
+  }
+  if (current === 0 && dist >= 6.5) return desired
+  if (current === 1 && dist >= 12.5) return 2
+  return current
+}
+
+export function segsForLod(lod: TerrainLod): number {
+  if (lod === 0) return SEGS_NEAR
+  if (lod === 1) return SEGS_MID
   return SEGS_FAR
 }
 
@@ -88,11 +116,44 @@ function buildCost(dist: number, withProps: boolean): number {
   return 0.22
 }
 
+/**
+ * Sample a chunk height grid the same way Three.js triangulates PlaneGeometry
+ * (diagonal from (0,1) to (1,0)).
+ */
+export function interpolateGridHeight(
+  heights: Float32Array,
+  segs: number,
+  originX: number,
+  originZ: number,
+  x: number,
+  z: number,
+): number {
+  const stride = segs + 1
+  const u = ((x - originX) / CHUNK_SIZE) * segs
+  const v = ((z - originZ) / CHUNK_SIZE) * segs
+  const ix = Math.min(segs - 1, Math.max(0, Math.floor(u)))
+  const iy = Math.min(segs - 1, Math.max(0, Math.floor(v)))
+  const fu = Math.min(1, Math.max(0, u - ix))
+  const fv = Math.min(1, Math.max(0, v - iy))
+  const ha = heights[iy * stride + ix]!
+  const hb = heights[(iy + 1) * stride + ix]!
+  const hc = heights[(iy + 1) * stride + ix + 1]!
+  const hd = heights[iy * stride + ix + 1]!
+  if (fu + fv <= 1) return (1 - fu - fv) * ha + fv * hb + fu * hd
+  return (fu + fv - 1) * hc + (1 - fu) * hb + (1 - fv) * hd
+}
+
 interface Chunk {
   key: string
   cx: number
   cz: number
   root: Group
+  lod: TerrainLod
+  segs: number
+  hasProps: boolean
+  originX: number
+  originZ: number
+  heights: Float32Array
   /** Current opacity 0–1 (lerped each frame). */
   alpha: number
   /** Desired opacity (distance fade or 0 while unloading). */
@@ -106,8 +167,8 @@ interface Chunk {
 interface PendingChunk {
   cx: number
   cz: number
-  withProps: boolean
   dist: number
+  rebuild: boolean
 }
 
 /**
@@ -150,6 +211,7 @@ export class TerrainSystem {
       side: FrontSide,
     })
     this.applyFog()
+    setContactHeightSampler((x, z) => this.sampleMeshHeight(x, z))
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {
@@ -190,6 +252,38 @@ export class TerrainSystem {
     this.updateFades(cx, cz, dt)
   }
 
+  /** Test/debug: current LOD and grid density for a cell. */
+  chunkStats(cx: number, cz: number): {
+    lod: TerrainLod
+    segs: number
+    vertices: number
+  } | null {
+    const chunk = this.chunks.get(`${cx},${cz}`)
+    if (!chunk) return null
+    return {
+      lod: chunk.lod,
+      segs: chunk.segs,
+      vertices: chunk.heights.length,
+    }
+  }
+
+  sampleMeshHeight(x: number, z: number): number | null {
+    const cx = Math.floor(x / CHUNK_SIZE)
+    const cz = Math.floor(z / CHUNK_SIZE)
+    const chunk = this.chunks.get(`${cx},${cz}`)
+    if (!chunk || chunk.heights.length !== (chunk.segs + 1) * (chunk.segs + 1)) {
+      return null
+    }
+    return interpolateGridHeight(
+      chunk.heights,
+      chunk.segs,
+      chunk.originX,
+      chunk.originZ,
+      x,
+      z,
+    )
+  }
+
   private scheduleAround(cx: number, cz: number): void {
     const needed = new Set<string>()
     const r2 = VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS
@@ -201,23 +295,33 @@ export class TerrainSystem {
         const kz = cz + dz
         const key = `${kx},${kz}`
         needed.add(key)
+        const dist = Math.hypot(dx, dz)
         const existing = this.chunks.get(key)
         if (existing) {
-          // Came back into range while fading out — keep and fade back in
           existing.fadingOut = false
+          const lod = lodWithHysteresis(dist, existing.lod)
+          const wantProps = ENABLE_VEGETATION && dist <= PROP_RADIUS
+          const needsRebuild =
+            lod !== existing.lod || (wantProps && !existing.hasProps)
+          if (needsRebuild && !this.pendingKeys.has(key)) {
+            this.pending.push({ cx: kx, cz: kz, dist, rebuild: true })
+            this.pendingKeys.add(key)
+          }
         } else if (!this.pendingKeys.has(key)) {
-          const dist = Math.hypot(dx, dz)
           this.pending.push({
             cx: kx,
             cz: kz,
-            withProps: ENABLE_VEGETATION && dist <= PROP_RADIUS,
             dist,
+            rebuild: false,
           })
           this.pendingKeys.add(key)
         }
       }
     }
 
+    for (const p of this.pending) {
+      p.dist = Math.hypot(p.cx - cx, p.cz - cz)
+    }
     this.pending.sort((a, b) => a.dist - b.dist)
 
     // Soft unload: mark out-of-range chunks to fade, don't hard-delete
@@ -244,17 +348,26 @@ export class TerrainSystem {
       const job = this.pending.shift()!
       const key = `${job.cx},${job.cz}`
       this.pendingKeys.delete(key)
-      if (this.chunks.has(key)) continue
 
       const pcx = Math.floor(this.focusX / CHUNK_SIZE)
       const pcz = Math.floor(this.focusZ / CHUNK_SIZE)
-      const ddx = job.cx - pcx
-      const ddz = job.cz - pcz
-      const dist = Math.hypot(ddx, ddz)
+      const dist = Math.hypot(job.cx - pcx, job.cz - pcz)
       if (dist * dist > VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS) continue
 
-      this.chunks.set(key, this.buildChunk(job.cx, job.cz, job.withProps, dist))
-      spent += buildCost(dist, job.withProps)
+      const withProps = ENABLE_VEGETATION && dist <= PROP_RADIUS
+      const existing = this.chunks.get(key)
+      if (existing) {
+        if (!job.rebuild) continue
+        const lod = lodWithHysteresis(dist, existing.lod)
+        const wantProps = withProps && !existing.hasProps
+        if (lod === existing.lod && !wantProps) continue
+        this.rebuildChunk(existing, lod, dist, withProps)
+        spent += buildCost(dist, withProps)
+        continue
+      }
+
+      this.chunks.set(key, this.buildChunk(job.cx, job.cz, withProps, dist))
+      spent += buildCost(dist, withProps)
     }
   }
 
@@ -338,31 +451,17 @@ export class TerrainSystem {
     root.name = `chunk_${cx}_${cz}`
     const originX = cx * CHUNK_SIZE
     const originZ = cz * CHUNK_SIZE
+    const lod = lodFromDist(dist)
 
-    root.add(this.buildHeightMesh(originX, originZ, dist))
-    if (withProps) root.add(this.buildProps(originX, originZ, cx, cz))
+    const built = this.buildHeightMesh(originX, originZ, dist, lod)
+    root.add(built.mesh)
+    if (withProps) {
+      const props = this.buildProps(originX, originZ, cx, cz)
+      props.name = 'TerrainProps'
+      root.add(props)
+    }
 
-    // Per-chunk material clones so opacity fade doesn't affect other tiles
-    root.traverse((obj) => {
-      if (!(obj instanceof Mesh)) return
-      if (Array.isArray(obj.material)) {
-        obj.material = obj.material.map((m) => {
-          const c = m.clone()
-          c.transparent = true
-          c.opacity = 0
-          c.depthWrite = false
-          return c
-        })
-      } else {
-        const c = obj.material.clone()
-        c.transparent = true
-        c.opacity = 0
-        if (c instanceof MeshStandardMaterial) c.depthWrite = false
-        obj.material = c
-      }
-      obj.matrixAutoUpdate = false
-      obj.updateMatrix()
-    })
+    this.stampChunkMeshes(root, 0)
     root.matrixAutoUpdate = false
     root.updateMatrix()
     root.updateMatrixWorld(true)
@@ -373,6 +472,12 @@ export class TerrainSystem {
       cx,
       cz,
       root,
+      lod,
+      segs: built.segs,
+      hasProps: withProps,
+      originX,
+      originZ,
+      heights: built.heights,
       alpha: 0,
       targetAlpha: 1,
       fadingOut: false,
@@ -382,15 +487,87 @@ export class TerrainSystem {
     return chunk
   }
 
+  private rebuildChunk(
+    chunk: Chunk,
+    lod: TerrainLod,
+    dist: number,
+    withProps: boolean,
+  ): void {
+    const keepAlpha = chunk.alpha
+    const remove: Object3D[] = []
+    for (const child of chunk.root.children) {
+      if (child.name === 'TerrainChunk') remove.push(child)
+      if (child.name === 'TerrainProps' && !withProps) remove.push(child)
+    }
+    for (const child of remove) {
+      chunk.root.remove(child)
+      if (child instanceof Mesh) {
+        child.geometry.dispose()
+        const mats = Array.isArray(child.material) ? child.material : [child.material]
+        for (const m of mats) m.dispose()
+      } else {
+        child.traverse((obj) => {
+          if (!(obj instanceof Mesh)) return
+          const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+          for (const m of mats) m.dispose()
+        })
+      }
+    }
+
+    const built = this.buildHeightMesh(chunk.originX, chunk.originZ, dist, lod)
+    this.stampChunkMeshes(built.mesh, keepAlpha)
+    chunk.root.add(built.mesh)
+    if (withProps && !chunk.hasProps) {
+      const props = this.buildProps(chunk.originX, chunk.originZ, chunk.cx, chunk.cz)
+      props.name = 'TerrainProps'
+      this.stampChunkMeshes(props, keepAlpha)
+      chunk.root.add(props)
+      chunk.hasProps = true
+    }
+    if (!withProps) chunk.hasProps = false
+
+    chunk.lod = lod
+    chunk.segs = built.segs
+    chunk.heights = built.heights
+    chunk.alpha = keepAlpha
+    chunk.appliedAlpha = -1
+    chunk.root.updateMatrixWorld(true)
+    this.applyChunkAlpha(chunk)
+  }
+
+  private stampChunkMeshes(root: Group | Mesh, opacity: number): void {
+    root.traverse((obj) => {
+      if (!(obj instanceof Mesh)) return
+      if (Array.isArray(obj.material)) {
+        obj.material = obj.material.map((m) => {
+          const c = m.clone()
+          c.transparent = opacity < 0.995
+          c.opacity = opacity
+          if (c instanceof MeshStandardMaterial) c.depthWrite = opacity > 0.12
+          return c
+        })
+      } else {
+        const c = obj.material.clone()
+        c.transparent = opacity < 0.995
+        c.opacity = opacity
+        if (c instanceof MeshStandardMaterial) c.depthWrite = opacity > 0.12
+        obj.material = c
+      }
+      obj.matrixAutoUpdate = false
+      obj.updateMatrix()
+    })
+  }
+
   private buildHeightMesh(
     originX: number,
     originZ: number,
     dist: number,
-  ): Mesh {
-    const segs = segsForDist(dist)
+    lod: TerrainLod,
+  ): { mesh: Mesh; heights: Float32Array; segs: number } {
+    const segs = segsForLod(lod)
     const doSlope = dist <= SLOPE_DIST
     const doSkirt = dist <= SKIRT_DIST
-    const near = dist <= SLOPE_DIST
+    const near = lod === 0
 
     const geo = new PlaneGeometry(CHUNK_SIZE, CHUNK_SIZE, segs, segs)
     geo.rotateX(-Math.PI / 2)
@@ -427,6 +604,9 @@ export class TerrainSystem {
       colors[i * 3 + 2] = b
     }
 
+    const heights = new Float32Array(stride * stride)
+    for (let i = 0; i < stride * stride; i++) heights[i] = pos.getY(i)
+
     if (doSlope && biomes) {
       for (let iz = 0; iz < stride; iz++) {
         for (let ix = 0; ix < stride; ix++) {
@@ -462,7 +642,7 @@ export class TerrainSystem {
     mesh.receiveShadow = near
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
-    return mesh
+    return { mesh, heights, segs }
   }
 
   /**

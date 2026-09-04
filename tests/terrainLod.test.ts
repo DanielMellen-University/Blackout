@@ -1,0 +1,110 @@
+import { Scene } from 'three'
+import { afterEach, describe, expect, it } from 'vitest'
+import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
+import {
+  CHUNK_SIZE,
+  interpolateGridHeight,
+  lodFromDist,
+  lodWithHysteresis,
+  segsForLod,
+  TerrainSystem,
+} from '../src/world/TerrainSystem'
+import { sampleTerrainHeight } from '../src/world/terrainSample'
+
+function pump(terrain: TerrainSystem, x: number, z: number, frames: number): void {
+  for (let i = 0; i < frames; i++) terrain.update(x, z, 1 / 60)
+}
+
+describe('terrain LOD bands', () => {
+  it('promotes after the inner ring and demotes only past hysteresis', () => {
+    expect(lodFromDist(0)).toBe(0)
+    expect(lodFromDist(11)).toBe(1)
+    expect(lodFromDist(12)).toBe(2)
+
+    expect(lodWithHysteresis(6, 0)).toBe(0)
+    expect(lodWithHysteresis(7, 0)).toBe(1)
+    expect(lodWithHysteresis(4.2, 1)).toBe(0)
+    expect(lodWithHysteresis(12, 1)).toBe(1)
+    expect(lodWithHysteresis(13, 1)).toBe(2)
+    expect(lodWithHysteresis(0, 2)).toBe(0)
+  })
+})
+
+describe('interpolateGridHeight', () => {
+  it('matches PlaneGeometry triangulation on a 1-cell quad', () => {
+    const heights = new Float32Array([0, 10, 30, 20])
+    // iy * 2 + ix: (0,0)=0, (1,0)=10, (0,1)=30, (1,1)=20
+    expect(interpolateGridHeight(heights, 1, 0, 0, 0, 0)).toBe(0)
+    expect(interpolateGridHeight(heights, 1, 0, 0, CHUNK_SIZE, 0)).toBe(10)
+    expect(interpolateGridHeight(heights, 1, 0, 0, 0, CHUNK_SIZE)).toBe(30)
+    expect(interpolateGridHeight(heights, 1, 0, 0, CHUNK_SIZE, CHUNK_SIZE)).toBe(20)
+    // Center sits on the b-d diagonal; triangle sample is 20, bilinear would be 15.
+    const mid = interpolateGridHeight(
+      heights,
+      1,
+      0,
+      0,
+      CHUNK_SIZE / 2,
+      CHUNK_SIZE / 2,
+    )
+    expect(mid).toBeCloseTo(20)
+  })
+})
+
+describe('TerrainSystem streaming LOD', () => {
+  afterEach(() => {
+    setContactHeightSampler(null)
+  })
+
+  it('promotes a far tile to near detail after flying onto it', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 260)
+    const far = terrain.chunkStats(0, 12)
+    expect(far).not.toBeNull()
+    expect(far!.lod).toBe(2)
+    expect(far!.segs).toBe(segsForLod(2))
+
+    pump(terrain, 210, 12 * CHUNK_SIZE + 210, 80)
+    const near = terrain.chunkStats(0, 12)
+    expect(near).not.toBeNull()
+    expect(near!.lod).toBe(0)
+    expect(near!.segs).toBe(segsForLod(0))
+    expect(near!.vertices).toBeGreaterThan(far!.vertices)
+  })
+
+  it('demotes the same tile after flying away', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 260)
+    pump(terrain, 210, 12 * CHUNK_SIZE + 210, 80)
+    expect(terrain.chunkStats(0, 12)?.lod).toBe(0)
+    pump(terrain, 210, 210, 80)
+    expect(terrain.chunkStats(0, 12)?.lod).toBe(2)
+  })
+})
+
+describe('visible mesh contact sampling', () => {
+  afterEach(() => {
+    setContactHeightSampler(null)
+  })
+
+  it('matches the rendered vertex at a chunk corner', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 40)
+    expect(terrain.chunkStats(0, 0)).not.toBeNull()
+    const x = 0
+    const z = 0
+    expect(sampleGroundHeight(x, z)).toBeCloseTo(sampleTerrainHeight(x, z), 5)
+  })
+
+  it('uses triangle interpolation instead of the continuous function off-vertex', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 40)
+    const stats = terrain.chunkStats(0, 0)
+    expect(stats).not.toBeNull()
+    const x = CHUNK_SIZE / stats!.segs / 2
+    const z = CHUNK_SIZE / stats!.segs / 2
+    const meshH = terrain.sampleMeshHeight(x, z)
+    expect(meshH).not.toBeNull()
+    expect(sampleGroundHeight(x, z)).toBeCloseTo(meshH!, 5)
+  })
+})

@@ -109,7 +109,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: dynamic terrain LOD, vegetation v2, route clearance, handling retune.
+Next: vegetation v2, route clearance, handling retune.
 
 Out of scope for now: radar, weapons, fuel.
 
