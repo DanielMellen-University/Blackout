@@ -25,4 +25,14 @@ describe('Time', () => {
     const frame = time.beginFrame(1016)
     expect(frame.steps).toBeLessThanOrEqual(2)
   })
+
+  it('exposes leftover time as a render blend factor', () => {
+    const time = new Time()
+    time.beginFrame(0)
+    const frame = time.beginFrame(20)
+    expect(frame.steps).toBe(1)
+    expect(frame.alpha).toBeCloseTo(20 / 1000 / SIM_STEP - 1, 5)
+    expect(frame.alpha).toBeGreaterThan(0)
+    expect(frame.alpha).toBeLessThan(1)
+  })
 })

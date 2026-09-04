@@ -38,8 +38,8 @@ export class CockpitMode {
   update(camera: PerspectiveCamera, aircraft: Aircraft): void {
     if (!this.attached) return
 
-    _seatWorld.copy(SEAT).applyQuaternion(aircraft.orientation)
-    camera.position.copy(aircraft.position).add(_seatWorld)
-    camera.quaternion.copy(aircraft.orientation).multiply(_noseFlip)
+    _seatWorld.copy(SEAT).applyQuaternion(aircraft.displayOrientation)
+    camera.position.copy(aircraft.displayPosition).add(_seatWorld)
+    camera.quaternion.copy(aircraft.displayOrientation).multiply(_noseFlip)
   }
 }

@@ -60,6 +60,11 @@ export class Aircraft {
   readonly velocity = new Vector3()
   readonly orientation = new Quaternion()
   readonly angularVelocity = new Vector3()
+  /** Pose shown this video frame (interpolated between physics steps). */
+  readonly displayPosition = new Vector3()
+  readonly displayOrientation = new Quaternion()
+  private readonly prevPosition = new Vector3()
+  private readonly prevOrientation = new Quaternion()
   readonly engineState: EngineState = createEngineState()
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
@@ -153,7 +158,41 @@ export class Aircraft {
     resolveEngineState(this.controls, this.engineState)
     this.status = 'ok'
     this.mesh.visible = true
-    this.syncMesh()
+    this.snapDisplay()
+  }
+
+  /** Store the pose from before this physics step for render interpolation. */
+  capturePrevious(): void {
+    this.prevPosition.copy(this.position)
+    this.prevOrientation.copy(this.orientation)
+  }
+
+  /**
+   * Blend the visible mesh/camera pose between the last two physics states.
+   * `alpha` 0 = previous step, 1 = current step.
+   */
+  present(alpha: number): void {
+    const t = alpha >= 1 ? 1 : alpha <= 0 ? 0 : alpha
+    if (t === 1) {
+      this.displayPosition.copy(this.position)
+      this.displayOrientation.copy(this.orientation)
+    } else if (t === 0) {
+      this.displayPosition.copy(this.prevPosition)
+      this.displayOrientation.copy(this.prevOrientation)
+    } else {
+      this.displayPosition.lerpVectors(this.prevPosition, this.position, t)
+      this.displayOrientation.copy(this.prevOrientation).slerp(this.orientation, t)
+    }
+    this.mesh.position.copy(this.displayPosition)
+    this.mesh.quaternion.copy(this.displayOrientation)
+  }
+
+  /** Copy physics pose to the display pose (reset, pause, crash). */
+  snapDisplay(): void {
+    this.prevPosition.copy(this.position)
+    this.prevOrientation.copy(this.orientation)
+    this.present(1)
+    this.updateVisuals(0)
   }
 
   step(dt: number): void {
@@ -177,7 +216,7 @@ export class Aircraft {
     this.controls.boost = false
     resolveEngineState(this.controls, this.engineState)
     this.mesh.visible = false
-    this.updateVisuals(0)
+    this.snapDisplay()
   }
 
   markLanded(): void {

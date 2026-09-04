@@ -9,6 +9,11 @@ export interface FrameTiming {
   /** Number of fixed simulation steps to run this frame. */
   steps: number
   stepDt: number
+  /**
+   * 0..1 blend from the previous physics pose to the current one.
+   * 1 means snap to the latest state (first frame, hitch, overload).
+   */
+  alpha: number
 }
 
 /**
@@ -27,7 +32,7 @@ export class Time {
   beginFrame(nowMs: number): FrameTiming {
     if (this.lastMs === null) {
       this.lastMs = nowMs
-      return { frameDt: 0, steps: 0, stepDt: this.stepDt }
+      return { frameDt: 0, steps: 0, stepDt: this.stepDt, alpha: 1 }
     }
 
     let frameDt = (nowMs - this.lastMs) / 1000
@@ -37,7 +42,7 @@ export class Time {
       // Tab hide / long hitch: do not catch up a multi-second stall.
       this.accum = 0
       this.noteFps(this.stepDt)
-      return { frameDt: this.stepDt, steps: 1, stepDt: this.stepDt }
+      return { frameDt: this.stepDt, steps: 1, stepDt: this.stepDt, alpha: 1 }
     }
 
     this.noteFps(frameDt)
@@ -48,9 +53,17 @@ export class Time {
       this.accum -= this.stepDt
       steps++
     }
-    if (steps >= MAX_STEPS) this.accum = 0
+    if (steps >= MAX_STEPS) {
+      this.accum = 0
+      return { frameDt, steps, stepDt: this.stepDt, alpha: 1 }
+    }
 
-    return { frameDt, steps, stepDt: this.stepDt }
+    return {
+      frameDt,
+      steps,
+      stepDt: this.stepDt,
+      alpha: this.accum / this.stepDt,
+    }
   }
 
   /**

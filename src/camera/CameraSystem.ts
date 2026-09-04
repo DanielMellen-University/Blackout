@@ -266,7 +266,7 @@ export class CameraSystem {
    * Aircraft heading around world Y from body +Z forward.
    */
   private aircraftHeading(aircraft: Aircraft): number {
-    _forward.set(0, 0, 1).applyQuaternion(aircraft.orientation)
+    _forward.set(0, 0, 1).applyQuaternion(aircraft.displayOrientation)
     if (Math.hypot(_forward.x, _forward.z) > 0.08) {
       this.stableHeading = Math.atan2(_forward.x, _forward.z)
     }
@@ -301,7 +301,7 @@ export class CameraSystem {
     const distScale = 1 + juice * SPEED_DIST_STRETCH
     const targetFov = cfg.fov + juice * SPEED_FOV_BOOST
 
-    _pivot.copy(aircraft.position)
+    _pivot.copy(aircraft.displayPosition)
     _pivot.y += 1.2
 
     this.camera.up.copy(_Y_UP)
@@ -335,7 +335,7 @@ export class CameraSystem {
     } else {
       _look.copy(cfg.lookOffset)
     }
-    _look.add(aircraft.position)
+    _look.add(aircraft.displayPosition)
 
     if (cfg.lookLead > 0) {
       // Slightly more lead at high speed so framing stays ahead of the jet

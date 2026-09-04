@@ -266,12 +266,17 @@ async function boot(): Promise<void> {
 
     syncInputContext()
     const simLive = playing && !menu.paused && !results.open
+    let visualDt = 0
+    let simDt = 0
     if (!simLive) {
       time.skipFrame(nowMs)
       aircraft.controls = input.sampleWithDt(0)
       if (!playing) input.resetFlightControls(0)
+      aircraft.snapDisplay()
     } else {
-      const { steps, stepDt } = time.beginFrame(nowMs)
+      const { frameDt, steps, stepDt, alpha } = time.beginFrame(nowMs)
+      visualDt = frameDt
+      simDt = steps * stepDt
       const dt = stepDt
 
       if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
@@ -279,6 +284,7 @@ async function boot(): Promise<void> {
       if (input.consumeReset()) resetFlight(false)
 
       for (let i = 0; i < steps; i++) {
+        aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
         aircraft.step(dt)
 
@@ -357,31 +363,31 @@ async function boot(): Promise<void> {
       if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
         banner = null
       }
+      aircraft.present(alpha)
     }
 
-    const renderDt = simLive ? 1 / 60 : 0
     world.update(
-      aircraft.position.x,
-      aircraft.position.y,
-      aircraft.position.z,
-      Math.max(renderDt, 1 / 60),
-      simLive ? renderDt : 0,
+      aircraft.displayPosition.x,
+      aircraft.displayPosition.y,
+      aircraft.displayPosition.z,
+      Math.max(visualDt, 1 / 120),
+      simDt,
     )
     const phase = world.atmosphere.phaseLabel
     const baseExp =
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
     renderer.toneMappingExposure = baseExp + crashFx.bloom * 1.35
-    crashFx.update(simLive ? renderDt : 0)
+    crashFx.update(simLive ? visualDt : 0)
 
     audio.update({
       throttle: aircraft.engineState.lever,
       boost: aircraft.engineState.afterburnerActive,
       speed: aircraft.speed,
       mute: !playing || menu.paused || results.open || aircraft.status === 'crashed',
-      dt: renderDt || 1 / 60,
+      dt: visualDt || 1 / 60,
     })
 
-    cameras.update(aircraft, simLive ? renderDt : 0)
+    cameras.update(aircraft, visualDt)
     renderer.render(world.scene, cameras.camera)
     debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
 

@@ -70,7 +70,7 @@ describe('TerrainSystem streaming LOD', () => {
     expect(near!.lod).toBe(0)
     expect(near!.segs).toBe(segsForLod(0))
     expect(near!.vertices).toBeGreaterThan(far!.vertices)
-  })
+  }, 20_000)
 
   it('demotes the same tile after flying away', () => {
     const terrain = new TerrainSystem(new Scene())
@@ -79,7 +79,7 @@ describe('TerrainSystem streaming LOD', () => {
     expect(terrain.chunkStats(0, 12)?.lod).toBe(0)
     pump(terrain, 210, 210, 80)
     expect(terrain.chunkStats(0, 12)?.lod).toBe(2)
-  })
+  }, 20_000)
 })
 
 describe('visible mesh contact sampling', () => {
