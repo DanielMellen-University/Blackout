@@ -4,7 +4,7 @@
 
 ### Audit follow-up
 
-- Spawn search no longer throws; a missing pad falls back to a leveled origin disk, and a failed reseed keeps the live world.
+- Spawn search no longer throws. Failed searches retry inland pads (never the origin ocean disk) and reseed keeps the live world if a replacement cannot be validated dry.
 - Rendered water and collision now share one surface (ocean at sea level, inland water at 0.35 m).
 - Near the jet, contact/AGL sample the visible chunk triangles so physics cannot miss the mesh. Far tiles promote and demote LOD (with hysteresis) instead of staying at their spawn resolution.
 - Contact is swept along the motion path. Cliffs and ridges crash instead of elevating the jet. Water ditching and inverted/obstacle hits crash.

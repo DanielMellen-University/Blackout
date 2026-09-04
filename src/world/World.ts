@@ -108,25 +108,37 @@ export class World {
     const previousSeed = this.seed
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
-    const nextSeed = randomizeWorldSeed()
-    try {
-      clearOpsPad()
-      const pad = findPlayableSpawn()
-      setOpsPad(pad.x, pad.z, pad.y)
-      this.seed = nextSeed
-      this.applySpawn(pad)
-      this.terrain.clearAll()
-      this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
-      this.atmosphere.randomizeWeather(this.seed)
-      this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
-      this.committed = true
-      return this.seed
-    } catch (err) {
+    const restore = (): void => {
       setWorldSeed(previousSeed)
       this.seed = previousSeed
       this.spawn = previousSpawn
       if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y)
       else clearOpsPad()
+    }
+
+    try {
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const nextSeed = randomizeWorldSeed()
+        clearOpsPad()
+        const pad = findPlayableSpawn()
+        if (!pad) continue
+        setOpsPad(pad.x, pad.z, pad.y)
+        this.seed = nextSeed
+        this.applySpawn(pad)
+        this.terrain.clearAll()
+        this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
+        this.atmosphere.randomizeWeather(this.seed)
+        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
+        this.committed = true
+        return this.seed
+      }
+      if (this.committed) {
+        restore()
+        return this.seed
+      }
+      throw new Error('reseed: no dry inland pad')
+    } catch (err) {
+      restore()
       if (this.committed) return this.seed
       throw err
     }

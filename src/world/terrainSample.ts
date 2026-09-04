@@ -790,7 +790,7 @@ export interface FlatSpawn {
 /**
  * Search for naturally flat inland ground with a clear takeoff lane.
  * Returns null instead of throwing so boot/reseed can keep the previous world
- * or fall back to {@link emergencyFlatSpawn}.
+ * or fall back to {@link findInlandFallback} / {@link findAnyDryLand}.
  */
 export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
   let best: FlatSpawn | null = null
@@ -814,14 +814,16 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
       if (!foot || foot.relief > 2.4) continue
       const score = pad + dep.score - foot.relief * 18
       if (score > bestScore) {
+        const cand: FlatSpawn = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+        if (!isUsableAirfield(cand)) continue
         bestScore = score
-        best = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+        best = cand
         if (bestScore > 90 && dep.score > 25 && foot.relief < 1.15) return best
       }
     }
   }
 
-  if (best) return best
+  if (best && isUsableAirfield(best)) return best
 
   for (let r = 300; r <= 24000; r += 280) {
     for (let i = 0; i < 16; i++) {
@@ -835,7 +837,8 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
       if (dep.score < -2e5) continue
       const foot = footprintRelief(x, z, dep.yaw)
       if (!foot || foot.relief > 2.4) continue
-      return { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+      const cand: FlatSpawn = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+      if (isUsableAirfield(cand)) return cand
     }
   }
 
@@ -851,30 +854,110 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
     if (dep.score < -2e5) continue
     const foot = footprintRelief(x, z, dep.yaw)
     if (!foot || foot.relief > 3.5) continue
-    return { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+    const cand: FlatSpawn = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+    if (isUsableAirfield(cand)) return cand
   }
   return null
 }
 
 /**
- * Last-resort pad so boot/reseed never throw. The ops pad still flattens a
- * disk here, so the strip is usable even if the surrounding biome is poor.
+ * Cheaper inland hunt used when the full search finds nothing. Skips the
+ * 800 m coastal grid but still refuses ocean, lakes, and a wet jet spawn.
  */
-export function emergencyFlatSpawn(): FlatSpawn {
-  const c = sampleClimate(0, 0)
-  const wet = c.biome === 'ocean' || c.biome === 'water'
-  return {
-    x: 0,
-    z: 0,
-    y: wet ? 8 : Math.max(8, c.height),
-    yaw: 0,
-    biome: FLAT_SPAWN_BIOMES.has(c.biome) ? c.biome : 'plains',
+export function findInlandFallback(maxRadius = 32000): FlatSpawn | null {
+  let best: FlatSpawn | null = null
+  let bestScore = -1e9
+  for (let ring = 400; ring <= maxRadius; ring += 220) {
+    const steps = 14 + ((ring / 700) | 0)
+    for (let i = 0; i < steps; i++) {
+      const a = (i / steps) * Math.PI * 2 + ring * 0.011
+      const x = Math.cos(a) * ring
+      const z = Math.sin(a) * ring
+      const c = sampleClimate(x, z)
+      const pad = scoreFlatPad(x, z, c)
+      if (pad <= 0) continue
+      if (hasWetNeighbors(x, z, 90)) continue
+      const dep = bestDeparture(x, z, c.height)
+      if (dep.score < -4e5) continue
+      const cand: FlatSpawn = { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
+      if (!isUsableAirfield(cand)) continue
+      const score = pad + dep.score * 0.12
+      if (score > bestScore) {
+        bestScore = score
+        best = cand
+        if (pad > 35) return cand
+      }
+    }
   }
+  return best
 }
 
-/** Always returns a spawn: searched pad, or the emergency origin disk. */
-export function findPlayableSpawn(maxRadius = 18000): FlatSpawn {
-  return findFlatSpawn(maxRadius) ?? emergencyFlatSpawn()
+/**
+ * Last-ditch spiral: any dry land high enough to sit a strip on.
+ * Never returns ocean or inland water.
+ */
+export function findAnyDryLand(): FlatSpawn | null {
+  for (let n = 0; n < 2200; n++) {
+    const r = 350 + ((n * 137) % 36000)
+    const a = n * 2.399963
+    const x = Math.cos(a) * r
+    const z = Math.sin(a) * r
+    const c = sampleClimate(x, z)
+    if (c.biome === 'ocean' || c.biome === 'water' || c.biome === 'swamp') continue
+    if (c.land < 0.76 || c.height < 7 || c.coastal > 0.08) continue
+    if (terrainSurfaceFromClimate(c).kind !== 'land') continue
+    const dep = bestDeparture(x, z, c.height)
+    const cand: FlatSpawn = {
+      x,
+      z,
+      y: Math.max(8, c.height),
+      yaw: dep.yaw,
+      biome: FLAT_SPAWN_BIOMES.has(c.biome) ? c.biome : 'plains',
+    }
+    if (isUsableAirfield(cand)) return cand
+  }
+  return null
+}
+
+/** True if the pad and the jet spawn 45 m behind it are dry land. */
+export function isUsableAirfield(pad: FlatSpawn): boolean {
+  if (!Number.isFinite(pad.x) || !Number.isFinite(pad.z)) return false
+  const fx = Math.sin(pad.yaw)
+  const fz = Math.cos(pad.yaw)
+  const rx = Math.cos(pad.yaw)
+  const rz = -Math.sin(pad.yaw)
+  const spots: [number, number][] = [
+    [pad.x, pad.z],
+    [pad.x - fx * 45, pad.z - fz * 45],
+    [pad.x + fx * 36, pad.z + fz * 36],
+    [pad.x + rx * 18, pad.z + rz * 18],
+    [pad.x - rx * 18, pad.z - rz * 18],
+  ]
+  for (const [x, z] of spots) {
+    const c = sampleClimate(x, z)
+    if (c.biome === 'ocean' || c.biome === 'water' || c.biome === 'swamp') return false
+    if (c.land < 0.62 || c.height < 4) return false
+    if (terrainSurfaceFromClimate(c).kind !== 'land') return false
+  }
+  return true
+}
+
+function hasWetNeighbors(x: number, z: number, r: number): boolean {
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2
+    const s = sampleClimate(x + Math.cos(a) * r, z + Math.sin(a) * r)
+    if (s.biome === 'ocean' || s.biome === 'water' || s.land < 0.55) return true
+  }
+  return false
+}
+
+/** Always a dry inland pad. Retries a cheap search before giving up. */
+export function findPlayableSpawn(maxRadius = 18000): FlatSpawn | null {
+  const found = findFlatSpawn(maxRadius)
+  if (found && isUsableAirfield(found)) return found
+  const inland = findInlandFallback()
+  if (inland) return inland
+  return findAnyDryLand()
 }
 
 /** Higher is better. Negative = reject. */
