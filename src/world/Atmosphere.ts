@@ -17,6 +17,7 @@ import {
   Vector3,
 } from 'three'
 import { SkyDome } from './SkyDome'
+import { SnowField } from './SnowField'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 
 /**
@@ -266,11 +267,9 @@ export class Atmosphere {
 
   private readonly precipRoot = new Group()
   private readonly rain: Points
-  private readonly snow: Points
   private readonly rainVel: Float32Array
-  private readonly snowVel: Float32Array
   private readonly rainMat: PointsMaterial
-  private readonly snowMat: PointsMaterial
+  private readonly snowField: SnowField
 
   private readonly cloudRoot = new Group()
   private readonly cloudClusters: Group[] = []
@@ -340,32 +339,12 @@ export class Atmosphere {
     this.rain.frustumCulled = false
     this.rain.visible = false
 
-    const snowCount = 2200
-    const snowPos = new Float32Array(snowCount * 3)
-    this.snowVel = new Float32Array(snowCount)
-    for (let i = 0; i < snowCount; i++) {
-      snowPos[i * 3] = (Math.random() - 0.5) * 150
-      snowPos[i * 3 + 1] = Math.random() * 90
-      snowPos[i * 3 + 2] = (Math.random() - 0.5) * 150
-      this.snowVel[i] = 6 + Math.random() * 12
-    }
-    const snowGeo = new BufferGeometry()
-    snowGeo.setAttribute('position', new BufferAttribute(snowPos, 3))
-    this.snowMat = new PointsMaterial({
-      color: 0xffffff,
-      size: 0.55,
-      transparent: true,
-      opacity: 0.75,
-      depthWrite: false,
-      sizeAttenuation: true,
-    })
-    this.snow = new Points(snowGeo, this.snowMat)
-    this.snow.frustumCulled = false
-    this.snow.visible = false
-
     this.precipRoot.name = 'PrecipFX'
-    this.precipRoot.add(this.rain, this.snow)
+    this.precipRoot.add(this.rain)
     scene.add(this.precipRoot)
+
+    this.snowField = new SnowField()
+    scene.add(this.snowField.points)
 
     // --- Layered world-space clouds (real-world altitudes & scale) ---
     this.cloudRoot.name = 'Clouds'
@@ -401,7 +380,7 @@ export class Atmosphere {
     }
     scene.add(this.cloudRoot)
 
-    this.apply(0, 0, 0, 0)
+    this.apply(0, 0, 0, 0, 0)
   }
 
   /** Cycle weather type (N key). */
@@ -469,10 +448,10 @@ export class Atmosphere {
     return 'DUSK'
   }
 
-  update(dt: number, ax: number, ay: number, az: number): void {
+  update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {
     this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
     this.elapsed += dt
-    this.cloudWindT += dt
+    this.cloudWindT += visualDt
 
     this.autoWeatherTimer += dt
     if (this.autoWeatherTimer > this.autoWeatherInterval) {
@@ -489,7 +468,7 @@ export class Atmosphere {
       if (this.weatherT >= 1) this.weatherFrom = this.weatherTo
     }
 
-    this.apply(ax, ay, az, dt)
+    this.apply(ax, ay, az, dt, visualDt)
   }
 
   private profileId(): WeatherId {
@@ -513,7 +492,7 @@ export class Atmosphere {
     }
   }
 
-  private apply(ax: number, ay: number, az: number, dt: number): void {
+  private apply(ax: number, ay: number, az: number, dt: number, visualDt: number): void {
     const t = this.timeOfDay
     // Sun elevation: -1 midnight-side, +1 noon
     const elev = Math.sin((t - 0.25) * Math.PI * 2)
@@ -643,7 +622,8 @@ export class Atmosphere {
 
     // World-space clouds (fly past them) + local precip FX
     this.updateClouds(ax, ay, az, dt, w.clouds, dayFactor, w.snow)
-    this.updatePrecip(ax, ay, az, dt, w.rain, w.snow)
+    this.updatePrecip(ax, ay, az, visualDt, w.rain)
+    this.snowField.update(visualDt, ax, ay, az, w.snow)
   }
 
   /**
@@ -847,57 +827,33 @@ export class Atmosphere {
     this.cloudRoot.visible = anyVisible
   }
 
-  /** Rain/snow particles stay local to the jet (weather FX, not scenery). */
+  /** Rain stays in a box around the jet; snow is a separate world-space field. */
   private updatePrecip(
     ax: number,
     ay: number,
     az: number,
     dt: number,
     rainAmt: number,
-    snowAmt: number,
   ): void {
     this.precipRoot.position.set(ax, ay, az)
 
     this.rain.visible = rainAmt > 0.05
-    if (this.rain.visible) {
-      this.rainMat.opacity = 0.22 + rainAmt * 0.55
-      const pos = this.rain.geometry.attributes.position as BufferAttribute
-      const arr = pos.array as Float32Array
-      const boost = rainAmt > 0.85 ? 1.4 : 1
-      for (let i = 0; i < this.rainVel.length; i++) {
-        const iy = i * 3 + 1
-        arr[iy]! -= this.rainVel[i]! * boost * dt
-        arr[i * 3]! += Math.sin(i + az * 0.01) * 3 * rainAmt * dt
-        if (arr[iy]! < -18) {
-          arr[iy] = 45 + Math.random() * 55
-          arr[i * 3] = (Math.random() - 0.5) * 140
-          arr[i * 3 + 2] = (Math.random() - 0.5) * 140
-        }
-      }
-      pos.needsUpdate = true
-    }
+    if (!this.rain.visible || dt <= 0) return
 
-    this.snow.visible = snowAmt > 0.05
-    if (this.snow.visible) {
-      this.snowMat.opacity = 0.35 + snowAmt * 0.5
-      this.snowMat.size = 0.45 + snowAmt * 0.35
-      const pos = this.snow.geometry.attributes.position as BufferAttribute
-      const arr = pos.array as Float32Array
-      const wind = 8 + snowAmt * 18
-      for (let i = 0; i < this.snowVel.length; i++) {
-        const ix = i * 3
-        const iy = i * 3 + 1
-        const iz = i * 3 + 2
-        arr[iy]! -= this.snowVel[i]! * (0.7 + snowAmt * 0.8) * dt
-        arr[ix]! += Math.sin(this.cloudWindT * 0.4 + i * 0.3) * wind * dt
-        arr[iz]! += Math.cos(this.cloudWindT * 0.35 + i * 0.2) * wind * 0.7 * dt
-        if (arr[iy]! < -20) {
-          arr[iy] = 50 + Math.random() * 50
-          arr[ix] = (Math.random() - 0.5) * 150
-          arr[iz] = (Math.random() - 0.5) * 150
-        }
+    this.rainMat.opacity = 0.22 + rainAmt * 0.55
+    const pos = this.rain.geometry.attributes.position as BufferAttribute
+    const arr = pos.array as Float32Array
+    const boost = rainAmt > 0.85 ? 1.4 : 1
+    for (let i = 0; i < this.rainVel.length; i++) {
+      const iy = i * 3 + 1
+      arr[iy]! -= this.rainVel[i]! * boost * dt
+      arr[i * 3]! += Math.sin(i + az * 0.01) * 3 * rainAmt * dt
+      if (arr[iy]! < -18) {
+        arr[iy] = 45 + Math.random() * 55
+        arr[i * 3] = (Math.random() - 0.5) * 140
+        arr[i * 3 + 2] = (Math.random() - 0.5) * 140
       }
-      pos.needsUpdate = true
     }
+    pos.needsUpdate = true
   }
 }

@@ -166,9 +166,9 @@ export class World {
    * Stream terrain + advance day/night and weather.
    * Pass simDt=0 to freeze challenge conditions while still streaming tiles.
    */
-  update(x: number, y: number, z: number, dt: number, simDt = dt): void {
+  update(x: number, y: number, z: number, dt: number, simDt = dt, visualDt = simDt): void {
     this.terrain.update(x, z, dt)
-    this.atmosphere.update(simDt, x, y, z)
+    this.atmosphere.update(simDt, x, y, z, visualDt)
   }
 
   private applySpawn(pad: FlatSpawn): void {

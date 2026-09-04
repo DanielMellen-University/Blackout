@@ -376,6 +376,7 @@ async function boot(): Promise<void> {
       aircraft.displayPosition.z,
       Math.max(visualDt, 1 / 120),
       simDt,
+      visualDt,
     )
     const phase = world.atmosphere.phaseLabel
     const baseExp =
