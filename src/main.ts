@@ -19,6 +19,7 @@ import {
 import { Time } from './core/Time'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
+import { FlightAudio } from './audio/FlightAudio'
 import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
@@ -65,6 +66,7 @@ async function boot(): Promise<void> {
   const hud = new HUD()
   const collision = new CollisionSystem()
   const crashFx = new CrashFx(world.scene)
+  const audio = new FlightAudio()
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
   debug?.syncPad()
 
@@ -91,10 +93,12 @@ async function boot(): Promise<void> {
     banner = null
     void lockGameKeyboard()
     canvas.focus({ preventScroll: true })
+    void audio.resume()
   }
 
   const quitToTitle = (): void => {
     playing = false
+    audio.silence()
     menu.close()
     titleScreen?.classList.remove('is-hidden')
     if (overlay) {
@@ -262,6 +266,14 @@ async function boot(): Promise<void> {
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
     renderer.toneMappingExposure = baseExp + crashFx.bloom * 1.35
     crashFx.update(dt)
+
+    audio.update({
+      throttle: aircraft.controls.throttle,
+      boost: aircraft.controls.boost,
+      speed: aircraft.speed,
+      mute: !playing || menu.paused || aircraft.status === 'crashed',
+      dt,
+    })
 
     cameras.update(aircraft, dt)
     renderer.render(world.scene, cameras.camera)
