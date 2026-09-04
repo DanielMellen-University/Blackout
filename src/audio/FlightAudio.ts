@@ -54,7 +54,7 @@ export class FlightAudio {
     if (ctx.state === 'suspended') return
 
     const thr = clamp01(opts.throttle)
-    const boost = opts.boost && thr > 0.02
+    const boost = opts.boost
     // Dry lever fills most of the rumble; AB adds a clear bump on top.
     const engLevel = thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45)
     const eng = Math.min(1, engLevel)
@@ -97,7 +97,7 @@ export class FlightAudio {
   playCue(kind: 'gate' | 'complete' | 'landed' | 'crash'): void {
     const ctx = this.ctx
     const output = this.effectsGain
-    if (!ctx || !output || ctx.state === 'suspended') return
+    if (!ctx || !output || ctx.state === 'suspended' || this.muted) return
 
     const now = ctx.currentTime
     if (kind === 'gate') {

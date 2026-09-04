@@ -19,6 +19,26 @@ const _scale = new Vector3()
 const _mat = new Matrix4()
 const _Y = new Vector3(0, 1, 0)
 
+/** Axis-aligned box in runway-local metres (origin at pad centre). */
+export interface LocalBox {
+  cx: number
+  cy: number
+  cz: number
+  hx: number
+  hy: number
+  hz: number
+}
+
+/**
+ * Solid airfield obstacles. Half-extents include a little fuselage padding
+ * so an origin-only aircraft query still hits hangar / tower / shack.
+ */
+export const AIRFIELD_COLLIDERS: readonly LocalBox[] = [
+  { cx: 39.2, cy: 5.8, cz: 2, hx: 18, hy: 6.2, hz: 12.2 },
+  { cx: 20.5, cy: 10, cz: -46, hx: 5.2, hy: 10.4, hz: 5.2 },
+  { cx: 16.5, cy: 1.7, cz: -32, hx: 4.2, hy: 1.8, hz: 3.4 },
+]
+
 /**
  * Ops-pad dress: hangar, tower, apron, PAPI, windsock.
  * Local frame matches the runway: +Z takeoff, +X right of heading.

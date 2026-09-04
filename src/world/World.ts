@@ -7,11 +7,13 @@ import {
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
-import { randomizeWorldSeed } from './noise'
+import { AIRFIELD_COLLIDERS } from './Airfield'
+import { randomizeWorldSeed, setWorldSeed } from './noise'
 import { createRunway } from './Runway'
 import {
   clearOpsPad,
-  findFlatSpawn,
+  findPlayableSpawn,
+  getOpsPad,
   setOpsPad,
   type FlatSpawn,
 } from './terrainSample'
@@ -51,6 +53,7 @@ export class World {
     yaw: 0,
     biome: 'plains',
   }
+  private committed = false
 
   constructor() {
     this.sun = this.createSun()
@@ -98,19 +101,61 @@ export class World {
 
   /**
    * New random world seed, pick a flat-biome airfield, rebuild terrain there.
+   * Search and validation run before the live world is replaced. If anything
+   * throws after a world already exists, the previous seed/pad stay in place.
    */
   reseed(): number {
-    this.seed = randomizeWorldSeed()
-    clearOpsPad()
-    const pad = findFlatSpawn()
-    setOpsPad(pad.x, pad.z, pad.y)
-    this.applySpawn(pad)
+    const previousSeed = this.seed
+    const previousPad = getOpsPad()
+    const previousSpawn = { ...this.spawn }
+    const nextSeed = randomizeWorldSeed()
+    try {
+      clearOpsPad()
+      const pad = findPlayableSpawn()
+      setOpsPad(pad.x, pad.z, pad.y)
+      this.seed = nextSeed
+      this.applySpawn(pad)
+      this.terrain.clearAll()
+      this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
+      this.atmosphere.randomizeWeather(this.seed)
+      this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
+      this.committed = true
+      return this.seed
+    } catch (err) {
+      setWorldSeed(previousSeed)
+      this.seed = previousSeed
+      this.spawn = previousSpawn
+      if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y)
+      else clearOpsPad()
+      if (this.committed) return this.seed
+      throw err
+    }
+  }
 
-    this.terrain.clearAll()
-    this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
-    this.atmosphere.randomizeWeather(this.seed)
-    this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
-    return this.seed
+  /** True if a world-space point overlaps hangar, tower, or shack. */
+  hitObstacle(x: number, y: number, z: number): boolean {
+    const pad = getOpsPad()
+    if (!pad) return false
+    const yaw = this.spawn.yaw
+    const dx = x - pad.x
+    const dz = z - pad.z
+    const fx = Math.sin(yaw)
+    const fz = Math.cos(yaw)
+    const rx = Math.cos(yaw)
+    const rz = -Math.sin(yaw)
+    const lx = dx * rx + dz * rz
+    const lz = dx * fx + dz * fz
+    const ly = y - pad.y
+    for (const b of AIRFIELD_COLLIDERS) {
+      if (
+        Math.abs(lx - b.cx) <= b.hx &&
+        Math.abs(ly - b.cy) <= b.hy &&
+        Math.abs(lz - b.cz) <= b.hz
+      ) {
+        return true
+      }
+    }
+    return false
   }
 
   cycleWeather(): WeatherId {
@@ -119,10 +164,11 @@ export class World {
 
   /**
    * Stream terrain + advance day/night and weather.
+   * Pass simDt=0 to freeze challenge conditions while still streaming tiles.
    */
-  update(x: number, y: number, z: number, dt: number): void {
+  update(x: number, y: number, z: number, dt: number, simDt = dt): void {
     this.terrain.update(x, z, dt)
-    this.atmosphere.update(dt, x, y, z)
+    this.atmosphere.update(simDt, x, y, z)
   }
 
   private applySpawn(pad: FlatSpawn): void {

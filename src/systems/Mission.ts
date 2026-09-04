@@ -40,9 +40,9 @@ interface Gate {
 const GATE_COUNT = 5
 const CIRCUIT_R = 980
 const GATE_RADIUS = 38
-const PASS_THICK = 16
 const _to = new Vector3()
 const _radial = new Vector3()
+const _prevTo = new Vector3()
 
 /**
  * Arcade checkpoint circuit around the airfield.
@@ -53,6 +53,11 @@ export class MissionSystem {
   private readonly gates: Gate[] = []
   private next = 0
   private status: MissionStatus = 'idle'
+  private havePrev = false
+  private prevX = 0
+  private prevY = 0
+  private prevZ = 0
+  lastPassQuality = 1
   private gateGeo: TorusGeometry | null = null
   private readonly beacon = new Group()
   private readonly liveMat: MeshBasicMaterial
@@ -102,6 +107,8 @@ export class MissionSystem {
     this.clear()
     this.status = 'live'
     this.next = 0
+    this.havePrev = false
+    this.lastPassQuality = 1
 
     this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
     for (let i = 0; i < GATE_COUNT; i++) {
@@ -155,20 +162,41 @@ export class MissionSystem {
   }
 
   update(px: number, py: number, pz: number): 'none' | 'pass' | 'complete' {
-    if (this.status !== 'live' || this.next >= this.gates.length) return 'none'
+    if (this.status !== 'live' || this.next >= this.gates.length) {
+      this.remember(px, py, pz)
+      return 'none'
+    }
+    if (!this.havePrev) {
+      this.remember(px, py, pz)
+      return 'none'
+    }
+
     const g = this.gates[this.next]!
+    _prevTo.set(this.prevX - g.pos.x, this.prevY - g.pos.y, this.prevZ - g.pos.z)
     _to.set(px - g.pos.x, py - g.pos.y, pz - g.pos.z)
+    const prevAlong = _prevTo.dot(g.fwd)
     const along = _to.dot(g.fwd)
-    _radial.copy(_to).addScaledVector(g.fwd, -along)
-    const inDisk = _radial.length() < g.radius
-    const crossed =
-      g.lastAlong < -2 && along > 2 && inDisk && Math.abs(along) < PASS_THICK * 2
-    const inside =
-      inDisk && Math.abs(along) < PASS_THICK
     g.lastAlong = along
 
-    if (!inside && !crossed) return 'none'
+    // Forward crossing only: the motion segment must hit the gate plane.
+    const crossedPlane = prevAlong < 0 && along >= 0
+    if (!crossedPlane) {
+      this.remember(px, py, pz)
+      return 'none'
+    }
 
+    const denom = along - prevAlong
+    const t = denom !== 0 ? MathUtils.clamp(-prevAlong / denom, 0, 1) : 1
+    const ix = this.prevX + (px - this.prevX) * t
+    const iy = this.prevY + (py - this.prevY) * t
+    const iz = this.prevZ + (pz - this.prevZ) * t
+    this.remember(px, py, pz)
+    _radial.set(ix - g.pos.x, iy - g.pos.y, iz - g.pos.z)
+    _radial.addScaledVector(g.fwd, -_radial.dot(g.fwd))
+    const radial = _radial.length()
+    if (radial > g.radius) return 'none'
+
+    this.lastPassQuality = 1 - Math.min(1, radial / Math.max(1, g.radius))
     g.passed = true
     this.next += 1
     if (this.next >= this.gates.length) {
@@ -178,6 +206,15 @@ export class MissionSystem {
     }
     this.paint()
     return 'pass'
+  }
+
+  activeGatePos(): Vector3 | null {
+    if (this.status !== 'live' || this.next >= this.gates.length) return null
+    return this.gates[this.next]!.pos
+  }
+
+  get totalGates(): number {
+    return this.gates.length
   }
 
   hud(px: number, py: number, pz: number, headingYaw = 0): MissionHud {
@@ -257,11 +294,19 @@ export class MissionSystem {
     this.beacon.visible = true
   }
 
+  private remember(px: number, py: number, pz: number): void {
+    this.prevX = px
+    this.prevY = py
+    this.prevZ = pz
+    this.havePrev = true
+  }
+
   private clear(): void {
     for (const g of this.gates) this.root.remove(g.root)
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
+    this.havePrev = false
     this.beacon.visible = false
     this.gateGeo?.dispose()
     this.gateGeo = null

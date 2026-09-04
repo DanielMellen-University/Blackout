@@ -249,6 +249,25 @@ body,
   transform: translateY(1px);
 }
 
+.btn-play:disabled {
+  cursor: wait;
+  filter: grayscale(0.35);
+  opacity: 0.7;
+  transform: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.title-status {
+  margin-top: 16px;
+  min-height: 1.2em;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
 .title-actions {
   display: flex;
   flex-direction: column;
@@ -545,6 +564,68 @@ body,
 
 #nav-alt {
   color: var(--ink-dim);
+}
+
+.run-results {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 8, 14, 0.55);
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+.run-results[hidden] {
+  display: none !important;
+}
+
+.run-results-panel {
+  width: min(420px, 100%);
+  padding: 22px 24px 20px;
+  background: rgba(6, 10, 16, 0.94);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.run-results-panel h2 {
+  font-size: 1.15rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.result-grid .label {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  color: var(--ink-mute);
+  margin-bottom: 4px;
+}
+
+.result-grid span:last-child {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.result-best {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 16px;
 }
 
 /* Flight warnings strip (top center) */

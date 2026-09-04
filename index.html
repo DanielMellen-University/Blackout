@@ -18,10 +18,11 @@
           <h1 class="title-logo">BLACKOUT</h1>
 
           <div class="title-actions">
-            <button type="button" id="btn-play" class="btn-play">PLAY</button>
+            <button type="button" id="btn-play" class="btn-play" disabled>PLAY</button>
             <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
             <button type="button" id="btn-info" class="btn-ghost">Game info</button>
           </div>
+          <p id="title-status" class="title-status">Finding an airfield…</p>
         </div>
       </div>
 
@@ -33,6 +34,8 @@
             <h2 id="menu-heading">Settings</h2>
             <div class="menu-stack">
               <button type="button" id="menu-resume" class="btn-play" hidden>Resume</button>
+              <button type="button" id="menu-retry" class="btn-ghost" hidden>Retry course</button>
+              <button type="button" id="menu-new-world" class="btn-ghost" hidden>New world</button>
               <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">
                 Fullscreen <span id="menu-fs-state">OFF</span>
               </button>
@@ -50,13 +53,13 @@
               <div><kbd>W</kbd><kbd>S</kbd></div><div>Pitch</div>
               <div><kbd>A</kbd><kbd>D</kbd></div><div>Yaw</div>
               <div><kbd>Q</kbd><kbd>E</kbd></div><div>Roll</div>
-              <div><kbd>Shift</kbd></div><div>Engine +</div>
-              <div><kbd>Ctrl</kbd></div><div>Engine − / brake</div>
+              <div><kbd>Shift</kbd> / <kbd>2</kbd></div><div>Engine +</div>
+              <div><kbd>Ctrl</kbd> / <kbd>1</kbd></div><div>Engine − / brake</div>
               <div><kbd>Space</kbd></div><div>Afterburner</div>
               <div><kbd>C</kbd></div><div>Camera mode</div>
               <div><kbd>N</kbd></div><div>Weather</div>
               <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
-              <div><kbd>R</kbd></div><div>Reset / new world</div>
+              <div><kbd>R</kbd></div><div>Retry same course</div>
               <div><kbd>Esc</kbd></div><div>Pause menu</div>
             </div>
             <button type="button" class="btn-ghost menu-back">Back</button>
@@ -69,8 +72,8 @@
               <li>Spawn on a flat airfield. Spool the engine, build speed, then rotate.</li>
               <li>Fly the glowing cyan rings in order. The top arrow points at the next gate.</li>
               <li>Takeoff: <kbd>Shift</kbd> to add power, then <kbd>W</kbd> at speed. Gear is automatic.</li>
-              <li>Crash or land, then <kbd>R</kbd> for a new world and circuit.</li>
-              <li>Engine percent is a speed target: 50% holds about 500 kts.</li>
+              <li>After the circuit, return and land to score. <kbd>R</kbd> retries the same course.</li>
+              <li>Engine percent is a speed target: 50% holds about 500 kts. Afterburner needs throttle open.</li>
             </ul>
             <p class="menu-about">Blackout is a browser arcade F-35 toy. No fuel, radar, or weapons. Just fly.</p>
             <button type="button" class="btn-ghost menu-back">Back</button>
@@ -97,8 +100,8 @@
             <span id="hud-cam">chase</span>
           </div>
           <div class="hud-row">
-            <span class="label">TIME</span>
-            <span id="hud-clock">12:00</span>
+            <span class="label">LAP</span>
+            <span id="hud-clock">0:00.00</span>
           </div>
           <div class="hud-row">
             <span class="label">WX</span>
@@ -226,6 +229,32 @@
         </div>
 
         <div id="hud-banner" class="banner" hidden></div>
+      </div>
+
+      <div id="run-results" class="run-results" hidden>
+        <div class="run-results-panel">
+          <p class="menu-kicker">Circuit</p>
+          <h2 id="result-title">COMPLETE RUN</h2>
+          <div class="result-grid">
+            <div>
+              <span class="label">SCORE</span>
+              <span id="result-score">0</span>
+            </div>
+            <div>
+              <span class="label">TIME</span>
+              <span id="result-time">0:00.00</span>
+            </div>
+            <div>
+              <span class="label">LANDING</span>
+              <span id="result-landing">0%</span>
+            </div>
+          </div>
+          <p id="result-best" class="result-best">BEST · 0</p>
+          <div class="menu-stack">
+            <button type="button" id="btn-retry" class="btn-play">Retry</button>
+            <button type="button" id="btn-new-world" class="btn-ghost">New world</button>
+          </div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

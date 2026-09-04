@@ -2,6 +2,7 @@ import {
   ACESFilmicToneMapping,
   MathUtils,
   PCFSoftShadowMap,
+  PerspectiveCamera,
   Quaternion,
   SRGBColorSpace,
   Vector3,
@@ -13,10 +14,12 @@ import { InputManager } from './core/InputManager'
 import {
   lockGameKeyboard,
   lockKeysOnly,
+  setFlightKeyCapture,
   suppressBrowserUi,
   toggleGameFullscreen,
 } from './core/suppressBrowserUi'
 import { Time } from './core/Time'
+import { ChallengeRun } from './systems/ChallengeRun'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { FlightAudio } from './audio/FlightAudio'
@@ -25,6 +28,7 @@ import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { GameMenu } from './ui/GameMenu'
 import { HUD } from './ui/HUD'
+import { RunResults } from './ui/RunResults'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 
@@ -33,13 +37,15 @@ async function boot(): Promise<void> {
   if (!canvas) throw new Error('#game canvas not found')
 
   const titleScreen = document.getElementById('title-screen')
-  const playBtn = document.getElementById('btn-play')
+  const playBtn = document.getElementById('btn-play') as HTMLButtonElement | null
   const overlay = document.getElementById('overlay')
   const menuEl = document.getElementById('menu')
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl)
 
   suppressBrowserUi(canvas)
+  const titleStatus = document.getElementById('title-status')
+  if (playBtn) playBtn.disabled = true
 
   const renderer = new WebGLRenderer({
     canvas,
@@ -54,6 +60,8 @@ async function boot(): Promise<void> {
   renderer.shadowMap.type = PCFSoftShadowMap
 
   const world = new World()
+  if (titleStatus) titleStatus.textContent = ''
+  if (playBtn) playBtn.disabled = false
   const aircraft = new Aircraft()
   aircraft.addTo(world.scene)
   // Place jet on the flat-biome airfield chosen at world reseed
@@ -64,9 +72,13 @@ async function boot(): Promise<void> {
   const input = new InputManager()
   const time = new Time()
   const hud = new HUD()
-  const collision = new CollisionSystem()
+  const collision = new CollisionSystem((jet) =>
+    world.hitObstacle(jet.position.x, jet.position.y, jet.position.z),
+  )
   const crashFx = new CrashFx(world.scene)
   const audio = new FlightAudio()
+  const results = new RunResults()
+  const challenge = new ChallengeRun()
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
   debug?.syncPad()
 
@@ -75,43 +87,67 @@ async function boot(): Promise<void> {
   let bannerUntil = 0
   let wasAirborne = false
 
+  const courseId = (): string => `seed:${world.worldSeed}`
+
+  const syncInputContext = (): void => {
+    const live = playing && !menu.paused && !results.open
+    input.flightLive = live
+    setFlightKeyCapture(live)
+  }
+
+  const resetFlight = (newWorld: boolean): void => {
+    results.hide()
+    if (newWorld) {
+      world.reseed()
+      debug?.syncPad()
+    } else {
+      world.mission.start(world.spawn.x, world.spawn.y, world.spawn.z, world.spawn.yaw)
+    }
+    aircraft.reset(world.spawn)
+    cameras.setMode(cameras.mode, aircraft)
+    crashFx.reset()
+    input.clearQueued()
+    input.resetFlightControls(0)
+    challenge.reset(courseId(), world.mission.totalGates)
+    banner = null
+    wasAirborne = false
+    time.reset()
+  }
+
   const startGame = (): void => {
     if (playing) return
     playing = true
     menu.close()
+    results.hide()
     titleScreen?.classList.add('is-hidden')
     if (overlay) {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
+    resetFlight(false)
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')
-    input.clearQueued()
-    input.resetFlightControls(0)
-    wasAirborne = false
-    banner = null
     void lockGameKeyboard()
     canvas.focus({ preventScroll: true })
     void audio.resume()
+    syncInputContext()
   }
 
   const quitToTitle = (): void => {
     playing = false
     audio.silence()
     menu.close()
+    results.hide()
     titleScreen?.classList.remove('is-hidden')
     if (overlay) {
       overlay.hidden = true
       overlay.classList.add('overlay-hidden')
     }
-    crashFx.reset()
-    aircraft.reset(world.spawn)
+    resetFlight(false)
     cameras.setMode('chase', aircraft)
     input.clearKeys()
-    input.resetFlightControls(0)
-    banner = null
-    wasAirborne = false
+    syncInputContext()
   }
 
   playBtn?.addEventListener('click', () => startGame())
@@ -121,8 +157,31 @@ async function boot(): Promise<void> {
   document.getElementById('btn-info')?.addEventListener('click', () => {
     menu.showTitlePage('info')
   })
-  document.getElementById('menu-resume')?.addEventListener('click', () => menu.close())
+  document.getElementById('menu-resume')?.addEventListener('click', () => {
+    menu.close()
+    input.clearQueued()
+    time.reset()
+    syncInputContext()
+  })
+  document.getElementById('menu-retry')?.addEventListener('click', () => {
+    menu.close()
+    resetFlight(false)
+    syncInputContext()
+  })
+  document.getElementById('menu-new-world')?.addEventListener('click', () => {
+    menu.close()
+    resetFlight(true)
+    syncInputContext()
+  })
   document.getElementById('menu-quit')?.addEventListener('click', () => quitToTitle())
+  document.getElementById('btn-retry')?.addEventListener('click', () => {
+    resetFlight(false)
+    syncInputContext()
+  })
+  document.getElementById('btn-new-world')?.addEventListener('click', () => {
+    resetFlight(true)
+    syncInputContext()
+  })
   document.getElementById('menu-fullscreen')?.addEventListener('click', () => {
     toggleGameFullscreen()
   })
@@ -150,10 +209,20 @@ async function boot(): Promise<void> {
           return
         }
         menu.togglePause()
-        if (menu.paused) input.clearQueued()
+        input.clearQueued()
+        time.reset()
+        syncInputContext()
         return
       }
       if (menu.open) return
+      if (results.open && playing) {
+        if (e.code === 'KeyR' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+          e.preventDefault()
+          resetFlight(false)
+          syncInputContext()
+        }
+        return
+      }
       if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
         if (e.code === 'Space') e.preventDefault()
         startGame()
@@ -195,87 +264,124 @@ async function boot(): Promise<void> {
   const tick = (nowMs: number): void => {
     requestAnimationFrame(tick)
 
-    const { frameDt } = time.beginFrame(nowMs)
-    const dt = frameDt > 0 ? Math.min(frameDt, 1 / 20) : 1 / 60
+    syncInputContext()
+    const simLive = playing && !menu.paused && !results.open
+    if (!simLive) {
+      time.skipFrame(nowMs)
+      aircraft.controls = input.sampleWithDt(0)
+      if (!playing) input.resetFlightControls(0)
+    } else {
+      const { steps, stepDt } = time.beginFrame(nowMs)
+      const dt = stepDt
 
-    if (playing && !menu.paused) {
       if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
       if (input.consumeWeatherCycle()) world.cycleWeather()
-      if (input.consumeReset()) {
-        world.reseed()
-        aircraft.reset(world.spawn)
-        cameras.setMode(cameras.mode, aircraft)
-        crashFx.reset()
-        debug?.syncPad()
-        input.clearQueued()
-        input.resetFlightControls(0)
-        banner = null
-        wasAirborne = false
+      if (input.consumeReset()) resetFlight(false)
+
+      for (let i = 0; i < steps; i++) {
+        aircraft.controls = input.sampleWithDt(dt)
+        aircraft.step(dt)
+
+        const touch = collision.check(aircraft)
+        if (aircraft.status !== 'crashed') {
+          const alt = altitudeAgl(
+            aircraft.position.x,
+            aircraft.position.y,
+            aircraft.position.z,
+            aircraft.controls.gearDown,
+          )
+          if (!aircraft.onGround && alt > 8) {
+            wasAirborne = true
+            aircraft.clearLanded()
+          }
+          if (touch === 'crash') {
+            const hit = aircraft.position.clone()
+            const v = aircraft.velocity.clone()
+            if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
+            aircraft.crash()
+            challenge.fail()
+            crashFx.trigger(hit, v)
+            cameras.impulse(1)
+            audio.playCue('crash')
+            showBanner('CRASH - press R', 4200)
+            break
+          }
+          const scoredTouch =
+            touch === 'landed' ||
+            (touch === 'roll' && challenge.phase === 'returning')
+          if (scoredTouch && wasAirborne && aircraft.status === 'ok') {
+            aircraft.markLanded()
+            wasAirborne = false
+            const pose = attitudeFromOrientation(aircraft.orientation)
+            const finished = challenge.finishLanding({
+              verticalSpeed: aircraft.impactVy || aircraft.velocity.y,
+              groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
+              pitchRad: pose.pitch,
+              rollRad: pose.roll,
+            })
+            if (finished) {
+              audio.playCue('landed')
+              results.show(finished)
+              syncInputContext()
+              break
+            }
+            if (touch === 'landed') {
+              audio.playCue('landed')
+              showBanner('LANDED')
+            }
+          }
+        }
+
+        if (aircraft.status !== 'crashed') {
+          const event = world.mission.update(
+            aircraft.position.x,
+            aircraft.position.y,
+            aircraft.position.z,
+          )
+          if (event === 'pass') {
+            challenge.recordGate(world.mission.lastPassQuality)
+            audio.playCue('gate')
+            showBanner('GATE CLEAR', 1200)
+          }
+          if (event === 'complete') {
+            challenge.recordGate(world.mission.lastPassQuality)
+            audio.playCue('complete')
+            showBanner('RETURN & LAND', 4200)
+          }
+        }
+
+        challenge.update(dt, aircraft.speed)
       }
 
-      aircraft.controls = input.sampleWithDt(dt)
-      aircraft.step(dt)
-
-      const event = world.mission.update(
-        aircraft.position.x,
-        aircraft.position.y,
-        aircraft.position.z,
-      )
-      if (event === 'pass') showBanner('GATE CLEAR', 1200)
-      if (event === 'complete') showBanner('CIRCUIT COMPLETE', 4200)
       world.mission.tick()
-
-      const touch = collision.check(aircraft)
-      if (aircraft.status !== 'crashed') {
-        if (!aircraft.onGround && aircraft.position.y > flightAltThreshold()) {
-          wasAirborne = true
-          aircraft.clearLanded()
-        }
-        if (touch === 'crash') {
-          const hit = aircraft.position.clone()
-          const v = aircraft.velocity.clone()
-          if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
-          aircraft.crash()
-          crashFx.trigger(hit, v)
-          cameras.impulse(1)
-          showBanner('CRASH - press R', 4200)
-        } else if (touch === 'landed' && wasAirborne && aircraft.status === 'ok') {
-          aircraft.markLanded()
-          showBanner('LANDED')
-          wasAirborne = false
-        }
-      }
-
       if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
         banner = null
       }
-    } else {
-      // Title idle, or pause: hold the jet, still run sky/terrain
-      aircraft.controls = input.sampleWithDt(0)
-      if (!playing) input.resetFlightControls(0)
     }
 
+    const renderDt = simLive ? 1 / 60 : 0
     world.update(
       aircraft.position.x,
       aircraft.position.y,
       aircraft.position.z,
-      dt,
+      Math.max(renderDt, 1 / 60),
+      simLive ? renderDt : 0,
     )
     const phase = world.atmosphere.phaseLabel
     const baseExp =
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
     renderer.toneMappingExposure = baseExp + crashFx.bloom * 1.35
-    crashFx.update(dt)
+    crashFx.update(simLive ? renderDt : 0)
 
     audio.update({
-      throttle: aircraft.controls.throttle,
-      boost: aircraft.controls.boost,
+      throttle: aircraft.engineState.lever,
+      boost: aircraft.engineState.afterburnerActive,
       speed: aircraft.speed,
-      mute: !playing || menu.paused || aircraft.status === 'crashed',
-      dt,
+      mute: !playing || menu.paused || results.open || aircraft.status === 'crashed',
+      dt: renderDt || 1 / 60,
     })
 
-    cameras.update(aircraft, dt)
+    cameras.update(aircraft, simLive ? renderDt : 0)
     renderer.render(world.scene, cameras.camera)
     debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
 
@@ -288,47 +394,55 @@ async function boot(): Promise<void> {
             aircraft.position.z,
             aircraft.controls.gearDown,
           )
-      const { pitch, roll, heading } = attitudeFromOrientation(aircraft.orientation)
+      const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
       const nav = world.mission.hud(
         aircraft.position.x,
         aircraft.position.y,
         aircraft.position.z,
-        heading,
       )
+      const gate = world.mission.activeGatePos()
       hud.update({
         y: alt,
         speed: aircraft.speed,
         cameraMode: cameras.modeLabel,
         fps: time.fps,
-        throttle: aircraft.controls.throttle,
-        boost: aircraft.controls.boost,
+        throttle: aircraft.engineState.lever,
+        boost: aircraft.engineState.afterburnerActive,
         gearDown: aircraft.controls.gearDown,
         onGround: aircraft.onGround,
         pitch,
         roll,
         warning: warn.text,
         warningLevel: warn.level,
-        clock: world.atmosphere.clockLabel,
+        clock: challenge.clockLabel,
         weather: world.atmosphere.weatherLabel,
         dayPhase: world.atmosphere.phaseLabel,
-        mission: nav.label,
+        mission: challenge.objectiveLabel,
         navDist: nav.dist,
-        navBearing: nav.bearing,
+        navBearing: gateScreenBearing(cameras.camera, gate),
         navAltDelta: nav.altDelta,
         banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
       })
     }
   }
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && playing && !menu.paused && !results.open) {
+      menu.openPause()
+      input.clearQueued()
+      time.reset()
+      syncInputContext()
+    }
+  })
+
+  challenge.reset(courseId(), world.mission.totalGates)
+  syncInputContext()
   requestAnimationFrame(tick)
 }
 
-function flightAltThreshold(): number {
-  return 8
-}
-
 const _fwd = new Vector3()
+const _gateView = new Vector3()
 const _inv = new Quaternion()
 const _localUp = new Vector3()
 
@@ -352,6 +466,22 @@ function attitudeFromOrientation(orientation: Quaternion): {
   return { pitch, roll, heading }
 }
 
+function gateScreenBearing(
+  camera: PerspectiveCamera,
+  gate: Vector3 | null,
+): number | null {
+  if (!gate) return null
+  camera.updateMatrixWorld()
+  _gateView.copy(gate).applyMatrix4(camera.matrixWorldInverse)
+  return Math.atan2(_gateView.x, -_gateView.z)
+}
+
 boot().catch((err) => {
   console.error('[Blackout] Failed to start', err)
+  const status = document.getElementById('title-status')
+  if (status) {
+    status.textContent = 'Could not create a world. Reload the page.'
+  }
+  const playBtn = document.getElementById('btn-play')
+  if (playBtn instanceof HTMLButtonElement) playBtn.disabled = true
 })

@@ -14,6 +14,8 @@ export class GameMenu {
   private readonly heading: HTMLElement
   private readonly btnResume: HTMLElement
   private readonly btnQuit: HTMLElement
+  private readonly btnRetry: HTMLElement
+  private readonly btnNewWorld: HTMLElement
   private readonly btnFs: HTMLElement
   private readonly fsState: HTMLElement
   private readonly btnClose: HTMLElement
@@ -26,6 +28,8 @@ export class GameMenu {
     this.heading = must(root, '#menu-heading')
     this.btnResume = must(root, '#menu-resume')
     this.btnQuit = must(root, '#menu-quit')
+    this.btnRetry = must(root, '#menu-retry')
+    this.btnNewWorld = must(root, '#menu-new-world')
     this.btnFs = must(root, '#menu-fullscreen')
     this.fsState = must(root, '#menu-fs-state')
     this.btnClose = must(root, '#menu-close')
@@ -69,6 +73,7 @@ export class GameMenu {
     this.root.hidden = false
     this.showView('root')
     this.syncChrome()
+    this.btnResume.focus({ preventScroll: true })
   }
 
   close(): void {
@@ -103,6 +108,8 @@ export class GameMenu {
     const pause = this.mode === 'pause'
     this.heading.textContent = pause ? 'Paused' : 'Settings'
     this.btnResume.hidden = !pause
+    this.btnRetry.hidden = !pause
+    this.btnNewWorld.hidden = !pause
     this.btnQuit.hidden = !pause
     this.btnClose.hidden = pause
     this.syncFullscreen()

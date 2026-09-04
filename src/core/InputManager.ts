@@ -16,6 +16,11 @@ export class InputManager {
   cameraToggleQueued = false
   resetQueued = false
   weatherCycleQueued = false
+  /**
+   * When false, keys are still tracked for stick continuity but C/R/N are not
+   * queued and browser-default suppression is left to the UI capture flag.
+   */
+  flightLive = false
 
   constructor(target: Window = window) {
     this.target = target
@@ -108,8 +113,21 @@ export class InputManager {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    // Block browser defaults for flight keys + any Ctrl/Cmd combo (Ctrl+W closes tab)
-    if (
+    if (this.flightLive && this.shouldPreventBrowserDefault(e)) {
+      e.preventDefault()
+    }
+
+    this.keys.add(e.code)
+    if (e.repeat) return
+    if (!this.flightLive) return
+
+    if (e.code === 'KeyC') this.cameraToggleQueued = true
+    if (e.code === 'KeyR') this.resetQueued = true
+    if (e.code === 'KeyN') this.weatherCycleQueued = true
+  }
+
+  private shouldPreventBrowserDefault(e: KeyboardEvent): boolean {
+    return (
       e.ctrlKey ||
       e.metaKey ||
       e.altKey ||
@@ -134,16 +152,7 @@ export class InputManager {
       e.code === 'KeyC' ||
       e.code === 'KeyN' ||
       e.code === 'F5'
-    ) {
-      e.preventDefault()
-    }
-
-    this.keys.add(e.code)
-    if (e.repeat) return
-
-    if (e.code === 'KeyC') this.cameraToggleQueued = true
-    if (e.code === 'KeyR') this.resetQueued = true
-    if (e.code === 'KeyN') this.weatherCycleQueued = true
+    )
   }
 
   private onKeyUp = (e: KeyboardEvent): void => {

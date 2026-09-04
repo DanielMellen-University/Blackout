@@ -1,4 +1,4 @@
-import type { ChallengeResult } from '../systems/ChallengeRun'
+import { formatTime, type ChallengeResult } from '../systems/ChallengeRun'
 
 /** Results screen for the takeoff → circuit → landing challenge loop. */
 export class RunResults {
@@ -25,7 +25,7 @@ export class RunResults {
   show(result: ChallengeResult): void {
     this.title.textContent = `${result.medal.toUpperCase()} RUN`
     this.score.textContent = result.totalScore.toLocaleString()
-    this.time.textContent = formatResultTime(result.elapsedSec)
+    this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
     this.best.textContent = result.isNewBest
       ? `NEW BEST · ${result.bestScore.toLocaleString()}`
@@ -45,8 +45,4 @@ function must(root: Document, id: string): HTMLElement {
   return el
 }
 
-function formatResultTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = seconds - mins * 60
-  return `${mins}:${secs.toFixed(2).padStart(5, '0')}`
-}
+

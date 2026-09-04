@@ -2,11 +2,24 @@
 
 ## 2026-09-04
 
+### Audit follow-up
+
+- Spawn search no longer throws; a missing pad falls back to a leveled origin disk, and a failed reseed keeps the live world.
+- Rendered water and collision now share one surface (ocean at sea level, inland water at 0.35 m).
+- Contact is swept along the motion path. Cliffs and ridges crash instead of elevating the jet. Water ditching and inverted/obstacle hits crash.
+- Gate passes require a forward plane crossing. The HUD arrow is projected through the active camera.
+- Simulation uses a fixed 60 Hz step with bounded catch-up. Pause, results, and a hidden tab freeze weather and daylight.
+- Menu keys no longer leak into flight. Tab/Enter work on title and pause. R retries the same course; pause/results offer New world.
+- Afterburner, plume, audio, and HUD share one engine state. Afterburner will not light with the throttle closed; ENG% stays the lever.
+- Circuit is a scored run (time, gate accuracy, landing) with a results screen and locally saved bests. Event cues play on gates, landing, and crash.
+- Stall / low-alt warnings are retuned and enabled.
+
 ### Audio
 
 - Engine rumble and wind hiss via Web Audio (procedural noise, no sample files).
 - Rumble follows throttle and afterburner; wind follows airspeed.
 - AudioContext resumes on Play; muted on title, pause, and crash.
+- Short procedural cues for gate, circuit complete, landing, and crash.
 
 ## 2026-08-13
 

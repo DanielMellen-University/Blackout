@@ -1,6 +1,11 @@
 import { MathUtils, Quaternion, Vector3 } from 'three'
-import { contactMinY } from '../world/ground'
-import type { Aircraft } from './Aircraft'
+import {
+  contactMinY,
+  sampleGroundNormal,
+  sampleGroundSurface,
+  undercarriageClearance,
+} from '../world/ground'
+import type { Aircraft, ContactSurfaceKind } from './Aircraft'
 import { flightConfig as C } from './flightConfig'
 
 const _fwd = new Vector3()
@@ -9,6 +14,19 @@ const _velDir = new Vector3()
 const _flatFwd = new Vector3()
 const _worldUp = new Vector3(0, 1, 0)
 const _spin = new Quaternion()
+const _prevPos = new Vector3()
+const _pt = new Vector3()
+const _normal = new Vector3()
+
+/** Body-frame probes: origin, nose, tail, wings, canopy. */
+const CONTACT_POINTS: ReadonlyArray<readonly [number, number, number]> = [
+  [0, 0, 0],
+  [0, 0, 7.2],
+  [0, 0, -4.8],
+  [5.4, 0, 0.4],
+  [-5.4, 0, 0.4],
+  [0, 1.05, 2.2],
+]
 
 /**
  * Arcade fighter model.
@@ -31,6 +49,7 @@ export class FlightModel {
     let onGround = this.grounded(position.y, minY, velocity.y, _up.y)
     const startedAirborne = !onGround
     aircraft.impactVy = 0
+    aircraft.impact = null
 
     const airspeed = velocity.length()
     const air = MathUtils.clamp(airspeed / C.airControlFullSpeed, 0, 1)
@@ -90,11 +109,11 @@ export class FlightModel {
 
     this.axes(orientation)
 
-    const lever = MathUtils.clamp(controls.throttle, 0, 1)
-    const boost = controls.boost
-    // ENG% is a speed command: 50% → 500 kts, 100% → 1000 kts. AB = dry max + extra.
-    const vmax = boost ? C.maxSpeedBoost : C.maxSpeed
-    const target = boost ? C.maxSpeedBoost : lever * C.maxSpeed
+    const engine = aircraft.engineState
+    const lever = engine.lever
+    const boost = engine.afterburnerActive
+    const vmax = engine.maxSpeed
+    const target = engine.targetSpeed
 
     // --- Gravity + simple lift (cancels g when fast and upright) ---
     // Lift must not add energy: after applying it, keep |v| from growing.
@@ -137,7 +156,7 @@ export class FlightModel {
     {
       const s = velocity.length()
       const err = target - s
-      const capAccel = boost ? C.maxAccelBoost : C.maxAccel
+      const capAccel = engine.maxAcceleration
       const capDecel =
         onGround && !boost && lever < 0.12 ? C.maxBrakeDecel : C.maxDecel
       const along = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
@@ -187,25 +206,121 @@ export class FlightModel {
 
     if (onGround && velocity.y < 0) velocity.y = 0
 
+    _prevPos.copy(position)
     position.addScaledVector(velocity, dt)
-    if (position.y < minY) {
-      const snap = minY - position.y
-      if (startedAirborne && velocity.y < 0) aircraft.impactVy = velocity.y
-      // Flying into a cliff / rising ridge — don't elevator onto the surface
-      if (startedAirborne && snap > 3.5) {
-        aircraft.impactVy = Math.min(aircraft.impactVy, C.crashVy - 1)
-      }
-      position.y = minY
-      if (velocity.y < 0) velocity.y = 0
-    } else if (
-      startedAirborne &&
-      position.y <= minY + 0.2 &&
-      velocity.y < 0
-    ) {
-      aircraft.impactVy = velocity.y
-    }
+    this.resolveContact(aircraft, _prevPos, startedAirborne)
 
     aircraft.syncMesh()
+  }
+
+  private resolveContact(
+    aircraft: Aircraft,
+    prev: Vector3,
+    startedAirborne: boolean,
+  ): void {
+    const { position, velocity, orientation, controls } = aircraft
+    const dx = position.x - prev.x
+    const dy = position.y - prev.y
+    const dz = position.z - prev.z
+    const dist = Math.hypot(dx, dy, dz)
+    const steps = Math.max(1, Math.min(24, Math.ceil(dist / C.contactSweepSpacing)))
+
+    let lastX = prev.x
+    let lastY = prev.y
+    let lastZ = prev.z
+
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps
+      const x = prev.x + dx * t
+      const y = prev.y + dy * t
+      const z = prev.z + dz * t
+      const hit = this.deepestHit(x, y, z, orientation, controls.gearDown)
+      if (!hit) {
+        lastX = x
+        lastY = y
+        lastZ = z
+        continue
+      }
+
+      if (startedAirborne) {
+        const nVel = velocity.dot(hit.normal)
+        const tang = Math.sqrt(Math.max(0, velocity.lengthSq() - nVel * nVel))
+        const imp = aircraft.impactState
+        imp.point.set(x, y, z)
+        imp.surfacePoint.set(hit.wx, hit.surfaceY, hit.wz)
+        imp.surfaceNormal.copy(hit.normal)
+        imp.preImpactVelocity.copy(velocity)
+        imp.normalVelocity = nVel
+        imp.verticalVelocity = velocity.y
+        imp.tangentialSpeed = tang
+        imp.surface = hit.kind
+        imp.gearDown = controls.gearDown
+        imp.startedAirborne = true
+        aircraft.impact = imp
+        if (velocity.y < 0) aircraft.impactVy = velocity.y
+
+        const wall = hit.normal.y < 0.55 || hit.depth > 3.5
+        if (wall) {
+          aircraft.impactVy = Math.min(aircraft.impactVy, C.crashVy - 1)
+          imp.normalVelocity = Math.min(nVel, C.crashVy - 1)
+          position.set(lastX, lastY, lastZ)
+          if (nVel < 0) velocity.addScaledVector(hit.normal, -nVel)
+          return
+        }
+      }
+
+      position.set(x, y + hit.depth, z)
+      if (velocity.y < 0) velocity.y = 0
+      const nv = velocity.dot(hit.normal)
+      if (nv < 0) velocity.addScaledVector(hit.normal, -nv)
+      return
+    }
+  }
+
+  private deepestHit(
+    ox: number,
+    oy: number,
+    oz: number,
+    orientation: Quaternion,
+    gearDown: boolean,
+  ): {
+    depth: number
+    normal: Vector3
+    kind: ContactSurfaceKind
+    wx: number
+    wz: number
+    surfaceY: number
+  } | null {
+    let depth = 0
+    let wx = ox
+    let wz = oz
+    let surfaceY = 0
+    let kind: ContactSurfaceKind = 'land'
+    let found = false
+
+    for (let i = 0; i < CONTACT_POINTS.length; i++) {
+      const p = CONTACT_POINTS[i]!
+      _pt.set(p[0], p[1], p[2]).applyQuaternion(orientation)
+      const px = ox + _pt.x
+      const py = oy + _pt.y
+      const pz = oz + _pt.z
+      const surface = sampleGroundSurface(px, pz)
+      const clearance = i === 0 ? undercarriageClearance(gearDown) : 0.4
+      const minY = surface.height + clearance
+      const d = minY - py
+      if (d > depth) {
+        found = true
+        depth = d
+        wx = px
+        wz = pz
+        surfaceY = surface.height
+        kind = surface.kind
+        sampleGroundNormal(px, pz, 2, _normal)
+      }
+    }
+
+    if (!found) return null
+    return { depth, normal: _normal, kind, wx, wz, surfaceY }
   }
 
   isOnGround(aircraft: Aircraft): boolean {

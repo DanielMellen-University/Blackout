@@ -13,7 +13,7 @@ import {
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
-import { sampleGroundHeight } from '../world/ground'
+import { altitudeAgl } from '../world/ground'
 import {
   createEngineState,
   resolveEngineState,
@@ -61,6 +61,19 @@ export class Aircraft {
   readonly orientation = new Quaternion()
   readonly angularVelocity = new Vector3()
   readonly engineState: EngineState = createEngineState()
+  /** Reused contact snapshot. `impact` points here when a new hit occurs. */
+  readonly impactState: AircraftImpact = {
+    point: new Vector3(),
+    surfacePoint: new Vector3(),
+    surfaceNormal: new Vector3(),
+    preImpactVelocity: new Vector3(),
+    normalVelocity: 0,
+    verticalVelocity: 0,
+    tangentialSpeed: 0,
+    surface: 'land',
+    gearDown: true,
+    startedAirborne: false,
+  }
   /** First terrain contact produced by the latest simulation step. */
   impact: AircraftImpact | null = null
   /**
@@ -179,7 +192,12 @@ export class Aircraft {
   /** Gear down near the surface, up once you have height. */
   private autoGear(): void {
     if (this.status === 'crashed') return
-    const agl = this.position.y - sampleGroundHeight(this.position.x, this.position.z)
+    const agl = altitudeAgl(
+      this.position.x,
+      this.position.y,
+      this.position.z,
+      this.controls.gearDown,
+    )
     if (this.onGround || agl < 16) this.controls.gearDown = true
     else if (agl > 30) this.controls.gearDown = false
   }

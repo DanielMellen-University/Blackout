@@ -16,6 +16,7 @@ import {
   applySlopeShading,
   biomeColor,
   sampleClimate,
+  terrainSurfaceFromClimate,
   type Biome,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity } from './vegetation'
@@ -405,9 +406,8 @@ export class TerrainSystem {
       const wx = originX + half + pos.getX(i)
       const wz = originZ + half + pos.getZ(i)
       const climate = sampleClimate(wx, wz)
-      let h = climate.height
-      if (climate.biome === 'water') h = Math.min(h, 0.35)
-      if (climate.biome === 'ocean') h = 0
+      const surface = terrainSurfaceFromClimate(climate)
+      const h = surface.height
       pos.setY(i, h)
       if (biomes) biomes[i] = climate.biome
       const [r, g, b] = biomeColor(
@@ -573,10 +573,11 @@ export class TerrainSystem {
       if (Math.abs(wx) < 34 && Math.abs(wz) < 120) continue
 
       const climate = sampleClimate(wx, wz)
-      const h = climate.height
+      const surface = terrainSurfaceFromClimate(climate)
+      const h = surface.height
       const f = climate.features
       if (climate.biome === 'ocean' || climate.biome === 'runway') continue
-      if (climate.biome === 'water' && f.river < 0.45 && f.lake < 0.45) continue
+      if (surface.kind === 'water' && f.river < 0.45 && f.lake < 0.45) continue
       if (f.river > 0.82) continue
       if (f.ravine > 0.55) continue
 

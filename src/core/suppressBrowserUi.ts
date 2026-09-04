@@ -89,7 +89,15 @@ function isEditableTarget(t: EventTarget | null): boolean {
   return false
 }
 
+/** True while flight owns the keyboard. Menus leave Tab/Enter/Space alone. */
+let captureFlightKeys = false
+
+export function setFlightKeyCapture(on: boolean): void {
+  captureFlightKeys = on
+}
+
 function shouldBlockKeydown(e: KeyboardEvent): boolean {
+  if (!captureFlightKeys) return false
   if (isEditableTarget(e.target)) return false
 
   const ctrl = e.ctrlKey || e.metaKey

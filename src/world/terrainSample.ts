@@ -789,9 +789,10 @@ export interface FlatSpawn {
 
 /**
  * Search for naturally flat inland ground with a clear takeoff lane.
- * Never returns an ocean / coastal pad.
+ * Returns null instead of throwing so boot/reseed can keep the previous world
+ * or fall back to {@link emergencyFlatSpawn}.
  */
-export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
+export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
   let best: FlatSpawn | null = null
   let bestScore = -1e9
 
@@ -820,9 +821,7 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
     }
   }
 
-  if (best && !nearOcean(best.x, best.z) && !isWet(sampleClimate(best.x, best.z))) {
-    return best
-  }
+  if (best) return best
 
   for (let r = 300; r <= 24000; r += 280) {
     for (let i = 0; i < 16; i++) {
@@ -835,7 +834,7 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
       const dep = bestDeparture(x, z, c.height)
       if (dep.score < -2e5) continue
       const foot = footprintRelief(x, z, dep.yaw)
-      if (!foot) continue
+      if (!foot || foot.relief > 2.4) continue
       return { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
     }
   }
@@ -849,9 +848,33 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
     if (scoreFlatPad(x, z, c) <= 0) continue
     if (nearOcean(x, z)) continue
     const dep = bestDeparture(x, z, c.height)
+    if (dep.score < -2e5) continue
+    const foot = footprintRelief(x, z, dep.yaw)
+    if (!foot || foot.relief > 3.5) continue
     return { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
   }
-  throw new Error('findFlatSpawn: no inland pad')
+  return null
+}
+
+/**
+ * Last-resort pad so boot/reseed never throw. The ops pad still flattens a
+ * disk here, so the strip is usable even if the surrounding biome is poor.
+ */
+export function emergencyFlatSpawn(): FlatSpawn {
+  const c = sampleClimate(0, 0)
+  const wet = c.biome === 'ocean' || c.biome === 'water'
+  return {
+    x: 0,
+    z: 0,
+    y: wet ? 8 : Math.max(8, c.height),
+    yaw: 0,
+    biome: FLAT_SPAWN_BIOMES.has(c.biome) ? c.biome : 'plains',
+  }
+}
+
+/** Always returns a spawn: searched pad, or the emergency origin disk. */
+export function findPlayableSpawn(maxRadius = 18000): FlatSpawn {
+  return findFlatSpawn(maxRadius) ?? emergencyFlatSpawn()
 }
 
 /** Higher is better. Negative = reject. */
