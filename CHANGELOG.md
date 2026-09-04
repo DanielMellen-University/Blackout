@@ -10,7 +10,7 @@
 - Contact is swept along the motion path. Cliffs and ridges crash instead of elevating the jet. Water ditching and inverted/obstacle hits crash.
 - Gate passes require a forward plane crossing. The HUD arrow is projected through the active camera.
 - Simulation uses a fixed 60 Hz step with bounded catch-up. The jet and camera interpolate between physics poses so high refresh rates do not jitter. Pause, results, and a hidden tab freeze weather and daylight.
-- Menu keys no longer leak into flight. Tab/Enter work on title and pause. R retries the same course; pause/results offer New world.
+- Menu keys no longer leak into flight. Tab/Enter work on title and pause. **R** rolls a new world; pause/results Retry keeps the same course.
 - Afterburner, plume, audio, and HUD share one engine state. Afterburner will not light with the throttle closed; ENG% stays the lever.
 - Circuit is a scored run (time, gate accuracy, landing) with a results screen and locally saved bests. Event cues play on gates, landing, and crash.
 - Stall / low-alt warnings are retuned and enabled.

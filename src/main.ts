@@ -216,7 +216,11 @@ async function boot(): Promise<void> {
       }
       if (menu.open) return
       if (results.open && playing) {
-        if (e.code === 'KeyR' || e.code === 'Enter' || e.code === 'NumpadEnter') {
+        if (e.code === 'KeyR') {
+          e.preventDefault()
+          resetFlight(true)
+          syncInputContext()
+        } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
           e.preventDefault()
           resetFlight(false)
           syncInputContext()
@@ -281,7 +285,7 @@ async function boot(): Promise<void> {
 
       if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
       if (input.consumeWeatherCycle()) world.cycleWeather()
-      if (input.consumeReset()) resetFlight(false)
+      if (input.consumeReset()) resetFlight(true)
 
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()

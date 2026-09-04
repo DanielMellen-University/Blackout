@@ -11,7 +11,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
-- Crash boom (arcing fireballs) or scored landing; **R** retries the same course
+- Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: chase, close, cockpit (locked to the jet), wingman, orbit; speed FOV juice
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
@@ -72,12 +72,12 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Scroll** | Zoom (not cockpit) |
 | **C** | Cycle camera |
 | **N** | Weather |
-| **R** | Retry same course |
+| **R** | New world + runway |
 | **Esc** | Pause menu |
 
 **Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear is automatic. Engine percent is the speed you want (50% ~ 500 kts).
 
-Landing is gentle with gear down. After the circuit, land to score. Hard impacts explode; press **R** to retry the same course. Fullscreen is a click toggle in the pause menu.
+Landing is gentle with gear down. After the circuit, land to score. Hard impacts explode; press **R** for a new world. Retry the same course from pause or the results screen. Fullscreen is a click toggle in the pause menu.
 
 ## Optional aircraft model
 
