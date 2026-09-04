@@ -16,6 +16,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
 - Procedural F-35 with afterburner plume and gear (optional GLB)
+- Engine rumble + wind hiss (Web Audio)
 - Streaming terrain (~8 km), LOD, fog wall, day/night, weather (**N**), clouds
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
@@ -95,7 +96,8 @@ Blackout/
 │   ├── camera/              # chase / cockpit
 │   ├── world/               # terrain, sky, airfield
 │   ├── ui/                  # HUD, menus
-│   └── systems/             # collision, mission, crash FX
+│   ├── systems/             # collision, mission, crash FX
+│   └── audio/               # engine/wind loops
 ├── CHANGELOG.md
 ├── index.html
 ├── package.json
@@ -106,7 +108,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: engine/wind audio, event SFX, vegetation v2, performance pass, warning retune.
+Next: event SFX, vegetation v2, performance pass, warning retune.
 
 Out of scope for now: radar, weapons, fuel.
 

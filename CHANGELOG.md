@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-04
+
+### Audio
+
+- Engine rumble and wind hiss via Web Audio (procedural noise, no sample files).
+- Rumble follows throttle and afterburner; wind follows airspeed.
+- AudioContext resumes on Play; muted on title, pause, and crash.
+
 ## 2026-08-13
 
 Session wrap. Arcade flight is playable: take off, fly the circuit, crash or land, reset.
