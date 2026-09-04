@@ -7,6 +7,7 @@ export class FlightAudio {
   private master: GainNode | null = null
   private engineGain: GainNode | null = null
   private windGain: GainNode | null = null
+  private effectsGain: GainNode | null = null
   private engineFilter: BiquadFilterNode | null = null
   private windFilter: BiquadFilterNode | null = null
   private engineSrc: AudioBufferSourceNode | null = null
@@ -92,6 +93,29 @@ export class FlightAudio {
     this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05)
   }
 
+  /** Short event cues keep checkpoints and landings readable without assets. */
+  playCue(kind: 'gate' | 'complete' | 'landed' | 'crash'): void {
+    const ctx = this.ctx
+    const output = this.effectsGain
+    if (!ctx || !output || ctx.state === 'suspended') return
+
+    const now = ctx.currentTime
+    if (kind === 'gate') {
+      this.tone(740, now, 0.11, 'sine', 0.18)
+      this.tone(980, now + 0.08, 0.14, 'sine', 0.14)
+    } else if (kind === 'complete') {
+      this.tone(520, now, 0.13, 'triangle', 0.16)
+      this.tone(660, now + 0.11, 0.13, 'triangle', 0.16)
+      this.tone(880, now + 0.22, 0.28, 'triangle', 0.18)
+    } else if (kind === 'landed') {
+      this.tone(420, now, 0.16, 'sine', 0.15)
+      this.tone(620, now + 0.14, 0.26, 'sine', 0.16)
+    } else {
+      this.tone(110, now, 0.5, 'sawtooth', 0.22, 42)
+      this.tone(58, now + 0.06, 0.7, 'triangle', 0.2, 28)
+    }
+  }
+
   dispose(): void {
     try {
       this.engineSrc?.stop()
@@ -106,6 +130,7 @@ export class FlightAudio {
     this.master = null
     this.engineGain = null
     this.windGain = null
+    this.effectsGain = null
     this.engineFilter = null
     this.windFilter = null
     this.built = false
@@ -138,6 +163,10 @@ export class FlightAudio {
     windGain.connect(windFilter)
     windFilter.connect(master)
 
+    const effectsGain = ctx.createGain()
+    effectsGain.gain.value = 0.8
+    effectsGain.connect(ctx.destination)
+
     const engBuf = makeNoiseBuffer(ctx, 2.5, 'brown')
     const windBuf = makeNoiseBuffer(ctx, 2.0, 'white')
 
@@ -156,11 +185,42 @@ export class FlightAudio {
     this.master = master
     this.engineGain = engineGain
     this.windGain = windGain
+    this.effectsGain = effectsGain
     this.engineFilter = engineFilter
     this.windFilter = windFilter
     this.engineSrc = engineSrc
     this.windSrc = windSrc
     this.built = true
+  }
+
+  private tone(
+    frequency: number,
+    start: number,
+    duration: number,
+    type: OscillatorType,
+    volume: number,
+    endFrequency = frequency,
+  ): void {
+    const ctx = this.ctx
+    const output = this.effectsGain
+    if (!ctx || !output) return
+
+    const oscillator = ctx.createOscillator()
+    const gain = ctx.createGain()
+    oscillator.type = type
+    oscillator.frequency.setValueAtTime(frequency, start)
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, endFrequency), start + duration)
+    gain.gain.setValueAtTime(0.0001, start)
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.015)
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+    oscillator.connect(gain)
+    gain.connect(output)
+    oscillator.start(start)
+    oscillator.stop(start + duration + 0.02)
+    oscillator.addEventListener('ended', () => {
+      oscillator.disconnect()
+      gain.disconnect()
+    })
   }
 }
 

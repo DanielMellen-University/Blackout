@@ -19,6 +19,8 @@ export const flightConfig = {
 
   maxAccel: 26,
   maxAccelBoost: 38,
+  /** Afterburner cannot light with the throttle effectively closed. */
+  afterburnerMinThrottle: 0.05,
   /** How hard IAS chases the ENG% target (1/s). */
   speedSeek: 1.45,
 
@@ -58,6 +60,13 @@ export const flightConfig = {
 
   crashVy: -14,
   softLandingVy: -6,
+
+  /** Contact / landing envelope. */
+  contactSweepSpacing: 2,
+  maxLandingSpeed: 75,
+  maxLandingSlope: 14 * (Math.PI / 180),
+  maxLandingPitch: 24 * (Math.PI / 180),
+  maxLandingBank: 30 * (Math.PI / 180),
 
   spawn: {
     position: { x: 0, y: 1.4, z: -45 },

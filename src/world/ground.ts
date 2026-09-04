@@ -1,5 +1,9 @@
+import { Vector3 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
-import { sampleTerrainHeight } from './terrainSample'
+import {
+  sampleTerrainSurface,
+  type TerrainSurface,
+} from './terrainSample'
 
 /**
  * Single source of truth for terrain height and aircraft contact height.
@@ -8,9 +12,28 @@ import { sampleTerrainHeight } from './terrainSample'
 
 /** World ground surface Y at horizontal position (infinite heightfield). */
 export function sampleGroundHeight(x: number, z: number): number {
-  const h = sampleTerrainHeight(x, z)
-  // Treat open ocean as a flat sea surface for contact / AGL
-  return h < 0 ? 0 : h
+  return sampleGroundSurface(x, z).height
+}
+
+/** The same resolved surface descriptor consumed by terrain rendering. */
+export function sampleGroundSurface(x: number, z: number): TerrainSurface {
+  return sampleTerrainSurface(x, z)
+}
+
+/**
+ * Up-facing surface normal, sampled from the resolved contact heightfield.
+ * Pass a target in hot paths to avoid allocating a Vector3 every query.
+ */
+export function sampleGroundNormal(
+  x: number,
+  z: number,
+  sampleDistance = 2,
+  target = new Vector3(),
+): Vector3 {
+  const d = Math.max(0.05, sampleDistance)
+  const dx = sampleGroundHeight(x + d, z) - sampleGroundHeight(x - d, z)
+  const dz = sampleGroundHeight(x, z + d) - sampleGroundHeight(x, z - d)
+  return target.set(-dx, d * 2, -dz).normalize()
 }
 
 /** Gear or belly clearance above the surface (meters). */

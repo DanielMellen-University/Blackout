@@ -25,6 +25,11 @@ export class Time {
     return { frameDt }
   }
 
+  /** Discard wall time accumulated while paused, hidden, or unfocused. */
+  reset(nowMs: number | null = null): void {
+    this.lastMs = nowMs
+  }
+
   get fps(): number {
     return this.fpsSmoothed
   }

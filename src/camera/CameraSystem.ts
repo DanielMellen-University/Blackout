@@ -113,6 +113,8 @@ export class CameraSystem {
 
   /** Smoothed 0–1 speed juice for FOV / pullback. */
   private speedJuice = 0
+  /** Last reliable horizontal heading; retained while the nose is near vertical. */
+  private stableHeading = 0
 
   /** Extra clearance above ground surface for the lens (meters). */
   groundClearance = 1.15
@@ -265,7 +267,10 @@ export class CameraSystem {
    */
   private aircraftHeading(aircraft: Aircraft): number {
     _forward.set(0, 0, 1).applyQuaternion(aircraft.orientation)
-    return Math.atan2(_forward.x, _forward.z)
+    if (Math.hypot(_forward.x, _forward.z) > 0.08) {
+      this.stableHeading = Math.atan2(_forward.x, _forward.z)
+    }
+    return this.stableHeading
   }
 
   /**
@@ -363,30 +368,25 @@ export class CameraSystem {
     desired: Vector3,
     out: Vector3,
   ): void {
-    // Shared ground query under the desired camera XY
-    const minY = cameraMinY(desired.x, desired.z, this.groundClearance)
     out.copy(desired)
-
-    if (pivot.y >= minY && desired.y >= minY) {
-      return
-    }
-
     _toCam.subVectors(desired, pivot)
-    const dy = _toCam.y
 
-    if (Math.abs(dy) < 1e-6) {
-      out.y = minY
-      return
-    }
+    // Check the whole sightline. Endpoint-only clamping lets the camera pass
+    // through a ridge between the jet and its desired chase position.
+    const samples = 10
+    for (let i = 1; i <= samples; i++) {
+      const t = i / samples
+      _desired.copy(pivot).addScaledVector(_toCam, t)
+      const floor = cameraMinY(_desired.x, _desired.z, this.groundClearance)
+      if (_desired.y >= floor) continue
 
-    const t = (minY - pivot.y) / dy
-
-    if (t >= 0 && t <= 1) {
-      out.copy(pivot).addScaledVector(_toCam, t)
-      out.lerp(pivot, 0.015)
-      out.y = Math.max(out.y, minY)
-    } else if (desired.y < minY) {
-      out.y = minY
+      const safeT = Math.max(0.06, (i - 1.25) / samples)
+      out.copy(pivot).addScaledVector(_toCam, safeT)
+      out.y = Math.max(
+        out.y,
+        cameraMinY(out.x, out.z, this.groundClearance),
+      )
+      break
     }
 
     const minSep = 1.5

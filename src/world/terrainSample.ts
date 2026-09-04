@@ -86,6 +86,41 @@ export interface Climate {
   coastal: number
 }
 
+export type TerrainSurfaceKind = 'land' | 'water'
+
+/**
+ * The physical and rendered top of the world at one horizontal position.
+ *
+ * Climate height describes the generated terrain before water is filled.  It
+ * is useful to biome generation, but it is not always the visible surface:
+ * ocean and inland water are deliberately flat.  Rendering, collision, AGL,
+ * props, and cameras must use this resolved surface instead of applying their
+ * own water rules.
+ */
+export interface TerrainSurface {
+  height: number
+  kind: TerrainSurfaceKind
+  biome: Biome
+}
+
+export const INLAND_WATER_LEVEL = 0.35
+
+export function terrainSurfaceFromClimate(
+  climate: Pick<Climate, 'height' | 'biome'>,
+): TerrainSurface {
+  if (climate.biome === 'ocean') {
+    return { height: SEA_LEVEL, kind: 'water', biome: climate.biome }
+  }
+  if (climate.biome === 'water') {
+    return {
+      height: Math.min(climate.height, INLAND_WATER_LEVEL),
+      kind: 'water',
+      biome: climate.biome,
+    }
+  }
+  return { height: climate.height, kind: 'land', biome: climate.biome }
+}
+
 /** Single domain warp — larger warp = softer large-scale biome edges. */
 function warp(x: number, z: number): [number, number] {
   const wx = x + (fbm(x * 0.00018 + 2, z * 0.00018 - 1, 2) - 0.5) * 420
@@ -767,9 +802,11 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
       const x = Math.cos(ang) * ring
       const z = Math.sin(ang) * ring
       const c = sampleClimate(x, z)
-      if (isWet(c) || nearOcean(x, z)) continue
       const pad = scoreFlatPad(x, z, c)
       if (pad < 0) continue
+      // The coastal scan is far more expensive than the local pad test.  Only
+      // run it for candidates that could actually become an airfield.
+      if (nearOcean(x, z)) continue
       const dep = bestDeparture(x, z, c.height)
       if (dep.score < -2e5) continue
       const foot = footprintRelief(x, z, dep.yaw)
@@ -793,8 +830,8 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
       const x = Math.cos(a) * r
       const z = Math.sin(a) * r
       const c = sampleClimate(x, z)
-      if (isWet(c) || nearOcean(x, z)) continue
       if (scoreFlatPad(x, z, c) <= 0) continue
+      if (nearOcean(x, z)) continue
       const dep = bestDeparture(x, z, c.height)
       if (dep.score < -2e5) continue
       const foot = footprintRelief(x, z, dep.yaw)
@@ -809,8 +846,8 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn {
     const x = Math.cos(a) * r
     const z = Math.sin(a) * r
     const c = sampleClimate(x, z)
-    if (isWet(c) || nearOcean(x, z)) continue
     if (scoreFlatPad(x, z, c) <= 0) continue
+    if (nearOcean(x, z)) continue
     const dep = bestDeparture(x, z, c.height)
     return { x, z, y: c.height, yaw: dep.yaw, biome: c.biome }
   }
@@ -959,8 +996,13 @@ function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
   return score
 }
 
+export function sampleTerrainSurface(x: number, z: number): TerrainSurface {
+  return terrainSurfaceFromClimate(sampleClimate(x, z))
+}
+
+/** Resolved rendered/contact surface height. */
 export function sampleTerrainHeight(x: number, z: number): number {
-  return sampleClimate(x, z).height
+  return sampleTerrainSurface(x, z).height
 }
 
 function biomeColorSolid(

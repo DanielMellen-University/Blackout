@@ -14,6 +14,11 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createPlaceholderF35 } from './createPlaceholderF35'
 import { sampleGroundHeight } from '../world/ground'
+import {
+  createEngineState,
+  resolveEngineState,
+  type EngineState,
+} from './EngineState'
 import { flightConfig } from './flightConfig'
 import { FlightModel } from './FlightModel'
 
@@ -25,6 +30,27 @@ const _Y_UP = new Vector3(0, 1, 0)
 
 export type AircraftStatus = 'ok' | 'crashed' | 'landed'
 
+export type ContactSurfaceKind = 'land' | 'water'
+
+/** Immutable snapshot of a newly detected terrain contact. */
+export interface AircraftImpact {
+  /** Aircraft-origin position at the first detected contact. */
+  point: Vector3
+  /** Terrain point directly below the aircraft origin. */
+  surfacePoint: Vector3
+  /** Unit surface normal pointing out of the terrain. */
+  surfaceNormal: Vector3
+  /** Velocity immediately before contact resolution. */
+  preImpactVelocity: Vector3
+  /** Negative when travelling into the terrain surface. */
+  normalVelocity: number
+  verticalVelocity: number
+  tangentialSpeed: number
+  surface: ContactSurfaceKind
+  gearDown: boolean
+  startedAirborne: boolean
+}
+
 /**
  * Aircraft entity: sim state + Three.js mesh.
  */
@@ -34,6 +60,9 @@ export class Aircraft {
   readonly velocity = new Vector3()
   readonly orientation = new Quaternion()
   readonly angularVelocity = new Vector3()
+  readonly engineState: EngineState = createEngineState()
+  /** First terrain contact produced by the latest simulation step. */
+  impact: AircraftImpact | null = null
   /**
    * Vertical speed at the moment we touched this frame (negative = downward).
    * 0 if we did not newly contact. Collision reads this, not post-clamp vy.
@@ -102,11 +131,13 @@ export class Aircraft {
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
     this.impactVy = 0
+    this.impact = null
     _spawnQuat.setFromAxisAngle(_Y_UP, yaw)
     this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
     this.controls.gearDown = true
     this.controls.throttle = s.throttle
+    resolveEngineState(this.controls, this.engineState)
     this.status = 'ok'
     this.mesh.visible = true
     this.syncMesh()
@@ -117,6 +148,7 @@ export class Aircraft {
       this.updateVisuals(dt)
       return
     }
+    resolveEngineState(this.controls, this.engineState)
     this.flight.step(this, dt)
     this.autoGear()
     this.updateVisuals(dt)
@@ -127,8 +159,10 @@ export class Aircraft {
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
     this.impactVy = 0
+    this.impact = null
     this.controls.throttle = 0
     this.controls.boost = false
+    resolveEngineState(this.controls, this.engineState)
     this.mesh.visible = false
     this.updateVisuals(0)
   }
@@ -168,9 +202,14 @@ export class Aircraft {
     if (!ab) return
 
     // Idle: tiny; throttle: glow; boost: full plume
-    const thr = this.controls.throttle
-    const boost = this.controls.boost && thr > 0.05
-    const power = this.status === 'crashed' ? 0 : boost ? 1 : thr * 0.22
+    const engine = this.engineState
+    const boost = engine.afterburnerActive
+    const power =
+      this.status === 'crashed'
+        ? 0
+        : boost
+          ? engine.effectivePower
+          : engine.lever * 0.22
     ab.visible = power > 0.04
 
     if (!ab.visible) return
