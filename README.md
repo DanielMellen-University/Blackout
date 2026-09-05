@@ -17,7 +17,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - Engine rumble + wind hiss (Web Audio)
-- Streaming terrain (~8 km), nested detail levels, continuous biome/valley transitions, level water basins, slope-aware vegetation, day/night, weather (**N**), clouds
+- Streaming terrain (~8 km), nested detail levels, continuous biome/valley transitions, level water basins, day/night, weather (**N**), clouds
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack

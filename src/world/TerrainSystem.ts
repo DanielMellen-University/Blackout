@@ -43,6 +43,8 @@ export const VIEW_RADIUS = 20
  * inside this hidden margin so you never watch tiles pop in.
  */
 export const FOG_MARGIN_CHUNKS = 2
+/** Temporary art hold: the current tree/rock kit is disabled until it is rebuilt. */
+export const ENABLE_VEGETATION = false
 /** Detailed props only near the jet (cells). */
 const PROP_RADIUS = 3
 /** Soft opacity fade across the fog margin. */
@@ -298,7 +300,7 @@ export class TerrainSystem {
         if (existing) {
           existing.fadingOut = false
           const lod = lodWithHysteresis(dist, existing.lod)
-          const wantProps = dist <= PROP_RADIUS + (existing.hasProps ? 1 : 0)
+          const wantProps = ENABLE_VEGETATION && dist <= PROP_RADIUS + (existing.hasProps ? 1 : 0)
           const needsRebuild =
             lod !== existing.lod || wantProps !== existing.hasProps
           if (needsRebuild && !this.pendingKeys.has(key)) {
@@ -353,7 +355,7 @@ export class TerrainSystem {
       if (dist * dist > VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS) continue
 
       const existing = this.chunks.get(key)
-      const withProps = dist <= PROP_RADIUS + (existing?.hasProps ? 1 : 0)
+      const withProps = ENABLE_VEGETATION && dist <= PROP_RADIUS + (existing?.hasProps ? 1 : 0)
       if (existing) {
         if (!job.rebuild) continue
         const lod = lodWithHysteresis(dist, existing.lod)

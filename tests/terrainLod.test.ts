@@ -126,4 +126,11 @@ describe('visible mesh contact sampling', () => {
     }
     terrain.clearAll()
   })
+
+  it('keeps the temporary vegetation hold free of tree and rock groups', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 24)
+    expect(terrain.root.getObjectByName('TerrainProps')).toBeUndefined()
+    terrain.clearAll()
+  })
 })
