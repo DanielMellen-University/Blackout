@@ -12,7 +12,7 @@ import {
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { createDefaultControls, type ControlState } from '../core/types'
-import { createPlaceholderF35 } from './createPlaceholderF35'
+import { createF35Model } from './createF35Model'
 import { altitudeAgl } from '../world/ground'
 import {
   createEngineState,
@@ -93,11 +93,12 @@ export class Aircraft {
   status: AircraftStatus = 'ok'
 
   private readonly flight = new FlightModel()
+  private gearExtension = 1
 
   constructor() {
     this.mesh = new Group()
     this.mesh.name = 'Aircraft'
-    const placeholder = createPlaceholderF35()
+    const placeholder = createF35Model()
     placeholder.name = 'model'
     this.mesh.add(placeholder)
     this.reset()
@@ -244,16 +245,28 @@ export class Aircraft {
   syncMesh(): void {
     this.mesh.position.copy(this.position)
     this.mesh.quaternion.copy(this.orientation)
-    this.updateVisuals(0)
   }
 
   /**
-   * Gear visibility + afterburner plume (placeholder model).
+   * Articulated gear and power-driven exhaust for the procedural model.
    * Safe no-ops if nodes missing (GLB path).
    */
   private updateVisuals(dt: number): void {
     const gear = this.mesh.getObjectByName('landingGear')
-    if (gear) gear.visible = this.controls.gearDown
+    const target = this.controls.gearDown ? 1 : 0
+    this.gearExtension = dt === 0
+      ? target
+      : MathUtils.damp(this.gearExtension, target, 4, dt)
+    if (gear) {
+      gear.visible = this.gearExtension > 0.015
+      const folded = 1 - this.gearExtension
+      const nose = gear.getObjectByName('gearNose')
+      const left = gear.getObjectByName('gearLeft')
+      const right = gear.getObjectByName('gearRight')
+      if (nose) nose.rotation.x = -folded * Math.PI * 0.5
+      if (left) left.rotation.z = folded * Math.PI * 0.5
+      if (right) right.rotation.z = -folded * Math.PI * 0.5
+    }
 
     const ab = this.mesh.getObjectByName('afterburner')
     if (!ab) return
@@ -269,22 +282,20 @@ export class Aircraft {
           : engine.lever * 0.22
     ab.visible = power > 0.04
 
-    if (!ab.visible) return
-
     // Stretch plume aft with power (group origin is nozzle lip — scale keeps flame at tail)
     const pulse =
       boost && dt > 0 ? 1 + Math.sin(performance.now() * 0.028) * 0.08 : 1
-    const len = (0.45 + power * 1.55) * pulse
-    const fat = 0.65 + power * 0.55
+    const len = (0.35 + Math.min(power, 1.25) * 1.05) * pulse
+    const fat = 0.82 + Math.min(power, 1.25) * 0.15
     ab.scale.set(fat, fat, len)
 
     ab.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
       const mat = obj.material
       if (mat instanceof MeshBasicMaterial) {
-        if (mat.name === 'abCore') mat.opacity = 0.55 + power * 0.45
-        else if (mat.name === 'abMid') mat.opacity = 0.25 + power * 0.5
-        else if (mat.name === 'abOuter') mat.opacity = 0.12 + power * 0.35
+        if (mat.name === 'abCore') mat.opacity = 0.22 + power * 0.24
+        else if (mat.name === 'abMid') mat.opacity = 0.12 + power * 0.2
+        else if (mat.name === 'abOuter') mat.opacity = 0.06 + power * 0.12
       }
       if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
         mat.emissiveIntensity = MathUtils.lerp(0.25, 2.8, power)
@@ -296,7 +307,7 @@ export class Aircraft {
       if (!(obj instanceof Mesh)) return
       const mat = obj.material
       if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
-        mat.emissiveIntensity = MathUtils.lerp(0.25, 3.2, power)
+        mat.emissiveIntensity = MathUtils.lerp(0, 3.2, power)
       }
     })
   }

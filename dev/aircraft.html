@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Blackout — aircraft art review</title>
+<style>
+  body { margin:0; background:#18222c; color:#e6edf3; font:14px system-ui }
+  nav { position:absolute; top:20px; left:20px; display:flex; gap:12px; align-items:center }
+  button { background:#293b4b; color:inherit; border:1px solid #5b7286; padding:10px 16px; cursor:pointer }
+  #stats { position:absolute; bottom:20px; left:20px; color:#aabccb }
+</style>
+<nav><b>BLACKOUT / AIRCRAFT REVIEW</b>
+  <button id="gear">Retract gear</button><button id="boost">Afterburner on</button>
+  <button id="front">Front quarter</button><button id="rear">Rear quarter</button>
+  <button id="side">Side</button><button id="top">Top</button>
+</nav>
+<div id="stats"></div>
+<script type="module">
+import * as T from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { Aircraft } from '/src/aircraft/Aircraft.ts'
+import { setContactHeightSampler } from '/src/world/ground.ts'
+const renderer = new T.WebGLRenderer({antialias:true})
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
+renderer.setSize(innerWidth,innerHeight)
+renderer.toneMapping = T.ACESFilmicToneMapping
+document.body.append(renderer.domElement)
+const scene = new T.Scene()
+scene.background = new T.Color('#18222c')
+scene.add(new T.HemisphereLight(0xe9f4ff,0x526170,2.2))
+for (const [x,y,z,intensity] of [[-10,16,14,3],[12,5,-10,2]]) {
+  const light=new T.DirectionalLight(0xffffff,intensity)
+  light.position.set(x,y,z); scene.add(light)
+}
+const aircraft = new Aircraft()
+setContactHeightSampler(()=>0)
+scene.add(aircraft.mesh)
+const camera = new T.PerspectiveCamera(40,innerWidth/innerHeight,.1,100)
+const controls = new OrbitControls(camera,renderer.domElement)
+controls.target.set(0,.15,0)
+const view=(x,y,z)=>{camera.position.set(x,y,z); controls.update()}
+view(15,9,19)
+document.querySelector('#front').onclick=()=>view(15,9,19)
+document.querySelector('#rear').onclick=()=>view(15,7,-20)
+document.querySelector('#side').onclick=()=>view(25,3,0)
+document.querySelector('#top').onclick=()=>view(0,27,.01)
+let gear=true, boost=false, previous=performance.now()
+document.querySelector('#gear').onclick=e=>{gear=!gear;e.target.textContent=gear?'Retract gear':'Extend gear'}
+document.querySelector('#boost').onclick=e=>{boost=!boost;e.target.textContent=boost?'Afterburner off':'Afterburner on'}
+onresize=()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+renderer.setAnimationLoop(now=>{
+  const dt=Math.min((now-previous)/1000,1/30); previous=now
+  aircraft.position.set(0,gear?1.4:1000,0); aircraft.velocity.set(0,0,0)
+  aircraft.orientation.identity(); aircraft.angularVelocity.set(0,0,0)
+  aircraft.controls.throttle=boost?1:0; aircraft.controls.boost=boost
+  aircraft.step(dt)
+  aircraft.mesh.position.set(0,0,0); aircraft.mesh.quaternion.identity()
+  renderer.render(scene,camera)
+  document.querySelector('#stats').textContent=renderer.info.render.triangles.toLocaleString()+' triangles · drag to orbit · scroll to zoom'
+})
+</script>
+</html>
