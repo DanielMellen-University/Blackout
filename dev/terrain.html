@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<title>Blackout — terrain review</title>
+<style>
+  body { margin:0; color:#e8f2ff; font:14px system-ui }
+  nav { position:absolute; top:20px; left:20px; padding:14px; background:#132030dd }
+  button { margin-left:16px; padding:10px; cursor:pointer }
+</style>
+<nav><b>BLACKOUT / TERRAIN REVIEW</b><button id="reseed">New world</button>
+  <span id="seed"></span> · drag to orbit · scroll to zoom
+  <span id="stats"></span>
+</nav>
+<script type="module">
+import * as T from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { World } from '/src/world/World.ts'
+const renderer=new T.WebGLRenderer({antialias:true})
+renderer.setSize(innerWidth,innerHeight)
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))
+renderer.toneMapping=T.ACESFilmicToneMapping
+document.body.append(renderer.domElement)
+const world=new World()
+const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,1,14000)
+const controls=new OrbitControls(camera,renderer.domElement)
+function frameWorld(){
+  const {x,y,z}=world.spawn
+  world.atmosphere.timeOfDay=.48
+  world.atmosphere.setWeather('clear')
+  camera.position.set(x+850,y+470,z-700)
+  controls.target.set(x,y+15,z+500);controls.update()
+  // Warm the review scene even when a background browser throttles animation.
+  for(let i=0;i<400;i++) world.terrain.update(x,z+500,1/30)
+  world.atmosphere.update(10,x,y,z)
+  world.atmosphere.timeOfDay=.48
+  world.atmosphere.update(0,x,y,z)
+  document.querySelector('#seed').textContent=' Seed '+Math.round(world.worldSeed)
+}
+frameWorld()
+document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
+let previous=performance.now()
+let frames=0
+renderer.setAnimationLoop(now=>{
+  const dt=Math.min((now-previous)/1000,1/30);previous=now
+  world.atmosphere.timeOfDay=.48
+  world.update(controls.target.x,controls.target.y,controls.target.z,dt)
+  renderer.render(world.scene,camera)
+  frames++
+  document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · sun '+world.sun.intensity.toFixed(2)+' · frame '+frames
+})
+onresize=()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+</script>
+</html>

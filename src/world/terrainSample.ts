@@ -113,7 +113,7 @@ export function terrainSurfaceFromClimate(
   }
   if (climate.biome === 'water') {
     return {
-      height: Math.min(climate.height, INLAND_WATER_LEVEL),
+      height: INLAND_WATER_LEVEL,
       kind: 'water',
       biome: climate.biome,
     }
@@ -162,7 +162,8 @@ function moistureAt(wx: number, wz: number): number {
 }
 
 function temperatureAt(wx: number, wz: number, z: number): number {
-  const lat = 0.5 + z * 0.000045
+  // Repeating latitude belts keep climate varied in either direction forever.
+  const lat = 0.5 + Math.sin(z * 0.000045) * 0.5
   let t =
     lat * 0.18 +
     fbm(wx * 0.0003 - 50, wz * 0.0003 + 20, 2) * 0.68 +
@@ -369,7 +370,6 @@ function biomeFitness(
   elev: number,
   moisture: number,
   temperature: number,
-  features: TerrainFeatures,
   land: number,
   mesaProv: number,
   wet: number,
@@ -440,16 +440,8 @@ function biomeFitness(
     (1 - aridish * 0.75) *
     (1 - arid * 0.85)
 
-  // Inland water depression (soft, rarely dominates land)
-  const waterFit =
-    Math.max(features.lake, features.pond * 0.9, features.river * 0.85) *
-    (1 - smoothstep(40, 80, elev))
-  if (waterFit > 0.2) w.water = waterFit * 1.1
-
-  // Kill tiny noise
-  for (const k of Object.keys(w) as Biome[]) {
-    if ((w[k] ?? 0) < 0.04) delete w[k]
-  }
+  // Water is resolved from the carved elevation, never a winning biome score.
+  // Even a tiny biome weight matters: dropping it caused visible height steps.
   return w
 }
 
@@ -502,7 +494,7 @@ function resolveBiomeBlend(weights: BiomeWeightMap): {
   // Mix toward secondary when close (seamless boundary)
   const mix =
     bestV > 0 && secondV > 0
-      ? clamp01((secondV / bestV) * 0.55)
+      ? secondV / (bestV + secondV)
       : 0
   return { primary: best, secondary: second, mix, weights: norm }
 }
@@ -530,9 +522,7 @@ function shapedHeightForBiome(
       )
     case 'mesa': {
       let mh = mesaHeightW(Math.max(h, base * 0.75), wx, wz)
-      if (features.ravine > 0.2) {
-        mh -= Math.pow(features.ravine, 1.45) * (38 + Math.max(0, mh) * 0.28)
-      }
+      mh -= Math.pow(features.ravine, 1.45) * (38 + Math.max(0, mh) * 0.28)
       return mh
     }
     case 'swamp':
@@ -601,27 +591,21 @@ function heightCoreW(
 
   let h = base
 
-  if (features.lake > 0.35 && moisture > 0.35) {
-    h -= Math.pow(features.lake, 1.4) * (18 + Math.max(0, h) * 0.18)
-  }
-  if (features.pond > 0.55) {
-    h -= Math.pow(features.pond, 1.4) * 12
-  }
+  h -= Math.pow(features.lake, 1.4) * (18 + Math.max(0, h) * 0.18) * smoothstep(.25, .45, moisture)
+  h -= Math.pow(features.pond, 1.4) * 12
 
   const mesaProv = mesaProvince(wx, wz)
   const wet = wetProvince(wx, wz)
   const arid = aridProvince(wx, wz)
   const cold = coldProvince(wx, wz)
-  if (mesaProv > 0.4 && moisture < 0.48) {
-    h += mesaProv * 28
-    base += mesaProv * 18
-  }
+  const mesaLift = mesaProv * smoothstep(.3, .5, mesaProv) * (1 - smoothstep(.38, .52, moisture))
+  h += mesaLift * 28
+  base += mesaLift * 18
 
   const fit = biomeFitness(
     h,
     moisture,
     temperature,
-    features,
     land,
     mesaProv,
     wet,
@@ -635,7 +619,7 @@ function heightCoreW(
   let wSum = 0
   for (const b of Object.keys(weights) as Biome[]) {
     const wt = weights[b] ?? 0
-    if (wt < 0.03) continue
+    if (wt <= 0) continue
     hBlend += wt * shapedHeightForBiome(b, base, h, wx, wz, features)
     wSum += wt
   }
@@ -643,27 +627,16 @@ function heightCoreW(
   else h = shapedHeightForBiome(primary, base, h, wx, wz, features)
 
   // Shared soft carves (all land)
-  if (features.river > 0.12 && primary !== 'snow' && primary !== 'ocean') {
-    h -= Math.pow(features.river, 1.45) * (18 + Math.max(0, h) * 0.12)
-  }
-  if (features.stream > 0.35 && primary !== 'ocean' && primary !== 'desert') {
-    h -= Math.pow(features.stream, 1.4) * 6
-  }
-  if (features.ravine > 0.18 && primary !== 'ocean') {
-    h -= Math.pow(features.ravine, 1.45) * (42 + Math.max(0, h) * 0.32)
-  }
-
-  if (
-    (features.lake > 0.55 || features.pond > 0.72 || features.river > 0.75) &&
-    h < 4 &&
-    primary !== 'desert' &&
-    primary !== 'mesa' &&
-    primary !== 'ocean'
-  ) {
-    h = Math.min(h, 0.3)
-  }
-
-  h = Math.max(h, primary === 'ocean' ? SEA_LEVEL - 2 : -2)
+  h -= Math.pow(features.river, 1.45) * (18 + Math.max(0, h) * 0.12)
+  h -= Math.pow(features.stream, 1.4) * 6 * (1 - (weights.desert ?? 0))
+  h -= Math.pow(features.ravine, 1.45) * (42 + Math.max(0, h) * 0.32)
+  // Broad drainage valleys ease into level basins. No 50-metre cliff caused
+  // by a categorical water override at an arbitrary noise threshold.
+  const basin = Math.max(features.lake, features.pond * .9, features.river)
+  const drainage = smoothstep(.3, .98, basin) * (1 - smoothstep(35, 110, h))
+  h += (INLAND_WATER_LEVEL - .8 - h) * drainage
+  h *= smoothstep(.36, .44, land)
+  h = Math.max(h, -2)
   return h
 }
 
@@ -729,19 +702,14 @@ export function sampleClimate(x: number, z: number): Climate {
       height,
       moisture,
       temperature,
-      features,
       land,
       mesaProv,
       wet,
       arid,
       cold,
     )
-    // Water overrides when strong
-    if (
-      (features.lake > 0.62 && height < 50) ||
-      (features.pond > 0.78 && height < 35) ||
-      (features.river > 0.78 && height < 50)
-    ) {
+    // Only submerged terrain becomes water; shores meet the water plane.
+    if (height <= INLAND_WATER_LEVEL && padT < 1) {
       biome = 'water'
       biomeB = resolveBiomeBlend(fit).primary
       biomeMix = 0.2

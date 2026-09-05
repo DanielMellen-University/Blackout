@@ -1,4 +1,4 @@
-import { Scene } from 'three'
+import { Mesh, Scene } from 'three'
 import { afterEach, describe, expect, it } from 'vitest'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
 import {
@@ -106,5 +106,24 @@ describe('visible mesh contact sampling', () => {
     const meshH = terrain.sampleMeshHeight(x, z)
     expect(meshH).not.toBeNull()
     expect(sampleGroundHeight(x, z)).toBeCloseTo(meshH!, 5)
+  })
+
+  it('matches heights and lighting normals across neighbouring near tiles', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 12)
+    const left = terrain.root.getObjectByName('chunk_0_0')!.getObjectByName('TerrainChunk') as Mesh
+    const right = terrain.root.getObjectByName('chunk_1_0')!.getObjectByName('TerrainChunk') as Mesh
+    const segs = terrain.chunkStats(0, 0)!.segs
+    for (let z = 0; z <= segs; z++) {
+      const a = z * (segs + 1) + segs
+      const b = z * (segs + 1)
+      expect(left.geometry.attributes.position!.getY(a))
+        .toBeCloseTo(right.geometry.attributes.position!.getY(b), 5)
+      for (const axis of [0, 1, 2]) {
+        expect(left.geometry.attributes.normal!.getComponent(a, axis))
+          .toBeCloseTo(right.geometry.attributes.normal!.getComponent(b, axis), 5)
+      }
+    }
+    terrain.clearAll()
   })
 })

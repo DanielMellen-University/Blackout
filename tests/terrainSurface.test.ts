@@ -23,4 +23,9 @@ describe('terrainSurfaceFromClimate', () => {
     expect(surface.kind).toBe('land')
     expect(surface.height).toBe(42)
   })
+
+  it('keeps one level water surface above a submerged basin', () => {
+    expect(terrainSurfaceFromClimate({ height: -2, biome: 'water' }).height)
+      .toBe(INLAND_WATER_LEVEL)
+  })
 })

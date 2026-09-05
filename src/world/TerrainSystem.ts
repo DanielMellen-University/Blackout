@@ -5,6 +5,7 @@ import {
   Fog,
   FrontSide,
   Group,
+  InstancedMesh,
   MathUtils,
   Mesh,
   MeshStandardMaterial,
@@ -18,6 +19,8 @@ import {
   biomeColor,
   sampleClimate,
   terrainSurfaceFromClimate,
+  sampleTerrainHeight,
+  opsPadBlend,
   type Biome,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity } from './vegetation'
@@ -40,23 +43,18 @@ export const VIEW_RADIUS = 20
  * inside this hidden margin so you never watch tiles pop in.
  */
 export const FOG_MARGIN_CHUNKS = 2
-/**
- * Temporary: disable trees/rocks/props until we redo vegetation.
- * Flip to true later to restore placement.
- */
-const ENABLE_VEGETATION = false
 /** Detailed props only near the jet (cells). */
-const PROP_RADIUS = 4
+const PROP_RADIUS = 3
 /** Soft opacity fade across the fog margin. */
 const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Seconds-ish ease for spawn/despawn opacity. */
 const FADE_RATE = 1.6
 /** Near-field mesh density (player ring). */
-const SEGS_NEAR = 16
+const SEGS_NEAR = 24
 /** Mid ring — still readable through light fog. */
-const SEGS_MID = 9
+const SEGS_MID = 12
 /** Far ring — silhouette only (heavy fog). */
-const SEGS_FAR = 5
+const SEGS_FAR = 6
 /** Skirts only where seams can be seen (not in the fog bank). */
 const SKIRT_DIST = 12
 /** Slope shading only up close. */
@@ -68,6 +66,8 @@ const SLOPE_DIST = 5
 const SKIRT_DEPTH = 220
 /** Build cost budget per frame (props cost more, far LODs cost less). */
 const BUILD_BUDGET = 2.4
+/** Stop between tiles when generation consumes its frame allowance. */
+const BUILD_TIME_MS = 7
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /**
  * Fog fully opaque at this range — two chunks inside the stream edge
@@ -300,9 +300,9 @@ export class TerrainSystem {
         if (existing) {
           existing.fadingOut = false
           const lod = lodWithHysteresis(dist, existing.lod)
-          const wantProps = ENABLE_VEGETATION && dist <= PROP_RADIUS
+          const wantProps = dist <= PROP_RADIUS + (existing.hasProps ? 1 : 0)
           const needsRebuild =
-            lod !== existing.lod || (wantProps && !existing.hasProps)
+            lod !== existing.lod || wantProps !== existing.hasProps
           if (needsRebuild && !this.pendingKeys.has(key)) {
             this.pending.push({ cx: kx, cz: kz, dist, rebuild: true })
             this.pendingKeys.add(key)
@@ -344,7 +344,8 @@ export class TerrainSystem {
 
   private drainBuildQueue(): void {
     let spent = 0
-    while (spent < BUILD_BUDGET && this.pending.length > 0) {
+    const deadline = performance.now() + BUILD_TIME_MS
+    while (spent < BUILD_BUDGET && this.pending.length > 0 && (spent === 0 || performance.now() < deadline)) {
       const job = this.pending.shift()!
       const key = `${job.cx},${job.cz}`
       this.pendingKeys.delete(key)
@@ -354,13 +355,12 @@ export class TerrainSystem {
       const dist = Math.hypot(job.cx - pcx, job.cz - pcz)
       if (dist * dist > VIEW_RADIUS * VIEW_RADIUS + VIEW_RADIUS) continue
 
-      const withProps = ENABLE_VEGETATION && dist <= PROP_RADIUS
       const existing = this.chunks.get(key)
+      const withProps = dist <= PROP_RADIUS + (existing?.hasProps ? 1 : 0)
       if (existing) {
         if (!job.rebuild) continue
         const lod = lodWithHysteresis(dist, existing.lod)
-        const wantProps = withProps && !existing.hasProps
-        if (lod === existing.lod && !wantProps) continue
+        if (lod === existing.lod && withProps === existing.hasProps) continue
         this.rebuildChunk(existing, lod, dist, withProps)
         spent += buildCost(dist, withProps)
         continue
@@ -381,6 +381,7 @@ export class TerrainSystem {
     const toRemove: string[] = []
 
     for (const [key, chunk] of this.chunks) {
+      this.fadeProps(chunk)
       if (!chunk.fadingOut) {
         const cellDist = Math.hypot(chunk.cx - pcx, chunk.cz - pcz)
         chunk.targetAlpha =
@@ -439,6 +440,36 @@ export class TerrainSystem {
         mat.depthWrite = a > 0.12
       }
     })
+    const props = chunk.root.getObjectByName('TerrainProps')
+    if (props) props.userData.alpha = -1
+    this.fadeProps(chunk)
+  }
+
+  /** Props fade on actual distance, independently of their opaque ground. */
+  private fadeProps(chunk: Chunk): void {
+    const props = chunk.root.getObjectByName('TerrainProps')
+    if (!props) return
+    const distance = Math.hypot(
+      chunk.originX + CHUNK_SIZE / 2 - this.focusX,
+      chunk.originZ + CHUNK_SIZE / 2 - this.focusZ,
+    ) / CHUNK_SIZE
+    const alpha = chunk.alpha * (1 - MathUtils.smoothstep(distance, 2, PROP_RADIUS + .7))
+    props.visible = alpha > .01
+    if (Math.abs((props.userData.alpha ?? -1) - alpha) < .02) return
+    props.userData.alpha = alpha
+    props.traverse(obj => {
+      if (!(obj instanceof Mesh)) return
+      const materials = Array.isArray(obj.material) ? obj.material : [obj.material]
+      for (const material of materials) {
+        material.opacity = alpha
+        material.transparent = false
+        if (!material.alphaHash) {
+          material.alphaHash = true
+          material.needsUpdate = true
+        }
+        material.depthWrite = true
+      }
+    })
   }
 
   private buildChunk(
@@ -456,12 +487,14 @@ export class TerrainSystem {
     const built = this.buildHeightMesh(originX, originZ, dist, lod)
     root.add(built.mesh)
     if (withProps) {
-      const props = this.buildProps(originX, originZ, cx, cz)
+      const props = this.buildProps(originX, originZ, cx, cz, built.heights, built.segs)
       props.name = 'TerrainProps'
       root.add(props)
     }
 
-    this.stampChunkMeshes(root, 0)
+    // Near ground must be present immediately, especially underneath the jet.
+    const initialAlpha = dist <= 5 ? 1 : 0
+    this.stampChunkMeshes(root, initialAlpha)
     root.matrixAutoUpdate = false
     root.updateMatrix()
     root.updateMatrixWorld(true)
@@ -478,7 +511,7 @@ export class TerrainSystem {
       originX,
       originZ,
       heights: built.heights,
-      alpha: 0,
+      alpha: initialAlpha,
       targetAlpha: 1,
       fadingOut: false,
       appliedAlpha: -1,
@@ -508,6 +541,7 @@ export class TerrainSystem {
       } else {
         child.traverse((obj) => {
           if (!(obj instanceof Mesh)) return
+          if (obj instanceof InstancedMesh) obj.dispose()
           const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
           for (const m of mats) m.dispose()
         })
@@ -518,7 +552,7 @@ export class TerrainSystem {
     this.stampChunkMeshes(built.mesh, keepAlpha)
     chunk.root.add(built.mesh)
     if (withProps && !chunk.hasProps) {
-      const props = this.buildProps(chunk.originX, chunk.originZ, chunk.cx, chunk.cz)
+      const props = this.buildProps(chunk.originX, chunk.originZ, chunk.cx, chunk.cz, built.heights, built.segs)
       props.name = 'TerrainProps'
       this.stampChunkMeshes(props, keepAlpha)
       chunk.root.add(props)
@@ -607,17 +641,28 @@ export class TerrainSystem {
     const heights = new Float32Array(stride * stride)
     for (let i = 0; i < stride * stride; i++) heights[i] = pos.getY(i)
 
+    // Neighbour samples outside the tile give shared edges the same normal.
+    // Clamping to an edge vertex used to halve the slope along every seam.
+    const gradientX = new Float32Array(heights.length)
+    const gradientZ = new Float32Array(heights.length)
+    for (let iz = 0; iz < stride; iz++) for (let ix = 0; ix < stride; ix++) {
+      const i = iz * stride + ix
+      const wx = originX + ix * cell
+      const wz = originZ + iz * cell
+      const hl = ix > 0 ? heights[i - 1]! : sampleTerrainHeight(wx - cell, wz)
+      const hr = ix < segs ? heights[i + 1]! : sampleTerrainHeight(wx + cell, wz)
+      const hd = iz > 0 ? heights[i - stride]! : sampleTerrainHeight(wx, wz - cell)
+      const hu = iz < segs ? heights[i + stride]! : sampleTerrainHeight(wx, wz + cell)
+      gradientX[i] = (hr - hl) / (2 * cell)
+      gradientZ[i] = (hu - hd) / (2 * cell)
+    }
     if (doSlope && biomes) {
       for (let iz = 0; iz < stride; iz++) {
         for (let ix = 0; ix < stride; ix++) {
           const i = iz * stride + ix
           const h = pos.getY(i)
-          const hl = pos.getY(iz * stride + Math.max(0, ix - 1))
-          const hr = pos.getY(iz * stride + Math.min(stride - 1, ix + 1))
-          const hd = pos.getY(Math.max(0, iz - 1) * stride + ix)
-          const hu = pos.getY(Math.min(stride - 1, iz + 1) * stride + ix)
-          const dx = (hr - hl) / (2 * cell)
-          const dz = (hu - hd) / (2 * cell)
+          const dx = gradientX[i]!
+          const dz = gradientZ[i]!
           const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
           const shaded = applySlopeShading(
             [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
@@ -635,6 +680,13 @@ export class TerrainSystem {
     geo.setAttribute('color', new BufferAttribute(colors, 3))
     if (doSkirt) this.appendEdgeSkirts(geo, segs)
     geo.computeVertexNormals()
+    const normals = geo.attributes.normal as BufferAttribute
+    for (let i = 0; i < heights.length; i++) {
+      const dx = gradientX[i]!
+      const dz = gradientZ[i]!
+      const length = Math.hypot(dx, 1, dz)
+      normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
+    }
 
     const mesh = new Mesh(geo, near ? this.groundMatNear : this.groundMatFar)
     mesh.position.set(originX + half, 0, originZ + half)
@@ -739,25 +791,31 @@ export class TerrainSystem {
     geo.setIndex(new BufferAttribute(idx, 1))
   }
 
-  private buildProps(originX: number, originZ: number, cx: number, cz: number): Group {
+  private buildProps(
+    originX: number, originZ: number, cx: number, cz: number,
+    heights: Float32Array, segs: number,
+  ): Group {
     this.vegFactory ??= createVegetationFactory()
     const veg = this.vegFactory.createBuckets()
-    const samples = 40
+    const samples = 100
 
     for (let i = 0; i < samples; i++) {
       const u = hash2(cx * 31 + i, cz * 17 + i * 3)
       const v = hash2(cz * 13 + i * 7, cx * 19 - i)
       const wx = originX + u * CHUNK_SIZE
       const wz = originZ + v * CHUNK_SIZE
-      if (Math.hypot(wx, wz) < 105) continue
-      if (Math.abs(wx) < 34 && Math.abs(wz) < 120) continue
+      // The runway can be anywhere in any seed.
+      if (opsPadBlend(wx, wz) > .01) continue
 
       const climate = sampleClimate(wx, wz)
       const surface = terrainSurfaceFromClimate(climate)
-      const h = surface.height
+      const h = interpolateGridHeight(heights, segs, originX, originZ, wx, wz)
       const f = climate.features
       if (climate.biome === 'ocean' || climate.biome === 'runway') continue
-      if (surface.kind === 'water' && f.river < 0.45 && f.lake < 0.45) continue
+      if (surface.kind === 'water') continue
+      const hx = interpolateGridHeight(heights, segs, originX, originZ, wx + 3, wz)
+      const hz = interpolateGridHeight(heights, segs, originX, originZ, wx, wz + 3)
+      if (Math.hypot(hx - h, hz - h) / 3 > .65) continue
       if (f.river > 0.82) continue
       if (f.ravine > 0.55) continue
 
@@ -780,6 +838,7 @@ export class TerrainSystem {
   private disposeChunk(chunk: Chunk): void {
     chunk.root.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
+      if (obj instanceof InstancedMesh) obj.dispose()
       // Terrain geometry is unique; vegetation geos are factory-shared — don't dispose those
       if (obj.name === 'TerrainChunk') {
         obj.geometry.dispose()

@@ -15,9 +15,9 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Cameras: chase, close, cockpit (locked to the jet), wingman, orbit; speed FOV juice
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
-- Procedural F-35 with afterburner plume and gear (optional GLB)
+- Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - Engine rumble + wind hiss (Web Audio)
-- Streaming terrain (~8 km), LOD, fog wall, day/night, weather (**N**), clouds
+- Streaming terrain (~8 km), nested detail levels, continuous biome/valley transitions, level water basins, slope-aware vegetation, day/night, weather (**N**), clouds
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack
@@ -80,6 +80,12 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 Landing is gentle with gear down. After the circuit, land to score. Hard impacts explode; press **R** for a new world. Retry the same course from pause or the results screen. Fullscreen is a click toggle in the pause menu.
 
 ## Optional aircraft model
+
+The built-in aircraft is an original procedural mesh. For visual development, run
+the dev server and open /dev/aircraft.html to inspect the model, gear animation,
+and exhaust under neutral lighting. /dev/terrain.html provides a daylight world
+review with orbit controls and reseeding. These pages are development tools and
+are not included in the production build.
 
 Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
 
