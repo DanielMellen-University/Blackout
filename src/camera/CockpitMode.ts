@@ -2,8 +2,8 @@ import { PerspectiveCamera, Quaternion, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 
 /** Seat in aircraft space (canopy). */
-const SEAT = new Vector3(0, 0.85, 2.55)
-const BASE_FOV = 78
+const SEAT = new Vector3(0, 0.62, 2.42)
+const BASE_FOV = 74
 
 const _seatWorld = new Vector3()
 /** Three.js camera looks down local -Z; airframe nose is +Z. */

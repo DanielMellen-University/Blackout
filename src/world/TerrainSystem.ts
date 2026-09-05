@@ -66,8 +66,6 @@ const SLOPE_DIST = 5
 const SKIRT_DEPTH = 220
 /** Build cost budget per frame (props cost more, far LODs cost less). */
 const BUILD_BUDGET = 2.4
-/** Stop between tiles when generation consumes its frame allowance. */
-const BUILD_TIME_MS = 7
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /**
  * Fog fully opaque at this range — two chunks inside the stream edge
@@ -344,8 +342,7 @@ export class TerrainSystem {
 
   private drainBuildQueue(): void {
     let spent = 0
-    const deadline = performance.now() + BUILD_TIME_MS
-    while (spent < BUILD_BUDGET && this.pending.length > 0 && (spent === 0 || performance.now() < deadline)) {
+    while (spent < BUILD_BUDGET && this.pending.length > 0) {
       const job = this.pending.shift()!
       const key = `${job.cx},${job.cz}`
       this.pendingKeys.delete(key)

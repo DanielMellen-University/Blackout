@@ -109,15 +109,17 @@ export function createF35Model(): Group {
     line(root, [[side * .38, .7, .8], [side * .46, .735, -1.8], [side * .31, .65, -3.55]], .014, trim)
   }
 
-  const canopy = new Mesh(new SphereGeometry(1, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2), glass)
+  // Low, flattened F-35 canopy: the old tall half-sphere read as a bubble
+  // floating above the chine in side profile.
+  const canopy = new Mesh(new SphereGeometry(1, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), glass)
   canopy.name = 'GoldCanopy'
-  canopy.scale.set(.71, .92, 1.79)
-  canopy.position.set(0, .61, 3.13)
+  canopy.scale.set(.74, .48, 1.68)
+  canopy.position.set(0, .56, 3.08)
   root.add(canopy)
   const rim: Point[] = []
   for (let i = 0; i <= 40; i++) {
     const a = i / 40 * Math.PI * 2
-    rim.push([Math.cos(a) * .725, .62, 3.13 + Math.sin(a) * 1.81])
+    rim.push([Math.cos(a) * .755, .56, 3.08 + Math.sin(a) * 1.7])
   }
   line(root, rim, .032, trim)
   plate(root, [[-.55, .72, 1.7], [.55, .72, 1.7], [.38, .8, -.2], [-.38, .8, -.2]], .08, upper, 'DorsalSpine')

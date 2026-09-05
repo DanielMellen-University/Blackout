@@ -20,6 +20,10 @@ describe('rebuilt aircraft', () => {
     const body = model.getObjectByName('BlendedFuselage') as Mesh
     const ray = new Raycaster(new Vector3(3, 0, 0), new Vector3(-1, 0, 0))
     expect(ray.intersectObject(body).length).toBeGreaterThan(0)
+    const canopy = model.getObjectByName('GoldCanopy')!
+    const canopyBounds = new Box3().setFromObject(canopy)
+    expect(canopyBounds.max.y).toBeLessThan(1.1)
+    expect(canopyBounds.max.y - canopyBounds.min.y).toBeLessThan(1.0)
   })
 
   it('retracts over multiple physics frames and extends again near the ground', () => {
