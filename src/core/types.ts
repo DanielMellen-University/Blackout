@@ -13,23 +13,17 @@ export interface ControlState {
   boost: boolean
 }
 
-/** Cycle order for the C key - see CameraSystem. */
-export type CameraMode = 'chase' | 'close' | 'cockpit' | 'wingman' | 'orbit'
+/** The two flight views toggled by C - see CameraSystem. */
+export type CameraMode = 'chase' | 'cockpit'
 
 export const CAMERA_MODES: readonly CameraMode[] = [
   'chase',
-  'close',
   'cockpit',
-  'wingman',
-  'orbit',
 ] as const
 
 export const CAMERA_MODE_LABELS: Record<CameraMode, string> = {
-  chase: 'chase',
-  close: 'close chase',
+  chase: 'external',
   cockpit: 'cockpit',
-  wingman: 'wingman',
-  orbit: 'orbit',
 }
 
 export function createDefaultControls(): ControlState {

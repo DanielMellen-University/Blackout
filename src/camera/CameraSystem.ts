@@ -16,6 +16,7 @@ const _pivot = new Vector3()
 const _desired = new Vector3()
 const _toCam = new Vector3()
 const _forward = new Vector3()
+const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
 const _Y_UP = new Vector3(0, 1, 0)
 
@@ -26,6 +27,7 @@ interface ModeConfig {
   lookOffset: Vector3
   fov: number
   lookLead: number
+  maxLookLead: number
   minDist: number
   maxDist: number
   defaultYaw: number
@@ -33,61 +35,25 @@ interface ModeConfig {
   defaultDistance: number
   followStiffness: number
   /**
-   * When true, orbit offset is rotated only by aircraft heading (yaw).
-   * Avoids rolling the camera with the jet for readable chase framing.
-   * Orbit mode uses world-space spherical offset instead.
+   * When true, the offset is rotated only by aircraft heading (yaw), avoiding
+   * camera roll while retaining a readable external view.
    */
   yawOnly?: boolean
 }
 
 const MODE_CONFIG: Record<ChaseMode, ModeConfig> = {
   chase: {
-    lookOffset: new Vector3(0, 1.2, 8),
-    fov: 62,
-    lookLead: 0.08,
+    lookOffset: new Vector3(0, 1.1, 5.5),
+    fov: 60,
+    lookLead: 0.055,
+    maxLookLead: 10,
     minDist: 6,
-    maxDist: 50,
+    maxDist: 32,
     defaultYaw: 0,
-    defaultPitch: 0.28,
-    defaultDistance: 19,
-    followStiffness: 10,
-    yawOnly: true,
-  },
-  close: {
-    lookOffset: new Vector3(0, 1.0, 6),
-    fov: 70,
-    lookLead: 0.05,
-    minDist: 3.5,
-    maxDist: 24,
-    defaultYaw: 0,
-    defaultPitch: 0.22,
-    defaultDistance: 9,
-    followStiffness: 12,
-    yawOnly: true,
-  },
-  wingman: {
-    lookOffset: new Vector3(0, 1.0, 4),
-    fov: 58,
-    lookLead: 0.05,
-    minDist: 8,
-    maxDist: 40,
-    defaultYaw: -0.9,
-    defaultPitch: 0.2,
-    defaultDistance: 15,
+    defaultPitch: 0.24,
+    defaultDistance: 17,
     followStiffness: 9,
     yawOnly: true,
-  },
-  orbit: {
-    lookOffset: new Vector3(0, 1.5, 0),
-    fov: 60,
-    lookLead: 0,
-    minDist: 6,
-    maxDist: 160,
-    defaultYaw: 0.6,
-    defaultPitch: 0.45,
-    defaultDistance: 22,
-    followStiffness: 8,
-    yawOnly: false,
   },
 }
 
@@ -97,14 +63,14 @@ const AUTO_RETURN_DELAY = 10 * (2 / 3)
 const AUTO_RETURN_RATE = 1.35
 const LOOK_STIFFNESS = 14
 /** Extra FOV (deg) at max airspeed. */
-const SPEED_FOV_BOOST = 14
+const SPEED_FOV_BOOST = 6
 /** Chase distance stretch at max airspeed (1 = base). */
-const SPEED_DIST_STRETCH = 0.42
+const SPEED_DIST_STRETCH = 0.14
 /** How fast FOV/distance juice tracks airspeed. */
 const JUICE_STIFFNESS = 3.2
 
 /**
- * Multi-mode flight camera: spring chase / orbit, plus a dedicated cockpit.
+ * Stable external chase camera plus a dedicated cockpit view.
  */
 export class CameraSystem {
   readonly camera: PerspectiveCamera
@@ -115,6 +81,9 @@ export class CameraSystem {
   private speedJuice = 0
   /** Last reliable horizontal heading; retained while the nose is near vertical. */
   private stableHeading = 0
+  /** Last aircraft position used to move the chase rig in the jet's frame. */
+  private readonly lastAircraftPosition = new Vector3()
+  private aircraftPositionReady = false
 
   /** Extra clearance above ground surface for the lens (meters). */
   groundClearance = 1.15
@@ -288,7 +257,18 @@ export class CameraSystem {
     if (this.mode === 'cockpit') return
     const cfg = MODE_CONFIG[this.mode]
 
-    // --- Speed juice (chunk 3.4): wider FOV + longer chase as IAS climbs ---
+    // Move the established rig by the aircraft's world translation before
+    // smoothing its relative offset. Without this, exponential world-space
+    // follow creates v / stiffness metres of unintended zoom-out at speed.
+    if (!snap && dt > 0 && this.aircraftPositionReady) {
+      _aircraftDelta.subVectors(aircraft.displayPosition, this.lastAircraftPosition)
+      this.camera.position.add(_aircraftDelta)
+      if (this.lookReady) this.lookSmoothed.add(_aircraftDelta)
+    }
+    this.lastAircraftPosition.copy(aircraft.displayPosition)
+    this.aircraftPositionReady = true
+
+    // Subtle speed sensation without making the aircraft disappear at Vmax.
     const speedT = MathUtils.clamp(aircraft.speed / flightConfig.maxSpeed, 0, 1)
     const targetJuice = speedT * speedT * (3 - 2 * speedT) // smoothstep
     if (snap || dt <= 0) {
@@ -298,14 +278,18 @@ export class CameraSystem {
       this.speedJuice = MathUtils.lerp(this.speedJuice, targetJuice, jA)
     }
     const juice = this.speedJuice
-    const distScale = 1 + juice * SPEED_DIST_STRETCH
-    const targetFov = cfg.fov + juice * SPEED_FOV_BOOST
+    const framing = resolveExternalSpeedFraming(
+      this.distance,
+      cfg.fov,
+      cfg.maxLookLead,
+      juice,
+    )
 
     _pivot.copy(aircraft.displayPosition)
     _pivot.y += 1.2
 
     this.camera.up.copy(_Y_UP)
-    this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, this.distance * distScale)
+    this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, framing.distance)
 
     if (cfg.yawOnly) {
       // Chase-style: rotate offset by heading only (no roll/pitch of the airframe)
@@ -342,6 +326,7 @@ export class CameraSystem {
       _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead * (1 + juice * 0.4))
       // Prefer horizontal lead so banking does not yank the look target skyward
       _velLead.y *= 0.35
+      _velLead.clampLength(0, framing.lookLeadLimit)
       _look.add(_velLead)
     }
 
@@ -355,8 +340,8 @@ export class CameraSystem {
 
     this.camera.lookAt(this.lookSmoothed)
 
-    if (Math.abs(this.camera.fov - targetFov) > 0.05) {
-      this.camera.fov = targetFov
+    if (Math.abs(this.camera.fov - framing.fov) > 0.05) {
+      this.camera.fov = framing.fov
       this.camera.updateProjectionMatrix()
     }
 
@@ -511,6 +496,27 @@ export class CameraSystem {
     const zoom = Math.exp(e.deltaY * 0.0012)
     this.distance = MathUtils.clamp(this.distance * zoom, cfg.minDist, cfg.maxDist)
     this.bumpInput()
+  }
+}
+
+export interface ExternalSpeedFraming {
+  distance: number
+  fov: number
+  lookLeadLimit: number
+}
+
+/** Pure external-camera envelope, exposed for regression tests and tuning. */
+export function resolveExternalSpeedFraming(
+  baseDistance: number,
+  baseFov: number,
+  maxLookLead: number,
+  speedJuice: number,
+): ExternalSpeedFraming {
+  const t = MathUtils.clamp(speedJuice, 0, 1)
+  return {
+    distance: baseDistance * (1 + t * SPEED_DIST_STRETCH),
+    fov: baseFov + t * SPEED_FOV_BOOST,
+    lookLeadLimit: MathUtils.lerp(maxLookLead * 0.45, maxLookLead, t),
   }
 }
 
