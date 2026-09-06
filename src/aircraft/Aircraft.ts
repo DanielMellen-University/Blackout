@@ -271,34 +271,37 @@ export class Aircraft {
     const ab = this.mesh.getObjectByName('afterburner')
     if (!ab) return
 
-    // Idle: tiny; throttle: glow; boost: full plume
+    // Drive plume size from the same 0..100% lever shown on the HUD. Boost
+    // changes the available exhaust envelope, but never replaces the lever's
+    // contribution, so 30% power cannot produce a full-size afterburner.
     const engine = this.engineState
     const boost = engine.afterburnerActive
-    const power =
-      this.status === 'crashed'
-        ? 0
-        : boost
-          ? engine.effectivePower
-          : engine.lever * 0.22
-    ab.visible = power > 0.04
+    const throttlePower = this.status === 'crashed' ? 0 : engine.lever
+    const plumeResponse = Math.pow(throttlePower, 0.82)
+    ab.visible = throttlePower > 0.015
+    ab.userData.powerPercent = throttlePower * 100
 
-    // Stretch plume aft with power (group origin is nozzle lip — scale keeps flame at tail)
+    // Stretch aft from the nozzle lip. Military power retains a compact hot
+    // exhaust; afterburner grows to a long, wide plume at full engine power.
     const pulse =
       boost && dt > 0 ? 1 + Math.sin(performance.now() * 0.028) * 0.08 : 1
-    const len = (0.35 + Math.min(power, 1.25) * 1.05) * pulse
-    const fat = 0.82 + Math.min(power, 1.25) * 0.15
+    const len = (
+      0.12 + plumeResponse * (boost ? 2.8 : 1.25)
+    ) * pulse
+    const fat = 0.68 + plumeResponse * (boost ? 0.62 : 0.32)
     ab.scale.set(fat, fat, len)
 
     ab.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
       const mat = obj.material
       if (mat instanceof MeshBasicMaterial) {
-        if (mat.name === 'abCore') mat.opacity = 0.22 + power * 0.24
-        else if (mat.name === 'abMid') mat.opacity = 0.12 + power * 0.2
-        else if (mat.name === 'abOuter') mat.opacity = 0.06 + power * 0.12
+        const boostGlow = boost ? 1 : 0.72
+        if (mat.name === 'abCore') mat.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
+        else if (mat.name === 'abMid') mat.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
+        else if (mat.name === 'abOuter') mat.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
       }
       if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
-        mat.emissiveIntensity = MathUtils.lerp(0.25, 2.8, power)
+        mat.emissiveIntensity = MathUtils.lerp(0.2, boost ? 3.4 : 2.1, plumeResponse)
       }
     })
 
@@ -307,7 +310,7 @@ export class Aircraft {
       if (!(obj instanceof Mesh)) return
       const mat = obj.material
       if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
-        mat.emissiveIntensity = MathUtils.lerp(0, 3.2, power)
+        mat.emissiveIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
       }
     })
   }

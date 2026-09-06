@@ -62,4 +62,28 @@ describe('rebuilt aircraft', () => {
     expect(plume.visible).toBe(false)
     expect(glow!.emissiveIntensity).toBe(0)
   })
+
+  it('scales afterburner length with the displayed engine-power percentage', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.boost = true
+    const plume = aircraft.mesh.getObjectByName('afterburner')!
+
+    aircraft.controls.throttle = 0.25
+    aircraft.step(0)
+    const quarterLength = plume.scale.z
+    expect(plume.userData.powerPercent).toBe(25)
+
+    aircraft.controls.throttle = 0.5
+    aircraft.step(0)
+    const halfLength = plume.scale.z
+    expect(plume.userData.powerPercent).toBe(50)
+
+    aircraft.controls.throttle = 1
+    aircraft.step(0)
+    expect(plume.userData.powerPercent).toBe(100)
+    expect(plume.scale.z).toBeGreaterThan(halfLength)
+    expect(halfLength).toBeGreaterThan(quarterLength)
+    expect(plume.scale.z).toBeGreaterThan(2.8)
+  })
 })
