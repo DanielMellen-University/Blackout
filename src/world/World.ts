@@ -104,7 +104,10 @@ export class World {
    * Search and validation run before the live world is replaced. If anything
    * throws after a world already exists, the previous seed/pad stay in place.
    */
-  reseed(): number {
+  reseed(requestedSeed?: number): number {
+    if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
+      throw new Error('World seed must be finite')
+    }
     const previousSeed = this.seed
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
@@ -117,8 +120,9 @@ export class World {
     }
 
     try {
-      for (let attempt = 0; attempt < 8; attempt++) {
-        const nextSeed = randomizeWorldSeed()
+      for (let attempt = 0; attempt < (requestedSeed === undefined ? 8 : 1); attempt++) {
+        const nextSeed = requestedSeed ?? randomizeWorldSeed()
+        setWorldSeed(nextSeed)
         clearOpsPad()
         const pad = findPlayableSpawn()
         if (!pad) continue

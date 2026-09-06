@@ -28,4 +28,9 @@ describe('terrainSurfaceFromClimate', () => {
     expect(terrainSurfaceFromClimate({ height: -2, biome: 'water' }).height)
       .toBe(INLAND_WATER_LEVEL)
   })
+
+  it('uses the basin elevation for highland lakes and river reaches', () => {
+    expect(terrainSurfaceFromClimate({ height: 122, biome: 'water', waterLevel: 152 }).height)
+      .toBe(152)
+  })
 })

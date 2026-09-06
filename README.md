@@ -17,7 +17,9 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - Engine rumble + wind hiss (Web Audio)
-- Streaming terrain (~8 km), nested detail levels, continuous biome/valley transitions, level water basins, day/night, weather (**N**), clouds
+- Infinite geographic provinces: alpine ranges, fjords, dune seas, terraced badlands, volcanic craters, salt flats, tundra, savanna, forests and rainforest regions
+- Broad oceans with continental shelves, meandering river valleys, elevated lakes, depth-coloured water, animated ripples and shoreline wash
+- Streaming terrain (~8 km), nested detail levels, biome blending, day/night, weather (**N**), clouds; trees and rocks remain temporarily disabled
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack
@@ -86,6 +88,12 @@ the dev server and open /dev/aircraft.html to inspect the model, gear animation,
 and exhaust under neutral lighting. /dev/terrain.html provides a daylight world
 review with orbit controls and reseeding. These pages are development tools and
 are not included in the production build.
+
+The terrain review includes fixed-seed destinations for an alpine range,
+highland lake, ocean, badlands and volcanic country. Geography is deterministic
+for a seed and coordinate; the new generator changes the landscapes of old
+seeds. Rivers use analytic channel profiles, and lakes use fixed basin levels;
+this is procedural geography rather than a rainfall/fluid simulation.
 
 Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
 

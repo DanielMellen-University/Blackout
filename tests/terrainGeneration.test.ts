@@ -15,7 +15,7 @@ describe('continuous terrain generation', () => {
         expect(Number.isFinite(climate.height)).toBe(true)
         if (climate.biome === 'water') {
           water++
-          expect(climate.height).toBeLessThanOrEqual(INLAND_WATER_LEVEL)
+          expect(climate.height).toBeLessThanOrEqual(climate.waterLevel ?? INLAND_WATER_LEVEL)
         }
       }
     }

@@ -8,6 +8,11 @@
   button { margin-left:16px; padding:10px; cursor:pointer }
 </style>
 <nav><b>BLACKOUT / TERRAIN REVIEW</b><button id="reseed">New world</button>
+  <select id="destination" aria-label="Terrain destination">
+    <option value="">Airfield</option><option value="alpine">Alpine range</option>
+    <option value="lake">Highland lake</option><option value="ocean">Ocean</option>
+    <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
+  </select>
   <span id="seed"></span> · drag to orbit · scroll to zoom
   <span id="stats"></span>
 </nav>
@@ -15,6 +20,7 @@
 import * as T from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { World } from '/src/world/World.ts'
+import { sampleTerrainHeight } from '/src/world/terrainSample.ts'
 const renderer=new T.WebGLRenderer({antialias:true})
 renderer.setSize(innerWidth,innerHeight)
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))
@@ -23,14 +29,18 @@ document.body.append(renderer.domElement)
 const world=new World()
 const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,1,14000)
 const controls=new OrbitControls(camera,renderer.domElement)
-function frameWorld(){
-  const {x,y,z}=world.spawn
+function frameWorld(destination){
+  const {x,y,z}=destination ?? world.spawn
   world.atmosphere.timeOfDay=.48
   world.atmosphere.setWeather('clear')
-  camera.position.set(x+850,y+470,z-700)
-  controls.target.set(x,y+15,z+500);controls.update()
+  let nearbyPeak=y
+  for(let ix=-2;ix<=2;ix++) for(let iz=-2;iz<=2;iz++) {
+    nearbyPeak=Math.max(nearbyPeak,sampleTerrainHeight(x+ix*750,z+iz*750))
+  }
+  camera.position.set(x+1800,Math.max(y+1300,nearbyPeak+1100),z-1800)
+  controls.target.set(x,y+15,z);controls.update()
   // Warm the review scene even when a background browser throttles animation.
-  for(let i=0;i<400;i++) world.terrain.update(x,z+500,1/30)
+  for(let i=0;i<400;i++) world.terrain.update(x,z,1/30)
   world.atmosphere.update(10,x,y,z)
   world.atmosphere.timeOfDay=.48
   world.atmosphere.update(0,x,y,z)
@@ -38,6 +48,18 @@ function frameWorld(){
 }
 frameWorld()
 document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
+const destinations={
+  alpine:[73,-1200,8400],lake:[1,-22200,-22200],ocean:[1,-30000,-30000],
+  mesa:[1,-30000,-15000],volcano:[1,-30000,-22800],
+}
+document.querySelector('#destination').onchange=e=>{
+  const target=destinations[e.target.value]
+  if(!target){frameWorld();return}
+  const [seed,x,z]=target
+  world.reseed(seed)
+  world.terrain.clearAll()
+  frameWorld({x,z,y:sampleTerrainHeight(x,z)})
+}
 let previous=performance.now()
 let frames=0
 renderer.setAnimationLoop(now=>{

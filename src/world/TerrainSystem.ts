@@ -25,6 +25,7 @@ import {
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
+import { applyWaterAppearance } from './WaterAppearance'
 
 /**
  * Streaming envelope.
@@ -184,6 +185,7 @@ export class TerrainSystem {
   private lastCz = Number.NaN
   private focusX = 0
   private focusZ = 0
+  private readonly waterClock = { value: 0 }
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -237,6 +239,7 @@ export class TerrainSystem {
    * builds a small budget, and eases chunk/prop opacity in and out.
    */
   update(worldX: number, worldZ: number, dt = 1 / 60): void {
+    this.waterClock.value += Math.max(0, dt)
     this.focusX = worldX
     this.focusZ = worldZ
     const cx = Math.floor(worldX / CHUNK_SIZE)
@@ -576,14 +579,20 @@ export class TerrainSystem {
           const c = m.clone()
           c.transparent = opacity < 0.995
           c.opacity = opacity
-          if (c instanceof MeshStandardMaterial) c.depthWrite = opacity > 0.12
+          if (c instanceof MeshStandardMaterial) {
+            c.depthWrite = opacity > 0.12
+            if (obj.name === 'TerrainChunk') applyWaterAppearance(c, this.waterClock)
+          }
           return c
         })
       } else {
         const c = obj.material.clone()
         c.transparent = opacity < 0.995
         c.opacity = opacity
-        if (c instanceof MeshStandardMaterial) c.depthWrite = opacity > 0.12
+        if (c instanceof MeshStandardMaterial) {
+          c.depthWrite = opacity > 0.12
+          if (obj.name === 'TerrainChunk') applyWaterAppearance(c, this.waterClock)
+        }
         obj.material = c
       }
       obj.matrixAutoUpdate = false
@@ -607,6 +616,7 @@ export class TerrainSystem {
 
     const pos = geo.attributes.position as BufferAttribute
     const colors = new Float32Array(pos.count * 3)
+    const water = new Float32Array(pos.count * 2)
     const half = CHUNK_SIZE * 0.5
     const stride = segs + 1
     const cell = CHUNK_SIZE / segs
@@ -618,6 +628,8 @@ export class TerrainSystem {
       const climate = sampleClimate(wx, wz)
       const surface = terrainSurfaceFromClimate(climate)
       const h = surface.height
+      water[i * 2] = surface.kind === 'water' ? 1 : 0
+      water[i * 2 + 1] = Math.max(0, h - climate.height)
       pos.setY(i, h)
       if (biomes) biomes[i] = climate.biome
       const [r, g, b] = biomeColor(
@@ -678,6 +690,10 @@ export class TerrainSystem {
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))
     if (doSkirt) this.appendEdgeSkirts(geo, segs)
+    // Skirt vertices remain rock; only the top grid carries water shading.
+    const paddedWater = new Float32Array(geo.attributes.position.count * 2)
+    paddedWater.set(water)
+    geo.setAttribute('waterData', new BufferAttribute(paddedWater, 2))
     geo.computeVertexNormals()
     const normals = geo.attributes.normal as BufferAttribute
     for (let i = 0; i < heights.length; i++) {
