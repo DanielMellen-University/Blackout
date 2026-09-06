@@ -529,7 +529,7 @@ export class Atmosphere {
     }
 
     const fogNear = this.baseFogNear * w.fogNearMul
-    const fogFar = this.baseFogFar * w.fogFarMul
+    const fogFar = Math.min(this.baseFogFar * w.fogFarMul, STREAM_RADIUS_M * .9)
     // Fog matches horizon so the stream edge blends into the sky
     if (this.scene.fog instanceof Fog) {
       this.scene.fog.color.copy(_horizon)

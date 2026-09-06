@@ -8,10 +8,10 @@ import {
 /**
  * Optional sampler that returns the *rendered* heightfield (chunk triangle
  * interpolation). Contact, AGL, and cameras use this when a tile exists so
- * physics cannot float above or sink through visible triangles. Kind / biome
- * still come from the procedural surface.
+ * physics cannot float above or sink through visible triangles. A full surface
+ * result also resolves water contact at the rendered, clipped shoreline.
  */
-export type MeshHeightSampler = (x: number, z: number) => number | null
+export type MeshHeightSampler = (x: number, z: number) => number | TerrainSurface | null
 
 let meshHeightSampler: MeshHeightSampler | null = null
 
@@ -30,10 +30,12 @@ export function sampleGroundHeight(x: number, z: number): number {
   return sampleGroundSurface(x, z).height
 }
 
-/** Procedural kind/biome, with height overridden by the visible mesh when present. */
+/** Prefer the visible mesh, falling back to procedural terrain outside loaded tiles. */
 export function sampleGroundSurface(x: number, z: number): TerrainSurface {
+  const sampled = meshHeightSampler?.(x, z)
+  if (sampled != null && typeof sampled !== 'number') return sampled
   const surface = sampleTerrainSurface(x, z)
-  const meshH = meshHeightSampler?.(x, z)
+  const meshH = sampled
   if (meshH == null || !Number.isFinite(meshH)) return surface
   if (meshH === surface.height) return surface
   return { height: meshH, kind: surface.kind, biome: surface.biome }

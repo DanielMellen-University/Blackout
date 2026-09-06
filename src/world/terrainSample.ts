@@ -1,4 +1,4 @@
-import { clamp01, hash2, smoothstep } from './noise'
+import { clamp01, smoothstep, valueNoise } from './noise'
 import { sampleGeography } from './Geography'
 
 /**
@@ -75,6 +75,7 @@ export interface TerrainFeatures {
 }
 
 export interface Climate {
+  biomeWeights?: [Biome, number][]
   height: number
   /** Water surface elevation; the height field underneath describes the bed. */
   waterLevel?: number
@@ -139,6 +140,7 @@ export function sampleClimate(x: number, z: number): Climate {
       if (climate.biome === 'ocean' || climate.biome === 'water') climate.biome = 'plains'
       climate.biomeB = climate.biome
       climate.biomeMix = 0
+      climate.biomeWeights = undefined
     }
   }
   return climate
@@ -353,7 +355,7 @@ function scoreFlatPad(x: number, z: number, c: Climate): number {
     return -1e6
   }
   if (c.features.ravine > 0.18) return -1e6
-  if (c.height > 38) return -1e5
+  if (c.height > 450) return -1e5
   if (c.height < 7) return -1e6
 
   const d = 28
@@ -366,7 +368,7 @@ function scoreFlatPad(x: number, z: number, c: Climate): number {
     (Math.abs(hx - h0) + Math.abs(hz - h0) + Math.abs(hxm - h0) + Math.abs(hzm - h0)) / 4
   if (slope > 2.2) return -1e5
 
-  let score = 120 - c.height * 0.7 - slope * 22
+  let score = 120 - c.height * 0.08 - slope * 22
   if (c.biome === 'plains') score += 48
   else if (c.biome === 'desert') score += 22
   else if (c.biome === 'forest') score += 8
@@ -566,8 +568,9 @@ export function biomeColor(
   land = 1,
   biomeB: Biome = biome,
   biomeMix = 0,
+  biomeWeights?: [Biome, number][],
 ): [number, number, number] {
-  const n = hash2(Math.floor(x * 0.5), Math.floor(z * 0.5))
+  const n = valueNoise(x / 90, z / 90)
   const speck = (n - 0.5) * 0.05
   const river = features?.river ?? 0
   const ravine = features?.ravine ?? 0
@@ -577,7 +580,18 @@ export function biomeColor(
 
   let col = biomeColorSolid(biome, height, moisture, n, speck, land)
   // Seamless cross-fade into neighboring biome color
-  if (biomeMix > 0 && biomeB !== biome) {
+  if (biomeWeights?.length) {
+    col = [0, 0, 0]
+    let total = 0
+    for (const [candidate, weight] of biomeWeights) {
+      const w = weight * weight
+      if (w === 0) continue
+      const c = biomeColorSolid(candidate, height, moisture, n, speck, land)
+      for (let i = 0; i < 3; i++) col[i]! += c[i]! * w
+      total += w
+    }
+    col = col.map(c => c / Math.max(total, .00001)) as [number, number, number]
+  } else if (biomeMix > 0 && biomeB !== biome) {
     const colB = biomeColorSolid(biomeB, height, moisture, n, speck, land)
     const t = clamp01(biomeMix)
     col = [
@@ -590,7 +604,7 @@ export function biomeColor(
   const ravineShade = smoothstep(.25, .9, ravine) * .3
   const riverShade = smoothstep(.1, .9, river) * .12
   col = col.map(c => c * (1 - ravineShade - riverShade)) as [number, number, number]
-  if (coastal > 0 && biome !== 'mesa') {
+  if (coastal > 0) {
     const sand: [number, number, number] = [0.82 + speck, 0.72 + speck * 0.5, 0.48]
     const t = clamp01(coastal)
     col = [

@@ -19,7 +19,8 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Engine rumble + wind hiss (Web Audio)
 - Infinite geographic provinces: alpine ranges, fjords, dune seas, terraced badlands, volcanic craters, salt flats, tundra, savanna, forests and rainforest regions
 - Broad oceans with continental shelves, meandering river valleys, elevated lakes, depth-coloured water, animated ripples and shoreline wash
-- Streaming terrain (~8 km), nested detail levels, biome blending, day/night, weather (**N**), clouds; trees and rocks remain temporarily disabled
+- Streaming terrain (16.8 km radius), adaptive detail tiles, smoothly blended climate-shaped biomes, tall alpine ranges, mesas, dunes, fjords and volcanic basins. Separate sea/lake/river surfaces provide steady water levels, depth tint, waves and shoreline foam. Trees and rocks remain temporarily disabled.
+- Terrain generation is frame-budgeted; coarse distant tiles and a shared deep-ocean surface reduce draw calls. Rendering resolution adapts gradually under sustained load. Day/night, weather (**N**) and clouds remain available.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack

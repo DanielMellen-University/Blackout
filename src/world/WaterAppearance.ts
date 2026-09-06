@@ -1,27 +1,50 @@
 import type { MeshStandardMaterial } from 'three'
 
-/** Water stays physically level; only its lighting ripples move. */
+/** Animated optical waves; sea/lake levels and collision stay perfectly steady. */
 export function applyWaterAppearance(material: MeshStandardMaterial, clock: { value: number }): void {
   material.onBeforeCompile = shader => {
     shader.uniforms.worldWaterTime = clock
-    shader.vertexShader = 'attribute vec2 waterData;\nvarying vec2 vWater;\nvarying vec2 vWaterXZ;\n' + shader.vertexShader
+    shader.vertexShader = 'attribute float waterDepth;\nvarying float vWaterDepth;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
-      '#include <project_vertex>\nvWater = waterData;\nvWaterXZ = (modelMatrix * vec4(transformed, 1.0)).xz;',
+      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nvarying vec2 vWater;\nvarying vec2 vWaterXZ;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nvarying float vWaterDepth;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
-      '#include <color_fragment>\nfloat wet = smoothstep(0.55, 0.98, vWater.x);\nfloat deepWater = smoothstep(1.0, 95.0, vWater.y);\nvec3 seaTint = mix(vec3(0.06, 0.32, 0.34), vec3(0.018, 0.07, 0.16), deepWater);\ndiffuseColor.rgb = mix(diffuseColor.rgb, seaTint, wet * 0.7);\nfloat shoreFoam = (1.0 - smoothstep(0.5, 4.0, vWater.y)) * wet;\nfloat wash = 0.5 + 0.5 * sin(vWaterXZ.x * 0.12 + vWaterXZ.y * 0.025 - worldWaterTime * 1.4);\ndiffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.65, 0.77, 0.74), shoreFoam * wash * 0.16);',
-    )
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <roughnessmap_fragment>',
-      '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.24, wet);',
+      `#include <color_fragment>
+      float depthMix = 1.0 - exp(-vWaterDepth * 0.045);
+      vec3 shallow = vec3(0.07, 0.46, 0.43);
+      vec3 deep = vec3(0.015, 0.065, 0.14);
+      diffuseColor.rgb = mix(shallow, deep, depthMix);
+      float shore = 1.0 - smoothstep(0.0, 5.0, vWaterDepth);
+      float wash = 0.5 + 0.5 * sin(vWaterDepth * 2.6 - worldWaterTime * 1.8
+        + sin(vWaterWorld.x * 0.025 + vWaterWorld.z * 0.04));
+      float foam = shore * smoothstep(0.48, 0.92, wash) * 0.58;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.75, 0.87, 0.86), foam);`,
     )
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <normal_fragment_maps>',
-      '#include <normal_fragment_maps>\nvec3 rippleWorld = vec3(cos(vWaterXZ.x * 0.055 + vWaterXZ.y * 0.025 + worldWaterTime) * 0.025, 0.0, sin(vWaterXZ.y * 0.075 - worldWaterTime * 0.8) * 0.025);\nnormal = normalize(normal + mat3(viewMatrix) * rippleWorld * wet);',
+      `#include <normal_fragment_maps>
+      float distanceFade = 1.0 - smoothstep(1500.0, 10000.0, length(vWaterWorld - cameraPosition));
+      vec2 p = vWaterWorld.xz;
+      float swellA = dot(p, vec2(0.032, 0.019)) + worldWaterTime * 0.65
+        + sin(p.y * 0.006 + sin(p.x * 0.004)) * 2.0;
+      float swellB = dot(p, vec2(-0.015, 0.048)) - worldWaterTime * 0.8
+        + sin(p.x * 0.009) * 1.5;
+      vec2 waves = (vec2(0.86, 0.51) * cos(swellA)
+        + vec2(-0.30, 0.95) * sin(swellB)) * 0.035;
+      waves += vec2(sin(p.y * 0.26 - worldWaterTime * 1.4),
+        cos(p.x * 0.21 + worldWaterTime)) * 0.008 * distanceFade;
+      normal = normalize(normal + mat3(viewMatrix) * vec3(waves.x, 0.0, waves.y));
+      float fresnel = pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);
+      // Analytic sky reflection avoids an extra scene render every frame.
+      vec3 reflectedSky = vec3(0.16, 0.28, 0.38);
+      #ifdef USE_FOG
+        reflectedSky = mix(reflectedSky, fogColor, 0.65);
+      #endif
+      totalEmissiveRadiance += reflectedSky * fresnel * 0.24;`,
     )
   }
-  material.customProgramCacheKey = () => 'geographic-water-v1'
+  material.customProgramCacheKey = () => 'independent-water-v2'
 }

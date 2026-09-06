@@ -31,6 +31,7 @@ import { HUD } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
+import { AdaptiveResolution } from './core/AdaptiveResolution'
 
 async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null
@@ -52,7 +53,8 @@ async function boot(): Promise<void> {
     antialias: true,
     powerPreference: 'high-performance',
   })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  const resolution = new AdaptiveResolution(window.devicePixelRatio)
+  renderer.setPixelRatio(resolution.ratio)
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.2
@@ -265,11 +267,15 @@ async function boot(): Promise<void> {
     bannerUntil = performance.now() + ms
   }
 
+  let previousFrame = 0
   const tick = (nowMs: number): void => {
     requestAnimationFrame(tick)
 
     syncInputContext()
     const simLive = playing && !menu.paused && !results.open
+    const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)
+    previousFrame = nowMs
+    if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) renderer.setPixelRatio(pixelRatio)
     let visualDt = 0
     let simDt = 0
     if (!simLive) {

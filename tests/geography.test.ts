@@ -25,7 +25,7 @@ describe('exploration geography', () => {
     expect(Object.keys(counts).length).toBeGreaterThanOrEqual(12)
     expect(counts.ocean).toBeGreaterThan(2000)
     expect(counts.ocean).toBeLessThan(20000)
-    expect(peak).toBeGreaterThan(1500)
+    expect(peak).toBeGreaterThan(4500)
     expect(elevatedLake).toBe(true)
     for (const biome of ['volcanic', 'saltflat', 'tundra', 'mesa', 'desert', 'rainforest']) {
       expect(counts[biome], biome).toBeGreaterThan(0)

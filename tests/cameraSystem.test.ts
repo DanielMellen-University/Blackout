@@ -38,7 +38,8 @@ describe('external camera framing', () => {
     const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
     const cameras = new CameraSystem(canvas)
     const aircraft = new Aircraft()
-    aircraft.position.set(0, 1000, 0)
+    // Test tracking above even the new alpine terrain, not ground avoidance.
+    aircraft.position.set(0, 15000, 0)
     aircraft.snapDisplay()
     cameras.update(aircraft, 1 / 60)
     const initialOffset = cameras.camera.position.clone().sub(aircraft.displayPosition)

@@ -13,6 +13,7 @@
     <option value="lake">Highland lake</option><option value="ocean">Ocean</option>
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
   </select>
+  <button id="fly">Flight benchmark</button>
   <span id="seed"></span> · drag to orbit · scroll to zoom
   <span id="stats"></span>
 </nav>
@@ -27,7 +28,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))
 renderer.toneMapping=T.ACESFilmicToneMapping
 document.body.append(renderer.domElement)
 const world=new World()
-const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,1,14000)
+const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,1,60000)
 const controls=new OrbitControls(camera,renderer.domElement)
 function frameWorld(destination){
   const {x,y,z}=destination ?? world.spawn
@@ -52,23 +53,40 @@ const destinations={
   alpine:[73,-1200,8400],lake:[1,-22200,-22200],ocean:[1,-30000,-30000],
   mesa:[1,-30000,-15000],volcano:[1,-30000,-22800],
 }
-document.querySelector('#destination').onchange=e=>{
-  const target=destinations[e.target.value]
+function visitDestination(value){
+  const target=destinations[value]
   if(!target){frameWorld();return}
   const [seed,x,z]=target
   world.reseed(seed)
   world.terrain.clearAll()
   frameWorld({x,z,y:sampleTerrainHeight(x,z)})
 }
+document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
+const requested=new URLSearchParams(location.search).get('destination')
+if(requested){document.querySelector('#destination').value=requested;visitDestination(requested)}
 let previous=performance.now()
 let frames=0
+let timings=[]
+let flying=false
+document.querySelector('#fly').onclick=()=>{flying=!flying;document.querySelector('#fly').textContent=flying?'Stop benchmark':'Flight benchmark'}
 renderer.setAnimationLoop(now=>{
+  timings.push(now-previous);if(timings.length>90)timings.shift()
   const dt=Math.min((now-previous)/1000,1/30);previous=now
+  if(flying){
+    const step=dt*400
+    camera.position.x+=step;controls.target.x+=step
+    const floor=sampleTerrainHeight(controls.target.x,controls.target.z)+1200
+    const rise=Math.max(0,floor-controls.target.y)
+    controls.target.y+=rise;camera.position.y+=rise;controls.update()
+  }
   world.atmosphere.timeOfDay=.48
   world.update(controls.target.x,controls.target.y,controls.target.z,dt)
   renderer.render(world.scene,camera)
   frames++
-  document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · sun '+world.sun.intensity.toFixed(2)+' · frame '+frames
+  if(frames%15===0){
+    const sorted=[...timings].sort((a,b)=>a-b)
+    document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95'
+  }
 })
 onresize=()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
 </script>
