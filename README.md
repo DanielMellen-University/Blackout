@@ -14,7 +14,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
-- HUD: arcade IAS readout scaled 3× and capped at 1000 kts, ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
+- HUD: IAS to 1000 kts (50% ENG ~ 500, 100% ~ 1000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - Engine rumble + wind hiss (Web Audio)
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
