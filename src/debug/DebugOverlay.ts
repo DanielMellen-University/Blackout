@@ -8,6 +8,7 @@ import {
 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig } from '../aircraft/flightConfig'
+import { displayedKnots } from '../core/airspeed'
 import {
   OPS_PAD_INNER,
   OPS_PAD_OUTER,
@@ -87,10 +88,10 @@ export class DebugOverlay {
     const { x, y, z } = aircraft.position
     const c = sampleClimate(x, z)
     const pad = getOpsPad()
-    const kts = aircraft.speed * 1.94384
+    const kts = displayedKnots(aircraft.speed)
     const targetKts = aircraft.controls.boost
-      ? flightConfig.maxSpeedBoost * 1.94384
-      : aircraft.controls.throttle * flightConfig.maxSpeed * 1.94384
+      ? displayedKnots(flightConfig.maxSpeedBoost)
+      : displayedKnots(aircraft.controls.throttle * flightConfig.maxSpeed)
     const blend = opsPadBlend(x, z)
     const padDist = pad ? Math.hypot(x - pad.x, z - pad.z) : -1
 

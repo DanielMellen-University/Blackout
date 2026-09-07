@@ -17,19 +17,19 @@ export const flightConfig = {
   /** Level-flight sustain (~180 kts). */
   liftSpeed: 92,
 
-  maxAccel: 26,
-  maxAccelBoost: 38,
+  maxAccel: 130,
+  maxAccelBoost: 190,
   /** Afterburner cannot light with the throttle effectively closed. */
   afterburnerMinThrottle: 0.05,
   /** How hard IAS chases the ENG% target (1/s). */
-  speedSeek: 1.45,
+  speedSeek: 7.25,
 
   /** Extra bleed only — cruise speed is set by ENG%, not this. */
   parasiteDrag: 0.000038,
-  maxDecel: 26,
-  maxBrakeDecel: 48,
-  airbrakeStrength: 40,
-  wheelBrakeDecel: 34,
+  maxDecel: 130,
+  maxBrakeDecel: 240,
+  airbrakeStrength: 200,
+  wheelBrakeDecel: 170,
   gearDrag: 0.0048,
   rollingDecel: 1.6,
 
@@ -56,7 +56,7 @@ export const flightConfig = {
   /** Used by (currently disabled) stall warning HUD. */
   stallAoA: 0.4,
 
-  throttleRate: 0.0792,
+  throttleRate: 0.396,
 
   crashVy: -14,
   softLandingVy: -6,
