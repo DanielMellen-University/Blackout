@@ -4,7 +4,7 @@ import type { SettlementPlan } from '../src/world/SettlementPlan'
 import { hitsSettlement, SettlementSystem } from '../src/world/SettlementSystem'
 
 vi.mock('../src/world/SettlementPlan', () => ({
-  SETTLEMENT_CELL_SIZE: 6000,
+  SETTLEMENT_CELL_SIZE: 24000,
   settlementForCell: (x: number, z: number) => x === 0 && z === 0 ? example() : null,
 }))
 
@@ -12,7 +12,7 @@ function example(): SettlementPlan {
   return {
     id: '0,0', kind: 'village', biome: 'plains', x: 3000, y: 100, z: 3000, radius: 150,
     roads: [], buildings: [{ x: 3000, y: 100, z: 3000, width: 12, depth: 24, height: 15,
-      yaw: Math.PI / 2, roof: 'pitched', wallColor: 0xc5c3b3, roofColor: 0x8b5343 }],
+      yaw: Math.PI / 2, shape: 'block', roof: 'pitched', wallColor: 0xc5c3b3, roofColor: 0x8b5343 }],
   }
 }
 

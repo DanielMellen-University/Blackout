@@ -28,7 +28,8 @@
 import * as T from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { World } from '/src/world/World.ts'
-import { sampleTerrainHeight } from '/src/world/terrainSample.ts'
+import { clearOpsPad, sampleTerrainHeight } from '/src/world/terrainSample.ts'
+import { getWorldSeed, setWorldSeed } from '/src/world/noise.ts'
 import { waterLandmarks, riverReaches } from '/src/world/Hydrology.ts'
 import { flightConfig } from '/src/aircraft/flightConfig.ts'
 import { settlementForCell } from '/src/world/SettlementPlan.ts'
@@ -66,14 +67,14 @@ function frameWorld(destination){
   world.atmosphere.update(10,x,y,z)
   world.atmosphere.timeOfDay=.48
   world.atmosphere.update(0,x,y,z)
-  document.querySelector('#seed').textContent=' Seed '+Math.round(world.worldSeed)
+  document.querySelector('#seed').textContent=' Seed '+Math.round(getWorldSeed())
 }
 frameWorld()
 document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
 const destinations={
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
   mesa:[1,-30000,-27600],volcano:[1,-20400,-13800],
-  city:[1,-2,-7],village:[1,-7,-2],
+  city:[1337,5,-1],village:[1,-7,-5],
 }
 function visitDestination(value){
   const target=destinations[value]
@@ -81,6 +82,9 @@ function visitDestination(value){
   let [seed,x,z]=target
   let settlement=null
   world.reseed(seed)
+  // Fixed review seeds must remain inspectable even when that seed cannot
+  // also provide a valid runway site under the current spawn constraints.
+  if(world.worldSeed!==seed){setWorldSeed(seed);clearOpsPad();world.settlements.clearAll()}
   world.terrain.clearAll()
   if(value==='lake'||value==='ocean'){
     const b=waterLandmarks(-1,-1).find(b=>b.sea===(value==='ocean'))
@@ -97,7 +101,8 @@ function visitDestination(value){
   if(value==='city'||value==='village'){
     const y=sampleTerrainHeight(x,z)
     settlementRadius=settlement.radius
-    camera.position.set(x+settlementRadius*1.25,y+settlementRadius*.95,z-settlementRadius*1.25)
+    const offset=Math.min(settlementRadius*.55,5000)
+    camera.position.set(x+offset,y+Math.min(settlementRadius*.3,2600),z-offset)
     controls.target.set(x,y+25,z);controls.update()
   }
 }

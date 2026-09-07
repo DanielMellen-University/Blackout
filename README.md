@@ -101,8 +101,11 @@ rim. River reaches descend between those levels. This is procedural drainage,
 not a rainfall or fluid simulation.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
-Their sizes, outlines, street networks and biome palettes vary by world seed.
-Buildings use deliberately exaggerated scale for readability from the jet.
+Villages range from sparse clusters to several-kilometre spreads; the rarest
+cities span roughly 17-21 km and contain 650-1,600 buildings. Organic branches,
+dead ends and broken district connectors replace repeated grids. Building
+footprints, heights, stepped/octagonal silhouettes, rooflines and biome palettes
+vary by world seed, using deliberately exaggerated scale for readability from the jet.
 Settlement placement runs in a background worker; buildings and roofs are
 instanced, with ground detail culled at distance. Trees and rocks remain disabled.
 The terrain review includes city/village destinations and a Flight scale view

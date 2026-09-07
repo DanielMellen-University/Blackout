@@ -1,5 +1,5 @@
 import {
-  BoxGeometry, BufferGeometry, Color, Float32BufferAttribute, Group,
+  BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, Group,
   InstancedMesh, Mesh, MeshStandardMaterial, Object3D, Scene,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
@@ -27,6 +27,10 @@ export function hitsSettlement(plan: SettlementPlan, x: number, y: number, z: nu
     const lx = Math.abs(dx * c - dz * s), lz = Math.abs(dx * s + dz * c)
     if (y < b.y - 2 || lx > b.width / 2 + 2.6 || lz > b.depth / 2 + 2.6) return false
     const top = b.y + b.height
+    const shape = b.shape ?? 'block'
+    if (shape === 'tower' && (lx / (b.width / 2 + 2.6)) ** 2 + (lz / (b.depth / 2 + 2.6)) ** 2 > 1) return false
+    if (shape === 'stepped' && y > b.y + b.height * .68 + 2
+      && (lx > b.width * .34 + 2.6 || lz > b.depth * .36 + 2.6)) return false
     if (y <= top + 2) return true
     if (b.roof === 'pitched') {
       const roofHeight = Math.min(b.width, b.depth) * .3 * Math.max(0, 1 - Math.max(0, lx - 2) / (b.width / 2 + .6))
@@ -55,6 +59,7 @@ interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
 export class SettlementSystem {
   readonly root = new Group()
   private readonly box = new BoxGeometry(1, 1, 1)
+  private readonly tower = new CylinderGeometry(.5, .5, 1, 8)
   private readonly roof = roofGeometry()
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
@@ -133,7 +138,7 @@ export class SettlementSystem {
     this.clearAll()
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
-    this.box.dispose(); this.roof.dispose()
+    this.box.dispose(); this.tower.dispose(); this.roof.dispose()
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose()
   }
 
@@ -194,7 +199,12 @@ export class SettlementSystem {
     root.position.set(plan.x, plan.y, plan.z)
     root.add(detail)
     const transform = new Object3D(), color = new Color()
-    const body = new InstancedMesh(this.box, this.walls, plan.buildings.length)
+    const regular = plan.buildings.filter(b => (b.shape ?? 'block') !== 'tower' && b.shape !== 'stepped')
+    const towers = plan.buildings.filter(b => b.shape === 'tower')
+    const stepped = plan.buildings.filter(b => b.shape === 'stepped')
+    const body = new InstancedMesh(this.box, this.walls, regular.length)
+    const towerBodies = new InstancedMesh(this.tower, this.walls, towers.length)
+    const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
     const pitched = plan.buildings.filter(b => b.roof === 'pitched')
     const flat = plan.buildings.filter(b => b.roof === 'flat')
     const gables = new InstancedMesh(this.roof, this.roofs, pitched.length)
@@ -206,12 +216,22 @@ export class SettlementSystem {
       mesh.setMatrixAt(index, transform.matrix)
       mesh.setColorAt(index, color.setHex(tint))
     }
-    plan.buildings.forEach((b, i) => put(body, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
+    regular.forEach((b, i) => put(body, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
+    towers.forEach((b, i) => put(towerBodies, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
+    stepped.forEach((b, i) => {
+      put(stepBodies, i * 2, b.x, b.y + b.height * .34, b.z, b.width, b.height * .68, b.depth, b.yaw, b.wallColor)
+      put(stepBodies, i * 2 + 1, b.x, b.y + b.height * .84, b.z, b.width * .68, b.height * .32, b.depth * .72, b.yaw, b.wallColor)
+    })
     pitched.forEach((b, i) => put(gables, i, b.x, b.y + b.height, b.z, b.width + 1.2, Math.min(b.width, b.depth) * .3, b.depth + 1.2, b.yaw, b.roofColor))
-    flat.forEach((b, i) => put(caps, i, b.x, b.y + b.height + .6, b.z, b.width + .5, 1.2, b.depth + .5, b.yaw, b.roofColor))
+    flat.forEach((b, i) => {
+      const topScaleX = b.shape === 'stepped' ? .68 : b.shape === 'tower' ? .72 : 1
+      const topScaleZ = b.shape === 'stepped' ? .72 : b.shape === 'tower' ? .72 : 1
+      put(caps, i, b.x, b.y + b.height + .6, b.z, b.width * topScaleX + .5, 1.2,
+        b.depth * topScaleZ + .5, b.yaw, b.roofColor)
+    })
     crowns.forEach((b, i) => put(caps, flat.length + i, b.x, b.y + b.height + b.height * .05, b.z,
       b.width * .48, b.height * .1, b.depth * .55, b.yaw, b.roofColor))
-    for (const mesh of [body, gables, caps]) {
+    for (const mesh of [body, towerBodies, stepBodies, gables, caps]) {
       if (!mesh.count) { mesh.dispose(); continue }
       mesh.computeBoundingSphere()
       // Roof silhouettes stay visible at distance too; only ground detail is culled.

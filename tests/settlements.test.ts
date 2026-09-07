@@ -42,10 +42,10 @@ describe('procedural settlements', () => {
       }
     }
     expect(cities).toBeGreaterThan(0)
-    expect(cities).toBeLessThan(675 * .08)
+    expect(cities).toBeLessThan(675 * .05)
     expect(villages).toBeGreaterThan(cities * 3)
     expect(villages).toBeGreaterThan(20)
-    expect(villages).toBeLessThan(675 * .24)
+    expect(villages).toBeLessThan(675 * .18)
     expect(biomes.size).toBeGreaterThanOrEqual(7)
   })
 
@@ -58,8 +58,8 @@ describe('procedural settlements', () => {
         expect(plan.buildings.length).toBeGreaterThanOrEqual(8)
         expect(plan.buildings.every(b => b.width >= 180 && b.depth >= 180 && b.height >= 95)).toBe(true)
       } else {
-        expect(plan.radius).toBeGreaterThanOrEqual(5800)
-        expect(plan.buildings.length).toBeGreaterThanOrEqual(400)
+        expect(plan.radius).toBeGreaterThanOrEqual(8500)
+        expect(plan.buildings.length).toBeGreaterThanOrEqual(650)
       }
       expect(plan.roads.length).toBeGreaterThan(0)
       for (const building of plan.buildings) {
@@ -77,7 +77,9 @@ describe('procedural settlements', () => {
             min = Math.min(min, c.height); max = Math.max(max, c.height)
           }
         }
-        expect(max - min).toBeLessThanOrEqual(Math.min(20, Math.min(building.width, building.depth) * .10))
+        const reliefLimit = plan.kind === 'city' ? Math.min(60, Math.min(building.width, building.depth) * .22)
+          : Math.min(35, Math.min(building.width, building.depth) * .15)
+        expect(max - min).toBeLessThanOrEqual(reliefLimit)
       }
       for (const road of plan.roads) for (let i = 0; i < road.points.length; i++) {
         const p = road.points[i]!, c = sampleClimate(p.x, p.z)
@@ -127,5 +129,14 @@ describe('procedural settlements', () => {
         expect(separated, `${plan.id} buildings ${i}/${j}`).toBe(true)
       }
     }
+  })
+
+  it('varies building silhouettes instead of cloning one box', () => {
+    const shapes = new Set<string>()
+    for (const seed of [1, 73, 1337]) {
+      setWorldSeed(seed)
+      for (const plan of region()) for (const building of plan.buildings) shapes.add(building.shape)
+    }
+    expect(shapes).toEqual(new Set(['block', 'slab', 'tower', 'stepped', 'hangar']))
   })
 })

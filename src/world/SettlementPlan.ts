@@ -2,11 +2,12 @@ import { getWorldSeed, hash2 } from './noise'
 import { getOpsPad, sampleClimate } from './terrainSample'
 import type { Biome, Climate } from './terrainSample'
 
-export const SETTLEMENT_CELL_SIZE = 16000
+export const SETTLEMENT_CELL_SIZE = 24000
 
 export interface SettlementBuilding {
   x: number; y: number; z: number
   width: number; depth: number; height: number; yaw: number
+  shape: 'block' | 'slab' | 'tower' | 'stepped' | 'hangar'
   roof: 'pitched' | 'flat'; wallColor: number; roofColor: number
 }
 export interface SettlementRoad { points: { x: number; y: number; z: number; leftY?: number; rightY?: number;
@@ -46,11 +47,11 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   const id = `${cx},${cz}`
   if (cache.has(id)) return cache.get(id)!
   const roll = hash2(cx * 131 + 8129, cz * 139 - 4513)
-  const kind = roll < .08 ? 'city' : 'village'
+  const kind = roll < .05 ? 'city' : 'village'
   let result: SettlementPlan | null = null
-  if (roll < .32) {
+  if (roll < .18) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
-    const radius = kind === 'city' ? 5800 + rand(1) * 1600 : 900 + rand(1) ** 1.4 * 1900
+    const radius = kind === 'city' ? 8500 + rand(1) * 2000 : 900 + rand(1) ** 1.4 * 1900
     const margin = radius + 300
     for (let attempt = 0; attempt < 6; attempt++) {
       const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
@@ -58,18 +59,23 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
       if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + 500) continue
       const c = sampleClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
-      let min = c.height, max = c.height, suitable = true
+      let min = c.height, max = c.height, suitable = true, drySamples = 1
       for (let i = 0; i < 8; i++) {
         const angle = i * Math.PI / 4
         const s = sampleClimate(x + Math.cos(angle) * radius * .8, z + Math.sin(angle) * radius * .8)
+        if (!dry(s)) {
+          if (kind === 'village') { suitable = false; break }
+          continue
+        }
+        drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
-        if (!dry(s) || max - min > (kind === 'city' ? 220 : 130)) { suitable = false; break }
+        if (max - min > (kind === 'city' ? 350 : 130)) { suitable = false; break }
       }
+      if (kind === 'city' && drySamples < 5) suitable = false
       if (!suitable) continue
       const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome, buildings: [], roads: [] }
       populate(plan, rand)
-      if (kind === 'city') console.log('CITYCOUNT', id, plan.radius, plan.buildings.length)
-      if (plan.buildings.length < (kind === 'city' ? 400 : 8)) continue
+      if (plan.buildings.length < (kind === 'city' ? 650 : 8)) continue
       result = plan
       break
     }
@@ -119,14 +125,23 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       if (!dry(c)) return
       min = Math.min(min, c.height); max = Math.max(max, c.height)
     }
-    if (max - min > Math.min(20, Math.min(width, depth) * .10)) return
+    const reliefLimit = plan.kind === 'city' ? Math.min(60, Math.min(width, depth) * .22)
+      : Math.min(35, Math.min(width, depth) * .15)
+    if (max - min > reliefLimit) return
     for (const key of keys) {
       const bucket = occupied.get(key) ?? []
       bucket.push({ x, z, hx, hz, yaw, width, depth }); occupied.set(key, bucket)
     }
     const n = serial++
+    const shapeRoll = rand(n + 2000)
+    const shape: SettlementBuilding['shape'] = plan.kind === 'city'
+      ? height > 620 && shapeRoll < .55 ? 'stepped'
+        : height > 380 && shapeRoll < .78 ? 'tower'
+          : shapeRoll < .28 ? 'slab' : 'block'
+      : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
     plan.buildings.push({ x, z, y: min - 1, width, depth, height: height + max - min + 1,
-      yaw, roof: plan.kind === 'city' && height > 25 ? 'flat' : style.roof,
+      shape,
+      yaw, roof: shape === 'tower' || shape === 'stepped' || (plan.kind === 'city' && height > 25) ? 'flat' : style.roof,
       wallColor: style.walls[Math.floor(rand(n) * style.walls.length)]!,
       roofColor: style.roofs[Math.floor(rand(n + 1000) * style.roofs.length)]! })
   }
@@ -137,7 +152,10 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const a = local[segment - 1]!, b = local[segment]!
       streets.push({ a, b, width })
       const length = Math.hypot(b.x - a.x, b.z - a.z)
-      const steps = Math.ceil(length / 16)
+      // The terrain's broad forms are smooth at this scale. Sampling arterial
+      // shoulders every 72 m keeps kilometre-wide cities cheap to plan while
+      // retaining enough points for curved, terrain-following road ribbons.
+      const steps = Math.ceil(length / (plan.kind === 'city' ? 72 : 40))
       for (let j = segment === 1 ? 0 : 1; j <= steps; j++) {
         const p = world(a.x + (b.x - a.x) * j / steps, a.z + (b.z - a.z) * j / steps)
         const c = sampleClimate(p.x, p.z)
@@ -195,14 +213,14 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       road(points, 32)
     }
   }
-  const target = city ? 650 + Math.floor(rand(200) * 950) : 8 + Math.floor(((plan.radius - 900) / 1900) * 62)
-  for (let attempt = 0; attempt < target * 24 && plan.buildings.length < target; attempt++) {
+  const target = city ? 700 + Math.floor(rand(200) * 900) : 8 + Math.floor(((plan.radius - 900) / 1900) * 62)
+  for (let attempt = 0; attempt < target * (city ? 60 : 32) && plan.buildings.length < target; attempt++) {
     const n = 10000 + attempt * 9
     const a = rand(n) * Math.PI * 2
     const distance = Math.sqrt(rand(n + 1)) * plan.radius * boundary(a)
     const p = polar(a, distance)
-    const width = city ? 180 + rand(n + 2) * 130 : 180 + rand(n + 2) * 145
-    const depth = city ? 180 + rand(n + 3) * 130 : 180 + rand(n + 3) * 145
+    const width = city ? 220 + rand(n + 2) * 200 : 180 + rand(n + 2) * 145
+    const depth = city ? 220 + rand(n + 3) * 200 : 180 + rand(n + 3) * 145
     let nearest = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
@@ -213,7 +231,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     }
     if (!clear || (!city && nearest > 420)) continue
     const core = Math.max(0, 1 - distance / (plan.radius * .65))
-    const height = city ? 100 + rand(n + 4) * 150 + core ** 2 * (650 + rand(n + 5) * 1000) : 95 + rand(n + 4) * 105
+    const height = city ? 120 + rand(n + 4) * 220 + core ** 2 * (700 + rand(n + 5) * 1100) : 95 + rand(n + 4) * 105
     building(p.x, p.z, width, depth, height, yaw + (rand(n + 6) - .5) * .35)
   }
 }
