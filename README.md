@@ -16,7 +16,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
-- Engine rumble + wind hiss (Web Audio)
+- Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Mostly dry land with uncommon enclosed seas, irregular lakes, and meandering rivers that vary in width and descend from lake outlets to sea level. Water is separate geometry over a sediment bed, with calm reflections and fine ripples.
 - Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks remain temporarily disabled.
@@ -117,7 +117,7 @@ Blackout/
 │   ├── world/               # terrain, sky, airfield
 │   ├── ui/                  # HUD, menus
 │   ├── systems/             # collision, mission, crash FX
-│   └── audio/               # engine/wind loops
+│   └── audio/               # engine/wind loops + event cues
 ├── CHANGELOG.md
 ├── index.html
 ├── package.json
@@ -128,7 +128,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: vegetation v2, route clearance, handling retune.
+Next: performance pass, vegetation v2 (still disabled until budgeted), warning retune.
 
 Out of scope for now: radar, weapons, fuel.
 

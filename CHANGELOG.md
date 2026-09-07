@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-07
+
+### Audio
+
+- Afterburner engage cue: short rising whoosh (edge-triggered, not every frame).
+- Touchdown and crash cues use brief noise bursts plus tones for clearer impact feel.
+- Gate and circuit-complete cues unchanged; effects still respect mute (crash fires on the crash frame before mute).
+
+
 ## 2026-09-04
 
 ### Audit follow-up
