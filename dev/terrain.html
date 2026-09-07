@@ -13,8 +13,10 @@
     <option value="lake">Irregular lake</option><option value="ocean">Inland sea</option>
     <option value="green">Green hills</option><option value="river">River valley</option>
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
+    <option value="city">City</option><option value="village">Village</option>
   </select>
   <button id="fly">Flight benchmark</button>
+  <button id="flight-view">Flight scale view</button>
   <select id="flight-speed" aria-label="Benchmark speed">
     <option value="cruise">Cruise · 400 m/s</option>
     <option value="maximum" selected>Maximum afterburner speed</option>
@@ -29,6 +31,9 @@ import { World } from '/src/world/World.ts'
 import { sampleTerrainHeight } from '/src/world/terrainSample.ts'
 import { waterLandmarks, riverReaches } from '/src/world/Hydrology.ts'
 import { flightConfig } from '/src/aircraft/flightConfig.ts'
+import { settlementForCell } from '/src/world/SettlementPlan.ts'
+import { Aircraft } from '/src/aircraft/Aircraft.ts'
+import { CameraSystem } from '/src/camera/CameraSystem.ts'
 const renderer=new T.WebGLRenderer({antialias:true})
 renderer.setSize(innerWidth,innerHeight)
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))
@@ -37,7 +42,16 @@ document.body.append(renderer.domElement)
 const world=new World()
 const camera=new T.PerspectiveCamera(55,innerWidth/innerHeight,1,60000)
 const controls=new OrbitControls(camera,renderer.domElement)
+const reviewJet=new Aircraft()
+reviewJet.addTo(world.scene);reviewJet.mesh.visible=false
+const chase=new CameraSystem(renderer.domElement)
+chase.resize(innerWidth,innerHeight)
+let flightView=false
+let settlementRadius=0
 function frameWorld(destination){
+  settlementRadius=0
+  flightView=false;reviewJet.mesh.visible=false;controls.enabled=true
+  document.querySelector('#flight-view').textContent='Flight scale view'
   const {x,y,z}=destination ?? world.spawn
   world.atmosphere.timeOfDay=.48
   world.atmosphere.setWeather('clear')
@@ -59,11 +73,13 @@ document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
 const destinations={
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
   mesa:[1,-30000,-27600],volcano:[1,-20400,-13800],
+  city:[1,-2,-7],village:[1,-7,-2],
 }
 function visitDestination(value){
   const target=destinations[value]
   if(!target){frameWorld();return}
   let [seed,x,z]=target
+  let settlement=null
   world.reseed(seed)
   world.terrain.clearAll()
   if(value==='lake'||value==='ocean'){
@@ -72,8 +88,18 @@ function visitDestination(value){
   } else if(value==='river'){
     const r=riverReaches(-1,-1).find(r=>r.ya>35&&r.ya<65)
     x=r.ax;z=r.az
+  } else if(value==='city'||value==='village'){
+    settlement=settlementForCell(x,z)
+    if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
+    x=settlement.x;z=settlement.z
   }
   frameWorld({x,z,y:sampleTerrainHeight(x,z)})
+  if(value==='city'||value==='village'){
+    const y=sampleTerrainHeight(x,z)
+    settlementRadius=settlement.radius
+    camera.position.set(x+settlementRadius*1.25,y+settlementRadius*.95,z-settlementRadius*1.25)
+    controls.target.set(x,y+25,z);controls.update()
+  }
 }
 document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
 const requested=new URLSearchParams(location.search).get('destination')
@@ -83,10 +109,20 @@ let frames=0
 let timings=[]
 let flying=false
 document.querySelector('#fly').onclick=()=>{flying=!flying;document.querySelector('#fly').textContent=flying?'Stop benchmark':'Flight benchmark'}
+document.querySelector('#flight-view').onclick=()=>{
+  flightView=!flightView;controls.enabled=!flightView;reviewJet.mesh.visible=flightView
+  flying=false;document.querySelector('#fly').textContent='Flight benchmark'
+  document.querySelector('#flight-view').textContent=flightView?'Orbit view':'Flight scale view'
+  if(flightView){
+    const x=controls.target.x,z=controls.target.z-Math.max(450,settlementRadius*.45)
+    reviewJet.reset({x,z,y:sampleTerrainHeight(x,z)+350,yaw:0})
+    chase.setMode('chase',reviewJet)
+  }
+}
 renderer.setAnimationLoop(now=>{
   timings.push(now-previous);if(timings.length>90)timings.shift()
   const dt=Math.min((now-previous)/1000,1/30);previous=now
-  if(flying){
+  if(flying&&!flightView){
     const speed=document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400
     const step=dt*speed
     camera.position.x+=step;controls.target.x+=step
@@ -95,14 +131,16 @@ renderer.setAnimationLoop(now=>{
     controls.target.y+=rise;camera.position.y+=rise;controls.update()
   }
   world.atmosphere.timeOfDay=.48
-  world.update(controls.target.x,controls.target.y,controls.target.z,dt)
-  renderer.render(world.scene,camera)
+  const focus=flightView?reviewJet.position:controls.target
+  world.update(focus.x,focus.y,focus.z,dt)
+  if(flightView) chase.update(reviewJet,dt)
+  renderer.render(world.scene,flightView?chase.camera:camera)
   frames++
   if(frames%15===0){
     const sorted=[...timings].sort((a,b)=>a-b)
-    document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95'
+    document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings loaded · '+world.settlements.pendingCount+' pending'
   }
 })
-onresize=()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix()}
+onresize=()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();chase.resize(innerWidth,innerHeight)}
 </script>
 </html>

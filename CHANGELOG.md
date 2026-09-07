@@ -2,6 +2,13 @@
 
 ## 2026-09-07
 
+### Settlements
+
+- Add rare, sprawling procedural cities and irregular villages in varied sizes.
+- Fit dry, gentle lots to existing terrain, with biome-specific architecture and oversized buildings for flight-camera readability.
+- Stream instanced buildings and roofs, precompute terrain suitability in a worker, and include building collision.
+- Add settlement destinations and a chase-camera scale check to the terrain review.
+
 ### Audio
 
 - Afterburner engage cue: short rising whoosh (edge-triggered, not every frame).

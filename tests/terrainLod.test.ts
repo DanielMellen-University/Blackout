@@ -105,7 +105,8 @@ describe('TerrainSystem streaming LOD', () => {
     for (let i = 0; i < 1000 && !terrain.chunkStats(0, 12); i++) pump(terrain, 210, 210, 1)
     pump(terrain, 210, 12 * CHUNK_SIZE + 210, 80)
     expect(terrain.chunkStats(0, 12)?.lod).toBe(0)
-    pump(terrain, 210, 210, 80)
+    // Streaming has a wall-clock budget; a busy test host can need more frames.
+    for (let i = 0; i < 1000 && terrain.chunkStats(0, 12)?.lod !== 2; i++) pump(terrain, 210, 210, 1)
     expect(terrain.chunkStats(0, 12)?.lod).toBe(2)
   }, 20_000)
 })

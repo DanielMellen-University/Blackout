@@ -19,6 +19,7 @@ import {
 } from './terrainSample'
 import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
 import { MissionSystem } from '../systems/Mission'
+import { SettlementSystem } from './SettlementSystem'
 
 export interface SpawnPose {
   x: number
@@ -34,6 +35,7 @@ export interface SpawnPose {
 export class World {
   readonly scene = new Scene()
   readonly terrain: TerrainSystem
+  readonly settlements: SettlementSystem
   readonly sun: DirectionalLight
   /** Cool moonlight — no shadows (cheap second key light). */
   readonly moon: DirectionalLight
@@ -76,6 +78,7 @@ export class World {
     this.scene.add(this.fill.target)
 
     this.terrain = new TerrainSystem(this.scene)
+    this.settlements = new SettlementSystem(this.scene)
     this.atmosphere = new Atmosphere(
       this.scene,
       {
@@ -130,6 +133,7 @@ export class World {
         this.seed = nextSeed
         this.applySpawn(pad)
         this.terrain.clearAll()
+        this.settlements.clearAll()
         this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
         this.atmosphere.randomizeWeather(this.seed)
         this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
@@ -150,6 +154,7 @@ export class World {
 
   /** True if a world-space point overlaps hangar, tower, or shack. */
   hitObstacle(x: number, y: number, z: number): boolean {
+    if (this.settlements.hitObstacle(x, y, z)) return true
     const pad = getOpsPad()
     if (!pad) return false
     const yaw = this.spawn.yaw
@@ -184,6 +189,7 @@ export class World {
    */
   update(x: number, y: number, z: number, dt: number, simDt = dt, visualDt = simDt): void {
     this.terrain.update(x, z, dt)
+    this.settlements.update(x, z)
     this.atmosphere.update(simDt, x, y, z, visualDt)
   }
 

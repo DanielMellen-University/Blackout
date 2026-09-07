@@ -100,6 +100,14 @@ Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. This is procedural drainage,
 not a rainfall or fluid simulation.
 
+Rare procedural cities and more frequent villages occupy suitable dry terrain.
+Their sizes, outlines, street networks and biome palettes vary by world seed.
+Buildings use deliberately exaggerated scale for readability from the jet.
+Settlement placement runs in a background worker; buildings and roofs are
+instanced, with ground detail culled at distance. Trees and rocks remain disabled.
+The terrain review includes city/village destinations and a Flight scale view
+using the game's actual chase camera and aircraft.
+
 Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
 
 ## Project layout
