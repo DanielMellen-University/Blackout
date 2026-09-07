@@ -22,6 +22,12 @@
     <option value="cruise">Cruise · 400 m/s</option>
     <option value="maximum" selected>Maximum afterburner speed</option>
   </select>
+  <select id="weather" aria-label="Weather preset">
+    <option value="clear">Clear</option><option value="cloudy">Cloudy</option>
+    <option value="overcast">Overcast</option><option value="fog">Fog</option>
+    <option value="rain">Rain</option><option value="storm">Storm</option>
+    <option value="snow">Snow</option><option value="blizzard">Blizzard</option>
+  </select>
   <span id="seed"></span> · drag to orbit · scroll to zoom
   <span id="stats"></span>
 </nav>
@@ -56,7 +62,7 @@ function frameWorld(destination){
   document.querySelector('#flight-view').textContent='Flight scale view'
   const {x,y,z}=destination ?? world.spawn
   world.atmosphere.timeOfDay=.48
-  world.atmosphere.setWeather('clear')
+  world.atmosphere.setWeather(document.querySelector('#weather').value,true)
   let nearbyPeak=y
   for(let ix=-2;ix<=2;ix++) for(let iz=-2;iz<=2;iz++) {
     nearbyPeak=Math.max(nearbyPeak,sampleTerrainHeight(x+ix*750,z+iz*750))
@@ -115,6 +121,7 @@ function visitDestination(value){
   }
 }
 document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
+document.querySelector('#weather').onchange=e=>world.atmosphere.setWeather(e.target.value,true)
 const requested=new URLSearchParams(location.search).get('destination')
 if(requested){document.querySelector('#destination').value=requested;visitDestination(requested)}
 let previous=performance.now()

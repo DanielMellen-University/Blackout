@@ -3,22 +3,38 @@ import {
   BufferAttribute,
   BufferGeometry,
   Color,
+  DataTexture,
   DirectionalLight,
+  DynamicDrawUsage,
   Fog,
   Group,
   HemisphereLight,
   IcosahedronGeometry,
+  InstancedMesh,
+  LinearFilter,
   MathUtils,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
+  Object3D,
   Points,
   PointsMaterial,
+  RGBAFormat,
   Scene,
   Vector3,
+  UnsignedByteType,
 } from 'three'
 import { SkyDome } from './SkyDome'
 import { SnowField } from './SnowField'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
+import {
+  WEATHER_LABELS,
+  WeatherDirector,
+  type WeatherId,
+  type WeatherSnapshot,
+} from './WeatherDirector'
+
+export { WEATHER_LABELS, WEATHER_ORDER, type WeatherId } from './WeatherDirector'
 
 /**
  * Cloud streaming envelope — match terrain load radius.
@@ -79,147 +95,14 @@ function cloudSpawnXZ(radiusScale = 0.92): { x: number; z: number } {
   return { x: Math.cos(ang) * r, z: Math.sin(ang) * r }
 }
 
-export type WeatherId =
-  | 'clear'
-  | 'cloudy'
-  | 'overcast'
-  | 'fog'
-  | 'rain'
-  | 'storm'
-  | 'snow'
-  | 'blizzard'
-
-export const WEATHER_ORDER: readonly WeatherId[] = [
-  'clear',
-  'cloudy',
-  'overcast',
-  'fog',
-  'rain',
-  'storm',
-  'snow',
-  'blizzard',
-] as const
-
-export const WEATHER_LABELS: Record<WeatherId, string> = {
-  clear: 'CLEAR',
-  cloudy: 'CLOUDY',
-  overcast: 'OVERCAST',
-  fog: 'FOG',
-  rain: 'RAIN',
-  storm: 'STORM',
-  snow: 'SNOW',
-  blizzard: 'BLIZZARD',
-}
-
-interface WeatherProfile {
-  fogNearMul: number
-  fogFarMul: number
-  sunMul: number
-  hemiMul: number
-  ambientMul: number
-  rain: number
-  snow: number
-  haze: number
-  clouds: number
-}
-
-const WEATHER: Record<WeatherId, WeatherProfile> = {
-  clear: {
-    fogNearMul: 1.15,
-    fogFarMul: 1.12,
-    sunMul: 1,
-    hemiMul: 1,
-    ambientMul: 1,
-    rain: 0,
-    snow: 0,
-    haze: 0,
-    clouds: 0.12,
-  },
-  cloudy: {
-    fogNearMul: 0.88,
-    fogFarMul: 0.92,
-    sunMul: 0.72,
-    hemiMul: 0.9,
-    ambientMul: 0.95,
-    rain: 0,
-    snow: 0,
-    haze: 0.18,
-    clouds: 0.55,
-  },
-  overcast: {
-    fogNearMul: 0.55,
-    fogFarMul: 0.65,
-    sunMul: 0.35,
-    hemiMul: 0.75,
-    ambientMul: 0.85,
-    rain: 0,
-    snow: 0,
-    haze: 0.4,
-    clouds: 0.92,
-  },
-  fog: {
-    fogNearMul: 0.2,
-    fogFarMul: 0.32,
-    sunMul: 0.22,
-    hemiMul: 0.5,
-    ambientMul: 0.68,
-    rain: 0,
-    snow: 0,
-    haze: 0.78,
-    clouds: 0.45,
-  },
-  rain: {
-    fogNearMul: 0.42,
-    fogFarMul: 0.55,
-    sunMul: 0.32,
-    hemiMul: 0.62,
-    ambientMul: 0.75,
-    rain: 0.75,
-    snow: 0,
-    haze: 0.48,
-    clouds: 0.8,
-  },
-  storm: {
-    fogNearMul: 0.28,
-    fogFarMul: 0.4,
-    sunMul: 0.14,
-    hemiMul: 0.48,
-    ambientMul: 0.58,
-    rain: 1,
-    snow: 0,
-    haze: 0.68,
-    clouds: 1,
-  },
-  snow: {
-    fogNearMul: 0.48,
-    fogFarMul: 0.6,
-    sunMul: 0.45,
-    hemiMul: 0.7,
-    ambientMul: 0.8,
-    rain: 0,
-    snow: 0.65,
-    haze: 0.4,
-    clouds: 0.7,
-  },
-  blizzard: {
-    fogNearMul: 0.18,
-    fogFarMul: 0.3,
-    sunMul: 0.12,
-    hemiMul: 0.45,
-    ambientMul: 0.55,
-    rain: 0,
-    snow: 1,
-    haze: 0.82,
-    clouds: 0.95,
-  },
-}
-
 const _c = new Color()
 const _c2 = new Color()
 const _sunDir = new Vector3()
 const _horizon = new Color()
 const _hemiSky = new Color()
 const _hemiGround = new Color()
+const _cloudObject = new Object3D()
+const _hiddenCloudMatrix = new Matrix4().makeScale(0, 0, 0)
 const COL_DAY_SKY = new Color(0x4a9fd4)
 const COL_NOON_SKY = new Color(0x5eb0e8)
 const COL_NIGHT_SKY = new Color(0x040812)
@@ -249,13 +132,11 @@ export class Atmosphere {
   dayLengthSec = 480
 
   weather: WeatherId = 'clear'
-  private weatherFrom: WeatherId = 'clear'
-  private weatherTo: WeatherId = 'clear'
-  private weatherT = 1
-
-  private autoWeatherTimer = 0
-  private readonly autoWeatherInterval = 75
+  private readonly weatherDirector = new WeatherDirector()
   private elapsed = 0
+  private lightningCharge = 0
+  private lightningFlash = 0
+  private gustPhase = 0
 
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
@@ -269,16 +150,17 @@ export class Atmosphere {
   private readonly rain: Points
   private readonly rainVel: Float32Array
   private readonly rainMat: PointsMaterial
+  private readonly rainTex: DataTexture
   private readonly snowField: SnowField
 
   private readonly cloudRoot = new Group()
   private readonly cloudClusters: Group[] = []
+  private readonly cloudInstances = {} as Record<CloudLayer, InstancedMesh>
   /** Absolute world positions (clouds do NOT follow the jet). */
   private readonly cloudWorld: Vector3[] = []
   /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
   private readonly cloudAlpha: number[] = []
   private readonly cloudLayers: CloudLayer[] = []
-  private cloudWindT = 0
 
   private baseFogNear = 1200
   private baseFogFar = 4000
@@ -306,9 +188,6 @@ export class Atmosphere {
 
     this.timeOfDay = Math.random()
     this.weather = 'clear'
-    this.weatherFrom = 'clear'
-    this.weatherTo = 'clear'
-    this.weatherT = 1
 
     // Shader sky: gradient + sun/moon discs + stars
     this.sky = new SkyDome(scene)
@@ -327,14 +206,23 @@ export class Atmosphere {
     }
     const rainGeo = new BufferGeometry()
     rainGeo.setAttribute('position', new BufferAttribute(rainPos, 3))
+    this.rainTex = makeRainStreakTexture()
     this.rainMat = new PointsMaterial({
       color: 0xb0cce0,
-      size: 0.32,
+      map: this.rainTex,
+      size: 1.15,
       transparent: true,
       opacity: 0.5,
       depthWrite: false,
       sizeAttenuation: true,
+      alphaTest: 0.03,
     })
+    this.rainMat.onBeforeCompile = (shader) => {
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <fog_vertex>',
+        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize, 9.0);',
+      )
+    }
     this.rain = new Points(rainGeo, this.rainMat)
     this.rain.frustumCulled = false
     this.rain.visible = false
@@ -352,7 +240,7 @@ export class Atmosphere {
     const puffMat = new MeshBasicMaterial({
       color: 0xe8f0f8,
       transparent: true,
-      opacity: 0,
+      opacity: 0.6,
       depthWrite: false,
     })
 
@@ -369,6 +257,11 @@ export class Atmosphere {
       layerPlan[j] = tmp
     }
 
+    const puffCounts: Record<CloudLayer, number> = {
+      cumulus: 0,
+      stratus: 0,
+      cirrus: 0,
+    }
     for (const layer of layerPlan) {
       const cluster = this.buildCloudCluster(layer, puffGeo, puffMat)
       const xz = cloudSpawnXZ()
@@ -376,7 +269,30 @@ export class Atmosphere {
       this.cloudAlpha.push(0)
       this.cloudLayers.push(layer)
       this.cloudClusters.push(cluster)
-      this.cloudRoot.add(cluster)
+      puffCounts[layer] += cluster.children.length
+    }
+
+    // Three deck-wide batches replace hundreds of individual cloud draw calls.
+    for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
+      const mat = puffMat.clone()
+      mat.name = `Cloud-${layer}`
+      const instances = new InstancedMesh(puffGeo, mat, puffCounts[layer])
+      instances.name = `CloudBatch-${layer}`
+      instances.frustumCulled = false
+      instances.instanceMatrix.setUsage(DynamicDrawUsage)
+      for (let i = 0; i < puffCounts[layer]; i++) {
+        instances.setMatrixAt(i, _hiddenCloudMatrix)
+      }
+      instances.instanceMatrix.needsUpdate = true
+      this.cloudInstances[layer] = instances
+      this.cloudRoot.add(instances)
+    }
+
+    const offsets: Record<CloudLayer, number> = { cumulus: 0, stratus: 0, cirrus: 0 }
+    for (let i = 0; i < this.cloudClusters.length; i++) {
+      const layer = this.cloudLayers[i]!
+      this.cloudClusters[i]!.userData.instanceOffset = offsets[layer]
+      offsets[layer] += this.cloudClusters[i]!.children.length
     }
     scene.add(this.cloudRoot)
 
@@ -385,17 +301,13 @@ export class Atmosphere {
 
   /** Cycle weather type (N key). */
   cycleWeather(): WeatherId {
-    const i = WEATHER_ORDER.indexOf(this.weatherTo)
-    const next = WEATHER_ORDER[(i + 1) % WEATHER_ORDER.length]!
-    this.setWeather(next)
+    const next = this.weatherDirector.cycle()
+    this.weather = next
     return next
   }
 
-  setWeather(id: WeatherId): void {
-    if (id === this.weatherTo && this.weatherT >= 1) return
-    this.weatherFrom = this.profileId()
-    this.weatherTo = id
-    this.weatherT = 0
+  setWeather(id: WeatherId, instant = false): void {
+    this.weatherDirector.setWeather(id, instant)
     this.weather = id
   }
 
@@ -423,10 +335,10 @@ export class Atmosphere {
       w = nightRoll < 0.5 ? 'fog' : 'snow'
     }
 
-    this.weatherFrom = w
-    this.weatherTo = w
-    this.weatherT = 1
+    this.weatherDirector.randomize(seed, w)
     this.weather = w
+    this.lightningCharge = 2 + this.seededPulse(seed) * 6
+    this.lightningFlash = 0
   }
 
   get clockLabel(): string {
@@ -437,7 +349,8 @@ export class Atmosphere {
   }
 
   get weatherLabel(): string {
-    return WEATHER_LABELS[this.weatherTo]
+    const suffix = this.weatherDirector.transitioning ? ' / SHIFTING' : ''
+    return `${WEATHER_LABELS[this.weatherDirector.targetId]}${suffix}`
   }
 
   get phaseLabel(): string {
@@ -451,45 +364,10 @@ export class Atmosphere {
   update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {
     this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
     this.elapsed += dt
-    this.cloudWindT += visualDt
-
-    this.autoWeatherTimer += dt
-    if (this.autoWeatherTimer > this.autoWeatherInterval) {
-      this.autoWeatherTimer = 0
-      if (this.weatherT >= 1 && Math.random() < 0.6) {
-        const next =
-          WEATHER_ORDER[Math.floor(Math.random() * WEATHER_ORDER.length)]!
-        this.setWeather(next)
-      }
-    }
-
-    if (this.weatherT < 1) {
-      this.weatherT = Math.min(1, this.weatherT + dt * 0.1)
-      if (this.weatherT >= 1) this.weatherFrom = this.weatherTo
-    }
+    this.weatherDirector.update(dt)
+    this.weather = this.weatherDirector.targetId
 
     this.apply(ax, ay, az, dt, visualDt)
-  }
-
-  private profileId(): WeatherId {
-    return this.weatherT < 1 ? this.weatherFrom : this.weatherTo
-  }
-
-  private blendedProfile(): WeatherProfile {
-    const a = WEATHER[this.weatherFrom]
-    const b = WEATHER[this.weatherTo]
-    const t = this.weatherT
-    return {
-      fogNearMul: MathUtils.lerp(a.fogNearMul, b.fogNearMul, t),
-      fogFarMul: MathUtils.lerp(a.fogFarMul, b.fogFarMul, t),
-      sunMul: MathUtils.lerp(a.sunMul, b.sunMul, t),
-      hemiMul: MathUtils.lerp(a.hemiMul, b.hemiMul, t),
-      ambientMul: MathUtils.lerp(a.ambientMul, b.ambientMul, t),
-      rain: MathUtils.lerp(a.rain, b.rain, t),
-      snow: MathUtils.lerp(a.snow, b.snow, t),
-      haze: MathUtils.lerp(a.haze, b.haze, t),
-      clouds: MathUtils.lerp(a.clouds, b.clouds, t),
-    }
   }
 
   private apply(ax: number, ay: number, az: number, dt: number, visualDt: number): void {
@@ -503,7 +381,9 @@ export class Atmosphere {
       MathUtils.smoothstep(t, 0.18, 0.28) * (1 - MathUtils.smoothstep(t, 0.28, 0.38)) +
       MathUtils.smoothstep(t, 0.68, 0.78) * (1 - MathUtils.smoothstep(t, 0.78, 0.88))
 
-    const w = this.blendedProfile()
+    const w = this.weatherDirector.snapshot()
+    this.updateLightning(dt, w)
+    const totalClouds = Math.max(w.lowClouds, w.midClouds * 0.9, w.highClouds * 0.55)
 
     // Zenith color (top of sky dome)
     _c.copy(COL_NIGHT_SKY).lerp(COL_DAY_SKY, dayFactor)
@@ -523,9 +403,20 @@ export class Atmosphere {
       _c.multiplyScalar(1 - w.rain * 0.18)
       _horizon.multiplyScalar(1 - w.rain * 0.14)
     }
+    if (w.lightning > 0.05) {
+      _c2.setHex(0x334052)
+      _c.lerp(_c2, w.lightning * 0.34)
+      _c2.setHex(0x465463)
+      _horizon.lerp(_c2, w.lightning * 0.28)
+    }
     if (w.snow > 0.7) {
       _c.lerp(COL_SNOW_SKY, 0.2)
       _horizon.lerp(COL_SNOW_HORIZ, 0.25)
+    }
+    if (this.lightningFlash > 0.01) {
+      _c2.setHex(0xcfe3ff)
+      _c.lerp(_c2, this.lightningFlash * 0.72)
+      _horizon.lerp(_c2, this.lightningFlash * 0.58)
     }
 
     const fogNear = this.baseFogNear * w.fogNearMul
@@ -546,7 +437,7 @@ export class Atmosphere {
     // --- Sun + moon key lights (terrain MeshStandardMaterials receive both) ---
     // Cheap: one extra directional, moon never casts shadows.
     const lightDist = 900
-    const clearMul = 1 - w.clouds * 0.55 - w.haze * 0.25
+    const clearMul = 1 - totalClouds * 0.55 - w.haze * 0.25
     const sunUp = MathUtils.smoothstep(elev, -0.08, 0.18)
     const moonUp = MathUtils.smoothstep(-elev, -0.06, 0.22)
 
@@ -564,7 +455,7 @@ export class Atmosphere {
     this.sun.color.copy(_c2)
     this.sun.intensity =
       (0.25 + dayFactor * 1.55) * sunUp * clearMul * w.sunMul
-    this.sun.castShadow = elev > 0.1 && w.clouds < 0.85 && sunUp > 0.35
+    this.sun.castShadow = elev > 0.1 && totalClouds < 0.85 && sunUp > 0.35
 
     // Moon opposite the sun — cool fill that actually lights the world at night
     this.moon.position.set(
@@ -591,12 +482,14 @@ export class Atmosphere {
       MathUtils.lerp(0.62, 1, dayFactor),
     )
     this.ambient.intensity =
-      (0.1 + dayFactor * 0.28 + nightFactor * 0.06) * w.ambientMul
+      (0.1 + dayFactor * 0.28 + nightFactor * 0.06) * w.ambientMul +
+      this.lightningFlash * 1.45
 
     // Soft bounce opposite the stronger key
     this.fill.color.setHex(dayFactor > 0.35 ? 0xc8e0ff : 0x6a7aaa)
     this.fill.intensity =
-      (0.1 + dayFactor * 0.22 + moonUp * nightFactor * 0.12) * w.sunMul
+      (0.1 + dayFactor * 0.22 + moonUp * nightFactor * 0.12) * w.sunMul +
+      this.lightningFlash * 2.2
     this.fill.position.set(
       ax - _sunDir.x * lightDist * 0.35,
       ay + 90,
@@ -616,13 +509,13 @@ export class Atmosphere {
       _c,
       _horizon,
       w.haze,
-      w.clouds,
+      totalClouds,
       this.elapsed,
     )
 
     // World-space clouds (fly past them) + local precip FX
-    this.updateClouds(ax, ay, az, dt, w.clouds, dayFactor, w.snow)
-    this.updatePrecip(ax, ay, az, visualDt, w.rain)
+    this.updateClouds(ax, ay, az, dt, w, dayFactor)
+    this.updatePrecip(ax, ay, az, visualDt, w)
     this.snowField.update(visualDt, ax, ay, az, w.snow)
   }
 
@@ -648,7 +541,7 @@ export class Atmosphere {
       // (big 10× banks used to bury mountains under their undersides)
       const nPuffs = 10 + ((Math.random() * 8) | 0) + puffBonus
       for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, baseMat.clone())
+        const mesh = new Mesh(puffGeo, baseMat)
         const edge = p / nPuffs
         const radial =
           (0.15 + edge * 0.85) * (180 + Math.random() * 220) * size
@@ -673,7 +566,7 @@ export class Atmosphere {
       const nPuffs = 14 + ((Math.random() * 10) | 0) + puffBonus
       const span = 700 * size
       for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, baseMat.clone())
+        const mesh = new Mesh(puffGeo, baseMat)
         const s = (140 + Math.random() * 160) * size
         const sy =
           s * (0.18 + Math.random() * 0.14) * Math.min(1.3, 0.7 + size * 0.06)
@@ -698,7 +591,7 @@ export class Atmosphere {
       const dirZ = Math.sin(streakAng)
       const length = 900 * size
       for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, baseMat.clone())
+        const mesh = new Mesh(puffGeo, baseMat)
         const along = (p / Math.max(1, nPuffs - 1) - 0.5) * length
         const side = (Math.random() - 0.5) * 80 * Math.sqrt(size)
         const s = (90 + Math.random() * 120) * size
@@ -728,16 +621,39 @@ export class Atmosphere {
     _ay: number,
     az: number,
     dt: number,
-    cover: number,
+    weather: WeatherSnapshot,
     dayFactor: number,
-    snowAmt: number,
   ): void {
-    const brightness = 0.5 + dayFactor * 0.48 - snowAmt * 0.08
-    const baseOpacity = MathUtils.clamp(0.28 + cover * 0.5, 0.18, 0.82)
+    const maxCover = Math.max(
+      weather.lowClouds,
+      weather.midClouds,
+      weather.highClouds,
+    )
+    const brightness =
+      0.5 + dayFactor * 0.48 - weather.snow * 0.08 + this.lightningFlash * 0.42
+    const baseOpacity = MathUtils.clamp(0.28 + maxCover * 0.5, 0.18, 0.82)
     const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
     // ~0.8s ease for opacity (smooth appear / disappear)
     const fadeK = 1 - Math.exp(-dt * 1.4)
     let anyVisible = false
+    this.gustPhase += dt * (0.35 + weather.gust * 1.4)
+    const gust = 1 + Math.sin(this.gustPhase) * weather.gust * 0.32
+
+    for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
+      const mat = this.cloudInstances[layer].material as MeshBasicMaterial
+      const cover =
+        layer === 'cumulus'
+          ? weather.lowClouds
+          : layer === 'stratus'
+            ? weather.midClouds
+            : weather.highClouds
+      mat.opacity = MathUtils.clamp(0.2 + cover * 0.58, 0.15, 0.8) *
+        CLOUD_LAYER[layer].opacityMul
+      let br = brightness
+      if (layer === 'cirrus') br = Math.min(1, br + 0.11)
+      else if (layer === 'cumulus' && dayFactor > 0.4) br = Math.min(1, br + 0.04)
+      mat.color.setRGB(br, Math.min(1, br * 1.02), Math.min(1, br * 1.06))
+    }
 
     // Layer priority with cover: clear → cirrus only; storm → all decks
     // Indices are shuffled so gate by fraction of total still works; also
@@ -749,9 +665,8 @@ export class Atmosphere {
       const spec = CLOUD_LAYER[layer]
 
       // Absolute wind (m/s) — high clouds drift faster
-      const windBase = 4.2 * spec.windMul
-      wpos.x += windBase * dt
-      wpos.z += windBase * 0.38 * dt
+      wpos.x += weather.windX * spec.windMul * gust * dt
+      wpos.z += weather.windZ * spec.windMul * gust * dt
 
       let dx = wpos.x - ax
       let dz = wpos.z - az
@@ -771,60 +686,64 @@ export class Atmosphere {
         distSq = dx * dx + dz * dz
       }
 
-      cluster.position.set(wpos.x, wpos.y, wpos.z)
-
       // 3D distance for high decks so they don't pop when you're under them
       const dy = wpos.y - _ay
       const dist3 = Math.sqrt(distSq + dy * dy)
       const distFade =
         1 - MathUtils.smoothstep(dist3, CLOUD_FADE_FULL, CLOUD_FADE_OUT)
 
-      // Weather: more cover unlocks lower decks; cirrus can appear with little cover
-      let layerNeed = 0.08
-      if (layer === 'stratus') layerNeed = 0.35
-      if (layer === 'cumulus') layerNeed = 0.22
-      const coverOn = cover >= layerNeed && cover > 0.05
-      // Density: only a fraction of each deck for partial cloud cover
-      const densityGate =
-        layer === 'cirrus'
-          ? i / this.cloudClusters.length < 0.35 + cover * 0.5
-          : i / this.cloudClusters.length < cover * 1.1
-
-      const target = coverOn && densityGate ? distFade : 0
+      const layerCover =
+        layer === 'cumulus'
+          ? weather.lowClouds
+          : layer === 'stratus'
+            ? weather.midClouds
+            : weather.highClouds
+      // Irrational stride distributes active clusters without obvious ordering.
+      const densityRoll = (i * 0.61803398875 + (layer === 'cirrus' ? 0.17 : 0)) % 1
+      const target = densityRoll < layerCover ? distFade : 0
       this.cloudAlpha[i] = MathUtils.lerp(this.cloudAlpha[i]!, target, fadeK)
       const a = this.cloudAlpha[i]!
 
       if (a < 0.01) {
-        cluster.visible = false
+        this.setCloudClusterMatrices(cluster, layer, wpos, 0)
         continue
       }
-      cluster.visible = true
       anyVisible = true
-
-      // Slightly denser near core of each cluster's opacity range
-      const op =
-        baseOpacity * a * spec.opacityMul * (0.78 + (i % 7) * 0.03)
-      // Cirrus colder / whiter; low cumulus warmer in day
-      let br = brightness
-      let bg = brightness * 1.02
-      let bb = brightness * 1.06
-      if (layer === 'cirrus') {
-        br = Math.min(1, brightness + 0.08)
-        bg = Math.min(1, brightness + 0.1)
-        bb = Math.min(1, brightness + 0.14)
-      } else if (layer === 'cumulus' && dayFactor > 0.4) {
-        br = Math.min(1, brightness + 0.04)
-      }
-
-      for (const child of cluster.children) {
-        const m = child as Mesh
-        const mat = m.material as MeshBasicMaterial
-        mat.opacity = op
-        mat.color.setRGB(br, bg, bb)
-      }
+      const opacityScale = MathUtils.smoothstep(a, 0, 1) *
+        (0.9 + (i % 7) * 0.015) * MathUtils.lerp(0.8, 1, baseOpacity)
+      this.setCloudClusterMatrices(cluster, layer, wpos, opacityScale)
     }
 
+    for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
+      this.cloudInstances[layer].instanceMatrix.needsUpdate = true
+    }
     this.cloudRoot.visible = anyVisible
+  }
+
+  private setCloudClusterMatrices(
+    cluster: Group,
+    layer: CloudLayer,
+    worldPosition: Vector3,
+    scaleMul: number,
+  ): void {
+    const instances = this.cloudInstances[layer]
+    const offset = cluster.userData.instanceOffset as number
+    for (let i = 0; i < cluster.children.length; i++) {
+      if (scaleMul <= 0) {
+        instances.setMatrixAt(offset + i, _hiddenCloudMatrix)
+        continue
+      }
+      const puff = cluster.children[i] as Mesh
+      _cloudObject.position.set(
+        worldPosition.x + puff.position.x,
+        worldPosition.y + puff.position.y,
+        worldPosition.z + puff.position.z,
+      )
+      _cloudObject.rotation.set(0, puff.rotation.y, 0)
+      _cloudObject.scale.copy(puff.scale).multiplyScalar(scaleMul)
+      _cloudObject.updateMatrix()
+      instances.setMatrixAt(offset + i, _cloudObject.matrix)
+    }
   }
 
   /** Rain stays in a box around the jet; snow is a separate world-space field. */
@@ -833,10 +752,11 @@ export class Atmosphere {
     ay: number,
     az: number,
     dt: number,
-    rainAmt: number,
+    weather: WeatherSnapshot,
   ): void {
     this.precipRoot.position.set(ax, ay, az)
 
+    const rainAmt = weather.rain
     this.rain.visible = rainAmt > 0.05
     if (!this.rain.visible || dt <= 0) return
 
@@ -847,7 +767,9 @@ export class Atmosphere {
     for (let i = 0; i < this.rainVel.length; i++) {
       const iy = i * 3 + 1
       arr[iy]! -= this.rainVel[i]! * boost * dt
-      arr[i * 3]! += Math.sin(i + az * 0.01) * 3 * rainAmt * dt
+      arr[i * 3]! +=
+        (weather.windX * 0.38 + Math.sin(i + az * 0.01) * 3 * rainAmt) * dt
+      arr[i * 3 + 2]! += weather.windZ * 0.38 * dt
       if (arr[iy]! < -18) {
         arr[iy] = 45 + Math.random() * 55
         arr[i * 3] = (Math.random() - 0.5) * 140
@@ -856,4 +778,46 @@ export class Atmosphere {
     }
     pos.needsUpdate = true
   }
+
+  private updateLightning(dt: number, weather: WeatherSnapshot): void {
+    this.lightningFlash *= Math.exp(-dt * 13)
+    if (weather.lightning < 0.03 || dt <= 0) return
+
+    this.lightningCharge -= dt * (0.35 + weather.lightning * 0.9)
+    if (this.lightningCharge > 0) return
+
+    const pulse = this.seededPulse(this.elapsed * 7.31 + this.gustPhase)
+    this.lightningFlash = 0.62 + pulse * 0.38
+    this.lightningCharge = (2.6 + this.seededPulse(this.elapsed * 2.17) * 7.5) /
+      Math.max(0.2, weather.lightning)
+  }
+
+  private seededPulse(value: number): number {
+    const n = Math.sin(value * 12.9898 + 78.233) * 43758.5453
+    return n - Math.floor(n)
+  }
+}
+
+function makeRainStreakTexture(): DataTexture {
+  const width = 32
+  const height = 64
+  const data = new Uint8Array(width * height * 4)
+  for (let y = 0; y < height; y++) {
+    const vy = y / (height - 1)
+    const taper = Math.sin(vy * Math.PI)
+    for (let x = 0; x < width; x++) {
+      const dx = Math.abs(x - (width - 1) * 0.5) / (width * 0.5)
+      const alpha = Math.pow(Math.max(0, 1 - dx * 7), 2) * Math.pow(taper, 0.35)
+      const i = (y * width + x) * 4
+      data[i] = 205
+      data[i + 1] = 226
+      data[i + 2] = 242
+      data[i + 3] = Math.round(alpha * 255)
+    }
+  }
+  const texture = new DataTexture(data, width, height, RGBAFormat, UnsignedByteType)
+  texture.magFilter = LinearFilter
+  texture.minFilter = LinearFilter
+  texture.needsUpdate = true
+  return texture
 }

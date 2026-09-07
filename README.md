@@ -20,7 +20,8 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Mostly dry land with uncommon enclosed seas, irregular lakes, and meandering rivers that vary in width and descend from lake outlets to sea level. Water is separate geometry over a sediment bed, with calm reflections and fine ripples.
 - Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks remain temporarily disabled.
-- Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load. Day/night, weather (**N**) and clouds remain available.
+- Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load.
+- Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack

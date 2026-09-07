@@ -12,6 +12,14 @@
 - Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 
+### Weather
+
+- Replace abrupt random preset jumps with seeded fronts that move through believable neighboring conditions.
+- Blend fog, daylight, three cloud decks, wind, gusts and precipitation continuously over each transition.
+- Add wind-driven rain streaks, storm-darkened skies and lightning flashes.
+- Batch every cloud puff into three instanced deck draws instead of hundreds of individual meshes.
+- Add instant weather selection to the terrain review for visual and performance QA.
+
 ### Audio
 
 - Afterburner engage cue: short rising whoosh (edge-triggered, not every frame).
