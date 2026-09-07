@@ -157,8 +157,9 @@ export class FlightModel {
       const s = velocity.length()
       const err = target - s
       const capAccel = engine.maxAcceleration
+      const idle = lever < C.idleLever && !boost
       const capDecel =
-        onGround && !boost && lever < 0.12 ? C.maxBrakeDecel : C.maxDecel
+        onGround && idle ? C.maxBrakeDecel : idle ? C.maxDecel : C.coastDecel
       const along = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
 
       if (along > 0.05) {
@@ -270,9 +271,16 @@ export class FlightModel {
       }
 
       position.set(x, y + hit.depth, z)
+      const speedBefore = velocity.length()
       if (velocity.y < 0) velocity.y = 0
       const nv = velocity.dot(hit.normal)
       if (nv < 0) velocity.addScaledVector(hit.normal, -nv)
+      // Walkable contact must not act as a brake; noisy mesh normals
+      // and shallow slopes used to strip speed after the takeoff roll.
+      if (hit.normal.y >= 0.55 && speedBefore > 1e-4) {
+        const s = velocity.length()
+        if (s > 1e-4 && s < speedBefore) velocity.multiplyScalar(speedBefore / s)
+      }
       return
     }
   }

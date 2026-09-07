@@ -21,12 +21,16 @@ export const flightConfig = {
   maxAccelBoost: 190,
   /** Afterburner cannot light with the throttle effectively closed. */
   afterburnerMinThrottle: 0.05,
+  /** Treat the lever as closed below this; speed hold then brakes instead of coasting. */
+  idleLever: 0.18,
   /** How hard IAS chases the ENG% target (1/s). */
   speedSeek: 7.25,
 
   /** Extra bleed only — cruise speed is set by ENG%, not this. */
   parasiteDrag: 0.000038,
   maxDecel: 130,
+  /** Mild overspeed bleed while the engine is still spooled (below gravity). */
+  coastDecel: 3,
   maxBrakeDecel: 240,
   airbrakeStrength: 200,
   wheelBrakeDecel: 170,

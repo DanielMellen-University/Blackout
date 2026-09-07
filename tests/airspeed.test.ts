@@ -1,3 +1,4 @@
+import { Vector3 } from 'three'
 import { afterEach, expect, it } from 'vitest'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import { flightConfig } from '../src/aircraft/flightConfig'
@@ -47,4 +48,38 @@ it('accelerates and decelerates promptly without overshooting zero', () => {
   for (let i = 0; i < 180; i++) plane.step(1 / 60)
   expect(Number.isFinite(plane.speed)).toBe(true)
   expect(plane.speed).toBeLessThan(10)
+})
+
+it('does not slam the brakes after a powered dive', () => {
+  setContactHeightSampler(() => 0)
+  const plane = new Aircraft()
+  plane.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
+  plane.controls.gearDown = false
+  plane.controls.throttle = 0.5
+  plane.velocity.set(0, 0, 250)
+  for (let i = 0; i < 180; i++) plane.step(1 / 60)
+  const held = plane.speed
+  expect(held).toBeGreaterThan(240)
+  expect(held).toBeLessThan(270)
+  plane.orientation.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
+  plane.velocity.set(0, -held, 0)
+  plane.angularVelocity.set(0, 0, 0)
+  for (let i = 0; i < 180; i++) plane.step(1 / 60)
+  expect(plane.speed).toBeGreaterThan(held + 15)
+})
+
+it('keeps accelerating on a shallow slope instead of bleeding off', () => {
+  setContactHeightSampler((_x, z) => 0.12 * z)
+  const plane = new Aircraft()
+  plane.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+  plane.controls.throttle = 1
+  const speeds: number[] = []
+  for (let i = 0; i < 120; i++) {
+    plane.step(1 / 60)
+    if (i % 15 === 14) speeds.push(plane.speed)
+  }
+  for (let i = 1; i < speeds.length; i++) {
+    expect(speeds[i]!).toBeGreaterThan(speeds[i - 1]! - 1)
+  }
+  expect(plane.speed).toBeGreaterThan(200)
 })
