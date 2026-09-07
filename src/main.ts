@@ -88,6 +88,7 @@ async function boot(): Promise<void> {
   let banner: string | null = null
   let bannerUntil = 0
   let wasAirborne = false
+  let prevAfterburner = false
 
   const courseId = (): string => `seed:${world.worldSeed}`
 
@@ -113,6 +114,7 @@ async function boot(): Promise<void> {
     challenge.reset(courseId(), world.mission.totalGates)
     banner = null
     wasAirborne = false
+    prevAfterburner = false
     time.reset()
   }
 
@@ -390,9 +392,23 @@ async function boot(): Promise<void> {
     renderer.toneMappingExposure = baseExp + crashFx.bloom * 1.35
     crashFx.update(simLive ? visualDt : 0)
 
+    const afterburnerOn = aircraft.engineState.afterburnerActive
+    if (
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      afterburnerOn &&
+      !prevAfterburner
+    ) {
+      audio.playCue('ab')
+    }
+    prevAfterburner = afterburnerOn
+
     audio.update({
       throttle: aircraft.engineState.lever,
-      boost: aircraft.engineState.afterburnerActive,
+      boost: afterburnerOn,
       speed: aircraft.speed,
       mute: !playing || menu.paused || results.open || aircraft.status === 'crashed',
       dt: visualDt || 1 / 60,
