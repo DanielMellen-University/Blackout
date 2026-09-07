@@ -94,7 +94,7 @@ export class FlightAudio {
   }
 
   /** Short event cues keep checkpoints and landings readable without assets. */
-  playCue(kind: 'gate' | 'complete' | 'landed' | 'crash'): void {
+  playCue(kind: 'gate' | 'complete' | 'landed' | 'crash' | 'ab'): void {
     const ctx = this.ctx
     const output = this.effectsGain
     if (!ctx || !output || ctx.state === 'suspended' || this.muted) return
@@ -108,11 +108,21 @@ export class FlightAudio {
       this.tone(660, now + 0.11, 0.13, 'triangle', 0.16)
       this.tone(880, now + 0.22, 0.28, 'triangle', 0.18)
     } else if (kind === 'landed') {
-      this.tone(420, now, 0.16, 'sine', 0.15)
-      this.tone(620, now + 0.14, 0.26, 'sine', 0.16)
+      // Soft tire thump: brief brown noise + settling tones.
+      this.noiseBurst(now, 0.12, 'brown', 0.22, 180, 90)
+      this.tone(380, now + 0.02, 0.14, 'sine', 0.12)
+      this.tone(560, now + 0.12, 0.22, 'sine', 0.14)
+    } else if (kind === 'ab') {
+      // Rising whoosh on engage (not every AB frame).
+      this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)
+      this.tone(220, now, 0.18, 'sawtooth', 0.1, 520)
+      this.tone(90, now + 0.04, 0.28, 'triangle', 0.08, 160)
     } else {
-      this.tone(110, now, 0.5, 'sawtooth', 0.22, 42)
-      this.tone(58, now + 0.06, 0.7, 'triangle', 0.2, 28)
+      // Impact: noise slap + descending growl.
+      this.noiseBurst(now, 0.18, 'white', 0.32, 900, 120)
+      this.noiseBurst(now + 0.02, 0.35, 'brown', 0.28, 200, 50)
+      this.tone(110, now, 0.45, 'sawtooth', 0.24, 38)
+      this.tone(58, now + 0.05, 0.55, 'triangle', 0.2, 24)
     }
   }
 
@@ -219,6 +229,42 @@ export class FlightAudio {
     oscillator.stop(start + duration + 0.02)
     oscillator.addEventListener('ended', () => {
       oscillator.disconnect()
+      gain.disconnect()
+    })
+  }
+
+  /** One-shot filtered noise for impacts and whooshes. */
+  private noiseBurst(
+    start: number,
+    duration: number,
+    kind: 'white' | 'brown',
+    volume: number,
+    startHz: number,
+    endHz: number,
+  ): void {
+    const ctx = this.ctx
+    const output = this.effectsGain
+    if (!ctx || !output) return
+
+    const src = ctx.createBufferSource()
+    src.buffer = makeNoiseBuffer(ctx, Math.max(0.05, duration + 0.05), kind)
+    const filter = ctx.createBiquadFilter()
+    filter.type = 'bandpass'
+    filter.Q.value = 0.8
+    filter.frequency.setValueAtTime(Math.max(40, startHz), start)
+    filter.frequency.exponentialRampToValueAtTime(Math.max(40, endHz), start + duration)
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(0.0001, start)
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), start + 0.012)
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + duration)
+    src.connect(filter)
+    filter.connect(gain)
+    gain.connect(output)
+    src.start(start)
+    src.stop(start + duration + 0.03)
+    src.addEventListener('ended', () => {
+      src.disconnect()
+      filter.disconnect()
       gain.disconnect()
     })
   }
