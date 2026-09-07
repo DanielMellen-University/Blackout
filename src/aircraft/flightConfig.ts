@@ -11,9 +11,9 @@ export const flightConfig = {
 
   /** Stall-ish floor (~80 kts). */
   minSpeed: 41,
-  /** ~1000 kts dry / ~1040 AB. */
-  maxSpeed: 514.44,
-  maxSpeedBoost: 535.02,
+  /** ~3000 kts dry / ~3120 AB. */
+  maxSpeed: 1543.32,
+  maxSpeedBoost: 1605.06,
   /** Level-flight sustain (~180 kts). */
   liftSpeed: 92,
 

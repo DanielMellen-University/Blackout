@@ -66,7 +66,7 @@ export class FlightModel {
       auth = Math.max(air, 0.28)
     }
     // Slightly heavier pitch only at extreme speed (still flyable)
-    const q = 1 / (1 + (airspeed / 420) ** 2 * 0.22)
+    const q = 1 / (1 + (airspeed / 1260) ** 2 * 0.22)
 
     const tOx = -controls.pitch * C.pitchRate * auth * q
     const tOy = -controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)

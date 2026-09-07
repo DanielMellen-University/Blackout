@@ -9,26 +9,26 @@ afterEach(() => setContactHeightSampler(null))
 
 it('converts metres per second to true knots without a fake scale', () => {
   expect(displayedKnots(100)).toBeCloseTo(194.384)
-  expect(displayedKnots(flightConfig.maxSpeed)).toBeCloseTo(1000, 0)
-  expect(displayedKnots(flightConfig.maxSpeedBoost)).toBeGreaterThan(1000)
+  expect(displayedKnots(flightConfig.maxSpeed)).toBeCloseTo(3000, 0)
+  expect(displayedKnots(flightConfig.maxSpeedBoost)).toBeGreaterThan(3000)
   expect(displayedKnots(-1)).toBe(0)
 })
 
-it('keeps 50% ENG near 500 kts and full dry power near 1000 kts', () => {
+it('keeps 50% ENG near 1500 kts and full dry power near 3000 kts', () => {
   setContactHeightSampler(() => 0)
   const plane = new Aircraft()
   plane.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
   plane.controls.gearDown = false
   plane.controls.throttle = 0.5
-  plane.velocity.set(0, 0, 200)
+  plane.velocity.set(0, 0, 600)
   for (let i = 0; i < 300; i++) plane.step(1 / 60)
-  expect(displayedKnots(plane.speed)).toBeGreaterThan(480)
-  expect(displayedKnots(plane.speed)).toBeLessThan(520)
+  expect(displayedKnots(plane.speed)).toBeGreaterThan(1440)
+  expect(displayedKnots(plane.speed)).toBeLessThan(1560)
 
   plane.controls.throttle = 1
-  for (let i = 0; i < 300; i++) plane.step(1 / 60)
-  expect(displayedKnots(plane.speed)).toBeGreaterThan(980)
-  expect(displayedKnots(plane.speed)).toBeLessThan(1010)
+  for (let i = 0; i < 480; i++) plane.step(1 / 60)
+  expect(displayedKnots(plane.speed)).toBeGreaterThan(2940)
+  expect(displayedKnots(plane.speed)).toBeLessThan(3060)
 })
 
 it('accelerates and decelerates promptly without overshooting zero', () => {
@@ -56,11 +56,11 @@ it('does not slam the brakes after a powered dive', () => {
   plane.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
   plane.controls.gearDown = false
   plane.controls.throttle = 0.5
-  plane.velocity.set(0, 0, 250)
+  plane.velocity.set(0, 0, flightConfig.maxSpeed * 0.5)
   for (let i = 0; i < 180; i++) plane.step(1 / 60)
   const held = plane.speed
-  expect(held).toBeGreaterThan(240)
-  expect(held).toBeLessThan(270)
+  expect(held).toBeGreaterThan(flightConfig.maxSpeed * 0.45)
+  expect(held).toBeLessThan(flightConfig.maxSpeed * 0.55)
   plane.orientation.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2)
   plane.velocity.set(0, -held, 0)
   plane.angularVelocity.set(0, 0, 0)

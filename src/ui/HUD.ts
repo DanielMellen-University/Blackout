@@ -34,7 +34,7 @@ export class HUD {
   private readonly navAltEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
-  private readonly maxKts = 1000
+  private readonly maxKts = 3000
   /** Pixels of ladder travel per degree of pitch. */
   private readonly pxPerDeg = 2.4
 
@@ -318,9 +318,10 @@ export class HUD {
     const rOuter = 52
     const rInnerMajor = 44
     const rInnerMinor = 47
-    const steps = this.maxKts / 10
+    const tickKts = 50
+    const steps = this.maxKts / tickKts
     for (let i = 0; i <= steps; i++) {
-      const kts = i * 10
+      const kts = i * tickKts
       const t = kts / this.maxKts
       const angleDeg = -120 + t * 240
       const rad = (angleDeg * Math.PI) / 180

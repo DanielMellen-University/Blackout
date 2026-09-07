@@ -9,12 +9,12 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Title screen: Play, Controls, Game info
 - Pause menu in flight (**Esc**): resume, fullscreen, quit to title
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
-- Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 500 kts)
+- Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
-- HUD: IAS to 1000 kts (50% ENG ~ 500, 100% ~ 1000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
+- HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - Engine rumble + wind hiss (Web Audio)
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
@@ -78,7 +78,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **R** | New world + runway |
 | **Esc** | Pause menu |
 
-**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear is automatic. Engine percent is the speed you want (50% ~ 500 kts).
+**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear is automatic. Engine percent is the speed you want (50% ~ 1500 kts).
 
 Landing is gentle with gear down. After the circuit, land to score. Hard impacts explode; press **R** for a new world. Retry the same course from pause or the results screen. Fullscreen is a click toggle in the pause menu.
 
