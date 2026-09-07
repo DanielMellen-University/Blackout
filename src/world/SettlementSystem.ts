@@ -5,8 +5,9 @@ import {
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
 import { getWorldSeed } from './noise'
-import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan } from './SettlementPlan'
-import type { SettlementRequest } from './settlement.worker'
+import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
+import { regionalRoadKey, roadBetweenSettlements, shouldConnectSettlements } from './RegionalRoads'
+import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 
 const LOAD_RADIUS = FOG_FAR
 const DETAIL_RADIUS = 4200
@@ -53,7 +54,41 @@ function roofGeometry(): BufferGeometry {
   return geometry
 }
 
+function segmentDistance(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+  const dx = bx - ax, dz = bz - az
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / Math.max(1, dx * dx + dz * dz)))
+  return Math.hypot(px - ax - dx * t, pz - az - dz * t)
+}
+
+function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number): BufferGeometry | null {
+  const positions: number[] = []
+  for (const road of roads) for (let i = 1; i < road.points.length; i++) {
+    const a = road.points[i - 1]!, b = road.points[i]!
+    const length = Math.hypot(b.x - a.x, b.z - a.z)
+    if (!length) continue
+    const nx = -(b.z - a.z) / length * road.width / 2
+    const nz = (b.x - a.x) / length * road.width / 2
+    const vertices = [
+      { x: a.leftX ?? a.x + nx, z: a.leftZ ?? a.z + nz, y: a.leftY ?? a.y },
+      { x: a.rightX ?? a.x - nx, z: a.rightZ ?? a.z - nz, y: a.rightY ?? a.y },
+      { x: b.leftX ?? b.x + nx, z: b.leftZ ?? b.z + nz, y: b.leftY ?? b.y },
+      { x: b.rightX ?? b.x - nx, z: b.rightZ ?? b.z - nz, y: b.rightY ?? b.y },
+    ]
+    for (const index of [0, 2, 1, 1, 2, 3]) {
+      const v = vertices[index]!
+      positions.push(v.x - originX, v.y - originY, v.z - originZ)
+    }
+  }
+  if (!positions.length) return null
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.computeVertexNormals()
+  return geometry
+}
+
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
+interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan }
+interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
 
 /** Independent scenery stream: shared geometry, instanced buildings, no shadow passes. */
 export class SettlementSystem {
@@ -64,13 +99,20 @@ export class SettlementSystem {
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  private readonly highway = new MeshStandardMaterial({ color: 0x575650, roughness: .96, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
+  private readonly highwayMark = new MeshStandardMaterial({ color: 0xd3be67, emissive: 0x4d4115, emissiveIntensity: .15,
+    roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly loaded = new Map<string, LoadedSettlement>()
+  private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
+  private readonly checkedLinks = new Set<string>()
   private queue: { cx: number; cz: number; key: string }[] = []
+  private linkQueue: RoadJob[] = []
   private lastCell = ''
   private worker: Worker | null = null
-  private inFlight: SettlementRequest | null = null
+  private inFlight: SettlementWorkerRequest | null = null
   private ready: { key: string; plan: SettlementPlan }[] = []
+  private readyRoads: { key: string; road: SettlementRoad; fromId: string; toId: string }[] = []
   private generation = 0
 
   constructor(scene: Scene) {
@@ -78,16 +120,26 @@ export class SettlementSystem {
     scene.add(this.root)
     if (typeof Worker !== 'undefined') {
       this.worker = new Worker(new URL('./settlement.worker.ts', import.meta.url), { type: 'module' })
-      this.worker.onmessage = (event: MessageEvent<{ key: string; generation: number; plan: SettlementPlan | null }>) => {
+      this.worker.onmessage = (event: MessageEvent<SettlementWorkerReply>) => {
         this.inFlight = null
-        const { key, generation, plan } = event.data
-        if (generation === this.generation && this.checked.has(key) && plan) this.ready.push({ key, plan })
+        const result = event.data
+        if (result.generation !== this.generation) return
+        if (result.type === 'settlement') {
+          if (this.checked.has(result.key) && result.plan) this.ready.push({ key: result.key, plan: result.plan })
+        } else if (this.checkedLinks.has(result.key) && result.road) {
+          this.readyRoads.push({ key: result.key, road: result.road, fromId: result.fromId, toId: result.toId })
+        }
       }
       this.worker.onerror = () => {
         this.worker?.terminate(); this.worker = null
         if (this.inFlight?.generation === this.generation) {
-          this.checked.delete(this.inFlight.key)
-          this.queue.unshift(this.inFlight)
+          if (this.inFlight.type === 'settlement') {
+            this.checked.delete(this.inFlight.key)
+            this.queue.unshift(this.inFlight)
+          } else {
+            this.checkedLinks.delete(this.inFlight.key)
+            this.linkQueue.unshift(this.inFlight)
+          }
         }
         this.inFlight = null
       }
@@ -122,14 +174,22 @@ export class SettlementSystem {
     for (const settlement of this.loaded.values()) count += settlement.plan.buildings.length
     return count
   }
-  get pendingCount(): number { return this.queue.length + this.ready.length + (this.inFlight ? 1 : 0) }
+  get pendingCount(): number {
+    return this.queue.length + this.ready.length + this.linkQueue.length + this.readyRoads.length + (this.inFlight ? 1 : 0)
+  }
+  get roadCount(): number { return this.connections.size }
 
   clearAll(): void {
     for (const settlement of this.loaded.values()) this.remove(settlement)
+    for (const connection of this.connections.values()) this.removeRoad(connection)
     this.loaded.clear()
+    this.connections.clear()
     this.checked.clear()
+    this.checkedLinks.clear()
     this.queue = []
+    this.linkQueue = []
     this.ready = []
+    this.readyRoads = []
     this.generation++
     this.lastCell = ''
   }
@@ -139,7 +199,7 @@ export class SettlementSystem {
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.roof.dispose()
-    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose()
+    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.highway.dispose(); this.highwayMark.dispose()
   }
 
   update(x: number, z: number): void {
@@ -161,30 +221,57 @@ export class SettlementSystem {
       for (const key of this.checked) {
         if (wanted.has(key)) continue
         const settlement = this.loaded.get(key)
-        if (settlement) { this.remove(settlement); this.loaded.delete(key) }
+        if (settlement) {
+          this.remove(settlement); this.loaded.delete(key)
+          this.removeLinksFor(settlement.plan.id)
+        }
         this.checked.delete(key)
       }
       this.queue = pending.sort((a, b) => a.distance - b.distance)
     }
     const ready = this.ready.shift()
-    if (ready && this.checked.has(ready.key)) this.loaded.set(ready.key, this.build(ready.plan))
+    if (ready && this.checked.has(ready.key)) {
+      this.loaded.set(ready.key, this.build(ready.plan))
+      this.scheduleLinks(ready.plan)
+    }
+    const readyRoad = this.readyRoads.shift()
+    if (readyRoad && this.checkedLinks.has(readyRoad.key)) {
+      const from = this.loaded.get(readyRoad.fromId)?.plan
+      const to = this.loaded.get(readyRoad.toId)?.plan
+      if (from && to) this.connections.set(readyRoad.key, this.buildRegionalRoad(readyRoad.road, from, to))
+    }
     // Terrain suitability runs off the render thread. One in-flight request
     // bounds worker traffic; stale replies after reseeds are discarded.
     const job = this.inFlight ? undefined : this.queue.shift()
     if (job) {
       this.checked.add(job.key)
       if (this.worker) {
-        this.inFlight = { ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
+        this.inFlight = { type: 'settlement', ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
         this.worker.postMessage(this.inFlight)
       } else {
         const plan = settlementForCell(job.cx, job.cz)
-        if (plan) this.loaded.set(job.key, this.build(plan))
+        if (plan) {
+          this.loaded.set(job.key, this.build(plan))
+          this.scheduleLinks(plan)
+        }
+      }
+    } else if (!this.inFlight) {
+      const link = this.linkQueue.shift()
+      if (link && this.worker) {
+        this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
+        this.worker.postMessage(this.inFlight)
+      } else if (link) {
+        const road = roadBetweenSettlements(link.from, link.to)
+        if (road) this.connections.set(link.key, this.buildRegionalRoad(road, link.from, link.to))
       }
     }
     for (const { plan, root, detail } of this.loaded.values()) {
       const distance = Math.hypot(plan.x - x, plan.z - z)
       root.visible = distance < LOAD_RADIUS + plan.radius
       detail.visible = distance < DETAIL_RADIUS + plan.radius
+    }
+    for (const connection of this.connections.values()) {
+      connection.root.visible = segmentDistance(x, z, connection.from.x, connection.from.z, connection.to.x, connection.to.z) < LOAD_RADIUS
     }
   }
 
@@ -237,37 +324,60 @@ export class SettlementSystem {
       // Roof silhouettes stay visible at distance too; only ground detail is culled.
       root.add(mesh)
     }
-    const positions: number[] = []
-    for (const road of plan.roads) {
-      for (let i = 1; i < road.points.length; i++) {
-        const a = road.points[i - 1], b = road.points[i]
-        const length = Math.hypot(b.x - a.x, b.z - a.z)
-        if (!length) continue
-        const nx = -(b.z - a.z) / length * road.width / 2
-        const nz = (b.x - a.x) / length * road.width / 2
-        // The worker has already validated and sampled both road shoulders.
-        const vertices = [
-          { x: a.leftX ?? a.x + nx, z: a.leftZ ?? a.z + nz, y: a.leftY ?? a.y },
-          { x: a.rightX ?? a.x - nx, z: a.rightZ ?? a.z - nz, y: a.rightY ?? a.y },
-          { x: b.leftX ?? b.x + nx, z: b.leftZ ?? b.z + nz, y: b.leftY ?? b.y },
-          { x: b.rightX ?? b.x - nx, z: b.rightZ ?? b.z - nz, y: b.rightY ?? b.y },
-        ]
-        for (const index of [0, 2, 1, 1, 2, 3]) {
-          const v = vertices[index]
-          positions.push(v.x - plan.x, v.y - plan.y, v.z - plan.z)
-        }
-      }
-    }
-    if (positions.length) {
-      const geometry = new BufferGeometry()
-      geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-      geometry.computeVertexNormals()
+    const geometry = createRoadGeometry(plan.roads, plan.x, plan.y, plan.z)
+    if (geometry) {
       const mesh = new Mesh(geometry, this.asphalt)
       mesh.name = 'SettlementRoads'
       detail.add(mesh)
     }
     this.root.add(root)
     return { root, detail, plan }
+  }
+
+  private scheduleLinks(plan: SettlementPlan): void {
+    for (const other of this.loaded.values()) {
+      if (other.plan.id === plan.id || !shouldConnectSettlements(plan, other.plan)) continue
+      const key = regionalRoadKey(plan, other.plan)
+      if (this.checkedLinks.has(key)) continue
+      this.checkedLinks.add(key)
+      this.linkQueue.push({ key, from: plan, to: other.plan })
+    }
+  }
+
+  private buildRegionalRoad(road: SettlementRoad, from: SettlementPlan, to: SettlementPlan): LoadedRoad {
+    const root = new Group()
+    root.name = `regional_road_${regionalRoadKey(from, to)}`
+    const x = (from.x + to.x) / 2, z = (from.z + to.z) / 2
+    root.position.set(x, 0, z)
+    const geometry = createRoadGeometry([road], x, 0, z)
+    if (geometry) root.add(new Mesh(geometry, this.highway))
+    const centerline: SettlementRoad = { width: 1.6, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
+    const marking = createRoadGeometry([centerline], x, 0, z)
+    if (marking) root.add(new Mesh(marking, this.highwayMark))
+    this.root.add(root)
+    return { root, from, to }
+  }
+
+  private removeLinksFor(settlementId: string): void {
+    this.linkQueue = this.linkQueue.filter(job => {
+      const keep = job.from.id !== settlementId && job.to.id !== settlementId
+      if (!keep) this.checkedLinks.delete(job.key)
+      return keep
+    })
+    this.readyRoads = this.readyRoads.filter(job => {
+      const keep = job.fromId !== settlementId && job.toId !== settlementId
+      if (!keep) this.checkedLinks.delete(job.key)
+      return keep
+    })
+    for (const [key, road] of this.connections) {
+      if (road.from.id !== settlementId && road.to.id !== settlementId) continue
+      this.removeRoad(road); this.connections.delete(key); this.checkedLinks.delete(key)
+    }
+  }
+
+  private removeRoad(road: LoadedRoad): void {
+    road.root.removeFromParent()
+    road.root.traverse(object => { if (object instanceof Mesh) object.geometry.dispose() })
   }
 
   private remove(settlement: LoadedSettlement): void {

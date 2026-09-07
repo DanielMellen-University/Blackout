@@ -9,6 +9,7 @@
 - Mix blocks, slabs, pitched hangars, octagonal towers and stepped skyscrapers.
 - Fit dry, gentle lots to existing terrain, with biome-specific architecture and oversized buildings for flight-camera readability.
 - Stream instanced buildings and roofs, precompute terrain suitability in a worker, and include building collision.
+- Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 
 ### Audio

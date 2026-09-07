@@ -34,11 +34,11 @@ describe('settlement rendering and lifecycle', () => {
       system.update(3000, 3000)
       expect(requests).toHaveLength(1)
       system.clearAll()
-      TestWorker.instance.onmessage!({ data: { ...requests[0], plan: example() } })
+      TestWorker.instance.onmessage!({ data: { type: 'settlement', ...requests[0], plan: example() } })
       system.update(3000, 3000)
       expect(system.count).toBe(0)
       expect(requests).toHaveLength(2)
-      TestWorker.instance.onmessage!({ data: { ...requests[1], plan: example() } })
+      TestWorker.instance.onmessage!({ data: { type: 'settlement', ...requests[1], plan: example() } })
       system.update(3000, 3000)
       expect(system.count).toBe(1)
     } finally {

@@ -110,6 +110,9 @@ Settlement placement runs in a background worker; buildings and roofs are
 instanced, with ground detail culled at distance. Trees and rocks remain disabled.
 The terrain review includes city/village destinations and a Flight scale view
 using the game's actual chase camera and aircraft.
+Selected nearby settlements are joined by sparse regional roads rather than a
+uniform world grid. Routes choose a curved terrain path, follow a bounded grade,
+and lift into bridge or viaduct approaches across water and deep folds.
 
 Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
 

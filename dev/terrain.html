@@ -14,6 +14,7 @@
     <option value="green">Green hills</option><option value="river">River valley</option>
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
     <option value="city">City</option><option value="village">Village</option>
+    <option value="roadlink">Regional road</option>
   </select>
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
@@ -75,6 +76,7 @@ const destinations={
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
   mesa:[1,-30000,-27600],volcano:[1,-20400,-13800],
   city:[1337,5,-1],village:[1,-7,-5],
+  roadlink:[1,-7,-5],
 }
 function visitDestination(value){
   const target=destinations[value]
@@ -96,14 +98,20 @@ function visitDestination(value){
     settlement=settlementForCell(x,z)
     if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
     x=settlement.x;z=settlement.z
+  } else if(value==='roadlink'){
+    const a=settlementForCell(x,z),b=settlementForCell(-6,-6)
+    if(!a||!b) throw new Error('Review road settlements no longer meet terrain suitability')
+    x=(a.x+b.x)/2;z=(a.z+b.z)/2
+    settlement={radius:Math.hypot(a.x-b.x,a.z-b.z)/2}
   }
   frameWorld({x,z,y:sampleTerrainHeight(x,z)})
-  if(value==='city'||value==='village'){
+  if(value==='city'||value==='village'||value==='roadlink'){
     const y=sampleTerrainHeight(x,z)
     settlementRadius=settlement.radius
     const offset=Math.min(settlementRadius*.55,5000)
     camera.position.set(x+offset,y+Math.min(settlementRadius*.3,2600),z-offset)
     controls.target.set(x,y+25,z);controls.update()
+    if(value==='roadlink') camera.position.set(x+3500,y+7000,z-3500)
   }
 }
 document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
@@ -143,7 +151,7 @@ renderer.setAnimationLoop(now=>{
   frames++
   if(frames%15===0){
     const sorted=[...timings].sort((a,b)=>a-b)
-    document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings loaded · '+world.settlements.pendingCount+' pending'
+    document.querySelector('#stats').textContent=' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
   }
 })
 onresize=()=>{renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();chase.resize(innerWidth,innerHeight)}

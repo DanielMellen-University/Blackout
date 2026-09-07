@@ -34,9 +34,11 @@ describe('procedural settlements', () => {
   it('keeps cities rare and villages more common across varied biomes', () => {
     let cities = 0, villages = 0
     const biomes = new Set<string>()
+    const shapes = new Set<string>()
     for (const seed of [1, 73, 1337]) {
       setWorldSeed(seed)
       for (const plan of region()) {
+        for (const building of plan.buildings) shapes.add(building.shape)
         if (plan.kind === 'city') cities++
         else { villages++; biomes.add(plan.biome) }
       }
@@ -47,6 +49,7 @@ describe('procedural settlements', () => {
     expect(villages).toBeGreaterThan(20)
     expect(villages).toBeLessThan(675 * .18)
     expect(biomes.size).toBeGreaterThanOrEqual(7)
+    expect(shapes).toEqual(new Set(['block', 'slab', 'tower', 'stepped', 'hangar']))
   })
 
   it('fits dry foundations, caps geometry and keeps roads on dry gentle ground', () => {
@@ -129,14 +132,5 @@ describe('procedural settlements', () => {
         expect(separated, `${plan.id} buildings ${i}/${j}`).toBe(true)
       }
     }
-  })
-
-  it('varies building silhouettes instead of cloning one box', () => {
-    const shapes = new Set<string>()
-    for (const seed of [1, 73, 1337]) {
-      setWorldSeed(seed)
-      for (const plan of region()) for (const building of plan.buildings) shapes.add(building.shape)
-    }
-    expect(shapes).toEqual(new Set(['block', 'slab', 'tower', 'stepped', 'hangar']))
   })
 })
