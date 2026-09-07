@@ -25,7 +25,7 @@ import {
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
-import { planTerrainTiles, tileKey, tileDistance } from './TerrainLayout'
+import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 
 /**
  * Streaming envelope.
@@ -181,6 +181,7 @@ export class TerrainSystem {
   private readonly pending: PendingChunk[] = []
   private readonly pendingKeys = new Set<string>()
   private desiredTiles = new Map<string, { cx: number; cz: number; size: number }>()
+  private readonly replacementKeys = new Map<string, string[]>()
   private readonly scene: Scene
   private lastCx = Number.NaN
   private lastCz = Number.NaN
@@ -232,6 +233,7 @@ export class TerrainSystem {
     this.pending.length = 0
     this.pendingKeys.clear()
     this.desiredTiles.clear()
+    this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
   }
@@ -334,13 +336,23 @@ export class TerrainSystem {
     for (const p of this.pending) {
       p.dist = Math.hypot(p.cx + p.size / 2 - cx - .5, p.cz + p.size / 2 - cz - .5)
     }
-    this.pending.sort((a, b) => a.dist - b.dist)
+    this.pending.sort((a, b) => terrainBuildPriority(a) - terrainBuildPriority(b) || a.dist - b.dist)
 
     // Soft unload: mark out-of-range chunks to fade, don't hard-delete
+    this.replacementKeys.clear()
     for (const [key, chunk] of this.chunks) {
       if (!needed.has(key)) {
         chunk.fadingOut = true
         chunk.targetAlpha = 0
+        // The layout only changes on cell crossings. Cache dependencies here
+        // instead of scanning every desired tile for every fallback each frame.
+        const replacements: string[] = []
+        for (const [nextKey, next] of this.desiredTiles) {
+          if (next.cx >= chunk.cx + chunk.size || next.cx + next.size <= chunk.cx
+            || next.cz >= chunk.cz + chunk.size || next.cz + next.size <= chunk.cz) continue
+          replacements.push(nextKey)
+        }
+        this.replacementKeys.set(key, replacements)
       }
     }
 
@@ -397,13 +409,7 @@ export class TerrainSystem {
       // Keep old coverage until every replacement leaf has finished building.
       // This handles both splitting a distant tile and merging near tiles.
       if (chunk.fadingOut) {
-        let waiting = false
-        for (const [nextKey, next] of this.desiredTiles) {
-          if (next.cx >= chunk.cx + chunk.size || next.cx + next.size <= chunk.cx
-            || next.cz >= chunk.cz + chunk.size || next.cz + next.size <= chunk.cz) continue
-          const replacement = this.chunks.get(nextKey)
-          if (!replacement) { waiting = true; break }
-        }
+        const waiting = this.replacementKeys.get(key)?.some(nextKey => !this.chunks.has(nextKey))
         if (waiting) continue
         // Coverage is complete. Retire the old tile atomically instead of
         // drawing two overlapping generations for several seconds in flight.
@@ -448,6 +454,7 @@ export class TerrainSystem {
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
       this.chunks.delete(key)
+      this.replacementKeys.delete(key)
     }
   }
 

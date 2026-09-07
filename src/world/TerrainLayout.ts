@@ -10,6 +10,14 @@ export function tileKey(cx: number, cz: number, size = 1): string {
   return size === 1 ? `${cx},${cz}` : `${cx},${cz}:${size}`
 }
 
+/** Keep contact detail first, then restore coverage before cosmetic LOD work.
+ * Coarse replacements retire several old leaves with a single build.
+ */
+export function terrainBuildPriority(job: { dist: number; size: number; rebuild: boolean }): number {
+  if (job.dist <= 4) return job.dist
+  return job.rebuild ? 1000 + job.dist : 10 + job.dist / job.size
+}
+
 export function tileDistance(cx: number, cz: number, size: number, x: number, z: number): number {
   return Math.hypot(
     Math.max(cx - x, 0, x - cx - size),

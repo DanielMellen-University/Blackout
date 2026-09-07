@@ -1,5 +1,7 @@
 import { Mesh, Scene } from 'three'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { flightConfig } from '../src/aircraft/flightConfig'
+import { planTerrainTiles } from '../src/world/TerrainLayout'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
 import {
   CHUNK_SIZE,
@@ -8,6 +10,7 @@ import {
   lodWithHysteresis,
   segsForLod,
   TerrainSystem,
+  VIEW_RADIUS,
 } from '../src/world/TerrainSystem'
 import { sampleTerrainHeight } from '../src/world/terrainSample'
 
@@ -55,6 +58,31 @@ describe('TerrainSystem streaming LOD', () => {
   afterEach(() => {
     setContactHeightSampler(null)
   })
+
+  it('retires fallback coverage after sustained maximum-speed flight', () => {
+    // Exercise the deterministic build-cost budget independently of test-host
+    // wall-clock speed. The browser benchmark covers the real 2 ms deadline.
+    const clock = vi.spyOn(performance, 'now').mockReturnValue(0)
+    const terrain = new TerrainSystem(new Scene())
+    let x = 210
+    try {
+      pump(terrain, x, 210, 400)
+      let peakTiles = terrain.root.children.length
+      for (let frame = 0; frame < 600; frame++) {
+        x += flightConfig.maxSpeedBoost / 60
+        terrain.update(x, 210, 1 / 60)
+        peakTiles = Math.max(peakTiles, terrain.root.children.length)
+      }
+      expect(peakTiles).toBeLessThan(750)
+      pump(terrain, x, 210, 400)
+      const expected = planTerrainTiles(Math.floor(x / CHUNK_SIZE) + .5, .5, VIEW_RADIUS)
+      expect(terrain.root.children.length).toBe(expected.length)
+      expect(terrain.chunkStats(Math.floor(x / CHUNK_SIZE), 0)?.lod).toBe(0)
+    } finally {
+      terrain.clearAll()
+      clock.mockRestore()
+    }
+  }, 20_000)
 
   it('promotes a far tile to near detail after flying onto it', () => {
     const terrain = new TerrainSystem(new Scene())

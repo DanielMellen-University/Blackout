@@ -92,8 +92,10 @@ are not included in the production build.
 
 The terrain review includes fixed-seed destinations for smooth green hills,
 alpine massifs, irregular lakes, river valleys, inland seas and badlands, plus a
-400 m/s flight benchmark with draw counts and frame timings. Geography is
-deterministic for a seed and coordinate; this generator changes old landscapes.
+flight benchmark at either 400 m/s or the current maximum afterburner speed,
+with draw counts and frame timings. Streaming prioritizes contact detail, then
+missing coverage and coarse replacements, before distant detail rebuilds.
+Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. This is procedural drainage,
 not a rainfall or fluid simulation.

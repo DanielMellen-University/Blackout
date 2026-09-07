@@ -15,6 +15,10 @@
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
   </select>
   <button id="fly">Flight benchmark</button>
+  <select id="flight-speed" aria-label="Benchmark speed">
+    <option value="cruise">Cruise · 400 m/s</option>
+    <option value="maximum" selected>Maximum afterburner speed</option>
+  </select>
   <span id="seed"></span> · drag to orbit · scroll to zoom
   <span id="stats"></span>
 </nav>
@@ -24,6 +28,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { World } from '/src/world/World.ts'
 import { sampleTerrainHeight } from '/src/world/terrainSample.ts'
 import { waterLandmarks, riverReaches } from '/src/world/Hydrology.ts'
+import { flightConfig } from '/src/aircraft/flightConfig.ts'
 const renderer=new T.WebGLRenderer({antialias:true})
 renderer.setSize(innerWidth,innerHeight)
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))
@@ -82,7 +87,8 @@ renderer.setAnimationLoop(now=>{
   timings.push(now-previous);if(timings.length>90)timings.shift()
   const dt=Math.min((now-previous)/1000,1/30);previous=now
   if(flying){
-    const step=dt*400
+    const speed=document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400
+    const step=dt*speed
     camera.position.x+=step;controls.target.x+=step
     const floor=sampleTerrainHeight(controls.target.x,controls.target.z)+1200
     const rise=Math.max(0,floor-controls.target.y)

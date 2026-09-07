@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { planTerrainTiles, tileKey } from '../src/world/TerrainLayout'
+import { planTerrainTiles, terrainBuildPriority, tileKey } from '../src/world/TerrainLayout'
 import { CHUNK_SIZE, FOG_FAR, STREAM_RADIUS_M, VIEW_RADIUS } from '../src/world/TerrainSystem'
 
 describe('long-range adaptive terrain coverage', () => {
+  it('prioritizes contact detail and missing coverage over distant LOD rebuilds', () => {
+    const contact = { dist: 2, size: 1, rebuild: true }
+    const merge = { dist: 24, size: 8, rebuild: false }
+    const split = { dist: 8, size: 1, rebuild: false }
+    const demote = { dist: 5, size: 1, rebuild: true }
+    expect([demote, split, merge, contact].sort((a, b) => terrainBuildPriority(a) - terrainBuildPriority(b)))
+      .toEqual([contact, merge, split, demote])
+  })
+
   it('doubles the previous render and fog envelope', () => {
     expect(STREAM_RADIUS_M).toBe(8400 * 2)
     expect(FOG_FAR).toBe(7560 * 2)
