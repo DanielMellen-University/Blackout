@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
+import { waterLandmarks } from '../src/world/Hydrology'
 import {
   clearOpsPad,
   findPlayableSpawn,
@@ -11,16 +12,8 @@ describe('airfield spawn', () => {
   it('rejects a pad whose climate is ocean even if labeled plains', () => {
     setWorldSeed(1)
     clearOpsPad()
-    let ocean: { x: number; z: number } | null = null
-    for (let i = 0; i < 80; i++) {
-      const x = i * 500
-      const c = sampleClimate(x, 0)
-      if (c.biome === 'ocean') {
-        ocean = { x, z: 0 }
-        break
-      }
-    }
-    expect(ocean).not.toBeNull()
+    const ocean = waterLandmarks(-1, -1).find(b => b.sea)!
+    expect(sampleClimate(ocean.x, ocean.z).biome).toBe('ocean')
     expect(
       isUsableAirfield({
         x: ocean!.x,

@@ -14,13 +14,13 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
-- HUD: IAS to 1000 kts, ENG, ALT AGL, ADI, gear, weather/time
+- HUD: arcade IAS readout scaled 3× and capped at 1000 kts, ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - Engine rumble + wind hiss (Web Audio)
-- Infinite geographic provinces: alpine ranges, fjords, dune seas, terraced badlands, volcanic craters, salt flats, tundra, savanna, forests and rainforest regions
-- Broad oceans with continental shelves, meandering river valleys, elevated lakes, depth-coloured water, animated ripples and shoreline wash
-- Streaming terrain (16.8 km radius), adaptive detail tiles, smoothly blended climate-shaped biomes, tall alpine ranges, mesas, dunes, fjords and volcanic basins. Separate sea/lake/river surfaces provide steady water levels, depth tint, waves and shoreline foam. Trees and rocks remain temporarily disabled.
-- Terrain generation is frame-budgeted; coarse distant tiles and a shared deep-ocean surface reduce draw calls. Rendering resolution adapts gradually under sustained load. Day/night, weather (**N**) and clouds remain available.
+- Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
+- Mostly dry land with uncommon enclosed seas, irregular lakes, and meandering rivers that vary in width and descend from lake outlets to sea level. Water is separate geometry over a sediment bed, with calm reflections and fine ripples.
+- Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks remain temporarily disabled.
+- Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load. Day/night, weather (**N**) and clouds remain available.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack
@@ -90,11 +90,13 @@ and exhaust under neutral lighting. /dev/terrain.html provides a daylight world
 review with orbit controls and reseeding. These pages are development tools and
 are not included in the production build.
 
-The terrain review includes fixed-seed destinations for an alpine range,
-highland lake, ocean, badlands and volcanic country. Geography is deterministic
-for a seed and coordinate; the new generator changes the landscapes of old
-seeds. Rivers use analytic channel profiles, and lakes use fixed basin levels;
-this is procedural geography rather than a rainfall/fluid simulation.
+The terrain review includes fixed-seed destinations for smooth green hills,
+alpine massifs, irregular lakes, river valleys, inland seas and badlands, plus a
+400 m/s flight benchmark with draw counts and frame timings. Geography is
+deterministic for a seed and coordinate; this generator changes old landscapes.
+Seas sit at zero elevation; each lake has its own level below the surrounding
+rim. River reaches descend between those levels. This is procedural drainage,
+not a rainfall or fluid simulation.
 
 Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
 

@@ -20,12 +20,11 @@ import {
   sampleClimate,
   terrainSurfaceFromClimate,
   opsPadBlend,
-  type Biome,
   type TerrainSurface,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
-import { buildWaterMesh, createOceanBackdrop } from './WaterSystem'
+import { buildWaterMesh } from './WaterSystem'
 import { planTerrainTiles, tileKey, tileDistance } from './TerrainLayout'
 
 /**
@@ -60,8 +59,6 @@ const SEGS_MID = 12
 /** Far ring — silhouette only (heavy fog). */
 const SEGS_FAR = 6
 /** Skirts only where seams can be seen (not in the fog bank). */
-/** Slope shading only up close. */
-const SLOPE_DIST = 5
 /**
  * Vertical skirt depth (m). Hides residual cracks and gives the surface
  * real edge thickness instead of a paper-thin sheet.
@@ -190,7 +187,6 @@ export class TerrainSystem {
   private focusX = 0
   private focusZ = 0
   private readonly waterClock = { value: 0 }
-  private readonly ocean = createOceanBackdrop(this.waterClock)
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -202,7 +198,6 @@ export class TerrainSystem {
     this.scene = scene
     this.root.name = 'TerrainSystem'
     scene.add(this.root)
-    scene.add(this.ocean)
 
     const matBase = {
       vertexColors: true as const,
@@ -251,7 +246,6 @@ export class TerrainSystem {
     this.focusZ = worldZ
     const cx = Math.floor(worldX / CHUNK_SIZE)
     const cz = Math.floor(worldZ / CHUNK_SIZE)
-    this.ocean.position.set(cx * CHUNK_SIZE, -.15, cz * CHUNK_SIZE)
 
     if (cx !== this.lastCx || cz !== this.lastCz) {
       this.lastCx = cx
@@ -654,7 +648,6 @@ export class TerrainSystem {
     size = 1,
   ): { mesh: Mesh; water: Mesh | null; heights: Float32Array; waterLevels: Float32Array; segs: number } {
     const segs = size > 1 ? SEGS_MID : segsForLod(lod)
-    const doSlope = dist <= SLOPE_DIST
     const near = lod === 0
 
     const span = CHUNK_SIZE * size
@@ -668,7 +661,6 @@ export class TerrainSystem {
     const stride = segs + 1
     const cell = span / segs
 
-    const biomes: Biome[] | null = doSlope ? new Array(pos.count) : null
     for (let i = 0; i < pos.count; i++) {
       const wx = originX + half + pos.getX(i)
       const wz = originZ + half + pos.getZ(i)
@@ -676,7 +668,6 @@ export class TerrainSystem {
       const h = climate.height
       waterLevels[i] = climate.waterLevel ?? 0
       pos.setY(i, h)
-      if (biomes) biomes[i] = climate.biome
       const [r, g, b] = biomeColor(
         climate.biome,
         h,
@@ -706,26 +697,23 @@ export class TerrainSystem {
       const i = iz * stride + ix
       const wx = originX + ix * cell
       const wz = originZ + iz * cell
-      const hl = ix > 0 ? heights[i - 1]! : sampleClimate(wx - cell, wz).height
-      const hr = ix < segs ? heights[i + 1]! : sampleClimate(wx + cell, wz).height
-      const hd = iz > 0 ? heights[i - stride]! : sampleClimate(wx, wz - cell).height
-      const hu = iz < segs ? heights[i + stride]! : sampleClimate(wx, wz + cell).height
+      const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleClimate(wx - cell, wz).height)
+      const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleClimate(wx + cell, wz).height)
+      const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleClimate(wx, wz - cell).height)
+      const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleClimate(wx, wz + cell).height)
       gradientX[i] = (hr - hl) / (2 * cell)
       gradientZ[i] = (hu - hd) / (2 * cell)
     }
-    if (doSlope && biomes) {
+    {
       for (let iz = 0; iz < stride; iz++) {
         for (let ix = 0; ix < stride; ix++) {
           const i = iz * stride + ix
-          const h = pos.getY(i)
           const dx = gradientX[i]!
           const dz = gradientZ[i]!
           const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
           const shaded = applySlopeShading(
             [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
             slope,
-            biomes[i]!,
-            h,
           )
           colors[i * 3] = shaded[0]
           colors[i * 3 + 1] = shaded[1]
@@ -735,7 +723,7 @@ export class TerrainSystem {
     }
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))
-    if (dist >= 4) this.appendEdgeSkirts(geo, segs)
+    const skirtEdges = dist >= 4 ? this.appendEdgeSkirts(geo, segs) : []
     geo.computeVertexNormals()
     const normals = geo.attributes.normal as BufferAttribute
     for (let i = 0; i < heights.length; i++) {
@@ -743,6 +731,14 @@ export class TerrainSystem {
       const dz = gradientZ[i]!
       const length = Math.hypot(dx, 1, dz)
       normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
+    }
+    // Skirts conceal LOD cracks; lighting them as vertical cliffs drew dark
+    // dotted outlines around every distant tile. Continue the edge shading.
+    for (let e = 0; e < skirtEdges.length; e++) {
+      const source = skirtEdges[e]!
+      for (const i of [heights.length + e, heights.length + skirtEdges.length + e]) {
+        normals.setXYZ(i, normals.getX(source), normals.getY(source), normals.getZ(source))
+      }
     }
 
     const mesh = new Mesh(geo, near ? this.groundMatNear : this.groundMatFar)
@@ -762,7 +758,7 @@ export class TerrainSystem {
    * Sharing those verts with computeVertexNormals() averaged vertical skirt
    * normals into the ground and painted a dark grid along every chunk seam.
    */
-  private appendEdgeSkirts(geo: PlaneGeometry, segs: number): void {
+  private appendEdgeSkirts(geo: PlaneGeometry, segs: number): number[] {
     const posAttr = geo.attributes.position as BufferAttribute
     const colAttr = geo.attributes.color as BufferAttribute
     const stride = segs + 1
@@ -815,16 +811,13 @@ export class TerrainSystem {
       const cr = colAttr.getX(src)
       const cg = colAttr.getY(src)
       const cb = colAttr.getZ(src)
-      col[rim * 3] = cr * 0.88
-      col[rim * 3 + 1] = cg * 0.86
-      col[rim * 3 + 2] = cb * 0.84
-      col[bot * 3] = cr * 0.55
-      col[bot * 3 + 1] = cg * 0.52
-      col[bot * 3 + 2] = cb * 0.48
+      col[rim * 3] = col[bot * 3] = cr
+      col[rim * 3 + 1] = col[bot * 3 + 1] = cg
+      col[rim * 3 + 2] = col[bot * 3 + 2] = cb
     }
 
     const oldIndex = geo.getIndex()
-    if (!oldIndex) return
+    if (!oldIndex) return []
     const nOld = oldIndex.count
     const idx = new Uint32Array(nOld + nEdge * 6)
     for (let i = 0; i < nOld; i++) idx[i] = oldIndex.getX(i)
@@ -847,6 +840,7 @@ export class TerrainSystem {
     geo.setAttribute('position', new BufferAttribute(pos, 3))
     geo.setAttribute('color', new BufferAttribute(col, 3))
     geo.setIndex(new BufferAttribute(idx, 1))
+    return edge
   }
 
   private buildProps(

@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
 import { sampleGeography } from '../src/world/Geography'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
+import { waterLandmarks } from '../src/world/Hydrology'
 
 describe('exploration geography', () => {
-  it('has oceans, elevated lakes, tall summits and distinct land provinces across seeds', () => {
+  it('has uncommon seas, elevated lakes, tall summits and distinct land provinces across seeds', () => {
     const counts: Record<string, number> = {}
     let peak = 0
     let elevatedLake = false
@@ -23,8 +24,8 @@ describe('exploration geography', () => {
       }
     }
     expect(Object.keys(counts).length).toBeGreaterThanOrEqual(12)
-    expect(counts.ocean).toBeGreaterThan(2000)
-    expect(counts.ocean).toBeLessThan(20000)
+    expect(counts.ocean).toBeGreaterThan(500)
+    expect(counts.ocean).toBeLessThan(30603 * .12)
     expect(peak).toBeGreaterThan(4500)
     expect(elevatedLake).toBe(true)
     for (const biome of ['volcanic', 'saltflat', 'tundra', 'mesa', 'desert', 'rainforest']) {
@@ -34,18 +35,19 @@ describe('exploration geography', () => {
 
   it('keeps an elevated lake level across its basin and meets the banks without a drop', () => {
     setWorldSeed(1)
+    const basin = waterLandmarks(-1, -1).find(b => !b.sea)!
     const levels = [-20, 0, 20].map(offset => {
-      const c = sampleGeography(-22200 + offset, -22200)
+      const c = sampleGeography(basin.x + offset, basin.z)
       expect(c.biome).toBe('water')
       return terrainSurfaceFromClimate(c).height
     })
-    expect(levels[0]).toBeGreaterThan(100)
+    expect(levels[0]).toBeGreaterThan(40)
     expect(levels[1]).toBe(levels[0])
     expect(levels[2]).toBe(levels[0])
     let crossings = 0
-    for (let x = -23700; x < -20700; x += 10) {
-      const a = terrainSurfaceFromClimate(sampleGeography(x, -22200))
-      const b = terrainSurfaceFromClimate(sampleGeography(x + 10, -22200))
+    for (let x = basin.x - basin.radius * 2; x < basin.x + basin.radius * 2; x += 10) {
+      const a = terrainSurfaceFromClimate(sampleGeography(x, basin.z))
+      const b = terrainSurfaceFromClimate(sampleGeography(x + 10, basin.z))
       if (a.kind !== b.kind) {
         crossings++
         expect(Math.abs(a.height - b.height)).toBeLessThan(10)

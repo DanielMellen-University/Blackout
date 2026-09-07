@@ -575,7 +575,8 @@ export function biomeColor(
   const river = features?.river ?? 0
   const ravine = features?.ravine ?? 0
   if (biome === 'ocean' || biome === 'water') {
-    return biomeColorSolid(biome, height, moisture, n * .3, speck, land)
+    // This mesh is sediment below the independent water surface, never blue paint.
+    return [.24 + speck, .22 + speck, .16 + speck]
   }
 
   let col = biomeColorSolid(biome, height, moisture, n, speck, land)
@@ -624,41 +625,15 @@ export function biomeColor(
 export function applySlopeShading(
   col: [number, number, number],
   slope01: number,
-  biome: Biome,
-  height: number,
 ): [number, number, number] {
-  const s = clamp01(slope01)
-  if (s < 0.12) return col
-
-  if (biome === 'mesa') {
-    // Steep badlands walls: darker burnt orange
-    const wall: [number, number, number] = [0.45, 0.16, 0.08]
-    const t = smoothstep(0.15, 0.7, s)
-    return [
-      col[0] + (wall[0] - col[0]) * t,
-      col[1] + (wall[1] - col[1]) * t,
-      col[2] + (wall[2] - col[2]) * t,
-    ]
-  }
-
-  if (biome === 'mountain' || biome === 'snow' || biome === 'hills') {
-    const rock: [number, number, number] = [0.32, 0.3, 0.28]
-    const t = smoothstep(0.18, 0.75, s) * (biome === 'hills' ? 0.7 : 1)
-    // Keep snow on high gentle slopes
-    const snowKeep = biome === 'snow' || height > 500 ? smoothstep(0.5, 0.15, s) * 0.4 : 0
-    const t2 = Math.max(0, t - snowKeep)
-    return [
-      col[0] + (rock[0] - col[0]) * t2,
-      col[1] + (rock[1] - col[1]) * t2,
-      col[2] + (rock[2] - col[2]) * t2,
-    ]
-  }
-
-  // Mild rock bleed on any steep face
-  const t = smoothstep(0.35, 0.85, s) * 0.45
+  // Derive rock tint from the already blended palette. Discrete biome switches
+  // and distance-limited shading used to draw hard borders across mountains.
+  const t = smoothstep(.14, .8, clamp01(slope01)) * .65
+  const warmth = clamp01((col[0] - col[2]) * 2)
+  const rock: [number, number, number] = [.32 + warmth * .14, .3 - warmth * .12, .28 - warmth * .16]
   return [
-    col[0] * (1 - t) + 0.35 * t,
-    col[1] * (1 - t) + 0.32 * t,
-    col[2] * (1 - t) + 0.28 * t,
+    col[0] + (rock[0] - col[0]) * t,
+    col[1] + (rock[1] - col[1]) * t,
+    col[2] + (rock[2] - col[2]) * t,
   ]
 }

@@ -2,6 +2,8 @@
  * HTML overlay HUD - flight readouts, speedometer, engine power,
  * attitude indicator (pitch ladder + bank), banner.
  */
+import { displayedKnots } from '../core/airspeed'
+
 export class HUD {
   private readonly posEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
@@ -100,7 +102,7 @@ export class HUD {
       this.posEl.textContent = String(Math.round(opts.y))
     }
 
-    const kts = Math.max(0, opts.speed * 1.94384)
+    const kts = displayedKnots(opts.speed)
     if (this.spdEl) {
       this.spdEl.textContent = String(Math.round(kts))
     }
