@@ -41,6 +41,7 @@
 ### Terrain readability
 
 - Feed continuous ridge, valley, plateau, and caldera signals into terrain vertex colors so distant terrain keeps geological structure without extra draw calls.
+- Add deterministic exposed-rock bands and cool valley shading to snow and mountain materials so alpine relief remains legible at flight distance.
 
 ### Weather
 

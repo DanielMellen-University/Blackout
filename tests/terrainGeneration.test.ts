@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad, INLAND_WATER_LEVEL, sampleClimate } from '../src/world/terrainSample'
+import { biomeColor, clearOpsPad, INLAND_WATER_LEVEL, sampleClimate } from '../src/world/terrainSample'
 
 describe('continuous terrain generation', () => {
   afterEach(clearOpsPad)
@@ -30,5 +30,15 @@ describe('continuous terrain generation', () => {
     sampleClimate(-120032.5, 308467.25)
     setWorldSeed(73)
     expect(sampleClimate(-120032.5, 308467.25)).toEqual(before)
+  })
+
+  it('keeps exposed alpine rock darker than the surrounding snowfield', () => {
+    const clean = biomeColor('snow', 3200, .2, 240, -480, undefined, 0, 1, 'snow', 0,
+      undefined, { ridge: 0, alpineValley: 0, plateau: 0, caldera: 0 })
+    const exposed = biomeColor('snow', 3200, .2, 240, -480, undefined, 0, 1, 'snow', 0,
+      undefined, { ridge: 1, alpineValley: 0, plateau: 0, caldera: 1 })
+    expect(exposed[0]).toBeLessThan(clean[0])
+    expect(exposed[1]).toBeLessThan(clean[1])
+    expect(exposed.every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
 })

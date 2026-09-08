@@ -624,6 +624,29 @@ export function biomeColor(
       col[0] = Math.min(.98, col[0] + shelf)
       col[1] = Math.min(.72, col[1] + shelf * .45)
     }
+
+    // Snow and high alpine faces need a second visual scale. A single pale
+    // snow palette made broad ridges read as one featureless white sheet from
+    // the chase camera. Stable mid-scale exposure bands reveal dark stone on
+    // wind-scoured shoulders and caldera rims, while valley floors stay cool
+    // blue instead of becoming noisy spikes or extra geometry.
+    if (biome === 'snow' || biome === 'mountain') {
+      const strata = valueNoise(x / 520, z / 520)
+      const exposure = clamp01((strata - .42) * 1.9 + landform.ridge * .24 + landform.caldera * .34)
+      const rockMix = smoothstep(.48, .9, exposure) * (biome === 'snow' ? .28 : .2)
+      const rock: [number, number, number] = biome === 'snow'
+        ? [.23, .28, .34]
+        : [.25, .24, .23]
+      col = [
+        col[0] + (rock[0] - col[0]) * rockMix,
+        col[1] + (rock[1] - col[1]) * rockMix,
+        col[2] + (rock[2] - col[2]) * rockMix,
+      ]
+      const valley = smoothstep(.18, .9, landform.alpineValley)
+      col[0] *= 1 - valley * .055
+      col[1] *= 1 - valley * .035
+      col[2] = Math.min(1, col[2] + valley * .035)
+    }
   }
 
   const ravineShade = smoothstep(.25, .9, ravine) * .3
