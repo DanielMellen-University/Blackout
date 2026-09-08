@@ -132,6 +132,7 @@ export class SettlementSystem {
   private readonly roadSnow = { value: 0 }
   private readonly buildingRain = { value: 0 }
   private readonly buildingSnow = { value: 0 }
+  private readonly buildingDaylight = { value: 1 }
   private readonly loaded = new Map<string, LoadedSettlement>()
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
@@ -182,6 +183,7 @@ export class SettlementSystem {
     this.walls.onBeforeCompile = shader => {
       shader.uniforms.settlementRain = this.buildingRain
       shader.uniforms.settlementSnow = this.buildingSnow
+      shader.uniforms.settlementDaylight = this.buildingDaylight
       shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
         varying vec2 settlementUv;
         varying float settlementWall;`)
@@ -192,7 +194,8 @@ export class SettlementSystem {
         varying vec2 settlementUv;
         varying float settlementWall;
         uniform float settlementRain;
-        uniform float settlementSnow;`)
+        uniform float settlementSnow;
+        uniform float settlementDaylight;`)
         .replace('#include <color_fragment>', `#include <color_fragment>
         vec2 grid = settlementUv / vec2(12.0, 10.0);
         vec2 pane = fract(grid);
@@ -201,7 +204,9 @@ export class SettlementSystem {
           * (1.0 - smoothstep(vec2(.72, .75) - aa, vec2(.72, .75) + aa, pane));
         float windowMask = settlementWall * windowShape.x * windowShape.y
           * (1.0 - smoothstep(.2, .55, max(aa.x, aa.y)));
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075, .12, .15), windowMask * .78);
+        vec3 windowColor = mix(vec3(1.15, .5, .18), vec3(.075, .12, .15), settlementDaylight);
+        float windowStrength = windowMask * (.78 + (1.0 - settlementDaylight) * .18);
+        diffuseColor.rgb = mix(diffuseColor.rgb, windowColor, windowStrength);
         diffuseColor.rgb *= 1.0 - settlementRain * .08;
         float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.68, .74, .8), wallSnowMask);`)
@@ -209,15 +214,20 @@ export class SettlementSystem {
     this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v2'
   }
 
-  setWeatherEffects(rain: number, snow: number): void {
+  setWeatherEffects(rain: number, snow: number, daylight = this.buildingDaylight.value): void {
     this.roadRain.value = MathUtils.clamp(rain, 0, 1)
     this.roadSnow.value = MathUtils.clamp(snow, 0, 1)
     this.buildingRain.value = this.roadRain.value
     this.buildingSnow.value = this.roadSnow.value
+    this.buildingDaylight.value = MathUtils.clamp(daylight, 0, 1)
   }
 
   get weatherEffects(): { rain: number; snow: number } {
     return { rain: this.roadRain.value, snow: this.roadSnow.value }
+  }
+
+  get lightingEffects(): { daylight: number } {
+    return { daylight: this.buildingDaylight.value }
   }
 
   private configureWeatherRoadMaterial(material: MeshStandardMaterial): void {

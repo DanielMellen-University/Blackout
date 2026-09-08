@@ -18,6 +18,7 @@
 - Mark wet route spans as bridge decks and render them with a separate concrete-toned material, keeping river crossings visually distinct.
 - Feed blended rain and snow intensity into settlement streets and bridge decks so the road network shares the same weather response as terrain.
 - Feed the same values into settlement facades and roofs, with wet walls and snow-catching horizontal roof surfaces.
+- Share the atmosphere daylight factor with instanced facade windows so settlements gain subdued daytime glazing and warm night lights without extra meshes.
 - Add batched local street centerlines so district roads remain legible from the chase camera without per-segment draw calls.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 - Rework settlement morphology so villages use rare hamlet, ribbon, crossroads and basin profiles with varied radii, loops and oversized landmark buildings; cities remain rare, broad and dense.

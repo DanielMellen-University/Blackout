@@ -358,6 +358,12 @@ export class Atmosphere {
     return this.weatherDirector.snapshot()
   }
 
+  /** Daylight factor shared by world materials (0 = night, 1 = full day). */
+  get daylight(): number {
+    const elevation = Math.sin((this.timeOfDay - 0.25) * Math.PI * 2)
+    return MathUtils.smoothstep(elevation, -0.12, 0.28)
+  }
+
   get phaseLabel(): string {
     const t = this.timeOfDay
     if (t < 0.2 || t >= 0.8) return 'NIGHT'

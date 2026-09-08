@@ -30,6 +30,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds altitude-aware cool cover without rebuilding streamed chunks.
 - Settlement streets and bridge decks use the same blended precipitation values, so roads wet and cool with the terrain.
 - Settlement facades and roof materials share those precipitation uniforms, darkening in rain and collecting cool snow on horizontal surfaces.
+- Building window grids also share the day/night factor, staying subdued by day and warming into low-cost city lights after sunset.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack

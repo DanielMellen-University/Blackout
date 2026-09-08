@@ -85,6 +85,10 @@ describe('settlement rendering and lifecycle', () => {
       expect(system.weatherEffects).toEqual({ rain: 1, snow: 0 })
       system.setWeatherEffects(.35, .7)
       expect(system.weatherEffects).toEqual({ rain: .35, snow: .7 })
+      system.setWeatherEffects(.1, .2, -.4)
+      expect(system.lightingEffects).toEqual({ daylight: 0 })
+      system.setWeatherEffects(.1, .2, .4)
+      expect(system.lightingEffects).toEqual({ daylight: .4 })
     } finally {
       system.dispose()
     }
