@@ -130,6 +130,8 @@ export class SettlementSystem {
     roughness: .86, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly roadRain = { value: 0 }
   private readonly roadSnow = { value: 0 }
+  private readonly buildingRain = { value: 0 }
+  private readonly buildingSnow = { value: 0 }
   private readonly loaded = new Map<string, LoadedSettlement>()
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
@@ -175,8 +177,11 @@ export class SettlementSystem {
     for (const material of [this.asphalt, this.highway, this.bridgeDeck, this.highwayEdge]) {
       this.configureWeatherRoadMaterial(material)
     }
+    this.configureWeatherRoofMaterial()
     // Facade windows live in the body shader, not thousands of separate meshes.
     this.walls.onBeforeCompile = shader => {
+      shader.uniforms.settlementRain = this.buildingRain
+      shader.uniforms.settlementSnow = this.buildingSnow
       shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
         varying vec2 settlementUv;
         varying float settlementWall;`)
@@ -185,7 +190,9 @@ export class SettlementSystem {
         settlementUv = uv * vec2(abs(normal.x) > .5 ? length(instanceMatrix[2].xyz) : length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz));`)
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
         varying vec2 settlementUv;
-        varying float settlementWall;`)
+        varying float settlementWall;
+        uniform float settlementRain;
+        uniform float settlementSnow;`)
         .replace('#include <color_fragment>', `#include <color_fragment>
         vec2 grid = settlementUv / vec2(12.0, 10.0);
         vec2 pane = fract(grid);
@@ -194,14 +201,19 @@ export class SettlementSystem {
           * (1.0 - smoothstep(vec2(.72, .75) - aa, vec2(.72, .75) + aa, pane));
         float windowMask = settlementWall * windowShape.x * windowShape.y
           * (1.0 - smoothstep(.2, .55, max(aa.x, aa.y)));
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075, .12, .15), windowMask * .78);`)
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075, .12, .15), windowMask * .78);
+        diffuseColor.rgb *= 1.0 - settlementRain * .08;
+        float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.68, .74, .8), wallSnowMask);`)
     }
-    this.walls.customProgramCacheKey = () => 'settlement-facades-v1'
+    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v2'
   }
 
   setWeatherEffects(rain: number, snow: number): void {
     this.roadRain.value = MathUtils.clamp(rain, 0, 1)
     this.roadSnow.value = MathUtils.clamp(snow, 0, 1)
+    this.buildingRain.value = this.roadRain.value
+    this.buildingSnow.value = this.roadSnow.value
   }
 
   get weatherEffects(): { rain: number; snow: number } {
@@ -223,6 +235,28 @@ export class SettlementSystem {
       )
     }
     material.customProgramCacheKey = () => 'settlement-road-weather-v1'
+  }
+
+  private configureWeatherRoofMaterial(): void {
+    this.roofs.onBeforeCompile = shader => {
+      shader.uniforms.settlementRain = this.buildingRain
+      shader.uniforms.settlementSnow = this.buildingSnow
+      shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
+        varying float settlementRoofTop;`)
+        .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
+        settlementRoofTop = objectNormal.y;`)
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        '#include <common>\nvarying float settlementRoofTop;\nuniform float settlementRain;\nuniform float settlementSnow;\n',
+      ).replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        float roofSnowMask = smoothstep(.34, .92, settlementRoofTop) * settlementSnow * .7;
+        diffuseColor.rgb *= 1.0 - settlementRain * .12;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.72, .78, .84), roofSnowMask);`,
+      )
+    }
+    this.roofs.customProgramCacheKey = () => 'settlement-roofs-weather-v1'
   }
 
   get count(): number { return this.loaded.size }

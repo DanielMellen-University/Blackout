@@ -29,6 +29,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
 - Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds altitude-aware cool cover without rebuilding streamed chunks.
 - Settlement streets and bridge decks use the same blended precipitation values, so roads wet and cool with the terrain.
+- Settlement facades and roof materials share those precipitation uniforms, darkening in rain and collecting cool snow on horizontal surfaces.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack
