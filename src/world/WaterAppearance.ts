@@ -19,7 +19,12 @@ export function applyWaterAppearance(material: MeshStandardMaterial, clock: { va
       diffuseColor.rgb = mix(vec3(0.075, 0.34, 0.38), vec3(0.012, 0.065, 0.14), depthMix);
       // A restrained foam-tinted shoreline, without repeated contour stripes.
       float wetEdge = exp(-max(0.0, vWaterDepth) * 2.5);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.46, 0.67, 0.58), wetEdge * 0.16);`,
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.46, 0.67, 0.58), wetEdge * 0.16);
+      // Drift a low-contrast foam breakup through the first metre of water so
+      // coves and river mouths do not read as a perfectly uniform ring.
+      float foamNoise = texture2D(waterNormals, vWaterWorld.xz / 96.0 + vec2(worldWaterTime * 0.006, -worldWaterTime * 0.004)).r;
+      float foamBand = smoothstep(0.54, 0.82, foamNoise) * (1.0 - smoothstep(0.12, 1.8, vWaterDepth));
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.54, 0.74, 0.66), foamBand * 0.18);`,
     )
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <normal_fragment_maps>',
@@ -41,5 +46,5 @@ export function applyWaterAppearance(material: MeshStandardMaterial, clock: { va
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-v3'
+  material.customProgramCacheKey = () => 'calm-basin-water-v4'
 }

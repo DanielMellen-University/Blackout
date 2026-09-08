@@ -55,6 +55,9 @@ export function buildWaterMesh(
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('waterDepth', new Float32BufferAttribute(depths, 1))
   geometry.computeVertexNormals()
+  // Water triangles are clipped per terrain cell, so give the renderer an
+  // explicit bound for fast streamed-tile culling.
+  geometry.computeBoundingSphere()
   const material = new MeshStandardMaterial({
     color: 0x345361, roughness: 0.2, metalness: 0.08,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,

@@ -101,7 +101,8 @@ with draw counts and frame timings. Streaming prioritizes contact detail, then
 missing coverage and coarse replacements, before distant detail rebuilds.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Seas sit at zero elevation; each lake has its own level below the surrounding
-rim. River reaches descend between those levels. This is procedural drainage,
+rim. River reaches descend between those levels. Shallow water carries moving,
+low-contrast foam breakup instead of a uniform shoreline. This is procedural drainage,
 not a rainfall or fluid simulation.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.

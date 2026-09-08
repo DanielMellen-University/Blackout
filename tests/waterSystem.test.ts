@@ -12,6 +12,7 @@ describe('independent water surfaces', () => {
       const mesh = buildWaterMesh(bed, new Float32Array(4).fill(level), 1, 100, 500, -700, clock)!
       expect(bed).toEqual(original)
       expect(mesh.name).toBe('WaterSurface')
+      expect(mesh.geometry.boundingSphere?.radius).toBeGreaterThan(0)
       const positions = mesh.geometry.getAttribute('position')
       const depths = mesh.geometry.getAttribute('waterDepth')
       const normals = mesh.geometry.getAttribute('normal')
