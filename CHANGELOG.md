@@ -16,6 +16,7 @@
 - Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
 - Add batched pale edge strips to regional connectors so long links retain a readable road silhouette through haze.
 - Mark wet route spans as bridge decks and render them with a separate concrete-toned material, keeping river crossings visually distinct.
+- Feed blended rain and snow intensity into settlement streets and bridge decks so the road network shares the same weather response as terrain.
 - Add batched local street centerlines so district roads remain legible from the chase camera without per-segment draw calls.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 - Rework settlement morphology so villages use rare hamlet, ribbon, crossroads and basin profiles with varied radii, loops and oversized landmark buildings; cities remain rare, broad and dense.

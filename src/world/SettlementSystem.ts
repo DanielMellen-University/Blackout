@@ -1,6 +1,6 @@
 import {
   BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, Group,
-  InstancedMesh, Mesh, MeshStandardMaterial, Object3D, Scene,
+  InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
@@ -128,6 +128,8 @@ export class SettlementSystem {
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly highwayEdge = new MeshStandardMaterial({ color: 0xb3ae8a, emissive: 0x302e1d, emissiveIntensity: .08,
     roughness: .86, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
+  private readonly roadRain = { value: 0 }
+  private readonly roadSnow = { value: 0 }
   private readonly loaded = new Map<string, LoadedSettlement>()
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
@@ -170,6 +172,9 @@ export class SettlementSystem {
         this.inFlight = null
       }
     }
+    for (const material of [this.asphalt, this.highway, this.bridgeDeck, this.highwayEdge]) {
+      this.configureWeatherRoadMaterial(material)
+    }
     // Facade windows live in the body shader, not thousands of separate meshes.
     this.walls.onBeforeCompile = shader => {
       shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
@@ -192,6 +197,32 @@ export class SettlementSystem {
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.075, .12, .15), windowMask * .78);`)
     }
     this.walls.customProgramCacheKey = () => 'settlement-facades-v1'
+  }
+
+  setWeatherEffects(rain: number, snow: number): void {
+    this.roadRain.value = MathUtils.clamp(rain, 0, 1)
+    this.roadSnow.value = MathUtils.clamp(snow, 0, 1)
+  }
+
+  get weatherEffects(): { rain: number; snow: number } {
+    return { rain: this.roadRain.value, snow: this.roadSnow.value }
+  }
+
+  private configureWeatherRoadMaterial(material: MeshStandardMaterial): void {
+    material.onBeforeCompile = shader => {
+      shader.uniforms.settlementRain = this.roadRain
+      shader.uniforms.settlementSnow = this.roadSnow
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        '#include <common>\nuniform float settlementRain;\nuniform float settlementSnow;\n',
+      ).replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        diffuseColor.rgb *= 1.0 - settlementRain * 0.2;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.72, 0.74), settlementSnow * 0.22);`,
+      )
+    }
+    material.customProgramCacheKey = () => 'settlement-road-weather-v1'
   }
 
   get count(): number { return this.loaded.size }

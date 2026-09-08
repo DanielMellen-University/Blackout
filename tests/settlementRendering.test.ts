@@ -78,6 +78,18 @@ describe('settlement rendering and lifecycle', () => {
     system.dispose()
   })
 
+  it('shares blended weather values with road materials', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      system.setWeatherEffects(1.2, -.1)
+      expect(system.weatherEffects).toEqual({ rain: 1, snow: 0 })
+      system.setWeatherEffects(.35, .7)
+      expect(system.weatherEffects).toEqual({ rain: .35, snow: .7 })
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('clears the checked-cell cache so reseeding can rebuild a settlement', () => {
     const system = new SettlementSystem(new Scene())
     system.update(3000, 3000)
