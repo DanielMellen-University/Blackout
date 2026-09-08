@@ -76,7 +76,9 @@ export function sampleLandforms(x: number, z: number) {
   // Humid lowlands get rolling watersheds, never sharp vertical noise.
   const wet = smoothstep(.42, .76, moisture)
   height += wet * (1 - highlands) * hills * hills * (75 + hot * 45)
-  height += cold * (valueNoise(wx / 900 + 33, wz / 900) - .3) * 42
+  // Cold provinces stay broad and flyable. Fine frozen noise was making
+  // otherwise smooth tundra read as small spikes from the aircraft.
+  height += cold * (valueNoise(wx / 900 + 33, wz / 900) - .3) * 14
 
   const badlandsBase = dry * smoothstep(.42, .65, province)
   const dunes = dry * (1 - smoothstep(.4, .62, province))

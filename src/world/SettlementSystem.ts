@@ -12,6 +12,11 @@ import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlemen
 const LOAD_RADIUS = FOG_FAR
 const DETAIL_RADIUS = 4200
 
+// Generation can be generous without letting a dense slice of the world turn
+// into an unbounded set of instance buffers or road meshes around the player.
+export const MAX_LOADED_SETTLEMENTS = 4
+export const MAX_LOADED_BUILDINGS = 1500
+
 const collisionRadii = new WeakMap<SettlementPlan, number>()
 
 /** Oriented walls and roof volumes with a small jet margin. */
@@ -331,7 +336,7 @@ export class SettlementSystem {
       this.queue = pending.sort((a, b) => a.distance - b.distance)
     }
     const ready = this.ready.shift()
-    if (ready && this.checked.has(ready.key)) {
+    if (ready && this.checked.has(ready.key) && this.canLoad(ready.plan)) {
       this.loaded.set(ready.key, this.build(ready.plan))
       this.scheduleLinks(ready.plan)
     }
@@ -351,7 +356,7 @@ export class SettlementSystem {
         this.worker.postMessage(this.inFlight)
       } else {
         const plan = settlementForCell(job.cx, job.cz)
-        if (plan) {
+        if (plan && this.canLoad(plan)) {
           this.loaded.set(job.key, this.build(plan))
           this.scheduleLinks(plan)
         }
@@ -379,6 +384,11 @@ export class SettlementSystem {
   hitObstacle(x: number, y: number, z: number): boolean {
     for (const { plan } of this.loaded.values()) if (hitsSettlement(plan, x, y, z)) return true
     return false
+  }
+
+  private canLoad(plan: SettlementPlan): boolean {
+    return this.loaded.size < MAX_LOADED_SETTLEMENTS &&
+      this.buildingCount + plan.buildings.length <= MAX_LOADED_BUILDINGS
   }
 
   private build(plan: SettlementPlan): LoadedSettlement {

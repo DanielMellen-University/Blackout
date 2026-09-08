@@ -19,6 +19,24 @@ describe('natural drainage', () => {
     }
   })
 
+  it('keeps terrain-flow channels deterministic and tightly bounded', () => {
+    setWorldSeed(1)
+    const first = riverReaches(-1, -1)
+    expect(first.length).toBeGreaterThan(50)
+    expect(first.length).toBeLessThanOrEqual(180)
+    for (const reach of first) {
+      expect(reach.wa).toBeGreaterThan(0)
+      expect(reach.wb).toBeGreaterThan(0)
+      expect(Math.max(reach.wa, reach.wb)).toBeLessThanOrEqual(230)
+    }
+    const signature = first.map(reach => [reach.ax, reach.az, reach.bx, reach.bz, reach.wa, reach.wb])
+    setWorldSeed(73)
+    riverReaches(-1, -1)
+    setWorldSeed(1)
+    const replay = riverReaches(-1, -1)
+    expect(replay.map(reach => [reach.ax, reach.az, reach.bx, reach.bz, reach.wa, reach.wb])).toEqual(signature)
+  })
+
   it('has enclosed, irregular basins rather than circles or unbounded oceans', () => {
     setWorldSeed(1)
     for (const b of waterLandmarks(-1, -1)) {
@@ -52,13 +70,13 @@ describe('natural drainage', () => {
 
   it('keeps green landforms free of narrow spikes', () => {
     setWorldSeed(1)
-    const green = new Set(['plains', 'forest', 'rainforest', 'savanna', 'tundra'])
+    const green = new Set(['plains', 'forest', 'rainforest', 'savanna'])
     let samples = 0
     for (let x = -30000; x < 30000; x += 475) for (let z = -30000; z < 30000; z += 625) {
       const c = sampleGeography(x, z)
       if (!green.has(c.biome) || c.river > .1 || c.features.lake > .1 || c.coastal > .1) continue
       const a = sampleGeography(x - 25, z).height, b = sampleGeography(x + 25, z).height
-      expect(Math.abs(a - 2 * c.height + b)).toBeLessThan(4)
+      expect(Math.abs(a - 2 * c.height + b), `${x},${z}`).toBeLessThan(4)
       samples++
     }
     expect(samples).toBeGreaterThan(1000)

@@ -120,6 +120,35 @@ const COL_HEMI_DAY = new Color(0xd8ecff)
 const COL_HEMI_NIGHT = new Color(0x1a2848)
 const COL_GROUND_DAY = new Color(0x3a4a38)
 const COL_GROUND_NIGHT = new Color(0x0c1018)
+const LIGHTNING_ATTACK_SEC = 0.1
+const LIGHTNING_DURATION_SEC = 0.6
+const LIGHTNING_MIN_PEAK = 0.3
+const LIGHTNING_MAX_PEAK = 0.44
+const LIGHTNING_MIN_CHARGE = 9
+const LIGHTNING_CHARGE_RANGE = 9
+const LIGHTNING_MIN_STRENGTH = 0.35
+
+/**
+ * A single broad glow is readable as distant lightning without a hard white-frame cut.
+ * The scalar is deliberately capped so all consumers can stay within a comfortable range.
+ */
+export function lightningFlashEnvelope(age: number, peak: number): number {
+  if (age <= 0 || age >= LIGHTNING_DURATION_SEC) return 0
+  const rise = MathUtils.smoothstep(age, 0, LIGHTNING_ATTACK_SEC)
+  const release = 1 - MathUtils.smoothstep(age, LIGHTNING_ATTACK_SEC, LIGHTNING_DURATION_SEC)
+  return MathUtils.clamp(peak, 0, LIGHTNING_MAX_PEAK) * rise * release
+}
+
+/**
+ * Full storms receive a visible flash roughly every 8-16 seconds.
+ * Developing fronts naturally wait longer, which avoids clustered strobing.
+ */
+export function lightningCooldown(weatherStrength: number, pulse: number): number {
+  const strength = MathUtils.clamp(weatherStrength, LIGHTNING_MIN_STRENGTH, 1)
+  const variation = MathUtils.clamp(pulse, 0, 1)
+  return (LIGHTNING_MIN_CHARGE + variation * LIGHTNING_CHARGE_RANGE) /
+    (0.25 + strength * 0.85)
+}
 
 /**
  * Day/night cycle + weather: sky dome (sun/moon/stars), fog, lights, clouds, rain/snow.
@@ -136,6 +165,8 @@ export class Atmosphere {
   private elapsed = 0
   private lightningCharge = 0
   private lightningFlash = 0
+  private lightningFlashAge = Infinity
+  private lightningFlashPeak = 0
   private gustPhase = 0
 
   private readonly hemi: HemisphereLight
@@ -337,8 +368,10 @@ export class Atmosphere {
 
     this.weatherDirector.randomize(seed, w)
     this.weather = w
-    this.lightningCharge = 2 + this.seededPulse(seed) * 6
+    this.lightningCharge = LIGHTNING_MIN_CHARGE + this.seededPulse(seed) * LIGHTNING_CHARGE_RANGE
     this.lightningFlash = 0
+    this.lightningFlashAge = Infinity
+    this.lightningFlashPeak = 0
   }
 
   get clockLabel(): string {
@@ -426,8 +459,8 @@ export class Atmosphere {
     }
     if (this.lightningFlash > 0.01) {
       _c2.setHex(0xcfe3ff)
-      _c.lerp(_c2, this.lightningFlash * 0.72)
-      _horizon.lerp(_c2, this.lightningFlash * 0.58)
+      _c.lerp(_c2, this.lightningFlash * 0.28)
+      _horizon.lerp(_c2, this.lightningFlash * 0.22)
     }
 
     const fogNear = this.baseFogNear * w.fogNearMul
@@ -494,13 +527,13 @@ export class Atmosphere {
     )
     this.ambient.intensity =
       (0.1 + dayFactor * 0.28 + nightFactor * 0.06) * w.ambientMul +
-      this.lightningFlash * 1.45
+      this.lightningFlash * 0.55
 
     // Soft bounce opposite the stronger key
     this.fill.color.setHex(dayFactor > 0.35 ? 0xc8e0ff : 0x6a7aaa)
     this.fill.intensity =
       (0.1 + dayFactor * 0.22 + moonUp * nightFactor * 0.12) * w.sunMul +
-      this.lightningFlash * 2.2
+      this.lightningFlash * 0.85
     this.fill.position.set(
       ax - _sunDir.x * lightDist * 0.35,
       ay + 90,
@@ -641,7 +674,7 @@ export class Atmosphere {
       weather.highClouds,
     )
     const brightness =
-      0.5 + dayFactor * 0.48 - weather.snow * 0.08 + this.lightningFlash * 0.42
+      0.5 + dayFactor * 0.48 - weather.snow * 0.08 + this.lightningFlash * 0.16
     const baseOpacity = MathUtils.clamp(0.28 + maxCover * 0.5, 0.18, 0.82)
     const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
     // ~0.8s ease for opacity (smooth appear / disappear)
@@ -791,16 +824,35 @@ export class Atmosphere {
   }
 
   private updateLightning(dt: number, weather: WeatherSnapshot): void {
-    this.lightningFlash *= Math.exp(-dt * 13)
-    if (weather.lightning < 0.03 || dt <= 0) return
+    if (dt <= 0) return
 
-    this.lightningCharge -= dt * (0.35 + weather.lightning * 0.9)
+    if (this.lightningFlashAge < LIGHTNING_DURATION_SEC) {
+      this.lightningFlashAge += dt
+      this.lightningFlash = lightningFlashEnvelope(
+        this.lightningFlashAge,
+        this.lightningFlashPeak,
+      )
+      if (this.lightningFlashAge >= LIGHTNING_DURATION_SEC) {
+        this.lightningFlash = 0
+        this.lightningFlashAge = Infinity
+      }
+    } else {
+      this.lightningFlash = 0
+    }
+
+    if (weather.lightning < LIGHTNING_MIN_STRENGTH) return
+
+    this.lightningCharge -= dt * (0.25 + weather.lightning * 0.85)
     if (this.lightningCharge > 0) return
 
     const pulse = this.seededPulse(this.elapsed * 7.31 + this.gustPhase)
-    this.lightningFlash = 0.62 + pulse * 0.38
-    this.lightningCharge = (2.6 + this.seededPulse(this.elapsed * 2.17) * 7.5) /
-      Math.max(0.2, weather.lightning)
+    this.lightningFlashPeak = LIGHTNING_MIN_PEAK + pulse *
+      (LIGHTNING_MAX_PEAK - LIGHTNING_MIN_PEAK)
+    this.lightningFlashAge = 0
+    this.lightningCharge = lightningCooldown(
+      weather.lightning,
+      this.seededPulse(this.elapsed * 2.17),
+    ) * (0.25 + weather.lightning * 0.85)
   }
 
   private seededPulse(value: number): number {

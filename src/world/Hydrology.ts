@@ -4,11 +4,85 @@ import { sampleLandforms } from './Landforms'
 export const CATCHMENT_SIZE = 32000
 const BIN = 2000
 const BINS = CATCHMENT_SIZE / BIN
+
+// This grid only exists while a catchment cache entry is being built. Query
+// time keeps the old compact basin + spatial-bin representation.
+const FLOW_GRID = 18
+const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
+const MAX_CHANNEL_EDGES = 72
+const MAX_RENDER_REACHES = 180
+
 interface Basin { x: number; z: number; radius: number; aspect: number; angle: number; phase: number; level: number; sea: boolean }
 interface Reach { ax: number; az: number; bx: number; bz: number; wa: number; wb: number; ya: number; yb: number }
 interface Catchment { basins: Basin[]; bins: Reach[][] }
+interface FlowGrid {
+  height: Float64Array
+  moisture: Float32Array
+  highlands: Float32Array
+  filled: Float64Array
+  parent: Int32Array
+  flow: Float64Array
+}
+interface FlowEdge { from: number; to: number; flow: number }
+
+class MinHeap {
+  private readonly entries: { id: number; level: number }[] = []
+
+  get size(): number { return this.entries.length }
+
+  push(id: number, level: number): void {
+    const entry = { id, level }
+    const values = this.entries
+    values.push(entry)
+    let child = values.length - 1
+    while (child > 0) {
+      const parent = (child - 1) >> 1
+      if (values[parent]!.level <= entry.level) break
+      values[child] = values[parent]!
+      child = parent
+    }
+    values[child] = entry
+  }
+
+  pop(): { id: number; level: number } | undefined {
+    const values = this.entries
+    if (values.length === 0) return undefined
+    const root = values[0]!
+    const tail = values.pop()!
+    if (values.length === 0) return root
+    let parent = 0
+    while (parent * 2 + 1 < values.length) {
+      let child = parent * 2 + 1
+      if (child + 1 < values.length && values[child + 1]!.level < values[child]!.level) child++
+      if (values[child]!.level >= tail.level) break
+      values[parent] = values[child]!
+      parent = child
+    }
+    values[parent] = tail
+    return root
+  }
+}
+
 let seed = Number.NaN
 const cache = new Map<string, Catchment>()
+
+function gridId(ix: number, iz: number): number { return iz * FLOW_GRID + ix }
+function gridX(ox: number, id: number): number { return ox + (id % FLOW_GRID) * FLOW_STEP }
+function gridZ(oz: number, id: number): number { return oz + Math.floor(id / FLOW_GRID) * FLOW_STEP }
+
+function insideGrid(id: number, inset = 0): boolean {
+  const x = id % FLOW_GRID, z = Math.floor(id / FLOW_GRID)
+  return x >= inset && z >= inset && x < FLOW_GRID - inset && z < FLOW_GRID - inset
+}
+
+function forEachNeighbor(id: number, visit: (neighbor: number) => void): void {
+  const x = id % FLOW_GRID, z = Math.floor(id / FLOW_GRID)
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    if (dx === 0 && dz === 0) continue
+    const nx = x + dx, nz = z + dz
+    if (nx >= 0 && nz >= 0 && nx < FLOW_GRID && nz < FLOW_GRID) visit(gridId(nx, nz))
+  }
+}
 
 /** Signed shore distance, warped in space and broken into coves and peninsulas. */
 export function basinDistance(b: Basin, x: number, z: number): number {
@@ -28,120 +102,295 @@ export function basinDistance(b: Basin, x: number, z: number): number {
   return (Math.hypot(u, v) - outline) * b.radius * b.aspect
 }
 
+/** Sample broad terrain once before creating the cached drainage graph. */
+function makeFlowGrid(ox: number, oz: number): FlowGrid {
+  const count = FLOW_GRID * FLOW_GRID
+  const height = new Float64Array(count)
+  const moisture = new Float32Array(count)
+  const highlands = new Float32Array(count)
+  for (let z = 0; z < FLOW_GRID; z++) for (let x = 0; x < FLOW_GRID; x++) {
+    const id = gridId(x, z)
+    const land = sampleLandforms(ox + x * FLOW_STEP, oz + z * FLOW_STEP)
+    height[id] = land.height
+    moisture[id] = land.moisture
+    highlands[id] = land.highlands
+  }
+  const filled = new Float64Array(count)
+  filled.fill(Infinity)
+  const parent = new Int32Array(count)
+  parent.fill(-1)
+  return { height, moisture, highlands, filled, parent, flow: new Float64Array(count) }
+}
+
+/** Pick an infrequent sea in naturally low country, never as a default background. */
+function chooseSeaCell(grid: FlowGrid, cx: number, cz: number): number | null {
+  if (hash2(cx - 91, cz + 101) <= .62) return null
+  const candidates: { id: number; score: number }[] = []
+  for (let z = 3; z < FLOW_GRID - 3; z++) for (let x = 3; x < FLOW_GRID - 3; x++) {
+    const id = gridId(x, z)
+    if (grid.highlands[id]! > .32 || grid.height[id]! > 950) continue
+    const score = grid.height[id]! + hash2(cx * 61 + x * 17, cz * 73 + z * 29) * 280
+    candidates.push({ id, score })
+  }
+  if (candidates.length === 0) return null
+  candidates.sort((a, b) => a.score - b.score)
+  const pool = Math.min(8, candidates.length)
+  return candidates[Math.floor(hash2(cx + 41, cz - 61) * pool)]!.id
+}
+
+/** Priority-flood routing resolves local sinks once and gives every cell one downstream parent. */
+function routeFlow(grid: FlowGrid, seaCell: number | null): void {
+  const heap = new MinHeap()
+  const closed = new Uint8Array(grid.height.length)
+  const seedCell = (id: number, level: number) => {
+    if (level >= grid.filled[id]!) return
+    grid.filled[id] = level
+    grid.parent[id] = -1
+    heap.push(id, level)
+  }
+  for (let z = 0; z < FLOW_GRID; z++) for (let x = 0; x < FLOW_GRID; x++) {
+    if (x === 0 || z === 0 || x === FLOW_GRID - 1 || z === FLOW_GRID - 1) {
+      const id = gridId(x, z)
+      // Boundary routes vanish into the existing edge fade. A small penalty
+      // keeps the occasional inland sea attractive when there is one.
+      seedCell(id, grid.height[id]! + 90)
+    }
+  }
+  if (seaCell !== null) seedCell(seaCell, 0)
+
+  while (heap.size > 0) {
+    const next = heap.pop()!
+    if (closed[next.id]) continue
+    closed[next.id] = 1
+    forEachNeighbor(next.id, neighbor => {
+      if (closed[neighbor]) return
+      const level = Math.max(grid.height[neighbor]!, next.level + .35)
+      if (level >= grid.filled[neighbor]!) return
+      grid.filled[neighbor] = level
+      grid.parent[neighbor] = next.id
+      heap.push(neighbor, level)
+    })
+  }
+
+  const order = Array.from({ length: grid.height.length }, (_, id) => id)
+  for (const id of order) {
+    // Humid hills contribute more runoff while dry terrain only feeds the
+    // largest channels. This changes which tributaries survive without a
+    // texture, mesh, or per-frame simulation.
+    grid.flow[id] = .08 + grid.moisture[id]! * .42 + grid.highlands[id]! * .1
+  }
+  order.sort((a, b) => grid.filled[b]! - grid.filled[a]!)
+  for (const id of order) {
+    const parent = grid.parent[id]!
+    if (parent >= 0) grid.flow[parent] += grid.flow[id]!
+  }
+}
+
+function localDepression(grid: FlowGrid, id: number): number {
+  let sum = 0, count = 0
+  forEachNeighbor(id, neighbor => { sum += grid.height[neighbor]!; count++ })
+  return Math.max(0, sum / Math.max(1, count) - grid.height[id]!)
+}
+
+function chooseLakeCells(grid: FlowGrid, seaCell: number | null, cx: number, cz: number): number[] {
+  const requested = 1 + Math.floor(hash2(cx - 17, cz + 73) * 3)
+  const candidates: { id: number; score: number }[] = []
+  for (let z = 3; z < FLOW_GRID - 3; z++) for (let x = 3; x < FLOW_GRID - 3; x++) {
+    const id = gridId(x, z)
+    if (id === seaCell || grid.highlands[id]! > .82) continue
+    const depression = localDepression(grid, id)
+    const spill = Math.max(0, grid.filled[id]! - grid.height[id]!)
+    const altitude = grid.height[id]!
+    // A broad local low is more important than random placement. The small
+    // province term still mixes lowland, foothill, and occasional alpine lakes.
+    const score = depression * 3.2 + spill * 1.8 + grid.moisture[id]! * 52 +
+      Math.min(65, altitude * .025) + hash2(cx * 113 + x * 31, cz * 127 + z * 47) * 28
+    candidates.push({ id, score })
+  }
+  candidates.sort((a, b) => b.score - a.score)
+  const selected: number[] = []
+  for (const candidate of candidates) {
+    const x = candidate.id % FLOW_GRID, z = Math.floor(candidate.id / FLOW_GRID)
+    const separated = selected.every(other => {
+      const ox = other % FLOW_GRID, oz = Math.floor(other / FLOW_GRID)
+      return Math.hypot(x - ox, z - oz) > 3.4
+    })
+    if (!separated) continue
+    selected.push(candidate.id)
+    if (selected.length >= requested) break
+  }
+  // A catchment always keeps at least one inland landmark, even in unusually
+  // flat or dry provinces where no cell has a strong numerical depression.
+  if (selected.length === 0 && candidates[0]) selected.push(candidates[0].id)
+  return selected
+}
+
+function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, phase: number): Basin {
+  const jitter = FLOW_STEP * .18
+  return {
+    x: gridX(ox, cell) + (hash2(cx + 113, cz - 29) - .5) * jitter,
+    z: gridZ(oz, cell) + (hash2(cx - 47, cz + 89) - .5) * jitter,
+    radius: 3300 + hash2(cx - 23, cz + 61) * 1900,
+    aspect: .62 + hash2(cx + 31, cz - 41) * .3,
+    angle: phase,
+    phase,
+    level: 0,
+    sea: true,
+  }
+}
+
+function makeLake(ox: number, oz: number, cell: number, index: number, cx: number, cz: number, grid: FlowGrid, phase: number): Basin {
+  const jitter = FLOW_STEP * .24
+  const x = gridX(ox, cell) + (hash2(cx + index * 17, cz - index * 31) - .5) * jitter
+  const z = gridZ(oz, cell) + (hash2(cx - index * 29, cz + index * 13) - .5) * jitter
+  const radius = 620 + hash2(cx + index * 21, cz - 82) * 1150
+  const land = sampleLandforms(x, z)
+  let rim = land.height
+  for (let j = 0; j < 12; j++) {
+    const angle = j * Math.PI / 6
+    rim = Math.min(rim, sampleLandforms(x + Math.cos(angle) * radius * 1.6,
+      z + Math.sin(angle) * radius * 1.6).height)
+  }
+  // The filled field identifies a real local bowl, but it can sit above the
+  // raw terrain at a spill saddle. Clamp the water below the sampled rim so a
+  // lake never turns that hidden routing value into an elevated landform.
+  const level = Math.max(45, Math.min(rim - 12,
+    Math.max(land.height - 12, Math.min(land.height + 95, grid.filled[cell]! - 9))))
+  return {
+    x,
+    z,
+    radius,
+    aspect: .46 + hash2(cx - 82, cz + index * 21) * .46,
+    angle: phase + index * 1.71 + (hash2(cx + index * 13, cz - 17) - .5) * .8,
+    phase: phase + index * 1.71 + hash2(cx - index * 31, cz + 17) * 1.6,
+    level,
+    sea: false,
+  }
+}
+
+function insideBasin(basins: readonly Basin[], x: number, z: number): boolean {
+  return basins.some(basin => basinDistance(basin, x, z) < 0)
+}
+
+/** Turn a coarse drainage edge into two gently meandering, terrain-carving reaches. */
+function emitDrainageEdge(
+  addReach: (reach: Reach) => void,
+  basins: readonly Basin[],
+  ox: number,
+  oz: number,
+  edge: FlowEdge,
+  levels: Float64Array,
+  flow: Float64Array,
+  salt: number,
+  canAdd: () => boolean,
+): void {
+  const ax = gridX(ox, edge.from), az = gridZ(oz, edge.from)
+  const bx = gridX(ox, edge.to), bz = gridZ(oz, edge.to)
+  const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz)
+  if (length < 1) return
+  const bend = (hash2(edge.from * 53 + salt * 17, edge.to * 71 - salt * 31) - .5) * Math.min(260, length * .22)
+  const mx = (ax + bx) / 2 - dz / length * bend
+  const mz = (az + bz) / 2 + dx / length * bend
+  const width = (value: number) => Math.max(14, Math.min(230, 8 + Math.pow(value, .58) * 12))
+  const wa = width(edge.flow)
+  const wb = width(Math.max(edge.flow, flow[edge.to]!))
+  const ya = levels[edge.from]!
+  const yb = Math.min(ya - .25, levels[edge.to]!)
+  const point = (t: number) => {
+    const inv = 1 - t
+    return {
+      x: inv * inv * ax + 2 * inv * t * mx + t * t * bx,
+      z: inv * inv * az + 2 * inv * t * mz + t * t * bz,
+    }
+  }
+  let a = point(0)
+  for (let step = 1; step <= 2; step++) {
+    if (!canAdd()) return
+    const t = step / 2, b = point(t)
+    const midX = (a.x + b.x) / 2, midZ = (a.z + b.z) / 2
+    // Rivers stop at a shore instead of cutting through a lake or sea and
+    // fighting its fixed water level in the query-time resolver.
+    if (!insideBasin(basins, midX, midZ)) {
+      const ta = (step - 1) / 2
+      addReach({
+        ax: a.x, az: a.z, bx: b.x, bz: b.z,
+        wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * t,
+        ya: ya + (yb - ya) * ta, yb: ya + (yb - ya) * t,
+      })
+    }
+    a = b
+  }
+}
+
 function catchment(cx: number, cz: number): Catchment {
   if (seed !== getWorldSeed()) { cache.clear(); seed = getWorldSeed() }
   const key = `${cx},${cz}`
   const previous = cache.get(key)
   if (previous) return previous
+
   const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
   const phase = hash2(cx + 79, cz - 41) * Math.PI * 2
-  const sea: Basin = {
-    x: ox + 16000 + (hash2(cx, cz + 41) - .5) * 1800,
-    z: oz + 16000 + (hash2(cx + 41, cz) - .5) * 1800,
-    radius: 3500 + hash2(cx - 23, cz + 61) * 1800,
-    aspect: .62 + hash2(cx + 31, cz - 41) * .3, angle: phase, phase, level: 0, sea: true,
+  const grid = makeFlowGrid(ox, oz)
+  const seaCell = chooseSeaCell(grid, cx, cz)
+  routeFlow(grid, seaCell)
+
+  const basins: Basin[] = []
+  if (seaCell !== null) basins.push(makeSea(ox, oz, seaCell, cx, cz, phase))
+  const lakeCells = chooseLakeCells(grid, seaCell, cx, cz)
+  for (let i = 0; i < lakeCells.length; i++) {
+    const lake = makeLake(ox, oz, lakeCells[i]!, i, cx, cz, grid, phase)
+    // Avoid a rare overlap between an organically shaped lake and sea.
+    if (!basins.some(basin => Math.hypot(lake.x - basin.x, lake.z - basin.z) < lake.radius + basin.radius * .7)) {
+      basins.push(lake)
+    }
   }
-  // Seas are landmarks, not the default catchment background.
-  const hasSea = hash2(cx - 91, cz + 101) > .58
-  const basins: Basin[] = hasSea ? [sea] : []
+
   const bins: Reach[][] = Array.from({ length: BINS * BINS }, () => [])
+  let renderedReaches = 0
   function addReach(r: Reach): void {
-    const margin = 1600 + Math.max(r.wa, r.wb)
+    if (renderedReaches >= MAX_RENDER_REACHES) return
+    renderedReaches++
+    const margin = 1250 + Math.max(r.wa, r.wb)
     const minX = Math.max(0, Math.floor((Math.min(r.ax, r.bx) - margin - ox) / BIN))
     const maxX = Math.min(BINS - 1, Math.floor((Math.max(r.ax, r.bx) + margin - ox) / BIN))
     const minZ = Math.max(0, Math.floor((Math.min(r.az, r.bz) - margin - oz) / BIN))
     const maxZ = Math.min(BINS - 1, Math.floor((Math.max(r.az, r.bz) + margin - oz) / BIN))
     for (let ix = minX; ix <= maxX; ix++) for (let iz = minZ; iz <= maxZ; iz++) bins[iz * BINS + ix]!.push(r)
   }
-  const lakeCount = 1 + Math.floor(hash2(cx - 17, cz + 73) * 3)
-  for (let i = 0; i < lakeCount; i++) {
-    const angle = phase + hash2(cx + i * 17, cz + 53) * Math.PI * 2
-    const distance = 7200 + hash2(cx + i * 29, cz + 53) * 6200
-    const x = sea.x + Math.cos(angle) * distance, z = sea.z + Math.sin(angle) * distance
-    const land = sampleLandforms(x, z)
-    if (land.highlands > .22) continue
-    const lake: Basin = {
-      x, z, radius: 700 + hash2(cx + i * 21, cz - 82) * 1050,
-      aspect: .46 + hash2(cx - 82, cz + i * 21) * .46,
-      angle: angle + .6 + (hash2(cx + i * 13, cz - 17) - .5) * .8,
-      phase: phase + i * 1.71 + hash2(cx - i * 31, cz + 17) * 1.6,
-      level: Math.max(55, land.height - 25), sea: false,
-    }
-    // Set the lake below its surrounding rim, so a hillside basin cannot spill
-    // into an unrelated low area when the shoreline field stops influencing it.
-    let rim = land.height
-    for (let j = 0; j < 12; j++) {
-      const a = j * Math.PI / 6
-      rim = Math.min(rim, sampleLandforms(x + Math.cos(a) * lake.radius * 1.6,
-        z + Math.sin(a) * lake.radius * 1.6).height)
-    }
-    lake.level = Math.max(45, rim - 18)
-    basins.push(lake)
-    if (!hasSea) continue
-    const dx = sea.x - x, dz = sea.z - z, length = Math.hypot(dx, dz)
-    const point = (t: number) => {
-      const bend = Math.sin(Math.PI * t) * (Math.sin(t * 10 + lake.phase) * 900 + Math.sin(t * 23 + phase) * 320)
-      return {
-        x: x + dx * t - dz / length * bend, z: z + dz * t + dx / length * bend,
-        width: (22 + valueNoise(t * 7 + i * 19, cx + cz * 7) * 25
-          + smoothstep(.3, .72, valueNoise(t * 12 + i * 11, cz - cx * 3)) * 115) * (.65 + t * .9),
-      }
-    }
-    const points = Array.from({ length: 73 }, (_, j) => point(j / 72))
-    const exit = points.findIndex(p => basinDistance(lake, p.x, p.z) > 0) / 72
-    const entry = points.findIndex(p => basinDistance(sea, p.x, p.z) < 0) / 72
-    const start = Math.max(0, Math.min(exit + .035, entry - .1))
-    const end = Math.max(start + .05, entry - .02)
-    const elevation = (t: number) => lake.level * (1 - smoothstep(start, end, t))
-    let a = points[0]!
-    for (let j = 1; j <= 72; j++) {
-      const b = points[j]!
-      addReach({ ax: a.x, az: a.z, bx: b.x, bz: b.z, wa: a.width, wb: b.width, ya: elevation((j - 1) / 72), yb: elevation(j / 72) })
-      a = b
-    }
 
-    // Side channels join the trunk from higher ground. They use the same
-    // water-level resolver as the main river, so the branch remains a real
-    // water surface and not a decorative blue line.
-    if (i === 0 && hash2(cx + i * 89, cz - i * 47) > .18) {
-      const joinT = .22 + hash2(cx - i * 31, cz + i * 67) * .48
-      const join = point(joinT)
-      const flowX = dx / length, flowZ = dz / length
-      const side = hash2(cx + i * 53, cz + 11) < .5 ? -1 : 1
-      const sideX = -flowZ * side
-      const sideZ = flowX * side
-      const sourceDistance = 1800 + hash2(cx + i * 73, cz - 19) * 2600
-      const sourceX = join.x + sideX * sourceDistance
-      const sourceZ = join.z + sideZ * sourceDistance
-      if (basins.some(b => basinDistance(b, sourceX, sourceZ) < 0)) continue
-      const sourceLevel = elevation(joinT) + 90 + hash2(cx - 13, cz + i * 23) * 150
-      const branchSteps = 14
-      const branch: { x: number; z: number; width: number; level: number }[] = [
-        { x: sourceX, z: sourceZ, width: 8, level: sourceLevel },
-      ]
-      for (let j = 1; j <= branchSteps; j++) {
-        const t = j / branchSteps
-        const bend = Math.sin(Math.PI * t) * side *
-          (160 + hash2(cx + j * 7, cz - i * 5) * 280)
-        const q = {
-          x: sourceX + (join.x - sourceX) * t + flowX * bend,
-          z: sourceZ + (join.z - sourceZ) * t + flowZ * bend,
-        }
-        const width = 11 + valueNoise(t * 5 + i * 7, cx - cz * 3) * 21 + t * 14
-        const level = sourceLevel + (elevation(joinT) - sourceLevel) * smoothstep(0, 1, t)
-        branch.push({ x: q.x, z: q.z, width, level })
-      }
-      if (branch.some(p => basins.some(b => basinDistance(b, p.x, p.z) < 0))) continue
-      for (let j = 1; j < branch.length; j++) {
-        const a = branch[j - 1]!, b = branch[j]!
-        addReach({
-          ax: a.x, az: a.z, bx: b.x, bz: b.z,
-          wa: Math.max(8, a.width * .72), wb: b.width,
-          ya: a.level, yb: b.level,
-        })
-      }
-    }
+  const levels = new Float64Array(grid.height.length)
+  const drainageOrder = Array.from({ length: levels.length }, (_, id) => id)
+  drainageOrder.sort((a, b) => grid.filled[b]! - grid.filled[a]!)
+  for (let id = 0; id < levels.length; id++) {
+    // `filled` is a routing aid, not a water surface. Limiting levels to the
+    // sampled ground keeps drainage channels carving down into valleys instead
+    // of ever lifting terrain across a hidden saddle.
+    levels[id] = Math.min(grid.height[id]! - 6, grid.filled[id]! - Math.min(26, 8 + Math.sqrt(grid.flow[id]!) * 1.25))
   }
+  for (const id of drainageOrder) {
+    const parent = grid.parent[id]!
+    if (parent >= 0) levels[parent] = Math.min(levels[parent]!, levels[id]! - .25)
+  }
+  if (seaCell !== null) levels[seaCell] = 0
+
+  const edges: FlowEdge[] = []
+  for (let id = 0; id < grid.parent.length; id++) {
+    const parent = grid.parent[id]!
+    if (parent < 0 || !insideGrid(id, 1) || !insideGrid(parent, 1)) continue
+    if (grid.flow[id]! < 2.8) continue
+    const midX = (gridX(ox, id) + gridX(ox, parent)) / 2
+    const midZ = (gridZ(oz, id) + gridZ(oz, parent)) / 2
+    if (insideBasin(basins, midX, midZ)) continue
+    edges.push({ from: id, to: parent, flow: grid.flow[id]! })
+  }
+  // Flow is monotonic downstream, so retaining the strongest bounded set also
+  // retains every trunk needed to keep those tributaries connected.
+  edges.sort((a, b) => b.flow - a.flow)
+  for (let i = 0; i < Math.min(MAX_CHANNEL_EDGES, edges.length); i++) {
+    emitDrainageEdge(addReach, basins, ox, oz, edges[i]!, levels, grid.flow, i,
+      () => renderedReaches < MAX_RENDER_REACHES)
+  }
+
   const result = { basins, bins }
   if (cache.size >= 128) cache.delete(cache.keys().next().value!)
   cache.set(key, result)
@@ -167,9 +416,10 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const d = Math.hypot(x - r.ax - dx * t, z - r.az - dz * t) - w
     if (d < nearest) { nearest = d; level = r.ya + (r.yb - r.ya) * t; width = w }
   }
+  const valleyRange = Math.max(650, Math.min(1250, width * 5 + 160))
   // On an inside bend, the closest reach can switch between different river
   // elevations. Blend the dry valley shoulders to avoid a step at that switch.
-  if (nearest > 0 && nearest < 1600) {
+  if (nearest > 0 && nearest < valleyRange) {
     let sum = 0, total = 0
     for (const r of reaches) {
       const dx = r.bx - r.ax, dz = r.bz - r.az
@@ -181,13 +431,13 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     }
     level += (sum / total - level) * smoothstep(0, 240, nearest)
   }
-  if (nearest < 1600) {
+  if (nearest < valleyRange) {
     const d = nearest
-    const blend = (1 - smoothstep(0, 1600, Math.max(0, d))) * edgeFade
+    const blend = (1 - smoothstep(0, valleyRange, Math.max(0, d))) * edgeFade
     const bank = d < 0 ? -(5 + width * .04) * smoothstep(0, width, -d) : d * .075 + d * d * .00007
     height += (level + bank - height) * blend
     if (blend > 0) waterLevel = level
-    river = 1 - smoothstep(0, 180, Math.max(0, d))
+    river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
   }
   for (const basin of region.basins) {
     const limit = basin.radius * 1.65 + 2000
@@ -202,7 +452,7 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const basinHeight = height + (basin.level + bed - height) * blend
     // Preserve an existing outlet through the bank instead of damming it shut.
     height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river : basinHeight
-    if (d <= 0 || nearest >= 1600) waterLevel = basin.level
+    if (d <= 0 || nearest >= valleyRange) waterLevel = basin.level
     if (basin.sea) coastal = 1 - smoothstep(0, 180, Math.abs(d))
     else lake = 1 - smoothstep(0, 160, Math.max(0, d))
   }

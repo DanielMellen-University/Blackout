@@ -44,10 +44,10 @@ describe('procedural settlements', () => {
       }
     }
     expect(cities).toBeGreaterThan(0)
-    expect(cities).toBeLessThan(675 * .05)
-    expect(villages).toBeGreaterThan(cities * 3)
-    expect(villages).toBeGreaterThan(20)
-    expect(villages).toBeLessThan(675 * .18)
+    expect(cities / 675).toBeLessThan(.02)
+    expect(villages / 675).toBeGreaterThan(.14)
+    expect(villages / 675).toBeLessThan(.35)
+    expect(villages).toBeGreaterThan(cities * 12)
     expect(biomes.size).toBeGreaterThanOrEqual(7)
     expect(shapes).toEqual(new Set(['block', 'slab', 'tower', 'stepped', 'hangar']))
   })

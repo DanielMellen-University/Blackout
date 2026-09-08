@@ -4,6 +4,12 @@ import type { Biome, Climate } from './terrainSample'
 
 export const SETTLEMENT_CELL_SIZE = 24000
 
+// Cells are deliberately large, so the candidate chance has to be generous
+// enough that a player encounters villages inside the visible flight envelope.
+// Site validation still rejects water, steep ground, and the active airfield.
+const CITY_CHANCE = .03
+const VILLAGE_CHANCE = .42
+
 export interface SettlementBuilding {
   x: number; y: number; z: number
   width: number; depth: number; height: number; yaw: number
@@ -59,19 +65,19 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   const id = `${cx},${cz}`
   if (cache.has(id)) return cache.get(id)!
   const roll = hash2(cx * 131 + 8129, cz * 139 - 4513)
-  // Settlements are landmarks, not a blanket grid. Cities are deliberately
-  // exceptional while villages still seed enough of the world to reward
-  // exploration across otherwise empty provinces.
-  const kind = roll < .03 ? 'city' : 'village'
+  // Cities stay exceptional. Villages have a much higher candidate rate than
+  // cities because a 24 km cell plus terrain validation otherwise turns them
+  // into once-per-session accidents instead of landmarks to fly toward.
+  const kind = roll < CITY_CHANCE ? 'city' : 'village'
   let result: SettlementPlan | null = null
-  if (roll < .22) {
+  if (roll < VILLAGE_CHANCE) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
     const radius = kind === 'city' ? 8500 + rand(1) * 1500 : 1050 + rand(1) ** .72 * 3950
     const margin = radius + 300
     // Huge city footprints need a broader site search now that mountain and
-    // foothill provinces have stronger relief. Rarity stays unchanged because
-    // only the original 5 percent of settlement cells can attempt a city.
-    const siteAttempts = kind === 'city' ? 32 : 8
+    // foothill provinces have stronger relief. Village surveys stay compact so
+    // a creek on the far side of a wide rural footprint does not erase it.
+    const siteAttempts = kind === 'city' ? 32 : 32
     for (let attempt = 0; attempt < siteAttempts; attempt++) {
       const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       const z = cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
@@ -79,16 +85,18 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
       const c = sampleClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
       let min = c.height, max = c.height, suitable = true, drySamples = 1
-      for (let i = 0; i < 8; i++) {
-        const angle = i * Math.PI / 4
-        const s = sampleClimate(x + Math.cos(angle) * radius * .8, z + Math.sin(angle) * radius * .8)
+      const surveySamples = kind === 'city' ? 8 : 6
+      const surveyRadius = radius * (kind === 'city' ? .8 : .56)
+      for (let i = 0; i < surveySamples; i++) {
+        const angle = i * Math.PI * 2 / surveySamples
+        const s = sampleClimate(x + Math.cos(angle) * surveyRadius, z + Math.sin(angle) * surveyRadius)
         if (!dry(s)) {
           if (kind === 'village') { suitable = false; break }
           continue
         }
         drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
-        if (max - min > (kind === 'city' ? 350 : 260)) { suitable = false; break }
+        if (max - min > (kind === 'city' ? 350 : 420)) { suitable = false; break }
       }
       if (kind === 'city' && drySamples < 4) suitable = false
       if (!suitable) continue

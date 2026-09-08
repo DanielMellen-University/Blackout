@@ -19,6 +19,11 @@ describe('weather director', () => {
     expect(halfway.windMps).toBeCloseTo(15.5)
   })
 
+  it('reserves lightning flashes for storm-strength weather', () => {
+    expect(WEATHER_PROFILES.rain.lightning).toBe(0)
+    expect(WEATHER_PROFILES.storm.lightning).toBeGreaterThan(0.35)
+  })
+
   it('keeps seeded weather and wind reproducible', () => {
     const first = new WeatherDirector()
     const second = new WeatherDirector()

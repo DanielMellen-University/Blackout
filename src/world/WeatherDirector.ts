@@ -78,7 +78,7 @@ export const WEATHER_PROFILES: Record<WeatherId, WeatherProfile> = {
   rain: {
     fogNearMul: 0.44, fogFarMul: 0.58, sunMul: 0.32, hemiMul: 0.62, ambientMul: 0.75,
     rain: 0.76, snow: 0, haze: 0.5, lowClouds: 0.9, midClouds: 0.94,
-    highClouds: 0.55, windMps: 15, gust: 0.38, lightning: 0.04,
+    highClouds: 0.55, windMps: 15, gust: 0.38, lightning: 0,
   },
   storm: {
     fogNearMul: 0.3, fogFarMul: 0.43, sunMul: 0.14, hemiMul: 0.48, ambientMul: 0.58,
