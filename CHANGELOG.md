@@ -6,6 +6,7 @@
 
 - Add rare 17-21 km procedural cities with 650-1,600 buildings and irregular villages in varied sizes.
 - Make city and village terrain-review destinations search outward from their anchor cell so generator tuning cannot leave the review page blank.
+- Make the regional-road review search for a valid connectable settlement pair and frame the route at a useful flight-scale height.
 - Replace repeated grids with asymmetric districts, bent approaches, branches, dead ends and terrain-following roads.
 - Mix blocks, slabs, pitched hangars, octagonal towers and stepped skyscrapers.
 - Fit dry, gentle lots to existing terrain, with biome-specific architecture and oversized buildings for flight-camera readability.

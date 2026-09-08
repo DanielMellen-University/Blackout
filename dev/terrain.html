@@ -40,6 +40,7 @@ import { getWorldSeed, setWorldSeed } from '/src/world/noise.ts'
 import { waterLandmarks, riverReaches } from '/src/world/Hydrology.ts'
 import { flightConfig } from '/src/aircraft/flightConfig.ts'
 import { settlementForCell } from '/src/world/SettlementPlan.ts'
+import { shouldConnectSettlements } from '/src/world/RegionalRoads.ts'
 import { Aircraft } from '/src/aircraft/Aircraft.ts'
 import { CameraSystem } from '/src/camera/CameraSystem.ts'
 const renderer=new T.WebGLRenderer({antialias:true})
@@ -96,6 +97,23 @@ function findSettlementNear(cx,cz,kind){
   }
   return null
 }
+function findRoadPair(cx,cz){
+  const plans=[]
+  const seen=new Set()
+  for(let ring=0;ring<=10&&plans.length<28;ring++){
+    for(let dx=-ring;dx<=ring;dx++) for(let dz=-ring;dz<=ring;dz++){
+      if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring) continue
+      const plan=settlementForCell(cx+dx,cz+dz)
+      if(plan&&!seen.has(plan.id)){seen.add(plan.id);plans.push(plan)}
+    }
+  }
+  for(let i=0;i<plans.length;i++) for(let j=0;j<i;j++){
+    const a=plans[i],b=plans[j]
+    const distance=Math.hypot(a.x-b.x,a.z-b.z)
+    if(distance>12000&&distance<34000&&shouldConnectSettlements(a,b)) return {a,b}
+  }
+  return null
+}
 function visitDestination(value){
   const target=destinations[value]
   if(!target){frameWorld();return}
@@ -117,8 +135,9 @@ function visitDestination(value){
     if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
     x=settlement.x;z=settlement.z
   } else if(value==='roadlink'){
-    const a=settlementForCell(x,z),b=settlementForCell(-6,-6)
-    if(!a||!b) throw new Error('Review road settlements no longer meet terrain suitability')
+    const pair=findRoadPair(x,z)
+    if(!pair) throw new Error('Review road settlements no longer meet terrain suitability')
+    const {a,b}=pair
     x=(a.x+b.x)/2;z=(a.z+b.z)/2
     settlement={radius:Math.hypot(a.x-b.x,a.z-b.z)/2}
   }
@@ -129,7 +148,7 @@ function visitDestination(value){
     const offset=Math.min(settlementRadius*.55,5000)
     camera.position.set(x+offset,y+Math.min(settlementRadius*.3,2600),z-offset)
     controls.target.set(x,y+25,z);controls.update()
-    if(value==='roadlink') camera.position.set(x+3500,y+7000,z-3500)
+    if(value==='roadlink') camera.position.set(x+2400,y+1800,z-2400)
   }
 }
 document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
