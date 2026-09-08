@@ -109,6 +109,18 @@ describe('TerrainSystem streaming LOD', () => {
     for (let i = 0; i < 1000 && terrain.chunkStats(0, 12)?.lod !== 2; i++) pump(terrain, 210, 210, 1)
     expect(terrain.chunkStats(0, 12)?.lod).toBe(2)
   }, 20_000)
+
+  it('updates rain and snow response without rebuilding the terrain stream', () => {
+    const terrain = new TerrainSystem(new Scene())
+    try {
+      terrain.setWeatherEffects(1.4, -.2)
+      expect(terrain.weatherEffects).toEqual({ rain: 1, snow: 0 })
+      terrain.setWeatherEffects(.2, .8)
+      expect(terrain.weatherEffects).toEqual({ rain: .2, snow: .8 })
+    } finally {
+      terrain.clearAll()
+    }
+  })
 })
 
 describe('visible mesh contact sampling', () => {

@@ -38,6 +38,7 @@
 
 - Replace abrupt random preset jumps with seeded fronts that move through believable neighboring conditions.
 - Blend fog, daylight, three cloud decks, wind, gusts and precipitation continuously over each transition.
+- Feed blended rain and snow intensity into streamed terrain materials so wet fronts darken the ground and snow cools high relief without rebuilding chunks.
 - Add wind-driven rain streaks, storm-darkened skies and lightning flashes.
 - Batch every cloud puff into three instanced deck draws instead of hundreds of individual meshes.
 - Add instant weather selection to the terrain review for visual and performance QA.

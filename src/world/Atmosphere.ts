@@ -353,6 +353,11 @@ export class Atmosphere {
     return `${WEATHER_LABELS[this.weatherDirector.targetId]}${suffix}`
   }
 
+  /** Continuous precipitation values for terrain surface shading. */
+  get weatherSnapshot(): WeatherSnapshot {
+    return this.weatherDirector.snapshot()
+  }
+
   get phaseLabel(): string {
     const t = this.timeOfDay
     if (t < 0.2 || t >= 0.8) return 'NIGHT'

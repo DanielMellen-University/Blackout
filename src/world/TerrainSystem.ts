@@ -193,6 +193,8 @@ export class TerrainSystem {
   private readonly groundMatNear: MeshStandardMaterial
   /** Mid/far tiles: single-sided (half the fill rate). */
   private readonly groundMatFar: MeshStandardMaterial
+  private readonly weatherRain = { value: 0 }
+  private readonly weatherSnow = { value: 0 }
   private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
 
   constructor(scene: Scene) {
@@ -214,8 +216,47 @@ export class TerrainSystem {
       ...matBase,
       side: FrontSide,
     })
+    this.configureWeatherMaterial(this.groundMatNear)
+    this.configureWeatherMaterial(this.groundMatFar)
     this.applyFog()
     setContactHeightSampler((x, z) => this.sampleMeshSurface(x, z))
+  }
+
+  /** Update visual weather response without rebuilding streamed terrain. */
+  setWeatherEffects(rain: number, snow: number): void {
+    this.weatherRain.value = MathUtils.clamp(rain, 0, 1)
+    this.weatherSnow.value = MathUtils.clamp(snow, 0, 1)
+  }
+
+  get weatherEffects(): { rain: number; snow: number } {
+    return { rain: this.weatherRain.value, snow: this.weatherSnow.value }
+  }
+
+  private configureWeatherMaterial(material: MeshStandardMaterial): void {
+    material.onBeforeCompile = shader => {
+      shader.uniforms.terrainRain = this.weatherRain
+      shader.uniforms.terrainSnow = this.weatherSnow
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        '#include <common>\nvarying float terrainHeight;\n',
+      ).replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nterrainHeight = transformed.y;\n',
+      )
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <common>',
+        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nvarying float terrainHeight;\n',
+      ).replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+        float wetGround = terrainRain * 0.18;
+        diffuseColor.rgb *= 1.0 - wetGround;
+        float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
+        float snowCover = terrainSnow * (0.08 + altitudeSnow * 0.38);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.72, 0.79, 0.87), snowCover);`,
+      )
+    }
+    material.customProgramCacheKey = () => 'terrain-weather-v1'
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {
@@ -639,6 +680,7 @@ export class TerrainSystem {
         c.opacity = opacity
         if (c instanceof MeshStandardMaterial) {
           c.depthWrite = opacity > 0.12
+          if (obj.name === 'TerrainChunk') this.configureWeatherMaterial(c)
         }
         obj.material = c
       }

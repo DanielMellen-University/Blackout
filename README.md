@@ -25,6 +25,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks remain temporarily disabled.
 - Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load.
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
+- Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds altitude-aware cool cover without rebuilding streamed chunks.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack

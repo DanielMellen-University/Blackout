@@ -136,6 +136,8 @@ export class World {
         this.settlements.clearAll()
         this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
         this.atmosphere.randomizeWeather(this.seed)
+        const initialWeather = this.atmosphere.weatherSnapshot
+        this.terrain.setWeatherEffects(initialWeather.rain, initialWeather.snow)
         this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
         this.committed = true
         return this.seed
@@ -191,6 +193,8 @@ export class World {
     this.terrain.update(x, z, dt)
     this.settlements.update(x, z)
     this.atmosphere.update(simDt, x, y, z, visualDt)
+    const weather = this.atmosphere.weatherSnapshot
+    this.terrain.setWeatherEffects(weather.rain, weather.snow)
   }
 
   private applySpawn(pad: FlatSpawn): void {
