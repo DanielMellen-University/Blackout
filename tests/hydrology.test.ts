@@ -63,4 +63,22 @@ describe('natural drainage', () => {
     }
     expect(samples).toBeGreaterThan(1000)
   })
+
+  it('varies basin count and keeps seas as occasional landmarks', () => {
+    let seaCount = 0
+    let catchments = 0
+    const basinCounts = new Set<number>()
+    for (const seed of [1, 73, 1337]) {
+      setWorldSeed(seed)
+      for (let cx = -2; cx <= 2; cx++) for (let cz = -2; cz <= 2; cz++) {
+        const basins = waterLandmarks(cx, cz)
+        basinCounts.add(basins.length)
+        if (basins.some(b => b.sea)) seaCount++
+        catchments++
+      }
+    }
+    expect(basinCounts.size).toBeGreaterThanOrEqual(2)
+    expect(seaCount).toBeGreaterThan(0)
+    expect(seaCount).toBeLessThan(catchments * .7)
+  })
 })

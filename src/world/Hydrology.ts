@@ -12,14 +12,19 @@ const cache = new Map<string, Catchment>()
 
 /** Signed shore distance, warped in space and broken into coves and peninsulas. */
 export function basinDistance(b: Basin, x: number, z: number): number {
-  const scale = b.sea ? 1800 : 550
-  const warp = b.sea ? 780 : 180
+  const scale = b.sea ? 2100 : 700
+  const warp = b.sea ? 950 : 320
   const dx = x - b.x + (fbm(x / scale + 19, z / scale, 2) - .5) * warp
   const dz = z - b.z + (fbm(x / scale - 47, z / scale + 13, 2) - .5) * warp
   const u = (dx * Math.cos(b.angle) + dz * Math.sin(b.angle)) / b.radius
   const v = (-dx * Math.sin(b.angle) + dz * Math.cos(b.angle)) / (b.radius * b.aspect)
   const theta = Math.atan2(v, u)
-  const outline = 1 + .20 * Math.sin(theta * 2 + b.phase) + .12 * Math.sin(theta * 3 - b.phase * 1.7) + .075 * Math.cos(theta * 5 + b.phase)
+  // Multiple low-frequency lobes make coves and peninsulas. A broad value
+  // field breaks the last hint of a repeated ellipse without noisy shorelines.
+  const shoreNoise = valueNoise(dx / (b.radius * .72) + b.phase * 1.7, dz / (b.radius * .72) - b.phase)
+  const outline = 1 + .16 * Math.sin(theta * 2 + b.phase) +
+    .12 * Math.sin(theta * 3 - b.phase * 1.7) +
+    .09 * Math.cos(theta * 5 + b.phase) + (shoreNoise - .5) * .34
   return (Math.hypot(u, v) - outline) * b.radius * b.aspect
 }
 
@@ -33,10 +38,11 @@ function catchment(cx: number, cz: number): Catchment {
   const sea: Basin = {
     x: ox + 16000 + (hash2(cx, cz + 41) - .5) * 1800,
     z: oz + 16000 + (hash2(cx + 41, cz) - .5) * 1800,
-    radius: 4400 + hash2(cx - 23, cz + 61) * 2000,
-    aspect: .55 + hash2(cx + 31, cz - 41) * .25, angle: phase, phase, level: 0, sea: true,
+    radius: 3500 + hash2(cx - 23, cz + 61) * 1800,
+    aspect: .62 + hash2(cx + 31, cz - 41) * .3, angle: phase, phase, level: 0, sea: true,
   }
-  const hasSea = hash2(cx - 91, cz + 101) > .24
+  // Seas are landmarks, not the default catchment background.
+  const hasSea = hash2(cx - 91, cz + 101) > .58
   const basins: Basin[] = hasSea ? [sea] : []
   const bins: Reach[][] = Array.from({ length: BINS * BINS }, () => [])
   function addReach(r: Reach): void {
@@ -47,16 +53,18 @@ function catchment(cx: number, cz: number): Catchment {
     const maxZ = Math.min(BINS - 1, Math.floor((Math.max(r.az, r.bz) + margin - oz) / BIN))
     for (let ix = minX; ix <= maxX; ix++) for (let iz = minZ; iz <= maxZ; iz++) bins[iz * BINS + ix]!.push(r)
   }
-  for (let i = 0; i < 3; i++) {
-    const angle = phase + i * Math.PI * 2 / 3
-    const distance = 9600 + hash2(cx + i * 17, cz + 53) * 1000
+  const lakeCount = 1 + Math.floor(hash2(cx - 17, cz + 73) * 3)
+  for (let i = 0; i < lakeCount; i++) {
+    const angle = phase + hash2(cx + i * 17, cz + 53) * Math.PI * 2
+    const distance = 7200 + hash2(cx + i * 29, cz + 53) * 6200
     const x = sea.x + Math.cos(angle) * distance, z = sea.z + Math.sin(angle) * distance
     const land = sampleLandforms(x, z)
     if (land.highlands > .22) continue
     const lake: Basin = {
-      x, z, radius: 800 + hash2(cx + i * 21, cz - 82) * 750,
-      aspect: .42 + hash2(cx - 82, cz + i * 21) * .32,
-      angle: angle + .6, phase: phase + i * 1.71,
+      x, z, radius: 700 + hash2(cx + i * 21, cz - 82) * 1050,
+      aspect: .46 + hash2(cx - 82, cz + i * 21) * .46,
+      angle: angle + .6 + (hash2(cx + i * 13, cz - 17) - .5) * .8,
+      phase: phase + i * 1.71 + hash2(cx - i * 31, cz + 17) * 1.6,
       level: Math.max(55, land.height - 25), sea: false,
     }
     // Set the lake below its surrounding rim, so a hillside basin cannot spill

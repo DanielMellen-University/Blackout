@@ -19,6 +19,13 @@
 - Retune mountain and snow palettes so high relief keeps readable rock and cool shadow detail instead of clipping to white.
 - Expand settlement site search to preserve rare giant cities as terrain relief becomes more expressive, and allow villages in wider hill provinces.
 
+### Water
+
+- Replace the repeated three-spoke lake layout with one to three independently placed basins per catchment.
+- Make seas occasional, smaller landmarks with broader irregular shore distortion rather than default oversized oceans.
+- Improve water shading with clear teal shallows, deep blue centers, foam-tinted edges, and moving specular glints.
+- Preserve fixed water levels and independent terrain/water meshes while keeping river width and route continuity deterministic.
+
 ### Weather
 
 - Replace abrupt random preset jumps with seeded fronts that move through believable neighboring conditions.
