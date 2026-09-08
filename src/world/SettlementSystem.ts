@@ -83,6 +83,7 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
   return geometry
 }
 
@@ -99,6 +100,8 @@ export class SettlementSystem {
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  private readonly streetMark = new MeshStandardMaterial({ color: 0xd2bd6b, emissive: 0x453b16, emissiveIntensity: .12,
+    roughness: .82, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly highway = new MeshStandardMaterial({ color: 0x575650, roughness: .96, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly highwayMark = new MeshStandardMaterial({ color: 0xd3be67, emissive: 0x4d4115, emissiveIntensity: .15,
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
@@ -328,6 +331,18 @@ export class SettlementSystem {
     if (geometry) {
       const mesh = new Mesh(geometry, this.asphalt)
       mesh.name = 'SettlementRoads'
+      detail.add(mesh)
+    }
+    // One batched centerline mesh keeps local streets readable from the chase
+    // camera without creating a draw call per street segment.
+    const centerlines: SettlementRoad[] = plan.roads.map(road => ({
+      width: Math.min(1.35, road.width * .045),
+      points: road.points.map(point => ({ ...point, y: point.y + .16 })),
+    }))
+    const markingGeometry = createRoadGeometry(centerlines, plan.x, plan.y, plan.z)
+    if (markingGeometry) {
+      const mesh = new Mesh(markingGeometry, this.streetMark)
+      mesh.name = 'SettlementRoadMarkings'
       detail.add(mesh)
     }
     this.root.add(root)

@@ -11,7 +11,9 @@ vi.mock('../src/world/SettlementPlan', () => ({
 function example(): SettlementPlan {
   return {
     id: '0,0', kind: 'village', biome: 'plains', x: 3000, y: 100, z: 3000, radius: 150,
-    roads: [], buildings: [{ x: 3000, y: 100, z: 3000, width: 12, depth: 24, height: 15,
+    roads: [{ width: 24, points: [
+      { x: 2940, y: 100, z: 3000 }, { x: 3060, y: 100, z: 3000 },
+    ] }], buildings: [{ x: 3000, y: 100, z: 3000, width: 12, depth: 24, height: 15,
       yaw: Math.PI / 2, shape: 'block', roof: 'pitched', wallColor: 0xc5c3b3, roofColor: 0x8b5343 }],
   }
 }
@@ -65,6 +67,15 @@ describe('settlement rendering and lifecycle', () => {
     expect(system.count).toBe(1)
     system.dispose()
     expect(scene.children).toHaveLength(0)
+  })
+
+  it('adds one batched centerline pass for local settlement roads', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    system.update(3000, 3000)
+    const names: string[] = []
+    system.root.traverse(object => { if (object.name) names.push(object.name) })
+    expect(names).toContain('SettlementRoadMarkings')
+    system.dispose()
   })
 
   it('clears the checked-cell cache so reseeding can rebuild a settlement', () => {

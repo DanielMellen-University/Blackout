@@ -118,6 +118,8 @@ using the game's actual chase camera and aircraft.
 Selected nearby settlements are joined by sparse regional roads rather than a
 uniform world grid. Routes choose a curved terrain path, follow a bounded grade,
 and lift into bridge or viaduct approaches across water and deep folds.
+Local district roads also receive a single batched centerline pass for readable
+street networks at flight distance.
 
 Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
 
