@@ -115,7 +115,7 @@ export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): Se
     const length = Math.hypot(dx, dz) || 1
     const nx = -dz / length * width / 2, nz = dx / length * width / 2
     const y = elevations[i]!
-    return { x: point.x, y, z: point.z, leftX: point.x + nx, leftY: y, leftZ: point.z + nz,
+    return { x: point.x, y, z: point.z, bridge: point.wet, leftX: point.x + nx, leftY: y, leftZ: point.z + nz,
       rightX: point.x - nx, rightY: y, rightZ: point.z - nz }
   })
   return { width, points }

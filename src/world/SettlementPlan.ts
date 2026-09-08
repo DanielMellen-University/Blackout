@@ -10,7 +10,7 @@ export interface SettlementBuilding {
   shape: 'block' | 'slab' | 'tower' | 'stepped' | 'hangar'
   roof: 'pitched' | 'flat'; wallColor: number; roofColor: number
 }
-export interface SettlementRoad { points: { x: number; y: number; z: number; leftY?: number; rightY?: number;
+export interface SettlementRoad { points: { x: number; y: number; z: number; bridge?: boolean; leftY?: number; rightY?: number;
   leftX?: number; leftZ?: number; rightX?: number; rightZ?: number }[]; width: number }
 export interface SettlementPlan {
   id: string; x: number; y: number; z: number; radius: number

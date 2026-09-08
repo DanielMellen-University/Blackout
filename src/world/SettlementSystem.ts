@@ -87,6 +87,25 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
   return geometry
 }
 
+/** Keep wet route spans together so a connector can change deck material once. */
+function bridgeSpans(road: SettlementRoad): SettlementRoad[] {
+  const spans: SettlementRoad[] = []
+  let points: SettlementRoad['points'] = []
+  for (let i = 0; i < road.points.length; i++) {
+    const point = road.points[i]!
+    if (point.bridge) {
+      if (!points.length && i > 0) points.push(road.points[i - 1]!)
+      points.push(point)
+    } else if (points.length) {
+      points.push(point)
+      if (points.length > 1) spans.push({ width: road.width, points })
+      points = []
+    }
+  }
+  if (points.length > 1) spans.push({ width: road.width, points })
+  return spans
+}
+
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
 interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan }
 interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
@@ -103,6 +122,8 @@ export class SettlementSystem {
   private readonly streetMark = new MeshStandardMaterial({ color: 0xd2bd6b, emissive: 0x453b16, emissiveIntensity: .12,
     roughness: .82, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly highway = new MeshStandardMaterial({ color: 0x575650, roughness: .96, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
+  private readonly bridgeDeck = new MeshStandardMaterial({ color: 0x777a76, roughness: .9, metalness: .02,
+    polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly highwayMark = new MeshStandardMaterial({ color: 0xd3be67, emissive: 0x4d4115, emissiveIntensity: .15,
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly highwayEdge = new MeshStandardMaterial({ color: 0xb3ae8a, emissive: 0x302e1d, emissiveIntensity: .08,
@@ -204,7 +225,7 @@ export class SettlementSystem {
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.roof.dispose()
-    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.highway.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
+    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
   }
 
   update(x: number, z: number): void {
@@ -374,6 +395,12 @@ export class SettlementSystem {
     root.position.set(x, 0, z)
     const geometry = createRoadGeometry([road], x, 0, z)
     if (geometry) root.add(new Mesh(geometry, this.highway))
+    const bridgeGeometry = createRoadGeometry(bridgeSpans(road), x, 0, z)
+    if (bridgeGeometry) {
+      const bridge = new Mesh(bridgeGeometry, this.bridgeDeck)
+      bridge.name = 'RegionalBridgeDeck'
+      root.add(bridge)
+    }
     const centerline: SettlementRoad = { width: 1.6, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
     const marking = createRoadGeometry([centerline], x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))

@@ -55,6 +55,7 @@ describe('regional settlement roads', () => {
       bend = Math.max(bend, Math.abs((point.x - start.x) * dz - (point.z - start.z) * dx) / length)
       expect(point.leftX).toBeTypeOf('number')
       expect(point.rightX).toBeTypeOf('number')
+      expect(point.bridge === undefined || typeof point.bridge === 'boolean').toBe(true)
     }
     expect(bend).toBeGreaterThan(100)
   })
