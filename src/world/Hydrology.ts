@@ -272,53 +272,136 @@ function insideBasin(basins: readonly Basin[], x: number, z: number): boolean {
   return basins.some(basin => basinDistance(basin, x, z) < 0)
 }
 
-/** Turn a coarse drainage edge into two gently meandering, terrain-carving reaches. */
-function emitDrainageEdge(
+/** Grade a river gently into a lower lake or sea before reaches are emitted. */
+function outletGrade(basins: readonly Basin[], x: number, z: number, level: number): number {
+  let receivingLevel = level
+  let receivingBlend = 0
+  for (const basin of basins) {
+    // A nearby lake higher than this route is not a receiving outlet. Raising
+    // the grade here would make a river climb uphill and recreate a dam.
+    if (basin.level >= level - .25) continue
+    const limit = basin.radius * 1.65 + 2000
+    if (Math.abs(x - basin.x) > limit || Math.abs(z - basin.z) > limit) continue
+    const d = basinDistance(basin, x, z)
+    const distance = Math.max(1200, Math.min(3200, 800 + (level - basin.level) * 18))
+    if (d >= distance) continue
+    const blend = 1 - smoothstep(0, distance, Math.max(0, d))
+    if (blend > receivingBlend) {
+      receivingLevel = basin.level
+      receivingBlend = blend
+    }
+  }
+  return level + (receivingLevel - level) * receivingBlend
+}
+
+/** Keep a river surface outside a basin, ending exactly at its water level. */
+function clipRiverAtShore(
+  basins: readonly Basin[],
+  a: { x: number; z: number },
+  b: { x: number; z: number },
+): { x: number; z: number; t: number; level?: number } | null {
+  const startInside = basins.find(basin => basinDistance(basin, a.x, a.z) < 0)
+  const endInside = basins.find(basin => basinDistance(basin, b.x, b.z) < 0)
+  if (startInside) return null
+  if (!endInside) {
+    const middle = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 }
+    // A curved reach can clip a narrow peninsula twice in one emitted span.
+    // Dropping that one span is cleaner than drawing an impossible bridge.
+    if (insideBasin(basins, middle.x, middle.z)) return null
+    return { x: b.x, z: b.z, t: 1 }
+  }
+
+  let low = 0, high = 1
+  for (let i = 0; i < 12; i++) {
+    const t = (low + high) / 2
+    const x = a.x + (b.x - a.x) * t
+    const z = a.z + (b.z - a.z) * t
+    if (basinDistance(endInside, x, z) < 0) high = t
+    else low = t
+  }
+  return {
+    x: a.x + (b.x - a.x) * low,
+    z: a.z + (b.z - a.z) * low,
+    t: low,
+    level: endInside.level,
+  }
+}
+
+function catmullPoint(
+  a: { x: number; z: number },
+  b: { x: number; z: number },
+  c: { x: number; z: number },
+  d: { x: number; z: number },
+  t: number,
+): { x: number; z: number } {
+  const t2 = t * t, t3 = t2 * t
+  const point = (av: number, bv: number, cv: number, dv: number) => .5 * (
+    2 * bv + (-av + cv) * t + (2 * av - 5 * bv + 4 * cv - dv) * t2 +
+    (-av + 3 * bv - 3 * cv + dv) * t3
+  )
+  return { x: point(a.x, b.x, c.x, d.x), z: point(a.z, b.z, c.z, d.z) }
+}
+
+/** Turn linked coarse drainage cells into a continuously curving river chain. */
+function emitDrainageChain(
   addReach: (reach: Reach) => void,
   basins: readonly Basin[],
   ox: number,
   oz: number,
-  edge: FlowEdge,
+  cx: number,
+  cz: number,
+  nodes: readonly number[],
   levels: Float64Array,
   flow: Float64Array,
   salt: number,
   canAdd: () => boolean,
 ): void {
-  const ax = gridX(ox, edge.from), az = gridZ(oz, edge.from)
-  const bx = gridX(ox, edge.to), bz = gridZ(oz, edge.to)
-  const dx = bx - ax, dz = bz - az, length = Math.hypot(dx, dz)
-  if (length < 1) return
-  const bend = (hash2(edge.from * 53 + salt * 17, edge.to * 71 - salt * 31) - .5) * Math.min(260, length * .22)
-  const mx = (ax + bx) / 2 - dz / length * bend
-  const mz = (az + bz) / 2 + dx / length * bend
+  if (nodes.length < 2) return
+  // A stable local offset removes the coarse routing grid from the silhouette
+  // while keeping shared confluence points identical across tributaries.
+  const points = nodes.map(id => ({
+    x: gridX(ox, id) + (hash2(cx * 59 + id * 23, cz * 83 - id * 41) - .5) * FLOW_STEP * .16,
+    z: gridZ(oz, id) + (hash2(cx * 97 - id * 37, cz * 71 + id * 19) - .5) * FLOW_STEP * .16,
+  }))
   const width = (value: number) => Math.max(14, Math.min(230, 8 + Math.pow(value, .58) * 12))
-  const wa = width(edge.flow)
-  const wb = width(Math.max(edge.flow, flow[edge.to]!))
-  const ya = levels[edge.from]!
-  const yb = Math.min(ya - .25, levels[edge.to]!)
-  const point = (t: number) => {
-    const inv = 1 - t
-    return {
-      x: inv * inv * ax + 2 * inv * t * mx + t * t * bx,
-      z: inv * inv * az + 2 * inv * t * mz + t * t * bz,
+  for (let segment = 0; segment < nodes.length - 1; segment++) {
+    const from = nodes[segment]!, to = nodes[segment + 1]!
+    const p0 = points[Math.max(0, segment - 1)]!
+    const p1 = points[segment]!
+    const p2 = points[segment + 1]!
+    const p3 = points[Math.min(points.length - 1, segment + 2)]!
+    const dx = p2.x - p1.x, dz = p2.z - p1.z, length = Math.hypot(dx, dz)
+    if (length < 1) continue
+    const bend = (hash2(from * 53 + salt * 17, to * 71 - salt * 31) - .5) * Math.min(220, length * .18)
+    const middle = { x: (p1.x + p2.x) / 2 - dz / length * bend, z: (p1.z + p2.z) / 2 + dx / length * bend }
+    const point = (t: number) => nodes.length === 2
+      ? {
+          x: (1 - t) * (1 - t) * p1.x + 2 * (1 - t) * t * middle.x + t * t * p2.x,
+          z: (1 - t) * (1 - t) * p1.z + 2 * (1 - t) * t * middle.z + t * t * p2.z,
+        }
+      : catmullPoint(p0, p1, p2, p3, t)
+    const wa = width(flow[from]!)
+    const wb = width(Math.max(flow[from]!, flow[to]!))
+    const ya = levels[from]!
+    const yb = Math.min(ya - .25, levels[to]!)
+    let a = point(0)
+    for (let step = 1; step <= 2; step++) {
+      if (!canAdd()) return
+      const t = step / 2, b = point(t)
+      const shore = clipRiverAtShore(basins, a, b)
+      // Rivers stop at the true shore instead of cutting through a lake or
+      // sea and fighting its fixed water level in the query-time resolver.
+      if (shore) {
+        const ta = (step - 1) / 2
+        const endT = ta + (t - ta) * shore.t
+        addReach({
+          ax: a.x, az: a.z, bx: shore.x, bz: shore.z,
+          wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * endT,
+          ya: ya + (yb - ya) * ta, yb: shore.level ?? ya + (yb - ya) * endT,
+        })
+      }
+      a = b
     }
-  }
-  let a = point(0)
-  for (let step = 1; step <= 2; step++) {
-    if (!canAdd()) return
-    const t = step / 2, b = point(t)
-    const midX = (a.x + b.x) / 2, midZ = (a.z + b.z) / 2
-    // Rivers stop at a shore instead of cutting through a lake or sea and
-    // fighting its fixed water level in the query-time resolver.
-    if (!insideBasin(basins, midX, midZ)) {
-      const ta = (step - 1) / 2
-      addReach({
-        ax: a.x, az: a.z, bx: b.x, bz: b.z,
-        wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * t,
-        ya: ya + (yb - ya) * ta, yb: ya + (yb - ya) * t,
-      })
-    }
-    a = b
   }
 }
 
@@ -365,7 +448,9 @@ function catchment(cx: number, cz: number): Catchment {
     // `filled` is a routing aid, not a water surface. Limiting levels to the
     // sampled ground keeps drainage channels carving down into valleys instead
     // of ever lifting terrain across a hidden saddle.
-    levels[id] = Math.min(grid.height[id]! - 6, grid.filled[id]! - Math.min(26, 8 + Math.sqrt(grid.flow[id]!) * 1.25))
+    const rawLevel = Math.min(grid.height[id]! - 6,
+      grid.filled[id]! - Math.min(26, 8 + Math.sqrt(grid.flow[id]!) * 1.25))
+    levels[id] = outletGrade(basins, gridX(ox, id), gridZ(oz, id), rawLevel)
   }
   for (const id of drainageOrder) {
     const parent = grid.parent[id]!
@@ -386,8 +471,25 @@ function catchment(cx: number, cz: number): Catchment {
   // Flow is monotonic downstream, so retaining the strongest bounded set also
   // retains every trunk needed to keep those tributaries connected.
   edges.sort((a, b) => b.flow - a.flow)
-  for (let i = 0; i < Math.min(MAX_CHANNEL_EDGES, edges.length); i++) {
-    emitDrainageEdge(addReach, basins, ox, oz, edges[i]!, levels, grid.flow, i,
+  const selected = edges.slice(0, MAX_CHANNEL_EDGES)
+  const outgoing = new Map<number, FlowEdge>()
+  const incoming = new Map<number, number>()
+  for (const edge of selected) {
+    outgoing.set(edge.from, edge)
+    incoming.set(edge.to, (incoming.get(edge.to) ?? 0) + 1)
+  }
+  let chain = 0
+  for (const edge of selected) {
+    if ((incoming.get(edge.from) ?? 0) === 1) continue
+    const nodes = [edge.from]
+    let current = edge.from
+    while (outgoing.has(current)) {
+      const next = outgoing.get(current)!
+      nodes.push(next.to)
+      current = next.to
+      if ((incoming.get(current) ?? 0) !== 1) break
+    }
+    emitDrainageChain(addReach, basins, ox, oz, cx, cz, nodes, levels, grid.flow, chain++,
       () => renderedReaches < MAX_RENDER_REACHES)
   }
 
@@ -431,6 +533,7 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     }
     level += (sum / total - level) * smoothstep(0, 240, nearest)
   }
+
   if (nearest < valleyRange) {
     const d = nearest
     const blend = (1 - smoothstep(0, valleyRange, Math.max(0, d))) * edgeFade
@@ -466,4 +569,75 @@ export function waterLandmarks(cx: number, cz: number): ReadonlyArray<Readonly<B
 
 export function riverReaches(cx: number, cz: number): ReadonlyArray<Readonly<Reach>> {
   return [...new Set(catchment(cx, cz).bins.flat())]
+}
+
+function lineIntersectsBounds(
+  ax: number, az: number, bx: number, bz: number,
+  minX: number, minZ: number, maxX: number, maxZ: number,
+): boolean {
+  const dx = bx - ax, dz = bz - az
+  let low = 0, high = 1
+  const clip = (p: number, q: number): boolean => {
+    if (Math.abs(p) < 1e-9) return q >= 0
+    const t = q / p
+    if (p < 0) {
+      if (t > high) return false
+      if (t > low) low = t
+    } else {
+      if (t < low) return false
+      if (t < high) high = t
+    }
+    return true
+  }
+  return clip(-dx, ax - minX) && clip(dx, maxX - ax) &&
+    clip(-dz, az - minZ) && clip(dz, maxZ - az)
+}
+
+/**
+ * Fast cached query for streaming LOD: reports whether a drainage reach could
+ * touch an axis-aligned tile. It avoids missing a thin river merely because
+ * every coarse terrain vertex happens to land on its dry bank. Broad basins
+ * are intentionally left to normal vertex sampling to preserve the budget.
+ */
+export function hydrologyIntersectsBounds(
+  minX: number,
+  minZ: number,
+  maxX: number,
+  maxZ: number,
+  margin = 0,
+): boolean {
+  const startCx = Math.floor((minX - margin) / CATCHMENT_SIZE)
+  const endCx = Math.floor((maxX + margin) / CATCHMENT_SIZE)
+  const startCz = Math.floor((minZ - margin) / CATCHMENT_SIZE)
+  const endCz = Math.floor((maxZ + margin) / CATCHMENT_SIZE)
+  const expandedMinX = minX - margin, expandedMinZ = minZ - margin
+  const expandedMaxX = maxX + margin, expandedMaxZ = maxZ + margin
+
+  for (let cz = startCz; cz <= endCz; cz++) for (let cx = startCx; cx <= endCx; cx++) {
+    const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
+    const region = catchment(cx, cz)
+    const localMinX = Math.max(0, expandedMinX - ox)
+    const localMaxX = Math.min(CATCHMENT_SIZE, expandedMaxX - ox)
+    const localMinZ = Math.max(0, expandedMinZ - oz)
+    const localMaxZ = Math.min(CATCHMENT_SIZE, expandedMaxZ - oz)
+    if (localMinX > localMaxX || localMinZ > localMaxZ) continue
+    const minBinX = Math.max(0, Math.floor(localMinX / BIN))
+    const maxBinX = Math.min(BINS - 1, Math.floor(localMaxX / BIN))
+    const minBinZ = Math.max(0, Math.floor(localMinZ / BIN))
+    const maxBinZ = Math.min(BINS - 1, Math.floor(localMaxZ / BIN))
+    const seen = new Set<Reach>()
+    for (let iz = minBinZ; iz <= maxBinZ; iz++) for (let ix = minBinX; ix <= maxBinX; ix++) {
+      for (const reach of region.bins[iz * BINS + ix]!) {
+        if (seen.has(reach)) continue
+        seen.add(reach)
+        const width = Math.max(reach.wa, reach.wb)
+        if (lineIntersectsBounds(
+          reach.ax, reach.az, reach.bx, reach.bz,
+          expandedMinX - width, expandedMinZ - width,
+          expandedMaxX + width, expandedMaxZ + width,
+        )) return true
+      }
+    }
+  }
+  return false
 }

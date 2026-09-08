@@ -25,6 +25,7 @@ import {
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
+import { hydrologyIntersectsBounds } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 
 /**
@@ -58,12 +59,10 @@ const SEGS_NEAR = 24
 const SEGS_MID = 12
 /** Far ring — silhouette only (heavy fog). */
 const SEGS_FAR = 6
-/** Skirts only where seams can be seen (not in the fog bank). */
-/**
- * Vertical skirt depth (m). Hides residual cracks and gives the surface
- * real edge thickness instead of a paper-thin sheet.
- */
-const SKIRT_DEPTH = 1600
+/** Keep shores smooth on merged far tiles without refining dry silhouettes. */
+const WATER_TARGET_CELL_M = 110
+/** Hard cap prevents a large sea from consuming the terrain build budget. */
+const WATER_MAX_SEGS = 32
 /** Build cost budget per frame (props cost more, far LODs cost less). */
 const BUILD_BUDGET = 2.4
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
@@ -430,7 +429,7 @@ export class TerrainSystem {
         if (!job.rebuild) continue
         const lod = lodWithHysteresis(dist, existing.lod)
         if (lod === existing.lod && withProps === existing.hasProps) continue
-        this.rebuildChunk(existing, lod, dist, withProps)
+        this.rebuildChunk(existing, lod, withProps)
         spent += buildCost(dist, withProps)
         continue
       }
@@ -565,7 +564,7 @@ export class TerrainSystem {
     const originZ = cz * CHUNK_SIZE
     const lod = lodFromDist(dist)
 
-    const built = this.buildHeightMesh(originX, originZ, dist, lod, size)
+    const built = this.buildHeightMesh(originX, originZ, lod, size)
     root.add(built.mesh)
     if (built.water) root.add(built.water)
     if (withProps) {
@@ -607,7 +606,6 @@ export class TerrainSystem {
   private rebuildChunk(
     chunk: Chunk,
     lod: TerrainLod,
-    dist: number,
     withProps: boolean,
   ): void {
     const keepAlpha = chunk.alpha
@@ -632,7 +630,7 @@ export class TerrainSystem {
       }
     }
 
-    const built = this.buildHeightMesh(chunk.originX, chunk.originZ, dist, lod, chunk.size)
+    const built = this.buildHeightMesh(chunk.originX, chunk.originZ, lod, chunk.size)
     this.stampChunkMeshes(built.mesh, keepAlpha)
     chunk.root.add(built.mesh)
     if (built.water) {
@@ -696,14 +694,15 @@ export class TerrainSystem {
   private buildHeightMesh(
     originX: number,
     originZ: number,
-    dist: number,
     lod: TerrainLod,
     size = 1,
+    waterDetail = false,
   ): { mesh: Mesh; water: Mesh | null; heights: Float32Array; waterLevels: Float32Array; segs: number } {
-    const segs = size > 1 ? SEGS_MID : segsForLod(lod)
     const near = lod === 0
-
     const span = CHUNK_SIZE * size
+    const baseSegs = size > 1 ? SEGS_MID : segsForLod(lod)
+    const waterSegs = Math.min(WATER_MAX_SEGS, Math.max(baseSegs, Math.ceil(span / WATER_TARGET_CELL_M)))
+    const segs = waterDetail ? waterSegs : baseSegs
     const geo = new PlaneGeometry(span, span, segs, segs)
     geo.rotateX(-Math.PI / 2)
 
@@ -742,6 +741,18 @@ export class TerrainSystem {
 
     const heights = new Float32Array(stride * stride)
     for (let i = 0; i < stride * stride; i++) heights[i] = pos.getY(i)
+    const containsWater = heights.some((height, index) => waterLevels[index]! > height + .01)
+    // The broad quadtree uses only 12 samples for a 3.36 km tile. That is
+    // excellent for dry fog silhouettes but makes a lake shore read as a
+    // dozen huge teeth. Rebuild just wet tiles at a capped world-space cell
+    // size, so water and its underlying bed stay on the same precise grid.
+    const touchesHydrology = !containsWater && !waterDetail && waterSegs > segs && hydrologyIntersectsBounds(
+      originX, originZ, originX + span, originZ + span,
+    )
+    if ((containsWater || touchesHydrology) && !waterDetail && waterSegs > segs) {
+      geo.dispose()
+      return this.buildHeightMesh(originX, originZ, lod, size, true)
+    }
 
     // Neighbour samples outside the tile give shared edges the same normal.
     // Clamping to an edge vertex used to halve the slope along every seam.
@@ -777,7 +788,10 @@ export class TerrainSystem {
     }
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))
-    const skirtEdges = dist >= 4 ? this.appendEdgeSkirts(geo, segs) : []
+    // Shared world-space edge samples keep neighbouring tiles aligned. Skirts
+    // used to conceal LOD cracks, but their deep side faces became artificial
+    // dark dams wherever a terrain tile met independently clipped water.
+    // Eliminating them also removes unused geometry from every streamed tile.
     geo.computeVertexNormals()
     const normals = geo.attributes.normal as BufferAttribute
     for (let i = 0; i < heights.length; i++) {
@@ -786,15 +800,6 @@ export class TerrainSystem {
       const length = Math.hypot(dx, 1, dz)
       normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
     }
-    // Skirts conceal LOD cracks; lighting them as vertical cliffs drew dark
-    // dotted outlines around every distant tile. Continue the edge shading.
-    for (let e = 0; e < skirtEdges.length; e++) {
-      const source = skirtEdges[e]!
-      for (const i of [heights.length + e, heights.length + skirtEdges.length + e]) {
-        normals.setXYZ(i, normals.getX(source), normals.getY(source), normals.getZ(source))
-      }
-    }
-
     const mesh = new Mesh(geo, near ? this.groundMatNear : this.groundMatFar)
     mesh.position.set(originX + half, 0, originZ + half)
     // Shadows only matter up close (sun shadow camera is local)
@@ -804,98 +809,6 @@ export class TerrainSystem {
     const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
       { rain: this.waterRain, snow: this.waterSnow })
     return { mesh, water, heights, waterLevels, segs }
-  }
-
-  /**
-   * Extrude a deep skirt from every boundary — hides cracks / paper edges.
-   *
-   * Important: skirt uses *duplicated* rim verts, not the surface edge verts.
-   * Sharing those verts with computeVertexNormals() averaged vertical skirt
-   * normals into the ground and painted a dark grid along every chunk seam.
-   */
-  private appendEdgeSkirts(geo: PlaneGeometry, segs: number): number[] {
-    const posAttr = geo.attributes.position as BufferAttribute
-    const colAttr = geo.attributes.color as BufferAttribute
-    const stride = segs + 1
-    const nTop = posAttr.count
-
-    // Boundary walk CCW (viewed from above): minZ → maxX → maxZ → minX
-    const edge: number[] = []
-    for (let ix = 0; ix < segs; ix++) edge.push(ix)
-    for (let iz = 0; iz < segs; iz++) edge.push(iz * stride + segs)
-    for (let ix = segs; ix > 0; ix--) edge.push(segs * stride + ix)
-    for (let iz = segs; iz > 0; iz--) edge.push(iz * stride)
-    const nEdge = edge.length
-
-    // Per edge sample: one rim copy + one bottom → 2 * nEdge extra verts
-    const nNew = nTop + nEdge * 2
-    const pos = new Float32Array(nNew * 3)
-    const col = new Float32Array(nNew * 3)
-
-    for (let i = 0; i < nTop; i++) {
-      pos[i * 3] = posAttr.getX(i)
-      pos[i * 3 + 1] = posAttr.getY(i)
-      pos[i * 3 + 2] = posAttr.getZ(i)
-      col[i * 3] = colAttr.getX(i)
-      col[i * 3 + 1] = colAttr.getY(i)
-      col[i * 3 + 2] = colAttr.getZ(i)
-    }
-
-    // Sink the rim slightly instead of nudging into the neighbouring surface.
-    const EPS = 0
-    for (let e = 0; e < nEdge; e++) {
-      const src = edge[e]!
-      const x = posAttr.getX(src)
-      const y = posAttr.getY(src)
-      const z = posAttr.getZ(src)
-      // Outward from chunk center (local origin is chunk center after mesh place)
-      const len = Math.hypot(x, z) || 1
-      const ox = (x / len) * EPS
-      const oz = (z / len) * EPS
-
-      const rim = nTop + e
-      const bot = nTop + nEdge + e
-      pos[rim * 3] = x + ox
-      pos[rim * 3 + 1] = y - .75
-      pos[rim * 3 + 2] = z + oz
-      pos[bot * 3] = x + ox
-      pos[bot * 3 + 1] = y - SKIRT_DEPTH
-      pos[bot * 3 + 2] = z + oz
-
-      // Match surface color (slightly shaded rock — not black)
-      const cr = colAttr.getX(src)
-      const cg = colAttr.getY(src)
-      const cb = colAttr.getZ(src)
-      col[rim * 3] = col[bot * 3] = cr
-      col[rim * 3 + 1] = col[bot * 3 + 1] = cg
-      col[rim * 3 + 2] = col[bot * 3 + 2] = cb
-    }
-
-    const oldIndex = geo.getIndex()
-    if (!oldIndex) return []
-    const nOld = oldIndex.count
-    const idx = new Uint32Array(nOld + nEdge * 6)
-    for (let i = 0; i < nOld; i++) idx[i] = oldIndex.getX(i)
-
-    let w = nOld
-    for (let e = 0; e < nEdge; e++) {
-      const e2 = (e + 1) % nEdge
-      const aR = nTop + e
-      const bR = nTop + e2
-      const aB = nTop + nEdge + e
-      const bB = nTop + nEdge + e2
-      idx[w++] = aR
-      idx[w++] = bR
-      idx[w++] = bB
-      idx[w++] = aR
-      idx[w++] = bB
-      idx[w++] = aB
-    }
-
-    geo.setAttribute('position', new BufferAttribute(pos, 3))
-    geo.setAttribute('color', new BufferAttribute(col, 3))
-    geo.setIndex(new BufferAttribute(idx, 1))
-    return edge
   }
 
   private buildProps(

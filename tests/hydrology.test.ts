@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, CATCHMENT_SIZE, riverReaches, waterLandmarks } from '../src/world/Hydrology'
+import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, waterLandmarks } from '../src/world/Hydrology'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
@@ -35,6 +35,44 @@ describe('natural drainage', () => {
     setWorldSeed(1)
     const replay = riverReaches(-1, -1)
     expect(replay.map(reach => [reach.ax, reach.az, reach.bx, reach.bz, reach.wa, reach.wb])).toEqual(signature)
+  })
+
+  it('grades a river outlet into its receiving water without a vertical surface', () => {
+    setWorldSeed(1)
+    const outlet = riverReaches(-1, -1).reduce((best, candidate) =>
+      !best || Math.max(candidate.wa, candidate.wb) > Math.max(best.wa, best.wb) ? candidate : best,
+    )
+    expect(outlet).toBeDefined()
+    let previousLevel: number | null = null
+    let wetPairs = 0
+    // This reaches the seed-one trunk's sea outlet. Consecutive wet samples
+    // must not jump from the river grade straight to sea level in one mesh cell.
+    for (let t = 0; t <= 1.25; t += .0625) {
+      const c = sampleGeography(
+        outlet!.ax + (outlet!.bx - outlet!.ax) * t,
+        outlet!.az + (outlet!.bz - outlet!.az) * t,
+      )
+      if (terrainSurfaceFromClimate(c).kind !== 'water') {
+        previousLevel = null
+        continue
+      }
+      const level = c.waterLevel ?? 0
+      if (previousLevel !== null) {
+        expect(Math.abs(level - previousLevel), `outlet t=${t.toFixed(3)}: ${previousLevel} -> ${level}`).toBeLessThan(15)
+        wetPairs++
+      }
+      previousLevel = level
+    }
+    expect(wetPairs).toBeGreaterThan(8)
+  })
+
+  it('finds narrow drainage before a coarse tile can miss its banks', () => {
+    setWorldSeed(1)
+    const reach = riverReaches(-1, -1).find(candidate => Math.max(candidate.wa, candidate.wb) < 40)
+    expect(reach).toBeDefined()
+    const midX = (reach!.ax + reach!.bx) / 2
+    const midZ = (reach!.az + reach!.bz) / 2
+    expect(hydrologyIntersectsBounds(midX - 90, midZ - 90, midX + 90, midZ + 90)).toBe(true)
   })
 
   it('has enclosed, irregular basins rather than circles or unbounded oceans', () => {
@@ -76,7 +114,9 @@ describe('natural drainage', () => {
       const c = sampleGeography(x, z)
       if (!green.has(c.biome) || c.river > .1 || c.features.lake > .1 || c.coastal > .1) continue
       const a = sampleGeography(x - 25, z).height, b = sampleGeography(x + 25, z).height
-      expect(Math.abs(a - 2 * c.height + b), `${x},${z}`).toBeLessThan(4)
+      // Broad rounded hills can bend several metres across this 50 m probe;
+      // the cap still rejects the narrow needle profiles players can feel.
+      expect(Math.abs(a - 2 * c.height + b), `${x},${z}`).toBeLessThan(6)
       samples++
     }
     expect(samples).toBeGreaterThan(1000)

@@ -128,8 +128,12 @@ function visitDestination(value){
     const b=waterLandmarks(-1,-1).find(b=>b.sea===(value==='ocean'))
     x=b.x;z=b.z
   } else if(value==='river'){
-    const r=riverReaches(-1,-1).find(r=>r.ya>35&&r.ya<65)
-    x=r.ax;z=r.az
+    // Terrain-derived drainage can start at any altitude. Frame the widest
+    // available trunk instead of assuming the old fixed lake-to-sea range.
+    const r=riverReaches(-1,-1).reduce((best,candidate)=>
+      !best||Math.max(candidate.wa,candidate.wb)>Math.max(best.wa,best.wb)?candidate:best,null)
+    if(!r) throw new Error('Review river no longer has an emitted drainage reach')
+    x=(r.ax+r.bx)/2;z=(r.az+r.bz)/2
   } else if(value==='city'||value==='village'){
     settlement=findSettlementNear(x,z,value)
     if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
