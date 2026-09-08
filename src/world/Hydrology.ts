@@ -99,6 +99,48 @@ function catchment(cx: number, cz: number): Catchment {
       addReach({ ax: a.x, az: a.z, bx: b.x, bz: b.z, wa: a.width, wb: b.width, ya: elevation((j - 1) / 72), yb: elevation(j / 72) })
       a = b
     }
+
+    // Side channels join the trunk from higher ground. They use the same
+    // water-level resolver as the main river, so the branch remains a real
+    // water surface and not a decorative blue line.
+    if (i === 0 && hash2(cx + i * 89, cz - i * 47) > .18) {
+      const joinT = .22 + hash2(cx - i * 31, cz + i * 67) * .48
+      const join = point(joinT)
+      const flowX = dx / length, flowZ = dz / length
+      const side = hash2(cx + i * 53, cz + 11) < .5 ? -1 : 1
+      const sideX = -flowZ * side
+      const sideZ = flowX * side
+      const sourceDistance = 1800 + hash2(cx + i * 73, cz - 19) * 2600
+      const sourceX = join.x + sideX * sourceDistance
+      const sourceZ = join.z + sideZ * sourceDistance
+      if (basins.some(b => basinDistance(b, sourceX, sourceZ) < 0)) continue
+      const sourceLevel = elevation(joinT) + 90 + hash2(cx - 13, cz + i * 23) * 150
+      const branchSteps = 14
+      const branch: { x: number; z: number; width: number; level: number }[] = [
+        { x: sourceX, z: sourceZ, width: 8, level: sourceLevel },
+      ]
+      for (let j = 1; j <= branchSteps; j++) {
+        const t = j / branchSteps
+        const bend = Math.sin(Math.PI * t) * side *
+          (160 + hash2(cx + j * 7, cz - i * 5) * 280)
+        const q = {
+          x: sourceX + (join.x - sourceX) * t + flowX * bend,
+          z: sourceZ + (join.z - sourceZ) * t + flowZ * bend,
+        }
+        const width = 11 + valueNoise(t * 5 + i * 7, cx - cz * 3) * 21 + t * 14
+        const level = sourceLevel + (elevation(joinT) - sourceLevel) * smoothstep(0, 1, t)
+        branch.push({ x: q.x, z: q.z, width, level })
+      }
+      if (branch.some(p => basins.some(b => basinDistance(b, p.x, p.z) < 0))) continue
+      for (let j = 1; j < branch.length; j++) {
+        const a = branch[j - 1]!, b = branch[j]!
+        addReach({
+          ax: a.x, az: a.z, bx: b.x, bz: b.z,
+          wa: Math.max(8, a.width * .72), wb: b.width,
+          ya: a.level, yb: b.level,
+        })
+      }
+    }
   }
   const result = { basins, bins }
   if (cache.size >= 128) cache.delete(cache.keys().next().value!)

@@ -25,6 +25,7 @@
 - Make seas occasional, smaller landmarks with broader irregular shore distortion rather than default oversized oceans.
 - Improve water shading with clear teal shallows, deep blue centers, foam-tinted edges, and moving specular glints.
 - Preserve fixed water levels and independent terrain/water meshes while keeping river width and route continuity deterministic.
+- Add higher-elevation tributaries that join trunks from dry ground, creating connected branching drainage instead of isolated strips.
 
 ### Weather
 
