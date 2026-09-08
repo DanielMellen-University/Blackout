@@ -543,13 +543,14 @@ function biomeColorSolid(
       ]
     }
     case 'mountain': {
-      const rock = 0.4 + n * 0.1
-      return [rock, rock * .98, rock * .94]
+      const rock = 0.3 + n * 0.08
+      return [rock, rock * .98, rock * .95]
     }
     case 'snow': {
-      const t = smoothstep(400, 1000, height)
-      const c = 0.5 + t * 0.45
-      return [c, c, c + 0.02]
+      // Snow is cool blue-gray rather than clipped white. The darker base
+      // leaves ridge shadow and exposed stone readable in bright daylight.
+      const t = smoothstep(450, 2200, height)
+      return [0.34 + t * .28 + n * .025, 0.39 + t * .27 + n * .02, 0.47 + t * .3]
     }
     case 'plains':
     default:

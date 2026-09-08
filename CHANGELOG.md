@@ -12,6 +12,13 @@
 - Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 
+### Terrain
+
+- Add broad ridge chains, foothill belts, long alpine valley cuts, dry plateau shelves, and rare deterministic volcanic calderas.
+- Keep green and wet provinces smoothly rolling while reserving harder erosion profiles for dry and alpine regions.
+- Retune mountain and snow palettes so high relief keeps readable rock and cool shadow detail instead of clipping to white.
+- Expand settlement site search to preserve rare giant cities as terrain relief becomes more expressive, and allow villages in wider hill provinces.
+
 ### Weather
 
 - Replace abrupt random preset jumps with seeded fronts that move through believable neighboring conditions.

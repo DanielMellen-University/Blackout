@@ -53,7 +53,11 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
     const radius = kind === 'city' ? 8500 + rand(1) * 2000 : 900 + rand(1) ** 1.4 * 1900
     const margin = radius + 300
-    for (let attempt = 0; attempt < 6; attempt++) {
+    // Huge city footprints need a broader site search now that mountain and
+    // foothill provinces have stronger relief. Rarity stays unchanged because
+    // only the original 5 percent of settlement cells can attempt a city.
+    const siteAttempts = kind === 'city' ? 12 : 8
+    for (let attempt = 0; attempt < siteAttempts; attempt++) {
       const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       const z = cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + 500) continue
@@ -69,7 +73,7 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
         }
         drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
-        if (max - min > (kind === 'city' ? 350 : 130)) { suitable = false; break }
+        if (max - min > (kind === 'city' ? 350 : 260)) { suitable = false; break }
       }
       if (kind === 'city' && drySamples < 5) suitable = false
       if (!suitable) continue
@@ -214,13 +218,13 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     }
   }
   const target = city ? 700 + Math.floor(rand(200) * 900) : 8 + Math.floor(((plan.radius - 900) / 1900) * 62)
-  for (let attempt = 0; attempt < target * (city ? 60 : 32) && plan.buildings.length < target; attempt++) {
+  for (let attempt = 0; attempt < target * (city ? 80 : 32) && plan.buildings.length < target; attempt++) {
     const n = 10000 + attempt * 9
     const a = rand(n) * Math.PI * 2
     const distance = Math.sqrt(rand(n + 1)) * plan.radius * boundary(a)
     const p = polar(a, distance)
-    const width = city ? 220 + rand(n + 2) * 200 : 180 + rand(n + 2) * 145
-    const depth = city ? 220 + rand(n + 3) * 200 : 180 + rand(n + 3) * 145
+    const width = city ? 210 + rand(n + 2) * 180 : 180 + rand(n + 2) * 145
+    const depth = city ? 210 + rand(n + 3) * 180 : 180 + rand(n + 3) * 145
     let nearest = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
