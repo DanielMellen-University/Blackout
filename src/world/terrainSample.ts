@@ -92,6 +92,13 @@ export interface Climate {
   features: TerrainFeatures
   /** 1 on beach shelf between land and open sea. */
   coastal: number
+  /** Continuous landform signals used for material detail without props. */
+  landform: {
+    ridge: number
+    alpineValley: number
+    plateau: number
+    caldera: number
+  }
 }
 
 export type TerrainSurfaceKind = 'land' | 'water'
@@ -570,6 +577,7 @@ export function biomeColor(
   biomeB: Biome = biome,
   biomeMix = 0,
   biomeWeights?: [Biome, number][],
+  landform?: Climate['landform'],
 ): [number, number, number] {
   const n = valueNoise(x / 90, z / 90)
   const speck = (n - 0.5) * 0.05
@@ -601,6 +609,21 @@ export function biomeColor(
       col[1] + (colB[1] - col[1]) * t,
       col[2] + (colB[2] - col[2]) * t,
     ]
+  }
+
+  if (landform) {
+    // Bake geology into vertex color so distant LODs keep relief cues without
+    // extra meshes, props, or a second terrain pass.
+    const ridgeLight = landform.ridge * (biome === 'snow' ? .055 : .09)
+    const valleyShade = landform.alpineValley * (biome === 'snow' ? .14 : .1)
+    const calderaShade = landform.caldera * .12
+    const relief = ridgeLight - valleyShade - calderaShade
+    col = col.map(c => c * (1 + relief)) as [number, number, number]
+    if (landform.plateau > .35 && (biome === 'mesa' || biome === 'desert')) {
+      const shelf = smoothstep(.35, .9, landform.plateau) * .08
+      col[0] = Math.min(.98, col[0] + shelf)
+      col[1] = Math.min(.72, col[1] + shelf * .45)
+    }
   }
 
   const ravineShade = smoothstep(.25, .9, ravine) * .3

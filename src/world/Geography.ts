@@ -37,5 +37,11 @@ export function sampleGeography(x: number, z: number): Climate {
     biomeMix: second / Math.max(.00001, best + second), biomeWeights,
     land: height < waterLevel ? .2 : 1 - coastal * .35,
     river, coastal, features: { river, lake, ravine: landform.ravine, pond: 0, stream: 0 },
+    landform: {
+      ridge: landform.ridge,
+      alpineValley: landform.alpineValley,
+      plateau: landform.plateau,
+      caldera: landform.caldera,
+    },
   }
 }

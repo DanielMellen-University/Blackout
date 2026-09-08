@@ -687,6 +687,7 @@ export class TerrainSystem {
         climate.biomeB,
         climate.biomeMix,
         climate.biomeWeights,
+        climate.landform,
       )
       colors[i * 3] = r
       colors[i * 3 + 1] = g

@@ -27,6 +27,10 @@
 - Preserve fixed water levels and independent terrain/water meshes while keeping river width and route continuity deterministic.
 - Add higher-elevation tributaries that join trunks from dry ground, creating connected branching drainage instead of isolated strips.
 
+### Terrain readability
+
+- Feed continuous ridge, valley, plateau, and caldera signals into terrain vertex colors so distant terrain keeps geological structure without extra draw calls.
+
 ### Weather
 
 - Replace abrupt random preset jumps with seeded fronts that move through believable neighboring conditions.
