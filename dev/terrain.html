@@ -84,6 +84,18 @@ const destinations={
   city:[1337,5,-1],village:[1,-7,-5],
   roadlink:[1,-7,-5],
 }
+function findSettlementNear(cx,cz,kind){
+  // Settlement rarity and terrain suitability can change as generation evolves;
+  // spiral outward from the review anchor instead of assuming one cell forever.
+  for(let ring=0;ring<=14;ring++){
+    for(let dx=-ring;dx<=ring;dx++) for(let dz=-ring;dz<=ring;dz++){
+      if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring) continue
+      const plan=settlementForCell(cx+dx,cz+dz)
+      if(plan&&(!kind||plan.kind===kind)) return plan
+    }
+  }
+  return null
+}
 function visitDestination(value){
   const target=destinations[value]
   if(!target){frameWorld();return}
@@ -101,7 +113,7 @@ function visitDestination(value){
     const r=riverReaches(-1,-1).find(r=>r.ya>35&&r.ya<65)
     x=r.ax;z=r.az
   } else if(value==='city'||value==='village'){
-    settlement=settlementForCell(x,z)
+    settlement=findSettlementNear(x,z,value)
     if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
     x=settlement.x;z=settlement.z
   } else if(value==='roadlink'){
