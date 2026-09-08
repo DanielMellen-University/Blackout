@@ -63,6 +63,20 @@ describe('procedural settlements', () => {
     expect(cities.every(plan => plan.radius >= 8500 && plan.buildings.length >= 650)).toBe(true)
   })
 
+  it('keeps city towers as landmarks instead of a uniform skyline', () => {
+    setWorldSeed(1337)
+    const city = region(10).find(plan => plan.kind === 'city')
+    expect(city).toBeDefined()
+    const buildings = city!.buildings
+    const towers = buildings.filter(building => building.shape === 'tower').length
+    expect(towers / buildings.length).toBeLessThan(.35)
+    expect(new Set(buildings.map(building => building.shape))).toEqual(
+      new Set(['block', 'slab', 'tower', 'stepped', 'hangar']),
+    )
+    expect(new Set(buildings.map(building => building.wallColor)).size).toBeGreaterThanOrEqual(4)
+    expect(new Set(buildings.map(building => building.roofColor)).size).toBeGreaterThanOrEqual(4)
+  })
+
   it('fits dry foundations, caps geometry and keeps roads on dry gentle ground', () => {
     setWorldSeed(1)
     for (const plan of region(5)) {

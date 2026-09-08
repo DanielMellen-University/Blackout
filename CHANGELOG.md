@@ -20,6 +20,7 @@
 - Add batched local street centerlines so district roads remain legible from the chase camera without per-segment draw calls.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 - Rework settlement morphology so villages use rare hamlet, ribbon, crossroads and basin profiles with varied radii, loops and oversized landmark buildings; cities remain rare, broad and dense.
+- Rebalance city districts so towers and stepped forms stay rare landmarks while slabs, halls, blocks, and biome-specific facade palettes carry the wider skyline.
 
 ### Terrain
 

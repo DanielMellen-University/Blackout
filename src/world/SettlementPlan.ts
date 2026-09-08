@@ -28,15 +28,27 @@ function dry(c: Climate): boolean {
 
 function palette(biome: Biome): { walls: number[]; roofs: number[]; roof: 'flat' | 'pitched' } {
   if (['desert', 'mesa', 'savanna', 'saltflat'].includes(biome)) {
-    return { walls: [0xc9b592, 0xe0cbb1, 0xb79372], roofs: [0x997659, 0xb9a186], roof: 'flat' }
+    return {
+      walls: [0xc9b592, 0xe0cbb1, 0xb79372, 0xd3b78d, 0xa98970],
+      roofs: [0x997659, 0xb9a186, 0x76584b, 0xc08b63], roof: 'flat',
+    }
   }
   if (['tundra', 'snow', 'mountain', 'volcanic'].includes(biome)) {
-    return { walls: [0x929793, 0xb7b4a9, 0x726e65], roofs: [0x465461, 0x624641], roof: 'pitched' }
+    return {
+      walls: [0x929793, 0xb7b4a9, 0x726e65, 0x82949a, 0xc2b8a5],
+      roofs: [0x465461, 0x624641, 0x34404a, 0x8a6559], roof: 'pitched',
+    }
   }
   if (['rainforest', 'swamp'].includes(biome)) {
-    return { walls: [0xb5a784, 0x93866e, 0xc7bea1], roofs: [0x6d786b, 0x897654], roof: 'pitched' }
+    return {
+      walls: [0xb5a784, 0x93866e, 0xc7bea1, 0x7f9c8e, 0xd0c39a],
+      roofs: [0x6d786b, 0x897654, 0x4f6258, 0x9d6f50], roof: 'pitched',
+    }
   }
-  return { walls: [0xc5c3b3, 0xb0aba2, 0xd1c4ad], roofs: [0x8b5343, 0x545f64, 0x705d51], roof: 'pitched' }
+  return {
+    walls: [0xc5c3b3, 0xb0aba2, 0xd1c4ad, 0x8e9ba2, 0xb8c7c4, 0x9d8f86],
+    roofs: [0x8b5343, 0x545f64, 0x705d51, 0x3e5668, 0xa35d45], roof: 'pitched',
+  }
 }
 
 /** One stable candidate per large cell; no world flattening or water filling. */
@@ -102,6 +114,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   let serial = 100
   const building = (lx: number, lz: number, width: number, depth: number, height: number, yaw = angle) => {
     const { x, z } = world(lx, lz)
+    const districtCore = Math.max(0, 1 - Math.hypot(lx, lz) / (plan.radius * .65))
     const bc = Math.cos(yaw), bs = Math.sin(yaw)
     const hx = (Math.abs(bc) * width + Math.abs(bs) * depth) / 2 + 5
     const hz = (Math.abs(bs) * width + Math.abs(bc) * depth) / 2 + 5
@@ -141,13 +154,23 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     }
     const n = serial++
     const shapeRoll = rand(n + 2000)
+    // High-rise forms are a small inner-district accent. The old height-first
+    // test made most city lots cylinders whenever the relief generator raised
+    // the skyline, erasing the slab, hall, and block silhouettes around them.
+    // Keep a few towers and stepped landmarks in the core, then let the outer
+    // districts carry the broader low-rise forms.
     const shape: SettlementBuilding['shape'] = plan.kind === 'city'
-      ? height > 620 && shapeRoll < .38 ? 'stepped'
-        : height > 380 && shapeRoll < .63 ? 'tower'
-          : shapeRoll < .24 ? 'slab' : shapeRoll < .34 ? 'hangar' : 'block'
+      ? shapeRoll < .11 && districtCore > .42 ? 'stepped'
+        : shapeRoll < .25 && districtCore > .24 ? 'tower'
+          : shapeRoll < .48 ? 'slab' : shapeRoll < .61 ? 'hangar' : 'block'
       : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
-    const finalHeight = plan.kind === 'city' && shape === 'hangar'
-      ? Math.min(height, 300 + rand(n + 3000) * 120) : height
+    const finalHeight = plan.kind === 'city'
+      ? shape === 'hangar'
+        ? Math.min(height, 300 + rand(n + 3000) * 120)
+        : shape === 'block' || shape === 'slab'
+          ? Math.min(height, 260 + rand(n + 3000) * 220 + districtCore * (480 + rand(n + 3001) * 760))
+          : height
+      : height
     const flatRoof = shape === 'tower' || shape === 'stepped'
       || (plan.kind === 'city' && shapeRoll < .58)
     plan.buildings.push({ x, z, y: min - 1, width, depth, height: finalHeight + max - min + 1,
