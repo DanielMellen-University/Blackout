@@ -39,6 +39,7 @@
 - Preserve fixed water levels and independent terrain/water meshes while keeping river width and route continuity deterministic.
 - Add higher-elevation tributaries that join trunks from dry ground, creating connected branching drainage instead of isolated strips.
 - Add moving low-contrast shoreline foam breakup and explicit water bounds for faster streamed-tile culling.
+- Couple rain and snow to the shared water shader so precipitation changes ripple, foam, glint, and cool surface tint without rebuilding water geometry.
 
 ### Terrain readability
 

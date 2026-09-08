@@ -1,5 +1,5 @@
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three'
-import { applyWaterAppearance } from './WaterAppearance'
+import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number }
 
@@ -9,7 +9,7 @@ interface WaterVertex { x: number; z: number; bed: number; level: number }
  */
 export function buildWaterMesh(
   beds: Float32Array, levels: Float32Array, segs: number, size: number,
-  originX: number, originZ: number, clock: { value: number },
+  originX: number, originZ: number, clock: { value: number }, weather?: WaterWeatherUniforms,
 ): Mesh | null {
   const positions: number[] = []
   const depths: number[] = []
@@ -62,7 +62,7 @@ export function buildWaterMesh(
     color: 0x345361, roughness: 0.2, metalness: 0.08,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
   })
-  applyWaterAppearance(material, clock)
+  applyWaterAppearance(material, clock, weather)
   const mesh = new Mesh(geometry, material)
   mesh.name = 'WaterSurface'
   mesh.position.set(originX + size / 2, 0, originZ + size / 2)

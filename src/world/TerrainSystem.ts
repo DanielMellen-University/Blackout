@@ -188,6 +188,8 @@ export class TerrainSystem {
   private focusX = 0
   private focusZ = 0
   private readonly waterClock = { value: 0 }
+  private readonly waterRain = { value: 0 }
+  private readonly waterSnow = { value: 0 }
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -226,6 +228,8 @@ export class TerrainSystem {
   setWeatherEffects(rain: number, snow: number): void {
     this.weatherRain.value = MathUtils.clamp(rain, 0, 1)
     this.weatherSnow.value = MathUtils.clamp(snow, 0, 1)
+    this.waterRain.value = this.weatherRain.value
+    this.waterSnow.value = this.weatherSnow.value
   }
 
   get weatherEffects(): { rain: number; snow: number } {
@@ -797,7 +801,8 @@ export class TerrainSystem {
     mesh.receiveShadow = near
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
-    const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock)
+    const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
+      { rain: this.waterRain, snow: this.waterSnow })
     return { mesh, water, heights, waterLevels, segs }
   }
 
