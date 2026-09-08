@@ -1,6 +1,6 @@
 import { hash2 } from './noise'
 import { sampleClimate } from './terrainSample'
-import type { SettlementPlan, SettlementRoad } from './SettlementPlan'
+import { settlementForCell, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
 
 export interface SettlementAnchor {
   id: string
@@ -9,6 +9,20 @@ export interface SettlementAnchor {
   roads: SettlementRoad[]
 }
 
+export interface RegionalRoadLink {
+  key: string
+  from: SettlementPlan
+  to: SettlementPlan
+}
+
+/**
+ * Settlement cells are deliberately wide, so this stays a small fixed search
+ * instead of growing with render distance or the number of loaded meshes.
+ */
+export const REGIONAL_GRAPH_CELL_RING = 2
+export const MAX_CITY_REGIONAL_LINKS = 2
+export const MAX_VILLAGE_REGIONAL_LINKS = 1
+
 function idNumbers(id: string): [number, number] {
   const [x = 0, z = 0] = id.split(',').map(Number)
   return [x, z]
@@ -16,6 +30,51 @@ function idNumbers(id: string): [number, number] {
 
 export function regionalRoadKey(a: SettlementAnchor, b: SettlementAnchor): string {
   return a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`
+}
+
+/**
+ * Pick a sparse, deterministic set of nearest neighbours for one settlement.
+ * The caller may discover the same edge from either endpoint; the canonical
+ * key and ordered plans make that harmless without relying on load order.
+ */
+export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readonly SettlementPlan[]): RegionalRoadLink[] {
+  const limit = plan.kind === 'city' ? MAX_CITY_REGIONAL_LINKS : MAX_VILLAGE_REGIONAL_LINKS
+  const selected = candidates
+    .filter(other => other.id !== plan.id && shouldConnectSettlements(plan, other))
+    .sort((a, b) => {
+      const distanceA = Math.hypot(plan.x - a.x, plan.z - a.z)
+      const distanceB = Math.hypot(plan.x - b.x, plan.z - b.z)
+      return distanceA - distanceB || a.id.localeCompare(b.id)
+    })
+
+  const links: RegionalRoadLink[] = []
+  const seen = new Set<string>()
+  for (const other of selected) {
+    const key = regionalRoadKey(plan, other)
+    if (seen.has(key)) continue
+    seen.add(key)
+    links.push(plan.id < other.id ? { key, from: plan, to: other } : { key, from: other, to: plan })
+    if (links.length >= limit) break
+  }
+  return links
+}
+
+/**
+ * Discover links from the deterministic world plan, not from whichever
+ * settlements happened to fit the current building-instance budget. Planning
+ * runs in the settlement worker, and the two-cell ring bounds it to 24 probes.
+ */
+export function regionalLinksForSettlement(plan: SettlementPlan): RegionalRoadLink[] {
+  const [cx, cz] = idNumbers(plan.id)
+  const candidates: SettlementPlan[] = []
+  for (let dx = -REGIONAL_GRAPH_CELL_RING; dx <= REGIONAL_GRAPH_CELL_RING; dx++) {
+    for (let dz = -REGIONAL_GRAPH_CELL_RING; dz <= REGIONAL_GRAPH_CELL_RING; dz++) {
+      if (!dx && !dz) continue
+      const other = settlementForCell(cx + dx, cz + dz)
+      if (other) candidates.push(other)
+    }
+  }
+  return selectRegionalRoadLinks(plan, candidates)
 }
 
 /** Sparse seeded graph: cities are strong hubs, villages form occasional links. */

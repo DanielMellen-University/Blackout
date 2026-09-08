@@ -5,10 +5,76 @@ import {
   Scene,
   ShaderMaterial,
   SphereGeometry,
+  Vector2,
   Vector3,
 } from 'three'
 
 const _dir = new Vector3()
+
+/**
+ * Weather values the sky needs to turn a generic blue gradient into a
+ * readable front. This deliberately stays rendering-only: it is a compact
+ * view of the director snapshot, not a second weather simulation.
+ */
+export interface SkyCloudInputs {
+  lowClouds: number
+  midClouds: number
+  highClouds: number
+  rain: number
+  lightning: number
+  windX: number
+  windZ: number
+}
+
+/**
+ * Blended controls for the dome's analytic cloud field. All coverage values
+ * remain bounded so a weather transition cannot create a one-frame whiteout.
+ */
+export interface SkyCloudDeck {
+  broken: number
+  blanket: number
+  cirrus: number
+  storm: number
+  darkness: number
+  windX: number
+  windZ: number
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value))
+}
+
+function smooth01(value: number): number {
+  const t = clamp01(value)
+  return t * t * (3 - 2 * t)
+}
+
+/**
+ * Keep the near instanced formations and the far sky deck in agreement.
+ * Light weather exposes broken puffs and cirrus, while rain closes those gaps
+ * into an undercast. Thunderstorms add darkness rather than a flash spike.
+ */
+export function deriveSkyCloudDeck(input: SkyCloudInputs): SkyCloudDeck {
+  const low = clamp01(input.lowClouds)
+  const mid = clamp01(input.midClouds)
+  const high = clamp01(input.highClouds)
+  const rain = clamp01(input.rain)
+  const storm = smooth01((clamp01(input.lightning) - 0.22) / 0.78)
+  const blanket = clamp01(mid * 0.62 + rain * 0.42 + storm * 0.2)
+
+  return {
+    // The blanket progressively fills the holes between individual clouds.
+    broken: clamp01(low * (1 - blanket * 0.95) * (1 - storm * 0.25)),
+    blanket,
+    cirrus: clamp01(high * (1 - blanket * 0.72) * (1 - rain * 0.2)),
+    storm,
+    darkness: clamp01(blanket * 0.14 + rain * 0.26 + storm * 0.34),
+    // The shader only needs a normalized drift vector. Capping it keeps a
+    // blizzard from making the sky pattern race across a frame.
+    windX: Math.max(-1, Math.min(1, input.windX / 34)),
+    windZ: Math.max(-1, Math.min(1, input.windZ / 34)),
+  }
+}
 
 /**
  * Full-sky dome with shader gradient, sun/moon discs, glow, and stars.
@@ -41,6 +107,14 @@ export class SkyDome {
         uStarIntensity: { value: 0 },
         uHaze: { value: 0 },
         uTime: { value: 0 },
+        // The far cloud deck is analytic inside this one existing draw. The
+        // instanced meshes still supply close parallax and volume.
+        uCloudBroken: { value: 0 },
+        uCloudBlanket: { value: 0 },
+        uCloudCirrus: { value: 0 },
+        uCloudStorm: { value: 0 },
+        uCloudDarkness: { value: 0 },
+        uCloudWind: { value: new Vector2(0.1, 0.03) },
       },
       vertexShader: /* glsl */ `
         varying vec3 vWorldDir;
@@ -68,12 +142,43 @@ export class SkyDome {
         uniform float uStarIntensity;
         uniform float uHaze;
         uniform float uTime;
+        uniform float uCloudBroken;
+        uniform float uCloudBlanket;
+        uniform float uCloudCirrus;
+        uniform float uCloudStorm;
+        uniform float uCloudDarkness;
+        uniform vec2 uCloudWind;
 
         // Stable hash for star field
         float hash13(vec3 p) {
           p = fract(p * 0.3183099 + vec3(0.11, 0.17, 0.13));
           p *= 17.0;
           return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+        }
+
+        // Two cheap value-noise octaves make broad weather decks without a
+        // texture fetch, extra mesh, or a fullscreen postprocess.
+        float hash21(vec2 p) {
+          p = fract(p * vec2(0.1031, 0.11369));
+          p += dot(p, p.yx + 19.19);
+          return fract((p.x + p.y) * p.x);
+        }
+
+        float valueNoise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          return mix(
+            mix(hash21(i), hash21(i + vec2(1.0, 0.0)), f.x),
+            mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0)), f.x),
+            f.y
+          );
+        }
+
+        float cloudField(vec2 p) {
+          float broad = valueNoise(p * 0.64);
+          float detail = valueNoise(p * 1.72 + vec2(31.7, -12.4));
+          return broad * 0.72 + detail * 0.28;
         }
 
         void main() {
@@ -142,6 +247,41 @@ export class SkyDome {
           col += vec3(0.25, 0.35, 0.65) * pow(moonAz, 2.0) *
             smoothstep(0.2, -0.15, elev) * uMoonIntensity * 0.35;
 
+          // --- Weather deck ---
+          // The projected direction keeps this field stable as the dome
+          // follows the aircraft. Fade it before the ground band so it cannot
+          // form a hard line at the horizon.
+          float deckSky = smoothstep(-0.08, 0.17, elev);
+          if (deckSky > 0.001) {
+            vec2 projected = dir.xz / max(0.24, elev + 0.34);
+            vec2 drift = uCloudWind * uTime * 0.018;
+            float wisps = cloudField(projected * 0.78 + drift * 0.65);
+            float puffs = smoothstep(0.58, 0.83,
+              cloudField(projected * 1.16 + drift));
+            float broad = smoothstep(0.24, 0.79,
+              cloudField(projected * 0.54 + drift * 0.4 + vec2(7.2, 18.1)));
+            float stormCells = smoothstep(0.48, 0.84,
+              cloudField(projected * 0.88 + drift * 0.55 + vec2(-16.3, 9.7)));
+
+            float cirrus = smoothstep(0.62, 0.88, wisps) * uCloudCirrus * 0.34;
+            float broken = puffs * uCloudBroken * 0.72;
+            // Even the darkest fronts retain soft internal variation rather
+            // than reading as an opaque flat ceiling.
+            float blanket = uCloudBlanket * mix(0.7, 1.0, broad);
+            float storm = uCloudStorm * mix(0.5, 1.0, stormCells);
+            float cloudAlpha = clamp(cirrus + broken * (1.0 - cirrus) +
+              blanket * (1.0 - cirrus) * (1.0 - broken * 0.38), 0.0, 0.96);
+            cloudAlpha = max(cloudAlpha, storm * 0.22) * deckSky;
+
+            float sunSoft = 0.58 + max(0.0, dot(dir, sunD)) * 0.28;
+            vec3 fairCloud = mix(vec3(0.82, 0.89, 0.95), vec3(0.44, 0.54, 0.65),
+              uCloudDarkness) * sunSoft;
+            vec3 stormCloud = mix(vec3(0.31, 0.39, 0.49), vec3(0.15, 0.22, 0.31),
+              stormCells * 0.72);
+            vec3 cloudColor = mix(fairCloud, stormCloud, uCloudStorm * 0.82);
+            col = mix(col, cloudColor, cloudAlpha);
+          }
+
           // Haze / overcast: flatten sky + mute celestial bodies a bit
           col = mix(col, uHorizonColor * 0.85, uHaze * 0.45);
 
@@ -168,7 +308,7 @@ export class SkyDome {
    * @param topColor zenith
    * @param horizonColor horizon band
    * @param haze weather haze 0–1
-   * @param cloudCover reduces sun/moon/stars
+   * @param cloudDeck blended analytic deck controls from the weather front
    * @param timeSec for star twinkle
    */
   update(
@@ -181,7 +321,7 @@ export class SkyDome {
     topColor: Color,
     horizonColor: Color,
     haze: number,
-    cloudCover: number,
+    cloudDeck: SkyCloudDeck,
     timeSec: number,
   ): void {
     this.mesh.position.set(ax, ay, az)
@@ -197,6 +337,11 @@ export class SkyDome {
     this.mat.uniforms.uHorizonColor!.value.copy(this.horizon)
 
     const night = 1 - dayFactor
+    const cloudCover = MathUtilsClamp(
+      cloudDeck.cirrus * 0.16 + cloudDeck.broken * 0.54 + cloudDeck.blanket * 0.9,
+      0,
+      1,
+    )
     const clearSky = 1 - MathUtilsClamp(cloudCover * 0.85 + haze * 0.35, 0, 0.92)
 
     this.mat.uniforms.uDayFactor!.value = dayFactor
@@ -204,6 +349,12 @@ export class SkyDome {
     this.mat.uniforms.uDusk!.value = dusk
     this.mat.uniforms.uHaze!.value = haze
     this.mat.uniforms.uTime!.value = timeSec
+    this.mat.uniforms.uCloudBroken!.value = cloudDeck.broken
+    this.mat.uniforms.uCloudBlanket!.value = cloudDeck.blanket
+    this.mat.uniforms.uCloudCirrus!.value = cloudDeck.cirrus
+    this.mat.uniforms.uCloudStorm!.value = cloudDeck.storm
+    this.mat.uniforms.uCloudDarkness!.value = cloudDeck.darkness
+    ;(this.mat.uniforms.uCloudWind!.value as Vector2).set(cloudDeck.windX, cloudDeck.windZ)
 
     // Sun bright in day; soft at dusk; gone fully under horizon
     const sunUp = MathUtilsClamp((_dir.y + 0.08) / 0.5, 0, 1)

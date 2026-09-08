@@ -13,7 +13,12 @@ const MAX_CHANNEL_EDGES = 72
 const MAX_RENDER_REACHES = 180
 
 interface Basin { x: number; z: number; radius: number; aspect: number; angle: number; phase: number; level: number; sea: boolean }
-interface Reach { ax: number; az: number; bx: number; bz: number; wa: number; wb: number; ya: number; yb: number }
+/** A cached analytic river segment, shared by terrain carving and water rendering. */
+export interface RiverReach {
+  ax: number; az: number; bx: number; bz: number
+  wa: number; wb: number; ya: number; yb: number
+}
+type Reach = RiverReach
 interface Catchment { basins: Basin[]; bins: Reach[][] }
 interface FlowGrid {
   height: Float64Array
@@ -593,25 +598,21 @@ function lineIntersectsBounds(
     clip(-dz, az - minZ) && clip(dz, maxZ - az)
 }
 
-/**
- * Fast cached query for streaming LOD: reports whether a drainage reach could
- * touch an axis-aligned tile. It avoids missing a thin river merely because
- * every coarse terrain vertex happens to land on its dry bank. Broad basins
- * are intentionally left to normal vertex sampling to preserve the budget.
- */
-export function hydrologyIntersectsBounds(
+/** Locate cached river reaches that touch an axis-aligned streamed tile. */
+export function riverReachesInBounds(
   minX: number,
   minZ: number,
   maxX: number,
   maxZ: number,
   margin = 0,
-): boolean {
+): ReadonlyArray<Readonly<RiverReach>> {
   const startCx = Math.floor((minX - margin) / CATCHMENT_SIZE)
   const endCx = Math.floor((maxX + margin) / CATCHMENT_SIZE)
   const startCz = Math.floor((minZ - margin) / CATCHMENT_SIZE)
   const endCz = Math.floor((maxZ + margin) / CATCHMENT_SIZE)
   const expandedMinX = minX - margin, expandedMinZ = minZ - margin
   const expandedMaxX = maxX + margin, expandedMaxZ = maxZ + margin
+  const result = new Set<Reach>()
 
   for (let cz = startCz; cz <= endCz; cz++) for (let cx = startCx; cx <= endCx; cx++) {
     const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
@@ -635,9 +636,25 @@ export function hydrologyIntersectsBounds(
           reach.ax, reach.az, reach.bx, reach.bz,
           expandedMinX - width, expandedMinZ - width,
           expandedMaxX + width, expandedMaxZ + width,
-        )) return true
+        )) result.add(reach)
       }
     }
   }
-  return false
+  return [...result]
+}
+
+/**
+ * Fast cached query for streaming LOD: reports whether a drainage reach could
+ * touch an axis-aligned tile. It avoids missing a thin river merely because
+ * every coarse terrain vertex happens to land on its dry bank. Broad basins
+ * are intentionally left to normal vertex sampling to preserve the budget.
+ */
+export function hydrologyIntersectsBounds(
+  minX: number,
+  minZ: number,
+  maxX: number,
+  maxZ: number,
+  margin = 0,
+): boolean {
+  return riverReachesInBounds(minX, minZ, maxX, maxZ, margin).length > 0
 }

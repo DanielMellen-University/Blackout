@@ -52,4 +52,23 @@ describe('independent water surfaces', () => {
       material.dispose()
     }
   })
+
+  it('batches analytic rivers when a coarse tile misses every wet vertex', () => {
+    const clock = { value: 0 }
+    const mesh = buildWaterMesh(
+      new Float32Array([60, 60, 60, 60]), new Float32Array(4), 1, 420, 0, 0, clock, undefined,
+      [{ ax: 12, az: 90, bx: 408, bz: 330, wa: 18, wb: 42, ya: 130, yb: 92 }],
+    )
+    expect(mesh).not.toBeNull()
+    const positions = mesh!.geometry.getAttribute('position')
+    const depths = mesh!.geometry.getAttribute('waterDepth')
+    expect(positions.count).toBeGreaterThanOrEqual(24)
+    expect(depths.count).toBe(positions.count)
+    for (let i = 0; i < positions.count; i++) {
+      expect(positions.getY(i)).toBeGreaterThan(90)
+      expect(depths.getX(i)).toBeGreaterThan(0)
+    }
+    mesh!.geometry.dispose()
+    ;(mesh!.material as MeshStandardMaterial).dispose()
+  })
 })

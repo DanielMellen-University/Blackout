@@ -6,16 +6,20 @@ import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
 import { getWorldSeed } from './noise'
 import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
-import { regionalRoadKey, roadBetweenSettlements, shouldConnectSettlements } from './RegionalRoads'
+import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 
 const LOAD_RADIUS = FOG_FAR
 const DETAIL_RADIUS = 4200
+const ROAD_LOAD_RADIUS = LOAD_RADIUS + 3000
+const ROAD_KEEP_RADIUS = ROAD_LOAD_RADIUS + 5000
 
 // Generation can be generous without letting a dense slice of the world turn
 // into an unbounded set of instance buffers or road meshes around the player.
 export const MAX_LOADED_SETTLEMENTS = 4
 export const MAX_LOADED_BUILDINGS = 1500
+/** Roads stream independently from settlement building roots. */
+export const MAX_LOADED_REGIONAL_ROADS = 6
 
 const collisionRadii = new WeakMap<SettlementPlan, number>()
 
@@ -65,6 +69,16 @@ function segmentDistance(px: number, pz: number, ax: number, az: number, bx: num
   return Math.hypot(px - ax - dx * t, pz - az - dz * t)
 }
 
+/** Exact route proximity prevents a curved connector disappearing near its bend. */
+function roadDistance(px: number, pz: number, road: SettlementRoad): number {
+  let nearest = Infinity
+  for (let i = 1; i < road.points.length; i++) {
+    const a = road.points[i - 1]!, b = road.points[i]!
+    nearest = Math.min(nearest, segmentDistance(px, pz, a.x, a.z, b.x, b.z))
+  }
+  return nearest
+}
+
 function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number): BufferGeometry | null {
   const positions: number[] = []
   for (const road of roads) for (let i = 1; i < road.points.length; i++) {
@@ -112,8 +126,9 @@ function bridgeSpans(road: SettlementRoad): SettlementRoad[] {
 }
 
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
-interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan }
+interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; road: SettlementRoad }
 interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
+interface ReadyRoad extends RoadJob { road: SettlementRoad }
 
 /** Independent scenery stream: shared geometry, instanced buildings, no shadow passes. */
 export class SettlementSystem {
@@ -142,13 +157,16 @@ export class SettlementSystem {
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
   private readonly checkedLinks = new Set<string>()
+  /** One canonical job per graph edge, retained while one nearby cell owns it. */
+  private readonly roadJobs = new Map<string, RoadJob>()
+  private readonly roadSources = new Map<string, Set<string>>()
   private queue: { cx: number; cz: number; key: string }[] = []
   private linkQueue: RoadJob[] = []
   private lastCell = ''
   private worker: Worker | null = null
   private inFlight: SettlementWorkerRequest | null = null
   private ready: { key: string; plan: SettlementPlan }[] = []
-  private readyRoads: { key: string; road: SettlementRoad; fromId: string; toId: string }[] = []
+  private readyRoads: ReadyRoad[] = []
   private generation = 0
 
   constructor(scene: Scene) {
@@ -161,9 +179,13 @@ export class SettlementSystem {
         const result = event.data
         if (result.generation !== this.generation) return
         if (result.type === 'settlement') {
-          if (this.checked.has(result.key) && result.plan) this.ready.push({ key: result.key, plan: result.plan })
+          if (this.checked.has(result.key) && result.plan) {
+            this.scheduleLinks(result.plan, result.key)
+            this.ready.push({ key: result.key, plan: result.plan })
+          }
         } else if (this.checkedLinks.has(result.key) && result.road) {
-          this.readyRoads.push({ key: result.key, road: result.road, fromId: result.fromId, toId: result.toId })
+          const job = this.roadJobs.get(result.key)
+          if (job) this.readyRoads.push({ ...job, road: result.road })
         }
       }
       this.worker.onerror = () => {
@@ -173,8 +195,9 @@ export class SettlementSystem {
             this.checked.delete(this.inFlight.key)
             this.queue.unshift(this.inFlight)
           } else {
-            this.checkedLinks.delete(this.inFlight.key)
-            this.linkQueue.unshift(this.inFlight)
+            // Keep the canonical edge marked while the synchronous fallback
+            // consumes it. Otherwise a second endpoint can enqueue a duplicate.
+            if (this.roadSources.has(this.inFlight.key)) this.linkQueue.unshift(this.inFlight)
           }
         }
         this.inFlight = null
@@ -292,6 +315,8 @@ export class SettlementSystem {
     this.connections.clear()
     this.checked.clear()
     this.checkedLinks.clear()
+    this.roadJobs.clear()
+    this.roadSources.clear()
     this.queue = []
     this.linkQueue = []
     this.ready = []
@@ -329,22 +354,26 @@ export class SettlementSystem {
         const settlement = this.loaded.get(key)
         if (settlement) {
           this.remove(settlement); this.loaded.delete(key)
-          this.removeLinksFor(settlement.plan.id)
         }
+        this.releaseLinksForCell(key)
         this.checked.delete(key)
       }
       this.queue = pending.sort((a, b) => a.distance - b.distance)
     }
+    this.pruneDistantRoads(x, z)
     const ready = this.ready.shift()
     if (ready && this.checked.has(ready.key) && this.canLoad(ready.plan)) {
       this.loaded.set(ready.key, this.build(ready.plan))
-      this.scheduleLinks(ready.plan)
     }
-    const readyRoad = this.readyRoads.shift()
-    if (readyRoad && this.checkedLinks.has(readyRoad.key)) {
-      const from = this.loaded.get(readyRoad.fromId)?.plan
-      const to = this.loaded.get(readyRoad.toId)?.plan
-      if (from && to) this.connections.set(readyRoad.key, this.buildRegionalRoad(readyRoad.road, from, to))
+    const readyRoadIndex = this.nearestReadyRoad(x, z)
+    if (readyRoadIndex >= 0) {
+      const readyRoad = this.readyRoads[readyRoadIndex]!
+      if (this.canLoadRoad(readyRoad, x, z)) {
+        this.readyRoads.splice(readyRoadIndex, 1)
+        if (!this.connections.has(readyRoad.key)) {
+          this.connections.set(readyRoad.key, this.buildRegionalRoad(readyRoad.road, readyRoad.from, readyRoad.to))
+        }
+      }
     }
     // Terrain suitability runs off the render thread. One in-flight request
     // bounds worker traffic; stale replies after reseeds are discarded.
@@ -356,9 +385,9 @@ export class SettlementSystem {
         this.worker.postMessage(this.inFlight)
       } else {
         const plan = settlementForCell(job.cx, job.cz)
-        if (plan && this.canLoad(plan)) {
-          this.loaded.set(job.key, this.build(plan))
-          this.scheduleLinks(plan)
+        if (plan) {
+          this.scheduleLinks(plan, job.key)
+          if (this.canLoad(plan)) this.loaded.set(job.key, this.build(plan))
         }
       }
     } else if (!this.inFlight) {
@@ -368,7 +397,7 @@ export class SettlementSystem {
         this.worker.postMessage(this.inFlight)
       } else if (link) {
         const road = roadBetweenSettlements(link.from, link.to)
-        if (road) this.connections.set(link.key, this.buildRegionalRoad(road, link.from, link.to))
+        if (road && this.checkedLinks.has(link.key)) this.readyRoads.push({ ...link, road })
       }
     }
     for (const { plan, root, detail } of this.loaded.values()) {
@@ -377,7 +406,7 @@ export class SettlementSystem {
       detail.visible = distance < DETAIL_RADIUS + plan.radius
     }
     for (const connection of this.connections.values()) {
-      connection.root.visible = segmentDistance(x, z, connection.from.x, connection.from.z, connection.to.x, connection.to.z) < LOAD_RADIUS
+      connection.root.visible = roadDistance(x, z, connection.road) < ROAD_LOAD_RADIUS
     }
   }
 
@@ -463,14 +492,83 @@ export class SettlementSystem {
     return { root, detail, plan }
   }
 
-  private scheduleLinks(plan: SettlementPlan): void {
-    for (const other of this.loaded.values()) {
-      if (other.plan.id === plan.id || !shouldConnectSettlements(plan, other.plan)) continue
-      const key = regionalRoadKey(plan, other.plan)
-      if (this.checkedLinks.has(key)) continue
-      this.checkedLinks.add(key)
-      this.linkQueue.push({ key, from: plan, to: other.plan })
+  /**
+   * A route belongs to nearby source cells, not to the building roots that
+   * happened to survive the four-settlement instance budget. Both endpoints
+   * can discover the same canonical edge without creating another job.
+   */
+  private scheduleLinks(plan: SettlementPlan, sourceKey: string): void {
+    for (const link of regionalLinksForSettlement(plan)) {
+      const sources = this.roadSources.get(link.key) ?? new Set<string>()
+      sources.add(sourceKey)
+      this.roadSources.set(link.key, sources)
+      if (this.checkedLinks.has(link.key)) continue
+      const job: RoadJob = { key: link.key, from: link.from, to: link.to }
+      this.checkedLinks.add(link.key)
+      this.roadJobs.set(link.key, job)
+      this.linkQueue.push(job)
     }
+  }
+
+  /** Drop an edge only after every nearby source cell that discovered it leaves. */
+  private releaseLinksForCell(sourceKey: string): void {
+    for (const [key, sources] of this.roadSources) {
+      if (!sources.delete(sourceKey) || sources.size) continue
+      this.roadSources.delete(key)
+      this.checkedLinks.delete(key)
+      this.roadJobs.delete(key)
+      this.linkQueue = this.linkQueue.filter(job => job.key !== key)
+      this.readyRoads = this.readyRoads.filter(road => road.key !== key)
+      const connection = this.connections.get(key)
+      if (connection) {
+        this.removeRoad(connection)
+        this.connections.delete(key)
+      }
+    }
+  }
+
+  /** Keep cached road plans but release GPU meshes as the player flies away. */
+  private pruneDistantRoads(x: number, z: number): void {
+    for (const [key, connection] of this.connections) {
+      if (roadDistance(x, z, connection.road) <= ROAD_KEEP_RADIUS) continue
+      this.connections.delete(key)
+      this.removeRoad(connection)
+      this.deferRoad({ key, from: connection.from, to: connection.to, road: connection.road })
+    }
+  }
+
+  private deferRoad(road: ReadyRoad): void {
+    if (!this.checkedLinks.has(road.key) || !this.roadSources.has(road.key) || this.connections.has(road.key)) return
+    if (!this.readyRoads.some(candidate => candidate.key === road.key)) this.readyRoads.push(road)
+  }
+
+  /** Choose the closest visible-ready route rather than whichever worker reply arrived first. */
+  private nearestReadyRoad(x: number, z: number): number {
+    this.readyRoads = this.readyRoads.filter(road => this.checkedLinks.has(road.key) && !this.connections.has(road.key))
+    let nearest = -1, nearestDistance = Infinity
+    for (let i = 0; i < this.readyRoads.length; i++) {
+      const distance = roadDistance(x, z, this.readyRoads[i]!.road)
+      if (distance > ROAD_LOAD_RADIUS || distance >= nearestDistance) continue
+      nearest = i
+      nearestDistance = distance
+    }
+    return nearest
+  }
+
+  /** A fixed mesh budget prevents a dense road graph from growing frame cost. */
+  private canLoadRoad(candidate: ReadyRoad, x: number, z: number): boolean {
+    if (this.connections.size < MAX_LOADED_REGIONAL_ROADS) return true
+    const candidateDistance = roadDistance(x, z, candidate.road)
+    let farthestKey = '', farthest: LoadedRoad | undefined, farthestDistance = -Infinity
+    for (const [key, connection] of this.connections) {
+      const distance = roadDistance(x, z, connection.road)
+      if (distance > farthestDistance) { farthestKey = key; farthest = connection; farthestDistance = distance }
+    }
+    if (!farthest || candidateDistance >= farthestDistance) return false
+    this.connections.delete(farthestKey)
+    this.removeRoad(farthest)
+    this.deferRoad({ key: farthestKey, from: farthest.from, to: farthest.to, road: farthest.road })
+    return true
   }
 
   private buildRegionalRoad(road: SettlementRoad, from: SettlementPlan, to: SettlementPlan): LoadedRoad {
@@ -498,24 +596,7 @@ export class SettlementSystem {
     const edgeGeometry = createRoadGeometry(edges, x, 0, z)
     if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
     this.root.add(root)
-    return { root, from, to }
-  }
-
-  private removeLinksFor(settlementId: string): void {
-    this.linkQueue = this.linkQueue.filter(job => {
-      const keep = job.from.id !== settlementId && job.to.id !== settlementId
-      if (!keep) this.checkedLinks.delete(job.key)
-      return keep
-    })
-    this.readyRoads = this.readyRoads.filter(job => {
-      const keep = job.fromId !== settlementId && job.toId !== settlementId
-      if (!keep) this.checkedLinks.delete(job.key)
-      return keep
-    })
-    for (const [key, road] of this.connections) {
-      if (road.from.id !== settlementId && road.to.id !== settlementId) continue
-      this.removeRoad(road); this.connections.delete(key); this.checkedLinks.delete(key)
-    }
+    return { root, from, to, road }
   }
 
   private removeRoad(road: LoadedRoad): void {

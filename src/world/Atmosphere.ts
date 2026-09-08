@@ -24,7 +24,7 @@ import {
   Vector3,
   UnsignedByteType,
 } from 'three'
-import { SkyDome } from './SkyDome'
+import { deriveSkyCloudDeck, SkyDome } from './SkyDome'
 import { SnowField } from './SnowField'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
@@ -427,6 +427,7 @@ export class Atmosphere {
 
     const w = this.weatherDirector.snapshot()
     this.updateLightning(dt, w)
+    const skyCloudDeck = deriveSkyCloudDeck(w)
     const totalClouds = Math.max(w.lowClouds, w.midClouds * 0.9, w.highClouds * 0.55)
 
     // Zenith color (top of sky dome)
@@ -542,7 +543,7 @@ export class Atmosphere {
     this.fill.target.position.set(ax, ay * 0.15, az)
     this.fill.target.updateMatrixWorld()
 
-    // Shader sky dome: sun, moon, stars, scatter gradient
+    // Shader sky dome: sun, moon, stars, scatter gradient, and a far weather deck.
     this.sky.update(
       ax,
       ay,
@@ -553,7 +554,7 @@ export class Atmosphere {
       _c,
       _horizon,
       w.haze,
-      totalClouds,
+      skyCloudDeck,
       this.elapsed,
     )
 
@@ -676,6 +677,15 @@ export class Atmosphere {
     const brightness =
       0.5 + dayFactor * 0.48 - weather.snow * 0.08 + this.lightningFlash * 0.16
     const baseOpacity = MathUtils.clamp(0.28 + maxCover * 0.5, 0.18, 0.82)
+    // MeshBasic clouds do not receive the scene lights. Tint the three shared
+    // batches from the same continuous front values so rain and storms become
+    // layered undercast rather than bright clear-weather puffs behind fog.
+    const stormShade = MathUtils.smoothstep(weather.lightning, 0.22, 1)
+    const cloudShade = MathUtils.clamp(
+      weather.rain * 0.22 + stormShade * 0.38 + weather.snow * 0.08,
+      0,
+      0.6,
+    )
     const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
     // ~0.8s ease for opacity (smooth appear / disappear)
     const fadeK = 1 - Math.exp(-dt * 1.4)
@@ -696,7 +706,13 @@ export class Atmosphere {
       let br = brightness
       if (layer === 'cirrus') br = Math.min(1, br + 0.11)
       else if (layer === 'cumulus' && dayFactor > 0.4) br = Math.min(1, br + 0.04)
-      mat.color.setRGB(br, Math.min(1, br * 1.02), Math.min(1, br * 1.06))
+      const layerShade = cloudShade * (layer === 'cirrus' ? 0.48 : layer === 'cumulus' ? 0.86 : 1)
+      br *= 1 - layerShade
+      mat.color.setRGB(
+        br * (0.96 - layerShade * 0.14),
+        Math.min(1, br * (1.02 - layerShade * 0.05)),
+        Math.min(1, br * (1.06 + layerShade * 0.08)),
+      )
     }
 
     // Layer priority with cover: clear → cirrus only; storm → all decks

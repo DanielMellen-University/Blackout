@@ -25,7 +25,7 @@ import {
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
-import { hydrologyIntersectsBounds } from './Hydrology'
+import { hydrologyIntersectsBounds, riverReachesInBounds } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 
 /**
@@ -806,8 +806,15 @@ export class TerrainSystem {
     mesh.receiveShadow = near
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
+    // One tile owns a reach by its midpoint, even when the ribbon itself
+    // crosses a tile edge. That prevents duplicate stream geometry while the
+    // quadtree swaps between merged and detailed terrain tiles.
+    const rivers = riverReachesInBounds(originX, originZ, originX + span, originZ + span).filter(reach => {
+      const x = (reach.ax + reach.bx) / 2, z = (reach.az + reach.bz) / 2
+      return x >= originX && x < originX + span && z >= originZ && z < originZ + span
+    })
     const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
-      { rain: this.waterRain, snow: this.waterSnow })
+      { rain: this.waterRain, snow: this.waterSnow }, rivers)
     return { mesh, water, heights, waterLevels, segs }
   }
 

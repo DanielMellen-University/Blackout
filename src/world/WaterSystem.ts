@@ -1,7 +1,22 @@
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three'
+import type { RiverReach } from './Hydrology'
+import { fbm } from './noise'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number }
+
+function makeWaterMaterial(
+  clock: { value: number },
+  weather: WaterWeatherUniforms | undefined,
+  polygonOffset = -1,
+): MeshStandardMaterial {
+  const material = new MeshStandardMaterial({
+    color: 0x345361, roughness: 0.2, metalness: 0.08,
+    polygonOffset: true, polygonOffsetFactor: polygonOffset, polygonOffsetUnits: polygonOffset,
+  })
+  applyWaterAppearance(material, clock, weather)
+  return material
+}
 
 /**
  * Independent water geometry. Each terrain triangle is clipped at its water
@@ -10,6 +25,7 @@ interface WaterVertex { x: number; z: number; bed: number; level: number }
 export function buildWaterMesh(
   beds: Float32Array, levels: Float32Array, segs: number, size: number,
   originX: number, originZ: number, clock: { value: number }, weather?: WaterWeatherUniforms,
+  reaches: readonly RiverReach[] = [],
 ): Mesh | null {
   const positions: number[] = []
   const depths: number[] = []
@@ -50,6 +66,7 @@ export function buildWaterMesh(
     triangle(a, b, d)
     triangle(b, c, d)
   }
+  appendRiverRibbons(reaches, size, originX, originZ, positions, depths)
   if (!positions.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -58,13 +75,76 @@ export function buildWaterMesh(
   // Water triangles are clipped per terrain cell, so give the renderer an
   // explicit bound for fast streamed-tile culling.
   geometry.computeBoundingSphere()
-  const material = new MeshStandardMaterial({
-    color: 0x345361, roughness: 0.2, metalness: 0.08,
-    polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
-  })
-  applyWaterAppearance(material, clock, weather)
+  const material = makeWaterMaterial(clock, weather)
   const mesh = new Mesh(geometry, material)
   mesh.name = 'WaterSurface'
   mesh.position.set(originX + size / 2, 0, originZ + size / 2)
   return mesh
+}
+
+/**
+ * Analytic river ribbons retain their curved, varying channel profile even
+ * where a far terrain tile has too few vertices to clip a narrow stream.
+ * One mesh batches every reach owned by a streamed terrain tile.
+ */
+function appendRiverRibbons(
+  reaches: readonly RiverReach[],
+  size: number,
+  originX: number,
+  originZ: number,
+  positions: number[],
+  depths: number[],
+): void {
+  const half = size / 2
+  type Section = { leftX: number; leftZ: number; rightX: number; rightZ: number; y: number; depth: number }
+
+  for (const reach of reaches) {
+    const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
+    const length = Math.hypot(dx, dz)
+    if (length < 1) continue
+    const nx = -dz / length, nz = dx / length
+    // A section roughly every 120 m is enough for visible meanders without
+    // turning a whole catchment into a high-poly water surface.
+    const sections: Section[] = []
+    const steps = Math.max(4, Math.min(12, Math.ceil(length / 120)))
+    for (let step = 0; step <= steps; step++) {
+      const t = step / steps
+      const baseX = reach.ax + dx * t
+      const baseZ = reach.az + dz * t
+      const baseWidth = reach.wa + (reach.wb - reach.wa) * t
+      // Endpoint fade preserves exact joins between adjacent reach segments.
+      const bend = (fbm(baseX / 340 + 17, baseZ / 340 - 23, 2) - .5) *
+        Math.min(22, baseWidth * .28) * Math.sin(Math.PI * t)
+      const centerX = baseX + nx * bend
+      const centerZ = baseZ + nz * bend
+      const widthVariation = .86 + fbm(baseX / 190 - 41, baseZ / 190 + 29, 2) * .28
+      const channelHalfWidth = Math.max(5, baseWidth * widthVariation)
+      const depth = Math.max(.45, Math.min(4, channelHalfWidth * .028))
+      const y = reach.ya + (reach.yb - reach.ya) * t + .04
+      sections.push({
+        leftX: centerX + nx * channelHalfWidth - originX - half,
+        leftZ: centerZ + nz * channelHalfWidth - originZ - half,
+        rightX: centerX - nx * channelHalfWidth - originX - half,
+        rightZ: centerZ - nz * channelHalfWidth - originZ - half,
+        y,
+        depth,
+      })
+    }
+
+    for (let step = 0; step < sections.length - 1; step++) {
+      const a = sections[step]!, b = sections[step + 1]!
+      // Two independently addressable triangles keep the mesh non-indexed,
+      // matching the clipped basin surface and avoiding seam bookkeeping.
+      positions.push(
+        a.leftX, a.y, a.leftZ,
+        b.leftX, b.y, b.leftZ,
+        b.rightX, b.y, b.rightZ,
+        a.leftX, a.y, a.leftZ,
+        b.rightX, b.y, b.rightZ,
+        a.rightX, a.y, a.rightZ,
+      )
+      depths.push(a.depth, b.depth, b.depth, a.depth, b.depth, a.depth)
+    }
+  }
+
 }
