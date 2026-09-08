@@ -47,16 +47,19 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   const id = `${cx},${cz}`
   if (cache.has(id)) return cache.get(id)!
   const roll = hash2(cx * 131 + 8129, cz * 139 - 4513)
-  const kind = roll < .05 ? 'city' : 'village'
+  // Settlements are landmarks, not a blanket grid. Cities are deliberately
+  // exceptional while villages still seed enough of the world to reward
+  // exploration across otherwise empty provinces.
+  const kind = roll < .03 ? 'city' : 'village'
   let result: SettlementPlan | null = null
-  if (roll < .18) {
+  if (roll < .22) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
-    const radius = kind === 'city' ? 8500 + rand(1) * 2000 : 900 + rand(1) ** 1.4 * 1900
+    const radius = kind === 'city' ? 8500 + rand(1) * 1500 : 1050 + rand(1) ** .72 * 3950
     const margin = radius + 300
     // Huge city footprints need a broader site search now that mountain and
     // foothill provinces have stronger relief. Rarity stays unchanged because
     // only the original 5 percent of settlement cells can attempt a city.
-    const siteAttempts = kind === 'city' ? 12 : 8
+    const siteAttempts = kind === 'city' ? 32 : 8
     for (let attempt = 0; attempt < siteAttempts; attempt++) {
       const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       const z = cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
@@ -75,7 +78,7 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
         min = Math.min(min, s.height); max = Math.max(max, s.height)
         if (max - min > (kind === 'city' ? 350 : 260)) { suitable = false; break }
       }
-      if (kind === 'city' && drySamples < 5) suitable = false
+      if (kind === 'city' && drySamples < 4) suitable = false
       if (!suitable) continue
       const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome, buildings: [], roads: [] }
       populate(plan, rand)
@@ -180,12 +183,24 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     flush()
   }
   const city = plan.kind === 'city'
+  // Village morphology is chosen independently from footprint size. This
+  // keeps settlements from reading as repeated radial templates or a grid.
+  const villageProfile = city ? 'basin' : (rand(43) < .24 ? 'hamlet'
+    : rand(44) < .5 ? 'ribbon' : rand(45) < .78 ? 'crossroads' : 'basin')
   const phase = rand(40) * Math.PI * 2
-  const aspect = (plan.kind === 'city' ? .78 : .62) + rand(41) * (plan.kind === 'city' ? .2 : .35)
+  const aspect = city ? .78 + rand(41) * .2
+    : villageProfile === 'hamlet' ? .55 + rand(41) * .25
+      : villageProfile === 'ribbon' ? .28 + rand(41) * .28
+        : villageProfile === 'crossroads' ? .64 + rand(41) * .3
+          : .82 + rand(41) * .4
   // Unequal lobes, asymmetric stretches and branched streets replace grids.
   const boundary = (a: number) => .77 + .11 * Math.sin(a * 3 + phase) + .065 * Math.sin(a * 5 - phase)
   const polar = (a: number, distance: number) => ({ x: Math.cos(a) * distance, z: Math.sin(a) * distance * aspect })
-  const arms = city ? 4 + Math.floor(rand(42) * 3) : 2 + Math.floor(rand(42) * 3)
+  const arms = city ? 4 + Math.floor(rand(42) * 3)
+    : villageProfile === 'hamlet' ? 2
+      : villageProfile === 'ribbon' ? 2 + Math.floor(rand(42) * 2)
+        : villageProfile === 'crossroads' ? 3 + Math.floor(rand(42) * 2)
+          : 4 + Math.floor(rand(42) * 2)
   for (let arm = 0; arm < arms; arm++) {
     const direction = arm / arms * Math.PI * 2 + (rand(50 + arm) - .5) * .65
     const reach = plan.radius * boundary(direction)
@@ -206,6 +221,18 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         z: (base.z + end.z) / 2 - Math.cos(heading) * length * .12 }, end], city ? 30 : 22)
     }
   }
+  if (!city && villageProfile !== 'hamlet') {
+    // A bent neighborhood loop gives larger villages a memorable spine while
+    // preserving gaps and cul-de-sacs between the buildings.
+    const loopPoints: { x: number; z: number }[] = []
+    const loopRadius = plan.radius * (villageProfile === 'ribbon' ? .34 : .48)
+    const loopCount = villageProfile === 'ribbon' ? 5 : 7
+    for (let i = 0; i <= loopCount; i++) {
+      const a = phase + i / loopCount * Math.PI * 1.65
+      loopPoints.push(polar(a, loopRadius * (1 + .15 * Math.sin(a * 2 + phase))))
+    }
+    road(loopPoints, 18 + rand(180) * 12)
+  }
   if (city) {
     // Broken, warped district connectors have neither circular nor square outlines.
     for (let ring = 0; ring < 1; ring++) {
@@ -217,14 +244,26 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       road(points, 32)
     }
   }
-  const target = city ? 700 + Math.floor(rand(200) * 900) : 8 + Math.floor(((plan.radius - 900) / 1900) * 62)
+  const target = city ? 660 + Math.floor(rand(200) * 620)
+    : villageProfile === 'hamlet' ? 8 + Math.floor(rand(201) * 8)
+      : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20)
+        : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28)
+          : 28 + Math.floor(rand(201) * 38)
   for (let attempt = 0; attempt < target * (city ? 80 : 32) && plan.buildings.length < target; attempt++) {
     const n = 10000 + attempt * 9
     const a = rand(n) * Math.PI * 2
     const distance = Math.sqrt(rand(n + 1)) * plan.radius * boundary(a)
     const p = polar(a, distance)
-    const width = city ? 210 + rand(n + 2) * 180 : 180 + rand(n + 2) * 145
-    const depth = city ? 210 + rand(n + 3) * 180 : 180 + rand(n + 3) * 145
+    // Buildings are intentionally oversized relative to the aircraft, but
+    // each village profile gets its own scale band. A few landmark lots are
+    // much larger again, preventing a uniform settlement silhouette.
+    const villageScale = villageProfile === 'hamlet' ? .78
+      : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
+    const landmarkScale = !city && rand(n + 8) < .08 ? 1.8 : 1
+    const width = city ? 160 + rand(n + 2) * 180
+      : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * landmarkScale)
+    const depth = city ? 160 + rand(n + 3) * 180
+      : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * landmarkScale)
     let nearest = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
@@ -235,7 +274,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     }
     if (!clear || (!city && nearest > 420)) continue
     const core = Math.max(0, 1 - distance / (plan.radius * .65))
-    const height = city ? 120 + rand(n + 4) * 220 + core ** 2 * (700 + rand(n + 5) * 1100) : 95 + rand(n + 4) * 105
+    const height = city ? 180 + rand(n + 4) * 260 + core ** 2 * (760 + rand(n + 5) * 1250) : 150 + rand(n + 4) * 240
     building(p.x, p.z, width, depth, height, yaw + (rand(n + 6) - .5) * .35)
   }
 }

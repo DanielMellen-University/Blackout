@@ -11,6 +11,7 @@
 - Stream instanced buildings and roofs, precompute terrain suitability in a worker, and include building collision.
 - Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
+- Rework settlement morphology so villages use rare hamlet, ribbon, crossroads and basin profiles with varied radii, loops and oversized landmark buildings; cities remain rare, broad and dense.
 
 ### Terrain
 

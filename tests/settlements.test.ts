@@ -52,6 +52,17 @@ describe('procedural settlements', () => {
     expect(shapes).toEqual(new Set(['block', 'slab', 'tower', 'stepped', 'hangar']))
   })
 
+  it('varies settlement scale and silhouette instead of repeating one footprint', () => {
+    setWorldSeed(73)
+    const plans = region()
+    const villages = plans.filter(plan => plan.kind === 'village')
+    const cities = plans.filter(plan => plan.kind === 'city')
+    expect(new Set(villages.map(plan => Math.round(plan.radius / 500))).size).toBeGreaterThanOrEqual(3)
+    const villageWidths = villages.flatMap(plan => plan.buildings.map(building => building.width))
+    expect(Math.max(...villageWidths) / Math.min(...villageWidths)).toBeGreaterThan(2)
+    expect(cities.every(plan => plan.radius >= 8500 && plan.buildings.length >= 650)).toBe(true)
+  })
+
   it('fits dry foundations, caps geometry and keeps roads on dry gentle ground', () => {
     setWorldSeed(1)
     for (const plan of region(5)) {
