@@ -12,6 +12,7 @@
 - Fit dry, gentle lots to existing terrain, with biome-specific architecture and oversized buildings for flight-camera readability.
 - Stream instanced buildings and roofs, precompute terrain suitability in a worker, and include building collision.
 - Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
+- Add batched pale edge strips to regional connectors so long links retain a readable road silhouette through haze.
 - Add batched local street centerlines so district roads remain legible from the chase camera without per-segment draw calls.
 - Add settlement destinations and a chase-camera scale check to the terrain review.
 - Rework settlement morphology so villages use rare hamlet, ribbon, crossroads and basin profiles with varied radii, loops and oversized landmark buildings; cities remain rare, broad and dense.

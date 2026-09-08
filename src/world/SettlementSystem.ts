@@ -105,6 +105,8 @@ export class SettlementSystem {
   private readonly highway = new MeshStandardMaterial({ color: 0x575650, roughness: .96, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly highwayMark = new MeshStandardMaterial({ color: 0xd3be67, emissive: 0x4d4115, emissiveIntensity: .15,
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
+  private readonly highwayEdge = new MeshStandardMaterial({ color: 0xb3ae8a, emissive: 0x302e1d, emissiveIntensity: .08,
+    roughness: .86, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly loaded = new Map<string, LoadedSettlement>()
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
@@ -202,7 +204,7 @@ export class SettlementSystem {
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.roof.dispose()
-    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.highway.dispose(); this.highwayMark.dispose()
+    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.highway.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
   }
 
   update(x: number, z: number): void {
@@ -369,6 +371,14 @@ export class SettlementSystem {
     const centerline: SettlementRoad = { width: 1.6, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
     const marking = createRoadGeometry([centerline], x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
+    // Edge strips give long links a readable silhouette through haze while
+    // staying as one batched mesh per connector.
+    const edges: SettlementRoad[] = [
+      { width: 1.15, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .2, z: point.leftZ ?? point.z })) },
+      { width: 1.15, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .2, z: point.rightZ ?? point.z })) },
+    ]
+    const edgeGeometry = createRoadGeometry(edges, x, 0, z)
+    if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
     this.root.add(root)
     return { root, from, to }
   }
