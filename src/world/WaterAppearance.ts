@@ -46,14 +46,17 @@ export function applyWaterAppearance(
       `#include <normal_fragment_maps>
       float distanceFade = 1.0 - smoothstep(400.0, 3500.0, length(vWaterWorld - cameraPosition));
       vec2 p = vWaterWorld.xz;
-      vec2 drift = vec2(worldWaterTime * (0.004 + waterRain * 0.003), worldWaterTime * (0.002 + waterRain * 0.002));
+      // Keep the accumulated phase independent of live weather blending. If
+      // rain multiplied worldWaterTime here, a front transition would jump the
+      // entire water pattern after the world had been running for a while.
+      vec2 drift = vec2(worldWaterTime * 0.004, worldWaterTime * 0.002);
       vec2 rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
       vec2 rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
       vec2 ripples = rippleA * (0.085 + waterRain * 0.045) + rippleB * (0.035 + waterSnow * 0.01) * distanceFade;
       normal = normalize(normal + mat3(viewMatrix) * vec3(ripples.x, 0.0, ripples.y));
       float fresnel = 0.02 + 0.48 * pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);
       float glint = pow(max(0.0, rippleA.x + rippleB.y), 3.0) *
-        (0.5 + 0.5 * sin(worldWaterTime * (0.7 + waterRain * 0.25) + p.x * 0.002)) * (1.0 - waterSnow * 0.15);
+        (0.5 + 0.5 * sin(worldWaterTime * 0.7 + p.x * 0.002)) * (1.0 - waterSnow * 0.15);
       vec3 reflectedSky = vec3(0.18, 0.46, 0.58) + vec3(0.12, 0.16, 0.14) * glint;
       #ifdef USE_FOG
         reflectedSky = fogColor * 0.85;

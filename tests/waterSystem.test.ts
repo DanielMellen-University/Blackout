@@ -28,4 +28,28 @@ describe('independent water surfaces', () => {
       ;(mesh.material as MeshStandardMaterial).dispose()
     }
   })
+
+  it('shares live precipitation uniforms with every generated water material', () => {
+    const clock = { value: 4 }
+    const weather = { rain: { value: .75 }, snow: { value: .25 } }
+    const mesh = buildWaterMesh(
+      new Float32Array([-8, -8, -8, -8]), new Float32Array(4), 1, 100, 0, 0, clock, weather,
+    )!
+    const material = mesh.material as MeshStandardMaterial
+    const shader = {
+      uniforms: {} as Record<string, unknown>,
+      vertexShader: '#include <project_vertex>',
+      fragmentShader: '#include <color_fragment>\n#include <normal_fragment_maps>',
+    }
+    try {
+      material.onBeforeCompile(shader as never)
+      expect(shader.uniforms.waterRain).toBe(weather.rain)
+      expect(shader.uniforms.waterSnow).toBe(weather.snow)
+      expect(shader.fragmentShader).toContain('waterRain')
+      expect(shader.fragmentShader).toContain('waterSnow')
+    } finally {
+      mesh.geometry.dispose()
+      material.dispose()
+    }
+  })
 })
