@@ -142,13 +142,17 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     const n = serial++
     const shapeRoll = rand(n + 2000)
     const shape: SettlementBuilding['shape'] = plan.kind === 'city'
-      ? height > 620 && shapeRoll < .55 ? 'stepped'
-        : height > 380 && shapeRoll < .78 ? 'tower'
-          : shapeRoll < .28 ? 'slab' : 'block'
+      ? height > 620 && shapeRoll < .38 ? 'stepped'
+        : height > 380 && shapeRoll < .63 ? 'tower'
+          : shapeRoll < .24 ? 'slab' : shapeRoll < .34 ? 'hangar' : 'block'
       : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
-    plan.buildings.push({ x, z, y: min - 1, width, depth, height: height + max - min + 1,
+    const finalHeight = plan.kind === 'city' && shape === 'hangar'
+      ? Math.min(height, 300 + rand(n + 3000) * 120) : height
+    const flatRoof = shape === 'tower' || shape === 'stepped'
+      || (plan.kind === 'city' && shapeRoll < .58)
+    plan.buildings.push({ x, z, y: min - 1, width, depth, height: finalHeight + max - min + 1,
       shape,
-      yaw, roof: shape === 'tower' || shape === 'stepped' || (plan.kind === 'city' && height > 25) ? 'flat' : style.roof,
+      yaw, roof: flatRoof ? 'flat' : style.roof,
       wallColor: style.walls[Math.floor(rand(n) * style.walls.length)]!,
       roofColor: style.roofs[Math.floor(rand(n + 1000) * style.roofs.length)]! })
   }

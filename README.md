@@ -109,7 +109,7 @@ not a rainfall or fluid simulation.
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
 Villages range from compact hamlets to several-kilometre ribbon, crossroads and
 basin settlements; the rarest cities span roughly 17-20 km and contain 650-1,300
-buildings. Organic branches,
+buildings with mixed towers, stepped cores, slabs, hangars and pitched rooflines. Organic branches,
 dead ends and broken district connectors replace repeated grids. Building
 footprints, heights, stepped/octagonal silhouettes, rooflines and biome palettes
 vary by world seed, using deliberately exaggerated scale for readability from the jet.
