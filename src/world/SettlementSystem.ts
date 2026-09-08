@@ -299,9 +299,11 @@ export class SettlementSystem {
     const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
     const pitched = plan.buildings.filter(b => b.roof === 'pitched')
     const flat = plan.buildings.filter(b => b.roof === 'flat')
+    const flatHangars = plan.buildings.filter(b => b.shape === 'hangar' && b.roof === 'flat')
     const gables = new InstancedMesh(this.roof, this.roofs, pitched.length)
     const crowns = flat.filter(b => plan.kind === 'city' && b.height > 250)
     const caps = new InstancedMesh(this.box, this.roofs, flat.length + crowns.length)
+    const hangarCaps = new InstancedMesh(this.roof, this.roofs, flatHangars.length)
     const put = (mesh: InstancedMesh, index: number, x: number, y: number, z: number, w: number, h: number, d: number, yaw: number, tint: number) => {
       transform.position.set(x - plan.x, y - plan.y, z - plan.z)
       transform.scale.set(w, h, d); transform.rotation.set(0, yaw, 0); transform.updateMatrix()
@@ -323,7 +325,11 @@ export class SettlementSystem {
     })
     crowns.forEach((b, i) => put(caps, flat.length + i, b.x, b.y + b.height + b.height * .05, b.z,
       b.width * .48, b.height * .1, b.depth * .55, b.yaw, b.roofColor))
-    for (const mesh of [body, towerBodies, stepBodies, gables, caps]) {
+    // Flat-roof hangars still get a broad shared canopy so their silhouette
+    // reads as a civic or industrial hall instead of another plain box.
+    flatHangars.forEach((b, i) => put(hangarCaps, i, b.x, b.y + b.height + .55, b.z,
+      b.width * 1.12, Math.min(b.width, b.depth) * .22, b.depth * 1.08, b.yaw, b.roofColor))
+    for (const mesh of [body, towerBodies, stepBodies, gables, caps, hangarCaps]) {
       if (!mesh.count) { mesh.dispose(); continue }
       mesh.computeBoundingSphere()
       // Roof silhouettes stay visible at distance too; only ground detail is culled.

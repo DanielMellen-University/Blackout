@@ -10,6 +10,7 @@
 - Replace repeated grids with asymmetric districts, bent approaches, branches, dead ends and terrain-following roads.
 - Mix blocks, slabs, pitched hangars, octagonal towers and stepped skyscrapers.
 - Rebalance city silhouettes so towers no longer dominate: stepped cores are rarer, hangars and slabs fill districts, and non-tower buildings regain pitched roof variation.
+- Render flat-roof hangars with shared gabled canopies so industrial halls have a distinct silhouette without extra per-building meshes.
 - Fit dry, gentle lots to existing terrain, with biome-specific architecture and oversized buildings for flight-camera readability.
 - Stream instanced buildings and roofs, precompute terrain suitability in a worker, and include building collision.
 - Connect selected nearby settlements with off-thread regional routes, gentle approaches and readable center markings.
