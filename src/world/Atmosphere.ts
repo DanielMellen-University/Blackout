@@ -192,6 +192,9 @@ export class Atmosphere {
   /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
   private readonly cloudAlpha: number[] = []
   private readonly cloudLayers: CloudLayer[] = []
+  /** Seeded cloud placement keeps a world reviewable after a reseed. */
+  private cloudSeed = 1337
+  private cloudRecycle = 0
 
   private baseFogNear = 1200
   private baseFogFar = 4000
@@ -368,6 +371,7 @@ export class Atmosphere {
 
     this.weatherDirector.randomize(seed, w)
     this.weather = w
+    this.reseedCloudField(seed)
     this.lightningCharge = LIGHTNING_MIN_CHARGE + this.seededPulse(seed) * LIGHTNING_CHARGE_RANGE
     this.lightningFlash = 0
     this.lightningFlashAge = Infinity
@@ -734,12 +738,13 @@ export class Atmosphere {
 
       // Past terrain unload range → recycle onto far spawn ring (in the fog)
       if (distSq > despawnSq) {
-        const ang = Math.random() * Math.PI * 2
+        const recycle = this.cloudRecycle++
+        const ang = this.cloudPulse(i, recycle * 2 + 11) * Math.PI * 2
         const r =
-          CLOUD_SPAWN_MIN + Math.random() * (CLOUD_SPAWN_MAX - CLOUD_SPAWN_MIN)
+          CLOUD_SPAWN_MIN + this.cloudPulse(i, recycle * 2 + 17) * (CLOUD_SPAWN_MAX - CLOUD_SPAWN_MIN)
         wpos.x = ax + Math.cos(ang) * r
         wpos.z = az + Math.sin(ang) * r
-        wpos.y = cloudAltitude(layer)
+        wpos.y = this.seededCloudAltitude(layer, i, recycle + 23)
         this.cloudAlpha[i] = 0 // start invisible, fade in
         dx = wpos.x - ax
         dz = wpos.z - az
@@ -873,6 +878,31 @@ export class Atmosphere {
 
   private seededPulse(value: number): number {
     const n = Math.sin(value * 12.9898 + 78.233) * 43758.5453
+    return n - Math.floor(n)
+  }
+
+  /** Place the existing pooled clusters deterministically for the new world. */
+  private reseedCloudField(seed: number): void {
+    this.cloudSeed = seed
+    this.cloudRecycle = 0
+    for (let i = 0; i < this.cloudWorld.length; i++) {
+      const angle = this.cloudPulse(i, 101) * Math.PI * 2
+      const radius = Math.sqrt(this.cloudPulse(i, 107)) * CLOUD_DESPAWN * .92
+      const position = this.cloudWorld[i]!
+      position.x = Math.cos(angle) * radius
+      position.z = Math.sin(angle) * radius
+      position.y = this.seededCloudAltitude(this.cloudLayers[i]!, i, 113)
+      this.cloudAlpha[i] = 0
+    }
+  }
+
+  private seededCloudAltitude(layer: CloudLayer, index: number, salt: number): number {
+    const spec = CLOUD_LAYER[layer]
+    return spec.yMin + this.cloudPulse(index, salt) * (spec.yMax - spec.yMin)
+  }
+
+  private cloudPulse(index: number, salt: number): number {
+    const n = Math.sin(this.cloudSeed * .000173 + index * 12.9898 + salt * 78.233) * 43758.5453
     return n - Math.floor(n)
   }
 }
