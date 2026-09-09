@@ -128,7 +128,10 @@ Each new airfield also reserves independent city and village anchor searches;
 the runway heading biases those landmarks into the first takeoff corridor, and
 deterministic fallback cells keep both tiers alive when a rough seed rejects
 the first shelf or a streaming reset retries the cell, while ordinary
-settlement rolls remain naturally sparse.
+settlement rolls remain naturally sparse. The two protected landmarks also use
+small shared beacon meshes above their tallest roofs, making the guaranteed
+destinations readable through flight fog and low-light weather without adding
+per-building geometry.
 Settlement placement runs in a background worker; buildings and roofs are
 instanced, with ground detail culled at distance. Trees and rocks use the same
 bounded instanced streaming path, with detailed props limited to the near field.

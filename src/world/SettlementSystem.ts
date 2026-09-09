@@ -1,6 +1,7 @@
 import {
   BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
   InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
+  MeshBasicMaterial,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
@@ -178,10 +179,14 @@ export class SettlementSystem {
   private readonly tower = new CylinderGeometry(.5, .5, 1, 8)
   /** Shared civic accents keep city silhouettes varied without per-building draws. */
   private readonly spire = new ConeGeometry(.5, 1, 8)
+  /** One shared low-poly marker makes guaranteed landmarks readable through flight fog. */
+  private readonly anchorBeacon = new ConeGeometry(.5, 1, 8)
   private readonly dome = new SphereGeometry(.5, 12, 6, 0, Math.PI * 2, 0, Math.PI * .5)
   private readonly roof = roofGeometry()
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
+  private readonly cityBeacon = new MeshBasicMaterial({ color: 0xffbd68, transparent: true, opacity: .86, depthWrite: false, fog: false })
+  private readonly villageBeacon = new MeshBasicMaterial({ color: 0x67e4d0, transparent: true, opacity: .82, depthWrite: false, fog: false })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly gravelShoulder = new MeshStandardMaterial({ color: 0x887d66, emissive: 0x17140f, emissiveIntensity: .12,
     roughness: 1, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
@@ -523,8 +528,9 @@ export class SettlementSystem {
     this.clearAll()
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
-    this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.dome.dispose(); this.roof.dispose()
+    this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.anchorBeacon.dispose(); this.dome.dispose(); this.roof.dispose()
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
+    this.cityBeacon.dispose(); this.villageBeacon.dispose()
   }
 
   update(x: number, z: number): void {
@@ -774,6 +780,20 @@ export class SettlementSystem {
       mesh.computeBoundingSphere()
       // Roof silhouettes stay visible at distance too; only ground detail is culled.
       root.add(mesh)
+    }
+    if (plan.anchor) {
+      // The marker is only present on the two protected spawn landmarks. It
+      // sits above the tallest roof, stays visible through the flight fog,
+      // and costs one shared low-poly draw per loaded anchor at most.
+      const highestRoof = Math.max(plan.y, ...plan.buildings.map(building => building.y + building.height))
+      const height = plan.kind === 'city' ? 520 : 260
+      const radius = plan.kind === 'city' ? 24 : 16
+      const beacon = new Mesh(this.anchorBeacon, plan.kind === 'city' ? this.cityBeacon : this.villageBeacon)
+      beacon.name = 'SettlementAnchorBeacon'
+      beacon.position.set(0, highestRoof - plan.y + height * .5 + 120, 0)
+      beacon.scale.set(radius, height, radius)
+      beacon.renderOrder = 2
+      detail.add(beacon)
     }
     const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
       width: road.width * 1.35,
