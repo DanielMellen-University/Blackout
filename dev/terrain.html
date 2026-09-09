@@ -76,6 +76,11 @@ function frameWorld(destination){
   controls.target.set(x,y+15,z);controls.update()
   // Warm the review scene even when a background browser throttles animation.
   for(let i=0;i<400;i++) world.terrain.update(x,z,1/30)
+  // Keep settlement streaming focused with the reviewed destination. Without
+  // this kick, the previous airfield cell could remain authoritative while
+  // the camera was already looking at a city or village several kilometres
+  // away.
+  world.settlements.update(x,z)
   world.atmosphere.update(10,x,y,z)
   world.atmosphere.timeOfDay=.48
   world.atmosphere.update(0,x,y,z)
@@ -128,6 +133,10 @@ function visitDestination(value){
   // also provide a valid runway site under the current spawn constraints.
   if(world.worldSeed!==seed){setWorldSeed(seed);clearOpsPad();world.settlements.clearAll()}
   world.terrain.clearAll()
+  // Terrain destinations are independent review scenes. Reset the settlement
+  // stream too, otherwise the airfield's checked cells can keep an unrelated
+  // village or city alive while this camera is aimed at the new destination.
+  world.settlements.clearAll()
   if(value==='lake'||value==='ocean'){
     const b=waterLandmarks(-1,-1).find(b=>b.sea===(value==='ocean'))
     x=b.x;z=b.z
@@ -155,8 +164,19 @@ function visitDestination(value){
     settlementRadius=settlement.radius
     settlementKind=value
     settlementTop=Math.max(700,...settlement.buildings.map(building=>building.y+building.height))
-    const offset=Math.min(settlementRadius*.55,5000)
-    camera.position.set(x+offset,y+Math.min(settlementRadius*.3,2600),z-offset)
+    // Frame from above the nearest terrain shoulder so the city/village is
+    // not hidden behind a local ridge in orbit mode.
+    const offset=Math.max(1300,Math.min(settlementRadius*.26,2800))
+    let nearbyPeak=y
+    for(let ix=-2;ix<=2;ix++) for(let iz=-2;iz<=2;iz++) {
+      nearbyPeak=Math.max(nearbyPeak,sampleTerrainHeight(x+ix*750,z+iz*750))
+    }
+    const viewY=Math.max(
+      y+Math.min(settlementRadius*.26,2800),
+      nearbyPeak+520,
+      settlementTop+180,
+    )
+    camera.position.set(x+offset,viewY,z-offset)
     controls.target.set(x,y+25,z);controls.update()
     if(value==='roadlink') camera.position.set(x+2400,y+1800,z-2400)
   }
