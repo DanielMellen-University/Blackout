@@ -24,6 +24,7 @@ interface Bit {
 }
 
 const _look = new Vector3()
+const _inherit = new Vector3()
 
 /**
  * Crash boom: central flash plus ballistic fireballs that arc out.
@@ -31,6 +32,9 @@ const _look = new Vector3()
 export class CrashFx {
   readonly root = new Group()
   private readonly bits: Bit[] = []
+  private readonly bloomPool: Bit[] = []
+  private readonly smokePool: Bit[] = []
+  private readonly ballPool: Bit[] = []
   private readonly fireMat: MeshBasicMaterial
   private readonly fireHotMat: MeshBasicMaterial
   private readonly fireMidMat: MeshBasicMaterial
@@ -88,6 +92,10 @@ export class CrashFx {
     this.sphereGeo = new SphereGeometry(1, 12, 10)
     this.trailGeo = new SphereGeometry(1, 8, 6)
 
+    for (let i = 0; i < 8; i++) this.bloomPool.push(this.makeBloomBit())
+    for (let i = 0; i < 14; i++) this.smokePool.push(this.makeSmokeBit())
+    for (let i = 0; i < 32; i++) this.ballPool.push(this.makeBallBit())
+
     this.ring = new Mesh(new RingGeometry(0.4, 1.15, 32), this.ringMat)
     this.ring.rotation.x = -Math.PI / 2
     this.root.add(this.ring)
@@ -121,13 +129,13 @@ export class CrashFx {
     this.flash.scale.setScalar(8)
     ;(this.flash.material as MeshBasicMaterial).opacity = 1
 
-    const inherit = vel.clone().multiplyScalar(0.22)
+    _inherit.copy(vel).multiplyScalar(0.22)
 
     for (let i = 0; i < 8; i++) {
-      this.spawnBloom(inherit)
+      this.spawnBloom(this.bloomPool[i]!, _inherit)
     }
     for (let i = 0; i < 14; i++) {
-      this.spawnSmoke(inherit)
+      this.spawnSmoke(this.smokePool[i]!, _inherit)
     }
     // The show: burning globes on real arcs
     const n = 22
@@ -135,12 +143,12 @@ export class CrashFx {
       const yaw = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.45
       const pitch = 0.28 + Math.random() * 0.72
       const speed = 22 + Math.random() * 38
-      this.spawnBall(yaw, pitch, speed, inherit)
+      this.spawnBall(this.ballPool[i]!, yaw, pitch, speed, _inherit)
     }
     for (let i = 0; i < 10; i++) {
       const yaw = Math.random() * Math.PI * 2
       const pitch = 0.15 + Math.random() * 0.5
-      this.spawnBall(yaw, pitch, 14 + Math.random() * 22, inherit)
+      this.spawnBall(this.ballPool[22 + i]!, yaw, pitch, 14 + Math.random() * 22, _inherit)
     }
   }
 
@@ -262,46 +270,51 @@ export class CrashFx {
     this.clearBits()
   }
 
-  private spawnBloom(inherit: Vector3): void {
-    const mesh = new Mesh(this.sphereGeo, (Math.random() > 0.4 ? this.fireHotMat : this.fireMat).clone())
+  private spawnBloom(bit: Bit, inherit: Vector3): void {
+    const mesh = bit.mesh
     mesh.position.set((Math.random() - 0.5) * 2, Math.random() * 1.4, (Math.random() - 0.5) * 2)
-    const vel = new Vector3(Math.random() - 0.5, 0.4 + Math.random(), Math.random() - 0.5)
+    bit.vel.set(Math.random() - 0.5, 0.4 + Math.random(), Math.random() - 0.5)
       .normalize()
       .multiplyScalar(2 + Math.random() * 4)
       .add(inherit)
     const size0 = 2.2 + Math.random() * 2.6
     mesh.scale.setScalar(size0)
-    this.root.add(mesh)
     const life = 0.55 + Math.random() * 0.45
-    this.bits.push({ mesh, vel, life, maxLife: life, kind: 'bloom', size0 })
+    bit.life = life
+    bit.maxLife = life
+    bit.size0 = size0
+    mesh.visible = true
+    this.bits.push(bit)
   }
 
-  private spawnSmoke(inherit: Vector3): void {
-    const mesh = new Mesh(this.sphereGeo, this.smokeMat.clone())
+  private spawnSmoke(bit: Bit, inherit: Vector3): void {
+    const mesh = bit.mesh
     mesh.position.set((Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3)
-    const vel = new Vector3(Math.random() - 0.5, 0.6 + Math.random(), Math.random() - 0.5)
+    bit.vel.set(Math.random() - 0.5, 0.6 + Math.random(), Math.random() - 0.5)
       .normalize()
       .multiplyScalar(2 + Math.random() * 3)
       .addScaledVector(inherit, 0.4)
     const size0 = 2.4 + Math.random() * 3
     mesh.scale.setScalar(size0)
-    this.root.add(mesh)
     const life = 1.8 + Math.random() * 2
-    this.bits.push({ mesh, vel, life, maxLife: life, kind: 'smoke', size0 })
+    bit.life = life
+    bit.maxLife = life
+    bit.size0 = size0
+    mesh.visible = true
+    this.bits.push(bit)
   }
 
-  private spawnBall(yaw: number, pitch: number, speed: number, inherit: Vector3): void {
+  private spawnBall(bit: Bit, yaw: number, pitch: number, speed: number, inherit: Vector3): void {
     const size0 = 0.7 + Math.random() * 2.1
-    const shell = new Mesh(this.sphereGeo, this.fireMidMat.clone())
-    const core = new Mesh(this.sphereGeo, this.fireHotMat.clone())
+    const shell = bit.mesh
+    const core = bit.core!
+    const trail = bit.trail!
     core.scale.setScalar(0.42)
-    const trail = new Mesh(this.trailGeo, this.fireMat.clone())
     trail.position.z = -0.85
     trail.scale.set(0.55, 0.55, 1.8)
-    shell.add(core, trail)
 
     const cp = Math.cos(pitch)
-    const vel = new Vector3(
+    bit.vel.set(
       Math.sin(yaw) * cp * speed,
       Math.sin(pitch) * speed,
       Math.cos(yaw) * cp * speed,
@@ -309,36 +322,51 @@ export class CrashFx {
 
     shell.position.set((Math.random() - 0.5) * 1.2, 0.6 + Math.random() * 1.4, (Math.random() - 0.5) * 1.2)
     shell.scale.setScalar(size0)
-    this.root.add(shell)
     const life = 2.4 + Math.random() * 2.8 + size0 * 0.35
-    this.bits.push({
-      mesh: shell,
-      vel,
-      life,
-      maxLife: life,
-      kind: 'ball',
-      size0,
-      core,
-      trail,
-    })
+    bit.life = life
+    bit.maxLife = life
+    bit.size0 = size0
+    shell.visible = true
+    this.bits.push(bit)
   }
 
   private clearBits(): void {
     for (const b of this.bits) {
-      this.root.remove(b.mesh)
-      const mats = [b.mesh.material, b.core?.material, b.trail?.material]
-      for (const mat of mats) {
-        if (!mat) continue
-        if (
-          mat !== this.fireMat &&
-          mat !== this.fireHotMat &&
-          mat !== this.fireMidMat &&
-          mat !== this.smokeMat
-        ) {
-          ;(mat as MeshBasicMaterial).dispose()
-        }
-      }
+      b.mesh.visible = false
     }
     this.bits.length = 0
+  }
+
+  private makeBloomBit(): Bit {
+    const mesh = new Mesh(this.sphereGeo, this.fireHotMat.clone())
+    mesh.visible = false
+    this.root.add(mesh)
+    return { mesh, vel: new Vector3(), life: 0, maxLife: 1, kind: 'bloom', size0: 1 }
+  }
+
+  private makeSmokeBit(): Bit {
+    const mesh = new Mesh(this.sphereGeo, this.smokeMat.clone())
+    mesh.visible = false
+    this.root.add(mesh)
+    return { mesh, vel: new Vector3(), life: 0, maxLife: 1, kind: 'smoke', size0: 1 }
+  }
+
+  private makeBallBit(): Bit {
+    const shell = new Mesh(this.sphereGeo, this.fireMidMat.clone())
+    const core = new Mesh(this.sphereGeo, this.fireHotMat.clone())
+    const trail = new Mesh(this.trailGeo, this.fireMat.clone())
+    shell.add(core, trail)
+    shell.visible = false
+    this.root.add(shell)
+    return {
+      mesh: shell,
+      vel: new Vector3(),
+      life: 0,
+      maxLife: 1,
+      kind: 'ball',
+      size0: 1,
+      core,
+      trail,
+    }
   }
 }
