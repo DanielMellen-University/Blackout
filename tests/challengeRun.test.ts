@@ -52,4 +52,14 @@ describe('ChallengeRun', () => {
   it('formats time with centiseconds', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
   })
+
+  it('reuses the clock label while the displayed centiseconds stay unchanged', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:clock', 1)
+    const first = run.clockLabel
+    run.update(0.001, 0)
+    expect(run.clockLabel).toBe(first)
+    run.update(0.01, 8)
+    expect(run.clockLabel).not.toBe(first)
+  })
 })

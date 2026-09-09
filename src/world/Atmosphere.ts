@@ -192,6 +192,11 @@ export class Atmosphere {
   private lightningFlashAge = Infinity
   private lightningFlashPeak = 0
   private gustPhase = 0
+  private clockLabelMinute = -1
+  private clockLabelValue = '00:00'
+  private weatherLabelTarget: WeatherId | null = null
+  private weatherLabelShifting = false
+  private weatherLabelValue = ''
   private readonly lastAnchor: AtmosphereAnchor = { x: 0, y: 0, z: 0 }
   private hasLastAnchor = false
   private dirty = true
@@ -414,15 +419,25 @@ export class Atmosphere {
   }
 
   get clockLabel(): string {
-    const hours = this.timeOfDay * 24
-    const h = Math.floor(hours) % 24
-    const m = Math.floor((hours - Math.floor(hours)) * 60)
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    const minute = Math.floor(this.timeOfDay * 24 * 60) % 1440
+    if (minute !== this.clockLabelMinute) {
+      this.clockLabelMinute = minute
+      const h = Math.floor(minute / 60)
+      const m = minute % 60
+      this.clockLabelValue = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    }
+    return this.clockLabelValue
   }
 
   get weatherLabel(): string {
-    const suffix = this.weatherDirector.transitioning ? ' / SHIFTING' : ''
-    return `${WEATHER_LABELS[this.weatherDirector.targetId]}${suffix}`
+    const target = this.weatherDirector.targetId
+    const shifting = this.weatherDirector.transitioning
+    if (target !== this.weatherLabelTarget || shifting !== this.weatherLabelShifting) {
+      this.weatherLabelTarget = target
+      this.weatherLabelShifting = shifting
+      this.weatherLabelValue = `${WEATHER_LABELS[target]}${shifting ? ' / SHIFTING' : ''}`
+    }
+    return this.weatherLabelValue
   }
 
   /** Continuous precipitation values for terrain surface shading. */

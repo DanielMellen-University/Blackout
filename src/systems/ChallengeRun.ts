@@ -53,6 +53,9 @@ export class ChallengeRun {
   private courseId = 'default'
   private gateQualityTotal = 0
   private readonly storage: ScoreStore | null
+  private clockLabelMinutes = -1
+  private clockLabelCentis = -1
+  private clockLabelValue = '0:00.00'
 
   constructor(storage: ScoreStore | null = browserStorage()) {
     this.storage = storage
@@ -66,6 +69,8 @@ export class ChallengeRun {
     this.gatesPassed = 0
     this.gateQualityTotal = 0
     this.result = null
+    this.clockLabelMinutes = -1
+    this.clockLabelCentis = -1
   }
 
   /** Advance simulation time and arm the clock once the takeoff roll begins. */
@@ -134,7 +139,15 @@ export class ChallengeRun {
   }
 
   get clockLabel(): string {
-    return formatTime(this.elapsedSec)
+    const safe = Math.max(0, this.elapsedSec)
+    const minutes = Math.floor(safe / 60)
+    const centis = Math.round((safe - minutes * 60) * 100)
+    if (minutes !== this.clockLabelMinutes || centis !== this.clockLabelCentis) {
+      this.clockLabelMinutes = minutes
+      this.clockLabelCentis = centis
+      this.clockLabelValue = formatTime(this.elapsedSec)
+    }
+    return this.clockLabelValue
   }
 
   get objectiveLabel(): string {
