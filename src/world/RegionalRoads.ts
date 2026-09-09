@@ -42,11 +42,12 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
   const selected = candidates
     .filter(other => other.id !== plan.id && shouldConnectSettlements(plan, other))
     .sort((a, b) => {
-      // Villages get one regional slot. Prefer a reachable city for that slot
-      // so the sparse graph grows readable hubs and spokes instead of spending
-      // every rural connection on another nearby village.
-      const aHub = plan.kind === 'village' && a.kind === 'city' ? 0 : 1
-      const bHub = plan.kind === 'village' && b.kind === 'city' ? 0 : 1
+      // Prefer a cross-tier endpoint for both sides of the edge. Villages use
+      // their one slot to reach a city, while cities spend their two slots on
+      // nearby village spokes before adding another city-to-city link. This
+      // keeps the sparse graph readable without increasing its road budget.
+      const aHub = a.kind !== plan.kind ? 0 : 1
+      const bHub = b.kind !== plan.kind ? 0 : 1
       if (aHub !== bHub) return aHub - bHub
       const distanceA = Math.hypot(plan.x - a.x, plan.z - a.z)
       const distanceB = Math.hypot(plan.x - b.x, plan.z - b.z)

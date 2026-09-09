@@ -78,4 +78,14 @@ describe('regional settlement roads', () => {
     expect(links).toHaveLength(1)
     expect(links[0]!.from.kind === 'city' || links[0]!.to.kind === 'city').toBe(true)
   })
+
+  it('gives a city priority access to nearby village spokes', () => {
+    setWorldSeed(1)
+    const city = plan('0,0', 0, 0, 'city')
+    const nearbyCity = plan('1,0', 19000, 0, 'city')
+    const village = plan('2,0', 17000, 9000, 'village')
+    const links = selectRegionalRoadLinks(city, [nearbyCity, village])
+    expect(links).toHaveLength(2)
+    expect(links[0]!.from.kind === 'village' || links[0]!.to.kind === 'village').toBe(true)
+  })
 })
