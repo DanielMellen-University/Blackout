@@ -42,7 +42,7 @@ describe('regional settlement roads', () => {
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
     expect(road!.points.length).toBeGreaterThan(100)
-    expect(road!.width).toBe(26)
+    expect(road!.width).toBe(36)
     const start = road!.points[0]!, end = road!.points.at(-1)!
     expect(start.x).toBeGreaterThan(a.x)
     expect(end.x).toBeLessThan(b.x)
@@ -66,6 +66,6 @@ describe('regional settlement roads', () => {
     a.kind = 'city'; a.radius = 9000
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
-    expect(road!.width).toBe(42)
+    expect(road!.width).toBe(54)
   })
 })

@@ -167,7 +167,11 @@ export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): Se
     }
   }
 
-  const width = a.kind === 'city' || b.kind === 'city' ? 42 : 26
+  // These links are viewed from the chase camera, not a top-down map. A
+  // village-to-village road narrower than 30 m collapses into a one-pixel
+  // thread once the fog blends it into the terrain. Give regional highways a
+  // readable shoulder while keeping them as one batched ribbon per link.
+  const width = a.kind === 'city' || b.kind === 'city' ? 54 : 36
   const points: SettlementRoad['points'] = best.points.map((point, i) => {
     const before = best.points[Math.max(0, i - 1)]!, after = best.points[Math.min(best.points.length - 1, i + 1)]!
     const dx = after.x - before.x, dz = after.z - before.z

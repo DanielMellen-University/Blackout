@@ -141,12 +141,16 @@ export class SettlementSystem {
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly streetMark = new MeshStandardMaterial({ color: 0xd2bd6b, emissive: 0x453b16, emissiveIntensity: .12,
     roughness: .82, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
-  private readonly highway = new MeshStandardMaterial({ color: 0x66665f, roughness: .92, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
+  // Regional links need a readable silhouette through the flight fog. A
+  // restrained cool emissive lift keeps asphalt visible at distance without
+  // making close roads glow or adding another material pass.
+  private readonly highway = new MeshStandardMaterial({ color: 0x72746f, emissive: 0x15191a, emissiveIntensity: .2,
+    roughness: .92, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly bridgeDeck = new MeshStandardMaterial({ color: 0x777a76, roughness: .9, metalness: .02,
     polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
-  private readonly highwayMark = new MeshStandardMaterial({ color: 0xd3be67, emissive: 0x4d4115, emissiveIntensity: .15,
+  private readonly highwayMark = new MeshStandardMaterial({ color: 0xe0c974, emissive: 0x735a1c, emissiveIntensity: .28,
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
-  private readonly highwayEdge = new MeshStandardMaterial({ color: 0xc4bd96, emissive: 0x3b351d, emissiveIntensity: .1,
+  private readonly highwayEdge = new MeshStandardMaterial({ color: 0xd9cf9f, emissive: 0x65582c, emissiveIntensity: .2,
     roughness: .86, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly roadRain = { value: 0 }
   private readonly roadSnow = { value: 0 }
@@ -644,14 +648,14 @@ export class SettlementSystem {
       bridge.name = 'RegionalBridgeDeck'
       root.add(bridge)
     }
-    const centerline: SettlementRoad = { width: 2.35, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
+    const centerline: SettlementRoad = { width: 2.8, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
     const marking = createRoadGeometry([centerline], x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
     // Edge strips give long links a readable silhouette through haze while
     // staying as one batched mesh per connector.
     const edges: SettlementRoad[] = [
-      { width: 1.9, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .2, z: point.leftZ ?? point.z })) },
-      { width: 1.9, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .2, z: point.rightZ ?? point.z })) },
+      { width: 2.4, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .2, z: point.leftZ ?? point.z })) },
+      { width: 2.4, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .2, z: point.rightZ ?? point.z })) },
     ]
     const edgeGeometry = createRoadGeometry(edges, x, 0, z)
     if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
