@@ -375,17 +375,28 @@ export class SettlementSystem {
     material.onBeforeCompile = shader => {
       shader.uniforms.settlementRain = this.roadRain
       shader.uniforms.settlementSnow = this.roadSnow
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        '#include <common>\nvarying vec3 settlementRoadWorld;\n',
+      ).replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\nsettlementRoadWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      )
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
-        '#include <common>\nuniform float settlementRain;\nuniform float settlementSnow;\n',
+        '#include <common>\nvarying vec3 settlementRoadWorld;\nuniform float settlementRain;\nuniform float settlementSnow;\n',
       ).replace(
         '#include <color_fragment>',
         `#include <color_fragment>
         diffuseColor.rgb *= 1.0 - settlementRain * 0.2;
+        float puddleField = .5 + .5 * sin(settlementRoadWorld.x * .021 +
+          sin(settlementRoadWorld.z * .013) * 1.7);
+        float puddleMask = smoothstep(.68, .9, puddleField) * settlementRain;
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.07, .1, .11), puddleMask * .24);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.72, 0.74), settlementSnow * 0.22);`,
       )
     }
-    material.customProgramCacheKey = () => 'settlement-road-weather-v1'
+    material.customProgramCacheKey = () => 'settlement-road-weather-v2'
   }
 
   private configureWeatherRoofMaterial(): void {

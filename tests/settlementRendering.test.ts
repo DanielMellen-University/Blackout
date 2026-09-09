@@ -116,6 +116,24 @@ describe('settlement rendering and lifecycle', () => {
     }
   })
 
+  it('breaks up rain puddles in the shared road shader', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      const asphalt = (system as unknown as { asphalt: MeshStandardMaterial }).asphalt
+      const shader = {
+        uniforms: {},
+        vertexShader: '#include <common>\n#include <project_vertex>',
+        fragmentShader: '#include <common>\n#include <color_fragment>',
+      }
+      asphalt.onBeforeCompile(shader as never, undefined as never)
+      expect(shader.vertexShader).toContain('settlementRoadWorld')
+      expect(shader.fragmentShader).toContain('puddleMask')
+      expect(asphalt.customProgramCacheKey()).toBe('settlement-road-weather-v2')
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('keeps facade windows readable at flight scale', () => {
     const system = new SettlementSystem(new Scene())
     try {
