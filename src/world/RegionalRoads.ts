@@ -121,7 +121,7 @@ function candidateRoute(
   const nx = -dz / distance, nz = dx / distance
   const count = Math.max(2, Math.ceil(distance / 110))
   const points: RoutePoint[] = []
-  let wet = 0, roughness = 0, climb = 0
+  let wet = 0, roughness = 0, steepness = 0, ridgeExposure = 0, valleySupport = 0, climb = 0
   let previous = a.y
   for (let i = 0; i <= count; i++) {
     const t = i / count
@@ -132,15 +132,32 @@ function candidateRoute(
     const isWet = climate.height < (climate.waterLevel ?? 0) + 1
     const surface = isWet ? (climate.waterLevel ?? 0) + 6 : climate.height + .55
     if (isWet) wet++
+    // Prefer broad alpine valleys over ridge spines when two bends have
+    // comparable wetness. These continuous landform signals are already
+    // sampled for the terrain, so route planning gets better geography
+    // without another noise field or a road mesh cost.
+    ridgeExposure += Math.max(0, climate.landform.ridge -
+      (climate.landform.alpineValley ?? 0) * .72)
+    valleySupport += climate.landform.alpineValley ?? 0
     if (i) {
       const grade = Math.abs(surface - previous) / (distance / count)
       roughness += Math.max(0, grade - .14) ** 2
+      steepness += Math.max(0, grade - .08) ** 2
       climb = Math.max(climb, surface - Math.max(a.y, b.y))
     }
     previous = surface
     points.push({ x, z, surface, wet: isWet })
   }
-  return { points, score: wet / points.length * 2.5 + roughness * 8 + Math.max(0, climb - 700) / 700 }
+  const samples = Math.max(1, points.length)
+  return {
+    points,
+    score: wet / samples * 2.5
+      + roughness * 8
+      + steepness / samples * 1.6
+      + ridgeExposure / samples * 1.5
+      - valleySupport / samples * .28
+      + Math.max(0, climb - 700) / 700,
+  }
 }
 
 /** Terrain-following road with grade-limited bridge and viaduct approaches. */
