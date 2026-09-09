@@ -25,7 +25,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Terrain vertex colors now carry the landform signal too, giving ridges, alpine valleys, plateaus, and calderas distinct readable shading even on distant low-detail tiles.
 - Snow and mountain palettes add stable exposed-rock bands and cool alpine-valley shading so high relief stays readable instead of becoming one white sheet.
 - Mostly dry land with uncommon enclosed seas, irregular lakes, and meandering rivers that vary in width and descend from lake outlets to sea level. Water is separate geometry over a sediment bed, with calm reflections and fine ripples.
-- Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks remain temporarily disabled.
+- Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks use bounded instanced streaming in the near field.
 - Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load.
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
 - Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds altitude-aware cool cover without rebuilding streamed chunks.

@@ -105,7 +105,11 @@ describe('procedural settlements', () => {
     setOpsPad(pad!.x, pad!.z, pad!.y)
     const plans = region(3).filter(plan => plan.anchor)
     expect(plans.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
-    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(14000)
+    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(13000)
+    expect(Math.hypot(
+      plans.find(plan => plan.anchor === 'village')!.x - pad!.x,
+      plans.find(plan => plan.anchor === 'village')!.z - pad!.z,
+    )).toBeLessThan(6000)
   })
 
   it('rescues both anchor tiers on rough seeded terrain', () => {

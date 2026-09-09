@@ -128,8 +128,8 @@ function anchorLocation(
   // is about 15 km. That made valid cities exist in the worker but disappear
   // into fog before the player could ever read their skyline. Villages sit
   // closer so the first landmark is reachable during the opening climb.
-  const base = kind === 'city' ? 8200 : 3000
-  const span = kind === 'city' ? 4200 : 3600
+  const base = kind === 'city' ? 9300 : 3300
+  const span = kind === 'city' ? 2600 : 2400
   const distance = base + hash2(cellX * 271 + attempt * 67 + salt,
     cellZ * 313 - attempt * 89 - salt) * span
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
@@ -153,7 +153,7 @@ function anchorGridLocation(
   const phase = hash2(cellX * 197 + cellZ * 233 + salt, cellZ * 271 - cellX * 307 - salt) * Math.PI * 2
   const angle = phase + sector / sectors * Math.PI * 2
   const ringStep = 500
-  const base = kind === 'city' ? 6800 : 1800
+  const base = kind === 'city' ? 7600 : 2100
   const distance = base + ring * ringStep
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
 }

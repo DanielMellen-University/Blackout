@@ -207,6 +207,8 @@ export class SettlementSystem {
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
   private readonly checkedLinks = new Set<string>()
+  /** Protected landmarks that must remain discoverable after a stream reset. */
+  private readonly protectedAnchors = new Map<'city' | 'village', string>()
   /** One canonical job per graph edge, retained while one nearby cell owns it. */
   private readonly roadJobs = new Map<string, RoadJob>()
   private readonly roadSources = new Map<string, Set<string>>()
@@ -384,6 +386,7 @@ export class SettlementSystem {
     this.connections.clear()
     this.checked.clear()
     this.checkedLinks.clear()
+    this.protectedAnchors.clear()
     this.roadJobs.clear()
     this.roadSources.clear()
     this.queue = []
@@ -419,7 +422,11 @@ export class SettlementSystem {
     for (let cx = padCellX - 1; cx <= padCellX + 1; cx++) for (let cz = padCellZ - 1; cz <= padCellZ + 1; cz++) {
       const key = `${cx},${cz}`
       if (cells.has(key)) continue
-      if (settlementAnchorForCell(cx, cz, pad)) cells.add(key)
+      const anchor = settlementAnchorForCell(cx, cz, pad)
+      if (anchor) {
+        cells.add(key)
+        this.protectedAnchors.set(anchor, key)
+      }
     }
     for (const key of cells) {
       if (this.checked.has(key) || this.loaded.has(key)) continue
@@ -442,6 +449,26 @@ export class SettlementSystem {
         // nearest-first queue retry after an ordinary settlement is evicted.
         this.queue = this.queue.filter(job => job.key !== key)
       }
+    }
+  }
+
+  /**
+   * Re-admit a protected landmark if a transient budget or worker handoff
+   * rejected it during the previous frame. Ordinary streaming is allowed to
+   * fill the queue, but it can never permanently consume the two spawn slots.
+   */
+  private retryProtectedAnchors(x: number, z: number): void {
+    if (!this.protectedAnchors.size) return
+    for (const key of this.protectedAnchors.values()) {
+      if (this.loaded.has(key) || this.ready.some(result => result.key === key)) continue
+      if (this.queue.some(job => job.key === key) || this.inFlight?.key === key) continue
+      const [cx, cz] = key.split(',').map(Number)
+      const plan = settlementForCell(cx!, cz!)
+      if (!plan) continue
+      this.scheduleLinks(plan, key)
+      if (!this.canLoad(plan, x, z)) continue
+      this.checked.add(key)
+      this.loaded.set(key, this.build(plan))
     }
   }
 
@@ -517,6 +544,7 @@ export class SettlementSystem {
           || Math.hypot(ax, az) - Math.hypot(bx, bz)
       })
     }
+    this.retryProtectedAnchors(x, z)
     this.pruneDistantRoads(x, z)
     // Worker completion order is nondeterministic. Always consume the nearest
     // ready plan first so a distant village cannot occupy the fixed instance
