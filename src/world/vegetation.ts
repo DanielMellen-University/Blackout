@@ -624,6 +624,15 @@ export function createVegetationFactory(): {
           if (roll < 0.5) return placeReedClump(x, y, z, 1.0 + roll, rot, seed)
           if (roll < 0.8) return placeDeciduous(x, y, z, 0.55 + roll * 0.8, rot, seed)
           return placeDeadAt(x, y, z, 0.6 + roll * 0.5, rot)
+        case 'savanna':
+          if (roll < 0.52) return placeGrassClump(x, y, z, 0.85 + roll * 1.1, rot, true, seed)
+          if (roll < 0.78) return placeBushAt(x, y, z, 0.65 + roll * 0.7, rot, true, seed)
+          if (roll < 0.92) return placeDeciduous(x, y, z, 0.55 + roll * 0.85, rot, seed)
+          return placeDeadAt(x, y, z, 0.65 + roll * 0.55, rot)
+        case 'tundra':
+          if (roll < 0.42) return placePine(x, y, z, 0.55 + roll * 0.9, rot, true, seed)
+          if (roll < 0.78) return placeRockAt(x, y, z, 0.85 + roll * 2.1, rot, false, seed)
+          return placeDeadAt(x, y, z, 0.55 + roll * 0.45, rot)
         case 'snow':
           if (roll < 0.65) return placePine(x, y, z, 0.65 + roll * 1.0, rot, true, seed)
           return placeRockAt(x, y, z, 1.0 + roll * 2.5, rot, false, seed)
@@ -637,6 +646,14 @@ export function createVegetationFactory(): {
         case 'desert':
           if (roll < 0.7) return placeCactusAt(x, y, z, 0.8 + roll * 1.2, rot, seed)
           return placeRockAt(x, y, z, 0.7 + roll * 1.8, rot, false, seed)
+        case 'volcanic':
+          if (roll < 0.56) return placeRockAt(x, y, z, 1.0 + roll * 2.8, rot, false, seed)
+          if (roll < 0.84) return placeDeadAt(x, y, z, 0.55 + roll * 0.5, rot)
+          return placeBushAt(x, y, z, 0.45 + roll * 0.45, rot, true, seed)
+        case 'saltflat':
+          if (roll < 0.48) return placeRockAt(x, y, z, 0.8 + roll * 1.8, rot, false, seed)
+          if (roll < 0.7) return placeDeadAt(x, y, z, 0.45 + roll * 0.4, rot)
+          return false
         default:
           return placeGrassClump(x, y, z, sBase * 0.7, rot, false, seed)
       }
@@ -704,6 +721,12 @@ export function vegetationDensity(
     case 'hills':
       d = 0.5
       break
+    case 'savanna':
+      d = 0.42
+      break
+    case 'tundra':
+      d = 0.22
+      break
     case 'desert':
       d = 0.36
       break
@@ -715,6 +738,12 @@ export function vegetationDensity(
       break
     case 'snow':
       d = 0.3
+      break
+    case 'volcanic':
+      d = 0.18
+      break
+    case 'saltflat':
+      d = 0.12
       break
     default:
       d = 0.25
