@@ -219,6 +219,7 @@ describe('procedural settlements', () => {
     )
     expect(inner.length).toBeGreaterThan(0)
     expect(outer.length).toBeGreaterThan(0)
+    expect(inner.length).toBeGreaterThan(8)
     expect(Math.max(...inner.map(building => building.height)))
       .toBeGreaterThan(Math.max(...outer.map(building => building.height)))
     expect(Math.min(...outer.map(building => building.height))).toBeLessThan(360)

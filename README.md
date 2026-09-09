@@ -144,7 +144,9 @@ buildings with mixed towers, stepped cores, slabs, hangars and pitched rooflines
 dead ends and broken district connectors replace repeated grids. Building
 footprints, heights, stepped/octagonal silhouettes, rooflines and biome palettes
 vary by world seed, using deliberately exaggerated scale for readability from the jet.
-Larger villages can also receive a small instanced civic spire or dome, giving
+Cities now seed a deterministic mixed-use downtown ring around the civic plaza
+before filling their broad outer districts, so the skyline reads clearly from
+the flight-scale review as well as from the city edge. Larger villages can also receive a small instanced civic spire or dome, giving
 their varied footprints a recognizable center without adding per-building
 draws. Every settlement reserves a deterministic central plaza or village
 green so road approaches have breathing room instead of filling the whole

@@ -493,6 +493,26 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20)
         : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28)
           : 28 + Math.floor(rand(201) * 38)
+  if (city) {
+    // Keep a readable mixed-use core around the civic plaza. Uniform
+    // area-scattering makes a huge city look empty from its own centre, while
+    // a deterministic ring gives the skyline an intentional downtown before
+    // the broader low-rise districts fill the outer footprint.
+    const coreLots = 34 + Math.floor(rand(203) * 18)
+    const coreRings = 4
+    const lotsPerRing = Math.ceil(coreLots / coreRings)
+    for (let attempt = 0; attempt < coreLots * 5 && plan.buildings.length < target; attempt++) {
+      const ring = attempt % coreRings
+      const sector = Math.floor(attempt / coreRings)
+      const angle = phase + sector / lotsPerRing * Math.PI * 2 + (rand(2200 + attempt) - .5) * .24
+      const distance = 860 + ring * 470 + rand(2300 + attempt) * 190
+      const p = polar(angle, distance)
+      const width = 190 + rand(2400 + attempt) * 170
+      const depth = 190 + rand(2500 + attempt) * 170
+      const height = 360 + rand(2600 + attempt) * 760 + (coreRings - ring) * 90
+      building(p.x, p.z, width, depth, height, angle + (rand(2700 + attempt) - .5) * .35)
+    }
+  }
   for (let attempt = 0; attempt < target * (city ? 80 : 32) && plan.buildings.length < target; attempt++) {
     const n = 10000 + attempt * 9
     const a = rand(n) * Math.PI * 2
