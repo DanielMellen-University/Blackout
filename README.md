@@ -142,6 +142,9 @@ distinct flyable peaks instead of broad tables. Snow and mountain faces use
 stronger deterministic rock bands, altitude exposure, and cool valley contrast
 so the existing relief remains readable at flight distance without extra terrain
 geometry or noise calls.
+Cold highlands also get occasional broad glacial cirques, reusing existing
+alpine signals to carve smooth bowls and cool blue ice-rock material bands
+without sharp peaks or additional noise work.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. Shallow water carries moving,
 low-contrast foam breakup instead of a uniform shoreline, while river ribbons carry

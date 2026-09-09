@@ -10,6 +10,7 @@ describe('regional landform families', () => {
     let valley = 0
     let plateau = 0
     let caldera = 0
+    let glacial = 0
     for (let x = -60000; x <= 60000; x += 600) {
       for (let z = -60000; z <= 60000; z += 600) {
         const land = sampleLandforms(x, z)
@@ -18,6 +19,7 @@ describe('regional landform families', () => {
         valley = Math.max(valley, land.alpineValley)
         plateau = Math.max(plateau, land.plateau)
         caldera = Math.max(caldera, land.caldera)
+        glacial = Math.max(glacial, land.glacial)
       }
     }
     expect(peak).toBeGreaterThan(5000)
@@ -25,6 +27,7 @@ describe('regional landform families', () => {
     expect(valley).toBeGreaterThan(.5)
     expect(plateau).toBeGreaterThan(.5)
     expect(caldera).toBeGreaterThan(.5)
+    expect(glacial).toBeGreaterThan(.35)
   })
 
   it('keeps green lowlands smoothly rolling instead of forming needles', () => {

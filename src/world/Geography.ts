@@ -46,6 +46,7 @@ export function sampleGeography(x: number, z: number): Climate {
       dunes: landform.dunes,
       badlands: landform.badlands,
       karst,
+      glacial: landform.glacial,
     },
   }
 }

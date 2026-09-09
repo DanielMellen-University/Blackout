@@ -94,6 +94,12 @@ export function sampleLandforms(x: number, z: number) {
     (peakMask - .5) * ridgeSpine * 520
   )
   height += alpineSculpt
+  // Cold highlands occasionally open into broad glacial cirques. Reuse the
+  // existing summit and valley fields so the bowls remain smooth, bounded,
+  // and free of a new noise cost in the terrain hot path.
+  const glacialProvince = cold * highlands * smoothstep(.32, .72, summitFold)
+  const cirque = glacialProvince * (1 - ridgeSpine * .65) * (1 - alpineValley * .35)
+  height -= cirque * (72 + gentle * 58)
 
   // Humid lowlands get rolling watersheds, never sharp vertical noise.
   const wet = smoothstep(.42, .76, moisture)
@@ -166,6 +172,7 @@ export function sampleLandforms(x: number, z: number) {
     badlands,
     dunes,
     karst: karstProvince * (.38 + karstSink * .62),
+    glacial: glacialProvince,
     cold,
     hot,
     dry,

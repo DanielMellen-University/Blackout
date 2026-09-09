@@ -108,6 +108,8 @@ export interface Climate {
     badlands?: number
     /** Humid limestone signal used for soft karst material breakup. */
     karst?: number
+    /** Cold alpine signal used for broad glacial cirque color breakup. */
+    glacial?: number
   }
 }
 
@@ -806,6 +808,16 @@ export function biomeColor(
       const limestoneMix = limestone * .14
       col = col.map((value, index) =>
         clamp01(value + (limestoneTint[index]! - value) * limestoneMix)) as [number, number, number]
+    }
+    const glacialSignal = clamp01(landform.glacial ?? 0)
+    if (glacialSignal > .06 && (biome === 'snow' || biome === 'mountain' || biome === 'tundra')) {
+      const iceField = .5 + .5 * Math.sin(x / 840 + Math.sin(z / 1280) * .7)
+      const iceMix = smoothstep(.25, .8, iceField) * glacialSignal * .14
+      const iceTint: [number, number, number] = biome === 'tundra'
+        ? [.48, .56, .58]
+        : [.28, .4, .5]
+      col = col.map((value, index) =>
+        clamp01(value + (iceTint[index]! - value) * iceMix)) as [number, number, number]
     }
 
     // Foothills are a broad transition zone, not a new biome. A restrained
