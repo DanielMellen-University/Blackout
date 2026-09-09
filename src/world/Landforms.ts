@@ -98,6 +98,16 @@ export function sampleLandforms(x: number, z: number) {
   // Humid lowlands get rolling watersheds, never sharp vertical noise.
   const wet = smoothstep(.42, .76, moisture)
   height += wet * (1 - highlands) * hills * hills * (84 + hot * 50)
+  // Humid limestone provinces get broad, soft karst bowls instead of another
+  // generic green sheet. The bounded signal is deliberately low amplitude so
+  // it adds sinkholes and low ridges without creating sharp lowland spikes.
+  const karstProvince = wet * (1 - highlands) * smoothstep(.42, .8, province) * (1 - hot * .35)
+  // Reuse the existing rolling-hill field so karst adds no extra noise calls
+  // to the terrain hot path.
+  const karstNoise = hills
+  const karstSink = smoothstep(.62, .86, karstNoise)
+  const karstRelief = (karstNoise - .5) * (42 + karstProvince * 26)
+  height += karstProvince * karstRelief - karstProvince * karstSink * (34 + gentle * 34)
   // Cold provinces stay broad and flyable. Fine frozen noise was making
   // otherwise smooth tundra read as small spikes from the aircraft.
   height += cold * (valueNoise(wx / 900 + 33, wz / 900) - .3) * 14
@@ -155,6 +165,7 @@ export function sampleLandforms(x: number, z: number) {
     plateau,
     badlands,
     dunes,
+    karst: karstProvince * (.38 + karstSink * .62),
     cold,
     hot,
     dry,

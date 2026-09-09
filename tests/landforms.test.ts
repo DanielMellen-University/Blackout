@@ -62,6 +62,23 @@ describe('regional landform families', () => {
     expect(high - low).toBeGreaterThan(420)
   })
 
+  it('adds smooth humid karst bowls without lowland spikes', () => {
+    setWorldSeed(1)
+    let karst = 0
+    for (let x = -36000; x <= 36000; x += 720) for (let z = -36000; z <= 36000; z += 720) {
+      const center = sampleLandforms(x, z)
+      if (center.karst < .45 || center.highlands > .08) continue
+      karst++
+      const left = sampleLandforms(x - 90, z).height
+      const right = sampleLandforms(x + 90, z).height
+      const down = sampleLandforms(x, z - 90).height
+      const up = sampleLandforms(x, z + 90).height
+      expect(Math.abs(left + right - center.height * 2)).toBeLessThan(60)
+      expect(Math.abs(down + up - center.height * 2)).toBeLessThan(60)
+    }
+    expect(karst).toBeGreaterThan(20)
+  })
+
   it('reaches zero landmark influence before volcanic cell borders', () => {
     setWorldSeed(1)
     for (const boundary of [-48000, -24000, 0, 24000, 48000]) {

@@ -106,6 +106,8 @@ export interface Climate {
     dunes?: number
     /** Dry badland and mesa signal used for material strata. */
     badlands?: number
+    /** Humid limestone signal used for soft karst material breakup. */
+    karst?: number
   }
 }
 
@@ -793,6 +795,17 @@ export function biomeColor(
         : [.74, .48, .23]
       const strataMix = strata * .16
       col = col.map((value, index) => clamp01(value + (strataTint[index]! - value) * strataMix)) as [number, number, number]
+    }
+    const karstSignal = clamp01(landform.karst ?? 0)
+    if (karstSignal > .06 && (biome === 'plains' || biome === 'forest' || biome === 'swamp' || biome === 'hills')) {
+      const limestoneField = .5 + .5 * Math.sin(x / 680 + Math.sin(z / 1150) * .8)
+      const limestone = smoothstep(.28, .78, limestoneField) * karstSignal
+      const limestoneTint: [number, number, number] = biome === 'swamp'
+        ? [.28, .4, .25]
+        : [.36, .45, .28]
+      const limestoneMix = limestone * .14
+      col = col.map((value, index) =>
+        clamp01(value + (limestoneTint[index]! - value) * limestoneMix)) as [number, number, number]
     }
 
     // Foothills are a broad transition zone, not a new biome. A restrained

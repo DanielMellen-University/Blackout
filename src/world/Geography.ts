@@ -7,7 +7,7 @@ import type { Biome, Climate } from './terrainSample'
 export function sampleGeography(x: number, z: number): Climate {
   const landform = sampleLandforms(x, z)
   const { height, waterLevel, river, lake, pond, stream, coastal } = sampleHydrology(x, z, landform.height)
-  const { moisture, temperature, cold, hot, dunes, badlands, volcanic, salt } = landform
+  const { moisture, temperature, cold, hot, dunes, badlands, karst, volcanic, salt } = landform
   const alpine = smoothstep(650, 1900, height)
   const snow = smoothstep(2600 - cold * 1100 + hot * 700, 3600 - cold * 900 + hot * 700, height)
   const low = 1 - alpine
@@ -45,6 +45,7 @@ export function sampleGeography(x: number, z: number): Climate {
       foothills: landform.foothills,
       dunes: landform.dunes,
       badlands: landform.badlands,
+      karst,
     },
   }
 }

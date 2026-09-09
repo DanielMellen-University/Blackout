@@ -131,6 +131,9 @@ per-frame fade path does not repeatedly search or traverse the scene tree.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Green provinces now use stronger rolling hills, so flat sheets are rarer
 without bringing back sharp lowland spikes.
+Selected humid lowlands now also carry a bounded karst signal: broad limestone
+bowls and low ridges add another terrain family while staying smooth enough for
+flight and blending into neighboring biome colors.
 Foothill shoulders also receive a restrained olive/stone material band, making
 the mountain-to-lowland transition readable without new geometry or noise calls.
 Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
