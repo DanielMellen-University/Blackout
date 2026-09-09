@@ -51,4 +51,16 @@ describe('continuous terrain generation', () => {
     const green = samples.map(color => color[1])
     expect(Math.max(...green) - Math.min(...green)).toBeGreaterThan(.01)
   })
+
+  it('gives exposed water beds feature-aware sediment variation', () => {
+    const river = biomeColor('water', 40, .6, 240, -480,
+      { river: 1, lake: 0, ravine: 0, pond: 0, stream: 1 }, 0, .2)
+    const pond = biomeColor('water', 40, .6, 240, -480,
+      { river: 0, lake: 0, ravine: 0, pond: 1, stream: 0 }, 0, .2)
+    const delta = biomeColor('water', 40, .6, 240, -480,
+      { river: 1, lake: 0, ravine: 0, pond: 0, stream: 0 }, 1, .2)
+    expect(river).not.toEqual(pond)
+    expect(delta[0]).toBeGreaterThan(river[0])
+    expect([...river, ...pond].every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
 })

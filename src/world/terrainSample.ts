@@ -582,10 +582,25 @@ export function biomeColor(
   const n = valueNoise(x / 90, z / 90)
   const speck = (n - 0.5) * 0.05
   const river = features?.river ?? 0
+  const lake = features?.lake ?? 0
+  const pond = features?.pond ?? 0
+  const stream = features?.stream ?? 0
   const ravine = features?.ravine ?? 0
   if (biome === 'ocean' || biome === 'water') {
-    // This mesh is sediment below the independent water surface, never blue paint.
-    return [.24 + speck, .22 + speck, .16 + speck]
+    // This mesh is sediment below the independent water surface, never blue
+    // paint. Feature-aware mud and gravel tones keep a shallow exposed bank
+    // from reading as a repeated dark cutout when the water is below it.
+    const wetNoise = valueNoise(x / 240 + 17, z / 240 - 9) - .5
+    if (biome === 'ocean') {
+      return [.11 + wetNoise * .035, .2 + wetNoise * .045, .24 + wetNoise * .055]
+    }
+    const channel = clamp01(Math.max(stream, river) * .8 + pond * .35 + lake * .25)
+    const shore = clamp01(coastal)
+    return [
+      .31 + wetNoise * .06 - channel * .035 + shore * .12,
+      .28 + wetNoise * .055 + channel * .01 + shore * .1,
+      .2 + wetNoise * .04 + channel * .035 + shore * .055,
+    ]
   }
 
   let col = biomeColorSolid(biome, height, moisture, n, speck, land)
