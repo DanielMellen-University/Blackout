@@ -101,8 +101,13 @@ function anchorLocation(
   const salt = kind === 'city' ? 17311 : 12971
   const angle = hash2(cellX * 157 + cellZ * 193 + attempt * 37 + salt,
     cellZ * 211 - cellX * 227 - attempt * 53 - salt) * Math.PI * 2
-  const base = kind === 'city' ? 14500 : 4500
-  const span = kind === 'city' ? 7500 : 7000
+  // Keep guaranteed landmarks inside the clear flight envelope. The old city
+  // ring started at 14.5 km and often ended at 22 km, while the fog horizon
+  // is about 15 km. That made valid cities exist in the worker but disappear
+  // into fog before the player could ever read their skyline. Villages sit
+  // closer so the first landmark is reachable during the opening climb.
+  const base = kind === 'city' ? 9000 : 3200
+  const span = kind === 'city' ? 4500 : 4200
   const distance = base + hash2(cellX * 271 + attempt * 67 + salt,
     cellZ * 313 - attempt * 89 - salt) * span
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }

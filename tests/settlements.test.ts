@@ -72,7 +72,7 @@ describe('procedural settlements', () => {
     expect(plans.some(plan => plan.kind === 'city')).toBe(true)
     const anchors = plans.filter(plan => plan.anchor)
     expect(anchors.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
-    expect(Math.max(...anchors.map(plan => Math.hypot(plan.x, plan.z)))).toBeLessThan(24000)
+    expect(Math.max(...anchors.map(plan => Math.hypot(plan.x, plan.z)))).toBeLessThan(14000)
   })
 
   it('keeps both guaranteed tiers discoverable on generated terrain', () => {
@@ -83,7 +83,7 @@ describe('procedural settlements', () => {
     setOpsPad(pad!.x, pad!.z, pad!.y)
     const plans = region(3).filter(plan => plan.anchor)
     expect(plans.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
-    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(24000)
+    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(14000)
   })
 
   it('varies settlement scale and silhouette instead of repeating one footprint', () => {
