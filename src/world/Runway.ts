@@ -8,6 +8,8 @@ import {
 } from 'three'
 import { createAirfieldLandmarks } from './Airfield'
 
+const runwayLightMaterial = new WeakMap<Group, MeshStandardMaterial>()
+
 /** Simple asphalt strip with centerline and threshold markings. */
 export function createRunway(): Group {
   const root = new Group()
@@ -56,6 +58,7 @@ export function createRunway(): Group {
   })
   const runwayLights = new Group()
   runwayLights.name = 'RunwayLights'
+  runwayLightMaterial.set(root, lightMat)
   root.add(runwayLights)
   const lightGeo = new BoxGeometry(0.25, 0.12, 0.25)
   for (let z = -length / 2; z <= length / 2; z += 8) {
@@ -77,9 +80,17 @@ export function runwayLightIntensity(daylight: number): number {
 }
 
 export function setRunwayDaylight(root: Group, daylight: number): void {
+  const intensity = runwayLightIntensity(daylight)
+  const shared = runwayLightMaterial.get(root)
+  if (shared) {
+    if (Math.abs(shared.emissiveIntensity - intensity) > 0.001) {
+      shared.emissiveIntensity = intensity
+    }
+    return
+  }
+  // Keep the helper useful for externally assembled runway groups.
   const lights = root.getObjectByName('RunwayLights')
   if (!lights) return
-  const intensity = runwayLightIntensity(daylight)
   lights.traverse((object) => {
     if (!(object instanceof Mesh) || !(object.material instanceof MeshStandardMaterial)) return
     object.material.emissiveIntensity = intensity

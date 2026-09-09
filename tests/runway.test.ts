@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
 import { createRunway, runwayLightIntensity, setRunwayDaylight } from '../src/world/Runway'
 
@@ -33,5 +33,15 @@ describe('runway lighting', () => {
     expect((light.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(.18)
     setRunwayDaylight(runway, 0)
     expect((light.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(1.8)
+  })
+
+  it('updates the cached shared material without traversing the runway', () => {
+    runway = createRunway()
+    const lookup = vi.spyOn(runway, 'getObjectByName')
+
+    setRunwayDaylight(runway, 0.5)
+    setRunwayDaylight(runway, 0.5)
+
+    expect(lookup).not.toHaveBeenCalled()
   })
 })
