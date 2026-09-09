@@ -78,6 +78,16 @@ describe('settlement rendering and lifecycle', () => {
     system.dispose()
   })
 
+  it('leaves a central green for village road approaches', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    try {
+      system.update(3000, 3000)
+      expect(scene.getObjectByName('SettlementGreen')).toBeDefined()
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('keeps road markings batched while rendering segmented dashes', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     try {

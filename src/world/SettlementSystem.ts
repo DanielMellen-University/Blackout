@@ -1,5 +1,5 @@
 import {
-  BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
+  BoxGeometry, BufferGeometry, CircleGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
   InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
   MeshBasicMaterial,
 } from 'three'
@@ -187,6 +187,8 @@ export class SettlementSystem {
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
   private readonly cityBeacon = new MeshBasicMaterial({ color: 0xffbd68, transparent: true, opacity: .86, depthWrite: false, fog: false })
   private readonly villageBeacon = new MeshBasicMaterial({ color: 0x67e4d0, transparent: true, opacity: .82, depthWrite: false, fog: false })
+  private readonly cityPlaza = new MeshStandardMaterial({ color: 0x76766c, roughness: .96, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  private readonly villageGreen = new MeshStandardMaterial({ color: 0x4f794c, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly gravelShoulder = new MeshStandardMaterial({ color: 0x887d66, emissive: 0x17140f, emissiveIntensity: .12,
     roughness: 1, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
@@ -530,7 +532,7 @@ export class SettlementSystem {
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.anchorBeacon.dispose(); this.dome.dispose(); this.roof.dispose()
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
-    this.cityBeacon.dispose(); this.villageBeacon.dispose()
+    this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.cityPlaza.dispose(); this.villageGreen.dispose()
   }
 
   update(x: number, z: number): void {
@@ -799,6 +801,17 @@ export class SettlementSystem {
       beacon.renderOrder = 2
       detail.add(beacon)
     }
+    const plazaRadius = plan.kind === 'city' ? 620 : Math.min(420, plan.radius * .13)
+    const plazaGeometry = new CircleGeometry(plazaRadius, plan.kind === 'city' ? 20 : 14)
+    plazaGeometry.computeBoundingSphere()
+    const plaza = new Mesh(plazaGeometry, plan.kind === 'city' ? this.cityPlaza : this.villageGreen)
+    plaza.name = plan.kind === 'city' ? 'SettlementPlaza' : 'SettlementGreen'
+    plaza.rotation.x = -Math.PI / 2
+    const centralRoadPoint = plan.roads
+      .flatMap(road => road.points)
+      .sort((a, b) => Math.hypot(a.x - plan.x, a.z - plan.z) - Math.hypot(b.x - plan.x, b.z - plan.z))[0]
+    plaza.position.set(0, (centralRoadPoint?.y ?? plan.y) - plan.y + .22, 0)
+    detail.add(plaza)
     const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
       width: road.width * 1.35,
       points: road.points.map(point => ({ ...point, y: point.y - .08 })),

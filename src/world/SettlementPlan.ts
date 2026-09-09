@@ -312,6 +312,11 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     const hx = (Math.abs(bc) * width + Math.abs(bs) * depth) / 2 + 5
     const hz = (Math.abs(bs) * width + Math.abs(bc) * depth) / 2 + 5
     if (Math.hypot(lx, lz) + Math.hypot(width, depth) / 2 > plan.radius * .97) return
+    // Keep a small central breathing space for a civic square or village
+    // green. Roads still converge through it, but buildings no longer fill
+    // the exact origin and turn every settlement into a solid block.
+    const plazaBuffer = plan.kind === 'city' ? 620 : Math.min(420, plan.radius * .13)
+    if (Math.hypot(lx, lz) < plazaBuffer && rand(serial + 701) < .78) return
     const keys: string[] = []
     for (let bx = Math.floor((x - hx) / 400); bx <= Math.floor((x + hx) / 400); bx++) {
       for (let bz = Math.floor((z - hz) / 400); bz <= Math.floor((z + hz) / 400); bz++) {

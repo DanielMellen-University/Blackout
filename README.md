@@ -128,7 +128,9 @@ footprints, heights, stepped/octagonal silhouettes, rooflines and biome palettes
 vary by world seed, using deliberately exaggerated scale for readability from the jet.
 Larger villages can also receive a small instanced civic spire or dome, giving
 their varied footprints a recognizable center without adding per-building
-draws.
+draws. Every settlement reserves a deterministic central plaza or village
+green so road approaches have breathing room instead of filling the whole
+footprint with blocks.
 Each new airfield also reserves independent city and village anchor searches;
 the runway heading biases those landmarks into the first takeoff corridor, and
 deterministic fallback cells keep both tiers alive when a rough seed rejects
