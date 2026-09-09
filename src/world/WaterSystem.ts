@@ -183,10 +183,17 @@ function appendRiverRibbons(
       const baseWidth = reach.wa + (reach.wb - reach.wa) * t
       // The reach is also the carve path used by sampleHydrology. Do not add
       // a renderer-only meander here or the water will float off its channel.
-      const mouthFade = reach.mouth ? 1 - Math.max(0, Math.min(1, (t - .55) / .45)) : 1
-      const channelHalfWidth = Math.max(reach.mouth ? 2 : 5, baseWidth * mouthFade)
+      // Keep a substantial submerged throat at a mouth. Tapering to a
+      // two-metre point exactly at the shore left a visible pinhole between
+      // the analytic river and the clipped basin surface, especially on a
+      // low-detail neighbouring tile. The final section is hidden under the
+      // receiving water, so this overlap is both safer and more natural.
+      const mouthFade = reach.mouth
+        ? .32 + .68 * (1 - Math.max(0, Math.min(1, (t - .55) / .45)))
+        : 1
+      const channelHalfWidth = Math.max(reach.mouth ? 8 : 5, baseWidth * mouthFade)
       const depth = reach.mouth
-        ? Math.max(.12, Math.min(4, channelHalfWidth * .028))
+        ? Math.max(.22, Math.min(4, channelHalfWidth * .035))
         : Math.max(.45, Math.min(4, channelHalfWidth * .028))
       const y = reach.ya + (reach.yb - reach.ya) * t + .04
       const edgeDepth = Math.max(.08, Math.min(.55, depth * .16))
@@ -203,9 +210,30 @@ function appendRiverRibbons(
       appendQuad(a.left, b.left, b.center, a.center)
       appendQuad(a.center, b.center, b.right, a.right)
     }
+    // Extend a mouth a short distance below the receiving basin. The basin
+    // owns the final water level, while this submerged overlap removes the
+    // one-frame-looking seam that otherwise appears where two clipped
+    // surfaces meet on separate terrain tiles.
+    let last = sections[sections.length - 1]!
+    if (reach.mouth && sections.length > 1) {
+      const previous = sections[sections.length - 2]!
+      const dx = last.center.x - previous.center.x, dz = last.center.z - previous.center.z
+      const length = Math.hypot(dx, dz)
+      if (length > 1) {
+        const overlap = Math.min(80, Math.max(32, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * 2.2))
+        const ox = dx / length * overlap, oz = dz / length * overlap
+        const submerged = (point: RibbonVertex): RibbonVertex => ({
+          x: point.x + ox, z: point.z + oz, y: last.center.y, depth: Math.max(point.depth, .18),
+        })
+        const nextLeft = submerged(last.left), nextCenter = submerged(last.center), nextRight = submerged(last.right)
+        appendQuad(last.left, nextLeft, nextCenter, last.center)
+        appendQuad(last.center, nextCenter, nextRight, last.right)
+        last = { left: nextLeft, center: nextCenter, right: nextRight }
+      }
+    }
     // Rounded joins/mouths hide tiny miter gaps when adjacent curved reaches
     // change direction or width. They are clipped with the same tile bounds.
-    const first = sections[0]!, last = sections[sections.length - 1]!
+    const first = sections[0]!
     appendRoundCap(first, Math.hypot(first.left.x - first.center.x, first.left.z - first.center.z))
     appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z))
   }

@@ -59,10 +59,10 @@ const SEGS_NEAR = 24
 const SEGS_MID = 12
 /** Far ring — silhouette only (heavy fog). */
 const SEGS_FAR = 6
-/** Keep shores smooth on merged far tiles without refining dry silhouettes. */
-const WATER_TARGET_CELL_M = 110
+/** Keep shores smooth on wet tiles without refining dry silhouettes. */
+const WATER_TARGET_CELL_M = 11
 /** Hard cap prevents a large sea from consuming the terrain build budget. */
-const WATER_MAX_SEGS = 32
+const WATER_MAX_SEGS = 48
 /** Rivers need a tighter grid nearby, but remain bounded in the fog ring. */
 const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 14, 1: 28, 2: 70 }
 const RIVER_MAX_SEGS = 48
