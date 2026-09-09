@@ -42,6 +42,26 @@ export class HUD {
   private readonly attributeCache = new WeakMap<Element, Map<string, string>>()
   private readonly classCache = new WeakMap<Element, Map<string, boolean>>()
   private readonly textCache = new WeakMap<Element, string>()
+  private altitudeValue = Number.NaN
+  private altitudeText = ''
+  private speedValue = Number.NaN
+  private speedText = ''
+  private fpsValue = Number.NaN
+  private fpsText = ''
+  private cameraModeValue: string | null = null
+  private cameraModeText = ''
+  private pitchValue = Number.NaN
+  private pitchText = ''
+  private rollValue = Number.NaN
+  private rollText = ''
+  private navBearingValue = Number.NaN
+  private navBearingText = ''
+  private navRangeMode = -1
+  private navRangeStep = Number.NaN
+  private navRangeText = ''
+  private navAltMode = -1
+  private navAltStep = Number.NaN
+  private navAltText = ''
   private previousGearDown: boolean | null = null
   private gearFlashUntil = 0
 
@@ -107,21 +127,40 @@ export class HUD {
     banner?: string | null
   }): void {
     if (this.posEl) {
-      this.setText(this.posEl, String(Math.round(opts.y)))
+      const altitude = Math.round(opts.y)
+      if (altitude !== this.altitudeValue) {
+        this.altitudeValue = altitude
+        this.altitudeText = String(altitude)
+      }
+      this.setText(this.posEl, this.altitudeText)
     }
 
     const kts = displayedKnots(opts.speed)
     if (this.spdEl) {
-      this.setText(this.spdEl, String(Math.round(kts)))
+      const speed = Math.round(kts)
+      if (speed !== this.speedValue) {
+        this.speedValue = speed
+        this.speedText = String(speed)
+      }
+      this.setText(this.spdEl, this.speedText)
     }
     this.updateSpeedo(kts)
     this.updateSpeedJuice(kts, !!opts.boost)
 
     if (this.camEl) {
-      this.setText(this.camEl, opts.cameraMode.toUpperCase())
+      if (opts.cameraMode !== this.cameraModeValue) {
+        this.cameraModeValue = opts.cameraMode
+        this.cameraModeText = opts.cameraMode.toUpperCase()
+      }
+      this.setText(this.camEl, this.cameraModeText)
     }
     if (this.fpsEl) {
-      this.setText(this.fpsEl, String(Math.round(opts.fps)))
+      const fps = Math.round(opts.fps)
+      if (fps !== this.fpsValue) {
+        this.fpsValue = fps
+        this.fpsText = String(fps)
+      }
+      this.setText(this.fpsEl, this.fpsText)
     }
     if (this.clockEl && opts.clock) {
       this.setText(this.clockEl, opts.clock)
@@ -184,21 +223,36 @@ export class HUD {
     this.setHidden(this.navCueEl, false)
     const deg = quantizeHudNumber((bearing * 180) / Math.PI, 4)
     if (this.navArrowEl) {
-      this.setStyle(this.navArrowEl, 'transform', `rotate(${deg}deg)`)
+      if (deg !== this.navBearingValue) {
+        this.navBearingValue = deg
+        this.navBearingText = `rotate(${deg}deg)`
+      }
+      this.setStyle(this.navArrowEl, 'transform', this.navBearingText)
     }
     if (this.navRangeEl) {
-      this.setText(
-        this.navRangeEl,
-        dist >= 1000 ? `${(dist / 1000).toFixed(1)} KM` : `${Math.round(dist)} M`,
-      )
+      const rangeMode = dist >= 1000 ? 1 : 0
+      const rangeStep = rangeMode ? Math.round(dist / 100) : Math.round(dist)
+      if (rangeMode !== this.navRangeMode || rangeStep !== this.navRangeStep) {
+        this.navRangeMode = rangeMode
+        this.navRangeStep = rangeStep
+        this.navRangeText = rangeMode ? `${(rangeStep / 10).toFixed(1)} KM` : `${rangeStep} M`
+      }
+      this.setText(this.navRangeEl, this.navRangeText)
     }
     if (this.navAltEl) {
-      if (Math.abs(altDelta) < 12) {
-        this.setText(this.navAltEl, 'LVL')
-      } else {
-        const dir = altDelta > 0 ? '+' : ''
-        this.setText(this.navAltEl, `${dir}${Math.round(altDelta)} M`)
+      const altMode = Math.abs(altDelta) < 12 ? 0 : 1
+      const altStep = altMode ? Math.round(altDelta) : 0
+      if (altMode !== this.navAltMode || altStep !== this.navAltStep) {
+        this.navAltMode = altMode
+        this.navAltStep = altStep
+        if (!altMode) {
+          this.navAltText = 'LVL'
+        } else {
+          const dir = altStep > 0 ? '+' : ''
+          this.navAltText = `${dir}${altStep} M`
+        }
       }
+      this.setText(this.navAltEl, this.navAltText)
     }
   }
 
@@ -241,11 +295,19 @@ export class HUD {
     }
     if (this.adiPitchEl) {
       const p = Math.round(pitchDeg)
-      this.setText(this.adiPitchEl, `P ${p > 0 ? '+' : ''}${p}°`)
+      if (p !== this.pitchValue) {
+        this.pitchValue = p
+        this.pitchText = `P ${p > 0 ? '+' : ''}${p}°`
+      }
+      this.setText(this.adiPitchEl, this.pitchText)
     }
     if (this.adiRollEl) {
       const r = Math.round(rollDeg)
-      this.setText(this.adiRollEl, `B ${r > 0 ? '+' : ''}${r}°`)
+      if (r !== this.rollValue) {
+        this.rollValue = r
+        this.rollText = `B ${r > 0 ? '+' : ''}${r}°`
+      }
+      this.setText(this.adiRollEl, this.rollText)
     }
   }
 
