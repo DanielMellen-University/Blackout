@@ -47,6 +47,8 @@ export class HUD {
   private altitudeText = ''
   private verticalSpeedValue = Number.NaN
   private verticalSpeedText = ''
+  private throttleValue = Number.NaN
+  private throttleText = ''
   private speedValue = Number.NaN
   private speedText = ''
   private fpsValue = Number.NaN
@@ -358,7 +360,11 @@ export class HUD {
     const level = Math.min(1, Math.max(0, throttle))
     const pct = Math.round(level * 100)
     if (this.thrEl) {
-      this.setText(this.thrEl, `${pct}%`)
+      if (pct !== this.throttleValue) {
+        this.throttleValue = pct
+        this.throttleText = `${pct}%`
+      }
+      this.setText(this.thrEl, this.throttleText)
     }
     if (this.engFill) {
       // Height % (not scaleY) so the bar fills cleanly from MIN→MAX
