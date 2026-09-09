@@ -106,6 +106,8 @@ export class Aircraft {
   private tailLeft: Object3D | null = null
   private tailRight: Object3D | null = null
   private afterburner: Object3D | null = null
+  private antiCollisionBeacon: Object3D | null = null
+  private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
 
@@ -286,6 +288,12 @@ export class Aircraft {
 
     this.updateControlSurfaces(dt)
 
+    if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
+      const opacity = antiCollisionBeaconOpacity(performance.now())
+      this.antiCollisionBeacon.visible = opacity > 0.01
+      this.antiCollisionBeaconMaterial.opacity = opacity
+    }
+
     const ab = this.afterburner
     if (!ab) return
 
@@ -350,6 +358,12 @@ export class Aircraft {
     this.tailLeft = find('tailLeft')
     this.tailRight = find('tailRight')
     this.afterburner = find('afterburner')
+    this.antiCollisionBeacon = find('antiCollisionBeacon')
+    this.antiCollisionBeaconMaterial =
+      this.antiCollisionBeacon instanceof Mesh &&
+      this.antiCollisionBeacon.material instanceof MeshBasicMaterial
+        ? this.antiCollisionBeacon.material
+        : null
     this.plumeMaterials.length = 0
     this.nozzleGlows.length = 0
     this.afterburner?.traverse((object) => {
@@ -376,6 +390,17 @@ export class Aircraft {
 /** Dispose a removed aircraft subtree without double-disposing shared slots. */
 export function disposeAircraftObject(root: Object3D): void {
   disposeObjectTree(root)
+}
+
+/** Rare dorsal anti-collision strobe envelope, hidden between flashes. */
+export function antiCollisionBeaconOpacity(timeMs: number): number {
+  if (!Number.isFinite(timeMs)) return 0
+  const period = 1400
+  const flash = ((timeMs % period) + period) % period
+  if (flash >= 128) return 0
+  const attack = Math.min(1, flash / 18)
+  const release = Math.max(0, 1 - Math.max(0, flash - 18) / 110)
+  return attack * release
 }
 
 function enableShadows(obj: Object3D): void {

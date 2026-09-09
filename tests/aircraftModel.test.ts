@@ -1,6 +1,10 @@
 import { Box3, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Aircraft, disposeAircraftObject } from '../src/aircraft/Aircraft'
+import {
+  Aircraft,
+  antiCollisionBeaconOpacity,
+  disposeAircraftObject,
+} from '../src/aircraft/Aircraft'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
 
@@ -61,6 +65,17 @@ describe('rebuilt aircraft', () => {
     aircraft.step(1 / 60)
     expect(plume.visible).toBe(false)
     expect(glow!.emissiveIntensity).toBe(0)
+  })
+
+  it('keeps the anti-collision beacon brief and hidden between flashes', () => {
+    const model = createF35Model()
+    const beacon = model.getObjectByName('antiCollisionBeacon') as Mesh
+    expect(beacon).toBeTruthy()
+    expect(antiCollisionBeaconOpacity(0)).toBe(0)
+    expect(antiCollisionBeaconOpacity(18)).toBeCloseTo(1)
+    expect(antiCollisionBeaconOpacity(80)).toBeGreaterThan(0)
+    expect(antiCollisionBeaconOpacity(200)).toBe(0)
+    expect(antiCollisionBeaconOpacity(1400)).toBe(0)
   })
 
   it('scales afterburner length with the displayed engine-power percentage', () => {

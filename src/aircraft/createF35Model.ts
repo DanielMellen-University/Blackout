@@ -134,6 +134,20 @@ export function createF35Model(): Group {
   buildNozzle(root, metal, black)
   buildGear(root, metal, rubber, skin)
   root.add(buildAfterburner())
+  const beacon = new Mesh(
+    new SphereGeometry(.07, 8, 6),
+    new MeshBasicMaterial({
+      name: 'antiCollisionBeaconMaterial',
+      color: 0xffd6a1,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  )
+  beacon.name = 'antiCollisionBeacon'
+  beacon.position.set(0, .88, -1.55)
+  root.add(beacon)
   for (const [x, color] of [[-5.22, 0xff3333], [5.22, 0x55ffad]]) {
     const nav = new Mesh(new SphereGeometry(.055, 8, 6), new MeshBasicMaterial({ color, toneMapped: false }))
     nav.position.set(x!, .035, -1.83)
