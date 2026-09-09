@@ -222,8 +222,16 @@ export class SettlementSystem {
     if (typeof Worker !== 'undefined') {
       this.worker = new Worker(new URL('./settlement.worker.ts', import.meta.url), { type: 'module' })
       this.worker.onmessage = (event: MessageEvent<SettlementWorkerReply>) => {
-        this.inFlight = null
         const result = event.data
+        // A reseed can clear the stream while the previous worker request is
+        // still running. Only the matching request may release the current
+        // in-flight slot; an older reply must never unblock or overwrite a
+        // newer destination stream.
+        const current = this.inFlight
+        const matchesCurrent = !!current
+          && current.generation === result.generation
+          && current.key === result.key
+        if (matchesCurrent) this.inFlight = null
         if (result.generation !== this.generation) return
         if (result.type === 'settlement') {
           if (this.checked.has(result.key) && result.plan) {
@@ -379,6 +387,10 @@ export class SettlementSystem {
     this.linkQueue = []
     this.ready = []
     this.readyRoads = []
+    // The worker may still be finishing a plan from the previous seed or
+    // destination. Let the next update dispatch immediately; stale replies
+    // are ignored by the generation check above.
+    this.inFlight = null
     this.generation++
     this.lastCell = ''
   }
@@ -426,27 +438,33 @@ export class SettlementSystem {
       }
       this.queue = retained.sort((a, b) => {
         const pad = getOpsPad()
-        const anchorRank = (job: { cx: number; cz: number }): number => {
+        const queueScore = (job: { cx: number; cz: number }): number => {
           // Some unit tests replace SettlementPlan with a minimal mock. The
           // optional call keeps that harness compatible while production
-          // builds still put guaranteed landmarks at the front of the queue.
+          // builds still give guaranteed landmarks a useful spawn bonus.
           let anchor: 'city' | 'village' | null = null
           try {
             anchor = settlementPlanApi.settlementAnchorForCell?.(job.cx, job.cz, pad) ?? null
           } catch {
             // A partial module mock may throw when an optional export is read.
           }
-          // Both guaranteed tiers outrank organic cells. Distance then wins,
-          // so the nearby village does not wait behind a slower city build.
-          return anchor ? 0 : 1
+          const cx = (job.cx + .5) * SETTLEMENT_CELL_SIZE - x
+          const cz = (job.cz + .5) * SETTLEMENT_CELL_SIZE - z
+          const distance = Math.hypot(cx, cz)
+          // Anchors get a bounded distance bonus, not an absolute rank. The
+          // old all-or-nothing ordering let a protected city near the runway
+          // block the actual city or village the player had flown toward.
+          // A nearby anchor still wins the opening stream, while a selected
+          // destination wins once it is materially closer to the aircraft.
+          const bonus = anchor === 'city' ? 12000 : anchor === 'village' ? 8000 : 0
+          return distance - bonus
         }
-        const rank = anchorRank(a) - anchorRank(b)
-        if (rank) return rank
         const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - x
         const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - z
         const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - x
         const bz = (b.cz + .5) * SETTLEMENT_CELL_SIZE - z
-        return Math.hypot(ax, az) - Math.hypot(bx, bz)
+        return queueScore(a) - queueScore(b)
+          || Math.hypot(ax, az) - Math.hypot(bx, bz)
       })
     }
     this.pruneDistantRoads(x, z)
@@ -525,6 +543,12 @@ export class SettlementSystem {
     // four ordinary villages crowd out the guaranteed city and village, so
     // the landmarks existed in the worker but never appeared in the scene.
     const candidateDistance = Math.hypot(plan.x - x, plan.z - z)
+    // Cell centres are only a coarse streaming index. An anchored city can
+    // sit near a cell edge, so the cell may be inside the envelope while its
+    // actual buildings are already behind the fog. Do not spend the protected
+    // instance budget on an off-screen plan; this is what previously hid the
+    // selected village or city behind a stale anchor.
+    if (candidateDistance > LOAD_RADIUS + plan.radius + 3000) return false
     while (this.loaded.size >= MAX_LOADED_SETTLEMENTS ||
       this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) {
       let farthestKey = ''

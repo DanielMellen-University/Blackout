@@ -59,21 +59,40 @@ let flightView=false
 let settlementRadius=0
 let settlementKind=''
 let settlementTop=700
+let reviewPeak=0
+let reviewPeakX=0
+let reviewPeakZ=0
 function frameWorld(destination){
   settlementRadius=0
   settlementKind=''
   settlementTop=700
+  reviewPeakX=0
+  reviewPeakZ=0
   flightView=false;reviewJet.mesh.visible=false;controls.enabled=true
   document.querySelector('#flight-view').textContent='Flight scale view'
   const {x,y,z}=destination ?? world.spawn
   world.atmosphere.timeOfDay=.48
   world.atmosphere.setWeather(document.querySelector('#weather').value,true)
   let nearbyPeak=y
-  for(let ix=-2;ix<=2;ix++) for(let iz=-2;iz<=2;iz++) {
-    nearbyPeak=Math.max(nearbyPeak,sampleTerrainHeight(x+ix*750,z+iz*750))
+  // Volcanic cones and alpine shoulders can put the sampled center well below
+  // the visible landform. Scan a wider local envelope so review cameras and
+  // flight starts never end up inside a mountain.
+  for(let ix=-6;ix<=6;ix++) for(let iz=-6;iz<=6;iz++) {
+    const sampleX=x+ix*600,sampleZ=z+iz*600,sampleY=sampleTerrainHeight(sampleX,sampleZ)
+    if(sampleY>nearbyPeak){nearbyPeak=sampleY;reviewPeakX=sampleX;reviewPeakZ=sampleZ}
   }
-  camera.position.set(x+1800,Math.max(y+1300,nearbyPeak+1100),z-1800)
-  controls.target.set(x,y+15,z);controls.update()
+  reviewPeak=nearbyPeak
+  const lookY=Math.max(y+15,nearbyPeak-900)
+  camera.position.set(x+1800,Math.max(y+1300,nearbyPeak+900),z-1800)
+  controls.target.set(x,lookY,z);controls.update()
+  if(!destination||Math.abs(nearbyPeak-y)<1200){reviewPeakX=x;reviewPeakZ=z}
+  else {
+    // High landforms need an oblique side view. Looking at the sampled center
+    // can put the review camera inside a cone or alpine wall, leaving only fog.
+    const sideX=reviewPeakX+3200,sideZ=reviewPeakZ-3200
+    camera.position.set(sideX,nearbyPeak+500,sideZ)
+    controls.target.set(reviewPeakX,nearbyPeak-900,reviewPeakZ);controls.update()
+  }
   // Warm the review scene even when a background browser throttles animation.
   for(let i=0;i<400;i++) world.terrain.update(x,z,1/30)
   // Keep settlement streaming focused with the reviewed destination. Without
@@ -167,14 +186,18 @@ function visitDestination(value){
     // Frame from above the nearest terrain shoulder so the city/village is
     // not hidden behind a local ridge in orbit mode.
     const offset=Math.max(1300,Math.min(settlementRadius*.26,2800))
-    let nearbyPeak=y
-    for(let ix=-2;ix<=2;ix++) for(let iz=-2;iz<=2;iz++) {
-      nearbyPeak=Math.max(nearbyPeak,sampleTerrainHeight(x+ix*750,z+iz*750))
+    // Settlement framing must use the local shelf, not the highest mountain
+    // in the review envelope. A distant alpine peak can be several kilometres
+    // taller than the town and previously pushed the camera so high that the
+    // city or village collapsed into a few pixels or disappeared behind fog.
+    let localPeak=y
+    for(let ix=-3;ix<=3;ix++) for(let iz=-3;iz<=3;iz++) {
+      localPeak=Math.max(localPeak,sampleTerrainHeight(x+ix*450,z+iz*450))
     }
-    const viewY=Math.max(
-      y+Math.min(settlementRadius*.26,2800),
-      nearbyPeak+520,
-      settlementTop+180,
+    const localRelief=Math.min(900,Math.max(0,localPeak-y)*.35)
+    const viewY=Math.min(
+      Math.max(y+Math.min(settlementRadius*.2,2200)+localRelief,settlementTop+260),
+      settlementTop+1300,
     )
     camera.position.set(x+offset,viewY,z-offset)
     controls.target.set(x,y+25,z);controls.update()
@@ -202,7 +225,10 @@ document.querySelector('#flight-view').onclick=()=>{
     const x=controls.target.x+edge,z=controls.target.z-edge
     const terrainY=sampleTerrainHeight(x,z)
     const skyline=settlementKind==='city' ? 2400 : settlementKind==='village' ? 1100 : 700
-    reviewJet.reset({x,z,y:Math.max(terrainY+skyline,settlementTop+450),yaw:0})
+    const spawnY=settlementKind
+      ? Math.max(terrainY+skyline,settlementTop+450)
+      : Math.max(terrainY+skyline,reviewPeak+550)
+    reviewJet.reset({x,z,y:spawnY,yaw:0})
     chase.setMode('chase',reviewJet)
   }
 }

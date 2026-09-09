@@ -75,4 +75,15 @@ describe('settlement streaming budgets', () => {
       system.dispose()
     }
   })
+
+  it('does not load a cell-edge plan whose actual buildings are beyond the fog envelope', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      const canLoad = (system as unknown as { canLoad(plan: SettlementPlan, x: number, z: number): boolean }).canLoad
+      const distant = planFor(3, 3)
+      expect(canLoad.call(system, distant, 0, 0)).toBe(false)
+    } finally {
+      system.dispose()
+    }
+  })
 })
