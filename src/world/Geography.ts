@@ -43,6 +43,8 @@ export function sampleGeography(x: number, z: number): Climate {
       plateau: landform.plateau,
       caldera: landform.caldera,
       foothills: landform.foothills,
+      dunes: landform.dunes,
+      badlands: landform.badlands,
     },
   }
 }

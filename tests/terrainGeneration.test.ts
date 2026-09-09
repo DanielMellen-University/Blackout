@@ -108,6 +108,21 @@ describe('continuous terrain generation', () => {
     expect(coast.every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
 
+  it('carries dune and badland signals into dry material bands', () => {
+    const dryBase = { ridge: 0, alpineValley: 0, plateau: .2, caldera: 0, foothills: 0 }
+    const dunes = biomeColor('desert', 180, .18, 260, -520, undefined, 0, 1, 'desert', 0,
+      undefined, { ...dryBase, dunes: 1, badlands: 0 })
+    const mesa = biomeColor('mesa', 420, .2, 260, -520, undefined, 0, 1, 'mesa', 0,
+      undefined, { ...dryBase, dunes: 0, badlands: 1 })
+    const plainDesert = biomeColor('desert', 180, .18, 260, -520, undefined, 0, 1, 'desert', 0,
+      undefined, dryBase)
+    const plainMesa = biomeColor('mesa', 420, .2, 260, -520, undefined, 0, 1, 'mesa', 0,
+      undefined, dryBase)
+    expect(dunes).not.toEqual(plainDesert)
+    expect(mesa).not.toEqual(plainMesa)
+    expect([...dunes, ...mesa].every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
+
   it('keeps volcanic caldera accents visibly warmer than cooled ash', () => {
     const ash = biomeColor('volcanic', 900, .3, 240, -480, undefined, 0, 1, 'volcanic', 0,
       undefined, { ridge: .4, alpineValley: .1, plateau: 0, caldera: 0 })

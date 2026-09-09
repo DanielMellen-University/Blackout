@@ -102,6 +102,10 @@ export interface Climate {
     caldera: number
     /** Broad mountain-to-lowland shoulder used for material separation. */
     foothills?: number
+    /** Dry-province dune field signal used for material banding. */
+    dunes?: number
+    /** Dry badland and mesa signal used for material strata. */
+    badlands?: number
   }
 }
 
@@ -764,6 +768,31 @@ export function biomeColor(
       const shelf = smoothstep(.35, .9, landform.plateau) * .08
       col[0] = Math.min(.98, col[0] + shelf)
       col[1] = Math.min(.72, col[1] + shelf * .45)
+    }
+
+    // Reuse the generated dry-province signals to make sand and badland
+    // relief readable from the air. These are broad analytic bands rather
+    // than another texture lookup, so the material stays cheap and blends
+    // continuously into neighbouring biomes.
+    const duneSignal = clamp01(landform.dunes ?? 0)
+    if (duneSignal > .08 && (biome === 'desert' || biome === 'savanna')) {
+      const windBand = .5 + .5 * Math.sin(x / 310 + Math.sin(z / 1700) * .9)
+      const band = smoothstep(.28, .78, windBand) * duneSignal
+      const duneTint: [number, number, number] = biome === 'savanna'
+        ? [.68, .57, .29]
+        : [.9, .75, .44]
+      const duneMix = band * .14
+      col = col.map((value, index) => clamp01(value + (duneTint[index]! - value) * duneMix)) as [number, number, number]
+    }
+    const badlandSignal = clamp01(landform.badlands ?? 0)
+    if (badlandSignal > .08 && (biome === 'mesa' || biome === 'desert')) {
+      const strataField = .5 + .5 * Math.sin(height * .032 + x / 1250 + Math.sin(z / 900) * .7)
+      const strata = smoothstep(.25, .76, strataField) * badlandSignal
+      const strataTint: [number, number, number] = biome === 'mesa'
+        ? [.66, .24, .1]
+        : [.74, .48, .23]
+      const strataMix = strata * .16
+      col = col.map((value, index) => clamp01(value + (strataTint[index]! - value) * strataMix)) as [number, number, number]
     }
 
     // Foothills are a broad transition zone, not a new biome. A restrained
