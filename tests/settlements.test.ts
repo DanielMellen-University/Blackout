@@ -113,7 +113,7 @@ describe('procedural settlements', () => {
   })
 
   it('rescues both anchor tiers on rough seeded terrain', () => {
-    for (const seed of [14, 18, 22, 27]) {
+    for (const seed of [1, 7, 14, 18, 22, 27, 73, 1337, 2026, 4096]) {
       setWorldSeed(seed)
       clearOpsPad()
       const pad = findPlayableSpawn()

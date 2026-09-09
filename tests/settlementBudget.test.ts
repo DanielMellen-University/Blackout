@@ -3,16 +3,22 @@ import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 
+const mockAnchorState = { rejectPrimary: false }
+
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
-  settlementForCell: (cx: number, cz: number) => {
+  settlementForCell: (cx: number, cz: number, forcedAnchor?: 'city' | 'village') => {
     if (Math.abs(cx) > 1 || Math.abs(cz) > 1) return null
+    if (mockAnchorState.rejectPrimary && ((cx === 1 && cz === 0) || (cx === 0 && cz === 1))) return null
     const plan = planFor(cx, cz)
+    if (forcedAnchor) { plan.kind = forcedAnchor; plan.anchor = forcedAnchor }
     if (cx === 1 && cz === 0) { plan.x = 3000; plan.z = 0 }
     if (cx === 0 && cz === 1) { plan.x = -3000; plan.z = 0 }
     return plan
   },
   settlementAnchorForCell: (cx: number, cz: number) => cx === 1 && cz === 0 ? 'city' : cx === 0 && cz === 1 ? 'village' : null,
+  settlementAnchorCells: (kind: 'city' | 'village') => kind === 'city'
+    ? [[1, 0], [0, -1]] : [[0, 1], [-1, 0]],
 }))
 
 import { MAX_LOADED_BUILDINGS, MAX_LOADED_SETTLEMENTS, SettlementSystem } from '../src/world/SettlementSystem'
@@ -130,6 +136,23 @@ describe('settlement streaming budgets', () => {
       expect(internals.loaded.has('1,0')).toBe(true)
       expect(internals.loaded.has('0,1')).toBe(true)
     } finally {
+      system.dispose()
+      clearOpsPad()
+    }
+  })
+
+  it('moves a rejected protected anchor to a deterministic fallback cell', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      mockAnchorState.rejectPrimary = true
+      setOpsPad(0, 0, 100)
+      ;(system as unknown as { primeAnchors(x: number, z: number): void }).primeAnchors(0, 0)
+      const loaded = (system as unknown as { loaded: Map<string, { plan: SettlementPlan }> }).loaded
+      expect(loaded.has('0,-1')).toBe(true)
+      expect(loaded.has('-1,0')).toBe(true)
+      expect([...loaded.values()].map(({ plan }) => plan.anchor)).toEqual(expect.arrayContaining(['city', 'village']))
+    } finally {
+      mockAnchorState.rejectPrimary = false
       system.dispose()
       clearOpsPad()
     }

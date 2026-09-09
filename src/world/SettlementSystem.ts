@@ -414,6 +414,7 @@ export class SettlementSystem {
     const pad = getOpsPad()
     if (!pad) return
     const cells = new Set<string>()
+    const anchorKinds = new Map<string, 'city' | 'village'>()
     // Scan only the small protected ring. This avoids duplicating the full
     // settlement queue while remaining robust if the anchor cell offset or
     // ring size changes later.
@@ -425,13 +426,13 @@ export class SettlementSystem {
       const anchor = settlementAnchorForCell(cx, cz, pad)
       if (anchor) {
         cells.add(key)
-        this.protectedAnchors.set(anchor, key)
+        anchorKinds.set(key, anchor)
       }
     }
     for (const key of cells) {
       if (this.checked.has(key) || this.loaded.has(key)) continue
       const [cx, cz] = key.split(',').map(Number)
-      const plan = settlementForCell(cx!, cz!)
+      const plan = settlementForCell(cx!, cz!, anchorKinds.get(key))
       if (!plan) {
         // A deterministic anchor can still fail terrain validation on a
         // future generator revision. Keep the cell checked only when there
@@ -439,6 +440,8 @@ export class SettlementSystem {
         this.checked.add(key)
         continue
       }
+      const anchor = anchorKinds.get(key)
+      if (anchor) this.protectedAnchors.set(anchor, key)
       this.scheduleLinks(plan, key)
       if (this.canLoad(plan, x, z)) {
         this.checked.add(key)
@@ -448,6 +451,36 @@ export class SettlementSystem {
         // budget is temporarily full. Leaving it unchecked lets the normal
         // nearest-first queue retry after an ordinary settlement is evicted.
         this.queue = this.queue.filter(job => job.key !== key)
+      }
+    }
+    // A protected cell can still fail if the new terrain revision puts its
+    // entire survey on water or a steep shelf. Try the remaining deterministic
+    // ring cells before giving up, forcing the same tier only for this rescue
+    // pass so organic rarity remains unchanged everywhere else.
+    for (const kind of ['village', 'city'] as const) {
+      if (this.protectedAnchors.has(kind)) continue
+      let candidates: [number, number][] = []
+      try {
+        candidates = settlementPlanApi.settlementAnchorCells?.(kind, pad) ?? []
+      } catch {
+        // Partial SettlementPlan mocks do not need to model fallback anchors.
+      }
+      for (const [cx, cz] of candidates) {
+        const key = `${cx},${cz}`
+        if (cells.has(key) || this.checked.has(key) || this.loaded.has(key)) continue
+        const plan = settlementForCell(cx, cz, kind)
+        if (!plan) continue
+        cells.add(key)
+        anchorKinds.set(key, kind)
+        this.protectedAnchors.set(kind, key)
+        this.scheduleLinks(plan, key)
+        if (this.canLoad(plan, x, z)) {
+          this.checked.add(key)
+          this.loaded.set(key, this.build(plan))
+        } else {
+          this.queue = this.queue.filter(job => job.key !== key)
+        }
+        break
       }
     }
   }

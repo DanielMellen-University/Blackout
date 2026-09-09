@@ -7,8 +7,8 @@ export const SETTLEMENT_CELL_SIZE = 24000
 // Cells are deliberately large, so the candidate chance has to be generous
 // enough that a player encounters villages inside the visible flight envelope.
 // Site validation still rejects water, steep ground, and the active airfield.
-const CITY_CHANCE = .03
-const VILLAGE_CHANCE = .42
+const CITY_CHANCE = .04
+const VILLAGE_CHANCE = .48
 /** Guaranteed landmarks keep a smaller minimum than organic cities so rough
  * worlds still get a readable destination instead of an empty anchor cell. */
 const ANCHOR_CITY_MIN_BUILDINGS = 420
@@ -53,8 +53,8 @@ function dry(c: Climate): boolean {
  * anchor only promotes a normal cell into a candidate; all water, relief, and
  * building-fit checks below still have to pass.
  */
-function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number] | null {
-  if (!pad) return null
+function anchorCandidates(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number][] {
+  if (!pad) return []
   const padCellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
   const padCellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
   const ring = kind === 'city' ? CITY_ANCHOR_RING : VILLAGE_ANCHOR_RING
@@ -72,10 +72,18 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
     const br = hash2(padCellX * 173 + b[0] * 37 + salt, padCellZ * 257 + b[1] * 53 - salt)
     return ar - br
   })
+  return offsets.map(([ox, oz]) => [padCellX + ox, padCellZ + oz])
+}
+
+function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number] | null {
+  const candidates = anchorCandidates(kind, pad)
+  if (!candidates.length) return null
+  const padCellX = Math.floor(pad!.x / SETTLEMENT_CELL_SIZE)
+  const padCellZ = Math.floor(pad!.z / SETTLEMENT_CELL_SIZE)
   if (kind === 'village') {
-    const [ox, oz] = offsets[0]!
-    return [padCellX + ox, padCellZ + oz]
+    return candidates[0]!
   }
+  const salt = 9173
   // Never spend the only anchor cell on the city tier. A coincident city and
   // village anchor used to make the city branch win and silently delete the
   // guaranteed village from that world.
@@ -83,22 +91,31 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
   // Prefer a dry, low-relief center cell. This keeps a guaranteed city from
   // landing on a dramatic snow peak when a nearby shelf is available.
   let best: [number, number] | null = null, bestScore = -Infinity
-  for (const [ox, oz] of offsets) {
-    if (villageAnchor && padCellX + ox === villageAnchor[0] && padCellZ + oz === villageAnchor[1]) continue
-    const climate = sampleClimate((padCellX + ox + .5) * SETTLEMENT_CELL_SIZE,
-      (padCellZ + oz + .5) * SETTLEMENT_CELL_SIZE)
+  for (const [cx, cz] of candidates) {
+    if (villageAnchor && cx === villageAnchor[0] && cz === villageAnchor[1]) continue
+    const climate = sampleClimate((cx + .5) * SETTLEMENT_CELL_SIZE,
+      (cz + .5) * SETTLEMENT_CELL_SIZE)
     if (!dry(climate)) continue
     const score = (cityBiomes.has(climate.biome) ? 6000 : 0)
       + Math.max(0, 2500 - Math.max(0, climate.height - 200) * .4)
       - climate.landform.ridge * 3500
-      + hash2(padCellX * 311 + ox * 71 + salt, padCellZ * 199 + oz * 97 - salt)
-    if (score > bestScore) { bestScore = score; best = [padCellX + ox, padCellZ + oz] }
+      + hash2(padCellX * 311 + (cx - padCellX) * 71 + salt, padCellZ * 199 + (cz - padCellZ) * 97 - salt)
+    if (score > bestScore) { bestScore = score; best = [cx, cz] }
   }
   if (best) return best
-  const fallback = offsets.find(([ox, oz]) =>
-    !villageAnchor || padCellX + ox !== villageAnchor[0] || padCellZ + oz !== villageAnchor[1],
-  ) ?? offsets[0]!
-  return [padCellX + fallback[0], padCellZ + fallback[1]]
+  return candidates.find(([cx, cz]) =>
+    !villageAnchor || cx !== villageAnchor[0] || cz !== villageAnchor[1],
+  ) ?? candidates[0]!
+}
+
+/** Ordered fallback cells used when the first protected landmark site fails validation. */
+export function settlementAnchorCells(
+  kind: 'city' | 'village', pad: { x: number; z: number } | null,
+): [number, number][] {
+  const candidates = anchorCandidates(kind, pad)
+  if (kind !== 'city' || !pad) return candidates
+  const village = anchorCell('village', pad)
+  return candidates.filter(([cx, cz]) => !village || cx !== village[0] || cz !== village[1])
 }
 
 /** Queue metadata for the streaming layer; null means a normal cell. */
@@ -189,15 +206,16 @@ function palette(biome: Biome): { walls: number[]; roofs: number[]; roof: 'flat'
 }
 
 /** One stable candidate per large cell; no world flattening or water filling. */
-export function settlementForCell(cx: number, cz: number): SettlementPlan | null {
+export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' | 'village'): SettlementPlan | null {
   const pad = getOpsPad()
   const context = `${getWorldSeed()}:${pad?.x}:${pad?.z}:${pad?.y}`
   if (context !== cacheContext) { cache.clear(); cacheContext = context }
   const id = `${cx},${cz}`
-  if (cache.has(id)) return cache.get(id)!
+  const cacheKey = `${id}:${forcedAnchor ?? 'normal'}`
+  if (cache.has(cacheKey)) return cache.get(cacheKey)!
   const roll = hash2(cx * 131 + 8129, cz * 139 - 4513)
-  const cityAnchor = isAnchorCell(cx, cz, 'city', pad)
-  const villageAnchor = isAnchorCell(cx, cz, 'village', pad)
+  const cityAnchor = forcedAnchor === 'city' || (forcedAnchor !== 'village' && isAnchorCell(cx, cz, 'city', pad))
+  const villageAnchor = forcedAnchor === 'village' || (forcedAnchor !== 'city' && isAnchorCell(cx, cz, 'village', pad))
   // Cities stay exceptional. Villages have a much higher candidate rate than
   // cities because a 24 km cell plus terrain validation otherwise turns them
   // into once-per-session accidents instead of landmarks to fly toward.
@@ -267,7 +285,7 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   }
   // Bounded including empty cells; revisiting reconstructs exactly the same plan.
   if (cache.size >= 192) cache.delete(cache.keys().next().value!)
-  cache.set(id, result)
+  cache.set(cacheKey, result)
   return result
 }
 

@@ -120,6 +120,9 @@ buildings with mixed towers, stepped cores, slabs, hangars and pitched rooflines
 dead ends and broken district connectors replace repeated grids. Building
 footprints, heights, stepped/octagonal silhouettes, rooflines and biome palettes
 vary by world seed, using deliberately exaggerated scale for readability from the jet.
+Each new airfield also reserves independent city and village anchor searches;
+deterministic fallback cells keep those two landmarks alive when a rough seed
+rejects the first shelf, while ordinary settlement rolls remain naturally sparse.
 Settlement placement runs in a background worker; buildings and roofs are
 instanced, with ground detail culled at distance. Trees and rocks use the same
 bounded instanced streaming path, with detailed props limited to the near field.
