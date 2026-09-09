@@ -371,9 +371,10 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     // Keep a few towers and stepped landmarks in the core, then let the outer
     // districts carry the broader low-rise forms.
     const shape: SettlementBuilding['shape'] = plan.kind === 'city'
-      ? shapeRoll < .11 && districtCore > .42 ? 'stepped'
-        : shapeRoll < .25 && districtCore > .24 ? 'tower'
-          : shapeRoll < .48 ? 'slab' : shapeRoll < .61 ? 'hangar' : 'block'
+      ? shapeRoll < (coldSettlementBiome ? .15 : .11) && districtCore > .42 ? 'stepped'
+        : shapeRoll < (coldSettlementBiome ? .3 : .25) && districtCore > .24 ? 'tower'
+          : shapeRoll < (wetSettlementBiome ? .5 : .48) ? 'slab'
+            : shapeRoll < (drySettlementBiome ? .67 : .61) ? 'hangar' : 'block'
       : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
     const finalHeight = plan.kind === 'city'
       ? shape === 'hangar'
@@ -425,11 +426,13 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     flush()
   }
   const city = plan.kind === 'city'
-  const dryVillageBiome = plan.biome === 'desert' || plan.biome === 'mesa' ||
+  const drySettlementBiome = plan.biome === 'desert' || plan.biome === 'mesa' ||
     plan.biome === 'savanna' || plan.biome === 'saltflat'
-  const wetVillageBiome = plan.biome === 'rainforest' || plan.biome === 'swamp'
-  const coldVillageBiome = plan.biome === 'tundra' || plan.biome === 'snow' ||
+  const wetSettlementBiome = plan.biome === 'rainforest' || plan.biome === 'swamp'
+  const coldSettlementBiome = plan.biome === 'tundra' || plan.biome === 'snow' ||
     plan.biome === 'mountain' || plan.biome === 'volcanic'
+  const cityFootprintScale = drySettlementBiome ? 1.1
+    : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.04 : 1
   // Village morphology is chosen independently from footprint size. This
   // keeps settlements from reading as repeated radial templates or a grid.
   // Climate families gently bias the footprint without removing seed variety:
@@ -437,18 +440,18 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   // and cold/highland villages favor compact crossroads.
   const profileRoll = rand(43), profileRollB = rand(44), profileRollC = rand(45)
   const villageProfile = city ? 'basin' : plan.anchor === 'village'
-    ? dryVillageBiome
+    ? drySettlementBiome
       ? (profileRoll < .52 ? 'ribbon' : profileRollB < .8 ? 'crossroads' : 'basin')
-      : wetVillageBiome
+      : wetSettlementBiome
         ? (profileRoll < .4 ? 'basin' : profileRollB < .73 ? 'ribbon' : 'crossroads')
-        : coldVillageBiome
+        : coldSettlementBiome
           ? (profileRoll < .5 ? 'crossroads' : profileRollB < .78 ? 'basin' : 'ribbon')
           : (profileRoll < .42 ? 'crossroads' : profileRollB < .72 ? 'basin' : 'ribbon')
-    : profileRoll < (dryVillageBiome ? .16 : .24) ? 'hamlet'
-      : profileRollB < (wetVillageBiome ? .58 : .5) ? 'ribbon'
-        : profileRollC < (coldVillageBiome ? .86 : .78) ? 'crossroads' : 'basin'
+    : profileRoll < (drySettlementBiome ? .16 : .24) ? 'hamlet'
+      : profileRollB < (wetSettlementBiome ? .58 : .5) ? 'ribbon'
+        : profileRollC < (coldSettlementBiome ? .86 : .78) ? 'crossroads' : 'basin'
   const phase = rand(40) * Math.PI * 2
-  const aspectBias = dryVillageBiome ? -.08 : wetVillageBiome ? .08 : coldVillageBiome ? -.04 : 0
+  const aspectBias = drySettlementBiome ? -.08 : wetSettlementBiome ? .08 : coldSettlementBiome ? -.04 : 0
   const aspect = city ? .78 + rand(41) * .2
     : villageProfile === 'hamlet' ? .55 + rand(41) * .25
       : villageProfile === 'ribbon' ? Math.max(.22, .28 + rand(41) * .28 + aspectBias)
@@ -559,8 +562,8 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const angle = phase + sector / lotsPerRing * Math.PI * 2 + (rand(2200 + attempt) - .5) * .24
       const distance = 860 + ring * 470 + rand(2300 + attempt) * 190
       const p = polar(angle, distance)
-      const width = 190 + rand(2400 + attempt) * 170
-      const depth = 190 + rand(2500 + attempt) * 170
+      const width = (190 + rand(2400 + attempt) * 170) * cityFootprintScale
+      const depth = (190 + rand(2500 + attempt) * 170) * cityFootprintScale
       const height = 360 + rand(2600 + attempt) * 760 + (coreRings - ring) * 90
       building(p.x, p.z, width, depth, height, angle + (rand(2700 + attempt) - .5) * .35)
     }
@@ -576,9 +579,9 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     const villageScale = villageProfile === 'hamlet' ? .78
       : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
     const landmarkScale = !city && rand(n + 8) < .08 ? 1.8 : 1
-    const width = city ? 160 + rand(n + 2) * 180
+    const width = city ? (160 + rand(n + 2) * 180) * cityFootprintScale
       : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * landmarkScale)
-    const depth = city ? 160 + rand(n + 3) * 180
+    const depth = city ? (160 + rand(n + 3) * 180) * cityFootprintScale
       : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * landmarkScale)
     let nearest = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
