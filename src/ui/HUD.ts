@@ -37,6 +37,9 @@ export class HUD {
   private readonly maxKts = 3000
   /** Pixels of ladder travel per degree of pitch. */
   private readonly pxPerDeg = 2.4
+  private readonly styleCache = new WeakMap<Element, Map<string, string>>()
+  private readonly attributeCache = new WeakMap<Element, Map<string, string>>()
+  private readonly classCache = new WeakMap<Element, Map<string, boolean>>()
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
@@ -167,9 +170,9 @@ export class HUD {
       return
     }
     this.setHidden(this.navCueEl, false)
-    const deg = (bearing * 180) / Math.PI
+    const deg = quantizeHudNumber((bearing * 180) / Math.PI, 4)
     if (this.navArrowEl) {
-      this.navArrowEl.style.transform = `rotate(${deg}deg)`
+      this.setStyle(this.navArrowEl, 'transform', `rotate(${deg}deg)`)
     }
     if (this.navRangeEl) {
       this.setText(
@@ -194,14 +197,15 @@ export class HUD {
     if (!this.warnEl || !this.warnTextEl) return
     if (!text || level === 'none') {
       this.setHidden(this.warnEl, true)
-      this.warnEl.classList.remove('caution', 'warning')
+      this.setClass(this.warnEl, 'caution', false)
+      this.setClass(this.warnEl, 'warning', false)
       this.setText(this.warnTextEl, '')
       return
     }
     this.setHidden(this.warnEl, false)
     this.setText(this.warnTextEl, text)
-    this.warnEl.classList.toggle('caution', level === 'caution')
-    this.warnEl.classList.toggle('warning', level === 'warning')
+    this.setClass(this.warnEl, 'caution', level === 'caution')
+    this.setClass(this.warnEl, 'warning', level === 'warning')
   }
 
   /**
@@ -213,14 +217,15 @@ export class HUD {
     const rollDeg = (rollRad * 180) / Math.PI
     // Clamp visual pitch travel so ladder stays readable
     const pitchVis = Math.max(-50, Math.min(50, pitchDeg))
-    const pitchPx = pitchVis * this.pxPerDeg
+    const pitchPx = quantizeHudNumber(pitchVis * this.pxPerDeg, 10)
+    const rollVisual = quantizeHudNumber(-rollDeg, 10)
 
     if (this.adiBall) {
       // Nose up → horizon slides down (sky fills more of the mask)
-      this.adiBall.style.transform = `rotate(${-rollDeg}deg) translateY(${pitchPx}px)`
+      this.setStyle(this.adiBall, 'transform', `rotate(${rollVisual}deg) translateY(${pitchPx}px)`)
     }
     if (this.adiBankPtr) {
-      this.adiBankPtr.style.transform = `rotate(${-rollDeg}deg)`
+      this.setStyle(this.adiBankPtr, 'transform', `rotate(${rollVisual}deg)`)
     }
     if (this.adiPitchEl) {
       const p = Math.round(pitchDeg)
@@ -240,13 +245,13 @@ export class HUD {
     const cy = 70
     const len = 42
     if (this.spdNeedle) {
-      this.spdNeedle.setAttribute('x2', String(cx + Math.sin(rad) * len))
-      this.spdNeedle.setAttribute('y2', String(cy - Math.cos(rad) * len))
+      this.setAttribute(this.spdNeedle, 'x2', formatHudNumber(cx + Math.sin(rad) * len, 10))
+      this.setAttribute(this.spdNeedle, 'y2', formatHudNumber(cy - Math.cos(rad) * len, 10))
     }
     if (this.spdArc) {
-      const shown = Math.max(0.5, t * 100)
-      this.spdArc.style.strokeDasharray = `${shown} 100`
-      this.spdArc.style.strokeDashoffset = '0'
+      const shown = Math.max(0.5, quantizeHudNumber(t * 100, 10))
+      this.setStyle(this.spdArc, 'stroke-dasharray', `${shown} 100`)
+      this.setStyle(this.spdArc, 'stroke-dashoffset', '0')
     }
   }
 
@@ -259,17 +264,18 @@ export class HUD {
     }
     if (this.engFill) {
       // Height % (not scaleY) so the bar fills cleanly from MIN→MAX
-      this.engFill.style.height = `${level * 100}%`
-      this.engFill.classList.toggle('boost', boost)
-      this.engFill.setAttribute('aria-valuenow', String(pct))
+      const shownLevel = quantizeHudNumber(level, 1000)
+      this.setStyle(this.engFill, 'height', `${shownLevel * 100}%`)
+      this.setClass(this.engFill, 'boost', boost)
+      this.setAttribute(this.engFill, 'aria-valuenow', String(pct))
     }
     if (this.engMarker) {
-      this.engMarker.style.bottom = `${level * 100}%`
+      this.setStyle(this.engMarker, 'bottom', `${quantizeHudNumber(level, 1000) * 100}%`)
     }
     if (this.engPanel) {
-      this.engPanel.classList.toggle('boost', boost)
-      this.engPanel.classList.toggle('spooled', level >= 0.95)
-      this.engPanel.style.setProperty('--eng-level', String(level))
+      this.setClass(this.engPanel, 'boost', boost)
+      this.setClass(this.engPanel, 'spooled', level >= 0.95)
+      this.setStyle(this.engPanel, '--eng-level', formatHudNumber(level, 1000))
     }
   }
 
@@ -280,6 +286,40 @@ export class HUD {
 
   private setHidden(el: HTMLElement, hidden: boolean): void {
     if (el.hidden !== hidden) el.hidden = hidden
+  }
+
+  /** Coalesce high-frequency style writes across the attitude and engine HUD. */
+  private setStyle(el: Element, property: string, value: string): void {
+    let cache = this.styleCache.get(el)
+    if (!cache) {
+      cache = new Map()
+      this.styleCache.set(el, cache)
+    }
+    if (cache.get(property) === value) return
+    cache.set(property, value)
+    ;(el as HTMLElement | SVGElement).style.setProperty(property, value)
+  }
+
+  private setAttribute(el: Element, name: string, value: string): void {
+    let cache = this.attributeCache.get(el)
+    if (!cache) {
+      cache = new Map()
+      this.attributeCache.set(el, cache)
+    }
+    if (cache.get(name) === value) return
+    cache.set(name, value)
+    el.setAttribute(name, value)
+  }
+
+  private setClass(el: Element, name: string, enabled: boolean): void {
+    let cache = this.classCache.get(el)
+    if (!cache) {
+      cache = new Map()
+      this.classCache.set(el, cache)
+    }
+    if (cache.get(name) === enabled) return
+    cache.set(name, enabled)
+    el.classList.toggle(name, enabled)
   }
 
   private buildAttitudeLadder(root: Document): void {
@@ -351,4 +391,14 @@ export class HUD {
       g.appendChild(line)
     }
   }
+}
+
+/** Stable decimal formatting prevents float noise from invalidating HUD caches. */
+export function quantizeHudNumber(value: number, precision: number): number {
+  if (!Number.isFinite(value) || precision <= 0) return 0
+  return Math.round(value * precision) / precision
+}
+
+export function formatHudNumber(value: number, precision: number): string {
+  return String(quantizeHudNumber(value, precision))
 }
