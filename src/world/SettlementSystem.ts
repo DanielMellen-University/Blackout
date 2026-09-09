@@ -147,6 +147,8 @@ export class SettlementSystem {
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  private readonly gravelShoulder = new MeshStandardMaterial({ color: 0x887d66, emissive: 0x17140f, emissiveIntensity: .12,
+    roughness: 1, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly streetMark = new MeshStandardMaterial({ color: 0xd2bd6b, emissive: 0x453b16, emissiveIntensity: .12,
     roughness: .82, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   // Regional links need a readable silhouette through the flight fog. A
@@ -215,7 +217,7 @@ export class SettlementSystem {
         this.inFlight = null
       }
     }
-    for (const material of [this.asphalt, this.highway, this.bridgeDeck, this.highwayEdge]) {
+    for (const material of [this.asphalt, this.gravelShoulder, this.highway, this.bridgeDeck, this.highwayEdge]) {
       this.configureWeatherRoadMaterial(material)
     }
     this.configureWeatherRoofMaterial()
@@ -353,7 +355,7 @@ export class SettlementSystem {
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.roof.dispose()
-    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
+    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
   }
 
   update(x: number, z: number): void {
@@ -685,6 +687,18 @@ export class SettlementSystem {
     root.name = `regional_road_${regionalRoadKey(from, to)}`
     const x = (from.x + to.x) / 2, z = (from.z + to.z) / 2
     root.position.set(x, 0, z)
+    // A broad gravel shoulder keeps the connector legible through the flight
+    // fog and separates it from pale grass or sand without another road pass.
+    const shoulderRoad: SettlementRoad = {
+      width: road.width * 1.55,
+      points: road.points.map(point => ({ x: point.x, y: point.y - .08, z: point.z })),
+    }
+    const shoulderGeometry = createRoadGeometry([shoulderRoad], x, 0, z)
+    if (shoulderGeometry) {
+      const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
+      shoulder.name = 'RegionalRoadShoulder'
+      root.add(shoulder)
+    }
     const geometry = createRoadGeometry([road], x, 0, z)
     if (geometry) root.add(new Mesh(geometry, this.highway))
     const bridgeGeometry = createRoadGeometry(bridgeSpans(road), x, 0, z)
