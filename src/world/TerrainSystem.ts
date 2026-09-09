@@ -355,6 +355,7 @@ export class TerrainSystem {
   private readonly groundMatFar: MeshStandardMaterial
   private readonly weatherRain = { value: 0 }
   private readonly weatherSnow = { value: 0 }
+  private readonly weatherClouds = { value: 0 }
   private readonly weatherWind = new Vector2()
   private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
 
@@ -384,9 +385,10 @@ export class TerrainSystem {
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
-  setWeatherEffects(rain: number, snow: number, windX = 0, windZ = 0): void {
+  setWeatherEffects(rain: number, snow: number, windX = 0, windZ = 0, cloudCover = 0): void {
     this.weatherRain.value = MathUtils.clamp(rain, 0, 1)
     this.weatherSnow.value = MathUtils.clamp(snow, 0, 1)
+    this.weatherClouds.value = MathUtils.clamp(cloudCover, 0, 1)
     this.weatherWind.set(windX, windZ)
     this.waterRain.value = this.weatherRain.value
     this.waterSnow.value = this.weatherSnow.value
@@ -403,17 +405,19 @@ export class TerrainSystem {
     material.onBeforeCompile = shader => {
       shader.uniforms.terrainRain = this.weatherRain
       shader.uniforms.terrainSnow = this.weatherSnow
+      shader.uniforms.terrainClouds = this.weatherClouds
+      shader.uniforms.terrainTime = this.waterClock
       shader.uniforms.terrainWind = { value: this.weatherWind }
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
-        '#include <common>\nvarying float terrainHeight;\n',
+        '#include <common>\nvarying float terrainHeight;\nvarying vec3 terrainWorld;\n',
       ).replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\nterrainHeight = transformed.y;\n',
+        '#include <begin_vertex>\nterrainHeight = transformed.y;\nterrainWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;\n',
       )
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
-        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nuniform vec2 terrainWind;\nvarying float terrainHeight;\n',
+        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nuniform float terrainClouds;\nuniform float terrainTime;\nuniform vec2 terrainWind;\nvarying float terrainHeight;\nvarying vec3 terrainWorld;\n',
       ).replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
@@ -436,10 +440,20 @@ export class TerrainSystem {
         vec2 windDir = terrainWind / windLength;
         float windExposure = .5 + .5 * dot(normal.xz, windDir);
         snowCover *= .84 + windExposure * .16;
+        // Low-frequency moving bands fake soft cloud shadows without adding
+        // a light, shadow map, or terrain draw. The field is world-space, so
+        // adjacent streamed tiles share one continuous shadow pattern.
+        vec2 cloudDrift = terrainWind * terrainTime * .018;
+        float cloudBandA = .5 + .5 * sin((terrainWorld.x + cloudDrift.x * 900.0) / 1700.0 +
+          sin((terrainWorld.z + cloudDrift.y * 900.0) / 2300.0) * 1.2);
+        float cloudBandB = .5 + .5 * sin((terrainWorld.z + cloudDrift.y * 900.0) / 3200.0 -
+          sin((terrainWorld.x + cloudDrift.x * 900.0) / 2100.0) * .8);
+        float cloudShadow = smoothstep(.34, .78, cloudBandA * .62 + cloudBandB * .38);
+        diffuseColor.rgb *= 1.0 - terrainClouds * cloudShadow * .12;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.76, 0.83, 0.91), snowCover);`,
       )
     }
-    material.customProgramCacheKey = () => 'terrain-weather-v4'
+    material.customProgramCacheKey = () => 'terrain-weather-v5'
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {

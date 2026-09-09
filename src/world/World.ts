@@ -143,7 +143,8 @@ export class World {
         this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
         const initialWeather = this.atmosphere.weatherSnapshot
-        this.terrain.setWeatherEffects(initialWeather.rain, initialWeather.snow, initialWeather.windX, initialWeather.windZ)
+        this.terrain.setWeatherEffects(initialWeather.rain, initialWeather.snow, initialWeather.windX, initialWeather.windZ,
+          Math.max(initialWeather.lowClouds, initialWeather.midClouds * .9))
         this.settlements.setWeatherEffects(initialWeather.rain, initialWeather.snow, this.atmosphere.daylight)
         this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
         this.committed = true
@@ -201,7 +202,8 @@ export class World {
     this.settlements.update(x, z)
     this.atmosphere.update(simDt, x, y, z, visualDt)
     const weather = this.atmosphere.weatherSnapshot
-    this.terrain.setWeatherEffects(weather.rain, weather.snow, weather.windX, weather.windZ)
+    this.terrain.setWeatherEffects(weather.rain, weather.snow, weather.windX, weather.windZ,
+      Math.max(weather.lowClouds, weather.midClouds * .9))
     this.settlements.setWeatherEffects(weather.rain, weather.snow, this.atmosphere.daylight)
   }
 

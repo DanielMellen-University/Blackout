@@ -177,6 +177,8 @@ describe('TerrainSystem streaming LOD', () => {
       const normalChunk = shader.fragmentShader.indexOf('#include <normal_fragment_maps>')
       expect(shader.fragmentShader.indexOf('float slopeExposure')).toBeGreaterThan(normalChunk)
       expect(shader.fragmentShader).toContain('uniform float terrainRain')
+      expect(shader.fragmentShader).toContain('uniform float terrainClouds')
+      expect(shader.fragmentShader).toContain('float cloudShadow')
       expect(shader.fragmentShader).toContain('float wetLowland')
     } finally {
       terrain.clearAll()
