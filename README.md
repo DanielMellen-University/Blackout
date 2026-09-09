@@ -53,6 +53,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Rain now breaks settlement streets, bridges, and highways into deterministic puddle patches through the shared road shader, keeping wet surfaces readable without extra meshes or materials.
 - Settlement facades and roof materials share those precipitation uniforms, darkening in rain and collecting cool snow on horizontal surfaces.
 - Building window grids also share the day/night factor, staying subdued by day and warming into low-cost city lights after sunset.
+- Cities now add a capped instanced street-light rhythm along outer roads, framing civic districts at night while keeping villages and the terrain budget unchanged.
 - Biomes: plains, forest, rainforest, desert, mesa, swamp, hills, mountain/snow, water/ocean
 
 ## Tech stack

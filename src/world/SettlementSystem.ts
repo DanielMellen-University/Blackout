@@ -185,6 +185,49 @@ function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['points'] {
   return supports
 }
 
+export interface SettlementStreetLightPoint {
+  x: number
+  y: number
+  z: number
+  yaw: number
+}
+
+/** Deterministic, capped light positions for city roads. */
+export function settlementStreetLightPoints(
+  plan: Pick<SettlementPlan, 'kind' | 'x' | 'z' | 'roads'>,
+): SettlementStreetLightPoint[] {
+  if (plan.kind !== 'city') return []
+  const points: SettlementStreetLightPoint[] = []
+  const seen = new Set<string>()
+  for (let roadIndex = 0; roadIndex < plan.roads.length; roadIndex++) {
+    const road = plan.roads[roadIndex]!
+    const spacing = road.width > 48 ? 420 : 340
+    for (let segmentIndex = 1; segmentIndex < road.points.length; segmentIndex++) {
+      const a = road.points[segmentIndex - 1]!, b = road.points[segmentIndex]!
+      const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+      const length = Math.hypot(dx, dz)
+      if (length < spacing * .7) continue
+      const nx = -dz / length, nz = dx / length
+      for (let distance = 170; distance < length; distance += spacing) {
+        const t = distance / length
+        const side = (roadIndex + Math.floor(distance / spacing)) % 2 ? -1 : 1
+        const offset = road.width * .5 + 38
+        const x = a.x + dx * t + nx * offset * side
+        const z = a.z + dz * t + nz * offset * side
+        // Keep the civic plaza open so the light rhythm frames the space
+        // instead of filling it with poles.
+        if (Math.hypot(x - plan.x, z - plan.z) < 760) continue
+        const key = String(Math.round(x / 120)) + ',' + String(Math.round(z / 120))
+        if (seen.has(key)) continue
+        seen.add(key)
+        points.push({ x, y: a.y + dy * t + .6, z, yaw: Math.atan2(dz, dx) })
+        if (points.length >= 72) return points
+      }
+    }
+  }
+  return points
+}
+
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
 interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; road: SettlementRoad }
 interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
@@ -200,11 +243,15 @@ export class SettlementSystem {
   /** One shared low-poly marker makes guaranteed landmarks readable through flight fog. */
   private readonly anchorBeacon = new ConeGeometry(.5, 1, 8)
   private readonly dome = new SphereGeometry(.5, 12, 6, 0, Math.PI * 2, 0, Math.PI * .5)
+  private readonly streetLampPole = new CylinderGeometry(.1, .16, 1, 5)
+  private readonly streetLampGlowGeometry = new SphereGeometry(.5, 8, 4)
   private readonly roof = roofGeometry()
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
   private readonly cityBeacon = new MeshBasicMaterial({ color: 0xffbd68, transparent: true, opacity: .86, depthWrite: false, fog: false })
   private readonly villageBeacon = new MeshBasicMaterial({ color: 0x67e4d0, transparent: true, opacity: .82, depthWrite: false, fog: false })
+  private readonly streetLampPoleMaterial = new MeshStandardMaterial({ color: 0x292824, roughness: .76, metalness: .35 })
+  private readonly streetLampGlow = new MeshBasicMaterial({ color: 0xffb45c, transparent: true, opacity: .06, depthWrite: false })
   private readonly cityPlaza = new MeshStandardMaterial({ color: 0x76766c, roughness: .96, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly villageGreen = new MeshStandardMaterial({ color: 0x4f794c, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
@@ -361,6 +408,7 @@ export class SettlementSystem {
     this.buildingRain.value = this.roadRain.value
     this.buildingSnow.value = this.roadSnow.value
     this.buildingDaylight.value = MathUtils.clamp(daylight, 0, 1)
+    this.streetLampGlow.opacity = .06 + (1 - this.buildingDaylight.value) * .72
   }
 
   get weatherEffects(): { rain: number; snow: number } {
@@ -574,9 +622,11 @@ export class SettlementSystem {
     this.clearAll()
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
-    this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.anchorBeacon.dispose(); this.dome.dispose(); this.roof.dispose()
+    this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.anchorBeacon.dispose(); this.dome.dispose()
+    this.streetLampPole.dispose(); this.streetLampGlowGeometry.dispose(); this.roof.dispose()
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
-    this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.cityPlaza.dispose(); this.villageGreen.dispose()
+    this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
+    this.cityPlaza.dispose(); this.villageGreen.dispose()
   }
 
   update(x: number, z: number): void {
@@ -856,6 +906,30 @@ export class SettlementSystem {
       .sort((a, b) => Math.hypot(a.x - plan.x, a.z - plan.z) - Math.hypot(b.x - plan.x, b.z - plan.z))[0]
     plaza.position.set(0, (centralRoadPoint?.y ?? plan.y) - plan.y + .22, 0)
     detail.add(plaza)
+    const lightPoints = settlementStreetLightPoints(plan)
+    if (lightPoints.length) {
+      const poles = new InstancedMesh(this.streetLampPole, this.streetLampPoleMaterial, lightPoints.length)
+      const glows = new InstancedMesh(this.streetLampGlowGeometry, this.streetLampGlow, lightPoints.length)
+      const lampTransform = new Object3D()
+      lightPoints.forEach((point, i) => {
+        lampTransform.position.set(point.x - plan.x, point.y - plan.y + 9, point.z - plan.z)
+        lampTransform.scale.set(.8, 18, .8)
+        lampTransform.rotation.set(0, point.yaw, 0)
+        lampTransform.updateMatrix()
+        poles.setMatrixAt(i, lampTransform.matrix)
+        lampTransform.position.set(point.x - plan.x, point.y - plan.y + 18.2, point.z - plan.z)
+        lampTransform.scale.set(2.8, 1.8, 2.8)
+        lampTransform.updateMatrix()
+        glows.setMatrixAt(i, lampTransform.matrix)
+      })
+      poles.instanceMatrix.needsUpdate = true
+      glows.instanceMatrix.needsUpdate = true
+      poles.computeBoundingSphere()
+      glows.computeBoundingSphere()
+      poles.name = 'SettlementStreetLightPoles'
+      glows.name = 'SettlementStreetLightGlow'
+      detail.add(poles, glows)
+    }
     const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
       width: road.width * 1.35,
       points: road.points.map(point => ({ ...point, y: point.y - .08 })),
