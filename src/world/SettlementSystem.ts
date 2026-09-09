@@ -764,13 +764,15 @@ export class SettlementSystem {
     // Worker completion order is nondeterministic. Always consume the nearest
     // ready plan first so a distant village cannot occupy the fixed instance
     // budget before a nearby city or village finishes planning.
-    this.ready.sort((a, b) => {
-      const priority = settlementLoadPriority(a.plan) - settlementLoadPriority(b.plan)
-      if (priority) return priority
-      const ad = Math.hypot(a.plan.x - x, a.plan.z - z)
-      const bd = Math.hypot(b.plan.x - x, b.plan.z - z)
-      return ad - bd
-    })
+    if (this.ready.length > 1) {
+      this.ready.sort((a, b) => {
+        const priority = settlementLoadPriority(a.plan) - settlementLoadPriority(b.plan)
+        if (priority) return priority
+        const ad = Math.hypot(a.plan.x - x, a.plan.z - z)
+        const bd = Math.hypot(b.plan.x - x, b.plan.z - z)
+        return ad - bd
+      })
+    }
     const ready = this.ready.shift()
     if (ready && this.checked.has(ready.key)) {
       if (this.canLoad(ready.plan, x, z)) this.loaded.set(ready.key, this.build(ready.plan))
@@ -1120,7 +1122,13 @@ export class SettlementSystem {
 
   /** Choose the closest visible-ready route rather than whichever worker reply arrived first. */
   private nearestReadyRoad(x: number, z: number): number {
-    this.readyRoads = this.readyRoads.filter(road => this.checkedLinks.has(road.key) && !this.connections.has(road.key))
+    let write = 0
+    for (let read = 0; read < this.readyRoads.length; read++) {
+      const road = this.readyRoads[read]!
+      if (!this.checkedLinks.has(road.key) || this.connections.has(road.key)) continue
+      this.readyRoads[write++] = road
+    }
+    this.readyRoads.length = write
     let nearest = -1, nearestDistance = Infinity
     for (let i = 0; i < this.readyRoads.length; i++) {
       const distance = roadDistance(x, z, this.readyRoads[i]!.road)
@@ -1133,6 +1141,7 @@ export class SettlementSystem {
 
   /** Generate the connector nearest to the aircraft before distant links. */
   private prioritizeRoadQueue(x: number, z: number): void {
+    if (this.linkQueue.length < 2) return
     this.linkQueue.sort((a, b) => {
       const distance = (job: RoadJob): number => Math.min(
         Math.hypot(job.from.x - x, job.from.z - z),

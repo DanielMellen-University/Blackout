@@ -40,6 +40,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runtime weather blending now fills one atmosphere-owned snapshot in place; public weather snapshots remain independent while the render loop avoids duplicate profile and wind allocations.
 - Atmosphere anchor tracking reuses one coordinate record between updates, eliminating another steady-flight allocation while keeping frozen-frame skip checks exact.
 - The analytic sky cloud deck now fills an atmosphere-owned record in place, removing another per-update allocation without changing cloud coverage or wind shading.
+- Settlement streaming now guards empty queue sorts and compacts ready roads in place, reducing worker handoff churn during steady flight without changing landmark priority.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.
