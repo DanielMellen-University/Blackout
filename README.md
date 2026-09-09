@@ -40,6 +40,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Snow particles now drift with the same blended wind direction as clouds and rain, keeping blizzards coherent without increasing the pooled particle count.
 - Water keeps one batched material but now differentiates river, pond, lake, and sea palettes by depth and body kind, making larger seas read deeper and inland water more varied.
 - Regional road selection now favors cross-tier hub spokes on both sides: cities reach nearby villages before adding another city link, while the fixed link caps stay unchanged.
+- Regional wet-span connectors now add capped instanced bridge piers beneath their existing deck meshes, grounding long village and city routes without per-span geometry.
 - Vegetation now gives savanna, tundra, volcanic, and saltflat provinces distinct sparse prop mixes instead of falling through to generic grass, while reusing the existing instanced mesh budget.
 - Instanced vegetation now shares the world weather response: rain darkens foliage and snow settles on upward-facing canopies, trunks, and rocks stay readable without extra draw calls.
 - Foliage now sways independently with the same blended weather wind as clouds, snow, terrain cover, and water. Rock materials stay static and the animation remains inside the existing instanced vegetation batches.

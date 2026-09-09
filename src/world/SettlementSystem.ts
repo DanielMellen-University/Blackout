@@ -4,7 +4,7 @@ import {
   MeshBasicMaterial,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
-import { getOpsPad } from './terrainSample'
+import { getOpsPad, sampleClimate } from './terrainSample'
 import { getWorldSeed } from './noise'
 import {
   settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE,
@@ -165,6 +165,24 @@ function bridgeSpans(road: SettlementRoad): SettlementRoad[] {
   }
   if (points.length > 1) spans.push({ width: road.width, points })
   return spans
+}
+
+/** Select a few deterministic supports so long wet crossings read as bridges. */
+function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['points'] {
+  const supports: SettlementRoad['points'] = []
+  let last: SettlementRoad['points'][number] | null = null
+  for (const point of road.points) {
+    if (!point.bridge) {
+      last = null
+      continue
+    }
+    if (!last || Math.hypot(point.x - last.x, point.z - last.z) >= 540) {
+      supports.push(point)
+      last = point
+    }
+    if (supports.length >= 8) break
+  }
+  return supports
 }
 
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
@@ -977,6 +995,24 @@ export class SettlementSystem {
       bridge.name = 'RegionalBridgeDeck'
       root.add(bridge)
     }
+    const pierPoints = bridgeSupportPoints(road)
+    if (pierPoints.length) {
+      const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
+      const transform = new Object3D()
+      pierPoints.forEach((point, i) => {
+        const bed = Math.min(point.y - 6, sampleClimate(point.x, point.z).height)
+        const height = Math.max(12, point.y - bed + 4)
+        transform.position.set(point.x - x, bed + height * .5, point.z - z)
+        transform.scale.set(Math.max(3.2, road.width * .1), height, Math.max(3.2, road.width * .1))
+        transform.rotation.set(0, 0, 0)
+        transform.updateMatrix()
+        piers.setMatrixAt(i, transform.matrix)
+      })
+      piers.instanceMatrix.needsUpdate = true
+      piers.computeBoundingSphere()
+      piers.name = 'RegionalBridgePiers'
+      root.add(piers)
+    }
     const centerline: SettlementRoad = { width: 4.2, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
     const marking = createRoadGeometry(dashedRoads([centerline], 32, 30), x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
@@ -994,7 +1030,9 @@ export class SettlementSystem {
 
   private removeRoad(road: LoadedRoad): void {
     road.root.removeFromParent()
-    road.root.traverse(object => { if (object instanceof Mesh) object.geometry.dispose() })
+    road.root.traverse(object => {
+      if (object instanceof Mesh && object.geometry !== this.tower) object.geometry.dispose()
+    })
   }
 
   private remove(settlement: LoadedSettlement): void {
