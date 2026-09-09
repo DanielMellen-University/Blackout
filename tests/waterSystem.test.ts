@@ -54,6 +54,7 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('vWaterFlow')
       expect(shader.fragmentShader).toContain('riverRiffle')
       expect(shader.fragmentShader).toContain('shoreFoam')
+      expect(shader.fragmentShader).toContain('waterPattern')
     } finally {
       mesh.geometry.dispose()
       material.dispose()

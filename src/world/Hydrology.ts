@@ -137,7 +137,10 @@ function makeFlowGrid(ox: number, oz: number): FlowGrid {
 
 /** Pick an infrequent sea in naturally low country, never as a default background. */
 function chooseSeaCell(grid: FlowGrid, cx: number, cz: number): number | null {
-  if (hash2(cx - 91, cz + 101) <= .62) return null
+  // Seas are regional landmarks, not the default background. Keeping the
+  // gate below one third of catchments leaves room for long dry provinces,
+  // lakes, and river valleys between shoreline encounters.
+  if (hash2(cx - 91, cz + 101) <= .68) return null
   const candidates: { id: number; score: number }[] = []
   for (let z = 3; z < FLOW_GRID - 3; z++) for (let x = 3; x < FLOW_GRID - 3; x++) {
     const id = gridId(x, z)
@@ -243,8 +246,11 @@ function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, p
   return {
     x: gridX(ox, cell) + (hash2(cx + 113, cz - 29) - .5) * jitter,
     z: gridZ(oz, cell) + (hash2(cx - 47, cz + 89) - .5) * jitter,
-    radius: 3300 + hash2(cx - 23, cz + 61) * 1900,
-    aspect: .62 + hash2(cx + 31, cz - 41) * .3,
+    // A sea is deliberately smaller than the old 3.3-5.2 km footprint. It
+    // should read as a broad enclosed coast, not an ocean swallowing a whole
+    // review tile or dominating every flight route.
+    radius: 3300 + hash2(cx - 23, cz + 61) * 1400,
+    aspect: .68 + hash2(cx + 31, cz - 41) * .24,
     angle: phase,
     phase,
     level: 0,
@@ -537,6 +543,7 @@ export function sampleHydrology(x: number, z: number, ground: number) {
   const binZ = Math.max(0, Math.min(BINS - 1, Math.floor(localZ / BIN)))
   const reaches = region.bins[binZ * BINS + binX]!
   let nearest = Infinity, level = 0, width = 1
+  let nearestReach: Reach | null = null
   for (const r of reaches) {
     const dx = r.bx - r.ax, dz = r.bz - r.az
     const t = Math.max(0, Math.min(1, ((x - r.ax) * dx + (z - r.az) * dz) / (dx * dx + dz * dz)))
@@ -544,6 +551,7 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const d = Math.hypot(x - r.ax - dx * t, z - r.az - dz * t) - w
     if (d < nearest) {
       nearest = d
+      nearestReach = r
       level = r.ya + (r.yb - r.ya) * t
       width = w
     }
@@ -599,6 +607,10 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const lateralFade = 1 - smoothstep(edgeWidth * .55, edgeWidth, lateral)
     const blend = alongFade * lateralFade * edgeFade
     if (blend <= .08) continue
+    // A broad mouth delta can overlap a nearby tributary after the coastline
+    // is warped. Only the closest reach may own the local water level, or the
+    // delta would flatten an upstream channel to sea level.
+    if (nearest < valleyRange && nearestReach && nearestReach !== reach) continue
     const deltaLevel = reach.yb
     height += (deltaLevel - 1.5 - height) * Math.min(1, blend * 1.25)
     if (blend > .16) {

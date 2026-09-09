@@ -32,6 +32,16 @@ export function applyWaterAppearance(
       diffuseColor.rgb = mix(vec3(0.075, 0.34, 0.38), vec3(0.012, 0.065, 0.14), depthMix);
       float riverMix = smoothstep(0.2, 0.8, vWaterFlow);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.055, 0.39, 0.42), riverMix * 0.32);
+      // Two broad, moving bands break up the old single-color sheet without
+      // turning the surface into noisy pixel glitter. The same field drives
+      // every tile, so catchment borders keep a continuous water pattern.
+      vec2 colorDrift = vec2(worldWaterTime * 0.0015, -worldWaterTime * 0.0011);
+      float patchA = texture2D(waterNormals, vWaterWorld.xz / 230.0 + colorDrift).r;
+      float patchB = texture2D(waterNormals, vec2(vWaterWorld.z, -vWaterWorld.x) / 510.0 - colorDrift * 0.6).g;
+      float waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
+      diffuseColor.rgb *= 0.86 + waterPattern * 0.24;
+      diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.82, 1.04, 1.1),
+        (1.0 - riverMix) * (0.12 + waterPattern * 0.1));
       // A broad shallow tint softens the clipped shoreline instead of leaving
       // a hard blue-to-bed edge on every terrain triangle.
       float wetEdge = exp(-max(0.0, vWaterDepth) * 2.5);
@@ -76,5 +86,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v7'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v8'
 }

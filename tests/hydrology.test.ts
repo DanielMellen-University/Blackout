@@ -156,6 +156,7 @@ describe('natural drainage', () => {
 
   it('varies basin count and keeps seas as occasional landmarks', () => {
     let seaCount = 0
+    const seaRadii: number[] = []
     let catchments = 0
     const basinCounts = new Set<number>()
     for (const seed of [1, 73, 1337]) {
@@ -163,13 +164,15 @@ describe('natural drainage', () => {
       for (let cx = -2; cx <= 2; cx++) for (let cz = -2; cz <= 2; cz++) {
         const basins = waterLandmarks(cx, cz)
         basinCounts.add(basins.length)
+        for (const basin of basins) if (basin.sea) seaRadii.push(basin.radius)
         if (basins.some(b => b.sea)) seaCount++
         catchments++
       }
     }
     expect(basinCounts.size).toBeGreaterThanOrEqual(2)
     expect(seaCount).toBeGreaterThan(0)
-    expect(seaCount).toBeLessThan(catchments * .7)
+    expect(seaCount).toBeLessThan(catchments * .55)
+    expect(Math.max(...seaRadii)).toBeLessThan(4601)
   })
 
   it('emits small ponds and classifies narrow channels as streams', () => {
