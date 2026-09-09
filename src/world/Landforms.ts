@@ -113,6 +113,16 @@ export function sampleLandforms(x: number, z: number) {
   const terraces = smoothstep(.24, .46, table) * 190 +
     smoothstep(.46, .7, table) * 310
   height += badlandsBase * terraces + plateau * (260 + terraces * .75)
+  // Dry mesas use broad stepped shelves rather than a single smooth dune.
+  // The transition is softened across each band so the terrain remains
+  // flyable, while the deterministic ledges still read as cliffs and benches
+  // at flight scale. This signal is gated to badlands and plateaus only.
+  const shelfPhase = table * 4
+  const shelfIndex = Math.floor(shelfPhase)
+  const shelfBlend = smoothstep(.35, .98, shelfPhase - shelfIndex)
+  const shelfShape = Math.min(1, shelfIndex / 3 + shelfBlend / 3)
+  const shelfRelief = Math.max(0, shelfShape - table * .72)
+  height += badlandsBase * shelfRelief * 180 + plateau * shelfRelief * 100
 
   const badlands = Math.max(badlandsBase, plateau * .82)
 

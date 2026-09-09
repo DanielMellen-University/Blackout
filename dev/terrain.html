@@ -152,6 +152,19 @@ function findSettlementNear(cx,cz,kind){
   }
   return null
 }
+function findWaterLandmark(sea){
+  // Water frequency is intentionally seeded and compact, so one hard-coded
+  // catchment can be empty after a generator revision. Search neighboring
+  // catchments deterministically instead of crashing the review scene.
+  for(let ring=0;ring<=14;ring++){
+    for(let dx=-ring;dx<=ring;dx++) for(let dz=-ring;dz<=ring;dz++){
+      if(ring>0&&Math.max(Math.abs(dx),Math.abs(dz))!==ring) continue
+      const basin=waterLandmarks(dx,dz).find(candidate=>candidate.sea===sea)
+      if(basin) return basin
+    }
+  }
+  return null
+}
 function findRoadPair(cx,cz){
   const plans=[]
   const seen=new Set()
@@ -185,7 +198,8 @@ function visitDestination(value){
   // village or city alive while this camera is aimed at the new destination.
   world.settlements.clearAll()
   if(value==='lake'||value==='ocean'){
-    const b=waterLandmarks(-1,-1).find(b=>b.sea===(value==='ocean'))
+    const b=findWaterLandmark(value==='ocean')
+    if(!b) throw new Error('Review water destination no longer has a matching basin')
     x=b.x;z=b.z
   } else if(value==='river'){
     // Terrain-derived drainage can start at any altitude. Frame the widest
