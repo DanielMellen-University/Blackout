@@ -35,7 +35,7 @@
 import * as T from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { World } from '/src/world/World.ts'
-import { clearOpsPad, sampleTerrainHeight } from '/src/world/terrainSample.ts'
+import { clearOpsPad, sampleClimate, sampleTerrainHeight } from '/src/world/terrainSample.ts'
 import { getWorldSeed, setWorldSeed } from '/src/world/noise.ts'
 import { waterLandmarks, riverReaches } from '/src/world/Hydrology.ts'
 import { flightConfig } from '/src/aircraft/flightConfig.ts'
@@ -62,6 +62,32 @@ let settlementTop=700
 let reviewPeak=0
 let reviewPeakX=0
 let reviewPeakZ=0
+let reviewMode=''
+
+function findLandscapeTarget(startX,startZ,predicate,score=(climate)=>0){
+  let best=null
+  // Search a deterministic spiral so fixed review seeds keep finding the
+  // requested province after the terrain generator changes.
+  for(let ring=0;ring<=42;ring++){
+    const count=ring?Math.max(8,ring*8):1
+    const radius=ring*1000
+    for(let i=0;i<count;i++){
+      const angle=ring*0.73+i/count*Math.PI*2
+      const x=startX+Math.cos(angle)*radius
+      const z=startZ+Math.sin(angle)*radius
+      const climate=sampleClimate(x,z)
+      if(!predicate(climate))continue
+      const distance=Math.hypot(x-startX,z-startZ)
+      const value=score(climate)-distance*.0002
+      if(!best||value>best.value)best={x,z,value}
+    }
+    // Once a strong nearby match exists, do not spend thousands of samples
+    // searching for a marginally prettier point on the far side of the map.
+    if(best&&ring>=8&&best.value>0.45)return best
+  }
+  return best??{x:startX,z:startZ,value:-Infinity}
+}
+
 function frameWorld(destination){
   settlementRadius=0
   settlementKind=''
@@ -77,7 +103,8 @@ function frameWorld(destination){
   // Volcanic cones and alpine shoulders can put the sampled center well below
   // the visible landform. Scan a wider local envelope so review cameras and
   // flight starts never end up inside a mountain.
-  for(let ix=-6;ix<=6;ix++) for(let iz=-6;iz<=6;iz++) {
+  const emphasizePeak=!destination||reviewMode==='alpine'||reviewMode==='volcano'
+  if(emphasizePeak)for(let ix=-6;ix<=6;ix++) for(let iz=-6;iz<=6;iz++) {
     const sampleX=x+ix*600,sampleZ=z+iz*600,sampleY=sampleTerrainHeight(sampleX,sampleZ)
     if(sampleY>nearbyPeak){nearbyPeak=sampleY;reviewPeakX=sampleX;reviewPeakZ=sampleZ}
   }
@@ -85,7 +112,7 @@ function frameWorld(destination){
   const lookY=Math.max(y+15,nearbyPeak-900)
   camera.position.set(x+1800,Math.max(y+1300,nearbyPeak+900),z-1800)
   controls.target.set(x,lookY,z);controls.update()
-  if(!destination||Math.abs(nearbyPeak-y)<1200){reviewPeakX=x;reviewPeakZ=z}
+  if(!destination||!emphasizePeak||Math.abs(nearbyPeak-y)<1200){reviewPeakX=x;reviewPeakZ=z}
   else {
     // High landforms need an oblique side view. Looking at the sampled center
     // can put the review camera inside a cone or alpine wall, leaving only fog.
@@ -145,6 +172,7 @@ function findRoadPair(cx,cz){
 function visitDestination(value){
   const target=destinations[value]
   if(!target){frameWorld();return}
+  reviewMode=value
   let [seed,x,z]=target
   let settlement=null
   world.reseed(seed)
@@ -176,6 +204,15 @@ function visitDestination(value){
     const {a,b}=pair
     x=(a.x+b.x)/2;z=(a.z+b.z)/2
     settlement={radius:Math.hypot(a.x-b.x,a.z-b.z)/2}
+  } else if(value==='mesa'){
+    const found=findLandscapeTarget(x,z,c=>c.biome==='mesa'&&c.height<1500,c=>
+      .5+(c.landform.plateau??0)*.8+(c.features.ravine??0)*.35)
+    x=found.x;z=found.z
+  } else if(value==='green'){
+    const found=findLandscapeTarget(x,z,c=>
+      (c.biome==='plains'||c.biome==='forest'||c.biome==='hills')&&c.height<650,c=>
+      .6+(c.biome==='plains'? .25:0)+(c.height<350? .2:0))
+    x=found.x;z=found.z
   }
   frameWorld({x,z,y:sampleTerrainHeight(x,z)})
   if(value==='city'||value==='village'||value==='roadlink'){

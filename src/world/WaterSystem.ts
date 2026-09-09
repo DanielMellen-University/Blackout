@@ -5,6 +5,9 @@ import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearan
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
 interface BasinVertex { x: number; z: number; y: number; depth: number }
 
+/** Cached warped shoreline samples reused by every terrain tile touching a basin. */
+const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
+
 function makeWaterMaterial(
   clock: { value: number },
   weather: WaterWeatherUniforms | undefined,
@@ -161,34 +164,47 @@ function appendAnalyticBasins(
     const extent = basin.radius * 1.75 + size * .72
     if (Math.abs(basin.x - centerX) > extent || Math.abs(basin.z - centerZ) > extent) continue
     const samples = basin.sea ? 256 : basin.pond ? 96 : 160
-    const boundary: BasinVertex[] = []
-    const highScale = basin.sea ? 2.65 : basin.pond ? 2.9 : 2.5
-    for (let i = 0; i < samples; i++) {
-      const angle = i / samples * Math.PI * 2
-      let low = 0, high = basin.radius * highScale
-      // The warped outline is broad and single-valued along a ray. Expand the
-      // bracket defensively for unusually deep coves before binary searching.
-      for (let expand = 0; expand < 3 && basinDistance(basin, basin.x + Math.cos(angle) * high,
-        basin.z + Math.sin(angle) * high) < 0; expand++) high *= 1.35
-      for (let pass = 0; pass < 9; pass++) {
-        const radius = (low + high) * .5
-        if (basinDistance(basin, basin.x + Math.cos(angle) * radius,
-          basin.z + Math.sin(angle) * radius) < 0) low = radius
-        else high = radius
+    let boundary = basinBoundaryCache.get(basin)
+    if (!boundary) {
+      boundary = []
+      const highScale = basin.sea ? 2.65 : basin.pond ? 2.9 : 2.5
+      for (let i = 0; i < samples; i++) {
+        const angle = i / samples * Math.PI * 2
+        let low = 0, high = basin.radius * highScale
+        // The warped outline is broad and single-valued along a ray. Expand the
+        // bracket defensively for unusually deep coves before binary searching.
+        for (let expand = 0; expand < 3 && basinDistance(basin, basin.x + Math.cos(angle) * high,
+          basin.z + Math.sin(angle) * high) < 0; expand++) high *= 1.35
+        for (let pass = 0; pass < 9; pass++) {
+          const radius = (low + high) * .5
+          if (basinDistance(basin, basin.x + Math.cos(angle) * radius,
+            basin.z + Math.sin(angle) * radius) < 0) low = radius
+          else high = radius
+        }
+        // Keep the boundary in basin-local coordinates. Every tile can then
+        // reuse the expensive warped shoreline solve and only clip the points
+        // that overlap its own rectangle.
+        boundary.push({
+          x: Math.cos(angle) * low,
+          z: Math.sin(angle) * low,
+          y: basin.level,
+          depth: .08,
+        })
       }
-      boundary.push({
-        x: basin.x + Math.cos(angle) * low - centerX,
-        z: basin.z + Math.sin(angle) * low - centerZ,
-        y: basin.level,
-        depth: .08,
-      })
+      basinBoundaryCache.set(basin, boundary)
     }
     const center: BasinVertex = {
       x: basin.x - centerX, z: basin.z - centerZ, y: basin.level,
       depth: basin.sea ? 180 : basin.pond ? 42 : 96,
     }
     for (let i = 0; i < boundary.length; i++) {
-      appendPolygon([center, boundary[i]!, boundary[(i + 1) % boundary.length]!])
+      const edge = boundary[i]!
+      const next = boundary[(i + 1) % boundary.length]!
+      appendPolygon([
+        center,
+        { ...edge, x: basin.x + edge.x - centerX, z: basin.z + edge.z - centerZ },
+        { ...next, x: basin.x + next.x - centerX, z: basin.z + next.z - centerZ },
+      ])
     }
   }
 }

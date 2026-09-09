@@ -101,8 +101,9 @@ and exhaust under neutral lighting. /dev/terrain.html provides a daylight world
 review with orbit controls and reseeding. These pages are development tools and
 are not included in the production build.
 
-The terrain review includes fixed-seed destinations for smooth green hills,
-alpine massifs, irregular lakes, river valleys, inland seas and badlands, plus a
+The terrain review uses fixed seeds and deterministic feature searches for
+smooth green hills, alpine massifs, irregular lakes, river valleys, inland seas
+and badlands, plus a
 flight benchmark at either 400 m/s or the current maximum afterburner speed,
 with draw counts and frame timings. Streaming prioritizes contact detail, then
 missing coverage and coarse replacements, before distant detail rebuilds.
@@ -120,7 +121,8 @@ dead ends and broken district connectors replace repeated grids. Building
 footprints, heights, stepped/octagonal silhouettes, rooflines and biome palettes
 vary by world seed, using deliberately exaggerated scale for readability from the jet.
 Settlement placement runs in a background worker; buildings and roofs are
-instanced, with ground detail culled at distance. Trees and rocks remain disabled.
+instanced, with ground detail culled at distance. Trees and rocks use the same
+bounded instanced streaming path, with detailed props limited to the near field.
 The terrain review includes city/village destinations and a Flight scale view
 using the game's actual chase camera and aircraft.
 Selected nearby settlements are joined by sparse regional roads rather than a
