@@ -9,7 +9,7 @@ import {
   UnsignedByteType,
 } from 'three'
 
-const FLAKE_COUNT = 3400
+const FLAKE_COUNT = 4200
 /** Half-size of the wrapping volume around the jet, metres. */
 const HALF = 110
 const SPAN = HALF * 2
@@ -23,6 +23,7 @@ export class SnowField {
   private readonly pos: Float32Array
   private readonly fall: Float32Array
   private readonly phase: Float32Array
+  private readonly size: Float32Array
   private readonly mat: PointsMaterial
   private readonly tex: DataTexture
   private clock = 0
@@ -32,19 +33,22 @@ export class SnowField {
     this.pos = new Float32Array(FLAKE_COUNT * 3)
     this.fall = new Float32Array(FLAKE_COUNT)
     this.phase = new Float32Array(FLAKE_COUNT)
+    this.size = new Float32Array(FLAKE_COUNT)
     for (let i = 0; i < FLAKE_COUNT; i++) {
       this.fall[i] = 3.8 + Math.random() * 8.4
       this.phase[i] = Math.random() * Math.PI * 2
+      this.size[i] = .68 + Math.random() * .72
     }
 
     const geo = new BufferGeometry()
     geo.setAttribute('position', new BufferAttribute(this.pos, 3))
+    geo.setAttribute('snowSize', new BufferAttribute(this.size, 1))
 
     this.tex = makeSoftDiscTexture(64)
     this.mat = new PointsMaterial({
       color: 0xeaf3ff,
       map: this.tex,
-      size: 0.34,
+      size: 0.42,
       transparent: true,
       opacity: 0,
       depthWrite: false,
@@ -54,8 +58,12 @@ export class SnowField {
     })
     this.mat.onBeforeCompile = (shader) => {
       shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        '#include <common>\n\tattribute float snowSize;',
+      )
+      shader.vertexShader = shader.vertexShader.replace(
         '#include <fog_vertex>',
-        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize, 15.0);',
+        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 18.0);',
       )
     }
 
@@ -81,7 +89,7 @@ export class SnowField {
 
     this.clock += dt
     this.points.visible = true
-    this.mat.opacity = Math.min(0.9, 0.28 + intensity * 0.62)
+    this.mat.opacity = Math.min(0.92, 0.32 + intensity * 0.6)
 
     const fallMul = 0.5 + intensity * 1.15
     const wind = 1.8 + intensity * 8.5

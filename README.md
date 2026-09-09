@@ -28,7 +28,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks use bounded instanced streaming in the near field.
 - Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load.
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
-- Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds altitude-aware cool cover without rebuilding streamed chunks.
+- Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds stronger altitude/slope-aware cool cover without rebuilding streamed chunks. Snowfall uses varied soft flakes in one pooled pass so it remains readable at flight scale.
 - Settlement streets and bridge decks use the same blended precipitation values, so roads wet and cool with the terrain.
 - Settlement facades and roof materials share those precipitation uniforms, darkening in rain and collecting cool snow on horizontal surfaces.
 - Building window grids also share the day/night factor, staying subdued by day and warming into low-cost city lights after sunset.
@@ -109,7 +109,8 @@ with draw counts and frame timings. Streaming prioritizes contact detail, then
 missing coverage and coarse replacements, before distant detail rebuilds.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
-summit folds so high terrain breaks into distinct flyable peaks instead of broad tables.
+summit folds plus a bounded peak-and-saddle sculpt so high terrain breaks into
+distinct flyable peaks instead of broad tables.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. Shallow water carries moving,
 low-contrast foam breakup instead of a uniform shoreline, while river ribbons carry

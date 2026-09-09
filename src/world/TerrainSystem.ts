@@ -412,11 +412,11 @@ export class TerrainSystem {
         diffuseColor.rgb *= 1.0 - wetGround;
         float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
         float slopeExposure = smoothstep(0.42, 0.94, normal.y);
-        float snowCover = terrainSnow * slopeExposure * (0.32 + altitudeSnow * 0.48);
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.72, 0.79, 0.87), snowCover);`,
+        float snowCover = terrainSnow * slopeExposure * (0.44 + altitudeSnow * 0.52);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.76, 0.83, 0.91), snowCover);`,
       )
     }
-    material.customProgramCacheKey = () => 'terrain-weather-v2'
+    material.customProgramCacheKey = () => 'terrain-weather-v3'
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {

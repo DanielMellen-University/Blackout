@@ -60,6 +60,13 @@ export function sampleLandforms(x: number, z: number) {
   const summit = .32 + fbm(wx / 4600 - 47, wz / 4600 + 116, 2) * .68
   const summitRefined = .22 + fbm(wx / 4600 - 47, wz / 4600 + 116, 2) * .78
   const summitFold = fbm(wx / 2600 + 173, wz / 2600 - 94, 2)
+  // A second, tighter scale breaks the broad massif field into linked peaks.
+  // Keep this as a signed, bounded sculpt rather than a raw high-frequency
+  // height term so alpine faces gain shoulders and saddles without turning
+  // into the sharp green-biome spikes this generator used to produce.
+  const peakNoise = fbm(wx / 1850 + 293, wz / 1850 - 337, 3, 2, .56)
+  const peakMask = smoothstep(.4, .78, peakNoise)
+  const peakSculpt = (peakNoise - .5) * (.55 + ridgeSpine * .9)
 
   // Long winding troughs break mountain walls into recognizable valleys.
   const valleyLine = Math.abs(valueNoise(wx / 6800 + 141, wz / 6800 - 207) - .5)
@@ -73,12 +80,17 @@ export function sampleLandforms(x: number, z: number) {
 
   let height = broadBase + rolling + detail
   height += foothills * (180 + hills * hills * 720)
-  const alpineExposure = Math.max(smoothstep(.97, 1, dry), smoothstep(.9, .98, cold))
+  const alpineExposure = Math.max(smoothstep(.92, 1, dry), smoothstep(.76, .96, cold))
   const mountainBlend = smoothstep(.35, .65, highlands) * alpineExposure
   const legacyUplift = highlands * (1050 + summit * 2100 + ridge * 4300)
   const refinedUplift = highlands * (650 + summitRefined * (2600 + summitFold * 850) + ridgeSpine * 2100)
   const mountainUplift = legacyUplift * (1 - mountainBlend) + refinedUplift * mountainBlend
   height += mountainUplift * (1 - alpineValley * (.68 + mountainBlend * .18))
+  const alpineSculpt = highlands * alpineExposure * (
+    peakSculpt * (450 + summitRefined * 900) +
+    (peakMask - .5) * ridgeSpine * 520
+  )
+  height += alpineSculpt
 
   // Humid lowlands get rolling watersheds, never sharp vertical noise.
   const wet = smoothstep(.42, .76, moisture)
