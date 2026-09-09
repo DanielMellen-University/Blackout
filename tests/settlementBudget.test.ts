@@ -157,4 +157,21 @@ describe('settlement streaming budgets', () => {
       clearOpsPad()
     }
   })
+
+  it('restores fallback anchors with their protected tier after a stream reset', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      mockAnchorState.rejectPrimary = true
+      setOpsPad(0, 0, 100)
+      ;(system as unknown as { primeAnchors(x: number, z: number): void }).primeAnchors(0, 0)
+      ;(system as unknown as { update(x: number, z: number): void }).update(100000, 100000)
+      ;(system as unknown as { update(x: number, z: number): void }).update(0, 0)
+      const loaded = (system as unknown as { loaded: Map<string, { plan: SettlementPlan }> }).loaded
+      expect([...loaded.values()].map(({ plan }) => plan.anchor)).toEqual(expect.arrayContaining(['city', 'village']))
+    } finally {
+      mockAnchorState.rejectPrimary = false
+      system.dispose()
+      clearOpsPad()
+    }
+  })
 })

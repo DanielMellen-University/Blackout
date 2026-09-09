@@ -112,6 +112,28 @@ describe('procedural settlements', () => {
     )).toBeLessThan(6000)
   })
 
+  it('biases guaranteed landmarks into the runway takeoff corridor', () => {
+    const base = sampleClimate(0, 0)
+    const sample = vi.spyOn(terrain, 'sampleClimate')
+    sample.mockImplementation((x, z) => ({
+      ...base,
+      height: 180 + ((x + z) % 3),
+      waterLevel: 0,
+      biome: 'plains',
+      biomeB: 'plains',
+      biomeMix: 0,
+      land: 1,
+      coastal: 0,
+    }))
+    setWorldSeed(2026)
+    // yaw=0 points the aircraft toward +Z. Both landmarks should be visible
+    // destinations after takeoff, not random searches behind the airfield.
+    setOpsPad(0, 0, 180, 0)
+    const anchors = region(3).filter(plan => plan.anchor)
+    expect(anchors).toHaveLength(2)
+    expect(anchors.every(plan => plan.z > 0)).toBe(true)
+  })
+
   it('rescues both anchor tiers on rough seeded terrain', () => {
     for (const seed of [1, 7, 14, 18, 22, 27, 73, 1337, 2026, 4096]) {
       setWorldSeed(seed)

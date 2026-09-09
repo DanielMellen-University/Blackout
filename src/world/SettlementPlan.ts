@@ -133,13 +133,22 @@ export function settlementAnchorForCell(
  * visible flight envelope even when their owning cells sit beside the pad.
  */
 function anchorLocation(
-  kind: 'city' | 'village', pad: { x: number; z: number }, attempt: number,
+  kind: 'city' | 'village', pad: { x: number; z: number; yaw?: number }, attempt: number,
 ): { x: number; z: number } {
   const cellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
   const cellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
   const salt = kind === 'city' ? 17311 : 12971
-  const angle = hash2(cellX * 157 + cellZ * 193 + attempt * 37 + salt,
+  const randomAngle = hash2(cellX * 157 + cellZ * 193 + attempt * 37 + salt,
     cellZ * 211 - cellX * 227 - attempt * 53 - salt) * Math.PI * 2
+  // Keep both guaranteed landmarks in the first takeoff corridor. Their
+  // distance still varies, and the spread is wide enough to avoid a stacked
+  // skyline, but a runway heading should lead toward a readable destination
+  // instead of sending the player on a blind search behind the airfield.
+  const forwardAngle = pad.yaw === undefined ? randomAngle : Math.PI * .5 - pad.yaw
+  const corridor = kind === 'city' ? .5 : .78
+  const angle = pad.yaw === undefined
+    ? randomAngle
+    : forwardAngle + (hash2(cellX * 223 + attempt * 61 + salt, cellZ * 239 - attempt * 79 - salt) - .5) * corridor
   // Keep guaranteed landmarks inside the clear flight envelope. The old city
   // ring started at 14.5 km and often ended at 22 km, while the fog horizon
   // is about 15 km. That made valid cities exist in the worker but disappear

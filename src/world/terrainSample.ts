@@ -16,6 +16,7 @@ export const OPS_PAD_OUTER = 118
 let opsX = 0
 let opsZ = 0
 let opsY = 0
+let opsYaw = 0
 let opsOn = false
 
 /** Disable pad leveling while searching for a natural flat. */
@@ -24,10 +25,11 @@ export function clearOpsPad(): void {
 }
 
 /** Level only the immediate airfield to this surface height (not a corridor). */
-export function setOpsPad(x: number, z: number, y: number): void {
+export function setOpsPad(x: number, z: number, y: number, yaw?: number): void {
   opsX = x
   opsZ = z
   opsY = y
+  opsYaw = yaw !== undefined && Number.isFinite(yaw) ? yaw : 0
   opsOn = true
 }
 
@@ -39,9 +41,9 @@ function padBlend(x: number, z: number): number {
   return 1 - smoothstep(OPS_PAD_INNER, OPS_PAD_OUTER, d)
 }
 
-export function getOpsPad(): { x: number; z: number; y: number } | null {
+export function getOpsPad(): { x: number; z: number; y: number; yaw?: number } | null {
   if (!opsOn) return null
-  return { x: opsX, z: opsZ, y: opsY }
+  return { x: opsX, z: opsZ, y: opsY, yaw: opsYaw }
 }
 
 export function opsPadBlend(x: number, z: number): number {

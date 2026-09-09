@@ -209,6 +209,8 @@ export class SettlementSystem {
   private readonly checkedLinks = new Set<string>()
   /** Protected landmarks that must remain discoverable after a stream reset. */
   private readonly protectedAnchors = new Map<'city' | 'village', string>()
+  /** Remembers whether a protected cell came from the deterministic fallback. */
+  private readonly protectedAnchorKinds = new Map<'city' | 'village', 'city' | 'village'>()
   /** One canonical job per graph edge, retained while one nearby cell owns it. */
   private readonly roadJobs = new Map<string, RoadJob>()
   private readonly roadSources = new Map<string, Set<string>>()
@@ -387,6 +389,7 @@ export class SettlementSystem {
     this.checked.clear()
     this.checkedLinks.clear()
     this.protectedAnchors.clear()
+    this.protectedAnchorKinds.clear()
     this.roadJobs.clear()
     this.roadSources.clear()
     this.queue = []
@@ -441,7 +444,10 @@ export class SettlementSystem {
         continue
       }
       const anchor = anchorKinds.get(key)
-      if (anchor) this.protectedAnchors.set(anchor, key)
+      if (anchor) {
+        this.protectedAnchors.set(anchor, key)
+        this.protectedAnchorKinds.set(anchor, anchor)
+      }
       this.scheduleLinks(plan, key)
       if (this.canLoad(plan, x, z)) {
         this.checked.add(key)
@@ -473,6 +479,7 @@ export class SettlementSystem {
         cells.add(key)
         anchorKinds.set(key, kind)
         this.protectedAnchors.set(kind, key)
+        this.protectedAnchorKinds.set(kind, kind)
         this.scheduleLinks(plan, key)
         if (this.canLoad(plan, x, z)) {
           this.checked.add(key)
@@ -492,11 +499,18 @@ export class SettlementSystem {
    */
   private retryProtectedAnchors(x: number, z: number): void {
     if (!this.protectedAnchors.size) return
-    for (const key of this.protectedAnchors.values()) {
+    for (const [kind, key] of this.protectedAnchors) {
       if (this.loaded.has(key) || this.ready.some(result => result.key === key)) continue
-      if (this.queue.some(job => job.key === key) || this.inFlight?.key === key) continue
+      if (this.inFlight?.key === key) continue
+      // A protected cell can be re-enqueued by the normal radius scan before
+      // this retry runs. Remove that ordinary job so the fallback tier is
+      // rebuilt synchronously instead of waiting behind unrelated cells.
+      this.queue = this.queue.filter(job => job.key !== key)
       const [cx, cz] = key.split(',').map(Number)
-      const plan = settlementForCell(cx!, cz!)
+      // Fallback cells are not returned by settlementAnchorForCell, so the
+      // ordinary call would rebuild them as a random settlement after a
+      // stream reset and the protected landmark would lose its priority.
+      const plan = settlementForCell(cx!, cz!, this.protectedAnchorKinds.get(kind) ?? kind)
       if (!plan) continue
       this.scheduleLinks(plan, key)
       if (!this.canLoad(plan, x, z)) continue

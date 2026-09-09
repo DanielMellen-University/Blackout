@@ -118,7 +118,7 @@ export class World {
       setWorldSeed(previousSeed)
       this.seed = previousSeed
       this.spawn = previousSpawn
-      if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y)
+      if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
       else clearOpsPad()
     }
 
@@ -129,7 +129,7 @@ export class World {
         clearOpsPad()
         const pad = findPlayableSpawn()
         if (!pad) continue
-        setOpsPad(pad.x, pad.z, pad.y)
+        setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed
         this.applySpawn(pad)
         this.terrain.clearAll()
