@@ -19,6 +19,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
+- Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.
 - Water is an independent surface with variable basin counts, irregular coves, narrower inland seas, bent rivers with deterministic tributaries, teal shallows, deep blue channels, shoreline foam tint, and animated glints.
 - Basin shorelines now combine directional headlands, broad shoulders, and a second cove scale so lakes and seas avoid radial silhouettes while staying analytic and cheap.
 - Water shares precipitation uniforms with terrain: rain roughens ripple and foam motion while snow cools the surface without rebuilding clipped water meshes.

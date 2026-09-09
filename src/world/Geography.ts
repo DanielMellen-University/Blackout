@@ -44,6 +44,7 @@ export function sampleGeography(x: number, z: number): Climate {
       caldera: landform.caldera,
       foothills: landform.foothills,
       dunes: landform.dunes,
+      alluvial: landform.alluvial,
       badlands: landform.badlands,
       karst,
       glacial: landform.glacial,

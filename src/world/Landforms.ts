@@ -120,9 +120,16 @@ export function sampleLandforms(x: number, z: number) {
 
   const badlandsBase = dry * smoothstep(.42, .65, province)
   const dunes = dry * (1 - smoothstep(.4, .62, province))
+  // Dry foothills spread into broad alluvial fans before the land reaches
+  // dunes or mesas. Reuse the existing province and gentle fields so this
+  // adds a new regional silhouette without another noise call.
+  const alluvialProvince = dry * foothills * smoothstep(.38, .74, province)
   const dunePhase = wx / 220 + Math.sin(wz / 1100) * 2 +
     valueNoise(wx / 1500, wz / 1500) * 6
   height += dunes * Math.pow((Math.sin(dunePhase) + 1) * .5, 2) * 48
+  const fanBand = .5 + .5 * Math.sin(wx / 3100 + Math.sin(wz / 4700) * 1.3)
+  const fanLobe = smoothstep(.2, .84, fanBand)
+  height += alluvialProvince * (fanBand - .5) * (150 + gentle * 190)
 
   // Dry plateaus combine broad shelves with erosion terraces. Their harder
   // profile is deliberately excluded from green and wet biomes.
@@ -171,6 +178,7 @@ export function sampleLandforms(x: number, z: number) {
     plateau,
     badlands,
     dunes,
+    alluvial: alluvialProvince * fanLobe,
     karst: karstProvince * (.38 + karstSink * .62),
     glacial: glacialProvince,
     cold,

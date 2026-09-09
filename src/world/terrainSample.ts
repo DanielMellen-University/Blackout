@@ -104,6 +104,8 @@ export interface Climate {
     foothills?: number
     /** Dry-province dune field signal used for material banding. */
     dunes?: number
+    /** Dry foothill fan signal used for broad alluvial material bands. */
+    alluvial?: number
     /** Dry badland and mesa signal used for material strata. */
     badlands?: number
     /** Humid limestone signal used for soft karst material breakup. */
@@ -787,6 +789,19 @@ export function biomeColor(
         : [.9, .75, .44]
       const duneMix = band * .14
       col = col.map((value, index) => clamp01(value + (duneTint[index]! - value) * duneMix)) as [number, number, number]
+    }
+    const alluvialSignal = clamp01(landform.alluvial ?? 0)
+    if (alluvialSignal > .06 && (biome === 'desert' || biome === 'savanna' || biome === 'mesa')) {
+      const fanField = .5 + .5 * Math.sin(x / 740 + Math.sin(z / 1280) * 1.1)
+      const fanBands = smoothstep(.25, .8, fanField) * alluvialSignal
+      const fanTint: [number, number, number] = biome === 'savanna'
+        ? [.54, .43, .2]
+        : biome === 'mesa'
+          ? [.62, .31, .15]
+          : [.78, .58, .3]
+      const fanMix = fanBands * .12
+      col = col.map((value, index) =>
+        clamp01(value + (fanTint[index]! - value) * fanMix)) as [number, number, number]
     }
     const badlandSignal = clamp01(landform.badlands ?? 0)
     if (badlandSignal > .08 && (biome === 'mesa' || biome === 'desert')) {
