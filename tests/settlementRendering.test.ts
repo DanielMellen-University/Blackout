@@ -78,6 +78,18 @@ describe('settlement rendering and lifecycle', () => {
     system.dispose()
   })
 
+  it('keeps road markings batched while rendering segmented dashes', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    try {
+      system.update(3000, 3000)
+      const markings = scene.getObjectByName('SettlementRoadMarkings') as Mesh
+      expect(markings).toBeDefined()
+      expect(markings.geometry.getAttribute('position').count).toBeGreaterThan(6)
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('shares blended weather values with road materials', () => {
     const system = new SettlementSystem(new Scene())
     try {

@@ -114,6 +114,36 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
   return geometry
 }
 
+/** Split long centerlines into readable dashes without adding draw calls. */
+function dashedRoads(roads: SettlementRoad[], dashLength: number, gapLength: number): SettlementRoad[] {
+  const dashed: SettlementRoad[] = []
+  const cycle = Math.max(1, dashLength + gapLength)
+  for (const road of roads) {
+    for (let i = 1; i < road.points.length; i++) {
+      const a = road.points[i - 1]!, b = road.points[i]!
+      const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
+      const length = Math.hypot(dx, dz)
+      if (length < 1) continue
+      // Start every segment at a stable phase. Curved route points are close
+      // enough that the tiny reset at a join is less visible than a global
+      // phase accumulator that can drift across a clipped road span.
+      for (let cursor = 0; cursor < length; cursor += cycle) {
+        const start = cursor / length
+        const end = Math.min(1, (cursor + dashLength) / length)
+        if (end - start < .08) continue
+        dashed.push({
+          width: road.width,
+          points: [
+            { x: a.x + dx * start, y: a.y + dy * start, z: a.z + dz * start },
+            { x: a.x + dx * end, y: a.y + dy * end, z: a.z + dz * end },
+          ],
+        })
+      }
+    }
+  }
+  return dashed
+}
+
 /** Keep wet route spans together so a connector can change deck material once. */
 function bridgeSpans(road: SettlementRoad): SettlementRoad[] {
   const spans: SettlementRoad[] = []
@@ -618,7 +648,10 @@ export class SettlementSystem {
       width: Math.min(1.35, road.width * .045),
       points: road.points.map(point => ({ ...point, y: point.y + .16 })),
     }))
-    const markingGeometry = createRoadGeometry(centerlines, plan.x, plan.y, plan.z)
+    const markingGeometry = createRoadGeometry(
+      dashedRoads(centerlines, plan.kind === 'city' ? 28 : 18, plan.kind === 'city' ? 24 : 20),
+      plan.x, plan.y, plan.z,
+    )
     if (markingGeometry) {
       const mesh = new Mesh(markingGeometry, this.streetMark)
       mesh.name = 'SettlementRoadMarkings'
@@ -744,7 +777,7 @@ export class SettlementSystem {
       root.add(bridge)
     }
     const centerline: SettlementRoad = { width: 2.8, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
-    const marking = createRoadGeometry([centerline], x, 0, z)
+    const marking = createRoadGeometry(dashedRoads([centerline], 32, 30), x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
     // Edge strips give long links a readable silhouette through haze while
     // staying as one batched mesh per connector.
