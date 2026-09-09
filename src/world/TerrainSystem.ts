@@ -732,7 +732,8 @@ export class TerrainSystem {
       // basins remain on the clipped terrain grid, preventing blocky river
       // strips from fighting the smooth channel surface.
       basinMask[i] = climate.biome === 'ocean' ||
-        (climate.biome === 'water' && climate.features.lake > climate.features.river * .55) ? 1 : 0
+        (climate.biome === 'water' &&
+          climate.features.lake + climate.features.pond > climate.features.river * .55) ? 1 : 0
       pos.setY(i, h)
       const [r, g, b] = biomeColor(
         climate.biome,

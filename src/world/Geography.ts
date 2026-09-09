@@ -6,7 +6,7 @@ import type { Biome, Climate } from './terrainSample'
 /** Landform and drainage fields meet here; water rendering is independent. */
 export function sampleGeography(x: number, z: number): Climate {
   const landform = sampleLandforms(x, z)
-  const { height, waterLevel, river, lake, coastal } = sampleHydrology(x, z, landform.height)
+  const { height, waterLevel, river, lake, pond, stream, coastal } = sampleHydrology(x, z, landform.height)
   const { moisture, temperature, cold, hot, dunes, badlands, volcanic, salt } = landform
   const alpine = smoothstep(650, 1900, height)
   const snow = smoothstep(2600 - cold * 1100 + hot * 700, 3600 - cold * 900 + hot * 700, height)
@@ -36,7 +36,7 @@ export function sampleGeography(x: number, z: number): Climate {
     height, waterLevel, moisture, temperature, biome, biomeB,
     biomeMix: second / Math.max(.00001, best + second), biomeWeights,
     land: height < waterLevel ? .2 : 1 - coastal * .35,
-    river, coastal, features: { river, lake, ravine: landform.ravine, pond: 0, stream: 0 },
+    river, coastal, features: { river, lake, ravine: landform.ravine, pond, stream },
     landform: {
       ridge: landform.ridge,
       alpineValley: landform.alpineValley,

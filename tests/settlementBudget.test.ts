@@ -50,4 +50,29 @@ describe('settlement streaming budgets', () => {
       system.dispose()
     }
   })
+
+  it('evicts stale landmarks when a nearby plan would otherwise exceed instances', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      for (let frame = 0; frame < 24; frame++) system.update(0, 0)
+      const loaded = (system as unknown as { loaded: Map<string, { plan: SettlementPlan }> }).loaded
+      expect(loaded.size).toBe(MAX_LOADED_SETTLEMENTS)
+      // Simulate several large villages already occupying the shared instance
+      // budget, then offer a nearer city-sized plan. The loader should evict
+      // only the farthest stale roots until both caps are satisfied.
+      for (const entry of loaded.values()) entry.plan.buildings = Array.from({ length: 400 }, () => entry.plan.buildings[0]!)
+      const candidate = planFor(0, 0)
+      candidate.id = 'nearby-city'
+      candidate.kind = 'city'
+      candidate.x = 0
+      candidate.z = 0
+      candidate.buildings = Array.from({ length: 500 }, () => candidate.buildings[0]!)
+      const canLoad = (system as unknown as { canLoad(plan: SettlementPlan, x: number, z: number): boolean }).canLoad
+      expect(canLoad.call(system, candidate, 0, 0)).toBe(true)
+      expect(system.count).toBeLessThan(MAX_LOADED_SETTLEMENTS)
+      expect(system.buildingCount + candidate.buildings.length).toBeLessThanOrEqual(MAX_LOADED_BUILDINGS)
+    } finally {
+      system.dispose()
+    }
+  })
 })

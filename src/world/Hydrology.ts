@@ -12,7 +12,10 @@ const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
 const MAX_CHANNEL_EDGES = 72
 const MAX_RENDER_REACHES = 300
 
-interface Basin { x: number; z: number; radius: number; aspect: number; angle: number; phase: number; level: number; sea: boolean }
+interface Basin {
+  x: number; z: number; radius: number; aspect: number; angle: number; phase: number
+  level: number; sea: boolean; pond: boolean
+}
 /** A cached analytic river segment, shared by terrain carving and water rendering. */
 export interface RiverReach {
   ax: number; az: number; bx: number; bz: number
@@ -93,8 +96,8 @@ function forEachNeighbor(id: number, visit: (neighbor: number) => void): void {
 
 /** Signed shore distance, warped in space and broken into coves and peninsulas. */
 export function basinDistance(b: Basin, x: number, z: number): number {
-  const scale = b.sea ? 2100 : 700
-  const warp = b.sea ? 950 : 320
+  const scale = b.sea ? 2100 : b.pond ? 260 : 700
+  const warp = b.sea ? 950 : b.pond ? 90 : 320
   const dx = x - b.x + (fbm(x / scale + 19, z / scale, 2) - .5) * warp
   const dz = z - b.z + (fbm(x / scale - 47, z / scale + 13, 2) - .5) * warp
   const u = (dx * Math.cos(b.angle) + dz * Math.sin(b.angle)) / b.radius
@@ -243,6 +246,7 @@ function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, p
     phase,
     level: 0,
     sea: true,
+    pond: false,
   }
 }
 
@@ -250,7 +254,10 @@ function makeLake(ox: number, oz: number, cell: number, index: number, cx: numbe
   const jitter = FLOW_STEP * .24
   const x = gridX(ox, cell) + (hash2(cx + index * 17, cz - index * 31) - .5) * jitter
   const z = gridZ(oz, cell) + (hash2(cx - index * 29, cz + index * 13) - .5) * jitter
-  const radius = 620 + hash2(cx + index * 21, cz - 82) * 1150
+  const pond = hash2(cx + index * 43 + 17, cz - index * 29 - 67) < .3
+  const radius = pond
+    ? 260 + hash2(cx + index * 21, cz - 82) * 360
+    : 620 + hash2(cx + index * 21, cz - 82) * 1150
   const land = sampleLandforms(x, z)
   let rim = land.height
   for (let j = 0; j < 12; j++) {
@@ -261,7 +268,7 @@ function makeLake(ox: number, oz: number, cell: number, index: number, cx: numbe
   // The filled field identifies a real local bowl, but it can sit above the
   // raw terrain at a spill saddle. Clamp the water below the sampled rim so a
   // lake never turns that hidden routing value into an elevated landform.
-  const level = Math.max(45, Math.min(rim - 12,
+  const level = Math.max(pond ? 8 : 45, Math.min(rim - (pond ? 5 : 12),
     Math.max(land.height - 12, Math.min(land.height + 95, grid.filled[cell]! - 9))))
   return {
     x,
@@ -272,6 +279,7 @@ function makeLake(ox: number, oz: number, cell: number, index: number, cx: numbe
     phase: phase + index * 1.71 + hash2(cx - index * 31, cz + 17) * 1.6,
     level,
     sea: false,
+    pond,
   }
 }
 
@@ -517,7 +525,7 @@ export function sampleHydrology(x: number, z: number, ground: number) {
   const region = catchment(cx, cz)
   const localX = x - cx * CATCHMENT_SIZE, localZ = z - cz * CATCHMENT_SIZE
   const edgeFade = smoothstep(0, 1600, Math.min(localX, localZ, CATCHMENT_SIZE - localX, CATCHMENT_SIZE - localZ))
-  let height = ground, waterLevel = 0, river = 0, lake = 0, coastal = 0
+  let height = ground, waterLevel = 0, river = 0, lake = 0, pond = 0, stream = 0, coastal = 0
   // Tiny negative coordinates can round their local remainder up to 32000.
   const binX = Math.max(0, Math.min(BINS - 1, Math.floor(localX / BIN)))
   const binZ = Math.max(0, Math.min(BINS - 1, Math.floor(localZ / BIN)))
@@ -553,6 +561,7 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     height += (level + bank - height) * blend
     if (blend > 0) waterLevel = level
     river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
+    stream = width < 48 ? river : 0
   }
   for (const basin of region.basins) {
     const limit = basin.radius * 1.65 + 2000
@@ -569,9 +578,10 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river : basinHeight
     if (d <= 0 || nearest >= valleyRange) waterLevel = basin.level
     if (basin.sea) coastal = 1 - smoothstep(0, 180, Math.abs(d))
+    else if (basin.pond) pond = 1 - smoothstep(0, 120, Math.max(0, d))
     else lake = 1 - smoothstep(0, 160, Math.max(0, d))
   }
-  return { height, waterLevel, river, lake, coastal }
+  return { height, waterLevel, river, lake, pond, stream, coastal }
 }
 
 /** Read-only landmarks for repeatable visual review and hydrology tests. */

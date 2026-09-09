@@ -375,6 +375,14 @@ export class SettlementSystem {
       })
     }
     this.pruneDistantRoads(x, z)
+    // Worker completion order is nondeterministic. Always consume the nearest
+    // ready plan first so a distant village cannot occupy the fixed instance
+    // budget before a nearby city or village finishes planning.
+    this.ready.sort((a, b) => {
+      const ad = Math.hypot(a.plan.x - x, a.plan.z - z)
+      const bd = Math.hypot(b.plan.x - x, b.plan.z - z)
+      return ad - bd
+    })
     const ready = this.ready.shift()
     if (ready && this.checked.has(ready.key)) {
       if (this.canLoad(ready.plan, x, z)) this.loaded.set(ready.key, this.build(ready.plan))
@@ -432,28 +440,31 @@ export class SettlementSystem {
 
   private canLoad(plan: SettlementPlan, x: number, z: number): boolean {
     if (this.loaded.has(plan.id)) return false
-    if (this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) return false
-    if (this.loaded.size < MAX_LOADED_SETTLEMENTS) return true
+    if (plan.buildings.length > MAX_LOADED_BUILDINGS) return false
 
-    // Keep the fixed GPU budget, but let nearby landmarks replace an older
-    // one that is still inside the broad streaming envelope. Without this,
-    // a fast flight could permanently hide a newly reached city or village
-    // behind four stale settlements from the previous region.
-    let farthestKey = ''
-    let farthestDistance = -Infinity
-    for (const [key, loaded] of this.loaded) {
-      const distance = Math.hypot(loaded.plan.x - x, loaded.plan.z - z)
-      if (distance > farthestDistance) {
-        farthestDistance = distance
-        farthestKey = key
-      }
-    }
+    // Keep the fixed GPU budget, but let a nearer landmark replace one or more
+    // stale landmarks when either the settlement-count or instance-count cap
+    // is reached. The old early return on instance count meant a city could be
+    // rejected forever behind a handful of villages, even after flying into
+    // its cell.
     const candidateDistance = Math.hypot(plan.x - x, plan.z - z)
-    if (!farthestKey || candidateDistance >= farthestDistance) return false
-    const farthest = this.loaded.get(farthestKey)
-    if (!farthest) return false
-    this.remove(farthest)
-    this.loaded.delete(farthestKey)
+    while (this.loaded.size >= MAX_LOADED_SETTLEMENTS ||
+      this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) {
+      let farthestKey = ''
+      let farthestDistance = -Infinity
+      for (const [key, loaded] of this.loaded) {
+        const distance = Math.hypot(loaded.plan.x - x, loaded.plan.z - z)
+        if (distance > farthestDistance) {
+          farthestDistance = distance
+          farthestKey = key
+        }
+      }
+      if (!farthestKey || candidateDistance >= farthestDistance) return false
+      const farthest = this.loaded.get(farthestKey)
+      if (!farthest) return false
+      this.remove(farthest)
+      this.loaded.delete(farthestKey)
+    }
     return true
   }
 
