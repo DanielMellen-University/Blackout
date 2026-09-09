@@ -113,6 +113,8 @@ async function boot(): Promise<void> {
     throttle: 0,
     boost: false,
     speed: 0,
+    rain: 0,
+    snow: 0,
     mute: true,
     dt: 1 / 60,
   }
@@ -486,6 +488,9 @@ async function boot(): Promise<void> {
     audioFrame.throttle = aircraft.engineState.lever
     audioFrame.boost = afterburnerOn
     audioFrame.speed = aircraft.speed
+    const precipitation = world.atmosphere.weatherSnapshot
+    audioFrame.rain = precipitation.rain
+    audioFrame.snow = precipitation.snow
     audioFrame.mute = !playing || menu.paused || results.open || aircraft.status === 'crashed'
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)

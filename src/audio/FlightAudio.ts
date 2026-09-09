@@ -1,17 +1,20 @@
 /**
- * Engine rumble + wind hiss via Web Audio.
- * Procedural noise only (no sample files). Levels follow throttle/boost and airspeed.
+ * Engine rumble, wind hiss, and precipitation ambience via Web Audio.
+ * Procedural noise only (no sample files). Levels follow flight power, airspeed, and weather.
  */
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private engineGain: GainNode | null = null
   private windGain: GainNode | null = null
+  private precipGain: GainNode | null = null
   private effectsGain: GainNode | null = null
   private engineFilter: BiquadFilterNode | null = null
   private windFilter: BiquadFilterNode | null = null
+  private precipFilter: BiquadFilterNode | null = null
   private engineSrc: AudioBufferSourceNode | null = null
   private windSrc: AudioBufferSourceNode | null = null
+  private precipSrc: AudioBufferSourceNode | null = null
   private built = false
   private muted = true
   private readonly scheduledTargets = new WeakMap<AudioParam, number>()
@@ -45,11 +48,20 @@ export class FlightAudio {
     throttle: number
     boost: boolean
     speed: number
+    rain: number
+    snow: number
     mute: boolean
     dt: number
   }): void {
     const ctx = this.ctx
-    if (!ctx || !this.built || !this.master || !this.engineGain || !this.windGain) {
+    if (
+      !ctx ||
+      !this.built ||
+      !this.master ||
+      !this.engineGain ||
+      !this.windGain ||
+      !this.precipGain
+    ) {
       return
     }
     if (ctx.state === 'suspended') return
@@ -63,11 +75,13 @@ export class FlightAudio {
     // Wind starts after a taxi crawl, strong by cruise (~400+ kts).
     const windT = clamp01((opts.speed - 18) / 280)
     const wind = windT * windT
+    const precip = precipitationAudioLevel(opts.rain, opts.snow)
 
     this.muted = opts.mute
     const masterTarget = opts.mute ? 0 : 1
     const engTarget = opts.mute ? 0 : eng * 0.42
     const windTarget = opts.mute ? 0 : wind * 0.28
+    const precipTarget = opts.mute ? 0 : precip * 0.18
 
     const now = ctx.currentTime
     const tau = Math.max(0.04, Math.min(0.12, opts.dt * 3))
@@ -75,6 +89,7 @@ export class FlightAudio {
     this.scheduleTarget(this.master.gain, masterTarget, now, tau)
     this.scheduleTarget(this.engineGain.gain, engTarget, now, tau)
     this.scheduleTarget(this.windGain.gain, windTarget, now, tau)
+    this.scheduleTarget(this.precipGain.gain, precipTarget, now, tau)
     if (this.engineSrc) {
       this.scheduleTarget(
         this.engineSrc.playbackRate,
@@ -93,6 +108,10 @@ export class FlightAudio {
     if (this.windFilter) {
       const cut = 900 + wind * 2200
       this.scheduleTarget(this.windFilter.frequency, cut, now, tau, 2)
+    }
+    if (this.precipFilter) {
+      const cut = 1200 + precip * 3000
+      this.scheduleTarget(this.precipFilter.frequency, cut, now, tau, 2)
     }
   }
 
@@ -162,19 +181,23 @@ export class FlightAudio {
     try {
       this.engineSrc?.stop()
       this.windSrc?.stop()
+      this.precipSrc?.stop()
     } catch {
       /* already stopped */
     }
     this.engineSrc = null
     this.windSrc = null
+    this.precipSrc = null
     void this.ctx?.close()
     this.ctx = null
     this.master = null
     this.engineGain = null
     this.windGain = null
+    this.precipGain = null
     this.effectsGain = null
     this.engineFilter = null
     this.windFilter = null
+    this.precipFilter = null
     this.built = false
   }
 
@@ -218,12 +241,22 @@ export class FlightAudio {
     windGain.connect(windFilter)
     windFilter.connect(master)
 
+    const precipGain = ctx.createGain()
+    precipGain.gain.value = 0
+    const precipFilter = ctx.createBiquadFilter()
+    precipFilter.type = 'bandpass'
+    precipFilter.frequency.value = 1600
+    precipFilter.Q.value = 0.45
+    precipGain.connect(precipFilter)
+    precipFilter.connect(master)
+
     const effectsGain = ctx.createGain()
     effectsGain.gain.value = 0.8
     effectsGain.connect(ctx.destination)
 
     const engBuf = makeNoiseBuffer(ctx, 2.5, 'brown')
     const windBuf = makeNoiseBuffer(ctx, 2.0, 'white')
+    const precipBuf = makeNoiseBuffer(ctx, 2.2, 'white')
 
     const engineSrc = ctx.createBufferSource()
     engineSrc.buffer = engBuf
@@ -237,14 +270,23 @@ export class FlightAudio {
     windSrc.connect(windGain)
     windSrc.start()
 
+    const precipSrc = ctx.createBufferSource()
+    precipSrc.buffer = precipBuf
+    precipSrc.loop = true
+    precipSrc.connect(precipGain)
+    precipSrc.start()
+
     this.master = master
     this.engineGain = engineGain
     this.windGain = windGain
+    this.precipGain = precipGain
     this.effectsGain = effectsGain
     this.engineFilter = engineFilter
     this.windFilter = windFilter
+    this.precipFilter = precipFilter
     this.engineSrc = engineSrc
     this.windSrc = windSrc
+    this.precipSrc = precipSrc
     this.built = true
   }
 
@@ -331,6 +373,11 @@ export function enginePlaybackRate(throttle: number, boost: boolean): number {
   const thr = clamp01(throttle)
   const engineLevel = Math.min(1, thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45))
   return 0.72 + engineLevel * 0.46 + (boost ? 0.08 : 0)
+}
+
+/** Bounded precipitation bed level shared by the audio update and tests. */
+export function precipitationAudioLevel(rain: number, snow: number): number {
+  return clamp01(clamp01(rain) * 0.9 + clamp01(snow) * 0.18)
 }
 
 function clamp01(v: number): number {
