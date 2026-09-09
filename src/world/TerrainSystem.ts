@@ -13,6 +13,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   Scene,
+  Vector2,
   type Object3D,
 } from 'three'
 import { hash2 } from './noise'
@@ -352,6 +353,7 @@ export class TerrainSystem {
   private readonly groundMatFar: MeshStandardMaterial
   private readonly weatherRain = { value: 0 }
   private readonly weatherSnow = { value: 0 }
+  private readonly weatherWind = new Vector2()
   private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
 
   constructor(scene: Scene) {
@@ -380,9 +382,10 @@ export class TerrainSystem {
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
-  setWeatherEffects(rain: number, snow: number): void {
+  setWeatherEffects(rain: number, snow: number, windX = 0, windZ = 0): void {
     this.weatherRain.value = MathUtils.clamp(rain, 0, 1)
     this.weatherSnow.value = MathUtils.clamp(snow, 0, 1)
+    this.weatherWind.set(windX, windZ)
     this.waterRain.value = this.weatherRain.value
     this.waterSnow.value = this.weatherSnow.value
     this.vegFactory?.setWeather(this.weatherRain.value, this.weatherSnow.value)
@@ -396,6 +399,7 @@ export class TerrainSystem {
     material.onBeforeCompile = shader => {
       shader.uniforms.terrainRain = this.weatherRain
       shader.uniforms.terrainSnow = this.weatherSnow
+      shader.uniforms.terrainWind = { value: this.weatherWind }
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
         '#include <common>\nvarying float terrainHeight;\n',
@@ -405,7 +409,7 @@ export class TerrainSystem {
       )
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
-        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nvarying float terrainHeight;\n',
+        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nuniform vec2 terrainWind;\nvarying float terrainHeight;\n',
       ).replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
@@ -424,6 +428,10 @@ export class TerrainSystem {
         float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
         float slopeExposure = smoothstep(0.42, 0.94, normal.y);
         float snowCover = terrainSnow * slopeExposure * (0.44 + altitudeSnow * 0.52);
+        float windLength = max(length(terrainWind), .001);
+        vec2 windDir = terrainWind / windLength;
+        float windExposure = .5 + .5 * dot(normal.xz, windDir);
+        snowCover *= .84 + windExposure * .16;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.76, 0.83, 0.91), snowCover);`,
       )
     }
