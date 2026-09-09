@@ -108,6 +108,7 @@ async function boot(): Promise<void> {
   let bannerUntil = 0
   let wasAirborne = false
   let prevAfterburner = false
+  let prevGearDown = true
   const audioFrame: Parameters<FlightAudio['update']>[0] = {
     throttle: 0,
     boost: false,
@@ -164,6 +165,7 @@ async function boot(): Promise<void> {
     banner = null
     wasAirborne = false
     prevAfterburner = false
+    prevGearDown = aircraft.controls.gearDown
     prevWarning = null
     time.reset()
   }
@@ -453,6 +455,19 @@ async function boot(): Promise<void> {
       renderer.toneMappingExposure = exposure
     }
     crashFx.update(simLive ? visualDt : 0)
+
+    const gearDown = aircraft.controls.gearDown
+    if (
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      gearDown !== prevGearDown
+    ) {
+      audio.playCue(gearDown ? 'gear-down' : 'gear-up')
+    }
+    prevGearDown = gearDown
 
     const afterburnerOn = aircraft.engineState.afterburnerActive
     if (
