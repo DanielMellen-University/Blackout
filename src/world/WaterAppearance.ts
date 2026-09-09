@@ -35,6 +35,9 @@ export function applyWaterAppearance(
     )
     shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <roughnessmap_fragment>',
+      '#include <roughnessmap_fragment>\nfloat waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18));',
+    ).replace(
       '#include <color_fragment>',
       `#include <color_fragment>
       float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
@@ -132,5 +135,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v9'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v10'
 }

@@ -49,7 +49,7 @@ describe('independent water surfaces', () => {
     const shader = {
       uniforms: {} as Record<string, unknown>,
       vertexShader: '#include <project_vertex>',
-      fragmentShader: '#include <color_fragment>\n#include <normal_fragment_maps>',
+      fragmentShader: '#include <roughnessmap_fragment>\n#include <color_fragment>\n#include <normal_fragment_maps>',
     }
     try {
       material.onBeforeCompile(shader as never)
@@ -73,6 +73,8 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('waterPattern')
       expect(shader.fragmentShader).toContain('seaMix')
       expect(shader.fragmentShader).toContain('cascadeFoam')
+      expect(shader.fragmentShader).toContain('waterSpecMask')
+      expect(shader.fragmentShader).toContain('roughnessFactor')
     } finally {
       mesh.geometry.dispose()
       material.dispose()
