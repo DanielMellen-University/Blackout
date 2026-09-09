@@ -64,6 +64,47 @@ body,
   -webkit-user-select: none;
 }
 
+/* Version-7 speed sensation: a quiet edge field that only wakes above cruise. */
+#speed-juice {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse at center, transparent 34%, rgba(110, 214, 229, 0.08) 72%, rgba(110, 214, 229, 0.2) 100%),
+    repeating-linear-gradient(108deg, transparent 0 9px, rgba(182, 245, 255, 0.14) 10px 11px, transparent 12px 42px);
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 28%, #000 76%, transparent 100%);
+  mask-image: radial-gradient(ellipse at center, transparent 28%, #000 76%, transparent 100%);
+  transition: opacity 0.18s ease;
+}
+
+#speed-juice.is-active {
+  animation: speed-juice-sweep 0.42s linear infinite;
+}
+
+#speed-juice.boost {
+  background:
+    radial-gradient(ellipse at center, transparent 30%, rgba(255, 126, 54, 0.1) 72%, rgba(255, 126, 54, 0.26) 100%),
+    repeating-linear-gradient(108deg, transparent 0 8px, rgba(255, 218, 150, 0.2) 9px 10px, transparent 11px 36px);
+}
+
+@keyframes speed-juice-sweep {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 0 0, 96px -34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #speed-juice.is-active {
+    animation: none;
+  }
+}
+
 /* Shared glass panel — dark enough to read in full daylight */
 .panel,
 #hud,

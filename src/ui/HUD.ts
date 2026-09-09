@@ -28,6 +28,7 @@ export class HUD {
   private readonly weatherEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
+  private readonly speedJuiceEl: HTMLElement | null
   private readonly navCueEl: HTMLElement | null
   private readonly navArrowEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
@@ -66,6 +67,7 @@ export class HUD {
     this.weatherEl = root.getElementById('hud-weather')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
+    this.speedJuiceEl = root.getElementById('speed-juice')
     this.navCueEl = root.getElementById('nav-cue')
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navRangeEl = root.getElementById('nav-range')
@@ -111,6 +113,7 @@ export class HUD {
       this.setText(this.spdEl, String(Math.round(kts)))
     }
     this.updateSpeedo(kts)
+    this.updateSpeedJuice(kts, !!opts.boost)
 
     if (this.camEl) {
       this.setText(this.camEl, opts.cameraMode.toUpperCase())
@@ -254,6 +257,15 @@ export class HUD {
       this.setStyle(this.spdArc, 'stroke-dasharray', `${shown} 100`)
       this.setStyle(this.spdArc, 'stroke-dashoffset', '0')
     }
+  }
+
+  private updateSpeedJuice(kts: number, boost: boolean): void {
+    if (!this.speedJuiceEl) return
+    const intensity = speedJuiceIntensity(kts, this.maxKts)
+    const active = intensity > 0
+    this.setClass(this.speedJuiceEl, 'is-active', active)
+    this.setClass(this.speedJuiceEl, 'boost', active && boost)
+    this.setStyle(this.speedJuiceEl, 'opacity', formatHudNumber(intensity + (boost ? .06 : 0), 1000))
   }
 
   private updateEngine(throttle: number, boost: boolean): void {
@@ -404,4 +416,11 @@ export function quantizeHudNumber(value: number, precision: number): number {
 
 export function formatHudNumber(value: number, precision: number): string {
   return String(quantizeHudNumber(value, precision))
+}
+
+/** Edge-streak intensity for the version-7 high-speed HUD treatment. */
+export function speedJuiceIntensity(knots: number, maxKts = 3000): number {
+  const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
+  if (t <= 0.18) return 0
+  return Math.min(0.42, (t - 0.18) * 0.52)
 }

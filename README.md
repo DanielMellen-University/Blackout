@@ -44,6 +44,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - External camera speed framing and crash-shake envelopes now reuse camera-owned records, removing per-frame temporary objects while preserving the existing framing and shake curves.
 - Aircraft control-surface animation now writes through cached hinge nodes directly, avoiding a per-step helper closure and name dispatch while retaining smooth F-35 flap, stabilator, and tail motion.
 - HUD text readouts now use the same cached-write strategy as styles and attributes, avoiding repeated DOM reads while preserving exact telemetry values.
+- Version 7 adds restrained high-speed edge streaks that scale with IAS and warm up under afterburner, with reduced-motion support and no new scene draw calls.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.
