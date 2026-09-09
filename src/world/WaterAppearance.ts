@@ -28,12 +28,12 @@ export function applyWaterAppearance(
     shader.uniforms.waterWindX = weather.windX ?? DEFAULT_WEATHER.windX
     shader.uniforms.waterWindZ = weather.windZ ?? DEFAULT_WEATHER.windZ
     shader.uniforms.waterNormals = { value: waterNormals }
-    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
+    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nattribute float waterDrop;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
-      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterDrop = waterDrop;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
       `#include <color_fragment>
@@ -77,6 +77,9 @@ export function applyWaterAppearance(
         vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
           vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.5, 0.56), riverRiffle * riverMix * 0.48);
+      float cascadeFoam = smoothstep(.18, .72, vWaterDrop) * riverMix;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.48, .76, .78),
+        cascadeFoam * (.22 + waterRain * .1));
       // Long broken streaks make rivers read as moving water at flight scale.
       // Two oblique axes keep the pattern from looking like a tiled stripe
       // texture when a reach turns through the terrain.
@@ -116,7 +119,8 @@ export function applyWaterAppearance(
         vec2(waterWindX, waterWindZ) * worldWaterTime * 0.0011;
       vec2 rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
       vec2 rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
-      vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025) + rippleB * (0.035 + waterSnow * 0.01) * distanceFade;
+      vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035) +
+        rippleB * (0.035 + waterSnow * 0.01) * distanceFade;
       normal = normalize(normal + mat3(viewMatrix) * vec3(ripples.x, 0.0, ripples.y));
       float fresnel = 0.02 + 0.48 * pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);
       float glint = pow(max(0.0, rippleA.x + rippleB.y), 3.0) *

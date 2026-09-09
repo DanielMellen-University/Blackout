@@ -18,10 +18,12 @@ describe('independent water surfaces', () => {
       const flow = mesh.geometry.getAttribute('waterFlow')
       const flowDir = mesh.geometry.getAttribute('waterFlowDir')
       const kind = mesh.geometry.getAttribute('waterKind')
+      const drop = mesh.geometry.getAttribute('waterDrop')
       const normals = mesh.geometry.getAttribute('normal')
       expect(flow.count).toBe(positions.count)
       expect(flowDir.count).toBe(positions.count)
       expect(kind.count).toBe(positions.count)
+      expect(drop.count).toBe(positions.count)
       let shoreline = 0
       for (let i = 0; i < positions.count; i++) {
         expect(positions.getY(i)).toBe(level)
@@ -61,6 +63,7 @@ describe('independent water surfaces', () => {
       expect(shader.vertexShader).toContain('waterFlow')
       expect(shader.vertexShader).toContain('waterFlowDir')
       expect(shader.vertexShader).toContain('waterKind')
+      expect(shader.vertexShader).toContain('waterDrop')
       expect(shader.fragmentShader).toContain('vWaterFlow')
       expect(shader.fragmentShader).toContain('riverRiffle')
       expect(shader.fragmentShader).toContain('flowStreak')
@@ -69,6 +72,7 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('shoreFoam')
       expect(shader.fragmentShader).toContain('waterPattern')
       expect(shader.fragmentShader).toContain('seaMix')
+      expect(shader.fragmentShader).toContain('cascadeFoam')
     } finally {
       mesh.geometry.dispose()
       material.dispose()

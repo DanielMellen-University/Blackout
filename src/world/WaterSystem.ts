@@ -45,6 +45,7 @@ export function buildWaterMesh(
   const flowValues: number[] = []
   const flowDirections: number[] = []
   const waterKinds: number[] = []
+  const waterDrops: number[] = []
   const stride = segs + 1
   const cell = size / segs
   const vertex = (i: number): WaterVertex => ({
@@ -83,6 +84,7 @@ export function buildWaterMesh(
         depths.push(Math.max(0, p.level - p.bed))
         flowValues.push(0)
         flowDirections.push(0, 0)
+        waterDrops.push(0)
         // Raster water is the compatibility path for a fixed basin. Analytic
         // basins below carry their exact lake, pond, or sea kind.
         waterKinds.push(1)
@@ -94,8 +96,8 @@ export function buildWaterMesh(
     triangle(a, b, d)
     triangle(b, c, d)
   }
-  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds)
-  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds)
+  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
+  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
   if (!positions.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -103,6 +105,7 @@ export function buildWaterMesh(
   geometry.setAttribute('waterFlow', new Float32BufferAttribute(flowValues, 1))
   geometry.setAttribute('waterFlowDir', new Float32BufferAttribute(flowDirections, 2))
   geometry.setAttribute('waterKind', new Float32BufferAttribute(waterKinds, 1))
+  geometry.setAttribute('waterDrop', new Float32BufferAttribute(waterDrops, 1))
   geometry.computeVertexNormals()
   // Water triangles are clipped per terrain cell, so give the renderer an
   // explicit bound for fast streamed-tile culling.
@@ -129,6 +132,7 @@ function appendAnalyticBasins(
   flowValues: number[],
   flowDirections: number[],
   waterKinds: number[],
+  waterDrops: number[],
 ): void {
   if (!basins.length) return
   const half = size / 2
@@ -168,6 +172,7 @@ function appendAnalyticBasins(
         flowValues.push(0)
         flowDirections.push(0, 0)
         waterKinds.push(kind)
+        waterDrops.push(0)
       }
     }
   }
@@ -245,6 +250,7 @@ function appendRiverRibbons(
   flowValues: number[],
   flowDirections: number[],
   waterKinds: number[],
+  waterDrops: number[],
 ): void {
   const half = size / 2
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
@@ -276,7 +282,7 @@ function appendRiverRibbons(
     return result
   }
 
-  const appendPolygon = (input: RibbonVertex[], flowX: number, flowZ: number): void => {
+  const appendPolygon = (input: RibbonVertex[], flowX: number, flowZ: number, drop: number): void => {
     let polygon = input
     polygon = clip(polygon, 'x', -half, true)
     polygon = clip(polygon, 'x', half, false)
@@ -289,16 +295,17 @@ function appendRiverRibbons(
         flowValues.push(1)
         flowDirections.push(flowX, flowZ)
         waterKinds.push(0)
+        waterDrops.push(drop)
       }
     }
   }
 
   const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
-    flowX: number, flowZ: number): void => {
-    appendPolygon([a, b, c, d], flowX, flowZ)
+    flowX: number, flowZ: number, drop: number): void => {
+    appendPolygon([a, b, c, d], flowX, flowZ, drop)
   }
 
-  const appendRoundCap = (section: Section, radius: number, flowX: number, flowZ: number): void => {
+  const appendRoundCap = (section: Section, radius: number, flowX: number, flowZ: number, drop: number): void => {
     const center = section.center
     const points: RibbonVertex[] = []
     for (let i = 0; i < 8; i++) {
@@ -307,12 +314,12 @@ function appendRiverRibbons(
         y: center.y, depth: Math.max(.08, center.depth * .5) })
     }
     for (let i = 0; i < points.length; i++) {
-      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!], flowX, flowZ)
+      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!], flowX, flowZ, drop)
     }
   }
 
   const appendTaperedCap = (
-    section: Section, flowX: number, flowZ: number, distance: number,
+    section: Section, flowX: number, flowZ: number, distance: number, drop: number,
   ): void => {
     // Tributaries that end at a streamed catchment boundary should fade into
     // the terrain instead of exposing a circular hose cap from above. The
@@ -369,16 +376,16 @@ function appendRiverRibbons(
       y: section.center.y - .012,
       depth: .008,
     }
-    appendPolygon([section.left, section.right, nearRight, nearLeft], flowX, flowZ)
-    appendPolygon([nearLeft, nearRight, midRight, midLeft], flowX, flowZ)
-    appendPolygon([midLeft, midRight, tip], flowX, flowZ)
+    appendPolygon([section.left, section.right, nearRight, nearLeft], flowX, flowZ, drop)
+    appendPolygon([nearLeft, nearRight, midRight, midLeft], flowX, flowZ, drop)
+    appendPolygon([midLeft, midRight, tip], flowX, flowZ, drop)
   }
 
-  const appendJunctionPad = (section: Section, radius: number, flowX: number, flowZ: number): void => {
+  const appendJunctionPad = (section: Section, radius: number, flowX: number, flowZ: number, drop: number): void => {
     // A chain can begin or end at a confluence without owning a terminal
     // marker. A small shared pad hides the miter seam where the neighbouring
     // chain arrives, while keeping the actual endpoint taper for true ends.
-    appendRoundCap(section, radius * 1.06, flowX, flowZ)
+    appendRoundCap(section, radius * 1.06, flowX, flowZ, drop)
   }
 
   for (const reach of reaches) {
@@ -387,6 +394,9 @@ function appendRiverRibbons(
     if (length < 1) continue
     const nx = -dz / length, nz = dx / length
     const flowX = dx / length, flowZ = dz / length
+    // A bounded grade signal lets steep reaches read as rapids without
+    // changing their exact water surface or adding a cascade mesh.
+    const drop = Math.max(0, Math.min(1, (reach.ya - reach.yb) / length * 5.5))
     // A section roughly every 120 m is enough for visible meanders without
     // turning a whole catchment into a high-poly water surface.
     const sections: Section[] = []
@@ -422,8 +432,8 @@ function appendRiverRibbons(
 
     for (let step = 0; step < sections.length - 1; step++) {
       const a = sections[step]!, b = sections[step + 1]!
-      appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ)
-      appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ)
+      appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ, drop)
+      appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ, drop)
     }
     // Extend a mouth a short distance below the receiving basin. The basin
     // owns the final water level, while this submerged overlap removes the
@@ -441,8 +451,8 @@ function appendRiverRibbons(
           x: point.x + ox, z: point.z + oz, y: last.center.y, depth: Math.max(point.depth, .18),
         })
         const nextLeft = submerged(last.left), nextCenter = submerged(last.center), nextRight = submerged(last.right)
-        appendQuad(last.left, nextLeft, nextCenter, last.center, flowX, flowZ)
-        appendQuad(last.center, nextCenter, nextRight, last.right, flowX, flowZ)
+        appendQuad(last.left, nextLeft, nextCenter, last.center, flowX, flowZ, drop)
+        appendQuad(last.center, nextCenter, nextRight, last.right, flowX, flowZ, drop)
         last = { left: nextLeft, center: nextCenter, right: nextRight }
       }
     }
@@ -453,21 +463,21 @@ function appendRiverRibbons(
     const source = reach.source ?? true
     const terminal = reach.terminal ?? true
     if (source) {
-      if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ)
-      else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4))
+      if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ, drop)
+      else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4), drop)
     } else if (!reach.mouth) {
-      appendJunctionPad(first, radius, -flowX, -flowZ)
+      appendJunctionPad(first, radius, -flowX, -flowZ, drop)
     }
     if (terminal) {
-      if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
+      if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop)
       else {
-        appendTaperedCap(last, flowX, flowZ, Math.max(140, radius * 3.4))
+        appendTaperedCap(last, flowX, flowZ, Math.max(140, radius * 3.4), drop)
         // Keep a shallow rounded shoulder at the live section so a bank that
         // rises faster than the feather cannot expose a square terminal edge.
-        appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ)
+        appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ, drop)
       }
     } else if (!reach.mouth) {
-      appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
+      appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop)
     }
   }
 

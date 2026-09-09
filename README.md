@@ -152,6 +152,8 @@ direction-aware moving riffles, variable widths, tapered tributary ends, and
 broken bank foam. Rivers receive a stronger depth/color response so they do not
 read as pale uniform strips at flight scale. This is procedural drainage, not a
 rainfall or fluid simulation.
+Steeper reaches now carry a bounded grade signal into the same shader, adding
+rapids foam and extra ripple energy without a second river mesh or draw family.
 Non-mouth tributaries use long, three-stage, slightly submerged endpoint tapers
 so streamed river pieces feather into their channel instead of ending as
 flat-cut ribbons; confluences get a small shared rounded shoulder to hide
