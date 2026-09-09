@@ -118,8 +118,10 @@ readable at flight distance without extra terrain geometry or noise calls.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. Shallow water carries moving,
 low-contrast foam breakup instead of a uniform shoreline, while river ribbons carry
-direction-aware moving riffles and broken bank foam. This is procedural drainage,
-not a rainfall or fluid simulation.
+direction-aware moving riffles, variable widths, tapered tributary ends, and
+broken bank foam. Rivers receive a stronger depth/color response so they do not
+read as pale uniform strips at flight scale. This is procedural drainage, not a
+rainfall or fluid simulation.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
 Villages range from compact hamlets to several-kilometre ribbon, crossroads and

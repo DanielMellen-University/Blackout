@@ -21,6 +21,8 @@ type Basin = WaterBasin
 export interface RiverReach {
   ax: number; az: number; bx: number; bz: number
   wa: number; wb: number; ya: number; yb: number
+  /** Chain-end markers let the renderer taper orphaned tributaries cleanly. */
+  source?: boolean; terminal?: boolean
   /** True when this reach terminates at a lake or sea shoreline. */
   mouth?: boolean
   /** The shoreline point and width used to form a small, query-time delta. */
@@ -378,6 +380,8 @@ function emitDrainageChain(
   levels: Float64Array,
   flow: Float64Array,
   salt: number,
+  startsAtJunction: boolean,
+  endsAtJunction: boolean,
   canAdd: () => boolean,
 ): void {
   if (nodes.length < 2) return
@@ -387,7 +391,13 @@ function emitDrainageChain(
     x: gridX(ox, id) + (hash2(cx * 59 + id * 23, cz * 83 - id * 41) - .5) * FLOW_STEP * .16,
     z: gridZ(oz, id) + (hash2(cx * 97 - id * 37, cz * 71 + id * 19) - .5) * FLOW_STEP * .16,
   }))
-  const width = (value: number) => Math.max(14, Math.min(230, 8 + Math.pow(value, .58) * 12))
+  const width = (value: number, node: number) => {
+    // Flow accumulation sets the broad scale; a stable node jitter prevents
+    // every reach from reading as a ruler-straight uniform ribbon while
+    // keeping joins deterministic and shared between terrain and water.
+    const variation = .96 + hash2(cx * 131 + node * 17 + 29, cz * 157 - node * 23 - 43) * .08
+    return Math.max(14, Math.min(230, (8 + Math.pow(value, .58) * 12) * variation))
+  }
   for (let segment = 0; segment < nodes.length - 1; segment++) {
     const from = nodes[segment]!, to = nodes[segment + 1]!
     const p0 = points[Math.max(0, segment - 1)]!
@@ -396,7 +406,11 @@ function emitDrainageChain(
     const p3 = points[Math.min(points.length - 1, segment + 2)]!
     const dx = p2.x - p1.x, dz = p2.z - p1.z, length = Math.hypot(dx, dz)
     if (length < 1) continue
-    const bend = (hash2(from * 53 + salt * 17, to * 71 - salt * 31) - .5) * Math.min(220, length * .18)
+    // Coarse flow cells are useful for performance, but their raw joins read
+    // as ruler-straight or right-angled rivers from the flight camera. Add a
+    // bounded lateral bow to each shared reach so the carved channel and the
+    // rendered ribbon keep a natural meander without extra route samples.
+    const bend = (hash2(from * 53 + salt * 17, to * 71 - salt * 31) - .5) * Math.min(300, length * .22)
     const middle = { x: (p1.x + p2.x) / 2 - dz / length * bend, z: (p1.z + p2.z) / 2 + dx / length * bend }
     const point = (t: number) => nodes.length === 2
       ? {
@@ -404,8 +418,8 @@ function emitDrainageChain(
           z: (1 - t) * (1 - t) * p1.z + 2 * (1 - t) * t * middle.z + t * t * p2.z,
         }
       : catmullPoint(p0, p1, p2, p3, t)
-    const wa = width(flow[from]!)
-    const wb = width(Math.max(flow[from]!, flow[to]!))
+    const wa = width(flow[from]!, from)
+    const wb = width(Math.max(flow[from]!, flow[to]!), to)
     const ya = levels[from]!
     const yb = Math.min(ya - .25, levels[to]!)
     // Four exact Catmull samples preserve the carved curve instead of asking
@@ -426,6 +440,8 @@ function emitDrainageChain(
           ax: a.x, az: a.z, bx: shore.x, bz: shore.z,
           wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * endT,
           ya: startLevel, yb: Math.min(startLevel - .05, shoreLevel),
+          source: !startsAtJunction && segment === 0 && step === 1,
+          terminal: !endsAtJunction && segment === nodes.length - 2 && (shore.level !== undefined || step === 4),
           mouth: shore.level !== undefined,
           mouthX: shore.level !== undefined ? shore.x : undefined,
           mouthZ: shore.level !== undefined ? shore.z : undefined,
@@ -515,13 +531,18 @@ function catchment(cx: number, cz: number): Catchment {
     if ((incoming.get(edge.from) ?? 0) === 1) continue
     const nodes = [edge.from]
     let current = edge.from
+    let endsAtJunction = false
     while (outgoing.has(current)) {
       const next = outgoing.get(current)!
       nodes.push(next.to)
       current = next.to
-      if ((incoming.get(current) ?? 0) !== 1) break
+      if ((incoming.get(current) ?? 0) !== 1) {
+        endsAtJunction = (incoming.get(current) ?? 0) > 1
+        break
+      }
     }
     emitDrainageChain(addReach, basins, ox, oz, cx, cz, nodes, levels, grid.flow, chain++,
+      (incoming.get(edge.from) ?? 0) > 1, endsAtJunction,
       () => renderedReaches < MAX_RENDER_REACHES)
   }
 

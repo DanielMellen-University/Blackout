@@ -28,10 +28,12 @@ export function applyWaterAppearance(
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
       `#include <color_fragment>
-      float depthMix = 1.0 - exp(-vWaterDepth * 0.055);
+      float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
       diffuseColor.rgb = mix(vec3(0.075, 0.34, 0.38), vec3(0.012, 0.065, 0.14), depthMix);
       float riverMix = smoothstep(0.2, 0.8, vWaterFlow);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.055, 0.39, 0.42), riverMix * 0.32);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.028, 0.28, 0.34), riverMix * 0.58);
+      float riverDepthBand = smoothstep(0.32, 2.8, vWaterDepth) * riverMix;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.018, 0.16, 0.23), riverDepthBand * 0.52);
       // Two broad, moving bands break up the old single-color sheet without
       // turning the surface into noisy pixel glitter. The same field drives
       // every tile, so catchment borders keep a continuous water pattern.
@@ -39,7 +41,7 @@ export function applyWaterAppearance(
       float patchA = texture2D(waterNormals, vWaterWorld.xz / 230.0 + colorDrift).r;
       float patchB = texture2D(waterNormals, vec2(vWaterWorld.z, -vWaterWorld.x) / 510.0 - colorDrift * 0.6).g;
       float waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
-      diffuseColor.rgb *= 0.86 + waterPattern * 0.24;
+      diffuseColor.rgb *= 0.8 + waterPattern * 0.36;
       diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.82, 1.04, 1.1),
         (1.0 - riverMix) * (0.12 + waterPattern * 0.1));
       // A broad shallow tint softens the clipped shoreline instead of leaving
@@ -55,7 +57,7 @@ export function applyWaterAppearance(
       float riverRiffle = smoothstep(0.5, 0.82, texture2D(waterNormals,
         vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
           vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.18, 0.55, 0.55), riverRiffle * riverMix * 0.34);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.5, 0.56), riverRiffle * riverMix * 0.48);
       // Long broken streaks make rivers read as moving water at flight scale.
       // Two oblique axes keep the pattern from looking like a tiled stripe
       // texture when a reach turns through the terrain.
@@ -70,7 +72,7 @@ export function applyWaterAppearance(
       float flowSpark = smoothstep(0.68, 0.92, texture2D(waterNormals,
         flowUvA * 0.72 + vec2(0.17, -0.31)).r);
       float flowPulse = 0.72 + 0.28 * sin(worldWaterTime * 0.55 + dot(vWaterWorld.xz, flowAxisA) * 0.012);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.24, 0.68, 0.72), flowStreak * riverMix * 0.5 * flowPulse);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.61, 0.67), flowStreak * riverMix * 0.72 * flowPulse);
       diffuseColor.rgb += vec3(0.05, 0.15, 0.16) * flowSpark * riverMix;
       float riverBankFoam = smoothstep(0.48, 0.84, texture2D(waterNormals,
         vWaterWorld.xz / 41.0 + vec2(worldWaterTime * 0.009, -worldWaterTime * 0.006)).b);

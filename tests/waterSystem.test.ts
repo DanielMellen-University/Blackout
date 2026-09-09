@@ -57,6 +57,7 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('vWaterFlow')
       expect(shader.fragmentShader).toContain('riverRiffle')
       expect(shader.fragmentShader).toContain('flowStreak')
+      expect(shader.fragmentShader).toContain('riverDepthBand')
       expect(shader.fragmentShader).toContain('riverBankFoam')
       expect(shader.fragmentShader).toContain('shoreFoam')
       expect(shader.fragmentShader).toContain('waterPattern')

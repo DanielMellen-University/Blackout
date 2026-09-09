@@ -294,6 +294,21 @@ function appendRiverRibbons(
     }
   }
 
+  const appendTaperedCap = (
+    section: Section, flowX: number, flowZ: number, distance: number,
+  ): void => {
+    // Tributaries that end at a streamed catchment boundary should fade into
+    // the terrain instead of exposing a circular hose cap from above. The
+    // route remains continuous because only chain endpoints call this.
+    const tip: RibbonVertex = {
+      x: section.center.x + flowX * distance,
+      z: section.center.z + flowZ * distance,
+      y: section.center.y,
+      depth: .02,
+    }
+    appendPolygon([section.left, section.right, tip], flowX, flowZ)
+  }
+
   for (const reach of reaches) {
     const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
     const length = Math.hypot(dx, dz)
@@ -362,8 +377,17 @@ function appendRiverRibbons(
     // Rounded joins/mouths hide tiny miter gaps when adjacent curved reaches
     // change direction or width. They are clipped with the same tile bounds.
     const first = sections[0]!
-    appendRoundCap(first, Math.hypot(first.left.x - first.center.x, first.left.z - first.center.z), flowX, flowZ)
-    appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
+    const radius = Math.hypot(first.left.x - first.center.x, first.left.z - first.center.z)
+    const source = reach.source ?? true
+    const terminal = reach.terminal ?? true
+    if (source) {
+      if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ)
+      else appendTaperedCap(first, -flowX, -flowZ, Math.max(80, radius * 2.2))
+    }
+    if (terminal) {
+      if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
+      else appendTaperedCap(last, flowX, flowZ, Math.max(80, radius * 2.2))
+    }
   }
 
 }
