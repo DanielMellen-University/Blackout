@@ -721,13 +721,15 @@ export class SettlementSystem {
     const stepped = plan.buildings.filter(b => b.shape === 'stepped')
     // A few high-rise and hall lots become deterministic civic landmarks. The
     // accents are instanced and capped, so a 1,000-building city adds at most
-    // twenty-four transforms while breaking the repeated-box skyline.
+    // twenty-four transforms while breaking the repeated-box skyline. Larger
+    // villages borrow the same shared accents at a much smaller cap, giving
+    // each rural profile a readable civic center without new draw families.
     const spireBuildings = plan.kind === 'city'
       ? plan.buildings.filter((b, i) => b.height > 620 && i % 17 === 4).slice(0, 12)
-      : []
+      : plan.buildings.filter((b, i) => (b.shape === 'tower' || b.shape === 'stepped') && i % 7 === 2).slice(0, 3)
     const domeBuildings = plan.kind === 'city'
       ? plan.buildings.filter((b, i) => (b.shape === 'hangar' || b.shape === 'slab') && i % 23 === 9).slice(0, 12)
-      : []
+      : plan.buildings.filter((b, i) => (b.shape === 'hangar' || b.shape === 'slab' || b.shape === 'block') && i % 11 === 3).slice(0, 2)
     const body = new InstancedMesh(this.box, this.walls, regular.length)
     const towerBodies = new InstancedMesh(this.tower, this.walls, towers.length)
     const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
@@ -753,12 +755,14 @@ export class SettlementSystem {
       put(stepBodies, i * 2 + 1, b.x, b.y + b.height * .84, b.z, b.width * .68, b.height * .32, b.depth * .72, b.yaw, b.wallColor)
     })
     spireBuildings.forEach((b, i) => {
-      const height = Math.min(b.height * .08, 110)
+      const height = plan.kind === 'city' ? Math.min(b.height * .08, 110) : Math.min(b.height * .12, 70)
       const radius = Math.max(18, Math.min(b.width, b.depth) * .2)
       put(spires, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
     })
     domeBuildings.forEach((b, i) => {
-      const height = Math.max(18, Math.min(72, Math.min(b.width, b.depth) * .2))
+      const height = plan.kind === 'city'
+        ? Math.max(18, Math.min(72, Math.min(b.width, b.depth) * .2))
+        : Math.max(16, Math.min(46, Math.min(b.width, b.depth) * .18))
       const radius = Math.max(26, Math.min(b.width, b.depth) * .42)
       put(domes, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
     })
