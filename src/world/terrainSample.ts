@@ -719,20 +719,22 @@ export function biomeColor(
     // blue instead of becoming noisy spikes or extra geometry.
     if (biome === 'snow' || biome === 'mountain') {
       const strata = valueNoise(x / 520, z / 520)
-      const exposure = clamp01((strata - .42) * 1.9 + landform.ridge * .24 + landform.caldera * .34)
-      const rockMix = smoothstep(.48, .9, exposure) * (biome === 'snow' ? .52 : .31)
+      const altitudeExposure = smoothstep(900, 2800, height)
+      const exposure = clamp01((strata - .34) * 2.35 + landform.ridge * .34 +
+        landform.caldera * .42 + altitudeExposure * .16)
+      const rockMix = smoothstep(.4, .84, exposure) * (biome === 'snow' ? .72 : .46)
       const rock: [number, number, number] = biome === 'snow'
-        ? [.16, .205, .275]
-        : [.25, .24, .23]
+        ? [.12, .16, .22]
+        : [.22, .215, .21]
       col = [
         col[0] + (rock[0] - col[0]) * rockMix,
         col[1] + (rock[1] - col[1]) * rockMix,
         col[2] + (rock[2] - col[2]) * rockMix,
       ]
       const valley = smoothstep(.18, .9, landform.alpineValley)
-      col[0] *= 1 - valley * .16
-      col[1] *= 1 - valley * .1
-      col[2] = Math.min(1, col[2] + valley * .1)
+      col[0] *= 1 - valley * .22
+      col[1] *= 1 - valley * .14
+      col[2] = Math.min(1, col[2] + valley * .14)
     }
   }
 
