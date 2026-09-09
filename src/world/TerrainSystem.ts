@@ -107,6 +107,13 @@ export function lodWithHysteresis(dist: number, current: TerrainLod): TerrainLod
   return current
 }
 
+/** Snow settles on exposed, upward-facing ground before it reaches cliffs. */
+export function terrainSnowCoverage(snow: number, height: number, normalY: number): number {
+  const altitudeSnow = MathUtils.smoothstep(height, 1400, 3200)
+  const slopeExposure = MathUtils.smoothstep(normalY, .42, .94)
+  return MathUtils.clamp(snow, 0, 1) * slopeExposure * (.32 + altitudeSnow * .48)
+}
+
 /** True when a streamed tile overlaps an analytic pond that coarse vertices can miss. */
 export function pondIntersectsBounds(originX: number, originZ: number, span: number): boolean {
   const minX = originX, minZ = originZ, maxX = originX + span, maxZ = originZ + span
@@ -401,7 +408,8 @@ export class TerrainSystem {
         float wetGround = terrainRain * 0.18;
         diffuseColor.rgb *= 1.0 - wetGround;
         float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
-        float snowCover = terrainSnow * (0.08 + altitudeSnow * 0.38);
+        float slopeExposure = smoothstep(0.42, 0.94, normal.y);
+        float snowCover = terrainSnow * slopeExposure * (0.32 + altitudeSnow * 0.48);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.72, 0.79, 0.87), snowCover);`,
       )
     }

@@ -12,6 +12,7 @@ import {
   pondIntersectsBounds,
   segsForLod,
   TerrainSystem,
+  terrainSnowCoverage,
   VIEW_RADIUS,
   waterSegsForLod,
 } from '../src/world/TerrainSystem'
@@ -52,6 +53,13 @@ describe('terrain LOD bands', () => {
     expect(waterSegsForLod(1, CHUNK_SIZE * 2)).toBe(40)
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(21)
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBeLessThan(waterSegsForLod(1, CHUNK_SIZE * 2))
+  })
+
+  it('accumulates snow on flat lowlands and leaves steep faces exposed', () => {
+    expect(terrainSnowCoverage(1, 0, 1)).toBeCloseTo(.32)
+    expect(terrainSnowCoverage(.66, 0, 1)).toBeCloseTo(.2112)
+    expect(terrainSnowCoverage(1, 3200, 1)).toBeCloseTo(.8)
+    expect(terrainSnowCoverage(1, 3200, .2)).toBe(0)
   })
 
   it('covers dry LOD edges without building walls through water', () => {
