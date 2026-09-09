@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { shouldScheduleAudioTarget } from '../src/audio/FlightAudio'
+import { enginePlaybackRate, shouldScheduleAudioTarget } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
   it('schedules the first target and meaningful changes', () => {
@@ -11,5 +11,18 @@ describe('flight audio automation', () => {
   it('treats non-positive epsilon as exact comparison', () => {
     expect(shouldScheduleAudioTarget(0.4, 0.400001, 0)).toBe(true)
     expect(shouldScheduleAudioTarget(0.4, 0.4, 0)).toBe(false)
+  })
+
+  it('spools the procedural engine without exceeding a safe playback envelope', () => {
+    const idle = enginePlaybackRate(0, false)
+    const cruise = enginePlaybackRate(.5, false)
+    const military = enginePlaybackRate(1, false)
+    const boost = enginePlaybackRate(1, true)
+
+    expect(idle).toBeCloseTo(.72)
+    expect(cruise).toBeGreaterThan(idle)
+    expect(military).toBeGreaterThan(cruise)
+    expect(boost).toBeGreaterThan(military)
+    expect(boost).toBeLessThanOrEqual(1.3)
   })
 })

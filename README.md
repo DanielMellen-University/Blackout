@@ -46,6 +46,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD text readouts now use the same cached-write strategy as styles and attributes, avoiding repeated DOM reads while preserving exact telemetry values.
 - Version 7 adds restrained high-speed edge streaks that scale with IAS and warm up under afterburner, with reduced-motion support and no new scene draw calls.
 - Version 7 external chase framing adds a tiny smooth afterburner sway, leaving cockpit mode untouched and keeping motion below the impact-shake envelope.
+- Version 7 engine audio now spools the procedural loop with throttle and afterburner through coalesced playback-rate automation, so power changes affect tone as well as loudness.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.

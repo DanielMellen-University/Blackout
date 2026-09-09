@@ -75,6 +75,15 @@ export class FlightAudio {
     this.scheduleTarget(this.master.gain, masterTarget, now, tau)
     this.scheduleTarget(this.engineGain.gain, engTarget, now, tau)
     this.scheduleTarget(this.windGain.gain, windTarget, now, tau)
+    if (this.engineSrc) {
+      this.scheduleTarget(
+        this.engineSrc.playbackRate,
+        enginePlaybackRate(opts.throttle, boost),
+        now,
+        tau,
+        0.001,
+      )
+    }
 
     if (this.engineFilter) {
       // Idle growl stays low; spool opens the filter a bit.
@@ -298,6 +307,13 @@ export function shouldScheduleAudioTarget(
   if (previous === undefined) return true
   const delta = Math.abs(previous - target)
   return epsilon <= 0 ? delta > 0 : delta >= epsilon
+}
+
+/** Bounded procedural engine spool rate shared by the audio update and tests. */
+export function enginePlaybackRate(throttle: number, boost: boolean): number {
+  const thr = clamp01(throttle)
+  const engineLevel = Math.min(1, thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45))
+  return 0.72 + engineLevel * 0.46 + (boost ? 0.08 : 0)
 }
 
 function clamp01(v: number): number {
