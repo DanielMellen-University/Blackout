@@ -324,36 +324,16 @@ export class Aircraft {
     const pitch = MathUtils.clamp(this.controls.pitch, -1, 1)
     const roll = MathUtils.clamp(this.controls.roll, -1, 1)
     const yaw = MathUtils.clamp(this.controls.yaw, -1, 1)
-    const setAngle = (name: string, axis: 'x' | 'y', target: number, response: number): void => {
-      const node = this.visualNode(name)
-      if (!node) return
-      const value = dt === 0
-        ? target
-        : MathUtils.damp(node.rotation[axis], target, response, dt)
-      node.rotation[axis] = value
-    }
 
     // Differential flaperons show roll while both sides contribute to pitch.
-    setAngle('flaperonLeft', 'x', -pitch * 0.16 - roll * 0.14, 14)
-    setAngle('flaperonRight', 'x', -pitch * 0.16 + roll * 0.14, 14)
-    setAngle('stabilatorLeft', 'x', -pitch * 0.12 - roll * 0.07, 11)
-    setAngle('stabilatorRight', 'x', -pitch * 0.12 + roll * 0.07, 11)
+    setSurfaceAngle(this.flaperonLeft, 'x', -pitch * 0.16 - roll * 0.14, 14, dt)
+    setSurfaceAngle(this.flaperonRight, 'x', -pitch * 0.16 + roll * 0.14, 14, dt)
+    setSurfaceAngle(this.stabilatorLeft, 'x', -pitch * 0.12 - roll * 0.07, 11, dt)
+    setSurfaceAngle(this.stabilatorRight, 'x', -pitch * 0.12 + roll * 0.07, 11, dt)
     // Canted tails move in opposite directions to sell yaw authority without
     // adding a separate rudder mesh or another render pass.
-    setAngle('tailLeft', 'y', yaw * 0.11, 10)
-    setAngle('tailRight', 'y', -yaw * 0.11, 10)
-  }
-
-  private visualNode(name: string): Object3D | null {
-    switch (name) {
-      case 'flaperonLeft': return this.flaperonLeft
-      case 'flaperonRight': return this.flaperonRight
-      case 'stabilatorLeft': return this.stabilatorLeft
-      case 'stabilatorRight': return this.stabilatorRight
-      case 'tailLeft': return this.tailLeft
-      case 'tailRight': return this.tailRight
-      default: return null
-    }
+    setSurfaceAngle(this.tailLeft, 'y', yaw * 0.11, 10, dt)
+    setSurfaceAngle(this.tailRight, 'y', -yaw * 0.11, 10, dt)
   }
 
   /** Cache the small set of nodes touched every physics step. */
@@ -403,4 +383,17 @@ function enableShadows(obj: Object3D): void {
     obj.castShadow = true
     obj.receiveShadow = true
   }
+}
+
+function setSurfaceAngle(
+  node: Object3D | null,
+  axis: 'x' | 'y',
+  target: number,
+  response: number,
+  dt: number,
+): void {
+  if (!node) return
+  node.rotation[axis] = dt === 0
+    ? target
+    : MathUtils.damp(node.rotation[axis], target, response, dt)
 }
