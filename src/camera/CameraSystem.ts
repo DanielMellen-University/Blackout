@@ -112,6 +112,9 @@ export class CameraSystem {
   private shakePhase = 0
   private readonly shakeOffset = { x: 0, y: 0, z: 0 }
   private readonly speedFraming = { distance: 0, fov: 0, lookLeadLimit: 0 }
+  private boostSway = 0
+  private boostPhase = 0
+  private readonly boostOffset = { x: 0, y: 0, z: 0 }
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -316,6 +319,7 @@ export class CameraSystem {
     }
     this.clampAboveGround(this.camera.position)
     this.applyShake(dt)
+    this.applyBoostSway(aircraft.engineState.afterburnerActive, dt)
 
     // Look slightly ahead of the jet (yaw-only offset + velocity lead)
     if (cfg.yawOnly) {
@@ -407,6 +411,19 @@ export class CameraSystem {
     this.camera.position.y += offset.y
     this.camera.position.z += offset.z
     this.shake *= Math.exp(-7 * Math.max(dt, 0.008))
+  }
+
+  private applyBoostSway(active: boolean, dt: number): void {
+    const target = active ? 1 : 0
+    this.boostSway = dt <= 0
+      ? target
+      : MathUtils.damp(this.boostSway, target, 7, dt)
+    if (this.boostSway <= 0.001) return
+    this.boostPhase = (this.boostPhase + Math.max(dt, 0.008) * 18) % (Math.PI * 2)
+    const offset = cameraBoostOffsetInto(this.boostOffset, this.boostPhase, this.boostSway)
+    this.camera.position.x += offset.x
+    this.camera.position.y += offset.y
+    this.camera.position.z += offset.z
   }
 
   private applyAircraftVisibility(aircraft: Aircraft): void {
@@ -518,6 +535,8 @@ export interface CameraShakeOffset {
   z: number
 }
 
+export type CameraBoostOffset = CameraShakeOffset
+
 /** Smooth, bounded impact shake that avoids frame-to-frame white-noise jitter. */
 export function cameraShakeOffset(phase: number, intensity: number): CameraShakeOffset {
   return cameraShakeOffsetInto({ x: 0, y: 0, z: 0 }, phase, intensity)
@@ -533,6 +552,23 @@ export function cameraShakeOffsetInto(
   out.x = (Math.sin(phase * 1.7) * .72 + Math.sin(phase * 3.1 + 1.2) * .28) * 2.4 * scale
   out.y = (Math.sin(phase * 2.1 + .7) * .75 + Math.sin(phase * 4.3) * .25) * 1.6 * scale
   out.z = (Math.cos(phase * 1.9 + 2) * .72 + Math.sin(phase * 3.7 - .8) * .28) * 2.4 * scale
+  return out
+}
+
+/** Smooth, tiny afterburner sway for the external chase camera. */
+export function cameraBoostOffset(phase: number, intensity: number): CameraBoostOffset {
+  return cameraBoostOffsetInto({ x: 0, y: 0, z: 0 }, phase, intensity)
+}
+
+export function cameraBoostOffsetInto(
+  out: CameraBoostOffset,
+  phase: number,
+  intensity: number,
+): CameraBoostOffset {
+  const scale = Math.min(1, Math.max(0, intensity))
+  out.x = (Math.sin(phase * 1.6) * .7 + Math.sin(phase * 2.9 + .8) * .3) * .028 * scale
+  out.y = (Math.sin(phase * 2.2 + .4) * .72 + Math.sin(phase * 3.7) * .28) * .016 * scale
+  out.z = (Math.cos(phase * 1.4 + 1.1) * .7 + Math.sin(phase * 3.2 - .5) * .3) * .035 * scale
   return out
 }
 

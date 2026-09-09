@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import {
+  cameraBoostOffset,
+  cameraBoostOffsetInto,
   cameraShakeOffset,
   cameraShakeOffsetInto,
   CameraSystem,
@@ -56,6 +58,18 @@ describe('external camera framing', () => {
     expect(first.z).toBeGreaterThanOrEqual(-2.4)
     expect(first.z).toBeLessThanOrEqual(2.4)
     expect(Math.hypot(next.x - first.x, next.y - first.y, next.z - first.z)).toBeLessThan(.25)
+  })
+
+  it('keeps afterburner sway tiny, smooth, and caller-owned', () => {
+    const first = cameraBoostOffset(.8, 1)
+    const next = cameraBoostOffset(.82, 1)
+    const target = { x: 0, y: 0, z: 0 }
+    expect(Math.abs(first.x)).toBeLessThanOrEqual(.028)
+    expect(Math.abs(first.y)).toBeLessThanOrEqual(.016)
+    expect(Math.abs(first.z)).toBeLessThanOrEqual(.035)
+    expect(Math.hypot(next.x - first.x, next.y - first.y, next.z - first.z)).toBeLessThan(.01)
+    expect(cameraBoostOffsetInto(target, .8, 1)).toBe(target)
+    expect(target).toEqual(first)
   })
 
   it('follows aircraft translation without accumulating speed lag', () => {
