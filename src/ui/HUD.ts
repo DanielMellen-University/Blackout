@@ -99,32 +99,32 @@ export class HUD {
     banner?: string | null
   }): void {
     if (this.posEl) {
-      this.posEl.textContent = String(Math.round(opts.y))
+      this.setText(this.posEl, String(Math.round(opts.y)))
     }
 
     const kts = displayedKnots(opts.speed)
     if (this.spdEl) {
-      this.spdEl.textContent = String(Math.round(kts))
+      this.setText(this.spdEl, String(Math.round(kts)))
     }
     this.updateSpeedo(kts)
 
     if (this.camEl) {
-      this.camEl.textContent = opts.cameraMode.toUpperCase()
+      this.setText(this.camEl, opts.cameraMode.toUpperCase())
     }
     if (this.fpsEl) {
-      this.fpsEl.textContent = String(Math.round(opts.fps))
+      this.setText(this.fpsEl, String(Math.round(opts.fps)))
     }
     if (this.clockEl && opts.clock) {
-      this.clockEl.textContent = opts.clock
+      this.setText(this.clockEl, opts.clock)
     }
     if (this.weatherEl && opts.weather) {
-      this.weatherEl.textContent = opts.weather
+      this.setText(this.weatherEl, opts.weather)
     }
     if (this.phaseEl && opts.dayPhase) {
-      this.phaseEl.textContent = opts.dayPhase
+      this.setText(this.phaseEl, opts.dayPhase)
     }
     if (this.missionEl && opts.mission) {
-      this.missionEl.textContent = opts.mission
+      this.setText(this.missionEl, opts.mission)
     }
     this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
 
@@ -133,10 +133,10 @@ export class HUD {
     }
 
     if (this.gearEl && opts.gearDown !== undefined) {
-      this.gearEl.textContent = opts.gearDown ? 'DOWN' : 'UP'
+      this.setText(this.gearEl, opts.gearDown ? 'DOWN' : 'UP')
     }
     if (this.stateEl && opts.onGround !== undefined) {
-      this.stateEl.textContent = opts.onGround ? 'GND' : 'AIR'
+      this.setText(this.stateEl, opts.onGround ? 'GND' : 'AIR')
     }
 
     if (opts.pitch !== undefined && opts.roll !== undefined) {
@@ -147,11 +147,11 @@ export class HUD {
 
     if (this.bannerEl) {
       if (opts.banner) {
-        this.bannerEl.textContent = opts.banner
-        this.bannerEl.hidden = false
+        this.setText(this.bannerEl, opts.banner)
+        this.setHidden(this.bannerEl, false)
       } else {
-        this.bannerEl.textContent = ''
-        this.bannerEl.hidden = true
+        this.setText(this.bannerEl, '')
+        this.setHidden(this.bannerEl, true)
       }
     }
   }
@@ -163,24 +163,26 @@ export class HUD {
   ): void {
     if (!this.navCueEl) return
     if (bearing === null) {
-      this.navCueEl.hidden = true
+      this.setHidden(this.navCueEl, true)
       return
     }
-    this.navCueEl.hidden = false
+    this.setHidden(this.navCueEl, false)
     const deg = (bearing * 180) / Math.PI
     if (this.navArrowEl) {
       this.navArrowEl.style.transform = `rotate(${deg}deg)`
     }
     if (this.navRangeEl) {
-      this.navRangeEl.textContent =
-        dist >= 1000 ? `${(dist / 1000).toFixed(1)} KM` : `${Math.round(dist)} M`
+      this.setText(
+        this.navRangeEl,
+        dist >= 1000 ? `${(dist / 1000).toFixed(1)} KM` : `${Math.round(dist)} M`,
+      )
     }
     if (this.navAltEl) {
       if (Math.abs(altDelta) < 12) {
-        this.navAltEl.textContent = 'LVL'
+        this.setText(this.navAltEl, 'LVL')
       } else {
         const dir = altDelta > 0 ? '+' : ''
-        this.navAltEl.textContent = `${dir}${Math.round(altDelta)} M`
+        this.setText(this.navAltEl, `${dir}${Math.round(altDelta)} M`)
       }
     }
   }
@@ -191,13 +193,13 @@ export class HUD {
   ): void {
     if (!this.warnEl || !this.warnTextEl) return
     if (!text || level === 'none') {
-      this.warnEl.hidden = true
+      this.setHidden(this.warnEl, true)
       this.warnEl.classList.remove('caution', 'warning')
-      this.warnTextEl.textContent = ''
+      this.setText(this.warnTextEl, '')
       return
     }
-    this.warnEl.hidden = false
-    this.warnTextEl.textContent = text
+    this.setHidden(this.warnEl, false)
+    this.setText(this.warnTextEl, text)
     this.warnEl.classList.toggle('caution', level === 'caution')
     this.warnEl.classList.toggle('warning', level === 'warning')
   }
@@ -222,11 +224,11 @@ export class HUD {
     }
     if (this.adiPitchEl) {
       const p = Math.round(pitchDeg)
-      this.adiPitchEl.textContent = `P ${p > 0 ? '+' : ''}${p}°`
+      this.setText(this.adiPitchEl, `P ${p > 0 ? '+' : ''}${p}°`)
     }
     if (this.adiRollEl) {
       const r = Math.round(rollDeg)
-      this.adiRollEl.textContent = `B ${r > 0 ? '+' : ''}${r}°`
+      this.setText(this.adiRollEl, `B ${r > 0 ? '+' : ''}${r}°`)
     }
   }
 
@@ -253,7 +255,7 @@ export class HUD {
     const level = Math.min(1, Math.max(0, throttle))
     const pct = Math.round(level * 100)
     if (this.thrEl) {
-      this.thrEl.textContent = `${pct}%`
+      this.setText(this.thrEl, `${pct}%`)
     }
     if (this.engFill) {
       // Height % (not scaleY) so the bar fills cleanly from MIN→MAX
@@ -269,6 +271,15 @@ export class HUD {
       this.engPanel.classList.toggle('spooled', level >= 0.95)
       this.engPanel.style.setProperty('--eng-level', String(level))
     }
+  }
+
+  /** Avoid layout-triggering DOM writes when a readout has not changed. */
+  private setText(el: HTMLElement, value: string): void {
+    if (el.textContent !== value) el.textContent = value
+  }
+
+  private setHidden(el: HTMLElement, hidden: boolean): void {
+    if (el.hidden !== hidden) el.hidden = hidden
   }
 
   private buildAttitudeLadder(root: Document): void {
