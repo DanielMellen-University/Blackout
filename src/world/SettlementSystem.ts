@@ -414,6 +414,7 @@ export class SettlementSystem {
         }
       }
     } else if (!this.inFlight) {
+      this.prioritizeRoadQueue(x, z)
       const link = this.linkQueue.shift()
       if (link && this.worker) {
         this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
@@ -601,6 +602,17 @@ export class SettlementSystem {
       nearestDistance = distance
     }
     return nearest
+  }
+
+  /** Generate the connector nearest to the aircraft before distant links. */
+  private prioritizeRoadQueue(x: number, z: number): void {
+    this.linkQueue.sort((a, b) => {
+      const distance = (job: RoadJob): number => Math.min(
+        Math.hypot(job.from.x - x, job.from.z - z),
+        Math.hypot(job.to.x - x, job.to.z - z),
+      )
+      return distance(a) - distance(b) || a.key.localeCompare(b.key)
+    })
   }
 
   /** A fixed mesh budget prevents a dense road graph from growing frame cost. */
