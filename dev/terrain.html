@@ -57,8 +57,12 @@ const chase=new CameraSystem(renderer.domElement)
 chase.resize(innerWidth,innerHeight)
 let flightView=false
 let settlementRadius=0
+let settlementKind=''
+let settlementTop=700
 function frameWorld(destination){
   settlementRadius=0
+  settlementKind=''
+  settlementTop=700
   flightView=false;reviewJet.mesh.visible=false;controls.enabled=true
   document.querySelector('#flight-view').textContent='Flight scale view'
   const {x,y,z}=destination ?? world.spawn
@@ -149,6 +153,8 @@ function visitDestination(value){
   if(value==='city'||value==='village'||value==='roadlink'){
     const y=sampleTerrainHeight(x,z)
     settlementRadius=settlement.radius
+    settlementKind=value
+    settlementTop=Math.max(700,...settlement.buildings.map(building=>building.y+building.height))
     const offset=Math.min(settlementRadius*.55,5000)
     camera.position.set(x+offset,y+Math.min(settlementRadius*.3,2600),z-offset)
     controls.target.set(x,y+25,z);controls.update()
@@ -169,8 +175,14 @@ document.querySelector('#flight-view').onclick=()=>{
   flying=false;document.querySelector('#fly').textContent='Flight benchmark'
   document.querySelector('#flight-view').textContent=flightView?'Orbit view':'Flight scale view'
   if(flightView){
-    const x=controls.target.x,z=controls.target.z-Math.max(450,settlementRadius*.45)
-    reviewJet.reset({x,z,y:sampleTerrainHeight(x,z)+350,yaw:0})
+    // Start at the settlement edge and above its skyline. The old centerline
+    // spawn put the aircraft inside city towers, making the landmark appear
+    // absent in flight-scale review and immediately triggering collisions.
+    const edge=Math.max(900,settlementRadius*.78)
+    const x=controls.target.x+edge,z=controls.target.z-edge
+    const terrainY=sampleTerrainHeight(x,z)
+    const skyline=settlementKind==='city' ? 2400 : settlementKind==='village' ? 1100 : 700
+    reviewJet.reset({x,z,y:Math.max(terrainY+skyline,settlementTop+450),yaw:0})
     chase.setMode('chase',reviewJet)
   }
 }

@@ -135,6 +135,11 @@ export class World {
         this.terrain.clearAll()
         this.settlements.clearAll()
         this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
+        // Kick off the protected city/village anchor jobs before the first
+        // rendered frame. Without this warm start, a fresh world spent its
+        // opening frames generating terrain while nearby landmarks waited for
+        // the first movement-triggered settlement update.
+        this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
         const initialWeather = this.atmosphere.weatherSnapshot
         this.terrain.setWeatherEffects(initialWeather.rain, initialWeather.snow)
