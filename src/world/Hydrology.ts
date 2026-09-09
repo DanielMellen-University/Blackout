@@ -139,9 +139,9 @@ function makeFlowGrid(ox: number, oz: number): FlowGrid {
 
 /** Pick an infrequent sea in naturally low country, never as a default background. */
 function chooseSeaCell(grid: FlowGrid, cx: number, cz: number): number | null {
-  // Seas are regional landmarks, not the default background. Keeping the
-  // gate below one third of catchments leaves room for long dry provinces,
-  // lakes, and river valleys between shoreline encounters.
+  // Seas are regional landmarks, not the default background. Keep them below
+  // one third of catchments so long dry provinces, lakes, and river valleys
+  // have room to breathe between shoreline encounters.
   if (hash2(cx - 91, cz + 101) <= .68) return null
   const candidates: { id: number; score: number }[] = []
   for (let z = 3; z < FLOW_GRID - 3; z++) for (let x = 3; x < FLOW_GRID - 3; x++) {
@@ -251,8 +251,8 @@ function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, p
     // A sea is deliberately smaller than the old 3.3-5.2 km footprint. It
     // should read as a broad enclosed coast, not an ocean swallowing a whole
     // review tile or dominating every flight route.
-    radius: 3300 + hash2(cx - 23, cz + 61) * 1400,
-    aspect: .68 + hash2(cx + 31, cz - 41) * .24,
+    radius: 3300 + hash2(cx - 23, cz + 61) * 1200,
+    aspect: .72 + hash2(cx + 31, cz - 41) * .24,
     angle: phase,
     phase,
     level: 0,
