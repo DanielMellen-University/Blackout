@@ -54,15 +54,34 @@ export function createRunway(): Group {
     emissive: 0xaaccff,
     emissiveIntensity: 0.8,
   })
+  const runwayLights = new Group()
+  runwayLights.name = 'RunwayLights'
+  root.add(runwayLights)
   const lightGeo = new BoxGeometry(0.25, 0.12, 0.25)
   for (let z = -length / 2; z <= length / 2; z += 8) {
     for (const x of [-width / 2 + 0.4, width / 2 - 0.4] as const) {
       const light = new Mesh(lightGeo, lightMat)
       light.position.set(x, 0.06, z)
-      root.add(light)
+      runwayLights.add(light)
     }
   }
 
   root.add(createAirfieldLandmarks())
   return root
+}
+
+/** Shared runway light response: subtle at day, readable at night. */
+export function runwayLightIntensity(daylight: number): number {
+  const t = Math.min(1, Math.max(0, daylight))
+  return 0.18 + (1 - t) * 1.62
+}
+
+export function setRunwayDaylight(root: Group, daylight: number): void {
+  const lights = root.getObjectByName('RunwayLights')
+  if (!lights) return
+  const intensity = runwayLightIntensity(daylight)
+  lights.traverse((object) => {
+    if (!(object instanceof Mesh) || !(object.material instanceof MeshStandardMaterial)) return
+    object.material.emissiveIntensity = intensity
+  })
 }

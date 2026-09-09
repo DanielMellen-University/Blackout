@@ -9,7 +9,7 @@ import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
 import { AIRFIELD_COLLIDERS } from './Airfield'
 import { randomizeWorldSeed, setWorldSeed } from './noise'
-import { createRunway } from './Runway'
+import { createRunway, setRunwayDaylight } from './Runway'
 import {
   clearOpsPad,
   findPlayableSpawn,
@@ -201,6 +201,7 @@ export class World {
     this.terrain.update(x, z, dt)
     this.settlements.update(x, z)
     this.atmosphere.update(simDt, x, y, z, visualDt)
+    setRunwayDaylight(this.runway, this.atmosphere.daylight)
     const weather = this.atmosphere.weatherSnapshot
     this.terrain.setWeatherEffects(weather.rain, weather.snow, weather.windX, weather.windZ,
       Math.max(weather.lowClouds, weather.midClouds * .9))

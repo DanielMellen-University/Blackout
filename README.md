@@ -11,6 +11,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
+- Runway edge lights dim into daylight and brighten through dusk and night using the shared atmosphere clock.
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.
