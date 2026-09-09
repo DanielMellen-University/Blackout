@@ -29,6 +29,11 @@ describe('external camera framing', () => {
     expect(overspeed.lookLeadLimit).toBe(10)
   })
 
+  it('keeps speed stretch inside the configured zoom envelope', () => {
+    const framing = resolveExternalSpeedFraming(32, 60, 10, 1, 32)
+    expect(framing.distance).toBe(32)
+  })
+
   it('follows aircraft translation without accumulating speed lag', () => {
     const target = {
       addEventListener: vi.fn(),

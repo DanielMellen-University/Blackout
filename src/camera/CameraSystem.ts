@@ -283,6 +283,7 @@ export class CameraSystem {
       cfg.fov,
       cfg.maxLookLead,
       juice,
+      cfg.maxDist,
     )
 
     _pivot.copy(aircraft.displayPosition)
@@ -511,10 +512,11 @@ export function resolveExternalSpeedFraming(
   baseFov: number,
   maxLookLead: number,
   speedJuice: number,
+  maxDistance = Infinity,
 ): ExternalSpeedFraming {
   const t = MathUtils.clamp(speedJuice, 0, 1)
   return {
-    distance: baseDistance * (1 + t * SPEED_DIST_STRETCH),
+    distance: Math.min(maxDistance, baseDistance * (1 + t * SPEED_DIST_STRETCH)),
     fov: baseFov + t * SPEED_FOV_BOOST,
     lookLeadLimit: MathUtils.lerp(maxLookLead * 0.45, maxLookLead, t),
   }
