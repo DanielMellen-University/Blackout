@@ -392,7 +392,7 @@ export class TerrainSystem {
     this.waterSnow.value = this.weatherSnow.value
     this.waterWindX.value = windX
     this.waterWindZ.value = windZ
-    this.vegFactory?.setWeather(this.weatherRain.value, this.weatherSnow.value)
+    this.vegFactory?.setWeather(this.weatherRain.value, this.weatherSnow.value, windX, windZ)
   }
 
   get weatherEffects(): { rain: number; snow: number } {
@@ -1076,8 +1076,9 @@ export class TerrainSystem {
     originX: number, originZ: number, cx: number, cz: number,
     heights: Float32Array, segs: number,
   ): Group {
-    this.vegFactory ??= createVegetationFactory()
-    this.vegFactory.setWeather(this.weatherRain.value, this.weatherSnow.value)
+    this.vegFactory ??= createVegetationFactory(this.waterClock)
+    this.vegFactory.setWeather(this.weatherRain.value, this.weatherSnow.value,
+      this.weatherWind.x, this.weatherWind.y)
     const veg = this.vegFactory.createBuckets()
     const samples = 72
 

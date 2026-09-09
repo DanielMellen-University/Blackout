@@ -31,6 +31,9 @@ const _q2 = new Quaternion()
 interface VegetationWeatherUniforms {
   rain: { value: number }
   snow: { value: number }
+  windX: { value: number }
+  windZ: { value: number }
+  time: { value: number }
 }
 
 export interface VegBuckets {
@@ -63,10 +66,33 @@ function mat(color: number, roughness = 0.86): MeshStandardMaterial {
 function configureWeatherMaterial(
   material: MeshStandardMaterial,
   weather: VegetationWeatherUniforms,
+  sway = 0,
 ): void {
   material.onBeforeCompile = shader => {
     shader.uniforms.vegetationRain = weather.rain
     shader.uniforms.vegetationSnow = weather.snow
+    if (sway > 0) {
+      shader.uniforms.vegetationWindX = weather.windX
+      shader.uniforms.vegetationWindZ = weather.windZ
+      shader.uniforms.vegetationTime = weather.time
+      shader.uniforms.vegetationSway = { value: sway }
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <common>',
+        '#include <common>\nuniform float vegetationWindX;\nuniform float vegetationWindZ;\nuniform float vegetationTime;\nuniform float vegetationSway;\n',
+      ).replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+      // Bend only the upper part of foliage. The phase uses the instance
+      // anchor so every plant moves independently while remaining one draw.
+      float vegetationHeight = smoothstep(-0.35, 0.95, transformed.y);
+      float vegetationPhase = vegetationTime * (0.82 + fract(sin(dot(instanceMatrix[3].xz, vec2(.017, .013))) * 43758.5453) * .36)
+        + dot(instanceMatrix[3].xz, vec2(.011, .009));
+      float vegetationGust = sin(vegetationPhase + transformed.y * 1.7) * vegetationHeight;
+      float vegetationWindScale = vegetationSway * (0.012 + length(vec2(vegetationWindX, vegetationWindZ)) * .0028);
+      transformed.x += vegetationGust * vegetationWindScale * vegetationWindX;
+      transformed.z += vegetationGust * vegetationWindScale * vegetationWindZ;`,
+      )
+    }
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <common>',
       '#include <common>\nuniform float vegetationRain;\nuniform float vegetationSnow;\n',
@@ -80,7 +106,7 @@ function configureWeatherMaterial(
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.72, .8, .88), snowMask);`,
     )
   }
-  material.customProgramCacheKey = () => 'vegetation-weather-v1'
+  material.customProgramCacheKey = () => `vegetation-weather-v2-${sway > 0 ? 'sway' : 'static'}`
 }
 
 function mesh(
@@ -126,12 +152,18 @@ function setAt(
 }
 
 /** Build reusable veg kits for one terrain system (shared geos/mats). */
-export function createVegetationFactory(): {
+export function createVegetationFactory(clock: { value: number } = { value: 0 }): {
   createBuckets: () => VegBuckets
-  setWeather: (rain: number, snow: number) => void
+  setWeather: (rain: number, snow: number, windX?: number, windZ?: number) => void
   disposeShared: () => void
 } {
-  const weather: VegetationWeatherUniforms = { rain: { value: 0 }, snow: { value: 0 } }
+  const weather: VegetationWeatherUniforms = {
+    rain: { value: 0 },
+    snow: { value: 0 },
+    windX: { value: 0 },
+    windZ: { value: 0 },
+    time: clock,
+  }
   // --- geometries (shared) ---
   const trunkGeo = new CylinderGeometry(0.18, 0.32, 1, 6)
   const pineConeGeo = new ConeGeometry(1, 2, 8)
@@ -200,7 +232,26 @@ export function createVegetationFactory(): {
     grassDryMat,
     deadMat,
   ]
-  for (const material of sharedMats) configureWeatherMaterial(material, weather)
+  const swayByMaterial = new Map<MeshStandardMaterial, number>([
+    [trunkMat, .24],
+    [trunkDarkMat, .24],
+    [pineMat, 1],
+    [pineLightMat, 1],
+    [oakMat, 1],
+    [birchCanopyMat, 1],
+    [autumnMat, 1],
+    [rfCanopyMat, 1],
+    [rfCanopy2Mat, 1],
+    [snowPineMat, 1],
+    [bushMat, .86],
+    [bushDryMat, .86],
+    [cactusMat, .42],
+    [reedMat, 1],
+    [grassMat, 1],
+    [grassDryMat, 1],
+    [deadMat, .68],
+  ])
+  for (const material of sharedMats) configureWeatherMaterial(material, weather, swayByMaterial.get(material) ?? 0)
 
   function createBuckets(): VegBuckets {
     const group = new Group()
@@ -723,9 +774,11 @@ export function createVegetationFactory(): {
 
   return {
     createBuckets,
-    setWeather: (rain: number, snow: number) => {
+    setWeather: (rain: number, snow: number, windX = 0, windZ = 0) => {
       weather.rain.value = Math.max(0, Math.min(1, rain))
       weather.snow.value = Math.max(0, Math.min(1, snow))
+      weather.windX.value = Number.isFinite(windX) ? windX : 0
+      weather.windZ.value = Number.isFinite(windZ) ? windZ : 0
     },
     disposeShared: () => {
       for (const g of sharedGeos) g.dispose()

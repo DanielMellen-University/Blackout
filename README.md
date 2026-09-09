@@ -42,6 +42,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Regional road selection now favors cross-tier hub spokes on both sides: cities reach nearby villages before adding another city link, while the fixed link caps stay unchanged.
 - Vegetation now gives savanna, tundra, volcanic, and saltflat provinces distinct sparse prop mixes instead of falling through to generic grass, while reusing the existing instanced mesh budget.
 - Instanced vegetation now shares the world weather response: rain darkens foliage and snow settles on upward-facing canopies, trunks, and rocks stay readable without extra draw calls.
+- Foliage now sways independently with the same blended weather wind as clouds, snow, terrain cover, and water. Rock materials stay static and the animation remains inside the existing instanced vegetation batches.
 - Terrain snow accumulation now shares wind direction too, lightly scouring windward slopes while retaining more cover on leeward faces without rebuilding streamed tiles.
 - Water ripple and color drift now share the same weather wind direction, keeping lakes and seas visually coherent with moving rain and cloud fronts without extra water draws.
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
@@ -237,7 +238,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: performance pass, vegetation v2 (still disabled until budgeted), warning retune.
+Next: performance pass, vegetation v2 refinement, warning retune.
 
 Out of scope for now: radar, weapons, fuel.
 
