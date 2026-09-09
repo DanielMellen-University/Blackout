@@ -424,11 +424,24 @@ export class SettlementSystem {
     for (const key of cells) {
       if (this.checked.has(key) || this.loaded.has(key)) continue
       const [cx, cz] = key.split(',').map(Number)
-      this.checked.add(key)
       const plan = settlementForCell(cx!, cz!)
-      if (!plan) continue
+      if (!plan) {
+        // A deterministic anchor can still fail terrain validation on a
+        // future generator revision. Keep the cell checked only when there
+        // is no plan to retry, otherwise it would spin every frame.
+        this.checked.add(key)
+        continue
+      }
       this.scheduleLinks(plan, key)
-      if (this.canLoad(plan, x, z)) this.loaded.set(key, this.build(plan))
+      if (this.canLoad(plan, x, z)) {
+        this.checked.add(key)
+        this.loaded.set(key, this.build(plan))
+      } else {
+        // Do not permanently consume an anchor when the shared instance
+        // budget is temporarily full. Leaving it unchecked lets the normal
+        // nearest-first queue retry after an ordinary settlement is evicted.
+        this.queue = this.queue.filter(job => job.key !== key)
+      }
     }
   }
 

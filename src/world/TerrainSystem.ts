@@ -403,8 +403,11 @@ export class TerrainSystem {
         '#include <common>',
         '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nvarying float terrainHeight;\n',
       ).replace(
-        '#include <color_fragment>',
-        `#include <color_fragment>
+        '#include <normal_fragment_maps>',
+        `#include <normal_fragment_maps>
+        // Normal is initialized by normal_fragment_begin immediately before
+        // this hook. Applying weather after that chunk avoids reading an
+        // undefined normal during color_fragment on Three.js 0.185+.
         float wetGround = terrainRain * 0.18;
         diffuseColor.rgb *= 1.0 - wetGround;
         float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
@@ -413,7 +416,7 @@ export class TerrainSystem {
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.72, 0.79, 0.87), snowCover);`,
       )
     }
-    material.customProgramCacheKey = () => 'terrain-weather-v1'
+    material.customProgramCacheKey = () => 'terrain-weather-v2'
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {

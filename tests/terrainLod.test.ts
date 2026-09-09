@@ -1,4 +1,4 @@
-import { InstancedMesh, Mesh, Scene } from 'three'
+import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import { planTerrainTiles } from '../src/world/TerrainLayout'
@@ -159,6 +159,24 @@ describe('TerrainSystem streaming LOD', () => {
       expect(terrain.weatherEffects).toEqual({ rain: 1, snow: 0 })
       terrain.setWeatherEffects(.2, .8)
       expect(terrain.weatherEffects).toEqual({ rain: .2, snow: .8 })
+    } finally {
+      terrain.clearAll()
+    }
+  })
+
+  it('injects weather shading after the normal is initialized', () => {
+    const terrain = new TerrainSystem(new Scene())
+    try {
+      const material = (terrain as unknown as { groundMatNear: MeshStandardMaterial }).groundMatNear
+      const shader = {
+        uniforms: {},
+        vertexShader: '#include <common>\n#include <begin_vertex>',
+        fragmentShader: '#include <common>\n#include <color_fragment>\n#include <normal_fragment_begin>\n#include <normal_fragment_maps>',
+      }
+      material.onBeforeCompile(shader as never, undefined as never)
+      const normalChunk = shader.fragmentShader.indexOf('#include <normal_fragment_maps>')
+      expect(shader.fragmentShader.indexOf('float slopeExposure')).toBeGreaterThan(normalChunk)
+      expect(shader.fragmentShader).toContain('uniform float terrainRain')
     } finally {
       terrain.clearAll()
     }

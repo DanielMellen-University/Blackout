@@ -107,4 +107,31 @@ describe('settlement streaming budgets', () => {
       clearOpsPad()
     }
   })
+
+  it('retries an anchor rejected by a temporarily full budget', () => {
+    const system = new SettlementSystem(new Scene())
+    const internals = system as unknown as {
+      canLoad: (plan: SettlementPlan, x: number, z: number) => boolean
+      checked: Set<string>
+      loaded: Map<string, { plan: SettlementPlan }>
+      primeAnchors: (x: number, z: number) => void
+    }
+    const originalCanLoad = internals.canLoad.bind(system)
+    internals.canLoad = () => false
+    try {
+      setOpsPad(0, 0, 100)
+      internals.primeAnchors(0, 0)
+      expect(system.count).toBe(0)
+      expect(internals.checked.size).toBe(0)
+
+      // Restore the real admission check once the ordinary budget clears.
+      internals.canLoad = originalCanLoad
+      for (let frame = 0; frame < 30; frame++) system.update(0, 0)
+      expect(internals.loaded.has('1,0')).toBe(true)
+      expect(internals.loaded.has('0,1')).toBe(true)
+    } finally {
+      system.dispose()
+      clearOpsPad()
+    }
+  })
 })
