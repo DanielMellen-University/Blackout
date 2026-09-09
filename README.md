@@ -21,6 +21,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Water is an independent surface with variable basin counts, irregular coves, narrower inland seas, bent rivers with deterministic tributaries, teal shallows, deep blue channels, shoreline foam tint, and animated glints.
 - Water shares precipitation uniforms with terrain: rain roughens ripple and foam motion while snow cools the surface without rebuilding clipped water meshes.
+- Rain also gives flat lowlands a restrained cool wet-sheen while leaving hills and mountains readable, using the existing terrain height and normal path.
 - Cities use landmark-only tower cores surrounded by slabs, industrial halls, blocks, stepped forms, and broader biome-specific color palettes.
 - Terrain vertex colors now carry the landform signal too, giving ridges, alpine valleys, plateaus, and calderas distinct readable shading even on distant low-detail tiles.
 - Snow and mountain palettes add stable exposed-rock bands and cool alpine-valley shading so high relief stays readable instead of becoming one white sheet.

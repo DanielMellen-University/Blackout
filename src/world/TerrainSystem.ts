@@ -413,13 +413,20 @@ export class TerrainSystem {
         // undefined normal during color_fragment on Three.js 0.185+.
         float wetGround = terrainRain * 0.18;
         diffuseColor.rgb *= 1.0 - wetGround;
+        // Rain darkens the whole world slightly, but low, level ground should
+        // also catch a cool wet sheen. Keep the response restrained so hills
+        // and mountains do not turn into a uniform blue wash.
+        float wetLowland = terrainRain * (1.0 - smoothstep(520.0, 1700.0, terrainHeight)) *
+          smoothstep(.78, .985, normal.y);
+        diffuseColor.rgb = mix(diffuseColor.rgb,
+          diffuseColor.rgb * vec3(.82, .92, .98), wetLowland * .2);
         float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
         float slopeExposure = smoothstep(0.42, 0.94, normal.y);
         float snowCover = terrainSnow * slopeExposure * (0.44 + altitudeSnow * 0.52);
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.76, 0.83, 0.91), snowCover);`,
       )
     }
-    material.customProgramCacheKey = () => 'terrain-weather-v3'
+    material.customProgramCacheKey = () => 'terrain-weather-v4'
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {
