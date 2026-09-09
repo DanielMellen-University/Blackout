@@ -15,11 +15,14 @@ describe('independent water surfaces', () => {
       expect(mesh.geometry.boundingSphere?.radius).toBeGreaterThan(0)
       const positions = mesh.geometry.getAttribute('position')
       const depths = mesh.geometry.getAttribute('waterDepth')
+      const flow = mesh.geometry.getAttribute('waterFlow')
       const normals = mesh.geometry.getAttribute('normal')
+      expect(flow.count).toBe(positions.count)
       let shoreline = 0
       for (let i = 0; i < positions.count; i++) {
         expect(positions.getY(i)).toBe(level)
         expect(depths.getX(i)).toBeGreaterThanOrEqual(0)
+        expect(flow.getX(i)).toBe(0)
         expect(normals.getY(i)).toBeCloseTo(1)
         if (depths.getX(i) < .001) shoreline++
       }
@@ -47,6 +50,8 @@ describe('independent water surfaces', () => {
       expect(shader.uniforms.waterSnow).toBe(weather.snow)
       expect(shader.fragmentShader).toContain('waterRain')
       expect(shader.fragmentShader).toContain('waterSnow')
+      expect(shader.vertexShader).toContain('waterFlow')
+      expect(shader.fragmentShader).toContain('vWaterFlow')
     } finally {
       mesh.geometry.dispose()
       material.dispose()
@@ -62,11 +67,14 @@ describe('independent water surfaces', () => {
     expect(mesh).not.toBeNull()
     const positions = mesh!.geometry.getAttribute('position')
     const depths = mesh!.geometry.getAttribute('waterDepth')
+    const flow = mesh!.geometry.getAttribute('waterFlow')
     expect(positions.count).toBeGreaterThanOrEqual(24)
     expect(depths.count).toBe(positions.count)
+    expect(flow.count).toBe(positions.count)
     for (let i = 0; i < positions.count; i++) {
       expect(positions.getY(i)).toBeGreaterThan(90)
       expect(depths.getX(i)).toBeGreaterThan(0)
+      expect(flow.getX(i)).toBe(1)
     }
     mesh!.geometry.dispose()
     ;(mesh!.material as MeshStandardMaterial).dispose()

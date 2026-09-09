@@ -37,6 +37,7 @@ export function buildWaterMesh(
     : basinMaskOrReaches ?? reachesArg
   const positions: number[] = []
   const depths: number[] = []
+  const flowValues: number[] = []
   const stride = segs + 1
   const cell = size / segs
   const vertex = (i: number): WaterVertex => ({
@@ -68,6 +69,7 @@ export function buildWaterMesh(
       for (const p of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
         positions.push(p.x, p.level, p.z)
         depths.push(Math.max(0, p.level - p.bed))
+        flowValues.push(0)
       }
     }
   }
@@ -76,11 +78,12 @@ export function buildWaterMesh(
     triangle(a, b, d)
     triangle(b, c, d)
   }
-  appendRiverRibbons(reaches, size, originX, originZ, positions, depths)
+  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues)
   if (!positions.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('waterDepth', new Float32BufferAttribute(depths, 1))
+  geometry.setAttribute('waterFlow', new Float32BufferAttribute(flowValues, 1))
   geometry.computeVertexNormals()
   // Water triangles are clipped per terrain cell, so give the renderer an
   // explicit bound for fast streamed-tile culling.
@@ -105,6 +108,7 @@ function appendRiverRibbons(
   originZ: number,
   positions: number[],
   depths: number[],
+  flowValues: number[],
 ): void {
   const half = size / 2
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
@@ -146,6 +150,7 @@ function appendRiverRibbons(
       for (const point of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
         positions.push(point.x, point.y, point.z)
         depths.push(point.depth)
+        flowValues.push(1)
       }
     }
   }
