@@ -52,6 +52,16 @@ describe('continuous terrain generation', () => {
     expect(Math.max(...green) - Math.min(...green)).toBeGreaterThan(.01)
   })
 
+  it('adds bounded ash and fissure variation to volcanic ground', () => {
+    const samples = [-1200, -480, 0, 520, 1200].map(x => biomeColor(
+      'volcanic', 900, .3, x, 640, undefined, 0, 1, 'volcanic', 0,
+      undefined, { ridge: .4, alpineValley: .1, plateau: 0, caldera: .15 },
+    ))
+    expect(new Set(samples.map(color => color.map(channel => channel.toFixed(4)).join(','))).size)
+      .toBeGreaterThan(2)
+    expect(samples.flat().every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
+
   it('gives exposed water beds feature-aware sediment variation', () => {
     const river = biomeColor('water', 40, .6, 240, -480,
       { river: 1, lake: 0, ravine: 0, pond: 0, stream: 1 }, 0, .2)

@@ -626,13 +626,36 @@ export function biomeColor(
     ]
   }
 
+  // Volcanic provinces need more than one gray tone to read as cooled lava,
+  // ash shelves, and occasional warm fissures from flight scale. Keep the
+  // breakup deterministic and material-only so it costs no extra geometry or
+  // draw call, and let caldera interiors carry the strongest warm accent.
+  if (biome === 'volcanic') {
+    const ashField = valueNoise(x / 520, z / 520)
+    const cinder = (ashField - .5) * .12
+    col = [
+      clamp01(col[0] + cinder * .9),
+      clamp01(col[1] + cinder * .82),
+      clamp01(col[2] + cinder * .72),
+    ]
+    const fissureField = valueNoise(x / 980 + 37, z / 980 - 19)
+    const calderaBoost = landform?.caldera ?? 0
+    const fissure = smoothstep(.78, .94, fissureField) * (.1 + calderaBoost * .72)
+    const ember: [number, number, number] = [0.42 + ashField * .12, .09 + ashField * .035, .025]
+    col = [
+      col[0] + (ember[0] - col[0]) * fissure,
+      col[1] + (ember[1] - col[1]) * fissure,
+      col[2] + (ember[2] - col[2]) * fissure,
+    ]
+  }
+
   // Lowland terrain is intentionally prop-free for now, so distant green
   // regions need a little visual structure in the existing vertex colors.
   // Two broad, world-space noise scales create meadow patches and soil
   // variation without hard biome borders, extra textures, or new draw calls.
   // The signal is applied after biome blending so transitions stay continuous.
   const texturedLand = biome === 'plains' || biome === 'forest' || biome === 'rainforest' ||
-    biome === 'savanna' || biome === 'swamp' || biome === 'hills' || biome === 'desert' || biome === 'mesa'
+    biome === 'savanna' || biome === 'swamp' || biome === 'hills' || biome === 'desert' || biome === 'mesa' || biome === 'volcanic'
   if (texturedLand) {
     const regional = valueNoise(x / 520, z / 520)
     const patch = valueNoise(x / 155, z / 155)
