@@ -89,6 +89,7 @@ async function boot(): Promise<void> {
   let bannerUntil = 0
   let wasAirborne = false
   let prevAfterburner = false
+  let prevWarning: string | null = null
 
   const courseId = (): string => `seed:${world.worldSeed}`
 
@@ -115,6 +116,7 @@ async function boot(): Promise<void> {
     banner = null
     wasAirborne = false
     prevAfterburner = false
+    prevWarning = null
     time.reset()
   }
 
@@ -429,6 +431,10 @@ async function boot(): Promise<void> {
           )
       const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
+      if (warn.text !== prevWarning) {
+        if (warn.text) audio.playCue('warning')
+        prevWarning = warn.text
+      }
       const nav = world.mission.hud(
         aircraft.position.x,
         aircraft.position.y,

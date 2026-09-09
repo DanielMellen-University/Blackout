@@ -94,7 +94,7 @@ export class FlightAudio {
   }
 
   /** Short event cues keep checkpoints and landings readable without assets. */
-  playCue(kind: 'gate' | 'complete' | 'landed' | 'crash' | 'ab'): void {
+  playCue(kind: 'gate' | 'complete' | 'landed' | 'crash' | 'ab' | 'warning'): void {
     const ctx = this.ctx
     const output = this.effectsGain
     if (!ctx || !output || ctx.state === 'suspended' || this.muted) return
@@ -117,6 +117,11 @@ export class FlightAudio {
       this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)
       this.tone(220, now, 0.18, 'sawtooth', 0.1, 520)
       this.tone(90, now + 0.04, 0.28, 'triangle', 0.08, 160)
+    } else if (kind === 'warning') {
+      // A short, soft edge cue. The HUD carries the sustained warning state;
+      // audio only announces a new caution so it cannot become a siren.
+      this.tone(760, now, 0.09, 'sine', 0.07, 690)
+      this.tone(540, now + 0.1, 0.12, 'sine', 0.055, 500)
     } else {
       // Impact: noise slap + descending growl.
       this.noiseBurst(now, 0.18, 'white', 0.32, 900, 120)
