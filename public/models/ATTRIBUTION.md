@@ -2,6 +2,13 @@
 
 Place aircraft and environment models here.
 
+## Current bundle audit
+
+The repository currently ships no external GLB, GLTF, audio, texture, or scanned
+environment asset. The default aircraft is generated from TypeScript geometry,
+and the flight audio is generated with Web Audio noise and oscillators. No
+third-party attribution is required for the files currently committed.
+
 ## Expected files
 
 | Path | Description |
@@ -12,7 +19,8 @@ Place aircraft and environment models here.
 
 The default aircraft is a **code-generated F-35A-inspired mesh** (not a licensed 3D scan). Proportions approximate a real F-35A (about 15.7 m length, about 11 m span) with diverterless intakes, canted twin tails, clipped-delta wings, and RAM-gray panel texturing.
 
-Visual polish is still in progress. A real GLB is the best path to a convincing look.
+Visual polish is still in progress. A real GLB is optional and must be audited
+below before it is committed.
 
 ## Optional: drop in a real GLB
 

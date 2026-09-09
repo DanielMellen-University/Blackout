@@ -290,7 +290,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: optional cockpit canopy framing; the shipped warning, performance, and attribution passes are complete.
+Next: optional cockpit canopy framing remains intentionally deferred; the shipped warning, performance, and attribution passes are complete.
 
 Out of scope for now: radar, weapons, fuel.
 
