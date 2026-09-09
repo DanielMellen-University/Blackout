@@ -68,23 +68,26 @@ export function createF35Model(): Group {
       [side * 5.28, -.045, -2.13], [side * 2.35, .02, -3.15],
       [side * 1.0, .12, -2.85],
     ], .12, upper, 'MainWing')
-    plate(root, [
+    const flaperon = plate(root, [
       [side * 1.85, .10, -2.39], [side * 4.93, -.0, -1.92],
       [side * 4.84, .0, -2.21], [side * 2.38, .075, -3.0],
     ], .035, skin, 'Flaperon')
+    mountSurface(root, flaperon, [side * 1.85, .10, -2.39], side < 0 ? 'flaperonLeft' : 'flaperonRight')
     line(root, [[side * 1.95, .13, 1.28], [side * 5.18, .025, -1.24]], .022, trim)
     line(root, [[side * 2.38, .12, -3.01], [side * 2.01, .14, -2.35], [side * 4.91, .04, -1.95]], .012, seam)
 
-    plate(root, [
+    const stabilator = plate(root, [
       [side * .73, .12, -3.72], [side * 1.56, .08, -3.58],
       [side * 3.27, -.02, -5.35], [side * 3.15, -.02, -6.06],
       [side * 1.13, .06, -5.75], [side * .64, .1, -5.0],
     ], .1, upper, 'Stabilator')
+    mountSurface(root, stabilator, [side * .73, .12, -3.72], side < 0 ? 'stabilatorLeft' : 'stabilatorRight')
     // Fins lean outwards as they rise, including the trailing rudder.
-    plate(root, [
+    const cantedTail = plate(root, [
       [side * .81, .38, -3.25], [side * 1.04, .36, -5.88],
       [side * 2.04, 2.68, -6.12], [side * 1.94, 2.78, -5.25],
     ], .1, skin, 'CantedTail', 'x')
+    mountSurface(root, cantedTail, [side * .81, .38, -3.25], side < 0 ? 'tailLeft' : 'tailRight')
     line(root, [[side * 1.08, .44, -5.35], [side * 1.94, 2.58, -5.74]], .017, trim)
 
     // Angular side intake, open black throat facing forward.
@@ -266,7 +269,7 @@ function geometry(positions: number[], indices: number[]): BufferGeometry {
 function plate(
   root: Group, points: Point[], thickness: number, material: Material,
   name: string, axis: 'x' | 'y' | 'z' = 'y',
-): void {
+): Mesh {
   const ai = axis === 'x' ? 0 : axis === 'y' ? 1 : 2
   const u = ai === 0 ? 2 : 0
   const v = ai === 1 ? 2 : 1
@@ -306,6 +309,19 @@ function plate(
   mesh.geometry.computeVertexNormals()
   mesh.name = name
   root.add(mesh)
+  return mesh
+}
+
+/** Move a panel under a local hinge so flight controls can animate it. */
+function mountSurface(root: Group, mesh: Mesh, pivot: Point, name: string): Group {
+  root.remove(mesh)
+  const group = new Group()
+  group.name = name
+  group.position.set(...pivot)
+  mesh.position.set(-pivot[0], -pivot[1], -pivot[2])
+  group.add(mesh)
+  root.add(group)
+  return group
 }
 
 function strut(root: Group, a: Point, b: Point, radius: number, material: Material): void {

@@ -86,4 +86,30 @@ describe('rebuilt aircraft', () => {
     expect(halfLength).toBeGreaterThan(quarterLength)
     expect(plume.scale.z).toBeGreaterThan(2.8)
   })
+
+  it('animates differential control surfaces from pitch, roll, and yaw input', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.pitch = .7
+    aircraft.controls.roll = .5
+    aircraft.controls.yaw = .6
+    aircraft.step(0)
+
+    const leftFlaperon = aircraft.mesh.getObjectByName('flaperonLeft')!
+    const rightFlaperon = aircraft.mesh.getObjectByName('flaperonRight')!
+    const leftTail = aircraft.mesh.getObjectByName('tailLeft')!
+    const rightTail = aircraft.mesh.getObjectByName('tailRight')!
+    expect(leftFlaperon.rotation.x).toBeLessThan(rightFlaperon.rotation.x)
+    expect(leftTail.rotation.y).toBeGreaterThan(0)
+    expect(rightTail.rotation.y).toBeLessThan(0)
+
+    aircraft.controls.pitch = 0
+    aircraft.controls.roll = 0
+    aircraft.controls.yaw = 0
+    aircraft.step(0)
+    expect(leftFlaperon.rotation.x).toBeCloseTo(0)
+    expect(rightFlaperon.rotation.x).toBeCloseTo(0)
+    expect(leftTail.rotation.y).toBeCloseTo(0)
+    expect(rightTail.rotation.y).toBeCloseTo(0)
+  })
 })

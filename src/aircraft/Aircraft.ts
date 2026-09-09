@@ -268,6 +268,8 @@ export class Aircraft {
       if (right) right.rotation.z = -folded * Math.PI * 0.5
     }
 
+    this.updateControlSurfaces(dt)
+
     const ab = this.mesh.getObjectByName('afterburner')
     if (!ab) return
 
@@ -313,6 +315,31 @@ export class Aircraft {
         mat.emissiveIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
       }
     })
+  }
+
+  /** Animate the procedural F-35's hinged panels from the live stick input. */
+  private updateControlSurfaces(dt: number): void {
+    const pitch = MathUtils.clamp(this.controls.pitch, -1, 1)
+    const roll = MathUtils.clamp(this.controls.roll, -1, 1)
+    const yaw = MathUtils.clamp(this.controls.yaw, -1, 1)
+    const setAngle = (name: string, axis: 'x' | 'y', target: number, response: number): void => {
+      const node = this.mesh.getObjectByName(name)
+      if (!node) return
+      const value = dt === 0
+        ? target
+        : MathUtils.damp(node.rotation[axis], target, response, dt)
+      node.rotation[axis] = value
+    }
+
+    // Differential flaperons show roll while both sides contribute to pitch.
+    setAngle('flaperonLeft', 'x', -pitch * 0.16 - roll * 0.14, 14)
+    setAngle('flaperonRight', 'x', -pitch * 0.16 + roll * 0.14, 14)
+    setAngle('stabilatorLeft', 'x', -pitch * 0.12 - roll * 0.07, 11)
+    setAngle('stabilatorRight', 'x', -pitch * 0.12 + roll * 0.07, 11)
+    // Canted tails move in opposite directions to sell yaw authority without
+    // adding a separate rudder mesh or another render pass.
+    setAngle('tailLeft', 'y', yaw * 0.11, 10)
+    setAngle('tailRight', 'y', -yaw * 0.11, 10)
   }
 
   get speed(): number {
