@@ -19,12 +19,12 @@ export function applyWaterAppearance(
     shader.uniforms.waterRain = weather.rain
     shader.uniforms.waterSnow = weather.snow
     shader.uniforms.waterNormals = { value: waterNormals }
-    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
+    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
-      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
       `#include <color_fragment>
@@ -56,6 +56,26 @@ export function applyWaterAppearance(
         vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
           vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.18, 0.55, 0.55), riverRiffle * riverMix * 0.34);
+      // Long broken streaks make rivers read as moving water at flight scale.
+      // Two oblique axes keep the pattern from looking like a tiled stripe
+      // texture when a reach turns through the terrain.
+      vec2 flowAxisA = normalize(vWaterFlowDir + vec2(0.0001));
+      vec2 flowAxisB = vec2(-flowAxisA.y, flowAxisA.x);
+      vec2 flowUvA = vec2(dot(vWaterWorld.xz, flowAxisA) / 72.0 + worldWaterTime * 0.018,
+        dot(vWaterWorld.xz, flowAxisB) / 13.0 - worldWaterTime * 0.002);
+      vec2 flowUvB = vec2(dot(vWaterWorld.xz, flowAxisB) / 94.0 - worldWaterTime * 0.014,
+        dot(vWaterWorld.xz, flowAxisA) / 17.0 + worldWaterTime * 0.0025);
+      float flowStreak = smoothstep(0.42, 0.76,
+        texture2D(waterNormals, flowUvA).g * 0.68 + texture2D(waterNormals, flowUvB).r * 0.32);
+      float flowSpark = smoothstep(0.68, 0.92, texture2D(waterNormals,
+        flowUvA * 0.72 + vec2(0.17, -0.31)).r);
+      float flowPulse = 0.72 + 0.28 * sin(worldWaterTime * 0.55 + dot(vWaterWorld.xz, flowAxisA) * 0.012);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.24, 0.68, 0.72), flowStreak * riverMix * 0.5 * flowPulse);
+      diffuseColor.rgb += vec3(0.05, 0.15, 0.16) * flowSpark * riverMix;
+      float riverBankFoam = smoothstep(0.48, 0.84, texture2D(waterNormals,
+        vWaterWorld.xz / 41.0 + vec2(worldWaterTime * 0.009, -worldWaterTime * 0.006)).b);
+      riverBankFoam *= riverMix * (1.0 - smoothstep(0.04, 0.9, vWaterDepth));
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.86, 0.79), riverBankFoam * 0.34);
       float shoreBreak = smoothstep(0.46, 0.8, texture2D(waterNormals,
         vWaterWorld.xz / 58.0 - vec2(worldWaterTime * 0.008, worldWaterTime * 0.003)).b);
       float shoreFoam = (1.0 - smoothstep(0.08, 2.8, vWaterDepth)) *
@@ -86,5 +106,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v8'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v9'
 }

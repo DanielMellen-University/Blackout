@@ -43,6 +43,7 @@ export function buildWaterMesh(
   const positions: number[] = []
   const depths: number[] = []
   const flowValues: number[] = []
+  const flowDirections: number[] = []
   const stride = segs + 1
   const cell = size / segs
   const vertex = (i: number): WaterVertex => ({
@@ -80,6 +81,7 @@ export function buildWaterMesh(
         positions.push(p.x, p.level, p.z)
         depths.push(Math.max(0, p.level - p.bed))
         flowValues.push(0)
+        flowDirections.push(0, 0)
       }
     }
   }
@@ -88,13 +90,14 @@ export function buildWaterMesh(
     triangle(a, b, d)
     triangle(b, c, d)
   }
-  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues)
-  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues)
+  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections)
+  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections)
   if (!positions.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('waterDepth', new Float32BufferAttribute(depths, 1))
   geometry.setAttribute('waterFlow', new Float32BufferAttribute(flowValues, 1))
+  geometry.setAttribute('waterFlowDir', new Float32BufferAttribute(flowDirections, 2))
   geometry.computeVertexNormals()
   // Water triangles are clipped per terrain cell, so give the renderer an
   // explicit bound for fast streamed-tile culling.
@@ -119,6 +122,7 @@ function appendAnalyticBasins(
   positions: number[],
   depths: number[],
   flowValues: number[],
+  flowDirections: number[],
 ): void {
   if (!basins.length) return
   const half = size / 2
@@ -156,6 +160,7 @@ function appendAnalyticBasins(
         positions.push(point.x, point.y, point.z)
         depths.push(point.depth)
         flowValues.push(0)
+        flowDirections.push(0, 0)
       }
     }
   }
@@ -223,6 +228,7 @@ function appendRiverRibbons(
   positions: number[],
   depths: number[],
   flowValues: number[],
+  flowDirections: number[],
 ): void {
   const half = size / 2
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
@@ -254,7 +260,7 @@ function appendRiverRibbons(
     return result
   }
 
-  const appendPolygon = (input: RibbonVertex[]): void => {
+  const appendPolygon = (input: RibbonVertex[], flowX: number, flowZ: number): void => {
     let polygon = input
     polygon = clip(polygon, 'x', -half, true)
     polygon = clip(polygon, 'x', half, false)
@@ -265,15 +271,17 @@ function appendRiverRibbons(
         positions.push(point.x, point.y, point.z)
         depths.push(point.depth)
         flowValues.push(1)
+        flowDirections.push(flowX, flowZ)
       }
     }
   }
 
-  const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex): void => {
-    appendPolygon([a, b, c, d])
+  const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
+    flowX: number, flowZ: number): void => {
+    appendPolygon([a, b, c, d], flowX, flowZ)
   }
 
-  const appendRoundCap = (section: Section, radius: number): void => {
+  const appendRoundCap = (section: Section, radius: number, flowX: number, flowZ: number): void => {
     const center = section.center
     const points: RibbonVertex[] = []
     for (let i = 0; i < 8; i++) {
@@ -282,7 +290,7 @@ function appendRiverRibbons(
         y: center.y, depth: Math.max(.08, center.depth * .5) })
     }
     for (let i = 0; i < points.length; i++) {
-      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!])
+      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!], flowX, flowZ)
     }
   }
 
@@ -291,6 +299,7 @@ function appendRiverRibbons(
     const length = Math.hypot(dx, dz)
     if (length < 1) continue
     const nx = -dz / length, nz = dx / length
+    const flowX = dx / length, flowZ = dz / length
     // A section roughly every 120 m is enough for visible meanders without
     // turning a whole catchment into a high-poly water surface.
     const sections: Section[] = []
@@ -326,8 +335,8 @@ function appendRiverRibbons(
 
     for (let step = 0; step < sections.length - 1; step++) {
       const a = sections[step]!, b = sections[step + 1]!
-      appendQuad(a.left, b.left, b.center, a.center)
-      appendQuad(a.center, b.center, b.right, a.right)
+      appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ)
+      appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ)
     }
     // Extend a mouth a short distance below the receiving basin. The basin
     // owns the final water level, while this submerged overlap removes the
@@ -345,16 +354,16 @@ function appendRiverRibbons(
           x: point.x + ox, z: point.z + oz, y: last.center.y, depth: Math.max(point.depth, .18),
         })
         const nextLeft = submerged(last.left), nextCenter = submerged(last.center), nextRight = submerged(last.right)
-        appendQuad(last.left, nextLeft, nextCenter, last.center)
-        appendQuad(last.center, nextCenter, nextRight, last.right)
+        appendQuad(last.left, nextLeft, nextCenter, last.center, flowX, flowZ)
+        appendQuad(last.center, nextCenter, nextRight, last.right, flowX, flowZ)
         last = { left: nextLeft, center: nextCenter, right: nextRight }
       }
     }
     // Rounded joins/mouths hide tiny miter gaps when adjacent curved reaches
     // change direction or width. They are clipped with the same tile bounds.
     const first = sections[0]!
-    appendRoundCap(first, Math.hypot(first.left.x - first.center.x, first.left.z - first.center.z))
-    appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z))
+    appendRoundCap(first, Math.hypot(first.left.x - first.center.x, first.left.z - first.center.z), flowX, flowZ)
+    appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
   }
 
 }

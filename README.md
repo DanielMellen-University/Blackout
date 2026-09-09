@@ -112,7 +112,8 @@ Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
 summit folds so high terrain breaks into distinct flyable peaks instead of broad tables.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. Shallow water carries moving,
-low-contrast foam breakup instead of a uniform shoreline. This is procedural drainage,
+low-contrast foam breakup instead of a uniform shoreline, while river ribbons carry
+direction-aware moving riffles and broken bank foam. This is procedural drainage,
 not a rainfall or fluid simulation.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
