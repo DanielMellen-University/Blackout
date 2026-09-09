@@ -73,4 +73,14 @@ describe('continuous terrain generation', () => {
     expect(delta[0]).toBeGreaterThan(river[0])
     expect([...river, ...pond].every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
+
+  it('adds a soft wet-silt tint around inland shore features', () => {
+    const dry = biomeColor('plains', 40, .6, 240, -480,
+      { river: 0, lake: 0, ravine: 0, pond: 0, stream: 0 }, 0, 1)
+    const shore = biomeColor('plains', 40, .6, 240, -480,
+      { river: 0, lake: .72, ravine: 0, pond: 0, stream: 0 }, 0, 1)
+    expect(shore[0]).toBeGreaterThan(dry[0])
+    expect(shore[2]).toBeGreaterThan(dry[2])
+    expect(shore.every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
 })

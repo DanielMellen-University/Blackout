@@ -670,6 +670,21 @@ export function biomeColor(
     ]
   }
 
+  // Inland basins deserve a soft wet shore instead of a hard blue-to-green
+  // boundary. Hydrology already fades lake and pond features across the
+  // exposed bank, so this reuses that signal as a warm silt tint with no
+  // shoreline mesh, texture lookup, or extra draw call.
+  const inlandShore = clamp01(Math.max(lake, pond))
+  if (inlandShore > 0) {
+    const wetSand: [number, number, number] = [0.53 + speck * .4, 0.55 + speck * .25, 0.38]
+    const shoreMix = smoothstep(.04, .72, inlandShore) * .42
+    col = [
+      col[0] + (wetSand[0] - col[0]) * shoreMix,
+      col[1] + (wetSand[1] - col[1]) * shoreMix,
+      col[2] + (wetSand[2] - col[2]) * shoreMix,
+    ]
+  }
+
   if (landform) {
     // Bake geology into vertex color so distant LODs keep relief cues without
     // extra meshes, props, or a second terrain pass.
