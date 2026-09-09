@@ -59,10 +59,10 @@ const SEGS_NEAR = 24
 const SEGS_MID = 12
 /** Far ring — silhouette only (heavy fog). */
 const SEGS_FAR = 6
-/** Keep shores smooth on wet tiles without refining dry silhouettes. */
-const WATER_TARGET_CELL_M = 11
-/** Hard cap prevents a large sea from consuming the terrain build budget. */
-const WATER_MAX_SEGS = 48
+/** Keep nearby shores smooth while coarsening water hidden in the fog. */
+const WATER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 11, 1: 22, 2: 64 }
+/** Per-LOD caps prevent a large sea from consuming the terrain build budget. */
+const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 40, 1: 32, 2: 20 }
 /** Rivers need a tighter grid nearby, but remain bounded in the fog ring. */
 const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 14, 1: 28, 2: 70 }
 const RIVER_MAX_SEGS = 48
@@ -123,6 +123,12 @@ export function segsForLod(lod: TerrainLod): number {
   if (lod === 0) return SEGS_NEAR
   if (lod === 1) return SEGS_MID
   return SEGS_FAR
+}
+
+/** Water-only grid budget; distant water can be coarser behind the fog. */
+export function waterSegsForLod(lod: TerrainLod, span: number): number {
+  return Math.min(WATER_MAX_SEGS[lod], Math.max(segsForLod(lod),
+    Math.ceil(span / WATER_TARGET_CELL_M[lod])))
 }
 
 function buildCost(dist: number, withProps: boolean): number {
@@ -724,7 +730,7 @@ export class TerrainSystem {
     const riverTargetCell = RIVER_TARGET_CELL_M[lod]
     const riverSegs = Math.min(RIVER_MAX_SEGS, Math.max(baseSegs, Math.ceil(span / riverTargetCell)))
     const hasRiver = reaches.length > 0
-    const waterSegs = Math.min(WATER_MAX_SEGS, Math.max(baseSegs, Math.ceil(span / WATER_TARGET_CELL_M)))
+    const waterSegs = waterSegsForLod(lod, span)
     const detailSegs = hasRiver ? Math.max(waterSegs, riverSegs) : waterSegs
     const segs = waterDetail ? detailSegs : baseSegs
     const geo = new PlaneGeometry(span, span, segs, segs)

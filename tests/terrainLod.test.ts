@@ -12,6 +12,7 @@ import {
   segsForLod,
   TerrainSystem,
   VIEW_RADIUS,
+  waterSegsForLod,
 } from '../src/world/TerrainSystem'
 import { waterLandmarks } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
@@ -43,6 +44,13 @@ describe('terrain LOD bands', () => {
     const originZ = Math.floor(pond!.z / CHUNK_SIZE) * CHUNK_SIZE
     expect(pondIntersectsBounds(originX, originZ, CHUNK_SIZE)).toBe(true)
     expect(pondIntersectsBounds(originX + CHUNK_SIZE * 8, originZ + CHUNK_SIZE * 8, CHUNK_SIZE)).toBe(false)
+  })
+
+  it('keeps nearby water detailed and distant water bounded', () => {
+    expect(waterSegsForLod(0, CHUNK_SIZE)).toBe(39)
+    expect(waterSegsForLod(1, CHUNK_SIZE * 2)).toBe(32)
+    expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(20)
+    expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBeLessThan(waterSegsForLod(1, CHUNK_SIZE * 2))
   })
 })
 
