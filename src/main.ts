@@ -108,6 +108,35 @@ async function boot(): Promise<void> {
   let bannerUntil = 0
   let wasAirborne = false
   let prevAfterburner = false
+  const audioFrame: Parameters<FlightAudio['update']>[0] = {
+    throttle: 0,
+    boost: false,
+    speed: 0,
+    mute: true,
+    dt: 1 / 60,
+  }
+  const hudFrame: Parameters<HUD['update']>[0] = {
+    y: 0,
+    speed: 0,
+    cameraMode: '',
+    fps: 0,
+    throttle: 0,
+    boost: false,
+    gearDown: false,
+    onGround: false,
+    pitch: 0,
+    roll: 0,
+    warning: null,
+    warningLevel: 'none',
+    clock: '',
+    weather: '',
+    dayPhase: '',
+    mission: '',
+    navDist: 0,
+    navBearing: null,
+    navAltDelta: 0,
+    banner: null,
+  }
   let prevWarning: string | null = null
 
   const courseId = (): string => `seed:${world.worldSeed}`
@@ -439,13 +468,12 @@ async function boot(): Promise<void> {
     }
     prevAfterburner = afterburnerOn
 
-    audio.update({
-      throttle: aircraft.engineState.lever,
-      boost: afterburnerOn,
-      speed: aircraft.speed,
-      mute: !playing || menu.paused || results.open || aircraft.status === 'crashed',
-      dt: visualDt || 1 / 60,
-    })
+    audioFrame.throttle = aircraft.engineState.lever
+    audioFrame.boost = afterburnerOn
+    audioFrame.speed = aircraft.speed
+    audioFrame.mute = !playing || menu.paused || results.open || aircraft.status === 'crashed'
+    audioFrame.dt = visualDt || 1 / 60
+    audio.update(audioFrame)
 
     cameras.update(aircraft, visualDt)
     renderer.render(world.scene, cameras.camera)
@@ -472,28 +500,27 @@ async function boot(): Promise<void> {
         aircraft.position.z,
       )
       const gate = world.mission.activeGatePos()
-      hud.update({
-        y: alt,
-        speed: aircraft.speed,
-        cameraMode: cameras.modeLabel,
-        fps: time.fps,
-        throttle: aircraft.engineState.lever,
-        boost: aircraft.engineState.afterburnerActive,
-        gearDown: aircraft.controls.gearDown,
-        onGround: aircraft.onGround,
-        pitch,
-        roll,
-        warning: warn.text,
-        warningLevel: warn.level,
-        clock: challenge.clockLabel,
-        weather: world.atmosphere.weatherLabel,
-        dayPhase: world.atmosphere.phaseLabel,
-        mission: challenge.objectiveLabel,
-        navDist: nav.dist,
-        navBearing: gateScreenBearing(cameras.camera, gate),
-        navAltDelta: nav.altDelta,
-        banner: aircraft.status === 'crashed' ? 'CRASH - press R' : banner,
-      })
+      hudFrame.y = alt
+      hudFrame.speed = aircraft.speed
+      hudFrame.cameraMode = cameras.modeLabel
+      hudFrame.fps = time.fps
+      hudFrame.throttle = aircraft.engineState.lever
+      hudFrame.boost = aircraft.engineState.afterburnerActive
+      hudFrame.gearDown = aircraft.controls.gearDown
+      hudFrame.onGround = aircraft.onGround
+      hudFrame.pitch = pitch
+      hudFrame.roll = roll
+      hudFrame.warning = warn.text
+      hudFrame.warningLevel = warn.level
+      hudFrame.clock = challenge.clockLabel
+      hudFrame.weather = world.atmosphere.weatherLabel
+      hudFrame.dayPhase = world.atmosphere.phaseLabel
+      hudFrame.mission = challenge.objectiveLabel
+      hudFrame.navDist = nav.dist
+      hudFrame.navBearing = gateScreenBearing(cameras.camera, gate)
+      hudFrame.navAltDelta = nav.altDelta
+      hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
+      hud.update(hudFrame)
     }
   }
 
@@ -515,6 +542,7 @@ const _fwd = new Vector3()
 const _gateView = new Vector3()
 const _inv = new Quaternion()
 const _localUp = new Vector3()
+const _attitude = { pitch: 0, roll: 0, heading: 0 }
 
 /**
  * Body: +Z nose, +Y up, +X right.
@@ -533,7 +561,10 @@ function attitudeFromOrientation(orientation: Quaternion): {
   _localUp.set(0, 1, 0).applyQuaternion(_inv)
   const roll = Math.atan2(-_localUp.x, _localUp.y)
 
-  return { pitch, roll, heading }
+  _attitude.pitch = pitch
+  _attitude.roll = roll
+  _attitude.heading = heading
+  return _attitude
 }
 
 function gateScreenBearing(
