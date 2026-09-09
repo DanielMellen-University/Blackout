@@ -43,6 +43,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Vegetation now gives savanna, tundra, volcanic, and saltflat provinces distinct sparse prop mixes instead of falling through to generic grass, while reusing the existing instanced mesh budget.
 - Instanced vegetation now shares the world weather response: rain darkens foliage and snow settles on upward-facing canopies, trunks, and rocks stay readable without extra draw calls.
 - Terrain snow accumulation now shares wind direction too, lightly scouring windward slopes while retaining more cover on leeward faces without rebuilding streamed tiles.
+- Water ripple and color drift now share the same weather wind direction, keeping lakes and seas visually coherent with moving rain and cloud fronts without extra water draws.
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
 - Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds stronger altitude/slope-aware cool cover without rebuilding streamed chunks. Snowfall uses varied soft flakes in one pooled pass so it remains readable at flight scale.
 - Settlement streets and bridge decks use the same blended precipitation values, so roads wet and cool with the terrain.

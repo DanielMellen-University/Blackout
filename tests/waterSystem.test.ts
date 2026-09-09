@@ -39,7 +39,7 @@ describe('independent water surfaces', () => {
 
   it('shares live precipitation uniforms with every generated water material', () => {
     const clock = { value: 4 }
-    const weather = { rain: { value: .75 }, snow: { value: .25 } }
+    const weather = { rain: { value: .75 }, snow: { value: .25 }, windX: { value: .8 }, windZ: { value: -.35 } }
     const mesh = buildWaterMesh(
       new Float32Array([-8, -8, -8, -8]), new Float32Array(4), 1, 100, 0, 0, clock, weather,
     )!
@@ -53,8 +53,11 @@ describe('independent water surfaces', () => {
       material.onBeforeCompile(shader as never)
       expect(shader.uniforms.waterRain).toBe(weather.rain)
       expect(shader.uniforms.waterSnow).toBe(weather.snow)
+      expect(shader.uniforms.waterWindX).toBe(weather.windX)
+      expect(shader.uniforms.waterWindZ).toBe(weather.windZ)
       expect(shader.fragmentShader).toContain('waterRain')
       expect(shader.fragmentShader).toContain('waterSnow')
+      expect(shader.fragmentShader).toContain('waterWindX')
       expect(shader.vertexShader).toContain('waterFlow')
       expect(shader.vertexShader).toContain('waterFlowDir')
       expect(shader.vertexShader).toContain('waterKind')

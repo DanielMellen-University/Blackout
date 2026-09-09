@@ -346,6 +346,8 @@ export class TerrainSystem {
   private readonly waterClock = { value: 0 }
   private readonly waterRain = { value: 0 }
   private readonly waterSnow = { value: 0 }
+  private readonly waterWindX = { value: 0 }
+  private readonly waterWindZ = { value: 0 }
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -388,6 +390,8 @@ export class TerrainSystem {
     this.weatherWind.set(windX, windZ)
     this.waterRain.value = this.weatherRain.value
     this.waterSnow.value = this.weatherSnow.value
+    this.waterWindX.value = windX
+    this.waterWindZ.value = windZ
     this.vegFactory?.setWeather(this.weatherRain.value, this.weatherSnow.value)
   }
 
@@ -1063,7 +1067,7 @@ export class TerrainSystem {
     // overlapping river surfaces during LOD transitions.
     const rivers = reaches
     const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
-      { rain: this.waterRain, snow: this.waterSnow }, basinMask, rivers,
+      { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ }, basinMask, rivers,
       basinsInBounds(originX, originZ, span))
     return { mesh, water, heights, waterLevels, segs }
   }

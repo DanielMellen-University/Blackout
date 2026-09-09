@@ -4,9 +4,16 @@ import { waterNormals } from './WaterNormals'
 export interface WaterWeatherUniforms {
   rain: { value: number }
   snow: { value: number }
+  windX?: { value: number }
+  windZ?: { value: number }
 }
 
-const DEFAULT_WEATHER: WaterWeatherUniforms = { rain: { value: 0 }, snow: { value: 0 } }
+const DEFAULT_WEATHER: Required<WaterWeatherUniforms> = {
+  rain: { value: 0 },
+  snow: { value: 0 },
+  windX: { value: 0 },
+  windZ: { value: 0 },
+}
 
 /** Calm reflective water; tiny optical ripples never move the actual water level. */
 export function applyWaterAppearance(
@@ -18,13 +25,15 @@ export function applyWaterAppearance(
     shader.uniforms.worldWaterTime = clock
     shader.uniforms.waterRain = weather.rain
     shader.uniforms.waterSnow = weather.snow
+    shader.uniforms.waterWindX = weather.windX ?? DEFAULT_WEATHER.windX
+    shader.uniforms.waterWindZ = weather.windZ ?? DEFAULT_WEATHER.windZ
     shader.uniforms.waterNormals = { value: waterNormals }
     shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
       '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
       `#include <color_fragment>
@@ -46,7 +55,8 @@ export function applyWaterAppearance(
       // Two broad, moving bands break up the old single-color sheet without
       // turning the surface into noisy pixel glitter. The same field drives
       // every tile, so catchment borders keep a continuous water pattern.
-      vec2 colorDrift = vec2(worldWaterTime * 0.0015, -worldWaterTime * 0.0011);
+      vec2 weatherDrift = vec2(waterWindX, waterWindZ) * worldWaterTime * 0.00055;
+      vec2 colorDrift = weatherDrift + vec2(worldWaterTime * 0.0015, -worldWaterTime * 0.0011);
       float patchA = texture2D(waterNormals, vWaterWorld.xz / 230.0 + colorDrift).r;
       float patchB = texture2D(waterNormals, vec2(vWaterWorld.z, -vWaterWorld.x) / 510.0 - colorDrift * 0.6).g;
       float waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
@@ -102,7 +112,8 @@ export function applyWaterAppearance(
       // Keep the accumulated phase independent of live weather blending. If
       // rain multiplied worldWaterTime here, a front transition would jump the
       // entire water pattern after the world had been running for a while.
-      vec2 drift = vec2(worldWaterTime * 0.004, worldWaterTime * 0.002);
+      vec2 drift = vec2(worldWaterTime * 0.004, worldWaterTime * 0.002) +
+        vec2(waterWindX, waterWindZ) * worldWaterTime * 0.0011;
       vec2 rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
       vec2 rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
       vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025) + rippleB * (0.035 + waterSnow * 0.01) * distanceFade;
