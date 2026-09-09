@@ -75,6 +75,9 @@ export class MissionSystem {
   private readonly waitMat: MeshBasicMaterial
   private readonly doneMat: MeshBasicMaterial
   private readonly beaconMat: MeshBasicMaterial
+  private readonly passFlashMat: MeshBasicMaterial
+  private passFlash: Mesh | null = null
+  private passFlashStartedAt = 0
 
   constructor(scene: Scene) {
     this.root.name = 'MissionGates'
@@ -109,6 +112,14 @@ export class MissionSystem {
       blending: AdditiveBlending,
       depthWrite: false,
     })
+    this.passFlashMat = new MeshBasicMaterial({
+      color: 0xf0b429,
+      transparent: true,
+      opacity: 0,
+      side: DoubleSide,
+      blending: AdditiveBlending,
+      depthWrite: false,
+    })
     this.buildBeacon()
     this.root.add(this.beacon)
   }
@@ -121,7 +132,12 @@ export class MissionSystem {
     this.havePrev = false
     this.lastPassQuality = 1
 
-    this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
+    const gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
+    this.gateGeo = gateGeo
+    this.passFlash = new Mesh(gateGeo, this.passFlashMat)
+    this.passFlash.name = 'GatePassFlash'
+    this.passFlash.visible = false
+    this.root.add(this.passFlash)
     for (let i = 0; i < GATE_COUNT; i++) {
       const t = (i / GATE_COUNT) * Math.PI * 2 + spawnYaw + 0.55
       const x = spawnX + Math.sin(t) * CIRCUIT_R
@@ -158,6 +174,18 @@ export class MissionSystem {
 
   /** Pulse the live ring and hold the far-visible beacon on it. */
   tick(): void {
+    const now = performance.now()
+    if (this.passFlash?.visible) {
+      const progress = (now - this.passFlashStartedAt) / 560
+      if (progress >= 1) {
+        this.passFlash.visible = false
+        this.passFlashMat.opacity = 0
+      } else {
+        this.passFlash.scale.setScalar(missionPassFlashScale(progress))
+        this.passFlashMat.opacity = missionPassFlashOpacity(progress)
+      }
+    }
+
     if (this.status !== 'live' || this.next >= this.gates.length) {
       this.beacon.visible = false
       return
@@ -165,11 +193,11 @@ export class MissionSystem {
     const g = this.gates[this.next]!
     const ring = g.root.children[0]
     if (ring) {
-      const s = 1.02 + Math.sin(performance.now() * 0.005) * 0.05
+      const s = 1.02 + Math.sin(now * 0.005) * 0.05
       ring.scale.setScalar(s)
     }
     this.placeBeacon()
-    const pulse = 0.42 + (Math.sin(performance.now() * 0.006) + 1) * 0.18
+    const pulse = 0.42 + (Math.sin(now * 0.006) + 1) * 0.18
     this.beaconMat.opacity = pulse
   }
 
@@ -210,6 +238,7 @@ export class MissionSystem {
 
     this.lastPassQuality = 1 - Math.min(1, radial / Math.max(1, g.radius))
     g.passed = true
+    this.triggerPassFlash(g)
     this.next += 1
     if (this.next >= this.gates.length) {
       this.status = 'complete'
@@ -285,6 +314,18 @@ export class MissionSystem {
     this.placeBeacon()
   }
 
+  private triggerPassFlash(gate: Gate): void {
+    const flash = this.passFlash
+    if (!flash) return
+    flash.position.copy(gate.pos)
+    const ring = gate.root.children[0]
+    if (ring) flash.rotation.copy(ring.rotation)
+    flash.scale.setScalar(1)
+    this.passFlashStartedAt = performance.now()
+    this.passFlashMat.opacity = missionPassFlashOpacity(0)
+    flash.visible = true
+  }
+
   private buildBeacon(): void {
     this.beacon.name = 'GateBeacon'
     const shaft = new Mesh(new CylinderGeometry(0.55, 0.55, 180, 6), this.beaconMat)
@@ -314,12 +355,18 @@ export class MissionSystem {
 
   private clear(): void {
     for (const g of this.gates) this.root.remove(g.root)
+    if (this.passFlash) {
+      this.root.remove(this.passFlash)
+      this.passFlash = null
+    }
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
     this.liveLabel = '—'
     this.havePrev = false
     this.beacon.visible = false
+    this.passFlashMat.opacity = 0
+    this.passFlashStartedAt = 0
     this.gateGeo?.dispose()
     this.gateGeo = null
   }
@@ -330,4 +377,21 @@ export class MissionSystem {
     this.gates.length = 0
     this.gateGeo = null
   }
+}
+
+/** Bounded ring scale for a completed checkpoint flash. */
+export function missionPassFlashScale(progress: number): number {
+  const t = clamp01(progress)
+  const eased = 1 - (1 - t) * (1 - t)
+  return 1 + eased * 2.2
+}
+
+/** Fade the checkpoint flash without a harsh one-frame brightness spike. */
+export function missionPassFlashOpacity(progress: number): number {
+  const t = clamp01(progress)
+  return (1 - t) * 0.86
+}
+
+function clamp01(value: number): number {
+  return value < 0 ? 0 : value > 1 ? 1 : value
 }

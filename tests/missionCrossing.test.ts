@@ -1,6 +1,10 @@
 import { Scene } from 'three'
 import { describe, expect, it } from 'vitest'
-import { MissionSystem } from '../src/systems/Mission'
+import {
+  missionPassFlashOpacity,
+  missionPassFlashScale,
+  MissionSystem,
+} from '../src/systems/Mission'
 
 describe('MissionSystem gate crossing', () => {
   it('does not award a gate that the jet spawned beyond', () => {
@@ -41,5 +45,14 @@ describe('MissionSystem gate crossing', () => {
     expect(second).toBe(first)
     expect(second.status).toBe('live')
     expect(second.dist).toBeGreaterThan(0)
+  })
+
+  it('keeps the gate pass flash bounded and monotonic', () => {
+    expect(missionPassFlashScale(0)).toBe(1)
+    expect(missionPassFlashScale(0.5)).toBeGreaterThan(1)
+    expect(missionPassFlashScale(1)).toBeCloseTo(3.2)
+    expect(missionPassFlashOpacity(0)).toBeCloseTo(0.86)
+    expect(missionPassFlashOpacity(0.5)).toBeGreaterThan(missionPassFlashOpacity(1))
+    expect(missionPassFlashOpacity(2)).toBe(0)
   })
 })
