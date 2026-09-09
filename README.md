@@ -137,8 +137,8 @@ using the game's actual chase camera and aircraft.
 Selected nearby settlements are joined by sparse regional roads rather than a
 uniform world grid. Routes choose a curved terrain path, follow a bounded grade,
 and lift into bridge or viaduct approaches across water and deep folds. Wet
-spans switch to a concrete-toned bridge deck, while highway centerlines and edge
-strips keep links readable at flight distance.
+spans switch to a concrete-toned bridge deck, while a cool slate highway deck,
+brighter shared centerlines and edge strips keep links readable at flight distance.
 Local district roads also receive a single batched centerline pass for readable
 street networks at flight distance.
 

@@ -190,11 +190,11 @@ export class SettlementSystem {
   // Regional links need a readable silhouette through the flight fog. A
   // restrained cool emissive lift keeps asphalt visible at distance without
   // making close roads glow or adding another material pass.
-  private readonly highway = new MeshStandardMaterial({ color: 0x72746f, emissive: 0x15191a, emissiveIntensity: .2,
+  private readonly highway = new MeshStandardMaterial({ color: 0x667176, emissive: 0x182126, emissiveIntensity: .24,
     roughness: .92, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly bridgeDeck = new MeshStandardMaterial({ color: 0x777a76, roughness: .9, metalness: .02,
     polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
-  private readonly highwayMark = new MeshStandardMaterial({ color: 0xe0c974, emissive: 0x735a1c, emissiveIntensity: .28,
+  private readonly highwayMark = new MeshStandardMaterial({ color: 0xe6cf6a, emissive: 0x806825, emissiveIntensity: .38,
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly highwayEdge = new MeshStandardMaterial({ color: 0xd9cf9f, emissive: 0x65582c, emissiveIntensity: .2,
     roughness: .86, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
@@ -925,14 +925,14 @@ export class SettlementSystem {
       bridge.name = 'RegionalBridgeDeck'
       root.add(bridge)
     }
-    const centerline: SettlementRoad = { width: 2.8, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
+    const centerline: SettlementRoad = { width: 4.2, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
     const marking = createRoadGeometry(dashedRoads([centerline], 32, 30), x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
     // Edge strips give long links a readable silhouette through haze while
     // staying as one batched mesh per connector.
     const edges: SettlementRoad[] = [
-      { width: 2.4, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .2, z: point.leftZ ?? point.z })) },
-      { width: 2.4, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .2, z: point.rightZ ?? point.z })) },
+      { width: 3.6, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .2, z: point.leftZ ?? point.z })) },
+      { width: 3.6, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .2, z: point.rightZ ?? point.z })) },
     ]
     const edgeGeometry = createRoadGeometry(edges, x, 0, z)
     if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))

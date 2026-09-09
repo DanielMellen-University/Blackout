@@ -217,7 +217,8 @@ function visitDestination(value){
     if(!pair) throw new Error('Review road settlements no longer meet terrain suitability')
     const {a,b}=pair
     x=(a.x+b.x)/2;z=(a.z+b.z)/2
-    settlement={radius:Math.hypot(a.x-b.x,a.z-b.z)/2}
+    settlement={radius:Math.hypot(a.x-b.x,a.z-b.z)/2,
+      buildings:[...a.buildings,...b.buildings]}
   } else if(value==='mesa'){
     const found=findLandscapeTarget(x,z,c=>c.biome==='mesa'&&c.height<1500,c=>
       .5+(c.landform.plateau??0)*.8+(c.features.ravine??0)*.35)
