@@ -34,6 +34,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runtime teardown also releases streamed terrain, settlement workers, weather pools, mission gates, crash effects, runway assets, and aircraft resources before renderer disposal.
 - New STALL and LOW ALT cautions announce their first transition with a quiet two-tone cue while the HUD carries the persistent warning state.
 - Flight warning evaluation reuses stable STALL, LOW ALT, and clear-state records to avoid per-frame telemetry garbage.
+- Mission HUD telemetry reuses one navigation snapshot and cached gate label between frames, avoiding recurring object and string allocations while flying the circuit.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.

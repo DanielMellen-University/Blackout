@@ -54,6 +54,16 @@ export class MissionSystem {
   private readonly gates: Gate[] = []
   private next = 0
   private status: MissionStatus = 'idle'
+  private liveLabel = '—'
+  private readonly hudState: MissionHud = {
+    status: 'idle',
+    current: 0,
+    total: 0,
+    dist: 0,
+    bearing: null,
+    altDelta: 0,
+    label: '—',
+  }
   private havePrev = false
   private prevX = 0
   private prevY = 0
@@ -141,6 +151,7 @@ export class MissionSystem {
         lastAlong: 0,
       })
     }
+    this.liveLabel = `GATE 1/${this.gates.length}`
     this.paint()
     this.placeBeacon()
   }
@@ -202,9 +213,11 @@ export class MissionSystem {
     this.next += 1
     if (this.next >= this.gates.length) {
       this.status = 'complete'
+      this.liveLabel = 'CIRCUIT DONE'
       this.paint()
       return 'complete'
     }
+    this.liveLabel = `GATE ${this.next + 1}/${this.gates.length}`
     this.paint()
     return 'pass'
   }
@@ -221,26 +234,24 @@ export class MissionSystem {
   hud(px: number, py: number, pz: number, headingYaw = 0): MissionHud {
     const total = this.gates.length
     if (this.status === 'complete') {
-      return {
-        status: 'complete',
-        current: total,
-        total,
-        dist: 0,
-        bearing: null,
-        altDelta: 0,
-        label: 'CIRCUIT DONE',
-      }
+      this.hudState.status = 'complete'
+      this.hudState.current = total
+      this.hudState.total = total
+      this.hudState.dist = 0
+      this.hudState.bearing = null
+      this.hudState.altDelta = 0
+      this.hudState.label = this.liveLabel
+      return this.hudState
     }
     if (this.status !== 'live' || total === 0) {
-      return {
-        status: 'idle',
-        current: 0,
-        total,
-        dist: 0,
-        bearing: null,
-        altDelta: 0,
-        label: '—',
-      }
+      this.hudState.status = 'idle'
+      this.hudState.current = 0
+      this.hudState.total = total
+      this.hudState.dist = 0
+      this.hudState.bearing = null
+      this.hudState.altDelta = 0
+      this.hudState.label = '—'
+      return this.hudState
     }
     const g = this.gates[this.next]!
     const dx = g.pos.x - px
@@ -248,15 +259,14 @@ export class MissionSystem {
     const dist = Math.hypot(dx, g.pos.y - py, dz)
     const gateBrg = Math.atan2(dx, dz)
     const bearing = MathUtils.euclideanModulo(gateBrg - headingYaw + Math.PI, Math.PI * 2) - Math.PI
-    return {
-      status: 'live',
-      current: this.next + 1,
-      total,
-      dist,
-      bearing,
-      altDelta: g.pos.y - py,
-      label: `GATE ${this.next + 1}/${total}`,
-    }
+    this.hudState.status = 'live'
+    this.hudState.current = this.next + 1
+    this.hudState.total = total
+    this.hudState.dist = dist
+    this.hudState.bearing = bearing
+    this.hudState.altDelta = g.pos.y - py
+    this.hudState.label = this.liveLabel
+    return this.hudState
   }
 
   get isComplete(): boolean {
@@ -307,6 +317,7 @@ export class MissionSystem {
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
+    this.liveLabel = '—'
     this.havePrev = false
     this.beacon.visible = false
     this.gateGeo?.dispose()

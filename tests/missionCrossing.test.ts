@@ -30,4 +30,16 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.update(behindX, gate.y, behindZ)).toBe('none')
     expect(mission.update(aheadX, gate.y, aheadZ)).toBe('pass')
   })
+
+  it('reuses the HUD telemetry snapshot between frames', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+
+    const first = mission.hud(0, 20, 0)
+    const second = mission.hud(4, 24, 8)
+
+    expect(second).toBe(first)
+    expect(second.status).toBe('live')
+    expect(second.dist).toBeGreaterThan(0)
+  })
 })
