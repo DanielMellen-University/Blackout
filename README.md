@@ -52,6 +52,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds stronger altitude/slope-aware cool cover without rebuilding streamed chunks. Snowfall uses varied soft flakes in one pooled pass so it remains readable at flight scale.
 - Settlement streets and bridge decks use the same blended precipitation values, so roads wet and cool with the terrain.
 - Rain now breaks settlement streets, bridges, and highways into deterministic puddle patches through the shared road shader, keeping wet surfaces readable without extra meshes or materials.
+- Those puddle patches also lower local roughness, giving wet roads and bridge decks a restrained highlight response without another material or draw.
 - Settlement facades and roof materials share those precipitation uniforms, darkening in rain and collecting cool snow on horizontal surfaces.
 - Building window grids also share the day/night factor, staying subdued by day and warming into low-cost city lights after sunset.
 - Cities now add a capped instanced street-light rhythm along outer roads, framing civic districts at night while keeping villages and the terrain budget unchanged.

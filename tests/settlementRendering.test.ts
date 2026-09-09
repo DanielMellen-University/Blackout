@@ -141,12 +141,13 @@ describe('settlement rendering and lifecycle', () => {
       const shader = {
         uniforms: {},
         vertexShader: '#include <common>\n#include <project_vertex>',
-        fragmentShader: '#include <common>\n#include <color_fragment>',
+        fragmentShader: '#include <common>\n#include <roughnessmap_fragment>\n#include <color_fragment>',
       }
       asphalt.onBeforeCompile(shader as never, undefined as never)
       expect(shader.vertexShader).toContain('settlementRoadWorld')
       expect(shader.fragmentShader).toContain('puddleMask')
-      expect(asphalt.customProgramCacheKey()).toBe('settlement-road-weather-v2')
+      expect(shader.fragmentShader).toContain('roughnessFactor')
+      expect(asphalt.customProgramCacheKey()).toBe('settlement-road-weather-v3')
     } finally {
       system.dispose()
     }

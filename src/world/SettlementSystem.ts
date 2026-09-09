@@ -434,6 +434,9 @@ export class SettlementSystem {
         '#include <common>',
         '#include <common>\nvarying vec3 settlementRoadWorld;\nuniform float settlementRain;\nuniform float settlementSnow;\n',
       ).replace(
+        '#include <roughnessmap_fragment>',
+        '#include <roughnessmap_fragment>\nfloat roadPuddleField = .5 + .5 * sin(settlementRoadWorld.x * .021 + sin(settlementRoadWorld.z * .013) * 1.7);\nfloat roadPuddleMask = smoothstep(.68, .9, roadPuddleField) * settlementRain;\nroughnessFactor = mix(roughnessFactor, .2, roadPuddleMask * .72 + settlementRain * .05);',
+      ).replace(
         '#include <color_fragment>',
         `#include <color_fragment>
         diffuseColor.rgb *= 1.0 - settlementRain * 0.2;
@@ -444,7 +447,7 @@ export class SettlementSystem {
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.72, 0.74), settlementSnow * 0.22);`,
       )
     }
-    material.customProgramCacheKey = () => 'settlement-road-weather-v2'
+    material.customProgramCacheKey = () => 'settlement-road-weather-v3'
   }
 
   private configureWeatherRoofMaterial(): void {
