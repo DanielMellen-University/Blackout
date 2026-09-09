@@ -67,6 +67,22 @@ describe('natural drainage', () => {
     expect(wetPairs).toBeGreaterThan(8)
   })
 
+  it('fills a short delta corridor past each shoreline mouth', () => {
+    setWorldSeed(1)
+    const outlet = riverReaches(-1, -1).find(reach => reach.mouth)
+    expect(outlet).toBeDefined()
+    const dx = outlet!.bx - outlet!.ax, dz = outlet!.bz - outlet!.az
+    const length = Math.hypot(dx, dz)
+    const width = outlet!.mouthWidth ?? outlet!.wb
+    const distance = Math.max(30, Math.min(120, width * .7))
+    const climate = sampleGeography(
+      outlet!.bx + dx / length * distance,
+      outlet!.bz + dz / length * distance,
+    )
+    expect(climate.waterLevel).toBeCloseTo(outlet!.yb, 0)
+    expect(climate.height).toBeLessThan((climate.waterLevel ?? 0) + 1)
+  })
+
   it('finds narrow drainage before a coarse tile can miss its banks', () => {
     setWorldSeed(1)
     const reach = riverReaches(-1, -1).find(candidate => Math.max(candidate.wa, candidate.wb) < 40)

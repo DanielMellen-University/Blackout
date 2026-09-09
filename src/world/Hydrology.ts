@@ -22,6 +22,8 @@ export interface RiverReach {
   wa: number; wb: number; ya: number; yb: number
   /** True when this reach terminates at a lake or sea shoreline. */
   mouth?: boolean
+  /** The shoreline point and width used to form a small, query-time delta. */
+  mouthX?: number; mouthZ?: number; mouthWidth?: number
 }
 type Reach = RiverReach
 interface Catchment { basins: Basin[]; bins: Reach[][] }
@@ -418,6 +420,9 @@ function emitDrainageChain(
           wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * endT,
           ya: startLevel, yb: Math.min(startLevel - .05, shoreLevel),
           mouth: shore.level !== undefined,
+          mouthX: shore.level !== undefined ? shore.x : undefined,
+          mouthZ: shore.level !== undefined ? shore.z : undefined,
+          mouthWidth: shore.level !== undefined ? wa + (wb - wa) * endT : undefined,
         })
       }
       a = b
@@ -536,7 +541,11 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const t = Math.max(0, Math.min(1, ((x - r.ax) * dx + (z - r.az) * dz) / (dx * dx + dz * dz)))
     const w = r.wa + (r.wb - r.wa) * t
     const d = Math.hypot(x - r.ax - dx * t, z - r.az - dz * t) - w
-    if (d < nearest) { nearest = d; level = r.ya + (r.yb - r.ya) * t; width = w }
+    if (d < nearest) {
+      nearest = d
+      level = r.ya + (r.yb - r.ya) * t
+      width = w
+    }
   }
   const valleyRange = Math.max(650, Math.min(1250, width * 5 + 160))
   // On an inside bend, the closest reach can switch between different river
@@ -562,6 +571,36 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     if (blend > 0) waterLevel = level
     river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
     stream = width < 48 ? river : 0
+  }
+
+  // A river should not stop at a mathematically exact shoreline and leave a
+  // dry triangular peninsula between its channel and the receiving basin.
+  // Fill a restrained, downstream delta corridor in the same query that
+  // carves the river. WaterSystem receives the resulting levels and therefore
+  // clips matching water geometry instead of relying on a renderer-only fan.
+  for (const reach of reaches) {
+    if (!reach.mouth || reach.mouthX === undefined || reach.mouthZ === undefined) continue
+    const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
+    const length = Math.hypot(dx, dz)
+    if (length < 1) continue
+    const px = x - reach.mouthX, pz = z - reach.mouthZ
+    const along = (px * dx + pz * dz) / length
+    const lateral = Math.abs(px * dz - pz * dx) / length
+    const channelWidth = Math.max(24, reach.mouthWidth ?? reach.wb)
+    const deltaLength = Math.max(260, Math.min(620, channelWidth * 3.6))
+    const deltaWidth = Math.max(90, Math.min(260, channelWidth * 2.15))
+    if (along < -channelWidth * .55 || along > deltaLength || lateral > deltaWidth) continue
+    const alongFade = 1 - smoothstep(-channelWidth * .55, deltaLength, along)
+    const edgeWidth = deltaWidth * (1 - .28 * Math.max(0, along) / deltaLength)
+    const lateralFade = 1 - smoothstep(edgeWidth * .55, edgeWidth, lateral)
+    const blend = alongFade * lateralFade * edgeFade
+    if (blend <= .08) continue
+    const deltaLevel = reach.yb
+    height += (deltaLevel - 1.5 - height) * Math.min(1, blend * 1.25)
+    if (blend > .16) {
+      waterLevel = deltaLevel
+      river = Math.max(river, blend)
+    }
   }
   for (const basin of region.basins) {
     const limit = basin.radius * 1.65 + 2000
