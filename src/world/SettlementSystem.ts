@@ -570,6 +570,16 @@ export class SettlementSystem {
       // Roof silhouettes stay visible at distance too; only ground detail is culled.
       root.add(mesh)
     }
+    const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
+      width: road.width * 1.35,
+      points: road.points.map(point => ({ ...point, y: point.y - .08 })),
+    }))
+    const shoulderGeometry = createRoadGeometry(localShoulders, plan.x, plan.y, plan.z)
+    if (shoulderGeometry) {
+      const mesh = new Mesh(shoulderGeometry, this.gravelShoulder)
+      mesh.name = 'SettlementRoadShoulders'
+      detail.add(mesh)
+    }
     const geometry = createRoadGeometry(plan.roads, plan.x, plan.y, plan.z)
     if (geometry) {
       const mesh = new Mesh(geometry, this.asphalt)
