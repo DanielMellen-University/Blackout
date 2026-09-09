@@ -18,6 +18,35 @@ const _fwd = new Vector3()
 const _up = new Vector3()
 const _vel = new Vector3()
 
+const NONE_WARNING = Object.freeze({
+  text: null,
+  level: 'none',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+}) as WarningState
+const STALL_WARNING = Object.freeze({
+  text: 'STALL',
+  level: 'warning',
+  stall: true,
+  lowAlt: false,
+  gear: false,
+}) as WarningState
+const GEAR_WARNING = Object.freeze({
+  text: 'GEAR',
+  level: 'caution',
+  stall: false,
+  lowAlt: false,
+  gear: true,
+}) as WarningState
+const LOW_ALT_WARNING = Object.freeze({
+  text: 'LOW ALT',
+  level: 'caution',
+  stall: false,
+  lowAlt: true,
+  gear: false,
+}) as WarningState
+
 /**
  * Arcade flight cautions: stall (AoA / low speed), low altitude, gear up on approach.
  * Priority: STALL > GEAR > LOW ALT.
@@ -26,16 +55,8 @@ export function evaluateWarnings(
   aircraft: Aircraft,
   altAgl: number,
 ): WarningState {
-  const none: WarningState = {
-    text: null,
-    level: 'none',
-    stall: false,
-    lowAlt: false,
-    gear: false,
-  }
-
-  if (aircraft.status === 'crashed') return none
-  if (aircraft.onGround) return none
+  if (aircraft.status === 'crashed') return NONE_WARNING
+  if (aircraft.onGround) return NONE_WARNING
 
   const speed = aircraft.speed
   _fwd.set(0, 0, 1).applyQuaternion(aircraft.orientation)
@@ -63,18 +84,8 @@ export function evaluateWarnings(
   // Gear is automatic; no GEAR caution
   const gear = false
 
-  let text: string | null = null
-  let level: WarningLevel = 'none'
-  if (stall) {
-    text = 'STALL'
-    level = 'warning'
-  } else if (gear) {
-    text = 'GEAR'
-    level = 'caution'
-  } else if (lowAlt) {
-    text = 'LOW ALT'
-    level = 'caution'
-  }
-
-  return { text, level, stall, lowAlt, gear }
+  if (stall) return STALL_WARNING
+  if (gear) return GEAR_WARNING
+  if (lowAlt) return LOW_ALT_WARNING
+  return NONE_WARNING
 }

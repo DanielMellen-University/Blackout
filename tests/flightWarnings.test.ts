@@ -34,4 +34,11 @@ describe('flight cautions', () => {
     aircraft.velocity.y = 0
     expect(evaluateWarnings(aircraft, 31).text).toBeNull()
   })
+
+  it('reuses the stable no-warning state between frames', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, 0, flightConfig.maxSpeed)
+    expect(evaluateWarnings(aircraft, 9000)).toBe(evaluateWarnings(aircraft, 9000))
+  })
 })
