@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import {
+  cameraShakeOffset,
   CameraSystem,
   resolveExternalSpeedFraming,
 } from '../src/camera/CameraSystem'
@@ -32,6 +33,18 @@ describe('external camera framing', () => {
   it('keeps speed stretch inside the configured zoom envelope', () => {
     const framing = resolveExternalSpeedFraming(32, 60, 10, 1, 32)
     expect(framing.distance).toBe(32)
+  })
+
+  it('uses bounded smooth impact shake instead of white-noise offsets', () => {
+    const first = cameraShakeOffset(0.8, 1)
+    const next = cameraShakeOffset(0.82, 1)
+    expect(first.x).toBeGreaterThanOrEqual(-2.4)
+    expect(first.x).toBeLessThanOrEqual(2.4)
+    expect(first.y).toBeGreaterThanOrEqual(-1.6)
+    expect(first.y).toBeLessThanOrEqual(1.6)
+    expect(first.z).toBeGreaterThanOrEqual(-2.4)
+    expect(first.z).toBeLessThanOrEqual(2.4)
+    expect(Math.hypot(next.x - first.x, next.y - first.y, next.z - first.z)).toBeLessThan(.25)
   })
 
   it('follows aircraft translation without accumulating speed lag', () => {

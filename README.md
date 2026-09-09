@@ -15,6 +15,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runway daylight updates use the shared edge-light material directly, avoiding per-frame runway tree traversals.
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: stable external chase and cockpit view, toggled with **C**
+- Crash camera impulse uses smooth bounded multi-frequency shake instead of harsh per-frame white-noise jitter.
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.

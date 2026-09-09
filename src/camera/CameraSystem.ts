@@ -109,6 +109,7 @@ export class CameraSystem {
   private readonly lookSensitivity = 0.005
   private readonly canvas: HTMLCanvasElement
   private shake = 0
+  private shakePhase = 0
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -145,6 +146,7 @@ export class CameraSystem {
   /** Brief view punch (crash boom). */
   impulse(amount = 1): void {
     this.shake = Math.max(this.shake, amount)
+    if (amount > 0) this.shakePhase = (this.shakePhase + amount * 1.7) % (Math.PI * 2)
   }
 
   toggleMode(aircraft?: Aircraft): CameraMode {
@@ -396,10 +398,11 @@ export class CameraSystem {
       this.shake = 0
       return
     }
-    const s = this.shake * this.shake
-    this.camera.position.x += (Math.random() - 0.5) * 2.4 * s
-    this.camera.position.y += (Math.random() - 0.5) * 1.6 * s
-    this.camera.position.z += (Math.random() - 0.5) * 2.4 * s
+    this.shakePhase = (this.shakePhase + Math.max(dt, 0.008) * 28) % (Math.PI * 2)
+    const offset = cameraShakeOffset(this.shakePhase, this.shake)
+    this.camera.position.x += offset.x
+    this.camera.position.y += offset.y
+    this.camera.position.z += offset.z
     this.shake *= Math.exp(-7 * Math.max(dt, 0.008))
   }
 
@@ -504,6 +507,22 @@ export interface ExternalSpeedFraming {
   distance: number
   fov: number
   lookLeadLimit: number
+}
+
+export interface CameraShakeOffset {
+  x: number
+  y: number
+  z: number
+}
+
+/** Smooth, bounded impact shake that avoids frame-to-frame white-noise jitter. */
+export function cameraShakeOffset(phase: number, intensity: number): CameraShakeOffset {
+  const scale = Math.max(0, intensity) ** 2
+  return {
+    x: (Math.sin(phase * 1.7) * .72 + Math.sin(phase * 3.1 + 1.2) * .28) * 2.4 * scale,
+    y: (Math.sin(phase * 2.1 + .7) * .75 + Math.sin(phase * 4.3) * .25) * 1.6 * scale,
+    z: (Math.cos(phase * 1.9 + 2) * .72 + Math.sin(phase * 3.7 - .8) * .28) * 2.4 * scale,
+  }
 }
 
 /** Pure external-camera envelope, exposed for regression tests and tuning. */
