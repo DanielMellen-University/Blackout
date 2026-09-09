@@ -121,6 +121,24 @@ function copyProfile(source: WeatherProfile): WeatherProfile {
   return { ...source }
 }
 
+/** Blend wind in polar space so a direction change does not create a false lull. */
+export function blendWind(
+  from: { x: number; z: number },
+  to: { x: number; z: number },
+  amount: number,
+): { x: number; z: number } {
+  const t = MathUtils.smoothstep(MathUtils.clamp(amount, 0, 1), 0, 1)
+  const fromSpeed = Math.hypot(from.x, from.z)
+  const toSpeed = Math.hypot(to.x, to.z)
+  if (fromSpeed < 1e-5 && toSpeed < 1e-5) return { x: 0, z: 0 }
+  const fromAngle = fromSpeed < 1e-5 ? Math.atan2(to.z, to.x) : Math.atan2(from.z, from.x)
+  const toAngle = toSpeed < 1e-5 ? fromAngle : Math.atan2(to.z, to.x)
+  const delta = Math.atan2(Math.sin(toAngle - fromAngle), Math.cos(toAngle - fromAngle))
+  const angle = fromAngle + delta * t
+  const speed = MathUtils.lerp(fromSpeed, toSpeed, t)
+  return { x: Math.cos(angle) * speed, z: Math.sin(angle) * speed }
+}
+
 export function blendWeatherProfile(
   from: WeatherProfile,
   to: WeatherProfile,
@@ -233,10 +251,11 @@ export class WeatherDirector {
   snapshot(): WeatherSnapshot {
     const profile = blendWeatherProfile(this.from, this.to, this.transitionT)
     const t = MathUtils.smoothstep(this.transitionT, 0, 1)
+    const wind = blendWind(this.windFrom, this.windTo, t)
     return {
       ...profile,
-      windX: MathUtils.lerp(this.windFrom.x, this.windTo.x, t),
-      windZ: MathUtils.lerp(this.windFrom.z, this.windTo.z, t),
+      windX: wind.x,
+      windZ: wind.z,
     }
   }
 

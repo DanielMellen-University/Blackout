@@ -3,6 +3,7 @@ import {
   WEATHER_NEIGHBORS,
   WEATHER_PROFILES,
   WeatherDirector,
+  blendWind,
   blendWeatherProfile,
 } from '../src/world/WeatherDirector'
 
@@ -59,5 +60,12 @@ describe('weather director', () => {
     expect(after.haze).toBeCloseTo(before.haze, 8)
     expect(after.windX).toBeCloseTo(before.windX, 8)
     expect(after.windZ).toBeCloseTo(before.windZ, 8)
+  })
+
+  it('turns wind through the shortest arc without inventing a calm lull', () => {
+    const middle = blendWind({ x: 12, z: 0 }, { x: -12, z: 0 }, .5)
+    expect(Math.hypot(middle.x, middle.z)).toBeCloseTo(12, 8)
+    expect(Math.abs(middle.x)).toBeLessThan(.001)
+    expect(Math.abs(middle.z)).toBeCloseTo(12, 8)
   })
 })
