@@ -1,7 +1,7 @@
 import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
-import { hitsSettlement, SettlementSystem, settlementStreetLightPoints } from '../src/world/SettlementSystem'
+import { hitsSettlement, SettlementSystem, settlementStreetLightPoints, settlementWaterfrontPoints } from '../src/world/SettlementSystem'
 
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
@@ -132,6 +132,19 @@ describe('settlement rendering and lifecycle', () => {
     expect(lights.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)
       && Number.isFinite(point.z) && Number.isFinite(point.yaw))).toBe(true)
     expect(settlementStreetLightPoints({ ...city, kind: 'village' })).toHaveLength(0)
+  })
+
+  it('keeps waterfront docks deterministic and capped', () => {
+    const plan: SettlementPlan = {
+      id: 'water-city', kind: 'city', biome: 'plains', x: 0, y: 120, z: 0, radius: 9000,
+      buildings: [], roads: [],
+    }
+    const first = settlementWaterfrontPoints(plan)
+    const second = settlementWaterfrontPoints(plan)
+    expect(second).toEqual(first)
+    expect(first.length).toBeLessThanOrEqual(3)
+    expect(first.every(point => point.length >= 220 && point.width >= 18
+      && Number.isFinite(point.yaw))).toBe(true)
   })
 
   it('breaks up rain puddles in the shared road shader', () => {

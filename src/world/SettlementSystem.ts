@@ -5,7 +5,7 @@ import {
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad, sampleClimate } from './terrainSample'
-import { getWorldSeed } from './noise'
+import { getWorldSeed, hash2 } from './noise'
 import {
   settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE,
   type SettlementPlan, type SettlementRoad,
@@ -228,6 +228,63 @@ export function settlementStreetLightPoints(
   return points
 }
 
+export interface SettlementWaterfrontPoint {
+  x: number
+  y: number
+  z: number
+  yaw: number
+  length: number
+  width: number
+}
+
+/** Find a few real basin edges so settlements can grow rare waterfront docks. */
+export function settlementWaterfrontPoints(
+  plan: Pick<SettlementPlan, 'kind' | 'x' | 'z' | 'radius'>,
+): SettlementWaterfrontPoint[] {
+  const points: SettlementWaterfrontPoint[] = []
+  const maxPoints = plan.kind === 'city' ? 3 : 1
+  const sectors = plan.kind === 'city' ? 18 : 12
+  const phase = hash2(Math.floor(plan.x / 240), Math.floor(plan.z / 240)) * Math.PI * 2
+  const usedSectors: number[] = []
+  const isWater = (biome: string, coastal: number, lake: number, pond: number): boolean =>
+    biome === 'water' || biome === 'ocean' || coastal > .72 || lake > .58 || pond > .58
+  for (let sector = 0; sector < sectors && points.length < maxPoints; sector++) {
+    if (usedSectors.some(other => {
+      const delta = Math.abs(sector - other)
+      return Math.min(delta, sectors - delta) < 2
+    })) continue
+    const angle = phase + sector / sectors * Math.PI * 2
+    let previous: { x: number; z: number; height: number } | null = null
+    for (let step = 0; step < 8; step++) {
+      const distance = plan.radius * .76 + step * 180
+      const x = plan.x + Math.cos(angle) * distance
+      const z = plan.z + Math.sin(angle) * distance
+      const climate = sampleClimate(x, z)
+      if (!isWater(climate.biome, climate.coastal, climate.features.lake, climate.features.pond)) {
+        if (climate.biome !== 'ocean' && climate.biome !== 'water') previous = { x, z, height: climate.height }
+        continue
+      }
+      if (!previous) break
+      const waterLevel = climate.waterLevel ?? (climate.biome === 'ocean' ? 0 : .35)
+      const waterDistance = distance + 80
+      const landDistance = Math.max(plan.radius * .68, distance - 180)
+      const dockLength = Math.max(220, Math.min(620, waterDistance - landDistance + 140))
+      const centerDistance = landDistance + dockLength * .5
+      points.push({
+        x: plan.x + Math.cos(angle) * centerDistance,
+        y: Math.max(waterLevel + 1.8, previous.height + .35),
+        z: plan.z + Math.sin(angle) * centerDistance,
+        yaw: Math.PI * .5 - angle,
+        length: dockLength,
+        width: plan.kind === 'city' ? 24 : 18,
+      })
+      usedSectors.push(sector)
+      break
+    }
+  }
+  return points
+}
+
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
 interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; road: SettlementRoad }
 interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
@@ -245,6 +302,8 @@ export class SettlementSystem {
   private readonly dome = new SphereGeometry(.5, 12, 6, 0, Math.PI * 2, 0, Math.PI * .5)
   private readonly streetLampPole = new CylinderGeometry(.1, .16, 1, 5)
   private readonly streetLampGlowGeometry = new SphereGeometry(.5, 8, 4)
+  private readonly dockDeck = new BoxGeometry(1, 1, 1)
+  private readonly dockPost = new CylinderGeometry(.16, .22, 1, 6)
   private readonly roof = roofGeometry()
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
@@ -252,6 +311,8 @@ export class SettlementSystem {
   private readonly villageBeacon = new MeshBasicMaterial({ color: 0x67e4d0, transparent: true, opacity: .82, depthWrite: false, fog: false })
   private readonly streetLampPoleMaterial = new MeshStandardMaterial({ color: 0x292824, roughness: .76, metalness: .35 })
   private readonly streetLampGlow = new MeshBasicMaterial({ color: 0xffb45c, transparent: true, opacity: .06, depthWrite: false })
+  private readonly dockDeckMaterial = new MeshStandardMaterial({ color: 0x72563e, roughness: .92 })
+  private readonly dockPostMaterial = new MeshStandardMaterial({ color: 0x45392d, roughness: .98 })
   private readonly cityPlaza = new MeshStandardMaterial({ color: 0x76766c, roughness: .96, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly villageGreen = new MeshStandardMaterial({ color: 0x4f794c, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
@@ -626,9 +687,10 @@ export class SettlementSystem {
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.anchorBeacon.dispose(); this.dome.dispose()
-    this.streetLampPole.dispose(); this.streetLampGlowGeometry.dispose(); this.roof.dispose()
+    this.streetLampPole.dispose(); this.streetLampGlowGeometry.dispose(); this.dockDeck.dispose(); this.dockPost.dispose(); this.roof.dispose()
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
     this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
+    this.dockDeckMaterial.dispose(); this.dockPostMaterial.dispose()
     this.cityPlaza.dispose(); this.villageGreen.dispose()
   }
 
@@ -932,6 +994,43 @@ export class SettlementSystem {
       poles.name = 'SettlementStreetLightPoles'
       glows.name = 'SettlementStreetLightGlow'
       detail.add(poles, glows)
+    }
+    const waterfrontPoints = settlementWaterfrontPoints(plan)
+    if (waterfrontPoints.length) {
+      const decks = new InstancedMesh(this.dockDeck, this.dockDeckMaterial, waterfrontPoints.length)
+      const posts = new InstancedMesh(this.dockPost, this.dockPostMaterial, waterfrontPoints.length * 2)
+      const dockTransform = new Object3D()
+      waterfrontPoints.forEach((point, i) => {
+        dockTransform.position.set(point.x - plan.x, point.y - plan.y, point.z - plan.z)
+        dockTransform.scale.set(point.width, 2.2, point.length)
+        dockTransform.rotation.set(0, point.yaw, 0)
+        dockTransform.updateMatrix()
+        decks.setMatrixAt(i, dockTransform.matrix)
+        const forwardX = Math.cos(Math.PI * .5 - point.yaw)
+        const forwardZ = Math.sin(Math.PI * .5 - point.yaw)
+        const sideX = -forwardZ, sideZ = forwardX
+        const endX = point.x + forwardX * point.length * .28
+        const endZ = point.z + forwardZ * point.length * .28
+        for (const side of [-1, 1]) {
+          const postIndex = i * 2 + (side > 0 ? 1 : 0)
+          dockTransform.position.set(
+            endX + sideX * point.width * .34 - plan.x,
+            point.y - plan.y - 5.2,
+            endZ + sideZ * point.width * .34 - plan.z,
+          )
+          dockTransform.scale.set(.7, 11, .7)
+          dockTransform.rotation.set(0, 0, 0)
+          dockTransform.updateMatrix()
+          posts.setMatrixAt(postIndex, dockTransform.matrix)
+        }
+      })
+      decks.instanceMatrix.needsUpdate = true
+      posts.instanceMatrix.needsUpdate = true
+      decks.computeBoundingSphere()
+      posts.computeBoundingSphere()
+      decks.name = 'SettlementWaterfrontDecks'
+      posts.name = 'SettlementWaterfrontPosts'
+      detail.add(decks, posts)
     }
     const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
       width: road.width * 1.35,
