@@ -108,6 +108,8 @@ flight benchmark at either 400 m/s or the current maximum afterburner speed,
 with draw counts and frame timings. Streaming prioritizes contact detail, then
 missing coverage and coarse replacements, before distant detail rebuilds.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
+Green provinces now use stronger rolling hills, so flat sheets are rarer
+without bringing back sharp lowland spikes.
 Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
 summit folds plus a bounded peak-and-saddle sculpt so high terrain breaks into
 distinct flyable peaks instead of broad tables. Snow and mountain faces use

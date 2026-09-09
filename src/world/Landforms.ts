@@ -74,7 +74,10 @@ export function sampleLandforms(x: number, z: number) {
 
   const hills = fbm(wx / 1700, wz / 1700, 2)
   const gentle = smoothstep(.18, .78, valueNoise(wx / 6500 + 5, wz / 6500 - 23))
-  const rolling = hills * hills * (75 + gentle * 330)
+  // Green provinces need visible topography at flight scale. Keep the same
+  // smooth 1.7 km signal, but raise its broad amplitude so flat sheets are
+  // uncommon while the existing curvature limits still suppress needles.
+  const rolling = hills * hills * (92 + gentle * 390)
   const detail = (valueNoise(wx / 260, wz / 260) - .5) * 3
   const broadBase = 48 + valueNoise(wx / 7000, wz / 7000) * 120
 
@@ -94,7 +97,7 @@ export function sampleLandforms(x: number, z: number) {
 
   // Humid lowlands get rolling watersheds, never sharp vertical noise.
   const wet = smoothstep(.42, .76, moisture)
-  height += wet * (1 - highlands) * hills * hills * (75 + hot * 45)
+  height += wet * (1 - highlands) * hills * hills * (84 + hot * 50)
   // Cold provinces stay broad and flyable. Fine frozen noise was making
   // otherwise smooth tundra read as small spikes from the aircraft.
   height += cold * (valueNoise(wx / 900 + 33, wz / 900) - .3) * 14

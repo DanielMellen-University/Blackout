@@ -48,6 +48,20 @@ describe('regional landform families', () => {
     expect(checked).toBeGreaterThan(250)
   })
 
+  it('keeps lowland provinces varied at flight scale', () => {
+    setWorldSeed(1)
+    let low = Infinity, high = -Infinity, checked = 0
+    for (let x = -36000; x <= 36000; x += 720) for (let z = -36000; z <= 36000; z += 720) {
+      const land = sampleLandforms(x, z)
+      if (land.highlands > .08 || land.badlands > .08 || land.volcanic > .08) continue
+      low = Math.min(low, land.height)
+      high = Math.max(high, land.height)
+      checked++
+    }
+    expect(checked).toBeGreaterThan(250)
+    expect(high - low).toBeGreaterThan(420)
+  })
+
   it('reaches zero landmark influence before volcanic cell borders', () => {
     setWorldSeed(1)
     for (const boundary of [-48000, -24000, 0, 24000, 48000]) {
