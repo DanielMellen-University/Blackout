@@ -109,6 +109,7 @@ body,
 .panel,
 #hud,
 #alt-meter,
+#vs-meter,
 .gauge-panel,
 #title-bar,
 #nav-cue {
@@ -754,7 +755,8 @@ body,
   pointer-events: none;
 }
 
-#alt-meter {
+#alt-meter,
+#vs-meter {
   display: flex;
   align-items: baseline;
   gap: 8px;
@@ -763,14 +765,16 @@ body,
   font-variant-numeric: tabular-nums;
 }
 
-#alt-meter .alt-label {
+#alt-meter .alt-label,
+#vs-meter .alt-label {
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.2em;
   color: var(--accent);
 }
 
-#alt-meter .alt-value {
+#alt-meter .alt-value,
+#vs-meter .alt-value {
   font-size: 1.6rem;
   font-weight: 700;
   color: #f0faf6;
@@ -780,7 +784,8 @@ body,
   text-align: right;
 }
 
-#alt-meter .alt-unit {
+#alt-meter .alt-unit,
+#vs-meter .alt-unit {
   font-size: 0.68rem;
   font-weight: 600;
   letter-spacing: 0.14em;

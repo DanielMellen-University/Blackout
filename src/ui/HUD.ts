@@ -6,6 +6,7 @@ import { displayedKnots } from '../core/airspeed'
 
 export class HUD {
   private readonly posEl: HTMLElement | null
+  private readonly verticalSpeedEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
   private readonly camEl: HTMLElement | null
   private readonly fpsEl: HTMLElement | null
@@ -44,6 +45,8 @@ export class HUD {
   private readonly textCache = new WeakMap<Element, string>()
   private altitudeValue = Number.NaN
   private altitudeText = ''
+  private verticalSpeedValue = Number.NaN
+  private verticalSpeedText = ''
   private speedValue = Number.NaN
   private speedText = ''
   private fpsValue = Number.NaN
@@ -67,6 +70,7 @@ export class HUD {
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
+    this.verticalSpeedEl = root.getElementById('hud-vs')
     this.spdEl = root.getElementById('hud-spd')
     this.camEl = root.getElementById('hud-cam')
     this.fpsEl = root.getElementById('hud-fps')
@@ -101,6 +105,8 @@ export class HUD {
 
   update(opts: {
     y: number
+    /** Vertical velocity in metres per second, positive while climbing. */
+    verticalSpeed?: number
     speed: number
     cameraMode: string
     fps: number
@@ -133,6 +139,15 @@ export class HUD {
         this.altitudeText = String(altitude)
       }
       this.setText(this.posEl, this.altitudeText)
+    }
+
+    if (this.verticalSpeedEl) {
+      const verticalSpeed = Math.round(opts.verticalSpeed ?? 0)
+      if (verticalSpeed !== this.verticalSpeedValue) {
+        this.verticalSpeedValue = verticalSpeed
+        this.verticalSpeedText = formatVerticalSpeed(verticalSpeed)
+      }
+      this.setText(this.verticalSpeedEl, this.verticalSpeedText)
     }
 
     const kts = displayedKnots(opts.speed)
@@ -486,6 +501,13 @@ export function quantizeHudNumber(value: number, precision: number): number {
 
 export function formatHudNumber(value: number, precision: number): string {
   return String(quantizeHudNumber(value, precision))
+}
+
+/** Signed, whole-number climb or sink rate for the compact flight readout. */
+export function formatVerticalSpeed(value: number): string {
+  const rounded = Math.round(Number.isFinite(value) ? value : 0)
+  if (rounded === 0) return '0'
+  return rounded > 0 ? `+${rounded}` : String(rounded)
 }
 
 /** Short HUD emphasis window used for automatic gear transitions. */

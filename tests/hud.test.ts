@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatHudNumber,
+  formatVerticalSpeed,
   gearTransitionActive,
   quantizeHudNumber,
   speedJuiceIntensity,
@@ -25,6 +26,13 @@ describe('HUD value formatting', () => {
     expect(speedJuiceIntensity(1800)).toBeGreaterThan(0)
     expect(speedJuiceIntensity(3000)).toBeCloseTo(.42)
     expect(speedJuiceIntensity(5000)).toBeCloseTo(.42)
+  })
+
+  it('formats climb and sink rates with a readable sign', () => {
+    expect(formatVerticalSpeed(12.4)).toBe('+12')
+    expect(formatVerticalSpeed(-3.6)).toBe('-4')
+    expect(formatVerticalSpeed(0.2)).toBe('0')
+    expect(formatVerticalSpeed(Number.NaN)).toBe('0')
   })
 
   it('keeps gear transition emphasis inside its short timing window', () => {
