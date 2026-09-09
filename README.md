@@ -27,6 +27,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.
+- Frozen title and pause frames skip redundant atmosphere light, sky, cloud, and weather work while still refreshing when the camera anchor or weather state changes.
 - Runtime teardown closes Web Audio, renderer, camera, and input resources on page unload so reloads do not leave stale browser work behind.
 - Runtime teardown also releases streamed terrain, settlement workers, weather pools, mission gates, crash effects, runway assets, and aircraft resources before renderer disposal.
 - New STALL and LOW ALT cautions announce their first transition with a quiet two-tone cue while the HUD carries the persistent warning state.

@@ -153,6 +153,25 @@ export function lightningCooldown(weatherStrength: number, pulse: number): numbe
     (0.25 + strength * 0.85)
 }
 
+export interface AtmosphereAnchor {
+  x: number
+  y: number
+  z: number
+}
+
+/** Static paused frames only need an atmosphere pass when the anchor moved. */
+export function atmosphereNeedsUpdate(
+  dt: number,
+  visualDt: number,
+  x: number,
+  y: number,
+  z: number,
+  previous: AtmosphereAnchor | null,
+): boolean {
+  if (dt > 0 || visualDt > 0 || !previous) return true
+  return previous.x !== x || previous.y !== y || previous.z !== z
+}
+
 /**
  * Day/night cycle + weather: sky dome (sun/moon/stars), fog, lights, clouds, rain/snow.
  * Full day ~8 real minutes. Time fully random on reseed.
@@ -171,6 +190,8 @@ export class Atmosphere {
   private lightningFlashAge = Infinity
   private lightningFlashPeak = 0
   private gustPhase = 0
+  private lastAnchor: AtmosphereAnchor | null = null
+  private dirty = true
 
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
@@ -344,12 +365,14 @@ export class Atmosphere {
   cycleWeather(): WeatherId {
     const next = this.weatherDirector.cycle()
     this.weather = next
+    this.dirty = true
     return next
   }
 
   setWeather(id: WeatherId, instant = false): void {
     this.weatherDirector.setWeather(id, instant)
     this.weather = id
+    this.dirty = true
   }
 
   /** Fully random time of day + weighted weather (on world reseed). */
@@ -383,6 +406,7 @@ export class Atmosphere {
     this.lightningFlash = 0
     this.lightningFlashAge = Infinity
     this.lightningFlashPeak = 0
+    this.dirty = true
   }
 
   get clockLabel(): string {
@@ -435,12 +459,15 @@ export class Atmosphere {
   }
 
   update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {
+    if (!this.dirty && !atmosphereNeedsUpdate(dt, visualDt, ax, ay, az, this.lastAnchor)) return
+    this.lastAnchor = { x: ax, y: ay, z: az }
     this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
     this.elapsed += dt
     this.weatherDirector.update(dt)
     this.weather = this.weatherDirector.targetId
 
     this.apply(ax, ay, az, dt, visualDt)
+    this.dirty = false
   }
 
   private apply(ax: number, ay: number, az: number, dt: number, visualDt: number): void {
