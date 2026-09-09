@@ -148,7 +148,9 @@ Cities now seed a deterministic mixed-use downtown ring around the civic plaza
 before filling their broad outer districts, so the skyline reads clearly from
 the flight-scale review as well as from the city edge. Protected villages get
 a modest density bonus so they read as destinations instead of tiny hamlets,
-while organic villages keep their rarer size bands. Larger villages can also
+while organic villages keep their rarer size bands. Village roads also seed a
+few deterministic frontage lots before the wider scatter pass, so long
+approaches read as lived-in instead of empty ribbons. Larger villages can also
 receive a small instanced civic spire or dome, giving
 their varied footprints a recognizable center without adding per-building
 draws. Every settlement reserves a deterministic central plaza or village

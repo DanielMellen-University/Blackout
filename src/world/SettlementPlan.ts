@@ -494,6 +494,40 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20) + anchorVillageLots
         : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28) + anchorVillageLots
           : 28 + Math.floor(rand(201) * 38) + anchorVillageLots
+  if (!city) {
+    // Seed a few lots directly from the street frontage before stochastic
+    // scatter. Random-only placement left long village approaches empty even
+    // when the road network was healthy, especially on rough terrain where
+    // most of the disk samples were rejected. Frontage stays sparse and
+    // asymmetric, while the normal building collision and foundation checks
+    // still decide whether each lot survives.
+    const villageScale = villageProfile === 'hamlet' ? .78
+      : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
+    let frontageSerial = 0
+    for (const street of streets) {
+      if (plan.buildings.length >= target) break
+      const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
+      const length = Math.hypot(dx, dz)
+      if (length < 180) continue
+      const lots = Math.min(3, Math.max(1, Math.floor(length / (plan.anchor === 'village' ? 430 : 520))))
+      const heading = Math.atan2(dz, dx)
+      const nx = -dz / length, nz = dx / length
+      for (let lot = 0; lot < lots && plan.buildings.length < target; lot++) {
+        const n = 7000 + frontageSerial++ * 17
+        const t = (lot + 1) / (lots + 1)
+        const along = length * t + (rand(n) - .5) * Math.min(110, length * .12)
+        const side = rand(n + 1) < .5 ? -1 : 1
+        const frontage = street.width * .5 + 115 + rand(n + 2) * 90
+        const localX = street.a.x + dx / length * along + nx * frontage * side
+        const localZ = street.a.z + dz / length * along + nz * frontage * side
+        const width = Math.max(180, (220 + rand(n + 3) * 220) * villageScale)
+        const depth = Math.max(180, (210 + rand(n + 4) * 230) * villageScale)
+        const height = 145 + rand(n + 5) * 235
+        building(localX, localZ, width, depth, height,
+          angle + heading + (rand(n + 6) - .5) * .24)
+      }
+    }
+  }
   if (city) {
     // Keep a readable mixed-use core around the civic plaza. Uniform
     // area-scattering makes a huge city look empty from its own centre, while
