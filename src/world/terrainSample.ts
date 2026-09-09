@@ -680,6 +680,21 @@ export function biomeColor(
     ]
   }
 
+  // Tundra is broad and wind-scoured, but not a single gray-green sheet.
+  // Interleaved frost and exposed scree bands add cold-region identity while
+  // keeping the material-only path cheap and continuous at biome borders.
+  if (biome === 'tundra') {
+    const frostField = .5 + .5 * Math.sin(x / 860 + Math.sin(z / 1430) * .75)
+    const screeField = .5 + .5 * Math.sin(z / 520 + Math.sin(x / 1180) * 1.1)
+    const frost = smoothstep(.28, .76, frostField * .72 + screeField * .28)
+    const scree = (1 - frost) * (.035 + screeField * .05)
+    col = [
+      clamp01(col[0] + frost * .055 + scree * .015),
+      clamp01(col[1] + frost * .06 + scree * .005),
+      clamp01(col[2] + frost * .075 + scree * .01),
+    ]
+  }
+
   // Lowland terrain is intentionally prop-free for now, so distant green
   // regions need a little visual structure in the existing vertex colors.
   // Two broad, world-space noise scales create meadow patches and soil
