@@ -300,6 +300,12 @@ export class SkyDome {
     scene.add(this.mesh)
   }
 
+  dispose(): void {
+    this.mesh.removeFromParent()
+    this.mesh.geometry.dispose()
+    this.mat.dispose()
+  }
+
   /**
    * @param ax player position (dome follows)
    * @param sunDir world direction toward the sun (normalized-ish)

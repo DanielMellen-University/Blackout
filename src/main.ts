@@ -8,7 +8,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three'
-import { Aircraft } from './aircraft/Aircraft'
+import { Aircraft, disposeAircraftObject } from './aircraft/Aircraft'
 import { CameraSystem } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
 import {
@@ -91,6 +91,9 @@ async function boot(): Promise<void> {
     input.dispose()
     cameras.dispose()
     audio.dispose()
+    world.dispose()
+    crashFx.dispose()
+    disposeAircraftObject(aircraft.mesh)
     renderer.dispose()
   }
   window.addEventListener('beforeunload', disposeRuntime, { once: true })

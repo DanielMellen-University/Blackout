@@ -692,6 +692,7 @@ export class SettlementSystem {
     this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
     this.dockDeckMaterial.dispose(); this.dockPostMaterial.dispose()
     this.cityPlaza.dispose(); this.villageGreen.dispose()
+    this.root.removeFromParent()
   }
 
   update(x: number, z: number): void {

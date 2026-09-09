@@ -12,6 +12,7 @@ import {
   Vector3,
 } from 'three'
 import { sampleTerrainHeight } from '../world/terrainSample'
+import { disposeObjectTree } from '../core/dispose'
 
 export type MissionStatus = 'idle' | 'live' | 'complete'
 
@@ -309,6 +310,13 @@ export class MissionSystem {
     this.havePrev = false
     this.beacon.visible = false
     this.gateGeo?.dispose()
+    this.gateGeo = null
+  }
+
+  dispose(): void {
+    disposeObjectTree(this.root)
+    this.root.removeFromParent()
+    this.gates.length = 0
     this.gateGeo = null
   }
 }

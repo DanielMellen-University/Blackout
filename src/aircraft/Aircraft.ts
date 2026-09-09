@@ -7,12 +7,11 @@ import {
   MeshStandardMaterial,
   Quaternion,
   Vector3,
-  type BufferGeometry,
-  type Material,
   type Object3D,
   type Scene,
 } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { disposeObjectTree } from '../core/dispose'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createF35Model } from './createF35Model'
 import { altitudeAgl } from '../world/ground'
@@ -358,17 +357,7 @@ export class Aircraft {
 
 /** Dispose a removed aircraft subtree without double-disposing shared slots. */
 export function disposeAircraftObject(root: Object3D): void {
-  const geometries = new Set<BufferGeometry>()
-  const materials = new Set<Material>()
-  root.traverse((obj) => {
-    if (!(obj instanceof Mesh)) return
-    geometries.add(obj.geometry)
-    const slots = Array.isArray(obj.material) ? obj.material : [obj.material]
-    for (const material of slots) materials.add(material)
-  })
-  for (const material of materials) material.dispose()
-  for (const geometry of geometries) geometry.dispose()
-  root.clear()
+  disposeObjectTree(root)
 }
 
 function enableShadows(obj: Object3D): void {

@@ -20,6 +20,7 @@ import {
 import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
 import { MissionSystem } from '../systems/Mission'
 import { SettlementSystem } from './SettlementSystem'
+import { disposeObjectTree } from '../core/dispose'
 
 export interface SpawnPose {
   x: number
@@ -56,6 +57,7 @@ export class World {
     biome: 'plains',
   }
   private committed = false
+  private disposed = false
 
   constructor() {
     this.sun = this.createSun()
@@ -198,6 +200,7 @@ export class World {
    * Pass simDt=0 to freeze challenge conditions while still streaming tiles.
    */
   update(x: number, y: number, z: number, dt: number, simDt = dt, visualDt = simDt): void {
+    if (this.disposed) return
     this.terrain.update(x, z, dt)
     this.settlements.update(x, z)
     this.atmosphere.update(simDt, x, y, z, visualDt)
@@ -206,6 +209,19 @@ export class World {
     this.terrain.setWeatherEffects(weather.rain, weather.snow, weather.windX, weather.windZ,
       Math.max(weather.lowClouds, weather.midClouds * .9))
     this.settlements.setWeatherEffects(weather.rain, weather.snow, this.atmosphere.daylight)
+  }
+
+  /** Release all streamed and persistent world resources before renderer teardown. */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.mission.dispose()
+    this.terrain.dispose()
+    this.settlements.dispose()
+    this.atmosphere.dispose()
+    disposeObjectTree(this.runway)
+    this.runway.removeFromParent()
+    this.scene.clear()
   }
 
   private applySpawn(pad: FlatSpawn): void {

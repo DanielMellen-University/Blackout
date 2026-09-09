@@ -26,6 +26,7 @@ import {
 } from 'three'
 import { deriveSkyCloudDeck, SkyDome } from './SkyDome'
 import { SnowField } from './SnowField'
+import { disposeObjectTree } from '../core/dispose'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
   WEATHER_LABELS,
@@ -413,6 +414,24 @@ export class Atmosphere {
     if (t < 0.3) return 'DAWN'
     if (t < 0.7) return 'DAY'
     return 'DUSK'
+  }
+
+  /** Release pooled weather, cloud, sky, and precipitation resources. */
+  dispose(): void {
+    this.precipRoot.removeFromParent()
+    disposeObjectTree(this.precipRoot)
+    this.snowField.points.removeFromParent()
+    this.snowField.dispose()
+    this.sky.dispose()
+
+    const cloudResources = new Group()
+    cloudResources.add(this.cloudRoot)
+    for (const cluster of this.cloudClusters) cloudResources.add(cluster)
+    disposeObjectTree(cloudResources)
+    this.cloudClusters.length = 0
+    this.cloudWorld.length = 0
+    this.cloudAlpha.length = 0
+    this.cloudLayers.length = 0
   }
 
   update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {

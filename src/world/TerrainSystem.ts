@@ -30,6 +30,7 @@ import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
+import { disposeObjectTree } from '../core/dispose'
 
 /**
  * Streaming envelope.
@@ -474,6 +475,18 @@ export class TerrainSystem {
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
+  }
+
+  /** Release streamed geometry and the shared near-field prop factory. */
+  dispose(): void {
+    this.clearAll()
+    this.vegFactory?.disposeShared()
+    this.vegFactory = null
+    this.groundMatNear.dispose()
+    this.groundMatFar.dispose()
+    disposeObjectTree(this.root)
+    this.root.removeFromParent()
+    setContactHeightSampler(null)
   }
 
   /**

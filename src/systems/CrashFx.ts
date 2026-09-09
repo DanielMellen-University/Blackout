@@ -10,6 +10,7 @@ import {
   type Scene,
 } from 'three'
 import { sampleGroundHeight } from '../world/ground'
+import { disposeObjectTree } from '../core/dispose'
 
 interface Bit {
   mesh: Mesh
@@ -242,6 +243,16 @@ export class CrashFx {
 
   reset(): void {
     this.stop()
+  }
+
+  dispose(): void {
+    this.stop()
+    disposeObjectTree(this.root)
+    this.root.removeFromParent()
+    this.fireMat.dispose()
+    this.fireHotMat.dispose()
+    this.fireMidMat.dispose()
+    this.smokeMat.dispose()
   }
 
   private stop(): void {
