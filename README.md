@@ -20,6 +20,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Water is an independent surface with variable basin counts, irregular coves, narrower inland seas, bent rivers with deterministic tributaries, teal shallows, deep blue channels, shoreline foam tint, and animated glints.
+- Basin shorelines now combine directional headlands, broad shoulders, and a second cove scale so lakes and seas avoid radial silhouettes while staying analytic and cheap.
 - Water shares precipitation uniforms with terrain: rain roughens ripple and foam motion while snow cools the surface without rebuilding clipped water meshes.
 - Rain also gives flat lowlands a restrained cool wet-sheen while leaving hills and mountains readable, using the existing terrain height and normal path.
 - Cities use landmark-only tower cores surrounded by slabs, industrial halls, blocks, stepped forms, and broader biome-specific color palettes.

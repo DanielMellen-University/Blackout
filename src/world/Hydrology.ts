@@ -111,9 +111,16 @@ export function basinDistance(b: Basin, x: number, z: number): number {
   // Multiple low-frequency lobes make coves and peninsulas. A broad value
   // field breaks the last hint of a repeated ellipse without noisy shorelines.
   const shoreNoise = valueNoise(dx / (b.radius * .72) + b.phase * 1.7, dz / (b.radius * .72) - b.phase)
-  const outline = 1 + .16 * Math.sin(theta * 2 + b.phase) +
+  // A broad directional lobe gives each basin a distinct headland and
+  // shoreline shoulder. The second field breaks that lobe into coves without
+  // introducing high-frequency noise or a new shoreline mesh.
+  const broadShore = valueNoise(dx / (b.radius * 1.45) - b.phase, dz / (b.radius * 1.45) + b.phase * 1.3)
+  const coveShore = valueNoise(dx / (b.radius * .42) + b.phase * 2.1, dz / (b.radius * .42) - b.phase * .8)
+  const outline = 1 + .1 * Math.sin(theta - b.phase * .8) +
+    .16 * Math.sin(theta * 2 + b.phase) +
     .12 * Math.sin(theta * 3 - b.phase * 1.7) +
-    .09 * Math.cos(theta * 5 + b.phase) + (shoreNoise - .5) * .34
+    .09 * Math.cos(theta * 5 + b.phase) +
+    (shoreNoise - .5) * .26 + (broadShore - .5) * .2 + (coveShore - .5) * .1
   return (Math.hypot(u, v) - outline) * b.radius * b.aspect
 }
 

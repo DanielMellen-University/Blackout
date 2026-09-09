@@ -123,6 +123,9 @@ describe('natural drainage', () => {
         expect(basinDistance(b, b.x + Math.cos(angle) * b.radius * 2, b.z + Math.sin(angle) * b.radius * 2)).toBeGreaterThan(0)
       }
       expect(Math.max(...radii) / Math.min(...radii)).toBeGreaterThan(1.5)
+      const oppositeDelta = Math.max(...radii.map((radius, index) =>
+        Math.abs(radius - radii[(index + 12) % 24]!)))
+      expect(oppositeDelta).toBeGreaterThan(b.radius * .08)
     }
   })
 
