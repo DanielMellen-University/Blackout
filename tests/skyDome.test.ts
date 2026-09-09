@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveSkyCloudDeck } from '../src/world/SkyDome'
+import { deriveSkyCloudDeck, deriveSkyCloudDeckInto } from '../src/world/SkyDome'
 import { WEATHER_PROFILES } from '../src/world/WeatherDirector'
 
 function deckFor(id: keyof typeof WEATHER_PROFILES) {
@@ -67,5 +67,14 @@ describe('analytic sky cloud deck', () => {
     expect(justAfter.storm - halfway.storm).toBeLessThan(0.01)
     expect(halfway.windX).toBeGreaterThan(0)
     expect(halfway.windZ).toBeLessThan(0)
+  })
+
+  it('fills a caller-owned deck for runtime updates', () => {
+    const weather = WEATHER_PROFILES.cloudy
+    const target = {} as ReturnType<typeof deriveSkyCloudDeck>
+    const input = { ...weather, windX: 8, windZ: -4 }
+
+    expect(deriveSkyCloudDeckInto(target, input)).toBe(target)
+    expect(target).toEqual(deriveSkyCloudDeck(input))
   })
 })

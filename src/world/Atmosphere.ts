@@ -24,7 +24,7 @@ import {
   Vector3,
   UnsignedByteType,
 } from 'three'
-import { deriveSkyCloudDeck, SkyDome } from './SkyDome'
+import { deriveSkyCloudDeckInto, SkyDome, type SkyCloudDeck } from './SkyDome'
 import { SnowField } from './SnowField'
 import { disposeObjectTree } from '../core/dispose'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
@@ -185,6 +185,7 @@ export class Atmosphere {
   weather: WeatherId = 'clear'
   private readonly weatherDirector = new WeatherDirector()
   private readonly weatherState = {} as WeatherSnapshot
+  private readonly skyCloudDeck = {} as SkyCloudDeck
   private elapsed = 0
   private lightningCharge = 0
   private lightningFlash = 0
@@ -497,7 +498,7 @@ export class Atmosphere {
       MathUtils.smoothstep(t, 0.68, 0.78) * (1 - MathUtils.smoothstep(t, 0.78, 0.88))
 
     this.updateLightning(dt, w)
-    const skyCloudDeck = deriveSkyCloudDeck(w)
+    deriveSkyCloudDeckInto(this.skyCloudDeck, w)
     const totalClouds = Math.max(w.lowClouds, w.midClouds * 0.9, w.highClouds * 0.55)
 
     // Zenith color (top of sky dome)
@@ -624,7 +625,7 @@ export class Atmosphere {
       _c,
       _horizon,
       w.haze,
-      skyCloudDeck,
+      this.skyCloudDeck,
       this.elapsed,
     )
 

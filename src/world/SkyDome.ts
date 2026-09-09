@@ -55,6 +55,14 @@ function smooth01(value: number): number {
  * into an undercast. Thunderstorms add darkness rather than a flash spike.
  */
 export function deriveSkyCloudDeck(input: SkyCloudInputs): SkyCloudDeck {
+  return deriveSkyCloudDeckInto({} as SkyCloudDeck, input)
+}
+
+/** Fill a caller-owned cloud deck for the render loop without allocating. */
+export function deriveSkyCloudDeckInto(
+  out: SkyCloudDeck,
+  input: SkyCloudInputs,
+): SkyCloudDeck {
   const low = clamp01(input.lowClouds)
   const mid = clamp01(input.midClouds)
   const high = clamp01(input.highClouds)
@@ -62,18 +70,17 @@ export function deriveSkyCloudDeck(input: SkyCloudInputs): SkyCloudDeck {
   const storm = smooth01((clamp01(input.lightning) - 0.22) / 0.78)
   const blanket = clamp01(mid * 0.62 + rain * 0.42 + storm * 0.2)
 
-  return {
-    // The blanket progressively fills the holes between individual clouds.
-    broken: clamp01(low * (1 - blanket * 0.95) * (1 - storm * 0.25)),
-    blanket,
-    cirrus: clamp01(high * (1 - blanket * 0.72) * (1 - rain * 0.2)),
-    storm,
-    darkness: clamp01(blanket * 0.14 + rain * 0.26 + storm * 0.34),
-    // The shader only needs a normalized drift vector. Capping it keeps a
-    // blizzard from making the sky pattern race across a frame.
-    windX: Math.max(-1, Math.min(1, input.windX / 34)),
-    windZ: Math.max(-1, Math.min(1, input.windZ / 34)),
-  }
+  // The blanket progressively fills the holes between individual clouds.
+  out.broken = clamp01(low * (1 - blanket * 0.95) * (1 - storm * 0.25))
+  out.blanket = blanket
+  out.cirrus = clamp01(high * (1 - blanket * 0.72) * (1 - rain * 0.2))
+  out.storm = storm
+  out.darkness = clamp01(blanket * 0.14 + rain * 0.26 + storm * 0.34)
+  // The shader only needs a normalized drift vector. Capping it keeps a
+  // blizzard from making the sky pattern race across a frame.
+  out.windX = Math.max(-1, Math.min(1, input.windX / 34))
+  out.windZ = Math.max(-1, Math.min(1, input.windZ / 34))
+  return out
 }
 
 /**
