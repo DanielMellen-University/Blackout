@@ -52,6 +52,26 @@ describe('procedural settlements', () => {
     expect(shapes).toEqual(new Set(['block', 'slab', 'tower', 'stepped', 'hangar']))
   })
 
+  it('anchors one reachable village and city around an active airfield', () => {
+    const base = sampleClimate(0, 0)
+    const sample = vi.spyOn(terrain, 'sampleClimate')
+    sample.mockImplementation((x, z) => ({
+      ...base,
+      height: 180 + ((x + z) % 3),
+      waterLevel: 0,
+      biome: 'plains',
+      biomeB: 'plains',
+      biomeMix: 0,
+      land: 1,
+      coastal: 0,
+    }))
+    setWorldSeed(2026)
+    setOpsPad(0, 0, 180)
+    const plans = region(3)
+    expect(plans.some(plan => plan.kind === 'village')).toBe(true)
+    expect(plans.some(plan => plan.kind === 'city')).toBe(true)
+  })
+
   it('varies settlement scale and silhouette instead of repeating one footprint', () => {
     setWorldSeed(73)
     const plans = region()

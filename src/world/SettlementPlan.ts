@@ -9,6 +9,11 @@ export const SETTLEMENT_CELL_SIZE = 24000
 // Site validation still rejects water, steep ground, and the active airfield.
 const CITY_CHANCE = .03
 const VILLAGE_CHANCE = .42
+/** Active airfields get one nearby village landmark so a fresh world has a
+ * readable destination instead of relying on several independent rolls. */
+const VILLAGE_ANCHOR_RING = 1
+/** Cities stay rare, but every world gets one deterministic regional target. */
+const CITY_ANCHOR_RING = 2
 
 export interface SettlementBuilding {
   x: number; y: number; z: number
@@ -21,15 +26,71 @@ export interface SettlementRoad { points: { x: number; y: number; z: number; bri
 export interface SettlementPlan {
   id: string; x: number; y: number; z: number; radius: number
   kind: 'city' | 'village'; biome: Biome
+  /** Spawn-priority landmark selected around the active airfield, when any. */
+  anchor?: 'city' | 'village'
   buildings: SettlementBuilding[]; roads: SettlementRoad[]
 }
 
 const cache = new Map<string, SettlementPlan | null>()
 let cacheContext = ''
-const cityBiomes = new Set<Biome>(['plains', 'forest', 'desert', 'savanna', 'saltflat', 'hills'])
+const cityBiomes = new Set<Biome>([
+  'plains', 'forest', 'rainforest', 'desert', 'mesa', 'savanna', 'saltflat',
+  'hills', 'tundra', 'snow', 'volcanic',
+])
 
 function dry(c: Climate): boolean {
   return c.biome !== 'water' && c.biome !== 'ocean' && c.height > (c.waterLevel ?? 0) + 2
+}
+
+/**
+ * Pick one stable cell around the current airfield for each settlement tier.
+ * This is deliberately disabled without an active pad so offline generation
+ * and biome-distribution tests still describe the natural world rolls. The
+ * anchor only promotes a normal cell into a candidate; all water, relief, and
+ * building-fit checks below still have to pass.
+ */
+function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number] | null {
+  if (!pad) return null
+  const padCellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
+  const padCellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
+  const ring = kind === 'city' ? CITY_ANCHOR_RING : VILLAGE_ANCHOR_RING
+  const salt = kind === 'city' ? 9173 : 4819
+  const offsets: [number, number][] = []
+  for (let ox = -ring; ox <= ring; ox++) for (let oz = -ring; oz <= ring; oz++) {
+    if (ox === 0 && oz === 0) continue
+    // Keep the city on the outer edge of its ring, separate from the village
+    // anchor and far enough away to read as a destination rather than a pad.
+    if (kind === 'city' && Math.max(Math.abs(ox), Math.abs(oz)) !== ring) continue
+    offsets.push([ox, oz])
+  }
+  offsets.sort((a, b) => {
+    const ar = hash2(padCellX * 173 + a[0] * 37 + salt, padCellZ * 257 + a[1] * 53 - salt)
+    const br = hash2(padCellX * 173 + b[0] * 37 + salt, padCellZ * 257 + b[1] * 53 - salt)
+    return ar - br
+  })
+  if (kind === 'village') {
+    const [ox, oz] = offsets[0]!
+    return [padCellX + ox, padCellZ + oz]
+  }
+  // Prefer a dry, low-relief center cell. This keeps a guaranteed city from
+  // landing on a dramatic snow peak when a nearby shelf is available.
+  let best: [number, number] | null = null, bestScore = -Infinity
+  for (const [ox, oz] of offsets) {
+    const climate = sampleClimate((padCellX + ox + .5) * SETTLEMENT_CELL_SIZE,
+      (padCellZ + oz + .5) * SETTLEMENT_CELL_SIZE)
+    if (!dry(climate)) continue
+    const score = (cityBiomes.has(climate.biome) ? 6000 : 0)
+      + Math.max(0, 2500 - Math.max(0, climate.height - 200) * .4)
+      - climate.landform.ridge * 3500
+      + hash2(padCellX * 311 + ox * 71 + salt, padCellZ * 199 + oz * 97 - salt)
+    if (score > bestScore) { bestScore = score; best = [padCellX + ox, padCellZ + oz] }
+  }
+  return best ?? [padCellX + offsets[0]![0], padCellZ + offsets[0]![1]]
+}
+
+function isAnchorCell(cx: number, cz: number, kind: 'city' | 'village', pad: { x: number; z: number } | null): boolean {
+  const anchor = anchorCell(kind, pad)
+  return !!anchor && anchor[0] === cx && anchor[1] === cz
 }
 
 function palette(biome: Biome): { walls: number[]; roofs: number[]; roof: 'flat' | 'pitched' } {
@@ -65,12 +126,14 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   const id = `${cx},${cz}`
   if (cache.has(id)) return cache.get(id)!
   const roll = hash2(cx * 131 + 8129, cz * 139 - 4513)
+  const cityAnchor = isAnchorCell(cx, cz, 'city', pad)
+  const villageAnchor = isAnchorCell(cx, cz, 'village', pad)
   // Cities stay exceptional. Villages have a much higher candidate rate than
   // cities because a 24 km cell plus terrain validation otherwise turns them
   // into once-per-session accidents instead of landmarks to fly toward.
-  const kind = roll < CITY_CHANCE ? 'city' : 'village'
+  const kind = roll < CITY_CHANCE || cityAnchor ? 'city' : 'village'
   let result: SettlementPlan | null = null
-  if (roll < VILLAGE_CHANCE) {
+  if (roll < VILLAGE_CHANCE || villageAnchor || cityAnchor) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
     const radius = kind === 'city' ? 8500 + rand(1) * 1500 : 1050 + rand(1) ** .72 * 3950
     // Cities are allowed to straddle cell boundaries. Restricting their
@@ -85,7 +148,7 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
     // Site validation is deterministic and off-thread, so spend a little more
     // search budget finding a real dry shelf instead of silently deleting the
     // whole landmark when the first random probes land on a river or ridge.
-    const siteAttempts = kind === 'city' ? 56 : 48
+    const siteAttempts = kind === 'city' ? (cityAnchor ? 96 : 56) : 48
     for (let attempt = 0; attempt < siteAttempts; attempt++) {
       const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       const z = cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
@@ -94,7 +157,7 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
       let min = c.height, max = c.height, suitable = true, drySamples = 1
       const surveySamples = kind === 'city' ? 8 : 6
-      const surveyRadius = radius * (kind === 'city' ? .8 : .56)
+      const surveyRadius = radius * (kind === 'city' ? (cityAnchor ? .58 : .8) : .56)
       for (let i = 0; i < surveySamples; i++) {
         const angle = i * Math.PI * 2 / surveySamples
         const s = sampleClimate(x + Math.cos(angle) * surveyRadius, z + Math.sin(angle) * surveyRadius)
@@ -107,11 +170,13 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
         }
         drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
-        if (max - min > (kind === 'city' ? 350 : 420)) { suitable = false; break }
+        const reliefLimit = kind === 'city' && cityAnchor ? 720 : kind === 'city' ? 350 : 420
+        if (max - min > reliefLimit) { suitable = false; break }
       }
-      if (drySamples < (kind === 'city' ? 4 : 3)) suitable = false
+      if (drySamples < (kind === 'city' ? (cityAnchor ? 3 : 4) : 3)) suitable = false
       if (!suitable) continue
-      const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome, buildings: [], roads: [] }
+      const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome,
+        anchor: cityAnchor ? 'city' : villageAnchor ? 'village' : undefined, buildings: [], roads: [] }
       populate(plan, rand)
       if (plan.buildings.length < (kind === 'city' ? 650 : 8)) continue
       result = plan
@@ -164,7 +229,9 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       if (!dry(c)) return
       min = Math.min(min, c.height); max = Math.max(max, c.height)
     }
-    const reliefLimit = plan.kind === 'city' ? Math.min(60, Math.min(width, depth) * .22)
+    const anchorCity = plan.kind === 'city' && plan.anchor === 'city'
+    const reliefLimit = plan.kind === 'city'
+      ? Math.min(anchorCity ? 150 : 60, Math.min(width, depth) * (anchorCity ? .62 : .22))
       : Math.min(35, Math.min(width, depth) * .15)
     if (max - min > reliefLimit) return
     for (const key of keys) {
