@@ -1,8 +1,10 @@
 import {
   BufferAttribute,
+  BufferGeometry,
   Color,
   DoubleSide,
   Fog,
+  Float32BufferAttribute,
   FrontSide,
   Group,
   InstancedMesh,
@@ -60,14 +62,16 @@ const SEGS_MID = 12
 /** Far ring — silhouette only (heavy fog). */
 const SEGS_FAR = 6
 /** Keep nearby shores smooth while coarsening water hidden in the fog. */
-const WATER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 11, 1: 22, 2: 64 }
+const WATER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 7, 1: 20, 2: 60 }
 /** Per-LOD caps prevent a large sea from consuming the terrain build budget. */
-const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 40, 1: 32, 2: 20 }
+const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 56, 1: 40, 2: 24 }
 /** Rivers need a tighter grid nearby, but remain bounded in the fog ring. */
-const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 14, 1: 28, 2: 70 }
-const RIVER_MAX_SEGS = 48
+const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 10, 1: 26, 2: 70 }
+const RIVER_MAX_SEGS = 64
 /** Build cost budget per frame (props cost more, far LODs cost less). */
 const BUILD_BUDGET = 2.4
+/** Hide quadtree T-junctions without making vertical dams through water. */
+const TERRAIN_SKIRT_DEPTH = 60
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /**
  * Fog fully opaque at this range — two chunks inside the stream edge
@@ -129,6 +133,105 @@ export function segsForLod(lod: TerrainLod): number {
 export function waterSegsForLod(lod: TerrainLod, span: number): number {
   return Math.min(WATER_MAX_SEGS[lod], Math.max(segsForLod(lod),
     Math.ceil(span / WATER_TARGET_CELL_M[lod])))
+}
+
+/**
+ * Build one non-indexed skirt strip for each dry tile edge. The strips are
+ * merged into the terrain draw, so the quadtree gets crack coverage without
+ * adding one draw call per streamed tile. Wet edges stay open for clipped
+ * lakes and rivers, avoiding the old artificial dark water dams.
+ */
+export function buildTerrainSkirtGeometry(
+  heights: Float32Array,
+  waterLevels: Float32Array,
+  colors: Float32Array,
+  segs: number,
+  span: number,
+  depth = TERRAIN_SKIRT_DEPTH,
+  edges: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
+): BufferGeometry | null {
+  const stride = segs + 1
+  if (heights.length !== stride * stride || waterLevels.length !== heights.length ||
+    colors.length !== heights.length * 3 || segs < 1 || depth <= 0) return null
+  const positions: number[] = []
+  const skirtColors: number[] = []
+  const half = span * .5
+  const cell = span / segs
+  const add = (a: number, b: number): void => {
+    // One wet point is enough to leave the whole edge open. This is slightly
+    // conservative, but keeps a shoreline from acquiring a single isolated
+    // wall segment when the analytic water surface crosses the edge.
+    if (waterLevels[a]! > heights[a]! + .2 || waterLevels[b]! > heights[b]! + .2) return
+    const ax = -half + (a % stride) * cell
+    const az = -half + Math.floor(a / stride) * cell
+    const bx = -half + (b % stride) * cell
+    const bz = -half + Math.floor(b / stride) * cell
+    const values = [
+      [ax, heights[a]!, az], [bx, heights[b]!, bz],
+      [ax, heights[a]! - depth, az], [bx, heights[b]! - depth, bz],
+    ] as const
+    for (const [i, j, k] of [[0, 1, 2], [1, 3, 2]] as const) {
+      for (const index of [i, j, k]) {
+        const point = values[index]!
+        positions.push(point[0], point[1], point[2])
+        const source = index === 3 ? b : index === 2 ? a : index === 1 ? b : a
+        const shade = index >= 2 ? .97 : 1
+        skirtColors.push(colors[source * 3]! * shade, colors[source * 3 + 1]! * shade,
+          colors[source * 3 + 2]! * shade)
+      }
+    }
+  }
+  if (edges[0]) for (let ix = 0; ix < segs; ix++) add(ix, ix + 1)
+  if (edges[1]) for (let iz = 0; iz < segs; iz++) add(iz * stride + segs, (iz + 1) * stride + segs)
+  if (edges[2]) for (let ix = segs; ix > 0; ix--) add(segs * stride + ix, segs * stride + ix - 1)
+  if (edges[3]) for (let iz = segs; iz > 0; iz--) add(iz * stride, (iz - 1) * stride)
+  if (!positions.length) return null
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new Float32BufferAttribute(skirtColors, 3))
+  geometry.computeVertexNormals()
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
+function mergeTerrainSkirt(
+  terrain: BufferGeometry,
+  skirt: BufferGeometry,
+): BufferGeometry {
+  const mainPos = terrain.getAttribute('position') as BufferAttribute
+  const mainColor = terrain.getAttribute('color') as BufferAttribute
+  const mainNormal = terrain.getAttribute('normal') as BufferAttribute
+  const skirtPos = skirt.getAttribute('position') as BufferAttribute
+  const skirtColor = skirt.getAttribute('color') as BufferAttribute
+  const skirtNormal = skirt.getAttribute('normal') as BufferAttribute
+  const position = new Float32Array(mainPos.count * 3 + skirtPos.count * 3)
+  const color = new Float32Array(mainColor.count * 3 + skirtColor.count * 3)
+  const normal = new Float32Array(mainNormal.count * 3 + skirtNormal.count * 3)
+  position.set(mainPos.array as Float32Array)
+  position.set(skirtPos.array as Float32Array, mainPos.count * 3)
+  color.set(mainColor.array as Float32Array)
+  color.set(skirtColor.array as Float32Array, mainColor.count * 3)
+  normal.set(mainNormal.array as Float32Array)
+  normal.set(skirtNormal.array as Float32Array, mainNormal.count * 3)
+  const merged = new BufferGeometry()
+  merged.setAttribute('position', new BufferAttribute(position, 3))
+  merged.setAttribute('color', new BufferAttribute(color, 3))
+  merged.setAttribute('normal', new BufferAttribute(normal, 3))
+  const uv = terrain.getAttribute('uv') as BufferAttribute | undefined
+  if (uv) {
+    const mergedUv = new Float32Array(uv.count * 2 + skirtPos.count * 2)
+    mergedUv.set(uv.array as Float32Array)
+    merged.setAttribute('uv', new BufferAttribute(mergedUv, 2))
+  }
+  const mainIndex = terrain.index?.array
+  if (mainIndex) {
+    const index = new Uint32Array(mainIndex.length + skirtPos.count)
+    index.set(mainIndex as Uint16Array | Uint32Array)
+    for (let i = 0; i < skirtPos.count; i++) index[mainIndex.length + i] = mainPos.count + i
+    merged.setIndex(new BufferAttribute(index, 1))
+  }
+  merged.computeBoundingSphere()
+  return merged
 }
 
 function buildCost(dist: number, withProps: boolean): number {
@@ -204,7 +307,7 @@ export class TerrainSystem {
   private readonly chunks = new Map<string, Chunk>()
   private readonly pending: PendingChunk[] = []
   private readonly pendingKeys = new Set<string>()
-  private desiredTiles = new Map<string, { cx: number; cz: number; size: number }>()
+  private desiredTiles = new Map<string, { cx: number; cz: number; size: number; dist: number }>()
   private readonly replacementKeys = new Map<string, string[]>()
   private readonly scene: Scene
   private lastCx = Number.NaN
@@ -576,6 +679,35 @@ export class TerrainSystem {
     })
   }
 
+  /** Only cover edges where this tile is the coarse side of a LOD boundary. */
+  private skirtEdgesForTile(
+    cx: number,
+    cz: number,
+    size: number,
+    lod: TerrainLod,
+  ): readonly [boolean, boolean, boolean, boolean] {
+    const finerAt = (edge: 'north' | 'east' | 'south' | 'west'): boolean => {
+      for (const tile of this.desiredTiles.values()) {
+        const overlaps = edge === 'north' || edge === 'south'
+          ? tile.cx < cx + size && tile.cx + tile.size > cx
+          : tile.cz < cz + size && tile.cz + tile.size > cz
+        if (!overlaps) continue
+        const touches = edge === 'north'
+          ? tile.cz + tile.size === cz
+          : edge === 'east'
+            ? tile.cx === cx + size
+            : edge === 'south'
+              ? tile.cz === cz + size
+              : tile.cx + tile.size === cx
+        if (!touches || (tile.cx === cx && tile.cz === cz && tile.size === size)) continue
+        const neighborLod = lodFromDist(tile.dist)
+        if (tile.size < size || (tile.size === size && neighborLod < lod)) return true
+      }
+      return false
+    }
+    return [finerAt('north'), finerAt('east'), finerAt('south'), finerAt('west')]
+  }
+
   private buildChunk(
     cx: number,
     cz: number,
@@ -589,7 +721,8 @@ export class TerrainSystem {
     const originZ = cz * CHUNK_SIZE
     const lod = lodFromDist(dist)
 
-    const built = this.buildHeightMesh(originX, originZ, lod, size)
+    const built = this.buildHeightMesh(originX, originZ, lod, size, false,
+      this.skirtEdgesForTile(cx, cz, size, lod))
     root.add(built.mesh)
     if (built.water) root.add(built.water)
     if (withProps) {
@@ -655,7 +788,8 @@ export class TerrainSystem {
       }
     }
 
-    const built = this.buildHeightMesh(chunk.originX, chunk.originZ, lod, chunk.size)
+    const built = this.buildHeightMesh(chunk.originX, chunk.originZ, lod, chunk.size, false,
+      this.skirtEdgesForTile(chunk.cx, chunk.cz, chunk.size, lod))
     this.stampChunkMeshes(built.mesh, keepAlpha)
     chunk.root.add(built.mesh)
     if (built.water) {
@@ -722,6 +856,7 @@ export class TerrainSystem {
     lod: TerrainLod,
     size = 1,
     waterDetail = false,
+    skirtEdges: readonly [boolean, boolean, boolean, boolean] | null = null,
   ): { mesh: Mesh; water: Mesh | null; heights: Float32Array; waterLevels: Float32Array; segs: number } {
     const near = lod === 0
     const span = CHUNK_SIZE * size
@@ -733,7 +868,7 @@ export class TerrainSystem {
     const waterSegs = waterSegsForLod(lod, span)
     const detailSegs = hasRiver ? Math.max(waterSegs, riverSegs) : waterSegs
     const segs = waterDetail ? detailSegs : baseSegs
-    const geo = new PlaneGeometry(span, span, segs, segs)
+    let geo: BufferGeometry = new PlaneGeometry(span, span, segs, segs)
     geo.rotateX(-Math.PI / 2)
 
     const pos = geo.attributes.position as BufferAttribute
@@ -790,7 +925,7 @@ export class TerrainSystem {
     const touchesHydrology = !containsWater && !waterDetail && (hasRiver || touchesPond)
     if ((containsWater || touchesHydrology) && !waterDetail && detailSegs > segs) {
       geo.dispose()
-      return this.buildHeightMesh(originX, originZ, lod, size, true)
+      return this.buildHeightMesh(originX, originZ, lod, size, true, skirtEdges)
     }
 
     // Neighbour samples outside the tile give shared edges the same normal.
@@ -827,10 +962,9 @@ export class TerrainSystem {
     }
 
     geo.setAttribute('color', new BufferAttribute(colors, 3))
-    // Shared world-space edge samples keep neighbouring tiles aligned. Skirts
-    // used to conceal LOD cracks, but their deep side faces became artificial
-    // dark dams wherever a terrain tile met independently clipped water.
-    // Eliminating them also removes unused geometry from every streamed tile.
+    // Shared world-space edge samples keep neighbouring tiles aligned. A
+    // merged dry-edge skirt covers the remaining T-junctions between quadtree
+    // LODs while wet edges stay open for independent water clipping.
     geo.computeVertexNormals()
     const normals = geo.attributes.normal as BufferAttribute
     for (let i = 0; i < heights.length; i++) {
@@ -838,6 +972,15 @@ export class TerrainSystem {
       const dz = gradientZ[i]!
       const length = Math.hypot(dx, 1, dz)
       normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
+    }
+    const skirt = lod === 0 || !skirtEdges ? null : buildTerrainSkirtGeometry(
+      heights, waterLevels, colors, segs, span, TERRAIN_SKIRT_DEPTH, skirtEdges,
+    )
+    if (skirt) {
+      const merged = mergeTerrainSkirt(geo, skirt)
+      geo.dispose()
+      skirt.dispose()
+      geo = merged
     }
     const mesh = new Mesh(geo, near ? this.groundMatNear : this.groundMatFar)
     mesh.position.set(originX + half, 0, originZ + half)

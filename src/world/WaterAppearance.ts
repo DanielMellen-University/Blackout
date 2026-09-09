@@ -32,18 +32,25 @@ export function applyWaterAppearance(
       diffuseColor.rgb = mix(vec3(0.075, 0.34, 0.38), vec3(0.012, 0.065, 0.14), depthMix);
       float riverMix = smoothstep(0.2, 0.8, vWaterFlow);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.055, 0.39, 0.42), riverMix * 0.32);
-      // A restrained foam-tinted shoreline, without repeated contour stripes.
+      // A broad shallow tint softens the clipped shoreline instead of leaving
+      // a hard blue-to-bed edge on every terrain triangle.
       float wetEdge = exp(-max(0.0, vWaterDepth) * 2.5);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.46, 0.67, 0.58), wetEdge * 0.16);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.42, 0.68, 0.61), wetEdge * 0.26);
       // Drift a low-contrast foam breakup through the first metre of water so
       // coves and river mouths do not read as a perfectly uniform ring.
       float foamNoise = texture2D(waterNormals, vWaterWorld.xz / 96.0 + vec2(worldWaterTime * 0.006, -worldWaterTime * 0.004)).r;
       float foamBand = smoothstep(0.54, 0.82, foamNoise) * (1.0 - smoothstep(0.12, 1.8, vWaterDepth));
       float weatherFoam = foamBand * (0.18 + waterRain * 0.18);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.54, 0.74, 0.66), weatherFoam);
-      float riverRiffle = smoothstep(0.58, 0.86, texture2D(waterNormals,
-        vWaterWorld.xz / 42.0 + vec2(worldWaterTime * 0.018, -worldWaterTime * 0.006)).g);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.34, 0.64, 0.62), riverRiffle * riverMix * 0.2);
+      float riverRiffle = smoothstep(0.5, 0.82, texture2D(waterNormals,
+        vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
+          vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.18, 0.55, 0.55), riverRiffle * riverMix * 0.34);
+      float shoreBreak = smoothstep(0.46, 0.8, texture2D(waterNormals,
+        vWaterWorld.xz / 58.0 - vec2(worldWaterTime * 0.008, worldWaterTime * 0.003)).b);
+      float shoreFoam = (1.0 - smoothstep(0.08, 2.8, vWaterDepth)) *
+        (0.12 + shoreBreak * 0.2) * (0.7 + waterRain * 0.25);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.76, 0.69), shoreFoam);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.12, 0.25, 0.36), waterSnow * 0.12);`,
     )
     shader.fragmentShader = shader.fragmentShader.replace(
@@ -69,5 +76,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v6'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v7'
 }

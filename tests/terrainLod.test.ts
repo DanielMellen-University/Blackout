@@ -5,6 +5,7 @@ import { planTerrainTiles } from '../src/world/TerrainLayout'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
 import {
   CHUNK_SIZE,
+  buildTerrainSkirtGeometry,
   interpolateGridHeight,
   lodFromDist,
   lodWithHysteresis,
@@ -47,10 +48,22 @@ describe('terrain LOD bands', () => {
   })
 
   it('keeps nearby water detailed and distant water bounded', () => {
-    expect(waterSegsForLod(0, CHUNK_SIZE)).toBe(39)
-    expect(waterSegsForLod(1, CHUNK_SIZE * 2)).toBe(32)
-    expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(20)
+    expect(waterSegsForLod(0, CHUNK_SIZE)).toBe(56)
+    expect(waterSegsForLod(1, CHUNK_SIZE * 2)).toBe(40)
+    expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(21)
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBeLessThan(waterSegsForLod(1, CHUNK_SIZE * 2))
+  })
+
+  it('covers dry LOD edges without building walls through water', () => {
+    const heights = new Float32Array(9).fill(100)
+    const colors = new Float32Array(27).fill(.4)
+    const dry = buildTerrainSkirtGeometry(heights, new Float32Array(9), colors, 2, CHUNK_SIZE)
+    expect(dry).not.toBeNull()
+    expect(dry!.getAttribute('position').count).toBe(48)
+    expect(Math.min(...(dry!.getAttribute('position').array as Float32Array))).toBeLessThan(100)
+    dry!.dispose()
+    const wetLevels = new Float32Array(9).fill(120)
+    expect(buildTerrainSkirtGeometry(heights, wetLevels, colors, 2, CHUNK_SIZE)).toBeNull()
   })
 })
 
