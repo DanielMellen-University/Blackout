@@ -191,7 +191,8 @@ export class Atmosphere {
   private lightningFlashAge = Infinity
   private lightningFlashPeak = 0
   private gustPhase = 0
-  private lastAnchor: AtmosphereAnchor | null = null
+  private readonly lastAnchor: AtmosphereAnchor = { x: 0, y: 0, z: 0 }
+  private hasLastAnchor = false
   private dirty = true
 
   private readonly hemi: HemisphereLight
@@ -461,8 +462,12 @@ export class Atmosphere {
   }
 
   update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {
-    if (!this.dirty && !atmosphereNeedsUpdate(dt, visualDt, ax, ay, az, this.lastAnchor)) return
-    this.lastAnchor = { x: ax, y: ay, z: az }
+    const previousAnchor = this.hasLastAnchor ? this.lastAnchor : null
+    if (!this.dirty && !atmosphereNeedsUpdate(dt, visualDt, ax, ay, az, previousAnchor)) return
+    this.lastAnchor.x = ax
+    this.lastAnchor.y = ay
+    this.lastAnchor.z = az
+    this.hasLastAnchor = true
     this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
     this.elapsed += dt
     this.weatherDirector.update(dt)

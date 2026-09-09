@@ -38,6 +38,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Main-loop audio and HUD frame records, plus aircraft attitude telemetry, are reused between frames so steady flight does not create short-lived control objects.
 - Weather propagation reuses its comparison record and only snapshots on meaningful transitions, avoiding a per-frame state object while preserving responsive rain, snow, wind, cloud, and daylight updates.
 - Runtime weather blending now fills one atmosphere-owned snapshot in place; public weather snapshots remain independent while the render loop avoids duplicate profile and wind allocations.
+- Atmosphere anchor tracking reuses one coordinate record between updates, eliminating another steady-flight allocation while keeping frozen-frame skip checks exact.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.
