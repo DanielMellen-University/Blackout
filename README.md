@@ -290,7 +290,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: performance pass, vegetation v2 refinement, warning retune.
+Next: optional cockpit canopy framing; the shipped warning, performance, and attribution passes are complete.
 
 Out of scope for now: radar, weapons, fuel.
 

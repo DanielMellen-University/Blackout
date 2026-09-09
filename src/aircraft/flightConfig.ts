@@ -57,7 +57,7 @@ export const flightConfig = {
   rotateClimb: 11,
   groundSteer: 1.7,
 
-  /** Used by (currently disabled) stall warning HUD. */
+  /** Stall AoA reference used by the tuned flight warning HUD. */
   stallAoA: 0.4,
 
   throttleRate: 0.396,

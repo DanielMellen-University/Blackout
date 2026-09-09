@@ -32,13 +32,6 @@ const STALL_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
 }) as WarningState
-const GEAR_WARNING = Object.freeze({
-  text: 'GEAR',
-  level: 'caution',
-  stall: false,
-  lowAlt: false,
-  gear: true,
-}) as WarningState
 const LOW_ALT_WARNING = Object.freeze({
   text: 'LOW ALT',
   level: 'caution',
@@ -48,8 +41,8 @@ const LOW_ALT_WARNING = Object.freeze({
 }) as WarningState
 
 /**
- * Arcade flight cautions: stall (AoA / low speed), low altitude, gear up on approach.
- * Priority: STALL > GEAR > LOW ALT.
+ * Arcade flight cautions: stall (AoA / low speed) and speed-scaled low altitude.
+ * Automatic gear does not need a separate caution.
  */
 export function evaluateWarnings(
   aircraft: Aircraft,
@@ -69,23 +62,49 @@ export function evaluateWarnings(
     aoaAbs = Math.abs(aoa)
   }
 
-  // Stall: high AoA or mushy low airspeed while airborne
-  const slow = speed < C.minSpeed * 0.92 && altAgl > 8
-  const highAoA = aoaAbs > C.stallAoA && speed < C.liftSpeed * 1.2
-  const stall = slow || highAoA
-
-  // Terrain warning only when height is closing quickly. This stays quiet during
-  // a slow, gear-down flare while still warning about a fast descent into terrain.
-  const descendingFast = aircraft.velocity.y < -4
-  const approachConfigured = aircraft.controls.gearDown && speed < 62
-  const lowAlt =
-    altAgl < 48 && altAgl > 1.5 && speed > 35 && descendingFast && !approachConfigured
-
-  // Gear is automatic; no GEAR caution
-  const gear = false
+  const stall = stallWarningActive(speed, aoaAbs, altAgl)
+  const lowAlt = lowAltitudeWarningActive(
+    altAgl,
+    speed,
+    aircraft.velocity.y,
+    aircraft.controls.gearDown,
+  )
 
   if (stall) return STALL_WARNING
-  if (gear) return GEAR_WARNING
   if (lowAlt) return LOW_ALT_WARNING
   return NONE_WARNING
+}
+
+/** Stall threshold shared by the warning path and focused tests. */
+export function stallWarningActive(speed: number, aoaAbs: number, altAgl: number): boolean {
+  if (!Number.isFinite(speed) || !Number.isFinite(altAgl)) return false
+  const safeSpeed = Math.max(0, speed)
+  const safeAoa = Number.isFinite(aoaAbs) ? Math.abs(aoaAbs) : 0
+  const slow = safeSpeed < C.minSpeed * 0.92 && altAgl > 8
+  const highAoA = safeAoa > C.stallAoA && safeSpeed < C.liftSpeed * 1.2
+  return slow || highAoA
+}
+
+/** Raise the terrain-caution ceiling for fast descents, capped for readability. */
+export function lowAltitudeWarningCeiling(speed: number): number {
+  const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+  return Math.min(96, Math.max(48, 32 + safeSpeed * 0.08))
+}
+
+/** Speed-scaled terrain caution that stays quiet during a configured flare. */
+export function lowAltitudeWarningActive(
+  altAgl: number,
+  speed: number,
+  verticalSpeed: number,
+  gearDown: boolean,
+): boolean {
+  if (!Number.isFinite(speed) || !Number.isFinite(altAgl)) return false
+  const safeSpeed = Math.max(0, speed)
+  const descendingFast = Number.isFinite(verticalSpeed) && verticalSpeed < -4
+  const approachConfigured = gearDown && safeSpeed < 62
+  return altAgl < lowAltitudeWarningCeiling(safeSpeed) &&
+    altAgl > 1.5 &&
+    safeSpeed > 35 &&
+    descendingFast &&
+    !approachConfigured
 }

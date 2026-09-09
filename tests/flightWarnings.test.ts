@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import { flightConfig } from '../src/aircraft/flightConfig'
-import { evaluateWarnings } from '../src/systems/FlightWarnings'
+import {
+  evaluateWarnings,
+  lowAltitudeWarningActive,
+  lowAltitudeWarningCeiling,
+  stallWarningActive,
+} from '../src/systems/FlightWarnings'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
 
 describe('flight cautions', () => {
@@ -40,5 +45,18 @@ describe('flight cautions', () => {
     aircraft.position.set(0, 10000, 0)
     aircraft.velocity.set(0, 0, flightConfig.maxSpeed)
     expect(evaluateWarnings(aircraft, 9000)).toBe(evaluateWarnings(aircraft, 9000))
+  })
+
+  it('scales low-altitude caution distance with speed', () => {
+    expect(lowAltitudeWarningCeiling(35)).toBe(48)
+    expect(lowAltitudeWarningCeiling(flightConfig.maxSpeed)).toBe(96)
+    expect(lowAltitudeWarningActive(70, 500, -8, false)).toBe(true)
+    expect(lowAltitudeWarningActive(70, 45, -8, true)).toBe(false)
+  })
+
+  it('keeps stall thresholds finite and flight-envelope based', () => {
+    expect(stallWarningActive(flightConfig.minSpeed * 0.5, 0, 9000)).toBe(true)
+    expect(stallWarningActive(flightConfig.liftSpeed, flightConfig.stallAoA * 1.2, 9000)).toBe(true)
+    expect(stallWarningActive(Number.NaN, Number.NaN, 9000)).toBe(false)
   })
 })
