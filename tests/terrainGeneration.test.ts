@@ -41,4 +41,14 @@ describe('continuous terrain generation', () => {
     expect(exposed[1]).toBeLessThan(clean[1])
     expect(exposed.every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
+
+  it('adds deterministic multi-scale breakup to prop-free lowlands', () => {
+    const samples = [-1200, -480, 0, 520, 1200].map(x => biomeColor(
+      'plains', 120, .48, x, 640, undefined, 0, 1, 'plains', 0,
+    ))
+    const replay = biomeColor('plains', 120, .48, 520, 640, undefined, 0, 1, 'plains', 0)
+    expect(replay).toEqual(samples[3])
+    const green = samples.map(color => color[1])
+    expect(Math.max(...green) - Math.min(...green)).toBeGreaterThan(.01)
+  })
 })

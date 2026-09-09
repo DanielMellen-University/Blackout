@@ -611,6 +611,27 @@ export function biomeColor(
     ]
   }
 
+  // Lowland terrain is intentionally prop-free for now, so distant green
+  // regions need a little visual structure in the existing vertex colors.
+  // Two broad, world-space noise scales create meadow patches and soil
+  // variation without hard biome borders, extra textures, or new draw calls.
+  // The signal is applied after biome blending so transitions stay continuous.
+  const texturedLand = biome === 'plains' || biome === 'forest' || biome === 'rainforest' ||
+    biome === 'savanna' || biome === 'swamp' || biome === 'hills' || biome === 'desert' || biome === 'mesa'
+  if (texturedLand) {
+    const regional = valueNoise(x / 520, z / 520)
+    const patch = valueNoise(x / 155, z / 155)
+    const broad = (regional - .5) * .11
+    const fine = (patch - .5) * .035
+    const breakup = broad + fine
+    const green = biome === 'plains' || biome === 'forest' || biome === 'rainforest' || biome === 'swamp' || biome === 'hills'
+    col = [
+      col[0] * (1 + breakup) + (green ? (regional - .5) * .012 : 0),
+      col[1] * (1 + breakup * .82) + (green ? (regional - .5) * .022 : 0),
+      col[2] * (1 + breakup * .64) - (green ? (regional - .5) * .008 : 0),
+    ]
+  }
+
   if (landform) {
     // Bake geology into vertex color so distant LODs keep relief cues without
     // extra meshes, props, or a second terrain pass.
