@@ -2,6 +2,8 @@
  * Engine rumble, wind hiss, and precipitation ambience via Web Audio.
  * Procedural noise only (no sample files). Levels follow flight power, airspeed, and weather.
  */
+export const EVENT_NOISE_BUFFER_SECONDS = 0.75
+
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
@@ -15,6 +17,8 @@ export class FlightAudio {
   private engineSrc: AudioBufferSourceNode | null = null
   private windSrc: AudioBufferSourceNode | null = null
   private precipSrc: AudioBufferSourceNode | null = null
+  private eventWhiteBuffer: AudioBuffer | null = null
+  private eventBrownBuffer: AudioBuffer | null = null
   private built = false
   private muted = true
   private readonly scheduledTargets = new WeakMap<AudioParam, number>()
@@ -193,6 +197,8 @@ export class FlightAudio {
     this.engineSrc = null
     this.windSrc = null
     this.precipSrc = null
+    this.eventWhiteBuffer = null
+    this.eventBrownBuffer = null
     void this.ctx?.close()
     this.ctx = null
     this.master = null
@@ -262,6 +268,10 @@ export class FlightAudio {
     const engBuf = makeNoiseBuffer(ctx, 2.5, 'brown')
     const windBuf = makeNoiseBuffer(ctx, 2.0, 'white')
     const precipBuf = makeNoiseBuffer(ctx, 2.2, 'white')
+    // One-shot cues reuse these fixed buffers. BufferSource nodes are still
+    // short-lived, but repeated crashes and weather cues stop rebuilding PCM.
+    this.eventWhiteBuffer = makeNoiseBuffer(ctx, EVENT_NOISE_BUFFER_SECONDS, 'white')
+    this.eventBrownBuffer = makeNoiseBuffer(ctx, EVENT_NOISE_BUFFER_SECONDS, 'brown')
 
     const engineSrc = ctx.createBufferSource()
     engineSrc.buffer = engBuf
@@ -336,10 +346,11 @@ export class FlightAudio {
   ): void {
     const ctx = this.ctx
     const output = this.effectsGain
-    if (!ctx || !output) return
+    const buffer = kind === 'white' ? this.eventWhiteBuffer : this.eventBrownBuffer
+    if (!ctx || !output || !buffer) return
 
     const src = ctx.createBufferSource()
-    src.buffer = makeNoiseBuffer(ctx, Math.max(0.05, duration + 0.05), kind)
+    src.buffer = buffer
     const filter = ctx.createBiquadFilter()
     filter.type = 'bandpass'
     filter.Q.value = 0.8

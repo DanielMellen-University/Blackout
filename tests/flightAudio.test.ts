@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
+  EVENT_NOISE_BUFFER_SECONDS,
   enginePlaybackRate,
   precipitationAudioLevel,
   shouldScheduleAudioTarget,
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('keeps the shared event-noise pool longer than every cue envelope', () => {
+    expect(EVENT_NOISE_BUFFER_SECONDS).toBeGreaterThan(0.58)
+    expect(EVENT_NOISE_BUFFER_SECONDS).toBeLessThan(1)
+  })
+
   it('schedules the first target and meaningful changes', () => {
     expect(shouldScheduleAudioTarget(undefined, 0.4)).toBe(true)
     expect(shouldScheduleAudioTarget(0.4, 0.401)).toBe(true)
