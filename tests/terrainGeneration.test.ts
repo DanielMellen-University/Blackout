@@ -42,6 +42,15 @@ describe('continuous terrain generation', () => {
     expect(exposed.every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
 
+  it('keeps alpine valleys cool and visibly deeper than flat snow', () => {
+    const flat = biomeColor('snow', 3200, .2, 240, -480, undefined, 0, 1, 'snow', 0,
+      undefined, { ridge: 0, alpineValley: 0, plateau: 0, caldera: 0 })
+    const valley = biomeColor('snow', 3200, .2, 240, -480, undefined, 0, 1, 'snow', 0,
+      undefined, { ridge: 0, alpineValley: 1, plateau: 0, caldera: 0 })
+    expect(valley[0]).toBeLessThan(flat[0])
+    expect(valley[2] - valley[0]).toBeGreaterThan(flat[2] - flat[0])
+  })
+
   it('adds deterministic multi-scale breakup to prop-free lowlands', () => {
     const samples = [-1200, -480, 0, 520, 1200].map(x => biomeColor(
       'plains', 120, .48, x, 640, undefined, 0, 1, 'plains', 0,
