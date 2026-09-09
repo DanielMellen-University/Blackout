@@ -81,8 +81,11 @@ export const WEATHER_PROFILES: Record<WeatherId, WeatherProfile> = {
     highClouds: 0.55, windMps: 15, gust: 0.38, lightning: 0,
   },
   storm: {
-    fogNearMul: 0.3, fogFarMul: 0.43, sunMul: 0.14, hemiMul: 0.48, ambientMul: 0.58,
-    rain: 1, snow: 0, haze: 0.68, lowClouds: 1, midClouds: 1,
+    // Storms stay oppressive, but the ground must remain readable through
+    // the fog wall. The old values pushed orbit review and low-flight terrain
+    // into an almost black silhouette even before a lightning envelope fired.
+    fogNearMul: 0.34, fogFarMul: 0.5, sunMul: 0.2, hemiMul: 0.62, ambientMul: 0.7,
+    rain: 1, snow: 0, haze: 0.62, lowClouds: 1, midClouds: 1,
     highClouds: 0.82, windMps: 27, gust: 0.85, lightning: 1,
   },
   snow: {
