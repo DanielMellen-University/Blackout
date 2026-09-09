@@ -129,6 +129,8 @@ read as pale uniform strips at flight scale. This is procedural drainage, not a
 rainfall or fluid simulation.
 Non-mouth tributaries use staged, slightly submerged endpoint tapers so streamed
 river pieces fade into their channel instead of ending as flat-cut ribbons.
+Large fog-ring tiles decimate cached lake and sea shoreline fans, keeping distant
+water bounded while nearby shorelines retain their full irregular outline.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
 Villages range from compact hamlets to several-kilometre ribbon, crossroads and

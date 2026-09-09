@@ -198,13 +198,21 @@ function appendAnalyticBasins(
       }
       basinBoundaryCache.set(basin, boundary)
     }
+    // Keep close shorelines smooth, but decimate the cached boundary when a
+    // large quadtree tile is already hidden in the fog. The cache remains
+    // high-resolution so flying back toward the same basin never bakes a
+    // permanently faceted outline into the shared landmark.
+    const sampleLimit = basin.sea ? 256 : basin.pond ? 96 : 160
+    const tileScale = Math.min(1, 420 / Math.max(420, size))
+    const desiredSamples = Math.max(48, Math.round(sampleLimit * (.3 + tileScale * .7)))
+    const boundaryStep = Math.max(1, Math.ceil(boundary.length / desiredSamples))
     const center: BasinVertex = {
       x: basin.x - centerX, z: basin.z - centerZ, y: basin.level,
       depth: basin.sea ? 180 : basin.pond ? 42 : 96,
     }
-    for (let i = 0; i < boundary.length; i++) {
+    for (let i = 0; i < boundary.length; i += boundaryStep) {
       const edge = boundary[i]!
-      const next = boundary[(i + 1) % boundary.length]!
+      const next = boundary[(i + boundaryStep) % boundary.length]!
       appendPolygon([
         center,
         { ...edge, x: basin.x + edge.x - centerX, z: basin.z + edge.z - centerZ },

@@ -149,4 +149,22 @@ describe('independent water surfaces', () => {
     mesh.geometry.dispose()
     ;(mesh.material as MeshStandardMaterial).dispose()
   })
+
+  it('decimates far basin shorelines while preserving near detail', () => {
+    const clock = { value: 0 }
+    const basin = {
+      x: 0, z: 0, radius: 720, aspect: .72, angle: .35, phase: .8,
+      level: 18, sea: false, pond: false,
+    }
+    const nearBed = new Float32Array(9).fill(-24)
+    const nearLevels = new Float32Array(9).fill(18)
+    const mask = new Float32Array(9).fill(1)
+    const near = buildWaterMesh(nearBed, nearLevels, 2, 420, -210, -210, clock, undefined, mask, [], [basin])!
+    const far = buildWaterMesh(nearBed, nearLevels, 2, 3360, -1680, -1680, clock, undefined, mask, [], [basin])!
+    expect(near.geometry.getAttribute('position').count)
+      .toBeGreaterThan(far.geometry.getAttribute('position').count * 1.8)
+    near.geometry.dispose(); far.geometry.dispose()
+    ;(near.material as MeshStandardMaterial).dispose()
+    ;(far.material as MeshStandardMaterial).dispose()
+  })
 })
