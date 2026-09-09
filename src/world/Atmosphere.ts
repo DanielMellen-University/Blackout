@@ -270,7 +270,10 @@ export class Atmosphere {
 
     // --- Layered world-space clouds (real-world altitudes & scale) ---
     this.cloudRoot.name = 'Clouds'
-    const puffGeo = new IcosahedronGeometry(1, 1)
+    // A smoother shared puff keeps the instanced cloud batches volumetric
+    // without multiplying draw calls. The old 20-face blob read as a stack
+    // of flat discs when viewed from below.
+    const puffGeo = new IcosahedronGeometry(1, 2)
     const puffMat = new MeshBasicMaterial({
       color: 0xe8f0f8,
       transparent: true,
@@ -617,8 +620,8 @@ export class Atmosphere {
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, baseMat)
         const s = (140 + Math.random() * 160) * size
-        const sy =
-          s * (0.18 + Math.random() * 0.14) * Math.min(1.3, 0.7 + size * 0.06)
+      const sy =
+        s * (0.26 + Math.random() * 0.2) * Math.min(1.2, 0.78 + size * 0.08)
         mesh.scale.set(
           s * (1.1 + Math.random() * 0.7),
           sy,
