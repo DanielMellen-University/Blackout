@@ -73,7 +73,15 @@ export class SnowField {
     this.points.visible = false
   }
 
-  update(dt: number, cx: number, cy: number, cz: number, intensity: number): void {
+  update(
+    dt: number,
+    cx: number,
+    cy: number,
+    cz: number,
+    intensity: number,
+    windX = 0,
+    windZ = 0,
+  ): void {
     const on = intensity > 0.02 && dt > 0
     if (!on) {
       this.mat.opacity = intensity > 0.02 ? this.mat.opacity : 0
@@ -93,15 +101,20 @@ export class SnowField {
 
     const fallMul = 0.5 + intensity * 1.15
     const wind = 1.8 + intensity * 8.5
+    // Match the weather front's actual wind direction instead of making snow
+    // drift in an unrelated local orbit. The sway remains as a small natural
+    // wobble, while the low multiplier keeps flakes inside the pooled field.
+    const driftX = windX * (.22 + intensity * .16)
+    const driftZ = windZ * (.22 + intensity * .16)
     const t = this.clock
     const yCenter = cy + 10
 
     for (let i = 0; i < FLAKE_COUNT; i++) {
       const ix = i * 3
       const ph = this.phase[i]!
-      let x = this.pos[ix]! + Math.sin(t * 0.31 + ph) * wind * dt
+      let x = this.pos[ix]! + (driftX + Math.sin(t * 0.31 + ph) * wind) * dt
       let y = this.pos[ix + 1]! - this.fall[i]! * fallMul * dt
-      let z = this.pos[ix + 2]! + Math.cos(t * 0.27 + ph * 1.37) * wind * 0.62 * dt
+      let z = this.pos[ix + 2]! + (driftZ + Math.cos(t * 0.27 + ph * 1.37) * wind * 0.62) * dt
       this.pos[ix] = wrap(x, cx)
       this.pos[ix + 1] = wrap(y, yCenter)
       this.pos[ix + 2] = wrap(z, cz)

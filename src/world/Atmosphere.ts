@@ -571,7 +571,7 @@ export class Atmosphere {
     // World-space clouds (fly past them) + local precip FX
     this.updateClouds(ax, ay, az, dt, w, dayFactor)
     this.updatePrecip(ax, ay, az, visualDt, w)
-    this.snowField.update(visualDt, ax, ay, az, w.snow)
+    this.snowField.update(visualDt, ax, ay, az, w.snow, w.windX, w.windZ)
   }
 
   /**
