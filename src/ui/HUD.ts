@@ -67,6 +67,17 @@ export class HUD {
   private navAltMode = -1
   private navAltStep = Number.NaN
   private navAltText = ''
+  private speedNeedleXValue = Number.NaN
+  private speedNeedleXText = ''
+  private speedNeedleYValue = Number.NaN
+  private speedNeedleYText = ''
+  private speedArcValue = Number.NaN
+  private speedArcText = ''
+  private adiBallPitchValue = Number.NaN
+  private adiBallRollValue = Number.NaN
+  private adiBallTransform = ''
+  private adiBankValue = Number.NaN
+  private adiBankTransform = ''
   private previousGearDown: boolean | null = null
   private gearFlashUntil = 0
 
@@ -305,10 +316,19 @@ export class HUD {
 
     if (this.adiBall) {
       // Nose up → horizon slides down (sky fills more of the mask)
-      this.setStyle(this.adiBall, 'transform', `rotate(${rollVisual}deg) translateY(${pitchPx}px)`)
+      if (pitchPx !== this.adiBallPitchValue || rollVisual !== this.adiBallRollValue) {
+        this.adiBallPitchValue = pitchPx
+        this.adiBallRollValue = rollVisual
+        this.adiBallTransform = `rotate(${rollVisual}deg) translateY(${pitchPx}px)`
+      }
+      this.setStyle(this.adiBall, 'transform', this.adiBallTransform)
     }
     if (this.adiBankPtr) {
-      this.setStyle(this.adiBankPtr, 'transform', `rotate(${rollVisual}deg)`)
+      if (rollVisual !== this.adiBankValue) {
+        this.adiBankValue = rollVisual
+        this.adiBankTransform = `rotate(${rollVisual}deg)`
+      }
+      this.setStyle(this.adiBankPtr, 'transform', this.adiBankTransform)
     }
     if (this.adiPitchEl) {
       const p = Math.round(pitchDeg)
@@ -336,12 +356,26 @@ export class HUD {
     const cy = 70
     const len = 42
     if (this.spdNeedle) {
-      this.setAttribute(this.spdNeedle, 'x2', formatHudNumber(cx + Math.sin(rad) * len, 10))
-      this.setAttribute(this.spdNeedle, 'y2', formatHudNumber(cy - Math.cos(rad) * len, 10))
+      const x2 = quantizeHudNumber(cx + Math.sin(rad) * len, 10)
+      if (x2 !== this.speedNeedleXValue) {
+        this.speedNeedleXValue = x2
+        this.speedNeedleXText = String(x2)
+      }
+      const y2 = quantizeHudNumber(cy - Math.cos(rad) * len, 10)
+      if (y2 !== this.speedNeedleYValue) {
+        this.speedNeedleYValue = y2
+        this.speedNeedleYText = String(y2)
+      }
+      this.setAttribute(this.spdNeedle, 'x2', this.speedNeedleXText)
+      this.setAttribute(this.spdNeedle, 'y2', this.speedNeedleYText)
     }
     if (this.spdArc) {
       const shown = Math.max(0.5, quantizeHudNumber(t * 100, 10))
-      this.setStyle(this.spdArc, 'stroke-dasharray', `${shown} 100`)
+      if (shown !== this.speedArcValue) {
+        this.speedArcValue = shown
+        this.speedArcText = `${shown} 100`
+      }
+      this.setStyle(this.spdArc, 'stroke-dasharray', this.speedArcText)
       this.setStyle(this.spdArc, 'stroke-dashoffset', '0')
     }
   }

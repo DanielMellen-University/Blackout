@@ -52,6 +52,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Aircraft control-surface animation now writes through cached hinge nodes directly, avoiding a per-step helper closure and name dispatch while retaining smooth F-35 flap, stabilator, and tail motion.
 - HUD text readouts now use the same cached-write strategy as styles and attributes, avoiding repeated DOM reads while preserving exact telemetry values.
 - The engine percentage readout now caches its rounded string too, removing another steady-flight template allocation without changing gauge responsiveness.
+- HUD gauge needles, arcs, and attitude transforms now reuse their quantized strings before the DOM write cache, trimming more steady-flight formatting churn.
 - Version 7 adds restrained high-speed edge streaks that scale with IAS and warm up under afterburner, with reduced-motion support and no new scene draw calls.
 - Version 7 external chase framing adds a tiny smooth afterburner sway, leaving cockpit mode untouched and keeping motion below the impact-shake envelope.
 - Version 7 engine audio now spools the procedural loop with throttle and afterburner through coalesced playback-rate automation, so power changes affect tone as well as loudness.
