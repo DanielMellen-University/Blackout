@@ -320,6 +320,8 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.04 : 1
   const villageFootprintScale = drySettlementBiome ? 1.08
     : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.02 : 1
+  const localRoadScale = drySettlementBiome ? 1.1
+    : wetSettlementBiome ? .88 : coldSettlementBiome ? 1.02 : 1
   const world = (x: number, z: number) => ({ x: plan.x + cos * x + sin * z, z: plan.z - sin * x + cos * z })
   const occupied = new Map<string, { x: number; z: number; hx: number; hz: number; yaw: number; width: number; depth: number }[]>()
   const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number }[] = []
@@ -482,7 +484,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const t = step / 6
       spine.push(polar(direction + Math.sin(t * 4 + phase + arm) * .19, reach * t))
     }
-    road(spine, city ? 42 + rand(70 + arm) * 25 : 25 + rand(70 + arm) * 20)
+    road(spine, (city ? 42 + rand(70 + arm) * 25 : 25 + rand(70 + arm) * 20) * localRoadScale)
     // Dead-end neighborhoods branch irregularly off the main approaches.
     for (let step = 2; step < 6; step += 2) {
       const base = spine[step]!
@@ -491,7 +493,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const length = reach * (city ? .22 : .18)
       const end = { x: base.x + Math.cos(heading) * length, z: base.z + Math.sin(heading) * length }
       road([base, { x: (base.x + end.x) / 2 + Math.sin(heading) * length * .12,
-        z: (base.z + end.z) / 2 - Math.cos(heading) * length * .12 }, end], city ? 30 : 22)
+        z: (base.z + end.z) / 2 - Math.cos(heading) * length * .12 }, end], (city ? 30 : 22) * localRoadScale)
     }
   }
   if (!city && villageProfile !== 'hamlet') {
@@ -504,7 +506,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const a = phase + i / loopCount * Math.PI * 1.65
       loopPoints.push(polar(a, loopRadius * (1 + .15 * Math.sin(a * 2 + phase))))
     }
-    road(loopPoints, 18 + rand(180) * 12)
+    road(loopPoints, (18 + rand(180) * 12) * localRoadScale)
   }
   if (city) {
     // Broken, warped district connectors have neither circular nor square outlines.
@@ -514,7 +516,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         const a = phase + i / 18 * Math.PI * (1.35 + rand(180 + ring) * .5)
         points.push(polar(a, plan.radius * .52 * (1 + .16 * Math.sin(a * 3 + ring))))
       }
-      road(points, 32)
+      road(points, 32 * localRoadScale)
     }
   }
   const anchorVillageLots = plan.anchor === 'village' ? 12 : 0

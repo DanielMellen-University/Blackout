@@ -35,6 +35,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Low coasts blend through a restrained beach and silt band driven by the warped shoreline signal, keeping cliffs and high shelves on their normal biome material.
 - City districts inherit biome architecture bias: dry skylines spread into broader hangars, wet cities stay tighter, and cold or highland cores favor stepped silhouettes.
 - Villages inherit the same climate logic at a smaller scale: dry hamlets favor broad halls, wet settlements cluster compactly, and cold villages pick up stepped civic forms.
+- Local road hierarchy follows the province too: dry settlements use broader spines, wet settlements tighter streets, and cold settlements heavier approaches while regional links keep their fixed budget.
 - Weather fronts now move through plausible neighboring states with smooth fog, light, cloud-deck and wind transitions. Clear, fog, rain, thunderstorms, snow and blizzards each have distinct visibility and precipitation. Layered clouds render in three instanced batches. Press **N** to cycle weather manually.
 - Terrain materials respond to the same blended precipitation values: rain darkens the ground and snow adds stronger altitude/slope-aware cool cover without rebuilding streamed chunks. Snowfall uses varied soft flakes in one pooled pass so it remains readable at flight scale.
 - Settlement streets and bridge decks use the same blended precipitation values, so roads wet and cool with the terrain.
