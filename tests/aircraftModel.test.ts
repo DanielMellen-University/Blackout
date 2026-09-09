@@ -1,4 +1,4 @@
-import { Box3, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
+import { Box3, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
@@ -29,6 +29,9 @@ describe('rebuilt aircraft', () => {
     const canopyBounds = new Box3().setFromObject(canopy)
     expect(canopyBounds.max.y).toBeLessThan(1.1)
     expect(canopyBounds.max.y - canopyBounds.min.y).toBeLessThan(1.0)
+    expect(canopy).toBeInstanceOf(Mesh)
+    expect((canopy as Mesh).material).toBeInstanceOf(MeshPhysicalMaterial)
+    expect(((canopy as Mesh).material as MeshPhysicalMaterial).clearcoat).toBeGreaterThan(.8)
   })
 
   it('retracts over multiple physics frames and extends again near the ground', () => {

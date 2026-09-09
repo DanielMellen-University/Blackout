@@ -2,7 +2,7 @@ import {
   AdditiveBlending, BoxGeometry, BufferGeometry, CylinderGeometry,
   DoubleSide, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial,
   MeshStandardMaterial, ShapeUtils, SphereGeometry, TorusGeometry,
-  Vector2, Vector3, type Material,
+  MeshPhysicalMaterial, Vector2, Vector3, type Material,
 } from 'three'
 
 type Point = [number, number, number]
@@ -18,9 +18,12 @@ export function createF35Model(): Group {
   const black = new MeshStandardMaterial({ color: 0x090e13, roughness: 0.85 })
   const metal = new MeshStandardMaterial({ color: 0xa8b3bc, roughness: 0.27, metalness: 0.85 })
   const rubber = new MeshStandardMaterial({ color: 0x11151a, roughness: 0.95 })
-  const glass = new MeshStandardMaterial({
+  const glass = new MeshPhysicalMaterial({
     color: 0x594933, emissive: 0x233c50, emissiveIntensity: 0.22,
     metalness: 0.72, roughness: 0.16,
+    clearcoat: 0.86,
+    clearcoatRoughness: 0.1,
+    ior: 1.44,
   })
 
   // Cross sections create the pointed radome, chine, broad engine body and

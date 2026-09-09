@@ -21,6 +21,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
+- The gold canopy now uses a restrained clearcoat physical material, giving the F-35 cockpit a sharper glass highlight without adding geometry or a draw call.
 - Airborne yaw and runway steering now honor the HUD control convention: A turns left and D turns right, with regression coverage for both nose directions.
 - Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
 - Aircraft animation caches gear, control-surface, afterburner, and nozzle nodes so each physics step avoids repeated scene-tree searches.
@@ -307,7 +308,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Next: optional cockpit canopy framing remains intentionally deferred; the shipped warning, performance, and attribution passes are complete.
+Optional cockpit canopy framing remains intentionally cut to preserve the existing first-person view; the shipped warning, performance, attribution, and aircraft presentation passes are complete.
 
 Out of scope for now: radar, weapons, fuel.
 
