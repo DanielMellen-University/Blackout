@@ -6,6 +6,7 @@ import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
 import { getWorldSeed } from './noise'
 import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
+import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 
@@ -22,6 +23,13 @@ export const MAX_LOADED_BUILDINGS = 1500
 export const MAX_LOADED_REGIONAL_ROADS = 6
 
 const collisionRadii = new WeakMap<SettlementPlan, number>()
+
+/** Lower values are protected spawn landmarks and should stream first. */
+export function settlementLoadPriority(plan: Pick<SettlementPlan, 'anchor' | 'kind'>): number {
+  if (plan.anchor === 'city') return 0
+  if (plan.anchor === 'village') return 1
+  return plan.kind === 'city' ? 2 : 3
+}
 
 /** Oriented walls and roof volumes with a small jet margin. */
 export function hitsSettlement(plan: SettlementPlan, x: number, y: number, z: number): boolean {
@@ -371,6 +379,21 @@ export class SettlementSystem {
         if (!retainedKeys.has(job.key)) retained.push(job)
       }
       this.queue = retained.sort((a, b) => {
+        const pad = getOpsPad()
+        const anchorRank = (job: { cx: number; cz: number }): number => {
+          // Some unit tests replace SettlementPlan with a minimal mock. The
+          // optional call keeps that harness compatible while production
+          // builds still put guaranteed landmarks at the front of the queue.
+          let anchor: 'city' | 'village' | null = null
+          try {
+            anchor = settlementPlanApi.settlementAnchorForCell?.(job.cx, job.cz, pad) ?? null
+          } catch {
+            // A partial module mock may throw when an optional export is read.
+          }
+          return anchor === 'city' ? 0 : anchor === 'village' ? 1 : 2
+        }
+        const rank = anchorRank(a) - anchorRank(b)
+        if (rank) return rank
         const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - x
         const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - z
         const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - x
@@ -383,6 +406,8 @@ export class SettlementSystem {
     // ready plan first so a distant village cannot occupy the fixed instance
     // budget before a nearby city or village finishes planning.
     this.ready.sort((a, b) => {
+      const priority = settlementLoadPriority(a.plan) - settlementLoadPriority(b.plan)
+      if (priority) return priority
       const ad = Math.hypot(a.plan.x - x, a.plan.z - z)
       const bd = Math.hypot(b.plan.x - x, b.plan.z - z)
       return ad - bd
@@ -447,24 +472,33 @@ export class SettlementSystem {
     if (this.loaded.has(plan.id)) return false
     if (plan.buildings.length > MAX_LOADED_BUILDINGS) return false
 
-    // Keep the fixed GPU budget, but let a nearer landmark replace one or more
-    // stale landmarks when either the settlement-count or instance-count cap
-    // is reached. The old early return on instance count meant a city could be
-    // rejected forever behind a handful of villages, even after flying into
-    // its cell.
+    // Keep the fixed GPU budget, but let an anchor landmark evict a random
+    // settlement when either cap is reached. The old nearest-only policy let
+    // four ordinary villages crowd out the guaranteed city and village, so
+    // the landmarks existed in the worker but never appeared in the scene.
     const candidateDistance = Math.hypot(plan.x - x, plan.z - z)
     while (this.loaded.size >= MAX_LOADED_SETTLEMENTS ||
       this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) {
       let farthestKey = ''
       let farthestDistance = -Infinity
+      let farthestPriority = -Infinity
       for (const [key, loaded] of this.loaded) {
+        // Anchor landmarks are mutually protected. Only ordinary settlements
+        // can be displaced to make room for a missing guaranteed tier.
+        if (loaded.plan.anchor) continue
         const distance = Math.hypot(loaded.plan.x - x, loaded.plan.z - z)
-        if (distance > farthestDistance) {
+        const priority = settlementLoadPriority(loaded.plan)
+        if (priority > farthestPriority || (priority === farthestPriority && distance > farthestDistance)) {
+          farthestPriority = priority
           farthestDistance = distance
           farthestKey = key
         }
       }
-      if (!farthestKey || candidateDistance >= farthestDistance) return false
+      if (!farthestKey) return false
+      // Anchors are allowed to displace a random plan from anywhere in the
+      // envelope. Ordinary plans still need to be nearer than the eviction
+      // candidate, preserving the normal streaming budget behavior.
+      if (!plan.anchor && candidateDistance >= farthestDistance) return false
       const farthest = this.loaded.get(farthestKey)
       if (!farthest) return false
       this.remove(farthest)

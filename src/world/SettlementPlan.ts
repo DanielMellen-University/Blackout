@@ -72,10 +72,15 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
     const [ox, oz] = offsets[0]!
     return [padCellX + ox, padCellZ + oz]
   }
+  // Never spend the only anchor cell on the city tier. A coincident city and
+  // village anchor used to make the city branch win and silently delete the
+  // guaranteed village from that world.
+  const villageAnchor = anchorCell('village', pad)
   // Prefer a dry, low-relief center cell. This keeps a guaranteed city from
   // landing on a dramatic snow peak when a nearby shelf is available.
   let best: [number, number] | null = null, bestScore = -Infinity
   for (const [ox, oz] of offsets) {
+    if (villageAnchor && padCellX + ox === villageAnchor[0] && padCellZ + oz === villageAnchor[1]) continue
     const climate = sampleClimate((padCellX + ox + .5) * SETTLEMENT_CELL_SIZE,
       (padCellZ + oz + .5) * SETTLEMENT_CELL_SIZE)
     if (!dry(climate)) continue
@@ -85,7 +90,20 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
       + hash2(padCellX * 311 + ox * 71 + salt, padCellZ * 199 + oz * 97 - salt)
     if (score > bestScore) { bestScore = score; best = [padCellX + ox, padCellZ + oz] }
   }
-  return best ?? [padCellX + offsets[0]![0], padCellZ + offsets[0]![1]]
+  if (best) return best
+  const fallback = offsets.find(([ox, oz]) =>
+    !villageAnchor || padCellX + ox !== villageAnchor[0] || padCellZ + oz !== villageAnchor[1],
+  ) ?? offsets[0]!
+  return [padCellX + fallback[0], padCellZ + fallback[1]]
+}
+
+/** Queue metadata for the streaming layer; null means a normal cell. */
+export function settlementAnchorForCell(
+  cx: number, cz: number, pad: { x: number; z: number } | null,
+): 'city' | 'village' | null {
+  if (isAnchorCell(cx, cz, 'city', pad)) return 'city'
+  if (isAnchorCell(cx, cz, 'village', pad)) return 'village'
+  return null
 }
 
 /**

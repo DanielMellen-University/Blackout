@@ -75,6 +75,28 @@ describe('procedural settlements', () => {
     expect(Math.max(...anchors.map(plan => Math.hypot(plan.x, plan.z)))).toBeLessThan(14000)
   })
 
+  it('keeps the guaranteed village and city in separate spawn cells', () => {
+    const base = sampleClimate(0, 0)
+    const sample = vi.spyOn(terrain, 'sampleClimate')
+    sample.mockImplementation((x, z) => ({
+      ...base,
+      height: 180 + ((x + z) % 3),
+      waterLevel: 0,
+      biome: 'plains',
+      biomeB: 'plains',
+      biomeMix: 0,
+      land: 1,
+      coastal: 0,
+    }))
+    for (const seed of [1, 73, 1337, 2026]) {
+      setWorldSeed(seed)
+      setOpsPad(0, 0, 180)
+      const anchors = region(3).filter(plan => plan.anchor)
+      expect(new Set(anchors.map(plan => plan.anchor))).toEqual(new Set(['village', 'city']))
+      expect(new Set(anchors.map(plan => plan.id)).size).toBe(2)
+    }
+  })
+
   it('keeps both guaranteed tiers discoverable on generated terrain', () => {
     setWorldSeed(1)
     clearOpsPad()
