@@ -184,6 +184,7 @@ export class Atmosphere {
 
   weather: WeatherId = 'clear'
   private readonly weatherDirector = new WeatherDirector()
+  private readonly weatherState = {} as WeatherSnapshot
   private elapsed = 0
   private lightningCharge = 0
   private lightningFlash = 0
@@ -358,7 +359,8 @@ export class Atmosphere {
     }
     scene.add(this.cloudRoot)
 
-    this.apply(0, 0, 0, 0, 0)
+    this.weatherDirector.snapshotInto(this.weatherState)
+    this.apply(0, 0, 0, 0, 0, this.weatherState)
   }
 
   /** Cycle weather type (N key). */
@@ -423,7 +425,7 @@ export class Atmosphere {
 
   /** Continuous precipitation values for terrain surface shading. */
   get weatherSnapshot(): WeatherSnapshot {
-    return this.weatherDirector.snapshot()
+    return this.weatherDirector.snapshotInto(this.weatherState)
   }
 
   /** Daylight factor shared by world materials (0 = night, 1 = full day). */
@@ -465,12 +467,20 @@ export class Atmosphere {
     this.elapsed += dt
     this.weatherDirector.update(dt)
     this.weather = this.weatherDirector.targetId
+    this.weatherDirector.snapshotInto(this.weatherState)
 
-    this.apply(ax, ay, az, dt, visualDt)
+    this.apply(ax, ay, az, dt, visualDt, this.weatherState)
     this.dirty = false
   }
 
-  private apply(ax: number, ay: number, az: number, dt: number, visualDt: number): void {
+  private apply(
+    ax: number,
+    ay: number,
+    az: number,
+    dt: number,
+    visualDt: number,
+    w: WeatherSnapshot,
+  ): void {
     const t = this.timeOfDay
     // Sun elevation: -1 midnight-side, +1 noon
     const elev = Math.sin((t - 0.25) * Math.PI * 2)
@@ -481,7 +491,6 @@ export class Atmosphere {
       MathUtils.smoothstep(t, 0.18, 0.28) * (1 - MathUtils.smoothstep(t, 0.28, 0.38)) +
       MathUtils.smoothstep(t, 0.68, 0.78) * (1 - MathUtils.smoothstep(t, 0.78, 0.88))
 
-    const w = this.weatherDirector.snapshot()
     this.updateLightning(dt, w)
     const skyCloudDeck = deriveSkyCloudDeck(w)
     const totalClouds = Math.max(w.lowClouds, w.midClouds * 0.9, w.highClouds * 0.55)

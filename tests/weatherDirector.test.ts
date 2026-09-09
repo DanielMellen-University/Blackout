@@ -39,6 +39,15 @@ describe('weather director', () => {
     expect(first.snapshot()).toEqual(second.snapshot())
   })
 
+  it('fills a caller-owned runtime snapshot without changing public snapshots', () => {
+    const director = new WeatherDirector()
+    director.randomize(1337, 'storm')
+    const target = {} as ReturnType<WeatherDirector['snapshot']>
+
+    expect(director.snapshotInto(target)).toBe(target)
+    expect(target).toEqual(director.snapshot())
+  })
+
   it('uses believable adjacent states for automatic fronts', () => {
     const director = new WeatherDirector()
     director.randomize(17, 'clear')

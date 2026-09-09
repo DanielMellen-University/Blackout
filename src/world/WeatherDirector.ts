@@ -116,6 +116,7 @@ const PROFILE_KEYS: readonly (keyof WeatherProfile)[] = [
   'fogNearMul', 'fogFarMul', 'sunMul', 'hemiMul', 'ambientMul', 'rain', 'snow',
   'haze', 'lowClouds', 'midClouds', 'highClouds', 'windMps', 'gust', 'lightning',
 ]
+const _windSample = { x: 0, z: 0 }
 
 function copyProfile(source: WeatherProfile): WeatherProfile {
   return { ...source }
@@ -127,16 +128,32 @@ export function blendWind(
   to: { x: number; z: number },
   amount: number,
 ): { x: number; z: number } {
+  const result = { x: 0, z: 0 }
+  blendWindInto(result, from, to, amount)
+  return result
+}
+
+function blendWindInto(
+  out: { x: number; z: number },
+  from: { x: number; z: number },
+  to: { x: number; z: number },
+  amount: number,
+): void {
   const t = MathUtils.smoothstep(MathUtils.clamp(amount, 0, 1), 0, 1)
   const fromSpeed = Math.hypot(from.x, from.z)
   const toSpeed = Math.hypot(to.x, to.z)
-  if (fromSpeed < 1e-5 && toSpeed < 1e-5) return { x: 0, z: 0 }
+  if (fromSpeed < 1e-5 && toSpeed < 1e-5) {
+    out.x = 0
+    out.z = 0
+    return
+  }
   const fromAngle = fromSpeed < 1e-5 ? Math.atan2(to.z, to.x) : Math.atan2(from.z, from.x)
   const toAngle = toSpeed < 1e-5 ? fromAngle : Math.atan2(to.z, to.x)
   const delta = Math.atan2(Math.sin(toAngle - fromAngle), Math.cos(toAngle - fromAngle))
   const angle = fromAngle + delta * t
   const speed = MathUtils.lerp(fromSpeed, toSpeed, t)
-  return { x: Math.cos(angle) * speed, z: Math.sin(angle) * speed }
+  out.x = Math.cos(angle) * speed
+  out.z = Math.sin(angle) * speed
 }
 
 export function blendWeatherProfile(
@@ -257,6 +274,18 @@ export class WeatherDirector {
       windX: wind.x,
       windZ: wind.z,
     }
+  }
+
+  /** Fill a caller-owned snapshot for the render loop without allocating. */
+  snapshotInto(out: WeatherSnapshot): WeatherSnapshot {
+    const t = MathUtils.smoothstep(this.transitionT, 0, 1)
+    for (const key of PROFILE_KEYS) {
+      out[key] = MathUtils.lerp(this.from[key], this.to[key], t)
+    }
+    blendWindInto(_windSample, this.windFrom, this.windTo, t)
+    out.windX = _windSample.x
+    out.windZ = _windSample.z
+    return out
   }
 
   private profileFromSnapshot(snapshot: WeatherSnapshot): WeatherProfile {
