@@ -135,7 +135,11 @@ Each new airfield also reserves independent city and village anchor searches;
 the runway heading biases those landmarks into the first takeoff corridor, and
 deterministic fallback cells keep both tiers alive when a rough seed rejects
 the first shelf or a streaming reset retries the cell, while ordinary
-settlement rolls remain naturally sparse. Cities rise from lower outer
+settlement rolls remain naturally sparse. Organic sites are centre-biased
+inside their stream cells so valid villages and cities are more likely to be
+seen before the aircraft crosses the fog boundary. The protected village uses
+a larger crossroads, basin, or ribbon profile instead of silently collapsing
+to the smallest hamlet. Cities rise from lower outer
 districts into taller cores instead of forming one uniform wall. The two
 protected landmarks also use
 small shared beacon meshes above their tallest roofs, making the guaranteed

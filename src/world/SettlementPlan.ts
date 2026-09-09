@@ -12,12 +12,17 @@ const VILLAGE_CHANCE = .48
 /** Guaranteed landmarks keep a smaller minimum than organic cities so rough
  * worlds still get a readable destination instead of an empty anchor cell. */
 const ANCHOR_CITY_MIN_BUILDINGS = 420
+// Keep the rescue threshold forgiving on rugged seeds; the protected village
+// uses a larger profile below, while this floor prevents terrain validation
+// from deleting the only nearby rural landmark.
 const ANCHOR_VILLAGE_MIN_BUILDINGS = 6
 /** Active airfields get one nearby village landmark so a fresh world has a
  * readable destination instead of relying on several independent rolls. */
 const VILLAGE_ANCHOR_RING = 1
 /** Cities stay rare, but every world gets one deterministic regional target. */
 const CITY_ANCHOR_RING = 1
+/** Keep organic sites inside the readable core of each 24 km stream cell. */
+const ORGANIC_SITE_CENTER_BIAS = .68
 
 export interface SettlementBuilding {
   x: number; y: number; z: number
@@ -251,12 +256,17 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
       const anchored = pad && (cityAnchor || villageAnchor)
         ? attempt < 96 ? anchorLocation(kind, pad, attempt) : anchorGridLocation(kind, pad, attempt - 96)
         : null
-      const x = anchored
-        ? anchored.x
-        : cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
-      const z = anchored
-        ? anchored.z
-        : cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
+      const organicCoordinate = (cell: number, random: number): number => {
+        // Uniform placement regularly put an otherwise valid settlement in a
+        // cell corner, where the player could fly past without ever seeing it.
+        // Contracting the random span toward the cell centre keeps the same
+        // density and deterministic seed while making generated landmarks
+        // discoverable inside the fog envelope.
+        const centered = .5 + (random - .5) * ORGANIC_SITE_CENTER_BIAS
+        return cell * SETTLEMENT_CELL_SIZE + margin + centered * (SETTLEMENT_CELL_SIZE - margin * 2)
+      }
+      const x = anchored ? anchored.x : organicCoordinate(cx, rand(10 + attempt * 2))
+      const z = anchored ? anchored.z : organicCoordinate(cz, rand(11 + attempt * 2))
       if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + 500) continue
       const c = sampleClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
@@ -417,8 +427,10 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   const city = plan.kind === 'city'
   // Village morphology is chosen independently from footprint size. This
   // keeps settlements from reading as repeated radial templates or a grid.
-  const villageProfile = city ? 'basin' : (rand(43) < .24 ? 'hamlet'
-    : rand(44) < .5 ? 'ribbon' : rand(45) < .78 ? 'crossroads' : 'basin')
+  const villageProfile = city ? 'basin' : plan.anchor === 'village'
+    ? (rand(43) < .42 ? 'crossroads' : rand(44) < .72 ? 'basin' : 'ribbon')
+    : (rand(43) < .24 ? 'hamlet'
+      : rand(44) < .5 ? 'ribbon' : rand(45) < .78 ? 'crossroads' : 'basin')
   const phase = rand(40) * Math.PI * 2
   const aspect = city ? .78 + rand(41) * .2
     : villageProfile === 'hamlet' ? .55 + rand(41) * .25

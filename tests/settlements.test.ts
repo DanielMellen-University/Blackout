@@ -179,6 +179,20 @@ describe('procedural settlements', () => {
     expect(cities.every(plan => plan.radius >= 8500 && plan.buildings.length >= 650)).toBe(true)
   })
 
+  it('keeps organic settlements inside the fog-readable cell core', () => {
+    clearOpsPad()
+    setWorldSeed(1337)
+    const plans = region(5).filter(plan => !plan.anchor)
+    expect(plans.length).toBeGreaterThan(0)
+    const maxOffset = Math.max(...plans.map(plan => {
+      const [cx, cz] = plan.id.split(',').map(Number)
+      return Math.hypot(plan.x - (cx! + .5) * 24000, plan.z - (cz! + .5) * 24000)
+    }))
+    // A centred site is much more likely to be visible before the aircraft
+    // crosses into the next 24 km stream cell than a corner-biased roll.
+    expect(maxOffset).toBeLessThan(10500)
+  })
+
   it('keeps city towers as landmarks instead of a uniform skyline', () => {
     setWorldSeed(1337)
     const city = region(10).find(plan => plan.kind === 'city')
