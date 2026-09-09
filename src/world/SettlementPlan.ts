@@ -489,11 +489,11 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     }
   }
   const anchorVillageLots = plan.anchor === 'village' ? 12 : 0
-  const target = city ? 660 + Math.floor(rand(200) * 620)
-    : villageProfile === 'hamlet' ? 8 + Math.floor(rand(201) * 8) + anchorVillageLots
+  const target = city ? 660 + Math.floor(rand(200) * 620) : Math.min(70,
+    villageProfile === 'hamlet' ? 8 + Math.floor(rand(201) * 8) + anchorVillageLots
       : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20) + anchorVillageLots
         : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28) + anchorVillageLots
-          : 28 + Math.floor(rand(201) * 38) + anchorVillageLots
+          : 28 + Math.floor(rand(201) * 38) + anchorVillageLots)
   if (!city) {
     // Seed a few lots directly from the street frontage before stochastic
     // scatter. Random-only placement left long village approaches empty even

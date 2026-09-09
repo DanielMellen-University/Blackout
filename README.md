@@ -154,7 +154,7 @@ few deterministic frontage lots before the wider scatter pass, so long
 approaches read as lived-in instead of empty ribbons. Larger villages can also
 receive a small instanced civic spire or dome, giving
 their varied footprints a recognizable center without adding per-building
-draws. Every settlement reserves a deterministic central plaza or village
+draws, and every village stays within a hard 70-building budget. Every settlement reserves a deterministic central plaza or village
 green so road approaches have breathing room instead of filling the whole
 footprint with blocks.
 Facade windows use a wider, lower-contrast rhythm so villages and cities keep
