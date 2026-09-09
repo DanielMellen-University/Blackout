@@ -92,6 +92,21 @@ describe('natural drainage', () => {
     expect(hydrologyIntersectsBounds(midX - 90, midZ - 90, midX + 90, midZ + 90)).toBe(true)
   })
 
+  it('keeps broad river banks dry outside the analytic channel ribbon', () => {
+    setWorldSeed(1)
+    const reach = riverReaches(-1, -1).find(candidate => !candidate.mouth &&
+      Math.max(candidate.wa, candidate.wb) < 80)
+    expect(reach).toBeDefined()
+    const dx = reach!.bx - reach!.ax, dz = reach!.bz - reach!.az
+    const length = Math.hypot(dx, dz)
+    const width = Math.max(reach!.wa, reach!.wb)
+    const x = (reach!.ax + reach!.bx) * .5 - dz / length * width * 3
+    const z = (reach!.az + reach!.bz) * .5 + dx / length * width * 3
+    const climate = sampleGeography(x, z)
+    expect(climate.waterLevel).toBe(0)
+    expect(terrainSurfaceFromClimate(climate).kind).toBe('land')
+  })
+
   it('has enclosed, irregular basins rather than circles or unbounded oceans', () => {
     setWorldSeed(1)
     for (const b of waterLandmarks(-1, -1)) {

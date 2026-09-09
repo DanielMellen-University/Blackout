@@ -1,8 +1,9 @@
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three'
-import type { RiverReach } from './Hydrology'
+import { basinDistance, type RiverReach, type WaterBasin } from './Hydrology'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
+interface BasinVertex { x: number; z: number; y: number; depth: number }
 
 function makeWaterMaterial(
   clock: { value: number },
@@ -27,6 +28,7 @@ export function buildWaterMesh(
   originX: number, originZ: number, clock: { value: number }, weather?: WaterWeatherUniforms,
   basinMaskOrReaches?: Float32Array | readonly RiverReach[],
   reachesArg: readonly RiverReach[] = [],
+  basins: readonly WaterBasin[] = [],
 ): Mesh | null {
   // Keep the old reaches-only call shape usable for focused tools and tests,
   // while terrain tiles pass an explicit mask to distinguish rivers from
@@ -47,6 +49,11 @@ export function buildWaterMesh(
   })
   function triangle(a: number, b: number, c: number): void {
     if (basinMask && basinMask[a]! <= .5 && basinMask[b]! <= .5 && basinMask[c]! <= .5) return
+    // Fixed-level basins get their own smooth analytic shoreline below. Do not
+    // also rasterize these triangles, or the two surfaces recreate the old
+    // sawtooth edge and expose a dark bed wedge between cells.
+    if (basins.length > 0 && basinMask &&
+      (basinMask[a]! > .5 || basinMask[b]! > .5 || basinMask[c]! > .5)) return
     if (beds[a]! >= levels[a]! && beds[b]! >= levels[b]! && beds[c]! >= levels[c]!) return
     const input = [vertex(a), vertex(b), vertex(c)]
     const polygon: WaterVertex[] = []
@@ -78,6 +85,7 @@ export function buildWaterMesh(
     triangle(a, b, d)
     triangle(b, c, d)
   }
+  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues)
   appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues)
   if (!positions.length) return null
   const geometry = new BufferGeometry()
@@ -93,6 +101,96 @@ export function buildWaterMesh(
   mesh.name = 'WaterSurface'
   mesh.position.set(originX + size / 2, 0, originZ + size / 2)
   return mesh
+}
+
+/**
+ * Tessellate each fixed-level basin from its warped analytic shoreline. The
+ * fan is clipped to the streamed tile, so a lake keeps one continuous outline
+ * while still batching into the existing water draw per tile.
+ */
+function appendAnalyticBasins(
+  basins: readonly WaterBasin[],
+  size: number,
+  originX: number,
+  originZ: number,
+  positions: number[],
+  depths: number[],
+  flowValues: number[],
+): void {
+  if (!basins.length) return
+  const half = size / 2
+  const centerX = originX + half, centerZ = originZ + half
+  const clip = (input: BasinVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): BasinVertex[] => {
+    if (!input.length) return input
+    const result: BasinVertex[] = []
+    const inside = (point: BasinVertex): boolean => keepGreater ? point[axis] >= bound : point[axis] <= bound
+    const intersection = (a: BasinVertex, b: BasinVertex): BasinVertex => {
+      const delta = b[axis] - a[axis]
+      const t = Math.abs(delta) < 1e-9 ? 0 : (bound - a[axis]) / delta
+      return {
+        x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t,
+        y: a.y + (b.y - a.y) * t, depth: a.depth + (b.depth - a.depth) * t,
+      }
+    }
+    let previous = input[input.length - 1]!, previousInside = inside(previous)
+    for (const current of input) {
+      const currentInside = inside(current)
+      if (currentInside !== previousInside) result.push(intersection(previous, current))
+      if (currentInside) result.push(current)
+      previous = current
+      previousInside = currentInside
+    }
+    return result
+  }
+  const appendPolygon = (input: BasinVertex[]): void => {
+    let polygon = input
+    polygon = clip(polygon, 'x', -half, true)
+    polygon = clip(polygon, 'x', half, false)
+    polygon = clip(polygon, 'z', -half, true)
+    polygon = clip(polygon, 'z', half, false)
+    for (let i = 1; i < polygon.length - 1; i++) {
+      for (const point of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
+        positions.push(point.x, point.y, point.z)
+        depths.push(point.depth)
+        flowValues.push(0)
+      }
+    }
+  }
+
+  for (const basin of basins) {
+    const extent = basin.radius * 1.75 + size * .72
+    if (Math.abs(basin.x - centerX) > extent || Math.abs(basin.z - centerZ) > extent) continue
+    const samples = basin.sea ? 256 : basin.pond ? 96 : 160
+    const boundary: BasinVertex[] = []
+    const highScale = basin.sea ? 2.65 : basin.pond ? 2.9 : 2.5
+    for (let i = 0; i < samples; i++) {
+      const angle = i / samples * Math.PI * 2
+      let low = 0, high = basin.radius * highScale
+      // The warped outline is broad and single-valued along a ray. Expand the
+      // bracket defensively for unusually deep coves before binary searching.
+      for (let expand = 0; expand < 3 && basinDistance(basin, basin.x + Math.cos(angle) * high,
+        basin.z + Math.sin(angle) * high) < 0; expand++) high *= 1.35
+      for (let pass = 0; pass < 9; pass++) {
+        const radius = (low + high) * .5
+        if (basinDistance(basin, basin.x + Math.cos(angle) * radius,
+          basin.z + Math.sin(angle) * radius) < 0) low = radius
+        else high = radius
+      }
+      boundary.push({
+        x: basin.x + Math.cos(angle) * low - centerX,
+        z: basin.z + Math.sin(angle) * low - centerZ,
+        y: basin.level,
+        depth: .08,
+      })
+    }
+    const center: BasinVertex = {
+      x: basin.x - centerX, z: basin.z - centerZ, y: basin.level,
+      depth: basin.sea ? 180 : basin.pond ? 42 : 96,
+    }
+    for (let i = 0; i < boundary.length; i++) {
+      appendPolygon([center, boundary[i]!, boundary[(i + 1) % boundary.length]!])
+    }
+  }
 }
 
 /**

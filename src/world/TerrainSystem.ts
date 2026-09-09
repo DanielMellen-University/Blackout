@@ -27,7 +27,7 @@ import {
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
-import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks } from './Hydrology'
+import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 
 /**
@@ -121,6 +121,24 @@ export function pondIntersectsBounds(originX: number, originZ: number, span: num
     }
   }
   return false
+}
+
+function basinsInBounds(originX: number, originZ: number, span: number): WaterBasin[] {
+  const result: WaterBasin[] = []
+  const minCx = Math.floor((originX - span * .8) / CATCHMENT_SIZE)
+  const maxCx = Math.floor((originX + span * 1.8) / CATCHMENT_SIZE)
+  const minCz = Math.floor((originZ - span * .8) / CATCHMENT_SIZE)
+  const maxCz = Math.floor((originZ + span * 1.8) / CATCHMENT_SIZE)
+  for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
+    for (const basin of waterLandmarks(cx, cz)) {
+      const extent = basin.radius * 1.75 + span * .72
+      const centerX = originX + span * .5, centerZ = originZ + span * .5
+      if (Math.abs(basin.x - centerX) <= extent && Math.abs(basin.z - centerZ) <= extent) {
+        result.push(basin)
+      }
+    }
+  }
+  return result
 }
 
 export function segsForLod(lod: TerrainLod): number {
@@ -993,7 +1011,8 @@ export class TerrainSystem {
     // overlapping river surfaces during LOD transitions.
     const rivers = reaches
     const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
-      { rain: this.waterRain, snow: this.waterSnow }, basinMask, rivers)
+      { rain: this.waterRain, snow: this.waterSnow }, basinMask, rivers,
+      basinsInBounds(originX, originZ, span))
     return { mesh, water, heights, waterLevels, segs }
   }
 

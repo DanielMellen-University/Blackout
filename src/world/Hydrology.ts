@@ -12,10 +12,11 @@ const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
 const MAX_CHANNEL_EDGES = 72
 const MAX_RENDER_REACHES = 300
 
-interface Basin {
+export interface WaterBasin {
   x: number; z: number; radius: number; aspect: number; angle: number; phase: number
   level: number; sea: boolean; pond: boolean
 }
+type Basin = WaterBasin
 /** A cached analytic river segment, shared by terrain carving and water rendering. */
 export interface RiverReach {
   ax: number; az: number; bx: number; bz: number
@@ -568,7 +569,10 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const blend = (1 - smoothstep(0, valleyRange, Math.max(0, d))) * edgeFade
     const bank = d < 0 ? -(5 + width * .04) * smoothstep(0, width, -d) : d * .075 + d * d * .00007
     height += (level + bank - height) * blend
-    if (blend > 0) waterLevel = level
+    // The broad valley blend shapes banks and floodplain relief, but only the
+    // channel itself owns a water surface. Marking the whole valley wet left
+    // a dark triangular bed wherever the analytic river ribbon was absent.
+    if (blend > 0 && Math.max(0, d) <= Math.max(42, width * 1.35)) waterLevel = level
     river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
     stream = width < 48 ? river : 0
   }
@@ -606,7 +610,9 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     const limit = basin.radius * 1.65 + 2000
     if (Math.abs(x - basin.x) > limit || Math.abs(z - basin.z) > limit) continue
     const d = basinDistance(basin, x, z)
-    const margin = basin.sea ? 2100 : 1400
+    // Keep a readable shallow shelf, not a kilometre-wide exposed brown
+    // wedge between dry terrain and the independent water surface.
+    const margin = basin.sea ? 900 : basin.pond ? 360 : 780
     if (d >= margin) continue
     const blend = (1 - smoothstep(0, margin, Math.max(0, d))) * edgeFade
     const bed = d < 0
@@ -616,7 +622,9 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     // Preserve an existing outlet through the bank instead of damming it shut.
     height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river : basinHeight
     if (d <= 0 || nearest >= valleyRange) waterLevel = basin.level
-    if (basin.sea) coastal = 1 - smoothstep(0, 180, Math.abs(d))
+    if (basin.sea) {
+      coastal = Math.max(coastal, 1 - smoothstep(0, 420, Math.max(0, d)))
+    }
     else if (basin.pond) pond = 1 - smoothstep(0, 120, Math.max(0, d))
     else lake = 1 - smoothstep(0, 160, Math.max(0, d))
   }

@@ -106,4 +106,21 @@ describe('independent water surfaces', () => {
     river.geometry.dispose()
     ;(river.material as MeshStandardMaterial).dispose()
   })
+
+  it('builds a smooth irregular shoreline fan for fixed-level basins', () => {
+    const clock = { value: 0 }
+    const basin = {
+      x: 0, z: 0, radius: 720, aspect: .72, angle: .35, phase: .8,
+      level: 18, sea: false, pond: false,
+    }
+    const bed = new Float32Array(9).fill(-24)
+    const levels = new Float32Array(9).fill(18)
+    const mask = new Float32Array(9).fill(1)
+    const mesh = buildWaterMesh(bed, levels, 2, 1800, -900, -900, clock, undefined, undefined, [], [basin])!
+    const positions = mesh.geometry.getAttribute('position')
+    expect(positions.count).toBeGreaterThan(60)
+    for (let i = 0; i < positions.count; i++) expect(positions.getY(i)).toBe(18)
+    mesh.geometry.dispose()
+    ;(mesh.material as MeshStandardMaterial).dispose()
+  })
 })
