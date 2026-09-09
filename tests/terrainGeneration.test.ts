@@ -119,4 +119,14 @@ describe('continuous terrain generation', () => {
     expect(shoulder[2]).toBeGreaterThanOrEqual(plain[2] - .02)
     expect(shoulder.every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
+
+  it('adds a distinct riparian tint to dry river shoulders', () => {
+    const dry = biomeColor('plains', 240, .48, 240, -480,
+      { river: 0, lake: 0, ravine: 0, pond: 0, stream: 0 }, 0, 1)
+    const river = biomeColor('plains', 240, .48, 240, -480,
+      { river: .05, lake: 0, ravine: 0, pond: 0, stream: .62 }, 0, 1)
+    expect(river[1]).toBeGreaterThan(dry[1])
+    expect(river[0]).toBeLessThan(dry[0])
+    expect(river.every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
 })

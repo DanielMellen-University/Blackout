@@ -685,6 +685,27 @@ export function biomeColor(
     ]
   }
 
+  // Give dry river shoulders their own ecological band. Hydrology already
+  // provides a smooth river/stream distance signal, so reuse it here rather
+  // than adding a second texture or mesh. The small noise-dependent strength
+  // keeps a long channel from becoming one perfectly uniform green stripe.
+  const riparian = clamp01(Math.max(river * .86, stream))
+  const riparianBiomes = biome === 'plains' || biome === 'forest' || biome === 'rainforest' ||
+    biome === 'hills' || biome === 'swamp' || biome === 'savanna'
+  if (riparian > .02 && riparianBiomes) {
+    const riparianColor: [number, number, number] = biome === 'savanna'
+      ? [.36, .5, .2]
+      : biome === 'swamp'
+        ? [.16, .4, .2]
+        : [.18, .5, .22]
+    const riparianMix = smoothstep(.04, .82, riparian) * (.1 + n * .05)
+    col = [
+      col[0] + (riparianColor[0] - col[0]) * riparianMix,
+      col[1] + (riparianColor[1] - col[1]) * riparianMix,
+      col[2] + (riparianColor[2] - col[2]) * riparianMix,
+    ]
+  }
+
   // Inland basins deserve a soft wet shore instead of a hard blue-to-green
   // boundary. Hydrology already fades lake and pond features across the
   // exposed bank, so this reuses that signal as a warm silt tint with no

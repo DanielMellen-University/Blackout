@@ -131,6 +131,8 @@ Non-mouth tributaries use staged, slightly submerged endpoint tapers so streamed
 river pieces fade into their channel instead of ending as flat-cut ribbons.
 Large fog-ring tiles decimate cached lake and sea shoreline fans, keeping distant
 water bounded while nearby shorelines retain their full irregular outline.
+Dry river shoulders receive a subtle biome-aware wet-meadow and silt tint so
+channels read as ecological corridors instead of isolated blue strips.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
 Villages range from compact hamlets to several-kilometre ribbon, crossroads and
