@@ -131,6 +131,29 @@ function anchorLocation(
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
 }
 
+/**
+ * Structured fallback positions cover the full landmark ring instead of
+ * relying on a handful of lucky random samples. The existing scatter remains
+ * first for organic placement; this pass is the deterministic rescue that
+ * keeps rough worlds from deleting their only city or village.
+ */
+function anchorGridLocation(
+  kind: 'city' | 'village', pad: { x: number; z: number }, attempt: number,
+): { x: number; z: number } {
+  const cellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
+  const cellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
+  const sectors = 24
+  const ring = Math.floor(attempt / sectors)
+  const sector = attempt % sectors
+  const salt = kind === 'city' ? 24131 : 18791
+  const phase = hash2(cellX * 197 + cellZ * 233 + salt, cellZ * 271 - cellX * 307 - salt) * Math.PI * 2
+  const angle = phase + sector / sectors * Math.PI * 2
+  const ringStep = 500
+  const base = kind === 'city' ? 7600 : 2200
+  const distance = base + ring * ringStep
+  return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
+}
+
 function isAnchorCell(cx: number, cz: number, kind: 'city' | 'village', pad: { x: number; z: number } | null): boolean {
   const anchor = anchorCell(kind, pad)
   return !!anchor && anchor[0] === cx && anchor[1] === cz
@@ -192,10 +215,10 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
     // Site validation is deterministic and off-thread, so spend a little more
     // search budget finding a real dry shelf instead of silently deleting the
     // whole landmark when the first random probes land on a river or ridge.
-    const siteAttempts = kind === 'city' ? (cityAnchor ? 96 : 56) : (villageAnchor ? 96 : 48)
+    const siteAttempts = kind === 'city' ? (cityAnchor ? 384 : 56) : (villageAnchor ? 384 : 48)
     for (let attempt = 0; attempt < siteAttempts; attempt++) {
       const anchored = pad && (cityAnchor || villageAnchor)
-        ? anchorLocation(kind, pad, attempt)
+        ? attempt < 96 ? anchorLocation(kind, pad, attempt) : anchorGridLocation(kind, pad, attempt - 96)
         : null
       const x = anchored
         ? anchored.x
@@ -221,7 +244,7 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
         }
         drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
-        const reliefLimit = kind === 'city' && cityAnchor ? 720
+        const reliefLimit = kind === 'city' && cityAnchor ? 1600
           : kind === 'city' ? 350 : villageAnchor ? 650 : 420
         if (max - min > reliefLimit) { suitable = false; break }
       }
@@ -282,9 +305,10 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       min = Math.min(min, c.height); max = Math.max(max, c.height)
     }
     const anchorCity = plan.kind === 'city' && plan.anchor === 'city'
+    const anchorVillage = plan.kind === 'village' && plan.anchor === 'village'
     const reliefLimit = plan.kind === 'city'
-      ? Math.min(anchorCity ? 150 : 60, Math.min(width, depth) * (anchorCity ? .62 : .22))
-      : Math.min(35, Math.min(width, depth) * .15)
+      ? Math.min(anchorCity ? 260 : 60, Math.min(width, depth) * (anchorCity ? .98 : .22))
+      : Math.min(anchorVillage ? 78 : 35, Math.min(width, depth) * (anchorVillage ? .32 : .15))
     if (max - min > reliefLimit) return
     for (const key of keys) {
       const bucket = occupied.get(key) ?? []
@@ -337,8 +361,9 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         const right = world(a.x + (b.x - a.x) * j / steps - sx, a.z + (b.z - a.z) * j / steps - sz)
         const leftClimate = sampleClimate(left.x, left.z), rightClimate = sampleClimate(right.x, right.z)
         const previous = points.at(-1)
+        const gradeLimit = plan.anchor ? .3 : .22
         if (!dry(c) || !dry(leftClimate) || !dry(rightClimate) ||
-          (previous && Math.abs(c.height + .25 - previous.y) > Math.hypot(p.x - previous.x, p.z - previous.z) * .22)) {
+          (previous && Math.abs(c.height + .25 - previous.y) > Math.hypot(p.x - previous.x, p.z - previous.z) * gradeLimit)) {
           flush(); continue
         }
         points.push({ ...p, y: c.height + .25, leftY: leftClimate.height + .35, rightY: rightClimate.height + .35,

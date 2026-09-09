@@ -108,6 +108,19 @@ describe('procedural settlements', () => {
     expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(14000)
   })
 
+  it('rescues both anchor tiers on rough seeded terrain', () => {
+    for (const seed of [14, 18, 22, 27]) {
+      setWorldSeed(seed)
+      clearOpsPad()
+      const pad = findPlayableSpawn()
+      expect(pad).toBeDefined()
+      setOpsPad(pad!.x, pad!.z, pad!.y)
+      const anchors = region(3).filter(plan => plan.anchor)
+      expect(new Set(anchors.map(plan => plan.anchor))).toEqual(new Set(['village', 'city']))
+      expect(Math.max(...anchors.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(14000)
+    }
+  })
+
   it('varies settlement scale and silhouette instead of repeating one footprint', () => {
     setWorldSeed(73)
     const plans = region()
