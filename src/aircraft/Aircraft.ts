@@ -95,6 +95,19 @@ export class Aircraft {
 
   private readonly flight = new FlightModel()
   private gearExtension = 1
+  private landingGear: Object3D | null = null
+  private gearNose: Object3D | null = null
+  private gearLeft: Object3D | null = null
+  private gearRight: Object3D | null = null
+  private flaperonLeft: Object3D | null = null
+  private flaperonRight: Object3D | null = null
+  private stabilatorLeft: Object3D | null = null
+  private stabilatorRight: Object3D | null = null
+  private tailLeft: Object3D | null = null
+  private tailRight: Object3D | null = null
+  private afterburner: Object3D | null = null
+  private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
+  private readonly nozzleGlows: MeshStandardMaterial[] = []
 
   constructor() {
     this.mesh = new Group()
@@ -102,6 +115,7 @@ export class Aircraft {
     const placeholder = createF35Model()
     placeholder.name = 'model'
     this.mesh.add(placeholder)
+    this.cacheVisualNodes()
     this.reset()
   }
 
@@ -134,6 +148,7 @@ export class Aircraft {
         disposeAircraftObject(old)
       }
       this.mesh.add(model)
+      this.cacheVisualNodes()
       this.usingPlaceholder = false
       return true
     } catch {
@@ -256,7 +271,7 @@ export class Aircraft {
    * Safe no-ops if nodes missing (GLB path).
    */
   private updateVisuals(dt: number): void {
-    const gear = this.mesh.getObjectByName('landingGear')
+    const gear = this.landingGear
     const target = this.controls.gearDown ? 1 : 0
     this.gearExtension = dt === 0
       ? target
@@ -264,17 +279,14 @@ export class Aircraft {
     if (gear) {
       gear.visible = this.gearExtension > 0.015
       const folded = 1 - this.gearExtension
-      const nose = gear.getObjectByName('gearNose')
-      const left = gear.getObjectByName('gearLeft')
-      const right = gear.getObjectByName('gearRight')
-      if (nose) nose.rotation.x = -folded * Math.PI * 0.5
-      if (left) left.rotation.z = folded * Math.PI * 0.5
-      if (right) right.rotation.z = -folded * Math.PI * 0.5
+      if (this.gearNose) this.gearNose.rotation.x = -folded * Math.PI * 0.5
+      if (this.gearLeft) this.gearLeft.rotation.z = folded * Math.PI * 0.5
+      if (this.gearRight) this.gearRight.rotation.z = -folded * Math.PI * 0.5
     }
 
     this.updateControlSurfaces(dt)
 
-    const ab = this.mesh.getObjectByName('afterburner')
+    const ab = this.afterburner
     if (!ab) return
 
     // Drive plume size from the same 0..100% lever shown on the HUD. Boost
@@ -297,28 +309,14 @@ export class Aircraft {
     const fat = 0.68 + plumeResponse * (boost ? 0.62 : 0.32)
     ab.scale.set(fat, fat, len)
 
-    ab.traverse((obj) => {
-      if (!(obj instanceof Mesh)) return
-      const mat = obj.material
-      if (mat instanceof MeshBasicMaterial) {
-        const boostGlow = boost ? 1 : 0.72
-        if (mat.name === 'abCore') mat.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
-        else if (mat.name === 'abMid') mat.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
-        else if (mat.name === 'abOuter') mat.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
-      }
-      if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
-        mat.emissiveIntensity = MathUtils.lerp(0.2, boost ? 3.4 : 2.1, plumeResponse)
-      }
-    })
-
-    // Nozzle core on the airframe (sibling of afterburner group)
-    this.mesh.traverse((obj) => {
-      if (!(obj instanceof Mesh)) return
-      const mat = obj.material
-      if (mat instanceof MeshStandardMaterial && mat.name === 'nozzleGlow') {
-        mat.emissiveIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
-      }
-    })
+    const boostGlow = boost ? 1 : 0.72
+    for (const plume of this.plumeMaterials) {
+      if (plume.name === 'abCore') plume.material.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
+      else if (plume.name === 'abMid') plume.material.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
+      else if (plume.name === 'abOuter') plume.material.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
+    }
+    const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
+    for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
   }
 
   /** Animate the procedural F-35's hinged panels from the live stick input. */
@@ -327,7 +325,7 @@ export class Aircraft {
     const roll = MathUtils.clamp(this.controls.roll, -1, 1)
     const yaw = MathUtils.clamp(this.controls.yaw, -1, 1)
     const setAngle = (name: string, axis: 'x' | 'y', target: number, response: number): void => {
-      const node = this.mesh.getObjectByName(name)
+      const node = this.visualNode(name)
       if (!node) return
       const value = dt === 0
         ? target
@@ -344,6 +342,46 @@ export class Aircraft {
     // adding a separate rudder mesh or another render pass.
     setAngle('tailLeft', 'y', yaw * 0.11, 10)
     setAngle('tailRight', 'y', -yaw * 0.11, 10)
+  }
+
+  private visualNode(name: string): Object3D | null {
+    switch (name) {
+      case 'flaperonLeft': return this.flaperonLeft
+      case 'flaperonRight': return this.flaperonRight
+      case 'stabilatorLeft': return this.stabilatorLeft
+      case 'stabilatorRight': return this.stabilatorRight
+      case 'tailLeft': return this.tailLeft
+      case 'tailRight': return this.tailRight
+      default: return null
+    }
+  }
+
+  /** Cache the small set of nodes touched every physics step. */
+  private cacheVisualNodes(): void {
+    const find = (name: string): Object3D | null => this.mesh.getObjectByName(name) ?? null
+    this.landingGear = find('landingGear')
+    this.gearNose = find('gearNose')
+    this.gearLeft = find('gearLeft')
+    this.gearRight = find('gearRight')
+    this.flaperonLeft = find('flaperonLeft')
+    this.flaperonRight = find('flaperonRight')
+    this.stabilatorLeft = find('stabilatorLeft')
+    this.stabilatorRight = find('stabilatorRight')
+    this.tailLeft = find('tailLeft')
+    this.tailRight = find('tailRight')
+    this.afterburner = find('afterburner')
+    this.plumeMaterials.length = 0
+    this.nozzleGlows.length = 0
+    this.afterburner?.traverse((object) => {
+      if (!(object instanceof Mesh) || !(object.material instanceof MeshBasicMaterial)) return
+      if (object.material.name === 'abCore' || object.material.name === 'abMid' || object.material.name === 'abOuter') {
+        this.plumeMaterials.push({ name: object.material.name, material: object.material })
+      }
+    })
+    this.mesh.traverse((object) => {
+      if (!(object instanceof Mesh) || !(object.material instanceof MeshStandardMaterial)) return
+      if (object.material.name === 'nozzleGlow') this.nozzleGlows.push(object.material)
+    })
   }
 
   get speed(): number {

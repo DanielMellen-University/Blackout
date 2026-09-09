@@ -126,4 +126,14 @@ describe('rebuilt aircraft', () => {
     expect(materialDispose).toHaveBeenCalledTimes(1)
     expect(model.children).toHaveLength(0)
   })
+
+  it('caches visual nodes instead of searching the model every physics step', () => {
+    const aircraft = new Aircraft()
+    const lookup = vi.spyOn(aircraft.mesh, 'getObjectByName')
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.throttle = 0.7
+    aircraft.step(1 / 60)
+
+    expect(lookup).not.toHaveBeenCalled()
+  })
 })
