@@ -130,7 +130,9 @@ Each new airfield also reserves independent city and village anchor searches;
 the runway heading biases those landmarks into the first takeoff corridor, and
 deterministic fallback cells keep both tiers alive when a rough seed rejects
 the first shelf or a streaming reset retries the cell, while ordinary
-settlement rolls remain naturally sparse. The two protected landmarks also use
+settlement rolls remain naturally sparse. Cities rise from lower outer
+districts into taller cores instead of forming one uniform wall. The two
+protected landmarks also use
 small shared beacon meshes above their tallest roofs, making the guaranteed
 destinations readable through flight fog and low-light weather without adding
 per-building geometry.

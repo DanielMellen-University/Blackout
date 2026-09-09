@@ -362,9 +362,12 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
     const finalHeight = plan.kind === 'city'
       ? shape === 'hangar'
-        ? Math.min(height, 300 + rand(n + 3000) * 120)
+        ? Math.min(height, 150 + rand(n + 3000) * 180 + districtCore * 260)
         : shape === 'block' || shape === 'slab'
-          ? Math.min(height, 260 + rand(n + 3000) * 220 + districtCore * (480 + rand(n + 3001) * 760))
+          // Cities get a readable low-rise fringe instead of one continuous
+          // wall. Height rises smoothly toward the inner districts, while
+          // each lot keeps deterministic variation inside its band.
+          ? Math.min(height, 120 + rand(n + 3000) * 170 + districtCore * (420 + rand(n + 3001) * 760))
           : height
       : height
     const flatRoof = shape === 'tower' || shape === 'stepped'

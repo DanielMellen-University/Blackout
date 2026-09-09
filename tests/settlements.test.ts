@@ -193,6 +193,23 @@ describe('procedural settlements', () => {
     expect(new Set(buildings.map(building => building.roofColor)).size).toBeGreaterThanOrEqual(4)
   })
 
+  it('gives cities a lower outer district and taller inner skyline', () => {
+    setWorldSeed(1337)
+    const city = region(10).find(plan => plan.kind === 'city')
+    expect(city).toBeDefined()
+    const inner = city!.buildings.filter(building =>
+      Math.hypot(building.x - city!.x, building.z - city!.z) < city!.radius * .28,
+    )
+    const outer = city!.buildings.filter(building =>
+      Math.hypot(building.x - city!.x, building.z - city!.z) > city!.radius * .78,
+    )
+    expect(inner.length).toBeGreaterThan(0)
+    expect(outer.length).toBeGreaterThan(0)
+    expect(Math.max(...inner.map(building => building.height)))
+      .toBeGreaterThan(Math.max(...outer.map(building => building.height)))
+    expect(Math.min(...outer.map(building => building.height))).toBeLessThan(360)
+  })
+
   it('fits dry foundations, caps geometry and keeps roads on dry gentle ground', () => {
     setWorldSeed(1)
     for (const plan of region(5)) {
