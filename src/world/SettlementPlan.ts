@@ -425,18 +425,35 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     flush()
   }
   const city = plan.kind === 'city'
+  const dryVillageBiome = plan.biome === 'desert' || plan.biome === 'mesa' ||
+    plan.biome === 'savanna' || plan.biome === 'saltflat'
+  const wetVillageBiome = plan.biome === 'rainforest' || plan.biome === 'swamp'
+  const coldVillageBiome = plan.biome === 'tundra' || plan.biome === 'snow' ||
+    plan.biome === 'mountain' || plan.biome === 'volcanic'
   // Village morphology is chosen independently from footprint size. This
   // keeps settlements from reading as repeated radial templates or a grid.
+  // Climate families gently bias the footprint without removing seed variety:
+  // dry villages stretch toward roads, wet villages gather around a basin,
+  // and cold/highland villages favor compact crossroads.
+  const profileRoll = rand(43), profileRollB = rand(44), profileRollC = rand(45)
   const villageProfile = city ? 'basin' : plan.anchor === 'village'
-    ? (rand(43) < .42 ? 'crossroads' : rand(44) < .72 ? 'basin' : 'ribbon')
-    : (rand(43) < .24 ? 'hamlet'
-      : rand(44) < .5 ? 'ribbon' : rand(45) < .78 ? 'crossroads' : 'basin')
+    ? dryVillageBiome
+      ? (profileRoll < .52 ? 'ribbon' : profileRollB < .8 ? 'crossroads' : 'basin')
+      : wetVillageBiome
+        ? (profileRoll < .4 ? 'basin' : profileRollB < .73 ? 'ribbon' : 'crossroads')
+        : coldVillageBiome
+          ? (profileRoll < .5 ? 'crossroads' : profileRollB < .78 ? 'basin' : 'ribbon')
+          : (profileRoll < .42 ? 'crossroads' : profileRollB < .72 ? 'basin' : 'ribbon')
+    : profileRoll < (dryVillageBiome ? .16 : .24) ? 'hamlet'
+      : profileRollB < (wetVillageBiome ? .58 : .5) ? 'ribbon'
+        : profileRollC < (coldVillageBiome ? .86 : .78) ? 'crossroads' : 'basin'
   const phase = rand(40) * Math.PI * 2
+  const aspectBias = dryVillageBiome ? -.08 : wetVillageBiome ? .08 : coldVillageBiome ? -.04 : 0
   const aspect = city ? .78 + rand(41) * .2
     : villageProfile === 'hamlet' ? .55 + rand(41) * .25
-      : villageProfile === 'ribbon' ? .28 + rand(41) * .28
-        : villageProfile === 'crossroads' ? .64 + rand(41) * .3
-          : .82 + rand(41) * .4
+      : villageProfile === 'ribbon' ? Math.max(.22, .28 + rand(41) * .28 + aspectBias)
+        : villageProfile === 'crossroads' ? Math.max(.5, .64 + rand(41) * .3 + aspectBias)
+          : Math.max(.7, .82 + rand(41) * .4 + aspectBias)
   // Unequal lobes, asymmetric stretches and branched streets replace grids.
   const boundary = (a: number) => .77 + .11 * Math.sin(a * 3 + phase) + .065 * Math.sin(a * 5 - phase)
   const polar = (a: number, distance: number) => ({ x: Math.cos(a) * distance, z: Math.sin(a) * distance * aspect })

@@ -152,7 +152,10 @@ the flight-scale review as well as from the city edge. Protected villages get
 a modest density bonus so they read as destinations instead of tiny hamlets,
 while organic villages keep their rarer size bands. Village roads also seed a
 few deterministic frontage lots before the wider scatter pass, so long
-approaches read as lived-in instead of empty ribbons. Larger villages can also
+approaches read as lived-in instead of empty ribbons. Dry villages tend toward
+stretched ribbons, wet villages gather into basin profiles, and cold/highland
+villages favor compact crossroads while seed variation remains intact. Larger
+villages can also
 receive a small instanced civic spire or dome, giving
 their varied footprints a recognizable center without adding per-building
 draws, and every village stays within a hard 70-building budget. Every settlement reserves a deterministic central plaza or village
