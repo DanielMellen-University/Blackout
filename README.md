@@ -148,6 +148,9 @@ green so road approaches have breathing room instead of filling the whole
 footprint with blocks.
 Facade windows use a wider, lower-contrast rhythm so villages and cities keep
 readable building silhouettes instead of collapsing into dense dark grids.
+Shared wall materials also add deterministic low-contrast panel seams and floor
+bands, keeping large blocks from collapsing into featureless boxes at flight
+scale without adding geometry or draw calls.
 Each new airfield also reserves independent city and village anchor searches;
 the runway heading biases those landmarks into the first takeoff corridor, and
 deterministic fallback cells keep both tiers alive when a rough seed rejects

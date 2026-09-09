@@ -318,11 +318,23 @@ export class SettlementSystem {
         float lightVariation = mix(.58, 1.0, smoothstep(.18, .82, fract(settlementSeed * 19.1 + grid.x * .13)));
         float windowStrength = windowMask * lightVariation * (.42 + (1.0 - settlementDaylight) * .24);
         diffuseColor.rgb = mix(diffuseColor.rgb, windowColor, windowStrength);
+        // A second, low-contrast scale breaks large walls into readable
+        // facade panels and floor bands. It is material-only, so villages
+        // and cities gain architectural rhythm without extra instance draws.
+        float panelPeriod = mix(48.0, 130.0, fract(settlementSeed * 7.4));
+        float panelCell = fract(settlementUv.x / panelPeriod);
+        float panelEdge = 1.0 - smoothstep(.035, .11, min(panelCell, 1.0 - panelCell));
+        float floorPeriod = mix(34.0, 90.0, fract(settlementSeed * 13.2));
+        float floorCell = fract(settlementUv.y / floorPeriod);
+        float floorEdge = 1.0 - smoothstep(.04, .13, min(floorCell, 1.0 - floorCell));
+        vec3 facadeTrim = mix(vec3(.68, .72, .7), vec3(1.04, .92, .72), fract(settlementSeed * 3.7));
+        float trimMask = settlementWall * (panelEdge * .7 + floorEdge * .42);
+        diffuseColor.rgb = mix(diffuseColor.rgb, facadeTrim, trimMask * .12);
         diffuseColor.rgb *= 1.0 - settlementRain * .08;
         float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.68, .74, .8), wallSnowMask);`)
     }
-    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v3'
+    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v4'
   }
 
   setWeatherEffects(rain: number, snow: number, daylight = this.buildingDaylight.value): void {

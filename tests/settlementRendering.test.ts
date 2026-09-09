@@ -128,6 +128,8 @@ describe('settlement rendering and lifecycle', () => {
       walls.onBeforeCompile(shader as never, undefined as never)
       expect(shader.fragmentShader).toContain('mix(5.0, 10.0, settlementSeed)')
       expect(shader.fragmentShader).toContain('(.42 + (1.0 - settlementDaylight) * .24)')
+      expect(shader.fragmentShader).toContain('panelPeriod')
+      expect(shader.fragmentShader).toContain('floorPeriod')
     } finally {
       system.dispose()
     }
