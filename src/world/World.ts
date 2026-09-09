@@ -84,6 +84,14 @@ export class World {
   private committed = false
   private disposed = false
   private appliedWeather: WeatherEffectState | null = null
+  private readonly weatherCandidate: WeatherEffectState = {
+    rain: 0,
+    snow: 0,
+    windX: 0,
+    windZ: 0,
+    cloudCover: 0,
+    daylight: 0,
+  }
 
   constructor() {
     this.sun = this.createSun()
@@ -247,14 +255,13 @@ export class World {
   }
 
   private applyWeatherEffects(weather: WeatherSnapshot, daylight: number): void {
-    const next: WeatherEffectState = {
-      rain: weather.rain,
-      snow: weather.snow,
-      windX: weather.windX,
-      windZ: weather.windZ,
-      cloudCover: Math.max(weather.lowClouds, weather.midClouds * .9),
-      daylight,
-    }
+    const next = this.weatherCandidate
+    next.rain = weather.rain
+    next.snow = weather.snow
+    next.windX = weather.windX
+    next.windZ = weather.windZ
+    next.cloudCover = Math.max(weather.lowClouds, weather.midClouds * .9)
+    next.daylight = daylight
     if (!weatherEffectsChanged(this.appliedWeather, next)) return
     this.terrain.setWeatherEffects(
       next.rain,
@@ -264,7 +271,7 @@ export class World {
       next.cloudCover,
     )
     this.settlements.setWeatherEffects(next.rain, next.snow, next.daylight)
-    this.appliedWeather = next
+    this.appliedWeather = { ...next }
   }
 
   private applySpawn(pad: FlatSpawn): void {
