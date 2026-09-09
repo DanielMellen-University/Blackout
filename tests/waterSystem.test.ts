@@ -17,14 +17,17 @@ describe('independent water surfaces', () => {
       const depths = mesh.geometry.getAttribute('waterDepth')
       const flow = mesh.geometry.getAttribute('waterFlow')
       const flowDir = mesh.geometry.getAttribute('waterFlowDir')
+      const kind = mesh.geometry.getAttribute('waterKind')
       const normals = mesh.geometry.getAttribute('normal')
       expect(flow.count).toBe(positions.count)
       expect(flowDir.count).toBe(positions.count)
+      expect(kind.count).toBe(positions.count)
       let shoreline = 0
       for (let i = 0; i < positions.count; i++) {
         expect(positions.getY(i)).toBe(level)
         expect(depths.getX(i)).toBeGreaterThanOrEqual(0)
         expect(flow.getX(i)).toBe(0)
+        expect(kind.getX(i)).toBe(1)
         expect(normals.getY(i)).toBeCloseTo(1)
         if (depths.getX(i) < .001) shoreline++
       }
@@ -54,6 +57,7 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('waterSnow')
       expect(shader.vertexShader).toContain('waterFlow')
       expect(shader.vertexShader).toContain('waterFlowDir')
+      expect(shader.vertexShader).toContain('waterKind')
       expect(shader.fragmentShader).toContain('vWaterFlow')
       expect(shader.fragmentShader).toContain('riverRiffle')
       expect(shader.fragmentShader).toContain('flowStreak')
@@ -61,6 +65,7 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('riverBankFoam')
       expect(shader.fragmentShader).toContain('shoreFoam')
       expect(shader.fragmentShader).toContain('waterPattern')
+      expect(shader.fragmentShader).toContain('seaMix')
     } finally {
       mesh.geometry.dispose()
       material.dispose()
@@ -78,15 +83,18 @@ describe('independent water surfaces', () => {
     const depths = mesh!.geometry.getAttribute('waterDepth')
     const flow = mesh!.geometry.getAttribute('waterFlow')
     const flowDir = mesh!.geometry.getAttribute('waterFlowDir')
+    const kind = mesh!.geometry.getAttribute('waterKind')
     expect(positions.count).toBeGreaterThanOrEqual(24)
     expect(depths.count).toBe(positions.count)
     expect(flow.count).toBe(positions.count)
     expect(flowDir.count).toBe(positions.count)
+    expect(kind.count).toBe(positions.count)
     expect(Math.hypot(flowDir.getX(0), flowDir.getY(0))).toBeCloseTo(1, 5)
     for (let i = 0; i < positions.count; i++) {
       expect(positions.getY(i)).toBeGreaterThan(90)
       expect(depths.getX(i)).toBeGreaterThan(0)
       expect(flow.getX(i)).toBe(1)
+      expect(kind.getX(i)).toBe(0)
     }
     mesh!.geometry.dispose()
     ;(mesh!.material as MeshStandardMaterial).dispose()

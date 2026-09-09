@@ -19,17 +19,26 @@ export function applyWaterAppearance(
     shader.uniforms.waterRain = weather.rain
     shader.uniforms.waterSnow = weather.snow
     shader.uniforms.waterNormals = { value: waterNormals }
-    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
+    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
-      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <color_fragment>',
       `#include <color_fragment>
       float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
-      diffuseColor.rgb = mix(vec3(0.075, 0.34, 0.38), vec3(0.012, 0.065, 0.14), depthMix);
+      // Keep one batched water material, but let geometry carry the body kind
+      // so rivers, ponds, lakes, and seas do not collapse into one teal sheet.
+      // Kind 0 = river, .5 = pond, 1 = lake, 2 = sea.
+      float lakeMix = smoothstep(.08, .92, vWaterKind);
+      float seaMix = smoothstep(1.24, 1.92, vWaterKind);
+      vec3 shallowWater = mix(vec3(0.03, 0.28, 0.34), vec3(0.075, 0.34, 0.38), lakeMix);
+      shallowWater = mix(shallowWater, vec3(0.025, 0.18, 0.3), seaMix);
+      vec3 deepWater = mix(vec3(0.008, 0.1, 0.14), vec3(0.012, 0.065, 0.14), lakeMix);
+      deepWater = mix(deepWater, vec3(0.006, 0.032, 0.11), seaMix);
+      diffuseColor.rgb = mix(shallowWater, deepWater, depthMix);
       float riverMix = smoothstep(0.2, 0.8, vWaterFlow);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.028, 0.28, 0.34), riverMix * 0.58);
       float riverDepthBand = smoothstep(0.32, 2.8, vWaterDepth) * riverMix;

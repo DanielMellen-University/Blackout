@@ -44,6 +44,7 @@ export function buildWaterMesh(
   const depths: number[] = []
   const flowValues: number[] = []
   const flowDirections: number[] = []
+  const waterKinds: number[] = []
   const stride = segs + 1
   const cell = size / segs
   const vertex = (i: number): WaterVertex => ({
@@ -82,6 +83,9 @@ export function buildWaterMesh(
         depths.push(Math.max(0, p.level - p.bed))
         flowValues.push(0)
         flowDirections.push(0, 0)
+        // Raster water is the compatibility path for a fixed basin. Analytic
+        // basins below carry their exact lake, pond, or sea kind.
+        waterKinds.push(1)
       }
     }
   }
@@ -90,14 +94,15 @@ export function buildWaterMesh(
     triangle(a, b, d)
     triangle(b, c, d)
   }
-  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections)
-  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections)
+  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds)
+  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds)
   if (!positions.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('waterDepth', new Float32BufferAttribute(depths, 1))
   geometry.setAttribute('waterFlow', new Float32BufferAttribute(flowValues, 1))
   geometry.setAttribute('waterFlowDir', new Float32BufferAttribute(flowDirections, 2))
+  geometry.setAttribute('waterKind', new Float32BufferAttribute(waterKinds, 1))
   geometry.computeVertexNormals()
   // Water triangles are clipped per terrain cell, so give the renderer an
   // explicit bound for fast streamed-tile culling.
@@ -123,6 +128,7 @@ function appendAnalyticBasins(
   depths: number[],
   flowValues: number[],
   flowDirections: number[],
+  waterKinds: number[],
 ): void {
   if (!basins.length) return
   const half = size / 2
@@ -149,7 +155,7 @@ function appendAnalyticBasins(
     }
     return result
   }
-  const appendPolygon = (input: BasinVertex[]): void => {
+  const appendPolygon = (input: BasinVertex[], kind: number): void => {
     let polygon = input
     polygon = clip(polygon, 'x', -half, true)
     polygon = clip(polygon, 'x', half, false)
@@ -161,6 +167,7 @@ function appendAnalyticBasins(
         depths.push(point.depth)
         flowValues.push(0)
         flowDirections.push(0, 0)
+        waterKinds.push(kind)
       }
     }
   }
@@ -217,7 +224,7 @@ function appendAnalyticBasins(
         center,
         { ...edge, x: basin.x + edge.x - centerX, z: basin.z + edge.z - centerZ },
         { ...next, x: basin.x + next.x - centerX, z: basin.z + next.z - centerZ },
-      ])
+      ], basin.sea ? 2 : basin.pond ? .5 : 1)
     }
   }
 }
@@ -237,6 +244,7 @@ function appendRiverRibbons(
   depths: number[],
   flowValues: number[],
   flowDirections: number[],
+  waterKinds: number[],
 ): void {
   const half = size / 2
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
@@ -280,6 +288,7 @@ function appendRiverRibbons(
         depths.push(point.depth)
         flowValues.push(1)
         flowDirections.push(flowX, flowZ)
+        waterKinds.push(0)
       }
     }
   }
