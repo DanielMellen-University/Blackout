@@ -80,6 +80,15 @@ describe('continuous terrain generation', () => {
     expect(samples.flat().every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
 
+  it('adds broad mineral variation to salt flats', () => {
+    const samples = [-1600, -720, 0, 680, 1500].map(x => biomeColor(
+      'saltflat', 80, .2, x, 510, undefined, 0, 1, 'saltflat', 0,
+    ))
+    expect(new Set(samples.map(color => color.map(channel => channel.toFixed(4)).join(','))).size)
+      .toBeGreaterThan(2)
+    expect(samples.flat().every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
+
   it('keeps volcanic caldera accents visibly warmer than cooled ash', () => {
     const ash = biomeColor('volcanic', 900, .3, 240, -480, undefined, 0, 1, 'volcanic', 0,
       undefined, { ridge: .4, alpineValley: .1, plateau: 0, caldera: 0 })

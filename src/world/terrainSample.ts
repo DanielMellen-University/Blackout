@@ -664,6 +664,22 @@ export function biomeColor(
     ]
   }
 
+  // Salt flats need broad mineral bands to read as a real playa rather than a
+  // single pale sheet. Two incommensurate world-space waves suggest crust,
+  // damp silt, and shallow evaporite pools without introducing a texture or
+  // another terrain draw.
+  if (biome === 'saltflat') {
+    const crustField = .5 + .5 * Math.sin(x / 720 + Math.sin(z / 1270) * .9)
+    const mineralField = .5 + .5 * Math.sin(z / 410 + Math.sin(x / 980) * 1.2)
+    const crust = smoothstep(.34, .78, crustField * .68 + mineralField * .32)
+    const damp = (1 - crust) * (.06 + mineralField * .06)
+    col = [
+      clamp01(col[0] + crust * .045 - damp * .08),
+      clamp01(col[1] + crust * .04 - damp * .04),
+      clamp01(col[2] + crust * .02 + damp * .035),
+    ]
+  }
+
   // Lowland terrain is intentionally prop-free for now, so distant green
   // regions need a little visual structure in the existing vertex colors.
   // Two broad, world-space noise scales create meadow patches and soil
