@@ -127,6 +127,8 @@ const LIGHTNING_MAX_PEAK = 0.44
 const LIGHTNING_MIN_CHARGE = 9
 const LIGHTNING_CHARGE_RANGE = 9
 const LIGHTNING_MIN_STRENGTH = 0.35
+/** Cloud matrices are large instanced batches; update them at a stable 30 Hz. */
+const CLOUD_UPDATE_STEP_SEC = 1 / 30
 
 /**
  * A single broad glow is readable as distant lightning without a hard white-frame cut.
@@ -195,6 +197,7 @@ export class Atmosphere {
   /** Seeded cloud placement keeps a world reviewable after a reseed. */
   private cloudSeed = 1337
   private cloudRecycle = 0
+  private cloudUpdateAccumulator = 0
 
   private baseFogNear = 1200
   private baseFogFar = 4000
@@ -676,6 +679,11 @@ export class Atmosphere {
     weather: WeatherSnapshot,
     dayFactor: number,
   ): void {
+    if (dt <= 0) return
+    this.cloudUpdateAccumulator += dt
+    if (this.cloudUpdateAccumulator < CLOUD_UPDATE_STEP_SEC) return
+    const cloudDt = this.cloudUpdateAccumulator
+    this.cloudUpdateAccumulator = 0
     const maxCover = Math.max(
       weather.lowClouds,
       weather.midClouds,
@@ -695,9 +703,9 @@ export class Atmosphere {
     )
     const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
     // ~0.8s ease for opacity (smooth appear / disappear)
-    const fadeK = 1 - Math.exp(-dt * 1.4)
+    const fadeK = 1 - Math.exp(-cloudDt * 1.4)
     let anyVisible = false
-    this.gustPhase += dt * (0.35 + weather.gust * 1.4)
+    this.gustPhase += cloudDt * (0.35 + weather.gust * 1.4)
     const gust = 1 + Math.sin(this.gustPhase) * weather.gust * 0.32
 
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
@@ -732,8 +740,8 @@ export class Atmosphere {
       const spec = CLOUD_LAYER[layer]
 
       // Absolute wind (m/s) — high clouds drift faster
-      wpos.x += weather.windX * spec.windMul * gust * dt
-      wpos.z += weather.windZ * spec.windMul * gust * dt
+      wpos.x += weather.windX * spec.windMul * gust * cloudDt
+      wpos.z += weather.windZ * spec.windMul * gust * cloudDt
 
       let dx = wpos.x - ax
       let dz = wpos.z - az
