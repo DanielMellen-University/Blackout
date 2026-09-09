@@ -9,7 +9,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { Aircraft, disposeAircraftObject } from './aircraft/Aircraft'
-import { CameraSystem } from './camera/CameraSystem'
+import { CameraSystem, TOUCHDOWN_IMPULSE } from './camera/CameraSystem'
 import { InputManager } from './core/InputManager'
 import {
   lockGameKeyboard,
@@ -390,6 +390,9 @@ async function boot(): Promise<void> {
           const scoredTouch =
             touch === 'landed' ||
             (touch === 'roll' && challenge.phase === 'returning')
+          if (touch === 'landed' && wasAirborne) {
+            cameras.impulse(TOUCHDOWN_IMPULSE)
+          }
           if (scoredTouch && wasAirborne && aircraft.status === 'ok') {
             aircraft.markLanded()
             wasAirborne = false

@@ -64,6 +64,8 @@ const AUTO_RETURN_RATE = 1.35
 const LOOK_STIFFNESS = 14
 /** Extra FOV (deg) at max airspeed. */
 const SPEED_FOV_BOOST = 6
+/** Small, non-crash camera pulse for a clean airborne touchdown. */
+export const TOUCHDOWN_IMPULSE = 0.18
 /** Chase distance stretch at max airspeed (1 = base). */
 const SPEED_DIST_STRETCH = 0.14
 /** How fast FOV/distance juice tracks airspeed. */

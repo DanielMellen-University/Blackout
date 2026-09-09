@@ -8,6 +8,7 @@ import {
   CameraSystem,
   resolveExternalSpeedFraming,
   resolveExternalSpeedFramingInto,
+  TOUCHDOWN_IMPULSE,
 } from '../src/camera/CameraSystem'
 import { CAMERA_MODES } from '../src/core/types'
 
@@ -70,6 +71,11 @@ describe('external camera framing', () => {
     expect(Math.hypot(next.x - first.x, next.y - first.y, next.z - first.z)).toBeLessThan(.01)
     expect(cameraBoostOffsetInto(target, .8, 1)).toBe(target)
     expect(target).toEqual(first)
+  })
+
+  it('keeps touchdown feedback below the crash shake envelope', () => {
+    expect(TOUCHDOWN_IMPULSE).toBeGreaterThan(0)
+    expect(TOUCHDOWN_IMPULSE).toBeLessThanOrEqual(0.2)
   })
 
   it('follows aircraft translation without accumulating speed lag', () => {
