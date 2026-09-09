@@ -108,6 +108,8 @@ flight benchmark at either 400 m/s or the current maximum afterburner speed,
 with draw counts and frame timings. Streaming prioritizes contact detail, then
 missing coverage and coarse replacements, before distant detail rebuilds.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
+Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
+summit folds so high terrain breaks into distinct flyable peaks instead of broad tables.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. Shallow water carries moving,
 low-contrast foam breakup instead of a uniform shoreline. This is procedural drainage,
