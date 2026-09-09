@@ -7,6 +7,7 @@ export class RunResults {
   private readonly score: HTMLElement
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
+  private readonly gates: HTMLElement
   private readonly best: HTMLElement
 
   constructor(root: Document = document) {
@@ -15,6 +16,7 @@ export class RunResults {
     this.score = must(root, 'result-score')
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
+    this.gates = must(root, 'result-gates')
     this.best = must(root, 'result-best')
   }
 
@@ -27,6 +29,7 @@ export class RunResults {
     this.score.textContent = result.totalScore.toLocaleString()
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
+    this.gates.textContent = result.gateScore.toLocaleString()
     this.best.textContent = result.isNewBest
       ? `NEW BEST · ${result.bestScore.toLocaleString()}`
       : `BEST · ${result.bestScore.toLocaleString()}`
@@ -44,5 +47,4 @@ function must(root: Document, id: string): HTMLElement {
   if (!el) throw new Error(`results missing #${id}`)
   return el
 }
-
 

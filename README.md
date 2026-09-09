@@ -53,6 +53,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Version 7 adds a restrained procedural precipitation bed: rain and snow now alter one pooled, coalesced audio layer without sample assets or extra scene work.
 - Version 7 adds a small airborne-touchdown camera pulse, keeping clean landings physical while staying far below the crash-shake envelope.
 - Version 7 adds a rare procedural dorsal anti-collision strobe to the F-35 silhouette, hidden between flashes so it adds detail without a steady draw cost.
+- Version 7 results now expose the gate-score contribution alongside total, time, and landing quality so circuit performance is readable after touchdown.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.

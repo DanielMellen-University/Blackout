@@ -29,6 +29,7 @@ describe('ChallengeRun', () => {
       rollRad: 0.05,
     })
     expect(result).not.toBeNull()
+    expect(result!.gateScore).toBe(15_000)
     expect(result!.totalScore).toBeGreaterThan(0)
     expect(result!.isNewBest).toBe(true)
     expect(run.phase).toBe('complete')
