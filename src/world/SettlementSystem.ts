@@ -358,12 +358,27 @@ export class SettlementSystem {
         this.releaseLinksForCell(key)
         this.checked.delete(key)
       }
-      this.queue = pending.sort((a, b) => a.distance - b.distance)
+      // Keep queued cells that are still inside the new envelope. Replacing
+      // the queue on every kilometre discarded work faster than the worker
+      // could finish it at top speed, making valid settlements appear absent.
+      const retained = this.queue.filter(job => wanted.has(job.key) && !this.checked.has(job.key))
+      const retainedKeys = new Set(retained.map(job => job.key))
+      for (const job of pending) {
+        if (!retainedKeys.has(job.key)) retained.push(job)
+      }
+      this.queue = retained.sort((a, b) => {
+        const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - x
+        const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - z
+        const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - x
+        const bz = (b.cz + .5) * SETTLEMENT_CELL_SIZE - z
+        return Math.hypot(ax, az) - Math.hypot(bx, bz)
+      })
     }
     this.pruneDistantRoads(x, z)
     const ready = this.ready.shift()
-    if (ready && this.checked.has(ready.key) && this.canLoad(ready.plan)) {
-      this.loaded.set(ready.key, this.build(ready.plan))
+    if (ready && this.checked.has(ready.key)) {
+      if (this.canLoad(ready.plan, x, z)) this.loaded.set(ready.key, this.build(ready.plan))
+      else this.ready.push(ready)
     }
     const readyRoadIndex = this.nearestReadyRoad(x, z)
     if (readyRoadIndex >= 0) {
@@ -387,7 +402,7 @@ export class SettlementSystem {
         const plan = settlementForCell(job.cx, job.cz)
         if (plan) {
           this.scheduleLinks(plan, job.key)
-          if (this.canLoad(plan)) this.loaded.set(job.key, this.build(plan))
+          if (this.canLoad(plan, x, z)) this.loaded.set(job.key, this.build(plan))
         }
       }
     } else if (!this.inFlight) {
@@ -415,9 +430,31 @@ export class SettlementSystem {
     return false
   }
 
-  private canLoad(plan: SettlementPlan): boolean {
-    return this.loaded.size < MAX_LOADED_SETTLEMENTS &&
-      this.buildingCount + plan.buildings.length <= MAX_LOADED_BUILDINGS
+  private canLoad(plan: SettlementPlan, x: number, z: number): boolean {
+    if (this.loaded.has(plan.id)) return false
+    if (this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) return false
+    if (this.loaded.size < MAX_LOADED_SETTLEMENTS) return true
+
+    // Keep the fixed GPU budget, but let nearby landmarks replace an older
+    // one that is still inside the broad streaming envelope. Without this,
+    // a fast flight could permanently hide a newly reached city or village
+    // behind four stale settlements from the previous region.
+    let farthestKey = ''
+    let farthestDistance = -Infinity
+    for (const [key, loaded] of this.loaded) {
+      const distance = Math.hypot(loaded.plan.x - x, loaded.plan.z - z)
+      if (distance > farthestDistance) {
+        farthestDistance = distance
+        farthestKey = key
+      }
+    }
+    const candidateDistance = Math.hypot(plan.x - x, plan.z - z)
+    if (!farthestKey || candidateDistance >= farthestDistance) return false
+    const farthest = this.loaded.get(farthestKey)
+    if (!farthest) return false
+    this.remove(farthest)
+    this.loaded.delete(farthestKey)
+    return true
   }
 
   private build(plan: SettlementPlan): LoadedSettlement {

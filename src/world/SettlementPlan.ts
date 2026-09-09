@@ -73,7 +73,12 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   if (roll < VILLAGE_CHANCE) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
     const radius = kind === 'city' ? 8500 + rand(1) * 1500 : 1050 + rand(1) ** .72 * 3950
-    const margin = radius + 300
+    // Cities are allowed to straddle cell boundaries. Restricting their
+    // center to radius+300 from every edge left a 9 km city with only a tiny
+    // 3 km-wide search strip inside a 24 km cell, so most otherwise excellent
+    // city shelves were discarded before population even ran. Villages keep
+    // their padded footprint because their smaller lots should stay local.
+    const margin = kind === 'city' ? 1800 : radius + 300
     // Huge city footprints need a broader site search now that mountain and
     // foothill provinces have stronger relief. Village surveys stay compact so
     // a creek on the far side of a wide rural footprint does not erase it.
