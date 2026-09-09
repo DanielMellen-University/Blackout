@@ -42,6 +42,8 @@ export class HUD {
   private readonly attributeCache = new WeakMap<Element, Map<string, string>>()
   private readonly classCache = new WeakMap<Element, Map<string, boolean>>()
   private readonly textCache = new WeakMap<Element, string>()
+  private previousGearDown: boolean | null = null
+  private gearFlashUntil = 0
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
@@ -140,7 +142,13 @@ export class HUD {
     }
 
     if (this.gearEl && opts.gearDown !== undefined) {
+      const now = performance.now()
+      if (this.previousGearDown !== null && this.previousGearDown !== opts.gearDown) {
+        this.gearFlashUntil = now + 700
+      }
+      this.previousGearDown = opts.gearDown
       this.setText(this.gearEl, opts.gearDown ? 'DOWN' : 'UP')
+      this.setClass(this.gearEl, 'gear-cycle', gearTransitionActive(now, this.gearFlashUntil))
     }
     if (this.stateEl && opts.onGround !== undefined) {
       this.setText(this.stateEl, opts.onGround ? 'GND' : 'AIR')
@@ -416,6 +424,11 @@ export function quantizeHudNumber(value: number, precision: number): number {
 
 export function formatHudNumber(value: number, precision: number): string {
   return String(quantizeHudNumber(value, precision))
+}
+
+/** Short HUD emphasis window used for automatic gear transitions. */
+export function gearTransitionActive(now: number, until: number): boolean {
+  return Number.isFinite(now) && Number.isFinite(until) && now < until
 }
 
 /** Edge-streak intensity for the version-7 high-speed HUD treatment. */

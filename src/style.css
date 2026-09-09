@@ -535,6 +535,30 @@ body,
   font-weight: 600;
 }
 
+#hud-gear.gear-cycle {
+  color: #f0b429;
+  text-shadow: 0 0 12px rgba(240, 180, 41, 0.55);
+  animation: gear-cycle 0.35s ease-out 2;
+}
+
+@keyframes gear-cycle {
+  0% {
+    transform: scale(1.12);
+  }
+  65% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #hud-gear.gear-cycle {
+    animation: none;
+  }
+}
+
 .banner {
   position: absolute;
   top: 42%;

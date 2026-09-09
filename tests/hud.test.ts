@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { formatHudNumber, quantizeHudNumber, speedJuiceIntensity } from '../src/ui/HUD'
+import {
+  formatHudNumber,
+  gearTransitionActive,
+  quantizeHudNumber,
+  speedJuiceIntensity,
+} from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
   it('removes float noise at a bounded visual precision', () => {
@@ -20,5 +25,12 @@ describe('HUD value formatting', () => {
     expect(speedJuiceIntensity(1800)).toBeGreaterThan(0)
     expect(speedJuiceIntensity(3000)).toBeCloseTo(.42)
     expect(speedJuiceIntensity(5000)).toBeCloseTo(.42)
+  })
+
+  it('keeps gear transition emphasis inside its short timing window', () => {
+    expect(gearTransitionActive(100, 700)).toBe(true)
+    expect(gearTransitionActive(700, 700)).toBe(false)
+    expect(gearTransitionActive(800, 700)).toBe(false)
+    expect(gearTransitionActive(Number.NaN, 700)).toBe(false)
   })
 })
