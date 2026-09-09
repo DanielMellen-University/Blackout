@@ -138,6 +138,8 @@ their varied footprints a recognizable center without adding per-building
 draws. Every settlement reserves a deterministic central plaza or village
 green so road approaches have breathing room instead of filling the whole
 footprint with blocks.
+Facade windows use a wider, lower-contrast rhythm so villages and cities keep
+readable building silhouettes instead of collapsing into dense dark grids.
 Each new airfield also reserves independent city and village anchor searches;
 the runway heading biases those landmarks into the first takeoff corridor, and
 deterministic fallback cells keep both tiers alive when a rough seed rejects

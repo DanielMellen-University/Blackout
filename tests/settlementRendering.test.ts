@@ -1,4 +1,4 @@
-import { InstancedMesh, Mesh, Scene } from 'three'
+import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import { hitsSettlement, SettlementSystem } from '../src/world/SettlementSystem'
@@ -111,6 +111,23 @@ describe('settlement rendering and lifecycle', () => {
       expect(system.lightingEffects).toEqual({ daylight: 0 })
       system.setWeatherEffects(.1, .2, .4)
       expect(system.lightingEffects).toEqual({ daylight: .4 })
+    } finally {
+      system.dispose()
+    }
+  })
+
+  it('keeps facade windows readable at flight scale', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      const walls = (system as unknown as { walls: MeshStandardMaterial }).walls
+      const shader = {
+        uniforms: {},
+        vertexShader: '#include <common>\n#include <begin_vertex>',
+        fragmentShader: '#include <common>\n#include <color_fragment>',
+      }
+      walls.onBeforeCompile(shader as never, undefined as never)
+      expect(shader.fragmentShader).toContain('mix(5.0, 10.0, settlementSeed)')
+      expect(shader.fragmentShader).toContain('(.42 + (1.0 - settlementDaylight) * .24)')
     } finally {
       system.dispose()
     }

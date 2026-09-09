@@ -299,8 +299,11 @@ export class SettlementSystem {
         .replace('#include <color_fragment>', `#include <color_fragment>
         // Deterministic per-building facade rhythm keeps the skyline from
         // reading as one repeated apartment texture while remaining one draw.
-        float columns = mix(8.0, 15.0, settlementSeed);
-        float rows = mix(7.0, 14.0, fract(settlementSeed * 7.31));
+        // A sparse facade rhythm reads as windows at flight scale. The old
+        // 8-15 by 7-14 grid made rural buildings look like dark perforated
+        // boxes, especially when a village occupied the whole review frame.
+        float columns = mix(5.0, 10.0, settlementSeed);
+        float rows = mix(4.0, 9.0, fract(settlementSeed * 7.31));
         vec2 grid = settlementUv / vec2(columns, rows);
         vec2 pane = fract(grid + vec2(fract(settlementSeed * 5.1), fract(settlementSeed * 9.7)) * .35);
         vec2 aa = max(fwidth(grid), vec2(.001));
@@ -313,7 +316,7 @@ export class SettlementSystem {
         vec3 windowColor = mix(warmWindows, coolWindows, settlementDaylight);
         windowColor = mix(windowColor, vec3(.32, .58, .78), smoothstep(.72, .96, fract(settlementSeed * 13.7)) * .42);
         float lightVariation = mix(.58, 1.0, smoothstep(.18, .82, fract(settlementSeed * 19.1 + grid.x * .13)));
-        float windowStrength = windowMask * lightVariation * (.78 + (1.0 - settlementDaylight) * .18);
+        float windowStrength = windowMask * lightVariation * (.42 + (1.0 - settlementDaylight) * .24);
         diffuseColor.rgb = mix(diffuseColor.rgb, windowColor, windowStrength);
         diffuseColor.rgb *= 1.0 - settlementRain * .08;
         float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
