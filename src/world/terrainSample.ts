@@ -720,9 +720,9 @@ export function biomeColor(
     if (biome === 'snow' || biome === 'mountain') {
       const strata = valueNoise(x / 520, z / 520)
       const exposure = clamp01((strata - .42) * 1.9 + landform.ridge * .24 + landform.caldera * .34)
-      const rockMix = smoothstep(.48, .9, exposure) * (biome === 'snow' ? .4 : .25)
+      const rockMix = smoothstep(.48, .9, exposure) * (biome === 'snow' ? .52 : .31)
       const rock: [number, number, number] = biome === 'snow'
-        ? [.19, .235, .3]
+        ? [.16, .205, .275]
         : [.25, .24, .23]
       col = [
         col[0] + (rock[0] - col[0]) * rockMix,
@@ -730,9 +730,9 @@ export function biomeColor(
         col[2] + (rock[2] - col[2]) * rockMix,
       ]
       const valley = smoothstep(.18, .9, landform.alpineValley)
-      col[0] *= 1 - valley * .1
-      col[1] *= 1 - valley * .06
-      col[2] = Math.min(1, col[2] + valley * .06)
+      col[0] *= 1 - valley * .16
+      col[1] *= 1 - valley * .1
+      col[2] = Math.min(1, col[2] + valley * .1)
     }
   }
 

@@ -110,7 +110,9 @@ missing coverage and coarse replacements, before distant detail rebuilds.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
 summit folds plus a bounded peak-and-saddle sculpt so high terrain breaks into
-distinct flyable peaks instead of broad tables.
+distinct flyable peaks instead of broad tables. Snow and mountain faces use
+stronger cool rock exposure and valley contrast so the existing relief remains
+readable at flight distance without extra terrain geometry or noise calls.
 Seas sit at zero elevation; each lake has its own level below the surrounding
 rim. River reaches descend between those levels. Shallow water carries moving,
 low-contrast foam breakup instead of a uniform shoreline, while river ribbons carry
