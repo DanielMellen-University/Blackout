@@ -28,6 +28,11 @@ const _X = new Vector3(1, 0, 0)
 const _Z = new Vector3(0, 0, 1)
 const _q2 = new Quaternion()
 
+interface VegetationWeatherUniforms {
+  rain: { value: number }
+  snow: { value: number }
+}
+
 export interface VegBuckets {
   group: Group
   finalize: () => void
@@ -53,6 +58,29 @@ function mat(color: number, roughness = 0.86): MeshStandardMaterial {
   material.emissive.setHex(color)
   material.emissiveIntensity = 0.035
   return material
+}
+
+function configureWeatherMaterial(
+  material: MeshStandardMaterial,
+  weather: VegetationWeatherUniforms,
+): void {
+  material.onBeforeCompile = shader => {
+    shader.uniforms.vegetationRain = weather.rain
+    shader.uniforms.vegetationSnow = weather.snow
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <common>',
+      '#include <common>\nuniform float vegetationRain;\nuniform float vegetationSnow;\n',
+    ).replace(
+      '#include <normal_fragment_maps>',
+      `#include <normal_fragment_maps>
+      // Keep rain and snow on the shared material path. Only upward-facing
+      // surfaces collect snow, so trunks and dark rocks remain readable.
+      diffuseColor.rgb *= 1.0 - vegetationRain * .1;
+      float snowMask = vegetationSnow * smoothstep(.38, .92, normal.y) * .62;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.72, .8, .88), snowMask);`,
+    )
+  }
+  material.customProgramCacheKey = () => 'vegetation-weather-v1'
 }
 
 function mesh(
@@ -100,8 +128,10 @@ function setAt(
 /** Build reusable veg kits for one terrain system (shared geos/mats). */
 export function createVegetationFactory(): {
   createBuckets: () => VegBuckets
+  setWeather: (rain: number, snow: number) => void
   disposeShared: () => void
 } {
+  const weather: VegetationWeatherUniforms = { rain: { value: 0 }, snow: { value: 0 } }
   // --- geometries (shared) ---
   const trunkGeo = new CylinderGeometry(0.18, 0.32, 1, 6)
   const pineConeGeo = new ConeGeometry(1, 2, 8)
@@ -170,6 +200,7 @@ export function createVegetationFactory(): {
     grassDryMat,
     deadMat,
   ]
+  for (const material of sharedMats) configureWeatherMaterial(material, weather)
 
   function createBuckets(): VegBuckets {
     const group = new Group()
@@ -692,6 +723,10 @@ export function createVegetationFactory(): {
 
   return {
     createBuckets,
+    setWeather: (rain: number, snow: number) => {
+      weather.rain.value = Math.max(0, Math.min(1, rain))
+      weather.snow.value = Math.max(0, Math.min(1, snow))
+    },
     disposeShared: () => {
       for (const g of sharedGeos) g.dispose()
       for (const m of sharedMats) m.dispose()

@@ -385,6 +385,7 @@ export class TerrainSystem {
     this.weatherSnow.value = MathUtils.clamp(snow, 0, 1)
     this.waterRain.value = this.weatherRain.value
     this.waterSnow.value = this.weatherSnow.value
+    this.vegFactory?.setWeather(this.weatherRain.value, this.weatherSnow.value)
   }
 
   get weatherEffects(): { rain: number; snow: number } {
@@ -1064,6 +1065,7 @@ export class TerrainSystem {
     heights: Float32Array, segs: number,
   ): Group {
     this.vegFactory ??= createVegetationFactory()
+    this.vegFactory.setWeather(this.weatherRain.value, this.weatherSnow.value)
     const veg = this.vegFactory.createBuckets()
     const samples = 72
 
