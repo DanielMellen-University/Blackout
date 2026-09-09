@@ -85,12 +85,17 @@ async function boot(): Promise<void> {
   debug?.syncPad()
 
   let disposed = false
+  let resizeFrame: number | null = null
   const disposeRuntime = (): void => {
     if (disposed) return
     disposed = true
     input.dispose()
     cameras.dispose()
     audio.dispose()
+    if (resizeFrame !== null) {
+      cancelAnimationFrame(resizeFrame)
+      resizeFrame = null
+    }
     world.dispose()
     crashFx.dispose()
     disposeAircraftObject(aircraft.mesh)
@@ -271,14 +276,22 @@ async function boot(): Promise<void> {
     }
   })
 
-  const onResize = (): void => {
+  const applyResize = (): void => {
     const w = window.innerWidth
     const h = window.innerHeight
     renderer.setSize(w, h, false)
     cameras.resize(w, h)
   }
+  const onResize = (): void => {
+    if (resizeFrame !== null) return
+    resizeFrame = requestAnimationFrame(() => {
+      resizeFrame = null
+      if (disposed) return
+      applyResize()
+    })
+  }
   window.addEventListener('resize', onResize)
-  onResize()
+  applyResize()
 
   const showBanner = (text: string, ms = 2800): void => {
     banner = text
@@ -406,7 +419,10 @@ async function boot(): Promise<void> {
     const phase = world.atmosphere.phaseLabel
     const baseExp =
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
-    renderer.toneMappingExposure = baseExp + crashFx.bloom * 1.35
+    const exposure = baseExp + crashFx.bloom * 1.35
+    if (Math.abs(renderer.toneMappingExposure - exposure) > 0.001) {
+      renderer.toneMappingExposure = exposure
+    }
     crashFx.update(simLive ? visualDt : 0)
 
     const afterburnerOn = aircraft.engineState.afterburnerActive
