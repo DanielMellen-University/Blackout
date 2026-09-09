@@ -128,8 +128,10 @@ direction-aware moving riffles, variable widths, tapered tributary ends, and
 broken bank foam. Rivers receive a stronger depth/color response so they do not
 read as pale uniform strips at flight scale. This is procedural drainage, not a
 rainfall or fluid simulation.
-Non-mouth tributaries use staged, slightly submerged endpoint tapers so streamed
-river pieces fade into their channel instead of ending as flat-cut ribbons.
+Non-mouth tributaries use long, three-stage, slightly submerged endpoint tapers
+so streamed river pieces feather into their channel instead of ending as
+flat-cut ribbons; confluences get a small shared rounded shoulder to hide
+arrival seams.
 Large fog-ring tiles decimate cached lake and sea shoreline fans, keeping distant
 water bounded while nearby shorelines retain their full irregular outline.
 Dry river shoulders receive a subtle biome-aware wet-meadow and silt tint so

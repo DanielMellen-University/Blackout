@@ -100,10 +100,15 @@ describe('independent water surfaces', () => {
     )!
     const positions = mesh.geometry.getAttribute('position')
     let lowered = 0
+    let maxX = -Infinity
     for (let i = 0; i < positions.count; i++) {
+      maxX = Math.max(maxX, positions.getX(i))
       if (positions.getY(i) < 100.04 - .01 && positions.getY(i) > 99.9) lowered++
     }
     expect(lowered).toBeGreaterThan(0)
+    // A terminal cap should feather well past the last live section instead
+    // of leaving a short, screen-space rectangular cutoff.
+    expect(maxX).toBeGreaterThan(150)
     mesh.geometry.dispose()
     ;(mesh.material as MeshStandardMaterial).dispose()
   })

@@ -307,20 +307,40 @@ function appendRiverRibbons(
   ): void => {
     // Tributaries that end at a streamed catchment boundary should fade into
     // the terrain instead of exposing a circular hose cap from above. The
-    // route remains continuous because only chain endpoints call this. Two
-    // taper stages avoid a visually flat cut when the first triangle is
-    // viewed edge-on or clipped by a neighbouring terrain tile.
+    // route remains continuous because only chain endpoints call this. Three
+    // taper stages keep the silhouette from reading as a hard rectangular
+    // cut when the last section is viewed edge-on or clipped by a neighbour.
     const halfWidth = Math.hypot(
       section.left.x - section.center.x,
       section.left.z - section.center.z,
     )
-    const midDistance = distance * .42
+    const nearDistance = distance * .2
+    const nearHalfWidth = Math.max(1.2, halfWidth * .7)
+    const nearCenter: RibbonVertex = {
+      x: section.center.x + flowX * nearDistance,
+      z: section.center.z + flowZ * nearDistance,
+      y: section.center.y + .02,
+      depth: .06,
+    }
+    const nearLeft: RibbonVertex = {
+      x: nearCenter.x - flowZ * nearHalfWidth,
+      z: nearCenter.z + flowX * nearHalfWidth,
+      y: nearCenter.y,
+      depth: nearCenter.depth,
+    }
+    const nearRight: RibbonVertex = {
+      x: nearCenter.x + flowZ * nearHalfWidth,
+      z: nearCenter.z - flowX * nearHalfWidth,
+      y: nearCenter.y,
+      depth: nearCenter.depth,
+    }
+    const midDistance = distance * .5
     const midHalfWidth = Math.max(.8, halfWidth * .42)
     const midCenter: RibbonVertex = {
       x: section.center.x + flowX * midDistance,
       z: section.center.z + flowZ * midDistance,
-      y: section.center.y - .015,
-      depth: .04,
+      y: section.center.y + .012,
+      depth: .035,
     }
     const midLeft: RibbonVertex = {
       x: midCenter.x - flowZ * midHalfWidth,
@@ -337,11 +357,19 @@ function appendRiverRibbons(
     const tip: RibbonVertex = {
       x: section.center.x + flowX * distance,
       z: section.center.z + flowZ * distance,
-      y: section.center.y - .03,
-      depth: .02,
+      y: section.center.y - .012,
+      depth: .008,
     }
-    appendPolygon([section.left, section.right, midRight, midLeft], flowX, flowZ)
+    appendPolygon([section.left, section.right, nearRight, nearLeft], flowX, flowZ)
+    appendPolygon([nearLeft, nearRight, midRight, midLeft], flowX, flowZ)
     appendPolygon([midLeft, midRight, tip], flowX, flowZ)
+  }
+
+  const appendJunctionPad = (section: Section, radius: number, flowX: number, flowZ: number): void => {
+    // A chain can begin or end at a confluence without owning a terminal
+    // marker. A small shared pad hides the miter seam where the neighbouring
+    // chain arrives, while keeping the actual endpoint taper for true ends.
+    appendRoundCap(section, radius * 1.06, flowX, flowZ)
   }
 
   for (const reach of reaches) {
@@ -417,11 +445,20 @@ function appendRiverRibbons(
     const terminal = reach.terminal ?? true
     if (source) {
       if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ)
-      else appendTaperedCap(first, -flowX, -flowZ, Math.max(80, radius * 2.2))
+      else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4))
+    } else if (!reach.mouth) {
+      appendJunctionPad(first, radius, -flowX, -flowZ)
     }
     if (terminal) {
       if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
-      else appendTaperedCap(last, flowX, flowZ, Math.max(80, radius * 2.2))
+      else {
+        appendTaperedCap(last, flowX, flowZ, Math.max(140, radius * 3.4))
+        // Keep a shallow rounded shoulder at the live section so a bank that
+        // rises faster than the feather cannot expose a square terminal edge.
+        appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ)
+      }
+    } else if (!reach.mouth) {
+      appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ)
     }
   }
 
