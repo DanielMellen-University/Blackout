@@ -40,6 +40,7 @@ export class HUD {
   private readonly styleCache = new WeakMap<Element, Map<string, string>>()
   private readonly attributeCache = new WeakMap<Element, Map<string, string>>()
   private readonly classCache = new WeakMap<Element, Map<string, boolean>>()
+  private readonly textCache = new WeakMap<Element, string>()
 
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
@@ -281,7 +282,9 @@ export class HUD {
 
   /** Avoid layout-triggering DOM writes when a readout has not changed. */
   private setText(el: HTMLElement, value: string): void {
-    if (el.textContent !== value) el.textContent = value
+    if (this.textCache.get(el) === value) return
+    this.textCache.set(el, value)
+    el.textContent = value
   }
 
   private setHidden(el: HTMLElement, hidden: boolean): void {
