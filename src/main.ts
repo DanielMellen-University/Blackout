@@ -1,7 +1,7 @@
 import {
   ACESFilmicToneMapping,
   MathUtils,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   PerspectiveCamera,
   Quaternion,
   SRGBColorSpace,
@@ -59,7 +59,9 @@ async function boot(): Promise<void> {
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.2
   renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = PCFSoftShadowMap
+  // Three.js now folds the old PCFSoftShadowMap into PCFShadowMap anyway.
+  // Use the supported constant directly so startup stays warning-free.
+  renderer.shadowMap.type = PCFShadowMap
 
   const world = new World()
   if (titleStatus) titleStatus.textContent = ''
