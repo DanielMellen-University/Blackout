@@ -21,6 +21,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
+- Airborne yaw and runway steering now honor the HUD control convention: A turns left and D turns right, with regression coverage for both nose directions.
 - Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
 - Aircraft animation caches gear, control-surface, afterburner, and nozzle nodes so each physics step avoids repeated scene-tree searches.
 - Flight surfaces are now visibly hinged: differential flaperons, stabilators, and canted tail panels move with pitch, roll, and yaw input while reusing the existing meshes.

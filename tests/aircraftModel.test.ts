@@ -140,6 +140,21 @@ describe('rebuilt aircraft', () => {
     expect(rightTail.rotation.y).toBeCloseTo(0)
   })
 
+  it('turns the nose in the same direction as the A/D yaw mapping', () => {
+    setContactHeightSampler(() => 0)
+    const forward = (yaw: number): number => {
+      const aircraft = new Aircraft()
+      aircraft.position.set(0, 1000, 0)
+      aircraft.velocity.set(0, 0, 120)
+      aircraft.controls.yaw = yaw
+      aircraft.step(1 / 60)
+      return new Vector3(0, 0, 1).applyQuaternion(aircraft.orientation).x
+    }
+
+    expect(forward(-1)).toBeLessThan(0)
+    expect(forward(1)).toBeGreaterThan(0)
+  })
+
   it('disposes replaced procedural model resources exactly once', () => {
     const model = createF35Model()
     const body = model.getObjectByName('BlendedFuselage') as Mesh

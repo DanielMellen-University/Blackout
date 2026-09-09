@@ -69,7 +69,7 @@ export class FlightModel {
     const q = 1 / (1 + (airspeed / 1260) ** 2 * 0.22)
 
     const tOx = -controls.pitch * C.pitchRate * auth * q
-    const tOy = -controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)
+    const tOy = controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)
     const tOz = -controls.roll * C.rollRate * (onGround ? auth * 0.28 : auth)
 
     const kP = 1 - Math.exp(-C.pitchResponse * dt)
@@ -103,7 +103,7 @@ export class FlightModel {
     orientation.multiply(_spin).normalize()
 
     if (onGround && groundSpeed > 0.5 && groundSpeed < 80) {
-      const steer = -controls.yaw * (C.groundSteer + groundSpeed * 0.02) * dt
+      const steer = controls.yaw * (C.groundSteer + groundSpeed * 0.02) * dt
       orientation.premultiply(_spin.setFromAxisAngle(_worldUp, steer)).normalize()
     }
 
