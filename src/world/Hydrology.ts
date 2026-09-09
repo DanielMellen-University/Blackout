@@ -10,13 +10,15 @@ const BINS = CATCHMENT_SIZE / BIN
 const FLOW_GRID = 18
 const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
 const MAX_CHANNEL_EDGES = 72
-const MAX_RENDER_REACHES = 180
+const MAX_RENDER_REACHES = 300
 
 interface Basin { x: number; z: number; radius: number; aspect: number; angle: number; phase: number; level: number; sea: boolean }
 /** A cached analytic river segment, shared by terrain carving and water rendering. */
 export interface RiverReach {
   ax: number; az: number; bx: number; bz: number
   wa: number; wb: number; ya: number; yb: number
+  /** True when this reach terminates at a lake or sea shoreline. */
+  mouth?: boolean
 }
 type Reach = RiverReach
 interface Catchment { basins: Basin[]; bins: Reach[][] }
@@ -389,20 +391,25 @@ function emitDrainageChain(
     const wb = width(Math.max(flow[from]!, flow[to]!))
     const ya = levels[from]!
     const yb = Math.min(ya - .25, levels[to]!)
+    // Four exact Catmull samples preserve the carved curve instead of asking
+    // the renderer to invent a second spline that could float off the bed.
     let a = point(0)
-    for (let step = 1; step <= 2; step++) {
+    for (let step = 1; step <= 4; step++) {
       if (!canAdd()) return
-      const t = step / 2, b = point(t)
+      const t = step / 4, b = point(t)
       const shore = clipRiverAtShore(basins, a, b)
       // Rivers stop at the true shore instead of cutting through a lake or
       // sea and fighting its fixed water level in the query-time resolver.
       if (shore) {
-        const ta = (step - 1) / 2
+        const ta = (step - 1) / 4
         const endT = ta + (t - ta) * shore.t
+        const startLevel = ya + (yb - ya) * ta
+        const shoreLevel = shore.level ?? ya + (yb - ya) * endT
         addReach({
           ax: a.x, az: a.z, bx: shore.x, bz: shore.z,
           wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * endT,
-          ya: ya + (yb - ya) * ta, yb: shore.level ?? ya + (yb - ya) * endT,
+          ya: startLevel, yb: Math.min(startLevel - .05, shoreLevel),
+          mouth: shore.level !== undefined,
         })
       }
       a = b

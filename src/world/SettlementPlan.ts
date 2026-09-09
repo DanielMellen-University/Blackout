@@ -77,7 +77,10 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
     // Huge city footprints need a broader site search now that mountain and
     // foothill provinces have stronger relief. Village surveys stay compact so
     // a creek on the far side of a wide rural footprint does not erase it.
-    const siteAttempts = kind === 'city' ? 32 : 32
+    // Site validation is deterministic and off-thread, so spend a little more
+    // search budget finding a real dry shelf instead of silently deleting the
+    // whole landmark when the first random probes land on a river or ridge.
+    const siteAttempts = kind === 'city' ? 56 : 48
     for (let attempt = 0; attempt < siteAttempts; attempt++) {
       const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       const z = cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
@@ -91,14 +94,17 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
         const angle = i * Math.PI * 2 / surveySamples
         const s = sampleClimate(x + Math.cos(angle) * surveyRadius, z + Math.sin(angle) * surveyRadius)
         if (!dry(s)) {
-          if (kind === 'village') { suitable = false; break }
+          // A village can border a creek, marsh, or lake. Rejecting one wet
+          // perimeter probe used to erase otherwise excellent landmarks;
+          // individual lots and road shoulders still perform strict dry-site
+          // checks during population.
           continue
         }
         drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
         if (max - min > (kind === 'city' ? 350 : 420)) { suitable = false; break }
       }
-      if (kind === 'city' && drySamples < 4) suitable = false
+      if (drySamples < (kind === 'city' ? 4 : 3)) suitable = false
       if (!suitable) continue
       const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome, buildings: [], roads: [] }
       populate(plan, rand)

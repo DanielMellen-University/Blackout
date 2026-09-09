@@ -25,7 +25,7 @@ import {
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
-import { hydrologyIntersectsBounds, riverReachesInBounds } from './Hydrology'
+import { riverReachesInBounds } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 
 /**
@@ -63,6 +63,9 @@ const SEGS_FAR = 6
 const WATER_TARGET_CELL_M = 110
 /** Hard cap prevents a large sea from consuming the terrain build budget. */
 const WATER_MAX_SEGS = 32
+/** Rivers need a tighter grid nearby, but remain bounded in the fog ring. */
+const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 14, 1: 28, 2: 70 }
+const RIVER_MAX_SEGS = 48
 /** Build cost budget per frame (props cost more, far LODs cost less). */
 const BUILD_BUDGET = 2.4
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
@@ -701,14 +704,20 @@ export class TerrainSystem {
     const near = lod === 0
     const span = CHUNK_SIZE * size
     const baseSegs = size > 1 ? SEGS_MID : segsForLod(lod)
+    const reaches = riverReachesInBounds(originX, originZ, originX + span, originZ + span)
+    const riverTargetCell = RIVER_TARGET_CELL_M[lod]
+    const riverSegs = Math.min(RIVER_MAX_SEGS, Math.max(baseSegs, Math.ceil(span / riverTargetCell)))
+    const hasRiver = reaches.length > 0
     const waterSegs = Math.min(WATER_MAX_SEGS, Math.max(baseSegs, Math.ceil(span / WATER_TARGET_CELL_M)))
-    const segs = waterDetail ? waterSegs : baseSegs
+    const detailSegs = hasRiver ? Math.max(waterSegs, riverSegs) : waterSegs
+    const segs = waterDetail ? detailSegs : baseSegs
     const geo = new PlaneGeometry(span, span, segs, segs)
     geo.rotateX(-Math.PI / 2)
 
     const pos = geo.attributes.position as BufferAttribute
     const colors = new Float32Array(pos.count * 3)
     const waterLevels = new Float32Array(pos.count)
+    const basinMask = new Float32Array(pos.count)
     const half = span * 0.5
     const stride = segs + 1
     const cell = span / segs
@@ -719,6 +728,11 @@ export class TerrainSystem {
       const climate = sampleClimate(wx, wz)
       const h = climate.height
       waterLevels[i] = climate.waterLevel ?? 0
+      // Rivers are rendered by the analytic ribbon below. Only fixed-level
+      // basins remain on the clipped terrain grid, preventing blocky river
+      // strips from fighting the smooth channel surface.
+      basinMask[i] = climate.biome === 'ocean' ||
+        (climate.biome === 'water' && climate.features.lake > climate.features.river * .55) ? 1 : 0
       pos.setY(i, h)
       const [r, g, b] = biomeColor(
         climate.biome,
@@ -746,10 +760,8 @@ export class TerrainSystem {
     // excellent for dry fog silhouettes but makes a lake shore read as a
     // dozen huge teeth. Rebuild just wet tiles at a capped world-space cell
     // size, so water and its underlying bed stay on the same precise grid.
-    const touchesHydrology = !containsWater && !waterDetail && waterSegs > segs && hydrologyIntersectsBounds(
-      originX, originZ, originX + span, originZ + span,
-    )
-    if ((containsWater || touchesHydrology) && !waterDetail && waterSegs > segs) {
+    const touchesHydrology = !containsWater && !waterDetail && hasRiver
+    if ((containsWater || touchesHydrology) && !waterDetail && detailSegs > segs) {
       geo.dispose()
       return this.buildHeightMesh(originX, originZ, lod, size, true)
     }
@@ -806,15 +818,12 @@ export class TerrainSystem {
     mesh.receiveShadow = near
     mesh.castShadow = false
     mesh.name = 'TerrainChunk'
-    // One tile owns a reach by its midpoint, even when the ribbon itself
-    // crosses a tile edge. That prevents duplicate stream geometry while the
-    // quadtree swaps between merged and detailed terrain tiles.
-    const rivers = riverReachesInBounds(originX, originZ, originX + span, originZ + span).filter(reach => {
-      const x = (reach.ax + reach.bx) / 2, z = (reach.az + reach.bz) / 2
-      return x >= originX && x < originX + span && z >= originZ && z < originZ + span
-    })
+    // Each tile receives the clipped portion of every touching reach. Exact
+    // rectangle clipping means adjacent terrain leaves meet without gaps or
+    // overlapping river surfaces during LOD transitions.
+    const rivers = reaches
     const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
-      { rain: this.waterRain, snow: this.waterSnow }, rivers)
+      { rain: this.waterRain, snow: this.waterSnow }, basinMask, rivers)
     return { mesh, water, heights, waterLevels, segs }
   }
 

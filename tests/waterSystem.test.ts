@@ -71,4 +71,29 @@ describe('independent water surfaces', () => {
     mesh!.geometry.dispose()
     ;(mesh!.material as MeshStandardMaterial).dispose()
   })
+
+  it('clips rivers to each tile and keeps raster water basin-only', () => {
+    const clock = { value: 0 }
+    const dryBed = new Float32Array([60, 60, 60, 60])
+    const noBasin = new Float32Array(4)
+    expect(buildWaterMesh(new Float32Array([-4, -4, -4, -4]), new Float32Array(4), 1, 100, 0, 0, clock, undefined, noBasin)).toBeNull()
+
+    const basin = buildWaterMesh(new Float32Array([-4, -4, -4, -4]), new Float32Array(4), 1, 100, 0, 0, clock,
+      undefined, new Float32Array(4).fill(1))!
+    expect(basin).not.toBeNull()
+    basin.geometry.dispose()
+    ;(basin.material as MeshStandardMaterial).dispose()
+
+    const river = buildWaterMesh(dryBed, new Float32Array(4), 1, 420, 0, 0, clock, undefined, noBasin,
+      [{ ax: -160, az: 60, bx: 580, bz: 340, wa: 26, wb: 38, ya: 90, yb: 70 }])!
+    const positions = river.geometry.getAttribute('position')
+    for (let i = 0; i < positions.count; i++) {
+      expect(positions.getX(i)).toBeGreaterThanOrEqual(-210 - 1e-4)
+      expect(positions.getX(i)).toBeLessThanOrEqual(210 + 1e-4)
+      expect(positions.getZ(i)).toBeGreaterThanOrEqual(-210 - 1e-4)
+      expect(positions.getZ(i)).toBeLessThanOrEqual(210 + 1e-4)
+    }
+    river.geometry.dispose()
+    ;(river.material as MeshStandardMaterial).dispose()
+  })
 })

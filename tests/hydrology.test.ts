@@ -23,12 +23,13 @@ describe('natural drainage', () => {
     setWorldSeed(1)
     const first = riverReaches(-1, -1)
     expect(first.length).toBeGreaterThan(50)
-    expect(first.length).toBeLessThanOrEqual(180)
+    expect(first.length).toBeLessThanOrEqual(300)
     for (const reach of first) {
       expect(reach.wa).toBeGreaterThan(0)
       expect(reach.wb).toBeGreaterThan(0)
       expect(Math.max(reach.wa, reach.wb)).toBeLessThanOrEqual(230)
     }
+    expect(first.some(reach => reach.mouth)).toBe(true)
     const signature = first.map(reach => [reach.ax, reach.az, reach.bx, reach.bz, reach.wa, reach.wb])
     setWorldSeed(73)
     riverReaches(-1, -1)
