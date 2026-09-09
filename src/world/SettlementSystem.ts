@@ -1,6 +1,6 @@
 import {
-  BoxGeometry, BufferGeometry, Color, CylinderGeometry, Float32BufferAttribute, Group,
-  InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene,
+  BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
+  InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
@@ -143,6 +143,9 @@ export class SettlementSystem {
   readonly root = new Group()
   private readonly box = new BoxGeometry(1, 1, 1)
   private readonly tower = new CylinderGeometry(.5, .5, 1, 8)
+  /** Shared civic accents keep city silhouettes varied without per-building draws. */
+  private readonly spire = new ConeGeometry(.5, 1, 8)
+  private readonly dome = new SphereGeometry(.5, 12, 6, 0, Math.PI * 2, 0, Math.PI * .5)
   private readonly roof = roofGeometry()
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
@@ -354,7 +357,7 @@ export class SettlementSystem {
     this.clearAll()
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
-    this.box.dispose(); this.tower.dispose(); this.roof.dispose()
+    this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.dome.dispose(); this.roof.dispose()
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
   }
 
@@ -531,9 +534,20 @@ export class SettlementSystem {
     const regular = plan.buildings.filter(b => (b.shape ?? 'block') !== 'tower' && b.shape !== 'stepped')
     const towers = plan.buildings.filter(b => b.shape === 'tower')
     const stepped = plan.buildings.filter(b => b.shape === 'stepped')
+    // A few high-rise and hall lots become deterministic civic landmarks. The
+    // accents are instanced and capped, so a 1,000-building city adds at most
+    // twenty-four transforms while breaking the repeated-box skyline.
+    const spireBuildings = plan.kind === 'city'
+      ? plan.buildings.filter((b, i) => b.height > 620 && i % 17 === 4).slice(0, 12)
+      : []
+    const domeBuildings = plan.kind === 'city'
+      ? plan.buildings.filter((b, i) => (b.shape === 'hangar' || b.shape === 'slab') && i % 23 === 9).slice(0, 12)
+      : []
     const body = new InstancedMesh(this.box, this.walls, regular.length)
     const towerBodies = new InstancedMesh(this.tower, this.walls, towers.length)
     const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
+    const spires = new InstancedMesh(this.spire, this.roofs, spireBuildings.length)
+    const domes = new InstancedMesh(this.dome, this.roofs, domeBuildings.length)
     const pitched = plan.buildings.filter(b => b.roof === 'pitched')
     const flat = plan.buildings.filter(b => b.roof === 'flat')
     const flatHangars = plan.buildings.filter(b => b.shape === 'hangar' && b.roof === 'flat')
@@ -553,6 +567,16 @@ export class SettlementSystem {
       put(stepBodies, i * 2, b.x, b.y + b.height * .34, b.z, b.width, b.height * .68, b.depth, b.yaw, b.wallColor)
       put(stepBodies, i * 2 + 1, b.x, b.y + b.height * .84, b.z, b.width * .68, b.height * .32, b.depth * .72, b.yaw, b.wallColor)
     })
+    spireBuildings.forEach((b, i) => {
+      const height = Math.min(b.height * .08, 110)
+      const radius = Math.max(18, Math.min(b.width, b.depth) * .2)
+      put(spires, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
+    })
+    domeBuildings.forEach((b, i) => {
+      const height = Math.max(18, Math.min(72, Math.min(b.width, b.depth) * .2))
+      const radius = Math.max(26, Math.min(b.width, b.depth) * .42)
+      put(domes, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
+    })
     pitched.forEach((b, i) => put(gables, i, b.x, b.y + b.height, b.z, b.width + 1.2, Math.min(b.width, b.depth) * .3, b.depth + 1.2, b.yaw, b.roofColor))
     flat.forEach((b, i) => {
       const topScaleX = b.shape === 'stepped' ? .68 : b.shape === 'tower' ? .72 : 1
@@ -566,7 +590,7 @@ export class SettlementSystem {
     // reads as a civic or industrial hall instead of another plain box.
     flatHangars.forEach((b, i) => put(hangarCaps, i, b.x, b.y + b.height + .55, b.z,
       b.width * 1.12, Math.min(b.width, b.depth) * .22, b.depth * 1.08, b.yaw, b.roofColor))
-    for (const mesh of [body, towerBodies, stepBodies, gables, caps, hangarCaps]) {
+    for (const mesh of [body, towerBodies, stepBodies, spires, domes, gables, caps, hangarCaps]) {
       if (!mesh.count) { mesh.dispose(); continue }
       mesh.computeBoundingSphere()
       // Roof silhouettes stay visible at distance too; only ground detail is culled.
