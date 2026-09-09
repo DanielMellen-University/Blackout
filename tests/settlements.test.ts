@@ -121,6 +121,27 @@ describe('procedural settlements', () => {
     }
   })
 
+  it('keeps anchored landmarks populated when rough terrain trims their footprint', () => {
+    const base = sampleClimate(0, 0)
+    const sample = vi.spyOn(terrain, 'sampleClimate')
+    sample.mockImplementation((x, z) => ({
+      ...base,
+      height: 220 + Math.sin(x * .0017) * 220 + Math.cos(z * .0013) * 180,
+      waterLevel: 0,
+      biome: 'plains',
+      biomeB: 'plains',
+      biomeMix: 0,
+      land: 1,
+      coastal: 0,
+    }))
+    setWorldSeed(73)
+    setOpsPad(0, 0, 220)
+    const anchors = region(3).filter(plan => plan.anchor)
+    expect(anchors.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
+    expect(anchors.find(plan => plan.anchor === 'village')!.buildings.length).toBeGreaterThanOrEqual(6)
+    expect(anchors.find(plan => plan.anchor === 'city')!.buildings.length).toBeGreaterThanOrEqual(420)
+  })
+
   it('varies settlement scale and silhouette instead of repeating one footprint', () => {
     setWorldSeed(73)
     const plans = region()

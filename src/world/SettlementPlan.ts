@@ -9,6 +9,10 @@ export const SETTLEMENT_CELL_SIZE = 24000
 // Site validation still rejects water, steep ground, and the active airfield.
 const CITY_CHANCE = .03
 const VILLAGE_CHANCE = .42
+/** Guaranteed landmarks keep a smaller minimum than organic cities so rough
+ * worlds still get a readable destination instead of an empty anchor cell. */
+const ANCHOR_CITY_MIN_BUILDINGS = 420
+const ANCHOR_VILLAGE_MIN_BUILDINGS = 6
 /** Active airfields get one nearby village landmark so a fresh world has a
  * readable destination instead of relying on several independent rolls. */
 const VILLAGE_ANCHOR_RING = 1
@@ -124,8 +128,8 @@ function anchorLocation(
   // is about 15 km. That made valid cities exist in the worker but disappear
   // into fog before the player could ever read their skyline. Villages sit
   // closer so the first landmark is reachable during the opening climb.
-  const base = kind === 'city' ? 9000 : 3200
-  const span = kind === 'city' ? 4500 : 4200
+  const base = kind === 'city' ? 8200 : 3000
+  const span = kind === 'city' ? 4200 : 3600
   const distance = base + hash2(cellX * 271 + attempt * 67 + salt,
     cellZ * 313 - attempt * 89 - salt) * span
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
@@ -149,7 +153,7 @@ function anchorGridLocation(
   const phase = hash2(cellX * 197 + cellZ * 233 + salt, cellZ * 271 - cellX * 307 - salt) * Math.PI * 2
   const angle = phase + sector / sectors * Math.PI * 2
   const ringStep = 500
-  const base = kind === 'city' ? 7600 : 2200
+  const base = kind === 'city' ? 6800 : 1800
   const distance = base + ring * ringStep
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
 }
@@ -253,7 +257,10 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
       const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome,
         anchor: cityAnchor ? 'city' : villageAnchor ? 'village' : undefined, buildings: [], roads: [] }
       populate(plan, rand)
-      if (plan.buildings.length < (kind === 'city' ? 650 : 8)) continue
+      const minimumBuildings = kind === 'city'
+        ? cityAnchor ? ANCHOR_CITY_MIN_BUILDINGS : 650
+        : villageAnchor ? ANCHOR_VILLAGE_MIN_BUILDINGS : 8
+      if (plan.buildings.length < minimumBuildings) continue
       result = plan
       break
     }

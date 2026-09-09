@@ -403,7 +403,9 @@ export class SettlementSystem {
           } catch {
             // A partial module mock may throw when an optional export is read.
           }
-          return anchor === 'city' ? 0 : anchor === 'village' ? 1 : 2
+          // Both guaranteed tiers outrank organic cells. Distance then wins,
+          // so the nearby village does not wait behind a slower city build.
+          return anchor ? 0 : 1
         }
         const rank = anchorRank(a) - anchorRank(b)
         if (rank) return rank
