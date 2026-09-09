@@ -1,6 +1,6 @@
 import { Box3, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
-import { afterEach, describe, expect, it } from 'vitest'
-import { Aircraft } from '../src/aircraft/Aircraft'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Aircraft, disposeAircraftObject } from '../src/aircraft/Aircraft'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
 
@@ -111,5 +111,19 @@ describe('rebuilt aircraft', () => {
     expect(rightFlaperon.rotation.x).toBeCloseTo(0)
     expect(leftTail.rotation.y).toBeCloseTo(0)
     expect(rightTail.rotation.y).toBeCloseTo(0)
+  })
+
+  it('disposes replaced procedural model resources exactly once', () => {
+    const model = createF35Model()
+    const body = model.getObjectByName('BlendedFuselage') as Mesh
+    const geometryDispose = vi.spyOn(body.geometry, 'dispose')
+    const material = body.material as MeshStandardMaterial
+    const materialDispose = vi.spyOn(material, 'dispose')
+
+    disposeAircraftObject(model)
+
+    expect(geometryDispose).toHaveBeenCalledTimes(1)
+    expect(materialDispose).toHaveBeenCalledTimes(1)
+    expect(model.children).toHaveLength(0)
   })
 })

@@ -18,6 +18,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
+- Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
 - Flight surfaces are now visibly hinged: differential flaperons, stabilators, and canted tail panels move with pitch, roll, and yaw input while reusing the existing meshes.
 - HUD readouts coalesce unchanged text and visibility updates, reducing avoidable DOM/layout churn during flight without lowering gauge responsiveness.
 - Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash

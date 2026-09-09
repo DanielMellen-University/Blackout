@@ -7,6 +7,8 @@ import {
   MeshStandardMaterial,
   Quaternion,
   Vector3,
+  type BufferGeometry,
+  type Material,
   type Object3D,
   type Scene,
 } from 'three'
@@ -128,7 +130,10 @@ export class Aircraft {
       model.traverse(enableShadows)
 
       const old = this.mesh.getObjectByName('model')
-      if (old) this.mesh.remove(old)
+      if (old) {
+        this.mesh.remove(old)
+        disposeAircraftObject(old)
+      }
       this.mesh.add(model)
       this.usingPlaceholder = false
       return true
@@ -349,6 +354,21 @@ export class Aircraft {
   get onGround(): boolean {
     return this.flight.isOnGround(this)
   }
+}
+
+/** Dispose a removed aircraft subtree without double-disposing shared slots. */
+export function disposeAircraftObject(root: Object3D): void {
+  const geometries = new Set<BufferGeometry>()
+  const materials = new Set<Material>()
+  root.traverse((obj) => {
+    if (!(obj instanceof Mesh)) return
+    geometries.add(obj.geometry)
+    const slots = Array.isArray(obj.material) ? obj.material : [obj.material]
+    for (const material of slots) materials.add(material)
+  })
+  for (const material of materials) material.dispose()
+  for (const geometry of geometries) geometry.dispose()
+  root.clear()
 }
 
 function enableShadows(obj: Object3D): void {
