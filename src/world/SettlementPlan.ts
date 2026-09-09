@@ -311,6 +311,15 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
 function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   const angle = rand(30) * Math.PI * 2, cos = Math.cos(angle), sin = Math.sin(angle)
   const style = palette(plan.biome)
+  const drySettlementBiome = plan.biome === 'desert' || plan.biome === 'mesa' ||
+    plan.biome === 'savanna' || plan.biome === 'saltflat'
+  const wetSettlementBiome = plan.biome === 'rainforest' || plan.biome === 'swamp'
+  const coldSettlementBiome = plan.biome === 'tundra' || plan.biome === 'snow' ||
+    plan.biome === 'mountain' || plan.biome === 'volcanic'
+  const cityFootprintScale = drySettlementBiome ? 1.1
+    : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.04 : 1
+  const villageFootprintScale = drySettlementBiome ? 1.08
+    : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.02 : 1
   const world = (x: number, z: number) => ({ x: plan.x + cos * x + sin * z, z: plan.z - sin * x + cos * z })
   const occupied = new Map<string, { x: number; z: number; hx: number; hz: number; yaw: number; width: number; depth: number }[]>()
   const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number }[] = []
@@ -375,7 +384,14 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         : shapeRoll < (coldSettlementBiome ? .3 : .25) && districtCore > .24 ? 'tower'
           : shapeRoll < (wetSettlementBiome ? .5 : .48) ? 'slab'
             : shapeRoll < (drySettlementBiome ? .67 : .61) ? 'hangar' : 'block'
-      : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
+      : drySettlementBiome
+        ? shapeRoll < .38 ? 'hangar' : shapeRoll < .62 ? 'block' : shapeRoll < .9 ? 'slab' : 'tower'
+        : wetSettlementBiome
+          ? shapeRoll < .2 ? 'hangar' : shapeRoll < .55 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
+          : coldSettlementBiome
+            ? shapeRoll < .2 ? 'hangar' : shapeRoll < .48 ? 'slab' : shapeRoll < .86 ? 'block'
+              : shapeRoll < .96 ? 'tower' : 'stepped'
+            : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
     const finalHeight = plan.kind === 'city'
       ? shape === 'hangar'
         ? Math.min(height, 150 + rand(n + 3000) * 180 + districtCore * 260)
@@ -426,13 +442,6 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     flush()
   }
   const city = plan.kind === 'city'
-  const drySettlementBiome = plan.biome === 'desert' || plan.biome === 'mesa' ||
-    plan.biome === 'savanna' || plan.biome === 'saltflat'
-  const wetSettlementBiome = plan.biome === 'rainforest' || plan.biome === 'swamp'
-  const coldSettlementBiome = plan.biome === 'tundra' || plan.biome === 'snow' ||
-    plan.biome === 'mountain' || plan.biome === 'volcanic'
-  const cityFootprintScale = drySettlementBiome ? 1.1
-    : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.04 : 1
   // Village morphology is chosen independently from footprint size. This
   // keeps settlements from reading as repeated radial templates or a grid.
   // Climate families gently bias the footprint without removing seed variety:
@@ -540,8 +549,8 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         const frontage = street.width * .5 + 115 + rand(n + 2) * 90
         const localX = street.a.x + dx / length * along + nx * frontage * side
         const localZ = street.a.z + dz / length * along + nz * frontage * side
-        const width = Math.max(180, (220 + rand(n + 3) * 220) * villageScale)
-        const depth = Math.max(180, (210 + rand(n + 4) * 230) * villageScale)
+        const width = Math.max(180, (220 + rand(n + 3) * 220) * villageScale * villageFootprintScale)
+        const depth = Math.max(180, (210 + rand(n + 4) * 230) * villageScale * villageFootprintScale)
         const height = 145 + rand(n + 5) * 235
         building(localX, localZ, width, depth, height,
           angle + heading + (rand(n + 6) - .5) * .24)
@@ -580,9 +589,9 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
     const landmarkScale = !city && rand(n + 8) < .08 ? 1.8 : 1
     const width = city ? (160 + rand(n + 2) * 180) * cityFootprintScale
-      : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * landmarkScale)
+      : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * villageFootprintScale * landmarkScale)
     const depth = city ? (160 + rand(n + 3) * 180) * cityFootprintScale
-      : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * landmarkScale)
+      : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * villageFootprintScale * landmarkScale)
     let nearest = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
