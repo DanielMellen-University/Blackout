@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { regionalRoadKey, roadBetweenSettlements, shouldConnectSettlements } from '../src/world/RegionalRoads'
+import { regionalRoadKey, roadBetweenSettlements, selectRegionalRoadLinks, shouldConnectSettlements } from '../src/world/RegionalRoads'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 
 function plan(id: string, x: number, z: number, kind: 'city' | 'village' = 'village'): SettlementPlan {
@@ -67,5 +67,15 @@ describe('regional settlement roads', () => {
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
     expect(road!.width).toBe(54)
+  })
+
+  it('gives a village priority access to a reachable city hub', () => {
+    setWorldSeed(1)
+    const village = plan('0,0', 0, 0, 'village')
+    const nearbyVillage = plan('1,0', 18000, 0, 'village')
+    const city = plan('2,0', 30000, 0, 'city')
+    const links = selectRegionalRoadLinks(village, [nearbyVillage, city])
+    expect(links).toHaveLength(1)
+    expect(links[0]!.from.kind === 'city' || links[0]!.to.kind === 'city').toBe(true)
   })
 })
