@@ -14,6 +14,7 @@ export class FlightAudio {
   private windSrc: AudioBufferSourceNode | null = null
   private built = false
   private muted = true
+  private readonly scheduledTargets = new WeakMap<AudioParam, number>()
 
   /**
    * Resume (or create) the AudioContext from a user gesture such as Play.
@@ -71,18 +72,18 @@ export class FlightAudio {
     const now = ctx.currentTime
     const tau = Math.max(0.04, Math.min(0.12, opts.dt * 3))
 
-    this.master.gain.setTargetAtTime(masterTarget, now, tau)
-    this.engineGain.gain.setTargetAtTime(engTarget, now, tau)
-    this.windGain.gain.setTargetAtTime(windTarget, now, tau)
+    this.scheduleTarget(this.master.gain, masterTarget, now, tau)
+    this.scheduleTarget(this.engineGain.gain, engTarget, now, tau)
+    this.scheduleTarget(this.windGain.gain, windTarget, now, tau)
 
     if (this.engineFilter) {
       // Idle growl stays low; spool opens the filter a bit.
       const cut = 90 + eng * 160 + (boost ? 70 : 0)
-      this.engineFilter.frequency.setTargetAtTime(cut, now, tau)
+      this.scheduleTarget(this.engineFilter.frequency, cut, now, tau, 0.5)
     }
     if (this.windFilter) {
       const cut = 900 + wind * 2200
-      this.windFilter.frequency.setTargetAtTime(cut, now, tau)
+      this.scheduleTarget(this.windFilter.frequency, cut, now, tau, 2)
     }
   }
 
@@ -90,7 +91,7 @@ export class FlightAudio {
   silence(): void {
     if (!this.master || !this.ctx) return
     this.muted = true
-    this.master.gain.setTargetAtTime(0, this.ctx.currentTime, 0.05)
+    this.scheduleTarget(this.master.gain, 0, this.ctx.currentTime, 0.05)
   }
 
   /** Short event cues keep checkpoints and landings readable without assets. */
@@ -153,6 +154,19 @@ export class FlightAudio {
 
   get isMuted(): boolean {
     return this.muted
+  }
+
+  private scheduleTarget(
+    param: AudioParam,
+    target: number,
+    now: number,
+    tau: number,
+    epsilon = 0.001,
+  ): void {
+    const previous = this.scheduledTargets.get(param)
+    if (!shouldScheduleAudioTarget(previous, target, epsilon)) return
+    this.scheduledTargets.set(param, target)
+    param.setTargetAtTime(target, now, tau)
   }
 
   private buildGraph(ctx: AudioContext): void {
@@ -273,6 +287,17 @@ export class FlightAudio {
       gain.disconnect()
     })
   }
+}
+
+/** Keep tiny floating-point drift from creating redundant AudioParam events. */
+export function shouldScheduleAudioTarget(
+  previous: number | undefined,
+  target: number,
+  epsilon = 0.001,
+): boolean {
+  if (previous === undefined) return true
+  const delta = Math.abs(previous - target)
+  return epsilon <= 0 ? delta > 0 : delta >= epsilon
 }
 
 function clamp01(v: number): number {
