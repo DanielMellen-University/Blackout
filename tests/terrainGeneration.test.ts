@@ -62,6 +62,14 @@ describe('continuous terrain generation', () => {
     expect(samples.flat().every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
 
+  it('keeps volcanic caldera accents visibly warmer than cooled ash', () => {
+    const ash = biomeColor('volcanic', 900, .3, 240, -480, undefined, 0, 1, 'volcanic', 0,
+      undefined, { ridge: .4, alpineValley: .1, plateau: 0, caldera: 0 })
+    const caldera = biomeColor('volcanic', 900, .3, 240, -480, undefined, 0, 1, 'volcanic', 0,
+      undefined, { ridge: .4, alpineValley: .1, plateau: 0, caldera: 1 })
+    expect(caldera[0] - caldera[1]).toBeGreaterThan(ash[0] - ash[1])
+  })
+
   it('gives exposed water beds feature-aware sediment variation', () => {
     const river = biomeColor('water', 40, .6, 240, -480,
       { river: 1, lake: 0, ravine: 0, pond: 0, stream: 1 }, 0, .2)

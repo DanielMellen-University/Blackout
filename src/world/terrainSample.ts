@@ -640,12 +640,21 @@ export function biomeColor(
     ]
     const fissureField = valueNoise(x / 980 + 37, z / 980 - 19)
     const calderaBoost = landform?.caldera ?? 0
-    const fissure = smoothstep(.78, .94, fissureField) * (.1 + calderaBoost * .72)
-    const ember: [number, number, number] = [0.42 + ashField * .12, .09 + ashField * .035, .025]
+    const fissure = smoothstep(.72, .92, fissureField) * (.15 + calderaBoost * .68)
+    const flowField = valueNoise(x / 920 - 23, z / 920 + 41) * .7 +
+      valueNoise(x / 240 + 71, z / 240 - 17) * .3
+    const flow = smoothstep(.64, .84, flowField) * (.07 + calderaBoost * .2)
+    const ember: [number, number, number] = [0.48 + ashField * .14, .075 + ashField * .035, .018]
     col = [
       col[0] + (ember[0] - col[0]) * fissure,
       col[1] + (ember[1] - col[1]) * fissure,
       col[2] + (ember[2] - col[2]) * fissure,
+    ]
+    const lavaRock: [number, number, number] = [.34 + ashField * .08, .075 + ashField * .025, .02]
+    col = [
+      col[0] + (lavaRock[0] - col[0]) * flow,
+      col[1] + (lavaRock[1] - col[1]) * flow,
+      col[2] + (lavaRock[2] - col[2]) * flow,
     ]
   }
 
