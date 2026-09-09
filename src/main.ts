@@ -84,6 +84,17 @@ async function boot(): Promise<void> {
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
   debug?.syncPad()
 
+  let disposed = false
+  const disposeRuntime = (): void => {
+    if (disposed) return
+    disposed = true
+    input.dispose()
+    cameras.dispose()
+    audio.dispose()
+    renderer.dispose()
+  }
+  window.addEventListener('beforeunload', disposeRuntime, { once: true })
+
   let playing = false
   let banner: string | null = null
   let bannerUntil = 0
@@ -273,6 +284,7 @@ async function boot(): Promise<void> {
 
   let previousFrame = 0
   const tick = (nowMs: number): void => {
+    if (disposed) return
     requestAnimationFrame(tick)
 
     syncInputContext()
