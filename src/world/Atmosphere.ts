@@ -430,6 +430,11 @@ export class Atmosphere {
     return this.weatherDirector.snapshotInto(this.weatherState)
   }
 
+  /** True while the current storm flash envelope is active. */
+  get lightningActive(): boolean {
+    return this.lightningFlashAge < LIGHTNING_DURATION_SEC
+  }
+
   /** Daylight factor shared by world materials (0 = night, 1 = full day). */
   get daylight(): number {
     const elevation = Math.sin((this.timeOfDay - 0.25) * Math.PI * 2)

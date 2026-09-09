@@ -130,6 +130,7 @@ export class FlightAudio {
       | 'landed'
       | 'crash'
       | 'ab'
+      | 'thunder'
       | 'warning'
       | 'gear-up'
       | 'gear-down',
@@ -156,6 +157,10 @@ export class FlightAudio {
       this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)
       this.tone(220, now, 0.18, 'sawtooth', 0.1, 520)
       this.tone(90, now + 0.04, 0.28, 'triangle', 0.08, 160)
+    } else if (kind === 'thunder') {
+      // Low, delayed-feeling roll: the sky flash stays readable without a sharp click.
+      this.noiseBurst(now, 0.52, 'brown', 0.14, 150, 42)
+      this.tone(74, now + 0.04, 0.7, 'triangle', 0.1, 32)
     } else if (kind === 'gear-up' || kind === 'gear-down') {
       // Keep the automatic gear state legible with a quiet mechanical double-click.
       const lowering = kind === 'gear-down'

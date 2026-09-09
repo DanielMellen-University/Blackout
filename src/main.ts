@@ -109,6 +109,7 @@ async function boot(): Promise<void> {
   let wasAirborne = false
   let prevAfterburner = false
   let prevGearDown = true
+  let prevLightning = false
   const audioFrame: Parameters<FlightAudio['update']>[0] = {
     throttle: 0,
     boost: false,
@@ -168,6 +169,7 @@ async function boot(): Promise<void> {
     wasAirborne = false
     prevAfterburner = false
     prevGearDown = aircraft.controls.gearDown
+    prevLightning = false
     prevWarning = null
     time.reset()
   }
@@ -460,6 +462,20 @@ async function boot(): Promise<void> {
       renderer.toneMappingExposure = exposure
     }
     crashFx.update(simLive ? visualDt : 0)
+
+    const lightningActive = world.atmosphere.lightningActive
+    if (
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      lightningActive &&
+      !prevLightning
+    ) {
+      audio.playCue('thunder')
+    }
+    prevLightning = lightningActive
 
     const gearDown = aircraft.controls.gearDown
     if (
