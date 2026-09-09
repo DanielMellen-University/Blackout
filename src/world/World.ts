@@ -7,6 +7,7 @@ import {
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
+import type { WeatherSnapshot } from './WeatherDirector'
 import { AIRFIELD_COLLIDERS } from './Airfield'
 import { randomizeWorldSeed, setWorldSeed } from './noise'
 import { createRunway, setRunwayDaylight } from './Runway'
@@ -28,6 +29,30 @@ export interface SpawnPose {
   z: number
   yaw: number
   biome: string
+}
+
+export interface WeatherEffectState {
+  rain: number
+  snow: number
+  windX: number
+  windZ: number
+  cloudCover: number
+  daylight: number
+}
+
+/** Ignore sub-pixel weather drift while retaining responsive transitions. */
+export function weatherEffectsChanged(
+  previous: WeatherEffectState | null,
+  next: WeatherEffectState,
+  epsilon = 0.0005,
+): boolean {
+  if (!previous) return true
+  return Math.abs(previous.rain - next.rain) > epsilon ||
+    Math.abs(previous.snow - next.snow) > epsilon ||
+    Math.abs(previous.windX - next.windX) > epsilon ||
+    Math.abs(previous.windZ - next.windZ) > epsilon ||
+    Math.abs(previous.cloudCover - next.cloudCover) > epsilon ||
+    Math.abs(previous.daylight - next.daylight) > epsilon
 }
 
 /**
@@ -58,6 +83,7 @@ export class World {
   }
   private committed = false
   private disposed = false
+  private appliedWeather: WeatherEffectState | null = null
 
   constructor() {
     this.sun = this.createSun()
@@ -145,9 +171,7 @@ export class World {
         this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
         const initialWeather = this.atmosphere.weatherSnapshot
-        this.terrain.setWeatherEffects(initialWeather.rain, initialWeather.snow, initialWeather.windX, initialWeather.windZ,
-          Math.max(initialWeather.lowClouds, initialWeather.midClouds * .9))
-        this.settlements.setWeatherEffects(initialWeather.rain, initialWeather.snow, this.atmosphere.daylight)
+        this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
         this.committed = true
         return this.seed
@@ -206,9 +230,7 @@ export class World {
     this.atmosphere.update(simDt, x, y, z, visualDt)
     setRunwayDaylight(this.runway, this.atmosphere.daylight)
     const weather = this.atmosphere.weatherSnapshot
-    this.terrain.setWeatherEffects(weather.rain, weather.snow, weather.windX, weather.windZ,
-      Math.max(weather.lowClouds, weather.midClouds * .9))
-    this.settlements.setWeatherEffects(weather.rain, weather.snow, this.atmosphere.daylight)
+    this.applyWeatherEffects(weather, this.atmosphere.daylight)
   }
 
   /** Release all streamed and persistent world resources before renderer teardown. */
@@ -222,6 +244,27 @@ export class World {
     disposeObjectTree(this.runway)
     this.runway.removeFromParent()
     this.scene.clear()
+  }
+
+  private applyWeatherEffects(weather: WeatherSnapshot, daylight: number): void {
+    const next: WeatherEffectState = {
+      rain: weather.rain,
+      snow: weather.snow,
+      windX: weather.windX,
+      windZ: weather.windZ,
+      cloudCover: Math.max(weather.lowClouds, weather.midClouds * .9),
+      daylight,
+    }
+    if (!weatherEffectsChanged(this.appliedWeather, next)) return
+    this.terrain.setWeatherEffects(
+      next.rain,
+      next.snow,
+      next.windX,
+      next.windZ,
+      next.cloudCover,
+    )
+    this.settlements.setWeatherEffects(next.rain, next.snow, next.daylight)
+    this.appliedWeather = next
   }
 
   private applySpawn(pad: FlatSpawn): void {
