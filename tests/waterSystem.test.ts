@@ -92,6 +92,22 @@ describe('independent water surfaces', () => {
     ;(mesh!.material as MeshStandardMaterial).dispose()
   })
 
+  it('drops staged tributary caps below the live channel surface', () => {
+    const clock = { value: 0 }
+    const mesh = buildWaterMesh(
+      new Float32Array([60, 60, 60, 60]), new Float32Array(4), 1, 420, 0, 0, clock, undefined,
+      [{ ax: 160, az: 90, bx: 260, bz: 90, wa: 18, wb: 18, ya: 100, yb: 100, source: true, terminal: true }],
+    )!
+    const positions = mesh.geometry.getAttribute('position')
+    let lowered = 0
+    for (let i = 0; i < positions.count; i++) {
+      if (positions.getY(i) < 100.04 - .01 && positions.getY(i) > 99.9) lowered++
+    }
+    expect(lowered).toBeGreaterThan(0)
+    mesh.geometry.dispose()
+    ;(mesh.material as MeshStandardMaterial).dispose()
+  })
+
   it('clips rivers to each tile and keeps raster water basin-only', () => {
     const clock = { value: 0 }
     const dryBed = new Float32Array([60, 60, 60, 60])

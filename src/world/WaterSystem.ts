@@ -299,14 +299,41 @@ function appendRiverRibbons(
   ): void => {
     // Tributaries that end at a streamed catchment boundary should fade into
     // the terrain instead of exposing a circular hose cap from above. The
-    // route remains continuous because only chain endpoints call this.
+    // route remains continuous because only chain endpoints call this. Two
+    // taper stages avoid a visually flat cut when the first triangle is
+    // viewed edge-on or clipped by a neighbouring terrain tile.
+    const halfWidth = Math.hypot(
+      section.left.x - section.center.x,
+      section.left.z - section.center.z,
+    )
+    const midDistance = distance * .42
+    const midHalfWidth = Math.max(.8, halfWidth * .42)
+    const midCenter: RibbonVertex = {
+      x: section.center.x + flowX * midDistance,
+      z: section.center.z + flowZ * midDistance,
+      y: section.center.y - .015,
+      depth: .04,
+    }
+    const midLeft: RibbonVertex = {
+      x: midCenter.x - flowZ * midHalfWidth,
+      z: midCenter.z + flowX * midHalfWidth,
+      y: midCenter.y,
+      depth: midCenter.depth,
+    }
+    const midRight: RibbonVertex = {
+      x: midCenter.x + flowZ * midHalfWidth,
+      z: midCenter.z - flowX * midHalfWidth,
+      y: midCenter.y,
+      depth: midCenter.depth,
+    }
     const tip: RibbonVertex = {
       x: section.center.x + flowX * distance,
       z: section.center.z + flowZ * distance,
-      y: section.center.y,
+      y: section.center.y - .03,
       depth: .02,
     }
-    appendPolygon([section.left, section.right, tip], flowX, flowZ)
+    appendPolygon([section.left, section.right, midRight, midLeft], flowX, flowZ)
+    appendPolygon([midLeft, midRight, tip], flowX, flowZ)
   }
 
   for (const reach of reaches) {

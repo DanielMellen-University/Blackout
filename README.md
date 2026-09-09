@@ -127,6 +127,8 @@ direction-aware moving riffles, variable widths, tapered tributary ends, and
 broken bank foam. Rivers receive a stronger depth/color response so they do not
 read as pale uniform strips at flight scale. This is procedural drainage, not a
 rainfall or fluid simulation.
+Non-mouth tributaries use staged, slightly submerged endpoint tapers so streamed
+river pieces fade into their channel instead of ending as flat-cut ribbons.
 
 Rare procedural cities and more frequent villages occupy suitable dry terrain.
 Villages range from compact hamlets to several-kilometre ribbon, crossroads and
