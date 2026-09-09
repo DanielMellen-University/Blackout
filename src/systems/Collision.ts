@@ -24,12 +24,32 @@ const _up = new Vector3()
 const _inv = new Quaternion()
 const _localUp = new Vector3()
 
+interface AttitudeState {
+  pitch: number
+  roll: number
+  upY: number
+}
+
 /**
  * Ground and obstacle outcomes. Uses the pre-resolution impact snapshot when
  * the flight model recorded one this step.
  */
 export class CollisionSystem {
   private readonly hitObstacle: (aircraft: Aircraft) => boolean
+  private readonly pose: AttitudeState = { pitch: 0, roll: 0, upY: 1 }
+  private readonly contact: ContactClassification = {
+    airborne: false,
+    impact: null,
+    onPad: false,
+    gearDown: true,
+    vy: 0,
+    groundSpeed: 0,
+    pitch: 0,
+    roll: 0,
+    upY: 1,
+    obstacle: false,
+    surface: 'land',
+  }
 
   constructor(hitObstacle: (aircraft: Aircraft) => boolean = () => false) {
     this.hitObstacle = hitObstacle
@@ -48,22 +68,22 @@ export class CollisionSystem {
     const onPad = aircraft.position.y <= minY + 0.2
     const vy = aircraft.impactVy < 0 ? aircraft.impactVy : aircraft.velocity.y
     const gs = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
-    const pose = attitude(aircraft.orientation)
+    const pose = attitudeInto(this.pose, aircraft.orientation)
     const surface = sampleGroundSurface(aircraft.position.x, aircraft.position.z).kind
 
-    return classifyContact({
-      airborne: aircraft.impact?.startedAirborne ?? !aircraft.onGround,
-      impact: aircraft.impact,
-      onPad,
-      gearDown: aircraft.controls.gearDown,
-      vy,
-      groundSpeed: gs,
-      pitch: pose.pitch,
-      roll: pose.roll,
-      upY: pose.upY,
-      obstacle: this.hitObstacle(aircraft),
-      surface,
-    })
+    const contact = this.contact
+    contact.airborne = aircraft.impact?.startedAirborne ?? !aircraft.onGround
+    contact.impact = aircraft.impact
+    contact.onPad = onPad
+    contact.gearDown = aircraft.controls.gearDown
+    contact.vy = vy
+    contact.groundSpeed = gs
+    contact.pitch = pose.pitch
+    contact.roll = pose.roll
+    contact.upY = pose.upY
+    contact.obstacle = this.hitObstacle(aircraft)
+    contact.surface = surface
+    return classifyContact(contact)
   }
 }
 
@@ -110,12 +130,13 @@ export function classifyContact(input: ContactClassification): TouchResult {
   return 'roll'
 }
 
-function attitude(orientation: Quaternion): { pitch: number; roll: number; upY: number } {
+export function attitudeInto(out: AttitudeState, orientation: Quaternion): AttitudeState {
   _fwd.set(0, 0, 1).applyQuaternion(orientation)
-  const pitch = Math.asin(MathUtils.clamp(_fwd.y, -1, 1))
+  out.pitch = Math.asin(MathUtils.clamp(_fwd.y, -1, 1))
   _up.set(0, 1, 0).applyQuaternion(orientation)
+  out.upY = _up.y
   _inv.copy(orientation).invert()
   _localUp.set(0, 1, 0).applyQuaternion(_inv)
-  const roll = Math.atan2(-_localUp.x, _localUp.y)
-  return { pitch, roll, upY: _up.y }
+  out.roll = Math.atan2(-_localUp.x, _localUp.y)
+  return out
 }

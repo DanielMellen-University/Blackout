@@ -58,6 +58,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Version 7 crash effects now reuse a fixed particle pool across retries, removing repeated mesh and material allocation without changing the explosion envelope.
 - Version 7 mission gates now reuse one fixed five-ring pool across retries, keeping circuit resets allocation-stable without changing the route.
 - Version 7 event audio now reuses fixed procedural white and brown noise buffers, keeping repeated cues from rebuilding PCM data.
+- Version 7 collision checks now reuse attitude and contact records at the fixed physics rate, removing another steady-flight allocation without changing landing rules.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.

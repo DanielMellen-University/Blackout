@@ -1,7 +1,7 @@
 import { Quaternion, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import type { AircraftImpact } from '../src/aircraft/Aircraft'
-import { classifyContact } from '../src/systems/Collision'
+import { attitudeInto, classifyContact } from '../src/systems/Collision'
 
 function impact(partial: Partial<AircraftImpact>): AircraftImpact {
   return {
@@ -119,5 +119,12 @@ describe('impact quaternion helper sanity', () => {
   it('keeps identity upright', () => {
     const q = new Quaternion()
     expect(q.w).toBeCloseTo(1)
+  })
+
+  it('fills the collision attitude record in place', () => {
+    const q = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 4)
+    const state = { pitch: 0, roll: 0, upY: 0 }
+    expect(attitudeInto(state, q)).toBe(state)
+    expect(state.upY).toBeCloseTo(1)
   })
 })
