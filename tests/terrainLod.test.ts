@@ -1,4 +1,4 @@
-import { Mesh, Scene } from 'three'
+import { InstancedMesh, Mesh, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import { planTerrainTiles } from '../src/world/TerrainLayout'
@@ -189,10 +189,14 @@ describe('visible mesh contact sampling', () => {
     terrain.clearAll()
   })
 
-  it('keeps the temporary vegetation hold free of tree and rock groups', () => {
+  it('streams a bounded near-field vegetation kit', () => {
     const terrain = new TerrainSystem(new Scene())
     pump(terrain, 210, 210, 24)
-    expect(terrain.root.getObjectByName('TerrainProps')).toBeUndefined()
+    const props = terrain.root.getObjectByName('TerrainProps')
+    expect(props).toBeDefined()
+    const instances: InstancedMesh[] = []
+    props!.traverse(object => { if (object instanceof InstancedMesh) instances.push(object) })
+    expect(instances.length).toBeLessThanOrEqual(20)
     terrain.clearAll()
   })
 })

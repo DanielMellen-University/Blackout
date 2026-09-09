@@ -45,10 +45,10 @@ export const VIEW_RADIUS = 40
  * inside this hidden margin so you never watch tiles pop in.
  */
 export const FOG_MARGIN_CHUNKS = 4
-/** Temporary art hold: the current tree/rock kit is disabled until it is rebuilt. */
-export const ENABLE_VEGETATION = false
+/** Stylized instanced vegetation v2 stays inside the near-field budget. */
+export const ENABLE_VEGETATION = true
 /** Detailed props only near the jet (cells). */
-const PROP_RADIUS = 3
+const PROP_RADIUS = 2
 /** Soft opacity fade across the fog margin. */
 const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Seconds-ish ease for spawn/despawn opacity. */
@@ -860,7 +860,7 @@ export class TerrainSystem {
   ): Group {
     this.vegFactory ??= createVegetationFactory()
     const veg = this.vegFactory.createBuckets()
-    const samples = 100
+    const samples = 72
 
     for (let i = 0; i < samples; i++) {
       const u = hash2(cx * 31 + i, cz * 17 + i * 3)

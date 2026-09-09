@@ -42,12 +42,17 @@ export interface VegBuckets {
 }
 
 function mat(color: number, roughness = 0.86): MeshStandardMaterial {
-  return new MeshStandardMaterial({
+  const material = new MeshStandardMaterial({
     color,
     roughness,
     metalness: 0.02,
     flatShading: true,
   })
+  // A tiny self-lit lift keeps the stylized silhouettes readable in fog and
+  // under cloud cover without making the vegetation glow.
+  material.emissive.setHex(color)
+  material.emissiveIntensity = 0.035
+  return material
 }
 
 function mesh(
@@ -99,37 +104,37 @@ export function createVegetationFactory(): {
 } {
   // --- geometries (shared) ---
   const trunkGeo = new CylinderGeometry(0.18, 0.32, 1, 6)
-  const pineConeGeo = new ConeGeometry(1, 1.6, 7)
-  const canopySphereGeo = new SphereGeometry(1, 7, 5)
+  const pineConeGeo = new ConeGeometry(1, 2, 8)
+  const canopySphereGeo = new IcosahedronGeometry(1, 1)
   const canopyFlatGeo = new SphereGeometry(1, 8, 4)
-  const bushGeo = new SphereGeometry(1, 6, 4)
-  const rockGeo = new DodecahedronGeometry(1, 0)
+  const bushGeo = new IcosahedronGeometry(1, 1)
+  const rockGeo = new DodecahedronGeometry(1, 1)
   const cactusBodyGeo = new CylinderGeometry(0.28, 0.34, 1, 7)
   const cactusArmGeo = new CylinderGeometry(0.14, 0.16, 0.55, 6)
   const reedGeo = new CylinderGeometry(0.04, 0.07, 1, 4)
-  const grassGeo = new ConeGeometry(0.22, 1, 4)
+  const grassGeo = new ConeGeometry(0.42, 1.25, 5)
   const deadGeo = new CylinderGeometry(0.12, 0.2, 1, 5)
 
   // --- materials ---
-  const trunkMat = mat(0x5c4030, 0.92)
-  const trunkDarkMat = mat(0x3d2a1c, 0.93)
-  const pineMat = mat(0x1f4d32, 0.88)
-  const pineLightMat = mat(0x2d6b42, 0.86)
-  const oakMat = mat(0x3a7a38, 0.84)
-  const birchCanopyMat = mat(0x5a9a48, 0.82)
-  const autumnMat = mat(0x8a6a28, 0.85)
-  const rfCanopyMat = mat(0x0d4a28, 0.8)
-  const rfCanopy2Mat = mat(0x1a6035, 0.82)
-  const bushMat = mat(0x3d6b2e, 0.88)
-  const bushDryMat = mat(0x6a7a3a, 0.9)
-  const snowPineMat = mat(0xc8d8e0, 0.78)
-  const rockMat = mat(0x6a6e72, 0.94)
-  const mesaRockMat = mat(0xc45a28, 0.88)
-  const cactusMat = mat(0x3f8a48, 0.78)
-  const reedMat = mat(0x4a6a30, 0.9)
-  const grassMat = mat(0x4f9a3a, 0.9)
-  const grassDryMat = mat(0x8a9a48, 0.92)
-  const deadMat = mat(0x6a5540, 0.94)
+  const trunkMat = mat(0x6f4c36, 0.92)
+  const trunkDarkMat = mat(0x4a3325, 0.93)
+  const pineMat = mat(0x285f3d, 0.88)
+  const pineLightMat = mat(0x3b8550, 0.86)
+  const oakMat = mat(0x4f9647, 0.84)
+  const birchCanopyMat = mat(0x72b65a, 0.82)
+  const autumnMat = mat(0xb18032, 0.85)
+  const rfCanopyMat = mat(0x136138, 0.8)
+  const rfCanopy2Mat = mat(0x2a8050, 0.82)
+  const bushMat = mat(0x4c8139, 0.88)
+  const bushDryMat = mat(0x8b913e, 0.9)
+  const snowPineMat = mat(0xd8e7ec, 0.78)
+  const rockMat = mat(0x818388, 0.94)
+  const mesaRockMat = mat(0xd46b36, 0.88)
+  const cactusMat = mat(0x4ca95b, 0.78)
+  const reedMat = mat(0x69923b, 0.9)
+  const grassMat = mat(0x74b94b, 0.9)
+  const grassDryMat = mat(0xb7ad50, 0.92)
+  const deadMat = mat(0x80644b, 0.94)
 
   const sharedGeos = [
     trunkGeo,
@@ -259,6 +264,7 @@ export function createVegetationFactory(): {
       snow: boolean,
       seed: number,
     ): boolean {
+      s *= 2.25
       if (nTrunk >= MAX.trunk) return false
       const leanX = (hash2(seed, 21) - 0.5) * 0.12
       const leanZ = (hash2(seed, 22) - 0.5) * 0.12
@@ -311,6 +317,7 @@ export function createVegetationFactory(): {
       rot: number,
       seed: number,
     ): boolean {
+      s *= 2.35
       const kind = hash2(seed, 40)
       const useDark = kind > 0.7
       if (useDark ? nTrunkD >= MAX.trunk : nTrunk >= MAX.trunk) return false
@@ -391,6 +398,7 @@ export function createVegetationFactory(): {
       rot: number,
       seed: number,
     ): boolean {
+      s *= 2.2
       if (nTrunkD >= MAX.trunk) return false
       const trunkH = s * 3.2
       setAt(trunksDark, nTrunkD++, x, y + trunkH * 0.5, z, s * 0.4, trunkH, s * 0.4, rot)
@@ -424,6 +432,7 @@ export function createVegetationFactory(): {
       dry: boolean,
       seed: number,
     ): boolean {
+      s *= 1.8
       const inst = dry ? bushesDry : bushes
       let idx = dry ? nBushDry : nBush
       if (idx >= MAX.bush) return false
@@ -459,6 +468,7 @@ export function createVegetationFactory(): {
       dry: boolean,
       seed: number,
     ): boolean {
+      s *= 1.65
       const inst = dry ? grassDry : grass
       let placed = 0
       for (let k = 0; k < 3; k++) {
@@ -492,6 +502,7 @@ export function createVegetationFactory(): {
       rot: number,
       seed: number,
     ): boolean {
+      s *= 1.9
       if (nCactus >= MAX.cactus) return false
       const h = s * 2.2
       setAt(cacti, nCactus++, x, y + h * 0.5, z, s * 0.9, h, s * 0.9, rot)
@@ -522,6 +533,7 @@ export function createVegetationFactory(): {
       rot: number,
       seed: number,
     ): boolean {
+      s *= 1.55
       let ok = false
       for (let k = 0; k < 4; k++) {
         if (nReed >= MAX.reed) break
@@ -553,6 +565,7 @@ export function createVegetationFactory(): {
       mesa: boolean,
       seed: number,
     ): boolean {
+      s *= 1.7
       if (mesa) {
         if (nMesa >= MAX.mesa) return false
         const sy = s * (0.5 + hash2(seed, 110) * 0.7)
@@ -566,6 +579,7 @@ export function createVegetationFactory(): {
     }
 
     function placeDeadAt(x: number, y: number, z: number, s: number, rot: number): boolean {
+      s *= 2.1
       if (nDead >= MAX.dead) return false
       const leanX = 0.3 + hash2(Math.floor(x), Math.floor(z)) * 0.5
       setAt(dead, nDead++, x, y + s * 0.55, z, s * 0.25, s * 1.4, s * 0.25, rot, leanX, 0.1)
