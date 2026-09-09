@@ -1,10 +1,18 @@
 import { Scene } from 'three'
+import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
-  settlementForCell: (cx: number, cz: number) => Math.abs(cx) <= 1 && Math.abs(cz) <= 1 ? planFor(cx, cz) : null,
+  settlementForCell: (cx: number, cz: number) => {
+    if (Math.abs(cx) > 1 || Math.abs(cz) > 1) return null
+    const plan = planFor(cx, cz)
+    if (cx === 1 && cz === 0) { plan.x = 3000; plan.z = 0 }
+    if (cx === 0 && cz === 1) { plan.x = -3000; plan.z = 0 }
+    return plan
+  },
+  settlementAnchorForCell: (cx: number, cz: number) => cx === 1 && cz === 0 ? 'city' : cx === 0 && cz === 1 ? 'village' : null,
 }))
 
 import { MAX_LOADED_BUILDINGS, MAX_LOADED_SETTLEMENTS, SettlementSystem } from '../src/world/SettlementSystem'
@@ -84,6 +92,19 @@ describe('settlement streaming budgets', () => {
       expect(canLoad.call(system, distant, 0, 0)).toBe(false)
     } finally {
       system.dispose()
+    }
+  })
+
+  it('primes protected city and village anchors before ordinary streaming', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      setOpsPad(0, 0, 100)
+      ;(system as unknown as { primeAnchors(x: number, z: number): void }).primeAnchors(0, 0)
+      expect(system.count).toBe(2)
+      expect(system.buildingCount).toBe(2)
+    } finally {
+      system.dispose()
+      clearOpsPad()
     }
   })
 })

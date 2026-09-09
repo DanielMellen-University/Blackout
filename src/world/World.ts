@@ -135,6 +135,7 @@ export class World {
         this.terrain.clearAll()
         this.settlements.clearAll()
         this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
+        this.settlements.primeAnchors(this.spawn.x, this.spawn.z)
         // Kick off the protected city/village anchor jobs before the first
         // rendered frame. Without this warm start, a fresh world spent its
         // opening frames generating terrain while nearby landmarks waited for

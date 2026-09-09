@@ -5,7 +5,10 @@ import {
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad } from './terrainSample'
 import { getWorldSeed } from './noise'
-import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
+import {
+  settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE,
+  type SettlementPlan, type SettlementRoad,
+} from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
@@ -393,6 +396,40 @@ export class SettlementSystem {
     this.inFlight = null
     this.generation++
     this.lastCell = ''
+  }
+
+  /**
+   * Build the two protected landmarks before the first rendered frame.
+   *
+   * The normal stream is intentionally asynchronous, but a new world starts
+   * with a small queue of ordinary cells that can occupy the settlement budget
+   * before the worker reaches the guaranteed city and village. Priming only
+   * the deterministic anchors makes those destinations immediately visible;
+   * every organic settlement and regional road still uses the worker stream.
+   */
+  primeAnchors(x: number, z: number): void {
+    const pad = getOpsPad()
+    if (!pad) return
+    const cells = new Set<string>()
+    // Scan only the small protected ring. This avoids duplicating the full
+    // settlement queue while remaining robust if the anchor cell offset or
+    // ring size changes later.
+    const padCellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
+    const padCellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
+    for (let cx = padCellX - 1; cx <= padCellX + 1; cx++) for (let cz = padCellZ - 1; cz <= padCellZ + 1; cz++) {
+      const key = `${cx},${cz}`
+      if (cells.has(key)) continue
+      if (settlementAnchorForCell(cx, cz, pad)) cells.add(key)
+    }
+    for (const key of cells) {
+      if (this.checked.has(key) || this.loaded.has(key)) continue
+      const [cx, cz] = key.split(',').map(Number)
+      this.checked.add(key)
+      const plan = settlementForCell(cx!, cz!)
+      if (!plan) continue
+      this.scheduleLinks(plan, key)
+      if (this.canLoad(plan, x, z)) this.loaded.set(key, this.build(plan))
+    }
   }
 
   dispose(): void {
