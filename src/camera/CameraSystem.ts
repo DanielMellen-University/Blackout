@@ -110,6 +110,8 @@ export class CameraSystem {
   private readonly canvas: HTMLCanvasElement
   private shake = 0
   private shakePhase = 0
+  private readonly shakeOffset = { x: 0, y: 0, z: 0 }
+  private readonly speedFraming = { distance: 0, fov: 0, lookLeadLimit: 0 }
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -280,7 +282,8 @@ export class CameraSystem {
       this.speedJuice = MathUtils.lerp(this.speedJuice, targetJuice, jA)
     }
     const juice = this.speedJuice
-    const framing = resolveExternalSpeedFraming(
+    const framing = resolveExternalSpeedFramingInto(
+      this.speedFraming,
       this.distance,
       cfg.fov,
       cfg.maxLookLead,
@@ -399,7 +402,7 @@ export class CameraSystem {
       return
     }
     this.shakePhase = (this.shakePhase + Math.max(dt, 0.008) * 28) % (Math.PI * 2)
-    const offset = cameraShakeOffset(this.shakePhase, this.shake)
+    const offset = cameraShakeOffsetInto(this.shakeOffset, this.shakePhase, this.shake)
     this.camera.position.x += offset.x
     this.camera.position.y += offset.y
     this.camera.position.z += offset.z
@@ -517,12 +520,20 @@ export interface CameraShakeOffset {
 
 /** Smooth, bounded impact shake that avoids frame-to-frame white-noise jitter. */
 export function cameraShakeOffset(phase: number, intensity: number): CameraShakeOffset {
+  return cameraShakeOffsetInto({ x: 0, y: 0, z: 0 }, phase, intensity)
+}
+
+/** Fill a caller-owned shake record for the camera loop without allocating. */
+export function cameraShakeOffsetInto(
+  out: CameraShakeOffset,
+  phase: number,
+  intensity: number,
+): CameraShakeOffset {
   const scale = Math.max(0, intensity) ** 2
-  return {
-    x: (Math.sin(phase * 1.7) * .72 + Math.sin(phase * 3.1 + 1.2) * .28) * 2.4 * scale,
-    y: (Math.sin(phase * 2.1 + .7) * .75 + Math.sin(phase * 4.3) * .25) * 1.6 * scale,
-    z: (Math.cos(phase * 1.9 + 2) * .72 + Math.sin(phase * 3.7 - .8) * .28) * 2.4 * scale,
-  }
+  out.x = (Math.sin(phase * 1.7) * .72 + Math.sin(phase * 3.1 + 1.2) * .28) * 2.4 * scale
+  out.y = (Math.sin(phase * 2.1 + .7) * .75 + Math.sin(phase * 4.3) * .25) * 1.6 * scale
+  out.z = (Math.cos(phase * 1.9 + 2) * .72 + Math.sin(phase * 3.7 - .8) * .28) * 2.4 * scale
+  return out
 }
 
 /** Pure external-camera envelope, exposed for regression tests and tuning. */
@@ -533,12 +544,30 @@ export function resolveExternalSpeedFraming(
   speedJuice: number,
   maxDistance = Infinity,
 ): ExternalSpeedFraming {
+  return resolveExternalSpeedFramingInto(
+    { distance: 0, fov: 0, lookLeadLimit: 0 },
+    baseDistance,
+    baseFov,
+    maxLookLead,
+    speedJuice,
+    maxDistance,
+  )
+}
+
+/** Fill a caller-owned framing record for per-frame camera updates. */
+export function resolveExternalSpeedFramingInto(
+  out: ExternalSpeedFraming,
+  baseDistance: number,
+  baseFov: number,
+  maxLookLead: number,
+  speedJuice: number,
+  maxDistance = Infinity,
+): ExternalSpeedFraming {
   const t = MathUtils.clamp(speedJuice, 0, 1)
-  return {
-    distance: Math.min(maxDistance, baseDistance * (1 + t * SPEED_DIST_STRETCH)),
-    fov: baseFov + t * SPEED_FOV_BOOST,
-    lookLeadLimit: MathUtils.lerp(maxLookLead * 0.45, maxLookLead, t),
-  }
+  out.distance = Math.min(maxDistance, baseDistance * (1 + t * SPEED_DIST_STRETCH))
+  out.fov = baseFov + t * SPEED_FOV_BOOST
+  out.lookLeadLimit = MathUtils.lerp(maxLookLead * 0.45, maxLookLead, t)
+  return out
 }
 
 /** Shortest-path angle difference in (-π, π]. */

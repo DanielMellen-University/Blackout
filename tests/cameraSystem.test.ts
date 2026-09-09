@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import {
   cameraShakeOffset,
+  cameraShakeOffsetInto,
   CameraSystem,
   resolveExternalSpeedFraming,
+  resolveExternalSpeedFramingInto,
 } from '../src/camera/CameraSystem'
 import { CAMERA_MODES } from '../src/core/types'
 
@@ -28,6 +30,15 @@ describe('external camera framing', () => {
     expect(overspeed.distance).toBeCloseTo(19.38)
     expect(overspeed.fov).toBe(66)
     expect(overspeed.lookLeadLimit).toBe(10)
+  })
+
+  it('fills camera envelopes into caller-owned records', () => {
+    const framing = { distance: 0, fov: 0, lookLeadLimit: 0 }
+    const shake = { x: 0, y: 0, z: 0 }
+    expect(resolveExternalSpeedFramingInto(framing, 17, 60, 10, .75)).toBe(framing)
+    expect(framing).toEqual(resolveExternalSpeedFraming(17, 60, 10, .75))
+    expect(cameraShakeOffsetInto(shake, .8, 1)).toBe(shake)
+    expect(shake).toEqual(cameraShakeOffset(.8, 1))
   })
 
   it('keeps speed stretch inside the configured zoom envelope', () => {
