@@ -98,6 +98,16 @@ describe('continuous terrain generation', () => {
     expect(samples.flat().every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
 
+  it('adds a restrained beach band to low coastal land', () => {
+    const inland = biomeColor('plains', 120, .48, 240, -480, undefined, 0, 1, 'plains', 0)
+    const coast = biomeColor('plains', 120, .48, 240, -480, undefined, .82, 1, 'plains', 0)
+    const cliff = biomeColor('plains', 900, .48, 240, -480, undefined, .82, 1, 'plains', 0)
+    expect(coast[0]).toBeGreaterThan(inland[0])
+    expect(coast[2]).toBeGreaterThan(inland[2])
+    expect(cliff).toEqual(inland)
+    expect(coast.every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
+
   it('keeps volcanic caldera accents visibly warmer than cooled ash', () => {
     const ash = biomeColor('volcanic', 900, .3, 240, -480, undefined, 0, 1, 'volcanic', 0,
       undefined, { ridge: .4, alpineValley: .1, plateau: 0, caldera: 0 })

@@ -812,9 +812,12 @@ export function biomeColor(
   const ravineShade = smoothstep(.25, .9, ravine) * .3
   const riverShade = smoothstep(.1, .9, river) * .12
   col = col.map(c => c * (1 - ravineShade - riverShade)) as [number, number, number]
+  // Low coasts deserve a soft beach band instead of a hard grass-to-sediment
+  // transition. Hydrology limits `coastal` to the warped sea edge, while the
+  // height gate keeps this sand tint off cliffs and elevated inland shelves.
   if (coastal > 0) {
     const sand: [number, number, number] = [0.82 + speck, 0.72 + speck * 0.5, 0.48]
-    const t = clamp01(coastal)
+    const t = clamp01(coastal) * smoothstep(320, 40, height) * .58
     col = [
       col[0] + (sand[0] - col[0]) * t,
       col[1] + (sand[1] - col[1]) * t,
