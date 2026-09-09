@@ -42,6 +42,7 @@ export function sampleGeography(x: number, z: number): Climate {
       alpineValley: landform.alpineValley,
       plateau: landform.plateau,
       caldera: landform.caldera,
+      foothills: landform.foothills,
     },
   }
 }

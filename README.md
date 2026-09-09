@@ -112,6 +112,8 @@ per-frame fade path does not repeatedly search or traverse the scene tree.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Green provinces now use stronger rolling hills, so flat sheets are rarer
 without bringing back sharp lowland spikes.
+Foothill shoulders also receive a restrained olive/stone material band, making
+the mountain-to-lowland transition readable without new geometry or noise calls.
 Alpine ranges use narrower ridge spines, deeper winding valleys, and multi-scale
 summit folds plus a bounded peak-and-saddle sculpt so high terrain breaks into
 distinct flyable peaks instead of broad tables. Snow and mountain faces use

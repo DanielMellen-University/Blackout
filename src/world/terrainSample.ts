@@ -100,6 +100,8 @@ export interface Climate {
     alpineValley: number
     plateau: number
     caldera: number
+    /** Broad mountain-to-lowland shoulder used for material separation. */
+    foothills?: number
   }
 }
 
@@ -710,6 +712,23 @@ export function biomeColor(
       const shelf = smoothstep(.35, .9, landform.plateau) * .08
       col[0] = Math.min(.98, col[0] + shelf)
       col[1] = Math.min(.72, col[1] + shelf * .45)
+    }
+
+    // Foothills are a broad transition zone, not a new biome. A restrained
+    // olive/stone lift keeps green provinces from reading as one flat sheet
+    // beside a massif while preserving smooth biome blending and the existing
+    // vertex-only material path.
+    const foothill = smoothstep(.16, .82, landform.foothills ?? 0)
+    if (foothill > 0 && (biome === 'plains' || biome === 'forest' || biome === 'hills' || biome === 'savanna')) {
+      const shoulder: [number, number, number] = biome === 'savanna'
+        ? [.38, .36, .18]
+        : [.2, .34, .18]
+      const shoulderMix = foothill * .18
+      col = [
+        col[0] + (shoulder[0] - col[0]) * shoulderMix,
+        col[1] + (shoulder[1] - col[1]) * shoulderMix,
+        col[2] + (shoulder[2] - col[2]) * shoulderMix,
+      ]
     }
 
     // Snow and high alpine faces need a second visual scale. A single pale

@@ -109,4 +109,14 @@ describe('continuous terrain generation', () => {
     expect(shore[2]).toBeGreaterThan(dry[2])
     expect(shore.every(channel => channel >= 0 && channel <= 1)).toBe(true)
   })
+
+  it('adds a restrained foothill shoulder to green material', () => {
+    const plain = biomeColor('plains', 240, .48, 240, -480, undefined, 0, 1, 'plains', 0,
+      undefined, { ridge: 0, alpineValley: 0, plateau: 0, caldera: 0, foothills: 0 })
+    const shoulder = biomeColor('plains', 240, .48, 240, -480, undefined, 0, 1, 'plains', 0,
+      undefined, { ridge: 0, alpineValley: 0, plateau: 0, caldera: 0, foothills: 1 })
+    expect(shoulder[1]).toBeLessThan(plain[1])
+    expect(shoulder[2]).toBeGreaterThanOrEqual(plain[2] - .02)
+    expect(shoulder.every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
 })
