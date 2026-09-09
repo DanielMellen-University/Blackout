@@ -488,11 +488,12 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       road(points, 32)
     }
   }
+  const anchorVillageLots = plan.anchor === 'village' ? 12 : 0
   const target = city ? 660 + Math.floor(rand(200) * 620)
-    : villageProfile === 'hamlet' ? 8 + Math.floor(rand(201) * 8)
-      : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20)
-        : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28)
-          : 28 + Math.floor(rand(201) * 38)
+    : villageProfile === 'hamlet' ? 8 + Math.floor(rand(201) * 8) + anchorVillageLots
+      : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20) + anchorVillageLots
+        : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28) + anchorVillageLots
+          : 28 + Math.floor(rand(201) * 38) + anchorVillageLots
   if (city) {
     // Keep a readable mixed-use core around the civic plaza. Uniform
     // area-scattering makes a huge city look empty from its own centre, while
@@ -536,7 +537,8 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       if (d < Math.hypot(width, depth) / 2 + street.width / 2 + 8) { clear = false; break }
       if (d < nearest) { nearest = d; yaw = angle + Math.atan2(dx, dz) }
     }
-    if (!clear || (!city && nearest > 420)) continue
+    const villageRoadReach = plan.anchor === 'village' ? 720 : 420
+    if (!clear || (!city && nearest > villageRoadReach)) continue
     const core = Math.max(0, 1 - distance / (plan.radius * .65))
     const height = city ? 180 + rand(n + 4) * 260 + core ** 2 * (760 + rand(n + 5) * 1250) : 150 + rand(n + 4) * 240
     building(p.x, p.z, width, depth, height, yaw + (rand(n + 6) - .5) * .35)
