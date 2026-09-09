@@ -8,10 +8,13 @@ import {
   interpolateGridHeight,
   lodFromDist,
   lodWithHysteresis,
+  pondIntersectsBounds,
   segsForLod,
   TerrainSystem,
   VIEW_RADIUS,
 } from '../src/world/TerrainSystem'
+import { waterLandmarks } from '../src/world/Hydrology'
+import { setWorldSeed } from '../src/world/noise'
 import { sampleTerrainHeight } from '../src/world/terrainSample'
 
 function pump(terrain: TerrainSystem, x: number, z: number, frames: number): void {
@@ -30,6 +33,16 @@ describe('terrain LOD bands', () => {
     expect(lodWithHysteresis(12, 1)).toBe(1)
     expect(lodWithHysteresis(13, 1)).toBe(2)
     expect(lodWithHysteresis(0, 2)).toBe(0)
+  })
+
+  it('detects ponds that fall between coarse far-tile vertices', () => {
+    setWorldSeed(1)
+    const pond = waterLandmarks(-2, -2).find(basin => basin.pond)
+    expect(pond).toBeDefined()
+    const originX = Math.floor(pond!.x / CHUNK_SIZE) * CHUNK_SIZE
+    const originZ = Math.floor(pond!.z / CHUNK_SIZE) * CHUNK_SIZE
+    expect(pondIntersectsBounds(originX, originZ, CHUNK_SIZE)).toBe(true)
+    expect(pondIntersectsBounds(originX + CHUNK_SIZE * 8, originZ + CHUNK_SIZE * 8, CHUNK_SIZE)).toBe(false)
   })
 })
 

@@ -25,7 +25,7 @@ import {
 import { createVegetationFactory, vegetationDensity } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
-import { riverReachesInBounds } from './Hydrology'
+import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 
 /**
@@ -101,6 +101,22 @@ export function lodWithHysteresis(dist: number, current: TerrainLod): TerrainLod
   if (current === 0 && dist >= 4.5) return desired
   if (current === 1 && dist >= 12.5) return 2
   return current
+}
+
+/** True when a streamed tile overlaps an analytic pond that coarse vertices can miss. */
+export function pondIntersectsBounds(originX: number, originZ: number, span: number): boolean {
+  const minX = originX, minZ = originZ, maxX = originX + span, maxZ = originZ + span
+  const minCx = Math.floor(minX / CATCHMENT_SIZE), maxCx = Math.floor((maxX - 1) / CATCHMENT_SIZE)
+  const minCz = Math.floor(minZ / CATCHMENT_SIZE), maxCz = Math.floor((maxZ - 1) / CATCHMENT_SIZE)
+  for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
+    for (const basin of waterLandmarks(cx, cz)) {
+      if (!basin.pond) continue
+      const nearestX = Math.max(minX, Math.min(maxX, basin.x))
+      const nearestZ = Math.max(minZ, Math.min(maxZ, basin.z))
+      if (Math.hypot(nearestX - basin.x, nearestZ - basin.z) < basin.radius * 1.7 + 120) return true
+    }
+  }
+  return false
 }
 
 export function segsForLod(lod: TerrainLod): number {
@@ -761,7 +777,11 @@ export class TerrainSystem {
     // excellent for dry fog silhouettes but makes a lake shore read as a
     // dozen huge teeth. Rebuild just wet tiles at a capped world-space cell
     // size, so water and its underlying bed stay on the same precise grid.
-    const touchesHydrology = !containsWater && !waterDetail && hasRiver
+    // Analytic ponds can fit between coarse far-grid vertices, leaving only a
+    // thin clipped rim. Their deterministic bounds promote the tile before
+    // water extraction, while the same cap still bounds the rebuild cost.
+    const touchesPond = !waterDetail && pondIntersectsBounds(originX, originZ, span)
+    const touchesHydrology = !containsWater && !waterDetail && (hasRiver || touchesPond)
     if ((containsWater || touchesHydrology) && !waterDetail && detailSegs > segs) {
       geo.dispose()
       return this.buildHeightMesh(originX, originZ, lod, size, true)
