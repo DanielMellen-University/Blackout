@@ -33,6 +33,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runtime teardown closes Web Audio, renderer, camera, and input resources on page unload so reloads do not leave stale browser work behind.
 - Runtime teardown also releases streamed terrain, settlement workers, weather pools, mission gates, crash effects, runway assets, and aircraft resources before renderer disposal.
 - Renderer startup uses Three.js's supported PCF shadow-map constant directly, avoiding the deprecated shadow-map fallback warning.
+- The fixed-step clock reuses its render timing record between ticks, removing another steady-frame allocation without changing interpolation or catch-up behavior.
 - New STALL and LOW ALT cautions announce their first transition with a quiet two-tone cue while the HUD carries the persistent warning state.
 - Flight warning evaluation reuses stable STALL, LOW ALT, and clear-state records to avoid per-frame telemetry garbage.
 - Mission HUD telemetry reuses one navigation snapshot and cached gate label between frames, avoiding recurring object and string allocations while flying the circuit.

@@ -25,6 +25,13 @@ export class Time {
   private fpsSmoothed = 60
   private accum = 0
   readonly stepDt = SIM_STEP
+  /** Reused render timing record so the animation loop stays allocation-free. */
+  private readonly frame: FrameTiming = {
+    frameDt: 0,
+    steps: 0,
+    stepDt: SIM_STEP,
+    alpha: 1,
+  }
 
   /**
    * Call once per animation frame while the sim is live.
@@ -32,7 +39,10 @@ export class Time {
   beginFrame(nowMs: number): FrameTiming {
     if (this.lastMs === null) {
       this.lastMs = nowMs
-      return { frameDt: 0, steps: 0, stepDt: this.stepDt, alpha: 1 }
+      this.frame.frameDt = 0
+      this.frame.steps = 0
+      this.frame.alpha = 1
+      return this.frame
     }
 
     let frameDt = (nowMs - this.lastMs) / 1000
@@ -42,7 +52,10 @@ export class Time {
       // Tab hide / long hitch: do not catch up a multi-second stall.
       this.accum = 0
       this.noteFps(this.stepDt)
-      return { frameDt: this.stepDt, steps: 1, stepDt: this.stepDt, alpha: 1 }
+      this.frame.frameDt = this.stepDt
+      this.frame.steps = 1
+      this.frame.alpha = 1
+      return this.frame
     }
 
     this.noteFps(frameDt)
@@ -55,15 +68,16 @@ export class Time {
     }
     if (steps >= MAX_STEPS) {
       this.accum = 0
-      return { frameDt, steps, stepDt: this.stepDt, alpha: 1 }
+      this.frame.frameDt = frameDt
+      this.frame.steps = steps
+      this.frame.alpha = 1
+      return this.frame
     }
 
-    return {
-      frameDt,
-      steps,
-      stepDt: this.stepDt,
-      alpha: this.accum / this.stepDt,
-    }
+    this.frame.frameDt = frameDt
+    this.frame.steps = steps
+    this.frame.alpha = this.accum / this.stepDt
+    return this.frame
   }
 
   /**

@@ -35,4 +35,13 @@ describe('Time', () => {
     expect(frame.alpha).toBeGreaterThan(0)
     expect(frame.alpha).toBeLessThan(1)
   })
+
+  it('reuses the frame timing record between render ticks', () => {
+    const time = new Time()
+    time.beginFrame(0)
+    const first = time.beginFrame(16)
+    const second = time.beginFrame(32)
+    expect(second).toBe(first)
+    expect(second.steps).toBe(1)
+  })
 })
