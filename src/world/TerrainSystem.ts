@@ -314,6 +314,9 @@ interface Chunk {
   fadingOut: boolean
   /** Last applied opacity — skip material walks when unchanged. */
   appliedAlpha: number
+  /** Cached near-field props root and meshes; avoids scene-tree searches every frame. */
+  props: Group | null
+  propMeshes: Mesh[]
 }
 
 interface PendingChunk {
@@ -676,14 +679,14 @@ export class TerrainSystem {
         mat.depthWrite = a > 0.12
       }
     })
-    const props = chunk.root.getObjectByName('TerrainProps')
+    const props = chunk.props
     if (props) props.userData.alpha = -1
     this.fadeProps(chunk)
   }
 
   /** Props fade on actual distance, independently of their opaque ground. */
   private fadeProps(chunk: Chunk): void {
-    const props = chunk.root.getObjectByName('TerrainProps')
+    const props = chunk.props
     if (!props) return
     const distance = Math.hypot(
       chunk.originX + CHUNK_SIZE / 2 - this.focusX,
@@ -693,8 +696,7 @@ export class TerrainSystem {
     props.visible = alpha > .01
     if (Math.abs((props.userData.alpha ?? -1) - alpha) < .02) return
     props.userData.alpha = alpha
-    props.traverse(obj => {
-      if (!(obj instanceof Mesh)) return
+    for (const obj of chunk.propMeshes) {
       const materials = Array.isArray(obj.material) ? obj.material : [obj.material]
       for (const material of materials) {
         material.opacity = alpha
@@ -705,7 +707,15 @@ export class TerrainSystem {
         }
         material.depthWrite = true
       }
+    }
+  }
+
+  private collectPropMeshes(props: Group): Mesh[] {
+    const meshes: Mesh[] = []
+    props.traverse(obj => {
+      if (obj instanceof Mesh) meshes.push(obj)
     })
+    return meshes
   }
 
   /** Only cover edges where this tile is the coarse side of a LOD boundary. */
@@ -754,9 +764,12 @@ export class TerrainSystem {
       this.skirtEdgesForTile(cx, cz, size, lod))
     root.add(built.mesh)
     if (built.water) root.add(built.water)
+    let props: Group | null = null
+    let propMeshes: Mesh[] = []
     if (withProps) {
-      const props = this.buildProps(originX, originZ, cx, cz, built.heights, built.segs)
+      props = this.buildProps(originX, originZ, cx, cz, built.heights, built.segs)
       props.name = 'TerrainProps'
+      propMeshes = this.collectPropMeshes(props)
       root.add(props)
     }
 
@@ -785,6 +798,8 @@ export class TerrainSystem {
       targetAlpha: 1,
       fadingOut: false,
       appliedAlpha: -1,
+      props,
+      propMeshes,
     }
     this.applyChunkAlpha(chunk)
     return chunk
@@ -803,6 +818,10 @@ export class TerrainSystem {
     }
     for (const child of remove) {
       chunk.root.remove(child)
+      if (child === chunk.props) {
+        chunk.props = null
+        chunk.propMeshes = []
+      }
       if (child instanceof Mesh) {
         child.geometry.dispose()
         const mats = Array.isArray(child.material) ? child.material : [child.material]
@@ -828,11 +847,17 @@ export class TerrainSystem {
     if (withProps && !chunk.hasProps) {
       const props = this.buildProps(chunk.originX, chunk.originZ, chunk.cx, chunk.cz, built.heights, built.segs)
       props.name = 'TerrainProps'
+      chunk.props = props
+      chunk.propMeshes = this.collectPropMeshes(props)
       this.stampChunkMeshes(props, keepAlpha)
       chunk.root.add(props)
       chunk.hasProps = true
     }
-    if (!withProps) chunk.hasProps = false
+    if (!withProps) {
+      chunk.hasProps = false
+      chunk.props = null
+      chunk.propMeshes = []
+    }
 
     chunk.lod = lod
     chunk.segs = built.segs

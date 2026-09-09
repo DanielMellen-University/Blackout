@@ -107,6 +107,8 @@ and badlands, plus a
 flight benchmark at either 400 m/s or the current maximum afterburner speed,
 with draw counts and frame timings. Streaming prioritizes contact detail, then
 missing coverage and coarse replacements, before distant detail rebuilds.
+Near-field vegetation roots and meshes are cached per streamed tile, so the
+per-frame fade path does not repeatedly search or traverse the scene tree.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.
 Green provinces now use stronger rolling hills, so flat sheets are rarer
 without bringing back sharp lowland spikes.

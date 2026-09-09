@@ -236,6 +236,17 @@ describe('visible mesh contact sampling', () => {
     const instances: InstancedMesh[] = []
     props!.traverse(object => { if (object instanceof InstancedMesh) instances.push(object) })
     expect(instances.length).toBeLessThanOrEqual(20)
+    const chunks = (terrain as unknown as {
+      chunks: Map<string, { hasProps: boolean; props: object | null; propMeshes: object[] }>
+    }).chunks
+    const propChunk = [...chunks.values()].find(chunk => chunk.hasProps)
+    expect(propChunk?.props).not.toBeNull()
+    const cachedMeshes = propChunk?.propMeshes.length ?? -1
+    let traversedMeshes = 0
+    ;(propChunk?.props as { traverse?: (visit: (object: object) => void) => void } | null)?.traverse?.(object => {
+      if (object instanceof InstancedMesh) traversedMeshes++
+    })
+    expect(cachedMeshes).toBe(traversedMeshes)
     terrain.clearAll()
   })
 })
