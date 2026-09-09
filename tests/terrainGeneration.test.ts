@@ -51,6 +51,15 @@ describe('continuous terrain generation', () => {
     expect(valley[2] - valley[0]).toBeGreaterThan(flat[2] - flat[0])
   })
 
+  it('keeps volcanic rock darker and warmer than a generic mountain face', () => {
+    const volcanic = biomeColor('volcanic', 2200, .2, -92800, -13600, undefined, 0, 1, 'volcanic', 0,
+      undefined, { ridge: .4, alpineValley: 0, plateau: 0, caldera: .25 })
+    const mountain = biomeColor('mountain', 2200, .2, -92800, -13600, undefined, 0, 1, 'mountain', 0,
+      undefined, { ridge: .4, alpineValley: 0, plateau: 0, caldera: 0 })
+    expect(volcanic[0] + volcanic[1] + volcanic[2]).toBeLessThan(mountain[0] + mountain[1] + mountain[2])
+    expect(volcanic[0] - volcanic[2]).toBeGreaterThan(mountain[0] - mountain[2])
+  })
+
   it('adds deterministic multi-scale breakup to prop-free lowlands', () => {
     const samples = [-1200, -480, 0, 520, 1200].map(x => biomeColor(
       'plains', 120, .48, x, 640, undefined, 0, 1, 'plains', 0,

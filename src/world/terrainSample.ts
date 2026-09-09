@@ -516,7 +516,9 @@ function biomeColorSolid(
     case 'water':
       return [0.045, 0.23 + n * 0.025, 0.31 + n * 0.025]
     case 'volcanic':
-      return [.16 + speck, .145 + speck, .14 + speck]
+      // Basalt starts charcoal so volcanic provinces do not wash into the
+      // adjacent snow and mountain weights under bright flight lighting.
+      return [.105 + speck * .65, .085 + speck * .58, .07 + speck * .48]
     case 'saltflat':
       return [.82 + speck, .8 + speck, .71 + speck]
     case 'tundra':
@@ -632,7 +634,7 @@ export function biomeColor(
   // draw call, and let caldera interiors carry the strongest warm accent.
   if (biome === 'volcanic') {
     const ashField = valueNoise(x / 520, z / 520)
-    const cinder = (ashField - .5) * .12
+    const cinder = (ashField - .5) * .2
     col = [
       clamp01(col[0] + cinder * .9),
       clamp01(col[1] + cinder * .82),
@@ -643,14 +645,14 @@ export function biomeColor(
     const fissure = smoothstep(.72, .92, fissureField) * (.15 + calderaBoost * .68)
     const flowField = valueNoise(x / 920 - 23, z / 920 + 41) * .7 +
       valueNoise(x / 240 + 71, z / 240 - 17) * .3
-    const flow = smoothstep(.64, .84, flowField) * (.07 + calderaBoost * .2)
+    const flow = smoothstep(.58, .82, flowField) * (.12 + calderaBoost * .26)
     const ember: [number, number, number] = [0.48 + ashField * .14, .075 + ashField * .035, .018]
     col = [
       col[0] + (ember[0] - col[0]) * fissure,
       col[1] + (ember[1] - col[1]) * fissure,
       col[2] + (ember[2] - col[2]) * fissure,
     ]
-    const lavaRock: [number, number, number] = [.34 + ashField * .08, .075 + ashField * .025, .02]
+    const lavaRock: [number, number, number] = [.3 + ashField * .1, .055 + ashField * .03, .016]
     col = [
       col[0] + (lavaRock[0] - col[0]) * flow,
       col[1] + (lavaRock[1] - col[1]) * flow,

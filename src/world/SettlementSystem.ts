@@ -226,32 +226,43 @@ export class SettlementSystem {
       shader.uniforms.settlementDaylight = this.buildingDaylight
       shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>
         varying vec2 settlementUv;
-        varying float settlementWall;`)
+        varying float settlementWall;
+        varying float settlementSeed;`)
         .replace('#include <begin_vertex>', `#include <begin_vertex>
         settlementWall = 1.0 - abs(normal.y);
+        settlementSeed = fract(sin(dot(instanceMatrix[3].xz, vec2(.013, .017))) * 43758.5453);
         settlementUv = uv * vec2(abs(normal.x) > .5 ? length(instanceMatrix[2].xyz) : length(instanceMatrix[0].xyz), length(instanceMatrix[1].xyz));`)
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>
         varying vec2 settlementUv;
         varying float settlementWall;
+        varying float settlementSeed;
         uniform float settlementRain;
         uniform float settlementSnow;
         uniform float settlementDaylight;`)
         .replace('#include <color_fragment>', `#include <color_fragment>
-        vec2 grid = settlementUv / vec2(12.0, 10.0);
-        vec2 pane = fract(grid);
+        // Deterministic per-building facade rhythm keeps the skyline from
+        // reading as one repeated apartment texture while remaining one draw.
+        float columns = mix(8.0, 15.0, settlementSeed);
+        float rows = mix(7.0, 14.0, fract(settlementSeed * 7.31));
+        vec2 grid = settlementUv / vec2(columns, rows);
+        vec2 pane = fract(grid + vec2(fract(settlementSeed * 5.1), fract(settlementSeed * 9.7)) * .35);
         vec2 aa = max(fwidth(grid), vec2(.001));
         vec2 windowShape = smoothstep(vec2(.22, .3) - aa, vec2(.22, .3) + aa, pane)
           * (1.0 - smoothstep(vec2(.72, .75) - aa, vec2(.72, .75) + aa, pane));
         float windowMask = settlementWall * windowShape.x * windowShape.y
           * (1.0 - smoothstep(.2, .55, max(aa.x, aa.y)));
-        vec3 windowColor = mix(vec3(1.15, .5, .18), vec3(.075, .12, .15), settlementDaylight);
-        float windowStrength = windowMask * (.78 + (1.0 - settlementDaylight) * .18);
+        vec3 warmWindows = vec3(1.15, .5, .18);
+        vec3 coolWindows = vec3(.075, .12, .15);
+        vec3 windowColor = mix(warmWindows, coolWindows, settlementDaylight);
+        windowColor = mix(windowColor, vec3(.32, .58, .78), smoothstep(.72, .96, fract(settlementSeed * 13.7)) * .42);
+        float lightVariation = mix(.58, 1.0, smoothstep(.18, .82, fract(settlementSeed * 19.1 + grid.x * .13)));
+        float windowStrength = windowMask * lightVariation * (.78 + (1.0 - settlementDaylight) * .18);
         diffuseColor.rgb = mix(diffuseColor.rgb, windowColor, windowStrength);
         diffuseColor.rgb *= 1.0 - settlementRain * .08;
         float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.68, .74, .8), wallSnowMask);`)
     }
-    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v2'
+    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v3'
   }
 
   setWeatherEffects(rain: number, snow: number, daylight = this.buildingDaylight.value): void {
