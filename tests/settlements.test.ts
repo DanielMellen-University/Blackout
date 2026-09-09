@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad, sampleClimate, setOpsPad } from '../src/world/terrainSample'
+import { clearOpsPad, findPlayableSpawn, sampleClimate, setOpsPad } from '../src/world/terrainSample'
 import { settlementForCell } from '../src/world/SettlementPlan'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import * as terrain from '../src/world/terrainSample'
@@ -70,6 +70,20 @@ describe('procedural settlements', () => {
     const plans = region(3)
     expect(plans.some(plan => plan.kind === 'village')).toBe(true)
     expect(plans.some(plan => plan.kind === 'city')).toBe(true)
+    const anchors = plans.filter(plan => plan.anchor)
+    expect(anchors.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
+    expect(Math.max(...anchors.map(plan => Math.hypot(plan.x, plan.z)))).toBeLessThan(24000)
+  })
+
+  it('keeps both guaranteed tiers discoverable on generated terrain', () => {
+    setWorldSeed(1)
+    clearOpsPad()
+    const pad = findPlayableSpawn()
+    expect(pad).toBeDefined()
+    setOpsPad(pad!.x, pad!.z, pad!.y)
+    const plans = region(3).filter(plan => plan.anchor)
+    expect(plans.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
+    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(24000)
   })
 
   it('varies settlement scale and silhouette instead of repeating one footprint', () => {

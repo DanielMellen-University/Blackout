@@ -13,7 +13,7 @@ const VILLAGE_CHANCE = .42
  * readable destination instead of relying on several independent rolls. */
 const VILLAGE_ANCHOR_RING = 1
 /** Cities stay rare, but every world gets one deterministic regional target. */
-const CITY_ANCHOR_RING = 2
+const CITY_ANCHOR_RING = 1
 
 export interface SettlementBuilding {
   x: number; y: number; z: number
@@ -88,6 +88,26 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
   return best ?? [padCellX + offsets[0]![0], padCellZ + offsets[0]![1]]
 }
 
+/**
+ * Anchor landmarks by distance from the pad, not by the centre of a 24 km
+ * settlement cell. This keeps the guaranteed village and city inside the
+ * visible flight envelope even when their owning cells sit beside the pad.
+ */
+function anchorLocation(
+  kind: 'city' | 'village', pad: { x: number; z: number }, attempt: number,
+): { x: number; z: number } {
+  const cellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
+  const cellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
+  const salt = kind === 'city' ? 17311 : 12971
+  const angle = hash2(cellX * 157 + cellZ * 193 + attempt * 37 + salt,
+    cellZ * 211 - cellX * 227 - attempt * 53 - salt) * Math.PI * 2
+  const base = kind === 'city' ? 14500 : 4500
+  const span = kind === 'city' ? 7500 : 7000
+  const distance = base + hash2(cellX * 271 + attempt * 67 + salt,
+    cellZ * 313 - attempt * 89 - salt) * span
+  return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
+}
+
 function isAnchorCell(cx: number, cz: number, kind: 'city' | 'village', pad: { x: number; z: number } | null): boolean {
   const anchor = anchorCell(kind, pad)
   return !!anchor && anchor[0] === cx && anchor[1] === cz
@@ -131,11 +151,12 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
   // Cities stay exceptional. Villages have a much higher candidate rate than
   // cities because a 24 km cell plus terrain validation otherwise turns them
   // into once-per-session accidents instead of landmarks to fly toward.
-  const kind = roll < CITY_CHANCE || cityAnchor ? 'city' : 'village'
+  const kind = cityAnchor ? 'city' : villageAnchor ? 'village' : roll < CITY_CHANCE ? 'city' : 'village'
   let result: SettlementPlan | null = null
   if (roll < VILLAGE_CHANCE || villageAnchor || cityAnchor) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
-    const radius = kind === 'city' ? 8500 + rand(1) * 1500 : 1050 + rand(1) ** .72 * 3950
+    const radius = kind === 'city' ? 8500 + rand(1) * 1500
+      : villageAnchor ? 1500 + rand(1) ** .72 * 2200 : 1050 + rand(1) ** .72 * 3950
     // Cities are allowed to straddle cell boundaries. Restricting their
     // center to radius+300 from every edge left a 9 km city with only a tiny
     // 3 km-wide search strip inside a 24 km cell, so most otherwise excellent
@@ -148,16 +169,23 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
     // Site validation is deterministic and off-thread, so spend a little more
     // search budget finding a real dry shelf instead of silently deleting the
     // whole landmark when the first random probes land on a river or ridge.
-    const siteAttempts = kind === 'city' ? (cityAnchor ? 96 : 56) : 48
+    const siteAttempts = kind === 'city' ? (cityAnchor ? 96 : 56) : (villageAnchor ? 96 : 48)
     for (let attempt = 0; attempt < siteAttempts; attempt++) {
-      const x = cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
-      const z = cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
+      const anchored = pad && (cityAnchor || villageAnchor)
+        ? anchorLocation(kind, pad, attempt)
+        : null
+      const x = anchored
+        ? anchored.x
+        : cx * SETTLEMENT_CELL_SIZE + margin + rand(10 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
+      const z = anchored
+        ? anchored.z
+        : cz * SETTLEMENT_CELL_SIZE + margin + rand(11 + attempt * 2) * (SETTLEMENT_CELL_SIZE - margin * 2)
       if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + 500) continue
       const c = sampleClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
       let min = c.height, max = c.height, suitable = true, drySamples = 1
       const surveySamples = kind === 'city' ? 8 : 6
-      const surveyRadius = radius * (kind === 'city' ? (cityAnchor ? .58 : .8) : .56)
+      const surveyRadius = radius * (kind === 'city' ? (cityAnchor ? .58 : .8) : (villageAnchor ? .48 : .56))
       for (let i = 0; i < surveySamples; i++) {
         const angle = i * Math.PI * 2 / surveySamples
         const s = sampleClimate(x + Math.cos(angle) * surveyRadius, z + Math.sin(angle) * surveyRadius)
@@ -170,7 +198,8 @@ export function settlementForCell(cx: number, cz: number): SettlementPlan | null
         }
         drySamples++
         min = Math.min(min, s.height); max = Math.max(max, s.height)
-        const reliefLimit = kind === 'city' && cityAnchor ? 720 : kind === 'city' ? 350 : 420
+        const reliefLimit = kind === 'city' && cityAnchor ? 720
+          : kind === 'city' ? 350 : villageAnchor ? 650 : 420
         if (max - min > reliefLimit) { suitable = false; break }
       }
       if (drySamples < (kind === 'city' ? (cityAnchor ? 3 : 4) : 3)) suitable = false
