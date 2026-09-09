@@ -47,6 +47,20 @@ describe('MissionSystem gate crossing', () => {
     expect(second.dist).toBeGreaterThan(0)
   })
 
+  it('reuses the fixed gate scene footprint across retries', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    const childCount = mission.root.children.length
+    const firstGate = mission.root.getObjectByName('gate_0')
+
+    mission.start(120, 24, -80, 0.7)
+
+    expect(mission.root.children).toHaveLength(childCount)
+    expect(mission.root.getObjectByName('gate_0')).toBe(firstGate)
+    expect(mission.activeGatePos()?.x).not.toBe(0)
+    mission.dispose()
+  })
+
   it('keeps the gate pass flash bounded and monotonic', () => {
     expect(missionPassFlashScale(0)).toBe(1)
     expect(missionPassFlashScale(0.5)).toBeGreaterThan(1)

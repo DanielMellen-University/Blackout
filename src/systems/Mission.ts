@@ -69,14 +69,15 @@ export class MissionSystem {
   private prevY = 0
   private prevZ = 0
   lastPassQuality = 1
-  private gateGeo: TorusGeometry | null = null
+  private readonly gateGeo: TorusGeometry
+  private readonly gatePool: Gate[] = []
   private readonly beacon = new Group()
   private readonly liveMat: MeshBasicMaterial
   private readonly waitMat: MeshBasicMaterial
   private readonly doneMat: MeshBasicMaterial
   private readonly beaconMat: MeshBasicMaterial
   private readonly passFlashMat: MeshBasicMaterial
-  private passFlash: Mesh | null = null
+  private readonly passFlash: Mesh
   private passFlashStartedAt = 0
 
   constructor(scene: Scene) {
@@ -120,6 +121,27 @@ export class MissionSystem {
       blending: AdditiveBlending,
       depthWrite: false,
     })
+    this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
+    for (let i = 0; i < GATE_COUNT; i++) {
+      const ring = new Mesh(this.gateGeo, this.waitMat)
+      ring.name = `gate_${i}`
+      const root = new Group()
+      root.add(ring)
+      root.visible = false
+      this.root.add(root)
+      this.gatePool.push({
+        root,
+        pos: new Vector3(),
+        fwd: new Vector3(),
+        radius: GATE_RADIUS - 2,
+        passed: false,
+        lastAlong: 0,
+      })
+    }
+    this.passFlash = new Mesh(this.gateGeo, this.passFlashMat)
+    this.passFlash.name = 'GatePassFlash'
+    this.passFlash.visible = false
+    this.root.add(this.passFlash)
     this.buildBeacon()
     this.root.add(this.beacon)
   }
@@ -132,12 +154,6 @@ export class MissionSystem {
     this.havePrev = false
     this.lastPassQuality = 1
 
-    const gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
-    this.gateGeo = gateGeo
-    this.passFlash = new Mesh(gateGeo, this.passFlashMat)
-    this.passFlash.name = 'GatePassFlash'
-    this.passFlash.visible = false
-    this.root.add(this.passFlash)
     for (let i = 0; i < GATE_COUNT; i++) {
       const t = (i / GATE_COUNT) * Math.PI * 2 + spawnYaw + 0.55
       const x = spawnX + Math.sin(t) * CIRCUIT_R
@@ -146,26 +162,17 @@ export class MissionSystem {
       const y = Math.max(spawnY + 72 + i * 18, ground + 80)
 
       // Tangent so you fly the circle
-      const fwd = new Vector3(Math.cos(t), 0, -Math.sin(t)).normalize()
-
-      const ring = new Mesh(this.gateGeo, this.waitMat)
-      ring.name = `gate_${i}`
+      const gate = this.gatePool[i]!
+      const fwd = gate.fwd.set(Math.cos(t), 0, -Math.sin(t)).normalize()
+      const ring = gate.root.children[0] as Mesh
       // Torus lies in XY; stand it up and face along fwd
       ring.rotation.y = Math.atan2(fwd.x, fwd.z)
-
-      const root = new Group()
-      root.position.set(x, y, z)
-      root.add(ring)
-      this.root.add(root)
-
-      this.gates.push({
-        root,
-        pos: new Vector3(x, y, z),
-        fwd,
-        radius: GATE_RADIUS - 2,
-        passed: false,
-        lastAlong: 0,
-      })
+      gate.root.position.set(x, y, z)
+      gate.root.visible = true
+      gate.pos.set(x, y, z)
+      gate.passed = false
+      gate.lastAlong = 0
+      this.gates.push(gate)
     }
     this.liveLabel = `GATE 1/${this.gates.length}`
     this.paint()
@@ -354,11 +361,7 @@ export class MissionSystem {
   }
 
   private clear(): void {
-    for (const g of this.gates) this.root.remove(g.root)
-    if (this.passFlash) {
-      this.root.remove(this.passFlash)
-      this.passFlash = null
-    }
+    for (const g of this.gatePool) g.root.visible = false
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
@@ -366,16 +369,14 @@ export class MissionSystem {
     this.havePrev = false
     this.beacon.visible = false
     this.passFlashMat.opacity = 0
+    this.passFlash.visible = false
     this.passFlashStartedAt = 0
-    this.gateGeo?.dispose()
-    this.gateGeo = null
   }
 
   dispose(): void {
     disposeObjectTree(this.root)
     this.root.removeFromParent()
     this.gates.length = 0
-    this.gateGeo = null
   }
 }
 
