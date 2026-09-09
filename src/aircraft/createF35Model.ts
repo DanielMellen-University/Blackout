@@ -262,6 +262,7 @@ function buildAfterburner(): Group {
   })
   for (let i = 0; i < 4; i++) {
     const diamond = new Mesh(new SphereGeometry(1, 8, 6), diamondMat)
+    diamond.name = `abDiamond${i}`
     diamond.scale.set(.14 - i * .018, .14 - i * .018, .15)
     diamond.position.z = -.4 - i * .48
     group.add(diamond)

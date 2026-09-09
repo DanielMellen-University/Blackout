@@ -109,6 +109,12 @@ export class Aircraft {
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
+  private readonly plumeDiamonds: Array<{
+    node: Object3D
+    x: number
+    y: number
+    z: number
+  }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
 
   constructor() {
@@ -273,6 +279,7 @@ export class Aircraft {
    * Safe no-ops if nodes missing (GLB path).
    */
   private updateVisuals(dt: number): void {
+    const now = performance.now()
     const gear = this.landingGear
     const target = this.controls.gearDown ? 1 : 0
     this.gearExtension = dt === 0
@@ -289,7 +296,7 @@ export class Aircraft {
     this.updateControlSurfaces(dt)
 
     if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
-      const opacity = antiCollisionBeaconOpacity(performance.now())
+      const opacity = antiCollisionBeaconOpacity(now)
       this.antiCollisionBeacon.visible = opacity > 0.01
       this.antiCollisionBeaconMaterial.opacity = opacity
     }
@@ -310,7 +317,7 @@ export class Aircraft {
     // Stretch aft from the nozzle lip. Military power retains a compact hot
     // exhaust; afterburner grows to a long, wide plume at full engine power.
     const pulse =
-      boost && dt > 0 ? 1 + Math.sin(performance.now() * 0.028) * 0.08 : 1
+      boost && dt > 0 ? 1 + Math.sin(now * 0.028) * 0.08 : 1
     const len = (
       0.12 + plumeResponse * (boost ? 2.8 : 1.25)
     ) * pulse
@@ -322,6 +329,11 @@ export class Aircraft {
       if (plume.name === 'abCore') plume.material.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
       else if (plume.name === 'abMid') plume.material.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
       else if (plume.name === 'abOuter') plume.material.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
+    }
+    for (let i = 0; i < this.plumeDiamonds.length; i++) {
+      const diamond = this.plumeDiamonds[i]!
+      const scale = afterburnerDiamondPulse(i, now, boost, plumeResponse)
+      diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
     }
     const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
     for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
@@ -365,8 +377,17 @@ export class Aircraft {
         ? this.antiCollisionBeacon.material
         : null
     this.plumeMaterials.length = 0
+    this.plumeDiamonds.length = 0
     this.nozzleGlows.length = 0
     this.afterburner?.traverse((object) => {
+      if (object.name.startsWith('abDiamond')) {
+        this.plumeDiamonds.push({
+          node: object,
+          x: object.scale.x,
+          y: object.scale.y,
+          z: object.scale.z,
+        })
+      }
       if (!(object instanceof Mesh) || !(object.material instanceof MeshBasicMaterial)) return
       if (object.material.name === 'abCore' || object.material.name === 'abMid' || object.material.name === 'abOuter') {
         this.plumeMaterials.push({ name: object.material.name, material: object.material })
@@ -401,6 +422,19 @@ export function antiCollisionBeaconOpacity(timeMs: number): number {
   const attack = Math.min(1, flash / 18)
   const release = Math.max(0, 1 - Math.max(0, flash - 18) / 110)
   return attack * release
+}
+
+/** Small procedural Mach-diamond pulse used by the external exhaust plume. */
+export function afterburnerDiamondPulse(
+  index: number,
+  timeMs: number,
+  boost: boolean,
+  response: number,
+): number {
+  const power = MathUtils.clamp(Number.isFinite(response) ? response : 0, 0, 1)
+  if (!boost) return 0.9 + power * 0.1
+  const phase = Number.isFinite(timeMs) ? timeMs * 0.034 + index * 1.35 : index * 1.35
+  return 1 + Math.sin(phase) * 0.1 * power
 }
 
 function enableShadows(obj: Object3D): void {

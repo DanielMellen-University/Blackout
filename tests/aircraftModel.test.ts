@@ -2,6 +2,7 @@ import { Box3, Mesh, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
+  afterburnerDiamondPulse,
   antiCollisionBeaconOpacity,
   disposeAircraftObject,
 } from '../src/aircraft/Aircraft'
@@ -76,6 +77,17 @@ describe('rebuilt aircraft', () => {
     expect(antiCollisionBeaconOpacity(80)).toBeGreaterThan(0)
     expect(antiCollisionBeaconOpacity(200)).toBe(0)
     expect(antiCollisionBeaconOpacity(1400)).toBe(0)
+  })
+
+  it('keeps exhaust Mach-diamond motion bounded and throttle driven', () => {
+    expect(afterburnerDiamondPulse(0, 1000, false, 0)).toBeCloseTo(.9)
+    expect(afterburnerDiamondPulse(0, 1000, false, 1)).toBeCloseTo(1)
+    const low = afterburnerDiamondPulse(1, 1000, true, .25)
+    const high = afterburnerDiamondPulse(1, 1000, true, 1)
+    expect(low).toBeGreaterThan(.97)
+    expect(low).toBeLessThan(1.03)
+    expect(high).toBeGreaterThan(.9)
+    expect(high).toBeLessThan(1.1)
   })
 
   it('scales afterburner length with the displayed engine-power percentage', () => {
