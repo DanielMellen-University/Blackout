@@ -22,6 +22,9 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
 - The gold canopy now uses a restrained clearcoat physical material, giving the F-35 cockpit a sharper glass highlight without adding geometry or a draw call.
+- High-speed cockpit view gains a slight canopy fog/vignette linked to IAS, with reduced-motion support and no new scene draws.
+- Clean touchdowns and fast rollouts kick up pooled ground scrub dust and tire smoke without per-landing allocation churn.
+- Approaching the live checkpoint softens a proximity pulse on the ring and HUD cue, separate from the brighter gate-pass flash.
 - Airborne yaw and runway steering now honor the HUD control convention: A turns left and D turns right, with regression coverage for both nose directions.
 - Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
 - Aircraft animation caches gear, control-surface, afterburner, and nozzle nodes so each physics step avoids repeated scene-tree searches.
@@ -48,7 +51,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runtime weather blending now fills one atmosphere-owned snapshot in place; public weather snapshots remain independent while the render loop avoids duplicate profile and wind allocations.
 - Atmosphere anchor tracking reuses one coordinate record between updates, eliminating another steady-flight allocation while keeping frozen-frame skip checks exact.
 - The analytic sky cloud deck now fills an atmosphere-owned record in place, removing another per-update allocation without changing cloud coverage or wind shading.
-- Settlement streaming now guards empty queue sorts and compacts ready roads in place, reducing worker handoff churn during steady flight without changing landmark priority.
+- Settlement streaming now guards empty void sorts and compacts ready roads in place, reducing worker handoff churn during steady flight without changing landmark priority.
 - External camera speed framing and crash-shake envelopes now reuse camera-owned records, removing per-frame temporary objects while preserving the existing framing and shake curves.
 - Aircraft control-surface animation now writes through cached hinge nodes directly, avoiding a per-step helper closure and name dispatch while retaining smooth F-35 flap, stabilator, and tail motion.
 - HUD text readouts now use the same cached-write strategy as styles and attributes, avoiding repeated DOM reads while preserving exact telemetry values.
