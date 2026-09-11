@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canopyTintIntensity,
   formatHudNumber,
   formatVerticalSpeed,
+  gateProximityHudActive,
   gearTransitionActive,
   quantizeHudNumber,
   speedJuiceIntensity,
@@ -40,5 +42,21 @@ describe('HUD value formatting', () => {
     expect(gearTransitionActive(700, 700)).toBe(false)
     expect(gearTransitionActive(800, 700)).toBe(false)
     expect(gearTransitionActive(Number.NaN, 700)).toBe(false)
+  })
+
+  it('limits canopy tint to cockpit view and high IAS', () => {
+    expect(canopyTintIntensity(2400, false)).toBe(0)
+    expect(canopyTintIntensity(400, true)).toBe(0)
+    expect(canopyTintIntensity(1800, true)).toBeGreaterThan(0)
+    expect(canopyTintIntensity(3000, true)).toBeCloseTo(0.28)
+    expect(canopyTintIntensity(5000, true)).toBeCloseTo(0.28)
+  })
+
+  it('marks the nav cue near the active gate only inside the soft window', () => {
+    expect(gateProximityHudActive(0)).toBe(false)
+    expect(gateProximityHudActive(180)).toBe(true)
+    expect(gateProximityHudActive(220)).toBe(true)
+    expect(gateProximityHudActive(221)).toBe(false)
+    expect(gateProximityHudActive(Number.NaN)).toBe(false)
   })
 })
