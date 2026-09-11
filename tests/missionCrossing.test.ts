@@ -1,6 +1,7 @@
 import { Scene } from 'three'
 import { describe, expect, it } from 'vitest'
 import {
+  gateProximityEmphasis,
   missionPassFlashOpacity,
   missionPassFlashScale,
   MissionSystem,
@@ -68,5 +69,13 @@ describe('MissionSystem gate crossing', () => {
     expect(missionPassFlashOpacity(0)).toBeCloseTo(0.86)
     expect(missionPassFlashOpacity(0.5)).toBeGreaterThan(missionPassFlashOpacity(1))
     expect(missionPassFlashOpacity(2)).toBe(0)
+  })
+
+  it('ramps soft gate proximity emphasis inside a few ring radii', () => {
+    expect(gateProximityEmphasis(400, 36)).toBe(0)
+    expect(gateProximityEmphasis(36, 36)).toBe(1)
+    expect(gateProximityEmphasis(90, 36)).toBeGreaterThan(0)
+    expect(gateProximityEmphasis(90, 36)).toBeLessThan(1)
+    expect(gateProximityEmphasis(Number.NaN, 36)).toBe(0)
   })
 })
