@@ -195,17 +195,28 @@ export class MissionSystem {
 
     if (this.status !== 'live' || this.next >= this.gates.length) {
       this.beacon.visible = false
+      this.liveMat.opacity = 0.85
       return
     }
     const g = this.gates[this.next]!
+    let near = 0
+    if (this.havePrev) {
+      const dist = Math.hypot(
+        this.prevX - g.pos.x,
+        this.prevY - g.pos.y,
+        this.prevZ - g.pos.z,
+      )
+      near = gateProximityEmphasis(dist, g.radius)
+    }
     const ring = g.root.children[0]
     if (ring) {
-      const s = 1.02 + Math.sin(now * 0.005) * 0.05
+      const s = 1.02 + Math.sin(now * 0.005) * 0.05 + near * 0.09
       ring.scale.setScalar(s)
     }
+    this.liveMat.opacity = 0.85 + near * 0.12
     this.placeBeacon()
     const pulse = 0.42 + (Math.sin(now * 0.006) + 1) * 0.18
-    this.beaconMat.opacity = pulse
+    this.beaconMat.opacity = pulse + near * 0.18
   }
 
   update(px: number, py: number, pz: number): 'none' | 'pass' | 'complete' {
@@ -391,6 +402,19 @@ export function missionPassFlashScale(progress: number): number {
 export function missionPassFlashOpacity(progress: number): number {
   const t = clamp01(progress)
   return (1 - t) * 0.86
+}
+
+/**
+ * Soft near-gate emphasis (0-1). Stronger inside ~4 ring radii, none beyond.
+ * Not the pass flash; just a readable proximity cue.
+ */
+export function gateProximityEmphasis(dist: number, gateRadius: number): number {
+  if (!Number.isFinite(dist) || !Number.isFinite(gateRadius) || gateRadius <= 0) return 0
+  const outer = gateRadius * 4.5
+  if (dist >= outer) return 0
+  const inner = gateRadius * 1.15
+  if (dist <= inner) return 1
+  return 1 - (dist - inner) / (outer - inner)
 }
 
 function clamp01(value: number): number {
