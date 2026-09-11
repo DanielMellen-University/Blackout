@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-11
+
+### Juice
+
+- Add pooled landing scrub dust and tire smoke on touchdown and high-speed rollout, reusing fixed meshes so retries do not allocate new GPU resources.
+- Add a cockpit-only high-speed canopy fog/vignette that scales with IAS and stays quiet under reduced-motion preferences.
+- Soften the live gate and HUD nav cue when the jet is near the active checkpoint, keeping the stronger pass flash for the actual crossing.
+
 ## 2026-09-07
 
 ### Settlements
