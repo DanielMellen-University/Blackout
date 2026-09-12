@@ -27,6 +27,8 @@ const _size = new Vector3()
 const _center = new Vector3()
 const _spawnQuat = new Quaternion()
 const _Y_UP = new Vector3(0, 1, 0)
+const _loadAcceleration = new Vector3()
+const _loadUp = new Vector3()
 const AIRFRAME_NIGHT_EMISSIVE = 0x153244
 
 export type AircraftStatus = 'ok' | 'crashed' | 'landed'
@@ -61,11 +63,14 @@ export class Aircraft {
   readonly velocity = new Vector3()
   readonly orientation = new Quaternion()
   readonly angularVelocity = new Vector3()
+  /** Smoothed acceleration along the pilot's body-up axis, expressed in G. */
+  loadFactor = 1
   /** Pose shown this video frame (interpolated between physics steps). */
   readonly displayPosition = new Vector3()
   readonly displayOrientation = new Quaternion()
   private readonly prevPosition = new Vector3()
   private readonly prevOrientation = new Quaternion()
+  private readonly prevVelocity = new Vector3()
   readonly engineState: EngineState = createEngineState()
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
@@ -217,6 +222,8 @@ export class Aircraft {
     this.position.set(x, y, z)
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
+    this.prevVelocity.copy(this.velocity)
+    this.loadFactor = 1
     this.impactVy = 0
     this.impact = null
     this.groundCacheValid = false
@@ -280,8 +287,10 @@ export class Aircraft {
     // Terrain chunks can be replaced between simulation steps, so never carry
     // a contact result across a new physics update.
     this.groundCacheValid = false
+    this.prevVelocity.copy(this.velocity)
     resolveEngineState(this.controls, this.engineState)
     this.flight.step(this, dt)
+    this.updateLoadFactor(dt)
     this.autoGear()
     this.updateVisuals(dt, nowMs)
   }
@@ -290,6 +299,8 @@ export class Aircraft {
     this.status = 'crashed'
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
+    this.prevVelocity.copy(this.velocity)
+    this.loadFactor = 0
     this.impactVy = 0
     this.impact = null
     this.groundCacheValid = false
@@ -448,6 +459,15 @@ export class Aircraft {
       this.visualTimeMs += dt * 1000
     }
     return this.visualTimeMs
+  }
+
+  /** Smooth body-up acceleration into an arcade-readable pilot G estimate. */
+  private updateLoadFactor(dt: number): void {
+    if (!Number.isFinite(dt) || dt <= 0) return
+    _loadAcceleration.subVectors(this.velocity, this.prevVelocity).multiplyScalar(1 / dt)
+    _loadUp.set(0, 1, 0).applyQuaternion(this.orientation)
+    const target = resolveLoadFactor(_loadAcceleration, _loadUp, flightConfig.gravity)
+    this.loadFactor = MathUtils.damp(this.loadFactor, target, 8, dt)
   }
 
   /** Flex the existing nozzle petals subtly with engine power. */
@@ -671,6 +691,19 @@ export function afterburnerDiamondPulse(
   if (!boost) return 0.9 + power * 0.1
   const phase = Number.isFinite(timeMs) ? timeMs * 0.034 + index * 1.35 : index * 1.35
   return 1 + Math.sin(phase) * 0.1 * power
+}
+
+/** Convert world acceleration into a bounded body-up pilot-load estimate. */
+export function resolveLoadFactor(
+  acceleration: Vector3,
+  bodyUp: Vector3,
+  gravity = flightConfig.gravity,
+): number {
+  const safeGravity = Number.isFinite(gravity) && gravity > 0 ? gravity : flightConfig.gravity
+  const axialValue = acceleration.dot(bodyUp)
+  const axial = Number.isFinite(axialValue) ? axialValue : 0
+  const up = Number.isFinite(bodyUp.y) ? bodyUp.y : 1
+  return MathUtils.clamp((axial + safeGravity * up) / safeGravity, -4, 12)
 }
 
 function enableShadows(obj: Object3D): void {

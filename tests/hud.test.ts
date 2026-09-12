@@ -3,11 +3,13 @@ import {
   afterburnerHeatIntensity,
   canopyTintIntensity,
   formatAudioState,
+  formatGForce,
   formatHeading,
   formatHudNumber,
   formatVerticalSpeed,
   gateProximityHudActive,
   gearTransitionActive,
+  gForceTone,
   headingTapeLabel,
   headingTapeOffset,
   normalizeBannerTone,
@@ -66,6 +68,15 @@ describe('HUD value formatting', () => {
     expect(formatVerticalSpeed(-3.6)).toBe('-4')
     expect(formatVerticalSpeed(0.2)).toBe('0')
     expect(formatVerticalSpeed(Number.NaN)).toBe('0')
+  })
+
+  it('formats bounded fighter G-load cues with distinct stress tones', () => {
+    expect(formatGForce(1)).toBe('+1.0G')
+    expect(formatGForce(-0.45)).toBe('-0.5G')
+    expect(formatGForce(Number.NaN)).toBe('+1.0G')
+    expect(gForceTone(3.9)).toBe('normal')
+    expect(gForceTone(4)).toBe('high')
+    expect(gForceTone(-0.1)).toBe('negative')
   })
 
   it('keeps vertical-speed color changes inside a deadband', () => {

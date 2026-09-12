@@ -272,6 +272,7 @@ async function boot(): Promise<void> {
   const hudFrame: Parameters<HUD['update']>[0] = {
     y: 0,
     verticalSpeed: 0,
+    gForce: 1,
     speed: 0,
     cameraMode: '',
     heading: 0,
@@ -781,6 +782,7 @@ async function boot(): Promise<void> {
       }
       hudFrame.y = alt
       hudFrame.verticalSpeed = aircraft.onGround ? 0 : aircraft.velocity.y
+      hudFrame.gForce = aircraft.loadFactor
       hudFrame.speed = aircraft.speed
       hudFrame.cameraMode = cameras.modeLabel
       hudFrame.fps = time.fps

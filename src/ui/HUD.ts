@@ -16,6 +16,7 @@ export function normalizeBannerTone(value: unknown): HudBannerTone {
 export class HUD {
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
+  private readonly gEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
   private readonly speedoPanel: HTMLElement | null
   private readonly camEl: HTMLElement | null
@@ -65,6 +66,8 @@ export class HUD {
   private verticalSpeedValue = Number.NaN
   private verticalSpeedText = ''
   private verticalSpeedAriaText = ''
+  private gValue = Number.NaN
+  private gText = ''
   private throttleValue = Number.NaN
   private throttleText = ''
   private speedValue = Number.NaN
@@ -115,6 +118,7 @@ export class HUD {
   constructor(root: Document = document) {
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
+    this.gEl = root.getElementById('hud-g')
     this.spdEl = root.getElementById('hud-spd')
     this.speedoPanel = root.getElementById('speedo-panel')
     this.camEl = root.getElementById('hud-cam')
@@ -159,6 +163,8 @@ export class HUD {
     y: number
     /** Vertical velocity in metres per second, positive while climbing. */
     verticalSpeed?: number
+    /** Smoothed acceleration along the pilot body-up axis, in G. */
+    gForce?: number
     speed: number
     cameraMode: string
     /** Aircraft heading (rad, 0 = north / +Z). */
@@ -219,6 +225,21 @@ export class HUD {
       const tone = verticalSpeedTone(opts.verticalSpeed ?? 0)
       this.setClass(this.verticalSpeedEl, 'climb', tone === 'climb')
       this.setClass(this.verticalSpeedEl, 'sink', tone === 'sink')
+    }
+
+    if (this.gEl && opts.gForce !== undefined) {
+      const gForce = Math.max(-4, Math.min(12, safeHudValue(opts.gForce, 1)))
+      const shown = Math.sign(gForce) * Math.round(Math.abs(gForce) * 10) / 10
+      if (shown !== this.gValue) {
+        this.gValue = shown
+        this.gText = formatGForce(shown)
+      }
+      this.setText(this.gEl, this.gText)
+      this.setAttribute(this.gEl, 'aria-valuenow', String(shown))
+      this.setAttribute(this.gEl, 'aria-valuetext', this.gText)
+      const tone = gForceTone(shown)
+      this.setClass(this.gEl, 'high-g', tone === 'high')
+      this.setClass(this.gEl, 'negative-g', tone === 'negative')
     }
 
     const rawKts = displayedKnots(opts.speed)
@@ -744,6 +765,22 @@ export function verticalSpeedTone(
   if (speed > deadband) return 'climb'
   if (speed < -deadband) return 'sink'
   return 'level'
+}
+
+/** Signed one-decimal G readout for the compact fighter HUD. */
+export function formatGForce(value: number): string {
+  const safe = Number.isFinite(value) ? value : 1
+  const rounded = Math.sign(safe) * Math.round(Math.abs(safe) * 10) / 10
+  return `${rounded >= 0 ? '+' : ''}${rounded.toFixed(1)}G`
+}
+
+/** Keep sustained high and negative loads visually distinct without alarms. */
+export function gForceTone(value: number, highThreshold = 4): 'normal' | 'high' | 'negative' {
+  const safe = Number.isFinite(value) ? value : 1
+  const threshold = Number.isFinite(highThreshold) ? Math.max(0, highThreshold) : 4
+  if (safe < 0) return 'negative'
+  if (safe >= threshold) return 'high'
+  return 'normal'
 }
 
 function headingDegrees(headingRad: number): number {

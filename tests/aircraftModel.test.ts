@@ -8,6 +8,7 @@ import {
   landingLightOpacity,
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
+  resolveLoadFactor,
 } from '../src/aircraft/Aircraft'
 import { contactSweepNeedsDetailedProbes } from '../src/aircraft/FlightModel'
 import { createF35Model } from '../src/aircraft/createF35Model'
@@ -184,6 +185,13 @@ describe('rebuilt aircraft', () => {
     expect(material.emissiveIntensity).toBeCloseTo(0.32)
     aircraft.setNightReadability(1)
     expect(material.emissiveIntensity).toBeCloseTo(0)
+  })
+
+  it('maps body-up acceleration to a bounded pilot load estimate', () => {
+    expect(resolveLoadFactor(new Vector3(0, 0, 0), new Vector3(0, 1, 0))).toBeCloseTo(1)
+    expect(resolveLoadFactor(new Vector3(0, 9.81, 0), new Vector3(0, 1, 0))).toBeCloseTo(2)
+    expect(resolveLoadFactor(new Vector3(0, -98.1, 0), new Vector3(0, 1, 0))).toBeCloseTo(-4)
+    expect(resolveLoadFactor(new Vector3(Number.NaN, 0, 0), new Vector3(0, 1, 0))).toBeCloseTo(1)
   })
 
   it('turns off both the plume and nozzle glow when power is cut', () => {
