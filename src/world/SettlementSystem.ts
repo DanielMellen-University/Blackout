@@ -444,6 +444,14 @@ export class SettlementSystem {
         float lightVariation = mix(.58, 1.0, smoothstep(.18, .82, fract(settlementSeed * 19.1 + grid.x * .13)));
         float windowStrength = windowMask * lightVariation * (.42 + (1.0 - settlementDaylight) * .24);
         diffuseColor.rgb = mix(diffuseColor.rgb, windowColor, windowStrength);
+        // Night lighting can leave a whole skyline below the tone-mapper's
+        // useful range when the moon is behind cloud or below the horizon.
+        // Add a tiny cool facade lift and let the window pattern glow at
+        // night. This keeps silhouettes readable without changing daytime
+        // materials, adding lights, or creating extra draw calls.
+        float nightFactor = 1.0 - settlementDaylight;
+        totalEmissiveRadiance += vec3(.012, .018, .03) * nightFactor;
+        totalEmissiveRadiance += windowColor * windowMask * nightFactor * .16;
         // A second, low-contrast scale breaks large walls into readable
         // facade panels and floor bands. It is material-only, so villages
         // and cities gain architectural rhythm without extra instance draws.
@@ -460,7 +468,7 @@ export class SettlementSystem {
         float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.68, .74, .8), wallSnowMask);`)
     }
-    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v4'
+    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v5'
   }
 
   setWeatherEffects(rain: number, snow: number, daylight = this.buildingDaylight.value): void {
