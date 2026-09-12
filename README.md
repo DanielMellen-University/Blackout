@@ -42,6 +42,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The nose wheel visibly follows A/D runway steering, then recenters smoothly after takeoff and resets with each new flight.
 - Heavy rain uses pooled per-streak drift instead of per-frame trigonometry, preserving wind variation while keeping storm CPU cost bounded.
 - The vertical-speed readout uses cool climb and amber sink tones with a small deadband, making flare timing readable without adding scene work.
+- Altitude, vertical speed, and airspeed expose live semantic meter values, while HUD banners and cautions announce themselves at the right urgency for assistive tech.
 - The runway windsock now aims downwind and extends with the live weather wind, giving takeoff a readable local wind cue without extra draw calls.
 - The runway PAPI now changes from red to white with the aircraft's real glide angle, while fly-bys hold a neutral two-white/two-red pattern.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.

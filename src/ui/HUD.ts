@@ -58,12 +58,15 @@ export class HUD {
   private readonly textCache = new WeakMap<Element, string>()
   private altitudeValue = Number.NaN
   private altitudeText = ''
+  private altitudeAriaText = ''
   private verticalSpeedValue = Number.NaN
   private verticalSpeedText = ''
+  private verticalSpeedAriaText = ''
   private throttleValue = Number.NaN
   private throttleText = ''
   private speedValue = Number.NaN
   private speedText = ''
+  private speedAriaText = ''
   private fpsValue = Number.NaN
   private fpsText = ''
   private cameraModeValue: string | null = null
@@ -184,34 +187,44 @@ export class HUD {
     flightPathY?: number
   }): void {
     if (this.posEl) {
-      const altitude = Math.round(opts.y)
+      const altitude = Number.isFinite(opts.y) ? Math.round(opts.y) : 0
       if (altitude !== this.altitudeValue) {
         this.altitudeValue = altitude
         this.altitudeText = String(altitude)
+        this.altitudeAriaText = `${this.altitudeText} metres`
       }
       this.setText(this.posEl, this.altitudeText)
+      this.setAttribute(this.posEl, 'aria-valuenow', String(Math.max(0, altitude)))
+      this.setAttribute(this.posEl, 'aria-valuetext', this.altitudeAriaText)
     }
 
     if (this.verticalSpeedEl) {
-      const verticalSpeed = Math.round(opts.verticalSpeed ?? 0)
+      const verticalSpeed = Number.isFinite(opts.verticalSpeed) ? Math.round(opts.verticalSpeed!) : 0
       if (verticalSpeed !== this.verticalSpeedValue) {
         this.verticalSpeedValue = verticalSpeed
         this.verticalSpeedText = formatVerticalSpeed(verticalSpeed)
+        this.verticalSpeedAriaText = `${this.verticalSpeedText} metres per second`
       }
       this.setText(this.verticalSpeedEl, this.verticalSpeedText)
+      this.setAttribute(this.verticalSpeedEl, 'aria-valuenow', String(verticalSpeed))
+      this.setAttribute(this.verticalSpeedEl, 'aria-valuetext', this.verticalSpeedAriaText)
       const tone = verticalSpeedTone(opts.verticalSpeed ?? 0)
       this.setClass(this.verticalSpeedEl, 'climb', tone === 'climb')
       this.setClass(this.verticalSpeedEl, 'sink', tone === 'sink')
     }
 
-    const kts = displayedKnots(opts.speed)
+    const rawKts = displayedKnots(opts.speed)
+    const kts = Number.isFinite(rawKts) ? rawKts : 0
     if (this.spdEl) {
       const speed = Math.round(kts)
       if (speed !== this.speedValue) {
         this.speedValue = speed
         this.speedText = String(speed)
+        this.speedAriaText = `${this.speedText} knots`
       }
       this.setText(this.spdEl, this.speedText)
+      this.setAttribute(this.spdEl, 'aria-valuenow', String(Math.max(0, speed)))
+      this.setAttribute(this.spdEl, 'aria-valuetext', this.speedAriaText)
     }
     this.updateSpeedo(kts)
     this.updateSpeedJuice(kts, !!opts.boost)
@@ -302,6 +315,7 @@ export class HUD {
         this.setHidden(this.bannerEl, true)
       }
       const tone = normalizeBannerTone(opts.bannerTone)
+      this.setAttribute(this.bannerEl, 'aria-live', tone === 'danger' ? 'assertive' : 'polite')
       this.setClass(this.bannerEl, 'banner-info', tone === 'info')
       this.setClass(this.bannerEl, 'banner-success', tone === 'success')
       this.setClass(this.bannerEl, 'banner-danger', tone === 'danger')

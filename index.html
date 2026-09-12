@@ -159,13 +159,29 @@
         <div id="hud-top-right">
           <div id="alt-meter" aria-label="Altitude">
             <span class="alt-label">ALT</span>
-            <span id="hud-pos" class="alt-value">0</span>
+            <span
+              id="hud-pos"
+              class="alt-value"
+              role="meter"
+              aria-valuemin="0"
+              aria-valuemax="100000"
+              aria-valuenow="0"
+              aria-valuetext="0 metres"
+            >0</span>
             <span class="alt-unit">m</span>
           </div>
 
           <div id="vs-meter" aria-label="Vertical speed">
             <span class="alt-label">VS</span>
-            <span id="hud-vs" class="alt-value">0</span>
+            <span
+              id="hud-vs"
+              class="alt-value"
+              role="meter"
+              aria-valuemin="-1000"
+              aria-valuemax="1000"
+              aria-valuenow="0"
+              aria-valuetext="0 metres per second"
+            >0</span>
             <span class="alt-unit">m/s</span>
           </div>
 
@@ -224,7 +240,15 @@
               <circle class="gauge-hub" cx="70" cy="70" r="5" />
             </svg>
             <div class="gauge-readout">
-              <span id="hud-spd" class="gauge-value">0</span>
+              <span
+                id="hud-spd"
+                class="gauge-value"
+                role="meter"
+                aria-valuemin="0"
+                aria-valuemax="4000"
+                aria-valuenow="0"
+                aria-valuetext="0 knots"
+              >0</span>
               <span class="gauge-unit">KTS</span>
             </div>
             <div class="gauge-title">IAS</div>
@@ -268,11 +292,18 @@
         </div>
 
         <!-- Flight cautions (stall / low alt / gear) — top center -->
-        <div id="hud-warn" class="warn" hidden>
+        <div id="hud-warn" class="warn" role="alert" aria-live="assertive" aria-atomic="true" hidden>
           <span id="hud-warn-text">—</span>
         </div>
 
-        <div id="hud-banner" class="banner" hidden></div>
+        <div
+          id="hud-banner"
+          class="banner"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          hidden
+        ></div>
       </div>
 
       <div id="run-results" class="run-results" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
