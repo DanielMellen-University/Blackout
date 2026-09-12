@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Code-split the optional GLB aircraft loader from the initial bundle, preserving the procedural F-35 fallback while reducing startup payload and keeping replacement teardown intact.
 - Add a responsive flight HUD frame for narrow and short browser windows, separating compact instrument groups and wrapping banners while preserving the desktop presentation.
 - Stage streamed settlements out of the title hero, preserving their generated cache while keeping the runway and aircraft readable and restoring the layer on flight start.
 - Compact expired landing dust and smoke with swap-pop removal, eliminating per-frame array shifts while preserving the fixed pooled touchdown effect.

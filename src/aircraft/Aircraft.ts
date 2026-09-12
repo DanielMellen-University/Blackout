@@ -10,7 +10,6 @@ import {
   type Object3D,
   type Scene,
 } from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { disposeObjectTree } from '../core/dispose'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createF35Model } from './createF35Model'
@@ -153,6 +152,10 @@ export class Aircraft {
 
   async tryLoadModel(url = '/models/f35.glb'): Promise<boolean> {
     try {
+      // Keep the optional asset pipeline out of the initial game bundle. The
+      // procedural F-35 is already playable, so only fetch the GLB loader when
+      // a model replacement is actually requested.
+      const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
       const gltf = await new GLTFLoader().loadAsync(url)
       const model = gltf.scene
       model.name = 'model'
