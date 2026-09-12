@@ -113,8 +113,8 @@ export class CameraSystem {
   private readonly lookSmoothed = new Vector3()
   private lookReady = false
 
-  /** performance.now() of last user camera adjust (look / zoom / mode change). */
-  private lastInputMs = performance.now()
+  /** Simulation/render seconds since the last user camera adjustment. */
+  private cameraIdleSeconds = 0
 
   private readonly lookSensitivity = 0.005
   private readonly canvas: HTMLCanvasElement
@@ -233,7 +233,7 @@ export class CameraSystem {
   }
 
   private bumpInput(): void {
-    this.lastInputMs = performance.now()
+    this.cameraIdleSeconds = 0
   }
 
   /**
@@ -243,8 +243,11 @@ export class CameraSystem {
   private updateAutoReturn(dt: number): void {
     if (this.mode === 'cockpit' || this.panDown || dt <= 0) return
 
-    const idleSec = (performance.now() - this.lastInputMs) / 1000
-    if (idleSec < AUTO_RETURN_DELAY) return
+    this.cameraIdleSeconds = Math.min(
+      AUTO_RETURN_DELAY + 1,
+      this.cameraIdleSeconds + dt,
+    )
+    if (this.cameraIdleSeconds < AUTO_RETURN_DELAY) return
 
     const cfg = MODE_CONFIG[this.mode]
     const alpha = 1 - Math.exp(-AUTO_RETURN_RATE * dt)

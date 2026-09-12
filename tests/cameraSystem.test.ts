@@ -194,6 +194,28 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('uses render time for camera auto-return instead of a wall-clock read', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+
+    cameras.update(aircraft, 1 / 60)
+    ;(cameras as unknown as { yaw: number }).yaw = 0.9
+    cameras.update(aircraft, 1 / 60)
+    expect((cameras as unknown as { yaw: number }).yaw).toBeCloseTo(0.9)
+
+    for (let i = 0; i < 420; i++) cameras.update(aircraft, 1 / 60)
+    expect((cameras as unknown as { yaw: number }).yaw).toBeLessThan(0.9)
+    cameras.dispose()
+  })
+
   it('keeps impact and boost camera effects above the terrain floor', () => {
     setGroundHeightSampler(() => 10)
     const target = {
