@@ -65,6 +65,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - HUD navigation, attitude, engine, and FPS paths now normalize malformed telemetry before it reaches DOM or CSS state, keeping one bad frame readable instead of showing `NaN`.
 - The flight HUD now carries a bounded body-axis G-load readout, with high and negative loads called out through restrained color cues and accessible meter values.
+- One-shot high-G and negative-G transition cues now complement the HUD load meter without repeating during sustained turns.
 - The optional GLB aircraft loader is code-split from the initial bundle, so the procedural F-35 can boot with a smaller payload while the replacement model still loads and cleans up normally.
 - The nose wheel visibly follows A/D runway steering, then recenters smoothly after takeoff and resets with each new flight.
 - Heavy rain uses pooled per-streak drift instead of per-frame trigonometry, preserving wind variation while keeping storm CPU cost bounded.

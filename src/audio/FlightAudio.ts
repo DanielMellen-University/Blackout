@@ -23,6 +23,8 @@ export interface FlightAudioViewMix {
   precipitationFilter: number
 }
 
+export type GLoadCueBand = 'negative' | 'normal' | 'high'
+
 const EXTERNAL_VIEW_MIX = Object.freeze({
   engine: 1,
   wind: 1,
@@ -221,6 +223,8 @@ export class FlightAudio {
       | 'thunder'
       | 'warning'
       | 'overspeed'
+      | 'g-high'
+      | 'g-negative'
       | 'gear-up'
       | 'gear-down',
   ): void {
@@ -268,6 +272,14 @@ export class FlightAudio {
       // terrain cautions without turning the cue into a harsh alarm.
       this.tone(680, now, 0.08, 'sine', 0.06, 520)
       this.tone(470, now + 0.1, 0.1, 'sine', 0.05, 360)
+    } else if (kind === 'g-high') {
+      // A restrained rising cue marks a real high-load transition once.
+      this.tone(430, now, 0.08, 'triangle', 0.045, 690)
+      this.tone(690, now + 0.08, 0.1, 'sine', 0.035, 820)
+    } else if (kind === 'g-negative') {
+      // Negative load gets a lower descending cue so it is distinct from stall.
+      this.tone(300, now, 0.09, 'triangle', 0.045, 180)
+      this.tone(180, now + 0.08, 0.1, 'sine', 0.035, 120)
     } else if (kind === 'warning') {
       // A short, soft edge cue. The HUD carries the sustained warning state;
       // audio only announces a new caution so it cannot become a siren.
@@ -545,6 +557,16 @@ export function engineWhineLevel(throttle: number, boost: boolean): number {
 /** Bounded precipitation bed level shared by the audio update and tests. */
 export function precipitationAudioLevel(rain: number, snow: number): number {
   return clamp01(clamp01(rain) * 0.9 + clamp01(snow) * 0.18)
+}
+
+/** Classify meaningful pilot-load transitions without reacting to tiny drift. */
+export function gLoadCueBand(value: number, highThreshold = 4, negativeThreshold = -0.35): GLoadCueBand {
+  const safe = Number.isFinite(value) ? value : 1
+  const high = Number.isFinite(highThreshold) ? Math.max(0, highThreshold) : 4
+  const negative = Number.isFinite(negativeThreshold) ? Math.min(0, negativeThreshold) : -0.35
+  if (safe >= high) return 'high'
+  if (safe <= negative) return 'negative'
+  return 'normal'
 }
 
 function clamp01(v: number): number {

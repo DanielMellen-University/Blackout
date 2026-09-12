@@ -40,7 +40,7 @@ import { ChallengeRun } from './systems/ChallengeRun'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
-import { FlightAudio } from './audio/FlightAudio'
+import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
 import {
   audioVolumePercent,
   normalizeAudioVolume,
@@ -250,6 +250,8 @@ async function boot(): Promise<void> {
   let prevAfterburner = false
   let prevGearDown = true
   let prevLightning = false
+  let prevGLoadBand: GLoadCueBand = 'normal'
+  let gLoadCueUntil = 0
   let audioMuted = false
   const onVisibilityChange = (): void => {
     if (document.hidden) {
@@ -358,6 +360,8 @@ async function boot(): Promise<void> {
     prevAfterburner = false
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
+    prevGLoadBand = 'normal'
+    gLoadCueUntil = 0
     prevWarning = null
     time.reset()
     if (briefing) showBanner('SPOOL ENGINE / W TO ROTATE', 5000)
@@ -716,6 +720,22 @@ async function boot(): Promise<void> {
       audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
     }
     prevAfterburner = afterburnerOn
+
+    const gBand = gLoadCueBand(aircraft.loadFactor)
+    if (
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      gBand !== prevGLoadBand &&
+      gBand !== 'normal' &&
+      nowMs >= gLoadCueUntil
+    ) {
+      audio.playCue(gBand === 'high' ? 'g-high' : 'g-negative')
+      gLoadCueUntil = nowMs + 450
+    }
+    prevGLoadBand = gBand
 
     audioFrame.throttle = aircraft.engineState.lever
     audioFrame.boost = afterburnerOn
