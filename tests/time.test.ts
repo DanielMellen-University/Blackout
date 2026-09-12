@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   shouldAdvanceWorld,
   shouldPauseForFocusLost,
+  shouldRenderFrame,
   shouldUpdateLiveHud,
   SIM_STEP,
   Time,
@@ -61,6 +62,13 @@ describe('Time', () => {
     expect(shouldUpdateLiveHud(false, false)).toBe(false)
     expect(shouldUpdateLiveHud(true, false)).toBe(false)
     expect(shouldUpdateLiveHud(true, true)).toBe(true)
+  })
+
+  it('gates renderer submissions while hidden or recovering a GPU context', () => {
+    expect(shouldRenderFrame(false, false)).toBe(true)
+    expect(shouldRenderFrame(true, false)).toBe(false)
+    expect(shouldRenderFrame(false, true)).toBe(false)
+    expect(shouldRenderFrame(true, true)).toBe(false)
   })
 
   it('pauses active flight when focus is lost without auto-resuming menus', () => {

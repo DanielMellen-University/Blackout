@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Gate render submissions during WebGL context loss and announce recovery so browser GPU resets do not hammer a dead renderer.
 - Announce `COCKPIT VIEW` or `EXTERNAL VIEW` when `C` toggles the camera, making view changes readable at speed.
 - Add a cockpit velocity-vector marker projected from the aircraft's real motion, keeping slips and climbs readable without changing physics or render budgets.
 - Restore the cockpit canopy rails, brow, and coaming in first-person rendering by placing the camera in the scene graph and removing it safely during teardown.

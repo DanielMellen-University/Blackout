@@ -30,6 +30,7 @@ import {
 import {
   shouldAdvanceWorld,
   shouldPauseForFocusLost,
+  shouldRenderFrame,
   shouldUpdateLiveHud,
   Time,
 } from './core/Time'
@@ -175,6 +176,7 @@ async function boot(): Promise<void> {
   debug?.syncPad()
 
   let disposed = false
+  let contextLost = false
   let resizeFrame: number | null = null
   const disposeRuntime = (): void => {
     if (disposed) return
@@ -197,6 +199,8 @@ async function boot(): Promise<void> {
       cancelAnimationFrame(resizeFrame)
       resizeFrame = null
     }
+    canvas.removeEventListener('webglcontextlost', onContextLost)
+    canvas.removeEventListener('webglcontextrestored', onContextRestored)
     world.dispose()
     crashFx.dispose()
     landingFx.dispose()
@@ -275,6 +279,20 @@ async function boot(): Promise<void> {
     banner = text
     bannerUntil = performance.now() + ms
   }
+
+  const onContextLost = (event: Event): void => {
+    // Prevent the browser from discarding the context before Three.js can
+    // participate in its restore path. Rendering is gated until restoration.
+    event.preventDefault()
+    contextLost = true
+    showBanner('GRAPHICS PAUSED / RECOVERING', 8000)
+  }
+  const onContextRestored = (): void => {
+    contextLost = false
+    showBanner('GRAPHICS RECOVERED', 1800)
+  }
+  canvas.addEventListener('webglcontextlost', onContextLost, false)
+  canvas.addEventListener('webglcontextrestored', onContextRestored, false)
 
   const resetFlight = (newWorld: boolean, briefing = false): void => {
     results.hide()
@@ -661,7 +679,7 @@ async function boot(): Promise<void> {
 
     // A hidden tab cannot present a frame. Keep simulation and streaming alive,
     // but avoid submitting camera/debug/render work until the tab is visible.
-    if (!document.hidden) {
+    if (shouldRenderFrame(document.hidden, contextLost)) {
       cameras.update(aircraft, visualDt)
       renderer.render(world.scene, cameras.camera)
       debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)

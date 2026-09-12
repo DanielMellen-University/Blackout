@@ -35,6 +35,11 @@ export function shouldUpdateLiveHud(playing: boolean, simulationLive: boolean): 
   return playing && simulationLive
 }
 
+/** Do not submit WebGL work while the document is hidden or the context is lost. */
+export function shouldRenderFrame(documentHidden: boolean, contextLost: boolean): boolean {
+  return !documentHidden && !contextLost
+}
+
 /** Pause active flight when the window loses focus without auto-resuming. */
 export function shouldPauseForFocusLost(
   playing: boolean,
