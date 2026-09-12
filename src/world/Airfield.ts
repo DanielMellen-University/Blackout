@@ -19,7 +19,13 @@ const _quat = new Quaternion()
 const _scale = new Vector3()
 const _mat = new Matrix4()
 const _Y = new Vector3(0, 1, 0)
-const windsockState = new WeakMap<Group, { angle: number; speed: number }>()
+const windsockState = new WeakMap<Group, {
+  angle: number
+  speed: number
+  windX: number
+  windZ: number
+  yaw: number
+}>()
 const windsockNodes = new WeakMap<Group, { windsock: Group; fabric: Mesh }>()
 
 interface PapiState {
@@ -27,6 +33,10 @@ interface PapiState {
   readonly lenses: readonly Mesh[]
   lastPattern: number
   lastDaylight: number
+  lastX: number
+  lastY: number
+  lastZ: number
+  lastYaw: number
 }
 
 interface BuiltPapi {
@@ -74,7 +84,15 @@ export function createAirfieldLandmarks(): Group {
   root.add(buildWindsock(mat))
   const papi = buildPapi(mat)
   root.add(papi.group)
-  airfieldPapiState.set(root, { ...papi, lastPattern: -1, lastDaylight: Number.NaN })
+  airfieldPapiState.set(root, {
+    ...papi,
+    lastPattern: -1,
+    lastDaylight: Number.NaN,
+    lastX: Number.NaN,
+    lastY: Number.NaN,
+    lastZ: Number.NaN,
+    lastYaw: Number.NaN,
+  })
   root.add(buildFloods(mat))
   root.add(buildFence(mat))
   root.add(buildApronLights(mat))
@@ -365,6 +383,14 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   const wx = Number.isFinite(windX) ? windX : 0
   const wz = Number.isFinite(windZ) ? windZ : 0
   const yaw = root.rotation.y
+  const previous = windsockState.get(root)
+  if (
+    previous &&
+    Math.abs(previous.windX - wx) < 0.002 &&
+    Math.abs(previous.windZ - wz) < 0.002 &&
+    Math.abs(angleDelta(previous.yaw, yaw)) < 0.001
+  ) return
+
   // Convert world wind into runway-local axes before aiming the fabric.
   const localX = Math.cos(yaw) * wx - Math.sin(yaw) * wz
   const localZ = Math.sin(yaw) * wx + Math.cos(yaw) * wz
@@ -373,13 +399,15 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   // The cone's local axis points toward -Z after its construction rotation,
   // so aim that axis downwind rather than into the incoming flow.
   const angle = magnitude > 1e-4 ? Math.atan2(-localX, -localZ) : 0
-  const previous = windsockState.get(root)
   if (
     previous &&
     Math.abs(angleDelta(previous.angle, angle)) < 0.004 &&
     Math.abs(previous.speed - speed) < 0.004
-  ) return
-  windsockState.set(root, { angle, speed })
+  ) {
+    windsockState.set(root, { ...previous, windX: wx, windZ: wz, yaw })
+    return
+  }
+  windsockState.set(root, { angle, speed, windX: wx, windZ: wz, yaw })
   nodes.windsock.rotation.y = angle
   nodes.fabric.rotation.x = 0.12 + speed * 0.18
   nodes.fabric.scale.set(1, 0.84 + speed * 0.28, 1)
@@ -447,9 +475,23 @@ export function setAirfieldPapi(
   const wx = Number.isFinite(x) ? x : root.position.x
   const wy = Number.isFinite(y) ? y : root.position.y
   const wz = Number.isFinite(z) ? z : root.position.z
+  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 1
+  const yaw = root.rotation.y
+  if (
+    Number.isFinite(state.lastX) &&
+    Math.abs(wx - state.lastX) < 0.35 &&
+    Math.abs(wy - state.lastY) < 0.35 &&
+    Math.abs(wz - state.lastZ) < 0.35 &&
+    Math.abs(angleDelta(state.lastYaw, yaw)) < 0.001 &&
+    Math.abs(safeDaylight - state.lastDaylight) < 0.01
+  ) return
+  state.lastX = wx
+  state.lastY = wy
+  state.lastZ = wz
+  state.lastYaw = yaw
+
   const dx = wx - root.position.x
   const dz = wz - root.position.z
-  const yaw = root.rotation.y
   const localX = Math.cos(yaw) * dx - Math.sin(yaw) * dz
   const localZ = Math.sin(yaw) * dx + Math.cos(yaw) * dz
 
@@ -466,7 +508,6 @@ export function setAirfieldPapi(
   const pattern = inApproach
     ? papiLightPattern(wy - root.position.y, distance)
     : 2
-  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 1
   if (
     pattern === state.lastPattern &&
     Math.abs(safeDaylight - state.lastDaylight) < 0.01

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Coalesce unchanged runway windsock and PAPI poses while invalidating on runway rotation, keeping weather and approach cues responsive without repeated transform math.
 - Cache runway windsock nodes after their first weather update, preserving downwind animation while removing repeated scene-tree searches from the world tick.
 - Preserve the last camera pose on frozen title, pause, and results frames so external ground-occlusion probes are not repeated while no visual time elapses.
 - Avoid redundant rich terrain surface queries during clearly airborne collision checks and stop collision plus aircraft visual work once a crash is latched.

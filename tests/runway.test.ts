@@ -126,4 +126,16 @@ describe('runway lighting', () => {
     setAirfieldPapi(runway, -13.5, height, -138, 0)
     expect((lenses[0]!.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(2.058)
   })
+
+  it('invalidates cached PAPI pose when the runway rotates', () => {
+    runway = createRunway()
+    const lookup = vi.spyOn(runway, 'getObjectByName')
+    setAirfieldPapi(runway, 0, 0, 0)
+    lookup.mockClear()
+
+    runway.rotation.y = Math.PI / 2
+    setAirfieldPapi(runway, 0, 0, 0)
+
+    expect(lookup).not.toHaveBeenCalled()
+  })
 })
