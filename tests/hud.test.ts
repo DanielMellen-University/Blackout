@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
+  afterburnerHeatIntensity,
   canopyTintIntensity,
+  formatHeading,
   formatHudNumber,
   formatVerticalSpeed,
   gateProximityHudActive,
@@ -37,6 +39,14 @@ describe('HUD value formatting', () => {
     expect(formatVerticalSpeed(Number.NaN)).toBe('0')
   })
 
+  it('wraps aircraft heading into a compact compass readout', () => {
+    expect(formatHeading(0)).toBe('000°')
+    expect(formatHeading(Math.PI / 2)).toBe('090°')
+    expect(formatHeading(-Math.PI / 2)).toBe('270°')
+    expect(formatHeading(2 * Math.PI)).toBe('000°')
+    expect(formatHeading(Number.NaN)).toBe('000°')
+  })
+
   it('keeps gear transition emphasis inside its short timing window', () => {
     expect(gearTransitionActive(100, 700)).toBe(true)
     expect(gearTransitionActive(700, 700)).toBe(false)
@@ -50,6 +60,14 @@ describe('HUD value formatting', () => {
     expect(canopyTintIntensity(1800, true)).toBeGreaterThan(0)
     expect(canopyTintIntensity(3000, true)).toBeCloseTo(0.28)
     expect(canopyTintIntensity(5000, true)).toBeCloseTo(0.28)
+  })
+
+  it('keeps afterburner heat veil soft and boost-only', () => {
+    expect(afterburnerHeatIntensity(2400, false)).toBe(0)
+    expect(afterburnerHeatIntensity(0, true)).toBeCloseTo(0.06)
+    expect(afterburnerHeatIntensity(1500, true)).toBeCloseTo(0.11)
+    expect(afterburnerHeatIntensity(3000, true)).toBeCloseTo(0.16)
+    expect(afterburnerHeatIntensity(5000, true)).toBeCloseTo(0.16)
   })
 
   it('marks the nav cue near the active gate only inside the soft window', () => {

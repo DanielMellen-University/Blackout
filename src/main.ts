@@ -129,6 +129,7 @@ async function boot(): Promise<void> {
     verticalSpeed: 0,
     speed: 0,
     cameraMode: '',
+    heading: 0,
     fps: 0,
     throttle: 0,
     boost: false,
@@ -541,7 +542,7 @@ async function boot(): Promise<void> {
             aircraft.position.z,
             aircraft.controls.gearDown,
           )
-      const { pitch, roll } = attitudeFromOrientation(aircraft.orientation)
+      const pose = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
       if (warn.text !== prevWarning) {
         if (warn.text) audio.playCue('warning')
@@ -562,8 +563,9 @@ async function boot(): Promise<void> {
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.gearDown = aircraft.controls.gearDown
       hudFrame.onGround = aircraft.onGround
-      hudFrame.pitch = pitch
-      hudFrame.roll = roll
+      hudFrame.pitch = pose.pitch
+      hudFrame.roll = pose.roll
+      hudFrame.heading = pose.heading
       hudFrame.warning = warn.text
       hudFrame.warningLevel = warn.level
       hudFrame.clock = challenge.clockLabel

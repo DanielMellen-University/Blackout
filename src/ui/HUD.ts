@@ -9,6 +9,7 @@ export class HUD {
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
   private readonly camEl: HTMLElement | null
+  private readonly headingEl: HTMLElement | null
   private readonly fpsEl: HTMLElement | null
   private readonly thrEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
@@ -31,6 +32,7 @@ export class HUD {
   private readonly missionEl: HTMLElement | null
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
+  private readonly heatVeilEl: HTMLElement | null
   private readonly navCueEl: HTMLElement | null
   private readonly navArrowEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
@@ -56,6 +58,8 @@ export class HUD {
   private fpsText = ''
   private cameraModeValue: string | null = null
   private cameraModeText = ''
+  private headingValue = Number.NaN
+  private headingText = ''
   private pitchValue = Number.NaN
   private pitchText = ''
   private rollValue = Number.NaN
@@ -87,6 +91,7 @@ export class HUD {
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.spdEl = root.getElementById('hud-spd')
     this.camEl = root.getElementById('hud-cam')
+    this.headingEl = root.getElementById('hud-hdg')
     this.fpsEl = root.getElementById('hud-fps')
     this.thrEl = root.getElementById('hud-thr')
     this.gearEl = root.getElementById('hud-gear')
@@ -109,6 +114,7 @@ export class HUD {
     this.missionEl = root.getElementById('hud-mission')
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
+    this.heatVeilEl = root.getElementById('heat-veil')
     this.navCueEl = root.getElementById('nav-cue')
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navRangeEl = root.getElementById('nav-range')
@@ -124,6 +130,8 @@ export class HUD {
     verticalSpeed?: number
     speed: number
     cameraMode: string
+    /** Aircraft heading (rad, 0 = north / +Z). */
+    heading?: number
     fps: number
     throttle?: number
     boost?: boolean
@@ -177,6 +185,7 @@ export class HUD {
     this.updateSpeedo(kts)
     this.updateSpeedJuice(kts, !!opts.boost)
     this.updateCanopyTint(kts, opts.cameraMode === 'cockpit')
+    this.updateHeatVeil(kts, !!opts.boost)
 
     if (this.camEl) {
       if (opts.cameraMode !== this.cameraModeValue) {
@@ -184,6 +193,14 @@ export class HUD {
         this.cameraModeText = opts.cameraMode.toUpperCase()
       }
       this.setText(this.camEl, this.cameraModeText)
+    }
+    if (this.headingEl && opts.heading !== undefined) {
+      const heading = headingDegrees(opts.heading)
+      if (heading !== this.headingValue) {
+        this.headingValue = heading
+        this.headingText = formatHeading(opts.heading)
+      }
+      this.setText(this.headingEl, this.headingText)
     }
     if (this.fpsEl) {
       const fps = Math.round(opts.fps)
@@ -402,6 +419,13 @@ export class HUD {
     this.setStyle(this.canopyTintEl, 'opacity', formatHudNumber(intensity, 1000))
   }
 
+  private updateHeatVeil(kts: number, boost: boolean): void {
+    if (!this.heatVeilEl) return
+    const intensity = afterburnerHeatIntensity(kts, boost, this.maxKts)
+    this.setClass(this.heatVeilEl, 'is-active', intensity > 0)
+    this.setStyle(this.heatVeilEl, 'opacity', formatHudNumber(intensity, 1000))
+  }
+
   private updateEngine(throttle: number, boost: boolean): void {
     // ENG% is the lever / speed target. Afterburner only restyles the bar.
     const level = Math.min(1, Math.max(0, throttle))
@@ -563,6 +587,17 @@ export function formatVerticalSpeed(value: number): string {
   return rounded > 0 ? `+${rounded}` : String(rounded)
 }
 
+function headingDegrees(headingRad: number): number {
+  if (!Number.isFinite(headingRad)) return 0
+  const degrees = Math.round((headingRad * 180) / Math.PI)
+  return ((degrees % 360) + 360) % 360
+}
+
+/** Wrap aircraft heading to a stable, three-digit 000–359 degree readout. */
+export function formatHeading(headingRad: number): string {
+  return `${String(headingDegrees(headingRad)).padStart(3, '0')}°`
+}
+
 /** Short HUD emphasis window used for automatic gear transitions. */
 export function gearTransitionActive(now: number, until: number): boolean {
   return Number.isFinite(now) && Number.isFinite(until) && now < until
@@ -584,6 +619,17 @@ export function canopyTintIntensity(knots: number, cockpit: boolean, maxKts = 30
   const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
   if (t <= 0.22) return 0
   return Math.min(0.28, (t - 0.22) * 0.36)
+}
+
+/** Soft edge warmth used only while the afterburner is lit. */
+export function afterburnerHeatIntensity(
+  knots: number,
+  boost: boolean,
+  maxKts = 3000,
+): number {
+  if (!boost) return 0
+  const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
+  return Math.min(0.16, 0.06 + t * 0.1)
 }
 
 /** HUD near-gate pulse window (meters to active checkpoint). */

@@ -23,6 +23,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
 - The gold canopy now uses a restrained clearcoat physical material, giving the F-35 cockpit a sharper glass highlight without adding geometry or a draw call.
 - High-speed cockpit view gains a slight canopy fog/vignette linked to IAS, with reduced-motion support and no new scene draws.
+- Afterburner now adds a restrained edge heat veil that scales with speed, stays boost-only, and respects reduced-motion settings.
 - Clean touchdowns and fast rollouts kick up pooled ground scrub dust and tire smoke without per-landing allocation churn.
 - Approaching the live checkpoint softens a proximity pulse on the ring and HUD cue, separate from the brighter gate-pass flash.
 - Airborne yaw and runway steering now honor the HUD control convention: A turns left and D turns right, with regression coverage for both nose directions.
@@ -43,6 +44,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD clock and weather labels now cache by displayed state, avoiding unchanged string reconstruction while keeping telemetry responsive.
 - Rounded flight, attitude, navigation, and camera readouts also reuse their formatted strings, reducing live overlay churn without lowering display precision.
 - The flight overlay now shows cached signed vertical speed, making climb, sink, and landing flare timing readable beside altitude without adding a per-frame allocation.
+- The flight overlay now includes a cached wrapped heading readout, making absolute orientation and A/D yaw response readable without adding scene work.
 - New STALL and LOW ALT cautions announce their first transition with a quiet two-tone cue while the HUD carries the persistent warning state.
 - Flight warning evaluation reuses stable STALL, LOW ALT, and clear-state records to avoid per-frame telemetry garbage.
 - Mission HUD telemetry reuses one navigation snapshot and cached gate label between frames, avoiding recurring object and string allocations while flying the circuit.
