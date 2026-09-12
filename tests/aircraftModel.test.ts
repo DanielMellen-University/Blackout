@@ -117,6 +117,21 @@ describe('rebuilt aircraft', () => {
     expect(contactSweepNeedsDetailedProbes(Number.NaN, 100, 100, 20)).toBe(true)
   })
 
+  it('ignores malformed frame deltas without poisoning the flight state', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.throttle = 0.7
+    aircraft.controls.boost = true
+    const before = aircraft.position.clone()
+
+    aircraft.step(Number.NaN)
+
+    expect(aircraft.position).toEqual(before)
+    expect(Number.isFinite(aircraft.velocity.length())).toBe(true)
+    expect(Number.isFinite(aircraft.engineState.targetSpeed)).toBe(true)
+    expect(Number.isFinite(aircraft.engineState.effectivePower)).toBe(true)
+  })
+
   it('spins deployed wheels with rollout speed and resets the spin', () => {
     setContactHeightSampler(() => 0)
     const aircraft = new Aircraft()

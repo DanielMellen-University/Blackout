@@ -296,7 +296,7 @@ export class Aircraft {
   }
 
   step(dt: number, nowMs?: number): void {
-    if (this.disposed || this.status === 'crashed') {
+    if (this.disposed || this.status === 'crashed' || !Number.isFinite(dt) || dt < 0) {
       return
     }
     // Terrain chunks can be replaced between simulation steps, so never carry

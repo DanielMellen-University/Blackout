@@ -69,7 +69,7 @@ export class FlightModel {
   }
 
   step(aircraft: Aircraft, dt: number): void {
-    if (dt <= 0) return
+    if (!Number.isFinite(dt) || dt <= 0) return
 
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
     const minY = contactMinY(position.x, position.z, controls.gearDown)

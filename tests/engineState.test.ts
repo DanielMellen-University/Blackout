@@ -19,4 +19,14 @@ describe('resolveEngineState', () => {
     expect(out.targetSpeed).toBeCloseTo(0.5 * C.maxSpeedBoost)
     expect(out.maxSpeed).toBe(C.maxSpeedBoost)
   })
+
+  it('contains malformed engine controls at a safe idle state', () => {
+    const out = createEngineState()
+    resolveEngineState({ throttle: Number.NaN, boost: 1 as unknown as boolean }, out)
+    expect(out.lever).toBe(0)
+    expect(out.afterburnerRequested).toBe(false)
+    expect(out.afterburnerActive).toBe(false)
+    expect(out.targetSpeed).toBe(0)
+    expect(Number.isFinite(out.effectivePower)).toBe(true)
+  })
 })

@@ -78,6 +78,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Altitude, vertical speed, and airspeed expose live semantic meter values, while HUD banners and cautions announce themselves at the right urgency for assistive tech.
 - Connected controllers poll at a bounded 30 Hz only during live flight, with stale axes and boost cleared immediately when focus is lost.
 - Keyboard and gamepad input now reject malformed frame deltas, axes, triggers, dead zones, and throttle values so one bad device sample cannot poison flight controls.
+- Engine resolution and flight integration also fail closed on malformed throttle, boost, and frame-delta values, keeping speed targets, afterburner state, and aircraft position finite.
 - Static runway and airfield meshes freeze their local transforms after construction, while the weather-driven windsock stays animatable for lower render-loop CPU cost.
 - The runway windsock now aims downwind and extends with the live weather wind, giving takeoff a readable local wind cue without extra draw calls.
 - The runway PAPI now changes from red to white with the aircraft's real glide angle, while fly-bys hold a neutral two-white/two-red pattern.

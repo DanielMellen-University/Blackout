@@ -38,8 +38,10 @@ export function resolveEngineState(
   controls: Pick<ControlState, 'throttle' | 'boost'>,
   out: EngineState,
 ): EngineState {
-  const lever = MathUtils.clamp(controls.throttle, 0, 1)
-  const afterburnerRequested = controls.boost
+  const lever = Number.isFinite(controls.throttle)
+    ? MathUtils.clamp(controls.throttle, 0, 1)
+    : 0
+  const afterburnerRequested = controls.boost === true
   const afterburnerActive = afterburnerRequested && lever >= C.afterburnerMinThrottle
   const maxSpeed = afterburnerActive ? C.maxSpeedBoost : C.maxSpeed
 
