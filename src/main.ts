@@ -60,6 +60,7 @@ import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
+import { startupFailureMessage } from './core/startupFailure'
 import {
   defaultRenderQuality,
   hudUpdateDue,
@@ -967,9 +968,7 @@ function gateScreenBearing(
 boot().catch((err) => {
   console.error('[Blackout] Failed to start', err)
   const status = document.getElementById('title-status')
-  if (status) {
-    status.textContent = 'Could not create a world. Reload the page.'
-  }
+  if (status) status.textContent = startupFailureMessage(err)
   const playBtn = document.getElementById('btn-play')
   if (playBtn instanceof HTMLButtonElement) playBtn.disabled = true
 })

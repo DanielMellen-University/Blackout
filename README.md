@@ -54,6 +54,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Hidden tabs now suspend the procedural engine, wind, and precipitation audio graph and resume it on return, reducing background CPU without changing the in-flight mix.
 - Low graphics now skip the analytic sky cloud detail octave while retaining the same full cloud shader on Balanced and High, trimming per-pixel weather cost without removing the sky deck.
 - WebGL context loss now pauses active flight immediately instead of simulating unseen motion, preserving the aircraft state for a safe resume after graphics recover.
+- Startup failures now provide specific, safe recovery guidance for graphics capability problems versus world-generation failures.
 - Graphics presets also scale the instanced cloud draw ranges and skip hidden cloud updates, so Low reduces atmospheric GPU and CPU cost without removing the weathered sky entirely.
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.
