@@ -6,6 +6,7 @@ import {
   cameraBoostOffsetInto,
   cameraShakeOffset,
   cameraShakeOffsetInto,
+  cameraOcclusionSampleCount,
   cameraModeCue,
   CameraSystem,
   resolveExternalSpeedFraming,
@@ -28,6 +29,15 @@ describe('external camera framing', () => {
     expect(framing.distance).toBeCloseTo(19.38)
     expect(framing.fov).toBe(66)
     expect(framing.lookLeadLimit).toBe(10)
+  })
+
+  it('keeps close chase rigs cheap while preserving full long-sightline coverage', () => {
+    expect(cameraOcclusionSampleCount(6)).toBe(6)
+    expect(cameraOcclusionSampleCount(10)).toBe(6)
+    expect(cameraOcclusionSampleCount(10.01)).toBe(8)
+    expect(cameraOcclusionSampleCount(22)).toBe(8)
+    expect(cameraOcclusionSampleCount(22.01)).toBe(10)
+    expect(cameraOcclusionSampleCount(Number.NaN)).toBe(10)
   })
 
   it('clamps invalid speed input into the designed envelope', () => {

@@ -15,6 +15,7 @@ const _velLead = new Vector3()
 const _pivot = new Vector3()
 const _desired = new Vector3()
 const _toCam = new Vector3()
+const _groundSample = new Vector3()
 const _forward = new Vector3()
 const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
@@ -396,13 +397,15 @@ export class CameraSystem {
     _toCam.subVectors(desired, pivot)
 
     // Check the whole sightline. Endpoint-only clamping lets the camera pass
-    // through a ridge between the jet and its desired chase position.
-    const samples = 10
+    // through a ridge between the jet and its desired chase position. Short
+    // rigs need fewer probes; long, user-zoomed sightlines keep the full
+    // budget so distant ridges remain protected.
+    const samples = cameraOcclusionSampleCount(_toCam.length())
     for (let i = 1; i <= samples; i++) {
       const t = i / samples
-      _desired.copy(pivot).addScaledVector(_toCam, t)
-      const floor = cameraMinY(_desired.x, _desired.z, this.groundClearance)
-      if (_desired.y >= floor) continue
+      _groundSample.copy(pivot).addScaledVector(_toCam, t)
+      const floor = cameraMinY(_groundSample.x, _groundSample.z, this.groundClearance)
+      if (_groundSample.y >= floor) continue
 
       const safeT = Math.max(0.06, (i - 1.25) / samples)
       out.copy(pivot).addScaledVector(_toCam, safeT)
@@ -558,6 +561,14 @@ export class CameraSystem {
     this.distance = MathUtils.clamp(this.distance * zoom, cfg.minDist, cfg.maxDist)
     this.bumpInput()
   }
+}
+
+/** Distance-aware ground-occlusion probes for the external chase rig. */
+export function cameraOcclusionSampleCount(distance: number): number {
+  const d = Number.isFinite(distance) ? Math.max(0, distance) : Infinity
+  if (d <= 10) return 6
+  if (d <= 22) return 8
+  return 10
 }
 
 export interface ExternalSpeedFraming {

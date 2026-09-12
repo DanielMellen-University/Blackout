@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Make chase-camera ground occlusion distance-aware, trimming redundant close-rig terrain probes while preserving full sampling on long sightlines.
 - Hide zero-count vegetation batches under reduced graphics presets, preserving authored matrices for instant restoration and removing empty renderer submissions.
 - Split visible mesh height queries from richer contact metadata so camera, AGL, collision-clearance, and landing-effect hot paths avoid redundant climate sampling.
 - Scale near-field instanced vegetation with the graphics presets, preserving authored batch counts so quality changes remain reversible without rebuilding terrain.
