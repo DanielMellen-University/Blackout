@@ -38,6 +38,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Caution and warning banners stop pulsing when the browser requests reduced motion, preserving readable alerts without visual flashing.
 - Audio mutes while the tab is hidden and resumes when active flight returns, preventing suspended browser contexts from leaving the game unexpectedly silent.
 - Touchdown dust and smoke are seeded from the landing state, making repeated landings visually repeatable while keeping the pooled effect budget.
+- Audio mute takes effect immediately, including for event cues raised in the same simulation frame as the toggle.
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.
 - Frozen title and pause frames skip redundant atmosphere light, sky, cloud, and weather work while still refreshing when the camera anchor or weather state changes.

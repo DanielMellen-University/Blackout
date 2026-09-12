@@ -381,6 +381,7 @@ async function boot(): Promise<void> {
       if (input.consumeReset()) resetFlight(true)
       if (input.consumeAudioToggle()) {
         audioMuted = !audioMuted
+        if (audioMuted) audio.silence()
         showBanner(audioMuted ? 'AUDIO MUTED' : 'AUDIO LIVE', 1200)
       }
 
