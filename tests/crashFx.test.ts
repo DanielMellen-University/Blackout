@@ -26,6 +26,20 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('compacts expired pooled particles during the effect tail', () => {
+    const fx = new CrashFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(4, -8, 12))
+    expect(fx.activeCount).toBe(54)
+
+    fx.update(1.1)
+    expect(fx.activeCount).toBeLessThan(54)
+    expect(fx.activeCount).toBeGreaterThan(0)
+
+    fx.update(7)
+    expect(fx.activeCount).toBe(0)
+    fx.dispose()
+  })
+
   it('replays the same impact burst deterministically', () => {
     const first = new CrashFx(new Scene())
     const second = new CrashFx(new Scene())

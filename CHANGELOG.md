@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Compact expired pooled crash particles during the effect tail, reducing needless simulation checks while preserving deterministic visuals.
 - Gate render submissions during WebGL context loss and announce recovery so browser GPU resets do not hammer a dead renderer.
 - Announce `COCKPIT VIEW` or `EXTERNAL VIEW` when `C` toggles the camera, making view changes readable at speed.
 - Add a cockpit velocity-vector marker projected from the aircraft's real motion, keeping slips and climbs readable without changing physics or render budgets.

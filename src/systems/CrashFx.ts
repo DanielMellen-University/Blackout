@@ -109,6 +109,11 @@ export class CrashFx {
     return this.alive
   }
 
+  /** Number of live pooled particles currently being simulated. */
+  get activeCount(): number {
+    return this.bits.length
+  }
+
   get shake(): number {
     return this.punch
   }
@@ -170,10 +175,13 @@ export class CrashFx {
     this.ringMat.opacity = 0.7 * ringT
     this.ring.visible = ringT > 0.02
 
-    for (const b of this.bits) {
+    for (let i = this.bits.length - 1; i >= 0; i--) {
+      const b = this.bits[i]!
       b.life -= dt
       if (b.life <= 0) {
         b.mesh.visible = false
+        const last = this.bits.pop()!
+        if (i < this.bits.length) this.bits[i] = last
         continue
       }
       const u = 1 - b.life / b.maxLife
