@@ -147,7 +147,6 @@ async function boot(): Promise<void> {
   aircraft.addTo(world.scene)
   // Place jet on the flat-biome airfield chosen at world reseed
   aircraft.reset(world.spawn)
-  await aircraft.tryLoadModel('/models/f35.glb')
 
   const cameras = new CameraSystem(canvas)
   cameras.attachToScene(world.scene)
@@ -782,6 +781,10 @@ async function boot(): Promise<void> {
 
   challenge.reset(courseId(), world.mission.totalGates)
   syncInputContext()
+  // The procedural F-35 is the immediate playable path. If an optional GLB
+  // exists, let it hydrate in the background instead of blocking the title
+  // screen on a missing or slow asset request.
+  void aircraft.tryLoadModel('/models/f35.glb')
   requestAnimationFrame(tick)
 }
 

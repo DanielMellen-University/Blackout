@@ -344,7 +344,7 @@ brighter shared centerlines and edge strips keep links readable at flight distan
 Local district roads also receive a single batched centerline pass for readable
 street networks at flight distance.
 
-Place a GLB at `public/models/f35.glb`. The app loads it on startup and falls back to the built-in procedural mesh if the file is missing. See `public/models/ATTRIBUTION.md` for licensing notes.
+Place a GLB at `public/models/f35.glb`. The app hydrates it in the background and falls back to the built-in procedural mesh if the file is missing or slow. See `public/models/ATTRIBUTION.md` for licensing notes.
 
 ## Project layout
 
@@ -372,9 +372,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
 
-Optional cockpit canopy framing remains intentionally cut to preserve the existing first-person view; the shipped warning, performance, attribution, and aircraft presentation passes are complete.
-
-Out of scope for now: radar, weapons, fuel.
+The current ship focuses on a readable arcade flight loop, strong aircraft presentation, and a bounded streamed world. Out of scope for now: radar, weapons, fuel.
 
 ## License
 
