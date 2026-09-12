@@ -267,6 +267,14 @@ body,
   -webkit-backdrop-filter: none;
 }
 
+/* Low quality keeps state cues readable while removing continuous compositor work. */
+.quality-lite #speed-juice.is-active,
+.quality-lite #canopy-tint.is-active,
+.quality-lite #heat-veil.is-active,
+.quality-lite #nav-cue.near-gate {
+  animation: none;
+}
+
 /* ---- Title screen ---- */
 .title-screen {
   position: fixed;
