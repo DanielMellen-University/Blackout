@@ -22,6 +22,8 @@ const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
 const _bearingDelta = new Vector3()
 const _bearingInverse = new Quaternion()
+const _cameraRollInverse = new Quaternion()
+const _cameraLocalUp = new Vector3()
 const _Y_UP = new Vector3(0, 1, 0)
 
 /** External / chase-style modes only. Cockpit is `CockpitMode`. */
@@ -74,6 +76,9 @@ export const TOUCHDOWN_IMPULSE = 0.18
 const SPEED_DIST_STRETCH = 0.14
 /** How fast FOV/distance juice tracks airspeed. */
 const JUICE_STIFFNESS = 3.2
+/** Keep the external horizon readable while letting turns carry a little drama. */
+const MAX_EXTERNAL_BANK = 0.14
+const EXTERNAL_BANK_STIFFNESS = 8
 /** Keep depth precision focused on the streamed world and cloud envelope. */
 export const CAMERA_FAR = STREAM_RADIUS_M * 1.5
 
@@ -129,6 +134,7 @@ export class CameraSystem {
   private readonly speedFraming = { distance: 0, fov: 0, lookLeadLimit: 0 }
   private boostSway = 0
   private boostPhase = 0
+  private externalBank = 0
   private readonly boostOffset = { x: 0, y: 0, z: 0 }
   private reducedMotion = false
   private disposed = false
@@ -152,6 +158,7 @@ export class CameraSystem {
     if (enabled) {
       this.shake = 0
       this.boostSway = 0
+      this.externalBank = 0
     }
   }
 
@@ -432,6 +439,14 @@ export class CameraSystem {
 
     this.camera.lookAt(this.lookSmoothed)
 
+    const targetBank = this.reducedMotion
+      ? 0
+      : cameraBankAngle(aircraft.displayOrientation, MAX_EXTERNAL_BANK)
+    this.externalBank = snap || dt <= 0
+      ? targetBank
+      : MathUtils.damp(this.externalBank, targetBank, EXTERNAL_BANK_STIFFNESS, dt)
+    this.camera.rotateZ(this.externalBank)
+
     if (Math.abs(this.camera.fov - framing.fov) > 0.05) {
       this.camera.fov = framing.fov
       this.camera.updateProjectionMatrix()
@@ -644,6 +659,15 @@ export function cameraRelativeBearing(
   _bearingInverse.copy(cameraOrientation).invert()
   _bearingDelta.applyQuaternion(_bearingInverse)
   return Math.atan2(_bearingDelta.x, -_bearingDelta.z)
+}
+
+/** Small external-view bank derived from the airframe roll, capped for readability. */
+export function cameraBankAngle(orientation: Quaternion, maxBank = MAX_EXTERNAL_BANK): number {
+  _cameraRollInverse.copy(orientation).invert()
+  _cameraLocalUp.set(0, 1, 0).applyQuaternion(_cameraRollInverse)
+  const roll = Math.atan2(-_cameraLocalUp.x, _cameraLocalUp.y)
+  const safeMax = Number.isFinite(maxBank) ? Math.max(0, maxBank) : MAX_EXTERNAL_BANK
+  return MathUtils.clamp(Number.isFinite(roll) ? roll : 0, -safeMax, safeMax)
 }
 
 export interface ExternalSpeedFraming {

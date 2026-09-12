@@ -4,6 +4,7 @@ import { Aircraft } from '../src/aircraft/Aircraft'
 import {
   cameraBoostOffset,
   cameraBoostOffsetInto,
+  cameraBankAngle,
   cameraShakeOffset,
   cameraShakeOffsetInto,
   cameraOcclusionSampleCount,
@@ -103,6 +104,15 @@ describe('external camera framing', () => {
     expect(framing.distance).toBeCloseTo(19.38)
     expect(framing.fov).toBe(66)
     expect(framing.lookLeadLimit).toBe(10)
+  })
+
+  it('adds only a restrained bank cue to the external horizon', () => {
+    const identity = new Quaternion()
+    expect(cameraBankAngle(identity)).toBeCloseTo(0)
+    const banked = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2)
+    expect(cameraBankAngle(banked, 0.14)).toBeCloseTo(-0.14)
+    expect(cameraBankAngle(banked, 0)).toBeCloseTo(0)
+    expect(cameraBankAngle(banked, Number.NaN)).toBeCloseTo(-0.14)
   })
 
   it('keeps close chase rigs cheap while preserving full long-sightline coverage', () => {

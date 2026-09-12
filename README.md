@@ -41,6 +41,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.
 - Chase-camera ground occlusion uses a distance-aware probe budget, reducing close-rig terrain queries while retaining full coverage for long user-zoomed sightlines.
 - The external camera far plane now tracks the streamed terrain and cloud envelope instead of an oversized 60 km range, preserving depth precision without clipping visible scenery.
+- The external chase camera now carries a capped, reduced-motion-aware bank cue from the aircraft roll, adding turn drama while keeping the horizon readable.
 - Camera resize handling now keeps zero-sized or malformed viewport reports out of projection math and skips redundant projection rebuilds during resize bursts.
 - Tone-mapping exposure now follows the continuous daylight factor instead of jumping at phase labels, keeping dawn, dusk, and storm-bloom transitions visually smooth.
 - The speed needle reuses whole-knot display precision, skipping redundant trigonometry during steady flight while retaining the same gauge resolution.
