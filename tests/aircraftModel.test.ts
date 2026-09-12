@@ -4,6 +4,7 @@ import {
   Aircraft,
   afterburnerDiamondPulse,
   antiCollisionBeaconOpacity,
+  canopyGlassEmissiveIntensity,
   disposeAircraftObject,
   landingLightOpacity,
   navigationLightOpacity,
@@ -186,6 +187,20 @@ describe('rebuilt aircraft', () => {
     expect(material.emissiveIntensity).toBeCloseTo(0.32)
     aircraft.setNightReadability(1)
     expect(material.emissiveIntensity).toBeCloseTo(0)
+  })
+
+  it('keeps canopy glass restrained by day and readable at night', () => {
+    expect(canopyGlassEmissiveIntensity(1)).toBeCloseTo(0.08)
+    expect(canopyGlassEmissiveIntensity(0)).toBeCloseTo(0.24)
+    expect(canopyGlassEmissiveIntensity(Number.NaN)).toBeCloseTo(0.24)
+
+    const aircraft = new Aircraft()
+    const canopy = aircraft.mesh.getObjectByName('GoldCanopy') as Mesh
+    const material = canopy.material as MeshPhysicalMaterial
+    aircraft.setNightReadability(1)
+    expect(material.emissiveIntensity).toBeCloseTo(0.08)
+    aircraft.setNightReadability(0)
+    expect(material.emissiveIntensity).toBeCloseTo(0.24)
   })
 
   it('maps body-up acceleration to a bounded pilot load estimate', () => {

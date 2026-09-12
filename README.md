@@ -128,6 +128,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Navigation-light brightness now follows the shared daylight envelope, staying subtle in full day and readable through dusk and night without extra lights or draw calls.
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
 - The gold canopy now uses a restrained clearcoat physical material, giving the F-35 cockpit a sharper glass highlight without adding geometry or a draw call.
+- Canopy emissive response now follows shared daylight, staying restrained in sun and readable at night without adding geometry or draw calls.
 - High-speed cockpit view gains a slight canopy fog/vignette linked to IAS, with reduced-motion support and no new scene draws.
 - Cockpit weather now adds a subtle bounded rain and snow streak veil from the live atmosphere state, while external view stays clear.
 - Cockpit streaks now drift slowly across the canopy like real rain on glass, with reduced-motion preferences keeping the layer static.

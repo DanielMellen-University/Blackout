@@ -3,6 +3,7 @@ import {
   Group,
   MathUtils,
   Mesh,
+  MeshPhysicalMaterial,
   MeshBasicMaterial,
   MeshStandardMaterial,
   Quaternion,
@@ -148,6 +149,8 @@ export class Aircraft {
   private readonly readabilityMaterials: MeshStandardMaterial[] = []
   private readonly readabilityMaterialSet = new Set<MeshStandardMaterial>()
   private nightReadabilityValue = Number.NaN
+  private canopyGlassMaterial: MeshPhysicalMaterial | null = null
+  private canopyGlassIntensityValue = Number.NaN
   private nozzleFlareValue = Number.NaN
   /** Presentation clock in milliseconds, supplied by RAF when available. */
   private visualTimeMs = 0
@@ -240,6 +243,7 @@ export class Aircraft {
     this.navLightOpacity = Number.NaN
     this.landingLightOpacityValue = Number.NaN
     this.nightReadabilityValue = Number.NaN
+    this.canopyGlassIntensityValue = Number.NaN
     this.nozzleFlareValue = Number.NaN
     this.vaporOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
@@ -367,6 +371,16 @@ export class Aircraft {
       this.nightReadabilityValue = intensity
       for (const material of this.readabilityMaterials) {
         material.emissiveIntensity = intensity
+      }
+    }
+    if (this.canopyGlassMaterial) {
+      const canopyIntensity = canopyGlassEmissiveIntensity(this.presentationDaylight)
+      if (
+        !Number.isFinite(this.canopyGlassIntensityValue) ||
+        Math.abs(canopyIntensity - this.canopyGlassIntensityValue) >= 0.005
+      ) {
+        this.canopyGlassIntensityValue = canopyIntensity
+        this.canopyGlassMaterial.emissiveIntensity = canopyIntensity
       }
     }
   }
@@ -593,6 +607,7 @@ export class Aircraft {
     this.nozzleGlows.length = 0
     this.readabilityMaterials.length = 0
     this.readabilityMaterialSet.clear()
+    this.canopyGlassMaterial = null
     this.afterburner?.traverse((object) => {
       if (object.name.startsWith('abDiamond')) {
         this.plumeDiamonds.push({
@@ -635,6 +650,10 @@ export class Aircraft {
       this.readabilityMaterialSet.add(material)
       this.readabilityMaterials.push(material)
     })
+    const canopy = this.mesh.getObjectByName('GoldCanopy')
+    if (canopy instanceof Mesh && canopy.material instanceof MeshPhysicalMaterial) {
+      this.canopyGlassMaterial = canopy.material
+    }
   }
 
   get speed(): number {
@@ -703,6 +722,12 @@ export function navigationLightOpacity(timeMs: number, daylight = 0): number {
 export function nightAirframeEmissiveIntensity(daylight: number): number {
   const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
   return (1 - safe) * 0.32
+}
+
+/** Keep the physical canopy readable at night without making it glow by day. */
+export function canopyGlassEmissiveIntensity(daylight: number): number {
+  const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
+  return 0.08 + (1 - safe) * 0.16
 }
 
 /** Gear-linked landing-lamp envelope, kept independent of dynamic lights. */

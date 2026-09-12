@@ -19,6 +19,7 @@ export function createF35Model(): Group {
   const metal = new MeshStandardMaterial({ color: 0xa8b3bc, roughness: 0.27, metalness: 0.85 })
   const rubber = new MeshStandardMaterial({ color: 0x11151a, roughness: 0.95 })
   const glass = new MeshPhysicalMaterial({
+    name: 'canopyGlass',
     color: 0x594933, emissive: 0x233c50, emissiveIntensity: 0.22,
     metalness: 0.72, roughness: 0.16,
     clearcoat: 0.86,
