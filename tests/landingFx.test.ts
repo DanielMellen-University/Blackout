@@ -30,6 +30,21 @@ describe('landing scrub pooling', () => {
     fx.dispose()
   })
 
+  it('compacts expired pooled particles during the effect tail', () => {
+    const fx = new LandingFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(42, -3, 0), 1)
+    expect(fx.activeCount).toBe(22)
+
+    fx.update(1.2)
+    expect(fx.activeCount).toBeLessThan(22)
+    expect(fx.activeCount).toBeGreaterThan(0)
+
+    fx.update(2)
+    expect(fx.activeCount).toBe(0)
+    expect(fx.root.visible).toBe(false)
+    fx.dispose()
+  })
+
   it('scales continuous scrub intensity with ground speed', () => {
     expect(landingScrubIntensity(0)).toBe(0)
     expect(landingScrubIntensity(9)).toBe(0)

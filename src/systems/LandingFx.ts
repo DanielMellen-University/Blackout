@@ -136,7 +136,8 @@ export class LandingFx {
       puff.life -= dt
       if (puff.life <= 0) {
         puff.mesh.visible = false
-        this.active.splice(i, 1)
+        const last = this.active.pop()!
+        if (i < this.active.length) this.active[i] = last
         continue
       }
       any = true
