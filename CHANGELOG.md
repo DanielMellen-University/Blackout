@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Improve menu keyboard flow with modal semantics, heading focus on subpages, and focus restoration after closing pause or settings.
 - Route menu, results, and preference controls through one idempotent listener bag so runtime teardown removes every UI callback before a remount.
 - Release graphics and audio preference listeners during runtime teardown so remounted scenes cannot mutate disposed renderer or audio state.
 - Honor the browser's reduced-motion preference in camera shake, touchdown impulse, and afterburner sway, including live preference changes.

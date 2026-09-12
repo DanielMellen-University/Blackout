@@ -19,6 +19,7 @@ export class GameMenu {
   private readonly btnFs: HTMLElement
   private readonly fsState: HTMLElement
   private readonly btnClose: HTMLElement
+  private returnFocus: HTMLElement | null = null
 
   constructor(root: HTMLElement) {
     this.root = root
@@ -44,6 +45,7 @@ export class GameMenu {
   }
 
   showTitlePage(page: 'controls' | 'info'): void {
+    this.rememberFocus()
     this.mode = 'title'
     this.root.hidden = false
     this.showView(page)
@@ -69,6 +71,7 @@ export class GameMenu {
   }
 
   openPause(): void {
+    this.rememberFocus()
     this.mode = 'pause'
     this.root.hidden = false
     this.showView('root')
@@ -79,6 +82,11 @@ export class GameMenu {
   close(): void {
     this.root.hidden = true
     this.view = 'root'
+    const target = this.returnFocus
+    this.returnFocus = null
+    if (target?.isConnected && !target.closest('[hidden]')) {
+      target.focus({ preventScroll: true })
+    }
   }
 
   back(): void {
@@ -96,6 +104,7 @@ export class GameMenu {
     this.panelRoot.hidden = view !== 'root'
     this.panelControls.hidden = view !== 'controls'
     this.panelInfo.hidden = view !== 'info'
+    this.focusHeading()
   }
 
   syncFullscreen(): void {
@@ -113,6 +122,24 @@ export class GameMenu {
     this.btnQuit.hidden = !pause
     this.btnClose.hidden = pause
     this.syncFullscreen()
+  }
+
+  private rememberFocus(): void {
+    const active = document.activeElement
+    this.returnFocus = active instanceof HTMLElement ? active : null
+  }
+
+  private focusHeading(): void {
+    if (!this.open) return
+    const panel = this.view === 'root'
+      ? this.panelRoot
+      : this.view === 'controls'
+        ? this.panelControls
+        : this.panelInfo
+    const heading = panel.querySelector('h2')
+    if (!(heading instanceof HTMLElement)) return
+    heading.tabIndex = -1
+    heading.focus({ preventScroll: true })
   }
 }
 

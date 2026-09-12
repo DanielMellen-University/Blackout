@@ -19,6 +19,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
 - Graphics and audio preference listeners are released with the runtime, preventing stale controls from touching a disposed scene after a remount.
 - Menu, results, and preference controls now share one teardown bag, so a remounted runtime cannot stack stale button callbacks.
+- Settings and pause dialogs now announce their active heading and return focus to the control that opened them when closed.
 - Crash camera impulse uses smooth bounded multi-frequency shake instead of harsh per-frame white-noise jitter.
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.
 - Graphics quality is selectable from the pause menu. Low disables shadow-map work and caps adaptive pixel density, while Balanced and High retain progressively larger budgets. The choice is saved locally.
