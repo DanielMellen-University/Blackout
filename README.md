@@ -38,6 +38,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Loaded-tile collision sweeps reuse one height and land/water record, avoiding rich surface-object churn while preserving fallback sampling outside the stream.
 - Settlement collision uses lazy coarse spatial buckets, so exact building and roof checks stay local instead of scanning every loaded city building each physics step.
 - Graphics presets now scale pooled rain and snow simulation and draw ranges, giving Low a real weather-performance budget while High keeps the full field.
+- Graphics presets now also scale the directional shadow-map resolution, keeping Low light while giving High sharper aircraft and airfield shadows without changing the scene draw path.
 - Graphics presets also scale the instanced cloud draw ranges and skip hidden cloud updates, so Low reduces atmospheric GPU and CPU cost without removing the weathered sky entirely.
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.

@@ -122,6 +122,7 @@ async function boot(): Promise<void> {
   renderer.shadowMap.type = PCFShadowMap
 
   let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
+  let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
   let shadowUpdateElapsed = SHADOW_UPDATE_STEP
 
@@ -131,6 +132,7 @@ async function boot(): Promise<void> {
     document.documentElement.classList.toggle('quality-lite', !profile.uiBackdropBlur)
     resolution.setCeiling(profile.maxPixelRatio)
     renderer.setPixelRatio(resolution.ratio)
+    applyShadowQuality?.(profile.shadowMapSize)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -150,6 +152,16 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
+  applyShadowQuality = (mapSize: number): void => {
+    const safeSize = Number.isFinite(mapSize) ? Math.max(256, Math.floor(mapSize)) : 1024
+    if (world.sun.shadow.mapSize.x === safeSize && world.sun.shadow.mapSize.y === safeSize) return
+    world.sun.shadow.mapSize.set(safeSize, safeSize)
+    if (renderer.shadowMap.enabled) {
+      renderer.shadowMap.needsUpdate = true
+      shadowUpdateElapsed = SHADOW_UPDATE_STEP
+    }
+  }
+  applyShadowQuality(initialQualityProfile.shadowMapSize)
   // Keep the title hero focused on the runway and jet. Nearby procedural
   // cities remain generated and become visible as soon as flight starts.
   world.setSettlementsVisible(false)

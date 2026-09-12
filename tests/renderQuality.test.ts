@@ -40,6 +40,8 @@ describe('render quality preferences', () => {
     expect(high.antialias).toBe(true)
     expect(low.shadows).toBe(false)
     expect(balanced.shadows).toBe(true)
+    expect(low.shadowMapSize).toBeLessThan(balanced.shadowMapSize)
+    expect(balanced.shadowMapSize).toBeLessThan(high.shadowMapSize)
     expect(low.uiBackdropBlur).toBe(false)
     expect(balanced.uiBackdropBlur).toBe(true)
     expect(high.uiBackdropBlur).toBe(true)
