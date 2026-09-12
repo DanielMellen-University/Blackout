@@ -20,6 +20,21 @@ export class GameMenu {
   private readonly fsState: HTMLElement
   private readonly btnClose: HTMLElement
   private returnFocus: HTMLElement | null = null
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (!this.open || event.key !== 'Tab') return
+    const focusable = this.activeFocusable()
+    if (focusable.length === 0) return
+
+    const active = document.activeElement
+    const index = active instanceof HTMLElement ? focusable.indexOf(active) : -1
+    if (event.shiftKey && index <= 0) {
+      event.preventDefault()
+      focusable[focusable.length - 1]!.focus({ preventScroll: true })
+    } else if (!event.shiftKey && (index < 0 || index === focusable.length - 1)) {
+      event.preventDefault()
+      focusable[0]!.focus({ preventScroll: true })
+    }
+  }
 
   constructor(root: HTMLElement) {
     this.root = root
@@ -34,6 +49,7 @@ export class GameMenu {
     this.btnFs = must(root, '#menu-fullscreen')
     this.fsState = must(root, '#menu-fs-state')
     this.btnClose = must(root, '#menu-close')
+    this.root.addEventListener('keydown', this.onKeyDown)
   }
 
   get open(): boolean {
@@ -89,6 +105,12 @@ export class GameMenu {
     }
   }
 
+  /** Release the menu-owned keyboard trap during runtime teardown. */
+  dispose(): void {
+    this.root.removeEventListener('keydown', this.onKeyDown)
+    this.returnFocus = null
+  }
+
   back(): void {
     if (this.view !== 'root') {
       this.showView('root')
@@ -140,6 +162,17 @@ export class GameMenu {
     if (!(heading instanceof HTMLElement)) return
     heading.tabIndex = -1
     heading.focus({ preventScroll: true })
+  }
+
+  private activeFocusable(): HTMLElement[] {
+    const panel = this.view === 'root'
+      ? this.panelRoot
+      : this.view === 'controls'
+        ? this.panelControls
+        : this.panelInfo
+    return Array.from(panel.querySelectorAll<HTMLElement>(
+      'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
+    )).filter((element) => !element.hidden && element.tabIndex >= 0)
   }
 }
 

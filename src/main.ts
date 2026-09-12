@@ -166,6 +166,7 @@ async function boot(): Promise<void> {
     disposed = true
     releaseBrowserUi()
     uiListeners.dispose()
+    menu.dispose()
     input.dispose()
     reducedMotionQuery?.removeEventListener?.('change', onReducedMotionChange)
     cameras.dispose()

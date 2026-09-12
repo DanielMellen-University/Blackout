@@ -4,10 +4,13 @@ import { GameMenu } from '../src/ui/GameMenu'
 class FakeElement {
   hidden = false
   tabIndex = 0
+  disabled = false
   textContent = ''
   isConnected = true
   readonly focus = vi.fn()
   private readonly nodes = new Map<string, FakeElement>()
+  private readonly lists = new Map<string, FakeElement[]>()
+  private readonly listeners = new Map<string, Set<(...args: never[]) => void>>()
 
   set(selector: string, element: FakeElement): void {
     this.nodes.set(selector, element)
@@ -15,6 +18,31 @@ class FakeElement {
 
   querySelector(selector: string): FakeElement | null {
     return this.nodes.get(selector) ?? null
+  }
+
+  querySelectorAll(selector: string): FakeElement[] {
+    return this.lists.get(selector) ?? []
+  }
+
+  setList(selector: string, elements: FakeElement[]): void {
+    this.lists.set(selector, elements)
+  }
+
+  addEventListener(type: string, listener: (...args: never[]) => void): void {
+    let set = this.listeners.get(type)
+    if (!set) {
+      set = new Set()
+      this.listeners.set(type, set)
+    }
+    set.add(listener)
+  }
+
+  removeEventListener(type: string, listener: (...args: never[]) => void): void {
+    this.listeners.get(type)?.delete(listener)
+  }
+
+  dispatch(type: string, event: unknown): void {
+    for (const listener of this.listeners.get(type) ?? []) listener(event as never)
   }
 
   closest(): null {
@@ -51,6 +79,10 @@ function menuFixture(): { root: FakeElement; resume: FakeElement } {
   root.set('#menu-fullscreen', fs)
   root.set('#menu-fs-state', fsState)
   root.set('#menu-close', close)
+  panelRoot.setList(
+    'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
+    [resume, close],
+  )
   return { root, resume }
 }
 
@@ -64,8 +96,12 @@ describe('menu focus flow', () => {
 
     menu.openPause()
     expect(fixture.resume.focus).toHaveBeenCalled()
+    const preventDefault = vi.fn()
+    fixture.root.dispatch('keydown', { key: 'Tab', shiftKey: false, preventDefault })
+    expect(preventDefault).toHaveBeenCalled()
     menu.close()
     expect(source.focus).toHaveBeenCalledWith({ preventScroll: true })
+    menu.dispose()
     vi.unstubAllGlobals()
   })
 })
