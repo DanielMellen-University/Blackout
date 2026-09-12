@@ -18,6 +18,15 @@ const _prevPos = new Vector3()
 const _pt = new Vector3()
 const _normal = new Vector3()
 
+interface SurfaceHit {
+  depth: number
+  normal: Vector3
+  kind: ContactSurfaceKind
+  wx: number
+  wz: number
+  surfaceY: number
+}
+
 /** Body-frame probes: origin, nose, tail, wings, canopy. */
 const CONTACT_POINTS: ReadonlyArray<readonly [number, number, number]> = [
   [0, 0, 0],
@@ -39,6 +48,16 @@ const CONTACT_POINTS: ReadonlyArray<readonly [number, number, number]> = [
  * Body: +X right, +Y up, +Z nose.
  */
 export class FlightModel {
+  /** Reused contact result; each sweep consumes it before the next probe. */
+  private readonly hitResult: SurfaceHit = {
+    depth: 0,
+    normal: _normal,
+    kind: 'land',
+    wx: 0,
+    wz: 0,
+    surfaceY: 0,
+  }
+
   step(aircraft: Aircraft, dt: number): void {
     if (dt <= 0) return
 
@@ -291,14 +310,7 @@ export class FlightModel {
     oz: number,
     orientation: Quaternion,
     gearDown: boolean,
-  ): {
-    depth: number
-    normal: Vector3
-    kind: ContactSurfaceKind
-    wx: number
-    wz: number
-    surfaceY: number
-  } | null {
+  ): SurfaceHit | null {
     let depth = 0
     let wx = ox
     let wz = oz
@@ -328,7 +340,14 @@ export class FlightModel {
     }
 
     if (!found) return null
-    return { depth, normal: _normal, kind, wx, wz, surfaceY }
+    const hit = this.hitResult
+    hit.depth = depth
+    hit.normal = _normal
+    hit.kind = kind
+    hit.wx = wx
+    hit.wz = wz
+    hit.surfaceY = surfaceY
+    return hit
   }
 
   isOnGround(aircraft: Aircraft): boolean {

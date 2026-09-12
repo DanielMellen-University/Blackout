@@ -34,6 +34,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.
 - The HUD now includes a lightweight fighter-style heading tape with cardinal marks and a centered caret, making yaw readable at a glance without adding scene work.
 - Dark airframe panels gain a restrained cool night fill that fades to zero in daylight, keeping the F-35 silhouette readable without extra lights or geometry.
+- Swept high-speed collision checks now reuse their contact record, trimming physics garbage without changing landing or crash outcomes.
 - The completion card is a proper keyboard-contained dialog and returns focus to the flight canvas when a run is restarted.
 - Completion results now show the gate, time, and landing contributions behind the total score.
 - Play, Retry, New World, and `R` now open with a short `SPOOL ENGINE / W TO ROTATE` briefing so takeoff has an immediate readable handoff.
