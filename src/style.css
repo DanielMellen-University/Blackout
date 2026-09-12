@@ -444,6 +444,48 @@ body,
   transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
 }
 
+/* Keep the launch card fully reachable on short laptop and mobile viewports. */
+@media (max-height: 560px) {
+  .title-screen {
+    padding: 16px 16px 12px;
+  }
+
+  .title-panel {
+    transform: none;
+    padding: 16px 18px 14px;
+  }
+
+  .title-logo {
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    margin-bottom: 14px;
+  }
+
+  .title-actions {
+    gap: 6px;
+  }
+
+  .btn-play {
+    padding: 10px 36px;
+  }
+
+  .btn-ghost {
+    padding: 9px 18px;
+  }
+
+  .title-takeoff {
+    margin-top: 8px;
+    padding: 8px 10px;
+  }
+
+  .title-hint {
+    margin-top: 8px;
+  }
+
+  .title-status {
+    margin-top: 10px;
+  }
+}
+
 .btn-ghost:hover {
   transform: translateY(-1px);
   border-color: rgba(61, 206, 168, 0.55);
