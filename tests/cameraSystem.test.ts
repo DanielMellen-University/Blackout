@@ -8,6 +8,7 @@ import {
   cameraShakeOffsetInto,
   cameraOcclusionSampleCount,
   cameraModeCue,
+  CAMERA_FAR,
   cameraRelativeBearing,
   CameraSystem,
   resolveExternalSpeedFraming,
@@ -46,6 +47,21 @@ describe('external camera framing', () => {
 
     expect(cameras.camera.position.distanceTo(aircraft.displayPosition)).toBeGreaterThan(5)
     expect(cameras.camera.position.y).toBeGreaterThan(aircraft.displayPosition.y - 1)
+    cameras.dispose()
+  })
+
+  it('keeps the depth range tight around the streamed world', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+
+    expect(cameras.camera.far).toBe(CAMERA_FAR)
+    expect(cameras.camera.far).toBeGreaterThan(16_800)
+    expect(cameras.camera.far).toBeLessThan(30_000)
     cameras.dispose()
   })
 

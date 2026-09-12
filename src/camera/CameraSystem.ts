@@ -7,6 +7,7 @@ import {
   type CameraMode,
 } from '../core/types'
 import { cameraMinY } from '../world/ground'
+import { STREAM_RADIUS_M } from '../world/TerrainSystem'
 import { CockpitMode } from './CockpitMode'
 
 const _offsetWorld = new Vector3()
@@ -73,6 +74,8 @@ export const TOUCHDOWN_IMPULSE = 0.18
 const SPEED_DIST_STRETCH = 0.14
 /** How fast FOV/distance juice tracks airspeed. */
 const JUICE_STIFFNESS = 3.2
+/** Keep depth precision focused on the streamed world and cloud envelope. */
+export const CAMERA_FAR = STREAM_RADIUS_M * 1.5
 
 /** Short feedback copy used when the pilot toggles between flight views. */
 export function cameraModeCue(mode: CameraMode): string {
@@ -129,8 +132,9 @@ export class CameraSystem {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
-    // Far plane past stream + sky (~8.4 km terrain, fog wall earlier)
-    this.camera = new PerspectiveCamera(62, 1, 0.2, 60000)
+    // Terrain and clouds fade before the stream edge, so a tighter far plane
+    // preserves depth precision without clipping anything the player can see.
+    this.camera = new PerspectiveCamera(62, 1, 0.2, CAMERA_FAR)
     this.bindInput(canvas)
     this.applyModeDefaults('chase')
   }

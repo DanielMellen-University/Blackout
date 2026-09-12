@@ -39,6 +39,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.
 - Chase-camera ground occlusion uses a distance-aware probe budget, reducing close-rig terrain queries while retaining full coverage for long user-zoomed sightlines.
+- The external camera far plane now tracks the streamed terrain and cloud envelope instead of an oversized 60 km range, preserving depth precision without clipping visible scenery.
 - The title hero stages streamed settlements out of view so the runway and F-35 stay readable; the cached city and village layer returns immediately when flight starts.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - The optional GLB aircraft loader is code-split from the initial bundle, so the procedural F-35 can boot with a smaller payload while the replacement model still loads and cleans up normally.
