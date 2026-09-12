@@ -314,4 +314,19 @@ describe('rebuilt aircraft', () => {
 
     expect(lookup).not.toHaveBeenCalled()
   })
+
+  it('uses the supplied frame timestamp for presentation animation', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.throttle = 0.8
+    aircraft.step(1 / 60, 1400)
+
+    const beacon = aircraft.mesh.getObjectByName('antiCollisionBeacon')!
+    const firstOpacity = (beacon as Mesh).material as MeshBasicMaterial
+    expect(firstOpacity.opacity).toBeCloseTo(0)
+
+    aircraft.step(1 / 60, 1418)
+    expect((beacon as Mesh).material as MeshBasicMaterial).toBe(firstOpacity)
+    expect(firstOpacity.opacity).toBeGreaterThan(0)
+  })
 })

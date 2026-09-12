@@ -137,6 +137,8 @@ export class Aircraft {
   private readonly readabilityMaterialSet = new Set<MeshStandardMaterial>()
   private nightReadabilityValue = Number.NaN
   private nozzleFlareValue = Number.NaN
+  /** Presentation clock in milliseconds, supplied by RAF when available. */
+  private visualTimeMs = 0
   private modelLoadToken = 0
   private disposed = false
 
@@ -220,6 +222,7 @@ export class Aircraft {
     this.controls.gearDown = true
     this.controls.throttle = s.throttle
     this.wheelSpin = 0
+    this.visualTimeMs = 0
     this.navLightOpacity = Number.NaN
     this.nightReadabilityValue = Number.NaN
     this.nozzleFlareValue = Number.NaN
@@ -258,14 +261,14 @@ export class Aircraft {
   }
 
   /** Copy physics pose to the display pose (reset, pause, crash). */
-  snapDisplay(): void {
+  snapDisplay(nowMs?: number): void {
     this.prevPosition.copy(this.position)
     this.prevOrientation.copy(this.orientation)
     this.present(1)
-    this.updateVisuals(0)
+    this.updateVisuals(0, nowMs)
   }
 
-  step(dt: number): void {
+  step(dt: number, nowMs?: number): void {
     if (this.status === 'crashed') {
       return
     }
@@ -275,7 +278,7 @@ export class Aircraft {
     resolveEngineState(this.controls, this.engineState)
     this.flight.step(this, dt)
     this.autoGear()
-    this.updateVisuals(dt)
+    this.updateVisuals(dt, nowMs)
   }
 
   crash(): void {
@@ -344,8 +347,8 @@ export class Aircraft {
    * Articulated gear and power-driven exhaust for the procedural model.
    * Safe no-ops if nodes missing (GLB path).
    */
-  private updateVisuals(dt: number): void {
-    const now = performance.now()
+  private updateVisuals(dt: number, nowMs?: number): void {
+    const now = this.resolveVisualTime(dt, nowMs)
     const gear = this.landingGear
     const target = this.controls.gearDown ? 1 : 0
     this.gearExtension = dt === 0
@@ -413,6 +416,16 @@ export class Aircraft {
     }
     const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
     for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
+  }
+
+  /** Use the render timestamp when supplied, otherwise advance deterministically. */
+  private resolveVisualTime(dt: number, nowMs?: number): number {
+    if (Number.isFinite(nowMs)) {
+      this.visualTimeMs = Math.max(this.visualTimeMs, nowMs!)
+    } else if (Number.isFinite(dt) && dt > 0) {
+      this.visualTimeMs += dt * 1000
+    }
+    return this.visualTimeMs
   }
 
   /** Flex the existing nozzle petals subtly with engine power. */

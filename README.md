@@ -66,6 +66,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - External chase framing now reuses one heading solve per frame, preserving the same camera feel with less repeated orientation math.
 - The airspeed gauge now marks its amber redline and true overspeed range, with accessible telemetry text that calls out when the jet leaves the displayed envelope.
 - Leaving the dry airspeed envelope now raises an `OVERSPEED` caution, keeping the visual redline aligned with the accessible warning and one-shot cue.
+- Aircraft presentation effects now follow the shared frame timestamp, keeping beacon, nav-light, and exhaust motion deterministic while avoiding a wall-clock read every physics step.
 - Navigation arrows reuse the mission bearing in cockpit view and avoid a redundant camera matrix rebuild in external view, keeping guidance responsive with less HUD CPU work.
 - The runway windsock mutates one cached weather state during smooth wind fronts, avoiding steady-flight object churn while preserving its downwind pose.
 - Reseeding now forces weather effects onto the new terrain and settlement stream even when the next world chooses the same weather profile, preventing stale neutral materials.

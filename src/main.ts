@@ -530,7 +530,7 @@ async function boot(): Promise<void> {
       time.skipFrame(nowMs)
       aircraft.controls = input.sampleWithDt(0)
       if (!playing) input.resetFlightControls(0)
-      aircraft.snapDisplay()
+      aircraft.snapDisplay(nowMs)
     } else {
       const { frameDt, steps, stepDt, alpha } = time.beginFrame(nowMs)
       visualDt = frameDt
@@ -552,7 +552,7 @@ async function boot(): Promise<void> {
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
-        aircraft.step(dt)
+        aircraft.step(dt, nowMs)
 
         const touch = collision.check(aircraft)
         if (aircraft.status !== 'crashed') {
