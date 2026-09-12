@@ -547,9 +547,13 @@ async function boot(): Promise<void> {
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 
-    cameras.update(aircraft, visualDt)
-    renderer.render(world.scene, cameras.camera)
-    debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
+    // A hidden tab cannot present a frame. Keep simulation and streaming alive,
+    // but avoid submitting camera/debug/render work until the tab is visible.
+    if (!document.hidden) {
+      cameras.update(aircraft, visualDt)
+      renderer.render(world.scene, cameras.camera)
+      debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
+    }
 
     if (playing) {
       const alt = aircraft.onGround
