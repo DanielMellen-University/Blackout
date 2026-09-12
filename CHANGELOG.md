@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Keep the takeoff brief on the title screen and announce `AIRFIELD READY · PRESS PLAY OR ENTER` when world setup finishes.
 - Show a short click-to-reenter cue when fullscreen drops unexpectedly during active flight, while keeping intentional menu exits quiet.
 - Show gate, time, and landing score contributions on the completion card so every run explains its total without changing scoring rules.
 - Harden the completion results dialog with semantic labeling, a contained Tab loop, focus restoration on retry, and teardown-safe listener cleanup.

@@ -22,7 +22,12 @@
             <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
             <button type="button" id="btn-info" class="btn-ghost">Game info</button>
           </div>
-          <p id="title-status" class="title-status">Finding an airfield…</p>
+          <div class="title-takeoff" aria-label="Takeoff briefing">
+            <strong>Takeoff brief</strong>
+            <span><kbd>Shift</kbd> spool power · <kbd>W</kbd> rotate · gear automatic</span>
+          </div>
+          <p id="title-hint" class="title-hint"><kbd>Enter</kbd> launches when the airfield is ready.</p>
+          <p id="title-status" class="title-status" role="status" aria-live="polite">Finding an airfield…</p>
         </div>
       </div>
 

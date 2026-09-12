@@ -120,7 +120,7 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
-  if (titleStatus) titleStatus.textContent = ''
+  if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
   if (playBtn) playBtn.disabled = false
   const aircraft = new Aircraft()
   aircraft.addTo(world.scene)

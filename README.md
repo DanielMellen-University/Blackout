@@ -23,6 +23,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Tab and Shift+Tab are contained inside the active settings or pause panel, then released during runtime teardown.
 - Losing browser-window focus now pauses active flight safely, with no automatic resume when focus returns.
 - If the browser drops fullscreen during active flight, a short banner explains how to click the canvas and recover it.
+- The title screen keeps the takeoff brief visible and announces when the airfield is ready for launch.
 - The completion card is a proper keyboard-contained dialog and returns focus to the flight canvas when a run is restarted.
 - Completion results now show the gate, time, and landing contributions behind the total score.
 - Play, Retry, New World, and `R` now open with a short `SPOOL ENGINE / W TO ROTATE` briefing so takeoff has an immediate readable handoff.
