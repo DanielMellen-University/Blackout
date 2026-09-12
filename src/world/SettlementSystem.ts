@@ -8,7 +8,7 @@ import { getOpsPad, sampleClimate } from './terrainSample'
 import { getWorldSeed, hash2 } from './noise'
 import {
   settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE,
-  type SettlementPlan, type SettlementRoad,
+  type SettlementBuilding, type SettlementPlan, type SettlementRoad,
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
@@ -26,7 +26,13 @@ export const MAX_LOADED_BUILDINGS = 1500
 /** Roads stream independently from settlement building roots. */
 export const MAX_LOADED_REGIONAL_ROADS = 6
 
-const collisionRadii = new WeakMap<SettlementPlan, number>()
+/** Coarse collision bins keep the exact building tests local in large cities. */
+const COLLISION_BUCKET_SIZE = 512
+interface CollisionIndex {
+  radius: number
+  buckets: Map<string, SettlementBuilding[]>
+}
+const collisionIndexes = new WeakMap<SettlementPlan, CollisionIndex>()
 
 /** Lower values are protected spawn landmarks and should stream first. */
 export function settlementLoadPriority(plan: Pick<SettlementPlan, 'anchor' | 'kind'>): number {
@@ -37,13 +43,11 @@ export function settlementLoadPriority(plan: Pick<SettlementPlan, 'anchor' | 'ki
 
 /** Oriented walls and roof volumes with a small jet margin. */
 export function hitsSettlement(plan: SettlementPlan, x: number, y: number, z: number): boolean {
-  let radius = collisionRadii.get(plan)
-  if (radius === undefined) {
-    radius = Math.max(0, ...plan.buildings.map(b => Math.hypot(b.x - plan.x, b.z - plan.z) + Math.hypot(b.width, b.depth) / 2 + 4))
-    collisionRadii.set(plan, radius)
-  }
-  if (Math.hypot(x - plan.x, z - plan.z) > radius) return false
-  return plan.buildings.some(b => {
+  const index = getCollisionIndex(plan)
+  if (Math.hypot(x - plan.x, z - plan.z) > index.radius) return false
+  const bucket = index.buckets.get(collisionBucketKey(x, z))
+  if (!bucket) return false
+  return bucket.some(b => {
     const dx = x - b.x, dz = z - b.z
     const c = Math.cos(b.yaw), s = Math.sin(b.yaw)
     const lx = Math.abs(dx * c - dz * s), lz = Math.abs(dx * s + dz * c)
@@ -62,6 +66,38 @@ export function hitsSettlement(plan: SettlementPlan, x: number, y: number, z: nu
     return plan.kind === 'city' && b.height > 250 && y <= top + b.height * .1 + 2
       && lx <= b.width * .24 + 2 && lz <= b.depth * .275 + 2
   })
+}
+
+function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
+  const cached = collisionIndexes.get(plan)
+  if (cached) return cached
+
+  const buckets = new Map<string, SettlementBuilding[]>()
+  let radius = 0
+  for (const building of plan.buildings) {
+    const extent = Math.hypot(building.width, building.depth) / 2 + 4
+    radius = Math.max(radius, Math.hypot(building.x - plan.x, building.z - plan.z) + extent)
+    const minX = Math.floor((building.x - extent) / COLLISION_BUCKET_SIZE)
+    const maxX = Math.floor((building.x + extent) / COLLISION_BUCKET_SIZE)
+    const minZ = Math.floor((building.z - extent) / COLLISION_BUCKET_SIZE)
+    const maxZ = Math.floor((building.z + extent) / COLLISION_BUCKET_SIZE)
+    for (let bx = minX; bx <= maxX; bx++) {
+      for (let bz = minZ; bz <= maxZ; bz++) {
+        const key = `${bx},${bz}`
+        const bucket = buckets.get(key)
+        if (bucket) bucket.push(building)
+        else buckets.set(key, [building])
+      }
+    }
+  }
+
+  const index = { radius, buckets }
+  collisionIndexes.set(plan, index)
+  return index
+}
+
+function collisionBucketKey(x: number, z: number): string {
+  return `${Math.floor(x / COLLISION_BUCKET_SIZE)},${Math.floor(z / COLLISION_BUCKET_SIZE)}`
 }
 
 function roofGeometry(): BufferGeometry {

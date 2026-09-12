@@ -115,6 +115,19 @@ describe('settlement rendering and lifecycle', () => {
     }
   })
 
+  it('keeps settlement collision exact across coarse spatial buckets', () => {
+    const plan: SettlementPlan = {
+      id: 'bucket-boundary', kind: 'city', biome: 'plains', x: 512, y: 100, z: 0, radius: 400,
+      buildings: [{ x: 510, y: 100, z: 0, width: 40, depth: 40, height: 80,
+        yaw: Math.PI / 4, shape: 'block', roof: 'flat', wallColor: 0xffffff, roofColor: 0x333333 }],
+      roads: [],
+    }
+
+    expect(hitsSettlement(plan, 520, 120, 0)).toBe(true)
+    expect(hitsSettlement(plan, 488, 120, 0)).toBe(true)
+    expect(hitsSettlement(plan, 620, 120, 0)).toBe(false)
+  })
+
   it('shares blended weather values with road materials', () => {
     const system = new SettlementSystem(new Scene())
     try {
