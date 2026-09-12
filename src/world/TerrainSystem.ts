@@ -1183,6 +1183,10 @@ export class TerrainSystem {
       const fullCount = obj.userData.fullCount
       if (!Number.isFinite(fullCount)) return
       obj.count = vegetationInstanceCount(fullCount, this.vegetationScale)
+      // A zero draw range still costs a renderer submission. Hide empty
+      // batches while retaining their authored matrices for instant quality
+      // changes back to a denser preset.
+      obj.visible = obj.count > 0
     })
   }
 
