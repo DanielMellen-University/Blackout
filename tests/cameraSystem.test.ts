@@ -14,9 +14,14 @@ import {
   TOUCHDOWN_IMPULSE,
 } from '../src/camera/CameraSystem'
 import { CAMERA_MODES } from '../src/core/types'
+import { setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
 
 describe('external camera framing', () => {
-  afterEach(() => vi.unstubAllGlobals())
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    setContactHeightSampler(null)
+    setGroundHeightSampler(null)
+  })
 
   it('toggles only between external and cockpit views', () => {
     expect(CAMERA_MODES).toEqual(['chase', 'cockpit'])
@@ -151,6 +156,31 @@ describe('external camera framing', () => {
 
     expect(movedOffset.distanceTo(initialOffset)).toBeLessThan(0.01)
     expect(movedOffset.length()).toBeLessThan(25)
+    cameras.dispose()
+  })
+
+  it('does not probe ground occlusion while the frame is frozen', () => {
+    let samples = 0
+    setGroundHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+    cameras.update(aircraft, 1 / 60)
+    cameras.update(aircraft, 1 / 60)
+    const beforeFrozen = samples
+
+    cameras.update(aircraft, 0)
+    expect(samples).toBe(beforeFrozen)
     cameras.dispose()
   })
 })

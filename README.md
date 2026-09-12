@@ -56,6 +56,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash VFX now stops as soon as its pooled particles expire and the flash envelope is complete, avoiding an empty post-crash tail and its terrain query.
 - Pooled crash and landing effects now return immediately on frozen or negative frame deltas, avoiding unchanged particle walks and paused crash terrain queries.
 - Collision classification now avoids redundant rich surface sampling for clearly airborne flight and returns immediately after a crash, trimming the steady-state physics and crash tail.
+- Paused, title, and results frames now preserve the camera pose without repeating external ground-occlusion probes when no visual time has elapsed.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.

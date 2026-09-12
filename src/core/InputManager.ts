@@ -134,7 +134,7 @@ export class InputManager {
     return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
 
-  /** Poll a connected standard gamepad at 10 Hz to keep flight input cheap. */
+  /** Poll a connected standard gamepad at 30 Hz to keep flight input cheap. */
   private updateGamepad(dt: number): void {
     this.gamepadPollIn -= dt
     if (this.gamepadPollIn > 0) return

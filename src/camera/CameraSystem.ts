@@ -191,6 +191,10 @@ export class CameraSystem {
       return
     }
 
+    // Paused, title, and results frames keep rendering the last camera pose.
+    // Avoid re-running ground occlusion probes when no visual time elapsed.
+    if (!Number.isFinite(dt) || dt <= 0) return
+
     if (this.mode === 'cockpit') {
       this.cockpit.update(this.camera, aircraft)
       this.applyAircraftVisibility(aircraft)
