@@ -88,3 +88,15 @@ export function shadowUpdateDue(
   }
   return Math.max(0, elapsed) + Math.max(0, dt) >= interval
 }
+
+/** Keep low-quality DOM HUD work bounded without slowing the flight model. */
+export function hudUpdateDue(
+  quality: RenderQuality,
+  nowMs: number,
+  previousMs: number,
+): boolean {
+  if (!Number.isFinite(nowMs)) return false
+  if (normalizeRenderQuality(quality) !== 'low') return true
+  if (!Number.isFinite(previousMs)) return true
+  return nowMs >= previousMs + 1000 / 30
+}

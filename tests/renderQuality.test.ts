@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   defaultRenderQuality,
+  hudUpdateDue,
   normalizeRenderQuality,
   readRenderQuality,
   renderQualityProfile,
@@ -58,5 +59,13 @@ describe('render quality preferences', () => {
     expect(shadowUpdateDue(0.02, 0.01, 0.05)).toBe(false)
     expect(shadowUpdateDue(Number.NaN, 0.1, 0.05)).toBe(false)
     expect(shadowUpdateDue(0, 1, 0)).toBe(false)
+  })
+
+  it('bounds low-quality HUD updates without throttling higher presets', () => {
+    expect(hudUpdateDue('low', 0, Number.NaN)).toBe(true)
+    expect(hudUpdateDue('low', 16, 0)).toBe(false)
+    expect(hudUpdateDue('low', 34, 0)).toBe(true)
+    expect(hudUpdateDue('balanced', 16, 0)).toBe(true)
+    expect(hudUpdateDue('high', Number.NaN, 0)).toBe(false)
   })
 })

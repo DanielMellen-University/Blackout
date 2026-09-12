@@ -61,6 +61,7 @@ import { sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
 import {
   defaultRenderQuality,
+  hudUpdateDue,
   normalizeRenderQuality,
   readRenderQuality,
   renderQualityProfile,
@@ -582,12 +583,14 @@ async function boot(): Promise<void> {
   applyResize()
 
   let previousFrame = 0
+  let lastHudUpdateMs = Number.NaN
   const tick = (nowMs: number): void => {
     if (disposed) return
     requestAnimationFrame(tick)
 
     syncInputContext()
     const simLive = playing && !menu.paused && !results.open
+    if (!simLive) lastHudUpdateMs = Number.NaN
     const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)
     previousFrame = nowMs
     if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) renderer.setPixelRatio(pixelRatio)
@@ -815,7 +818,8 @@ async function boot(): Promise<void> {
       debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
     }
 
-    if (shouldUpdateLiveHud(playing, simLive)) {
+    if (shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {
+      lastHudUpdateMs = nowMs
       const alt = aircraft.onGround
         ? 0
         : altitudeAgl(
