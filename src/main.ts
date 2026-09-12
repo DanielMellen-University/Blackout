@@ -698,10 +698,9 @@ async function boot(): Promise<void> {
       !menu.paused &&
       !results.open &&
       aircraft.status !== 'crashed' &&
-      afterburnerOn &&
-      !prevAfterburner
+      afterburnerOn !== prevAfterburner
     ) {
-      audio.playCue('ab')
+      audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
     }
     prevAfterburner = afterburnerOn
 
