@@ -34,6 +34,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - High-frequency HUD transforms, SVG needle attributes, engine bars, and warning classes also coalesce unchanged style writes, reducing layout churn while preserving smooth visual precision.
 - Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash
 - Engine, weather, and event audio now share a conservative output limiter, preventing stacked cues from clipping at full power.
+- Press **M** during flight to mute or restore audio without pausing; the HUD shows the live audio state.
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.
 - Frozen title and pause frames skip redundant atmosphere light, sky, cloud, and weather work while still refreshing when the camera anchor or weather state changes.
@@ -174,6 +175,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Scroll** | Zoom (not cockpit) |
 | **C** | Toggle external / cockpit camera |
 | **N** | Weather |
+| **M** | Mute / unmute audio |
 | **R** | New world + runway |
 | **Esc** | Pause menu |
 

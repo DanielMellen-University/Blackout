@@ -10,6 +10,7 @@ export class HUD {
   private readonly spdEl: HTMLElement | null
   private readonly camEl: HTMLElement | null
   private readonly headingEl: HTMLElement | null
+  private readonly audioEl: HTMLElement | null
   private readonly fpsEl: HTMLElement | null
   private readonly thrEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
@@ -60,6 +61,8 @@ export class HUD {
   private cameraModeText = ''
   private headingValue = Number.NaN
   private headingText = ''
+  private audioMutedValue: boolean | null = null
+  private audioText = ''
   private pitchValue = Number.NaN
   private pitchText = ''
   private rollValue = Number.NaN
@@ -92,6 +95,7 @@ export class HUD {
     this.spdEl = root.getElementById('hud-spd')
     this.camEl = root.getElementById('hud-cam')
     this.headingEl = root.getElementById('hud-hdg')
+    this.audioEl = root.getElementById('hud-audio')
     this.fpsEl = root.getElementById('hud-fps')
     this.thrEl = root.getElementById('hud-thr')
     this.gearEl = root.getElementById('hud-gear')
@@ -132,6 +136,7 @@ export class HUD {
     cameraMode: string
     /** Aircraft heading (rad, 0 = north / +Z). */
     heading?: number
+    audioMuted?: boolean
     fps: number
     throttle?: number
     boost?: boolean
@@ -201,6 +206,15 @@ export class HUD {
         this.headingText = formatHeading(opts.heading)
       }
       this.setText(this.headingEl, this.headingText)
+    }
+    if (this.audioEl && opts.audioMuted !== undefined) {
+      const muted = !!opts.audioMuted
+      if (muted !== this.audioMutedValue) {
+        this.audioMutedValue = muted
+        this.audioText = formatAudioState(muted)
+      }
+      this.setText(this.audioEl, this.audioText)
+      this.setClass(this.audioEl, 'muted', muted)
     }
     if (this.fpsEl) {
       const fps = Math.round(opts.fps)
@@ -596,6 +610,11 @@ function headingDegrees(headingRad: number): number {
 /** Wrap aircraft heading to a stable, three-digit 000–359 degree readout. */
 export function formatHeading(headingRad: number): string {
   return `${String(headingDegrees(headingRad)).padStart(3, '0')}°`
+}
+
+/** Compact audio state label used by the in-flight HUD. */
+export function formatAudioState(muted: boolean): string {
+  return muted ? 'MUTE' : 'LIVE'
 }
 
 /** Short HUD emphasis window used for automatic gear transitions. */

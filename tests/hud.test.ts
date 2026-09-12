@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   afterburnerHeatIntensity,
   canopyTintIntensity,
+  formatAudioState,
   formatHeading,
   formatHudNumber,
   formatVerticalSpeed,
@@ -45,6 +46,11 @@ describe('HUD value formatting', () => {
     expect(formatHeading(-Math.PI / 2)).toBe('270°')
     expect(formatHeading(2 * Math.PI)).toBe('000°')
     expect(formatHeading(Number.NaN)).toBe('000°')
+  })
+
+  it('keeps the audio state label compact', () => {
+    expect(formatAudioState(false)).toBe('LIVE')
+    expect(formatAudioState(true)).toBe('MUTE')
   })
 
   it('keeps gear transition emphasis inside its short timing window', () => {

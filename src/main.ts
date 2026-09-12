@@ -115,6 +115,7 @@ async function boot(): Promise<void> {
   let prevAfterburner = false
   let prevGearDown = true
   let prevLightning = false
+  let audioMuted = false
   const audioFrame: Parameters<FlightAudio['update']>[0] = {
     throttle: 0,
     boost: false,
@@ -130,6 +131,7 @@ async function boot(): Promise<void> {
     speed: 0,
     cameraMode: '',
     heading: 0,
+    audioMuted: false,
     fps: 0,
     throttle: 0,
     boost: false,
@@ -204,6 +206,7 @@ async function boot(): Promise<void> {
 
   const quitToTitle = (): void => {
     playing = false
+    audioMuted = false
     audio.silence()
     menu.close()
     results.hide()
@@ -367,6 +370,10 @@ async function boot(): Promise<void> {
       if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
       if (input.consumeWeatherCycle()) world.cycleWeather()
       if (input.consumeReset()) resetFlight(true)
+      if (input.consumeAudioToggle()) {
+        audioMuted = !audioMuted
+        showBanner(audioMuted ? 'AUDIO MUTED' : 'AUDIO LIVE', 1200)
+      }
 
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()
@@ -525,7 +532,8 @@ async function boot(): Promise<void> {
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain
     audioFrame.snow = precipitation.snow
-    audioFrame.mute = !playing || menu.paused || results.open || aircraft.status === 'crashed'
+    audioFrame.mute =
+      audioMuted || !playing || menu.paused || results.open || aircraft.status === 'crashed'
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 
@@ -566,6 +574,7 @@ async function boot(): Promise<void> {
       hudFrame.pitch = pose.pitch
       hudFrame.roll = pose.roll
       hudFrame.heading = pose.heading
+      hudFrame.audioMuted = audioMuted
       hudFrame.warning = warn.text
       hudFrame.warningLevel = warn.level
       hudFrame.clock = challenge.clockLabel

@@ -16,6 +16,7 @@ export class InputManager {
   cameraToggleQueued = false
   resetQueued = false
   weatherCycleQueued = false
+  audioToggleQueued = false
   /**
    * When false, keys are still tracked for stick continuity but C/R/N are not
    * queued and browser-default suppression is left to the UI capture flag.
@@ -68,11 +69,12 @@ export class InputManager {
     this.controls.gearDown = true
   }
 
-  /** Forget one-shot C / R / N so the title screen cannot leak into Play. */
+  /** Forget one-shot C / R / N / M so the title screen cannot leak into Play. */
   clearQueued(): void {
     this.cameraToggleQueued = false
     this.resetQueued = false
     this.weatherCycleQueued = false
+    this.audioToggleQueued = false
   }
 
   /** Drop a single code (e.g. Space used to start) without killing held stick. */
@@ -108,6 +110,12 @@ export class InputManager {
     return true
   }
 
+  consumeAudioToggle(): boolean {
+    if (!this.audioToggleQueued) return false
+    this.audioToggleQueued = false
+    return true
+  }
+
   private axis(positive: string, negative: string): number {
     return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
@@ -124,6 +132,7 @@ export class InputManager {
     if (e.code === 'KeyC') this.cameraToggleQueued = true
     if (e.code === 'KeyR') this.resetQueued = true
     if (e.code === 'KeyN') this.weatherCycleQueued = true
+    if (e.code === 'KeyM') this.audioToggleQueued = true
   }
 
   private shouldPreventBrowserDefault(e: KeyboardEvent): boolean {
@@ -151,6 +160,7 @@ export class InputManager {
       e.code === 'KeyG' ||
       e.code === 'KeyC' ||
       e.code === 'KeyN' ||
+      e.code === 'KeyM' ||
       e.code === 'F5'
     )
   }
@@ -161,5 +171,6 @@ export class InputManager {
 
   private onBlur = (): void => {
     this.keys.clear()
+    this.clearQueued()
   }
 }
