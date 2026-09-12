@@ -140,6 +140,9 @@ export class Aircraft {
     y: number
     z: number
   }> = []
+  private readonly vaporNodes: Object3D[] = []
+  private vaporMaterial: MeshBasicMaterial | null = null
+  private vaporOpacity = Number.NaN
   private readonly nozzlePetals: Array<{ node: Object3D; angle: number }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
   private readonly readabilityMaterials: MeshStandardMaterial[] = []
@@ -238,6 +241,7 @@ export class Aircraft {
     this.landingLightOpacityValue = Number.NaN
     this.nightReadabilityValue = Number.NaN
     this.nozzleFlareValue = Number.NaN
+    this.vaporOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     if (this.gearNose) this.gearNose.rotation.y = 0
     resolveEngineState(this.controls, this.engineState)
@@ -389,6 +393,7 @@ export class Aircraft {
     this.updateControlSurfaces(dt)
     this.updateWheelSpin(dt)
     this.updateNoseGearSteering(dt)
+    this.updateVaporTrails()
 
     if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
       const opacity = antiCollisionBeaconOpacity(now)
@@ -484,6 +489,23 @@ export class Aircraft {
     }
   }
 
+  /** Reveal the pooled wingtip vapor only when speed or load makes it readable. */
+  private updateVaporTrails(): void {
+    if (this.vaporNodes.length === 0) return
+    const intensity = this.status === 'crashed'
+      ? 0
+      : wingtipVaporIntensity(this.speed, this.loadFactor)
+    if (Number.isFinite(this.vaporOpacity) && Math.abs(intensity - this.vaporOpacity) < 0.006) return
+    this.vaporOpacity = intensity
+    const amount = intensity / 0.22
+    const visible = intensity > 0.004
+    for (const node of this.vaporNodes) {
+      node.visible = visible
+      node.scale.set(.72 + amount * .42, .62 + amount * .92, .72 + amount * .42)
+    }
+    if (this.vaporMaterial) this.vaporMaterial.opacity = intensity
+  }
+
   /** Animate the procedural F-35's hinged panels from the live stick input. */
   private updateControlSurfaces(dt: number): void {
     const pitch = MathUtils.clamp(this.controls.pitch, -1, 1)
@@ -565,6 +587,8 @@ export class Aircraft {
         : null
     this.plumeMaterials.length = 0
     this.plumeDiamonds.length = 0
+    this.vaporNodes.length = 0
+    this.vaporMaterial = null
     this.nozzlePetals.length = 0
     this.nozzleGlows.length = 0
     this.readabilityMaterials.length = 0
@@ -583,6 +607,13 @@ export class Aircraft {
         this.plumeMaterials.push({ name: object.material.name, material: object.material })
       }
     })
+    for (const name of ['vaporTrailLeft', 'vaporTrailRight']) {
+      const vapor = find(name)
+      if (vapor) this.vaporNodes.push(vapor)
+      if (vapor instanceof Mesh && vapor.material instanceof MeshBasicMaterial) {
+        this.vaporMaterial = vapor.material
+      }
+    }
     this.mesh.traverse((object) => {
       if (object.name.startsWith('nozzlePetal')) {
         const angle = object.userData.nozzleAngle
@@ -704,6 +735,15 @@ export function resolveLoadFactor(
   const axial = Number.isFinite(axialValue) ? axialValue : 0
   const up = Number.isFinite(bodyUp.y) ? bodyUp.y : 1
   return MathUtils.clamp((axial + safeGravity * up) / safeGravity, -4, 12)
+}
+
+/** Bounded wingtip vapor envelope driven by high speed and hard maneuvering. */
+export function wingtipVaporIntensity(speed: number, loadFactor: number): number {
+  const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+  const safeLoad = Number.isFinite(loadFactor) ? Math.abs(loadFactor) : 1
+  const speedT = MathUtils.smoothstep(safeSpeed, 260, 780)
+  const loadT = MathUtils.smoothstep(safeLoad, 0.6, 3.5)
+  return MathUtils.clamp(speedT * (0.045 + loadT * 0.175), 0, 0.22)
 }
 
 function enableShadows(obj: Object3D): void {

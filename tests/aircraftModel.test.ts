@@ -9,6 +9,7 @@ import {
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
   resolveLoadFactor,
+  wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
 import { contactSweepNeedsDetailedProbes } from '../src/aircraft/FlightModel'
 import { createF35Model } from '../src/aircraft/createF35Model'
@@ -192,6 +193,26 @@ describe('rebuilt aircraft', () => {
     expect(resolveLoadFactor(new Vector3(0, 9.81, 0), new Vector3(0, 1, 0))).toBeCloseTo(2)
     expect(resolveLoadFactor(new Vector3(0, -98.1, 0), new Vector3(0, 1, 0))).toBeCloseTo(-4)
     expect(resolveLoadFactor(new Vector3(Number.NaN, 0, 0), new Vector3(0, 1, 0))).toBeCloseTo(1)
+  })
+
+  it('keeps wingtip vapor dormant at taxi speed and bounded in a hard turn', () => {
+    expect(wingtipVaporIntensity(0, 1)).toBe(0)
+    expect(wingtipVaporIntensity(260, 1)).toBe(0)
+    expect(wingtipVaporIntensity(780, 1)).toBeGreaterThan(0.045)
+    expect(wingtipVaporIntensity(780, 1)).toBeLessThan(0.07)
+    expect(wingtipVaporIntensity(1600, 5)).toBeCloseTo(0.22)
+    expect(wingtipVaporIntensity(Number.NaN, Number.NaN)).toBe(0)
+  })
+
+  it('builds hidden shared-material wingtip vapor nodes', () => {
+    const model = createF35Model()
+    const left = model.getObjectByName('vaporTrailLeft') as Mesh
+    const right = model.getObjectByName('vaporTrailRight') as Mesh
+    expect(left).toBeTruthy()
+    expect(right).toBeTruthy()
+    expect(left.visible).toBe(false)
+    expect(right.visible).toBe(false)
+    expect(left.material).toBe(right.material)
   })
 
   it('turns off both the plume and nozzle glow when power is cut', () => {

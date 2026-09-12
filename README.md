@@ -119,6 +119,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner
+- High-speed and high-load turns now reveal two pooled wingtip vapor trails, adding a readable condensation cue without per-frame allocations or cockpit clutter.
 - Red and green navigation lights use a restrained shared pulse, keeping the F-35 readable at dusk and night without point lights or extra shadow passes.
 - Navigation-light brightness now follows the shared daylight envelope, staying subtle in full day and readable through dusk and night without extra lights or draw calls.
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
