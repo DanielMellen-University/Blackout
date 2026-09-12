@@ -12,6 +12,7 @@ import {
   headingTapeOffset,
   normalizeBannerTone,
   quantizeHudNumber,
+  safeHudValue,
   speedWarningLevel,
   speedJuiceIntensity,
   speedNeedleKts,
@@ -29,6 +30,12 @@ describe('HUD value formatting', () => {
     expect(quantizeHudNumber(Number.NaN, 100)).toBe(0)
     expect(quantizeHudNumber(3, 0)).toBe(0)
     expect(formatHudNumber(Infinity, 100)).toBe('0')
+  })
+
+  it('keeps malformed live telemetry finite', () => {
+    expect(safeHudValue(4.5)).toBe(4.5)
+    expect(safeHudValue(Number.NaN)).toBe(0)
+    expect(safeHudValue(Number.POSITIVE_INFINITY, -1)).toBe(-1)
   })
 
   it('keeps high-speed edge juice restrained and bounded', () => {

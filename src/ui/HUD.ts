@@ -281,7 +281,7 @@ export class HUD {
       this.setClass(this.audioEl, 'muted', muted)
     }
     if (this.fpsEl) {
-      const fps = Math.round(opts.fps)
+      const fps = Math.max(0, Math.round(safeHudValue(opts.fps)))
       if (fps !== this.fpsValue) {
         this.fpsValue = fps
         this.fpsText = String(fps)
@@ -347,13 +347,15 @@ export class HUD {
     altDelta: number,
   ): void {
     if (!this.navCueEl) return
-    if (bearing === null) {
+    if (bearing === null || !Number.isFinite(bearing)) {
       this.setClass(this.navCueEl, 'near-gate', false)
       this.setHidden(this.navCueEl, true)
       return
     }
+    const safeDist = Math.max(0, safeHudValue(dist))
+    const safeAltDelta = safeHudValue(altDelta)
     this.setHidden(this.navCueEl, false)
-    this.setClass(this.navCueEl, 'near-gate', gateProximityHudActive(dist))
+    this.setClass(this.navCueEl, 'near-gate', gateProximityHudActive(safeDist))
     const deg = quantizeHudNumber((bearing * 180) / Math.PI, 4)
     if (this.navArrowEl) {
       if (deg !== this.navBearingValue) {
@@ -363,8 +365,8 @@ export class HUD {
       this.setStyle(this.navArrowEl, 'transform', this.navBearingText)
     }
     if (this.navRangeEl) {
-      const rangeMode = dist >= 1000 ? 1 : 0
-      const rangeStep = rangeMode ? Math.round(dist / 100) : Math.round(dist)
+      const rangeMode = safeDist >= 1000 ? 1 : 0
+      const rangeStep = rangeMode ? Math.round(safeDist / 100) : Math.round(safeDist)
       if (rangeMode !== this.navRangeMode || rangeStep !== this.navRangeStep) {
         this.navRangeMode = rangeMode
         this.navRangeStep = rangeStep
@@ -373,8 +375,8 @@ export class HUD {
       this.setText(this.navRangeEl, this.navRangeText)
     }
     if (this.navAltEl) {
-      const altMode = Math.abs(altDelta) < 12 ? 0 : 1
-      const altStep = altMode ? Math.round(altDelta) : 0
+      const altMode = Math.abs(safeAltDelta) < 12 ? 0 : 1
+      const altStep = altMode ? Math.round(safeAltDelta) : 0
       if (altMode !== this.navAltMode || altStep !== this.navAltStep) {
         this.navAltMode = altMode
         this.navAltStep = altStep
@@ -412,8 +414,8 @@ export class HUD {
    * Fixed yellow wings = aircraft reference.
    */
   private updateAttitude(pitchRad: number, rollRad: number): void {
-    const pitchDeg = (pitchRad * 180) / Math.PI
-    const rollDeg = (rollRad * 180) / Math.PI
+    const pitchDeg = (safeHudValue(pitchRad) * 180) / Math.PI
+    const rollDeg = (safeHudValue(rollRad) * 180) / Math.PI
     // Clamp visual pitch travel so ladder stays readable
     const pitchVis = Math.max(-50, Math.min(50, pitchDeg))
     const pitchPx = quantizeHudNumber(pitchVis * this.pxPerDeg, 10)
@@ -536,7 +538,7 @@ export class HUD {
 
   private updateEngine(throttle: number, boost: boolean): void {
     // ENG% is the lever / speed target. Afterburner only restyles the bar.
-    const level = Math.min(1, Math.max(0, throttle))
+    const level = Math.min(1, Math.max(0, safeHudValue(throttle)))
     const pct = Math.round(level * 100)
     if (this.thrEl) {
       if (pct !== this.throttleValue) {
@@ -714,6 +716,11 @@ const HEADING_TAPE_STEP_PX = 56
 export function quantizeHudNumber(value: number, precision: number): number {
   if (!Number.isFinite(value) || precision <= 0) return 0
   return Math.round(value * precision) / precision
+}
+
+/** Keep malformed live telemetry from reaching DOM text or CSS values. */
+export function safeHudValue(value: number, fallback = 0): number {
+  return Number.isFinite(value) ? value : fallback
 }
 
 export function formatHudNumber(value: number, precision: number): string {
