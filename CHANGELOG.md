@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Gate detailed aircraft contact sweeps behind conservative previous, midpoint, and current terrain clearances so high-altitude flight avoids unnecessary height queries while near-ground contact remains unchanged.
 - Make multisample antialiasing quality-aware at renderer creation so Low avoids the extra GPU cost while Balanced and High retain the sharper path.
 - Harden fixed-step timing against malformed or backwards animation timestamps so one bad browser frame cannot poison simulation interpolation or the FPS estimate.
 - Reduce pooled crash VFX terrain queries to one shared impact-point sample per update, preserving the fixed particle burst while trimming crash-time CPU work.

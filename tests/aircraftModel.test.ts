@@ -8,6 +8,7 @@ import {
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
 } from '../src/aircraft/Aircraft'
+import { contactSweepNeedsDetailedProbes } from '../src/aircraft/FlightModel'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
 
@@ -69,6 +70,26 @@ describe('rebuilt aircraft', () => {
     aircraft.position.x += 1
     expect(aircraft.onGround).toBe(false)
     expect(samples).toBeGreaterThan(firstSamples)
+  })
+
+  it('skips detailed contact probes while the jet is safely above terrain', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.velocity.set(0, 0, 120)
+    const before = samples
+    aircraft.step(1 / 60)
+    expect(samples - before).toBeLessThan(10)
+  })
+
+  it('keeps the detailed path enabled near the conservative contact envelope', () => {
+    expect(contactSweepNeedsDetailedProbes(80, 80, 80, 20)).toBe(false)
+    expect(contactSweepNeedsDetailedProbes(38, 38, 38, 20)).toBe(true)
+    expect(contactSweepNeedsDetailedProbes(Number.NaN, 100, 100, 20)).toBe(true)
   })
 
   it('spins deployed wheels with rollout speed and resets the spin', () => {

@@ -19,6 +19,11 @@ const _prevPos = new Vector3()
 const _pt = new Vector3()
 const _normal = new Vector3()
 
+/** Extra vertical envelope used by the broad phase before detailed probes. */
+const CONTACT_BROADPHASE_MARGIN = 24
+const CONTACT_BROADPHASE_TRAVEL_FACTOR = 0.75
+const CONTACT_BROADPHASE_TRAVEL_CAP = 32
+
 interface SurfaceHit {
   depth: number
   normal: Vector3
@@ -233,7 +238,7 @@ export class FlightModel {
 
     _prevPos.copy(position)
     position.addScaledVector(velocity, dt)
-    this.resolveContact(aircraft, _prevPos, startedAirborne)
+    this.resolveContact(aircraft, _prevPos, startedAirborne, minY)
 
     aircraft.syncMesh()
   }
@@ -242,12 +247,33 @@ export class FlightModel {
     aircraft: Aircraft,
     prev: Vector3,
     startedAirborne: boolean,
+    previousMinY: number,
   ): void {
     const { position, velocity, orientation, controls } = aircraft
     const dx = position.x - prev.x
     const dy = position.y - prev.y
     const dz = position.z - prev.z
     const dist = Math.hypot(dx, dy, dz)
+
+    // A fast jet spends most of its time far above the heightfield. Check the
+    // old, new, and midpoint clearances first; only paths that enter a
+    // conservative vertical envelope pay for all swept body probes.
+    if (prev.y - previousMinY > CONTACT_BROADPHASE_MARGIN) {
+      const currentMinY = contactMinY(position.x, position.z, controls.gearDown)
+      const midMinY = contactMinY(
+        prev.x + dx * 0.5,
+        prev.z + dz * 0.5,
+        controls.gearDown,
+      )
+      const midpointClearance = (prev.y + dy * 0.5) - midMinY
+      if (!contactSweepNeedsDetailedProbes(
+        prev.y - previousMinY,
+        position.y - currentMinY,
+        midpointClearance,
+        dist,
+      )) return
+    }
+
     const steps = Math.max(1, Math.min(24, Math.ceil(dist / C.contactSweepSpacing)))
 
     let lastX = prev.x
@@ -373,4 +399,28 @@ export class FlightModel {
     _fwd.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
   }
+}
+
+/**
+ * Conservative broad-phase gate for swept aircraft contact.
+ * Invalid samples keep the detailed path enabled so bad terrain data cannot
+ * turn into a missed collision.
+ */
+export function contactSweepNeedsDetailedProbes(
+  previousClearance: number,
+  currentClearance: number,
+  midpointClearance: number,
+  travelMeters: number,
+): boolean {
+  if (
+    !Number.isFinite(previousClearance) ||
+    !Number.isFinite(currentClearance) ||
+    !Number.isFinite(midpointClearance)
+  ) return true
+  const travel = Number.isFinite(travelMeters) ? Math.max(0, travelMeters) : 0
+  const margin = CONTACT_BROADPHASE_MARGIN + Math.min(
+    CONTACT_BROADPHASE_TRAVEL_CAP,
+    travel * CONTACT_BROADPHASE_TRAVEL_FACTOR,
+  )
+  return Math.min(previousClearance, currentClearance, midpointClearance) <= margin
 }
