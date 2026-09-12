@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Scale instanced cloud draw ranges with graphics quality and skip hidden cloud simulation work on reduced budgets, keeping Low atmospheric performance predictable while High stays unchanged.
 - Add a pooled fighter-style heading tape with cardinal marks and a centered caret, driven by cached heading telemetry without new scene geometry or draw calls.
 - Give existing flight banners distinct info, success, and danger treatments so normal feedback no longer reads like a crash alert.
 - Tie pooled rain and snow simulation plus draw ranges to the Low, Balanced, and High graphics presets so weather costs match the selected budget.

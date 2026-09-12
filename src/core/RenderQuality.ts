@@ -11,13 +11,15 @@ export interface RenderQualityProfile {
   readonly shadows: boolean
   /** Fraction of pooled rain and snow particles simulated and drawn. */
   readonly precipitationScale: number
+  /** Fraction of cloud puffs submitted to the instanced deck batches. */
+  readonly cloudScale: number
 }
 
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQualityProfile>> =
   Object.freeze({
-    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false, precipitationScale: 0.42 }),
-    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true, precipitationScale: 0.72 }),
-    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true, precipitationScale: 1 }),
+    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false, precipitationScale: 0.42, cloudScale: 0.5 }),
+    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true, precipitationScale: 0.72, cloudScale: 0.78 }),
+    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true, precipitationScale: 1, cloudScale: 1 }),
   })
 
 const STORAGE_KEY = 'blackout.renderQuality'

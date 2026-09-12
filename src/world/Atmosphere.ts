@@ -131,6 +131,31 @@ const LIGHTNING_MIN_STRENGTH = 0.35
 /** Cloud matrices are large instanced batches; update them at a stable 30 Hz. */
 const CLOUD_UPDATE_STEP_SEC = 1 / 30
 
+/** Clamp a cloud deck's instanced draw range to a safe quality budget. */
+export function cloudPuffCount(total: number, scale: number): number {
+  if (!Number.isFinite(total) || total <= 0) return 0
+  const safeScale = Number.isFinite(scale) ? MathUtils.clamp(scale, 0, 1) : 1
+  return Math.max(1, Math.min(Math.floor(total), Math.round(total * safeScale)))
+}
+
+/** Snap a cloud budget to complete cluster boundaries so silhouettes stay intact. */
+export function cloudPuffBudget(
+  total: number,
+  scale: number,
+  cutoffs: readonly number[],
+): number {
+  const target = cloudPuffCount(total, scale)
+  let budget = 0
+  for (const cutoff of cutoffs) {
+    if (!Number.isFinite(cutoff) || cutoff > target) break
+    budget = Math.max(budget, Math.floor(cutoff))
+  }
+  if (target > 0 && budget === 0 && cutoffs.length > 0) {
+    budget = Math.max(0, Math.floor(cutoffs[0]!))
+  }
+  return Math.min(Math.floor(total), budget)
+}
+
 /**
  * A single broad glow is readable as distant lightning without a hard white-frame cut.
  * The scalar is deliberately capped so all consumers can stay within a comfortable range.
@@ -222,6 +247,22 @@ export class Atmosphere {
   private readonly cloudRoot = new Group()
   private readonly cloudClusters: Group[] = []
   private readonly cloudInstances = {} as Record<CloudLayer, InstancedMesh>
+  private readonly cloudPuffCounts: Record<CloudLayer, number> = {
+    cumulus: 0,
+    stratus: 0,
+    cirrus: 0,
+  }
+  private readonly cloudLayerCutoffs: Record<CloudLayer, number[]> = {
+    cumulus: [],
+    stratus: [],
+    cirrus: [],
+  }
+  private readonly cloudDrawCounts: Record<CloudLayer, number> = {
+    cumulus: 0,
+    stratus: 0,
+    cirrus: 0,
+  }
+  private cloudDensityScale = 1
   /** Absolute world positions (clouds do NOT follow the jet). */
   private readonly cloudWorld: Vector3[] = []
   /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
@@ -332,11 +373,6 @@ export class Atmosphere {
       layerPlan[j] = tmp
     }
 
-    const puffCounts: Record<CloudLayer, number> = {
-      cumulus: 0,
-      stratus: 0,
-      cirrus: 0,
-    }
     for (const layer of layerPlan) {
       const cluster = this.buildCloudCluster(layer, puffGeo, puffMat)
       const xz = cloudSpawnXZ()
@@ -344,18 +380,18 @@ export class Atmosphere {
       this.cloudAlpha.push(0)
       this.cloudLayers.push(layer)
       this.cloudClusters.push(cluster)
-      puffCounts[layer] += cluster.children.length
+      this.cloudPuffCounts[layer] += cluster.children.length
     }
 
     // Three deck-wide batches replace hundreds of individual cloud draw calls.
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       const mat = puffMat.clone()
       mat.name = `Cloud-${layer}`
-      const instances = new InstancedMesh(puffGeo, mat, puffCounts[layer])
+      const instances = new InstancedMesh(puffGeo, mat, this.cloudPuffCounts[layer])
       instances.name = `CloudBatch-${layer}`
       instances.frustumCulled = false
       instances.instanceMatrix.setUsage(DynamicDrawUsage)
-      for (let i = 0; i < puffCounts[layer]; i++) {
+      for (let i = 0; i < this.cloudPuffCounts[layer]; i++) {
         instances.setMatrixAt(i, _hiddenCloudMatrix)
       }
       instances.instanceMatrix.needsUpdate = true
@@ -366,8 +402,13 @@ export class Atmosphere {
     const offsets: Record<CloudLayer, number> = { cumulus: 0, stratus: 0, cirrus: 0 }
     for (let i = 0; i < this.cloudClusters.length; i++) {
       const layer = this.cloudLayers[i]!
-      this.cloudClusters[i]!.userData.instanceOffset = offsets[layer]
-      offsets[layer] += this.cloudClusters[i]!.children.length
+      const cluster = this.cloudClusters[i]!
+      cluster.userData.instanceOffset = offsets[layer]
+      offsets[layer] += cluster.children.length
+      this.cloudLayerCutoffs[layer].push(offsets[layer])
+    }
+    for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
+      this.cloudDrawCounts[layer] = this.cloudPuffCounts[layer]
     }
     scene.add(this.cloudRoot)
 
@@ -383,6 +424,23 @@ export class Atmosphere {
     this.rainActiveCount = precipitationParticleCount(this.rainParticleCount, safe)
     this.rain.geometry.setDrawRange(0, this.rainActiveCount)
     this.snowField.setDensityScale(safe)
+  }
+
+  /** Apply a quality budget to the existing instanced cloud deck batches. */
+  setCloudDensityScale(scale: number): void {
+    const safe = Number.isFinite(scale) ? MathUtils.clamp(scale, 0, 1) : 1
+    if (safe === this.cloudDensityScale) return
+    this.cloudDensityScale = safe
+    for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
+      const instances = this.cloudInstances[layer]
+      const budget = cloudPuffBudget(
+        this.cloudPuffCounts[layer],
+        safe,
+        this.cloudLayerCutoffs[layer],
+      )
+      this.cloudDrawCounts[layer] = budget
+      instances.geometry.setDrawRange(0, budget)
+    }
   }
 
   /** Cycle weather type (N key). */
@@ -834,6 +892,11 @@ export class Atmosphere {
       const wpos = this.cloudWorld[i]!
       const layer = this.cloudLayers[i]!
       const spec = CLOUD_LAYER[layer]
+      const instanceOffset = cluster.userData.instanceOffset as number
+      if (instanceOffset >= this.cloudDrawCounts[layer]) {
+        this.cloudAlpha[i] = 0
+        continue
+      }
 
       // Absolute wind (m/s) — high clouds drift faster
       wpos.x += weather.windX * spec.windMul * gust * cloudDt

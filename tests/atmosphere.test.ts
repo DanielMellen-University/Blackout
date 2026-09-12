@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   atmosphereNeedsUpdate,
+  cloudPuffBudget,
+  cloudPuffCount,
   lightningCooldown,
   lightningFlashEnvelope,
 } from '../src/world/Atmosphere'
@@ -31,5 +33,14 @@ describe('lightning comfort', () => {
     expect(atmosphereNeedsUpdate(0, 0, 10, 20, 31, anchor)).toBe(true)
     expect(atmosphereNeedsUpdate(0, 0, 10, 20, 30, null)).toBe(true)
     expect(atmosphereNeedsUpdate(0, 1 / 120, 10, 20, 30, anchor)).toBe(true)
+  })
+
+  it('keeps cloud draw budgets bounded and nonzero', () => {
+    expect(cloudPuffCount(100, 0.5)).toBe(50)
+    expect(cloudPuffCount(100, 1.4)).toBe(100)
+    expect(cloudPuffCount(100, 0)).toBe(1)
+    expect(cloudPuffCount(0, 0.5)).toBe(0)
+    expect(cloudPuffBudget(42, 0.65, [12, 26, 42])).toBe(26)
+    expect(cloudPuffBudget(42, 0, [12, 26, 42])).toBe(12)
   })
 })
