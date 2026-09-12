@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Harden the completion results dialog with semantic labeling, a contained Tab loop, focus restoration on retry, and teardown-safe listener cleanup.
 - Add a short takeoff briefing banner on Play, Retry, New World, and `R`, making the first action readable without changing the flight model.
 - Pause active flight on window blur as well as tab hide, using the same guarded path and requiring an explicit resume after focus returns.
 - Contain Tab navigation inside the active pause or settings panel and release the focus trap during runtime teardown.

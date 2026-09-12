@@ -11,6 +11,22 @@ export class RunResults {
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
   private readonly best: HTMLElement
+  private returnFocus: HTMLElement | null = null
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (!this.open || event.key !== 'Tab') return
+    const focusable = this.activeFocusable()
+    if (focusable.length === 0) return
+
+    const active = document.activeElement
+    const index = active instanceof HTMLElement ? focusable.indexOf(active) : -1
+    if (event.shiftKey && index <= 0) {
+      event.preventDefault()
+      focusable[focusable.length - 1]!.focus({ preventScroll: true })
+    } else if (!event.shiftKey && (index < 0 || index === focusable.length - 1)) {
+      event.preventDefault()
+      focusable[0]!.focus({ preventScroll: true })
+    }
+  }
 
   constructor(root: Document = document) {
     this.root = must(root, 'run-results')
@@ -20,6 +36,10 @@ export class RunResults {
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
     this.best = must(root, 'result-best')
+    this.root.setAttribute('role', 'dialog')
+    this.root.setAttribute('aria-modal', 'true')
+    this.root.setAttribute('aria-labelledby', 'result-title')
+    this.root.addEventListener('keydown', this.onKeyDown)
   }
 
   get open(): boolean {
@@ -27,6 +47,8 @@ export class RunResults {
   }
 
   show(result: ChallengeResult): void {
+    const active = document.activeElement
+    this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
     this.root.classList.add(resultMedalClass(result.medal))
     this.title.textContent = `${result.medal.toUpperCase()} RUN`
@@ -44,6 +66,23 @@ export class RunResults {
 
   hide(): void {
     this.root.hidden = true
+    const target = this.returnFocus
+    this.returnFocus = null
+    if (target?.isConnected && !target.closest('[hidden]')) {
+      target.focus({ preventScroll: true })
+    }
+  }
+
+  /** Release the results-owned keyboard trap during runtime teardown. */
+  dispose(): void {
+    this.root.removeEventListener('keydown', this.onKeyDown)
+    this.returnFocus = null
+  }
+
+  private activeFocusable(): HTMLElement[] {
+    return Array.from(this.root.querySelectorAll<HTMLElement>(
+      'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+    )).filter((element) => !element.hidden && element.tabIndex >= 0)
   }
 }
 
