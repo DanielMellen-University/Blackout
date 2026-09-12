@@ -56,6 +56,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runtime teardown closes Web Audio, renderer, camera, and input resources on page unload so reloads do not leave stale browser work behind.
 - Runtime teardown also releases streamed terrain, settlement workers, weather pools, mission gates, crash effects, runway assets, and aircraft resources before renderer disposal.
 - Runtime teardown now unregisters global key, fullscreen, resize, and visibility handlers so a remounted scene cannot drive disposed state.
+- Browser-suppression handlers now have an idempotent teardown that restores the canvas focus and context-menu state on runtime disposal.
 - Renderer startup uses Three.js's supported PCF shadow-map constant directly, avoiding the deprecated shadow-map fallback warning.
 - The fixed-step clock reuses its render timing record between ticks, removing another steady-frame allocation without changing interpolation or catch-up behavior.
 - HUD clock and weather labels now cache by displayed state, avoiding unchanged string reconstruction while keeping telemetry responsive.

@@ -172,15 +172,25 @@ function blockBrowserShortcuts(e: KeyboardEvent): void {
  * Block the browser context menu so hold-RMB camera pan can work
  * (including while Shift is held for boost).
  */
-export function suppressBrowserUi(canvas: HTMLCanvasElement): void {
+export function suppressBrowserUi(canvas: HTMLCanvasElement): () => void {
   const blockMenu = (e: Event): void => {
     e.preventDefault()
     e.stopPropagation()
   }
 
   const cap: AddEventListenerOptions = { capture: true }
+  const body = document.body
+  const contextTargets = [window, document, document.documentElement, body, canvas]
+  const previousContextMenu = {
+    document: document.oncontextmenu,
+    window: window.oncontextmenu,
+    canvas: canvas.oncontextmenu,
+    body: body?.oncontextmenu ?? null,
+  }
+  const previousTabIndex = canvas.tabIndex
+  const previousOutline = canvas.style.outline
 
-  for (const target of [window, document, document.documentElement, document.body, canvas]) {
+  for (const target of contextTargets) {
     if (!target) continue
     target.addEventListener('contextmenu', blockMenu, cap)
   }
@@ -190,54 +200,84 @@ export function suppressBrowserUi(canvas: HTMLCanvasElement): void {
   }
   window.addEventListener('pointerdown', softenRightButton, cap)
   window.addEventListener('mousedown', softenRightButton, cap)
-  window.addEventListener(
-    'auxclick',
-    (e: MouseEvent) => {
-      if (e.button === 2) {
-        e.preventDefault()
-        e.stopPropagation()
-      }
-    },
-    cap,
-  )
+  const blockRightAuxClick = (e: MouseEvent): void => {
+    if (e.button === 2) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+  window.addEventListener('auxclick', blockRightAuxClick, cap)
 
   // Capture-phase so we beat browser chrome for Ctrl+W etc. when allowed
   window.addEventListener('keydown', blockBrowserShortcuts, cap)
   document.addEventListener('keydown', blockBrowserShortcuts, cap)
 
   // Mid-click auto-scroll / open link
-  window.addEventListener(
-    'mousedown',
-    (e) => {
-      if (e.button === 1) e.preventDefault()
-    },
-    cap,
-  )
-  window.addEventListener(
-    'auxclick',
-    (e) => {
-      if (e.button === 1) e.preventDefault()
-    },
-    cap,
-  )
+  const blockMiddleClick = (e: MouseEvent): void => {
+    if (e.button === 1) e.preventDefault()
+  }
+  window.addEventListener('mousedown', blockMiddleClick, cap)
+  window.addEventListener('auxclick', blockMiddleClick, cap)
 
-  document.oncontextmenu = () => false
-  window.oncontextmenu = () => false
-  canvas.oncontextmenu = () => false
-  if (document.body) document.body.oncontextmenu = () => false
+  const documentContextMenu = (): boolean => false
+  const windowContextMenu = (): boolean => false
+  const canvasContextMenu = (): boolean => false
+  const bodyContextMenu = (): boolean => false
+  document.oncontextmenu = documentContextMenu
+  window.oncontextmenu = windowContextMenu
+  canvas.oncontextmenu = canvasContextMenu
+  if (body) body.oncontextmenu = bodyContextMenu
 
   canvas.tabIndex = 0
   canvas.style.outline = 'none'
-  canvas.addEventListener('pointerdown', () => {
+  const focusCanvas = (): void => {
     canvas.focus({ preventScroll: true })
     tryReenterFullscreenFromClick()
-  })
+  }
+  canvas.addEventListener('pointerdown', focusCanvas)
 
-  document.addEventListener('fullscreenchange', () => {
+  const onFullscreenChange = (): void => {
     if (shouldReenterFullscreen(!!document.fullscreenElement, captureFlightKeys)) {
       reenterFullscreenOnClick = true
     }
-  })
+  }
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+
+  let disposed = false
+  return (): void => {
+    if (disposed) return
+    disposed = true
+    for (const target of contextTargets) {
+      if (!target) continue
+      target.removeEventListener('contextmenu', blockMenu, cap)
+    }
+    window.removeEventListener('pointerdown', softenRightButton, cap)
+    window.removeEventListener('mousedown', softenRightButton, cap)
+    window.removeEventListener('auxclick', blockRightAuxClick, cap)
+    window.removeEventListener('keydown', blockBrowserShortcuts, cap)
+    document.removeEventListener('keydown', blockBrowserShortcuts, cap)
+    window.removeEventListener('mousedown', blockMiddleClick, cap)
+    window.removeEventListener('auxclick', blockMiddleClick, cap)
+    canvas.removeEventListener('pointerdown', focusCanvas)
+    document.removeEventListener('fullscreenchange', onFullscreenChange)
+
+    if (document.oncontextmenu === documentContextMenu) {
+      document.oncontextmenu = previousContextMenu.document
+    }
+    if (window.oncontextmenu === windowContextMenu) {
+      window.oncontextmenu = previousContextMenu.window
+    }
+    if (canvas.oncontextmenu === canvasContextMenu) {
+      canvas.oncontextmenu = previousContextMenu.canvas
+    }
+    if (body?.oncontextmenu === bodyContextMenu) {
+      body.oncontextmenu = previousContextMenu.body
+    }
+    canvas.tabIndex = previousTabIndex
+    canvas.style.outline = previousOutline
+    setFlightKeyCapture(false)
+    reenterFullscreenOnClick = false
+  }
 }
 
 /** Re-apply Keyboard Lock after entering fullscreen. */

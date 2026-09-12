@@ -45,7 +45,7 @@ async function boot(): Promise<void> {
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl)
 
-  suppressBrowserUi(canvas)
+  const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
   if (playBtn) playBtn.disabled = true
 
@@ -93,6 +93,7 @@ async function boot(): Promise<void> {
   const disposeRuntime = (): void => {
     if (disposed) return
     disposed = true
+    releaseBrowserUi()
     input.dispose()
     cameras.dispose()
     audio.dispose()
