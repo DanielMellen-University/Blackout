@@ -237,6 +237,7 @@ export class Atmosphere {
   private readonly lastAnchor: AtmosphereAnchor = { x: 0, y: 0, z: 0 }
   private hasLastAnchor = false
   private dirty = true
+  private disposed = false
 
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
@@ -433,6 +434,7 @@ export class Atmosphere {
 
   /** Apply the selected graphics preset to both pooled precipitation fields. */
   setPrecipitationScale(scale: number): void {
+    if (this.disposed) return
     const safe = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1
     if (safe === this.precipitationScale) return
     this.precipitationScale = safe
@@ -443,6 +445,7 @@ export class Atmosphere {
 
   /** Apply a quality budget to the existing instanced cloud deck batches. */
   setCloudDensityScale(scale: number): void {
+    if (this.disposed) return
     const safe = Number.isFinite(scale) ? MathUtils.clamp(scale, 0, 1) : 1
     if (safe === this.cloudDensityScale) return
     this.cloudDensityScale = safe
@@ -460,6 +463,7 @@ export class Atmosphere {
 
   /** Cycle weather type (N key). */
   cycleWeather(): WeatherId {
+    if (this.disposed) return this.weather
     const next = this.weatherDirector.cycle()
     this.weather = next
     this.dirty = true
@@ -467,6 +471,7 @@ export class Atmosphere {
   }
 
   setWeather(id: WeatherId, instant = false): void {
+    if (this.disposed) return
     this.weatherDirector.setWeather(id, instant)
     this.weather = id
     this.dirty = true
@@ -474,6 +479,7 @@ export class Atmosphere {
 
   /** Fully random time of day + weighted weather (on world reseed). */
   randomizeWeather(seed: number): void {
+    if (this.disposed) return
     // Full 0–1 clock (any hour equally likely)
     const tRoll = Math.abs(Math.sin(seed * 78.233) * 43758.5453)
     this.timeOfDay = tRoll - Math.floor(tRoll)
@@ -554,6 +560,8 @@ export class Atmosphere {
 
   /** Release pooled weather, cloud, sky, and precipitation resources. */
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.precipRoot.removeFromParent()
     disposeObjectTree(this.precipRoot)
     this.snowField.points.removeFromParent()
@@ -571,6 +579,7 @@ export class Atmosphere {
   }
 
   update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {
+    if (this.disposed) return
     const previousAnchor = this.hasLastAnchor ? this.lastAnchor : null
     if (!this.dirty && !atmosphereNeedsUpdate(dt, visualDt, ax, ay, az, previousAnchor)) return
     this.lastAnchor.x = ax
