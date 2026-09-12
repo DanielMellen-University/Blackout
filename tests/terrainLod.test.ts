@@ -2,7 +2,13 @@ import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import { planTerrainTiles } from '../src/world/TerrainLayout'
-import { sampleGroundHeight, setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
+import {
+  sampleGroundHeight,
+  sampleGroundSurfaceInto,
+  setContactHeightSampler,
+  setGroundHeightSampler,
+  setGroundSurfaceSampler,
+} from '../src/world/ground'
 import {
   CHUNK_SIZE,
   buildTerrainSkirtGeometry,
@@ -206,6 +212,20 @@ describe('visible mesh contact sampling', () => {
     expect(sampleGroundHeight(8, -3)).toBe(42)
     expect(heightCalls).toBe(1)
     expect(contactCalls).toBe(0)
+  })
+
+  it('fills contact height and kind through one caller-owned record', () => {
+    let calls = 0
+    setGroundSurfaceSampler((_x, _z, out) => {
+      calls++
+      out.height = 24
+      out.kind = 'water'
+      return true
+    })
+    const out = { height: 0, kind: 'land' as const }
+    expect(sampleGroundSurfaceInto(8, -3, out)).toBe(out)
+    expect(out).toEqual({ height: 24, kind: 'water' })
+    expect(calls).toBe(1)
   })
 
   it('matches the rendered vertex at a chunk corner', () => {

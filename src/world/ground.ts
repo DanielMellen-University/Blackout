@@ -2,6 +2,7 @@ import { Vector3 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import {
   sampleTerrainSurface,
+  type TerrainSurfaceKind,
   type TerrainSurface,
 } from './terrainSample'
 
@@ -13,9 +14,19 @@ import {
  */
 export type MeshHeightSampler = (x: number, z: number) => number | TerrainSurface | null
 export type GroundHeightSampler = (x: number, z: number) => number | null
+export interface GroundSurfaceSample {
+  height: number
+  kind: TerrainSurfaceKind
+}
+export type GroundSurfaceSampler = (
+  x: number,
+  z: number,
+  out: GroundSurfaceSample,
+) => boolean
 
 let meshHeightSampler: MeshHeightSampler | null = null
 let groundHeightSampler: GroundHeightSampler | null = null
+let groundSurfaceSampler: GroundSurfaceSampler | null = null
 
 export function setContactHeightSampler(sampler: MeshHeightSampler | null): void {
   meshHeightSampler = sampler
@@ -23,11 +34,17 @@ export function setContactHeightSampler(sampler: MeshHeightSampler | null): void
   // lifetime. Clearing the contact sampler must not leave a disposed world
   // feeding stale heights to AGL, camera, or effect queries.
   groundHeightSampler = null
+  groundSurfaceSampler = null
 }
 
 /** Register the allocation-free height path used by hot queries. */
 export function setGroundHeightSampler(sampler: GroundHeightSampler | null): void {
   groundHeightSampler = sampler
+}
+
+/** Register the caller-owned surface path used by collision hot loops. */
+export function setGroundSurfaceSampler(sampler: GroundSurfaceSampler | null): void {
+  groundSurfaceSampler = sampler
 }
 
 /**
@@ -62,6 +79,25 @@ export function sampleGroundSurface(x: number, z: number): TerrainSurface {
   if (meshH == null || !Number.isFinite(meshH)) return surface
   if (meshH === surface.height) return surface
   return { height: meshH, kind: surface.kind, biome: surface.biome }
+}
+
+/**
+ * Fill a caller-owned height/kind record without allocating on loaded tiles.
+ * Rich biome metadata remains available through sampleGroundSurface().
+ */
+export function sampleGroundSurfaceInto(
+  x: number,
+  z: number,
+  out: GroundSurfaceSample,
+): GroundSurfaceSample {
+  if (groundSurfaceSampler?.(x, z, out) === true && Number.isFinite(out.height)) {
+    out.kind = out.kind === 'water' ? 'water' : 'land'
+    return out
+  }
+  const surface = sampleGroundSurface(x, z)
+  out.height = surface.height
+  out.kind = surface.kind
+  return out
 }
 
 /**

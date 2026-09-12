@@ -2,8 +2,9 @@ import { MathUtils, Quaternion, Vector3 } from 'three'
 import {
   contactMinY,
   sampleGroundNormal,
-  sampleGroundSurface,
+  sampleGroundSurfaceInto,
   undercarriageClearance,
+  type GroundSurfaceSample,
 } from '../world/ground'
 import type { Aircraft, ContactSurfaceKind } from './Aircraft'
 import { flightConfig as C } from './flightConfig'
@@ -56,6 +57,10 @@ export class FlightModel {
     wx: 0,
     wz: 0,
     surfaceY: 0,
+  }
+  private readonly surfaceSample: GroundSurfaceSample = {
+    height: 0,
+    kind: 'land',
   }
 
   step(aircraft: Aircraft, dt: number): void {
@@ -324,7 +329,7 @@ export class FlightModel {
       const px = ox + _pt.x
       const py = oy + _pt.y
       const pz = oz + _pt.z
-      const surface = sampleGroundSurface(px, pz)
+      const surface = sampleGroundSurfaceInto(px, pz, this.surfaceSample)
       const clearance = i === 0 ? undercarriageClearance(gearDown) : 0.4
       const minY = surface.height + clearance
       const d = minY - py

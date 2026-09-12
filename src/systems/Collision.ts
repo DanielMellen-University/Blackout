@@ -1,7 +1,11 @@
 import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { Aircraft, AircraftImpact, ContactSurfaceKind } from '../aircraft/Aircraft'
 import { flightConfig as C } from '../aircraft/flightConfig'
-import { contactMinY, sampleGroundSurface } from '../world/ground'
+import {
+  contactMinY,
+  sampleGroundSurfaceInto,
+  type GroundSurfaceSample,
+} from '../world/ground'
 
 export type TouchResult = 'air' | 'roll' | 'landed' | 'crash'
 
@@ -50,6 +54,10 @@ export class CollisionSystem {
     obstacle: false,
     surface: 'land',
   }
+  private readonly surfaceSample: GroundSurfaceSample = {
+    height: 0,
+    kind: 'land',
+  }
 
   constructor(hitObstacle: (aircraft: Aircraft) => boolean = () => false) {
     this.hitObstacle = hitObstacle
@@ -69,7 +77,11 @@ export class CollisionSystem {
     const vy = aircraft.impactVy < 0 ? aircraft.impactVy : aircraft.velocity.y
     const gs = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
     const pose = attitudeInto(this.pose, aircraft.orientation)
-    const surface = sampleGroundSurface(aircraft.position.x, aircraft.position.z).kind
+    const surface = sampleGroundSurfaceInto(
+      aircraft.position.x,
+      aircraft.position.z,
+      this.surfaceSample,
+    ).kind
 
     const contact = this.contact
     contact.airborne = aircraft.impact?.startedAirborne ?? !aircraft.onGround

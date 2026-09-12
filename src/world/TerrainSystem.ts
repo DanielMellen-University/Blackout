@@ -26,7 +26,12 @@ import {
   type TerrainSurface,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
-import { setContactHeightSampler, setGroundHeightSampler } from './ground'
+import {
+  setContactHeightSampler,
+  setGroundHeightSampler,
+  setGroundSurfaceSampler,
+  type GroundSurfaceSample,
+} from './ground'
 import { buildWaterMesh } from './WaterSystem'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
@@ -385,6 +390,7 @@ export class TerrainSystem {
     this.applyFog()
     setContactHeightSampler((x, z) => this.sampleMeshSurface(x, z))
     setGroundHeightSampler((x, z) => this.sampleMeshHeight(x, z))
+    setGroundSurfaceSampler((x, z, out) => this.sampleMeshSurfaceInto(x, z, out))
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
@@ -581,6 +587,35 @@ export class TerrainSystem {
       height: Math.max(bed, level), kind: wet ? 'water' : 'land',
       biome: wet ? (level <= 0 ? 'ocean' : 'water') : sampleClimate(x, z).biome,
     }
+  }
+
+  /** Fill only the contact fields needed by physics and collision checks. */
+  sampleMeshSurfaceInto(x: number, z: number, out: GroundSurfaceSample): boolean {
+    const cx = Math.floor(x / CHUNK_SIZE)
+    const cz = Math.floor(z / CHUNK_SIZE)
+    const chunk = this.chunks.get(`${cx},${cz}`)
+    if (!chunk || chunk.heights.length !== (chunk.segs + 1) * (chunk.segs + 1)) {
+      return false
+    }
+    const bed = interpolateGridHeight(
+      chunk.heights,
+      chunk.segs,
+      chunk.originX,
+      chunk.originZ,
+      x,
+      z,
+    )
+    const level = interpolateGridHeight(
+      chunk.waterLevels,
+      chunk.segs,
+      chunk.originX,
+      chunk.originZ,
+      x,
+      z,
+    )
+    out.height = Math.max(bed, level)
+    out.kind = bed < level ? 'water' : 'land'
+    return true
   }
 
   private scheduleAround(cx: number, cz: number): void {
