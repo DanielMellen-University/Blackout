@@ -201,6 +201,8 @@ describe('external camera framing', () => {
     cameras.attachToScene(scene)
     expect(cameras.camera.parent).toBe(scene)
     cameras.dispose()
+    cameras.dispose()
+    cameras.attachToScene(scene)
     expect(cameras.camera.parent).toBeNull()
   })
 

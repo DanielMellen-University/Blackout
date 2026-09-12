@@ -131,6 +131,7 @@ export class CameraSystem {
   private boostPhase = 0
   private readonly boostOffset = { x: 0, y: 0, z: 0 }
   private reducedMotion = false
+  private disposed = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -159,6 +160,7 @@ export class CameraSystem {
   }
 
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
+    if (this.disposed) return
     const leavingCockpit = this.mode === 'cockpit' && mode !== 'cockpit'
     this.autoReturnEnabled = true
     this.mode = mode
@@ -184,7 +186,7 @@ export class CameraSystem {
    * Gameplay always calls setMode afterwards, restoring the normal chase rig.
    */
   setTitleFraming(aircraft?: Aircraft): void {
-    if (this.mode === 'cockpit') return
+    if (this.disposed || this.mode === 'cockpit') return
     this.autoReturnEnabled = false
     this.yaw = 0.55
     this.pitch = 0.18
@@ -199,12 +201,13 @@ export class CameraSystem {
 
   /** Brief view punch (crash boom). */
   impulse(amount = 1): void {
-    if (this.reducedMotion) return
+    if (this.disposed || this.reducedMotion) return
     this.shake = Math.max(this.shake, amount)
     if (amount > 0) this.shakePhase = (this.shakePhase + amount * 1.7) % (Math.PI * 2)
   }
 
   toggleMode(aircraft?: Aircraft): CameraMode {
+    if (this.disposed) return this.mode
     const idx = CAMERA_MODES.indexOf(this.mode)
     const next = CAMERA_MODES[(idx + 1) % CAMERA_MODES.length]!
     this.setMode(next, aircraft)
@@ -212,6 +215,7 @@ export class CameraSystem {
   }
 
   update(aircraft: Aircraft, dt: number): void {
+    if (this.disposed) return
     if (!this.initialized) {
       this.setMode(this.mode, aircraft)
       this.initialized = true
@@ -240,10 +244,13 @@ export class CameraSystem {
 
   /** Add the camera to the render scene so camera-attached cockpit geometry draws. */
   attachToScene(scene: Scene): void {
+    if (this.disposed) return
     if (this.camera.parent !== scene) scene.add(this.camera)
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     const c = this.canvas
     const cap: AddEventListenerOptions = { capture: true }
     c.removeEventListener('pointerdown', this.onPointerDown, cap)

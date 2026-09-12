@@ -23,6 +23,7 @@ const _noseFlip = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.P
  */
 export class CockpitMode {
   private attached = false
+  private disposed = false
   private readonly frame = new Group()
   private readonly frameMaterial = new MeshBasicMaterial({
     color: 0x101b25,
@@ -66,6 +67,7 @@ export class CockpitMode {
   }
 
   enter(camera: PerspectiveCamera): void {
+    if (this.disposed) return
     this.attached = true
     if (this.frame.parent !== camera) camera.add(this.frame)
     this.frame.visible = true
@@ -76,6 +78,7 @@ export class CockpitMode {
   }
 
   exit(camera: PerspectiveCamera): void {
+    if (this.disposed) return
     this.attached = false
     this.frame.visible = false
     camera.up.set(0, 1, 0)
@@ -84,7 +87,7 @@ export class CockpitMode {
   }
 
   update(camera: PerspectiveCamera, aircraft: Aircraft): void {
-    if (!this.attached) return
+    if (this.disposed || !this.attached) return
 
     if (this.frame.parent !== camera) camera.add(this.frame)
     this.frame.visible = true
@@ -96,6 +99,9 @@ export class CockpitMode {
 
   /** Release the camera-attached cockpit geometry during runtime teardown. */
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.attached = false
     this.frame.removeFromParent()
     this.frame.traverse((object) => {
       if (!(object instanceof Mesh)) return
