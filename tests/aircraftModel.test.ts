@@ -52,6 +52,23 @@ describe('rebuilt aircraft', () => {
     expect(model.getObjectByName('vaporTrailLeft')!.matrixAutoUpdate).toBe(true)
   })
 
+  it('keeps the core exhaust cue while trimming secondary effects on Low', () => {
+    const aircraft = new Aircraft()
+    const plume = aircraft.mesh.getObjectByName('afterburner')!
+    const outer = plume.getObjectByName('abOuter')!
+    const firstDiamond = plume.getObjectByName('abDiamond0')!
+    const secondDiamond = plume.getObjectByName('abDiamond1')!
+
+    aircraft.setRenderQuality('low')
+    expect(outer.visible).toBe(false)
+    expect(firstDiamond.visible).toBe(true)
+    expect(secondDiamond.visible).toBe(false)
+
+    aircraft.setRenderQuality('high')
+    expect(outer.visible).toBe(true)
+    expect(secondDiamond.visible).toBe(true)
+  })
+
   it('retracts over multiple physics frames and extends again near the ground', () => {
     setContactHeightSampler(() => 0)
     const aircraft = new Aircraft()

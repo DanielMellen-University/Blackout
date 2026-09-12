@@ -122,6 +122,7 @@ async function boot(): Promise<void> {
   renderer.shadowMap.type = PCFShadowMap
 
   let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
+  let applyAircraftQuality: ((quality: RenderQuality) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
   let shadowUpdateElapsed = SHADOW_UPDATE_STEP
@@ -133,6 +134,7 @@ async function boot(): Promise<void> {
     resolution.setCeiling(profile.maxPixelRatio)
     renderer.setPixelRatio(resolution.ratio)
     applyShadowQuality?.(profile.shadowMapSize)
+    applyAircraftQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -174,6 +176,8 @@ async function boot(): Promise<void> {
   if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
   if (playBtn) playBtn.disabled = false
   const aircraft = new Aircraft()
+  applyAircraftQuality = (quality): void => aircraft.setRenderQuality(quality)
+  applyAircraftQuality(renderQuality)
   aircraft.addTo(world.scene)
   // Place jet on the flat-biome airfield chosen at world reseed
   aircraft.reset(world.spawn)

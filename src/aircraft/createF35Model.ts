@@ -352,6 +352,7 @@ function buildAfterburner(): Group {
     }
     material.customProgramCacheKey = () => 'soft-exhaust-v1'
     const plume = new Mesh(new CylinderGeometry(radius, .015, length, 24, 1, true), material)
+    plume.name = name
     plume.rotation.x = Math.PI / 2
     plume.position.z = -length / 2
     group.add(plume)

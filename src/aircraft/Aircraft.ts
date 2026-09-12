@@ -22,6 +22,7 @@ import {
 } from './EngineState'
 import { flightConfig } from './flightConfig'
 import { FlightModel } from './FlightModel'
+import type { RenderQuality } from '../core/RenderQuality'
 
 const _box = new Box3()
 const _size = new Vector3()
@@ -138,6 +139,7 @@ export class Aircraft {
   private landingLightMaterial: MeshBasicMaterial | null = null
   private landingLightOpacityValue = Number.NaN
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
+  private readonly lowQualityPlumeNodes: Object3D[] = []
   private readonly plumeDiamonds: Array<{
     node: Object3D
     x: number
@@ -159,6 +161,7 @@ export class Aircraft {
   private visualTimeMs = 0
   private modelLoadToken = 0
   private disposed = false
+  private visualQuality: RenderQuality = 'balanced'
 
   constructor() {
     this.mesh = new Group()
@@ -397,6 +400,13 @@ export class Aircraft {
     }
   }
 
+  /** Apply the shared render preset to aircraft-only visual detail. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    this.visualQuality = quality
+    this.applyVisualQuality()
+  }
+
   /**
    * Articulated gear and power-driven exhaust for the procedural model.
    * Safe no-ops if nodes missing (GLB path).
@@ -478,6 +488,7 @@ export class Aircraft {
     }
     for (let i = 0; i < this.plumeDiamonds.length; i++) {
       const diamond = this.plumeDiamonds[i]!
+      if (this.visualQuality === 'low' && i > 0) continue
       const scale = afterburnerDiamondPulse(i, now, boost, plumeResponse)
       diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
     }
@@ -527,7 +538,7 @@ export class Aircraft {
     if (Number.isFinite(this.vaporOpacity) && Math.abs(intensity - this.vaporOpacity) < 0.006) return
     this.vaporOpacity = intensity
     const amount = intensity / 0.22
-    const visible = intensity > 0.004
+    const visible = this.visualQuality !== 'low' && intensity > 0.004
     for (const node of this.vaporNodes) {
       node.visible = visible
       node.scale.set(.72 + amount * .42, .62 + amount * .92, .72 + amount * .42)
@@ -619,6 +630,7 @@ export class Aircraft {
         : null
     this.plumeMaterials.length = 0
     this.plumeDiamonds.length = 0
+    this.lowQualityPlumeNodes.length = 0
     this.vaporNodes.length = 0
     this.vaporMaterial = null
     this.nozzlePetals.length = 0
@@ -628,16 +640,19 @@ export class Aircraft {
     this.canopyGlassMaterial = null
     this.afterburner?.traverse((object) => {
       if (object.name.startsWith('abDiamond')) {
+        const index = Number(object.name.slice('abDiamond'.length))
         this.plumeDiamonds.push({
           node: object,
           x: object.scale.x,
           y: object.scale.y,
           z: object.scale.z,
         })
+        if (Number.isFinite(index) && index > 0) this.lowQualityPlumeNodes.push(object)
       }
       if (!(object instanceof Mesh) || !(object.material instanceof MeshBasicMaterial)) return
       if (object.material.name === 'abCore' || object.material.name === 'abMid' || object.material.name === 'abOuter') {
         this.plumeMaterials.push({ name: object.material.name, material: object.material })
+        if (object.material.name === 'abOuter') this.lowQualityPlumeNodes.push(object)
       }
     })
     for (const name of ['vaporTrailLeft', 'vaporTrailRight']) {
@@ -671,6 +686,16 @@ export class Aircraft {
     const canopy = this.mesh.getObjectByName('GoldCanopy')
     if (canopy instanceof Mesh && canopy.material instanceof MeshPhysicalMaterial) {
       this.canopyGlassMaterial = canopy.material
+    }
+    this.applyVisualQuality()
+  }
+
+  /** Hide only secondary aircraft effects on Low; core power cues stay visible. */
+  private applyVisualQuality(): void {
+    const low = this.visualQuality === 'low'
+    for (const node of this.lowQualityPlumeNodes) node.visible = !low
+    if (low) {
+      for (const node of this.vaporNodes) node.visible = false
     }
   }
 

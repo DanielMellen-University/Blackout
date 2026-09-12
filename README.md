@@ -42,6 +42,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Low graphics now also stop continuous cockpit, afterburner, speed-juice, and near-gate CSS motion loops while retaining their readable state styling.
 - HUD effect envelopes now sanitize malformed speed and power telemetry before it reaches CSS, keeping edge juice and afterburner heat finite even during a bad frame.
 - The procedural F-35 now freezes static panel transforms while leaving gear, control surfaces, nozzle petals, plume, and vapor trails live, trimming aircraft matrix work without changing its silhouette or animation.
+- Low graphics now trim secondary aircraft exhaust shells, Mach diamonds, and wingtip vapor while retaining the core power cue; Balanced and High keep the full fighter presentation.
 - Graphics presets also scale the instanced cloud draw ranges and skip hidden cloud updates, so Low reduces atmospheric GPU and CPU cost without removing the weathered sky entirely.
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.
