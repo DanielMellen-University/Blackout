@@ -56,6 +56,7 @@ import { RunResults } from './ui/RunResults'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
+import { sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
 import {
   defaultRenderQuality,
@@ -661,10 +662,7 @@ async function boot(): Promise<void> {
         visualDt,
       )
     }
-    const phase = world.atmosphere.phaseLabel
-    const baseExp =
-      phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15
-    const exposure = baseExp + crashFx.bloom * 1.35
+    const exposure = sceneExposure(world.atmosphere.daylight, crashFx.bloom)
     if (Math.abs(renderer.toneMappingExposure - exposure) > 0.001) {
       renderer.toneMappingExposure = exposure
     }

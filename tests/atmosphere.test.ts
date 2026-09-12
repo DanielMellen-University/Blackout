@@ -6,6 +6,7 @@ import {
   lightningCooldown,
   lightningFlashEnvelope,
 } from '../src/world/Atmosphere'
+import { sceneExposure } from '../src/core/SceneExposure'
 
 describe('lightning comfort', () => {
   it('uses a capped, eased single-flash envelope', () => {
@@ -42,5 +43,13 @@ describe('lightning comfort', () => {
     expect(cloudPuffCount(0, 0.5)).toBe(0)
     expect(cloudPuffBudget(42, 0.65, [12, 26, 42])).toBe(26)
     expect(cloudPuffBudget(42, 0, [12, 26, 42])).toBe(12)
+  })
+
+  it('keeps scene exposure continuous and bounded across day/night values', () => {
+    expect(sceneExposure(0)).toBeCloseTo(0.95)
+    expect(sceneExposure(0.5)).toBeCloseTo(1.05)
+    expect(sceneExposure(1)).toBeCloseTo(1.15)
+    expect(sceneExposure(Number.NaN, Number.NaN)).toBeCloseTo(0.95)
+    expect(sceneExposure(2, 2)).toBeCloseTo(2.5)
   })
 })
