@@ -15,6 +15,7 @@ import {
   lockGameKeyboard,
   lockKeysOnly,
   setFlightKeyCapture,
+  shouldReenterFullscreen,
   suppressBrowserUi,
   toggleGameFullscreen,
 } from './core/suppressBrowserUi'
@@ -409,6 +410,12 @@ async function boot(): Promise<void> {
 
   const onFullscreenChange = (): void => {
     menu.syncFullscreen()
+    if (!document.fullscreenElement && shouldReenterFullscreen(
+      false,
+      playing && !menu.paused && !results.open,
+    )) {
+      showBanner('CLICK TO RE-ENTER FULLSCREEN', 5000)
+    }
     if (document.fullscreenElement) {
       void lockKeysOnly()
       return
