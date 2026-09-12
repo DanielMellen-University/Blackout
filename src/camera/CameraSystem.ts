@@ -333,11 +333,13 @@ export class CameraSystem {
 
     this.camera.up.copy(_Y_UP)
     this.sphericalOffset(_offsetWorld, this.yaw, this.pitch, framing.distance)
+    const heading = cfg.yawOnly ? this.aircraftHeading(aircraft) : 0
+    if (cfg.yawOnly) {
+      _headingQuat.setFromAxisAngle(_Y_UP, heading)
+    }
 
     if (cfg.yawOnly) {
       // Chase-style: rotate offset by heading only (no roll/pitch of the airframe)
-      const heading = this.aircraftHeading(aircraft)
-      _headingQuat.setFromAxisAngle(_Y_UP, heading)
       _offsetWorld.applyQuaternion(_headingQuat)
     }
     // Orbit: leave offset in world spherical space around the pivot
@@ -366,8 +368,6 @@ export class CameraSystem {
 
     // Look slightly ahead of the jet (yaw-only offset + velocity lead)
     if (cfg.yawOnly) {
-      const heading = this.aircraftHeading(aircraft)
-      _headingQuat.setFromAxisAngle(_Y_UP, heading)
       _look.copy(cfg.lookOffset).applyQuaternion(_headingQuat)
     } else {
       _look.copy(cfg.lookOffset)
