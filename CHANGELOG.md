@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add a short takeoff briefing banner on Play, Retry, New World, and `R`, making the first action readable without changing the flight model.
 - Pause active flight on window blur as well as tab hide, using the same guarded path and requiring an explicit resume after focus returns.
 - Contain Tab navigation inside the active pause or settings panel and release the focus trap during runtime teardown.
 - Improve menu keyboard flow with modal semantics, heading focus on subpages, and focus restoration after closing pause or settings.

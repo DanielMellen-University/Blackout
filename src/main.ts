@@ -257,7 +257,12 @@ async function boot(): Promise<void> {
     setFlightKeyCapture(live)
   }
 
-  const resetFlight = (newWorld: boolean): void => {
+  const showBanner = (text: string, ms = 2800): void => {
+    banner = text
+    bannerUntil = performance.now() + ms
+  }
+
+  const resetFlight = (newWorld: boolean, briefing = false): void => {
     results.hide()
     if (newWorld) {
       world.reseed()
@@ -279,6 +284,7 @@ async function boot(): Promise<void> {
     prevLightning = false
     prevWarning = null
     time.reset()
+    if (briefing) showBanner('SPOOL ENGINE / W TO ROTATE', 5000)
   }
 
   const startGame = (): void => {
@@ -291,7 +297,7 @@ async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    resetFlight(false)
+    resetFlight(false, true)
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')
@@ -333,21 +339,21 @@ async function boot(): Promise<void> {
   })
   uiListeners.add(document.getElementById('menu-retry'), 'click', () => {
     menu.close()
-    resetFlight(false)
+    resetFlight(false, true)
     syncInputContext()
   })
   uiListeners.add(document.getElementById('menu-new-world'), 'click', () => {
     menu.close()
-    resetFlight(true)
+    resetFlight(true, true)
     syncInputContext()
   })
   uiListeners.add(document.getElementById('menu-quit'), 'click', () => quitToTitle())
   uiListeners.add(document.getElementById('btn-retry'), 'click', () => {
-    resetFlight(false)
+    resetFlight(false, true)
     syncInputContext()
   })
   uiListeners.add(document.getElementById('btn-new-world'), 'click', () => {
-    resetFlight(true)
+    resetFlight(true, true)
     syncInputContext()
   })
   uiListeners.add(document.getElementById('menu-fullscreen'), 'click', () => {
@@ -384,11 +390,11 @@ async function boot(): Promise<void> {
     if (results.open && playing) {
       if (e.code === 'KeyR') {
         e.preventDefault()
-        resetFlight(true)
+        resetFlight(true, true)
         syncInputContext()
       } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
         e.preventDefault()
-        resetFlight(false)
+        resetFlight(false, true)
         syncInputContext()
       }
       return
@@ -434,11 +440,6 @@ async function boot(): Promise<void> {
   window.addEventListener('resize', onResize)
   applyResize()
 
-  const showBanner = (text: string, ms = 2800): void => {
-    banner = text
-    bannerUntil = performance.now() + ms
-  }
-
   let previousFrame = 0
   const tick = (nowMs: number): void => {
     if (disposed) return
@@ -464,7 +465,7 @@ async function boot(): Promise<void> {
 
       if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
       if (input.consumeWeatherCycle()) world.cycleWeather()
-      if (input.consumeReset()) resetFlight(true)
+      if (input.consumeReset()) resetFlight(true, true)
       if (input.consumeAudioToggle()) {
         audioMuted = !audioMuted
         if (audioMuted) audio.silence()
