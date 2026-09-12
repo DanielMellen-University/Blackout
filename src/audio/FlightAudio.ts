@@ -138,7 +138,8 @@ export class FlightAudio {
     const eng = Math.min(1, engLevel)
 
     // Wind starts after a taxi crawl, strong by cruise (~400+ kts).
-    const windT = clamp01((opts.speed - 18) / 280)
+    const speed = Number.isFinite(opts.speed) ? Math.max(0, opts.speed) : 0
+    const windT = clamp01((speed - 18) / 280)
     const wind = windT * windT
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
     const whine = engineWhineLevel(opts.throttle, boost)
@@ -151,7 +152,8 @@ export class FlightAudio {
     const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine
 
     const now = ctx.currentTime
-    const tau = Math.max(0.04, Math.min(0.12, opts.dt * 3))
+    const dt = Number.isFinite(opts.dt) && opts.dt > 0 ? Math.min(opts.dt, 0.25) : 1 / 60
+    const tau = Math.max(0.04, Math.min(0.12, dt * 3))
 
     this.scheduleTarget(this.master.gain, masterTarget, now, tau)
     this.scheduleTarget(this.engineGain.gain, engTarget, now, tau)
@@ -507,7 +509,9 @@ export function shouldScheduleAudioTarget(
   target: number,
   epsilon = 0.001,
 ): boolean {
+  if (!Number.isFinite(target)) return false
   if (previous === undefined) return true
+  if (!Number.isFinite(previous)) return true
   const delta = Math.abs(previous - target)
   return epsilon <= 0 ? delta > 0 : delta >= epsilon
 }
@@ -544,6 +548,7 @@ export function precipitationAudioLevel(rain: number, snow: number): number {
 }
 
 function clamp01(v: number): number {
+  if (!Number.isFinite(v)) return 0
   return v < 0 ? 0 : v > 1 ? 1 : v
 }
 

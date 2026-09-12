@@ -61,6 +61,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Atmosphere weather, quality, update, and teardown calls now fail closed after disposal, preventing stale runtime paths from touching released sky, cloud, or precipitation resources.
 - Flight audio now recovers from a browser-closed context and ignores late resume, update, and cue calls after teardown.
 - One-shot flight cues and volume writes also bail out cleanly when a browser closes the audio context mid-frame, preventing dead-context exceptions during tab recovery.
+- Procedural audio now clamps malformed telemetry and rejects non-finite automation targets, keeping a bad frame silent instead of poisoning the Web Audio graph.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - HUD navigation, attitude, engine, and FPS paths now normalize malformed telemetry before it reaches DOM or CSS state, keeping one bad frame readable instead of showing `NaN`.
 - The flight HUD now carries a bounded body-axis G-load readout, with high and negative loads called out through restrained color cues and accessible meter values.

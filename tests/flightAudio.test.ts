@@ -32,6 +32,7 @@ describe('flight audio automation', () => {
     expect(shouldScheduleAudioTarget(undefined, 0.4)).toBe(true)
     expect(shouldScheduleAudioTarget(0.4, 0.401)).toBe(true)
     expect(shouldScheduleAudioTarget(0.4, 0.4004)).toBe(false)
+    expect(shouldScheduleAudioTarget(0.4, Number.NaN)).toBe(false)
   })
 
   it('treats non-positive epsilon as exact comparison', () => {
@@ -63,6 +64,7 @@ describe('flight audio automation', () => {
     expect(military).toBeGreaterThan(cruise)
     expect(boost).toBeGreaterThan(military)
     expect(boost).toBeLessThanOrEqual(1.3)
+    expect(enginePlaybackRate(Number.NaN, false)).toBeCloseTo(.72)
   })
 
   it('adds a smooth, bounded turbine whine above idle', () => {
@@ -73,6 +75,7 @@ describe('flight audio automation', () => {
     expect(engineWhineLevel(1, true)).toBe(1)
     expect(engineWhineLevel(2, true)).toBeLessThanOrEqual(1)
     expect(engineWhineLevel(-1, true)).toBe(0)
+    expect(engineWhineLevel(Number.NaN, true)).toBe(0)
   })
 
   it('keeps precipitation ambience subtle and bounded', () => {
@@ -81,6 +84,7 @@ describe('flight audio automation', () => {
     expect(precipitationAudioLevel(0, 1)).toBeCloseTo(0.18)
     expect(precipitationAudioLevel(4, 4)).toBeLessThanOrEqual(1)
     expect(precipitationAudioLevel(-1, -1)).toBe(0)
+    expect(precipitationAudioLevel(Number.NaN, Number.NaN)).toBe(0)
   })
 
   it('muffles external wind and precipitation inside the cockpit', () => {
