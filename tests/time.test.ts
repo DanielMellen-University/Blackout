@@ -52,6 +52,31 @@ describe('Time', () => {
     expect(second.steps).toBe(1)
   })
 
+  it('ignores malformed and backwards RAF timestamps without poisoning timing', () => {
+    const time = new Time()
+    time.beginFrame(100)
+    const malformed = time.beginFrame(Number.NaN)
+    expect(malformed.steps).toBe(0)
+    expect(malformed.frameDt).toBe(0)
+    expect(Number.isFinite(malformed.alpha)).toBe(true)
+
+    const backwards = time.beginFrame(50)
+    expect(backwards.frameDt).toBe(0)
+    expect(backwards.steps).toBe(0)
+    const recovered = time.beginFrame(116)
+    expect(recovered.frameDt).toBeCloseTo(0.016, 6)
+    expect(Number.isFinite(time.fps)).toBe(true)
+  })
+
+  it('keeps skipped frames monotonic when the timestamp is invalid', () => {
+    const time = new Time()
+    time.beginFrame(100)
+    time.skipFrame(Number.NaN)
+    const frame = time.beginFrame(116)
+    expect(frame.frameDt).toBeCloseTo(0.016, 6)
+    expect(frame.steps).toBe(0)
+  })
+
   it('skips world streaming on static non-flight frames', () => {
     expect(shouldAdvanceWorld(false, 0, 0)).toBe(false)
     expect(shouldAdvanceWorld(false, 0, 0.016)).toBe(true)

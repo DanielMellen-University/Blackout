@@ -49,6 +49,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The runway PAPI now changes from red to white with the aircraft's real glide angle, while fly-bys hold a neutral two-white/two-red pattern.
 - PAPI brightness follows the day/night atmosphere, staying restrained in daylight and readable during night approaches.
 - Crash fireball updates resolve one shared impact-point ground sample per frame instead of querying terrain once per pooled particle, keeping the explosion cheap on steep streamed terrain.
+- Fixed-step timing now ignores malformed or backwards animation timestamps, preventing a bad browser frame from poisoning simulation interpolation or the FPS readout.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.

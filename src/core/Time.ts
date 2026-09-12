@@ -70,16 +70,21 @@ export class Time {
    * Call once per animation frame while the sim is live.
    */
   beginFrame(nowMs: number): FrameTiming {
+    const safeNow = Number.isFinite(nowMs) ? nowMs : (this.lastMs ?? 0)
     if (this.lastMs === null) {
-      this.lastMs = nowMs
+      this.lastMs = safeNow
       this.frame.frameDt = 0
       this.frame.steps = 0
       this.frame.alpha = 1
       return this.frame
     }
 
-    let frameDt = (nowMs - this.lastMs) / 1000
-    this.lastMs = nowMs
+    // RAF timestamps should be monotonic, but a test harness, restored page,
+    // or browser clock edge can still hand us a bad value. Never let one
+    // malformed frame turn the accumulator or FPS estimate into NaN/Infinity.
+    const monotonicNow = Math.max(this.lastMs, safeNow)
+    const frameDt = Math.max(0, (monotonicNow - this.lastMs) / 1000)
+    this.lastMs = monotonicNow
 
     if (frameDt > SUSPEND_AFTER) {
       // Tab hide / long hitch: do not catch up a multi-second stall.
@@ -119,10 +124,14 @@ export class Time {
    */
   skipFrame(nowMs: number): void {
     if (this.lastMs !== null) {
-      const frameDt = (nowMs - this.lastMs) / 1000
+      const safeNow = Number.isFinite(nowMs) ? nowMs : this.lastMs
+      const monotonicNow = Math.max(this.lastMs, safeNow)
+      const frameDt = (monotonicNow - this.lastMs) / 1000
       if (frameDt > 0 && frameDt <= SUSPEND_AFTER) this.noteFps(frameDt)
+      this.lastMs = monotonicNow
+    } else if (Number.isFinite(nowMs)) {
+      this.lastMs = nowMs
     }
-    this.lastMs = nowMs
     this.accum = 0
   }
 
@@ -137,6 +146,7 @@ export class Time {
   }
 
   private noteFps(frameDt: number): void {
+    if (!Number.isFinite(frameDt) || frameDt <= 0) return
     this.fpsSmoothed = this.fpsSmoothed * 0.9 + (1 / Math.max(frameDt, 1e-6)) * 0.1
   }
 }
