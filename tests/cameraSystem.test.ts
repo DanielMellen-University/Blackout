@@ -6,6 +6,7 @@ import {
   cameraBoostOffsetInto,
   cameraShakeOffset,
   cameraShakeOffsetInto,
+  cameraModeCue,
   CameraSystem,
   resolveExternalSpeedFraming,
   resolveExternalSpeedFramingInto,
@@ -18,6 +19,8 @@ describe('external camera framing', () => {
 
   it('toggles only between external and cockpit views', () => {
     expect(CAMERA_MODES).toEqual(['chase', 'cockpit'])
+    expect(cameraModeCue('chase')).toBe('EXTERNAL VIEW')
+    expect(cameraModeCue('cockpit')).toBe('COCKPIT VIEW')
   })
 
   it('keeps the aircraft readable at maximum speed', () => {

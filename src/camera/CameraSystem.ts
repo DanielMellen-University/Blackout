@@ -71,6 +71,11 @@ const SPEED_DIST_STRETCH = 0.14
 /** How fast FOV/distance juice tracks airspeed. */
 const JUICE_STIFFNESS = 3.2
 
+/** Short feedback copy used when the pilot toggles between flight views. */
+export function cameraModeCue(mode: CameraMode): string {
+  return mode === 'cockpit' ? 'COCKPIT VIEW' : 'EXTERNAL VIEW'
+}
+
 /**
  * Stable external chase camera plus a dedicated cockpit view.
  */

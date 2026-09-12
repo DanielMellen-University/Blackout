@@ -26,6 +26,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The title screen keeps the takeoff brief visible and announces when the airfield is ready for launch.
 - First-person mode now renders its camera-attached canopy rails, brow, and coaming while removing them cleanly on teardown.
 - Cockpit view now projects a restrained velocity-vector marker from the jet's real motion, making slips and climbs readable without adding scene geometry.
+- Toggling `C` now announces the active cockpit or external view with a short in-flight cue.
 - The completion card is a proper keyboard-contained dialog and returns focus to the flight canvas when a run is restarted.
 - Completion results now show the gate, time, and landing contributions behind the total score.
 - Play, Retry, New World, and `R` now open with a short `SPOOL ENGINE / W TO ROTATE` briefing so takeoff has an immediate readable handoff.

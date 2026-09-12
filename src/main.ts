@@ -9,7 +9,11 @@ import {
   WebGLRenderer,
 } from 'three'
 import { Aircraft, disposeAircraftObject } from './aircraft/Aircraft'
-import { CameraSystem, TOUCHDOWN_IMPULSE } from './camera/CameraSystem'
+import {
+  cameraModeCue,
+  CameraSystem,
+  TOUCHDOWN_IMPULSE,
+} from './camera/CameraSystem'
 import {
   writeFlightPathMarker,
   type FlightPathMarkerPosition,
@@ -479,7 +483,10 @@ async function boot(): Promise<void> {
       simDt = steps * stepDt
       const dt = stepDt
 
-      if (input.consumeCameraToggle()) cameras.toggleMode(aircraft)
+      if (input.consumeCameraToggle()) {
+        const mode = cameras.toggleMode(aircraft)
+        showBanner(cameraModeCue(mode), 1200)
+      }
       if (input.consumeWeatherCycle()) world.cycleWeather()
       if (input.consumeReset()) resetFlight(true, true)
       if (input.consumeAudioToggle()) {
