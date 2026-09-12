@@ -645,7 +645,12 @@ async function boot(): Promise<void> {
         challenge.update(dt, aircraft.speed)
       }
 
-      world.mission.tick(nowMs)
+      world.mission.tick(
+        nowMs,
+        aircraft.displayPosition.x,
+        aircraft.displayPosition.y,
+        aircraft.displayPosition.z,
+      )
       if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
         banner = null
       }

@@ -183,7 +183,7 @@ export class MissionSystem {
   }
 
   /** Pulse the live ring and hold the far-visible beacon on it. */
-  tick(nowMs?: number): void {
+  tick(nowMs?: number, playerX?: number, playerY?: number, playerZ?: number): void {
     const now = this.resolvePresentationTime(nowMs, nowMs === undefined)
     if (this.passFlash?.visible) {
       const progress = (now - this.passFlashStartedAt) / 560
@@ -218,7 +218,8 @@ export class MissionSystem {
     }
     this.liveMat.opacity = 0.85 + near * 0.12
     const pulse = 0.42 + (Math.sin(now * 0.006) + 1) * 0.18
-    this.beaconMat.opacity = pulse + near * 0.18
+    const distance = finiteDistanceToGate(playerX, playerY, playerZ, g.pos)
+    this.beaconMat.opacity = (pulse + near * 0.18) * gateBeaconDistanceOpacity(distance)
   }
 
   update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'complete' {
@@ -405,6 +406,16 @@ export class MissionSystem {
   }
 }
 
+function finiteDistanceToGate(
+  x: number | undefined,
+  y: number | undefined,
+  z: number | undefined,
+  gate: Vector3,
+): number {
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return Number.NaN
+  return Math.hypot(x! - gate.x, y! - gate.y, z! - gate.z)
+}
+
 /** Bounded ring scale for a completed checkpoint flash. */
 export function missionPassFlashScale(progress: number): number {
   const t = clamp01(progress)
@@ -429,6 +440,13 @@ export function gateProximityEmphasis(dist: number, gateRadius: number): number 
   const inner = gateRadius * 1.15
   if (dist <= inner) return 1
   return 1 - (dist - inner) / (outer - inner)
+}
+
+/** Keep the tall gate beacon quiet at close range while preserving far guidance. */
+export function gateBeaconDistanceOpacity(distance: number): number {
+  if (!Number.isFinite(distance)) return 1
+  const safeDistance = Math.max(0, distance)
+  return 0.24 + MathUtils.smoothstep(safeDistance, 80, 420) * 0.76
 }
 
 function clamp01(value: number): number {
