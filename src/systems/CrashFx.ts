@@ -11,6 +11,7 @@ import {
 } from 'three'
 import { sampleGroundHeight } from '../world/ground'
 import { disposeObjectTree } from '../core/dispose'
+import type { RenderQuality } from '../core/RenderQuality'
 
 interface Bit {
   mesh: Mesh
@@ -49,6 +50,7 @@ export class CrashFx {
   private punch = 0
   private randomState = 1
   private disposed = false
+  private renderQuality: RenderQuality = 'balanced'
 
   constructor(scene: Scene) {
     this.root.name = 'CrashFx'
@@ -119,6 +121,12 @@ export class CrashFx {
     return this.punch
   }
 
+  /** Reduce transient particle pressure on constrained render presets. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    this.renderQuality = quality
+  }
+
   get bloom(): number {
     if (!this.alive) return 0
     return Math.max(0, 1 - this.age * 3.6)
@@ -140,24 +148,29 @@ export class CrashFx {
 
     _inherit.copy(vel).multiplyScalar(0.22)
 
-    for (let i = 0; i < 8; i++) {
+    const low = this.renderQuality === 'low'
+    const bloomCount = low ? 4 : 8
+    const smokeCount = low ? 7 : 14
+    const primaryBallCount = low ? 12 : 22
+    const secondaryBallCount = low ? 4 : 10
+    for (let i = 0; i < bloomCount; i++) {
       this.spawnBloom(this.bloomPool[i]!, _inherit)
     }
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < smokeCount; i++) {
       this.spawnSmoke(this.smokePool[i]!, _inherit)
     }
     // The show: burning globes on real arcs
-    const n = 22
+    const n = primaryBallCount
     for (let i = 0; i < n; i++) {
       const yaw = (i / n) * Math.PI * 2 + (this.nextRandom() - 0.5) * 0.45
       const pitch = 0.28 + this.nextRandom() * 0.72
       const speed = 22 + this.nextRandom() * 38
       this.spawnBall(this.ballPool[i]!, yaw, pitch, speed, _inherit)
     }
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < secondaryBallCount; i++) {
       const yaw = this.nextRandom() * Math.PI * 2
       const pitch = 0.15 + this.nextRandom() * 0.5
-      this.spawnBall(this.ballPool[22 + i]!, yaw, pitch, 14 + this.nextRandom() * 22, _inherit)
+      this.spawnBall(this.ballPool[primaryBallCount + i]!, yaw, pitch, 14 + this.nextRandom() * 22, _inherit)
     }
   }
 

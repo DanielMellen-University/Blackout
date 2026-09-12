@@ -123,6 +123,7 @@ async function boot(): Promise<void> {
 
   let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
   let applyAircraftQuality: ((quality: RenderQuality) => void) | null = null
+  let applyEffectsQuality: ((quality: RenderQuality) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
   let shadowUpdateElapsed = SHADOW_UPDATE_STEP
@@ -135,6 +136,7 @@ async function boot(): Promise<void> {
     renderer.setPixelRatio(resolution.ratio)
     applyShadowQuality?.(profile.shadowMapSize)
     applyAircraftQuality?.(next)
+    applyEffectsQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -209,6 +211,11 @@ async function boot(): Promise<void> {
   )
   const crashFx = new CrashFx(world.scene)
   const landingFx = new LandingFx(world.scene)
+  applyEffectsQuality = (quality): void => {
+    crashFx.setRenderQuality(quality)
+    landingFx.setRenderQuality(quality)
+  }
+  applyEffectsQuality(renderQuality)
   const audio = new FlightAudio()
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)

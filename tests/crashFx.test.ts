@@ -19,6 +19,14 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('trims transient particles on Low while preserving the pooled effect', () => {
+    const fx = new CrashFx(new Scene())
+    fx.setRenderQuality('low')
+    fx.trigger(new Vector3(), new Vector3(4, -8, 12))
+    expect(fx.activeCount).toBe(27)
+    fx.dispose()
+  })
+
   it('hides the pooled effect cleanly when reset', () => {
     const fx = new CrashFx(new Scene())
     fx.trigger(new Vector3(), new Vector3())

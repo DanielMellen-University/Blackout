@@ -23,6 +23,14 @@ describe('landing scrub pooling', () => {
     fx.dispose()
   })
 
+  it('trims touchdown particles on Low while preserving the scrub pool', () => {
+    const fx = new LandingFx(new Scene())
+    fx.setRenderQuality('low')
+    fx.trigger(new Vector3(), new Vector3(42, -3, 0), 1)
+    expect(fx.activeCount).toBe(12)
+    fx.dispose()
+  })
+
   it('hides pooled scrub cleanly when reset', () => {
     const fx = new LandingFx(new Scene())
     fx.trigger(new Vector3(), new Vector3(22, -3, 0), 1)

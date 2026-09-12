@@ -46,6 +46,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Reduced-motion mode now also freezes the aircraft's exhaust pulse, Mach-diamond shimmer, and navigation-light breathing while retaining static engine and lighting cues.
 - The cockpit velocity-vector marker now eases between screen positions for steadier hard-turn guidance, while Low quality and reduced-motion keep it immediate and transition-free.
 - Cockpit rails, brow, and coaming now freeze their authored local transforms, reducing camera-attached matrix work while keeping the camera and aircraft pose fully live.
+- Low graphics now trim secondary crash fireballs, smoke, and landing dust while preserving the pooled core impact cues; Balanced and High retain the full transient effects.
 - Graphics presets also scale the instanced cloud draw ranges and skip hidden cloud updates, so Low reduces atmospheric GPU and CPU cost without removing the weathered sky entirely.
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.

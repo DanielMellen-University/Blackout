@@ -11,6 +11,7 @@ import {
 } from 'three'
 import { sampleGroundHeight } from '../world/ground'
 import { disposeObjectTree } from '../core/dispose'
+import type { RenderQuality } from '../core/RenderQuality'
 
 interface Puff {
   mesh: Mesh
@@ -43,6 +44,7 @@ export class LandingFx {
   private alive = false
   private randomState = 1
   private disposed = false
+  private renderQuality: RenderQuality = 'balanced'
 
   constructor(scene: Scene) {
     this.root.name = 'LandingFx'
@@ -74,6 +76,12 @@ export class LandingFx {
     return this.active.length
   }
 
+  /** Reduce transient particle pressure on constrained render presets. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    this.renderQuality = quality
+  }
+
   /** Burst on airborne-to-ground contact. Intensity 0-1. */
   trigger(pos: Vector3, vel: Vector3, intensity = 1): void {
     if (this.disposed) return
@@ -90,14 +98,15 @@ export class LandingFx {
     else _fwd.set(0, 0, 1)
     _side.set(_fwd.z, 0, -_fwd.x)
 
-    const dustN = Math.min(POOL_DUST, 6 + Math.floor(strength * 8))
+    const low = this.renderQuality === 'low'
+    const dustN = Math.min(POOL_DUST, low ? 3 + Math.floor(strength * 4) : 6 + Math.floor(strength * 8))
     for (let i = 0; i < dustN; i++) {
       const puff = this.nextIdle(this.dustPool)
       if (!puff) break
       this.spawnDust(puff, _fwd, _side, gs, strength, true)
     }
 
-    const smokeN = Math.min(POOL_SMOKE, 3 + Math.floor(strength * 5))
+    const smokeN = Math.min(POOL_SMOKE, low ? 2 + Math.floor(strength * 3) : 3 + Math.floor(strength * 5))
     for (let i = 0; i < smokeN; i++) {
       const puff = this.nextIdle(this.smokePool)
       if (!puff) break
