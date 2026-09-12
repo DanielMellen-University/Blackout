@@ -238,7 +238,9 @@ export class CameraSystem {
   }
 
   resize(width: number, height: number): void {
-    this.camera.aspect = width / height
+    const aspect = cameraViewportAspect(width, height)
+    if (Math.abs(this.camera.aspect - aspect) < 1e-6) return
+    this.camera.aspect = aspect
     this.camera.updateProjectionMatrix()
   }
 
@@ -611,6 +613,13 @@ export class CameraSystem {
     this.distance = MathUtils.clamp(this.distance * zoom, cfg.minDist, cfg.maxDist)
     this.bumpInput()
   }
+}
+
+/** Return a finite projection aspect even during zero-sized or malformed resizes. */
+export function cameraViewportAspect(width: number, height: number): number {
+  const safeWidth = Number.isFinite(width) && width > 0 ? width : 1
+  const safeHeight = Number.isFinite(height) && height > 0 ? height : 1
+  return safeWidth / safeHeight
 }
 
 /** Distance-aware ground-occlusion probes for the external chase rig. */

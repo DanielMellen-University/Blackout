@@ -8,6 +8,7 @@ import {
   cameraShakeOffsetInto,
   cameraOcclusionSampleCount,
   cameraModeCue,
+  cameraViewportAspect,
   CAMERA_FAR,
   cameraRelativeBearing,
   CameraSystem,
@@ -88,6 +89,13 @@ describe('external camera framing', () => {
     expect(cameras.camera.far).toBeGreaterThan(16_800)
     expect(cameras.camera.far).toBeLessThan(30_000)
     cameras.dispose()
+  })
+
+  it('keeps malformed viewport sizes out of the projection matrix', () => {
+    expect(cameraViewportAspect(1280, 720)).toBeCloseTo(1280 / 720)
+    expect(cameraViewportAspect(0, 0)).toBe(1)
+    expect(cameraViewportAspect(Number.NaN, 720)).toBeCloseTo(1 / 720)
+    expect(cameraViewportAspect(1280, Infinity)).toBeCloseTo(1280)
   })
 
   it('keeps the aircraft readable at maximum speed', () => {
