@@ -20,8 +20,9 @@ export class GameMenu {
   private readonly fsState: HTMLElement
   private readonly btnClose: HTMLElement
   private returnFocus: HTMLElement | null = null
+  private disposed = false
   private readonly onKeyDown = (event: KeyboardEvent): void => {
-    if (!this.open || event.key !== 'Tab') return
+    if (this.disposed || !this.open || event.key !== 'Tab') return
     const focusable = this.activeFocusable()
     if (focusable.length === 0) return
 
@@ -53,7 +54,7 @@ export class GameMenu {
   }
 
   get open(): boolean {
-    return !this.root.hidden
+    return !this.disposed && !this.root.hidden
   }
 
   get paused(): boolean {
@@ -61,6 +62,7 @@ export class GameMenu {
   }
 
   showTitlePage(page: 'controls' | 'info'): void {
+    if (this.disposed) return
     this.rememberFocus()
     this.mode = 'title'
     this.root.hidden = false
@@ -69,6 +71,7 @@ export class GameMenu {
   }
 
   togglePause(): void {
+    if (this.disposed) return
     if (this.mode === 'pause' && this.open) {
       this.handleEscape()
       return
@@ -77,7 +80,7 @@ export class GameMenu {
   }
 
   handleEscape(): void {
-    if (!this.open) return
+    if (this.disposed || !this.open) return
     if (this.view !== 'root') {
       this.showView('root')
       this.syncChrome()
@@ -87,6 +90,7 @@ export class GameMenu {
   }
 
   openPause(): void {
+    if (this.disposed) return
     this.rememberFocus()
     this.mode = 'pause'
     this.root.hidden = false
@@ -96,6 +100,7 @@ export class GameMenu {
   }
 
   close(): void {
+    if (this.disposed) return
     this.root.hidden = true
     this.view = 'root'
     const target = this.returnFocus
@@ -107,11 +112,14 @@ export class GameMenu {
 
   /** Release the menu-owned keyboard trap during runtime teardown. */
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.root.removeEventListener('keydown', this.onKeyDown)
     this.returnFocus = null
   }
 
   back(): void {
+    if (this.disposed) return
     if (this.view !== 'root') {
       this.showView('root')
       this.syncChrome()
@@ -122,6 +130,7 @@ export class GameMenu {
   }
 
   showView(view: MenuView): void {
+    if (this.disposed) return
     this.view = view
     this.panelRoot.hidden = view !== 'root'
     this.panelControls.hidden = view !== 'controls'
@@ -130,6 +139,7 @@ export class GameMenu {
   }
 
   syncFullscreen(): void {
+    if (this.disposed) return
     const on = !!document.fullscreenElement
     this.fsState.textContent = on ? 'ON' : 'OFF'
     this.btnFs.setAttribute('aria-pressed', on ? 'true' : 'false')

@@ -13,8 +13,9 @@ export class RunResults {
   private readonly scoreDetail: HTMLElement
   private readonly best: HTMLElement
   private returnFocus: HTMLElement | null = null
+  private disposed = false
   private readonly onKeyDown = (event: KeyboardEvent): void => {
-    if (!this.open || event.key !== 'Tab') return
+    if (this.disposed || !this.open || event.key !== 'Tab') return
     const focusable = this.activeFocusable()
     if (focusable.length === 0) return
 
@@ -45,10 +46,11 @@ export class RunResults {
   }
 
   get open(): boolean {
-    return !this.root.hidden
+    return !this.disposed && !this.root.hidden
   }
 
   show(result: ChallengeResult): void {
+    if (this.disposed) return
     const active = document.activeElement
     this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
@@ -72,6 +74,7 @@ export class RunResults {
   }
 
   hide(): void {
+    if (this.disposed) return
     this.root.hidden = true
     const target = this.returnFocus
     this.returnFocus = null
@@ -82,6 +85,8 @@ export class RunResults {
 
   /** Release the results-owned keyboard trap during runtime teardown. */
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.root.removeEventListener('keydown', this.onKeyDown)
     this.returnFocus = null
   }

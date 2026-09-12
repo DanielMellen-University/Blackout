@@ -148,6 +148,10 @@ describe('run results focus flow', () => {
     const afterDispose = { key: 'Tab', shiftKey: false, preventDefault: vi.fn() }
     fixture.root.dispatch('keydown', afterDispose)
     expect(afterDispose.preventDefault).not.toHaveBeenCalled()
+    results.dispose()
+    results.show(result)
+    results.hide()
+    expect(results.open).toBe(false)
     vi.unstubAllGlobals()
   })
 })
