@@ -25,6 +25,7 @@ import {
   lockGameKeyboard,
   lockKeysOnly,
   setFlightKeyCapture,
+  shouldPauseForFullscreenExit,
   shouldReenterFullscreen,
   suppressBrowserUi,
   toggleGameFullscreen,
@@ -495,6 +496,17 @@ async function boot(): Promise<void> {
 
   const onFullscreenChange = (): void => {
     menu.syncFullscreen()
+    if (shouldPauseForFullscreenExit(
+      !!document.fullscreenElement,
+      playing,
+      menu.paused,
+      results.open,
+    )) {
+      menu.openPause()
+      input.clearQueued()
+      time.reset()
+      syncInputContext()
+    }
     if (!document.fullscreenElement && shouldReenterFullscreen(
       false,
       playing && !menu.paused && !results.open,

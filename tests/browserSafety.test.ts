@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   setFlightKeyCapture,
+  shouldPauseForFullscreenExit,
   shouldReenterFullscreen,
   suppressBrowserUi,
 } from '../src/core/suppressBrowserUi'
@@ -36,6 +37,14 @@ describe('browser fullscreen safety', () => {
     expect(shouldReenterFullscreen(false, true)).toBe(true)
     expect(shouldReenterFullscreen(true, true)).toBe(false)
     expect(shouldReenterFullscreen(false, false)).toBe(false)
+  })
+
+  it('pauses only when fullscreen is lost during active flight', () => {
+    expect(shouldPauseForFullscreenExit(false, true, false, false)).toBe(true)
+    expect(shouldPauseForFullscreenExit(false, true, true, false)).toBe(false)
+    expect(shouldPauseForFullscreenExit(false, true, false, true)).toBe(false)
+    expect(shouldPauseForFullscreenExit(true, true, false, false)).toBe(false)
+    expect(shouldPauseForFullscreenExit(false, false, false, false)).toBe(false)
   })
 
   it('returns an idempotent browser-UI teardown that restores host state', () => {

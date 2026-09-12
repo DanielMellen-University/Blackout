@@ -422,3 +422,13 @@ export function tryReenterFullscreenFromClick(): void {
 export function shouldReenterFullscreen(isFullscreen: boolean, flightLive: boolean): boolean {
   return flightLive && !isFullscreen
 }
+
+/** Pause active flight when fullscreen disappears outside the pause menu. */
+export function shouldPauseForFullscreenExit(
+  isFullscreen: boolean,
+  flightLive: boolean,
+  menuPaused: boolean,
+  resultsOpen: boolean,
+): boolean {
+  return !isFullscreen && flightLive && !menuPaused && !resultsOpen
+}

@@ -25,6 +25,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Tab and Shift+Tab are contained inside the active settings or pause panel, then released during runtime teardown.
 - Losing browser-window focus now pauses active flight safely, with no automatic resume when focus returns.
 - If the browser drops fullscreen during active flight, a short banner explains how to click the canvas and recover it.
+- If fullscreen is lost unexpectedly during active flight, the game now pauses immediately so the aircraft cannot continue flying unattended.
 - The title screen keeps the takeoff brief visible and announces when the airfield is ready for launch.
 - The chase rig is seeded before the title frame, keeping the F-35 hero composition present before Play is pressed.
 - The title overlay keeps the runway and F-35 silhouette visible behind the briefing so the first screen still feels like a flight game.
