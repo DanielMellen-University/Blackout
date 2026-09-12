@@ -164,6 +164,10 @@ async function boot(): Promise<void> {
 
   const cameras = new CameraSystem(canvas)
   cameras.attachToScene(world.scene)
+  // Seed the chase rig before the first title frame. Without an explicit pose
+  // here, the paused title loop has no render delta to drive CameraSystem and
+  // the hero camera stays at the origin until Play is pressed.
+  cameras.setMode('chase', aircraft)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null

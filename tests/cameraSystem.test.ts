@@ -30,6 +30,25 @@ describe('external camera framing', () => {
     expect(cameraModeCue('cockpit')).toBe('COCKPIT VIEW')
   })
 
+  it('seeds the external rig immediately when an aircraft is supplied', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+
+    cameras.setMode('chase', aircraft)
+
+    expect(cameras.camera.position.distanceTo(aircraft.displayPosition)).toBeGreaterThan(5)
+    expect(cameras.camera.position.y).toBeGreaterThan(aircraft.displayPosition.y - 1)
+    cameras.dispose()
+  })
+
   it('keeps the aircraft readable at maximum speed', () => {
     const framing = resolveExternalSpeedFraming(17, 60, 10, 1)
     expect(framing.distance).toBeCloseTo(19.38)
