@@ -16,6 +16,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
+- Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
 - Crash camera impulse uses smooth bounded multi-frequency shake instead of harsh per-frame white-noise jitter.
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.
 - Graphics quality is selectable from the pause menu. Low disables shadow-map work and caps adaptive pixel density, while Balanced and High retain progressively larger budgets. The choice is saved locally.

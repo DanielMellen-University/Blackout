@@ -117,6 +117,7 @@ export class CameraSystem {
   private boostSway = 0
   private boostPhase = 0
   private readonly boostOffset = { x: 0, y: 0, z: 0 }
+  private reducedMotion = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -128,6 +129,19 @@ export class CameraSystem {
 
   get modeLabel(): string {
     return CAMERA_MODE_LABELS[this.mode]
+  }
+
+  /** Honor the browser's reduced-motion preference for camera-only effects. */
+  setReducedMotion(enabled: boolean): void {
+    this.reducedMotion = enabled
+    if (enabled) {
+      this.shake = 0
+      this.boostSway = 0
+    }
+  }
+
+  get prefersReducedMotion(): boolean {
+    return this.reducedMotion
   }
 
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
@@ -152,6 +166,7 @@ export class CameraSystem {
 
   /** Brief view punch (crash boom). */
   impulse(amount = 1): void {
+    if (this.reducedMotion) return
     this.shake = Math.max(this.shake, amount)
     if (amount > 0) this.shakePhase = (this.shakePhase + amount * 1.7) % (Math.PI * 2)
   }
@@ -404,6 +419,10 @@ export class CameraSystem {
   }
 
   private applyShake(dt: number): void {
+    if (this.reducedMotion) {
+      this.shake = 0
+      return
+    }
     if (this.shake <= 0.002) {
       this.shake = 0
       return
@@ -417,6 +436,10 @@ export class CameraSystem {
   }
 
   private applyBoostSway(active: boolean, dt: number): void {
+    if (this.reducedMotion) {
+      this.boostSway = 0
+      return
+    }
     const target = active ? 1 : 0
     this.boostSway = dt <= 0
       ? target

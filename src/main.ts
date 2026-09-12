@@ -119,6 +119,15 @@ async function boot(): Promise<void> {
   await aircraft.tryLoadModel('/models/f35.glb')
 
   const cameras = new CameraSystem(canvas)
+  const reducedMotionQuery = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : null
+  const syncReducedMotion = (): void => {
+    cameras.setReducedMotion(!!reducedMotionQuery?.matches)
+  }
+  const onReducedMotionChange = (): void => syncReducedMotion()
+  reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
+  syncReducedMotion()
   const input = new InputManager()
   const time = new Time()
   const hud = new HUD()
@@ -151,6 +160,7 @@ async function boot(): Promise<void> {
     disposed = true
     releaseBrowserUi()
     input.dispose()
+    reducedMotionQuery?.removeEventListener?.('change', onReducedMotionChange)
     cameras.dispose()
     audio.dispose()
     document.removeEventListener('visibilitychange', onVisibilityChange)

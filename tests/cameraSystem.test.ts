@@ -78,6 +78,27 @@ describe('external camera framing', () => {
     expect(TOUCHDOWN_IMPULSE).toBeLessThanOrEqual(0.2)
   })
 
+  it('suppresses camera shake when reduced motion is enabled', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+    cameras.setReducedMotion(true)
+    cameras.update(aircraft, 0)
+    const before = cameras.camera.position.clone()
+    cameras.impulse(1)
+    cameras.update(aircraft, 0)
+    expect(cameras.prefersReducedMotion).toBe(true)
+    expect(cameras.camera.position).toEqual(before)
+    cameras.dispose()
+  })
+
   it('follows aircraft translation without accumulating speed lag', () => {
     const target = {
       addEventListener: vi.fn(),
