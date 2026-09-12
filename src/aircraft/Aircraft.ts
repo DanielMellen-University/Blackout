@@ -27,7 +27,7 @@ const _size = new Vector3()
 const _center = new Vector3()
 const _spawnQuat = new Quaternion()
 const _Y_UP = new Vector3(0, 1, 0)
-const AIRFRAME_NIGHT_EMISSIVE = 0x0b1822
+const AIRFRAME_NIGHT_EMISSIVE = 0x153244
 
 export type AircraftStatus = 'ok' | 'crashed' | 'landed'
 
@@ -608,7 +608,7 @@ export function navigationLightOpacity(timeMs: number): number {
 /** Cool panel fill strength, zero in daylight and capped at night. */
 export function nightAirframeEmissiveIntensity(daylight: number): number {
   const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
-  return (1 - safe) * 0.24
+  return (1 - safe) * 0.32
 }
 
 /** Small procedural Mach-diamond pulse used by the external exhaust plume. */

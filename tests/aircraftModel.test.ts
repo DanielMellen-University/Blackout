@@ -143,15 +143,15 @@ describe('rebuilt aircraft', () => {
 
   it('keeps the airframe readable at night without a daylight glow', () => {
     expect(nightAirframeEmissiveIntensity(1)).toBe(0)
-    expect(nightAirframeEmissiveIntensity(0)).toBeCloseTo(0.24)
-    expect(nightAirframeEmissiveIntensity(-1)).toBeCloseTo(0.24)
-    expect(nightAirframeEmissiveIntensity(Number.NaN)).toBeCloseTo(0.24)
+    expect(nightAirframeEmissiveIntensity(0)).toBeCloseTo(0.32)
+    expect(nightAirframeEmissiveIntensity(-1)).toBeCloseTo(0.32)
+    expect(nightAirframeEmissiveIntensity(Number.NaN)).toBeCloseTo(0.32)
 
     const aircraft = new Aircraft()
     const body = aircraft.mesh.getObjectByName('BlendedFuselage') as Mesh
     const material = body.material as MeshStandardMaterial
     aircraft.setNightReadability(0)
-    expect(material.emissiveIntensity).toBeCloseTo(0.24)
+    expect(material.emissiveIntensity).toBeCloseTo(0.32)
     aircraft.setNightReadability(1)
     expect(material.emissiveIntensity).toBeCloseTo(0)
   })
