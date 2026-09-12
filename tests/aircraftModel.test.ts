@@ -41,6 +41,17 @@ describe('rebuilt aircraft', () => {
     expect(((canopy as Mesh).material as MeshPhysicalMaterial).clearcoat).toBeGreaterThan(.8)
   })
 
+  it('freezes static airframe matrices without freezing animated presentation nodes', () => {
+    const model = createF35Model()
+    expect(model.getObjectByName('BlendedFuselage')!.matrixAutoUpdate).toBe(false)
+    expect(model.getObjectByName('GoldCanopy')!.matrixAutoUpdate).toBe(false)
+    expect(model.getObjectByName('landingGear')!.matrixAutoUpdate).toBe(true)
+    expect(model.getObjectByName('flaperonLeft')!.matrixAutoUpdate).toBe(true)
+    expect(model.getObjectByName('afterburner')!.matrixAutoUpdate).toBe(true)
+    expect(model.getObjectByName('nozzlePetal0')!.matrixAutoUpdate).toBe(true)
+    expect(model.getObjectByName('vaporTrailLeft')!.matrixAutoUpdate).toBe(true)
+  })
+
   it('retracts over multiple physics frames and extends again near the ground', () => {
     setContactHeightSampler(() => 0)
     const aircraft = new Aircraft()

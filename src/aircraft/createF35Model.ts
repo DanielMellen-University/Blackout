@@ -192,7 +192,43 @@ export function createF35Model(): Group {
       obj.receiveShadow = true
     }
   })
+  markPresentationNodes(root)
+  freezeStaticMatrices(root)
   return root
+}
+
+/** Keep only nodes touched by the flight presentation loop on live local matrices. */
+function markPresentationNodes(root: Group): void {
+  const dynamicRoots = [
+    'landingGear',
+    'flaperonLeft',
+    'flaperonRight',
+    'stabilatorLeft',
+    'stabilatorRight',
+    'tailLeft',
+    'tailRight',
+    'afterburner',
+    'vaporTrails',
+  ]
+  for (const name of dynamicRoots) {
+    root.getObjectByName(name)?.traverse((object) => {
+      object.userData.presentationDynamic = true
+    })
+  }
+  for (let i = 0; i < 18; i++) {
+    root.getObjectByName(`nozzlePetal${i}`)?.traverse((object) => {
+      object.userData.presentationDynamic = true
+    })
+  }
+}
+
+/** Freeze authored local transforms so the aircraft parent can move cheaply. */
+function freezeStaticMatrices(root: Group): void {
+  root.traverse((object) => {
+    if (object.userData.presentationDynamic) return
+    object.updateMatrix()
+    object.matrixAutoUpdate = false
+  })
 }
 
 /** Two shared-material wingtip vapor ribbons for fast, hard-bank turns. */
