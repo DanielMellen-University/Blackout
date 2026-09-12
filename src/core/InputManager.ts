@@ -1,6 +1,9 @@
 import { flightConfig } from '../aircraft/flightConfig'
 import { createDefaultControls, type ControlState } from './types'
 
+/** Keep controller latency below one frame budget without polling every step. */
+export const GAMEPAD_POLL_INTERVAL = 1 / 30
+
 /**
  * Maps keyboard into ControlState for arcade flight.
  * W/S pitch, A/D yaw, Q/E roll, Space boost, Shift/Ctrl throttle. Gear is automatic.
@@ -41,16 +44,13 @@ export class InputManager {
     this.target.removeEventListener('keyup', this.onKeyUp)
     this.target.removeEventListener('blur', this.onBlur)
     this.keys.clear()
-    this.gamepadPitch = 0
-    this.gamepadRoll = 0
-    this.gamepadYaw = 0
-    this.gamepadThrottle = 0
-    this.gamepadBoost = false
+    this.clearGamepadState()
   }
 
   sampleWithDt(dt: number): ControlState {
     const step = Math.max(0, Math.min(dt, 0.05))
-    this.updateGamepad(step)
+    if (this.flightLive) this.updateGamepad(step)
+    else this.clearGamepadState()
 
     this.controls.pitch = mergeAxis(this.axis('KeyW', 'KeyS'), this.gamepadPitch)
     this.controls.yaw = mergeAxis(this.axis('KeyD', 'KeyA'), this.gamepadYaw)
@@ -98,6 +98,7 @@ export class InputManager {
   /** Full key wipe — window blur only. */
   clearKeys(): void {
     this.keys.clear()
+    this.clearGamepadState()
     this.controls.boost = false
     this.controls.pitch = 0
     this.controls.roll = 0
@@ -137,12 +138,8 @@ export class InputManager {
   private updateGamepad(dt: number): void {
     this.gamepadPollIn -= dt
     if (this.gamepadPollIn > 0) return
-    this.gamepadPollIn = 0.1
-    this.gamepadPitch = 0
-    this.gamepadRoll = 0
-    this.gamepadYaw = 0
-    this.gamepadThrottle = 0
-    this.gamepadBoost = false
+    this.gamepadPollIn = GAMEPAD_POLL_INTERVAL
+    this.clearGamepadState()
 
     if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') return
     let pads: readonly (Gamepad | null)[]
@@ -224,7 +221,17 @@ export class InputManager {
 
   private onBlur = (): void => {
     this.keys.clear()
+    this.clearGamepadState()
     this.clearQueued()
+  }
+
+  private clearGamepadState(): void {
+    this.gamepadPollIn = 0
+    this.gamepadPitch = 0
+    this.gamepadRoll = 0
+    this.gamepadYaw = 0
+    this.gamepadThrottle = 0
+    this.gamepadBoost = false
   }
 }
 

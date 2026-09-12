@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Limit gamepad polling to a responsive 30 Hz live-flight budget, skip it on title and pause screens, and clear stale controller state on blur or teardown.
 - Add semantic altitude, vertical-speed, and airspeed meters plus cached polite/urgent HUD announcements so live telemetry remains accessible without extra per-frame DOM churn.
 - Drive the runway PAPI from the aircraft's runway-local glide angle, with cached four-lens material updates and a neutral pattern outside the approach corridor.
 - Drive the runway windsock from resolved weather wind direction and strength in runway-local space, with cached updates and no new draw calls.

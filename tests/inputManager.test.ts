@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { InputManager, normalizeGamepadAxis } from '../src/core/InputManager'
+import { GAMEPAD_POLL_INTERVAL, InputManager, normalizeGamepadAxis } from '../src/core/InputManager'
 
 type Listener = (event: {
   code: string
@@ -75,6 +75,32 @@ describe('flight input one-shot controls', () => {
     expect(controls.throttle).toBeCloseTo(.01386, 5)
     fake.fire('keydown', 'KeyW')
     expect(input.sampleWithDt(.05).pitch).toBe(1)
+    input.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('clears stale controller axes immediately when focus leaves', () => {
+    vi.stubGlobal('navigator', {
+      getGamepads: () => [{
+        connected: true,
+        axes: [.8, -.8, .8],
+        buttons: [{ pressed: true, value: 1 }, {}, {}, {}, {}, {}, {}, { value: 1 }],
+      }],
+    })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+    const active = input.sampleWithDt(0)
+    expect(active.roll).toBeGreaterThan(0.7)
+    expect(active.boost).toBe(true)
+
+    fake.fire('blur', '')
+    input.flightLive = false
+    const cleared = input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 0.25)
+    expect(cleared.roll).toBe(0)
+    expect(cleared.pitch).toBe(0)
+    expect(cleared.yaw).toBe(0)
+    expect(cleared.boost).toBe(false)
     input.dispose()
     vi.unstubAllGlobals()
   })
