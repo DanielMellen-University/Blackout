@@ -295,6 +295,7 @@ async function boot(): Promise<void> {
   const onVisibilityChange = (): void => {
     if (document.hidden) {
       audio.silence()
+      void audio.suspend()
       return
     }
     if (playing && !menu.paused && !results.open) void audio.resume()

@@ -120,6 +120,7 @@ describe('flight audio automation', () => {
     expect(audio.isDisposed).toBe(true)
     audio.dispose()
     await audio.resume()
+    await audio.suspend()
     audio.playCue('gate')
     audio.silence()
     expect(audio.isDisposed).toBe(true)

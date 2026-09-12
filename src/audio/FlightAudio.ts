@@ -99,6 +99,16 @@ export class FlightAudio {
     }
   }
 
+  /** Suspend the procedural graph while the page is hidden. */
+  async suspend(): Promise<void> {
+    if (this.disposed) return
+    try {
+      if (this.ctx?.state === 'running') await this.ctx.suspend()
+    } catch {
+      /* Audio suspension is optional and browser-dependent. */
+    }
+  }
+
   /**
    * Per-frame levels. Pass mute on title, pause, or crash.
    * speed is m/s (same as Aircraft.speed).
