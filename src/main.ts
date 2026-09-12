@@ -112,12 +112,15 @@ async function boot(): Promise<void> {
   // Use the supported constant directly so startup stays warning-free.
   renderer.shadowMap.type = PCFShadowMap
 
+  let applyAtmosphereQuality: ((scale: number) => void) | null = null
+
   const applyRenderQuality = (next: RenderQuality): void => {
     renderQuality = next
     const profile = renderQualityProfile(next)
     resolution.setCeiling(profile.maxPixelRatio)
     renderer.setPixelRatio(resolution.ratio)
     renderer.shadowMap.enabled = profile.shadows
+    applyAtmosphereQuality?.(profile.precipitationScale)
     if (qualitySelect) qualitySelect.value = next
     writeRenderQuality(qualityStorage, next)
   }
@@ -129,6 +132,8 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
+  applyAtmosphereQuality = (scale) => world.atmosphere.setPrecipitationScale(scale)
+  applyAtmosphereQuality(initialQualityProfile.precipitationScale)
   if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
   if (playBtn) playBtn.disabled = false
   const aircraft = new Aircraft()

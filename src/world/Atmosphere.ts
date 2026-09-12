@@ -25,7 +25,7 @@ import {
   UnsignedByteType,
 } from 'three'
 import { deriveSkyCloudDeckInto, SkyDome, type SkyCloudDeck } from './SkyDome'
-import { SnowField } from './SnowField'
+import { precipitationParticleCount, SnowField } from './SnowField'
 import { disposeObjectTree } from '../core/dispose'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
@@ -215,6 +215,9 @@ export class Atmosphere {
   private readonly rainMat: PointsMaterial
   private readonly rainTex: DataTexture
   private readonly snowField: SnowField
+  private readonly rainParticleCount: number
+  private rainActiveCount: number
+  private precipitationScale = 1
 
   private readonly cloudRoot = new Group()
   private readonly cloudClusters: Group[] = []
@@ -263,6 +266,8 @@ export class Atmosphere {
 
     // --- Precipitation ---
     const rainCount = 3200
+    this.rainParticleCount = rainCount
+    this.rainActiveCount = rainCount
     const rainPos = new Float32Array(rainCount * 3)
     this.rainVel = new Float32Array(rainCount)
     for (let i = 0; i < rainCount; i++) {
@@ -368,6 +373,16 @@ export class Atmosphere {
 
     this.weatherDirector.snapshotInto(this.weatherState)
     this.apply(0, 0, 0, 0, 0, this.weatherState)
+  }
+
+  /** Apply the selected graphics preset to both pooled precipitation fields. */
+  setPrecipitationScale(scale: number): void {
+    const safe = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1
+    if (safe === this.precipitationScale) return
+    this.precipitationScale = safe
+    this.rainActiveCount = precipitationParticleCount(this.rainParticleCount, safe)
+    this.rain.geometry.setDrawRange(0, this.rainActiveCount)
+    this.snowField.setDensityScale(safe)
   }
 
   /** Cycle weather type (N key). */
@@ -921,7 +936,7 @@ export class Atmosphere {
     const pos = this.rain.geometry.attributes.position as BufferAttribute
     const arr = pos.array as Float32Array
     const boost = rainAmt > 0.85 ? 1.4 : 1
-    for (let i = 0; i < this.rainVel.length; i++) {
+    for (let i = 0; i < this.rainActiveCount; i++) {
       const iy = i * 3 + 1
       arr[iy]! -= this.rainVel[i]! * boost * dt
       arr[i * 3]! +=

@@ -32,8 +32,11 @@ describe('render quality preferences', () => {
   it('keeps low quality below the balanced pixel and shadow budget', () => {
     const low = renderQualityProfile('low')
     const balanced = renderQualityProfile('balanced')
+    const high = renderQualityProfile('high')
     expect(low.maxPixelRatio).toBeLessThan(balanced.maxPixelRatio)
     expect(low.shadows).toBe(false)
     expect(balanced.shadows).toBe(true)
+    expect(low.precipitationScale).toBeLessThan(balanced.precipitationScale)
+    expect(balanced.precipitationScale).toBeLessThan(high.precipitationScale)
   })
 })

@@ -9,13 +9,15 @@ export interface RenderQualityProfile {
   readonly label: string
   readonly maxPixelRatio: number
   readonly shadows: boolean
+  /** Fraction of pooled rain and snow particles simulated and drawn. */
+  readonly precipitationScale: number
 }
 
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQualityProfile>> =
   Object.freeze({
-    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false }),
-    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true }),
-    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true }),
+    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false, precipitationScale: 0.42 }),
+    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true, precipitationScale: 0.72 }),
+    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true, precipitationScale: 1 }),
   })
 
 const STORAGE_KEY = 'blackout.renderQuality'

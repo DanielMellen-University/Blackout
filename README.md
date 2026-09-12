@@ -29,6 +29,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Toggling `C` now announces the active cockpit or external view with a short in-flight cue.
 - WebGL context loss now gates render submissions and shows a recovery cue, keeping simulation state safe through browser GPU resets.
 - Expired crash particles are compacted out of the live update list, trimming the effect's CPU tail without changing its fixed visual pool.
+- Graphics presets now scale pooled rain and snow simulation and draw ranges, giving Low a real weather-performance budget while High keeps the full field.
 - The completion card is a proper keyboard-contained dialog and returns focus to the flight canvas when a run is restarted.
 - Completion results now show the gate, time, and landing contributions behind the total score.
 - Play, Retry, New World, and `R` now open with a short `SPOOL ENGINE / W TO ROTATE` briefing so takeoff has an immediate readable handoff.

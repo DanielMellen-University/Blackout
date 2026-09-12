@@ -14,6 +14,14 @@ const FLAKE_COUNT = 4200
 const HALF = 110
 const SPAN = HALF * 2
 
+/** Clamp a pooled particle budget without allowing an accidental zero draw. */
+export function precipitationParticleCount(total: number, scale: number): number {
+  const safeTotal = Math.max(0, Math.floor(Number.isFinite(total) ? total : 0))
+  if (safeTotal === 0) return 0
+  const safeScale = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1
+  return Math.max(1, Math.min(safeTotal, Math.floor(safeTotal * safeScale)))
+}
+
 /**
  * World-space snow that wraps around the follow point.
  * Updated every rendered frame so flakes do not stutter at high refresh rates.
@@ -28,6 +36,7 @@ export class SnowField {
   private readonly tex: DataTexture
   private clock = 0
   private scattered = false
+  private activeCountValue = FLAKE_COUNT
 
   constructor() {
     this.pos = new Float32Array(FLAKE_COUNT * 3)
@@ -73,6 +82,21 @@ export class SnowField {
     this.points.visible = false
   }
 
+  get activeCount(): number {
+    return this.activeCountValue
+  }
+
+  /** Apply the selected graphics preset to the pooled snow budget. */
+  setDensityScale(scale: number): void {
+    const next = precipitationParticleCount(FLAKE_COUNT, scale)
+    if (next === this.activeCountValue) return
+    this.activeCountValue = next
+    this.points.geometry.setDrawRange(0, next)
+    // Newly enabled flakes need a fresh world-space distribution instead of
+    // appearing at the origin when a preset is raised during a storm.
+    this.scattered = false
+  }
+
   update(
     dt: number,
     cx: number,
@@ -109,7 +133,7 @@ export class SnowField {
     const t = this.clock
     const yCenter = cy + 10
 
-    for (let i = 0; i < FLAKE_COUNT; i++) {
+    for (let i = 0; i < this.activeCountValue; i++) {
       const ix = i * 3
       const ph = this.phase[i]!
       let x = this.pos[ix]! + (driftX + Math.sin(t * 0.31 + ph) * wind) * dt
