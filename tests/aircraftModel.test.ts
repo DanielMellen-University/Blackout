@@ -54,6 +54,22 @@ describe('rebuilt aircraft', () => {
     expect(left.rotation.z).toBeGreaterThan(1)
   })
 
+  it('avoids a second terrain query when auto-gear already knows the jet is grounded', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    samples = 0
+
+    aircraft.step(0)
+
+    expect(samples).toBe(1)
+    expect(aircraft.controls.gearDown).toBe(true)
+  })
+
   it('reuses the grounded query until the flight pose changes', () => {
     let samples = 0
     setContactHeightSampler(() => {

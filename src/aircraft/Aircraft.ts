@@ -315,13 +315,17 @@ export class Aircraft {
   /** Gear down near the surface, up once you have height. */
   private autoGear(): void {
     if (this.status === 'crashed') return
+    if (this.onGround) {
+      this.controls.gearDown = true
+      return
+    }
     const agl = altitudeAgl(
       this.position.x,
       this.position.y,
       this.position.z,
       this.controls.gearDown,
     )
-    if (this.onGround || agl < 16) this.controls.gearDown = true
+    if (agl < 16) this.controls.gearDown = true
     else if (agl > 30) this.controls.gearDown = false
   }
 

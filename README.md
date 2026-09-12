@@ -82,6 +82,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD gear-transition cues use the main animation timestamp, keeping timing stable through frame hitches without an extra per-frame clock read.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
+- Automatic gear now checks the cached grounded state before requesting AGL, avoiding a duplicate terrain sample on every grounded physics step.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.
 - The HUD now includes a lightweight fighter-style heading tape with cardinal marks and a centered caret, making yaw readable at a glance without adding scene work.
 - Dark airframe panels gain a restrained cool night fill that fades to zero in daylight, keeping the F-35 silhouette readable without extra lights or geometry.
