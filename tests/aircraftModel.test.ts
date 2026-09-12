@@ -52,6 +52,24 @@ describe('rebuilt aircraft', () => {
     expect(left.rotation.z).toBeGreaterThan(1)
   })
 
+  it('reuses the grounded query until the flight pose changes', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 100, 0)
+    expect(aircraft.onGround).toBe(false)
+    const firstSamples = samples
+    expect(aircraft.onGround).toBe(false)
+    expect(samples).toBe(firstSamples)
+
+    aircraft.position.x += 1
+    expect(aircraft.onGround).toBe(false)
+    expect(samples).toBeGreaterThan(firstSamples)
+  })
+
   it('spins deployed wheels with rollout speed and resets the spin', () => {
     setContactHeightSampler(() => 0)
     const aircraft = new Aircraft()

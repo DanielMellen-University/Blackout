@@ -31,6 +31,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
 - Deployed landing wheels now spin with rollout speed and reset cleanly between runs, using the existing gear meshes with no added draw calls.
 - Aircraft animation caches gear, control-surface, afterburner, and nozzle nodes so each physics step avoids repeated scene-tree searches.
+- Repeated ground-state reads now reuse a pose-keyed contact result, reducing terrain sampling across auto-gear, collision, warnings, and HUD without allowing stale state after movement or attitude changes.
 - Flight surfaces are now visibly hinged: differential flaperons, stabilators, and canted tail panels move with pitch, roll, and yaw input while reusing the existing meshes.
 - HUD readouts coalesce unchanged text and visibility updates, reducing avoidable DOM/layout churn during flight without lowering gauge responsiveness.
 - High-frequency HUD transforms, SVG needle attributes, engine bars, and warning classes also coalesce unchanged style writes, reducing layout churn while preserving smooth visual precision.

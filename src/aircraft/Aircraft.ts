@@ -110,6 +110,18 @@ export class Aircraft {
   private wheelSpin = 0
   private readonly navLightMaterials: MeshBasicMaterial[] = []
   private navLightOpacity = Number.NaN
+  /** Reuse repeated contact checks until the physics pose actually changes. */
+  private groundCacheValid = false
+  private groundCacheValue = false
+  private groundCacheX = Number.NaN
+  private groundCacheY = Number.NaN
+  private groundCacheZ = Number.NaN
+  private groundCacheVy = Number.NaN
+  private groundCacheOx = Number.NaN
+  private groundCacheOy = Number.NaN
+  private groundCacheOz = Number.NaN
+  private groundCacheOw = Number.NaN
+  private groundCacheGearDown = false
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
@@ -182,6 +194,7 @@ export class Aircraft {
     this.angularVelocity.set(0, 0, 0)
     this.impactVy = 0
     this.impact = null
+    this.groundCacheValid = false
     _spawnQuat.setFromAxisAngle(_Y_UP, yaw)
     this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
@@ -235,6 +248,9 @@ export class Aircraft {
       this.updateVisuals(dt)
       return
     }
+    // Terrain chunks can be replaced between simulation steps, so never carry
+    // a contact result across a new physics update.
+    this.groundCacheValid = false
     resolveEngineState(this.controls, this.engineState)
     this.flight.step(this, dt)
     this.autoGear()
@@ -247,6 +263,7 @@ export class Aircraft {
     this.angularVelocity.set(0, 0, 0)
     this.impactVy = 0
     this.impact = null
+    this.groundCacheValid = false
     this.controls.throttle = 0
     this.controls.boost = false
     resolveEngineState(this.controls, this.engineState)
@@ -443,7 +460,36 @@ export class Aircraft {
   }
 
   get onGround(): boolean {
-    return this.flight.isOnGround(this)
+    const p = this.position
+    const o = this.orientation
+    const gearDown = this.controls.gearDown
+    if (
+      this.groundCacheValid &&
+      this.groundCacheX === p.x &&
+      this.groundCacheY === p.y &&
+      this.groundCacheZ === p.z &&
+      this.groundCacheVy === this.velocity.y &&
+      this.groundCacheOx === o.x &&
+      this.groundCacheOy === o.y &&
+      this.groundCacheOz === o.z &&
+      this.groundCacheOw === o.w &&
+      this.groundCacheGearDown === gearDown
+    ) {
+      return this.groundCacheValue
+    }
+
+    this.groundCacheValue = this.flight.isOnGround(this)
+    this.groundCacheX = p.x
+    this.groundCacheY = p.y
+    this.groundCacheZ = p.z
+    this.groundCacheVy = this.velocity.y
+    this.groundCacheOx = o.x
+    this.groundCacheOy = o.y
+    this.groundCacheOz = o.z
+    this.groundCacheOw = o.w
+    this.groundCacheGearDown = gearDown
+    this.groundCacheValid = true
+    return this.groundCacheValue
   }
 }
 
