@@ -202,7 +202,6 @@ async function boot(): Promise<void> {
   }
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
-  syncReducedMotion()
   const input = new InputManager()
   const time = new Time()
   const hud = new HUD()
@@ -216,6 +215,7 @@ async function boot(): Promise<void> {
     landingFx.setRenderQuality(quality)
   }
   applyEffectsQuality(renderQuality)
+  syncReducedMotion()
   const audio = new FlightAudio()
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)

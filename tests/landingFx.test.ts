@@ -31,6 +31,17 @@ describe('landing scrub pooling', () => {
     fx.dispose()
   })
 
+  it('keeps landing particles steady under reduced motion', () => {
+    const fx = new LandingFx(new Scene())
+    fx.setReducedMotion(true)
+    fx.trigger(new Vector3(), new Vector3(42, -3, 0), 1)
+    const particle = fx.root.children.find(child => child.visible)!
+    const position = particle.position.clone()
+    fx.update(0.2)
+    expect(particle.position).toEqual(position)
+    fx.dispose()
+  })
+
   it('hides pooled scrub cleanly when reset', () => {
     const fx = new LandingFx(new Scene())
     fx.trigger(new Vector3(), new Vector3(22, -3, 0), 1)

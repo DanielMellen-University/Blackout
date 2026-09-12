@@ -27,6 +27,18 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('keeps crash particles and bloom steady under reduced motion', () => {
+    const fx = new CrashFx(new Scene())
+    fx.setReducedMotion(true)
+    fx.trigger(new Vector3(), new Vector3(4, -8, 12))
+    const particle = fx.root.children.find(child => child.visible)!
+    const position = particle.position.clone()
+    fx.update(0.2)
+    expect(particle.position).toEqual(position)
+    expect(fx.bloom).toBeLessThanOrEqual(0.3)
+    fx.dispose()
+  })
+
   it('hides the pooled effect cleanly when reset', () => {
     const fx = new CrashFx(new Scene())
     fx.trigger(new Vector3(), new Vector3())

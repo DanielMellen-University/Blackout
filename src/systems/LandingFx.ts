@@ -45,6 +45,7 @@ export class LandingFx {
   private randomState = 1
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
+  private reducedMotion = false
 
   constructor(scene: Scene) {
     this.root.name = 'LandingFx'
@@ -80,6 +81,12 @@ export class LandingFx {
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
     this.renderQuality = quality
+  }
+
+  /** Keep the readable landing fade while removing drifting particle motion. */
+  setReducedMotion(enabled: boolean): void {
+    if (this.disposed) return
+    this.reducedMotion = enabled
   }
 
   /** Burst on airborne-to-ground contact. Intensity 0-1. */
@@ -155,18 +162,22 @@ export class LandingFx {
       any = true
       const u = 1 - puff.life / puff.maxLife
       if (puff.kind === 'dust') {
-        puff.vel.y += 1.2 * dt
-        puff.vel.multiplyScalar(Math.exp(-1.6 * dt))
-        puff.mesh.position.addScaledVector(puff.vel, dt)
-        const s = puff.size0 * (1 + u * 2.4)
+        if (!this.reducedMotion) {
+          puff.vel.y += 1.2 * dt
+          puff.vel.multiplyScalar(Math.exp(-1.6 * dt))
+          puff.mesh.position.addScaledVector(puff.vel, dt)
+        }
+        const s = puff.size0 * (1 + (this.reducedMotion ? 0 : u * 2.4))
         puff.mesh.scale.set(s, s * 0.55, s)
         const mat = puff.mesh.material as MeshBasicMaterial
         mat.opacity = (1 - u) * 0.4
       } else {
-        puff.vel.y += 3.4 * dt
-        puff.vel.multiplyScalar(Math.exp(-0.7 * dt))
-        puff.mesh.position.addScaledVector(puff.vel, dt)
-        puff.mesh.scale.setScalar(puff.size0 * (1 + u * 3.2))
+        if (!this.reducedMotion) {
+          puff.vel.y += 3.4 * dt
+          puff.vel.multiplyScalar(Math.exp(-0.7 * dt))
+          puff.mesh.position.addScaledVector(puff.vel, dt)
+        }
+        puff.mesh.scale.setScalar(puff.size0 * (1 + (this.reducedMotion ? 0 : u * 3.2)))
         const mat = puff.mesh.material as MeshBasicMaterial
         mat.opacity = (1 - u) * 0.34
       }

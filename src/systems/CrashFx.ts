@@ -51,6 +51,7 @@ export class CrashFx {
   private randomState = 1
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
+  private reducedMotion = false
 
   constructor(scene: Scene) {
     this.root.name = 'CrashFx'
@@ -127,9 +128,16 @@ export class CrashFx {
     this.renderQuality = quality
   }
 
+  /** Keep the readable crash fade while removing large transient motion. */
+  setReducedMotion(enabled: boolean): void {
+    if (this.disposed) return
+    this.reducedMotion = enabled
+  }
+
   get bloom(): number {
     if (!this.alive) return 0
-    return Math.max(0, 1 - this.age * 3.6)
+    const scale = this.reducedMotion ? 0.3 : 1
+    return Math.max(0, 1 - this.age * 3.6) * scale
   }
 
   trigger(pos: Vector3, vel: Vector3): void {
@@ -138,7 +146,7 @@ export class CrashFx {
     this.randomState = seedFromImpact(pos, vel)
     this.alive = true
     this.age = 0
-    this.punch = 1
+    this.punch = this.reducedMotion ? 0 : 1
     this.root.position.copy(pos)
     this.root.visible = true
     this.ring.scale.setScalar(2)
@@ -182,11 +190,11 @@ export class CrashFx {
     const flashMat = this.flash.material as MeshBasicMaterial
     const flashT = Math.max(0, 1 - this.age * 4.2)
     flashMat.opacity = flashT
-    this.flash.scale.setScalar(7 + this.age * 36)
+    this.flash.scale.setScalar(this.reducedMotion ? 7 : 7 + this.age * 36)
     this.flash.visible = flashT > 0.02
 
     const ringT = Math.max(0, 1 - this.age * 1.2)
-    this.ring.scale.setScalar(4 + this.age * 48)
+    this.ring.scale.setScalar(this.reducedMotion ? 4 : 4 + this.age * 48)
     this.ringMat.opacity = 0.7 * ringT
     this.ring.visible = ringT > 0.02
 
@@ -213,22 +221,24 @@ export class CrashFx {
       }
       const u = 1 - b.life / b.maxLife
 
-      if (b.kind === 'smoke') {
-        b.vel.y += 5 * dt
-        b.vel.multiplyScalar(Math.exp(-0.5 * dt))
-      } else if (b.kind === 'bloom') {
-        b.vel.multiplyScalar(Math.exp(-1.4 * dt))
-        b.vel.y += 2 * dt
-      } else {
-        // Ballistic fireballs: gravity, almost no drag so the arc reads
-        b.vel.y -= 19.5 * dt
-        b.vel.multiplyScalar(Math.exp(-0.06 * dt))
+      if (!this.reducedMotion) {
+        if (b.kind === 'smoke') {
+          b.vel.y += 5 * dt
+          b.vel.multiplyScalar(Math.exp(-0.5 * dt))
+        } else if (b.kind === 'bloom') {
+          b.vel.multiplyScalar(Math.exp(-1.4 * dt))
+          b.vel.y += 2 * dt
+        } else {
+          // Ballistic fireballs: gravity, almost no drag so the arc reads
+          b.vel.y -= 19.5 * dt
+          b.vel.multiplyScalar(Math.exp(-0.06 * dt))
+        }
+
+        b.mesh.position.addScaledVector(b.vel, dt)
       }
 
-      b.mesh.position.addScaledVector(b.vel, dt)
-
       const worldY = this.root.position.y + b.mesh.position.y
-      if (worldY < floor) {
+      if (!this.reducedMotion && worldY < floor) {
         b.mesh.position.y = floor - this.root.position.y
         if (b.kind === 'ball' && b.vel.y < 0) {
           b.vel.y *= -0.32
