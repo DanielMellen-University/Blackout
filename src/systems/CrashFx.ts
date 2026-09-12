@@ -175,6 +175,10 @@ export class CrashFx {
     this.ringMat.opacity = 0.7 * ringT
     this.ring.visible = ringT > 0.02
 
+    // The burst stays local to its impact point. Resolve the visible ground
+    // once per update instead of repeating the terrain sampler for every bit.
+    const floor = sampleGroundHeight(this.root.position.x, this.root.position.z) + 0.4
+
     for (let i = this.bits.length - 1; i >= 0; i--) {
       const b = this.bits[i]!
       b.life -= dt
@@ -200,12 +204,7 @@ export class CrashFx {
 
       b.mesh.position.addScaledVector(b.vel, dt)
 
-      const gy = sampleGroundHeight(
-        this.root.position.x + b.mesh.position.x,
-        this.root.position.z + b.mesh.position.z,
-      )
       const worldY = this.root.position.y + b.mesh.position.y
-      const floor = gy + 0.4
       if (worldY < floor) {
         b.mesh.position.y = floor - this.root.position.y
         if (b.kind === 'ball' && b.vel.y < 0) {

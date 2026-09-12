@@ -1,6 +1,9 @@
 import { Scene, Vector3 } from 'three'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { CrashFx } from '../src/systems/CrashFx'
+import { setContactHeightSampler } from '../src/world/ground'
+
+afterEach(() => setContactHeightSampler(null))
 
 describe('crash effect pooling', () => {
   it('keeps a stable scene footprint across repeated crash retries', () => {
@@ -37,6 +40,19 @@ describe('crash effect pooling', () => {
 
     fx.update(7)
     expect(fx.activeCount).toBe(0)
+    fx.dispose()
+  })
+
+  it('shares one ground query across the active burst', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const fx = new CrashFx(new Scene())
+    fx.trigger(new Vector3(4, 3, -2), new Vector3(4, -8, 12))
+    fx.update(0.08)
+    expect(samples).toBe(1)
     fx.dispose()
   })
 
