@@ -151,6 +151,13 @@ export class Aircraft {
   private vaporOpacity = Number.NaN
   private readonly nozzlePetals: Array<{ node: Object3D; angle: number }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
+  private plumeResponseValue = Number.NaN
+  private plumeBoostValue: boolean | null = null
+  private plumeVisibleValue: boolean | null = null
+  private plumePulseAnimatedValue: boolean | null = null
+  private plumeFatValue = Number.NaN
+  private plumeLengthValue = Number.NaN
+  private nozzleIntensityValue = Number.NaN
   private readonly readabilityMaterials: MeshStandardMaterial[] = []
   private readonly readabilityMaterialSet = new Set<MeshStandardMaterial>()
   private nightReadabilityValue = Number.NaN
@@ -253,6 +260,7 @@ export class Aircraft {
     this.nightReadabilityValue = Number.NaN
     this.canopyGlassIntensityValue = Number.NaN
     this.nozzleFlareValue = Number.NaN
+    this.resetPlumeCache()
     this.vaporOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     if (this.gearNose) this.gearNose.rotation.y = 0
@@ -477,33 +485,62 @@ export class Aircraft {
     if (!ab) return
 
     const plumeResponse = Math.pow(throttlePower, 0.82)
-    ab.visible = throttlePower > 0.015
-    ab.userData.powerPercent = throttlePower * 100
+    const plumeVisible = throttlePower > 0.015
+    const boostChanged = boost !== this.plumeBoostValue
+    const responseChanged = boostChanged ||
+      !Number.isFinite(this.plumeResponseValue) ||
+      Math.abs(plumeResponse - this.plumeResponseValue) > 0.001
+    if (plumeVisible !== this.plumeVisibleValue) {
+      this.plumeVisibleValue = plumeVisible
+      ab.visible = plumeVisible
+    }
+    if (responseChanged) {
+      this.plumeResponseValue = plumeResponse
+      this.plumeBoostValue = boost
+      ab.userData.powerPercent = throttlePower * 100
+    }
 
     // Stretch aft from the nozzle lip. Military power retains a compact hot
     // exhaust; afterburner grows to a long, wide plume at full engine power.
+    const pulseAnimated = boost && dt > 0 && !this.reducedMotion
+    const pulseModeChanged = pulseAnimated !== this.plumePulseAnimatedValue
+    this.plumePulseAnimatedValue = pulseAnimated
     const pulse =
-      boost && dt > 0 && !this.reducedMotion ? 1 + Math.sin(now * 0.028) * 0.08 : 1
+      pulseAnimated ? 1 + Math.sin(now * 0.028) * 0.08 : 1
     const len = (
       0.12 + plumeResponse * (boost ? 2.8 : 1.25)
     ) * pulse
     const fat = 0.68 + plumeResponse * (boost ? 0.62 : 0.32)
-    ab.scale.set(fat, fat, len)
-
-    const boostGlow = boost ? 1 : 0.72
-    for (const plume of this.plumeMaterials) {
-      if (plume.name === 'abCore') plume.material.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
-      else if (plume.name === 'abMid') plume.material.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
-      else if (plume.name === 'abOuter') plume.material.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
+    if (pulseAnimated || pulseModeChanged || responseChanged ||
+      Math.abs(fat - this.plumeFatValue) > 0.001 ||
+      Math.abs(len - this.plumeLengthValue) > 0.001) {
+      this.plumeFatValue = fat
+      this.plumeLengthValue = len
+      ab.scale.set(fat, fat, len)
     }
-    for (let i = 0; i < this.plumeDiamonds.length; i++) {
-      const diamond = this.plumeDiamonds[i]!
-      if (this.visualQuality === 'low' && i > 0) continue
-      const scale = afterburnerDiamondPulse(i, now, boost && !this.reducedMotion, plumeResponse)
-      diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
+
+    if (responseChanged) {
+      const boostGlow = boost ? 1 : 0.72
+      for (const plume of this.plumeMaterials) {
+        if (plume.name === 'abCore') plume.material.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
+        else if (plume.name === 'abMid') plume.material.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
+        else if (plume.name === 'abOuter') plume.material.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
+      }
+    }
+    if (pulseAnimated || pulseModeChanged || responseChanged) {
+      for (let i = 0; i < this.plumeDiamonds.length; i++) {
+        const diamond = this.plumeDiamonds[i]!
+        if (this.visualQuality === 'low' && i > 0) continue
+        const scale = afterburnerDiamondPulse(i, now, pulseAnimated, plumeResponse)
+        diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
+      }
     }
     const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
-    for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
+    if (responseChanged || !Number.isFinite(this.nozzleIntensityValue) ||
+      Math.abs(nozzleIntensity - this.nozzleIntensityValue) > 0.002) {
+      this.nozzleIntensityValue = nozzleIntensity
+      for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
+    }
   }
 
   /** Use the render timestamp when supplied, otherwise advance deterministically. */
@@ -645,6 +682,7 @@ export class Aircraft {
     this.vaporMaterial = null
     this.nozzlePetals.length = 0
     this.nozzleGlows.length = 0
+    this.resetPlumeCache()
     this.readabilityMaterials.length = 0
     this.readabilityMaterialSet.clear()
     this.canopyGlassMaterial = null
@@ -707,6 +745,16 @@ export class Aircraft {
     if (low) {
       for (const node of this.vaporNodes) node.visible = false
     }
+  }
+
+  private resetPlumeCache(): void {
+    this.plumeResponseValue = Number.NaN
+    this.plumeBoostValue = null
+    this.plumeVisibleValue = null
+    this.plumePulseAnimatedValue = null
+    this.plumeFatValue = Number.NaN
+    this.plumeLengthValue = Number.NaN
+    this.nozzleIntensityValue = Number.NaN
   }
 
   get speed(): number {
