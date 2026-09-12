@@ -73,6 +73,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Version 7 adds edge-triggered procedural thunder for the existing rate-limited lightning flashes, keeping storms audible without repeated alarms.
 - Version 7 crash effects now reuse a fixed particle pool across retries, removing repeated mesh and material allocation without changing the explosion envelope.
 - Crash bursts are seeded from their impact state, so retries are visually repeatable while retaining the same pooled effect budget.
+- If Chrome exits fullscreen on Escape during flight, the next canvas click now safely re-enters it without affecting menu or title interactions.
 - Version 7 mission gates now reuse one fixed five-ring pool across retries, keeping circuit resets allocation-stable without changing the route.
 - Version 7 event audio now reuses fixed procedural white and brown noise buffers, keeping repeated cues from rebuilding PCM data.
 - Version 7 collision checks now reuse attitude and contact records at the fixed physics rate, removing another steady-flight allocation without changing landing rules.

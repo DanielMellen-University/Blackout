@@ -228,6 +228,13 @@ export function suppressBrowserUi(canvas: HTMLCanvasElement): void {
   canvas.style.outline = 'none'
   canvas.addEventListener('pointerdown', () => {
     canvas.focus({ preventScroll: true })
+    tryReenterFullscreenFromClick()
+  })
+
+  document.addEventListener('fullscreenchange', () => {
+    if (shouldReenterFullscreen(!!document.fullscreenElement, captureFlightKeys)) {
+      reenterFullscreenOnClick = true
+    }
   })
 }
 
@@ -366,4 +373,9 @@ export function tryReenterFullscreenFromClick(): void {
     return
   }
   enterGameFullscreenFromGesture()
+}
+
+/** Arm the click fallback only when flight lost fullscreen unexpectedly. */
+export function shouldReenterFullscreen(isFullscreen: boolean, flightLive: boolean): boolean {
+  return flightLive && !isFullscreen
 }
