@@ -153,6 +153,12 @@ describe('external camera framing', () => {
     expect(cameraOcclusionSampleCount(Number.NaN)).toBe(10)
   })
 
+  it('uses a smaller bounded occlusion budget on Low', () => {
+    expect(cameraOcclusionSampleCount(6, 'low')).toBe(4)
+    expect(cameraOcclusionSampleCount(16, 'low')).toBe(5)
+    expect(cameraOcclusionSampleCount(40, 'low')).toBe(6)
+  })
+
   it('computes camera-local navigation bearings without matrix refreshes', () => {
     const camera = new Vector3(0, 10, 0)
     const target = new Vector3(100, 40, 0)

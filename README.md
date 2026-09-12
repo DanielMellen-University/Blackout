@@ -48,6 +48,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Cockpit rails, brow, and coaming now freeze their authored local transforms, reducing camera-attached matrix work while keeping the camera and aircraft pose fully live.
 - Low graphics now trim secondary crash fireballs, smoke, and landing dust while preserving the pooled core impact cues; Balanced and High retain the full transient effects.
 - Reduced-motion mode now freezes crash and landing particle movement and softens crash bloom while retaining readable fades and impact state.
+- Low graphics now use a smaller bounded chase-camera ground-occlusion probe budget, preserving terrain clearance while reducing per-frame terrain queries; Balanced and High keep full coverage.
 - Graphics presets also scale the instanced cloud draw ranges and skip hidden cloud updates, so Low reduces atmospheric GPU and CPU cost without removing the weathered sky entirely.
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.

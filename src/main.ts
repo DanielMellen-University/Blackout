@@ -124,6 +124,7 @@ async function boot(): Promise<void> {
   let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
   let applyAircraftQuality: ((quality: RenderQuality) => void) | null = null
   let applyEffectsQuality: ((quality: RenderQuality) => void) | null = null
+  let applyCameraQuality: ((quality: RenderQuality) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
   let shadowUpdateElapsed = SHADOW_UPDATE_STEP
@@ -137,6 +138,7 @@ async function boot(): Promise<void> {
     applyShadowQuality?.(profile.shadowMapSize)
     applyAircraftQuality?.(next)
     applyEffectsQuality?.(next)
+    applyCameraQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -191,6 +193,8 @@ async function boot(): Promise<void> {
   // the hero camera stays at the origin until Play is pressed.
   cameras.setMode('chase', aircraft)
   cameras.setTitleFraming(aircraft)
+  applyCameraQuality = (quality): void => cameras.setRenderQuality(quality)
+  applyCameraQuality(renderQuality)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null

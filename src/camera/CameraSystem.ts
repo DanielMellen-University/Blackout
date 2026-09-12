@@ -9,6 +9,7 @@ import {
 import { cameraMinY } from '../world/ground'
 import { STREAM_RADIUS_M } from '../world/TerrainSystem'
 import { CockpitMode } from './CockpitMode'
+import type { RenderQuality } from '../core/RenderQuality'
 
 const _offsetWorld = new Vector3()
 const _look = new Vector3()
@@ -138,6 +139,7 @@ export class CameraSystem {
   private readonly boostOffset = { x: 0, y: 0, z: 0 }
   private reducedMotion = false
   private disposed = false
+  private renderQuality: RenderQuality = 'balanced'
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -160,6 +162,12 @@ export class CameraSystem {
       this.boostSway = 0
       this.externalBank = 0
     }
+  }
+
+  /** Apply the shared render preset to chase-camera terrain probe detail. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    this.renderQuality = quality
   }
 
   get prefersReducedMotion(): boolean {
@@ -479,7 +487,7 @@ export class CameraSystem {
     // through a ridge between the jet and its desired chase position. Short
     // rigs need fewer probes; long, user-zoomed sightlines keep the full
     // budget so distant ridges remain protected.
-    const samples = cameraOcclusionSampleCount(_toCam.length())
+    const samples = cameraOcclusionSampleCount(_toCam.length(), this.renderQuality)
     for (let i = 1; i <= samples; i++) {
       const t = i / samples
       _groundSample.copy(pivot).addScaledVector(_toCam, t)
@@ -650,8 +658,13 @@ export function cameraViewportAspect(width: number, height: number): number {
 }
 
 /** Distance-aware ground-occlusion probes for the external chase rig. */
-export function cameraOcclusionSampleCount(distance: number): number {
+export function cameraOcclusionSampleCount(distance: number, quality: RenderQuality = 'balanced'): number {
   const d = Number.isFinite(distance) ? Math.max(0, distance) : Infinity
+  if (quality === 'low') {
+    if (d <= 10) return 4
+    if (d <= 22) return 5
+    return 6
+  }
   if (d <= 10) return 6
   if (d <= 22) return 8
   return 10
