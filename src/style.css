@@ -249,6 +249,24 @@ body,
     0 8px 28px rgba(0, 0, 0, 0.55);
 }
 
+/* Low quality keeps the same readable glass colors without GPU blur passes. */
+.quality-lite .panel,
+.quality-lite #hud,
+.quality-lite #alt-meter,
+.quality-lite #vs-meter,
+.quality-lite .gauge-panel,
+.quality-lite #title-bar,
+.quality-lite #nav-cue,
+.quality-lite #heading-tape,
+.quality-lite .title-panel,
+.quality-lite .menu-backdrop,
+.quality-lite .banner,
+.quality-lite .run-results,
+.quality-lite #fps {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 /* ---- Title screen ---- */
 .title-screen {
   position: fixed;

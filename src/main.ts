@@ -128,6 +128,7 @@ async function boot(): Promise<void> {
   const applyRenderQuality = (next: RenderQuality): void => {
     renderQuality = next
     const profile = renderQualityProfile(next)
+    document.documentElement.classList.toggle('quality-lite', !profile.uiBackdropBlur)
     resolution.setCeiling(profile.maxPixelRatio)
     renderer.setPixelRatio(resolution.ratio)
     renderer.shadowMap.enabled = profile.shadows

@@ -119,6 +119,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash camera impulse uses smooth bounded multi-frequency shake instead of harsh per-frame white-noise jitter.
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.
 - Graphics quality is selectable from the pause menu. Low disables shadow-map work and caps adaptive pixel density, while Balanced and High retain progressively larger budgets. The choice is saved locally.
+- Low quality also removes CSS backdrop-blur passes from glass UI surfaces, reducing compositor cost while keeping the same readable panel colors.
 - Adaptive pixel density now refreshes its device cap when the viewport or fullscreen DPR changes, clamping immediately on a denser display without jumping quality upward during recovery.
 - Audio volume is adjustable from the pause menu and saved locally. The slider changes the master mix smoothly, while **M** remains an immediate mute toggle.
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
