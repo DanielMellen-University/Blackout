@@ -137,6 +137,8 @@ export class Aircraft {
   private readonly readabilityMaterialSet = new Set<MeshStandardMaterial>()
   private nightReadabilityValue = Number.NaN
   private nozzleFlareValue = Number.NaN
+  private modelLoadToken = 0
+  private disposed = false
 
   constructor() {
     this.mesh = new Group()
@@ -149,10 +151,13 @@ export class Aircraft {
   }
 
   addTo(scene: Scene): void {
+    if (this.disposed) return
     scene.add(this.mesh)
   }
 
   async tryLoadModel(url = '/models/f35.glb'): Promise<boolean> {
+    if (this.disposed) return false
+    const loadToken = ++this.modelLoadToken
     try {
       // Keep the optional asset pipeline out of the initial game bundle. The
       // procedural F-35 is already playable, so only fetch the GLB loader when
@@ -161,6 +166,11 @@ export class Aircraft {
       const gltf = await new GLTFLoader().loadAsync(url)
       const model = gltf.scene
       model.name = 'model'
+
+      if (this.disposed || loadToken !== this.modelLoadToken) {
+        disposeAircraftObject(model)
+        return false
+      }
 
       _box.setFromObject(model)
       _box.getSize(_size)
@@ -280,6 +290,14 @@ export class Aircraft {
     resolveEngineState(this.controls, this.engineState)
     this.mesh.visible = false
     this.snapDisplay()
+  }
+
+  /** Cancel optional model hydration and release all aircraft resources. */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.modelLoadToken++
+    disposeAircraftObject(this.mesh)
   }
 
   markLanded(): void {

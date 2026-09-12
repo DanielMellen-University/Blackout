@@ -297,6 +297,14 @@ describe('rebuilt aircraft', () => {
     expect(model.children).toHaveLength(0)
   })
 
+  it('cancels optional model hydration after aircraft disposal', async () => {
+    const aircraft = new Aircraft()
+    aircraft.dispose()
+
+    await expect(aircraft.tryLoadModel('/models/late.glb')).resolves.toBe(false)
+    expect(aircraft.mesh.children).toHaveLength(0)
+  })
+
   it('caches visual nodes instead of searching the model every physics step', () => {
     const aircraft = new Aircraft()
     const lookup = vi.spyOn(aircraft.mesh, 'getObjectByName')

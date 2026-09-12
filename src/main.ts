@@ -8,7 +8,7 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three'
-import { Aircraft, disposeAircraftObject } from './aircraft/Aircraft'
+import { Aircraft } from './aircraft/Aircraft'
 import {
   cameraModeCue,
   CameraSystem,
@@ -228,7 +228,7 @@ async function boot(): Promise<void> {
     world.dispose()
     crashFx.dispose()
     landingFx.dispose()
-    disposeAircraftObject(aircraft.mesh)
+    aircraft.dispose()
     renderer.dispose()
   }
   window.addEventListener('beforeunload', disposeRuntime, { once: true })
