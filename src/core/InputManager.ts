@@ -48,7 +48,7 @@ export class InputManager {
   }
 
   sampleWithDt(dt: number): ControlState {
-    const step = Math.max(0, Math.min(dt, 0.05))
+    const step = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 0.05)) : 0
     if (this.flightLive) this.updateGamepad(step)
     else this.clearGamepadState()
 
@@ -59,7 +59,7 @@ export class InputManager {
 
     // Engine power: Shift up, Ctrl down
     const thrRate = flightConfig.throttleRate
-    let thr = this.controls.throttle
+    let thr = Number.isFinite(this.controls.throttle) ? this.controls.throttle : 0
     if (this.keys.has('Digit1') || this.keys.has('ControlLeft') || this.keys.has('ControlRight')) {
       thr -= thrRate * step
     }
@@ -67,14 +67,14 @@ export class InputManager {
       thr += thrRate * step
     }
     thr += this.gamepadThrottle * thrRate * step
-    this.controls.throttle = thr < 0 ? 0 : thr > 1 ? 1 : thr
+    this.controls.throttle = clamp01(thr)
 
     return this.controls
   }
 
   /** Sync throttle/gear when the aircraft is reset to the runway. */
   resetFlightControls(throttle = 0): void {
-    this.controls.throttle = throttle
+    this.controls.throttle = clamp01(throttle)
     this.controls.boost = false
     this.controls.pitch = 0
     this.controls.roll = 0
@@ -160,13 +160,13 @@ export class InputManager {
 
     // Standard mapping: left stick pitch/roll, right stick X yaw.
     this.gamepadRoll = normalizeGamepadAxis(pad.axes[0] ?? 0)
-    this.gamepadPitch = -normalizeGamepadAxis(pad.axes[1] ?? 0)
+    const pitch = normalizeGamepadAxis(pad.axes[1] ?? 0)
+    this.gamepadPitch = pitch === 0 ? 0 : -pitch
     this.gamepadYaw = normalizeGamepadAxis(pad.axes[2] ?? 0)
     // LT brakes throttle, RT advances it, and A/ Cross is afterburner.
-    const leftTrigger = pad.buttons[6]?.value ?? 0
-    const rightTrigger = pad.buttons[7]?.value ?? 0
-    this.gamepadThrottle = Math.max(0, Math.min(1, rightTrigger)) -
-      Math.max(0, Math.min(1, leftTrigger))
+    const leftTrigger = normalizeGamepadTrigger(pad.buttons[6]?.value ?? 0)
+    const rightTrigger = normalizeGamepadTrigger(pad.buttons[7]?.value ?? 0)
+    this.gamepadThrottle = rightTrigger - leftTrigger
     this.gamepadBoost = pad.buttons[0]?.pressed ?? false
   }
 
@@ -238,7 +238,9 @@ export class InputManager {
 /** Apply a centered dead zone and rescale the remaining stick travel. */
 export function normalizeGamepadAxis(value: number, deadzone = 0.14): number {
   if (!Number.isFinite(value)) return 0
-  const safeDeadzone = Math.max(0, Math.min(0.9, deadzone))
+  const safeDeadzone = Number.isFinite(deadzone)
+    ? Math.max(0, Math.min(0.9, deadzone))
+    : 0.14
   const clamped = Math.max(-1, Math.min(1, value))
   const magnitude = Math.abs(clamped)
   if (magnitude <= safeDeadzone) return 0
@@ -247,5 +249,14 @@ export function normalizeGamepadAxis(value: number, deadzone = 0.14): number {
 }
 
 function mergeAxis(keyboard: number, gamepad: number): number {
-  return Math.abs(keyboard) > 0.001 ? keyboard : gamepad
+  return Math.abs(keyboard) > 0.001 ? keyboard : (Number.isFinite(gamepad) ? gamepad : 0)
+}
+
+function normalizeGamepadTrigger(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+}
+
+function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.min(1, value))
 }

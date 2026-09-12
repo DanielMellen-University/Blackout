@@ -110,5 +110,33 @@ describe('flight input one-shot controls', () => {
     expect(normalizeGamepadAxis(1)).toBe(1)
     expect(normalizeGamepadAxis(-1)).toBe(-1)
     expect(normalizeGamepadAxis(Number.NaN)).toBe(0)
+    expect(normalizeGamepadAxis(0.5, Number.NaN)).toBeCloseTo(normalizeGamepadAxis(0.5))
+  })
+
+  it('contains malformed frame and controller telemetry', () => {
+    vi.stubGlobal('navigator', {
+      getGamepads: () => [{
+        connected: true,
+        axes: [Number.NaN, Number.POSITIVE_INFINITY, Number.NaN],
+        buttons: [{ pressed: false, value: false }, {}, {}, {}, {}, {},
+          { pressed: false, value: Number.NaN },
+          { pressed: false, value: Number.POSITIVE_INFINITY }],
+      }],
+    })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+    const controls = input.sampleWithDt(Number.NaN)
+
+    expect(controls.pitch).toBe(0)
+    expect(controls.roll).toBe(0)
+    expect(controls.yaw).toBe(0)
+    expect(controls.throttle).toBe(0)
+    expect(Number.isFinite(controls.throttle)).toBe(true)
+
+    input.resetFlightControls(Number.NaN)
+    expect(input.sampleWithDt(Number.POSITIVE_INFINITY).throttle).toBe(0)
+    input.dispose()
+    vi.unstubAllGlobals()
   })
 })
