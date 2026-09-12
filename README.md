@@ -40,6 +40,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Touchdown dust and smoke are seeded from the landing state, making repeated landings visually repeatable while keeping the pooled effect budget.
 - Audio mute takes effect immediately, including for event cues raised in the same simulation frame as the toggle.
 - Hidden tabs skip camera, renderer, and debug submissions while keeping simulation timing and world streaming ready for the next visible frame.
+- The active-gate beacon now updates only when the route changes, avoiding a redundant per-frame position copy while preserving the same visible guidance.
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.
 - Frozen title and pause frames skip redundant atmosphere light, sky, cloud, and weather work while still refreshing when the camera anchor or weather state changes.

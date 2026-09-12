@@ -214,7 +214,6 @@ export class MissionSystem {
       ring.scale.setScalar(s)
     }
     this.liveMat.opacity = 0.85 + near * 0.12
-    this.placeBeacon()
     const pulse = 0.42 + (Math.sin(now * 0.006) + 1) * 0.18
     this.beaconMat.opacity = pulse + near * 0.18
   }

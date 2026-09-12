@@ -48,6 +48,24 @@ describe('MissionSystem gate crossing', () => {
     expect(second.dist).toBeGreaterThan(0)
   })
 
+  it('keeps the live beacon aligned without a per-frame reposition', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    const gate = mission.activeGatePos()!
+    const beacon = mission.root.getObjectByName('GateBeacon')!
+
+    expect(beacon.position.x).toBe(gate.x)
+    expect(beacon.position.y).toBe(gate.y)
+    expect(beacon.position.z).toBe(gate.z)
+
+    mission.tick()
+
+    expect(beacon.position.x).toBe(gate.x)
+    expect(beacon.position.y).toBe(gate.y)
+    expect(beacon.position.z).toBe(gate.z)
+    mission.dispose()
+  })
+
   it('reuses the fixed gate scene footprint across retries', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)
