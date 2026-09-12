@@ -17,6 +17,7 @@ export class HUD {
   private readonly spdEl: HTMLElement | null
   private readonly camEl: HTMLElement | null
   private readonly headingEl: HTMLElement | null
+  private readonly headingTapeTrackEl: HTMLElement | null
   private readonly audioEl: HTMLElement | null
   private readonly fpsEl: HTMLElement | null
   private readonly thrEl: HTMLElement | null
@@ -69,6 +70,8 @@ export class HUD {
   private cameraModeText = ''
   private headingValue = Number.NaN
   private headingText = ''
+  private headingTapeValue = Number.NaN
+  private headingTapeTransform = ''
   private audioMutedValue: boolean | null = null
   private audioText = ''
   private pitchValue = Number.NaN
@@ -107,6 +110,7 @@ export class HUD {
     this.spdEl = root.getElementById('hud-spd')
     this.camEl = root.getElementById('hud-cam')
     this.headingEl = root.getElementById('hud-hdg')
+    this.headingTapeTrackEl = root.getElementById('heading-tape-track')
     this.audioEl = root.getElementById('hud-audio')
     this.fpsEl = root.getElementById('hud-fps')
     this.thrEl = root.getElementById('hud-thr')
@@ -139,6 +143,7 @@ export class HUD {
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
+    this.buildHeadingTape(root)
   }
 
   update(opts: {
@@ -229,6 +234,7 @@ export class HUD {
         this.headingText = formatHeading(opts.heading)
       }
       this.setText(this.headingEl, this.headingText)
+      this.updateHeadingTape(opts.heading)
     }
     if (this.audioEl && opts.audioMuted !== undefined) {
       const muted = !!opts.audioMuted
@@ -628,7 +634,39 @@ export class HUD {
       g.appendChild(line)
     }
   }
+
+  private buildHeadingTape(root: Document): void {
+    const track = this.headingTapeTrackEl
+    if (!track) return
+    // Three wrapped compass passes keep the active heading centered without
+    // allocating or rebuilding DOM as the aircraft crosses north.
+    for (let degrees = -360; degrees <= 720; degrees += HEADING_TAPE_STEP_DEG) {
+      const mark = root.createElement('div')
+      const major = degrees % 30 === 0
+      mark.className = `heading-tape-mark${major ? ' major' : ''}`
+      if (major) {
+        const label = root.createElement('span')
+        label.className = 'heading-tape-label'
+        label.textContent = headingTapeLabel(degrees)
+        mark.appendChild(label)
+      }
+      track.appendChild(mark)
+    }
+  }
+
+  private updateHeadingTape(headingRad: number): void {
+    if (!this.headingTapeTrackEl) return
+    const heading = headingDegrees(headingRad)
+    if (heading === this.headingTapeValue) return
+    this.headingTapeValue = heading
+    const offset = headingTapeOffset(headingRad)
+    this.headingTapeTransform = `translate3d(-${offset}px, 0, 0)`
+    this.setStyle(this.headingTapeTrackEl, 'transform', this.headingTapeTransform)
+  }
 }
+
+const HEADING_TAPE_STEP_DEG = 15
+const HEADING_TAPE_STEP_PX = 56
 
 /** Stable decimal formatting prevents float noise from invalidating HUD caches. */
 export function quantizeHudNumber(value: number, precision: number): number {
@@ -651,6 +689,25 @@ function headingDegrees(headingRad: number): number {
   if (!Number.isFinite(headingRad)) return 0
   const degrees = Math.round((headingRad * 180) / Math.PI)
   return ((degrees % 360) + 360) % 360
+}
+
+/** Pixel offset that centers the wrapped compass item for an aircraft heading. */
+export function headingTapeOffset(headingRad: number, stepPx = HEADING_TAPE_STEP_PX): number {
+  const safeStep = Number.isFinite(stepPx) && stepPx > 0 ? stepPx : HEADING_TAPE_STEP_PX
+  const heading = headingDegrees(headingRad)
+  // The tape starts at -360°, so the centered wrapped pass begins at index 24.
+  return ((heading + 360) / HEADING_TAPE_STEP_DEG + 0.5) * safeStep
+}
+
+/** Label a 30° compass major mark with cardinal letters where appropriate. */
+export function headingTapeLabel(degrees: number): string {
+  if (!Number.isFinite(degrees)) return '000'
+  const wrapped = ((Math.round(degrees) % 360) + 360) % 360
+  if (wrapped === 0) return 'N'
+  if (wrapped === 90) return 'E'
+  if (wrapped === 180) return 'S'
+  if (wrapped === 270) return 'W'
+  return String(wrapped).padStart(3, '0')
 }
 
 /** Wrap aircraft heading to a stable, three-digit 000–359 degree readout. */

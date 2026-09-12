@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add a pooled fighter-style heading tape with cardinal marks and a centered caret, driven by cached heading telemetry without new scene geometry or draw calls.
 - Give existing flight banners distinct info, success, and danger treatments so normal feedback no longer reads like a crash alert.
 - Tie pooled rain and snow simulation plus draw ranges to the Low, Balanced, and High graphics presets so weather costs match the selected budget.
 - Compact expired pooled crash particles during the effect tail, reducing needless simulation checks while preserving deterministic visuals.

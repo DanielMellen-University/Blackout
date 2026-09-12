@@ -8,6 +8,8 @@ import {
   formatVerticalSpeed,
   gateProximityHudActive,
   gearTransitionActive,
+  headingTapeLabel,
+  headingTapeOffset,
   normalizeBannerTone,
   quantizeHudNumber,
   speedJuiceIntensity,
@@ -47,6 +49,16 @@ describe('HUD value formatting', () => {
     expect(formatHeading(-Math.PI / 2)).toBe('270°')
     expect(formatHeading(2 * Math.PI)).toBe('000°')
     expect(formatHeading(Number.NaN)).toBe('000°')
+  })
+
+  it('keeps the wrapped heading tape centered across north', () => {
+    expect(headingTapeOffset(0, 56)).toBeCloseTo(1372)
+    expect(headingTapeOffset(Math.PI / 2, 56)).toBeCloseTo(1708)
+    expect(headingTapeOffset(-Math.PI / 2, 56)).toBeCloseTo(2380)
+    expect(headingTapeLabel(0)).toBe('N')
+    expect(headingTapeLabel(90)).toBe('E')
+    expect(headingTapeLabel(360)).toBe('N')
+    expect(headingTapeLabel(-30)).toBe('330')
   })
 
   it('keeps the audio state label compact', () => {

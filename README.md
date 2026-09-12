@@ -31,6 +31,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Expired crash particles are compacted out of the live update list, trimming the effect's CPU tail without changing its fixed visual pool.
 - Graphics presets now scale pooled rain and snow simulation and draw ranges, giving Low a real weather-performance budget while High keeps the full field.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.
+- The HUD now includes a lightweight fighter-style heading tape with cardinal marks and a centered caret, making yaw readable at a glance without adding scene work.
 - The completion card is a proper keyboard-contained dialog and returns focus to the flight canvas when a run is restarted.
 - Completion results now show the gate, time, and landing contributions behind the total score.
 - Play, Retry, New World, and `R` now open with a short `SPOOL ENGINE / W TO ROTATE` briefing so takeoff has an immediate readable handoff.
