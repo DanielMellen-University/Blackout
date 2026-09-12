@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   EVENT_NOISE_BUFFER_SECONDS,
+  FLIGHT_AUDIO_LIMITER,
   enginePlaybackRate,
   precipitationAudioLevel,
   shouldScheduleAudioTarget,
@@ -10,6 +11,16 @@ describe('flight audio automation', () => {
   it('keeps the shared event-noise pool longer than every cue envelope', () => {
     expect(EVENT_NOISE_BUFFER_SECONDS).toBeGreaterThan(0.58)
     expect(EVENT_NOISE_BUFFER_SECONDS).toBeLessThan(1)
+  })
+
+  it('keeps the output limiter conservative and bounded', () => {
+    expect(FLIGHT_AUDIO_LIMITER.threshold).toBeLessThan(0)
+    expect(FLIGHT_AUDIO_LIMITER.knee).toBeGreaterThan(0)
+    expect(FLIGHT_AUDIO_LIMITER.ratio).toBeGreaterThanOrEqual(8)
+    expect(FLIGHT_AUDIO_LIMITER.attack).toBeGreaterThan(0)
+    expect(FLIGHT_AUDIO_LIMITER.attack).toBeLessThan(0.01)
+    expect(FLIGHT_AUDIO_LIMITER.release).toBeGreaterThan(0.05)
+    expect(FLIGHT_AUDIO_LIMITER.release).toBeLessThan(0.3)
   })
 
   it('schedules the first target and meaningful changes', () => {

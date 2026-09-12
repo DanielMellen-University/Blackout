@@ -4,6 +4,15 @@
  */
 export const EVENT_NOISE_BUFFER_SECONDS = 0.75
 
+/** Conservative output guard for stacked engine, weather, and event cues. */
+export const FLIGHT_AUDIO_LIMITER = Object.freeze({
+  threshold: -7,
+  knee: 12,
+  ratio: 10,
+  attack: 0.003,
+  release: 0.18,
+})
+
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
@@ -11,6 +20,7 @@ export class FlightAudio {
   private windGain: GainNode | null = null
   private precipGain: GainNode | null = null
   private effectsGain: GainNode | null = null
+  private limiter: DynamicsCompressorNode | null = null
   private engineFilter: BiquadFilterNode | null = null
   private windFilter: BiquadFilterNode | null = null
   private precipFilter: BiquadFilterNode | null = null
@@ -199,6 +209,7 @@ export class FlightAudio {
     this.precipSrc = null
     this.eventWhiteBuffer = null
     this.eventBrownBuffer = null
+    this.limiter?.disconnect()
     void this.ctx?.close()
     this.ctx = null
     this.master = null
@@ -206,6 +217,7 @@ export class FlightAudio {
     this.windGain = null
     this.precipGain = null
     this.effectsGain = null
+    this.limiter = null
     this.engineFilter = null
     this.windFilter = null
     this.precipFilter = null
@@ -232,7 +244,14 @@ export class FlightAudio {
   private buildGraph(ctx: AudioContext): void {
     const master = ctx.createGain()
     master.gain.value = 0
-    master.connect(ctx.destination)
+    const limiter = ctx.createDynamicsCompressor()
+    limiter.threshold.value = FLIGHT_AUDIO_LIMITER.threshold
+    limiter.knee.value = FLIGHT_AUDIO_LIMITER.knee
+    limiter.ratio.value = FLIGHT_AUDIO_LIMITER.ratio
+    limiter.attack.value = FLIGHT_AUDIO_LIMITER.attack
+    limiter.release.value = FLIGHT_AUDIO_LIMITER.release
+    limiter.connect(ctx.destination)
+    master.connect(limiter)
 
     const engineGain = ctx.createGain()
     engineGain.gain.value = 0
@@ -263,7 +282,7 @@ export class FlightAudio {
 
     const effectsGain = ctx.createGain()
     effectsGain.gain.value = 0.8
-    effectsGain.connect(ctx.destination)
+    effectsGain.connect(limiter)
 
     const engBuf = makeNoiseBuffer(ctx, 2.5, 'brown')
     const windBuf = makeNoiseBuffer(ctx, 2.0, 'white')
@@ -296,6 +315,7 @@ export class FlightAudio {
     this.windGain = windGain
     this.precipGain = precipGain
     this.effectsGain = effectsGain
+    this.limiter = limiter
     this.engineFilter = engineFilter
     this.windFilter = windFilter
     this.precipFilter = precipFilter
