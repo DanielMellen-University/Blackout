@@ -40,5 +40,7 @@ describe('render quality preferences', () => {
     expect(balanced.precipitationScale).toBeLessThan(high.precipitationScale)
     expect(low.cloudScale).toBeLessThan(balanced.cloudScale)
     expect(balanced.cloudScale).toBeLessThan(high.cloudScale)
+    expect(low.vegetationScale).toBeLessThan(balanced.vegetationScale)
+    expect(balanced.vegetationScale).toBeLessThan(high.vegetationScale)
   })
 })

@@ -25,7 +25,7 @@ import {
   opsPadBlend,
   type TerrainSurface,
 } from './terrainSample'
-import { createVegetationFactory, vegetationDensity } from './vegetation'
+import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
 import { setContactHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
@@ -359,6 +359,7 @@ export class TerrainSystem {
   private readonly weatherClouds = { value: 0 }
   private readonly weatherWind = new Vector2()
   private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
+  private vegetationScale = 1
 
   constructor(scene: Scene) {
     this.scene = scene
@@ -400,6 +401,14 @@ export class TerrainSystem {
 
   get weatherEffects(): { rain: number; snow: number } {
     return { rain: this.weatherRain.value, snow: this.weatherSnow.value }
+  }
+
+  /** Scale near-field vegetation batches without rebuilding terrain geometry. */
+  setVegetationScale(scale: number): void {
+    const safe = Number.isFinite(scale) ? MathUtils.clamp(scale, 0, 1) : 1
+    if (safe === this.vegetationScale) return
+    this.vegetationScale = safe
+    for (const chunk of this.chunks.values()) this.applyVegetationScale(chunk.props)
   }
 
   private configureWeatherMaterial(material: MeshStandardMaterial): void {
@@ -1142,7 +1151,18 @@ export class TerrainSystem {
     }
 
     veg.finalize()
+    this.applyVegetationScale(veg.group)
     return veg.group
+  }
+
+  private applyVegetationScale(props: Group | null): void {
+    if (!props) return
+    props.traverse(obj => {
+      if (!(obj instanceof InstancedMesh)) return
+      const fullCount = obj.userData.fullCount
+      if (!Number.isFinite(fullCount)) return
+      obj.count = vegetationInstanceCount(fullCount, this.vegetationScale)
+    })
   }
 
   private disposeChunk(chunk: Chunk): void {

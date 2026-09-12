@@ -112,7 +112,7 @@ async function boot(): Promise<void> {
   // Use the supported constant directly so startup stays warning-free.
   renderer.shadowMap.type = PCFShadowMap
 
-  let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number) => void) | null = null
+  let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
 
   const applyRenderQuality = (next: RenderQuality): void => {
     renderQuality = next
@@ -120,7 +120,7 @@ async function boot(): Promise<void> {
     resolution.setCeiling(profile.maxPixelRatio)
     renderer.setPixelRatio(resolution.ratio)
     renderer.shadowMap.enabled = profile.shadows
-    applyAtmosphereQuality?.(profile.precipitationScale, profile.cloudScale)
+    applyAtmosphereQuality?.(profile.precipitationScale, profile.cloudScale, profile.vegetationScale)
     if (qualitySelect) qualitySelect.value = next
     writeRenderQuality(qualityStorage, next)
   }
@@ -132,11 +132,12 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
-  applyAtmosphereQuality = (precipitationScale, cloudScale) => {
+  applyAtmosphereQuality = (precipitationScale, cloudScale, vegetationScale) => {
     world.atmosphere.setPrecipitationScale(precipitationScale)
     world.atmosphere.setCloudDensityScale(cloudScale)
+    world.terrain.setVegetationScale(vegetationScale)
   }
-  applyAtmosphereQuality(initialQualityProfile.precipitationScale, initialQualityProfile.cloudScale)
+  applyAtmosphereQuality(initialQualityProfile.precipitationScale, initialQualityProfile.cloudScale, initialQualityProfile.vegetationScale)
   if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
   if (playBtn) playBtn.disabled = false
   const aircraft = new Aircraft()

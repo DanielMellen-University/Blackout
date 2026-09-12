@@ -1,8 +1,15 @@
 import { Mesh, MeshStandardMaterial } from 'three'
 import { describe, expect, it } from 'vitest'
-import { createVegetationFactory } from '../src/world/vegetation'
+import { createVegetationFactory, vegetationInstanceCount } from '../src/world/vegetation'
 
 describe('weathered vegetation materials', () => {
+  it('clamps quality-scaled instance counts to the authored batch', () => {
+    expect(vegetationInstanceCount(100, .45)).toBe(45)
+    expect(vegetationInstanceCount(100, 1.4)).toBe(100)
+    expect(vegetationInstanceCount(100, 0)).toBe(0)
+    expect(vegetationInstanceCount(0, .5)).toBe(0)
+  })
+
   it('shares wind and clock uniforms with pooled foliage shaders', () => {
     const clock = { value: 12 }
     const factory = createVegetationFactory(clock)
@@ -12,6 +19,7 @@ describe('weathered vegetation materials', () => {
     buckets.finalize()
 
     const mesh = buckets.group.children.find(child => child instanceof Mesh) as Mesh
+    expect(mesh.userData.fullCount).toBe((mesh as { count?: number }).count)
     const material = mesh.material as MeshStandardMaterial
     const shader = {
       uniforms: {} as Record<string, unknown>,

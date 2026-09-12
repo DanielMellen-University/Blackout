@@ -13,13 +13,15 @@ export interface RenderQualityProfile {
   readonly precipitationScale: number
   /** Fraction of cloud puffs submitted to the instanced deck batches. */
   readonly cloudScale: number
+  /** Fraction of near-field vegetation instances submitted per terrain chunk. */
+  readonly vegetationScale: number
 }
 
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQualityProfile>> =
   Object.freeze({
-    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false, precipitationScale: 0.42, cloudScale: 0.5 }),
-    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true, precipitationScale: 0.72, cloudScale: 0.78 }),
-    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true, precipitationScale: 1, cloudScale: 1 }),
+    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45 }),
+    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75 }),
+    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1 }),
   })
 
 const STORAGE_KEY = 'blackout.renderQuality'

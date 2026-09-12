@@ -123,6 +123,13 @@ function mesh(
   return m
 }
 
+/** Return a bounded instance count for a quality-scaled vegetation batch. */
+export function vegetationInstanceCount(total: number, scale: number): number {
+  if (!Number.isFinite(total) || total <= 0) return 0
+  const safeScale = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1
+  return Math.max(0, Math.min(Math.floor(total), Math.floor(total * safeScale)))
+}
+
 function setAt(
   inst: InstancedMesh,
   index: number,
@@ -764,6 +771,7 @@ export function createVegetationFactory(clock: { value: number } = { value: 0 })
       dead.count = nDead
 
       for (const m of all) {
+        m.userData.fullCount = m.count
         m.instanceMatrix.needsUpdate = true
         if (m.count > 0) group.add(m)
       }
