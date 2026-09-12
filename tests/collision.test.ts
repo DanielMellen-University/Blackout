@@ -1,7 +1,19 @@
 import { Quaternion, Vector3 } from 'three'
-import { describe, expect, it } from 'vitest'
-import type { AircraftImpact } from '../src/aircraft/Aircraft'
+import { afterEach, describe, expect, it } from 'vitest'
+import { Aircraft, type AircraftImpact } from '../src/aircraft/Aircraft'
 import { attitudeInto, classifyContact } from '../src/systems/Collision'
+import { CollisionSystem } from '../src/systems/Collision'
+import {
+  setContactHeightSampler,
+  setGroundHeightSampler,
+  setGroundSurfaceSampler,
+} from '../src/world/ground'
+
+afterEach(() => {
+  setContactHeightSampler(null)
+  setGroundHeightSampler(null)
+  setGroundSurfaceSampler(null)
+})
 
 function impact(partial: Partial<AircraftImpact>): AircraftImpact {
   return {
@@ -126,5 +138,54 @@ describe('impact quaternion helper sanity', () => {
     const state = { pitch: 0, roll: 0, upY: 0 }
     expect(attitudeInto(state, q)).toBe(state)
     expect(state.upY).toBeCloseTo(1)
+  })
+})
+
+describe('collision query budget', () => {
+  it('skips the rich surface query for a high airborne jet', () => {
+    let surfaceSamples = 0
+    setGroundHeightSampler(() => 0)
+    setGroundSurfaceSampler((_x, _z, out) => {
+      surfaceSamples++
+      out.height = 0
+      out.kind = 'land'
+      return true
+    })
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.velocity.set(0, 0, 120)
+
+    expect(new CollisionSystem().check(aircraft)).toBe('air')
+    expect(surfaceSamples).toBe(0)
+  })
+
+  it('trusts the resolved impact surface without sampling it again', () => {
+    let surfaceSamples = 0
+    setGroundSurfaceSampler((_x, _z, out) => {
+      surfaceSamples++
+      out.height = 0
+      out.kind = 'land'
+      return true
+    })
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1.4, 0)
+    aircraft.impact = impact({ surface: 'water' })
+
+    expect(new CollisionSystem().check(aircraft)).toBe('crash')
+    expect(surfaceSamples).toBe(0)
+  })
+
+  it('short-circuits collision checks after a crash', () => {
+    let heightSamples = 0
+    setGroundHeightSampler(() => {
+      heightSamples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.crash()
+    const afterCrash = heightSamples
+
+    expect(new CollisionSystem().check(aircraft)).toBe('crash')
+    expect(heightSamples).toBe(afterCrash)
   })
 })

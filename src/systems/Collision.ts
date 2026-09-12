@@ -68,24 +68,38 @@ export class CollisionSystem {
    * Main freezes / shows banner on crash or landed.
    */
   check(aircraft: Aircraft): TouchResult {
-    const minY = contactMinY(
-      aircraft.position.x,
-      aircraft.position.z,
-      aircraft.controls.gearDown,
-    )
-    const onPad = aircraft.position.y <= minY + 0.2
+    if (aircraft.status === 'crashed') return 'crash'
+
+    const impact = aircraft.impact
+    // FlightModel already resolved the rich surface on an impact. For normal
+    // flight, only grounded or near-ground poses need a second surface query;
+    // a high airborne jet can classify as air from the cached grounded check.
+    const grounded = impact ? false : aircraft.onGround
+    let onPad = !!impact || grounded
+    let surface: ContactSurfaceKind = impact?.surface ?? 'land'
+    if (!impact && !grounded) {
+      const minY = contactMinY(
+        aircraft.position.x,
+        aircraft.position.z,
+        aircraft.controls.gearDown,
+      )
+      onPad = aircraft.position.y <= minY + 0.2
+    }
+    if (!impact && onPad) {
+      surface = sampleGroundSurfaceInto(
+        aircraft.position.x,
+        aircraft.position.z,
+        this.surfaceSample,
+      ).kind
+    }
+
     const vy = aircraft.impactVy < 0 ? aircraft.impactVy : aircraft.velocity.y
     const gs = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
     const pose = attitudeInto(this.pose, aircraft.orientation)
-    const surface = sampleGroundSurfaceInto(
-      aircraft.position.x,
-      aircraft.position.z,
-      this.surfaceSample,
-    ).kind
 
     const contact = this.contact
-    contact.airborne = aircraft.impact?.startedAirborne ?? !aircraft.onGround
-    contact.impact = aircraft.impact
+    contact.airborne = impact?.startedAirborne ?? !grounded
+    contact.impact = impact
     contact.onPad = onPad
     contact.gearDown = aircraft.controls.gearDown
     contact.vy = vy

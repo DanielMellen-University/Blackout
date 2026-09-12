@@ -257,7 +257,6 @@ export class Aircraft {
 
   step(dt: number): void {
     if (this.status === 'crashed') {
-      this.updateVisuals(dt)
       return
     }
     // Terrain chunks can be replaced between simulation steps, so never carry
