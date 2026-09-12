@@ -66,4 +66,16 @@ describe('flight cautions', () => {
     expect(overspeedWarningActive(flightConfig.maxSpeed + 0.1)).toBe(true)
     expect(overspeedWarningActive(Number.NaN)).toBe(false)
   })
+
+  it('labels an overspeed transition without changing caution priority', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, 0, flightConfig.maxSpeed + 1)
+
+    const warning = evaluateWarnings(aircraft, 9000)
+    expect(warning.text).toBe('OVERSPEED')
+    expect(warning.level).toBe('caution')
+    expect(warning.overspeed).toBe(true)
+    expect(warning.stall).toBe(false)
+  })
 })

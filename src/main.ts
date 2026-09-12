@@ -744,7 +744,7 @@ async function boot(): Promise<void> {
       const pose = attitudeFromOrientation(aircraft.orientation)
       const warn = evaluateWarnings(aircraft, alt)
       if (warn.text !== prevWarning) {
-        if (warn.text) audio.playCue('warning')
+        if (warn.text) audio.playCue(warn.overspeed ? 'overspeed' : 'warning')
         prevWarning = warn.text
       }
       const nav = world.mission.hud(

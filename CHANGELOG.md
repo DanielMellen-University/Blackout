@@ -14,6 +14,7 @@
 - Advance chase-camera auto-return from rendered delta time, removing its per-frame wall-clock read while keeping paused framing frozen.
 - Drive mission gate pulses and pass flashes from the shared RAF timestamp, removing their per-frame wall-clock reads while preserving route feedback.
 - Add a view-aware flight mix that muffles wind, precipitation, and turbine whine in cockpit view while retaining engine presence without new audio nodes.
+- Give the existing overspeed caution a distinct soft descending cue so it does not sound like stall or terrain warnings.
 - Coalesce mission navigation bearings by reusing aircraft-relative data in cockpit view and avoiding an external camera matrix refresh.
 - Mutate the cached windsock weather state in place so smooth wind fronts do not clone a replacement record every frame.
 - Reset world weather-effect caching during reseed so a matching profile still reapplies wet, snow, wind, and settlement lighting to fresh streamed content.

@@ -209,6 +209,7 @@ export class FlightAudio {
       | 'ab'
       | 'thunder'
       | 'warning'
+      | 'overspeed'
       | 'gear-up'
       | 'gear-down',
   ): void {
@@ -245,6 +246,11 @@ export class FlightAudio {
       const second = lowering ? 225 : 300
       this.tone(first, now, 0.08, 'triangle', 0.07, lowering ? 118 : 165)
       this.tone(second, now + 0.055, 0.09, 'sine', 0.05, lowering ? 190 : 250)
+    } else if (kind === 'overspeed') {
+      // A descending pair separates speed-envelope pressure from stall and
+      // terrain cautions without turning the cue into a harsh alarm.
+      this.tone(680, now, 0.08, 'sine', 0.06, 520)
+      this.tone(470, now + 0.1, 0.1, 'sine', 0.05, 360)
     } else if (kind === 'warning') {
       // A short, soft edge cue. The HUD carries the sustained warning state;
       // audio only announces a new caution so it cannot become a siren.
