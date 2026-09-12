@@ -32,6 +32,7 @@ import {
 } from './core/suppressBrowserUi'
 import {
   shouldAdvanceWorld,
+  shouldPauseForContextLoss,
   shouldPauseForFocusLost,
   shouldRenderFrame,
   shouldUpdateLiveHud,
@@ -369,6 +370,12 @@ async function boot(): Promise<void> {
     event.preventDefault()
     contextLost = true
     showBanner('GRAPHICS PAUSED / RECOVERING', 8000, 'danger')
+    if (shouldPauseForContextLoss(playing, menu.paused, results.open)) {
+      menu.openPause()
+      input.clearQueued()
+      time.reset()
+      syncInputContext()
+    }
   }
   const onContextRestored = (): void => {
     contextLost = false

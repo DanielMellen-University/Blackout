@@ -49,6 +49,15 @@ export function shouldPauseForFocusLost(
   return playing && !menuPaused && !resultsOpen
 }
 
+/** Pause active flight while the GPU context is unavailable. */
+export function shouldPauseForContextLoss(
+  playing: boolean,
+  menuPaused: boolean,
+  resultsOpen: boolean,
+): boolean {
+  return playing && !menuPaused && !resultsOpen
+}
+
 /**
  * Frame timing helper. Simulation uses a fixed-step accumulator so low FPS
  * does not slow the jet down; leftover time past MAX_STEPS is dropped.

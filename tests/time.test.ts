@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   shouldAdvanceWorld,
+  shouldPauseForContextLoss,
   shouldPauseForFocusLost,
   shouldRenderFrame,
   shouldUpdateLiveHud,
@@ -115,5 +116,12 @@ describe('Time', () => {
     expect(shouldPauseForFocusLost(true, true, false)).toBe(false)
     expect(shouldPauseForFocusLost(true, false, true)).toBe(false)
     expect(shouldPauseForFocusLost(false, false, false)).toBe(false)
+  })
+
+  it('pauses active flight when graphics context recovery begins', () => {
+    expect(shouldPauseForContextLoss(true, false, false)).toBe(true)
+    expect(shouldPauseForContextLoss(true, true, false)).toBe(false)
+    expect(shouldPauseForContextLoss(true, false, true)).toBe(false)
+    expect(shouldPauseForContextLoss(false, false, false)).toBe(false)
   })
 })
