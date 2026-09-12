@@ -140,6 +140,7 @@ export class World {
 
   /** Stage the title screen without throwing away the nearby settlement cache. */
   setSettlementsVisible(visible: boolean): void {
+    if (this.disposed) return
     this.settlements.setVisible(visible)
   }
 
@@ -149,6 +150,7 @@ export class World {
    * throws after a world already exists, the previous seed/pad stay in place.
    */
   reseed(requestedSeed?: number): number {
+    if (this.disposed) return this.seed
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
       throw new Error('World seed must be finite')
     }
@@ -209,6 +211,7 @@ export class World {
 
   /** True if a world-space point overlaps hangar, tower, or shack. */
   hitObstacle(x: number, y: number, z: number): boolean {
+    if (this.disposed) return false
     if (this.settlements.hitObstacle(x, y, z)) return true
     const pad = getOpsPad()
     if (!pad) return false
@@ -235,6 +238,7 @@ export class World {
   }
 
   cycleWeather(): WeatherId {
+    if (this.disposed) return this.atmosphere.weather
     return this.atmosphere.cycleWeather()
   }
 

@@ -56,6 +56,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Menu and results overlays now become inert after teardown, blocking late DOM mutations while keeping repeated disposal safe during runtime reloads.
 - The optional `?debug=1` overlay now releases its DOM marker and ring resources on teardown, preventing debug sessions from leaking across reloads.
 - Pooled crash and landing effects now ignore late triggers after teardown and release safely on repeated disposal, preventing stale VFX from surviving runtime reloads.
+- The world façade now fails closed after disposal, so late reseed, weather, settlement-visibility, and collision calls cannot reach released subsystems.
 - Flight audio now recovers from a browser-closed context and ignores late resume, update, and cue calls after teardown.
 - One-shot flight cues and volume writes also bail out cleanly when a browser closes the audio context mid-frame, preventing dead-context exceptions during tab recovery.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
