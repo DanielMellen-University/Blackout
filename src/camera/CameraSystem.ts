@@ -169,6 +169,9 @@ export class CameraSystem {
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
     if (this.disposed) return
     const leavingCockpit = this.mode === 'cockpit' && mode !== 'cockpit'
+    const externalYaw = this.yaw
+    const externalPitch = this.pitch
+    const externalDistance = this.distance
     this.autoReturnEnabled = true
     this.mode = mode
     this.lookReady = false
@@ -177,8 +180,15 @@ export class CameraSystem {
     if (mode === 'cockpit') {
       this.cockpit.enter(this.camera)
     } else {
-      if (leavingCockpit) this.cockpit.exit(this.camera)
-      this.applyModeDefaults(mode)
+      if (leavingCockpit) {
+        this.cockpit.exit(this.camera)
+        this.applyModeDefaults(mode)
+        this.yaw = externalYaw
+        this.pitch = externalPitch
+        this.distance = externalDistance
+      } else {
+        this.applyModeDefaults(mode)
+      }
     }
 
     if (aircraft) {

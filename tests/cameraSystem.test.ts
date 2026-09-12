@@ -33,6 +33,35 @@ describe('external camera framing', () => {
     expect(cameraModeCue('cockpit')).toBe('COCKPIT VIEW')
   })
 
+  it('restores the last external framing after a cockpit toggle', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+
+    cameras.setMode('chase', aircraft)
+    const state = cameras as unknown as { yaw: number; pitch: number; distance: number }
+    state.yaw = -0.72
+    state.pitch = 0.41
+    state.distance = 27
+
+    cameras.setMode('cockpit', aircraft)
+    expect(cameras.camera.fov).toBe(74)
+    cameras.setMode('chase', aircraft)
+
+    expect(state.yaw).toBeCloseTo(-0.72)
+    expect(state.pitch).toBeCloseTo(0.41)
+    expect(state.distance).toBeCloseTo(27)
+    expect(cameras.camera.fov).toBe(60)
+    cameras.dispose()
+  })
+
   it('seeds the external rig immediately when an aircraft is supplied', () => {
     const target = {
       addEventListener: vi.fn(),
