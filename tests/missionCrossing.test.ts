@@ -117,4 +117,14 @@ describe('MissionSystem gate crossing', () => {
     expect(gateBeaconDistanceOpacity(1000)).toBeCloseTo(1)
     expect(gateBeaconDistanceOpacity(Number.NaN)).toBe(1)
   })
+
+  it('ignores late mission calls after idempotent teardown', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    mission.dispose()
+    mission.dispose()
+    mission.start(100, 20, 100, 0)
+    expect(mission.update(0, 0, 0)).toBe('none')
+    expect(() => mission.tick()).not.toThrow()
+  })
 })

@@ -82,6 +82,7 @@ export class MissionSystem {
   private passFlashStartedAt = 0
   /** Presentation clock in milliseconds, supplied by RAF when available. */
   private presentationTimeMs = 0
+  private disposed = false
 
   constructor(scene: Scene) {
     this.root.name = 'MissionGates'
@@ -151,6 +152,7 @@ export class MissionSystem {
 
   /** Place a new circuit from the current runway spawn. */
   start(spawnX: number, spawnY: number, spawnZ: number, spawnYaw: number): void {
+    if (this.disposed) return
     this.clear()
     this.status = 'live'
     this.next = 0
@@ -184,6 +186,7 @@ export class MissionSystem {
 
   /** Pulse the live ring and hold the far-visible beacon on it. */
   tick(nowMs?: number, playerX?: number, playerY?: number, playerZ?: number): void {
+    if (this.disposed) return
     const now = this.resolvePresentationTime(nowMs, nowMs === undefined)
     if (this.passFlash?.visible) {
       const progress = (now - this.passFlashStartedAt) / 560
@@ -223,6 +226,7 @@ export class MissionSystem {
   }
 
   update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'complete' {
+    if (this.disposed) return 'none'
     this.resolvePresentationTime(nowMs)
     if (this.status !== 'live' || this.next >= this.gates.length) {
       this.remember(px, py, pz)
@@ -400,6 +404,8 @@ export class MissionSystem {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     disposeObjectTree(this.root)
     this.root.removeFromParent()
     this.gates.length = 0
