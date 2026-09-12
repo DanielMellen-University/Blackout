@@ -35,6 +35,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash
 - Engine, weather, and event audio now share a conservative output limiter, preventing stacked cues from clipping at full power.
 - Press **M** during flight to mute or restore audio without pausing; the HUD shows the live audio state.
+- Caution and warning banners stop pulsing when the browser requests reduced motion, preserving readable alerts without visual flashing.
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.
 - Frozen title and pause frames skip redundant atmosphere light, sky, cloud, and weather work while still refreshing when the camera anchor or weather state changes.
