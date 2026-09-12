@@ -47,6 +47,8 @@ describe('HUD value formatting', () => {
     expect(speedJuiceIntensity(1800)).toBeGreaterThan(0)
     expect(speedJuiceIntensity(3000)).toBeCloseTo(.42)
     expect(speedJuiceIntensity(5000)).toBeCloseTo(.42)
+    expect(speedJuiceIntensity(Number.NaN)).toBe(0)
+    expect(speedJuiceIntensity(3000, Number.NaN)).toBeCloseTo(.42)
   })
 
   it('marks the airspeed redline without hiding true overspeed', () => {
@@ -141,6 +143,8 @@ describe('HUD value formatting', () => {
     expect(afterburnerHeatIntensity(1500, true)).toBeCloseTo(0.11)
     expect(afterburnerHeatIntensity(3000, true)).toBeCloseTo(0.16)
     expect(afterburnerHeatIntensity(5000, true)).toBeCloseTo(0.16)
+    expect(afterburnerHeatIntensity(Number.NaN, true)).toBeCloseTo(0.06)
+    expect(afterburnerHeatIntensity(1500, true, Number.NaN)).toBeCloseTo(0.11)
   })
 
   it('marks the nav cue near the active gate only inside the soft window', () => {

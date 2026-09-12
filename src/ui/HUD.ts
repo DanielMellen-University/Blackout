@@ -835,7 +835,9 @@ export function gearTransitionActive(now: number, until: number): boolean {
 
 /** Edge-streak intensity for the version-7 high-speed HUD treatment. */
 export function speedJuiceIntensity(knots: number, maxKts = 3000): number {
-  const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
+  const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
+  const safeMaxKts = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 3000
+  const t = Math.min(1, Math.max(0, safeKnots / safeMaxKts))
   if (t <= 0.18) return 0
   return Math.min(0.42, (t - 0.18) * 0.52)
 }
@@ -889,7 +891,9 @@ export function afterburnerHeatIntensity(
   maxKts = 3000,
 ): number {
   if (!boost) return 0
-  const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
+  const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
+  const safeMaxKts = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 3000
+  const t = Math.min(1, Math.max(0, safeKnots / safeMaxKts))
   return Math.min(0.16, 0.06 + t * 0.1)
 }
 
