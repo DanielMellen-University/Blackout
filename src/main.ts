@@ -163,8 +163,11 @@ async function boot(): Promise<void> {
 
   const courseId = (): string => `seed:${world.worldSeed}`
 
+  let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {
     const live = playing && !menu.paused && !results.open
+    if (live === lastInputContextLive) return
+    lastInputContextLive = live
     input.flightLive = live
     setFlightKeyCapture(live)
   }

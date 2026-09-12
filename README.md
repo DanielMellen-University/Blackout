@@ -41,6 +41,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Audio mute takes effect immediately, including for event cues raised in the same simulation frame as the toggle.
 - Hidden tabs skip camera, renderer, and debug submissions while keeping simulation timing and world streaming ready for the next visible frame.
 - Static title, pause, and results frames skip world streaming work until flight resumes, reducing idle CPU without changing the live anchor or weather path.
+- Flight keyboard-capture state is now coalesced, so steady frames do not rewrite the same input mode.
 - The active-gate beacon now updates only when the route changes, avoiding a redundant per-frame position copy while preserving the same visible guidance.
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.

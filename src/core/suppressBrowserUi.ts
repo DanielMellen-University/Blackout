@@ -94,6 +94,7 @@ function isEditableTarget(t: EventTarget | null): boolean {
 let captureFlightKeys = false
 
 export function setFlightKeyCapture(on: boolean): void {
+  if (captureFlightKeys === on) return
   captureFlightKeys = on
 }
 
