@@ -471,6 +471,7 @@ body,
   align-items: center;
   justify-content: center;
   padding: 24px;
+  overflow-y: auto;
 }
 
 .menu[hidden] {
@@ -491,6 +492,8 @@ body,
 }
 
 .menu-panel {
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
   padding: 22px 24px 20px;
   background: rgba(6, 10, 16, 0.94);
   border: 1px solid var(--panel-border);
