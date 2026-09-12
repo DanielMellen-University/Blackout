@@ -12,6 +12,12 @@ export class InputManager {
   private readonly keys = new Set<string>()
   private readonly controls: ControlState = createDefaultControls()
   private readonly target: Window
+  private gamepadPollIn = 0
+  private gamepadPitch = 0
+  private gamepadRoll = 0
+  private gamepadYaw = 0
+  private gamepadThrottle = 0
+  private gamepadBoost = false
 
   cameraToggleQueued = false
   resetQueued = false
@@ -35,15 +41,21 @@ export class InputManager {
     this.target.removeEventListener('keyup', this.onKeyUp)
     this.target.removeEventListener('blur', this.onBlur)
     this.keys.clear()
+    this.gamepadPitch = 0
+    this.gamepadRoll = 0
+    this.gamepadYaw = 0
+    this.gamepadThrottle = 0
+    this.gamepadBoost = false
   }
 
   sampleWithDt(dt: number): ControlState {
     const step = Math.max(0, Math.min(dt, 0.05))
+    this.updateGamepad(step)
 
-    this.controls.pitch = this.axis('KeyW', 'KeyS')
-    this.controls.yaw = this.axis('KeyD', 'KeyA')
-    this.controls.roll = this.axis('KeyQ', 'KeyE')
-    this.controls.boost = this.keys.has('Space')
+    this.controls.pitch = mergeAxis(this.axis('KeyW', 'KeyS'), this.gamepadPitch)
+    this.controls.yaw = mergeAxis(this.axis('KeyD', 'KeyA'), this.gamepadYaw)
+    this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll)
+    this.controls.boost = this.keys.has('Space') || this.gamepadBoost
 
     // Engine power: Shift up, Ctrl down
     const thrRate = flightConfig.throttleRate
@@ -54,6 +66,7 @@ export class InputManager {
     if (this.keys.has('Digit2') || this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')) {
       thr += thrRate * step
     }
+    thr += this.gamepadThrottle * thrRate * step
     this.controls.throttle = thr < 0 ? 0 : thr > 1 ? 1 : thr
 
     return this.controls
@@ -120,6 +133,46 @@ export class InputManager {
     return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
 
+  /** Poll a connected standard gamepad at 10 Hz to keep flight input cheap. */
+  private updateGamepad(dt: number): void {
+    this.gamepadPollIn -= dt
+    if (this.gamepadPollIn > 0) return
+    this.gamepadPollIn = 0.1
+    this.gamepadPitch = 0
+    this.gamepadRoll = 0
+    this.gamepadYaw = 0
+    this.gamepadThrottle = 0
+    this.gamepadBoost = false
+
+    if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') return
+    let pads: readonly (Gamepad | null)[]
+    try {
+      pads = navigator.getGamepads()
+    } catch {
+      return
+    }
+    let pad: Gamepad | null = null
+    for (let i = 0; i < pads.length; i++) {
+      const candidate = pads[i]
+      if (candidate?.connected) {
+        pad = candidate
+        break
+      }
+    }
+    if (!pad) return
+
+    // Standard mapping: left stick pitch/roll, right stick X yaw.
+    this.gamepadRoll = normalizeGamepadAxis(pad.axes[0] ?? 0)
+    this.gamepadPitch = -normalizeGamepadAxis(pad.axes[1] ?? 0)
+    this.gamepadYaw = normalizeGamepadAxis(pad.axes[2] ?? 0)
+    // LT brakes throttle, RT advances it, and A/ Cross is afterburner.
+    const leftTrigger = pad.buttons[6]?.value ?? 0
+    const rightTrigger = pad.buttons[7]?.value ?? 0
+    this.gamepadThrottle = Math.max(0, Math.min(1, rightTrigger)) -
+      Math.max(0, Math.min(1, leftTrigger))
+    this.gamepadBoost = pad.buttons[0]?.pressed ?? false
+  }
+
   private onKeyDown = (e: KeyboardEvent): void => {
     if (this.flightLive && this.shouldPreventBrowserDefault(e)) {
       e.preventDefault()
@@ -173,4 +226,19 @@ export class InputManager {
     this.keys.clear()
     this.clearQueued()
   }
+}
+
+/** Apply a centered dead zone and rescale the remaining stick travel. */
+export function normalizeGamepadAxis(value: number, deadzone = 0.14): number {
+  if (!Number.isFinite(value)) return 0
+  const safeDeadzone = Math.max(0, Math.min(0.9, deadzone))
+  const clamped = Math.max(-1, Math.min(1, value))
+  const magnitude = Math.abs(clamped)
+  if (magnitude <= safeDeadzone) return 0
+  const scaled = (magnitude - safeDeadzone) / (1 - safeDeadzone)
+  return Math.sign(clamped) * scaled
+}
+
+function mergeAxis(keyboard: number, gamepad: number): number {
+  return Math.abs(keyboard) > 0.001 ? keyboard : gamepad
 }

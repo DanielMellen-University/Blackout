@@ -193,6 +193,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **C** | Toggle external / cockpit camera |
 | **N** | Weather |
 | **M** | Mute / unmute audio |
+| **Gamepad** | Left stick pitch/roll, LT/RT throttle, A / Cross afterburner |
 | **R** | New world + runway |
 | **Esc** | Pause menu |
 
