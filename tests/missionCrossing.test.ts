@@ -66,6 +66,19 @@ describe('MissionSystem gate crossing', () => {
     mission.dispose()
   })
 
+  it('uses the supplied frame timestamp for gate presentation', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    const ring = mission.root.getObjectByName('gate_0')!
+
+    mission.tick(1000)
+    const firstScale = ring.scale.x
+    mission.tick(1100)
+
+    expect(ring.scale.x).not.toBe(firstScale)
+    mission.dispose()
+  })
+
   it('reuses the fixed gate scene footprint across retries', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)

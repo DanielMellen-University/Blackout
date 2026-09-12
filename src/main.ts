@@ -618,6 +618,7 @@ async function boot(): Promise<void> {
             aircraft.position.x,
             aircraft.position.y,
             aircraft.position.z,
+            nowMs,
           )
           if (event === 'pass') {
             challenge.recordGate(world.mission.lastPassQuality)
@@ -634,7 +635,7 @@ async function boot(): Promise<void> {
         challenge.update(dt, aircraft.speed)
       }
 
-      world.mission.tick()
+      world.mission.tick(nowMs)
       if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
         banner = null
       }

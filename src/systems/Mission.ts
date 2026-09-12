@@ -79,6 +79,8 @@ export class MissionSystem {
   private readonly passFlashMat: MeshBasicMaterial
   private readonly passFlash: Mesh
   private passFlashStartedAt = 0
+  /** Presentation clock in milliseconds, supplied by RAF when available. */
+  private presentationTimeMs = 0
 
   constructor(scene: Scene) {
     this.root.name = 'MissionGates'
@@ -180,8 +182,8 @@ export class MissionSystem {
   }
 
   /** Pulse the live ring and hold the far-visible beacon on it. */
-  tick(): void {
-    const now = performance.now()
+  tick(nowMs?: number): void {
+    const now = this.resolvePresentationTime(nowMs)
     if (this.passFlash?.visible) {
       const progress = (now - this.passFlashStartedAt) / 560
       if (progress >= 1) {
@@ -218,7 +220,8 @@ export class MissionSystem {
     this.beaconMat.opacity = pulse + near * 0.18
   }
 
-  update(px: number, py: number, pz: number): 'none' | 'pass' | 'complete' {
+  update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'complete' {
+    this.resolvePresentationTime(nowMs)
     if (this.status !== 'live' || this.next >= this.gates.length) {
       this.remember(px, py, pz)
       return 'none'
@@ -338,7 +341,7 @@ export class MissionSystem {
     const ring = gate.root.children[0]
     if (ring) flash.rotation.copy(ring.rotation)
     flash.scale.setScalar(1)
-    this.passFlashStartedAt = performance.now()
+    this.passFlashStartedAt = this.presentationTimeMs
     this.passFlashMat.opacity = missionPassFlashOpacity(0)
     flash.visible = true
   }
@@ -381,6 +384,15 @@ export class MissionSystem {
     this.passFlashMat.opacity = 0
     this.passFlash.visible = false
     this.passFlashStartedAt = 0
+    this.presentationTimeMs = 0
+  }
+
+  /** Keep mission presentation monotonic and independent from wall-clock reads. */
+  private resolvePresentationTime(nowMs?: number): number {
+    if (Number.isFinite(nowMs)) {
+      this.presentationTimeMs = Math.max(this.presentationTimeMs, nowMs!)
+    }
+    return this.presentationTimeMs
   }
 
   dispose(): void {
