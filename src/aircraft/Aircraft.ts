@@ -223,6 +223,7 @@ export class Aircraft {
    * Reset to runway. Pass world spawn pose so airfield can move with flat-biome search.
    */
   reset(spawn?: { x: number; y: number; z: number; yaw: number }): void {
+    if (this.disposed) return
     const s = flightConfig.spawn
     const x = spawn?.x ?? s.position.x
     const y = spawn?.y ?? s.position.y
@@ -259,6 +260,7 @@ export class Aircraft {
 
   /** Store the pose from before this physics step for render interpolation. */
   capturePrevious(): void {
+    if (this.disposed) return
     this.prevPosition.copy(this.position)
     this.prevOrientation.copy(this.orientation)
   }
@@ -268,6 +270,7 @@ export class Aircraft {
    * `alpha` 0 = previous step, 1 = current step.
    */
   present(alpha: number): void {
+    if (this.disposed) return
     const t = alpha >= 1 ? 1 : alpha <= 0 ? 0 : alpha
     if (t === 1) {
       this.displayPosition.copy(this.position)
@@ -285,6 +288,7 @@ export class Aircraft {
 
   /** Copy physics pose to the display pose (reset, pause, crash). */
   snapDisplay(nowMs?: number): void {
+    if (this.disposed) return
     this.prevPosition.copy(this.position)
     this.prevOrientation.copy(this.orientation)
     this.present(1)
@@ -292,7 +296,7 @@ export class Aircraft {
   }
 
   step(dt: number, nowMs?: number): void {
-    if (this.status === 'crashed') {
+    if (this.disposed || this.status === 'crashed') {
       return
     }
     // Terrain chunks can be replaced between simulation steps, so never carry
@@ -307,6 +311,7 @@ export class Aircraft {
   }
 
   crash(): void {
+    if (this.disposed) return
     this.status = 'crashed'
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
@@ -331,11 +336,13 @@ export class Aircraft {
   }
 
   markLanded(): void {
+    if (this.disposed) return
     if (this.status === 'ok') this.status = 'landed'
   }
 
   /** After a landing, going airborne again is a new flight. */
   clearLanded(): void {
+    if (this.disposed) return
     if (this.status === 'landed') this.status = 'ok'
   }
 
@@ -357,6 +364,7 @@ export class Aircraft {
   }
 
   syncMesh(): void {
+    if (this.disposed) return
     this.mesh.position.copy(this.position)
     this.mesh.quaternion.copy(this.orientation)
   }
@@ -366,6 +374,7 @@ export class Aircraft {
    * the existing silhouette readable without adding lights or draw calls.
    */
   setNightReadability(daylight: number): void {
+    if (this.disposed) return
     const intensity = nightAirframeEmissiveIntensity(daylight)
     this.presentationDaylight = Number.isFinite(daylight)
       ? MathUtils.clamp(daylight, 0, 1)
@@ -670,6 +679,7 @@ export class Aircraft {
   }
 
   get onGround(): boolean {
+    if (this.disposed) return false
     const p = this.position
     const o = this.orientation
     const gearDown = this.controls.gearDown

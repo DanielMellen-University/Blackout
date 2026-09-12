@@ -384,6 +384,28 @@ describe('rebuilt aircraft', () => {
     expect(aircraft.mesh.children).toHaveLength(0)
   })
 
+  it('ignores late lifecycle calls after idempotent disposal', () => {
+    const aircraft = new Aircraft()
+    aircraft.dispose()
+    aircraft.dispose()
+
+    expect(() => {
+      aircraft.reset({ x: 20, y: 80, z: -40, yaw: 1 })
+      aircraft.capturePrevious()
+      aircraft.present(0.5)
+      aircraft.snapDisplay(1200)
+      aircraft.step(1 / 60, 1216)
+      aircraft.crash()
+      aircraft.markLanded()
+      aircraft.clearLanded()
+      aircraft.syncMesh()
+      aircraft.setNightReadability(0)
+    }).not.toThrow()
+    expect(aircraft.mesh.children).toHaveLength(0)
+    expect(aircraft.onGround).toBe(false)
+    expect(aircraft.status).toBe('ok')
+  })
+
   it('caches visual nodes instead of searching the model every physics step', () => {
     const aircraft = new Aircraft()
     const lookup = vi.spyOn(aircraft.mesh, 'getObjectByName')

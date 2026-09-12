@@ -167,6 +167,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Resize bursts are coalesced to one renderer and camera update per animation frame, and steady tone-mapping exposure avoids redundant renderer state writes.
 - Runtime teardown closes Web Audio, renderer, camera, and input resources on page unload so reloads do not leave stale browser work behind.
 - Runtime teardown also releases streamed terrain, settlement workers, weather pools, mission gates, crash effects, runway assets, and aircraft resources before renderer disposal.
+- Aircraft reset, presentation, simulation, landing, readability, and ground-state calls now fail closed after disposal, preventing late remount callbacks from mutating released model state.
 - Settlement streaming teardown is idempotent and ignores late updates, so reloads and remounts cannot double-release shared geometry or rebuild a disposed world.
 - Runtime teardown now unregisters global key, fullscreen, resize, and visibility handlers so a remounted scene cannot drive disposed state.
 - Browser-suppression handlers now have an idempotent teardown that restores the canvas focus and context-menu state on runtime disposal.
