@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ChallengeRun, formatTime } from '../src/systems/ChallengeRun'
+import { ChallengeRun, formatTime, resultMedalClass } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
   it('starts the clock on the takeoff roll and scores a completed landing', () => {
@@ -51,6 +51,13 @@ describe('ChallengeRun', () => {
 
   it('formats time with centiseconds', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
+  })
+
+  it('maps every result medal to a stable presentation class', () => {
+    expect(resultMedalClass('gold')).toBe('medal-gold')
+    expect(resultMedalClass('silver')).toBe('medal-silver')
+    expect(resultMedalClass('bronze')).toBe('medal-bronze')
+    expect(resultMedalClass('complete')).toBe('medal-complete')
   })
 
   it('reuses the clock label while the displayed centiseconds stay unchanged', () => {

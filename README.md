@@ -86,6 +86,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Version 7 adds a small airborne-touchdown camera pulse, keeping clean landings physical while staying far below the crash-shake envelope.
 - Version 7 adds a rare procedural dorsal anti-collision strobe to the F-35 silhouette, hidden between flashes so it adds detail without a steady draw cost.
 - Version 7 results now expose the gate-score contribution alongside total, time, and landing quality so circuit performance is readable after touchdown.
+- Results now tint the panel by medal tier and briefly call out a new best, with reduced-motion-safe presentation.
 - Version 7 adds edge-triggered procedural thunder for the existing rate-limited lightning flashes, keeping storms audible without repeated alarms.
 - Version 7 crash effects now reuse a fixed particle pool across retries, removing repeated mesh and material allocation without changing the explosion envelope.
 - Crash bursts are seeded from their impact state, so retries are visually repeatable while retaining the same pooled effect budget.

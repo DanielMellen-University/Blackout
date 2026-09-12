@@ -183,6 +183,11 @@ export function formatTime(seconds: number): string {
   return `${mins}:${secs.toFixed(2).padStart(5, '0')}`
 }
 
+/** Stable class hook for medal-specific results styling. */
+export function resultMedalClass(medal: Medal): string {
+  return `medal-${medal}`
+}
+
 function medalFor(score: number): Medal {
   if (score >= 88_000) return 'gold'
   if (score >= 76_000) return 'silver'

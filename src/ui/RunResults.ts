@@ -1,4 +1,6 @@
-import { formatTime, type ChallengeResult } from '../systems/ChallengeRun'
+import { formatTime, resultMedalClass, type ChallengeResult } from '../systems/ChallengeRun'
+
+const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
 
 /** Results screen for the takeoff → circuit → landing challenge loop. */
 export class RunResults {
@@ -25,6 +27,8 @@ export class RunResults {
   }
 
   show(result: ChallengeResult): void {
+    for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
+    this.root.classList.add(resultMedalClass(result.medal))
     this.title.textContent = `${result.medal.toUpperCase()} RUN`
     this.score.textContent = result.totalScore.toLocaleString()
     this.time.textContent = formatTime(result.elapsedSec)
@@ -33,6 +37,7 @@ export class RunResults {
     this.best.textContent = result.isNewBest
       ? `NEW BEST · ${result.bestScore.toLocaleString()}`
       : `BEST · ${result.bestScore.toLocaleString()}`
+    this.best.classList.toggle('new-best', result.isNewBest)
     this.root.hidden = false
     document.getElementById('btn-retry')?.focus({ preventScroll: true })
   }
@@ -47,4 +52,3 @@ function must(root: Document, id: string): HTMLElement {
   if (!el) throw new Error(`results missing #${id}`)
   return el
 }
-
