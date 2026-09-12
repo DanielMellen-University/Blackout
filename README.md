@@ -85,6 +85,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - PAPI brightness follows the day/night atmosphere, staying restrained in daylight and readable during night approaches.
 - Crash fireball updates resolve one shared impact-point ground sample per frame instead of querying terrain once per pooled particle, keeping the explosion cheap on steep streamed terrain.
 - Fixed-step timing now ignores malformed or backwards animation timestamps, preventing a bad browser frame from poisoning simulation interpolation or the FPS readout.
+- Timing resets also reject non-finite timestamps, keeping pause, focus, and resume transitions from poisoning the next fixed-step frame.
 - Low graphics quality now skips multisample antialiasing at renderer startup, while Balanced and High retain the sharper edge path.
 - High-altitude collision sweeps now use a conservative three-point terrain broad phase before running detailed body probes, trimming steady-flight height queries without changing near-ground contact.
 - Directional shadows now refresh on a bounded 20 Hz cadence instead of rebuilding every rendered frame, with immediate refreshes after quality or WebGL context changes.

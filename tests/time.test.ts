@@ -77,6 +77,20 @@ describe('Time', () => {
     expect(frame.steps).toBe(0)
   })
 
+  it('does not let a malformed reset timestamp poison the next frame', () => {
+    const time = new Time()
+    time.beginFrame(100)
+    time.reset(Number.NaN)
+
+    const first = time.beginFrame(250)
+    expect(first.frameDt).toBe(0)
+    expect(first.steps).toBe(0)
+
+    const recovered = time.beginFrame(266)
+    expect(recovered.frameDt).toBeCloseTo(0.016, 6)
+    expect(Number.isFinite(recovered.alpha)).toBe(true)
+  })
+
   it('skips world streaming on static non-flight frames', () => {
     expect(shouldAdvanceWorld(false, 0, 0)).toBe(false)
     expect(shouldAdvanceWorld(false, 0, 0.016)).toBe(true)

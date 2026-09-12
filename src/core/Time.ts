@@ -137,7 +137,7 @@ export class Time {
 
   /** Discard wall time accumulated while paused, hidden, or unfocused. */
   reset(nowMs: number | null = null): void {
-    this.lastMs = nowMs
+    this.lastMs = nowMs !== null && Number.isFinite(nowMs) ? nowMs : null
     this.accum = 0
   }
 
