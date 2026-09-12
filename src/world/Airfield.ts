@@ -20,6 +20,7 @@ const _scale = new Vector3()
 const _mat = new Matrix4()
 const _Y = new Vector3(0, 1, 0)
 const windsockState = new WeakMap<Group, { angle: number; speed: number }>()
+const windsockNodes = new WeakMap<Group, { windsock: Group; fabric: Mesh }>()
 
 interface PapiState {
   readonly group: Group
@@ -351,10 +352,15 @@ function buildWindsock(mat: Mats): Group {
 
 /** Drive the existing windsock from world wind without rebuilding its mesh. */
 export function setAirfieldWind(root: Group, windX: number, windZ: number): void {
-  const windsock = root.getObjectByName('Windsock')
-  if (!(windsock instanceof Group)) return
-  const sock = windsock.getObjectByName('WindsockFabric')
-  if (!(sock instanceof Mesh)) return
+  let nodes = windsockNodes.get(root)
+  if (!nodes) {
+    const windsock = root.getObjectByName('Windsock')
+    if (!(windsock instanceof Group)) return
+    const fabric = windsock.getObjectByName('WindsockFabric')
+    if (!(fabric instanceof Mesh)) return
+    nodes = { windsock, fabric }
+    windsockNodes.set(root, nodes)
+  }
 
   const wx = Number.isFinite(windX) ? windX : 0
   const wz = Number.isFinite(windZ) ? windZ : 0
@@ -374,9 +380,9 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
     Math.abs(previous.speed - speed) < 0.004
   ) return
   windsockState.set(root, { angle, speed })
-  windsock.rotation.y = angle
-  sock.rotation.x = 0.12 + speed * 0.18
-  sock.scale.set(1, 0.84 + speed * 0.28, 1)
+  nodes.windsock.rotation.y = angle
+  nodes.fabric.rotation.x = 0.12 + speed * 0.18
+  nodes.fabric.scale.set(1, 0.84 + speed * 0.28, 1)
 }
 
 /**

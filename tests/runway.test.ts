@@ -73,6 +73,17 @@ describe('runway lighting', () => {
     expect(Math.abs(Math.abs(windsock.rotation.y) - Math.PI)).toBeLessThan(0.005)
   })
 
+  it('caches windsock nodes after the first weather update', () => {
+    runway = createRunway()
+    const lookup = vi.spyOn(runway, 'getObjectByName')
+
+    setAirfieldWind(runway, 10, 0)
+    lookup.mockClear()
+    setAirfieldWind(runway, -8, 4)
+
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
   it('maps glide angle to a readable PAPI pattern', () => {
     const distance = 100
     expect(papiLightPattern(Math.tan(4 * Math.PI / 180) * distance, distance)).toBe(4)
