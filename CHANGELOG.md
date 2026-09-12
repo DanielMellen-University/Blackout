@@ -5,6 +5,7 @@
 ### Ship
 
 - Make optional aircraft GLB hydration cancellation-safe with request tokens and an owned dispose path, preventing late assets from mutating a torn-down runtime.
+- Keep final external camera effects above terrain clearance so touchdown shake and afterburner sway cannot clip the lens through ridges.
 - Replace per-flake snow sine and cosine evaluation with a shared periodic sway table, preserving storm motion while lowering CPU work at the full precipitation budget.
 - Coalesce unchanged runway windsock and PAPI poses while invalidating on runway rotation, keeping weather and approach cues responsive without repeated transform math.
 - Cache runway windsock nodes after their first weather update, preserving downwind animation while removing repeated scene-tree searches from the world tick.

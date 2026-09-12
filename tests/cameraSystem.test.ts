@@ -14,7 +14,7 @@ import {
   TOUCHDOWN_IMPULSE,
 } from '../src/camera/CameraSystem'
 import { CAMERA_MODES } from '../src/core/types'
-import { setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
+import { cameraMinY, setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
 
 describe('external camera framing', () => {
   afterEach(() => {
@@ -181,6 +181,36 @@ describe('external camera framing', () => {
 
     cameras.update(aircraft, 0)
     expect(samples).toBe(beforeFrozen)
+    cameras.dispose()
+  })
+
+  it('keeps impact and boost camera effects above the terrain floor', () => {
+    setGroundHeightSampler(() => 10)
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 12, 0)
+    aircraft.snapDisplay()
+
+    // The first update initializes the mode. Force a steep low-altitude rig
+    // so the post-effect clamp is exercised at the edge of the terrain.
+    cameras.update(aircraft, 1 / 60)
+    ;(cameras as unknown as { pitch: number }).pitch = -1.4
+    cameras.impulse(1)
+
+    const floor = cameraMinY(0, 0, 1.15)
+    let lowest = Number.POSITIVE_INFINITY
+    for (let i = 0; i < 24; i++) {
+      cameras.update(aircraft, 1 / 60)
+      lowest = Math.min(lowest, cameras.camera.position.y)
+    }
+
+    expect(lowest).toBeGreaterThanOrEqual(floor - 1e-6)
     cameras.dispose()
   })
 })

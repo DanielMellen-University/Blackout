@@ -352,8 +352,17 @@ export class CameraSystem {
       this.camera.position.lerp(_desired, alpha)
     }
     this.clampAboveGround(this.camera.position)
+    // Shake and afterburner sway are applied after the rig solve. Keep their
+    // final lens position above the terrain so a low pass cannot clip through
+    // a ridge during a touchdown pulse or boost.
+    const effectsMayMoveCamera = !this.reducedMotion && (
+      this.shake > 0.002 ||
+      this.boostSway > 0.001 ||
+      aircraft.engineState.afterburnerActive
+    )
     this.applyShake(dt)
     this.applyBoostSway(aircraft.engineState.afterburnerActive, dt)
+    if (effectsMayMoveCamera) this.clampAboveGround(this.camera.position)
 
     // Look slightly ahead of the jet (yaw-only offset + velocity lead)
     if (cfg.yawOnly) {
