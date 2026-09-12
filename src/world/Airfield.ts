@@ -383,9 +383,18 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   const wx = Number.isFinite(windX) ? windX : 0
   const wz = Number.isFinite(windZ) ? windZ : 0
   const yaw = root.rotation.y
-  const previous = windsockState.get(root)
+  let previous = windsockState.get(root)
+  if (!previous) {
+    previous = {
+      angle: Number.NaN,
+      speed: Number.NaN,
+      windX: Number.NaN,
+      windZ: Number.NaN,
+      yaw: Number.NaN,
+    }
+    windsockState.set(root, previous)
+  }
   if (
-    previous &&
     Math.abs(previous.windX - wx) < 0.002 &&
     Math.abs(previous.windZ - wz) < 0.002 &&
     Math.abs(angleDelta(previous.yaw, yaw)) < 0.001
@@ -400,14 +409,19 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   // so aim that axis downwind rather than into the incoming flow.
   const angle = magnitude > 1e-4 ? Math.atan2(-localX, -localZ) : 0
   if (
-    previous &&
     Math.abs(angleDelta(previous.angle, angle)) < 0.004 &&
     Math.abs(previous.speed - speed) < 0.004
   ) {
-    windsockState.set(root, { ...previous, windX: wx, windZ: wz, yaw })
+    previous.windX = wx
+    previous.windZ = wz
+    previous.yaw = yaw
     return
   }
-  windsockState.set(root, { angle, speed, windX: wx, windZ: wz, yaw })
+  previous.angle = angle
+  previous.speed = speed
+  previous.windX = wx
+  previous.windZ = wz
+  previous.yaw = yaw
   nodes.windsock.rotation.y = angle
   nodes.fabric.rotation.x = 0.12 + speed * 0.18
   nodes.fabric.scale.set(1, 0.84 + speed * 0.28, 1)
