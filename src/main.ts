@@ -132,6 +132,9 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
+  // Keep the title hero focused on the runway and jet. Nearby procedural
+  // cities remain generated and become visible as soon as flight starts.
+  world.setSettlementsVisible(false)
   applyAtmosphereQuality = (precipitationScale, cloudScale, vegetationScale) => {
     world.atmosphere.setPrecipitationScale(precipitationScale)
     world.atmosphere.setCloudDensityScale(cloudScale)
@@ -335,6 +338,7 @@ async function boot(): Promise<void> {
   const startGame = (): void => {
     if (playing) return
     playing = true
+    world.setSettlementsVisible(true)
     menu.close()
     results.hide()
     titleScreen?.classList.add('is-hidden')
@@ -354,6 +358,7 @@ async function boot(): Promise<void> {
 
   const quitToTitle = (): void => {
     playing = false
+    world.setSettlementsVisible(false)
     audioMuted = false
     audio.silence()
     menu.close()

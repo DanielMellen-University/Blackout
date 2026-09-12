@@ -34,6 +34,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.
 - Chase-camera ground occlusion uses a distance-aware probe budget, reducing close-rig terrain queries while retaining full coverage for long user-zoomed sightlines.
+- The title hero stages streamed settlements out of view so the runway and F-35 stay readable; the cached city and village layer returns immediately when flight starts.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.
 - The HUD now includes a lightweight fighter-style heading tape with cardinal marks and a centered caret, making yaw readable at a glance without adding scene work.

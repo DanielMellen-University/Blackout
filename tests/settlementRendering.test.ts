@@ -69,6 +69,21 @@ describe('settlement rendering and lifecycle', () => {
     expect(scene.children).toHaveLength(0)
   })
 
+  it('can stage settlements out of the title hero without clearing the cache', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    try {
+      system.update(3000, 3000)
+      expect(system.count).toBe(1)
+      system.setVisible(false)
+      expect(system.root.visible).toBe(false)
+      expect(system.count).toBe(1)
+      system.setVisible(true)
+      expect(system.root.visible).toBe(true)
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('adds one batched centerline pass for local settlement roads', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     system.update(3000, 3000)

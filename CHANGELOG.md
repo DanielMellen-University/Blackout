@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Stage streamed settlements out of the title hero, preserving their generated cache while keeping the runway and aircraft readable and restoring the layer on flight start.
 - Make chase-camera ground occlusion distance-aware, trimming redundant close-rig terrain probes while preserving full sampling on long sightlines.
 - Hide zero-count vegetation batches under reduced graphics presets, preserving authored matrices for instant restoration and removing empty renderer submissions.
 - Split visible mesh height queries from richer contact metadata so camera, AGL, collision-clearance, and landing-effect hot paths avoid redundant climate sampling.

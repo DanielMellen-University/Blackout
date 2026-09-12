@@ -138,6 +138,11 @@ export class World {
     return this.seed
   }
 
+  /** Stage the title screen without throwing away the nearby settlement cache. */
+  setSettlementsVisible(visible: boolean): void {
+    this.settlements.setVisible(visible)
+  }
+
   /**
    * New random world seed, pick a flat-biome airfield, rebuild terrain there.
    * Search and validation run before the live world is replaced. If anything

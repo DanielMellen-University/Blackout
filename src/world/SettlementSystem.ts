@@ -534,6 +534,11 @@ export class SettlementSystem {
   }
 
   get count(): number { return this.loaded.size }
+
+  /** Toggle the streamed settlement layer without discarding generated data. */
+  setVisible(visible: boolean): void {
+    this.root.visible = visible
+  }
   get buildingCount(): number {
     let count = 0
     for (const settlement of this.loaded.values()) count += settlement.plan.buildings.length
