@@ -194,6 +194,7 @@ async function boot(): Promise<void> {
     : null
   const syncReducedMotion = (): void => {
     const reduced = !!reducedMotionQuery?.matches
+    aircraft.setReducedMotion(reduced)
     cameras.setReducedMotion(reduced)
     world.atmosphere.setReducedMotion(reduced)
   }

@@ -320,6 +320,27 @@ describe('rebuilt aircraft', () => {
     expect(high).toBeLessThan(1.1)
   })
 
+  it('respects reduced motion for the aircraft exhaust pulse', () => {
+    const animated = new Aircraft()
+    animated.position.set(0, 1000, 0)
+    animated.controls.throttle = 1
+    animated.controls.boost = true
+    animated.step(0, 0)
+    const baseLength = animated.mesh.getObjectByName('afterburner')!.scale.z
+    animated.step(1 / 60, 37)
+    expect(animated.mesh.getObjectByName('afterburner')!.scale.z).not.toBeCloseTo(baseLength, 3)
+
+    const calm = new Aircraft()
+    calm.position.set(0, 1000, 0)
+    calm.controls.throttle = 1
+    calm.controls.boost = true
+    calm.setReducedMotion(true)
+    calm.step(0, 0)
+    const calmBaseLength = calm.mesh.getObjectByName('afterburner')!.scale.z
+    calm.step(1 / 60, 37)
+    expect(calm.mesh.getObjectByName('afterburner')!.scale.z).toBeCloseTo(calmBaseLength, 5)
+  })
+
   it('scales afterburner length with the displayed engine-power percentage', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 1000, 0)

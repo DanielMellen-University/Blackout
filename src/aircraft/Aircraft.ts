@@ -162,6 +162,7 @@ export class Aircraft {
   private modelLoadToken = 0
   private disposed = false
   private visualQuality: RenderQuality = 'balanced'
+  private reducedMotion = false
 
   constructor() {
     this.mesh = new Group()
@@ -407,6 +408,12 @@ export class Aircraft {
     this.applyVisualQuality()
   }
 
+  /** Disable continuous aircraft-only visual motion for motion-sensitive play. */
+  setReducedMotion(enabled: boolean): void {
+    if (this.disposed) return
+    this.reducedMotion = enabled
+  }
+
   /**
    * Articulated gear and power-driven exhaust for the procedural model.
    * Safe no-ops if nodes missing (GLB path).
@@ -449,7 +456,10 @@ export class Aircraft {
       }
     }
 
-    const navOpacity = navigationLightOpacity(now, this.presentationDaylight)
+    const navOpacity = navigationLightOpacity(
+      this.reducedMotion ? Number.NaN : now,
+      this.presentationDaylight,
+    )
     if (Math.abs(navOpacity - this.navLightOpacity) > .01) {
       this.navLightOpacity = navOpacity
       for (const material of this.navLightMaterials) material.opacity = navOpacity
@@ -473,7 +483,7 @@ export class Aircraft {
     // Stretch aft from the nozzle lip. Military power retains a compact hot
     // exhaust; afterburner grows to a long, wide plume at full engine power.
     const pulse =
-      boost && dt > 0 ? 1 + Math.sin(now * 0.028) * 0.08 : 1
+      boost && dt > 0 && !this.reducedMotion ? 1 + Math.sin(now * 0.028) * 0.08 : 1
     const len = (
       0.12 + plumeResponse * (boost ? 2.8 : 1.25)
     ) * pulse
@@ -489,7 +499,7 @@ export class Aircraft {
     for (let i = 0; i < this.plumeDiamonds.length; i++) {
       const diamond = this.plumeDiamonds[i]!
       if (this.visualQuality === 'low' && i > 0) continue
-      const scale = afterburnerDiamondPulse(i, now, boost, plumeResponse)
+      const scale = afterburnerDiamondPulse(i, now, boost && !this.reducedMotion, plumeResponse)
       diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
     }
     const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
