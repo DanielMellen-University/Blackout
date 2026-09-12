@@ -12,6 +12,7 @@
 - Coalesce mission navigation bearings by reusing aircraft-relative data in cockpit view and avoiding an external camera matrix refresh.
 - Mutate the cached windsock weather state in place so smooth wind fronts do not clone a replacement record every frame.
 - Reset world weather-effect caching during reseed so a matching profile still reapplies wet, snow, wind, and settlement lighting to fresh streamed content.
+- Share the main RAF timestamp with HUD gear-transition cues so timing remains deterministic without a redundant wall-clock read.
 - Replace per-flake snow sine and cosine evaluation with a shared periodic sway table, preserving storm motion while lowering CPU work at the full precipitation budget.
 - Coalesce unchanged runway windsock and PAPI poses while invalidating on runway rotation, keeping weather and approach cues responsive without repeated transform math.
 - Cache runway windsock nodes after their first weather update, preserving downwind animation while removing repeated scene-tree searches from the world tick.

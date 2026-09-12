@@ -181,6 +181,8 @@ export class HUD {
     mission?: string
     /** Next-gate range in meters; omit or 0 to hide. */
     navDist?: number
+    /** RAF timestamp shared by the main loop for time-based HUD cues. */
+    timeMs?: number
     /** Radians, 0 = ahead, + = right of nose. */
     navBearing?: number | null
     navAltDelta?: number
@@ -304,7 +306,7 @@ export class HUD {
     }
 
     if (this.gearEl && opts.gearDown !== undefined) {
-      const now = performance.now()
+      const now = Number.isFinite(opts.timeMs) ? opts.timeMs! : performance.now()
       if (this.previousGearDown !== null && this.previousGearDown !== opts.gearDown) {
         this.gearFlashUntil = now + 700
       }

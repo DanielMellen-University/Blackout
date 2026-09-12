@@ -68,6 +68,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Navigation arrows reuse the mission bearing in cockpit view and avoid a redundant camera matrix rebuild in external view, keeping guidance responsive with less HUD CPU work.
 - The runway windsock mutates one cached weather state during smooth wind fronts, avoiding steady-flight object churn while preserving its downwind pose.
 - Reseeding now forces weather effects onto the new terrain and settlement stream even when the next world chooses the same weather profile, preventing stale neutral materials.
+- HUD gear-transition cues use the main animation timestamp, keeping timing stable through frame hitches without an extra per-frame clock read.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.

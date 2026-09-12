@@ -283,6 +283,7 @@ async function boot(): Promise<void> {
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
+    timeMs: 0,
     banner: null,
     bannerTone: 'info',
     flightPathVisible: false,
@@ -784,6 +785,7 @@ async function boot(): Promise<void> {
         ? nav.bearing
         : gateScreenBearing(cameras.camera, gate)
       hudFrame.navAltDelta = nav.altDelta
+      hudFrame.timeMs = nowMs
       hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
       hudFrame.bannerTone = aircraft.status === 'crashed' ? 'danger' : bannerTone
       hudFrame.flightPathVisible = flightPathMarker.visible
