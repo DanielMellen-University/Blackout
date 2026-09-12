@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Drive the runway windsock from resolved weather wind direction and strength in runway-local space, with cached updates and no new draw calls.
 - Add deadbanded climb and sink colors to the signed vertical-speed HUD readout, improving landing readability without extra scene work or DOM churn.
 - Let the optional GLB aircraft replacement hydrate after the playable runtime is ready, so a missing or slow model request cannot block the title screen or first flight.
 - Replace per-streak rain sine evaluation with pooled sway values, preserving wind and storm drift while reducing heavy-weather CPU work.

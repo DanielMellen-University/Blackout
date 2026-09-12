@@ -8,7 +8,7 @@ import {
 import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
 import type { WeatherSnapshot } from './WeatherDirector'
-import { AIRFIELD_COLLIDERS } from './Airfield'
+import { AIRFIELD_COLLIDERS, setAirfieldWind } from './Airfield'
 import { randomizeWorldSeed, setWorldSeed } from './noise'
 import { createRunway, setRunwayDaylight } from './Runway'
 import {
@@ -185,6 +185,7 @@ export class World {
         this.atmosphere.randomizeWeather(this.seed)
         const initialWeather = this.atmosphere.weatherSnapshot
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
+        setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
         this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
         this.committed = true
         return this.seed
@@ -244,6 +245,7 @@ export class World {
     setRunwayDaylight(this.runway, this.atmosphere.daylight)
     const weather = this.atmosphere.weatherSnapshot
     this.applyWeatherEffects(weather, this.atmosphere.daylight)
+    setAirfieldWind(this.runway, weather.windX, weather.windZ)
   }
 
   /** Release all streamed and persistent world resources before renderer teardown. */

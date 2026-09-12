@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
 import { createRunway, runwayLightIntensity, setRunwayDaylight } from '../src/world/Runway'
+import { setAirfieldWind } from '../src/world/Airfield'
 
 describe('runway lighting', () => {
   let runway: ReturnType<typeof createRunway> | null = null
@@ -43,5 +44,19 @@ describe('runway lighting', () => {
     setRunwayDaylight(runway, 0.5)
 
     expect(lookup).not.toHaveBeenCalled()
+  })
+
+  it('aims the windsock downwind in runway-local space', () => {
+    runway = createRunway()
+    const windsock = runway.getObjectByName('Windsock')!
+    const fabric = runway.getObjectByName('WindsockFabric')!
+
+    setAirfieldWind(runway, 10, 0)
+    expect(windsock.rotation.y).toBeCloseTo(-Math.PI / 2)
+    expect(fabric.scale.y).toBeGreaterThan(0.84)
+
+    runway.rotation.y = Math.PI / 2
+    setAirfieldWind(runway, 10, 0)
+    expect(Math.abs(Math.abs(windsock.rotation.y) - Math.PI)).toBeLessThan(0.005)
   })
 })

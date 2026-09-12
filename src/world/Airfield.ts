@@ -11,6 +11,7 @@ import {
   Quaternion,
   SphereGeometry,
   Vector3,
+  MathUtils,
 } from 'three'
 
 const _pos = new Vector3()
@@ -18,6 +19,7 @@ const _quat = new Quaternion()
 const _scale = new Vector3()
 const _mat = new Matrix4()
 const _Y = new Vector3(0, 1, 0)
+const windsockState = new WeakMap<Group, { angle: number; speed: number }>()
 
 /** Axis-aligned box in runway-local metres (origin at pad centre). */
 export interface LocalBox {
@@ -313,6 +315,7 @@ function buildWindsock(mat: Mats): Group {
   g.add(pole)
 
   const sock = new Mesh(new ConeGeometry(0.55, 2.6, 7, 1, true), mat.sock)
+  sock.name = 'WindsockFabric'
   sock.geometry.rotateX(-Math.PI / 2)
   sock.position.set(0.2, 7.55, 1.15)
   sock.rotation.y = 0.18
@@ -326,6 +329,36 @@ function buildWindsock(mat: Mats): Group {
   g.add(hoop)
 
   return g
+}
+
+/** Drive the existing windsock from world wind without rebuilding its mesh. */
+export function setAirfieldWind(root: Group, windX: number, windZ: number): void {
+  const windsock = root.getObjectByName('Windsock')
+  if (!(windsock instanceof Group)) return
+  const sock = windsock.getObjectByName('WindsockFabric')
+  if (!(sock instanceof Mesh)) return
+
+  const wx = Number.isFinite(windX) ? windX : 0
+  const wz = Number.isFinite(windZ) ? windZ : 0
+  const yaw = root.rotation.y
+  // Convert world wind into runway-local axes before aiming the fabric.
+  const localX = Math.cos(yaw) * wx - Math.sin(yaw) * wz
+  const localZ = Math.sin(yaw) * wx + Math.cos(yaw) * wz
+  const magnitude = Math.hypot(localX, localZ)
+  const speed = MathUtils.clamp(magnitude / 31, 0, 1)
+  // The cone's local axis points toward -Z after its construction rotation,
+  // so aim that axis downwind rather than into the incoming flow.
+  const angle = magnitude > 1e-4 ? Math.atan2(-localX, -localZ) : 0
+  const previous = windsockState.get(root)
+  if (
+    previous &&
+    Math.abs(angleDelta(previous.angle, angle)) < 0.004 &&
+    Math.abs(previous.speed - speed) < 0.004
+  ) return
+  windsockState.set(root, { angle, speed })
+  windsock.rotation.y = angle
+  sock.rotation.x = 0.12 + speed * 0.18
+  sock.scale.set(1, 0.84 + speed * 0.28, 1)
 }
 
 function buildPapi(mat: Mats): Group {
@@ -419,4 +452,8 @@ function buildApronLights(mat: Mats): Group {
   mesh.instanceMatrix.needsUpdate = true
   g.add(mesh)
   return g
+}
+
+function angleDelta(from: number, to: number): number {
+  return Math.atan2(Math.sin(to - from), Math.cos(to - from))
 }
