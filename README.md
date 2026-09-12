@@ -49,6 +49,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Camera and cockpit teardown are idempotent, so duplicate unmounts cannot resurrect or double-release the camera-attached frame.
 - The procedural F-35 now carries a cached gear-linked nose landing lamp, adding approach and takeoff readability without dynamic lights or shadow cost.
 - Fast airborne external flight now shares the cockpit's velocity-vector cue, helping read drift and turn direction without new scene geometry or draw calls.
+- Flight audio now recovers from a browser-closed context and ignores late resume, update, and cue calls after teardown.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - The optional GLB aircraft loader is code-split from the initial bundle, so the procedural F-35 can boot with a smaller payload while the replacement model still loads and cleans up normally.
 - The nose wheel visibly follows A/D runway steering, then recenters smoothly after takeoff and resets with each new flight.

@@ -91,4 +91,16 @@ describe('flight audio automation', () => {
     expect(audio.setVolume(0.65)).toBeCloseTo(0.65)
     expect(audio.setVolume(2)).toBe(1)
   })
+
+  it('makes teardown idempotent and blocks post-dispose graph work', async () => {
+    const audio = new FlightAudio()
+    expect(audio.isDisposed).toBe(false)
+    audio.dispose()
+    expect(audio.isDisposed).toBe(true)
+    audio.dispose()
+    await audio.resume()
+    audio.playCue('gate')
+    audio.silence()
+    expect(audio.isDisposed).toBe(true)
+  })
 })

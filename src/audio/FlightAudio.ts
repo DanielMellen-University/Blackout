@@ -68,6 +68,7 @@ export class FlightAudio {
   private built = false
   private muted = true
   private volume = 1
+  private disposed = false
   private readonly scheduledTargets = new WeakMap<AudioParam, number>()
 
   /**
@@ -75,7 +76,12 @@ export class FlightAudio {
    * Safe to call repeatedly.
    */
   async resume(): Promise<void> {
+    if (this.disposed) return
     try {
+      if (this.ctx?.state === 'closed') {
+        this.ctx = null
+        this.built = false
+      }
       if (!this.ctx) {
         const AC =
           window.AudioContext ||
@@ -106,9 +112,11 @@ export class FlightAudio {
     /** True when the player is inside the camera-attached cockpit. */
     cockpit?: boolean
   }): void {
+    if (this.disposed) return
     const ctx = this.ctx
     if (
       !ctx ||
+      ctx.state === 'closed' ||
       !this.built ||
       !this.master ||
       !this.engineGain ||
@@ -214,6 +222,7 @@ export class FlightAudio {
       | 'gear-up'
       | 'gear-down',
   ): void {
+    if (this.disposed) return
     const ctx = this.ctx
     const output = this.effectsGain
     if (!ctx || !output || ctx.state === 'suspended' || this.muted || this.volume <= 0) return
@@ -272,6 +281,8 @@ export class FlightAudio {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     try {
       this.engineSrc?.stop()
       this.windSrc?.stop()
@@ -304,6 +315,10 @@ export class FlightAudio {
 
   get isMuted(): boolean {
     return this.muted
+  }
+
+  get isDisposed(): boolean {
+    return this.disposed
   }
 
   private scheduleTarget(
