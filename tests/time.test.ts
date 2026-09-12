@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   shouldAdvanceWorld,
+  shouldPauseForFocusLost,
   shouldUpdateLiveHud,
   SIM_STEP,
   Time,
@@ -60,5 +61,12 @@ describe('Time', () => {
     expect(shouldUpdateLiveHud(false, false)).toBe(false)
     expect(shouldUpdateLiveHud(true, false)).toBe(false)
     expect(shouldUpdateLiveHud(true, true)).toBe(true)
+  })
+
+  it('pauses active flight when focus is lost without auto-resuming menus', () => {
+    expect(shouldPauseForFocusLost(true, false, false)).toBe(true)
+    expect(shouldPauseForFocusLost(true, true, false)).toBe(false)
+    expect(shouldPauseForFocusLost(true, false, true)).toBe(false)
+    expect(shouldPauseForFocusLost(false, false, false)).toBe(false)
   })
 })

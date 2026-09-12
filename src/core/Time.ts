@@ -35,6 +35,15 @@ export function shouldUpdateLiveHud(playing: boolean, simulationLive: boolean): 
   return playing && simulationLive
 }
 
+/** Pause active flight when the window loses focus without auto-resuming. */
+export function shouldPauseForFocusLost(
+  playing: boolean,
+  menuPaused: boolean,
+  resultsOpen: boolean,
+): boolean {
+  return playing && !menuPaused && !resultsOpen
+}
+
 /**
  * Frame timing helper. Simulation uses a fixed-step accumulator so low FPS
  * does not slow the jet down; leftover time past MAX_STEPS is dropped.

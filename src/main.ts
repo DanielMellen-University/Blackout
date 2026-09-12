@@ -18,7 +18,12 @@ import {
   suppressBrowserUi,
   toggleGameFullscreen,
 } from './core/suppressBrowserUi'
-import { shouldAdvanceWorld, shouldUpdateLiveHud, Time } from './core/Time'
+import {
+  shouldAdvanceWorld,
+  shouldPauseForFocusLost,
+  shouldUpdateLiveHud,
+  Time,
+} from './core/Time'
 import { ChallengeRun } from './systems/ChallengeRun'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
@@ -173,6 +178,7 @@ async function boot(): Promise<void> {
     audio.dispose()
     document.removeEventListener('visibilitychange', onVisibilityChange)
     document.removeEventListener('visibilitychange', onFlightVisibilityPause)
+    window.removeEventListener('blur', onWindowBlur)
     document.removeEventListener('fullscreenchange', onFullscreenChange)
     window.removeEventListener('keydown', onGlobalKeyDown, true)
     window.removeEventListener('resize', onResize)
@@ -685,15 +691,19 @@ async function boot(): Promise<void> {
     }
   }
 
+  const pauseForLostFocus = (): void => {
+    if (!shouldPauseForFocusLost(playing, menu.paused, results.open)) return
+    menu.openPause()
+    input.clearQueued()
+    time.reset()
+    syncInputContext()
+  }
+  const onWindowBlur = (): void => pauseForLostFocus()
   const onFlightVisibilityPause = (): void => {
-    if (document.hidden && playing && !menu.paused && !results.open) {
-      menu.openPause()
-      input.clearQueued()
-      time.reset()
-      syncInputContext()
-    }
+    if (document.hidden) pauseForLostFocus()
   }
   document.addEventListener('visibilitychange', onFlightVisibilityPause)
+  window.addEventListener('blur', onWindowBlur)
 
   challenge.reset(courseId(), world.mission.totalGates)
   syncInputContext()
