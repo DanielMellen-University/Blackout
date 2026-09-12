@@ -229,6 +229,17 @@ describe('settlement rendering and lifecycle', () => {
     system.dispose()
   })
 
+  it('makes settlement teardown idempotent and ignores late updates', () => {
+    const system = new SettlementSystem(new Scene())
+    system.update(3000, 3000)
+    const geometryDispose = vi.spyOn((system as unknown as { box: Mesh['geometry'] }).box, 'dispose')
+
+    system.dispose()
+    expect(() => system.dispose()).not.toThrow()
+    expect(() => system.update(3000, 3000)).not.toThrow()
+    expect(geometryDispose).toHaveBeenCalledOnce()
+  })
+
   it('collides with rotated buildings and roofs without blocking the open street', () => {
     const plan = example()
     expect(hitsSettlement(plan, 3010, 110, 3000)).toBe(true)

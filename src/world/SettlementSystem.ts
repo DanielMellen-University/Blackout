@@ -391,6 +391,7 @@ export class SettlementSystem {
   private ready: { key: string; plan: SettlementPlan }[] = []
   private readyRoads: ReadyRoad[] = []
   private generation = 0
+  private disposed = false
 
   constructor(scene: Scene) {
     this.root.name = 'Settlements'
@@ -732,6 +733,8 @@ export class SettlementSystem {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.clearAll()
     this.worker?.terminate(); this.worker = null
     this.root.removeFromParent()
@@ -741,10 +744,10 @@ export class SettlementSystem {
     this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
     this.dockDeckMaterial.dispose(); this.dockPostMaterial.dispose()
     this.cityPlaza.dispose(); this.villageGreen.dispose()
-    this.root.removeFromParent()
   }
 
   update(x: number, z: number): void {
+    if (this.disposed) return
     const cell = `${Math.floor(x / 1000)},${Math.floor(z / 1000)}`
     if (cell !== this.lastCell) {
       this.lastCell = cell
