@@ -46,6 +46,14 @@ describe('runway lighting', () => {
     expect(lookup).not.toHaveBeenCalled()
   })
 
+  it('freezes static runway meshes while leaving the windsock fabric animatable', () => {
+    runway = createRunway()
+    const asphalt = runway.children.find(child => child instanceof Mesh) as Mesh
+    const fabric = runway.getObjectByName('WindsockFabric') as Mesh
+    expect(asphalt.matrixAutoUpdate).toBe(false)
+    expect(fabric.matrixAutoUpdate).toBe(true)
+  })
+
   it('aims the windsock downwind in runway-local space', () => {
     runway = createRunway()
     const windsock = runway.getObjectByName('Windsock')!

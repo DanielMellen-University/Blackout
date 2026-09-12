@@ -6,7 +6,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
 } from 'three'
-import { createAirfieldLandmarks } from './Airfield'
+import { createAirfieldLandmarks, freezeStaticAirfieldMeshes } from './Airfield'
 
 const runwayLightMaterial = new WeakMap<Group, MeshStandardMaterial>()
 
@@ -70,6 +70,7 @@ export function createRunway(): Group {
   }
 
   root.add(createAirfieldLandmarks())
+  freezeStaticAirfieldMeshes(root)
   return root
 }
 

@@ -76,6 +76,7 @@ export function createAirfieldLandmarks(): Group {
   root.add(buildFloods(mat))
   root.add(buildFence(mat))
   root.add(buildApronLights(mat))
+  freezeStaticAirfieldMeshes(root)
 
   return root
 }
@@ -375,6 +376,19 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   windsock.rotation.y = angle
   sock.rotation.x = 0.12 + speed * 0.18
   sock.scale.set(1, 0.84 + speed * 0.28, 1)
+}
+
+/**
+ * Freeze local matrices for airfield geometry that never animates. Parent
+ * runway transforms still propagate normally; the windsock fabric remains
+ * live because its rotation and extension are driven by weather.
+ */
+export function freezeStaticAirfieldMeshes(root: Group): void {
+  root.traverse((object) => {
+    if (!(object instanceof Mesh) || object.name === 'WindsockFabric') return
+    object.updateMatrix()
+    object.matrixAutoUpdate = false
+  })
 }
 
 /**
