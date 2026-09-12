@@ -1410,6 +1410,36 @@ body,
   padding: 4px;
 }
 
+#speedo-panel.redline {
+  border-color: rgba(240, 180, 41, 0.52);
+  box-shadow:
+    0 0 0 1px rgba(240, 180, 41, 0.08) inset,
+    0 8px 28px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(240, 180, 41, 0.12);
+}
+
+#speedo-panel.redline .gauge-arc.spd {
+  stroke: var(--amber);
+}
+
+#speedo-panel.overspeed {
+  border-color: rgba(255, 92, 77, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(255, 92, 77, 0.1) inset,
+    0 8px 28px rgba(0, 0, 0, 0.55),
+    0 0 22px rgba(255, 92, 77, 0.18);
+}
+
+#speedo-panel.overspeed .gauge-arc.spd,
+#speedo-panel.overspeed .gauge-needle {
+  stroke: var(--danger);
+}
+
+#speedo-panel.overspeed .gauge-value {
+  color: #fff0ed;
+  text-shadow: 0 0 14px rgba(255, 92, 77, 0.42);
+}
+
 .gauge-svg {
   width: 100%;
   height: 100%;

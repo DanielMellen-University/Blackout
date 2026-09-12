@@ -12,6 +12,7 @@ import {
   headingTapeOffset,
   normalizeBannerTone,
   quantizeHudNumber,
+  speedWarningLevel,
   speedJuiceIntensity,
   verticalSpeedTone,
 } from '../src/ui/HUD'
@@ -35,6 +36,14 @@ describe('HUD value formatting', () => {
     expect(speedJuiceIntensity(1800)).toBeGreaterThan(0)
     expect(speedJuiceIntensity(3000)).toBeCloseTo(.42)
     expect(speedJuiceIntensity(5000)).toBeCloseTo(.42)
+  })
+
+  it('marks the airspeed redline without hiding true overspeed', () => {
+    expect(speedWarningLevel(2800)).toBe('normal')
+    expect(speedWarningLevel(2820)).toBe('redline')
+    expect(speedWarningLevel(3000)).toBe('redline')
+    expect(speedWarningLevel(3000.1)).toBe('overspeed')
+    expect(speedWarningLevel(Number.NaN)).toBe('normal')
   })
 
   it('formats climb and sink rates with a readable sign', () => {

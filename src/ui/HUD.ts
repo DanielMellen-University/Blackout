@@ -6,6 +6,8 @@ import { displayedKnots } from '../core/airspeed'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
+export type SpeedWarningLevel = 'normal' | 'redline' | 'overspeed'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -15,6 +17,7 @@ export class HUD {
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
+  private readonly speedoPanel: HTMLElement | null
   private readonly camEl: HTMLElement | null
   private readonly headingEl: HTMLElement | null
   private readonly headingTapeTrackEl: HTMLElement | null
@@ -67,6 +70,7 @@ export class HUD {
   private speedValue = Number.NaN
   private speedText = ''
   private speedAriaText = ''
+  private speedWarningValue: SpeedWarningLevel | null = null
   private fpsValue = Number.NaN
   private fpsText = ''
   private cameraModeValue: string | null = null
@@ -111,6 +115,7 @@ export class HUD {
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.spdEl = root.getElementById('hud-spd')
+    this.speedoPanel = root.getElementById('speedo-panel')
     this.camEl = root.getElementById('hud-cam')
     this.headingEl = root.getElementById('hud-hdg')
     this.headingTapeTrackEl = root.getElementById('heading-tape-track')
@@ -217,14 +222,25 @@ export class HUD {
     const kts = Number.isFinite(rawKts) ? rawKts : 0
     if (this.spdEl) {
       const speed = Math.round(kts)
-      if (speed !== this.speedValue) {
+      const warning = speedWarningLevel(kts, this.maxKts)
+      if (speed !== this.speedValue || warning !== this.speedWarningValue) {
         this.speedValue = speed
         this.speedText = String(speed)
-        this.speedAriaText = `${this.speedText} knots`
+        this.speedWarningValue = warning
+        const suffix = warning === 'overspeed'
+          ? ', overspeed'
+          : warning === 'redline'
+            ? ', redline'
+            : ''
+        this.speedAriaText = `${this.speedText} knots${suffix}`
       }
       this.setText(this.spdEl, this.speedText)
       this.setAttribute(this.spdEl, 'aria-valuenow', String(Math.max(0, speed)))
       this.setAttribute(this.spdEl, 'aria-valuetext', this.speedAriaText)
+      if (this.speedoPanel) {
+        this.setClass(this.speedoPanel, 'redline', warning !== 'normal')
+        this.setClass(this.speedoPanel, 'overspeed', warning === 'overspeed')
+      }
     }
     this.updateSpeedo(kts)
     this.updateSpeedJuice(kts, !!opts.boost)
@@ -759,6 +775,15 @@ export function speedJuiceIntensity(knots: number, maxKts = 3000): number {
   const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
   if (t <= 0.18) return 0
   return Math.min(0.42, (t - 0.18) * 0.52)
+}
+
+/** Keep the airspeed gauge honest near and beyond its displayed envelope. */
+export function speedWarningLevel(knots: number, maxKts = 3000): SpeedWarningLevel {
+  const safeMax = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 3000
+  const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
+  if (safeKnots > safeMax) return 'overspeed'
+  if (safeKnots >= safeMax * 0.94) return 'redline'
+  return 'normal'
 }
 
 /**
