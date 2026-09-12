@@ -47,15 +47,20 @@ describe('rebuilt aircraft', () => {
     aircraft.position.set(0, 1000, 0)
     aircraft.step(1 / 60)
     const left = aircraft.mesh.getObjectByName('gearLeft')!
+    const leftDoor = aircraft.mesh.getObjectByName('gearDoorLeft')!
     expect(left.rotation.z).toBeGreaterThan(0)
     expect(left.rotation.z).toBeLessThan(.2)
+    expect(leftDoor.rotation.z).toBeLessThan(0)
     for (let i = 0; i < 120; i++) aircraft.step(1 / 60)
     expect(aircraft.mesh.getObjectByName('landingGear')!.visible).toBe(false)
+    expect(leftDoor.rotation.z).toBeLessThan(-.4)
     aircraft.position.set(0, 1.4, 0)
     aircraft.velocity.set(0, 0, 0)
     aircraft.step(1 / 60)
     expect(aircraft.mesh.getObjectByName('landingGear')!.visible).toBe(true)
     expect(left.rotation.z).toBeGreaterThan(1)
+    for (let i = 0; i < 60; i++) aircraft.step(1 / 60)
+    expect(leftDoor.rotation.z).toBeGreaterThan(-.1)
   })
 
   it('avoids a second terrain query when auto-gear already knows the jet is grounded', () => {

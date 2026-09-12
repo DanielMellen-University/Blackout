@@ -279,6 +279,7 @@ function buildGear(root: Group, metal: Material, rubber: Material, skin: Materia
       pivot.add(hub)
     }
     const door = new Mesh(new BoxGeometry(.065, .4, nose ? .6 : .85), skin)
+    door.name = nose ? 'gearDoorNose' : side < 0 ? 'gearDoorLeft' : 'gearDoorRight'
     door.position.set(nose ? .19 : side * .28, -.2, -.08)
     pivot.add(door)
     gear.add(pivot)

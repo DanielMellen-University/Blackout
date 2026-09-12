@@ -53,6 +53,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Short-height viewports switch to a compact title layout so the launch card remains fully reachable instead of clipping around the showcase composition.
 - Camera and cockpit teardown are idempotent, so duplicate unmounts cannot resurrect or double-release the camera-attached frame.
 - The procedural F-35 now carries a cached gear-linked nose landing lamp, adding approach and takeoff readability without dynamic lights or shadow cost.
+- Existing nose and main gear doors now articulate with the extension cycle, making takeoff and landing hardware read more like an F-35 without extra meshes.
 - Fast airborne external flight now shares the cockpit's velocity-vector cue, helping read drift and turn direction without new scene geometry or draw calls.
 - The live gate beacon now dims as the jet closes in, keeping the tall navigation shaft useful at distance without overwhelming the view during a pass.
 - Mission gate teardown is now idempotent and ignores late calls, preventing released gate resources from being touched during reload or remount paths.

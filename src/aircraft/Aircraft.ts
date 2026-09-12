@@ -105,6 +105,9 @@ export class Aircraft {
   private gearNose: Object3D | null = null
   private gearLeft: Object3D | null = null
   private gearRight: Object3D | null = null
+  private gearDoorNose: Object3D | null = null
+  private gearDoorLeft: Object3D | null = null
+  private gearDoorRight: Object3D | null = null
   private flaperonLeft: Object3D | null = null
   private flaperonRight: Object3D | null = null
   private stabilatorLeft: Object3D | null = null
@@ -402,6 +405,9 @@ export class Aircraft {
       if (this.gearNose) this.gearNose.rotation.x = -folded * Math.PI * 0.5
       if (this.gearLeft) this.gearLeft.rotation.z = folded * Math.PI * 0.5
       if (this.gearRight) this.gearRight.rotation.z = -folded * Math.PI * 0.5
+      if (this.gearDoorNose) this.gearDoorNose.rotation.x = folded * 0.72
+      if (this.gearDoorLeft) this.gearDoorLeft.rotation.z = -folded * 0.52
+      if (this.gearDoorRight) this.gearDoorRight.rotation.z = folded * 0.52
     }
 
     this.updateControlSurfaces(dt)
@@ -568,6 +574,9 @@ export class Aircraft {
     this.gearNose = find('gearNose')
     this.gearLeft = find('gearLeft')
     this.gearRight = find('gearRight')
+    this.gearDoorNose = find('gearDoorNose')
+    this.gearDoorLeft = find('gearDoorLeft')
+    this.gearDoorRight = find('gearDoorRight')
     this.flaperonLeft = find('flaperonLeft')
     this.flaperonRight = find('flaperonRight')
     this.stabilatorLeft = find('stabilatorLeft')
