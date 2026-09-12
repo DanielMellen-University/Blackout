@@ -8,6 +8,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 - Title screen: Play, Controls, Game info
 - Pause menu in flight (**Esc**): resume, fullscreen, quit to title
+- Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
