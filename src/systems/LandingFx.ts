@@ -41,6 +41,7 @@ export class LandingFx {
   private readonly discGeo: PlaneGeometry
   private scrubCooldown = 0
   private alive = false
+  private randomState = 1
 
   constructor(scene: Scene) {
     this.root.name = 'LandingFx'
@@ -76,6 +77,7 @@ export class LandingFx {
   trigger(pos: Vector3, vel: Vector3, intensity = 1): void {
     const strength = clamp01(intensity)
     if (strength < 0.05) return
+    this.randomState = seedFromLanding(pos, vel, strength)
     this.alive = true
     this.root.visible = true
     this.root.position.set(pos.x, sampleGroundHeight(pos.x, pos.z) + 0.15, pos.z)
@@ -167,6 +169,7 @@ export class LandingFx {
     this.active.length = 0
     this.scrubCooldown = 0
     this.alive = false
+    this.randomState = 1
     this.root.visible = false
   }
 
@@ -193,23 +196,23 @@ export class LandingFx {
     strength: number,
     burst: boolean,
   ): void {
-    const lateral = (Math.random() - 0.5) * (burst ? 3.2 : 1.6)
-    const aft = -0.4 - Math.random() * (burst ? 2.4 : 1.1)
+    const lateral = (this.nextRandom() - 0.5) * (burst ? 3.2 : 1.6)
+    const aft = -0.4 - this.nextRandom() * (burst ? 2.4 : 1.1)
     puff.mesh.position
       .copy(side)
       .multiplyScalar(lateral)
       .addScaledVector(fwd, aft)
-    puff.mesh.position.y = 0.05 + Math.random() * 0.25
+    puff.mesh.position.y = 0.05 + this.nextRandom() * 0.25
     puff.vel
       .copy(side)
       .multiplyScalar(lateral * 0.55)
-      .addScaledVector(fwd, -1.2 - Math.random() * 2.4)
-    puff.vel.y = 0.6 + Math.random() * 1.8
+      .addScaledVector(fwd, -1.2 - this.nextRandom() * 2.4)
+    puff.vel.y = 0.6 + this.nextRandom() * 1.8
     if (gs > 1) puff.vel.addScaledVector(fwd, Math.min(8, gs * 0.08))
-    const size0 = (burst ? 1.1 : 0.7) + Math.random() * 1.2 * strength
+    const size0 = (burst ? 1.1 : 0.7) + this.nextRandom() * 1.2 * strength
     puff.size0 = size0
     puff.mesh.scale.set(size0, size0 * 0.5, size0)
-    const life = (burst ? 0.55 : 0.35) + Math.random() * 0.45
+    const life = (burst ? 0.55 : 0.35) + this.nextRandom() * 0.45
     puff.life = life
     puff.maxLife = life
     ;(puff.mesh.material as MeshBasicMaterial).opacity = 0.42 * strength
@@ -224,22 +227,22 @@ export class LandingFx {
     gs: number,
     strength: number,
   ): void {
-    const lateral = (Math.random() - 0.5) * 2.4
+    const lateral = (this.nextRandom() - 0.5) * 2.4
     puff.mesh.position
       .copy(side)
       .multiplyScalar(lateral)
-      .addScaledVector(fwd, -0.8 - Math.random() * 1.6)
-    puff.mesh.position.y = 0.2 + Math.random() * 0.4
+      .addScaledVector(fwd, -0.8 - this.nextRandom() * 1.6)
+    puff.mesh.position.y = 0.2 + this.nextRandom() * 0.4
     puff.vel
       .copy(side)
       .multiplyScalar(lateral * 0.35)
-      .addScaledVector(fwd, -0.6 - Math.random() * 1.4)
-    puff.vel.y = 1.4 + Math.random() * 2.2
+      .addScaledVector(fwd, -0.6 - this.nextRandom() * 1.4)
+    puff.vel.y = 1.4 + this.nextRandom() * 2.2
     if (gs > 1) puff.vel.addScaledVector(fwd, Math.min(6, gs * 0.05))
-    const size0 = 0.9 + Math.random() * 1.4 * strength
+    const size0 = 0.9 + this.nextRandom() * 1.4 * strength
     puff.size0 = size0
     puff.mesh.scale.setScalar(size0)
-    const life = 0.7 + Math.random() * 0.9
+    const life = 0.7 + this.nextRandom() * 0.9
     puff.life = life
     puff.maxLife = life
     ;(puff.mesh.material as MeshBasicMaterial).opacity = 0.34 * strength
@@ -261,6 +264,11 @@ export class LandingFx {
     this.root.add(mesh)
     return { mesh, vel: new Vector3(), life: 0, maxLife: 1, size0: 1, kind: 'smoke' }
   }
+
+  private nextRandom(): number {
+    this.randomState = (Math.imul(this.randomState, 1664525) + 1013904223) >>> 0
+    return this.randomState / 0x100000000
+  }
 }
 
 /** Continuous scrub intensity from ground speed (m/s). */
@@ -278,4 +286,14 @@ export function landingScrubRate(groundSpeed: number): number {
 
 function clamp01(value: number): number {
   return value < 0 ? 0 : value > 1 ? 1 : value
+}
+
+function seedFromLanding(pos: Vector3, vel: Vector3, intensity: number): number {
+  let state = 2166136261
+  for (const value of [pos.x, pos.y, pos.z, vel.x, vel.y, vel.z, intensity]) {
+    const quantized = Number.isFinite(value) ? Math.round(value * 1000) : 0
+    state ^= quantized
+    state = Math.imul(state, 16777619)
+  }
+  return state >>> 0 || 1
 }

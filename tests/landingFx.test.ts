@@ -38,4 +38,27 @@ describe('landing scrub pooling', () => {
     expect(landingScrubRate(9)).toBe(0)
     expect(landingScrubRate(65)).toBeGreaterThan(landingScrubRate(20))
   })
+
+  it('replays the same touchdown burst deterministically', () => {
+    const first = new LandingFx(new Scene())
+    const second = new LandingFx(new Scene())
+    const point = new Vector3(12, 1, -3)
+    const velocity = new Vector3(-10, -1, 8)
+
+    first.trigger(point, velocity, 0.7)
+    second.trigger(point, velocity, 0.7)
+
+    const firstVisible = first.root.children
+      .filter((child) => child.visible)
+      .slice(0, 4)
+      .map((child) => child.position.toArray())
+    const secondVisible = second.root.children
+      .filter((child) => child.visible)
+      .slice(0, 4)
+      .map((child) => child.position.toArray())
+    expect(secondVisible).toEqual(firstVisible)
+
+    first.dispose()
+    second.dispose()
+  })
 })
