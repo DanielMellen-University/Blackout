@@ -18,7 +18,7 @@ import {
   suppressBrowserUi,
   toggleGameFullscreen,
 } from './core/suppressBrowserUi'
-import { shouldAdvanceWorld, Time } from './core/Time'
+import { shouldAdvanceWorld, shouldUpdateLiveHud, Time } from './core/Time'
 import { ChallengeRun } from './systems/ChallengeRun'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
@@ -560,7 +560,7 @@ async function boot(): Promise<void> {
       debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
     }
 
-    if (playing) {
+    if (shouldUpdateLiveHud(playing, simLive)) {
       const alt = aircraft.onGround
         ? 0
         : altitudeAgl(

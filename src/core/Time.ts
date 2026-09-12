@@ -30,6 +30,11 @@ export function shouldAdvanceWorld(
   return simDt > 0 || visualDt > 0
 }
 
+/** Keep the live HUD frozen under pause/results overlays until flight resumes. */
+export function shouldUpdateLiveHud(playing: boolean, simulationLive: boolean): boolean {
+  return playing && simulationLive
+}
+
 /**
  * Frame timing helper. Simulation uses a fixed-step accumulator so low FPS
  * does not slow the jet down; leftover time past MAX_STEPS is dropped.

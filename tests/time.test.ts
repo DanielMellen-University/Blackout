@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { shouldAdvanceWorld, SIM_STEP, Time } from '../src/core/Time'
+import {
+  shouldAdvanceWorld,
+  shouldUpdateLiveHud,
+  SIM_STEP,
+  Time,
+} from '../src/core/Time'
 
 describe('Time', () => {
   it('runs extra fixed steps instead of slowing down at 10 fps', () => {
@@ -49,5 +54,11 @@ describe('Time', () => {
     expect(shouldAdvanceWorld(false, 0, 0)).toBe(false)
     expect(shouldAdvanceWorld(false, 0, 0.016)).toBe(true)
     expect(shouldAdvanceWorld(true, 0, 0)).toBe(true)
+  })
+
+  it('freezes the live HUD under pause and results overlays', () => {
+    expect(shouldUpdateLiveHud(false, false)).toBe(false)
+    expect(shouldUpdateLiveHud(true, false)).toBe(false)
+    expect(shouldUpdateLiveHud(true, true)).toBe(true)
   })
 })
