@@ -9,6 +9,7 @@
 - Strengthen the existing cool F-35 panel fill at dusk and night so the aircraft remains readable without extra lights, meshes, or draw calls.
 - Coalesce external chase heading extraction and yaw-quaternion setup so camera framing avoids duplicate orientation math each frame.
 - Add a cached amber/red airspeed redline cue with accessible overspeed text, keeping the HUD honest when the jet passes its displayed 3000-knot envelope.
+- Coalesce mission navigation bearings by reusing aircraft-relative data in cockpit view and avoiding an external camera matrix refresh.
 - Replace per-flake snow sine and cosine evaluation with a shared periodic sway table, preserving storm motion while lowering CPU work at the full precipitation budget.
 - Coalesce unchanged runway windsock and PAPI poses while invalidating on runway rotation, keeping weather and approach cues responsive without repeated transform math.
 - Cache runway windsock nodes after their first weather update, preserving downwind animation while removing repeated scene-tree searches from the world tick.

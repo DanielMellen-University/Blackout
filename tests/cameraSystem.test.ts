@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Scene } from 'three'
+import { Quaternion, Scene, Vector3 } from 'three'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import {
   cameraBoostOffset,
@@ -8,6 +8,7 @@ import {
   cameraShakeOffsetInto,
   cameraOcclusionSampleCount,
   cameraModeCue,
+  cameraRelativeBearing,
   CameraSystem,
   resolveExternalSpeedFraming,
   resolveExternalSpeedFramingInto,
@@ -43,6 +44,15 @@ describe('external camera framing', () => {
     expect(cameraOcclusionSampleCount(22)).toBe(8)
     expect(cameraOcclusionSampleCount(22.01)).toBe(10)
     expect(cameraOcclusionSampleCount(Number.NaN)).toBe(10)
+  })
+
+  it('computes camera-local navigation bearings without matrix refreshes', () => {
+    const camera = new Vector3(0, 10, 0)
+    const target = new Vector3(100, 40, 0)
+    expect(cameraRelativeBearing(camera, new Quaternion(), target)).toBeCloseTo(Math.PI / 2)
+
+    const yawed = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI / 2)
+    expect(cameraRelativeBearing(camera, yawed, target)).toBeCloseTo(0)
   })
 
   it('clamps invalid speed input into the designed envelope', () => {

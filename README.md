@@ -65,6 +65,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The F-35's existing night readability layer now uses a stronger cool panel fill at dusk and night while fading fully out in daylight.
 - External chase framing now reuses one heading solve per frame, preserving the same camera feel with less repeated orientation math.
 - The airspeed gauge now marks its amber redline and true overspeed range, with accessible telemetry text that calls out when the jet leaves the displayed envelope.
+- Navigation arrows reuse the mission bearing in cockpit view and avoid a redundant camera matrix rebuild in external view, keeping guidance responsive with less HUD CPU work.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.

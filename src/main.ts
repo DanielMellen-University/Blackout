@@ -11,6 +11,7 @@ import {
 import { Aircraft } from './aircraft/Aircraft'
 import {
   cameraModeCue,
+  cameraRelativeBearing,
   CameraSystem,
   TOUCHDOWN_IMPULSE,
 } from './camera/CameraSystem'
@@ -746,6 +747,7 @@ async function boot(): Promise<void> {
         aircraft.position.x,
         aircraft.position.y,
         aircraft.position.z,
+        pose.heading,
       )
       const gate = world.mission.activeGatePos()
       if (cameras.mode === 'cockpit') {
@@ -778,7 +780,9 @@ async function boot(): Promise<void> {
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       hudFrame.mission = challenge.objectiveLabel
       hudFrame.navDist = nav.dist
-      hudFrame.navBearing = gateScreenBearing(cameras.camera, gate)
+      hudFrame.navBearing = cameras.mode === 'cockpit'
+        ? nav.bearing
+        : gateScreenBearing(cameras.camera, gate)
       hudFrame.navAltDelta = nav.altDelta
       hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
       hudFrame.bannerTone = aircraft.status === 'crashed' ? 'danger' : bannerTone
@@ -813,7 +817,6 @@ async function boot(): Promise<void> {
 }
 
 const _fwd = new Vector3()
-const _gateView = new Vector3()
 const _inv = new Quaternion()
 const _localUp = new Vector3()
 const _attitude = { pitch: 0, roll: 0, heading: 0 }
@@ -851,9 +854,7 @@ function gateScreenBearing(
   gate: Vector3 | null,
 ): number | null {
   if (!gate) return null
-  camera.updateMatrixWorld()
-  _gateView.copy(gate).applyMatrix4(camera.matrixWorldInverse)
-  return Math.atan2(_gateView.x, -_gateView.z)
+  return cameraRelativeBearing(camera.position, camera.quaternion, gate)
 }
 
 boot().catch((err) => {

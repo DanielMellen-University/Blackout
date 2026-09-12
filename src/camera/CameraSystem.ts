@@ -19,6 +19,8 @@ const _groundSample = new Vector3()
 const _forward = new Vector3()
 const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
+const _bearingDelta = new Vector3()
+const _bearingInverse = new Quaternion()
 const _Y_UP = new Vector3(0, 1, 0)
 
 /** External / chase-style modes only. Cockpit is `CockpitMode`. */
@@ -582,6 +584,22 @@ export function cameraOcclusionSampleCount(distance: number): number {
   if (d <= 10) return 6
   if (d <= 22) return 8
   return 10
+}
+
+/**
+ * Return a target's horizontal bearing in camera-local space without forcing
+ * a matrix-world rebuild. The gameplay camera is attached directly to the
+ * world scene, so its position and quaternion are already world-space state.
+ */
+export function cameraRelativeBearing(
+  cameraPosition: Vector3,
+  cameraOrientation: Quaternion,
+  target: Vector3,
+): number {
+  _bearingDelta.subVectors(target, cameraPosition)
+  _bearingInverse.copy(cameraOrientation).invert()
+  _bearingDelta.applyQuaternion(_bearingInverse)
+  return Math.atan2(_bearingDelta.x, -_bearingDelta.z)
 }
 
 export interface ExternalSpeedFraming {
