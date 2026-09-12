@@ -41,6 +41,7 @@ interface Gate {
 const GATE_COUNT = 5
 const CIRCUIT_R = 980
 const GATE_RADIUS = 38
+const PRESENTATION_FALLBACK_STEP_MS = 1000 / 60
 const _to = new Vector3()
 const _radial = new Vector3()
 const _prevTo = new Vector3()
@@ -183,7 +184,7 @@ export class MissionSystem {
 
   /** Pulse the live ring and hold the far-visible beacon on it. */
   tick(nowMs?: number): void {
-    const now = this.resolvePresentationTime(nowMs)
+    const now = this.resolvePresentationTime(nowMs, nowMs === undefined)
     if (this.passFlash?.visible) {
       const progress = (now - this.passFlashStartedAt) / 560
       if (progress >= 1) {
@@ -388,9 +389,11 @@ export class MissionSystem {
   }
 
   /** Keep mission presentation monotonic and independent from wall-clock reads. */
-  private resolvePresentationTime(nowMs?: number): number {
+  private resolvePresentationTime(nowMs?: number, advanceFallback = false): number {
     if (Number.isFinite(nowMs)) {
       this.presentationTimeMs = Math.max(this.presentationTimeMs, nowMs!)
+    } else if (advanceFallback) {
+      this.presentationTimeMs += PRESENTATION_FALLBACK_STEP_MS
     }
     return this.presentationTimeMs
   }

@@ -66,14 +66,14 @@ describe('MissionSystem gate crossing', () => {
     mission.dispose()
   })
 
-  it('uses the supplied frame timestamp for gate presentation', () => {
+  it('uses a deterministic frame clock for gate presentation', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)
     const ring = mission.root.getObjectByName('gate_0')!
 
-    mission.tick(1000)
+    mission.tick()
     const firstScale = ring.scale.x
-    mission.tick(1100)
+    mission.tick()
 
     expect(ring.scale.x).not.toBe(firstScale)
     mission.dispose()
