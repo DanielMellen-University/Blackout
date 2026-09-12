@@ -175,6 +175,10 @@ export class World {
         this.applySpawn(pad)
         this.terrain.clearAll()
         this.settlements.clearAll()
+        // A fresh terrain and settlement stream starts with neutral weather
+        // state, even when the seeded weather profile happens to match the
+        // previous world. Force the first application after a reseed.
+        this.appliedWeather = null
         this.terrain.update(this.spawn.x, this.spawn.z, 1 / 60)
         this.settlements.primeAnchors(this.spawn.x, this.spawn.z)
         // Kick off the protected city/village anchor jobs before the first
@@ -280,7 +284,16 @@ export class World {
       next.cloudCover,
     )
     this.settlements.setWeatherEffects(next.rain, next.snow, next.daylight)
-    this.appliedWeather = { ...next }
+    if (!this.appliedWeather) {
+      this.appliedWeather = { ...next }
+    } else {
+      this.appliedWeather.rain = next.rain
+      this.appliedWeather.snow = next.snow
+      this.appliedWeather.windX = next.windX
+      this.appliedWeather.windZ = next.windZ
+      this.appliedWeather.cloudCover = next.cloudCover
+      this.appliedWeather.daylight = next.daylight
+    }
   }
 
   private applySpawn(pad: FlatSpawn): void {
