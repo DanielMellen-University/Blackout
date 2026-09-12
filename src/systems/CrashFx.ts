@@ -175,6 +175,14 @@ export class CrashFx {
     this.ringMat.opacity = 0.7 * ringT
     this.ring.visible = ringT > 0.02
 
+    // Once the pooled particles are gone, the flash and ring have already
+    // finished their readable envelope. Stop immediately instead of carrying
+    // an empty effect through the remaining hard-stop tail.
+    if (this.bits.length === 0 && this.age > 1) {
+      this.stop()
+      return
+    }
+
     // The burst stays local to its impact point. Resolve the visible ground
     // once per update instead of repeating the terrain sampler for every bit.
     const floor = sampleGroundHeight(this.root.position.x, this.root.position.z) + 0.4
@@ -255,7 +263,8 @@ export class CrashFx {
       }
     }
 
-    if (this.age > 7.5) this.stop()
+    if (this.bits.length === 0 && this.age > 1) this.stop()
+    else if (this.age > 7.5) this.stop()
   }
 
   reset(): void {

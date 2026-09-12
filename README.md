@@ -53,6 +53,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Low graphics quality now skips multisample antialiasing at renderer startup, while Balanced and High retain the sharper edge path.
 - High-altitude collision sweeps now use a conservative three-point terrain broad phase before running detailed body probes, trimming steady-flight height queries without changing near-ground contact.
 - Directional shadows now refresh on a bounded 20 Hz cadence instead of rebuilding every rendered frame, with immediate refreshes after quality or WebGL context changes.
+- Crash VFX now stops as soon as its pooled particles expire and the flash envelope is complete, avoiding an empty post-crash tail and its terrain query.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.

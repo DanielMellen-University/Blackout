@@ -56,6 +56,23 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('stops the effect when the pooled particle tail is empty', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const fx = new CrashFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(4, -8, 12))
+    fx.update(6.5)
+    expect(fx.active).toBe(false)
+    expect(fx.root.visible).toBe(false)
+    const afterStop = samples
+    fx.update(0.5)
+    expect(samples).toBe(afterStop)
+    fx.dispose()
+  })
+
   it('replays the same impact burst deterministically', () => {
     const first = new CrashFx(new Scene())
     const second = new CrashFx(new Scene())
