@@ -1,6 +1,7 @@
 import { PerspectiveCamera, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import {
+  shouldShowFlightPathMarker,
   writeFlightPathMarker,
   type FlightPathMarkerPosition,
 } from '../src/camera/FlightPathMarker'
@@ -19,6 +20,14 @@ function camera(): PerspectiveCamera {
 }
 
 describe('flight path marker projection', () => {
+  it('keeps the cockpit cue available but gates external drift by flight state', () => {
+    expect(shouldShowFlightPathMarker(true, true, 0)).toBe(true)
+    expect(shouldShowFlightPathMarker(false, true, 120)).toBe(false)
+    expect(shouldShowFlightPathMarker(false, false, 59.9)).toBe(false)
+    expect(shouldShowFlightPathMarker(false, false, 60)).toBe(true)
+    expect(shouldShowFlightPathMarker(false, false, Number.NaN)).toBe(false)
+  })
+
   it('centers a forward velocity vector', () => {
     const out = marker()
     writeFlightPathMarker(camera(), new Vector3(), new Vector3(0, 0, -100), out)

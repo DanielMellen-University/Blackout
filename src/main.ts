@@ -16,6 +16,7 @@ import {
   TOUCHDOWN_IMPULSE,
 } from './camera/CameraSystem'
 import {
+  shouldShowFlightPathMarker,
   writeFlightPathMarker,
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
@@ -759,10 +760,14 @@ async function boot(): Promise<void> {
         pose.heading,
       )
       const gate = world.mission.activeGatePos()
-      if (cameras.mode === 'cockpit') {
+      if (shouldShowFlightPathMarker(
+        cameras.mode === 'cockpit',
+        aircraft.onGround,
+        aircraft.speed,
+      )) {
         writeFlightPathMarker(
           cameras.camera,
-          cameras.camera.position,
+          cameras.mode === 'cockpit' ? cameras.camera.position : aircraft.displayPosition,
           aircraft.velocity,
           flightPathMarker,
         )

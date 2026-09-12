@@ -7,6 +7,20 @@ export interface FlightPathMarkerPosition {
   visible: boolean
 }
 
+/**
+ * Show the velocity-vector cue once external flight has enough airspeed to
+ * make drift useful, while keeping the existing cockpit cue available during
+ * the takeoff roll.
+ */
+export function shouldShowFlightPathMarker(
+  cockpit: boolean,
+  onGround: boolean,
+  speed: number,
+): boolean {
+  if (cockpit) return true
+  return !onGround && Number.isFinite(speed) && speed >= 60
+}
+
 const _point = new Vector3()
 
 /**
