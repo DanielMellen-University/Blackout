@@ -156,6 +156,8 @@ describe('rebuilt aircraft', () => {
     expect(navigationLightOpacity(1000)).toBeGreaterThan(.75)
     expect(navigationLightOpacity(1000)).toBeLessThan(.9)
     expect(Math.abs(navigationLightOpacity(1000) - navigationLightOpacity(1001))).toBeLessThan(.001)
+    expect(navigationLightOpacity(1000, 1)).toBeLessThan(navigationLightOpacity(1000, 0))
+    expect(navigationLightOpacity(1000, 1)).toBeGreaterThan(.3)
   })
 
   it('links the nose landing lamp to gear extension without a dynamic light', () => {

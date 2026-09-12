@@ -110,6 +110,7 @@ export class Aircraft {
   private wheelSpin = 0
   private readonly navLightMaterials: MeshBasicMaterial[] = []
   private navLightOpacity = Number.NaN
+  private presentationDaylight = 1
   /** Reuse repeated contact checks until the physics pose actually changes. */
   private groundCacheValid = false
   private groundCacheValue = false
@@ -344,10 +345,14 @@ export class Aircraft {
    */
   setNightReadability(daylight: number): void {
     const intensity = nightAirframeEmissiveIntensity(daylight)
-    if (Math.abs(intensity - this.nightReadabilityValue) < 0.005) return
-    this.nightReadabilityValue = intensity
-    for (const material of this.readabilityMaterials) {
-      material.emissiveIntensity = intensity
+    this.presentationDaylight = Number.isFinite(daylight)
+      ? MathUtils.clamp(daylight, 0, 1)
+      : 0
+    if (!Number.isFinite(this.nightReadabilityValue) || Math.abs(intensity - this.nightReadabilityValue) >= 0.005) {
+      this.nightReadabilityValue = intensity
+      for (const material of this.readabilityMaterials) {
+        material.emissiveIntensity = intensity
+      }
     }
   }
 
@@ -389,7 +394,7 @@ export class Aircraft {
       }
     }
 
-    const navOpacity = navigationLightOpacity(now)
+    const navOpacity = navigationLightOpacity(now, this.presentationDaylight)
     if (Math.abs(navOpacity - this.navLightOpacity) > .01) {
       this.navLightOpacity = navOpacity
       for (const material of this.navLightMaterials) material.opacity = navOpacity
@@ -635,10 +640,12 @@ export function antiCollisionBeaconOpacity(timeMs: number): number {
   return attack * release
 }
 
-/** Slow nav-light breathing keeps the silhouette readable without strobing. */
-export function navigationLightOpacity(timeMs: number): number {
-  if (!Number.isFinite(timeMs)) return .82
-  return .79 + (Math.sin(timeMs * .0038) + 1) * .03
+/** Slow daylight-aware nav-light breathing keeps the silhouette readable without strobing. */
+export function navigationLightOpacity(timeMs: number, daylight = 0): number {
+  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
+  const base = 0.34 + (1 - safeDaylight) * 0.45
+  if (!Number.isFinite(timeMs)) return base + .03
+  return base + (Math.sin(timeMs * .0038) + 1) * .03
 }
 
 /** Cool panel fill strength, zero in daylight and capped at night. */
