@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { deriveSkyCloudDeck, deriveSkyCloudDeckInto } from '../src/world/SkyDome'
+import { deriveSkyCloudDeck, deriveSkyCloudDeckInto, skyCloudDetailScale } from '../src/world/SkyDome'
 import { WEATHER_PROFILES } from '../src/world/WeatherDirector'
 
 function deckFor(id: keyof typeof WEATHER_PROFILES) {
@@ -76,5 +76,12 @@ describe('analytic sky cloud deck', () => {
 
     expect(deriveSkyCloudDeckInto(target, input)).toBe(target)
     expect(target).toEqual(deriveSkyCloudDeck(input))
+  })
+
+  it('removes the detail octave only for the Low cloud budget', () => {
+    expect(skyCloudDetailScale(0.5)).toBe(0)
+    expect(skyCloudDetailScale(0.78)).toBe(1)
+    expect(skyCloudDetailScale(1)).toBe(1)
+    expect(skyCloudDetailScale(Number.NaN)).toBe(1)
   })
 })

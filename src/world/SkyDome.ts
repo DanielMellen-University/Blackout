@@ -49,6 +49,13 @@ function smooth01(value: number): number {
   return t * t * (3 - 2 * t)
 }
 
+/** Disable the expensive detail octave on the Low cloud budget. */
+export function skyCloudDetailScale(scale: number): number {
+  if (!Number.isFinite(scale)) return 1
+  const safe = clamp01(scale)
+  return safe < 0.6 ? 0 : 1
+}
+
 /**
  * Keep the near instanced formations and the far sky deck in agreement.
  * Light weather exposes broken puffs and cirrus, while rain closes those gaps
@@ -122,6 +129,7 @@ export class SkyDome {
         uCloudStorm: { value: 0 },
         uCloudDarkness: { value: 0 },
         uCloudWind: { value: new Vector2(0.1, 0.03) },
+        uCloudDetail: { value: 1 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vWorldDir;
@@ -155,6 +163,7 @@ export class SkyDome {
         uniform float uCloudStorm;
         uniform float uCloudDarkness;
         uniform vec2 uCloudWind;
+        uniform float uCloudDetail;
 
         // Stable hash for star field
         float hash13(vec3 p) {
@@ -184,6 +193,7 @@ export class SkyDome {
 
         float cloudField(vec2 p) {
           float broad = valueNoise(p * 0.64);
+          if (uCloudDetail < 0.5) return broad;
           float detail = valueNoise(p * 1.72 + vec2(31.7, -12.4));
           return broad * 0.72 + detail * 0.28;
         }
@@ -311,6 +321,12 @@ export class SkyDome {
     this.mesh.removeFromParent()
     this.mesh.geometry.dispose()
     this.mat.dispose()
+  }
+
+  /** Apply the shared render budget to analytic sky cloud detail. */
+  setCloudDetailScale(scale: number): void {
+    const detail = skyCloudDetailScale(scale)
+    this.mat.uniforms.uCloudDetail!.value = detail
   }
 
   /**

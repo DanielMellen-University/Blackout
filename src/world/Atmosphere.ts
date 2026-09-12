@@ -450,6 +450,7 @@ export class Atmosphere {
     const safe = Number.isFinite(scale) ? MathUtils.clamp(scale, 0, 1) : 1
     if (safe === this.cloudDensityScale) return
     this.cloudDensityScale = safe
+    this.sky.setCloudDetailScale(safe)
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       const instances = this.cloudInstances[layer]
       const budget = cloudPuffBudget(
