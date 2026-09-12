@@ -6,6 +6,7 @@ import {
   antiCollisionBeaconOpacity,
   disposeAircraftObject,
   navigationLightOpacity,
+  nightAirframeEmissiveIntensity,
 } from '../src/aircraft/Aircraft'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
@@ -100,6 +101,21 @@ describe('rebuilt aircraft', () => {
     expect(navigationLightOpacity(1000)).toBeGreaterThan(.75)
     expect(navigationLightOpacity(1000)).toBeLessThan(.9)
     expect(Math.abs(navigationLightOpacity(1000) - navigationLightOpacity(1001))).toBeLessThan(.001)
+  })
+
+  it('keeps the airframe readable at night without a daylight glow', () => {
+    expect(nightAirframeEmissiveIntensity(1)).toBe(0)
+    expect(nightAirframeEmissiveIntensity(0)).toBeCloseTo(0.24)
+    expect(nightAirframeEmissiveIntensity(-1)).toBeCloseTo(0.24)
+    expect(nightAirframeEmissiveIntensity(Number.NaN)).toBeCloseTo(0.24)
+
+    const aircraft = new Aircraft()
+    const body = aircraft.mesh.getObjectByName('BlendedFuselage') as Mesh
+    const material = body.material as MeshStandardMaterial
+    aircraft.setNightReadability(0)
+    expect(material.emissiveIntensity).toBeCloseTo(0.24)
+    aircraft.setNightReadability(1)
+    expect(material.emissiveIntensity).toBeCloseTo(0)
   })
 
   it('turns off both the plume and nozzle glow when power is cut', () => {

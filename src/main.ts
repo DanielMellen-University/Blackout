@@ -634,6 +634,7 @@ async function boot(): Promise<void> {
     if (Math.abs(renderer.toneMappingExposure - exposure) > 0.001) {
       renderer.toneMappingExposure = exposure
     }
+    aircraft.setNightReadability(world.atmosphere.daylight)
     crashFx.update(simLive ? visualDt : 0)
     landingFx.update(simLive ? visualDt : 0)
 

@@ -28,6 +28,7 @@ const _size = new Vector3()
 const _center = new Vector3()
 const _spawnQuat = new Quaternion()
 const _Y_UP = new Vector3(0, 1, 0)
+const AIRFRAME_NIGHT_EMISSIVE = 0x0b1822
 
 export type AircraftStatus = 'ok' | 'crashed' | 'landed'
 
@@ -132,6 +133,9 @@ export class Aircraft {
     z: number
   }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
+  private readonly readabilityMaterials: MeshStandardMaterial[] = []
+  private readonly readabilityMaterialSet = new Set<MeshStandardMaterial>()
+  private nightReadabilityValue = Number.NaN
 
   constructor() {
     this.mesh = new Group()
@@ -202,6 +206,7 @@ export class Aircraft {
     this.controls.throttle = s.throttle
     this.wheelSpin = 0
     this.navLightOpacity = Number.NaN
+    this.nightReadabilityValue = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     resolveEngineState(this.controls, this.engineState)
     this.status = 'ok'
@@ -296,6 +301,19 @@ export class Aircraft {
   syncMesh(): void {
     this.mesh.position.copy(this.position)
     this.mesh.quaternion.copy(this.orientation)
+  }
+
+  /**
+   * Add a restrained cool fill to dark airframe panels at night. This keeps
+   * the existing silhouette readable without adding lights or draw calls.
+   */
+  setNightReadability(daylight: number): void {
+    const intensity = nightAirframeEmissiveIntensity(daylight)
+    if (Math.abs(intensity - this.nightReadabilityValue) < 0.005) return
+    this.nightReadabilityValue = intensity
+    for (const material of this.readabilityMaterials) {
+      material.emissiveIntensity = intensity
+    }
   }
 
   /**
@@ -435,6 +453,8 @@ export class Aircraft {
     this.plumeMaterials.length = 0
     this.plumeDiamonds.length = 0
     this.nozzleGlows.length = 0
+    this.readabilityMaterials.length = 0
+    this.readabilityMaterialSet.clear()
     this.afterburner?.traverse((object) => {
       if (object.name.startsWith('abDiamond')) {
         this.plumeDiamonds.push({
@@ -451,7 +471,17 @@ export class Aircraft {
     })
     this.mesh.traverse((object) => {
       if (!(object instanceof Mesh) || !(object.material instanceof MeshStandardMaterial)) return
-      if (object.material.name === 'nozzleGlow') this.nozzleGlows.push(object.material)
+      const material = object.material
+      if (material.name === 'nozzleGlow') {
+        this.nozzleGlows.push(material)
+        return
+      }
+      // Physical canopy glass already carries its own emissive tint. Only
+      // dark non-emissive panels receive the subtle night readability layer.
+      if (material.emissive.getHex() !== 0 || this.readabilityMaterialSet.has(material)) return
+      material.emissive.setHex(AIRFRAME_NIGHT_EMISSIVE)
+      this.readabilityMaterialSet.add(material)
+      this.readabilityMaterials.push(material)
     })
   }
 
@@ -513,6 +543,12 @@ export function antiCollisionBeaconOpacity(timeMs: number): number {
 export function navigationLightOpacity(timeMs: number): number {
   if (!Number.isFinite(timeMs)) return .82
   return .79 + (Math.sin(timeMs * .0038) + 1) * .03
+}
+
+/** Cool panel fill strength, zero in daylight and capped at night. */
+export function nightAirframeEmissiveIntensity(daylight: number): number {
+  const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
+  return (1 - safe) * 0.24
 }
 
 /** Small procedural Mach-diamond pulse used by the external exhaust plume. */
