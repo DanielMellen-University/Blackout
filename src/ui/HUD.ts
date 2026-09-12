@@ -101,6 +101,7 @@ export class HUD {
   private speedNeedleXText = ''
   private speedNeedleYValue = Number.NaN
   private speedNeedleYText = ''
+  private speedNeedleValue = Number.NaN
   private speedArcValue = Number.NaN
   private speedArcText = ''
   private adiBallPitchValue = Number.NaN
@@ -454,24 +455,30 @@ export class HUD {
 
   private updateSpeedo(kts: number): void {
     const t = Math.min(1, kts / this.maxKts)
-    const angleDeg = -120 + t * 240
-    const rad = (angleDeg * Math.PI) / 180
     const cx = 70
     const cy = 70
     const len = 42
     if (this.spdNeedle) {
-      const x2 = quantizeHudNumber(cx + Math.sin(rad) * len, 10)
-      if (x2 !== this.speedNeedleXValue) {
-        this.speedNeedleXValue = x2
-        this.speedNeedleXText = String(x2)
+      // The numeric readout is whole-knot precision. Reuse that same input
+      // for the needle so steady flight does not redo trig every frame.
+      const needleKts = speedNeedleKts(kts)
+      if (needleKts !== this.speedNeedleValue) {
+        this.speedNeedleValue = needleKts
+        const angleDeg = -120 + Math.min(1, needleKts / this.maxKts) * 240
+        const rad = (angleDeg * Math.PI) / 180
+        const x2 = quantizeHudNumber(cx + Math.sin(rad) * len, 10)
+        if (x2 !== this.speedNeedleXValue) {
+          this.speedNeedleXValue = x2
+          this.speedNeedleXText = String(x2)
+        }
+        const y2 = quantizeHudNumber(cy - Math.cos(rad) * len, 10)
+        if (y2 !== this.speedNeedleYValue) {
+          this.speedNeedleYValue = y2
+          this.speedNeedleYText = String(y2)
+        }
+        this.setAttribute(this.spdNeedle, 'x2', this.speedNeedleXText)
+        this.setAttribute(this.spdNeedle, 'y2', this.speedNeedleYText)
       }
-      const y2 = quantizeHudNumber(cy - Math.cos(rad) * len, 10)
-      if (y2 !== this.speedNeedleYValue) {
-        this.speedNeedleYValue = y2
-        this.speedNeedleYText = String(y2)
-      }
-      this.setAttribute(this.spdNeedle, 'x2', this.speedNeedleXText)
-      this.setAttribute(this.spdNeedle, 'y2', this.speedNeedleYText)
     }
     if (this.spdArc) {
       const shown = Math.max(0.5, quantizeHudNumber(t * 100, 10))
@@ -786,6 +793,11 @@ export function speedWarningLevel(knots: number, maxKts = 3000): SpeedWarningLev
   if (safeKnots > safeMax) return 'overspeed'
   if (safeKnots >= safeMax * 0.94) return 'redline'
   return 'normal'
+}
+
+/** Whole-knot input shared by the speed readout and needle geometry. */
+export function speedNeedleKts(knots: number): number {
+  return Math.round(Number.isFinite(knots) ? Math.max(0, knots) : 0)
 }
 
 /**

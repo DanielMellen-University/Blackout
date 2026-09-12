@@ -14,6 +14,7 @@ import {
   quantizeHudNumber,
   speedWarningLevel,
   speedJuiceIntensity,
+  speedNeedleKts,
   verticalSpeedTone,
 } from '../src/ui/HUD'
 
@@ -44,6 +45,13 @@ describe('HUD value formatting', () => {
     expect(speedWarningLevel(3000)).toBe('redline')
     expect(speedWarningLevel(3000.1)).toBe('overspeed')
     expect(speedWarningLevel(Number.NaN)).toBe('normal')
+  })
+
+  it('coalesces the speed needle to the displayed knot resolution', () => {
+    expect(speedNeedleKts(1200.49)).toBe(1200)
+    expect(speedNeedleKts(1200.5)).toBe(1201)
+    expect(speedNeedleKts(-12)).toBe(0)
+    expect(speedNeedleKts(Number.NaN)).toBe(0)
   })
 
   it('formats climb and sink rates with a readable sign', () => {
