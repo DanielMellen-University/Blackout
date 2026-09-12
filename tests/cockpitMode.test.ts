@@ -15,6 +15,8 @@ describe('cockpit camera presentation', () => {
     expect(frame).toBeTruthy()
     expect(frame?.visible).toBe(true)
     expect(frame?.children).toHaveLength(4)
+    expect(frame?.matrixAutoUpdate).toBe(false)
+    expect(frame?.children.every(child => !child.matrixAutoUpdate)).toBe(true)
 
     cockpit.exit(camera)
     expect(frame?.visible).toBe(false)

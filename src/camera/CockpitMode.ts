@@ -60,6 +60,10 @@ export class CockpitMode {
     coaming.rotation.x = -0.08
 
     this.frame.add(leftRail, rightRail, brow, coaming)
+    this.frame.traverse((object) => {
+      object.updateMatrix()
+      object.matrixAutoUpdate = false
+    })
   }
 
   get active(): boolean {
