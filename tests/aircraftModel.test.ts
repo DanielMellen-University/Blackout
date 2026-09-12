@@ -201,6 +201,26 @@ describe('rebuilt aircraft', () => {
     expect(plume.scale.z).toBeGreaterThan(2.8)
   })
 
+  it('flares the exhaust petals with engine power and afterburner', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    const petal = aircraft.mesh.getObjectByName('nozzlePetal0')!
+
+    aircraft.controls.throttle = 0.25
+    aircraft.controls.boost = false
+    aircraft.step(0)
+    const militaryFlare = Math.hypot(petal.rotation.x, petal.rotation.y)
+
+    aircraft.controls.throttle = 1
+    aircraft.controls.boost = true
+    aircraft.step(0)
+    const afterburnerFlare = Math.hypot(petal.rotation.x, petal.rotation.y)
+
+    expect(militaryFlare).toBeGreaterThan(0)
+    expect(afterburnerFlare).toBeGreaterThan(militaryFlare)
+    expect(afterburnerFlare).toBeLessThanOrEqual(0.12)
+  })
+
   it('animates differential control surfaces from pitch, roll, and yaw input', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 1000, 0)

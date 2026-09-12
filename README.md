@@ -47,6 +47,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Static runway and airfield meshes freeze their local transforms after construction, while the weather-driven windsock stays animatable for lower render-loop CPU cost.
 - The runway windsock now aims downwind and extends with the live weather wind, giving takeoff a readable local wind cue without extra draw calls.
 - The runway PAPI now changes from red to white with the aircraft's real glide angle, while fly-bys hold a neutral two-white/two-red pattern.
+- The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.
 - The HUD now includes a lightweight fighter-style heading tape with cardinal marks and a centered caret, making yaw readable at a glance without adding scene work.

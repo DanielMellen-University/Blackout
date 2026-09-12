@@ -131,10 +131,12 @@ export class Aircraft {
     y: number
     z: number
   }> = []
+  private readonly nozzlePetals: Array<{ node: Object3D; angle: number }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
   private readonly readabilityMaterials: MeshStandardMaterial[] = []
   private readonly readabilityMaterialSet = new Set<MeshStandardMaterial>()
   private nightReadabilityValue = Number.NaN
+  private nozzleFlareValue = Number.NaN
 
   constructor() {
     this.mesh = new Group()
@@ -210,6 +212,7 @@ export class Aircraft {
     this.wheelSpin = 0
     this.navLightOpacity = Number.NaN
     this.nightReadabilityValue = Number.NaN
+    this.nozzleFlareValue = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     if (this.gearNose) this.gearNose.rotation.y = 0
     resolveEngineState(this.controls, this.engineState)
@@ -355,15 +358,17 @@ export class Aircraft {
       for (const material of this.navLightMaterials) material.opacity = navOpacity
     }
 
-    const ab = this.afterburner
-    if (!ab) return
-
     // Drive plume size from the same 0..100% lever shown on the HUD. Boost
     // changes the available exhaust envelope, but never replaces the lever's
     // contribution, so 30% power cannot produce a full-size afterburner.
     const engine = this.engineState
     const boost = engine.afterburnerActive
     const throttlePower = this.status === 'crashed' ? 0 : engine.lever
+    this.updateNozzlePetals(throttlePower, boost)
+
+    const ab = this.afterburner
+    if (!ab) return
+
     const plumeResponse = Math.pow(throttlePower, 0.82)
     ab.visible = throttlePower > 0.015
     ab.userData.powerPercent = throttlePower * 100
@@ -391,6 +396,20 @@ export class Aircraft {
     }
     const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
     for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
+  }
+
+  /** Flex the existing nozzle petals subtly with engine power. */
+  private updateNozzlePetals(power: number, boost: boolean): void {
+    if (this.nozzlePetals.length === 0) return
+    const safePower = MathUtils.clamp(Number.isFinite(power) ? power : 0, 0, 1)
+    const target = safePower * (boost ? 0.12 : 0.035)
+    if (Math.abs(target - this.nozzleFlareValue) < 0.002) return
+    this.nozzleFlareValue = target
+    for (const petal of this.nozzlePetals) {
+      petal.node.rotation.x = Math.cos(petal.angle) * target
+      petal.node.rotation.y = Math.sin(petal.angle) * target
+      petal.node.rotation.z = -petal.angle
+    }
   }
 
   /** Animate the procedural F-35's hinged panels from the live stick input. */
@@ -468,6 +487,7 @@ export class Aircraft {
         : null
     this.plumeMaterials.length = 0
     this.plumeDiamonds.length = 0
+    this.nozzlePetals.length = 0
     this.nozzleGlows.length = 0
     this.readabilityMaterials.length = 0
     this.readabilityMaterialSet.clear()
@@ -486,6 +506,13 @@ export class Aircraft {
       }
     })
     this.mesh.traverse((object) => {
+      if (object.name.startsWith('nozzlePetal')) {
+        const angle = object.userData.nozzleAngle
+        this.nozzlePetals.push({
+          node: object,
+          angle: Number.isFinite(angle) ? angle : 0,
+        })
+      }
       if (!(object instanceof Mesh) || !(object.material instanceof MeshStandardMaterial)) return
       const material = object.material
       if (material.name === 'nozzleGlow') {

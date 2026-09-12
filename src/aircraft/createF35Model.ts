@@ -191,6 +191,8 @@ function buildNozzle(root: Group, metal: Material, black: Material): void {
   for (let i = 0; i < 18; i++) {
     const a = i / 18 * Math.PI * 2
     const petal = new Mesh(new BoxGeometry(.12, .065, .67), metal)
+    petal.name = `nozzlePetal${i}`
+    petal.userData.nozzleAngle = a
     petal.position.set(Math.sin(a) * .652, Math.cos(a) * .652, -6.76)
     petal.rotation.z = -a
     root.add(petal)
