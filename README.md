@@ -39,6 +39,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The title hero stages streamed settlements out of view so the runway and F-35 stay readable; the cached city and village layer returns immediately when flight starts.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - The optional GLB aircraft loader is code-split from the initial bundle, so the procedural F-35 can boot with a smaller payload while the replacement model still loads and cleans up normally.
+- The nose wheel visibly follows A/D runway steering, then recenters smoothly after takeoff and resets with each new flight.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.
 - The HUD now includes a lightweight fighter-style heading tape with cardinal marks and a centered caret, making yaw readable at a glance without adding scene work.

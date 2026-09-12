@@ -211,6 +211,7 @@ export class Aircraft {
     this.navLightOpacity = Number.NaN
     this.nightReadabilityValue = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
+    if (this.gearNose) this.gearNose.rotation.y = 0
     resolveEngineState(this.controls, this.engineState)
     this.status = 'ok'
     this.mesh.visible = true
@@ -340,6 +341,7 @@ export class Aircraft {
 
     this.updateControlSurfaces(dt)
     this.updateWheelSpin(dt)
+    this.updateNoseGearSteering(dt)
 
     if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
       const opacity = antiCollisionBeaconOpacity(now)
@@ -419,6 +421,17 @@ export class Aircraft {
       }
     }
     for (const wheel of this.wheels) wheel.rotation.x = this.wheelSpin
+  }
+
+  /** Turn the nose wheel with rudder input while the jet is rolling. */
+  private updateNoseGearSteering(dt: number): void {
+    const nose = this.gearNose
+    if (!nose) return
+    const grounded = this.onGround && this.gearExtension > 0.75
+    const target = grounded ? MathUtils.clamp(this.controls.yaw, -1, 1) * 0.38 : 0
+    nose.rotation.y = dt === 0
+      ? target
+      : MathUtils.damp(nose.rotation.y, target, 11, dt)
   }
 
   /** Cache the small set of nodes touched every physics step. */

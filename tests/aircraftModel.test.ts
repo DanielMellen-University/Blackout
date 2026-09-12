@@ -89,6 +89,23 @@ describe('rebuilt aircraft', () => {
     expect(left.rotation.x).toBe(0)
   })
 
+  it('steers the nose wheel with runway yaw input and recenters airborne', () => {
+    setContactHeightSampler(() => 0)
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    const noseGear = aircraft.mesh.getObjectByName('gearNose')!
+
+    aircraft.controls.yaw = 1
+    aircraft.step(0)
+    expect(noseGear.rotation.y).toBeCloseTo(0.38)
+
+    aircraft.controls.yaw = 0
+    aircraft.position.y = 100
+    aircraft.step(1 / 60)
+    expect(noseGear.rotation.y).toBeLessThan(0.38)
+    expect(noseGear.rotation.y).toBeGreaterThan(0)
+  })
+
   it('keeps red and green navigation lights softly pulsing', () => {
     const model = createF35Model()
     const left = model.getObjectByName('navLightLeft') as Mesh
