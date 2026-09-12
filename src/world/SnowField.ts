@@ -13,6 +13,13 @@ const FLAKE_COUNT = 4200
 /** Half-size of the wrapping volume around the jet, metres. */
 const HALF = 110
 const SPAN = HALF * 2
+const SNOW_WAVE_SIZE = 256
+const SNOW_WAVE_MASK = SNOW_WAVE_SIZE - 1
+const SNOW_WAVE_SCALE = SNOW_WAVE_SIZE / (Math.PI * 2)
+const SNOW_WAVE = Float32Array.from(
+  { length: SNOW_WAVE_SIZE },
+  (_, i) => Math.sin((i / SNOW_WAVE_SIZE) * Math.PI * 2),
+)
 
 /** Clamp a pooled particle budget without allowing an accidental zero draw. */
 export function precipitationParticleCount(total: number, scale: number): number {
@@ -20,6 +27,13 @@ export function precipitationParticleCount(total: number, scale: number): number
   if (safeTotal === 0) return 0
   const safeScale = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1
   return Math.max(1, Math.min(safeTotal, Math.floor(safeTotal * safeScale)))
+}
+
+/** Quantized periodic sway shared by every snow flake. */
+export function snowWave(phase: number): number {
+  if (!Number.isFinite(phase)) return 0
+  const index = Math.floor(phase * SNOW_WAVE_SCALE) & SNOW_WAVE_MASK
+  return SNOW_WAVE[index]!
 }
 
 /**
@@ -136,9 +150,10 @@ export class SnowField {
     for (let i = 0; i < this.activeCountValue; i++) {
       const ix = i * 3
       const ph = this.phase[i]!
-      let x = this.pos[ix]! + (driftX + Math.sin(t * 0.31 + ph) * wind) * dt
+      let x = this.pos[ix]! + (driftX + snowWave(t * 0.31 + ph) * wind) * dt
       let y = this.pos[ix + 1]! - this.fall[i]! * fallMul * dt
-      let z = this.pos[ix + 2]! + (driftZ + Math.cos(t * 0.27 + ph * 1.37) * wind * 0.62) * dt
+      let z = this.pos[ix + 2]! +
+        (driftZ + snowWave(t * 0.27 + ph * 1.37 + Math.PI / 2) * wind * 0.62) * dt
       this.pos[ix] = wrap(x, cx)
       this.pos[ix + 1] = wrap(y, yCenter)
       this.pos[ix + 2] = wrap(z, cz)

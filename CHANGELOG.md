@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Replace per-flake snow sine and cosine evaluation with a shared periodic sway table, preserving storm motion while lowering CPU work at the full precipitation budget.
 - Coalesce unchanged runway windsock and PAPI poses while invalidating on runway rotation, keeping weather and approach cues responsive without repeated transform math.
 - Cache runway windsock nodes after their first weather update, preserving downwind animation while removing repeated scene-tree searches from the world tick.
 - Preserve the last camera pose on frozen title, pause, and results frames so external ground-occlusion probes are not repeated while no visual time elapses.

@@ -59,6 +59,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Paused, title, and results frames now preserve the camera pose without repeating external ground-occlusion probes when no visual time has elapsed.
 - Runway wind updates cache the windsock and fabric nodes after the first lookup, preserving downwind animation without repeated scene-tree traversal.
 - Runway wind and PAPI updates now coalesce unchanged poses and invalidate on runway rotation, preserving weather and approach feedback without repeated trigonometry.
+- Snow drift uses a shared periodic sway table instead of two trigonometric calls per flake, keeping blizzards animated while reducing CPU cost.
 - The F-35 exhaust petals flex subtly with military power and afterburner, adding mechanical life without extra geometry or draw calls.
 - Height-only ground queries now use visible mesh interpolation directly, so camera clearance, AGL, collision clearance, and landing effects skip redundant biome sampling in flight.
 - Flight banners now distinguish neutral info, successful landings/gates, and actual crash or recovery danger states instead of using one alarm color for every event.

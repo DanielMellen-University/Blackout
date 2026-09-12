@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { precipitationParticleCount, SnowField, wrap } from '../src/world/SnowField'
+import { precipitationParticleCount, SnowField, snowWave, wrap } from '../src/world/SnowField'
 
 describe('snow wrap', () => {
   it('maps a point onto the opposite side of the follow volume', () => {
@@ -15,6 +15,13 @@ describe('snow wrap', () => {
     expect(precipitationParticleCount(4200, 1.4)).toBe(4200)
     expect(precipitationParticleCount(4200, 0)).toBe(1)
     expect(precipitationParticleCount(0, 0.4)).toBe(0)
+  })
+
+  it('keeps pooled sway finite and periodic without per-flake trig', () => {
+    expect(snowWave(0)).toBeCloseTo(0, 2)
+    expect(snowWave(Math.PI / 2)).toBeCloseTo(1, 2)
+    expect(snowWave(1.17 + Math.PI * 2)).toBeCloseTo(snowWave(1.17), 2)
+    expect(snowWave(Number.NaN)).toBe(0)
   })
 
   it('changes the pooled draw range without rebuilding the field', () => {
