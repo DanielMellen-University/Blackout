@@ -1626,3 +1626,135 @@ body,
   pointer-events: none;
   z-index: 3;
 }
+
+/* Keep the flight instruments usable on narrow browser windows. The desktop
+   layout remains unchanged; compact screens get smaller, separated instrument
+   groups so the heading tape and warnings do not bury the actual readouts. */
+@media (max-width: 560px) {
+  #title-bar {
+    top: 10px;
+    left: 10px;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  #title-bar h1 {
+    font-size: 0.86rem;
+    letter-spacing: 0.24em;
+  }
+
+  #phase-badge {
+    font-size: 0.54rem;
+    padding: 3px 7px;
+  }
+
+  #heading-tape {
+    top: 52px;
+    width: calc(100vw - 20px);
+    height: 34px;
+  }
+
+  #heading-tape::after {
+    top: 13px;
+    height: 15px;
+  }
+
+  .heading-tape-mark::before {
+    top: 18px;
+    height: 6px;
+  }
+
+  .heading-tape-mark.major::before {
+    top: 15px;
+    height: 9px;
+  }
+
+  .heading-tape-label {
+    padding-top: 3px;
+    font-size: 0.54rem;
+  }
+
+  #heading-tape-caret {
+    font-size: 0.62rem;
+  }
+
+  #hud {
+    top: 94px;
+    left: 10px;
+    min-width: 126px;
+    padding: 8px 10px;
+    font-size: 0.68rem;
+  }
+
+  .hud-row {
+    gap: 10px;
+    line-height: 1.45;
+  }
+
+  .hud-row .label {
+    font-size: 0.56rem;
+  }
+
+  #hud-top-right {
+    top: 94px;
+    right: 10px;
+    gap: 6px;
+    transform: scale(0.8);
+    transform-origin: top right;
+  }
+
+  #gauges {
+    left: 10px;
+    bottom: 10px;
+    gap: 8px;
+    transform: scale(0.82);
+    transform-origin: left bottom;
+  }
+
+  .warn {
+    top: 92px;
+    min-width: 100px;
+    padding: 6px 12px;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+  }
+
+  .banner {
+    max-width: calc(100vw - 20px);
+    padding: 10px 14px;
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    white-space: normal;
+    text-align: center;
+  }
+
+  #nav-cue {
+    min-width: 92px;
+    padding: 6px 10px 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  #hud-top-right {
+    transform: scale(0.68);
+  }
+
+  #gauges {
+    transform: scale(0.72);
+  }
+
+  #hud {
+    min-width: 118px;
+    font-size: 0.64rem;
+  }
+}
+
+@media (max-height: 520px) and (max-width: 700px) {
+  #hud-top-right {
+    transform: scale(0.76);
+  }
+
+  #gauges {
+    transform: scale(0.78);
+  }
+}
