@@ -13,6 +13,7 @@ import {
   normalizeBannerTone,
   quantizeHudNumber,
   speedJuiceIntensity,
+  verticalSpeedTone,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
@@ -41,6 +42,14 @@ describe('HUD value formatting', () => {
     expect(formatVerticalSpeed(-3.6)).toBe('-4')
     expect(formatVerticalSpeed(0.2)).toBe('0')
     expect(formatVerticalSpeed(Number.NaN)).toBe('0')
+  })
+
+  it('keeps vertical-speed color changes inside a deadband', () => {
+    expect(verticalSpeedTone(2.01)).toBe('climb')
+    expect(verticalSpeedTone(-2.01)).toBe('sink')
+    expect(verticalSpeedTone(2)).toBe('level')
+    expect(verticalSpeedTone(-2)).toBe('level')
+    expect(verticalSpeedTone(Number.NaN)).toBe('level')
   })
 
   it('wraps aircraft heading into a compact compass readout', () => {

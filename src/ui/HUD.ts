@@ -199,6 +199,9 @@ export class HUD {
         this.verticalSpeedText = formatVerticalSpeed(verticalSpeed)
       }
       this.setText(this.verticalSpeedEl, this.verticalSpeedText)
+      const tone = verticalSpeedTone(opts.verticalSpeed ?? 0)
+      this.setClass(this.verticalSpeedEl, 'climb', tone === 'climb')
+      this.setClass(this.verticalSpeedEl, 'sink', tone === 'sink')
     }
 
     const kts = displayedKnots(opts.speed)
@@ -683,6 +686,18 @@ export function formatVerticalSpeed(value: number): string {
   const rounded = Math.round(Number.isFinite(value) ? value : 0)
   if (rounded === 0) return '0'
   return rounded > 0 ? `+${rounded}` : String(rounded)
+}
+
+/** Deadbanded vertical-speed tone so tiny turbulence does not flicker colors. */
+export function verticalSpeedTone(
+  value: number,
+  threshold = 2,
+): 'climb' | 'sink' | 'level' {
+  const speed = Number.isFinite(value) ? value : 0
+  const deadband = Number.isFinite(threshold) ? Math.max(0, threshold) : 2
+  if (speed > deadband) return 'climb'
+  if (speed < -deadband) return 'sink'
+  return 'level'
 }
 
 function headingDegrees(headingRad: number): number {

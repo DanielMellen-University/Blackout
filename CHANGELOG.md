@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add deadbanded climb and sink colors to the signed vertical-speed HUD readout, improving landing readability without extra scene work or DOM churn.
 - Let the optional GLB aircraft replacement hydrate after the playable runtime is ready, so a missing or slow model request cannot block the title screen or first flight.
 - Replace per-streak rain sine evaluation with pooled sway values, preserving wind and storm drift while reducing heavy-weather CPU work.
 - Drive the existing F-35 nose gear from runway yaw input, smoothly recenter it in the air, and reset it between flights for clearer takeoff and rollout feedback.
