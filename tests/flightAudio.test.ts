@@ -5,6 +5,7 @@ import {
   enginePlaybackRate,
   precipitationAudioLevel,
   shouldScheduleAudioTarget,
+  shouldSkipMutedAudioUpdate,
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
@@ -32,6 +33,12 @@ describe('flight audio automation', () => {
   it('treats non-positive epsilon as exact comparison', () => {
     expect(shouldScheduleAudioTarget(0.4, 0.400001, 0)).toBe(true)
     expect(shouldScheduleAudioTarget(0.4, 0.4, 0)).toBe(false)
+  })
+
+  it('skips repeated muted updates without blocking unmute transitions', () => {
+    expect(shouldSkipMutedAudioUpdate(true, true)).toBe(true)
+    expect(shouldSkipMutedAudioUpdate(true, false)).toBe(false)
+    expect(shouldSkipMutedAudioUpdate(false, true)).toBe(false)
   })
 
   it('spools the procedural engine without exceeding a safe playback envelope', () => {

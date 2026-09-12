@@ -79,6 +79,7 @@ export class FlightAudio {
       return
     }
     if (ctx.state === 'suspended') return
+    if (shouldSkipMutedAudioUpdate(this.muted, opts.mute)) return
 
     const thr = clamp01(opts.throttle)
     const boost = opts.boost
@@ -402,6 +403,11 @@ export function shouldScheduleAudioTarget(
   if (previous === undefined) return true
   const delta = Math.abs(previous - target)
   return epsilon <= 0 ? delta > 0 : delta >= epsilon
+}
+
+/** Skip repeated paused/hidden updates once the output is already muted. */
+export function shouldSkipMutedAudioUpdate(previousMuted: boolean, mute: boolean): boolean {
+  return previousMuted && mute
 }
 
 /** Bounded procedural engine spool rate shared by the audio update and tests. */

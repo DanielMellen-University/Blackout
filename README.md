@@ -43,6 +43,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Static title, pause, and results frames skip world streaming work until flight resumes, reducing idle CPU without changing the live anchor or weather path.
 - Flight keyboard-capture state is now coalesced, so steady frames do not rewrite the same input mode.
 - The HUD freezes its last live telemetry under pause and results overlays, avoiding gauge and warning recomputation until flight resumes.
+- The audio graph now returns immediately from repeated muted pause/hidden updates, while unmute transitions still schedule normally.
 - The active-gate beacon now updates only when the route changes, avoiding a redundant per-frame position copy while preserving the same visible guidance.
 - Flight audio coalesces unchanged Web Audio automation targets so steady cruise does not enqueue redundant gain and filter ramps.
 - Weather uniforms and settlement lighting updates are coalesced at the world boundary, preserving visible transitions while reducing stable-flight writes.
