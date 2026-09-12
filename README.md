@@ -43,6 +43,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The external camera far plane now tracks the streamed terrain and cloud envelope instead of an oversized 60 km range, preserving depth precision without clipping visible scenery.
 - The speed needle reuses whole-knot display precision, skipping redundant trigonometry during steady flight while retaining the same gauge resolution.
 - The title hero stages streamed settlements out of view so the runway and F-35 stay readable; the cached city and village layer returns immediately when flight starts.
+- The launch card now sits compactly above the hero with a lighter scene veil, keeping the runway and F-35 silhouette visible on the first frame without weakening menu contrast.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - The optional GLB aircraft loader is code-split from the initial bundle, so the procedural F-35 can boot with a smaller payload while the replacement model still loads and cleans up normally.
 - The nose wheel visibly follows A/D runway steering, then recenters smoothly after takeoff and resets with each new flight.
