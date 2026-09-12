@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Replace per-streak rain sine evaluation with pooled sway values, preserving wind and storm drift while reducing heavy-weather CPU work.
 - Drive the existing F-35 nose gear from runway yaw input, smoothly recenter it in the air, and reset it between flights for clearer takeoff and rollout feedback.
 - Code-split the optional GLB aircraft loader from the initial bundle, preserving the procedural F-35 fallback while reducing startup payload and keeping replacement teardown intact.
 - Add a responsive flight HUD frame for narrow and short browser windows, separating compact instrument groups and wrapping banners while preserving the desktop presentation.

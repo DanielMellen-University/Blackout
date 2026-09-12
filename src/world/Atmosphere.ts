@@ -197,6 +197,18 @@ export function atmosphereNeedsUpdate(
   return previous.x !== x || previous.y !== y || previous.z !== z
 }
 
+/** Cheap per-streak lateral rain drift used by the pooled particle update. */
+export function rainLateralVelocity(
+  sway: number,
+  windX: number,
+  intensity: number,
+): number {
+  const streakSway = Number.isFinite(sway) ? sway : 0
+  const wind = Number.isFinite(windX) ? windX : 0
+  const rain = Number.isFinite(intensity) ? MathUtils.clamp(intensity, 0, 1) : 0
+  return wind * 0.38 + streakSway * 3 * rain
+}
+
 /**
  * Day/night cycle + weather: sky dome (sun/moon/stars), fog, lights, clouds, rain/snow.
  * Full day ~8 real minutes. Time fully random on reseed.
@@ -237,6 +249,7 @@ export class Atmosphere {
   private readonly precipRoot = new Group()
   private readonly rain: Points
   private readonly rainVel: Float32Array
+  private readonly rainSway: Float32Array
   private readonly rainMat: PointsMaterial
   private readonly rainTex: DataTexture
   private readonly snowField: SnowField
@@ -311,11 +324,13 @@ export class Atmosphere {
     this.rainActiveCount = rainCount
     const rainPos = new Float32Array(rainCount * 3)
     this.rainVel = new Float32Array(rainCount)
+    this.rainSway = new Float32Array(rainCount)
     for (let i = 0; i < rainCount; i++) {
       rainPos[i * 3] = (Math.random() - 0.5) * 140
       rainPos[i * 3 + 1] = Math.random() * 90
       rainPos[i * 3 + 2] = (Math.random() - 0.5) * 140
       this.rainVel[i] = 32 + Math.random() * 48
+      this.rainSway[i] = Math.random() * 2 - 1
     }
     const rainGeo = new BufferGeometry()
     rainGeo.setAttribute('position', new BufferAttribute(rainPos, 3))
@@ -1002,8 +1017,7 @@ export class Atmosphere {
     for (let i = 0; i < this.rainActiveCount; i++) {
       const iy = i * 3 + 1
       arr[iy]! -= this.rainVel[i]! * boost * dt
-      arr[i * 3]! +=
-        (weather.windX * 0.38 + Math.sin(i + az * 0.01) * 3 * rainAmt) * dt
+      arr[i * 3]! += rainLateralVelocity(this.rainSway[i]!, weather.windX, rainAmt) * dt
       arr[i * 3 + 2]! += weather.windZ * 0.38 * dt
       if (arr[iy]! < -18) {
         arr[iy] = 45 + Math.random() * 55
