@@ -236,6 +236,7 @@ async function boot(): Promise<void> {
     world.dispose()
     crashFx.dispose()
     landingFx.dispose()
+    debug?.dispose()
     aircraft.dispose()
     renderer.dispose()
   }

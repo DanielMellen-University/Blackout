@@ -26,6 +26,7 @@ export class DebugOverlay {
   private readonly marks: Group
   private readonly inner: Mesh
   private readonly outer: Mesh
+  private disposed = false
 
   constructor(scene: Scene) {
     this.el = document.createElement('pre')
@@ -74,6 +75,7 @@ export class DebugOverlay {
   }
 
   syncPad(): void {
+    if (this.disposed) return
     const pad = getOpsPad()
     if (!pad) {
       this.marks.visible = false
@@ -84,6 +86,7 @@ export class DebugOverlay {
   }
 
   update(aircraft: Aircraft, spawn: SpawnPose, cam: string, fps: number): void {
+    if (this.disposed) return
     this.syncPad()
     const { x, y, z } = aircraft.position
     const c = sampleClimate(x, z)
@@ -106,5 +109,18 @@ export class DebugOverlay {
       `ias   ${kts.toFixed(0)} kts  tgt ${targetKts.toFixed(0)}  eng ${(aircraft.controls.throttle * 100).toFixed(1)}%${aircraft.controls.boost ? ' BOOST' : ''}`,
       `gnd   ${aircraft.onGround ? 'yes' : 'no'}  impactVy ${aircraft.impactVy.toFixed(1)}  cam ${cam}  ${fps.toFixed(0)} fps`,
     ].join('\n')
+  }
+
+  /** Release the optional debug DOM and marker resources during runtime teardown. */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.el.remove()
+    this.inner.geometry.dispose()
+    this.outer.geometry.dispose()
+    ;(this.inner.material as MeshBasicMaterial).dispose()
+    ;(this.outer.material as MeshBasicMaterial).dispose()
+    this.marks.removeFromParent()
+    this.marks.clear()
   }
 }
