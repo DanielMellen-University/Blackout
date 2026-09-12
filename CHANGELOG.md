@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Make multisample antialiasing quality-aware at renderer creation so Low avoids the extra GPU cost while Balanced and High retain the sharper path.
 - Harden fixed-step timing against malformed or backwards animation timestamps so one bad browser frame cannot poison simulation interpolation or the FPS estimate.
 - Reduce pooled crash VFX terrain queries to one shared impact-point sample per update, preserving the fixed particle burst while trimming crash-time CPU work.
 - Couple PAPI emissive intensity to the shared daylight envelope so approach cues stay restrained by day and readable at night without extra lights or geometry.

@@ -8,6 +8,8 @@ export type RenderQuality = 'low' | 'balanced' | 'high'
 export interface RenderQualityProfile {
   readonly label: string
   readonly maxPixelRatio: number
+  /** Whether the renderer should request multisample antialiasing at boot. */
+  readonly antialias: boolean
   readonly shadows: boolean
   /** Fraction of pooled rain and snow particles simulated and drawn. */
   readonly precipitationScale: number
@@ -19,9 +21,9 @@ export interface RenderQualityProfile {
 
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQualityProfile>> =
   Object.freeze({
-    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, shadows: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45 }),
-    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, shadows: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75 }),
-    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, shadows: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1 }),
+    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, antialias: false, shadows: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45 }),
+    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, antialias: true, shadows: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75 }),
+    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, antialias: true, shadows: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1 }),
   })
 
 const STORAGE_KEY = 'blackout.renderQuality'

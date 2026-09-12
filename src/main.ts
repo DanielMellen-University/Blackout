@@ -99,7 +99,9 @@ async function boot(): Promise<void> {
 
   const renderer = new WebGLRenderer({
     canvas,
-    antialias: true,
+    // Multisample antialiasing is selected once at context creation. Low
+    // quality should avoid paying that GPU cost on constrained devices.
+    antialias: initialQualityProfile.antialias,
     powerPreference: 'high-performance',
   })
   const resolution = new AdaptiveResolution(window.devicePixelRatio, initialQualityProfile.maxPixelRatio)
