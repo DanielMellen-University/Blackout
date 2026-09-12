@@ -228,6 +228,7 @@ export class Atmosphere {
   private lightningFlash = 0
   private lightningFlashAge = Infinity
   private lightningFlashPeak = 0
+  private reducedMotion = false
   private gustPhase = 0
   private clockLabelMinute = -1
   private clockLabelValue = '00:00'
@@ -541,7 +542,21 @@ export class Atmosphere {
 
   /** True while the current storm flash envelope is active. */
   get lightningActive(): boolean {
-    return this.lightningFlashAge < LIGHTNING_DURATION_SEC
+    return !this.reducedMotion && this.lightningFlashAge < LIGHTNING_DURATION_SEC
+  }
+
+  /** Respect the browser's reduced-motion preference for storm flashes. */
+  setReducedMotion(enabled: boolean): void {
+    if (this.disposed) return
+    this.reducedMotion = enabled
+    if (enabled) {
+      this.lightningFlash = 0
+      this.lightningFlashAge = Infinity
+    }
+  }
+
+  get prefersReducedMotion(): boolean {
+    return this.reducedMotion
   }
 
   /** Daylight factor shared by world materials (0 = night, 1 = full day). */
@@ -1038,7 +1053,11 @@ export class Atmosphere {
   }
 
   private updateLightning(dt: number, weather: WeatherSnapshot): void {
-    if (dt <= 0) return
+    if (dt <= 0 || this.reducedMotion) {
+      this.lightningFlash = 0
+      this.lightningFlashAge = Infinity
+      return
+    }
 
     if (this.lightningFlashAge < LIGHTNING_DURATION_SEC) {
       this.lightningFlashAge += dt

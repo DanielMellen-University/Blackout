@@ -18,6 +18,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
+- Reduced-motion preferences also suppress storm lightning flashes and their thunder cue while keeping precipitation and cloud weather active.
 - Graphics and audio preference listeners are released with the runtime, preventing stale controls from touching a disposed scene after a remount.
 - Menu, results, and preference controls now share one teardown bag, so a remounted runtime cannot stack stale button callbacks.
 - Settings and pause dialogs now announce their active heading and return focus to the control that opened them when closed.

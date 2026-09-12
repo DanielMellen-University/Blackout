@@ -175,7 +175,9 @@ async function boot(): Promise<void> {
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null
   const syncReducedMotion = (): void => {
-    cameras.setReducedMotion(!!reducedMotionQuery?.matches)
+    const reduced = !!reducedMotionQuery?.matches
+    cameras.setReducedMotion(reduced)
+    world.atmosphere.setReducedMotion(reduced)
   }
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
