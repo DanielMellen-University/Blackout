@@ -129,7 +129,7 @@ export class LandingFx {
   }
 
   update(dt: number): void {
-    if (!this.alive) return
+    if (!this.alive || dt <= 0) return
     let any = false
     for (let i = this.active.length - 1; i >= 0; i--) {
       const puff = this.active[i]!

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Skip pooled crash and landing-particle simulation when the frame delta is frozen or invalid, preventing paused effects from consuming CPU or sampling terrain.
 - End the pooled crash effect as soon as its particles expire and the readable flash envelope is complete, avoiding empty-tail terrain queries.
 - Throttle the directional shadow map to a bounded 20 Hz cadence, forcing immediate refreshes after quality or WebGL context changes while keeping Low shadow-free.
 - Gate detailed aircraft contact sweeps behind conservative previous, midpoint, and current terrain clearances so high-altitude flight avoids unnecessary height queries while near-ground contact remains unchanged.

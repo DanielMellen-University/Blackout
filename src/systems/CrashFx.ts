@@ -160,7 +160,7 @@ export class CrashFx {
   }
 
   update(dt: number): void {
-    if (!this.alive) return
+    if (!this.alive || dt <= 0) return
     this.age += dt
     this.punch = Math.max(0, this.punch - dt * 1.55)
 

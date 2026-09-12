@@ -56,6 +56,23 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('does not walk or resample the burst while time is frozen', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const fx = new CrashFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(4, -8, 12))
+    fx.update(0.08)
+    const afterActive = samples
+    const activeCount = fx.activeCount
+    fx.update(0)
+    expect(samples).toBe(afterActive)
+    expect(fx.activeCount).toBe(activeCount)
+    fx.dispose()
+  })
+
   it('stops the effect when the pooled particle tail is empty', () => {
     let samples = 0
     setContactHeightSampler(() => {

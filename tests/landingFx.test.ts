@@ -45,6 +45,15 @@ describe('landing scrub pooling', () => {
     fx.dispose()
   })
 
+  it('keeps pooled landing particles untouched while time is frozen', () => {
+    const fx = new LandingFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(0, -2, 50), 1)
+    const activeCount = fx.activeCount
+    fx.update(0)
+    expect(fx.activeCount).toBe(activeCount)
+    fx.dispose()
+  })
+
   it('scales continuous scrub intensity with ground speed', () => {
     expect(landingScrubIntensity(0)).toBe(0)
     expect(landingScrubIntensity(9)).toBe(0)
