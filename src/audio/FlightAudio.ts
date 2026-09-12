@@ -189,7 +189,7 @@ export class FlightAudio {
 
   /** Hard silence (e.g. before dispose). */
   silence(): void {
-    if (!this.master || !this.ctx) return
+    if (!this.master || !this.ctx || !audioContextUsable(this.ctx.state)) return
     this.muted = true
     this.scheduleTarget(this.master.gain, 0, this.ctx.currentTime, 0.05)
   }
@@ -197,7 +197,7 @@ export class FlightAudio {
   /** Set the master mix level without changing the mute state. */
   setVolume(volume: number): number {
     this.volume = clamp01(volume)
-    if (this.ctx && this.master && !this.muted) {
+    if (this.ctx && audioContextUsable(this.ctx.state) && this.master && !this.muted) {
       this.scheduleTarget(this.master.gain, this.volume, this.ctx.currentTime, 0.06)
     }
     return this.volume
@@ -225,7 +225,7 @@ export class FlightAudio {
     if (this.disposed) return
     const ctx = this.ctx
     const output = this.effectsGain
-    if (!ctx || !output || ctx.state === 'suspended' || this.muted || this.volume <= 0) return
+    if (!ctx || !audioContextUsable(ctx.state) || !output || ctx.state === 'suspended' || this.muted || this.volume <= 0) return
 
     const now = ctx.currentTime
     if (kind === 'gate') {
@@ -443,7 +443,7 @@ export class FlightAudio {
   ): void {
     const ctx = this.ctx
     const output = this.effectsGain
-    if (!ctx || !output) return
+    if (!ctx || !audioContextUsable(ctx.state) || !output) return
 
     const oscillator = ctx.createOscillator()
     const gain = ctx.createGain()
@@ -475,7 +475,7 @@ export class FlightAudio {
     const ctx = this.ctx
     const output = this.effectsGain
     const buffer = kind === 'white' ? this.eventWhiteBuffer : this.eventBrownBuffer
-    if (!ctx || !output || !buffer) return
+    if (!ctx || !audioContextUsable(ctx.state) || !output || !buffer) return
 
     const src = ctx.createBufferSource()
     src.buffer = buffer
@@ -515,6 +515,11 @@ export function shouldScheduleAudioTarget(
 /** Skip repeated paused/hidden updates once the output is already muted. */
 export function shouldSkipMutedAudioUpdate(previousMuted: boolean, mute: boolean): boolean {
   return previousMuted && mute
+}
+
+/** Closed browser contexts reject node and AudioParam operations. */
+export function audioContextUsable(state: AudioContextState | string): boolean {
+  return state !== 'closed'
 }
 
 /** Bounded procedural engine spool rate shared by the audio update and tests. */

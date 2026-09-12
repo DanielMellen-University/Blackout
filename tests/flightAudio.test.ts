@@ -3,6 +3,7 @@ import {
   EVENT_NOISE_BUFFER_SECONDS,
   FLIGHT_AUDIO_LIMITER,
   FlightAudio,
+  audioContextUsable,
   enginePlaybackRate,
   engineWhineLevel,
   flightAudioViewMix,
@@ -42,6 +43,13 @@ describe('flight audio automation', () => {
     expect(shouldSkipMutedAudioUpdate(true, true)).toBe(true)
     expect(shouldSkipMutedAudioUpdate(true, false)).toBe(false)
     expect(shouldSkipMutedAudioUpdate(false, true)).toBe(false)
+  })
+
+  it('treats a browser-closed context as unavailable for graph writes', () => {
+    expect(audioContextUsable('running')).toBe(true)
+    expect(audioContextUsable('suspended')).toBe(true)
+    expect(audioContextUsable('closed')).toBe(false)
+    expect(audioContextUsable('unexpected')).toBe(true)
   })
 
   it('spools the procedural engine without exceeding a safe playback envelope', () => {
