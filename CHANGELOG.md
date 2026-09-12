@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add a restrained cockpit canopy frame and dashboard coaming to first-person view, with no external-camera draw cost and explicit teardown.
 - Add Low, Balanced, and High graphics presets to the pause menu. Low disables shadow-map work and caps adaptive pixel density, while higher presets retain progressively larger budgets. The selected preset persists locally and can be changed without restarting the flight.
 - Add a persistent audio-volume slider with smooth master automation, keeping the existing mute toggle and event cues intact.
 

@@ -196,6 +196,7 @@ export class CameraSystem {
     c.removeEventListener('wheel', this.onWheel)
     c.removeEventListener('auxclick', this.onAuxClick, cap)
     c.removeEventListener('mousedown', this.onMouseDownBlock, cap)
+    this.cockpit.dispose()
   }
 
   private bumpInput(): void {
