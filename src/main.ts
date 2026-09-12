@@ -105,9 +105,11 @@ async function boot(): Promise<void> {
     writeRenderQuality(qualityStorage, next)
   }
   applyRenderQuality(renderQuality)
-  qualitySelect?.addEventListener('change', () => {
+  const onQualityChange = (): void => {
+    if (!qualitySelect) return
     applyRenderQuality(normalizeRenderQuality(qualitySelect.value, renderQuality))
-  })
+  }
+  qualitySelect?.addEventListener('change', onQualityChange)
 
   const world = new World()
   if (titleStatus) titleStatus.textContent = ''
@@ -145,9 +147,11 @@ async function boot(): Promise<void> {
     writeAudioVolume(qualityStorage, volume)
   }
   applyAudioVolume(initialAudioVolume)
-  volumeRange?.addEventListener('input', () => {
+  const onVolumeInput = (): void => {
+    if (!volumeRange) return
     applyAudioVolume(Number(volumeRange.value) / 100)
-  })
+  }
+  volumeRange?.addEventListener('input', onVolumeInput)
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
@@ -159,6 +163,8 @@ async function boot(): Promise<void> {
     if (disposed) return
     disposed = true
     releaseBrowserUi()
+    qualitySelect?.removeEventListener('change', onQualityChange)
+    volumeRange?.removeEventListener('input', onVolumeInput)
     input.dispose()
     reducedMotionQuery?.removeEventListener?.('change', onReducedMotionChange)
     cameras.dispose()

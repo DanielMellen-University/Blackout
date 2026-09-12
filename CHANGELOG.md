@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Release graphics and audio preference listeners during runtime teardown so remounted scenes cannot mutate disposed renderer or audio state.
 - Honor the browser's reduced-motion preference in camera shake, touchdown impulse, and afterburner sway, including live preference changes.
 - Add a restrained cockpit canopy frame and dashboard coaming to first-person view, with no external-camera draw cost and explicit teardown.
 - Add Low, Balanced, and High graphics presets to the pause menu. Low disables shadow-map work and caps adaptive pixel density, while higher presets retain progressively larger budgets. The selected preset persists locally and can be changed without restarting the flight.
