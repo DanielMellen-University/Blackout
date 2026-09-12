@@ -118,6 +118,8 @@ export class CameraSystem {
 
   /** Simulation/render seconds since the last user camera adjustment. */
   private cameraIdleSeconds = 0
+  /** Title showcase framing stays composed until the player launches. */
+  private autoReturnEnabled = true
 
   private readonly lookSensitivity = 0.005
   private readonly canvas: HTMLCanvasElement
@@ -158,6 +160,7 @@ export class CameraSystem {
 
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
     const leavingCockpit = this.mode === 'cockpit' && mode !== 'cockpit'
+    this.autoReturnEnabled = true
     this.mode = mode
     this.lookReady = false
     this.bumpInput()
@@ -173,6 +176,24 @@ export class CameraSystem {
       if (mode === 'cockpit') this.cockpit.update(this.camera, aircraft)
       else this.applyRig(aircraft, 0, true)
       this.applyAircraftVisibility(aircraft)
+    }
+  }
+
+  /**
+   * Stage a readable three-quarter aircraft hero for the title screen.
+   * Gameplay always calls setMode afterwards, restoring the normal chase rig.
+   */
+  setTitleFraming(aircraft?: Aircraft): void {
+    if (this.mode === 'cockpit') return
+    this.autoReturnEnabled = false
+    this.yaw = 0.55
+    this.pitch = 0.18
+    this.distance = 19
+    this.bumpInput()
+    this.lookReady = false
+    if (aircraft) {
+      this.applyRig(aircraft, 0, true)
+      this.initialized = true
     }
   }
 
@@ -245,7 +266,7 @@ export class CameraSystem {
    * toward this mode's default framing.
    */
   private updateAutoReturn(dt: number): void {
-    if (this.mode === 'cockpit' || this.panDown || dt <= 0) return
+    if (!this.autoReturnEnabled || this.mode === 'cockpit' || this.panDown || dt <= 0) return
 
     this.cameraIdleSeconds = Math.min(
       AUTO_RETURN_DELAY + 1,

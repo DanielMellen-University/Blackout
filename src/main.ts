@@ -168,6 +168,7 @@ async function boot(): Promise<void> {
   // here, the paused title loop has no render delta to drive CameraSystem and
   // the hero camera stays at the origin until Play is pressed.
   cameras.setMode('chase', aircraft)
+  cameras.setTitleFraming(aircraft)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null
@@ -393,6 +394,7 @@ async function boot(): Promise<void> {
     }
     resetFlight(false)
     cameras.setMode('chase', aircraft)
+    cameras.setTitleFraming(aircraft)
     input.clearKeys()
     syncInputContext()
   }

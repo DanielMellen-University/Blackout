@@ -50,6 +50,31 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('holds a three-quarter title showcase until gameplay resets the rig', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+
+    cameras.setMode('chase', aircraft)
+    cameras.setTitleFraming(aircraft)
+    const showcaseYaw = (cameras as unknown as { yaw: number }).yaw
+    expect(showcaseYaw).toBeCloseTo(0.55)
+
+    for (let i = 0; i < 600; i++) cameras.update(aircraft, 1 / 60)
+    expect((cameras as unknown as { yaw: number }).yaw).toBeCloseTo(showcaseYaw)
+
+    cameras.setMode('chase', aircraft)
+    expect((cameras as unknown as { yaw: number }).yaw).toBeCloseTo(0)
+    cameras.dispose()
+  })
+
   it('keeps the depth range tight around the streamed world', () => {
     const target = {
       addEventListener: vi.fn(),
