@@ -3,6 +3,7 @@ import {
   EVENT_NOISE_BUFFER_SECONDS,
   FLIGHT_AUDIO_LIMITER,
   enginePlaybackRate,
+  engineWhineLevel,
   precipitationAudioLevel,
   shouldScheduleAudioTarget,
   shouldSkipMutedAudioUpdate,
@@ -52,6 +53,16 @@ describe('flight audio automation', () => {
     expect(military).toBeGreaterThan(cruise)
     expect(boost).toBeGreaterThan(military)
     expect(boost).toBeLessThanOrEqual(1.3)
+  })
+
+  it('adds a smooth, bounded turbine whine above idle', () => {
+    expect(engineWhineLevel(0, false)).toBe(0)
+    expect(engineWhineLevel(.16, false)).toBe(0)
+    expect(engineWhineLevel(.5, false)).toBeGreaterThan(0)
+    expect(engineWhineLevel(1, false)).toBeCloseTo(.82)
+    expect(engineWhineLevel(1, true)).toBe(1)
+    expect(engineWhineLevel(2, true)).toBeLessThanOrEqual(1)
+    expect(engineWhineLevel(-1, true)).toBe(0)
   })
 
   it('keeps precipitation ambience subtle and bounded', () => {

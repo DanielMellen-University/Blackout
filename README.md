@@ -36,6 +36,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD readouts coalesce unchanged text and visibility updates, reducing avoidable DOM/layout churn during flight without lowering gauge responsiveness.
 - High-frequency HUD transforms, SVG needle attributes, engine bars, and warning classes also coalesce unchanged style writes, reducing layout churn while preserving smooth visual precision.
 - Engine rumble + wind hiss (Web Audio); short event cues for afterburner engage, gates, touchdown, and crash
+- Engine audio now layers one restrained turbine whine above the low rumble, with throttle and afterburner-driven pitch and coalesced automation.
 - Engine, weather, and event audio now share a conservative output limiter, preventing stacked cues from clipping at full power.
 - Press **M** during flight to mute or restore audio without pausing; the HUD shows the live audio state.
 - Caution and warning banners stop pulsing when the browser requests reduced motion, preserving readable alerts without visual flashing.

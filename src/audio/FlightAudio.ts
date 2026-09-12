@@ -24,6 +24,8 @@ export class FlightAudio {
   private engineFilter: BiquadFilterNode | null = null
   private windFilter: BiquadFilterNode | null = null
   private precipFilter: BiquadFilterNode | null = null
+  private engineWhine: OscillatorNode | null = null
+  private engineWhineGain: GainNode | null = null
   private engineSrc: AudioBufferSourceNode | null = null
   private windSrc: AudioBufferSourceNode | null = null
   private precipSrc: AudioBufferSourceNode | null = null
@@ -74,7 +76,9 @@ export class FlightAudio {
       !this.master ||
       !this.engineGain ||
       !this.windGain ||
-      !this.precipGain
+      !this.precipGain ||
+      !this.engineWhineGain ||
+      !this.engineWhine
     ) {
       return
     }
@@ -91,12 +95,14 @@ export class FlightAudio {
     const windT = clamp01((opts.speed - 18) / 280)
     const wind = windT * windT
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
+    const whine = engineWhineLevel(opts.throttle, boost)
 
     this.muted = opts.mute
     const masterTarget = opts.mute ? 0 : 1
     const engTarget = opts.mute ? 0 : eng * 0.42
     const windTarget = opts.mute ? 0 : wind * 0.28
     const precipTarget = opts.mute ? 0 : precip * 0.18
+    const whineTarget = opts.mute ? 0 : whine * 0.065
 
     const now = ctx.currentTime
     const tau = Math.max(0.04, Math.min(0.12, opts.dt * 3))
@@ -105,6 +111,7 @@ export class FlightAudio {
     this.scheduleTarget(this.engineGain.gain, engTarget, now, tau)
     this.scheduleTarget(this.windGain.gain, windTarget, now, tau)
     this.scheduleTarget(this.precipGain.gain, precipTarget, now, tau)
+    this.scheduleTarget(this.engineWhineGain.gain, whineTarget, now, tau, 0.0005)
     if (this.engineSrc) {
       this.scheduleTarget(
         this.engineSrc.playbackRate,
@@ -113,6 +120,10 @@ export class FlightAudio {
         tau,
         0.001,
       )
+    }
+    if (this.engineWhine) {
+      const whineHz = 420 + eng * 980 + (boost ? 380 : 0)
+      this.scheduleTarget(this.engineWhine.frequency, whineHz, now, tau, 2)
     }
 
     if (this.engineFilter) {
@@ -202,12 +213,15 @@ export class FlightAudio {
       this.engineSrc?.stop()
       this.windSrc?.stop()
       this.precipSrc?.stop()
+      this.engineWhine?.stop()
     } catch {
       /* already stopped */
     }
     this.engineSrc = null
     this.windSrc = null
     this.precipSrc = null
+    this.engineWhine = null
+    this.engineWhineGain = null
     this.eventWhiteBuffer = null
     this.eventBrownBuffer = null
     this.limiter?.disconnect()
@@ -281,6 +295,17 @@ export class FlightAudio {
     precipGain.connect(precipFilter)
     precipFilter.connect(master)
 
+    // A single restrained oscillator adds turbine presence above the brown
+    // rumble without allocating nodes while the aircraft is flying.
+    const engineWhineGain = ctx.createGain()
+    engineWhineGain.gain.value = 0
+    const engineWhine = ctx.createOscillator()
+    engineWhine.type = 'triangle'
+    engineWhine.frequency.value = 420
+    engineWhine.connect(engineWhineGain)
+    engineWhineGain.connect(master)
+    engineWhine.start()
+
     const effectsGain = ctx.createGain()
     effectsGain.gain.value = 0.8
     effectsGain.connect(limiter)
@@ -320,6 +345,8 @@ export class FlightAudio {
     this.engineFilter = engineFilter
     this.windFilter = windFilter
     this.precipFilter = precipFilter
+    this.engineWhine = engineWhine
+    this.engineWhineGain = engineWhineGain
     this.engineSrc = engineSrc
     this.windSrc = windSrc
     this.precipSrc = precipSrc
@@ -415,6 +442,15 @@ export function enginePlaybackRate(throttle: number, boost: boolean): number {
   const thr = clamp01(throttle)
   const engineLevel = Math.min(1, thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45))
   return 0.72 + engineLevel * 0.46 + (boost ? 0.08 : 0)
+}
+
+/** Smooth turbine-whine envelope layered above the low engine rumble. */
+export function engineWhineLevel(throttle: number, boost: boolean): number {
+  const thr = clamp01(throttle)
+  if (thr <= 0.16) return 0
+  const t = (thr - 0.16) / 0.84
+  const smooth = t * t * (3 - 2 * t)
+  return Math.min(1, smooth * (boost ? 1 : 0.82))
 }
 
 /** Bounded precipitation bed level shared by the audio update and tests. */
