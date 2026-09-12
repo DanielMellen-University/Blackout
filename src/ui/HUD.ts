@@ -34,6 +34,7 @@ export class HUD {
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
   private readonly heatVeilEl: HTMLElement | null
+  private readonly flightPathEl: HTMLElement | null
   private readonly navCueEl: HTMLElement | null
   private readonly navArrowEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
@@ -75,6 +76,10 @@ export class HUD {
   private navAltMode = -1
   private navAltStep = Number.NaN
   private navAltText = ''
+  private flightPathXValue = Number.NaN
+  private flightPathYValue = Number.NaN
+  private flightPathXText = ''
+  private flightPathYText = ''
   private speedNeedleXValue = Number.NaN
   private speedNeedleXText = ''
   private speedNeedleYValue = Number.NaN
@@ -119,6 +124,7 @@ export class HUD {
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
     this.heatVeilEl = root.getElementById('heat-veil')
+    this.flightPathEl = root.getElementById('flight-path-marker')
     this.navCueEl = root.getElementById('nav-cue')
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navRangeEl = root.getElementById('nav-range')
@@ -159,6 +165,10 @@ export class HUD {
     navBearing?: number | null
     navAltDelta?: number
     banner?: string | null
+    /** Cockpit-only velocity-vector position in viewport percentages. */
+    flightPathVisible?: boolean
+    flightPathX?: number
+    flightPathY?: number
   }): void {
     if (this.posEl) {
       const altitude = Math.round(opts.y)
@@ -191,6 +201,11 @@ export class HUD {
     this.updateSpeedJuice(kts, !!opts.boost)
     this.updateCanopyTint(kts, opts.cameraMode === 'cockpit')
     this.updateHeatVeil(kts, !!opts.boost)
+    this.updateFlightPath(
+      opts.flightPathVisible === true,
+      opts.flightPathX ?? 50,
+      opts.flightPathY ?? 50,
+    )
 
     if (this.camEl) {
       if (opts.cameraMode !== this.cameraModeValue) {
@@ -438,6 +453,25 @@ export class HUD {
     const intensity = afterburnerHeatIntensity(kts, boost, this.maxKts)
     this.setClass(this.heatVeilEl, 'is-active', intensity > 0)
     this.setStyle(this.heatVeilEl, 'opacity', formatHudNumber(intensity, 1000))
+  }
+
+  private updateFlightPath(visible: boolean, x: number, y: number): void {
+    if (!this.flightPathEl) return
+    this.setHidden(this.flightPathEl, !visible)
+    if (!visible) return
+
+    const markerX = quantizeHudNumber(Number.isFinite(x) ? x : 50, 10)
+    const markerY = quantizeHudNumber(Number.isFinite(y) ? y : 50, 10)
+    if (markerX !== this.flightPathXValue) {
+      this.flightPathXValue = markerX
+      this.flightPathXText = `${markerX}%`
+    }
+    if (markerY !== this.flightPathYValue) {
+      this.flightPathYValue = markerY
+      this.flightPathYText = `${markerY}%`
+    }
+    this.setStyle(this.flightPathEl, 'left', this.flightPathXText)
+    this.setStyle(this.flightPathEl, 'top', this.flightPathYText)
   }
 
   private updateEngine(throttle: number, boost: boolean): void {

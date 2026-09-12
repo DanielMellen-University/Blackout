@@ -10,6 +10,10 @@ import {
 } from 'three'
 import { Aircraft, disposeAircraftObject } from './aircraft/Aircraft'
 import { CameraSystem, TOUCHDOWN_IMPULSE } from './camera/CameraSystem'
+import {
+  writeFlightPathMarker,
+  type FlightPathMarkerPosition,
+} from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
 import {
   lockGameKeyboard,
@@ -246,6 +250,9 @@ async function boot(): Promise<void> {
     navBearing: null,
     navAltDelta: 0,
     banner: null,
+    flightPathVisible: false,
+    flightPathX: 50,
+    flightPathY: 50,
   }
   let prevWarning: string | null = null
 
@@ -674,6 +681,16 @@ async function boot(): Promise<void> {
         aircraft.position.z,
       )
       const gate = world.mission.activeGatePos()
+      if (cameras.mode === 'cockpit') {
+        writeFlightPathMarker(
+          cameras.camera,
+          cameras.camera.position,
+          aircraft.velocity,
+          flightPathMarker,
+        )
+      } else {
+        flightPathMarker.visible = false
+      }
       hudFrame.y = alt
       hudFrame.verticalSpeed = aircraft.onGround ? 0 : aircraft.velocity.y
       hudFrame.speed = aircraft.speed
@@ -697,6 +714,9 @@ async function boot(): Promise<void> {
       hudFrame.navBearing = gateScreenBearing(cameras.camera, gate)
       hudFrame.navAltDelta = nav.altDelta
       hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
+      hudFrame.flightPathVisible = flightPathMarker.visible
+      hudFrame.flightPathX = flightPathMarker.x
+      hudFrame.flightPathY = flightPathMarker.y
       hud.update(hudFrame)
     }
   }
@@ -725,6 +745,11 @@ const _gateView = new Vector3()
 const _inv = new Quaternion()
 const _localUp = new Vector3()
 const _attitude = { pitch: 0, roll: 0, heading: 0 }
+const flightPathMarker: FlightPathMarkerPosition = {
+  x: 50,
+  y: 50,
+  visible: false,
+}
 
 /**
  * Body: +Z nose, +Y up, +X right.

@@ -161,6 +161,45 @@ body,
   animation: heat-veil-breathe 1.8s ease-in-out infinite;
 }
 
+/* Cockpit velocity-vector cue: a quiet flight-path marker over the real nose. */
+#flight-path-marker {
+  position: absolute;
+  z-index: 4;
+  width: 34px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border: 1.5px solid rgba(184, 248, 228, 0.9);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(6, 10, 16, 0.75),
+    0 0 14px rgba(61, 206, 168, 0.38);
+  opacity: 0.9;
+}
+
+#flight-path-marker::before,
+#flight-path-marker::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 1.5px;
+  background: rgba(184, 248, 228, 0.9);
+  box-shadow: 0 0 5px rgba(61, 206, 168, 0.42);
+}
+
+#flight-path-marker::before {
+  left: -9px;
+}
+
+#flight-path-marker::after {
+  right: -9px;
+}
+
+#flight-path-marker[hidden] {
+  display: none !important;
+}
+
 @keyframes heat-veil-breathe {
   0%,
   100% {

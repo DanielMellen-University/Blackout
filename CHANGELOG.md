@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add a cockpit velocity-vector marker projected from the aircraft's real motion, keeping slips and climbs readable without changing physics or render budgets.
 - Restore the cockpit canopy rails, brow, and coaming in first-person rendering by placing the camera in the scene graph and removing it safely during teardown.
 - Keep the takeoff brief on the title screen and announce `AIRFIELD READY · PRESS PLAY OR ENTER` when world setup finishes.
 - Show a short click-to-reenter cue when fullscreen drops unexpectedly during active flight, while keeping intentional menu exits quiet.
