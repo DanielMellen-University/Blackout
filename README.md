@@ -115,6 +115,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Swept high-speed collision checks now reuse their contact record, trimming physics garbage without changing landing or crash outcomes.
 - The completion card is a proper keyboard-contained dialog and returns focus to the flight canvas when a run is restarted.
 - Completion results now show the gate, time, and landing contributions behind the total score.
+- Mission timing and scoring now fail safe on malformed telemetry, keeping one bad frame from producing `NaN` labels or invalid results.
 - Play, Retry, New World, and `R` now open with a short `SPOOL ENGINE / W TO ROTATE` briefing so takeoff has an immediate readable handoff.
 - Crash camera impulse uses smooth bounded multi-frequency shake instead of harsh per-frame white-noise jitter.
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.

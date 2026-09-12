@@ -75,9 +75,11 @@ export class ChallengeRun {
 
   /** Advance simulation time and arm the clock once the takeoff roll begins. */
   update(dt: number, speed: number): void {
-    if (this.phase === 'ready' && speed > 5) this.phase = 'running'
+    const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
+    const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+    if (this.phase === 'ready' && safeSpeed > 5) this.phase = 'running'
     if (this.phase === 'running' || this.phase === 'returning') {
-      this.elapsedSec += Math.max(0, dt)
+      this.elapsedSec += safeDt
     }
   }
 
@@ -96,7 +98,7 @@ export class ChallengeRun {
   finishLanding(metrics: LandingMetrics): ChallengeResult | null {
     if (this.phase !== 'returning') return null
 
-    const elapsedSec = this.elapsedSec
+    const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
     const gateScore = Math.round(20_000 * clamp01(gateQuality))
@@ -104,11 +106,15 @@ export class ChallengeRun {
     // A brisk, clean circuit scores well; time can never erase completion.
     const timeScore = Math.round(Math.max(5_000, 70_000 - elapsedSec * 320))
 
-    const sink = Math.max(0, -metrics.verticalSpeed)
+    const verticalSpeed = finiteOr(metrics.verticalSpeed)
+    const groundSpeed = Math.max(0, finiteOr(metrics.groundSpeed))
+    const rollRad = finiteOr(metrics.rollRad)
+    const pitchRad = finiteOr(metrics.pitchRad)
+    const sink = Math.max(0, -verticalSpeed)
     const sinkPenalty = Math.max(0, sink - 1.2) / 5
-    const speedPenalty = Math.max(0, metrics.groundSpeed - 32) / 38
-    const bankPenalty = Math.abs(metrics.rollRad) / (Math.PI / 5)
-    const pitchPenalty = Math.max(0, Math.abs(metrics.pitchRad) - 0.22) / 0.65
+    const speedPenalty = Math.max(0, groundSpeed - 32) / 38
+    const bankPenalty = Math.abs(rollRad) / (Math.PI / 5)
+    const pitchPenalty = Math.max(0, Math.abs(pitchRad) - 0.22) / 0.65
     const landingQuality = clamp01(
       1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
     )
@@ -139,7 +145,7 @@ export class ChallengeRun {
   }
 
   get clockLabel(): string {
-    const safe = Math.max(0, this.elapsedSec)
+    const safe = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const minutes = Math.floor(safe / 60)
     const centis = Math.round((safe - minutes * 60) * 100)
     if (minutes !== this.clockLabelMinutes || centis !== this.clockLabelCentis) {
@@ -177,7 +183,7 @@ export class ChallengeRun {
 }
 
 export function formatTime(seconds: number): string {
-  const safe = Math.max(0, seconds)
+  const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
   const mins = Math.floor(safe / 60)
   const secs = safe - mins * 60
   return `${mins}:${secs.toFixed(2).padStart(5, '0')}`
@@ -196,7 +202,11 @@ function medalFor(score: number): Medal {
 }
 
 function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value))
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+}
+
+function finiteOr(value: number, fallback = 0): number {
+  return Number.isFinite(value) ? value : fallback
 }
 
 function browserStorage(): ScoreStore | null {

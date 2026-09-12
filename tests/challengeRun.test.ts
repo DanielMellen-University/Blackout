@@ -51,6 +51,30 @@ describe('ChallengeRun', () => {
 
   it('formats time with centiseconds', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
+    expect(formatTime(Number.NaN)).toBe('0:00.00')
+    expect(formatTime(Number.POSITIVE_INFINITY)).toBe('0:00.00')
+  })
+
+  it('keeps malformed telemetry from poisoning a run result', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:malformed', 1)
+    run.update(Number.NaN, Number.NaN)
+    expect(run.phase).toBe('ready')
+    expect(run.elapsedSec).toBe(0)
+
+    run.update(Number.POSITIVE_INFINITY, 8)
+    expect(run.phase).toBe('running')
+    expect(run.elapsedSec).toBe(0)
+    run.recordGate(Number.NaN)
+    const result = run.finishLanding({
+      verticalSpeed: Number.NaN,
+      groundSpeed: Number.POSITIVE_INFINITY,
+      pitchRad: Number.NaN,
+      rollRad: Number.NEGATIVE_INFINITY,
+    })
+    expect(result).not.toBeNull()
+    expect(Number.isFinite(result!.totalScore)).toBe(true)
+    expect(result!.gateScore).toBe(0)
   })
 
   it('maps every result medal to a stable presentation class', () => {
