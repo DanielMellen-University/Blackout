@@ -13,6 +13,40 @@ export const FLIGHT_AUDIO_LIMITER = Object.freeze({
   release: 0.18,
 })
 
+export interface FlightAudioViewMix {
+  engine: number
+  wind: number
+  precipitation: number
+  whine: number
+  engineFilter: number
+  windFilter: number
+  precipitationFilter: number
+}
+
+const EXTERNAL_VIEW_MIX = Object.freeze({
+  engine: 1,
+  wind: 1,
+  precipitation: 1,
+  whine: 1,
+  engineFilter: 1,
+  windFilter: 1,
+  precipitationFilter: 1,
+}) as FlightAudioViewMix
+const COCKPIT_VIEW_MIX = Object.freeze({
+  engine: 0.92,
+  wind: 0.58,
+  precipitation: 0.76,
+  whine: 0.84,
+  engineFilter: 0.82,
+  windFilter: 0.78,
+  precipitationFilter: 0.82,
+}) as FlightAudioViewMix
+
+/** Enclosed cockpit mix muffles wind and rain while retaining engine presence. */
+export function flightAudioViewMix(cockpit: boolean): FlightAudioViewMix {
+  return cockpit ? COCKPIT_VIEW_MIX : EXTERNAL_VIEW_MIX
+}
+
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
@@ -69,6 +103,8 @@ export class FlightAudio {
     snow: number
     mute: boolean
     dt: number
+    /** True when the player is inside the camera-attached cockpit. */
+    cockpit?: boolean
   }): void {
     const ctx = this.ctx
     if (
@@ -88,6 +124,7 @@ export class FlightAudio {
 
     const thr = clamp01(opts.throttle)
     const boost = opts.boost
+    const view = flightAudioViewMix(opts.cockpit === true)
     // Dry lever fills most of the rumble; AB adds a clear bump on top.
     const engLevel = thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45)
     const eng = Math.min(1, engLevel)
@@ -100,10 +137,10 @@ export class FlightAudio {
 
     this.muted = opts.mute
     const masterTarget = opts.mute ? 0 : this.volume
-    const engTarget = opts.mute ? 0 : eng * 0.42
-    const windTarget = opts.mute ? 0 : wind * 0.28
-    const precipTarget = opts.mute ? 0 : precip * 0.18
-    const whineTarget = opts.mute ? 0 : whine * 0.065
+    const engTarget = opts.mute ? 0 : eng * 0.42 * view.engine
+    const windTarget = opts.mute ? 0 : wind * 0.28 * view.wind
+    const precipTarget = opts.mute ? 0 : precip * 0.18 * view.precipitation
+    const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine
 
     const now = ctx.currentTime
     const tau = Math.max(0.04, Math.min(0.12, opts.dt * 3))
@@ -129,15 +166,15 @@ export class FlightAudio {
 
     if (this.engineFilter) {
       // Idle growl stays low; spool opens the filter a bit.
-      const cut = 90 + eng * 160 + (boost ? 70 : 0)
+      const cut = (90 + eng * 160 + (boost ? 70 : 0)) * view.engineFilter
       this.scheduleTarget(this.engineFilter.frequency, cut, now, tau, 0.5)
     }
     if (this.windFilter) {
-      const cut = 900 + wind * 2200
+      const cut = (900 + wind * 2200) * view.windFilter
       this.scheduleTarget(this.windFilter.frequency, cut, now, tau, 2)
     }
     if (this.precipFilter) {
-      const cut = 1200 + precip * 3000
+      const cut = (1200 + precip * 3000) * view.precipitationFilter
       this.scheduleTarget(this.precipFilter.frequency, cut, now, tau, 2)
     }
   }

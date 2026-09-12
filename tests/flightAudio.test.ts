@@ -5,6 +5,7 @@ import {
   FlightAudio,
   enginePlaybackRate,
   engineWhineLevel,
+  flightAudioViewMix,
   precipitationAudioLevel,
   shouldScheduleAudioTarget,
   shouldSkipMutedAudioUpdate,
@@ -72,6 +73,15 @@ describe('flight audio automation', () => {
     expect(precipitationAudioLevel(0, 1)).toBeCloseTo(0.18)
     expect(precipitationAudioLevel(4, 4)).toBeLessThanOrEqual(1)
     expect(precipitationAudioLevel(-1, -1)).toBe(0)
+  })
+
+  it('muffles external wind and precipitation inside the cockpit', () => {
+    const external = flightAudioViewMix(false)
+    const cockpit = flightAudioViewMix(true)
+    expect(cockpit.wind).toBeLessThan(external.wind)
+    expect(cockpit.precipitation).toBeLessThan(external.precipitation)
+    expect(cockpit.engine).toBeLessThan(external.engine)
+    expect(cockpit.engine).toBeGreaterThan(0.8)
   })
 
   it('keeps the user volume level bounded', () => {

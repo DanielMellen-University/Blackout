@@ -69,6 +69,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Aircraft presentation effects now follow the shared frame timestamp, keeping beacon, nav-light, and exhaust motion deterministic while avoiding a wall-clock read every physics step.
 - Chase-camera auto-return now advances from rendered delta time, so the rig remains deterministic and paused frames do not consult a wall clock.
 - Mission gate pulses and pass flashes now follow the shared frame timestamp, keeping route feedback deterministic without per-frame wall-clock reads.
+- Cockpit audio now tucks wind, rain, snow, and high-frequency whine behind the canopy while retaining engine presence; chase view keeps the open-air mix.
 - Navigation arrows reuse the mission bearing in cockpit view and avoid a redundant camera matrix rebuild in external view, keeping guidance responsive with less HUD CPU work.
 - The runway windsock mutates one cached weather state during smooth wind fronts, avoiding steady-flight object churn while preserving its downwind pose.
 - Reseeding now forces weather effects onto the new terrain and settlement stream even when the next world chooses the same weather profile, preventing stale neutral materials.

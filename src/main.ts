@@ -259,6 +259,7 @@ async function boot(): Promise<void> {
     snow: 0,
     mute: true,
     dt: 1 / 60,
+    cockpit: false,
   }
   const hudFrame: Parameters<HUD['update']>[0] = {
     y: 0,
@@ -710,6 +711,7 @@ async function boot(): Promise<void> {
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain
     audioFrame.snow = precipitation.snow
+    audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.mute =
       audioMuted || document.hidden || !playing || menu.paused || results.open || aircraft.status === 'crashed'
     audioFrame.dt = visualDt || 1 / 60
