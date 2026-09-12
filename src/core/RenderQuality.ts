@@ -72,3 +72,15 @@ export function writeRenderQuality(
 export function renderQualityProfile(quality: RenderQuality): RenderQualityProfile {
   return RENDER_QUALITY_PROFILES[normalizeRenderQuality(quality)]
 }
+
+/** Keep the directional shadow map responsive without rebuilding it every frame. */
+export function shadowUpdateDue(
+  elapsed: number,
+  dt: number,
+  interval = 1 / 20,
+): boolean {
+  if (!Number.isFinite(elapsed) || !Number.isFinite(dt) || !Number.isFinite(interval) || interval <= 0) {
+    return false
+  }
+  return Math.max(0, elapsed) + Math.max(0, dt) >= interval
+}

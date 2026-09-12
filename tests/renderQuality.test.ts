@@ -4,6 +4,7 @@ import {
   normalizeRenderQuality,
   readRenderQuality,
   renderQualityProfile,
+  shadowUpdateDue,
   writeRenderQuality,
 } from '../src/core/RenderQuality'
 
@@ -45,5 +46,12 @@ describe('render quality preferences', () => {
     expect(balanced.cloudScale).toBeLessThan(high.cloudScale)
     expect(low.vegetationScale).toBeLessThan(balanced.vegetationScale)
     expect(balanced.vegetationScale).toBeLessThan(high.vegetationScale)
+  })
+
+  it('refreshes the directional shadow map on a bounded cadence', () => {
+    expect(shadowUpdateDue(0.04, 0.01, 0.05)).toBe(true)
+    expect(shadowUpdateDue(0.02, 0.01, 0.05)).toBe(false)
+    expect(shadowUpdateDue(Number.NaN, 0.1, 0.05)).toBe(false)
+    expect(shadowUpdateDue(0, 1, 0)).toBe(false)
   })
 })

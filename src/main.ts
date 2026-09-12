@@ -60,6 +60,7 @@ import {
   normalizeRenderQuality,
   readRenderQuality,
   renderQualityProfile,
+  shadowUpdateDue,
   writeRenderQuality,
   type RenderQuality,
 } from './core/RenderQuality'
@@ -110,11 +111,15 @@ async function boot(): Promise<void> {
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.2
   renderer.shadowMap.enabled = initialQualityProfile.shadows
+  renderer.shadowMap.autoUpdate = false
+  renderer.shadowMap.needsUpdate = initialQualityProfile.shadows
   // Three.js now folds the old PCFSoftShadowMap into PCFShadowMap anyway.
   // Use the supported constant directly so startup stays warning-free.
   renderer.shadowMap.type = PCFShadowMap
 
   let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
+  const SHADOW_UPDATE_STEP = 1 / 20
+  let shadowUpdateElapsed = SHADOW_UPDATE_STEP
 
   const applyRenderQuality = (next: RenderQuality): void => {
     renderQuality = next
@@ -122,6 +127,12 @@ async function boot(): Promise<void> {
     resolution.setCeiling(profile.maxPixelRatio)
     renderer.setPixelRatio(resolution.ratio)
     renderer.shadowMap.enabled = profile.shadows
+    if (profile.shadows) {
+      // A quality switch can re-enable shadows after Low, so refresh on the
+      // next visible render instead of waiting for the cadence timer.
+      renderer.shadowMap.needsUpdate = true
+      shadowUpdateElapsed = SHADOW_UPDATE_STEP
+    }
     applyAtmosphereQuality?.(profile.precipitationScale, profile.cloudScale, profile.vegetationScale)
     if (qualitySelect) qualitySelect.value = next
     writeRenderQuality(qualityStorage, next)
@@ -305,6 +316,10 @@ async function boot(): Promise<void> {
   }
   const onContextRestored = (): void => {
     contextLost = false
+    if (renderer.shadowMap.enabled) {
+      renderer.shadowMap.needsUpdate = true
+      shadowUpdateElapsed = SHADOW_UPDATE_STEP
+    }
     showBanner('GRAPHICS RECOVERED', 1800, 'success')
   }
   canvas.addEventListener('webglcontextlost', onContextLost, false)
@@ -700,6 +715,13 @@ async function boot(): Promise<void> {
     // A hidden tab cannot present a frame. Keep simulation and streaming alive,
     // but avoid submitting camera/debug/render work until the tab is visible.
     if (shouldRenderFrame(document.hidden, contextLost)) {
+      if (renderer.shadowMap.enabled) {
+        shadowUpdateElapsed += Math.max(0, visualDt)
+        if (shadowUpdateDue(shadowUpdateElapsed, 0, SHADOW_UPDATE_STEP)) {
+          renderer.shadowMap.needsUpdate = true
+          shadowUpdateElapsed %= SHADOW_UPDATE_STEP
+        }
+      }
       cameras.update(aircraft, visualDt)
       renderer.render(world.scene, cameras.camera)
       debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
