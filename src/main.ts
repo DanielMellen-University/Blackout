@@ -124,6 +124,7 @@ async function boot(): Promise<void> {
   let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
   let applyAircraftQuality: ((quality: RenderQuality) => void) | null = null
   let applyEffectsQuality: ((quality: RenderQuality) => void) | null = null
+  let applyEffectsMotion: ((reduced: boolean) => void) | null = null
   let applyCameraQuality: ((quality: RenderQuality) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
@@ -203,6 +204,7 @@ async function boot(): Promise<void> {
     aircraft.setReducedMotion(reduced)
     cameras.setReducedMotion(reduced)
     world.atmosphere.setReducedMotion(reduced)
+    applyEffectsMotion?.(reduced)
   }
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
@@ -217,6 +219,10 @@ async function boot(): Promise<void> {
   applyEffectsQuality = (quality): void => {
     crashFx.setRenderQuality(quality)
     landingFx.setRenderQuality(quality)
+  }
+  applyEffectsMotion = (reduced): void => {
+    crashFx.setReducedMotion(reduced)
+    landingFx.setReducedMotion(reduced)
   }
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
