@@ -47,6 +47,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The title hero uses a stable three-quarter aircraft showcase, then resets to the normal rear chase framing as soon as takeoff begins.
 - Short-height viewports switch to a compact title layout so the launch card remains fully reachable instead of clipping around the showcase composition.
 - Camera and cockpit teardown are idempotent, so duplicate unmounts cannot resurrect or double-release the camera-attached frame.
+- The procedural F-35 now carries a cached gear-linked nose landing lamp, adding approach and takeoff readability without dynamic lights or shadow cost.
 - The flight HUD reflows on narrow or short browser windows, keeping the heading tape, telemetry, warnings, and gauges readable without changing the desktop layout.
 - The optional GLB aircraft loader is code-split from the initial bundle, so the procedural F-35 can boot with a smaller payload while the replacement model still loads and cleans up normally.
 - The nose wheel visibly follows A/D runway steering, then recenters smoothly after takeoff and resets with each new flight.

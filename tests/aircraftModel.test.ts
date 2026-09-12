@@ -5,6 +5,7 @@ import {
   afterburnerDiamondPulse,
   antiCollisionBeaconOpacity,
   disposeAircraftObject,
+  landingLightOpacity,
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
 } from '../src/aircraft/Aircraft'
@@ -155,6 +156,17 @@ describe('rebuilt aircraft', () => {
     expect(navigationLightOpacity(1000)).toBeGreaterThan(.75)
     expect(navigationLightOpacity(1000)).toBeLessThan(.9)
     expect(Math.abs(navigationLightOpacity(1000) - navigationLightOpacity(1001))).toBeLessThan(.001)
+  })
+
+  it('links the nose landing lamp to gear extension without a dynamic light', () => {
+    const model = createF35Model()
+    const lamp = model.getObjectByName('landingLightNose') as Mesh
+    expect(lamp).toBeTruthy()
+    expect((lamp.material as MeshBasicMaterial).toneMapped).toBe(false)
+    expect(landingLightOpacity(0)).toBe(0)
+    expect(landingLightOpacity(.5)).toBe(0)
+    expect(landingLightOpacity(1)).toBeCloseTo(.95)
+    expect(landingLightOpacity(Number.NaN)).toBe(0)
   })
 
   it('keeps the airframe readable at night without a daylight glow', () => {

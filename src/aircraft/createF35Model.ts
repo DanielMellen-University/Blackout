@@ -170,6 +170,20 @@ export function createF35Model(): Group {
     nav.position.set(x, .035, -1.83)
     root.add(nav)
   }
+  const landingLight = new Mesh(
+    new SphereGeometry(.09, 8, 6),
+    new MeshBasicMaterial({
+      name: 'landingLightMaterial',
+      color: 0xfff2cf,
+      transparent: true,
+      opacity: .95,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  )
+  landingLight.name = 'landingLightNose'
+  landingLight.position.set(0, -.76, 3.58)
+  root.add(landingLight)
   root.traverse((obj) => {
     if (obj instanceof Mesh) {
       obj.castShadow = !(obj.material instanceof MeshBasicMaterial)
