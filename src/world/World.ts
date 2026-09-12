@@ -186,7 +186,7 @@ export class World {
         const initialWeather = this.atmosphere.weatherSnapshot
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
-        setAirfieldPapi(this.runway, this.spawn.x, this.spawn.y, this.spawn.z)
+        setAirfieldPapi(this.runway, this.spawn.x, this.spawn.y, this.spawn.z, this.atmosphere.daylight)
         this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
         this.committed = true
         return this.seed
@@ -247,7 +247,7 @@ export class World {
     const weather = this.atmosphere.weatherSnapshot
     this.applyWeatherEffects(weather, this.atmosphere.daylight)
     setAirfieldWind(this.runway, weather.windX, weather.windZ)
-    setAirfieldPapi(this.runway, x, y, z)
+    setAirfieldPapi(this.runway, x, y, z, this.atmosphere.daylight)
   }
 
   /** Release all streamed and persistent world resources before renderer teardown. */

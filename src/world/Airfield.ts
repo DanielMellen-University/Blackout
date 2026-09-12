@@ -25,6 +25,7 @@ interface PapiState {
   readonly group: Group
   readonly lenses: readonly Mesh[]
   lastPattern: number
+  lastDaylight: number
 }
 
 interface BuiltPapi {
@@ -72,7 +73,7 @@ export function createAirfieldLandmarks(): Group {
   root.add(buildWindsock(mat))
   const papi = buildPapi(mat)
   root.add(papi.group)
-  airfieldPapiState.set(root, { ...papi, lastPattern: -1 })
+  airfieldPapiState.set(root, { ...papi, lastPattern: -1, lastDaylight: Number.NaN })
   root.add(buildFloods(mat))
   root.add(buildFence(mat))
   root.add(buildApronLights(mat))
@@ -408,11 +409,24 @@ export function papiLightPattern(height: number, distance: number): number {
   return 0
 }
 
+/** Keep approach lights readable at night without overpowering daylight. */
+export function papiLightIntensity(daylight: number, white: boolean): number {
+  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 1
+  const nightBoost = 0.72 + (1 - safeDaylight) * 0.75
+  return (white ? 1.4 : 1.6) * nightBoost
+}
+
 /**
  * Drive the runway PAPI from the aircraft's world position. Approach geometry
  * is resolved in runway-local space so the cue remains correct on rotated pads.
  */
-export function setAirfieldPapi(root: Group, x: number, y: number, z: number): void {
+export function setAirfieldPapi(
+  root: Group,
+  x: number,
+  y: number,
+  z: number,
+  daylight = 1,
+): void {
   let state = runwayPapiState.get(root)
   if (!state) {
     state = airfieldPapiState.get(root)
@@ -446,8 +460,13 @@ export function setAirfieldPapi(root: Group, x: number, y: number, z: number): v
   const pattern = inApproach
     ? papiLightPattern(wy - root.position.y, distance)
     : 2
-  if (pattern === state.lastPattern) return
+  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 1
+  if (
+    pattern === state.lastPattern &&
+    Math.abs(safeDaylight - state.lastDaylight) < 0.01
+  ) return
   state.lastPattern = pattern
+  state.lastDaylight = safeDaylight
 
   for (let i = 0; i < state.lenses.length; i++) {
     const lens = state.lenses[i]
@@ -455,7 +474,7 @@ export function setAirfieldPapi(root: Group, x: number, y: number, z: number): v
     const white = i < pattern
     lens.material.color.set(white ? 0xf4f8ff : 0xff4030)
     lens.material.emissive.set(white ? 0xaaccff : 0xff2010)
-    lens.material.emissiveIntensity = white ? 1.4 : 1.6
+    lens.material.emissiveIntensity = papiLightIntensity(safeDaylight, white)
   }
 }
 

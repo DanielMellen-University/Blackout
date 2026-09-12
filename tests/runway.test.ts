@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
 import { createRunway, runwayLightIntensity, setRunwayDaylight } from '../src/world/Runway'
-import { papiLightPattern, setAirfieldPapi, setAirfieldWind } from '../src/world/Airfield'
+import {
+  papiLightIntensity,
+  papiLightPattern,
+  setAirfieldPapi,
+  setAirfieldWind,
+} from '../src/world/Airfield'
 
 describe('runway lighting', () => {
   let runway: ReturnType<typeof createRunway> | null = null
@@ -78,6 +83,13 @@ describe('runway lighting', () => {
     expect(papiLightPattern(Number.NaN, distance)).toBe(2)
   })
 
+  it('keeps PAPI dimmer in daylight and brighter at night', () => {
+    expect(papiLightIntensity(1, true)).toBeCloseTo(1.008)
+    expect(papiLightIntensity(0, true)).toBeCloseTo(2.058)
+    expect(papiLightIntensity(0, false)).toBeCloseTo(2.352)
+    expect(papiLightIntensity(Number.NaN, true)).toBeCloseTo(1.008)
+  })
+
   it('updates PAPI lenses only when the approach pattern changes', () => {
     runway = createRunway()
     const lookup = vi.spyOn(runway, 'getObjectByName')
@@ -92,11 +104,15 @@ describe('runway lighting', () => {
     expect(lenses).toHaveLength(4)
     expect((lenses[0]!.material as MeshStandardMaterial).color.getHex()).toBe(0xf4f8ff)
     expect((lenses[3]!.material as MeshStandardMaterial).color.getHex()).toBe(0xf4f8ff)
+    expect((lenses[0]!.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(1.008)
 
     const previous = lenses.map(lens => (lens.material as MeshStandardMaterial).color.getHex())
     lookup.mockClear()
     setAirfieldPapi(runway, -13.5, height, -138)
     expect(lookup).not.toHaveBeenCalled()
     expect(lenses.map(lens => (lens.material as MeshStandardMaterial).color.getHex())).toEqual(previous)
+
+    setAirfieldPapi(runway, -13.5, height, -138, 0)
+    expect((lenses[0]!.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(2.058)
   })
 })
