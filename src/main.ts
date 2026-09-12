@@ -96,6 +96,7 @@ async function boot(): Promise<void> {
     input.dispose()
     cameras.dispose()
     audio.dispose()
+    document.removeEventListener('visibilitychange', onVisibilityChange)
     if (resizeFrame !== null) {
       cancelAnimationFrame(resizeFrame)
       resizeFrame = null
@@ -116,6 +117,14 @@ async function boot(): Promise<void> {
   let prevGearDown = true
   let prevLightning = false
   let audioMuted = false
+  const onVisibilityChange = (): void => {
+    if (document.hidden) {
+      audio.silence()
+      return
+    }
+    if (playing && !menu.paused && !results.open) void audio.resume()
+  }
+  document.addEventListener('visibilitychange', onVisibilityChange)
   const audioFrame: Parameters<FlightAudio['update']>[0] = {
     throttle: 0,
     boost: false,
@@ -533,7 +542,7 @@ async function boot(): Promise<void> {
     audioFrame.rain = precipitation.rain
     audioFrame.snow = precipitation.snow
     audioFrame.mute =
-      audioMuted || !playing || menu.paused || results.open || aircraft.status === 'crashed'
+      audioMuted || document.hidden || !playing || menu.paused || results.open || aircraft.status === 'crashed'
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 
