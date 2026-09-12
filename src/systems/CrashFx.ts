@@ -48,6 +48,7 @@ export class CrashFx {
   private age = 0
   private punch = 0
   private randomState = 1
+  private disposed = false
 
   constructor(scene: Scene) {
     this.root.name = 'CrashFx'
@@ -124,6 +125,7 @@ export class CrashFx {
   }
 
   trigger(pos: Vector3, vel: Vector3): void {
+    if (this.disposed) return
     this.clearBits()
     this.randomState = seedFromImpact(pos, vel)
     this.alive = true
@@ -160,7 +162,7 @@ export class CrashFx {
   }
 
   update(dt: number): void {
-    if (!this.alive || dt <= 0) return
+    if (this.disposed || !this.alive || dt <= 0) return
     this.age += dt
     this.punch = Math.max(0, this.punch - dt * 1.55)
 
@@ -268,10 +270,13 @@ export class CrashFx {
   }
 
   reset(): void {
+    if (this.disposed) return
     this.stop()
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.stop()
     disposeObjectTree(this.root)
     this.root.removeFromParent()

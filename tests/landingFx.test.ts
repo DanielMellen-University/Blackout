@@ -1,10 +1,13 @@
 import { Scene, Vector3 } from 'three'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   LandingFx,
   landingScrubIntensity,
   landingScrubRate,
 } from '../src/systems/LandingFx'
+import { setContactHeightSampler } from '../src/world/ground'
+
+afterEach(() => setContactHeightSampler(null))
 
 describe('landing scrub pooling', () => {
   it('keeps a stable scene footprint across repeated touchdowns', () => {
@@ -84,5 +87,17 @@ describe('landing scrub pooling', () => {
 
     first.dispose()
     second.dispose()
+  })
+
+  it('ignores late calls after idempotent disposal', () => {
+    setContactHeightSampler(() => 0)
+    const fx = new LandingFx(new Scene())
+    fx.dispose()
+    fx.dispose()
+    fx.trigger(new Vector3(), new Vector3(0, -2, 40))
+    fx.scrub(new Vector3(), new Vector3(0, 0, 50), 1 / 60)
+    fx.update(1)
+    fx.reset()
+    expect(fx.activeCount).toBe(0)
   })
 })

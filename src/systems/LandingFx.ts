@@ -42,6 +42,7 @@ export class LandingFx {
   private scrubCooldown = 0
   private alive = false
   private randomState = 1
+  private disposed = false
 
   constructor(scene: Scene) {
     this.root.name = 'LandingFx'
@@ -75,6 +76,7 @@ export class LandingFx {
 
   /** Burst on airborne-to-ground contact. Intensity 0-1. */
   trigger(pos: Vector3, vel: Vector3, intensity = 1): void {
+    if (this.disposed) return
     const strength = clamp01(intensity)
     if (strength < 0.05) return
     this.randomState = seedFromLanding(pos, vel, strength)
@@ -105,6 +107,7 @@ export class LandingFx {
 
   /** Continuous low-rate scrub while rolling above a soft ground-speed floor. */
   scrub(pos: Vector3, vel: Vector3, dt: number): void {
+    if (this.disposed) return
     const gs = Math.hypot(vel.x, vel.z)
     const rate = landingScrubRate(gs)
     if (rate <= 0) return
@@ -129,7 +132,7 @@ export class LandingFx {
   }
 
   update(dt: number): void {
-    if (!this.alive || dt <= 0) return
+    if (this.disposed || !this.alive || dt <= 0) return
     let any = false
     for (let i = this.active.length - 1; i >= 0; i--) {
       const puff = this.active[i]!
@@ -166,6 +169,7 @@ export class LandingFx {
   }
 
   reset(): void {
+    if (this.disposed) return
     for (const puff of this.active) puff.mesh.visible = false
     this.active.length = 0
     this.scrubCooldown = 0
@@ -175,7 +179,9 @@ export class LandingFx {
   }
 
   dispose(): void {
+    if (this.disposed) return
     this.reset()
+    this.disposed = true
     disposeObjectTree(this.root)
     this.root.removeFromParent()
     this.dustMat.dispose()

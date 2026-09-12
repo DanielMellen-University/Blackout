@@ -112,4 +112,14 @@ describe('crash effect pooling', () => {
     first.dispose()
     second.dispose()
   })
+
+  it('ignores late calls after idempotent disposal', () => {
+    const fx = new CrashFx(new Scene())
+    fx.dispose()
+    fx.dispose()
+    fx.trigger(new Vector3(), new Vector3(1, 2, 3))
+    fx.update(1)
+    fx.reset()
+    expect(fx.active).toBe(false)
+  })
 })
