@@ -47,6 +47,7 @@ export class CrashFx {
   private alive = false
   private age = 0
   private punch = 0
+  private randomState = 1
 
   constructor(scene: Scene) {
     this.root.name = 'CrashFx'
@@ -119,6 +120,7 @@ export class CrashFx {
 
   trigger(pos: Vector3, vel: Vector3): void {
     this.clearBits()
+    this.randomState = seedFromImpact(pos, vel)
     this.alive = true
     this.age = 0
     this.punch = 1
@@ -140,15 +142,15 @@ export class CrashFx {
     // The show: burning globes on real arcs
     const n = 22
     for (let i = 0; i < n; i++) {
-      const yaw = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.45
-      const pitch = 0.28 + Math.random() * 0.72
-      const speed = 22 + Math.random() * 38
+      const yaw = (i / n) * Math.PI * 2 + (this.nextRandom() - 0.5) * 0.45
+      const pitch = 0.28 + this.nextRandom() * 0.72
+      const speed = 22 + this.nextRandom() * 38
       this.spawnBall(this.ballPool[i]!, yaw, pitch, speed, _inherit)
     }
     for (let i = 0; i < 10; i++) {
-      const yaw = Math.random() * Math.PI * 2
-      const pitch = 0.15 + Math.random() * 0.5
-      this.spawnBall(this.ballPool[22 + i]!, yaw, pitch, 14 + Math.random() * 22, _inherit)
+      const yaw = this.nextRandom() * Math.PI * 2
+      const pitch = 0.15 + this.nextRandom() * 0.5
+      this.spawnBall(this.ballPool[22 + i]!, yaw, pitch, 14 + this.nextRandom() * 22, _inherit)
     }
   }
 
@@ -272,14 +274,14 @@ export class CrashFx {
 
   private spawnBloom(bit: Bit, inherit: Vector3): void {
     const mesh = bit.mesh
-    mesh.position.set((Math.random() - 0.5) * 2, Math.random() * 1.4, (Math.random() - 0.5) * 2)
-    bit.vel.set(Math.random() - 0.5, 0.4 + Math.random(), Math.random() - 0.5)
+    mesh.position.set((this.nextRandom() - 0.5) * 2, this.nextRandom() * 1.4, (this.nextRandom() - 0.5) * 2)
+    bit.vel.set(this.nextRandom() - 0.5, 0.4 + this.nextRandom(), this.nextRandom() - 0.5)
       .normalize()
-      .multiplyScalar(2 + Math.random() * 4)
+      .multiplyScalar(2 + this.nextRandom() * 4)
       .add(inherit)
-    const size0 = 2.2 + Math.random() * 2.6
+    const size0 = 2.2 + this.nextRandom() * 2.6
     mesh.scale.setScalar(size0)
-    const life = 0.55 + Math.random() * 0.45
+    const life = 0.55 + this.nextRandom() * 0.45
     bit.life = life
     bit.maxLife = life
     bit.size0 = size0
@@ -289,14 +291,14 @@ export class CrashFx {
 
   private spawnSmoke(bit: Bit, inherit: Vector3): void {
     const mesh = bit.mesh
-    mesh.position.set((Math.random() - 0.5) * 3, Math.random() * 2, (Math.random() - 0.5) * 3)
-    bit.vel.set(Math.random() - 0.5, 0.6 + Math.random(), Math.random() - 0.5)
+    mesh.position.set((this.nextRandom() - 0.5) * 3, this.nextRandom() * 2, (this.nextRandom() - 0.5) * 3)
+    bit.vel.set(this.nextRandom() - 0.5, 0.6 + this.nextRandom(), this.nextRandom() - 0.5)
       .normalize()
-      .multiplyScalar(2 + Math.random() * 3)
+      .multiplyScalar(2 + this.nextRandom() * 3)
       .addScaledVector(inherit, 0.4)
-    const size0 = 2.4 + Math.random() * 3
+    const size0 = 2.4 + this.nextRandom() * 3
     mesh.scale.setScalar(size0)
-    const life = 1.8 + Math.random() * 2
+    const life = 1.8 + this.nextRandom() * 2
     bit.life = life
     bit.maxLife = life
     bit.size0 = size0
@@ -305,7 +307,7 @@ export class CrashFx {
   }
 
   private spawnBall(bit: Bit, yaw: number, pitch: number, speed: number, inherit: Vector3): void {
-    const size0 = 0.7 + Math.random() * 2.1
+    const size0 = 0.7 + this.nextRandom() * 2.1
     const shell = bit.mesh
     const core = bit.core!
     const trail = bit.trail!
@@ -320,9 +322,9 @@ export class CrashFx {
       Math.cos(yaw) * cp * speed,
     ).add(inherit)
 
-    shell.position.set((Math.random() - 0.5) * 1.2, 0.6 + Math.random() * 1.4, (Math.random() - 0.5) * 1.2)
+    shell.position.set((this.nextRandom() - 0.5) * 1.2, 0.6 + this.nextRandom() * 1.4, (this.nextRandom() - 0.5) * 1.2)
     shell.scale.setScalar(size0)
-    const life = 2.4 + Math.random() * 2.8 + size0 * 0.35
+    const life = 2.4 + this.nextRandom() * 2.8 + size0 * 0.35
     bit.life = life
     bit.maxLife = life
     bit.size0 = size0
@@ -335,6 +337,11 @@ export class CrashFx {
       b.mesh.visible = false
     }
     this.bits.length = 0
+  }
+
+  private nextRandom(): number {
+    this.randomState = (Math.imul(this.randomState, 1664525) + 1013904223) >>> 0
+    return this.randomState / 0x100000000
   }
 
   private makeBloomBit(): Bit {
@@ -369,4 +376,14 @@ export class CrashFx {
       trail,
     }
   }
+}
+
+function seedFromImpact(pos: Vector3, vel: Vector3): number {
+  let state = 2166136261
+  for (const value of [pos.x, pos.y, pos.z, vel.x, vel.y, vel.z]) {
+    const quantized = Number.isFinite(value) ? Math.round(value * 1000) : 0
+    state ^= quantized
+    state = Math.imul(state, 16777619)
+  }
+  return state >>> 0 || 1
 }

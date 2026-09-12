@@ -25,4 +25,27 @@ describe('crash effect pooling', () => {
     expect(fx.root.visible).toBe(false)
     fx.dispose()
   })
+
+  it('replays the same impact burst deterministically', () => {
+    const first = new CrashFx(new Scene())
+    const second = new CrashFx(new Scene())
+    const point = new Vector3(12, 3, -4)
+    const velocity = new Vector3(-4, 2, 8)
+
+    first.trigger(point, velocity)
+    second.trigger(point, velocity)
+
+    const firstVisible = first.root.children
+      .filter((child) => child.visible)
+      .slice(0, 4)
+      .map((child) => child.position.toArray())
+    const secondVisible = second.root.children
+      .filter((child) => child.visible)
+      .slice(0, 4)
+      .map((child) => child.position.toArray())
+    expect(secondVisible).toEqual(firstVisible)
+
+    first.dispose()
+    second.dispose()
+  })
 })
