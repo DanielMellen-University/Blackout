@@ -51,6 +51,24 @@ describe('rebuilt aircraft', () => {
     expect(left.rotation.z).toBeGreaterThan(1)
   })
 
+  it('spins deployed wheels with rollout speed and resets the spin', () => {
+    setContactHeightSampler(() => 0)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.velocity.set(0, 0, 40)
+    aircraft.controls.throttle = 0
+    aircraft.step(1 / 60)
+
+    const nose = aircraft.mesh.getObjectByName('wheelNose')!
+    const left = aircraft.mesh.getObjectByName('wheelLeft')!
+    expect(nose.rotation.x).toBeGreaterThan(0)
+    expect(left.rotation.x).toBeCloseTo(nose.rotation.x)
+
+    aircraft.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    expect(nose.rotation.x).toBe(0)
+    expect(left.rotation.x).toBe(0)
+  })
+
   it('turns off both the plume and nozzle glow when power is cut', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 1000, 0)

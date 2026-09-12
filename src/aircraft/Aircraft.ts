@@ -106,6 +106,8 @@ export class Aircraft {
   private tailLeft: Object3D | null = null
   private tailRight: Object3D | null = null
   private afterburner: Object3D | null = null
+  private readonly wheels: Object3D[] = []
+  private wheelSpin = 0
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
@@ -183,6 +185,8 @@ export class Aircraft {
     this.controls = createDefaultControls()
     this.controls.gearDown = true
     this.controls.throttle = s.throttle
+    this.wheelSpin = 0
+    for (const wheel of this.wheels) wheel.rotation.x = 0
     resolveEngineState(this.controls, this.engineState)
     this.status = 'ok'
     this.mesh.visible = true
@@ -294,6 +298,7 @@ export class Aircraft {
     }
 
     this.updateControlSurfaces(dt)
+    this.updateWheelSpin(dt)
 
     if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
       const opacity = antiCollisionBeaconOpacity(now)
@@ -356,6 +361,19 @@ export class Aircraft {
     setSurfaceAngle(this.tailRight, 'y', -yaw * 0.11, 10, dt)
   }
 
+  /** Spin the existing wheel meshes during taxi and rollout without new parts. */
+  private updateWheelSpin(dt: number): void {
+    if (this.wheels.length === 0) return
+    const deployed = this.gearExtension > 0.08
+    if (dt > 0 && deployed) {
+      const groundSpeed = Math.hypot(this.velocity.x, this.velocity.z)
+      if (groundSpeed > 0.2) {
+        this.wheelSpin = (this.wheelSpin + (groundSpeed * dt) / 0.32) % (Math.PI * 2)
+      }
+    }
+    for (const wheel of this.wheels) wheel.rotation.x = this.wheelSpin
+  }
+
   /** Cache the small set of nodes touched every physics step. */
   private cacheVisualNodes(): void {
     const find = (name: string): Object3D | null => this.mesh.getObjectByName(name) ?? null
@@ -370,6 +388,11 @@ export class Aircraft {
     this.tailLeft = find('tailLeft')
     this.tailRight = find('tailRight')
     this.afterburner = find('afterburner')
+    this.wheels.length = 0
+    for (const name of ['wheelNose', 'wheelLeft', 'wheelRight']) {
+      const wheel = find(name)
+      if (wheel) this.wheels.push(wheel)
+    }
     this.antiCollisionBeacon = find('antiCollisionBeacon')
     this.antiCollisionBeaconMaterial =
       this.antiCollisionBeacon instanceof Mesh &&

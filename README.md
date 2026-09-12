@@ -28,6 +28,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Approaching the live checkpoint softens a proximity pulse on the ring and HUD cue, separate from the brighter gate-pass flash.
 - Airborne yaw and runway steering now honor the HUD control convention: A turns left and D turns right, with regression coverage for both nose directions.
 - Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
+- Deployed landing wheels now spin with rollout speed and reset cleanly between runs, using the existing gear meshes with no added draw calls.
 - Aircraft animation caches gear, control-surface, afterburner, and nozzle nodes so each physics step avoids repeated scene-tree searches.
 - Flight surfaces are now visibly hinged: differential flaperons, stabilators, and canted tail panels move with pitch, roll, and yaw input while reusing the existing meshes.
 - HUD readouts coalesce unchanged text and visibility updates, reducing avoidable DOM/layout churn during flight without lowering gauge responsiveness.

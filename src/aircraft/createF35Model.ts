@@ -208,6 +208,7 @@ function buildGear(root: Group, metal: Material, rubber: Material, skin: Materia
     strut(pivot, [0, -.08, -.46], [0, axleY + .08, -.15], .028, metal)
     strut(pivot, [0, axleY + .19, -.15], [side * .18, axleY, -.15], .055, metal)
     const wheel = new Mesh(new CylinderGeometry(r, r, nose ? .16 : .23, 20), rubber)
+    wheel.name = nose ? 'wheelNose' : side < 0 ? 'wheelLeft' : 'wheelRight'
     wheel.rotation.z = Math.PI / 2
     wheel.position.set(side * .18, axleY, -.15)
     pivot.add(wheel)
