@@ -450,7 +450,7 @@ export class Aircraft {
     this.updateVaporTrails()
 
     if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
-      const opacity = antiCollisionBeaconOpacity(now)
+      const opacity = antiCollisionBeaconOpacity(now, this.reducedMotion)
       this.antiCollisionBeacon.visible = opacity > 0.01
       this.antiCollisionBeaconMaterial.opacity = opacity
     }
@@ -802,7 +802,8 @@ export function disposeAircraftObject(root: Object3D): void {
 }
 
 /** Rare dorsal anti-collision strobe envelope, hidden between flashes. */
-export function antiCollisionBeaconOpacity(timeMs: number): number {
+export function antiCollisionBeaconOpacity(timeMs: number, reducedMotion = false): number {
+  if (reducedMotion) return 0.16
   if (!Number.isFinite(timeMs)) return 0
   const period = 1400
   const flash = ((timeMs % period) + period) % period

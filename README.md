@@ -58,6 +58,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Pause, focus-loss, fullscreen-loss, visibility, and graphics-recovery paths now silence flight audio immediately instead of waiting for the next animation frame.
 - Crash transitions now reuse their position and velocity snapshots instead of cloning vectors, keeping the failure path allocation-stable.
 - Aircraft presentation now caches steady-state exhaust opacity, nozzle glow, and non-pulsing plume shape writes while retaining boost pulses and reduced-motion transitions.
+- Reduced-motion mode now replaces the aircraft's anti-collision strobe with a steady low-intensity cue, keeping the silhouette readable without flashing.
 - Graphics presets also scale the instanced cloud draw ranges and skip hidden cloud updates, so Low reduces atmospheric GPU and CPU cost without removing the weathered sky entirely.
 - Graphics presets also scale near-field vegetation instance counts, giving Low a meaningful foliage CPU and GPU budget while keeping the same authored world and allowing live quality changes.
 - Empty vegetation batches are hidden when a quality preset reduces them to zero, removing wasted draw submissions while keeping live preset changes reversible.

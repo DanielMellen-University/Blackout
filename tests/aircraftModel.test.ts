@@ -307,6 +307,8 @@ describe('rebuilt aircraft', () => {
     expect(antiCollisionBeaconOpacity(80)).toBeGreaterThan(0)
     expect(antiCollisionBeaconOpacity(200)).toBe(0)
     expect(antiCollisionBeaconOpacity(1400)).toBe(0)
+    expect(antiCollisionBeaconOpacity(18, true)).toBeCloseTo(.16)
+    expect(antiCollisionBeaconOpacity(200, true)).toBeCloseTo(.16)
   })
 
   it('keeps exhaust Mach-diamond motion bounded and throttle driven', () => {
