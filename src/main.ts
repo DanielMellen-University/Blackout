@@ -33,6 +33,14 @@ import { RunResults } from './ui/RunResults'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
+import {
+  defaultRenderQuality,
+  normalizeRenderQuality,
+  readRenderQuality,
+  renderQualityProfile,
+  writeRenderQuality,
+  type RenderQuality,
+} from './core/RenderQuality'
 
 async function boot(): Promise<void> {
   const canvas = document.getElementById('game') as HTMLCanvasElement | null
@@ -42,6 +50,7 @@ async function boot(): Promise<void> {
   const playBtn = document.getElementById('btn-play') as HTMLButtonElement | null
   const overlay = document.getElementById('overlay')
   const menuEl = document.getElementById('menu')
+  const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl)
 
@@ -49,20 +58,47 @@ async function boot(): Promise<void> {
   const titleStatus = document.getElementById('title-status')
   if (playBtn) playBtn.disabled = true
 
+  let qualityStorage: Storage | null = null
+  try {
+    qualityStorage = window.localStorage
+  } catch {
+    /* Private browsing can deny storage. The game remains fully playable. */
+  }
+  const renderQualityFallback = defaultRenderQuality({
+    hardwareConcurrency: navigator.hardwareConcurrency,
+    deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
+  })
+  let renderQuality: RenderQuality = readRenderQuality(qualityStorage, renderQualityFallback)
+  const initialQualityProfile = renderQualityProfile(renderQuality)
+
   const renderer = new WebGLRenderer({
     canvas,
     antialias: true,
     powerPreference: 'high-performance',
   })
-  const resolution = new AdaptiveResolution(window.devicePixelRatio)
+  const resolution = new AdaptiveResolution(window.devicePixelRatio, initialQualityProfile.maxPixelRatio)
   renderer.setPixelRatio(resolution.ratio)
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.2
-  renderer.shadowMap.enabled = true
+  renderer.shadowMap.enabled = initialQualityProfile.shadows
   // Three.js now folds the old PCFSoftShadowMap into PCFShadowMap anyway.
   // Use the supported constant directly so startup stays warning-free.
   renderer.shadowMap.type = PCFShadowMap
+
+  const applyRenderQuality = (next: RenderQuality): void => {
+    renderQuality = next
+    const profile = renderQualityProfile(next)
+    resolution.setCeiling(profile.maxPixelRatio)
+    renderer.setPixelRatio(resolution.ratio)
+    renderer.shadowMap.enabled = profile.shadows
+    if (qualitySelect) qualitySelect.value = next
+    writeRenderQuality(qualityStorage, next)
+  }
+  applyRenderQuality(renderQuality)
+  qualitySelect?.addEventListener('change', () => {
+    applyRenderQuality(normalizeRenderQuality(qualitySelect.value, renderQuality))
+  })
 
   const world = new World()
   if (titleStatus) titleStatus.textContent = ''

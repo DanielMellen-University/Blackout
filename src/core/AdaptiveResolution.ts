@@ -1,13 +1,26 @@
 /** Slow, bounded resolution changes keep sustained GPU load near a 60 Hz budget. */
 export class AdaptiveResolution {
-  readonly maximum: number
+  maximum: number
   ratio: number
   private elapsed = 0
   private total = 0
   private frames = 0
-  constructor(deviceRatio: number) {
-    this.maximum = Math.min(1.5, Math.max(.75, deviceRatio))
+  private readonly deviceRatio: number
+  constructor(deviceRatio: number, ceiling = 1.5) {
+    this.deviceRatio = Math.max(.75, Number.isFinite(deviceRatio) ? deviceRatio : 1)
+    this.maximum = Math.min(this.deviceRatio, Math.max(.75, ceiling))
     this.ratio = this.maximum
+  }
+
+  /** Change the user-selected ceiling without jumping above device limits. */
+  setCeiling(ceiling: number): number {
+    this.maximum = Math.min(
+      this.deviceRatio,
+      Math.max(.75, Number.isFinite(ceiling) ? ceiling : 1.5),
+    )
+    this.ratio = Math.min(this.ratio, this.maximum)
+    this.elapsed = this.total = this.frames = 0
+    return this.ratio
   }
   update(frameMs: number, active: boolean): number {
     if (!active || !Number.isFinite(frameMs) || frameMs <= 0 || frameMs > 150) {

@@ -15,3 +15,14 @@ it('reduces sustained rendering load, recovers gradually, and ignores pauses', (
   for (let i = 0; i < 1000; i++) quality.update(34, true)
   expect(quality.ratio).toBe(.75)
 })
+
+it('applies a lower user ceiling without exceeding the device ratio', () => {
+  const quality = new AdaptiveResolution(2, 1.15)
+  expect(quality.maximum).toBeCloseTo(1.15)
+  expect(quality.ratio).toBeCloseTo(1.15)
+  quality.setCeiling(.8)
+  expect(quality.maximum).toBeCloseTo(.8)
+  expect(quality.ratio).toBeCloseTo(.8)
+  quality.setCeiling(4)
+  expect(quality.maximum).toBeCloseTo(2)
+})
