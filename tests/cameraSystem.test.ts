@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Scene } from 'three'
 import { Aircraft } from '../src/aircraft/Aircraft'
 import {
   cameraBoostOffset,
@@ -97,6 +98,22 @@ describe('external camera framing', () => {
     expect(cameras.prefersReducedMotion).toBe(true)
     expect(cameras.camera.position).toEqual(before)
     cameras.dispose()
+  })
+
+  it('attaches and detaches the camera so camera children render safely', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const scene = new Scene()
+
+    cameras.attachToScene(scene)
+    expect(cameras.camera.parent).toBe(scene)
+    cameras.dispose()
+    expect(cameras.camera.parent).toBeNull()
   })
 
   it('follows aircraft translation without accumulating speed lag', () => {

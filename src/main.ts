@@ -129,6 +129,7 @@ async function boot(): Promise<void> {
   await aircraft.tryLoadModel('/models/f35.glb')
 
   const cameras = new CameraSystem(canvas)
+  cameras.attachToScene(world.scene)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null

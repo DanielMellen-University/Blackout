@@ -1,4 +1,4 @@
-import { MathUtils, PerspectiveCamera, Quaternion, Vector3 } from 'three'
+import { MathUtils, PerspectiveCamera, Quaternion, Scene, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig } from '../aircraft/flightConfig'
 import {
@@ -201,6 +201,11 @@ export class CameraSystem {
     this.camera.updateProjectionMatrix()
   }
 
+  /** Add the camera to the render scene so camera-attached cockpit geometry draws. */
+  attachToScene(scene: Scene): void {
+    if (this.camera.parent !== scene) scene.add(this.camera)
+  }
+
   dispose(): void {
     const c = this.canvas
     const cap: AddEventListenerOptions = { capture: true }
@@ -212,6 +217,7 @@ export class CameraSystem {
     c.removeEventListener('auxclick', this.onAuxClick, cap)
     c.removeEventListener('mousedown', this.onMouseDownBlock, cap)
     this.cockpit.dispose()
+    this.camera.removeFromParent()
   }
 
   private bumpInput(): void {
