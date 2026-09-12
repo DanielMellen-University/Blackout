@@ -154,17 +154,21 @@ export class MissionSystem {
   start(spawnX: number, spawnY: number, spawnZ: number, spawnYaw: number): void {
     if (this.disposed) return
     this.clear()
+    const safeSpawnX = finiteOr(spawnX, 0)
+    const safeSpawnY = finiteOr(spawnY, 0)
+    const safeSpawnZ = finiteOr(spawnZ, 0)
+    const safeSpawnYaw = finiteOr(spawnYaw, 0)
     this.status = 'live'
     this.next = 0
     this.havePrev = false
     this.lastPassQuality = 1
 
     for (let i = 0; i < GATE_COUNT; i++) {
-      const t = (i / GATE_COUNT) * Math.PI * 2 + spawnYaw + 0.55
-      const x = spawnX + Math.sin(t) * CIRCUIT_R
-      const z = spawnZ + Math.cos(t) * CIRCUIT_R
+      const t = (i / GATE_COUNT) * Math.PI * 2 + safeSpawnYaw + 0.55
+      const x = safeSpawnX + Math.sin(t) * CIRCUIT_R
+      const z = safeSpawnZ + Math.cos(t) * CIRCUIT_R
       const ground = sampleTerrainHeight(x, z)
-      const y = Math.max(spawnY + 72 + i * 18, ground + 80)
+      const y = Math.max(safeSpawnY + 72 + i * 18, ground + 80)
 
       // Tangent so you fly the circle
       const gate = this.gatePool[i]!
@@ -228,6 +232,7 @@ export class MissionSystem {
   update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'complete' {
     if (this.disposed) return 'none'
     this.resolvePresentationTime(nowMs)
+    if (!finiteCoordinates(px, py, pz)) return 'none'
     if (this.status !== 'live' || this.next >= this.gates.length) {
       this.remember(px, py, pz)
       return 'none'
@@ -309,17 +314,21 @@ export class MissionSystem {
       return this.hudState
     }
     const g = this.gates[this.next]!
-    const dx = g.pos.x - px
-    const dz = g.pos.z - pz
-    const dist = Math.hypot(dx, g.pos.y - py, dz)
+    const safePx = finiteOr(px, this.havePrev ? this.prevX : 0)
+    const safePy = finiteOr(py, this.havePrev ? this.prevY : 0)
+    const safePz = finiteOr(pz, this.havePrev ? this.prevZ : 0)
+    const safeHeading = finiteOr(headingYaw, 0)
+    const dx = g.pos.x - safePx
+    const dz = g.pos.z - safePz
+    const dist = Math.hypot(dx, g.pos.y - safePy, dz)
     const gateBrg = Math.atan2(dx, dz)
-    const bearing = MathUtils.euclideanModulo(gateBrg - headingYaw + Math.PI, Math.PI * 2) - Math.PI
+    const bearing = MathUtils.euclideanModulo(gateBrg - safeHeading + Math.PI, Math.PI * 2) - Math.PI
     this.hudState.status = 'live'
     this.hudState.current = this.next + 1
     this.hudState.total = total
     this.hudState.dist = dist
     this.hudState.bearing = bearing
-    this.hudState.altDelta = g.pos.y - py
+    this.hudState.altDelta = g.pos.y - safePy
     this.hudState.label = this.liveLabel
     return this.hudState
   }
@@ -422,6 +431,14 @@ function finiteDistanceToGate(
   return Math.hypot(x! - gate.x, y! - gate.y, z! - gate.z)
 }
 
+function finiteCoordinates(x: number, y: number, z: number): boolean {
+  return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)
+}
+
+function finiteOr(value: number, fallback: number): number {
+  return Number.isFinite(value) ? value : fallback
+}
+
 /** Bounded ring scale for a completed checkpoint flash. */
 export function missionPassFlashScale(progress: number): number {
   const t = clamp01(progress)
@@ -456,5 +473,6 @@ export function gateBeaconDistanceOpacity(distance: number): number {
 }
 
 function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
   return value < 0 ? 0 : value > 1 ? 1 : value
 }

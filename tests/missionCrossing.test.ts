@@ -118,6 +118,30 @@ describe('MissionSystem gate crossing', () => {
     expect(gateBeaconDistanceOpacity(Number.NaN)).toBe(1)
   })
 
+  it('contains malformed telemetry without poisoning the mission state', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN)
+    const gate = mission.activeGatePos()!
+
+    expect(Number.isFinite(gate.x)).toBe(true)
+    expect(Number.isFinite(gate.y)).toBe(true)
+    expect(Number.isFinite(gate.z)).toBe(true)
+
+    const nav = mission.hud(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NaN)
+    expect(Number.isFinite(nav.dist)).toBe(true)
+    expect(Number.isFinite(nav.bearing!)).toBe(true)
+    expect(Number.isFinite(nav.altDelta)).toBe(true)
+
+    expect(mission.update(Number.NaN, gate.y, gate.z)).toBe('none')
+    const t = 0.55
+    const fwdX = Math.cos(t)
+    const fwdZ = -Math.sin(t)
+    expect(mission.update(gate.x - fwdX * 20, gate.y, gate.z - fwdZ * 20)).toBe('none')
+    expect(mission.update(gate.x + fwdX * 20, gate.y, gate.z + fwdZ * 20)).toBe('pass')
+    expect(Number.isFinite(missionPassFlashScale(Number.NaN))).toBe(true)
+    mission.dispose()
+  })
+
   it('ignores late mission calls after idempotent teardown', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)
