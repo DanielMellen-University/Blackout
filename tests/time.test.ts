@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SIM_STEP, Time } from '../src/core/Time'
+import { shouldAdvanceWorld, SIM_STEP, Time } from '../src/core/Time'
 
 describe('Time', () => {
   it('runs extra fixed steps instead of slowing down at 10 fps', () => {
@@ -43,5 +43,11 @@ describe('Time', () => {
     const second = time.beginFrame(32)
     expect(second).toBe(first)
     expect(second.steps).toBe(1)
+  })
+
+  it('skips world streaming on static non-flight frames', () => {
+    expect(shouldAdvanceWorld(false, 0, 0)).toBe(false)
+    expect(shouldAdvanceWorld(false, 0, 0.016)).toBe(true)
+    expect(shouldAdvanceWorld(true, 0, 0)).toBe(true)
   })
 })

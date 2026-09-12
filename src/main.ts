@@ -18,7 +18,7 @@ import {
   suppressBrowserUi,
   toggleGameFullscreen,
 } from './core/suppressBrowserUi'
-import { Time } from './core/Time'
+import { shouldAdvanceWorld, Time } from './core/Time'
 import { ChallengeRun } from './systems/ChallengeRun'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
@@ -477,14 +477,16 @@ async function boot(): Promise<void> {
       aircraft.present(alpha)
     }
 
-    world.update(
-      aircraft.displayPosition.x,
-      aircraft.displayPosition.y,
-      aircraft.displayPosition.z,
-      Math.max(visualDt, 1 / 120),
-      simDt,
-      visualDt,
-    )
+    if (shouldAdvanceWorld(simLive, simDt, visualDt)) {
+      world.update(
+        aircraft.displayPosition.x,
+        aircraft.displayPosition.y,
+        aircraft.displayPosition.z,
+        Math.max(visualDt, 1 / 120),
+        simDt,
+        visualDt,
+      )
+    }
     const phase = world.atmosphere.phaseLabel
     const baseExp =
       phase === 'NIGHT' ? 0.95 : phase === 'DUSK' || phase === 'DAWN' ? 1.05 : 1.15

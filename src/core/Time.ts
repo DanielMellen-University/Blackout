@@ -17,6 +17,20 @@ export interface FrameTiming {
 }
 
 /**
+ * Static title, pause, and results frames do not need world streaming work.
+ * Keep the predicate pure so the animation loop and regression tests share
+ * the same idle-frame policy.
+ */
+export function shouldAdvanceWorld(
+  simulationLive: boolean,
+  simDt: number,
+  visualDt: number,
+): boolean {
+  if (simulationLive) return true
+  return simDt > 0 || visualDt > 0
+}
+
+/**
  * Frame timing helper. Simulation uses a fixed-step accumulator so low FPS
  * does not slow the jet down; leftover time past MAX_STEPS is dropped.
  */
