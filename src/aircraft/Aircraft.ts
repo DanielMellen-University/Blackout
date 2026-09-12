@@ -108,6 +108,8 @@ export class Aircraft {
   private afterburner: Object3D | null = null
   private readonly wheels: Object3D[] = []
   private wheelSpin = 0
+  private readonly navLightMaterials: MeshBasicMaterial[] = []
+  private navLightOpacity = Number.NaN
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
@@ -186,6 +188,7 @@ export class Aircraft {
     this.controls.gearDown = true
     this.controls.throttle = s.throttle
     this.wheelSpin = 0
+    this.navLightOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     resolveEngineState(this.controls, this.engineState)
     this.status = 'ok'
@@ -306,6 +309,12 @@ export class Aircraft {
       this.antiCollisionBeaconMaterial.opacity = opacity
     }
 
+    const navOpacity = navigationLightOpacity(now)
+    if (Math.abs(navOpacity - this.navLightOpacity) > .01) {
+      this.navLightOpacity = navOpacity
+      for (const material of this.navLightMaterials) material.opacity = navOpacity
+    }
+
     const ab = this.afterburner
     if (!ab) return
 
@@ -393,6 +402,13 @@ export class Aircraft {
       const wheel = find(name)
       if (wheel) this.wheels.push(wheel)
     }
+    this.navLightMaterials.length = 0
+    for (const name of ['navLightLeft', 'navLightRight']) {
+      const nav = find(name)
+      if (nav instanceof Mesh && nav.material instanceof MeshBasicMaterial) {
+        this.navLightMaterials.push(nav.material)
+      }
+    }
     this.antiCollisionBeacon = find('antiCollisionBeacon')
     this.antiCollisionBeaconMaterial =
       this.antiCollisionBeacon instanceof Mesh &&
@@ -445,6 +461,12 @@ export function antiCollisionBeaconOpacity(timeMs: number): number {
   const attack = Math.min(1, flash / 18)
   const release = Math.max(0, 1 - Math.max(0, flash - 18) / 110)
   return attack * release
+}
+
+/** Slow nav-light breathing keeps the silhouette readable without strobing. */
+export function navigationLightOpacity(timeMs: number): number {
+  if (!Number.isFinite(timeMs)) return .82
+  return .79 + (Math.sin(timeMs * .0038) + 1) * .03
 }
 
 /** Small procedural Mach-diamond pulse used by the external exhaust plume. */

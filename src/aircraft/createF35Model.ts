@@ -151,9 +151,23 @@ export function createF35Model(): Group {
   beacon.name = 'antiCollisionBeacon'
   beacon.position.set(0, .88, -1.55)
   root.add(beacon)
-  for (const [x, color] of [[-5.22, 0xff3333], [5.22, 0x55ffad]]) {
-    const nav = new Mesh(new SphereGeometry(.055, 8, 6), new MeshBasicMaterial({ color, toneMapped: false }))
-    nav.position.set(x!, .035, -1.83)
+  for (const [x, color, name] of [
+    [-5.22, 0xff3333, 'navLightLeft'],
+    [5.22, 0x55ffad, 'navLightRight'],
+  ] as const) {
+    const nav = new Mesh(
+      new SphereGeometry(.055, 8, 6),
+      new MeshBasicMaterial({
+        name: `${name}Material`,
+        color,
+        transparent: true,
+        opacity: .82,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    )
+    nav.name = name
+    nav.position.set(x, .035, -1.83)
     root.add(nav)
   }
   root.traverse((obj) => {

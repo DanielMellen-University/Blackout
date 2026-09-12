@@ -1,10 +1,11 @@
-import { Box3, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
+import { Box3, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
   afterburnerDiamondPulse,
   antiCollisionBeaconOpacity,
   disposeAircraftObject,
+  navigationLightOpacity,
 } from '../src/aircraft/Aircraft'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
@@ -67,6 +68,20 @@ describe('rebuilt aircraft', () => {
     aircraft.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
     expect(nose.rotation.x).toBe(0)
     expect(left.rotation.x).toBe(0)
+  })
+
+  it('keeps red and green navigation lights softly pulsing', () => {
+    const model = createF35Model()
+    const left = model.getObjectByName('navLightLeft') as Mesh
+    const right = model.getObjectByName('navLightRight') as Mesh
+    expect(left).toBeTruthy()
+    expect(right).toBeTruthy()
+    expect((left.material as MeshBasicMaterial).transparent).toBe(true)
+    expect((right.material as MeshBasicMaterial).transparent).toBe(true)
+    expect(navigationLightOpacity(0)).toBeCloseTo(.82)
+    expect(navigationLightOpacity(1000)).toBeGreaterThan(.75)
+    expect(navigationLightOpacity(1000)).toBeLessThan(.9)
+    expect(Math.abs(navigationLightOpacity(1000) - navigationLightOpacity(1001))).toBeLessThan(.001)
   })
 
   it('turns off both the plume and nozzle glow when power is cut', () => {
