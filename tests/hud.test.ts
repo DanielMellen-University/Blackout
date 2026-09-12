@@ -8,6 +8,7 @@ import {
   formatVerticalSpeed,
   gateProximityHudActive,
   gearTransitionActive,
+  normalizeBannerTone,
   quantizeHudNumber,
   speedJuiceIntensity,
 } from '../src/ui/HUD'
@@ -82,5 +83,12 @@ describe('HUD value formatting', () => {
     expect(gateProximityHudActive(220)).toBe(true)
     expect(gateProximityHudActive(221)).toBe(false)
     expect(gateProximityHudActive(Number.NaN)).toBe(false)
+  })
+
+  it('normalizes banner tones to the supported visual states', () => {
+    expect(normalizeBannerTone('success')).toBe('success')
+    expect(normalizeBannerTone('danger')).toBe('danger')
+    expect(normalizeBannerTone('warning')).toBe('info')
+    expect(normalizeBannerTone(null)).toBe('info')
   })
 })

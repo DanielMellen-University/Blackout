@@ -49,7 +49,7 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { GameMenu } from './ui/GameMenu'
-import { HUD } from './ui/HUD'
+import { HUD, type HudBannerTone } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
@@ -216,6 +216,7 @@ async function boot(): Promise<void> {
 
   let playing = false
   let banner: string | null = null
+  let bannerTone: HudBannerTone = 'info'
   let bannerUntil = 0
   let wasAirborne = false
   let prevAfterburner = false
@@ -263,6 +264,7 @@ async function boot(): Promise<void> {
     navBearing: null,
     navAltDelta: 0,
     banner: null,
+    bannerTone: 'info',
     flightPathVisible: false,
     flightPathX: 50,
     flightPathY: 50,
@@ -280,8 +282,9 @@ async function boot(): Promise<void> {
     setFlightKeyCapture(live)
   }
 
-  const showBanner = (text: string, ms = 2800): void => {
+  const showBanner = (text: string, ms = 2800, tone: HudBannerTone = 'info'): void => {
     banner = text
+    bannerTone = tone
     bannerUntil = performance.now() + ms
   }
 
@@ -290,11 +293,11 @@ async function boot(): Promise<void> {
     // participate in its restore path. Rendering is gated until restoration.
     event.preventDefault()
     contextLost = true
-    showBanner('GRAPHICS PAUSED / RECOVERING', 8000)
+    showBanner('GRAPHICS PAUSED / RECOVERING', 8000, 'danger')
   }
   const onContextRestored = (): void => {
     contextLost = false
-    showBanner('GRAPHICS RECOVERED', 1800)
+    showBanner('GRAPHICS RECOVERED', 1800, 'success')
   }
   canvas.addEventListener('webglcontextlost', onContextLost, false)
   canvas.addEventListener('webglcontextrestored', onContextRestored, false)
@@ -315,6 +318,7 @@ async function boot(): Promise<void> {
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates)
     banner = null
+    bannerTone = 'info'
     wasAirborne = false
     prevAfterburner = false
     prevGearDown = aircraft.controls.gearDown
@@ -508,7 +512,7 @@ async function boot(): Promise<void> {
 
       if (input.consumeCameraToggle()) {
         const mode = cameras.toggleMode(aircraft)
-        showBanner(cameraModeCue(mode), 1200)
+        showBanner(cameraModeCue(mode), 1200, 'info')
       }
       if (input.consumeWeatherCycle()) world.cycleWeather()
       if (input.consumeReset()) resetFlight(true, true)
@@ -544,7 +548,7 @@ async function boot(): Promise<void> {
             crashFx.trigger(hit, v)
             cameras.impulse(1)
             audio.playCue('crash')
-            showBanner('CRASH - press R', 4200)
+            showBanner('CRASH - press R', 4200, 'danger')
             break
           }
           const scoredTouch =
@@ -577,7 +581,7 @@ async function boot(): Promise<void> {
             }
             if (touch === 'landed') {
               audio.playCue('landed')
-              showBanner('LANDED')
+              showBanner('LANDED', 2800, 'success')
             }
           }
         }
@@ -591,7 +595,7 @@ async function boot(): Promise<void> {
           if (event === 'pass') {
             challenge.recordGate(world.mission.lastPassQuality)
             audio.playCue('gate')
-            showBanner('GATE CLEAR', 1200)
+            showBanner('GATE CLEAR', 1200, 'success')
           }
           if (event === 'complete') {
             challenge.recordGate(world.mission.lastPassQuality)
@@ -744,6 +748,7 @@ async function boot(): Promise<void> {
       hudFrame.navBearing = gateScreenBearing(cameras.camera, gate)
       hudFrame.navAltDelta = nav.altDelta
       hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
+      hudFrame.bannerTone = aircraft.status === 'crashed' ? 'danger' : bannerTone
       hudFrame.flightPathVisible = flightPathMarker.visible
       hudFrame.flightPathX = flightPathMarker.x
       hudFrame.flightPathY = flightPathMarker.y

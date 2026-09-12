@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Give existing flight banners distinct info, success, and danger treatments so normal feedback no longer reads like a crash alert.
 - Tie pooled rain and snow simulation plus draw ranges to the Low, Balanced, and High graphics presets so weather costs match the selected budget.
 - Compact expired pooled crash particles during the effect tail, reducing needless simulation checks while preserving deterministic visuals.
 - Gate render submissions during WebGL context loss and announce recovery so browser GPU resets do not hammer a dead renderer.

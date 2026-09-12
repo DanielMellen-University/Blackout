@@ -4,6 +4,13 @@
  */
 import { displayedKnots } from '../core/airspeed'
 
+export type HudBannerTone = 'info' | 'success' | 'danger'
+
+/** Normalize banner tone input so stale callers cannot add arbitrary classes. */
+export function normalizeBannerTone(value: unknown): HudBannerTone {
+  return value === 'success' || value === 'danger' ? value : 'info'
+}
+
 export class HUD {
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
@@ -165,6 +172,7 @@ export class HUD {
     navBearing?: number | null
     navAltDelta?: number
     banner?: string | null
+    bannerTone?: HudBannerTone
     /** Cockpit-only velocity-vector position in viewport percentages. */
     flightPathVisible?: boolean
     flightPathX?: number
@@ -284,6 +292,10 @@ export class HUD {
         this.setText(this.bannerEl, '')
         this.setHidden(this.bannerEl, true)
       }
+      const tone = normalizeBannerTone(opts.bannerTone)
+      this.setClass(this.bannerEl, 'banner-info', tone === 'info')
+      this.setClass(this.bannerEl, 'banner-success', tone === 'success')
+      this.setClass(this.bannerEl, 'banner-danger', tone === 'danger')
     }
   }
 
