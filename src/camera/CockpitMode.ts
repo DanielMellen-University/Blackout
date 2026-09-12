@@ -88,6 +88,7 @@ export class CockpitMode {
 
   update(camera: PerspectiveCamera, aircraft: Aircraft): void {
     if (this.disposed || !this.attached) return
+    if (!finiteVector3(aircraft.displayPosition) || !finiteQuaternion(aircraft.displayOrientation)) return
 
     if (this.frame.parent !== camera) camera.add(this.frame)
     this.frame.visible = true
@@ -109,4 +110,13 @@ export class CockpitMode {
     })
     this.frameMaterial.dispose()
   }
+}
+
+function finiteVector3(value: Vector3): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z)
+}
+
+function finiteQuaternion(value: Quaternion): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) &&
+    Number.isFinite(value.z) && Number.isFinite(value.w)
 }

@@ -142,6 +142,20 @@ describe('external camera framing', () => {
     expect(overspeed.lookLeadLimit).toBe(10)
   })
 
+  it('contains malformed camera telemetry without emitting non-finite framing', () => {
+    const framing = resolveExternalSpeedFraming(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NaN)
+    expect(framing).toEqual({ distance: 17, fov: 60, lookLeadLimit: 4.5 })
+
+    expect(cameraRelativeBearing(
+      new Vector3(Number.NaN, 0, 0),
+      new Quaternion(),
+      new Vector3(),
+    )).toBe(0)
+    expect(cameraBankAngle(new Quaternion(Number.NaN, 0, 0, 1))).toBe(0)
+    expect(cameraShakeOffset(Number.NaN, Number.NaN)).toEqual({ x: 0, y: 0, z: 0 })
+    expect(cameraBoostOffset(Number.NaN, Number.NaN)).toEqual({ x: 0, y: 0, z: 0 })
+  })
+
   it('fills camera envelopes into caller-owned records', () => {
     const framing = { distance: 0, fov: 0, lookLeadLimit: 0 }
     const shake = { x: 0, y: 0, z: 0 }

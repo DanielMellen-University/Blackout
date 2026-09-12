@@ -45,6 +45,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The external camera far plane now tracks the streamed terrain and cloud envelope instead of an oversized 60 km range, preserving depth precision without clipping visible scenery.
 - The external chase camera now carries a capped, reduced-motion-aware bank cue from the aircraft roll, adding turn drama while keeping the horizon readable.
 - Camera resize handling now keeps zero-sized or malformed viewport reports out of projection math and skips redundant projection rebuilds during resize bursts.
+- External and cockpit camera paths now fail closed on malformed vectors, quaternions, speed envelopes, and motion phases, preventing a bad frame from producing non-finite lens transforms.
 - Tone-mapping exposure now follows the continuous daylight factor instead of jumping at phase labels, keeping dawn, dusk, and storm-bloom transitions visually smooth.
 - The speed needle reuses whole-knot display precision, skipping redundant trigonometry during steady flight while retaining the same gauge resolution.
 - The title hero stages streamed settlements out of view so the runway and F-35 stay readable; the cached city and village layer returns immediately when flight starts.

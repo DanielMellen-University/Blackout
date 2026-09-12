@@ -342,6 +342,7 @@ export class CameraSystem {
 
   private applyRig(aircraft: Aircraft, dt: number, snap: boolean): void {
     if (this.mode === 'cockpit') return
+    if (!finiteVector3(aircraft.displayPosition) || !finiteQuaternion(aircraft.displayOrientation)) return
     const cfg = MODE_CONFIG[this.mode]
 
     // Move the established rig by the aircraft's world translation before
@@ -356,7 +357,8 @@ export class CameraSystem {
     this.aircraftPositionReady = true
 
     // Subtle speed sensation without making the aircraft disappear at Vmax.
-    const speedT = MathUtils.clamp(aircraft.speed / flightConfig.maxSpeed, 0, 1)
+    const speed = Number.isFinite(aircraft.speed) ? Math.max(0, aircraft.speed) : 0
+    const speedT = MathUtils.clamp(speed / flightConfig.maxSpeed, 0, 1)
     const targetJuice = speedT * speedT * (3 - 2 * speedT) // smoothstep
     if (snap || dt <= 0) {
       this.speedJuice = targetJuice
@@ -420,7 +422,7 @@ export class CameraSystem {
     }
     _look.add(aircraft.displayPosition)
 
-    if (cfg.lookLead > 0) {
+    if (cfg.lookLead > 0 && finiteVector3(aircraft.velocity)) {
       // Slightly more lead at high speed so framing stays ahead of the jet
       _velLead.copy(aircraft.velocity).multiplyScalar(cfg.lookLead * (1 + juice * 0.4))
       // Prefer horizontal lead so banking does not yank the look target skyward
@@ -655,6 +657,11 @@ export function cameraRelativeBearing(
   cameraOrientation: Quaternion,
   target: Vector3,
 ): number {
+  if (
+    !finiteVector3(cameraPosition) ||
+    !finiteQuaternion(cameraOrientation) ||
+    !finiteVector3(target)
+  ) return 0
   _bearingDelta.subVectors(target, cameraPosition)
   _bearingInverse.copy(cameraOrientation).invert()
   _bearingDelta.applyQuaternion(_bearingInverse)
@@ -663,6 +670,7 @@ export function cameraRelativeBearing(
 
 /** Small external-view bank derived from the airframe roll, capped for readability. */
 export function cameraBankAngle(orientation: Quaternion, maxBank = MAX_EXTERNAL_BANK): number {
+  if (!finiteQuaternion(orientation)) return 0
   _cameraRollInverse.copy(orientation).invert()
   _cameraLocalUp.set(0, 1, 0).applyQuaternion(_cameraRollInverse)
   const roll = Math.atan2(-_cameraLocalUp.x, _cameraLocalUp.y)
@@ -695,10 +703,18 @@ export function cameraShakeOffsetInto(
   phase: number,
   intensity: number,
 ): CameraShakeOffset {
-  const scale = Math.max(0, intensity) ** 2
-  out.x = (Math.sin(phase * 1.7) * .72 + Math.sin(phase * 3.1 + 1.2) * .28) * 2.4 * scale
-  out.y = (Math.sin(phase * 2.1 + .7) * .75 + Math.sin(phase * 4.3) * .25) * 1.6 * scale
-  out.z = (Math.cos(phase * 1.9 + 2) * .72 + Math.sin(phase * 3.7 - .8) * .28) * 2.4 * scale
+  const safePhase = Number.isFinite(phase) ? phase : 0
+  const safeIntensity = Number.isFinite(intensity) ? Math.max(0, intensity) : 0
+  const scale = safeIntensity ** 2
+  if (scale === 0) {
+    out.x = 0
+    out.y = 0
+    out.z = 0
+    return out
+  }
+  out.x = (Math.sin(safePhase * 1.7) * .72 + Math.sin(safePhase * 3.1 + 1.2) * .28) * 2.4 * scale
+  out.y = (Math.sin(safePhase * 2.1 + .7) * .75 + Math.sin(safePhase * 4.3) * .25) * 1.6 * scale
+  out.z = (Math.cos(safePhase * 1.9 + 2) * .72 + Math.sin(safePhase * 3.7 - .8) * .28) * 2.4 * scale
   return out
 }
 
@@ -712,10 +728,18 @@ export function cameraBoostOffsetInto(
   phase: number,
   intensity: number,
 ): CameraBoostOffset {
-  const scale = Math.min(1, Math.max(0, intensity))
-  out.x = (Math.sin(phase * 1.6) * .7 + Math.sin(phase * 2.9 + .8) * .3) * .028 * scale
-  out.y = (Math.sin(phase * 2.2 + .4) * .72 + Math.sin(phase * 3.7) * .28) * .016 * scale
-  out.z = (Math.cos(phase * 1.4 + 1.1) * .7 + Math.sin(phase * 3.2 - .5) * .3) * .035 * scale
+  const safePhase = Number.isFinite(phase) ? phase : 0
+  const safeIntensity = Number.isFinite(intensity) ? intensity : 0
+  const scale = Math.min(1, Math.max(0, safeIntensity))
+  if (scale === 0) {
+    out.x = 0
+    out.y = 0
+    out.z = 0
+    return out
+  }
+  out.x = (Math.sin(safePhase * 1.6) * .7 + Math.sin(safePhase * 2.9 + .8) * .3) * .028 * scale
+  out.y = (Math.sin(safePhase * 2.2 + .4) * .72 + Math.sin(safePhase * 3.7) * .28) * .016 * scale
+  out.z = (Math.cos(safePhase * 1.4 + 1.1) * .7 + Math.sin(safePhase * 3.2 - .5) * .3) * .035 * scale
   return out
 }
 
@@ -746,11 +770,24 @@ export function resolveExternalSpeedFramingInto(
   speedJuice: number,
   maxDistance = Infinity,
 ): ExternalSpeedFraming {
-  const t = MathUtils.clamp(speedJuice, 0, 1)
-  out.distance = Math.min(maxDistance, baseDistance * (1 + t * SPEED_DIST_STRETCH))
-  out.fov = baseFov + t * SPEED_FOV_BOOST
-  out.lookLeadLimit = MathUtils.lerp(maxLookLead * 0.45, maxLookLead, t)
+  const safeDistance = Number.isFinite(baseDistance) ? Math.max(0, baseDistance) : 17
+  const safeFov = Number.isFinite(baseFov) ? baseFov : 60
+  const safeLead = Number.isFinite(maxLookLead) ? Math.max(0, maxLookLead) : 10
+  const safeMaxDistance = Number.isFinite(maxDistance) && maxDistance > 0 ? maxDistance : Infinity
+  const t = Number.isFinite(speedJuice) ? MathUtils.clamp(speedJuice, 0, 1) : 0
+  out.distance = Math.min(safeMaxDistance, safeDistance * (1 + t * SPEED_DIST_STRETCH))
+  out.fov = safeFov + t * SPEED_FOV_BOOST
+  out.lookLeadLimit = MathUtils.lerp(safeLead * 0.45, safeLead, t)
   return out
+}
+
+function finiteVector3(value: Vector3): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) && Number.isFinite(value.z)
+}
+
+function finiteQuaternion(value: Quaternion): boolean {
+  return Number.isFinite(value.x) && Number.isFinite(value.y) &&
+    Number.isFinite(value.z) && Number.isFinite(value.w)
 }
 
 /** Shortest-path angle difference in (-π, π]. */
