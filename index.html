@@ -47,6 +47,13 @@
                   <option value="high">High</option>
                 </select>
               </label>
+              <label class="menu-setting" for="menu-volume">
+                <span>Audio</span>
+                <span class="menu-setting-control">
+                  <input id="menu-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Audio volume" />
+                  <output id="menu-volume-value" for="menu-volume">100%</output>
+                </span>
+              </label>
               <button type="button" id="menu-open-controls" class="btn-ghost">Controls</button>
               <button type="button" id="menu-open-info" class="btn-ghost">Game info</button>
               <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>

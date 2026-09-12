@@ -24,6 +24,12 @@ import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
 import { FlightAudio } from './audio/FlightAudio'
+import {
+  audioVolumePercent,
+  normalizeAudioVolume,
+  readAudioVolume,
+  writeAudioVolume,
+} from './audio/AudioPreferences'
 import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
@@ -51,6 +57,8 @@ async function boot(): Promise<void> {
   const overlay = document.getElementById('overlay')
   const menuEl = document.getElementById('menu')
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
+  const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
+  const volumeValue = document.getElementById('menu-volume-value')
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl)
 
@@ -69,6 +77,7 @@ async function boot(): Promise<void> {
     deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
   })
   let renderQuality: RenderQuality = readRenderQuality(qualityStorage, renderQualityFallback)
+  const initialAudioVolume = readAudioVolume(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -119,6 +128,17 @@ async function boot(): Promise<void> {
   const crashFx = new CrashFx(world.scene)
   const landingFx = new LandingFx(world.scene)
   const audio = new FlightAudio()
+  const applyAudioVolume = (next: number): void => {
+    const volume = normalizeAudioVolume(next)
+    audio.setVolume(volume)
+    if (volumeRange) volumeRange.value = String(Math.round(volume * 100))
+    if (volumeValue) volumeValue.textContent = audioVolumePercent(volume)
+    writeAudioVolume(qualityStorage, volume)
+  }
+  applyAudioVolume(initialAudioVolume)
+  volumeRange?.addEventListener('input', () => {
+    applyAudioVolume(Number(volumeRange.value) / 100)
+  })
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null

@@ -18,6 +18,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash camera impulse uses smooth bounded multi-frequency shake instead of harsh per-frame white-noise jitter.
 - External speed framing respects the chase camera's configured maximum distance, keeping the jet readable even when zoomed out at top speed.
 - Graphics quality is selectable from the pause menu. Low disables shadow-map work and caps adaptive pixel density, while Balanced and High retain progressively larger budgets. The choice is saved locally.
+- Audio volume is adjustable from the pause menu and saved locally. The slider changes the master mix smoothly, while **M** remains an immediate mute toggle.
 - Middle-mouse look / pan, scroll zoom (not in cockpit)
 - HUD: IAS to 3000 kts (50% ENG ~ 1500, 100% ~ 3000), ENG, ALT AGL, ADI, gear, weather/time. Acceleration and deceleration respond 5× faster.
 - Rebuilt F-35-style airframe with canted tails, intake throats, gold canopy, articulated landing gear, and a soft single-engine afterburner

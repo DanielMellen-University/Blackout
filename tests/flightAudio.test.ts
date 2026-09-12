@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   EVENT_NOISE_BUFFER_SECONDS,
   FLIGHT_AUDIO_LIMITER,
+  FlightAudio,
   enginePlaybackRate,
   engineWhineLevel,
   precipitationAudioLevel,
@@ -71,5 +72,13 @@ describe('flight audio automation', () => {
     expect(precipitationAudioLevel(0, 1)).toBeCloseTo(0.18)
     expect(precipitationAudioLevel(4, 4)).toBeLessThanOrEqual(1)
     expect(precipitationAudioLevel(-1, -1)).toBe(0)
+  })
+
+  it('keeps the user volume level bounded', () => {
+    const audio = new FlightAudio()
+    expect(audio.setVolume(-1)).toBe(0)
+    expect(audio.volumeLevel).toBe(0)
+    expect(audio.setVolume(0.65)).toBeCloseTo(0.65)
+    expect(audio.setVolume(2)).toBe(1)
   })
 })

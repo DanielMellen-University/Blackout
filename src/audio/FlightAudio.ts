@@ -33,6 +33,7 @@ export class FlightAudio {
   private eventBrownBuffer: AudioBuffer | null = null
   private built = false
   private muted = true
+  private volume = 1
   private readonly scheduledTargets = new WeakMap<AudioParam, number>()
 
   /**
@@ -98,7 +99,7 @@ export class FlightAudio {
     const whine = engineWhineLevel(opts.throttle, boost)
 
     this.muted = opts.mute
-    const masterTarget = opts.mute ? 0 : 1
+    const masterTarget = opts.mute ? 0 : this.volume
     const engTarget = opts.mute ? 0 : eng * 0.42
     const windTarget = opts.mute ? 0 : wind * 0.28
     const precipTarget = opts.mute ? 0 : precip * 0.18
@@ -148,6 +149,19 @@ export class FlightAudio {
     this.scheduleTarget(this.master.gain, 0, this.ctx.currentTime, 0.05)
   }
 
+  /** Set the master mix level without changing the mute state. */
+  setVolume(volume: number): number {
+    this.volume = clamp01(volume)
+    if (this.ctx && this.master && !this.muted) {
+      this.scheduleTarget(this.master.gain, this.volume, this.ctx.currentTime, 0.06)
+    }
+    return this.volume
+  }
+
+  get volumeLevel(): number {
+    return this.volume
+  }
+
   /** Short event cues keep checkpoints and landings readable without assets. */
   playCue(
     kind:
@@ -163,7 +177,7 @@ export class FlightAudio {
   ): void {
     const ctx = this.ctx
     const output = this.effectsGain
-    if (!ctx || !output || ctx.state === 'suspended' || this.muted) return
+    if (!ctx || !output || ctx.state === 'suspended' || this.muted || this.volume <= 0) return
 
     const now = ctx.currentTime
     if (kind === 'gate') {
@@ -308,7 +322,9 @@ export class FlightAudio {
 
     const effectsGain = ctx.createGain()
     effectsGain.gain.value = 0.8
-    effectsGain.connect(limiter)
+    // Route one master level through ambience and event cues alike so the
+    // pause-menu volume control actually balances the complete flight mix.
+    effectsGain.connect(master)
 
     const engBuf = makeNoiseBuffer(ctx, 2.5, 'brown')
     const windBuf = makeNoiseBuffer(ctx, 2.0, 'white')
