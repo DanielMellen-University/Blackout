@@ -2,7 +2,7 @@ import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import { planTerrainTiles } from '../src/world/TerrainLayout'
-import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
+import { sampleGroundHeight, setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
 import {
   CHUNK_SIZE,
   buildTerrainSkirtGeometry,
@@ -189,6 +189,23 @@ describe('TerrainSystem streaming LOD', () => {
 describe('visible mesh contact sampling', () => {
   afterEach(() => {
     setContactHeightSampler(null)
+  })
+
+  it('uses the dedicated height path without asking for contact metadata', () => {
+    let contactCalls = 0
+    let heightCalls = 0
+    setContactHeightSampler(() => {
+      contactCalls++
+      return { height: 12, kind: 'land', biome: 'plains' }
+    })
+    setGroundHeightSampler(() => {
+      heightCalls++
+      return 42
+    })
+
+    expect(sampleGroundHeight(8, -3)).toBe(42)
+    expect(heightCalls).toBe(1)
+    expect(contactCalls).toBe(0)
   })
 
   it('matches the rendered vertex at a chunk corner', () => {

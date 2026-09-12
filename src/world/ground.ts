@@ -12,11 +12,22 @@ import {
  * result also resolves water contact at the rendered, clipped shoreline.
  */
 export type MeshHeightSampler = (x: number, z: number) => number | TerrainSurface | null
+export type GroundHeightSampler = (x: number, z: number) => number | null
 
 let meshHeightSampler: MeshHeightSampler | null = null
+let groundHeightSampler: GroundHeightSampler | null = null
 
 export function setContactHeightSampler(sampler: MeshHeightSampler | null): void {
   meshHeightSampler = sampler
+  // The dedicated height callback belongs to the same streamed terrain
+  // lifetime. Clearing the contact sampler must not leave a disposed world
+  // feeding stale heights to AGL, camera, or effect queries.
+  groundHeightSampler = null
+}
+
+/** Register the allocation-free height path used by hot queries. */
+export function setGroundHeightSampler(sampler: GroundHeightSampler | null): void {
+  groundHeightSampler = sampler
 }
 
 /**
@@ -27,7 +38,19 @@ export function setContactHeightSampler(sampler: MeshHeightSampler | null): void
 
 /** World ground surface Y at horizontal position (infinite heightfield). */
 export function sampleGroundHeight(x: number, z: number): number {
-  return sampleGroundSurface(x, z).height
+  const height = groundHeightSampler?.(x, z)
+  if (height != null && Number.isFinite(height)) return height
+  // Preserve the public fallback behavior for callers that only provide the
+  // richer contact sampler, including test and tooling integrations.
+  const sampled = meshHeightSampler?.(x, z)
+  if (typeof sampled === 'number' && Number.isFinite(sampled)) return sampled
+  if (sampled != null && typeof sampled !== 'number' && Number.isFinite(sampled.height)) {
+    return sampled.height
+  }
+  // The richer callback has already been sampled above. Fall back directly
+  // to the analytic surface instead of invoking it a second time when a
+  // streamed tile is not ready.
+  return sampleTerrainSurface(x, z).height
 }
 
 /** Prefer the visible mesh, falling back to procedural terrain outside loaded tiles. */

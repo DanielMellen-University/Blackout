@@ -26,7 +26,7 @@ import {
   type TerrainSurface,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
-import { setContactHeightSampler } from './ground'
+import { setContactHeightSampler, setGroundHeightSampler } from './ground'
 import { buildWaterMesh } from './WaterSystem'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
@@ -384,6 +384,7 @@ export class TerrainSystem {
     this.configureWeatherMaterial(this.groundMatFar)
     this.applyFog()
     setContactHeightSampler((x, z) => this.sampleMeshSurface(x, z))
+    setGroundHeightSampler((x, z) => this.sampleMeshHeight(x, z))
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
@@ -536,7 +537,27 @@ export class TerrainSystem {
   }
 
   sampleMeshHeight(x: number, z: number): number | null {
-    return this.sampleMeshSurface(x, z)?.height ?? null
+    const cx = Math.floor(x / CHUNK_SIZE)
+    const cz = Math.floor(z / CHUNK_SIZE)
+    const chunk = this.chunks.get(`${cx},${cz}`)
+    if (!chunk || chunk.heights.length !== (chunk.segs + 1) * (chunk.segs + 1)) return null
+    const bed = interpolateGridHeight(
+      chunk.heights,
+      chunk.segs,
+      chunk.originX,
+      chunk.originZ,
+      x,
+      z,
+    )
+    const level = interpolateGridHeight(
+      chunk.waterLevels,
+      chunk.segs,
+      chunk.originX,
+      chunk.originZ,
+      x,
+      z,
+    )
+    return Math.max(bed, level)
   }
 
   sampleMeshSurface(x: number, z: number): TerrainSurface | null {

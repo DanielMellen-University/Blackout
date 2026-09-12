@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Split visible mesh height queries from richer contact metadata so camera, AGL, collision-clearance, and landing-effect hot paths avoid redundant climate sampling.
 - Scale near-field instanced vegetation with the graphics presets, preserving authored batch counts so quality changes remain reversible without rebuilding terrain.
 - Reuse swept-contact results in the flight model so high-speed collision probes avoid per-sample object allocation while preserving the existing crash and landing envelope.
 - Keep dark airframe panels readable at night with a bounded cool emissive fill that fades out in daylight without adding lights, meshes, or draw calls.
