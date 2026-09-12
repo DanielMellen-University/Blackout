@@ -25,6 +25,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Losing browser-window focus now pauses active flight safely, with no automatic resume when focus returns.
 - If the browser drops fullscreen during active flight, a short banner explains how to click the canvas and recover it.
 - The title screen keeps the takeoff brief visible and announces when the airfield is ready for launch.
+- The title overlay keeps the runway and F-35 silhouette visible behind the briefing so the first screen still feels like a flight game.
 - First-person mode now renders its camera-attached canopy rails, brow, and coaming while removing them cleanly on teardown.
 - Cockpit view now projects a restrained velocity-vector marker from the jet's real motion, making slips and climbs readable without adding scene geometry.
 - Toggling `C` now announces the active cockpit or external view with a short in-flight cue.
