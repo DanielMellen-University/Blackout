@@ -97,6 +97,10 @@ async function boot(): Promise<void> {
     cameras.dispose()
     audio.dispose()
     document.removeEventListener('visibilitychange', onVisibilityChange)
+    document.removeEventListener('visibilitychange', onFlightVisibilityPause)
+    document.removeEventListener('fullscreenchange', onFullscreenChange)
+    window.removeEventListener('keydown', onGlobalKeyDown, true)
+    window.removeEventListener('resize', onResize)
     if (resizeFrame !== null) {
       cancelAnimationFrame(resizeFrame)
       resizeFrame = null
@@ -281,44 +285,41 @@ async function boot(): Promise<void> {
     el.addEventListener('click', () => menu.back())
   })
 
-  window.addEventListener(
-    'keydown',
-    (e) => {
-      if (e.code === 'Escape') {
+  const onGlobalKeyDown = (e: KeyboardEvent): void => {
+    if (e.code === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      if (!playing) {
+        if (menu.open) menu.handleEscape()
+        return
+      }
+      menu.togglePause()
+      input.clearQueued()
+      time.reset()
+      syncInputContext()
+      return
+    }
+    if (menu.open) return
+    if (results.open && playing) {
+      if (e.code === 'KeyR') {
         e.preventDefault()
-        e.stopPropagation()
-        if (!playing) {
-          if (menu.open) menu.handleEscape()
-          return
-        }
-        menu.togglePause()
-        input.clearQueued()
-        time.reset()
+        resetFlight(true)
         syncInputContext()
-        return
+      } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+        e.preventDefault()
+        resetFlight(false)
+        syncInputContext()
       }
-      if (menu.open) return
-      if (results.open && playing) {
-        if (e.code === 'KeyR') {
-          e.preventDefault()
-          resetFlight(true)
-          syncInputContext()
-        } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-          e.preventDefault()
-          resetFlight(false)
-          syncInputContext()
-        }
-        return
-      }
-      if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
-        if (e.code === 'Space') e.preventDefault()
-        startGame()
-      }
-    },
-    true,
-  )
+      return
+    }
+    if (!playing && (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space')) {
+      if (e.code === 'Space') e.preventDefault()
+      startGame()
+    }
+  }
+  window.addEventListener('keydown', onGlobalKeyDown, true)
 
-  document.addEventListener('fullscreenchange', () => {
+  const onFullscreenChange = (): void => {
     menu.syncFullscreen()
     if (document.fullscreenElement) {
       void lockKeysOnly()
@@ -332,7 +333,8 @@ async function boot(): Promise<void> {
     } catch {
       /* ignore */
     }
-  })
+  }
+  document.addEventListener('fullscreenchange', onFullscreenChange)
 
   const applyResize = (): void => {
     const w = window.innerWidth
@@ -608,14 +610,15 @@ async function boot(): Promise<void> {
     }
   }
 
-  document.addEventListener('visibilitychange', () => {
+  const onFlightVisibilityPause = (): void => {
     if (document.hidden && playing && !menu.paused && !results.open) {
       menu.openPause()
       input.clearQueued()
       time.reset()
       syncInputContext()
     }
-  })
+  }
+  document.addEventListener('visibilitychange', onFlightVisibilityPause)
 
   challenge.reset(courseId(), world.mission.totalGates)
   syncInputContext()
