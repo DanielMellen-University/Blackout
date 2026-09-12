@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
 import { createRunway, runwayLightIntensity, setRunwayDaylight } from '../src/world/Runway'
-import { setAirfieldWind } from '../src/world/Airfield'
+import { papiLightPattern, setAirfieldPapi, setAirfieldWind } from '../src/world/Airfield'
 
 describe('runway lighting', () => {
   let runway: ReturnType<typeof createRunway> | null = null
@@ -58,5 +58,37 @@ describe('runway lighting', () => {
     runway.rotation.y = Math.PI / 2
     setAirfieldWind(runway, 10, 0)
     expect(Math.abs(Math.abs(windsock.rotation.y) - Math.PI)).toBeLessThan(0.005)
+  })
+
+  it('maps glide angle to a readable PAPI pattern', () => {
+    const distance = 100
+    expect(papiLightPattern(Math.tan(4 * Math.PI / 180) * distance, distance)).toBe(4)
+    expect(papiLightPattern(Math.tan(3.2 * Math.PI / 180) * distance, distance)).toBe(3)
+    expect(papiLightPattern(Math.tan(2.6 * Math.PI / 180) * distance, distance)).toBe(2)
+    expect(papiLightPattern(Math.tan(2 * Math.PI / 180) * distance, distance)).toBe(1)
+    expect(papiLightPattern(Math.tan(1 * Math.PI / 180) * distance, distance)).toBe(0)
+    expect(papiLightPattern(Number.NaN, distance)).toBe(2)
+  })
+
+  it('updates PAPI lenses only when the approach pattern changes', () => {
+    runway = createRunway()
+    const lookup = vi.spyOn(runway, 'getObjectByName')
+    setAirfieldPapi(runway, 0, 0, 0)
+    expect(lookup).toHaveBeenCalledTimes(1)
+
+    const distance = 100
+    const height = Math.tan(4 * Math.PI / 180) * distance
+    setAirfieldPapi(runway, -13.5, height, -138)
+    const papi = runway.getObjectByName('PAPI')!
+    const lenses = papi.children.filter(child => child.name.startsWith('PapiLens')) as Mesh[]
+    expect(lenses).toHaveLength(4)
+    expect((lenses[0]!.material as MeshStandardMaterial).color.getHex()).toBe(0xf4f8ff)
+    expect((lenses[3]!.material as MeshStandardMaterial).color.getHex()).toBe(0xf4f8ff)
+
+    const previous = lenses.map(lens => (lens.material as MeshStandardMaterial).color.getHex())
+    lookup.mockClear()
+    setAirfieldPapi(runway, -13.5, height, -138)
+    expect(lookup).not.toHaveBeenCalled()
+    expect(lenses.map(lens => (lens.material as MeshStandardMaterial).color.getHex())).toEqual(previous)
   })
 })

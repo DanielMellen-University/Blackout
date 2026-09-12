@@ -21,6 +21,20 @@ const _mat = new Matrix4()
 const _Y = new Vector3(0, 1, 0)
 const windsockState = new WeakMap<Group, { angle: number; speed: number }>()
 
+interface PapiState {
+  readonly group: Group
+  readonly lenses: readonly Mesh[]
+  lastPattern: number
+}
+
+interface BuiltPapi {
+  readonly group: Group
+  readonly lenses: readonly Mesh[]
+}
+
+const airfieldPapiState = new WeakMap<Group, PapiState>()
+const runwayPapiState = new WeakMap<Group, PapiState>()
+
 /** Axis-aligned box in runway-local metres (origin at pad centre). */
 export interface LocalBox {
   cx: number
@@ -56,7 +70,9 @@ export function createAirfieldLandmarks(): Group {
   root.add(buildTower(mat))
   root.add(buildShack(mat))
   root.add(buildWindsock(mat))
-  root.add(buildPapi(mat))
+  const papi = buildPapi(mat)
+  root.add(papi.group)
+  airfieldPapiState.set(root, { ...papi, lastPattern: -1 })
   root.add(buildFloods(mat))
   root.add(buildFence(mat))
   root.add(buildApronLights(mat))
@@ -361,24 +377,97 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   sock.scale.set(1, 0.84 + speed * 0.28, 1)
 }
 
-function buildPapi(mat: Mats): Group {
+/**
+ * Pick the four-light PAPI pattern from the aircraft's approach angle.
+ * The return value is the number of white lenses, from 0 (all red) to 4
+ * (all white). Invalid inputs resolve to a level two-white/two-red cue.
+ */
+export function papiLightPattern(height: number, distance: number): number {
+  if (!Number.isFinite(height) || !Number.isFinite(distance)) return 2
+  const safeHeight = Math.max(0, height)
+  const safeDistance = Math.max(1, distance)
+  const angleDeg = Math.atan2(safeHeight, safeDistance) * 180 / Math.PI
+  if (angleDeg >= 3.5) return 4
+  if (angleDeg >= 3) return 3
+  if (angleDeg >= 2.5) return 2
+  if (angleDeg >= 1.8) return 1
+  return 0
+}
+
+/**
+ * Drive the runway PAPI from the aircraft's world position. Approach geometry
+ * is resolved in runway-local space so the cue remains correct on rotated pads.
+ */
+export function setAirfieldPapi(root: Group, x: number, y: number, z: number): void {
+  let state = runwayPapiState.get(root)
+  if (!state) {
+    state = airfieldPapiState.get(root)
+    if (!state) {
+      const airfield = root.getObjectByName('Airfield')
+      if (airfield instanceof Group) state = airfieldPapiState.get(airfield)
+    }
+    if (state) runwayPapiState.set(root, state)
+  }
+  if (!state) return
+
+  const wx = Number.isFinite(x) ? x : root.position.x
+  const wy = Number.isFinite(y) ? y : root.position.y
+  const wz = Number.isFinite(z) ? z : root.position.z
+  const dx = wx - root.position.x
+  const dz = wz - root.position.z
+  const yaw = root.rotation.y
+  const localX = Math.cos(yaw) * dx - Math.sin(yaw) * dz
+  const localZ = Math.sin(yaw) * dx + Math.cos(yaw) * dz
+
+  const papiX = -13.5
+  const papiZ = -38
+  // The PAPI is mounted at the near (-Z) threshold and faces incoming
+  // aircraft on that side of the strip.
+  const along = papiZ - localZ
+  const lateral = localX - papiX
+  // Outside the landing corridor, hold a neutral two-white/two-red pattern so
+  // distant fly-bys do not make the approach lights flash unpredictably.
+  const inApproach = along > 8 && along < 1200 && Math.abs(lateral) < 100
+  const distance = Math.hypot(along, lateral)
+  const pattern = inApproach
+    ? papiLightPattern(wy - root.position.y, distance)
+    : 2
+  if (pattern === state.lastPattern) return
+  state.lastPattern = pattern
+
+  for (let i = 0; i < state.lenses.length; i++) {
+    const lens = state.lenses[i]
+    if (!(lens?.material instanceof MeshStandardMaterial)) continue
+    const white = i < pattern
+    lens.material.color.set(white ? 0xf4f8ff : 0xff4030)
+    lens.material.emissive.set(white ? 0xaaccff : 0xff2010)
+    lens.material.emissiveIntensity = white ? 1.4 : 1.6
+  }
+}
+
+function buildPapi(mat: Mats): BuiltPapi {
   const g = new Group()
   g.name = 'PAPI'
   g.position.set(-13.5, 0, -38)
 
   const boxGeo = new BoxGeometry(0.9, 0.45, 0.7)
   const lensGeo = new BoxGeometry(0.62, 0.22, 0.08)
+  const lenses: Mesh[] = []
   // Classic 4-box: two white, two red, approaching from -Z
   const colors = [mat.whiteLite, mat.whiteLite, mat.redLite, mat.redLite]
   for (let i = 0; i < 4; i++) {
     const x = i * 1.35
     g.add(box(boxGeo, mat.metalDark, x, 0.28, 0))
-    const lens = new Mesh(lensGeo, colors[i]!)
+    // Each lens gets an owned material so the approach pattern can change
+    // without mutating the shared airfield palette.
+    const lens = new Mesh(lensGeo, colors[i]!.clone())
+    lens.name = `PapiLens${i}`
     lens.position.set(x, 0.32, -0.38)
+    lenses.push(lens)
     g.add(lens)
   }
 
-  return g
+  return { group: g, lenses }
 }
 
 function buildFloods(mat: Mats): Group {
