@@ -649,12 +649,12 @@ async function boot(): Promise<void> {
             aircraft.clearLanded()
           }
           if (touch === 'crash') {
-            const hit = aircraft.position.clone()
-            const v = aircraft.velocity.clone()
+            _crashPoint.copy(aircraft.position)
+            _crashVelocity.copy(aircraft.velocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
             aircraft.crash()
             challenge.fail()
-            crashFx.trigger(hit, v)
+            crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
             audio.playCue('crash')
             showBanner('CRASH - press R', 4200, 'danger')
@@ -931,6 +931,8 @@ async function boot(): Promise<void> {
 const _fwd = new Vector3()
 const _inv = new Quaternion()
 const _localUp = new Vector3()
+const _crashPoint = new Vector3()
+const _crashVelocity = new Vector3()
 const _attitude = { pitch: 0, roll: 0, heading: 0 }
 const flightPathMarker: FlightPathMarkerPosition = {
   x: 50,
