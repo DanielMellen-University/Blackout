@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   afterburnerHeatIntensity,
   canopyTintIntensity,
+  canopyWeatherIntensity,
   formatAudioState,
   formatGForce,
   formatHeading,
@@ -123,6 +124,15 @@ describe('HUD value formatting', () => {
     expect(canopyTintIntensity(1800, true)).toBeGreaterThan(0)
     expect(canopyTintIntensity(3000, true)).toBeCloseTo(0.28)
     expect(canopyTintIntensity(5000, true)).toBeCloseTo(0.28)
+  })
+
+  it('adds a bounded weather veil only to the cockpit canopy', () => {
+    expect(canopyWeatherIntensity(1, 0, true)).toBeCloseTo(0.09)
+    expect(canopyWeatherIntensity(0, 1, true)).toBeCloseTo(0.045)
+    expect(canopyWeatherIntensity(4, 4, true)).toBeCloseTo(0.12)
+    expect(canopyWeatherIntensity(1, 1, false)).toBe(0)
+    expect(canopyTintIntensity(0, true, 3000, 1, 0)).toBeCloseTo(0.09)
+    expect(canopyTintIntensity(0, false, 3000, 1, 1)).toBe(0)
   })
 
   it('keeps afterburner heat veil soft and boost-only', () => {

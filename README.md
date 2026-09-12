@@ -127,6 +127,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The afterburner now gives its cached Mach diamonds a restrained throttle-scaled pulse, adding depth to the exhaust without extra draw calls.
 - The gold canopy now uses a restrained clearcoat physical material, giving the F-35 cockpit a sharper glass highlight without adding geometry or a draw call.
 - High-speed cockpit view gains a slight canopy fog/vignette linked to IAS, with reduced-motion support and no new scene draws.
+- Cockpit weather now adds a subtle bounded rain and snow streak veil from the live atmosphere state, while external view stays clear.
 - Afterburner now adds a restrained edge heat veil that scales with speed, stays boost-only, and respects reduced-motion settings.
 - Clean touchdowns and fast rollouts kick up pooled ground scrub dust and tire smoke without per-landing allocation churn.
 - Approaching the live checkpoint softens a proximity pulse on the ring and HUD cue, separate from the brighter gate-pass flash.

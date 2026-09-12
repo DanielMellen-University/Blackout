@@ -286,6 +286,8 @@ async function boot(): Promise<void> {
     onGround: false,
     pitch: 0,
     roll: 0,
+    rain: 0,
+    snow: 0,
     warning: null,
     warningLevel: 'none',
     clock: '',
@@ -812,6 +814,8 @@ async function boot(): Promise<void> {
       hudFrame.onGround = aircraft.onGround
       hudFrame.pitch = pose.pitch
       hudFrame.roll = pose.roll
+      hudFrame.rain = precipitation.rain
+      hudFrame.snow = precipitation.snow
       hudFrame.heading = pose.heading
       hudFrame.audioMuted = audioMuted
       hudFrame.warning = warn.text

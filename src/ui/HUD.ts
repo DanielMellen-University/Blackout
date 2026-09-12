@@ -179,6 +179,10 @@ export class HUD {
     pitch?: number
     /** Aircraft roll (rad), right wing down positive. */
     roll?: number
+    /** Live rain intensity used by the cockpit canopy veil. */
+    rain?: number
+    /** Live snow intensity used by the cockpit canopy veil. */
+    snow?: number
     /** Active caution / warning (STALL, LOW ALT, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
@@ -268,7 +272,12 @@ export class HUD {
     }
     this.updateSpeedo(kts)
     this.updateSpeedJuice(kts, !!opts.boost)
-    this.updateCanopyTint(kts, opts.cameraMode === 'cockpit')
+    this.updateCanopyTint(
+      kts,
+      opts.cameraMode === 'cockpit',
+      opts.rain ?? 0,
+      opts.snow ?? 0,
+    )
     this.updateHeatVeil(kts, !!opts.boost)
     this.updateFlightPath(
       opts.flightPathVisible === true,
@@ -523,12 +532,13 @@ export class HUD {
     this.setStyle(this.speedJuiceEl, 'opacity', formatHudNumber(intensity + (boost ? .06 : 0), 1000))
   }
 
-  private updateCanopyTint(kts: number, cockpit: boolean): void {
+  private updateCanopyTint(kts: number, cockpit: boolean, rain: number, snow: number): void {
     if (!this.canopyTintEl) return
-    const intensity = canopyTintIntensity(kts, cockpit)
+    const intensity = canopyTintIntensity(kts, cockpit, this.maxKts, rain, snow)
     const active = intensity > 0.01
     this.setClass(this.canopyTintEl, 'is-active', active)
     this.setStyle(this.canopyTintEl, 'opacity', formatHudNumber(intensity, 1000))
+    this.setStyle(this.canopyTintEl, '--canopy-wet', formatHudNumber(canopyWeatherIntensity(rain, snow, cockpit), 1000))
   }
 
   private updateHeatVeil(kts: number, boost: boolean): void {
@@ -848,11 +858,28 @@ export function speedNeedleKts(knots: number): number {
  * Cockpit-only canopy fog/vignette from IAS. Outside cockpit the tint stays off.
  * Reduced-motion callers should pass the same curve; CSS freezes animation.
  */
-export function canopyTintIntensity(knots: number, cockpit: boolean, maxKts = 3000): number {
+export function canopyTintIntensity(
+  knots: number,
+  cockpit: boolean,
+  maxKts = 3000,
+  rain = 0,
+  snow = 0,
+): number {
   if (!cockpit) return 0
-  const t = Math.min(1, Math.max(0, knots / Math.max(1, maxKts)))
-  if (t <= 0.22) return 0
-  return Math.min(0.28, (t - 0.22) * 0.36)
+  const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
+  const safeMaxKts = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 3000
+  const t = Math.min(1, Math.max(0, safeKnots / safeMaxKts))
+  const weather = canopyWeatherIntensity(rain, snow, cockpit)
+  if (t <= 0.22) return weather
+  return Math.min(0.32, (t - 0.22) * 0.36 + weather)
+}
+
+/** Bounded weather response for the cockpit canopy streak texture. */
+export function canopyWeatherIntensity(rain: number, snow: number, cockpit: boolean): number {
+  if (!cockpit) return 0
+  const wet = Math.min(1, Math.max(0, safeHudValue(rain))) * 0.09
+  const frozen = Math.min(1, Math.max(0, safeHudValue(snow))) * 0.045
+  return Math.min(0.12, wet + frozen)
 }
 
 /** Soft edge warmth used only while the afterburner is lit. */

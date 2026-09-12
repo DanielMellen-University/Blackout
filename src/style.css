@@ -119,8 +119,15 @@ body,
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  --canopy-wet: 0;
   opacity: 0;
   background:
+    repeating-linear-gradient(
+      104deg,
+      transparent 0 24px,
+      rgba(188, 226, 242, calc(var(--canopy-wet) * 0.7)) 25px 26px,
+      transparent 27px 54px
+    ),
     radial-gradient(ellipse at center, transparent 42%, rgba(18, 28, 40, 0.22) 78%, rgba(8, 14, 22, 0.46) 100%),
     linear-gradient(180deg, rgba(120, 190, 210, 0.05), transparent 34%, transparent 68%, rgba(20, 30, 42, 0.12));
   mix-blend-mode: multiply;
