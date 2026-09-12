@@ -10,6 +10,7 @@ export class RunResults {
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
+  private readonly scoreDetail: HTMLElement
   private readonly best: HTMLElement
   private returnFocus: HTMLElement | null = null
   private readonly onKeyDown = (event: KeyboardEvent): void => {
@@ -35,6 +36,7 @@ export class RunResults {
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
+    this.scoreDetail = must(root, 'result-score-detail')
     this.best = must(root, 'result-best')
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
@@ -56,6 +58,11 @@ export class RunResults {
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
     this.gates.textContent = result.gateScore.toLocaleString()
+    this.scoreDetail.textContent = [
+      `GATE +${result.gateScore.toLocaleString()}`,
+      `TIME +${result.timeScore.toLocaleString()}`,
+      `LAND +${result.landingScore.toLocaleString()}`,
+    ].join(' · ')
     this.best.textContent = result.isNewBest
       ? `NEW BEST · ${result.bestScore.toLocaleString()}`
       : `BEST · ${result.bestScore.toLocaleString()}`

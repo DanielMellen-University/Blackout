@@ -91,6 +91,7 @@ function resultsFixture(): {
     ['result-time', new FakeElement()],
     ['result-landing', new FakeElement()],
     ['result-gates', new FakeElement()],
+    ['result-score-detail', new FakeElement()],
     ['result-best', new FakeElement()],
     ['btn-retry', retry],
   ])
@@ -124,6 +125,9 @@ describe('run results focus flow', () => {
 
     results.show(result)
     expect(fixture.retry.focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
+      'GATE +20,000 · TIME +70,000 · LAND +10,000',
+    )
 
     fixture.document.activeElement = fixture.newWorld
     const forward = { key: 'Tab', shiftKey: false, preventDefault: vi.fn() }
@@ -147,3 +151,7 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 })
+
+function elementsFor(document: FakeDocument, id: string): FakeElement | null {
+  return document.getElementById(id)
+}

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Show gate, time, and landing score contributions on the completion card so every run explains its total without changing scoring rules.
 - Harden the completion results dialog with semantic labeling, a contained Tab loop, focus restoration on retry, and teardown-safe listener cleanup.
 - Add a short takeoff briefing banner on Play, Retry, New World, and `R`, making the first action readable without changing the flight model.
 - Pause active flight on window blur as well as tab hide, using the same guarded path and requiring an explicit resume after focus returns.
