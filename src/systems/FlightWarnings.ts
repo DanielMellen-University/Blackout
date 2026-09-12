@@ -12,6 +12,7 @@ export interface WarningState {
   stall: boolean
   lowAlt: boolean
   gear: boolean
+  overspeed: boolean
 }
 
 const _fwd = new Vector3()
@@ -24,6 +25,7 @@ const NONE_WARNING = Object.freeze({
   stall: false,
   lowAlt: false,
   gear: false,
+  overspeed: false,
 }) as WarningState
 const STALL_WARNING = Object.freeze({
   text: 'STALL',
@@ -31,6 +33,7 @@ const STALL_WARNING = Object.freeze({
   stall: true,
   lowAlt: false,
   gear: false,
+  overspeed: false,
 }) as WarningState
 const LOW_ALT_WARNING = Object.freeze({
   text: 'LOW ALT',
@@ -38,6 +41,15 @@ const LOW_ALT_WARNING = Object.freeze({
   stall: false,
   lowAlt: true,
   gear: false,
+  overspeed: false,
+}) as WarningState
+const OVERSPEED_WARNING = Object.freeze({
+  text: 'OVERSPEED',
+  level: 'caution',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+  overspeed: true,
 }) as WarningState
 
 /**
@@ -69,9 +81,11 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
+  const overspeed = overspeedWarningActive(speed)
 
   if (stall) return STALL_WARNING
   if (lowAlt) return LOW_ALT_WARNING
+  if (overspeed) return OVERSPEED_WARNING
   return NONE_WARNING
 }
 
@@ -107,4 +121,9 @@ export function lowAltitudeWarningActive(
     safeSpeed > 35 &&
     descendingFast &&
     !approachConfigured
+}
+
+/** Warn only after the jet leaves the dry displayed airspeed envelope. */
+export function overspeedWarningActive(speed: number): boolean {
+  return Number.isFinite(speed) && speed > C.maxSpeed
 }

@@ -5,6 +5,7 @@ import {
   evaluateWarnings,
   lowAltitudeWarningActive,
   lowAltitudeWarningCeiling,
+  overspeedWarningActive,
   stallWarningActive,
 } from '../src/systems/FlightWarnings'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
@@ -58,5 +59,11 @@ describe('flight cautions', () => {
     expect(stallWarningActive(flightConfig.minSpeed * 0.5, 0, 9000)).toBe(true)
     expect(stallWarningActive(flightConfig.liftSpeed, flightConfig.stallAoA * 1.2, 9000)).toBe(true)
     expect(stallWarningActive(Number.NaN, Number.NaN, 9000)).toBe(false)
+  })
+
+  it('raises overspeed only beyond the dry speed envelope', () => {
+    expect(overspeedWarningActive(flightConfig.maxSpeed)).toBe(false)
+    expect(overspeedWarningActive(flightConfig.maxSpeed + 0.1)).toBe(true)
+    expect(overspeedWarningActive(Number.NaN)).toBe(false)
   })
 })

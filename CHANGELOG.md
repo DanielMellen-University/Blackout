@@ -9,6 +9,7 @@
 - Strengthen the existing cool F-35 panel fill at dusk and night so the aircraft remains readable without extra lights, meshes, or draw calls.
 - Coalesce external chase heading extraction and yaw-quaternion setup so camera framing avoids duplicate orientation math each frame.
 - Add a cached amber/red airspeed redline cue with accessible overspeed text, keeping the HUD honest when the jet passes its displayed 3000-knot envelope.
+- Add an `OVERSPEED` caution once the jet leaves the dry airspeed envelope, sharing the HUD's accessible warning and one-shot cue.
 - Coalesce mission navigation bearings by reusing aircraft-relative data in cockpit view and avoiding an external camera matrix refresh.
 - Mutate the cached windsock weather state in place so smooth wind fronts do not clone a replacement record every frame.
 - Reset world weather-effect caching during reseed so a matching profile still reapplies wet, snow, wind, and settlement lighting to fresh streamed content.
