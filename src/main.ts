@@ -39,6 +39,7 @@ import { RunResults } from './ui/RunResults'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
+import { ListenerBag } from './core/ListenerBag'
 import {
   defaultRenderQuality,
   normalizeRenderQuality,
@@ -61,6 +62,7 @@ async function boot(): Promise<void> {
   const volumeValue = document.getElementById('menu-volume-value')
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl)
+  const uiListeners = new ListenerBag()
 
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
@@ -109,7 +111,7 @@ async function boot(): Promise<void> {
     if (!qualitySelect) return
     applyRenderQuality(normalizeRenderQuality(qualitySelect.value, renderQuality))
   }
-  qualitySelect?.addEventListener('change', onQualityChange)
+  uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
   if (titleStatus) titleStatus.textContent = ''
@@ -151,7 +153,7 @@ async function boot(): Promise<void> {
     if (!volumeRange) return
     applyAudioVolume(Number(volumeRange.value) / 100)
   }
-  volumeRange?.addEventListener('input', onVolumeInput)
+  uiListeners.add(volumeRange, 'input', onVolumeInput)
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
@@ -163,8 +165,7 @@ async function boot(): Promise<void> {
     if (disposed) return
     disposed = true
     releaseBrowserUi()
-    qualitySelect?.removeEventListener('change', onQualityChange)
-    volumeRange?.removeEventListener('input', onVolumeInput)
+    uiListeners.dispose()
     input.dispose()
     reducedMotionQuery?.removeEventListener?.('change', onReducedMotionChange)
     cameras.dispose()
@@ -310,52 +311,52 @@ async function boot(): Promise<void> {
     syncInputContext()
   }
 
-  playBtn?.addEventListener('click', () => startGame())
-  document.getElementById('btn-controls')?.addEventListener('click', () => {
+  uiListeners.add(playBtn, 'click', () => startGame())
+  uiListeners.add(document.getElementById('btn-controls'), 'click', () => {
     menu.showTitlePage('controls')
   })
-  document.getElementById('btn-info')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('btn-info'), 'click', () => {
     menu.showTitlePage('info')
   })
-  document.getElementById('menu-resume')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-resume'), 'click', () => {
     menu.close()
     input.clearQueued()
     time.reset()
     syncInputContext()
   })
-  document.getElementById('menu-retry')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-retry'), 'click', () => {
     menu.close()
     resetFlight(false)
     syncInputContext()
   })
-  document.getElementById('menu-new-world')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-new-world'), 'click', () => {
     menu.close()
     resetFlight(true)
     syncInputContext()
   })
-  document.getElementById('menu-quit')?.addEventListener('click', () => quitToTitle())
-  document.getElementById('btn-retry')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-quit'), 'click', () => quitToTitle())
+  uiListeners.add(document.getElementById('btn-retry'), 'click', () => {
     resetFlight(false)
     syncInputContext()
   })
-  document.getElementById('btn-new-world')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('btn-new-world'), 'click', () => {
     resetFlight(true)
     syncInputContext()
   })
-  document.getElementById('menu-fullscreen')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-fullscreen'), 'click', () => {
     toggleGameFullscreen()
   })
-  document.getElementById('menu-open-controls')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-open-controls'), 'click', () => {
     menu.showView('controls')
   })
-  document.getElementById('menu-open-info')?.addEventListener('click', () => {
+  uiListeners.add(document.getElementById('menu-open-info'), 'click', () => {
     menu.showView('info')
   })
   menuEl.querySelectorAll('[data-menu-close]').forEach((el) => {
-    el.addEventListener('click', () => menu.close())
+    uiListeners.add(el, 'click', () => menu.close())
   })
   menuEl.querySelectorAll('.menu-back').forEach((el) => {
-    el.addEventListener('click', () => menu.back())
+    uiListeners.add(el, 'click', () => menu.back())
   })
 
   const onGlobalKeyDown = (e: KeyboardEvent): void => {
