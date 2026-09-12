@@ -26,3 +26,16 @@ it('applies a lower user ceiling without exceeding the device ratio', () => {
   quality.setCeiling(4)
   expect(quality.maximum).toBeCloseTo(2)
 })
+
+it('refreshes the display-density cap without jumping recovered quality upward', () => {
+  const quality = new AdaptiveResolution(2)
+  quality.update(34, true)
+  expect(quality.setDeviceRatio(1)).toBeCloseTo(1)
+  expect(quality.maximum).toBeCloseTo(1)
+
+  quality.setDeviceRatio(3)
+  expect(quality.maximum).toBeCloseTo(1.5)
+  expect(quality.ratio).toBeCloseTo(1)
+  quality.setDeviceRatio(Number.NaN)
+  expect(quality.maximum).toBeCloseTo(1.5)
+})

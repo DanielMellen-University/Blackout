@@ -508,6 +508,7 @@ async function boot(): Promise<void> {
   const applyResize = (): void => {
     const w = window.innerWidth
     const h = window.innerHeight
+    resolution.setDeviceRatio(window.devicePixelRatio)
     renderer.setSize(w, h, false)
     cameras.resize(w, h)
   }
