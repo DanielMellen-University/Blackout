@@ -3,6 +3,7 @@ import {
   FUEL_CRITICAL_FRACTION,
   FUEL_LOW_FRACTION,
   createFuelState,
+  fuelEnduranceSeconds,
   fuelPercent,
   fuelWarningLevel,
   refuelFuel,
@@ -57,5 +58,16 @@ describe('arcade fuel system', () => {
     expect(fuelWarningLevel({ fraction: Number.NaN })).toBe('critical')
     expect(fuelPercent({ fraction: 0.735 })).toBe(74)
     expect(fuelPercent({ fraction: Number.POSITIVE_INFINITY })).toBe(0)
+  })
+
+  it('estimates endurance from the current power request without dividing by zero', () => {
+    const idle = fuelEnduranceSeconds(1, 0, false)
+    const dry = fuelEnduranceSeconds(1, 1, false)
+    const boost = fuelEnduranceSeconds(1, 1, true)
+    expect(idle).toBeGreaterThan(dry)
+    expect(dry).toBeGreaterThan(boost)
+    expect(fuelEnduranceSeconds(0, 1, true)).toBe(0)
+    expect(fuelEnduranceSeconds(1, Number.NaN, false)).toBe(12500)
+    expect(fuelEnduranceSeconds(1, 0, false)).toBe(12500)
   })
 })

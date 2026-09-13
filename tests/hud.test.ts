@@ -9,6 +9,7 @@ import {
   waterSurfaceCue,
   formatGForce,
   formatHeading,
+  formatFuelEndurance,
   formatHudNumber,
   formatVerticalSpeed,
   formatWind,
@@ -336,5 +337,13 @@ describe('HUD value formatting', () => {
     expect(weatherCycleBanner('RAIN / SHIFTING')).toBe('WEATHER SHIFT / RAIN / SHIFTING')
     expect(weatherCycleBanner('')).toBe('WEATHER SHIFT / WEATHER')
     expect(weatherCycleBanner(null)).toBe('WEATHER SHIFT / WEATHER')
+  })
+
+  it('formats bounded fuel endurance for cockpit scanning', () => {
+    expect(formatFuelEndurance(0)).toBe('END 0:00')
+    expect(formatFuelEndurance(125)).toBe('END 2:05')
+    expect(formatFuelEndurance(3661)).toBe('END 1:01:01')
+    expect(formatFuelEndurance(null)).toBe('END --')
+    expect(formatFuelEndurance(Number.NaN)).toBe('END --')
   })
 })

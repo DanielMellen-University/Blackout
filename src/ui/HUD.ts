@@ -3,7 +3,7 @@
  * attitude indicator (pitch ladder + bank), banner.
  */
 import { displayedKnots } from '../core/airspeed'
-import { fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
+import { fuelEnduranceSeconds, fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
 import {
   MAX_RADAR_CONTACTS,
   radarBearingArrow,
@@ -156,6 +156,18 @@ export function weatherCycleBanner(label: unknown): string {
   return `WEATHER SHIFT / ${safe}`
 }
 
+/** Format a finite fuel endurance estimate for the compact HUD row. */
+export function formatFuelEndurance(seconds: number | null): string {
+  if (seconds === null || !Number.isFinite(seconds)) return 'END --'
+  const safe = Math.min(359_999, Math.max(0, Math.round(seconds)))
+  const hours = Math.floor(safe / 3600)
+  const minutes = Math.floor((safe % 3600) / 60)
+  const secs = safe % 60
+  return hours > 0
+    ? `END ${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+    : `END ${minutes}:${String(secs).padStart(2, '0')}`
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
@@ -190,6 +202,7 @@ export class HUD {
   private readonly missionEl: HTMLElement | null
   private readonly missionProgressEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
+  private readonly fuelEnduranceEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
   private readonly pausedEl: HTMLElement | null
@@ -247,6 +260,8 @@ export class HUD {
   private fuelValue = Number.NaN
   private fuelText = ''
   private fuelAriaText = ''
+  private fuelEnduranceValue = -1
+  private fuelEnduranceText = 'END --'
   private radarText = ''
   private radarAriaText = ''
   private hintText = ''
@@ -336,6 +351,7 @@ export class HUD {
     this.missionEl = root.getElementById('hud-mission')
     this.missionProgressEl = root.getElementById('hud-gate-progress')
     this.fuelEl = root.getElementById('hud-fuel')
+    this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
     this.radarEl = root.getElementById('hud-radar')
     this.hintEl = root.getElementById('hud-hint')
     this.pausedEl = root.getElementById('hud-paused')
@@ -644,6 +660,20 @@ export class HUD {
       const fuelWarning = fuelWarningLevel({ fraction: opts.fuel })
       this.setClass(this.fuelEl, 'low', fuelWarning !== 'normal')
       this.setClass(this.fuelEl, 'critical', fuelWarning === 'critical')
+      if (this.fuelEnduranceEl) {
+        const endurance = fuelEnduranceSeconds(opts.fuel, opts.throttle ?? 0, opts.boost === true)
+        const enduranceValue = endurance === null ? -1 : Math.round(endurance / 5) * 5
+        if (enduranceValue !== this.fuelEnduranceValue) {
+          this.fuelEnduranceValue = enduranceValue
+          this.fuelEnduranceText = formatFuelEndurance(endurance === null ? null : enduranceValue)
+        }
+        this.setText(this.fuelEnduranceEl, this.fuelEnduranceText)
+        this.setAttribute(this.fuelEnduranceEl, 'aria-label', this.fuelEnduranceText === 'END --'
+          ? 'fuel endurance unavailable'
+          : `fuel endurance ${this.fuelEnduranceText.slice(4)}`)
+        this.fuelAriaText = `${percent}% fuel, ${this.fuelEnduranceText.toLowerCase()}`
+        this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
+      }
     }
     if (this.radarEl && opts.radar !== undefined) {
       const radarText = formatRadarContacts(opts.radar)

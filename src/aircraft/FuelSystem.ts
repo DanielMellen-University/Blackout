@@ -19,7 +19,7 @@ export const AIRFIELD_REFUEL_RATE = 8
 const IDLE_BURN_RATE = 0.008
 const THROTTLE_BURN_RATE = 0.07
 const AFTERBURNER_BURN_RATE = 0.38
-const AFTERBURNER_MIN_THROTTLE = 0.05
+export const AFTERBURNER_MIN_THROTTLE = 0.05
 
 export function createFuelState(): FuelState {
   return {
@@ -91,4 +91,19 @@ export function fuelWarningLevel(
   if (fraction <= FUEL_CRITICAL_FRACTION) return 'critical'
   if (fraction <= FUEL_LOW_FRACTION) return 'low'
   return 'normal'
+}
+
+/** Estimate remaining seconds at the current lever and afterburner request. */
+export function fuelEnduranceSeconds(
+  fraction: number,
+  throttle: number,
+  boostRequested: boolean,
+): number | null {
+  const safeFraction = Number.isFinite(fraction) ? MathUtils.clamp(fraction, 0, 1) : 0
+  const lever = Number.isFinite(throttle) ? MathUtils.clamp(throttle, 0, 1) : 0
+  const afterburner = boostRequested === true && lever >= AFTERBURNER_MIN_THROTTLE
+  const burnRate = IDLE_BURN_RATE + lever * THROTTLE_BURN_RATE +
+    (afterburner ? AFTERBURNER_BURN_RATE : 0)
+  if (burnRate <= 0) return null
+  return Math.max(0, Math.round((safeFraction * FUEL_CAPACITY) / burnRate))
 }
