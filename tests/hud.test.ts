@@ -10,6 +10,7 @@ import {
   formatHeading,
   formatHudNumber,
   formatVerticalSpeed,
+  formatWind,
   gateProximityHudActive,
   gearTransitionActive,
   gForceTone,
@@ -24,6 +25,8 @@ import {
   speedJuiceIntensity,
   speedNeedleKts,
   verticalSpeedTone,
+  windDirectionDegrees,
+  windSpeedMps,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
@@ -190,5 +193,13 @@ describe('HUD value formatting', () => {
     expect(normalizeMissionPhase('unknown')).toBe('ready')
     expect(missionPhaseClass('complete')).toBe('phase-complete')
     expect(missionPhaseClass(null)).toBe('phase-ready')
+  })
+
+  it('formats finite wind telemetry with a calm fallback', () => {
+    expect(windSpeedMps(3, 4)).toBe(5)
+    expect(windDirectionDegrees(0, 5)).toBe(0)
+    expect(windDirectionDegrees(5, 0)).toBe(90)
+    expect(formatWind(3, 4)).toBe('5 M/S 037°')
+    expect(formatWind(Number.NaN, 4)).toBe('CALM')
   })
 })

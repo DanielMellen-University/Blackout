@@ -66,6 +66,7 @@ export class HUD {
   private readonly warnTextEl: HTMLElement | null
   private readonly clockEl: HTMLElement | null
   private readonly weatherEl: HTMLElement | null
+  private readonly windEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
@@ -121,6 +122,10 @@ export class HUD {
   private fuelAriaText = ''
   private radarText = ''
   private radarAriaText = ''
+  private windSpeedValue = Number.NaN
+  private windDirectionValue = Number.NaN
+  private windText = ''
+  private windAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
   private navBearingValue = Number.NaN
   private navBearingText = ''
@@ -177,6 +182,7 @@ export class HUD {
     this.warnTextEl = root.getElementById('hud-warn-text')
     this.clockEl = root.getElementById('hud-clock')
     this.weatherEl = root.getElementById('hud-weather')
+    this.windEl = root.getElementById('hud-wind')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
     this.fuelEl = root.getElementById('hud-fuel')
@@ -219,6 +225,9 @@ export class HUD {
     rain?: number
     /** Live snow intensity used by the cockpit canopy veil. */
     snow?: number
+    /** Live world wind vector in metres per second. */
+    windX?: number
+    windZ?: number
     /** Active caution / warning (STALL, LOW ALT, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
@@ -375,6 +384,23 @@ export class HUD {
     }
     if (this.weatherEl && opts.weather) {
       this.setText(this.weatherEl, opts.weather)
+    }
+    if (this.windEl && (opts.windX !== undefined || opts.windZ !== undefined)) {
+      const windX = Number.isFinite(opts.windX) ? opts.windX! : Number.NaN
+      const windZ = Number.isFinite(opts.windZ) ? opts.windZ! : Number.NaN
+      const speed = windSpeedMps(windX, windZ)
+      const direction = windDirectionDegrees(windX, windZ)
+      const speedStep = Math.round(speed)
+      if (speedStep !== this.windSpeedValue || direction !== this.windDirectionValue) {
+        this.windSpeedValue = speedStep
+        this.windDirectionValue = direction
+        this.windText = formatWind(windX, windZ)
+        this.windAriaText = this.windText === 'CALM'
+          ? 'Calm wind'
+          : `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees`
+      }
+      this.setText(this.windEl, this.windText)
+      this.setAttribute(this.windEl, 'aria-label', this.windAriaText)
     }
     if (this.phaseEl && opts.dayPhase) {
       this.setText(this.phaseEl, opts.dayPhase)
@@ -848,6 +874,27 @@ export function altitudeCue(altitude: number, onGround = false): AltitudeCue {
   if (safeAltitude <= 12) return 'warning'
   if (safeAltitude <= 48) return 'caution'
   return 'normal'
+}
+
+/** Horizontal wind speed used by the compact weather readout. */
+export function windSpeedMps(windX: number, windZ: number): number {
+  if (!Number.isFinite(windX) || !Number.isFinite(windZ)) return 0
+  return Math.hypot(windX, windZ)
+}
+
+/** Direction the weather vector travels toward, in degrees from world north. */
+export function windDirectionDegrees(windX: number, windZ: number): number {
+  const speed = windSpeedMps(windX, windZ)
+  if (speed < 0.5) return 0
+  const degrees = Math.round((Math.atan2(windX, windZ) * 180) / Math.PI)
+  return ((degrees % 360) + 360) % 360
+}
+
+/** Format one stable, low-noise weather vector for pilots and screen readers. */
+export function formatWind(windX: number, windZ: number): string {
+  const speed = Math.round(windSpeedMps(windX, windZ))
+  if (speed < 1) return 'CALM'
+  return `${speed} M/S ${String(windDirectionDegrees(windX, windZ)).padStart(3, '0')}°`
 }
 
 /** Normalize route phases before they become DOM class names or announcements. */

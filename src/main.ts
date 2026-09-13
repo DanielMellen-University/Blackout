@@ -426,6 +426,8 @@ async function boot(): Promise<void> {
     warningLevel: 'none',
     clock: '',
     weather: '',
+    windX: 0,
+    windZ: 0,
     dayPhase: '',
     mission: '',
     missionPhase: 'ready',
@@ -1045,6 +1047,8 @@ async function boot(): Promise<void> {
       hudFrame.warningLevel = warn.level
       hudFrame.clock = challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
+      hudFrame.windX = precipitation.windX
+      hudFrame.windZ = precipitation.windZ
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`
       hudFrame.missionPhase = challenge.phase
