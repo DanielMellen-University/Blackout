@@ -61,12 +61,18 @@ export interface MissionRoutePoint {
 export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision'
+export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
+export type MissionScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
 
 export interface MissionRouteSummary {
   profile: MissionRouteProfile
   label: string
   challenge: MissionChallenge
   challengeLabel: string
+  modifier: MissionRouteModifier
+  modifierLabel: string
+  scoringFocus: MissionScoringFocus
+  scoringFocusLabel: string
   difficulty: MissionRouteDifficulty
   lengthMeters: number
   maxTurnDegrees: number
@@ -84,6 +90,19 @@ const MISSION_CHALLENGE_LABELS: Record<MissionChallenge, string> = {
   approach: 'APPROACH',
   range: 'RANGE',
   precision: 'PRECISION',
+}
+
+const ROUTE_MODIFIER_LABELS: Record<MissionRouteModifier, string> = {
+  steady: 'STEADY',
+  tempo: 'TEMPO',
+  altitude: 'ALTITUDE',
+}
+
+const SCORING_FOCUS_LABELS: Record<MissionScoringFocus, string> = {
+  balanced: 'BALANCED',
+  gates: 'GATES',
+  pace: 'PACE',
+  landing: 'LANDING',
 }
 
 export function routeProfileForSpawn(
@@ -114,6 +133,36 @@ export function missionChallengeLabel(challenge: MissionChallenge): string {
   return MISSION_CHALLENGE_LABELS[challenge] ?? MISSION_CHALLENGE_LABELS.approach
 }
 
+export function routeModifierForSpawn(
+  spawnX: number,
+  spawnZ: number,
+  spawnYaw = 0,
+  profile = routeProfileForSpawn(spawnX, spawnZ, spawnYaw),
+): MissionRouteModifier {
+  const safeX = finiteOr(spawnX, 0)
+  const safeZ = finiteOr(spawnZ, 0)
+  const safeYaw = finiteOr(spawnYaw, 0)
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : 0
+  const hash = Math.abs(Math.floor(
+    safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
+  ))
+  return (['steady', 'tempo', 'altitude'] as const)[hash % 3]!
+}
+
+export function routeModifierLabel(modifier: MissionRouteModifier): string {
+  return ROUTE_MODIFIER_LABELS[modifier] ?? ROUTE_MODIFIER_LABELS.steady
+}
+
+export function scoringFocusForModifier(modifier: MissionRouteModifier): MissionScoringFocus {
+  if (modifier === 'tempo') return 'pace'
+  if (modifier === 'altitude') return 'landing'
+  return 'balanced'
+}
+
+export function scoringFocusLabel(focus: MissionScoringFocus): string {
+  return SCORING_FOCUS_LABELS[focus] ?? SCORING_FOCUS_LABELS.balanced
+}
+
 /**
  * Build a varied route whose first leg follows the runway heading and whose
  * sampled straight segments stay above the generated terrain.
@@ -124,6 +173,7 @@ export function buildMissionRoute(
   spawnZ: number,
   spawnYaw: number,
   profile = routeProfileForSpawn(spawnX, spawnZ, spawnYaw),
+  modifier = routeModifierForSpawn(spawnX, spawnZ, spawnYaw, profile),
 ): MissionRoutePoint[] {
   const safeSpawnX = finiteOr(spawnX, 0)
   const safeSpawnY = finiteOr(spawnY, 0)
@@ -134,7 +184,7 @@ export function buildMissionRoute(
   const forwardZ = Math.cos(safeSpawnYaw)
   const rightX = Math.cos(safeSpawnYaw)
   const rightZ = -Math.sin(safeSpawnYaw)
-  const offsets = routeOffsets(profile, seedPhase)
+  const offsets = routeOffsets(profile, seedPhase, modifier)
   const points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
     y: safeSpawnY + offset.height + i * (profile === 'slalom' ? 12 : 22),
@@ -191,7 +241,22 @@ interface RouteOffset {
   height: number
 }
 
-function routeOffsets(profile: MissionRouteProfile, seedPhase: number): RouteOffset[] {
+function routeOffsets(
+  profile: MissionRouteProfile,
+  seedPhase: number,
+  modifier: MissionRouteModifier,
+): RouteOffset[] {
+  const cadence = modifier === 'tempo'
+    ? [1, 0.8, 1.18, 0.86, 1.08]
+    : [1, 1, 1, 1, 1]
+  const altitudeWave = modifier === 'altitude'
+    ? [0, 58, 132, 68, 188]
+    : [0, 0, 0, 0, 0]
+  const shape = (offset: RouteOffset, index: number): RouteOffset => ({
+    forward: offset.forward * cadence[index]!,
+    right: offset.right * cadence[index]!,
+    height: offset.height + altitudeWave[index]!,
+  })
   if (profile === 'sweep') {
     const spread = 560 + seedPhase * 90
     return [
@@ -200,7 +265,7 @@ function routeOffsets(profile: MissionRouteProfile, seedPhase: number): RouteOff
       { forward: 360, right: spread * 1.08, height: 170 },
       { forward: -420, right: spread * 0.62, height: 198 },
       { forward: -760, right: -120, height: 168 },
-    ]
+    ].map(shape)
   }
   if (profile === 'slalom') {
     const spread = 520 + seedPhase * 80
@@ -210,7 +275,7 @@ function routeOffsets(profile: MissionRouteProfile, seedPhase: number): RouteOff
       { forward: 520, right: spread * 0.96, height: 116 },
       { forward: -180, right: -spread * 1.08, height: 176 },
       { forward: -760, right: spread * 0.12, height: 142 },
-    ]
+    ].map(shape)
   }
 
   return Array.from({ length: GATE_COUNT }, (_, i) => {
@@ -219,11 +284,11 @@ function routeOffsets(profile: MissionRouteProfile, seedPhase: number): RouteOff
       Math.sin(seedPhase * 2.1 + i * 1.73) * ROUTE_ANGLE_VARIATION
     const radius = ROUTE_RADIUS +
       Math.sin(seedPhase * 1.7 + i * 2.21) * ROUTE_RADIUS_VARIATION
-    return {
+    return shape({
       forward: Math.cos(angle) * radius,
       right: Math.sin(angle) * radius,
       height: 104,
-    }
+    }, i)
   })
 }
 
@@ -233,6 +298,7 @@ export function summarizeMissionRoute(
   spawnZ: number,
   route: readonly MissionRoutePoint[],
   profile: MissionRouteProfile,
+  modifier = routeModifierForSpawn(spawnX, spawnZ, 0, profile),
 ): MissionRouteSummary {
   const safeSpawnX = finiteOr(spawnX, 0)
   const safeSpawnY = finiteOr(spawnY, 0)
@@ -289,6 +355,10 @@ export function summarizeMissionRoute(
     label: routeProfileLabel(profile),
     challenge: missionChallengeForProfile(profile),
     challengeLabel: missionChallengeLabel(missionChallengeForProfile(profile)),
+    modifier,
+    modifierLabel: routeModifierLabel(modifier),
+    scoringFocus: scoringFocusForModifier(modifier),
+    scoringFocusLabel: scoringFocusLabel(scoringFocusForModifier(modifier)),
     difficulty,
     lengthMeters: finiteOr(lengthMeters, 0),
     maxTurnDegrees: finiteOr(maxTurnDegrees, 0),
@@ -308,18 +378,24 @@ export class MissionSystem {
   private status: MissionStatus = 'idle'
   private liveLabel = '—'
   private profile: MissionRouteProfile = 'orbit'
+  private modifier: MissionRouteModifier = 'steady'
+  private scoringFocusValue: MissionScoringFocus = 'balanced'
   private readonly summary: MissionRouteSummary = {
     profile: 'orbit',
     label: 'ORBIT',
     challenge: 'approach',
     challengeLabel: 'APPROACH',
+    modifier: 'steady',
+    modifierLabel: 'STEADY',
+    scoringFocus: 'balanced',
+    scoringFocusLabel: 'BALANCED',
     difficulty: 'standard',
     lengthMeters: 0,
     maxTurnDegrees: 0,
     minClearanceMeters: ROUTE_CLEARANCE,
     maxAltitudeMeters: 0,
   }
-  private routeBriefingText = 'ROUTE ORBIT / APPROACH / STANDARD / MIN CLR 120M'
+  private routeBriefingText = 'ROUTE ORBIT / APPROACH / STEADY / BALANCED / STANDARD / MIN CLR 120M'
   private readonly hudState: MissionHud = {
     status: 'idle',
     current: 0,
@@ -421,6 +497,7 @@ export class MissionSystem {
     spawnZ: number,
     spawnYaw: number,
     requestedProfile?: MissionRouteProfile,
+    requestedModifier?: MissionRouteModifier,
   ): void {
     if (this.disposed) return
     this.clear()
@@ -432,19 +509,33 @@ export class MissionSystem {
     this.next = 0
     this.havePrev = false
     this.lastPassQuality = 1
+    this.modifier = requestedModifier ?? routeModifierForSpawn(safeSpawnX, safeSpawnZ, spawnYaw, this.profile)
+    this.scoringFocusValue = scoringFocusForModifier(this.modifier)
 
-    const route = buildMissionRoute(safeSpawnX, safeSpawnY, safeSpawnZ, spawnYaw, this.profile)
+    const route = buildMissionRoute(
+      safeSpawnX,
+      safeSpawnY,
+      safeSpawnZ,
+      spawnYaw,
+      this.profile,
+      this.modifier,
+    )
     const summary = summarizeMissionRoute(
       safeSpawnX,
       safeSpawnY,
       safeSpawnZ,
       route,
       this.profile,
+      this.modifier,
     )
     this.summary.profile = summary.profile
     this.summary.label = summary.label
     this.summary.challenge = summary.challenge
     this.summary.challengeLabel = summary.challengeLabel
+    this.summary.modifier = summary.modifier
+    this.summary.modifierLabel = summary.modifierLabel
+    this.summary.scoringFocus = summary.scoringFocus
+    this.summary.scoringFocusLabel = summary.scoringFocusLabel
     this.summary.difficulty = summary.difficulty
     this.summary.lengthMeters = summary.lengthMeters
     this.summary.maxTurnDegrees = summary.maxTurnDegrees
@@ -453,6 +544,8 @@ export class MissionSystem {
     this.routeBriefingText = [
       `ROUTE ${summary.label}`,
       summary.challengeLabel,
+      summary.modifierLabel,
+      summary.scoringFocusLabel,
       summary.difficulty.toUpperCase(),
       `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
     ].join(' / ')
@@ -587,6 +680,18 @@ export class MissionSystem {
 
   get routeProfileLabel(): string {
     return routeProfileLabel(this.profile)
+  }
+
+  get routeModifier(): MissionRouteModifier {
+    return this.modifier
+  }
+
+  get routeModifierLabel(): string {
+    return routeModifierLabel(this.modifier)
+  }
+
+  get scoringFocus(): MissionScoringFocus {
+    return this.scoringFocusValue
   }
 
   get routeSummary(): MissionRouteSummary {

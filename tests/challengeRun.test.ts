@@ -7,6 +7,7 @@ import {
   repairCourseHistory,
   readCourseHistory,
   resultMedalClass,
+  scoringWeightsForFocus,
 } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
@@ -180,5 +181,16 @@ describe('ChallengeRun', () => {
       bestTimeSec: Number.POSITIVE_INFINITY,
     })
     expect(values.get('blackout.history.seed:repair:orbit')).toBe('{"completionCount":2}')
+  })
+
+  it('keeps route scoring emphasis explicit and sum-stable', () => {
+    for (const focus of ['balanced', 'gates', 'pace', 'landing'] as const) {
+      const weights = scoringWeightsForFocus(focus)
+      expect(weights.gate + weights.time + weights.landing).toBe(100_000)
+      expect(weights.minimumTime).toBeGreaterThan(0)
+    }
+    expect(scoringWeightsForFocus('gates').gate).toBeGreaterThan(scoringWeightsForFocus('balanced').gate)
+    expect(scoringWeightsForFocus('pace').time).toBeGreaterThan(scoringWeightsForFocus('balanced').time)
+    expect(scoringWeightsForFocus('landing').landing).toBeGreaterThan(scoringWeightsForFocus('balanced').landing)
   })
 })

@@ -473,7 +473,7 @@ async function boot(): Promise<void> {
     landingFx.reset()
     input.clearQueued()
     input.resetFlightControls(0)
-    challenge.reset(courseId(), world.mission.totalGates)
+    challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
     banner = null
     bannerTone = 'info'
     wasAirborne = false
@@ -1011,7 +1011,7 @@ async function boot(): Promise<void> {
   document.addEventListener('visibilitychange', onFlightVisibilityPause)
   window.addEventListener('blur', onWindowBlur)
 
-  challenge.reset(courseId(), world.mission.totalGates)
+  challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB
   // exists, let it hydrate in the background instead of blocking the title

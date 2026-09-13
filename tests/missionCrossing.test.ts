@@ -8,6 +8,10 @@ import {
   buildMissionRoute,
   routeProfileForSpawn,
   routeProfileLabel,
+  routeModifierForSpawn,
+  routeModifierLabel,
+  scoringFocusForModifier,
+  scoringFocusLabel,
   summarizeMissionRoute,
   MissionSystem,
 } from '../src/systems/Mission'
@@ -201,12 +205,29 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('slalom')).toBe('SLALOM')
   })
 
+  it('adds deterministic route rhythm modifiers without changing the pooled gate count', () => {
+    const steady = buildMissionRoute(0, 100_000, 0, 0, 'orbit', 'steady')
+    const tempo = buildMissionRoute(0, 100_000, 0, 0, 'orbit', 'tempo')
+    const altitude = buildMissionRoute(0, 100_000, 0, 0, 'orbit', 'altitude')
+    expect(steady).toHaveLength(5)
+    expect(tempo).toHaveLength(5)
+    expect(altitude).toHaveLength(5)
+    expect(tempo[1]!.x).not.toBeCloseTo(steady[1]!.x)
+    expect(altitude[2]!.y).toBeGreaterThan(steady[2]!.y)
+    expect(routeModifierForSpawn(0, 0, 0, 'orbit')).toBe('steady')
+    expect(routeModifierLabel('tempo')).toBe('TEMPO')
+    expect(scoringFocusForModifier('altitude')).toBe('landing')
+    expect(scoringFocusLabel('pace')).toBe('PACE')
+  })
+
   it('exposes cached route feedback after mission start', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)
     expect(mission.routeSummary.label).toBe(mission.routeProfileLabel)
     expect(mission.routeBriefing).toContain('MIN CLR')
     expect(mission.routeBriefing).toContain(mission.routeProfileLabel)
+    expect(mission.routeBriefing).toContain(mission.routeModifierLabel)
+    expect(mission.routeBriefing).toContain(mission.routeSummary.scoringFocusLabel)
     expect(mission.routeSummary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
     mission.dispose()
   })

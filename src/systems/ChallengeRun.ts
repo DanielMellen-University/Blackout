@@ -6,6 +6,7 @@ export type ChallengePhase =
   | 'failed'
 
 export type Medal = 'gold' | 'silver' | 'bronze' | 'complete'
+export type ChallengeScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
 
 export interface LandingMetrics {
   /** Downward speed at first contact, in m/s (negative = descending). */
@@ -52,6 +53,20 @@ export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export interface CourseHistory {
   completionCount: number
   bestTimeSec: number
+}
+
+interface ScoringWeights {
+  gate: number
+  time: number
+  landing: number
+  minimumTime: number
+}
+
+export function scoringWeightsForFocus(focus: ChallengeScoringFocus): ScoringWeights {
+  if (focus === 'gates') return { gate: 30_000, time: 60_000, landing: 10_000, minimumTime: 5_000 }
+  if (focus === 'pace') return { gate: 18_000, time: 76_000, landing: 6_000, minimumTime: 6_000 }
+  if (focus === 'landing') return { gate: 18_000, time: 60_000, landing: 22_000, minimumTime: 5_000 }
+  return { gate: 20_000, time: 70_000, landing: 10_000, minimumTime: 5_000 }
 }
 
 type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
@@ -162,6 +177,7 @@ export class ChallengeRun {
   result: ChallengeResult | null = null
 
   private courseId = 'default'
+  private scoringFocus: ChallengeScoringFocus = 'balanced'
   private gateQualityTotal = 0
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
@@ -175,9 +191,10 @@ export class ChallengeRun {
     this.storage = storage
   }
 
-  reset(courseId: string, totalGates: number): void {
+  reset(courseId: string, totalGates: number, scoringFocus: ChallengeScoringFocus = 'balanced'): void {
     this.courseId = courseId
     this.totalGates = Math.max(0, Math.floor(totalGates))
+    this.scoringFocus = scoringFocus
     this.phase = 'ready'
     this.elapsedSec = 0
     this.gatesPassed = 0
@@ -223,10 +240,11 @@ export class ChallengeRun {
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
-    const gateScore = Math.round(20_000 * clamp01(gateQuality))
+    const weights = scoringWeightsForFocus(this.scoringFocus)
+    const gateScore = Math.round(weights.gate * clamp01(gateQuality))
 
     // A brisk, clean circuit scores well; time can never erase completion.
-    const timeScore = Math.round(Math.max(5_000, 70_000 - elapsedSec * 320))
+    const timeScore = Math.round(Math.max(weights.minimumTime, weights.time - elapsedSec * 320))
 
     const verticalSpeed = finiteOr(metrics.verticalSpeed)
     const groundSpeed = Math.max(0, finiteOr(metrics.groundSpeed))
@@ -240,7 +258,7 @@ export class ChallengeRun {
     const landingQuality = clamp01(
       1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
     )
-    const landingScore = Math.round(10_000 * landingQuality)
+    const landingScore = Math.round(weights.landing * landingQuality)
     const totalScore = gateScore + timeScore + landingScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
