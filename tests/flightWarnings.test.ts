@@ -78,4 +78,20 @@ describe('flight cautions', () => {
     expect(warning.overspeed).toBe(true)
     expect(warning.stall).toBe(false)
   })
+
+  it('raises low-fuel caution bands only after the flight leaves the ground', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, 0, 500)
+    aircraft.fuel.fraction = 0.2
+    expect(evaluateWarnings(aircraft, 9000).text).toBe('FUEL LOW')
+    expect(evaluateWarnings(aircraft, 9000).fuel).toBe(true)
+
+    aircraft.fuel.fraction = 0
+    expect(evaluateWarnings(aircraft, 9000).text).toBe('FUEL EMPTY')
+    expect(evaluateWarnings(aircraft, 9000).level).toBe('warning')
+
+    aircraft.position.y = sampleGroundHeight(0, 0) + flightConfig.gearHeight
+    expect(evaluateWarnings(aircraft, 0).text).toBeNull()
+  })
 })

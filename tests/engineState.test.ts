@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createEngineState, resolveEngineState } from '../src/aircraft/EngineState'
 import { flightConfig as C } from '../src/aircraft/flightConfig'
+import { FUEL_AFTERBURNER_RESERVE_FRACTION } from '../src/aircraft/FuelSystem'
 
 describe('resolveEngineState', () => {
   it('does not light afterburner with a closed throttle', () => {
@@ -39,5 +40,14 @@ describe('resolveEngineState', () => {
     expect(out.targetSpeed).toBe(0)
     expect(out.maxAcceleration).toBe(0)
     expect(out.effectivePower).toBe(0)
+  })
+
+  it('locks afterburner inside the protected reserve while retaining dry power', () => {
+    const out = createEngineState()
+    resolveEngineState({ throttle: 1, boost: true }, out, FUEL_AFTERBURNER_RESERVE_FRACTION)
+    expect(out.afterburnerActive).toBe(false)
+    expect(out.fuelAvailable).toBe(true)
+    expect(out.targetSpeed).toBe(C.maxSpeed)
+    expect(out.maxAcceleration).toBe(C.maxAccel)
   })
 })

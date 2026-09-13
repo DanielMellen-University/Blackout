@@ -9,6 +9,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { Aircraft } from './aircraft/Aircraft'
+import { FUEL_AFTERBURNER_RESERVE_FRACTION } from './aircraft/FuelSystem'
 import {
   cameraModeCue,
   cameraRelativeBearing,
@@ -367,6 +368,7 @@ async function boot(): Promise<void> {
   let bannerUntil = 0
   let wasAirborne = false
   let prevAfterburner = false
+  let prevAfterburnerLockout = false
   let prevGearDown = true
   let prevLightning = false
   let prevGLoadBand: GLoadCueBand = 'normal'
@@ -495,6 +497,7 @@ async function boot(): Promise<void> {
     bannerTone = 'info'
     wasAirborne = false
     prevAfterburner = false
+    prevAfterburnerLockout = false
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
     prevGLoadBand = 'normal'
@@ -900,6 +903,22 @@ async function boot(): Promise<void> {
       audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
     }
     prevAfterburner = afterburnerOn
+    const afterburnerLocked = aircraft.engineState.afterburnerRequested &&
+      aircraft.engineState.lever >= 0.05 &&
+      aircraft.fuel.fraction <= FUEL_AFTERBURNER_RESERVE_FRACTION
+    if (
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      afterburnerLocked &&
+      !prevAfterburnerLockout
+    ) {
+      audio.playCue('warning')
+      showBanner('AFTERBURNER LOCKED / FUEL RESERVE', 2200, 'danger')
+    }
+    prevAfterburnerLockout = afterburnerLocked
 
     const gBand = gLoadCueBand(aircraft.loadFactor)
     if (

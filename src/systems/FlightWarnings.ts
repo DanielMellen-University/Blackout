@@ -1,6 +1,7 @@
 import { Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig as C } from '../aircraft/flightConfig'
+import { fuelWarningLevel } from '../aircraft/FuelSystem'
 
 export type WarningLevel = 'none' | 'caution' | 'warning'
 
@@ -13,6 +14,7 @@ export interface WarningState {
   lowAlt: boolean
   gear: boolean
   overspeed: boolean
+  fuel: boolean
 }
 
 const _fwd = new Vector3()
@@ -26,6 +28,7 @@ const NONE_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   overspeed: false,
+  fuel: false,
 }) as WarningState
 const STALL_WARNING = Object.freeze({
   text: 'STALL',
@@ -34,6 +37,7 @@ const STALL_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   overspeed: false,
+  fuel: false,
 }) as WarningState
 const LOW_ALT_WARNING = Object.freeze({
   text: 'LOW ALT',
@@ -42,6 +46,7 @@ const LOW_ALT_WARNING = Object.freeze({
   lowAlt: true,
   gear: false,
   overspeed: false,
+  fuel: false,
 }) as WarningState
 const OVERSPEED_WARNING = Object.freeze({
   text: 'OVERSPEED',
@@ -50,6 +55,25 @@ const OVERSPEED_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   overspeed: true,
+  fuel: false,
+}) as WarningState
+const FUEL_LOW_WARNING = Object.freeze({
+  text: 'FUEL LOW',
+  level: 'caution',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+  overspeed: false,
+  fuel: true,
+}) as WarningState
+const FUEL_EMPTY_WARNING = Object.freeze({
+  text: 'FUEL EMPTY',
+  level: 'warning',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+  overspeed: false,
+  fuel: true,
 }) as WarningState
 
 /**
@@ -82,10 +106,13 @@ export function evaluateWarnings(
     aircraft.controls.gearDown,
   )
   const overspeed = overspeedWarningActive(speed)
+  const fuelLevel = fuelWarningLevel(aircraft.fuel)
 
   if (stall) return STALL_WARNING
   if (lowAlt) return LOW_ALT_WARNING
   if (overspeed) return OVERSPEED_WARNING
+  if (fuelLevel === 'critical') return FUEL_EMPTY_WARNING
+  if (fuelLevel === 'low') return FUEL_LOW_WARNING
   return NONE_WARNING
 }
 

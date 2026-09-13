@@ -10,6 +10,8 @@ export interface FuelState {
 export const FUEL_CAPACITY = 100
 export const FUEL_LOW_FRACTION = 0.25
 export const FUEL_CRITICAL_FRACTION = 0.1
+/** Keep a small reserve so afterburner cannot strand the aircraft at zero. */
+export const FUEL_AFTERBURNER_RESERVE_FRACTION = 0.05
 
 /** Fuel units per second at idle, before throttle and afterburner multipliers. */
 const IDLE_BURN_RATE = 0.008

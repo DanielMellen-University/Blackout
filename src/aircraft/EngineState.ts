@@ -1,6 +1,7 @@
 import { MathUtils } from 'three'
 import type { ControlState } from '../core/types'
 import { flightConfig as C } from './flightConfig'
+import { FUEL_AFTERBURNER_RESERVE_FRACTION } from './FuelSystem'
 
 /**
  * The resolved engine command shared by flight physics and aircraft visuals.
@@ -48,7 +49,10 @@ export function resolveEngineState(
   const safeFuel = Number.isFinite(fuelFraction) ? MathUtils.clamp(fuelFraction, 0, 1) : 0
   const fuelAvailable = safeFuel > 0.0001
   const afterburnerRequested = controls.boost === true
-  const afterburnerActive = fuelAvailable && afterburnerRequested && lever >= C.afterburnerMinThrottle
+  const afterburnerActive = fuelAvailable &&
+    safeFuel > FUEL_AFTERBURNER_RESERVE_FRACTION &&
+    afterburnerRequested &&
+    lever >= C.afterburnerMinThrottle
   const maxSpeed = afterburnerActive ? C.maxSpeedBoost : C.maxSpeed
 
   out.lever = lever
