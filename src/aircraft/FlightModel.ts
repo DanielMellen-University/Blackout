@@ -189,7 +189,12 @@ export class FlightModel {
       const idle = lever < C.idleLever && !boost
       const capDecel =
         onGround && idle ? C.maxBrakeDecel : idle ? C.maxDecel : C.coastDecel
-      const along = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
+      const requestedAlong = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
+      // Wheel brakes hold the jet against throttle creep while stationary or
+      // taxiing. They still permit the speed-hold path to bleed momentum.
+      const along = onGround && controls.airbrake
+        ? Math.min(0, requestedAlong)
+        : requestedAlong
 
       if (along > 0.05) {
         if (onGround) {

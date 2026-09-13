@@ -49,7 +49,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Sustained critical heat now locks afterburner while preserving dry thrust until the engine cools, adding a forgiving power-management decision.
 - When heat protection clears, the game announces `AFTERBURNER READY / ENGINE COOL` once, unless the fuel reserve lockout is still active.
 - The engine panel keeps afterburner availability visible as `AB ON`, `AB READY`, `AB HOT`, or `AB FUEL` after transient banners fade.
-- Hold `B` to deploy the speed brake for predictable airborne deceleration, or wheel brakes during rollout, with a live `BRK OPEN` cue and matching control-surface flare.
+- Hold `B` to deploy the speed brake for predictable airborne deceleration, or wheel brakes during rollout. Wheel brakes hold the jet against throttle creep until released, with a live `BRK OPEN` cue and matching control-surface flare.
 - Speed-brake deployment now lifts the existing wind bed and plays one quiet open or close cue, keeping the audio graph pooled.
 - Crossing a gate plane outside the ring now gives a single `GATE MISSED / RE-ALIGN` cue, so the route tells you how to recover without advancing the checkpoint.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.

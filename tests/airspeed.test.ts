@@ -120,6 +120,19 @@ it('uses the held brake as wheel braking during ground rollout', () => {
   expect(Number.isFinite(braked.speed)).toBe(true)
 })
 
+it('holds the jet stopped against throttle while wheel brakes are held', () => {
+  setContactHeightSampler(() => 0)
+  const plane = new Aircraft()
+  plane.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+  plane.controls.throttle = 1
+  plane.controls.airbrake = true
+
+  for (let i = 0; i < 60; i++) plane.step(1 / 60)
+
+  expect(plane.speed).toBe(0)
+  expect(Number.isFinite(plane.position.z)).toBe(true)
+})
+
 it('keeps accelerating on a shallow slope instead of bleeding off', () => {
   setContactHeightSampler((_x, z) => 0.12 * z)
   const plane = new Aircraft()
