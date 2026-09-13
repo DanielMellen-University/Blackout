@@ -11,12 +11,14 @@ import {
   formatHudNumber,
   formatVerticalSpeed,
   formatWind,
+  flightStateLabel,
   gateProximityHudActive,
   gearTransitionActive,
   gForceTone,
   headingTapeLabel,
   headingTapeOffset,
   normalizeBannerTone,
+  normalizeFlightState,
   normalizeMissionPhase,
   missionPhaseClass,
   quantizeHudNumber,
@@ -201,5 +203,14 @@ describe('HUD value formatting', () => {
     expect(windDirectionDegrees(5, 0)).toBe(90)
     expect(formatWind(3, 4)).toBe('5 M/S 037°')
     expect(formatWind(Number.NaN, 4)).toBe('CALM')
+  })
+
+  it('normalizes stable ground, airborne, and crash state cues', () => {
+    expect(normalizeFlightState('ground')).toBe('ground')
+    expect(normalizeFlightState('airborne')).toBe('airborne')
+    expect(normalizeFlightState('crashed')).toBe('crashed')
+    expect(normalizeFlightState('bad', true)).toBe('ground')
+    expect(normalizeFlightState('bad', false)).toBe('airborne')
+    expect(flightStateLabel('crashed')).toBe('CRASH')
   })
 })

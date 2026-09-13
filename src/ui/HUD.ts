@@ -19,6 +19,8 @@ export type AltitudeCue = 'normal' | 'caution' | 'warning'
 
 export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | 'failed'
 
+export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -127,6 +129,9 @@ export class HUD {
   private windText = ''
   private windAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
+  private flightStateValue: FlightStateCue | null = null
+  private flightStateText = ''
+  private flightStateAriaText = ''
   private navBearingValue = Number.NaN
   private navBearingText = ''
   private navRangeMode = -1
@@ -221,6 +226,8 @@ export class HUD {
     pitch?: number
     /** Aircraft roll (rad), right wing down positive. */
     roll?: number
+    /** Stable aircraft state used by the compact state row. */
+    flightState?: FlightStateCue | string
     /** Live rain intensity used by the cockpit canopy veil. */
     rain?: number
     /** Live snow intensity used by the cockpit canopy veil. */
@@ -457,8 +464,19 @@ export class HUD {
       this.setText(this.gearEl, opts.gearDown ? 'DOWN' : 'UP')
       this.setClass(this.gearEl, 'gear-cycle', gearTransitionActive(now, this.gearFlashUntil))
     }
-    if (this.stateEl && opts.onGround !== undefined) {
-      this.setText(this.stateEl, opts.onGround ? 'GND' : 'AIR')
+    if (this.stateEl && (opts.onGround !== undefined || opts.flightState !== undefined)) {
+      const state = normalizeFlightState(opts.flightState, opts.onGround === true)
+      if (state !== this.flightStateValue) {
+        this.flightStateValue = state
+        this.flightStateText = flightStateLabel(state)
+        this.flightStateAriaText = state === 'crashed' ? 'Aircraft crashed' :
+          state === 'airborne' ? 'Aircraft airborne' : 'Aircraft on ground'
+      }
+      this.setText(this.stateEl, this.flightStateText)
+      this.setAttribute(this.stateEl, 'aria-label', this.flightStateAriaText)
+      this.setAttribute(this.stateEl, 'aria-live', 'polite')
+      this.setClass(this.stateEl, 'flight-airborne', state === 'airborne')
+      this.setClass(this.stateEl, 'flight-crashed', state === 'crashed')
     }
 
     if (opts.pitch !== undefined && opts.roll !== undefined) {
@@ -904,6 +922,20 @@ export function normalizeMissionPhase(value: unknown): MissionPhaseCue {
 
 export function missionPhaseClass(value: unknown): string {
   return `phase-${normalizeMissionPhase(value)}`
+}
+
+/** Normalize aircraft state before it reaches the HUD or accessibility tree. */
+export function normalizeFlightState(value: unknown, onGround = false): FlightStateCue {
+  if (value === 'crashed') return 'crashed'
+  if (value === 'airborne') return 'airborne'
+  if (value === 'ground') return 'ground'
+  return onGround ? 'ground' : 'airborne'
+}
+
+export function flightStateLabel(state: FlightStateCue): string {
+  if (state === 'crashed') return 'CRASH'
+  if (state === 'airborne') return 'AIR'
+  return 'GND'
 }
 
 export function formatHudNumber(value: number, precision: number): string {

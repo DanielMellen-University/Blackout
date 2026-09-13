@@ -418,6 +418,7 @@ async function boot(): Promise<void> {
     boost: false,
     gearDown: false,
     onGround: false,
+    flightState: 'ground',
     pitch: 0,
     roll: 0,
     rain: 0,
@@ -1037,6 +1038,9 @@ async function boot(): Promise<void> {
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.gearDown = aircraft.controls.gearDown
       hudFrame.onGround = aircraft.onGround
+      hudFrame.flightState = aircraft.status === 'crashed'
+        ? 'crashed'
+        : aircraft.onGround ? 'ground' : 'airborne'
       hudFrame.pitch = pose.pitch
       hudFrame.roll = pose.roll
       hudFrame.rain = precipitation.rain
