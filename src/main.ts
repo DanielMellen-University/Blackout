@@ -22,6 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
+import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
   lockGameKeyboard,
   lockKeysOnly,
@@ -126,6 +127,7 @@ async function boot(): Promise<void> {
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
+  const touchRoot = document.getElementById('touch-controls')
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl, canvas)
   const uiListeners = new ListenerBag()
@@ -318,6 +320,13 @@ async function boot(): Promise<void> {
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
   const input = new InputManager()
+  const touchDevice = touchInputSupported(
+    typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
+    typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
+  )
+  const touchControls = touchRoot && touchDevice
+    ? new TouchControls(touchRoot, (state) => input.setTouchState(state))
+    : null
   const time = new Time()
   const hud = new HUD()
   const collision = new CollisionSystem((jet) =>
@@ -369,6 +378,7 @@ async function boot(): Promise<void> {
     uiListeners.dispose()
     menu.dispose()
     results.dispose()
+    touchControls?.dispose()
     input.dispose()
     reducedMotionQuery?.removeEventListener?.('change', onReducedMotionChange)
     cameras.dispose()
@@ -794,6 +804,7 @@ async function boot(): Promise<void> {
 
     syncInputContext()
     const simLive = playing && !menu.paused && !results.open
+    touchControls?.setVisible(touchDevice && simLive)
     if (!simLive) lastHudUpdateMs = Number.NaN
     const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)
     previousFrame = nowMs

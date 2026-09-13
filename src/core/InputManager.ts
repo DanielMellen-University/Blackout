@@ -1,5 +1,6 @@
 import { flightConfig } from '../aircraft/flightConfig'
 import { createDefaultControls, type ControlState } from './types'
+import type { TouchInputState } from './TouchControls'
 
 /** Keep controller latency below one frame budget without polling every step. */
 export const GAMEPAD_POLL_INTERVAL = 1 / 30
@@ -21,6 +22,11 @@ export class InputManager {
   private gamepadYaw = 0
   private gamepadThrottle = 0
   private gamepadBoost = false
+  private touchPitch = 0
+  private touchRoll = 0
+  private touchYaw = 0
+  private touchThrottle = 0
+  private touchBoost = false
 
   cameraToggleQueued = false
   resetQueued = false
@@ -47,6 +53,7 @@ export class InputManager {
     this.target.removeEventListener('blur', this.onBlur)
     this.keys.clear()
     this.clearGamepadState()
+    this.clearTouchState()
   }
 
   sampleWithDt(dt: number): ControlState {
@@ -54,10 +61,10 @@ export class InputManager {
     if (this.flightLive) this.updateGamepad(step)
     else this.clearGamepadState()
 
-    this.controls.pitch = mergeAxis(this.axis('KeyW', 'KeyS'), this.gamepadPitch)
-    this.controls.yaw = mergeAxis(this.axis('KeyD', 'KeyA'), this.gamepadYaw)
-    this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll)
-    this.controls.boost = this.keys.has('Space') || this.gamepadBoost
+    this.controls.pitch = mergeAxis(this.axis('KeyW', 'KeyS'), this.gamepadPitch, this.touchPitch)
+    this.controls.yaw = mergeAxis(this.axis('KeyD', 'KeyA'), this.gamepadYaw, this.touchYaw)
+    this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll, this.touchRoll)
+    this.controls.boost = this.keys.has('Space') || this.gamepadBoost || this.touchBoost
     this.controls.airbrake = this.keys.has('KeyB')
 
     // Engine power: Shift up, Ctrl down
@@ -70,6 +77,7 @@ export class InputManager {
       thr += thrRate * step
     }
     thr += this.gamepadThrottle * thrRate * step
+    thr += this.touchThrottle * thrRate * step
     this.controls.throttle = clamp01(thr)
 
     return this.controls
@@ -84,6 +92,15 @@ export class InputManager {
     this.controls.roll = 0
     this.controls.yaw = 0
     this.controls.gearDown = true
+  }
+
+  /** Feed the optional event-driven touch deck into the normal input sampler. */
+  setTouchState(state: Partial<TouchInputState> | null): void {
+    this.touchPitch = clampAxis(state?.pitch)
+    this.touchYaw = clampAxis(state?.yaw)
+    this.touchRoll = clampAxis(state?.roll)
+    this.touchThrottle = clampAxis(state?.throttle)
+    this.touchBoost = state?.boost === true
   }
 
   /** Forget one-shot C / R / N / M / T / G so the title screen cannot leak into Play. */
@@ -105,6 +122,7 @@ export class InputManager {
   clearKeys(): void {
     this.keys.clear()
     this.clearGamepadState()
+    this.clearTouchState()
     this.controls.boost = false
     this.controls.airbrake = false
     this.controls.pitch = 0
@@ -245,6 +263,7 @@ export class InputManager {
   private onBlur = (): void => {
     this.keys.clear()
     this.clearGamepadState()
+    this.clearTouchState()
     this.clearQueued()
   }
 
@@ -255,6 +274,14 @@ export class InputManager {
     this.gamepadYaw = 0
     this.gamepadThrottle = 0
     this.gamepadBoost = false
+  }
+
+  private clearTouchState(): void {
+    this.touchPitch = 0
+    this.touchRoll = 0
+    this.touchYaw = 0
+    this.touchThrottle = 0
+    this.touchBoost = false
   }
 }
 
@@ -271,8 +298,15 @@ export function normalizeGamepadAxis(value: number, deadzone = 0.14): number {
   return Math.sign(clamped) * scaled
 }
 
-function mergeAxis(keyboard: number, gamepad: number): number {
-  return Math.abs(keyboard) > 0.001 ? keyboard : (Number.isFinite(gamepad) ? gamepad : 0)
+function mergeAxis(keyboard: number, gamepad: number, touch: number): number {
+  if (Math.abs(keyboard) > 0.001) return keyboard
+  if (Number.isFinite(gamepad) && Math.abs(gamepad) > 0.001) return gamepad
+  return Number.isFinite(touch) ? touch : 0
+}
+
+function clampAxis(value: number | undefined): number {
+  const finite = typeof value === 'number' && Number.isFinite(value) ? value : 0
+  return Math.max(-1, Math.min(1, finite))
 }
 
 function normalizeGamepadTrigger(value: number): number {

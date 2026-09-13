@@ -11,6 +11,23 @@
     <div id="app">
       <canvas id="game" oncontextmenu="return false;"></canvas>
 
+      <!-- Optional live-flight deck for touch-capable browsers. -->
+      <div id="touch-controls" class="touch-controls" aria-label="Touch flight controls" hidden>
+        <div class="touch-cluster touch-cluster-left" aria-label="Pitch and roll">
+          <button type="button" data-touch-action="pitch-up" aria-label="Pitch up" aria-pressed="false">▲</button>
+          <button type="button" data-touch-action="roll-left" aria-label="Roll left" aria-pressed="false">◀</button>
+          <button type="button" data-touch-action="roll-right" aria-label="Roll right" aria-pressed="false">▶</button>
+          <button type="button" data-touch-action="pitch-down" aria-label="Pitch down" aria-pressed="false">▼</button>
+        </div>
+        <div class="touch-cluster touch-cluster-right" aria-label="Yaw, throttle, and boost">
+          <button type="button" data-touch-action="yaw-left" aria-label="Yaw left" aria-pressed="false">YAW L</button>
+          <button type="button" data-touch-action="yaw-right" aria-label="Yaw right" aria-pressed="false">YAW R</button>
+          <button type="button" data-touch-action="throttle-down" aria-label="Decrease throttle" aria-pressed="false">− PWR</button>
+          <button type="button" data-touch-action="throttle-up" aria-label="Increase throttle" aria-pressed="false">+ PWR</button>
+          <button type="button" class="touch-boost" data-touch-action="boost" aria-label="Afterburner" aria-pressed="false">BOOST</button>
+        </div>
+      </div>
+
       <!-- Title / menu — shown before flight -->
       <div id="title-screen" class="title-screen">
         <div class="title-panel">
@@ -95,6 +112,7 @@
               <div><kbd>T</kbd></div><div>Cycle radar target</div>
               <div><kbd>M</kbd></div><div>Mute audio</div>
               <div><kbd>Gamepad</kbd></div><div>Left stick pitch/roll, right stick yaw, triggers throttle, A afterburner</div>
+              <div><kbd>Touch</kbd></div><div>Live-flight pitch, yaw, roll, throttle, and afterburner deck on touch devices</div>
               <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
               <div><kbd>R</kbd></div><div>New world</div>
               <div><kbd>Esc</kbd></div><div>Pause menu</div>

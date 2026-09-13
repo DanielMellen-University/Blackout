@@ -172,6 +172,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The vertical-speed readout uses cool climb and amber sink tones with a small deadband, making flare timing readable without adding scene work.
 - Altitude, vertical speed, and airspeed expose live semantic meter values, while HUD banners and cautions announce themselves at the right urgency for assistive tech.
 - Connected controllers poll at a bounded 30 Hz only during live flight, with stale axes and boost cleared immediately when focus is lost.
+- Touch-capable browsers get an optional event-driven flight deck during live flight for pitch, yaw, roll, throttle, and afterburner control.
 - Keyboard and gamepad input now reject malformed frame deltas, axes, triggers, dead zones, and throttle values so one bad device sample cannot poison flight controls.
 - Engine resolution and flight integration also fail closed on malformed throttle, boost, and frame-delta values, keeping speed targets, afterburner state, and aircraft position finite.
 - Static runway and airfield meshes freeze their local transforms after construction, while the weather-driven windsock stays animatable for lower render-loop CPU cost.
@@ -411,6 +412,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **T** | Cycle radar settlement target |
 | **M** | Mute / unmute audio |
 | **Gamepad** | Left stick pitch/roll, LT/RT throttle, A / Cross afterburner |
+| **Touch** | Live-flight pitch, yaw, roll, throttle, and afterburner deck on touch-capable browsers |
 | **R** | New world + runway |
 | **Esc** | Pause menu |
 

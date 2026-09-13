@@ -121,6 +121,28 @@ describe('flight input one-shot controls', () => {
     vi.unstubAllGlobals()
   })
 
+  it('merges event-driven touch controls after keyboard and gamepad input', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+    input.setTouchState({ pitch: 1, yaw: -1, roll: 0.5, throttle: 1, boost: true })
+
+    const touch = input.sampleWithDt(0)
+    expect(touch.pitch).toBe(1)
+    expect(touch.yaw).toBe(-1)
+    expect(touch.roll).toBeCloseTo(0.5)
+    expect(touch.boost).toBe(true)
+    expect(input.sampleWithDt(0.05).throttle).toBeCloseTo(0.0198, 5)
+
+    fake.fire('keydown', 'KeyS')
+    expect(input.sampleWithDt(0).pitch).toBe(-1)
+    fake.fire('keyup', 'KeyS')
+    input.setTouchState(null)
+    expect(input.sampleWithDt(0).boost).toBe(false)
+    expect(input.sampleWithDt(0).yaw).toBe(0)
+    input.dispose()
+  })
+
   it('clears stale controller axes immediately when focus leaves', () => {
     vi.stubGlobal('navigator', {
       getGamepads: () => [{
