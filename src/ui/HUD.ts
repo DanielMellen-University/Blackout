@@ -79,6 +79,20 @@ export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' {
   return target === 'base' ? 'BASE' : 'NEXT GATE'
 }
 
+export type NavigationAltitudeCue = 'high' | 'low' | 'level'
+
+/** Convert target altitude error into a calm climb, descent, or level cue. */
+export function navigationAltitudeCue(
+  altDelta: number,
+  target: unknown = 'gate',
+): NavigationAltitudeCue {
+  const safe = Number.isFinite(altDelta) ? altDelta : 0
+  const threshold = target === 'base' ? 25 : 40
+  if (safe > threshold) return 'high'
+  if (safe < -threshold) return 'low'
+  return 'level'
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
@@ -628,6 +642,10 @@ export class HUD {
     const safeBearing = normalizeNavigationBearing(bearing)
     if (safeBearing === null) {
       this.setClass(this.navCueEl, 'near-gate', false)
+      this.setClass(this.navCueEl, 'return-home', false)
+      this.setClass(this.navCueEl, 'nav-alt-high', false)
+      this.setClass(this.navCueEl, 'nav-alt-low', false)
+      this.setClass(this.navCueEl, 'nav-alt-level', false)
       this.setHidden(this.navCueEl, true)
       this.setNavigationSector(null)
       return
@@ -635,9 +653,13 @@ export class HUD {
     const safeDist = Math.max(0, safeHudValue(dist))
     const safeAltDelta = safeHudValue(altDelta)
     const targetLabel = navigationTargetLabel(target)
+    const altitudeCue = navigationAltitudeCue(safeAltDelta, targetLabel === 'BASE' ? 'base' : 'gate')
     this.setHidden(this.navCueEl, false)
     this.setClass(this.navCueEl, 'near-gate', targetLabel !== 'BASE' && gateProximityHudActive(safeDist))
     this.setClass(this.navCueEl, 'return-home', targetLabel === 'BASE')
+    this.setClass(this.navCueEl, 'nav-alt-high', altitudeCue === 'high')
+    this.setClass(this.navCueEl, 'nav-alt-low', altitudeCue === 'low')
+    this.setClass(this.navCueEl, 'nav-alt-level', altitudeCue === 'level')
     if (this.navTargetEl) {
       this.setText(this.navTargetEl, targetLabel)
       this.setAttribute(this.navCueEl, 'aria-label', `${targetLabel} navigation`)
@@ -675,6 +697,10 @@ export class HUD {
         }
       }
       this.setText(this.navAltEl, this.navAltText)
+      const altLabel = altitudeCue === 'high'
+        ? 'climb to target'
+        : altitudeCue === 'low' ? 'descend to target' : 'level with target'
+      this.setAttribute(this.navAltEl, 'aria-label', `${altLabel}, ${this.navAltText}`)
     }
   }
 

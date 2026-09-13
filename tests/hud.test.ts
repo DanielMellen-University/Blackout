@@ -23,6 +23,7 @@ import {
   normalizeBannerTone,
   normalizeFlightState,
   normalizeMissionPhase,
+  navigationAltitudeCue,
   navigationBearingDegrees,
   navigationTargetLabel,
   navigationSector,
@@ -265,6 +266,14 @@ describe('HUD value formatting', () => {
     expect(navigationTargetLabel('base')).toBe('BASE')
     expect(navigationTargetLabel('gate')).toBe('NEXT GATE')
     expect(navigationTargetLabel(null)).toBe('NEXT GATE')
+  })
+
+  it('turns navigation altitude error into a bounded climb or descent cue', () => {
+    expect(navigationAltitudeCue(41)).toBe('high')
+    expect(navigationAltitudeCue(-41)).toBe('low')
+    expect(navigationAltitudeCue(24, 'base')).toBe('level')
+    expect(navigationAltitudeCue(26, 'base')).toBe('high')
+    expect(navigationAltitudeCue(Number.NaN)).toBe('level')
   })
 
   it('keeps the takeoff control hint compact and stable', () => {
