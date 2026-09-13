@@ -29,4 +29,15 @@ describe('resolveEngineState', () => {
     expect(out.targetSpeed).toBe(0)
     expect(Number.isFinite(out.effectivePower)).toBe(true)
   })
+
+  it('cuts afterburner and thrust demand when the tank is empty', () => {
+    const out = createEngineState()
+    resolveEngineState({ throttle: 1, boost: true }, out, 0)
+    expect(out.afterburnerRequested).toBe(true)
+    expect(out.afterburnerActive).toBe(false)
+    expect(out.fuelAvailable).toBe(false)
+    expect(out.targetSpeed).toBe(0)
+    expect(out.maxAcceleration).toBe(0)
+    expect(out.effectivePower).toBe(0)
+  })
 })

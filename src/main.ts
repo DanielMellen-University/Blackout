@@ -401,6 +401,7 @@ async function boot(): Promise<void> {
     audioMuted: false,
     fps: 0,
     throttle: 0,
+    fuel: 1,
     boost: false,
     gearDown: false,
     onGround: false,
@@ -987,6 +988,7 @@ async function boot(): Promise<void> {
       hudFrame.cameraMode = cameras.modeLabel
       hudFrame.fps = time.fps
       hudFrame.throttle = aircraft.engineState.lever
+      hudFrame.fuel = aircraft.fuel.fraction
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.gearDown = aircraft.controls.gearDown
       hudFrame.onGround = aircraft.onGround

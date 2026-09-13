@@ -3,6 +3,7 @@
  * attitude indicator (pitch ladder + bank), banner.
  */
 import { displayedKnots } from '../core/airspeed'
+import { fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
@@ -43,6 +44,7 @@ export class HUD {
   private readonly weatherEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
+  private readonly fuelEl: HTMLElement | null
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
   private readonly heatVeilEl: HTMLElement | null
@@ -88,6 +90,9 @@ export class HUD {
   private pitchText = ''
   private rollValue = Number.NaN
   private rollText = ''
+  private fuelValue = Number.NaN
+  private fuelText = ''
+  private fuelAriaText = ''
   private navBearingValue = Number.NaN
   private navBearingText = ''
   private navRangeMode = -1
@@ -145,6 +150,7 @@ export class HUD {
     this.weatherEl = root.getElementById('hud-weather')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
+    this.fuelEl = root.getElementById('hud-fuel')
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
     this.heatVeilEl = root.getElementById('heat-veil')
@@ -190,6 +196,8 @@ export class HUD {
     weather?: string
     dayPhase?: string
     mission?: string
+    /** Remaining fuel as a normalized fraction. */
+    fuel?: number
     /** Next-gate range in meters; omit or 0 to hide. */
     navDist?: number
     /** RAF timestamp shared by the main loop for time-based HUD cues. */
@@ -329,6 +337,20 @@ export class HUD {
     }
     if (this.missionEl && opts.mission) {
       this.setText(this.missionEl, opts.mission)
+    }
+    if (this.fuelEl && opts.fuel !== undefined) {
+      const percent = fuelPercent({ fraction: opts.fuel })
+      if (percent !== this.fuelValue) {
+        this.fuelValue = percent
+        this.fuelText = `${percent}%`
+        this.fuelAriaText = `${percent}% fuel`
+      }
+      this.setText(this.fuelEl, this.fuelText)
+      this.setAttribute(this.fuelEl, 'aria-valuenow', String(percent))
+      this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
+      const fuelWarning = fuelWarningLevel({ fraction: opts.fuel })
+      this.setClass(this.fuelEl, 'low', fuelWarning !== 'normal')
+      this.setClass(this.fuelEl, 'critical', fuelWarning === 'critical')
     }
     this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
 

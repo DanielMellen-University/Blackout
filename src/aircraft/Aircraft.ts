@@ -23,6 +23,7 @@ import {
 import { flightConfig } from './flightConfig'
 import { FlightModel } from './FlightModel'
 import type { RenderQuality } from '../core/RenderQuality'
+import { createFuelState, resetFuel, updateFuel, type FuelState } from './FuelSystem'
 
 const _box = new Box3()
 const _size = new Vector3()
@@ -74,6 +75,7 @@ export class Aircraft {
   private readonly prevOrientation = new Quaternion()
   private readonly prevVelocity = new Vector3()
   readonly engineState: EngineState = createEngineState()
+  readonly fuel: FuelState = createFuelState()
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
     point: new Vector3(),
@@ -244,6 +246,7 @@ export class Aircraft {
     this.velocity.set(0, 0, 0)
     this.angularVelocity.set(0, 0, 0)
     this.prevVelocity.copy(this.velocity)
+    resetFuel(this.fuel)
     this.loadFactor = 1
     this.impactVy = 0
     this.impact = null
@@ -264,7 +267,7 @@ export class Aircraft {
     this.vaporOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     if (this.gearNose) this.gearNose.rotation.y = 0
-    resolveEngineState(this.controls, this.engineState)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
     this.status = 'ok'
     this.mesh.visible = true
     this.snapDisplay()
@@ -315,7 +318,8 @@ export class Aircraft {
     // a contact result across a new physics update.
     this.groundCacheValid = false
     this.prevVelocity.copy(this.velocity)
-    resolveEngineState(this.controls, this.engineState)
+    updateFuel(this.fuel, dt, this.controls.throttle, this.controls.boost)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
     this.flight.step(this, dt)
     this.updateLoadFactor(dt)
     this.autoGear()
@@ -334,7 +338,7 @@ export class Aircraft {
     this.groundCacheValid = false
     this.controls.throttle = 0
     this.controls.boost = false
-    resolveEngineState(this.controls, this.engineState)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
     this.mesh.visible = false
     this.snapDisplay()
   }

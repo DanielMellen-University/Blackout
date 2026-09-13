@@ -31,6 +31,21 @@ it('keeps 50% ENG near 1500 kts and full dry power near 3000 kts', () => {
   expect(displayedKnots(plane.speed)).toBeLessThan(3060)
 })
 
+it('resets and consumes the aircraft fuel state with engine use', () => {
+  setContactHeightSampler(() => 0)
+  const plane = new Aircraft()
+  plane.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
+  plane.controls.gearDown = false
+  plane.controls.throttle = 1
+  plane.controls.boost = true
+  for (let i = 0; i < 120; i++) plane.step(1 / 60)
+  expect(plane.fuel.remaining).toBeLessThan(100)
+  expect(plane.fuel.fraction).toBeGreaterThan(0)
+  plane.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
+  expect(plane.fuel.remaining).toBe(100)
+  expect(plane.engineState.fuelAvailable).toBe(true)
+})
+
 it('accelerates and decelerates promptly without overshooting zero', () => {
   setContactHeightSampler(() => 0)
   const plane = new Aircraft()

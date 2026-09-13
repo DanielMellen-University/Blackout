@@ -19,6 +19,8 @@ export interface EngineState {
   maxAcceleration: number
   /** Normalized engine output for feedback systems. */
   effectivePower: number
+  /** Whether the tank still has usable fuel for engine thrust. */
+  fuelAvailable: boolean
 }
 
 export function createEngineState(): EngineState {
@@ -30,6 +32,7 @@ export function createEngineState(): EngineState {
     maxSpeed: C.maxSpeed,
     maxAcceleration: C.maxAccel,
     effectivePower: 0,
+    fuelAvailable: true,
   }
 }
 
@@ -37,12 +40,15 @@ export function createEngineState(): EngineState {
 export function resolveEngineState(
   controls: Pick<ControlState, 'throttle' | 'boost'>,
   out: EngineState,
+  fuelFraction = 1,
 ): EngineState {
   const lever = Number.isFinite(controls.throttle)
     ? MathUtils.clamp(controls.throttle, 0, 1)
     : 0
+  const safeFuel = Number.isFinite(fuelFraction) ? MathUtils.clamp(fuelFraction, 0, 1) : 0
+  const fuelAvailable = safeFuel > 0.0001
   const afterburnerRequested = controls.boost === true
-  const afterburnerActive = afterburnerRequested && lever >= C.afterburnerMinThrottle
+  const afterburnerActive = fuelAvailable && afterburnerRequested && lever >= C.afterburnerMinThrottle
   const maxSpeed = afterburnerActive ? C.maxSpeedBoost : C.maxSpeed
 
   out.lever = lever
@@ -50,13 +56,14 @@ export function resolveEngineState(
   out.afterburnerActive = afterburnerActive
   // ENG remains a speed command. Afterburner raises the available envelope,
   // but it no longer bypasses a low or closed throttle lever.
-  out.targetSpeed = lever * maxSpeed
+  out.targetSpeed = fuelAvailable ? lever * maxSpeed : 0
   out.maxSpeed = maxSpeed
-  out.maxAcceleration = afterburnerActive
+  out.maxAcceleration = fuelAvailable && afterburnerActive
     ? MathUtils.lerp(C.maxAccel, C.maxAccelBoost, lever)
-    : C.maxAccel
+    : fuelAvailable ? C.maxAccel : 0
   out.effectivePower = afterburnerActive
     ? MathUtils.lerp(0.82, 1, lever)
-    : lever * 0.78
+    : fuelAvailable ? lever * 0.78 : 0
+  out.fuelAvailable = fuelAvailable
   return out
 }
