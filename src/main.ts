@@ -796,7 +796,7 @@ async function boot(): Promise<void> {
               groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
               pitchRad: pose.pitch,
               rollRad: pose.roll,
-            })
+            }, aircraft.fuel.fraction)
             if (finished) {
               audio.playCue('landed')
               results.show(finished)

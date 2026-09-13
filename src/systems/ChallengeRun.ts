@@ -46,6 +46,10 @@ export interface ChallengeResult {
   masteryBadges?: MasteryBadgeId[]
   /** Badges earned for the first time on this run. */
   newMasteryBadges?: MasteryBadgeId[]
+  /** Remaining fuel at touchdown, rounded to a whole percent. */
+  fuelRemainingPercent?: number
+  /** Fuel spent during this sortie, rounded to a whole percent. */
+  fuelUsedPercent?: number
 }
 
 export interface ScoreStore {
@@ -368,10 +372,12 @@ export class ChallengeRun {
     }
   }
 
-  finishLanding(metrics: LandingMetrics): ChallengeResult | null {
+  finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
     if (this.phase !== 'returning') return null
 
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
+    const fuelRemainingPercent = Math.round(clamp01(fuelFraction) * 100)
+    const fuelUsedPercent = 100 - fuelRemainingPercent
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
     const weights = scoringWeightsForFocus(this.scoringFocus)
@@ -446,6 +452,8 @@ export class ChallengeRun {
       scoringFocus: this.scoringFocus,
       masteryBadges: allBadges,
       newMasteryBadges: newBadges,
+      fuelRemainingPercent,
+      fuelUsedPercent,
     }
     return this.result
   }

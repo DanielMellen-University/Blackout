@@ -204,6 +204,32 @@ describe('ChallengeRun', () => {
     expect(scoringWeightsForFocus('landing').landing).toBeGreaterThan(scoringWeightsForFocus('balanced').landing)
   })
 
+  it('captures sanitized fuel usage in a completed result without changing scores', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:fuel-result', 1)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    }, 0.72)!
+    expect(result.fuelRemainingPercent).toBe(72)
+    expect(result.fuelUsedPercent).toBe(28)
+    expect(Number.isFinite(result.totalScore)).toBe(true)
+
+    run.reset('seed:fuel-result-2', 1)
+    run.recordGate(1)
+    const malformed = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    }, Number.NaN)!
+    expect(malformed.fuelRemainingPercent).toBe(0)
+    expect(malformed.fuelUsedPercent).toBe(100)
+  })
+
   it('awards mastery badges from finite run quality thresholds', () => {
     expect(masteryBadgesForRun(1, 1, 1, 'gold')).toEqual([
       'first-flight',

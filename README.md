@@ -36,6 +36,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Course records self-heal malformed score and badge data without blocking launch.
 - Fuel now resets per sortie, burns harder on afterburner, and warns before the tank is empty.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
+- Completed-run results show remaining and spent fuel for each sortie.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

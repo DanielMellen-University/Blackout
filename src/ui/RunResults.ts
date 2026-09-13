@@ -16,6 +16,7 @@ export class RunResults {
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
+  private readonly fuel: HTMLElement
   private readonly scoreDetail: HTMLElement
   private readonly badges: HTMLElement
   private readonly splits: HTMLElement
@@ -45,6 +46,7 @@ export class RunResults {
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
+    this.fuel = must(root, 'result-fuel')
     this.scoreDetail = must(root, 'result-score-detail')
     this.badges = must(root, 'result-badges')
     this.splits = must(root, 'result-splits')
@@ -70,6 +72,14 @@ export class RunResults {
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
     this.gates.textContent = result.gateScore.toLocaleString()
+    const fuelRemaining = Number.isFinite(result.fuelRemainingPercent)
+      ? Math.max(0, Math.min(100, Math.round(result.fuelRemainingPercent!)))
+      : 100
+    const fuelUsed = Number.isFinite(result.fuelUsedPercent)
+      ? Math.max(0, Math.min(100, Math.round(result.fuelUsedPercent!)))
+      : 100 - fuelRemaining
+    this.fuel.textContent = `${fuelRemaining}%`
+    this.fuel.setAttribute('aria-label', `${fuelRemaining}% remaining, ${fuelUsed}% used`)
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
