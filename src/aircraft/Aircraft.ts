@@ -825,10 +825,13 @@ export function navigationLightOpacity(timeMs: number, daylight = 0): number {
   return base + (Math.sin(timeMs * .0038) + 1) * .03
 }
 
-/** Cool panel fill strength, zero in daylight and capped at night. */
+/** Cool panel fill strength, zero in daylight and stronger through dusk. */
 export function nightAirframeEmissiveIntensity(daylight: number): number {
   const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
-  return (1 - safe) * 0.32
+  // A dark stealth finish needs a little more separation from storm clouds
+  // than a clear night does. Keep the fill additive-only and fully disabled
+  // in daylight so the authored grey panels still own the daytime read.
+  return (1 - safe) * 0.42
 }
 
 /** Keep the physical canopy readable at night without making it glow by day. */
