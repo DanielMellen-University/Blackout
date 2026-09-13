@@ -506,6 +506,7 @@ export class HUD {
       }
       this.setText(this.radarEl, this.radarText)
       this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
+      this.setClass(this.radarEl, 'radar-active', radarText !== 'NO CONTACTS')
     }
     if (this.hintEl && opts.controlHint !== undefined) {
       const hint = typeof opts.controlHint === 'string' ? opts.controlHint : ''

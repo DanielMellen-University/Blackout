@@ -998,6 +998,8 @@ body,
 }
 
 .hud-radar {
+  position: relative;
+  overflow: hidden;
   max-width: 260px;
   margin-top: 5px;
   color: var(--accent);
@@ -1005,6 +1007,44 @@ body,
   letter-spacing: 0.06em;
   line-height: 1.5;
   white-space: normal;
+}
+
+.hud-radar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8%;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, rgba(61, 206, 168, 0.72), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.hud-radar.radar-active::after {
+  opacity: 0.5;
+  animation: radar-scan 2.6s linear infinite;
+}
+
+@keyframes radar-scan {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(280px);
+  }
+}
+
+.quality-lite .hud-radar.radar-active::after {
+  animation: none;
+  opacity: 0.18;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-radar.radar-active::after {
+    animation: none;
+    opacity: 0.18;
+  }
 }
 
 .hud-hint {
