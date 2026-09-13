@@ -4,6 +4,8 @@ import {
   courseDefinitionForId,
   courseRunId,
   courseSeedForId,
+  readSelectedCourseId,
+  writeSelectedCourseId,
 } from '../src/systems/CourseLibrary'
 import { clearOpsPad, findPlayableSpawn, isUsableAirfield } from '../src/world/terrainSample'
 import { setWorldSeed } from '../src/world/noise'
@@ -17,6 +19,20 @@ describe('course library', () => {
     expect(courseDefinitionForId('precision-slalom').profile).toBe('slalom')
     expect(courseRunId(courseDefinitionForId('precision-slalom'))).toBe('seed:3:slalom')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
+  })
+
+  it('persists only valid course ids and fails closed on storage denial', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(readSelectedCourseId(storage)).toBe('random')
+    writeSelectedCourseId(storage, 'range-sweep')
+    expect(readSelectedCourseId(storage)).toBe('range-sweep')
+    values.set('blackout.course-selection', 'not-a-course')
+    expect(readSelectedCourseId(storage)).toBe('random')
+    expect(() => writeSelectedCourseId(null, 'training-orbit')).not.toThrow()
   })
 
   it('validates every curated seed to a usable dry airfield', () => {

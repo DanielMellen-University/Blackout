@@ -43,6 +43,8 @@ import {
   courseDefinitionForId,
   courseRunId,
   COURSE_LIBRARY,
+  readSelectedCourseId,
+  writeSelectedCourseId,
   type CourseId,
 } from './systems/CourseLibrary'
 import { CollisionSystem } from './systems/Collision'
@@ -129,7 +131,10 @@ async function boot(): Promise<void> {
     }
   }
   refreshCourseSelectorLabels()
-  let selectedCourseId: CourseId = courseDefinitionForId(titleCourseSelect?.value).id
+  let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
+  if (titleCourseSelect?.value && selectedCourseId === 'random') {
+    selectedCourseId = courseDefinitionForId(titleCourseSelect.value).id
+  }
   for (const select of courseSelectors) select.value = selectedCourseId
 
   const releaseBrowserUi = suppressBrowserUi(canvas)
@@ -467,6 +472,7 @@ async function boot(): Promise<void> {
   const onCourseChange = (event: Event): void => {
     const select = event.currentTarget as HTMLSelectElement | null
     selectedCourseId = courseDefinitionForId(select?.value).id
+    writeSelectedCourseId(qualityStorage, selectedCourseId)
     for (const other of courseSelectors) other.value = selectedCourseId
   }
   for (const select of courseSelectors) uiListeners.add(select, 'change', onCourseChange)
