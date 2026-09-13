@@ -80,6 +80,7 @@ import {
   engineHeatCue,
   engineHeatRearmBanner,
   engineFuelAvailabilityBanner,
+  emergencyReturnActive,
   crosswindSpeedMps,
   navigationApproachCue,
   weatherCycleBanner,
@@ -404,6 +405,7 @@ async function boot(): Promise<void> {
   let prevAfterburnerLockout = false
   let prevAfterburnerHeatLockout = false
   let prevFuelAvailable = true
+  let engineOut = false
   let prevGearDown = true
   let prevLightning = false
   let prevGLoadBand: GLoadCueBand = 'normal'
@@ -555,6 +557,7 @@ async function boot(): Promise<void> {
     prevAfterburnerLockout = false
     prevAfterburnerHeatLockout = false
     prevFuelAvailable = true
+    engineOut = false
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
     prevGLoadBand = 'normal'
@@ -854,6 +857,7 @@ async function boot(): Promise<void> {
           if (aircraft.fuel.fraction > before + .00001) {
             if (!refueling) showBanner('REFUELING / HOLD POSITION', 1400, 'info')
             refueling = aircraft.fuel.fraction < .9999
+            if (engineOut && aircraft.fuel.fraction > 0.0001) engineOut = false
           }
         } else {
           refueling = false
@@ -1084,6 +1088,7 @@ async function boot(): Promise<void> {
     ) {
       audio.playCue('warning')
       showBanner(fuelOutBanner, 3200, 'danger')
+      engineOut = true
     }
     prevFuelAvailable = fuelAvailable
 
@@ -1171,7 +1176,8 @@ async function boot(): Promise<void> {
       )
       const gate = world.mission.activeGatePos()
       const returning = challenge.phase === 'returning'
-      let navTarget: 'gate' | 'base' | 'city' | 'village' = returning ? 'base' : 'gate'
+      const emergencyReturn = emergencyReturnActive(engineOut, challenge.phase)
+      let navTarget: 'gate' | 'base' | 'city' | 'village' = returning || emergencyReturn ? 'base' : 'gate'
       let navBearing = cameras.mode === 'cockpit'
         ? nav.bearing
         : gateScreenBearing(cameras.camera, gate)
@@ -1179,7 +1185,7 @@ async function boot(): Promise<void> {
       let navAltDelta = nav.altDelta
       let navApproach: 'aligned' | 'turn-left' | 'turn-right' | null = null
       let navCrosswind: number | null = null
-      if (returning) {
+      if (returning || emergencyReturn) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navDist = Math.hypot(
           returnTarget.x - aircraft.position.x,
@@ -1218,7 +1224,7 @@ async function boot(): Promise<void> {
         )
       }
       const selectedRadarTarget = radar.selectedTarget()
-      if (!returning && selectedRadarTarget) {
+      if (!returning && !emergencyReturn && selectedRadarTarget) {
         const targetX = Number.isFinite(selectedRadarTarget.x) ? selectedRadarTarget.x! : aircraft.position.x
         const targetY = Number.isFinite(selectedRadarTarget.y) ? selectedRadarTarget.y! : aircraft.position.y
         const targetZ = Number.isFinite(selectedRadarTarget.z) ? selectedRadarTarget.z! : aircraft.position.z

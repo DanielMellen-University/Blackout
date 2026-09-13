@@ -19,6 +19,7 @@ import {
   engineHeatCue,
   engineHeatBanner,
   engineFuelAvailabilityBanner,
+  emergencyReturnActive,
   engineHeatRearmBanner,
   afterburnerHudLabel,
   flightStateLabel,
@@ -248,6 +249,14 @@ describe('HUD value formatting', () => {
     expect(engineFuelAvailabilityBanner(false, false)).toBeNull()
     expect(engineFuelAvailabilityBanner(false, true)).toBeNull()
     expect(engineFuelAvailabilityBanner(true, true)).toBeNull()
+  })
+
+  it('routes only recoverable engine-out phases toward base', () => {
+    expect(emergencyReturnActive(true, 'running')).toBe(true)
+    expect(emergencyReturnActive(true, 'returning')).toBe(true)
+    expect(emergencyReturnActive(true, 'complete')).toBe(false)
+    expect(emergencyReturnActive(true, 'failed')).toBe(false)
+    expect(emergencyReturnActive(false, 'running')).toBe(false)
   })
 
   it('keeps water crossing cues calm and semantic', () => {

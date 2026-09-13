@@ -105,6 +105,11 @@ export function navigationTargetText(target: unknown, current?: number, total?: 
   return `GATE ${safeCurrent + 1}/${safeTotal}`
 }
 
+/** Route the navigation cue to base while an engine-out sortie is recoverable. */
+export function emergencyReturnActive(engineOut: boolean, phase: unknown): boolean {
+  return engineOut === true && phase !== 'complete' && phase !== 'failed'
+}
+
 export type NavigationAltitudeCue = 'high' | 'low' | 'level'
 
 export type NavigationRangeCue = 'closing' | 'opening' | 'steady'
