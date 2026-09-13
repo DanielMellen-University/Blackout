@@ -20,6 +20,9 @@ import {
   normalizeBannerTone,
   normalizeFlightState,
   normalizeMissionPhase,
+  navigationBearingDegrees,
+  navigationSector,
+  normalizeNavigationBearing,
   missionPhaseClass,
   quantizeHudNumber,
   safeHudValue,
@@ -212,5 +215,16 @@ describe('HUD value formatting', () => {
     expect(normalizeFlightState('bad', true)).toBe('ground')
     expect(normalizeFlightState('bad', false)).toBe('airborne')
     expect(flightStateLabel('crashed')).toBe('CRASH')
+  })
+
+  it('keeps navigation bearings wrapped and sector cues stable in hard turns', () => {
+    expect(normalizeNavigationBearing(3 * Math.PI)).toBeCloseTo(Math.PI)
+    expect(normalizeNavigationBearing(Number.NaN)).toBeNull()
+    expect(navigationBearingDegrees(-Math.PI / 2)).toBe(-90)
+    expect(navigationSector(0)).toBe('ahead')
+    expect(navigationSector(Math.PI / 2)).toBe('right')
+    expect(navigationSector(-Math.PI / 2)).toBe('left')
+    expect(navigationSector(Math.PI)).toBe('behind')
+    expect(navigationSector(null)).toBe('ahead')
   })
 })

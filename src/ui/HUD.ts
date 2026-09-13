@@ -21,6 +21,8 @@ export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | '
 
 export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
 
+export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -134,6 +136,7 @@ export class HUD {
   private flightStateAriaText = ''
   private navBearingValue = Number.NaN
   private navBearingText = ''
+  private navSectorValue: NavigationSector | null = null
   private navRangeMode = -1
   private navRangeStep = Number.NaN
   private navRangeText = ''
@@ -507,16 +510,19 @@ export class HUD {
     altDelta: number,
   ): void {
     if (!this.navCueEl) return
-    if (bearing === null || !Number.isFinite(bearing)) {
+    const safeBearing = normalizeNavigationBearing(bearing)
+    if (safeBearing === null) {
       this.setClass(this.navCueEl, 'near-gate', false)
       this.setHidden(this.navCueEl, true)
+      this.setNavigationSector(null)
       return
     }
     const safeDist = Math.max(0, safeHudValue(dist))
     const safeAltDelta = safeHudValue(altDelta)
     this.setHidden(this.navCueEl, false)
     this.setClass(this.navCueEl, 'near-gate', gateProximityHudActive(safeDist))
-    const deg = quantizeHudNumber((bearing * 180) / Math.PI, 4)
+    this.setNavigationSector(navigationSector(safeBearing))
+    const deg = navigationBearingDegrees(safeBearing)
     if (this.navArrowEl) {
       if (deg !== this.navBearingValue) {
         this.navBearingValue = deg
@@ -548,6 +554,14 @@ export class HUD {
         }
       }
       this.setText(this.navAltEl, this.navAltText)
+    }
+  }
+
+  private setNavigationSector(sector: NavigationSector | null): void {
+    if (!this.navCueEl || sector === this.navSectorValue) return
+    this.navSectorValue = sector
+    for (const candidate of NAVIGATION_SECTORS) {
+      this.setClass(this.navCueEl, `guidance-${candidate}`, candidate === sector)
     }
   }
 
@@ -873,6 +887,7 @@ export class HUD {
 const HEADING_TAPE_STEP_DEG = 15
 const HEADING_TAPE_STEP_PX = 56
 const MISSION_PHASES: readonly MissionPhaseCue[] = ['ready', 'running', 'returning', 'complete', 'failed']
+const NAVIGATION_SECTORS: readonly NavigationSector[] = ['ahead', 'left', 'right', 'behind']
 
 /** Stable decimal formatting prevents float noise from invalidating HUD caches. */
 export function quantizeHudNumber(value: number, precision: number): number {
@@ -936,6 +951,27 @@ export function flightStateLabel(state: FlightStateCue): string {
   if (state === 'crashed') return 'CRASH'
   if (state === 'airborne') return 'AIR'
   return 'GND'
+}
+
+/** Wrap a navigation bearing to a stable signed range, or reject it safely. */
+export function normalizeNavigationBearing(bearing: number | null | undefined): number | null {
+  if (bearing === null || bearing === undefined || !Number.isFinite(bearing)) return null
+  return Math.atan2(Math.sin(bearing), Math.cos(bearing))
+}
+
+/** Whole-degree arrow input avoids sub-degree DOM churn during hard turns. */
+export function navigationBearingDegrees(bearing: number): number {
+  const safe = normalizeNavigationBearing(bearing) ?? 0
+  return Math.round((safe * 180) / Math.PI)
+}
+
+/** Classify the target side so the cue remains readable while the jet rotates. */
+export function navigationSector(bearing: number | null | undefined): NavigationSector {
+  const safe = normalizeNavigationBearing(bearing) ?? 0
+  const absolute = Math.abs(safe)
+  if (absolute <= Math.PI / 8) return 'ahead'
+  if (absolute >= Math.PI * .75) return 'behind'
+  return safe > 0 ? 'right' : 'left'
 }
 
 export function formatHudNumber(value: number, precision: number): string {

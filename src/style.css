@@ -282,6 +282,10 @@ body,
   transition: none;
 }
 
+.quality-lite #nav-arrow {
+  transition: none;
+}
+
 /* ---- Title screen ---- */
 .title-screen {
   position: fixed;
@@ -1057,6 +1061,19 @@ body,
   animation: near-gate-pulse 0.9s ease-in-out infinite;
 }
 
+#nav-arrow {
+  transition: transform 120ms ease-out;
+}
+
+#nav-cue.guidance-ahead #nav-arrow {
+  color: #a9f5dd;
+}
+
+#nav-cue.guidance-behind #nav-arrow {
+  color: #ffcf83;
+  text-shadow: 0 0 12px rgba(240, 180, 41, 0.42);
+}
+
 @keyframes near-gate-pulse {
   0%,
   100% {
@@ -1071,6 +1088,10 @@ body,
   #nav-cue.near-gate {
     animation: none;
     box-shadow: 0 0 12px rgba(61, 206, 168, 0.2);
+  }
+
+  #nav-arrow {
+    transition: none;
   }
 }
 
