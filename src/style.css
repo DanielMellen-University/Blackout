@@ -649,6 +649,20 @@ body,
   outline-offset: 7px;
 }
 
+.menu-state {
+  margin: -7px 0 14px;
+  color: #ffcf83;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.menu-state[hidden] {
+  display: none !important;
+}
+
 .menu-stack {
   display: flex;
   flex-direction: column;
@@ -1004,6 +1018,22 @@ body,
 }
 
 .hud-hint[hidden] {
+  display: none !important;
+}
+
+.hud-paused {
+  margin-top: 7px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(240, 180, 41, 0.28);
+  color: #ffcf83;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.hud-paused[hidden] {
   display: none !important;
 }
 

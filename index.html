@@ -44,6 +44,7 @@
           <div id="menu-root" class="menu-panel">
             <p class="menu-kicker">Blackout</p>
             <h2 id="menu-heading">Settings</h2>
+            <p id="menu-state" class="menu-state" role="status" aria-live="polite" hidden></p>
             <div class="menu-stack">
               <button type="button" id="menu-resume" class="btn-play" hidden>Resume</button>
               <button type="button" id="menu-retry" class="btn-ghost" hidden>Retry same course</button>
@@ -193,6 +194,7 @@
           </div>
           <div id="hud-radar" class="hud-radar" aria-label="Radar contacts">NO CONTACTS</div>
           <div id="hud-hint" class="hud-hint" aria-label="Flight control hints" aria-live="polite" hidden></div>
+          <div id="hud-paused" class="hud-paused" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         </div>
 
         <!-- Top-right: altitude + attitude + fps -->

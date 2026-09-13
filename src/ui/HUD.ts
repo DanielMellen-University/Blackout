@@ -21,6 +21,10 @@ export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | '
 
 export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
 
+export function pauseStateLabel(paused: boolean): string {
+  return paused ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
+}
+
 export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
 
 export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · C VIEW'
@@ -80,6 +84,7 @@ export class HUD {
   private readonly fuelEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
+  private readonly pausedEl: HTMLElement | null
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
   private readonly heatVeilEl: HTMLElement | null
@@ -132,6 +137,7 @@ export class HUD {
   private radarText = ''
   private radarAriaText = ''
   private hintText = ''
+  private pausedValue: boolean | null = null
   private windSpeedValue = Number.NaN
   private windDirectionValue = Number.NaN
   private windText = ''
@@ -204,6 +210,7 @@ export class HUD {
     this.fuelEl = root.getElementById('hud-fuel')
     this.radarEl = root.getElementById('hud-radar')
     this.hintEl = root.getElementById('hud-hint')
+    this.pausedEl = root.getElementById('hud-paused')
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
     this.heatVeilEl = root.getElementById('heat-veil')
@@ -216,6 +223,16 @@ export class HUD {
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
     this.buildHeadingTape(root)
+  }
+
+  /** Keep the frozen-flight state explicit even while live telemetry is paused. */
+  setPaused(paused: boolean): void {
+    if (!this.pausedEl || paused === this.pausedValue) return
+    this.pausedValue = paused
+    const label = pauseStateLabel(paused)
+    this.setText(this.pausedEl, label)
+    this.setHidden(this.pausedEl, !paused)
+    this.setAttribute(this.pausedEl, 'aria-label', paused ? 'Flight paused. Simulation held.' : '')
   }
 
   update(opts: {

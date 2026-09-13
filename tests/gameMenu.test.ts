@@ -52,13 +52,14 @@ class FakeElement {
   setAttribute(): void {}
 }
 
-function menuFixture(): { root: FakeElement; resume: FakeElement } {
+function menuFixture(): { root: FakeElement; resume: FakeElement; state: FakeElement } {
   const root = new FakeElement()
   const panelRoot = new FakeElement()
   const panelControls = new FakeElement()
   const panelInfo = new FakeElement()
   const resume = new FakeElement()
   const heading = new FakeElement()
+  const state = new FakeElement()
   const fs = new FakeElement()
   const fsState = new FakeElement()
   const quit = new FakeElement()
@@ -72,6 +73,7 @@ function menuFixture(): { root: FakeElement; resume: FakeElement } {
   root.set('#menu-controls', panelControls)
   root.set('#menu-info', panelInfo)
   root.set('#menu-heading', heading)
+  root.set('#menu-state', state)
   root.set('#menu-resume', resume)
   root.set('#menu-quit', quit)
   root.set('#menu-retry', retry)
@@ -83,7 +85,7 @@ function menuFixture(): { root: FakeElement; resume: FakeElement } {
     'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
     [resume, close],
   )
-  return { root, resume }
+  return { root, resume, state }
 }
 
 describe('menu focus flow', () => {
@@ -96,16 +98,33 @@ describe('menu focus flow', () => {
 
     menu.openPause()
     expect(fixture.resume.focus).toHaveBeenCalled()
+    expect(fixture.state.textContent).toBe('FLIGHT PAUSED · SIMULATION HOLD')
+    expect(fixture.state.hidden).toBe(false)
     const preventDefault = vi.fn()
     fixture.root.dispatch('keydown', { key: 'Tab', shiftKey: false, preventDefault })
     expect(preventDefault).toHaveBeenCalled()
     menu.close()
+    expect(fixture.state.hidden).toBe(true)
     expect(source.focus).toHaveBeenCalledWith({ preventScroll: true })
     menu.dispose()
     menu.dispose()
     menu.openPause()
     menu.showView('controls')
     expect(menu.open).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the pause status out of the title settings view', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    vi.stubGlobal('document', { activeElement: null, fullscreenElement: null })
+    const fixture = menuFixture()
+    const menu = new GameMenu(fixture.root as unknown as HTMLElement)
+
+    menu.openPause()
+    menu.showTitlePage('controls')
+    expect(fixture.state.textContent).toBe('')
+    expect(fixture.state.hidden).toBe(true)
+    menu.dispose()
     vi.unstubAllGlobals()
   })
 })

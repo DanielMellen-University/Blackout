@@ -24,6 +24,7 @@ import {
   navigationBearingDegrees,
   navigationSector,
   normalizeNavigationBearing,
+  pauseStateLabel,
   missionPhaseClass,
   quantizeHudNumber,
   safeHudValue,
@@ -217,6 +218,11 @@ describe('HUD value formatting', () => {
     expect(normalizeFlightState('bad', true)).toBe('ground')
     expect(normalizeFlightState('bad', false)).toBe('airborne')
     expect(flightStateLabel('crashed')).toBe('CRASH')
+  })
+
+  it('keeps the paused-flight announcement explicit and compact', () => {
+    expect(pauseStateLabel(true)).toBe('FLIGHT PAUSED · SIMULATION HOLD')
+    expect(pauseStateLabel(false)).toBe('')
   })
 
   it('keeps navigation bearings wrapped and sector cues stable in hard turns', () => {

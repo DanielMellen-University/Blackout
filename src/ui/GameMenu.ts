@@ -12,6 +12,7 @@ export class GameMenu {
   private readonly panelControls: HTMLElement
   private readonly panelInfo: HTMLElement
   private readonly heading: HTMLElement
+  private readonly state: HTMLElement
   private readonly btnResume: HTMLElement
   private readonly btnQuit: HTMLElement
   private readonly btnRetry: HTMLElement
@@ -43,6 +44,7 @@ export class GameMenu {
     this.panelControls = must(root, '#menu-controls')
     this.panelInfo = must(root, '#menu-info')
     this.heading = must(root, '#menu-heading')
+    this.state = must(root, '#menu-state')
     this.btnResume = must(root, '#menu-resume')
     this.btnQuit = must(root, '#menu-quit')
     this.btnRetry = must(root, '#menu-retry')
@@ -103,6 +105,8 @@ export class GameMenu {
     if (this.disposed) return
     this.root.hidden = true
     this.view = 'root'
+    this.state.textContent = ''
+    this.state.hidden = true
     const target = this.returnFocus
     this.returnFocus = null
     if (target?.isConnected && !target.closest('[hidden]')) {
@@ -148,6 +152,8 @@ export class GameMenu {
   private syncChrome(): void {
     const pause = this.mode === 'pause'
     this.heading.textContent = pause ? 'Paused' : 'Settings'
+    this.state.textContent = pause ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
+    this.state.hidden = !pause
     this.btnResume.hidden = !pause
     this.btnRetry.hidden = !pause
     this.btnNewWorld.hidden = !pause

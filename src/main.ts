@@ -453,6 +453,7 @@ async function boot(): Promise<void> {
   let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {
     const live = playing && !menu.paused && !results.open
+    hud.setPaused(menu.paused)
     if (live === lastInputContextLive) return
     lastInputContextLive = live
     input.flightLive = live
