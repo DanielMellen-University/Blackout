@@ -27,6 +27,7 @@ import {
   navigationBearingDegrees,
   navigationEtaSeconds,
   navigationRangeCue,
+  navigationSectorLabel,
   navigationTargetLabel,
   navigationSector,
   normalizeNavigationBearing,
@@ -263,6 +264,10 @@ describe('HUD value formatting', () => {
     expect(navigationSector(-Math.PI / 2)).toBe('left')
     expect(navigationSector(Math.PI)).toBe('behind')
     expect(navigationSector(null)).toBe('ahead')
+    expect(navigationSectorLabel('left')).toBe('LEFT')
+    expect(navigationSectorLabel('right')).toBe('RIGHT')
+    expect(navigationSectorLabel('behind')).toBe('BEHIND')
+    expect(navigationSectorLabel(null)).toBe('AHEAD')
   })
 
   it('labels the return cue as base and fails closed to the next gate', () => {

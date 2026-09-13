@@ -31,6 +31,13 @@ export function hudBackgroundHidden(menuOpen: boolean, resultsOpen: boolean): bo
 
 export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
 
+export function navigationSectorLabel(sector: NavigationSector | null): string {
+  if (sector === 'left') return 'LEFT'
+  if (sector === 'right') return 'RIGHT'
+  if (sector === 'behind') return 'BEHIND'
+  return 'AHEAD'
+}
+
 export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · C VIEW'
 
 export type WeatherCue = 'calm' | 'active' | 'severe'
@@ -167,6 +174,7 @@ export class HUD {
   private readonly navCueEl: HTMLElement | null
   private readonly navTargetEl: HTMLElement | null
   private readonly navArrowEl: HTMLElement | null
+  private readonly navTurnEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
   private readonly navTrendEl: HTMLElement | null
   private readonly navEtaEl: HTMLElement | null
@@ -234,6 +242,7 @@ export class HUD {
   private navBearingValue = Number.NaN
   private navBearingText = ''
   private navSectorValue: NavigationSector | null = null
+  private navTurnText = ''
   private navRangeMode = -1
   private navRangeStep = Number.NaN
   private navRangeText = ''
@@ -309,6 +318,7 @@ export class HUD {
     this.navCueEl = root.getElementById('nav-cue')
     this.navTargetEl = root.getElementById('nav-target')
     this.navArrowEl = root.getElementById('nav-arrow')
+    this.navTurnEl = root.getElementById('nav-turn')
     this.navRangeEl = root.getElementById('nav-range')
     this.navTrendEl = root.getElementById('nav-trend')
     this.navEtaEl = root.getElementById('nav-eta')
@@ -692,6 +702,8 @@ export class HUD {
       this.setClass(this.navCueEl, 'nav-range-steady', false)
       this.setHidden(this.navCueEl, true)
       this.setNavigationSector(null)
+      if (this.navTurnEl) this.setText(this.navTurnEl, '')
+      this.navTurnText = ''
       this.navRangeValue = Number.NaN
       this.navRangeCueValue = null
       this.navTargetValue = null
@@ -719,9 +731,15 @@ export class HUD {
     this.setClass(this.navCueEl, 'nav-range-steady', rangeCue === 'steady')
     if (this.navTargetEl) {
       this.setText(this.navTargetEl, targetLabel)
-      this.setAttribute(this.navCueEl, 'aria-label', `${targetLabel} navigation`)
     }
-    this.setNavigationSector(navigationSector(safeBearing))
+    const sector = navigationSector(safeBearing)
+    this.setNavigationSector(sector)
+    this.setAttribute(this.navCueEl, 'aria-label', `${targetLabel} navigation, ${navigationSectorLabel(sector)}`)
+    if (this.navTurnEl) {
+      const turnText = navigationSectorLabel(sector)
+      if (turnText !== this.navTurnText) this.navTurnText = turnText
+      this.setText(this.navTurnEl, this.navTurnText)
+    }
     const deg = navigationBearingDegrees(safeBearing)
     if (this.navArrowEl) {
       if (deg !== this.navBearingValue) {
