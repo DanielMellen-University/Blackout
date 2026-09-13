@@ -294,6 +294,8 @@ export class HUD {
   private hudBackgroundHiddenValue: boolean | null = null
   private windSpeedValue = Number.NaN
   private windDirectionValue = Number.NaN
+  private windCrosswindValue = Number.NaN
+  private windCrosswindVisible = false
   private windText = ''
   private windAriaText = ''
   private weatherCueValue: WeatherCue | null = null
@@ -448,6 +450,8 @@ export class HUD {
     /** Live world wind vector in metres per second. */
     windX?: number
     windZ?: number
+    /** Runway-relative crosswind used on the return leg, in metres per second. */
+    crosswind?: number | null
     /** Active caution / warning (STALL, LOW ALT, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
@@ -633,16 +637,30 @@ export class HUD {
       const speed = windSpeedMps(windX, windZ)
       const direction = windDirectionDegrees(windX, windZ)
       const speedStep = Math.round(speed)
-      if (speedStep !== this.windSpeedValue || direction !== this.windDirectionValue) {
+      const crosswindVisible = opts.crosswind !== undefined && opts.crosswind !== null
+      const crosswind = crosswindVisible && Number.isFinite(opts.crosswind)
+        ? Math.max(0, opts.crosswind!)
+        : 0
+      const crosswindStep = crosswindVisible ? Math.round(crosswind) : -1
+      if (
+        speedStep !== this.windSpeedValue ||
+        direction !== this.windDirectionValue ||
+        crosswindStep !== this.windCrosswindValue ||
+        crosswindVisible !== this.windCrosswindVisible
+      ) {
         this.windSpeedValue = speedStep
         this.windDirectionValue = direction
-        this.windText = formatWind(windX, windZ)
-        this.windAriaText = this.windText === 'CALM'
-          ? 'Calm wind'
-          : `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees`
+        this.windCrosswindValue = crosswindStep
+        this.windCrosswindVisible = crosswindVisible
+        const baseWindText = formatWind(windX, windZ)
+        this.windText = crosswindVisible ? `${baseWindText} · ${formatCrosswind(crosswind)}` : baseWindText
+        this.windAriaText = baseWindText === 'CALM'
+          ? crosswindVisible ? `Calm wind, ${formatCrosswind(crosswind).toLowerCase()}` : 'Calm wind'
+          : `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees${crosswindVisible ? `, ${formatCrosswind(crosswind).toLowerCase()}` : ''}`
       }
       this.setText(this.windEl, this.windText)
       this.setAttribute(this.windEl, 'aria-label', this.windAriaText)
+      this.setClass(this.windEl, 'crosswind-active', crosswindVisible && crosswind >= 8)
     }
     if (this.phaseEl && opts.dayPhase) {
       this.setText(this.phaseEl, opts.dayPhase)
@@ -1294,6 +1312,18 @@ export function altitudeCue(altitude: number, onGround = false): AltitudeCue {
 export function windSpeedMps(windX: number, windZ: number): number {
   if (!Number.isFinite(windX) || !Number.isFinite(windZ)) return 0
   return Math.hypot(windX, windZ)
+}
+
+/** Resolve the absolute wind component across the home runway. */
+export function crosswindSpeedMps(windX: number, windZ: number, runwayYaw: number): number {
+  if (!Number.isFinite(windX) || !Number.isFinite(windZ) || !Number.isFinite(runwayYaw)) return 0
+  return Math.abs(windX * Math.cos(runwayYaw) - windZ * Math.sin(runwayYaw))
+}
+
+/** Format runway-relative crosswind as a compact return-leg cue. */
+export function formatCrosswind(crosswind: number): string {
+  const safe = Number.isFinite(crosswind) ? Math.max(0, crosswind) : 0
+  return safe < 1 ? 'XW CALM' : `XW ${Math.round(safe)} M/S`
 }
 
 /** Direction the weather vector travels toward, in degrees from world north. */

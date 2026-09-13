@@ -78,6 +78,7 @@ import {
   HUD,
   engineHeatBanner,
   engineHeatCue,
+  crosswindSpeedMps,
   navigationApproachCue,
   weatherCycleBanner,
   waterSurfaceCue,
@@ -1089,6 +1090,7 @@ async function boot(): Promise<void> {
       let navDist = nav.dist
       let navAltDelta = nav.altDelta
       let navApproach: 'aligned' | 'turn-left' | 'turn-right' | null = null
+      let navCrosswind: number | null = null
       if (returning) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navDist = Math.hypot(
@@ -1101,6 +1103,11 @@ async function boot(): Promise<void> {
           ? cameraRelativeBearing(cameras.camera.position, cameras.camera.quaternion, returnTarget)
           : gateScreenBearing(cameras.camera, returnTarget)
         navApproach = navigationApproachCue(pose.heading - world.spawn.yaw, 'base')
+        navCrosswind = crosswindSpeedMps(
+          precipitation.windX,
+          precipitation.windZ,
+          world.spawn.yaw,
+        )
       }
       const radarContacts = radar.update(
         aircraft.position.x,
@@ -1184,6 +1191,7 @@ async function boot(): Promise<void> {
       hudFrame.navAltDelta = navAltDelta
       hudFrame.navTarget = returning ? 'base' : 'gate'
       hudFrame.navApproach = navApproach
+      hudFrame.crosswind = navCrosswind
       hudFrame.radar = radarContacts
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
         ? FLIGHT_CONTROLS_HINT

@@ -3,6 +3,7 @@ import {
   afterburnerHeatIntensity,
   canopyTintIntensity,
   canopyWeatherIntensity,
+  crosswindSpeedMps,
   altitudeCue,
   formatAudioState,
   formatRadarContacts,
@@ -10,6 +11,7 @@ import {
   formatGForce,
   formatHeading,
   formatFuelEndurance,
+  formatCrosswind,
   formatHudNumber,
   formatVerticalSpeed,
   formatWind,
@@ -250,6 +252,11 @@ describe('HUD value formatting', () => {
     expect(windDirectionDegrees(5, 0)).toBe(90)
     expect(formatWind(3, 4)).toBe('5 M/S 037°')
     expect(formatWind(Number.NaN, 4)).toBe('CALM')
+    expect(crosswindSpeedMps(3, 4, 0)).toBe(3)
+    expect(crosswindSpeedMps(3, 4, Math.PI / 2)).toBe(4)
+    expect(crosswindSpeedMps(Number.NaN, 4, 0)).toBe(0)
+    expect(formatCrosswind(0.4)).toBe('XW CALM')
+    expect(formatCrosswind(8.2)).toBe('XW 8 M/S')
   })
 
   it('normalizes stable ground, airborne, and crash state cues', () => {
