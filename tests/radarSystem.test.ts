@@ -69,4 +69,26 @@ describe('arcade radar sweep', () => {
     expect(radarDistanceLabel(420)).toBe('420M')
     expect(radarDistanceLabel(4200)).toBe('4.2K')
   })
+
+  it('cycles only identified settlement contacts and retains world positions', () => {
+    const radar = new RadarSystem()
+    radar.update(0, 0, 0, { x: 0, y: 0, z: 600 }, [
+      { x: 100, y: 40, z: 0, kind: 'city', id: 'city-1' },
+      { x: 200, y: 80, z: 0, kind: 'village', id: 'village-1' },
+    ])
+    const first = radar.cycleTarget()
+    expect(first?.id).toBe('city-1')
+    expect(first?.x).toBe(100)
+    expect(first?.y).toBe(40)
+    expect(first?.z).toBe(0)
+    expect(first?.selected).toBe(true)
+    expect(radar.selectedTarget()?.id).toBe('city-1')
+
+    const second = radar.cycleTarget()
+    expect(second?.id).toBe('village-1')
+    expect(radar.selectedTarget()?.kind).toBe('village')
+    expect(radar.cycleTarget()?.id).toBe('city-1')
+    radar.clearTarget()
+    expect(radar.selectedTarget()).toBeNull()
+  })
 })

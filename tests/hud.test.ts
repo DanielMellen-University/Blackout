@@ -229,6 +229,17 @@ describe('HUD value formatting', () => {
     expect(formatRadarContacts([
       { kind: 'village', label: '', distance: Number.NaN, bearing: Number.NaN },
     ])).toBe('CONTACT 0M ↑')
+    expect(formatRadarContacts([
+      { kind: 'city', label: 'CITY', distance: 800, bearing: 0, selected: true },
+    ])).toBe('> CITY 800M ↑')
+  })
+
+  it('keeps optional radar targets explicit in the navigation label', () => {
+    expect(navigationTargetLabel('city')).toBe('CITY')
+    expect(navigationTargetLabel('village')).toBe('VILLAGE')
+    expect(navigationTargetText('city')).toBe('CITY TARGET')
+    expect(navigationTargetText('village')).toBe('VILLAGE TARGET')
+    expect(navigationTargetLabel('unknown')).toBe('NEXT GATE')
   })
 
   it('keeps water crossing cues calm and semantic', () => {

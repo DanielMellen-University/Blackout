@@ -466,6 +466,7 @@ async function boot(): Promise<void> {
   let controlHintUntilMs = 0
   const radarDiscovered = new Set<string>()
   let radarDiscoveryCooldownUntil = 0
+  let radarTargetCycleQueued = false
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   let overWater = false
   let refueling = false
@@ -551,6 +552,8 @@ async function boot(): Promise<void> {
     prevEngineHeat = null
     radarDiscovered.clear()
     radarDiscoveryCooldownUntil = 0
+    radar.clearTarget()
+    radarTargetCycleQueued = false
     overWater = false
     refueling = false
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
@@ -808,6 +811,7 @@ async function boot(): Promise<void> {
         if (audioMuted) audio.silence()
         showBanner(audioMuted ? 'AUDIO MUTED' : 'AUDIO LIVE', 1200)
       }
+      if (input.consumeRadarTargetCycle()) radarTargetCycleQueued = true
 
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()
@@ -1129,6 +1133,7 @@ async function boot(): Promise<void> {
       )
       const gate = world.mission.activeGatePos()
       const returning = challenge.phase === 'returning'
+      let navTarget: 'gate' | 'base' | 'city' | 'village' = returning ? 'base' : 'gate'
       let navBearing = cameras.mode === 'cockpit'
         ? nav.bearing
         : gateScreenBearing(cameras.camera, gate)
@@ -1165,6 +1170,33 @@ async function boot(): Promise<void> {
           RADAR_RANGE_METERS,
         ),
       )
+      if (radarTargetCycleQueued) {
+        radarTargetCycleQueued = false
+        const selected = radar.cycleTarget()
+        showBanner(
+          selected ? `RADAR LOCK / ${selected.label}` : 'NO SETTLEMENTS IN RANGE',
+          1400,
+          selected ? 'info' : 'danger',
+        )
+      }
+      const selectedRadarTarget = radar.selectedTarget()
+      if (!returning && selectedRadarTarget) {
+        const targetX = Number.isFinite(selectedRadarTarget.x) ? selectedRadarTarget.x! : aircraft.position.x
+        const targetY = Number.isFinite(selectedRadarTarget.y) ? selectedRadarTarget.y! : aircraft.position.y
+        const targetZ = Number.isFinite(selectedRadarTarget.z) ? selectedRadarTarget.z! : aircraft.position.z
+        returnTarget.set(targetX, targetY, targetZ)
+        navDist = Math.hypot(
+          targetX - aircraft.position.x,
+          targetY - aircraft.position.y,
+          targetZ - aircraft.position.z,
+        )
+        navAltDelta = targetY - aircraft.position.y
+        navBearing = cameras.mode === 'cockpit'
+          ? cameraRelativeBearing(cameras.camera.position, cameras.camera.quaternion, returnTarget)
+          : gateScreenBearing(cameras.camera, returnTarget)
+        navTarget = selectedRadarTarget.kind
+        navApproach = null
+      }
       if (aircraft.status === 'ok' && !aircraft.onGround && nowMs >= radarDiscoveryCooldownUntil) {
         for (const contact of radarContacts) {
           if (contact.kind === 'gate' || !contact.id || radarDiscovered.has(contact.id)) continue
@@ -1239,7 +1271,7 @@ async function boot(): Promise<void> {
       hudFrame.navDist = navDist
       hudFrame.navBearing = navBearing
       hudFrame.navAltDelta = navAltDelta
-      hudFrame.navTarget = returning ? 'base' : 'gate'
+      hudFrame.navTarget = navTarget
       hudFrame.navApproach = navApproach
       hudFrame.crosswind = navCrosswind
       hudFrame.radar = radarContacts

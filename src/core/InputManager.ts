@@ -26,6 +26,7 @@ export class InputManager {
   resetQueued = false
   weatherCycleQueued = false
   audioToggleQueued = false
+  radarTargetCycleQueued = false
   /**
    * When false, keys are still tracked for stick continuity but C/R/N are not
    * queued and browser-default suppression is left to the UI capture flag.
@@ -90,6 +91,7 @@ export class InputManager {
     this.resetQueued = false
     this.weatherCycleQueued = false
     this.audioToggleQueued = false
+    this.radarTargetCycleQueued = false
   }
 
   /** Drop a single code (e.g. Space used to start) without killing held stick. */
@@ -130,6 +132,12 @@ export class InputManager {
   consumeAudioToggle(): boolean {
     if (!this.audioToggleQueued) return false
     this.audioToggleQueued = false
+    return true
+  }
+
+  consumeRadarTargetCycle(): boolean {
+    if (!this.radarTargetCycleQueued) return false
+    this.radarTargetCycleQueued = false
     return true
   }
 
@@ -186,6 +194,7 @@ export class InputManager {
     if (e.code === 'KeyR') this.resetQueued = true
     if (e.code === 'KeyN') this.weatherCycleQueued = true
     if (e.code === 'KeyM') this.audioToggleQueued = true
+    if (e.code === 'KeyT') this.radarTargetCycleQueued = true
   }
 
   private shouldPreventBrowserDefault(e: KeyboardEvent): boolean {
@@ -215,6 +224,7 @@ export class InputManager {
       e.code === 'KeyN' ||
       e.code === 'KeyM' ||
       e.code === 'KeyB' ||
+      e.code === 'KeyT' ||
       e.code === 'F5'
     )
   }

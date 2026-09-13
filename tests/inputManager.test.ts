@@ -41,6 +41,20 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('queues radar target cycling only during live flight', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    fake.fire('keydown', 'KeyT')
+    expect(input.consumeRadarTargetCycle()).toBe(false)
+
+    input.flightLive = true
+    fake.fire('keydown', 'KeyT')
+    expect(input.consumeRadarTargetCycle()).toBe(true)
+    expect(input.consumeRadarTargetCycle()).toBe(false)
+
+    input.dispose()
+  })
+
   it('holds and releases the opt-in speed brake without changing default controls', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

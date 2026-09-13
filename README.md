@@ -56,6 +56,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A landed jet can refill at the home strip while stationary, with a short hold-position cue that makes recovery sorties less punishing.
 - Completed-run results show remaining and spent fuel for each sortie.
 - A compact radar readout prioritizes the active gate and nearby generated settlements.
+- Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.
@@ -400,6 +401,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Scroll** | Zoom (not cockpit) |
 | **C** | Toggle external / cockpit camera |
 | **N** | Weather |
+| **T** | Cycle radar settlement target |
 | **M** | Mute / unmute audio |
 | **Gamepad** | Left stick pitch/roll, LT/RT throttle, A / Cross afterburner |
 | **R** | New world + runway |

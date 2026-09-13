@@ -58,7 +58,8 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
     const label = typeof contact.label === 'string' && contact.label.length > 0
       ? contact.label
       : 'CONTACT'
-    labels.push(`${label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`)
+    const marker = contact.selected === true ? '> ' : ''
+    labels.push(`${marker}${label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`)
   }
   return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
 }
@@ -84,13 +85,18 @@ export function missionProgressText(current: number, total: number): string {
 }
 
 /** Restrict the navigation target label to the two supported route states. */
-export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' {
-  return target === 'base' ? 'BASE' : 'NEXT GATE'
+export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' | 'CITY' | 'VILLAGE' {
+  if (target === 'base') return 'BASE'
+  if (target === 'city') return 'CITY'
+  if (target === 'village') return 'VILLAGE'
+  return 'NEXT GATE'
 }
 
 /** Include the active checkpoint number when mission counts are available. */
 export function navigationTargetText(target: unknown, current?: number, total?: number): string {
   if (target === 'base') return 'BASE'
+  if (target === 'city') return 'CITY TARGET'
+  if (target === 'village') return 'VILLAGE TARGET'
   const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total!)) : 0
   if (safeTotal <= 0) return 'NEXT GATE'
   const safeCurrent = Number.isFinite(current)
@@ -345,7 +351,7 @@ export class HUD {
   private navRangeValue = Number.NaN
   private navRangeCueValue: NavigationRangeCue | null = null
   private navRangeCueText = ''
-  private navTargetValue: 'NEXT GATE' | 'BASE' | null = null
+  private navTargetValue: 'NEXT GATE' | 'BASE' | 'CITY' | 'VILLAGE' | null = null
   private navEtaValue = -1
   private navEtaText = '--'
   private navAltMode = -1
@@ -920,7 +926,7 @@ export class HUD {
     this.navTargetValue = targetLabel
     const altitudeCue = navigationAltitudeCue(safeAltDelta, targetLabel === 'BASE' ? 'base' : 'gate')
     this.setHidden(this.navCueEl, false)
-    this.setClass(this.navCueEl, 'near-gate', targetLabel !== 'BASE' && gateProximityHudActive(safeDist))
+    this.setClass(this.navCueEl, 'near-gate', targetLabel === 'NEXT GATE' && gateProximityHudActive(safeDist))
     this.setClass(this.navCueEl, 'return-home', targetLabel === 'BASE')
     this.setClass(this.navCueEl, 'nav-alt-high', altitudeCue === 'high')
     this.setClass(this.navCueEl, 'nav-alt-low', altitudeCue === 'low')

@@ -18,8 +18,13 @@ export interface RadarContact {
   distance: number
   bearing: number
   label: string
+  /** World position is retained for optional navigation target handoff. */
+  x?: number
+  y?: number
+  z?: number
   id?: string
   biome?: string
+  selected?: boolean
 }
 
 export interface RadarGate {
@@ -38,10 +43,11 @@ export const MAX_RADAR_CONTACTS = 6
 export class RadarSystem {
   private readonly contactPool: RadarContact[] = Array.from(
     { length: MAX_RADAR_CONTACTS },
-    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', id: '', biome: '' }),
+    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, id: '', biome: '', selected: false }),
   )
   private readonly contacts: RadarContact[] = []
   private visibleContactLimit = MAX_RADAR_CONTACTS
+  private selectedTargetId = ''
 
   /** Reduce label crowding on constrained render and motion settings. */
   setRenderQuality(quality: RenderQuality): void {
@@ -88,13 +94,51 @@ export class RadarSystem {
       const priority = radarKindPriority(a.kind) - radarKindPriority(b.kind)
       return priority || a.distance - b.distance
     })
+    for (const contact of this.contacts) {
+      contact.selected = contact.id !== '' && contact.id === this.selectedTargetId
+    }
     return this.contacts
+  }
+
+  /** Cycle the selected settlement target in the current fixed contact pool. */
+  cycleTarget(): RadarContact | null {
+    let first: RadarContact | null = null
+    let next: RadarContact | null = null
+    let foundSelected = false
+    for (const contact of this.contacts) {
+      if (!contact.id || contact.kind === 'gate') continue
+      if (!first) first = contact
+      if (foundSelected && !next) next = contact
+      if (contact.id === this.selectedTargetId) foundSelected = true
+    }
+    const target = next ?? first
+    if (!target || !target.id) {
+      this.selectedTargetId = ''
+      return null
+    }
+    this.selectedTargetId = target.id
+    for (const contact of this.contacts) contact.selected = contact.id === this.selectedTargetId
+    return target
+  }
+
+  /** Return the selected settlement only while it remains in the current range. */
+  selectedTarget(): RadarContact | null {
+    if (!this.selectedTargetId) return null
+    for (const contact of this.contacts) {
+      if (contact.id === this.selectedTargetId && contact.kind !== 'gate') return contact
+    }
+    return null
+  }
+
+  clearTarget(): void {
+    this.selectedTargetId = ''
+    for (const contact of this.contacts) contact.selected = false
   }
 
   private addContact(
     kind: RadarContactKind,
     x: number,
-    _y: number,
+    y: number,
     z: number,
     px: number,
     pz: number,
@@ -114,6 +158,9 @@ export class RadarSystem {
     contact.distance = distance
     contact.bearing = bearing
     contact.label = radarContactLabel(contact.kind)
+    contact.x = x
+    contact.y = Number.isFinite(y) ? y : 0
+    contact.z = z
     contact.id = typeof id === 'string' ? id : ''
     contact.biome = typeof biome === 'string' ? biome : ''
     this.contacts.push(contact)
