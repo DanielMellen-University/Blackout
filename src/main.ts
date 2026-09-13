@@ -1129,6 +1129,8 @@ async function boot(): Promise<void> {
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`
       hudFrame.missionPhase = challenge.phase
+      hudFrame.missionCurrent = challenge.gatesPassed
+      hudFrame.missionTotal = challenge.totalGates
       hudFrame.navDist = nav.dist
       hudFrame.navBearing = cameras.mode === 'cockpit'
         ? nav.bearing

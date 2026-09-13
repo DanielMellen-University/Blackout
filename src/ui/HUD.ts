@@ -59,6 +59,21 @@ export function waterSurfaceCue(biome: unknown): string {
   return biome === 'ocean' ? 'SEA CROSSING' : 'INLAND WATER CROSSING'
 }
 
+/** Clamp route progress before it reaches the visual and semantic meters. */
+export function missionProgressPercent(current: number, total: number): number {
+  const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0
+  const safeCurrent = Number.isFinite(current) ? Math.max(0, Math.floor(current)) : 0
+  return safeTotal > 0 ? Math.min(100, Math.round((Math.min(safeCurrent, safeTotal) / safeTotal) * 100)) : 0
+}
+
+export function missionProgressText(current: number, total: number): string {
+  const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0
+  const safeCurrent = Number.isFinite(current)
+    ? Math.min(safeTotal, Math.max(0, Math.floor(current)))
+    : 0
+  return `${safeCurrent} of ${safeTotal} gates cleared`
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
@@ -91,6 +106,7 @@ export class HUD {
   private readonly windEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
+  private readonly missionProgressEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
@@ -156,6 +172,10 @@ export class HUD {
   private weatherCueValue: WeatherCue | null = null
   private weatherAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
+  private missionProgressCurrent = -1
+  private missionProgressTotal = -1
+  private missionProgressPercentText = ''
+  private missionProgressAriaText = ''
   private flightStateValue: FlightStateCue | null = null
   private flightStateText = ''
   private flightStateAriaText = ''
@@ -219,6 +239,7 @@ export class HUD {
     this.windEl = root.getElementById('hud-wind')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
+    this.missionProgressEl = root.getElementById('hud-gate-progress')
     this.fuelEl = root.getElementById('hud-fuel')
     this.radarEl = root.getElementById('hud-radar')
     this.hintEl = root.getElementById('hud-hint')
@@ -296,6 +317,9 @@ export class HUD {
     fuel?: number
     /** Current route phase used for a restrained mission-state cue. */
     missionPhase?: MissionPhaseCue | string
+    /** Cleared and total gates for the compact route progress meter. */
+    missionCurrent?: number
+    missionTotal?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
     /** Temporary control hint shown during the takeoff handoff. */
@@ -488,6 +512,20 @@ export class HUD {
           }
         }
       }
+    }
+    if (this.missionProgressEl && (opts.missionCurrent !== undefined || opts.missionTotal !== undefined)) {
+      const current = Number.isFinite(opts.missionCurrent) ? Math.max(0, Math.floor(opts.missionCurrent!)) : 0
+      const total = Number.isFinite(opts.missionTotal) ? Math.max(0, Math.floor(opts.missionTotal!)) : 0
+      if (current !== this.missionProgressCurrent || total !== this.missionProgressTotal) {
+        this.missionProgressCurrent = current
+        this.missionProgressTotal = total
+        this.missionProgressPercentText = `${missionProgressPercent(current, total)}%`
+        this.missionProgressAriaText = missionProgressText(current, total)
+      }
+      this.setStyle(this.missionProgressEl, '--mission-progress', this.missionProgressPercentText)
+      this.setAttribute(this.missionProgressEl, 'aria-valuemax', String(total))
+      this.setAttribute(this.missionProgressEl, 'aria-valuenow', String(Math.min(current, total)))
+      this.setAttribute(this.missionProgressEl, 'aria-valuetext', this.missionProgressAriaText)
     }
     if (this.fuelEl && opts.fuel !== undefined) {
       const percent = fuelPercent({ fraction: opts.fuel })

@@ -28,6 +28,8 @@ import {
   normalizeNavigationBearing,
   pauseStateLabel,
   missionPhaseClass,
+  missionProgressPercent,
+  missionProgressText,
   quantizeHudNumber,
   safeHudValue,
   speedWarningLevel,
@@ -194,6 +196,14 @@ describe('HUD value formatting', () => {
     expect(waterSurfaceCue('ocean')).toBe('SEA CROSSING')
     expect(waterSurfaceCue('water')).toBe('INLAND WATER CROSSING')
     expect(waterSurfaceCue(undefined)).toBe('INLAND WATER CROSSING')
+  })
+
+  it('bounds route progress for the compact gate meter', () => {
+    expect(missionProgressPercent(2, 5)).toBe(40)
+    expect(missionProgressPercent(9, 5)).toBe(100)
+    expect(missionProgressPercent(Number.NaN, Number.NaN)).toBe(0)
+    expect(missionProgressText(2, 5)).toBe('2 of 5 gates cleared')
+    expect(missionProgressText(9, 5)).toBe('5 of 5 gates cleared')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {
