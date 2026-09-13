@@ -9,6 +9,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Title screen: Play, Controls, Game info
 - Pause menu in flight (**Esc**): resume, fullscreen, quit to title
 - Paused flight is labeled explicitly in the menu and frozen HUD so the simulation hold is unmistakable
+- Automatic pauses explain whether focus, fullscreen, or graphics recovery caused the hold
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
 - Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.

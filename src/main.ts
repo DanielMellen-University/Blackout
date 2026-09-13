@@ -474,7 +474,7 @@ async function boot(): Promise<void> {
     showBanner('GRAPHICS PAUSED / RECOVERING', 8000, 'danger')
     if (shouldPauseForContextLoss(playing, menu.paused, results.open)) {
       audio.silence()
-      menu.openPause()
+      menu.openPause('graphics')
       input.clearQueued()
       time.reset()
       syncInputContext()
@@ -689,7 +689,7 @@ async function boot(): Promise<void> {
       results.open,
     )) {
       audio.silence()
-      menu.openPause()
+      menu.openPause('fullscreen')
       input.clearQueued()
       time.reset()
       syncInputContext()
@@ -1087,7 +1087,7 @@ async function boot(): Promise<void> {
   const pauseForLostFocus = (): void => {
     if (!shouldPauseForFocusLost(playing, menu.paused, results.open)) return
     audio.silence()
-    menu.openPause()
+    menu.openPause('focus')
     input.clearQueued()
     time.reset()
     syncInputContext()

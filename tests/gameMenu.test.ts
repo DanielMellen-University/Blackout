@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { GameMenu } from '../src/ui/GameMenu'
+import { GameMenu, pauseReasonLabel } from '../src/ui/GameMenu'
 
 class FakeElement {
   hidden = false
@@ -126,5 +126,12 @@ describe('menu focus flow', () => {
     expect(fixture.state.hidden).toBe(true)
     menu.dispose()
     vi.unstubAllGlobals()
+  })
+
+  it('explains why an automatic pause was triggered', () => {
+    expect(pauseReasonLabel('focus')).toBe('FLIGHT PAUSED · WINDOW FOCUS LOST')
+    expect(pauseReasonLabel('fullscreen')).toBe('FLIGHT PAUSED · FULLSCREEN EXITED')
+    expect(pauseReasonLabel('graphics')).toBe('FLIGHT PAUSED · GRAPHICS RECOVERING')
+    expect(pauseReasonLabel('manual')).toBe('FLIGHT PAUSED · SIMULATION HOLD')
   })
 })

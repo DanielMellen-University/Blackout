@@ -1,6 +1,21 @@
 export type MenuMode = 'title' | 'pause'
 type MenuView = 'root' | 'controls' | 'info'
 
+export type PauseReason = 'manual' | 'focus' | 'fullscreen' | 'graphics'
+
+export function pauseReasonLabel(reason: PauseReason): string {
+  switch (reason) {
+    case 'focus':
+      return 'FLIGHT PAUSED · WINDOW FOCUS LOST'
+    case 'fullscreen':
+      return 'FLIGHT PAUSED · FULLSCREEN EXITED'
+    case 'graphics':
+      return 'FLIGHT PAUSED · GRAPHICS RECOVERING'
+    default:
+      return 'FLIGHT PAUSED · SIMULATION HOLD'
+  }
+}
+
 /**
  * Title settings + in-flight pause menu.
  */
@@ -20,6 +35,7 @@ export class GameMenu {
   private readonly btnFs: HTMLElement
   private readonly fsState: HTMLElement
   private readonly btnClose: HTMLElement
+  private pauseReason: PauseReason = 'manual'
   private returnFocus: HTMLElement | null = null
   private disposed = false
   private readonly onKeyDown = (event: KeyboardEvent): void => {
@@ -91,10 +107,11 @@ export class GameMenu {
     this.close()
   }
 
-  openPause(): void {
+  openPause(reason: PauseReason = 'manual'): void {
     if (this.disposed) return
     this.rememberFocus()
     this.mode = 'pause'
+    this.pauseReason = reason
     this.root.hidden = false
     this.showView('root')
     this.syncChrome()
@@ -105,6 +122,7 @@ export class GameMenu {
     if (this.disposed) return
     this.root.hidden = true
     this.view = 'root'
+    this.pauseReason = 'manual'
     this.state.textContent = ''
     this.state.hidden = true
     const target = this.returnFocus
@@ -152,7 +170,7 @@ export class GameMenu {
   private syncChrome(): void {
     const pause = this.mode === 'pause'
     this.heading.textContent = pause ? 'Paused' : 'Settings'
-    this.state.textContent = pause ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
+    this.state.textContent = pause ? pauseReasonLabel(this.pauseReason) : ''
     this.state.hidden = !pause
     this.btnResume.hidden = !pause
     this.btnRetry.hidden = !pause
