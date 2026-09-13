@@ -19,6 +19,7 @@ import {
   engineHeatCue,
   engineHeatBanner,
   engineHeatRearmBanner,
+  afterburnerHudLabel,
   flightStateLabel,
   gateProximityHudActive,
   gearTransitionActive,
@@ -194,6 +195,14 @@ describe('HUD value formatting', () => {
     expect(engineHeatRearmBanner(false, true)).toBeNull()
     expect(engineHeatRearmBanner(true, true)).toBeNull()
     expect(engineHeatRearmBanner(true, false)).toBe('AFTERBURNER READY / ENGINE COOL')
+  })
+
+  it('keeps afterburner availability explicit after transient banners fade', () => {
+    expect(afterburnerHudLabel(false, null)).toBe('AB READY')
+    expect(afterburnerHudLabel(true, null)).toBe('AB ON')
+    expect(afterburnerHudLabel(false, 'heat')).toBe('AB HOT')
+    expect(afterburnerHudLabel(true, 'fuel')).toBe('AB FUEL')
+    expect(afterburnerHudLabel(false, 'unknown')).toBe('AB READY')
   })
 
   it('marks the nav cue near the active gate only inside the soft window', () => {

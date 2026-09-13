@@ -1190,6 +1190,9 @@ async function boot(): Promise<void> {
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
       hudFrame.boost = aircraft.engineState.afterburnerActive
+      hudFrame.afterburnerLock = aircraft.engineState.afterburnerHeatLocked
+        ? 'heat'
+        : aircraft.fuel.fraction <= FUEL_AFTERBURNER_RESERVE_FRACTION ? 'fuel' : null
       hudFrame.gearDown = aircraft.controls.gearDown
       hudFrame.onGround = aircraft.onGround
       hudFrame.flightState = aircraft.status === 'crashed'

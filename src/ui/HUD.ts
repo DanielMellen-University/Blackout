@@ -201,6 +201,16 @@ export function missionPaceLabel(value: unknown): string {
   return value.trim()
 }
 
+/** Describe afterburner availability without exposing internal lockout state. */
+export function afterburnerHudLabel(
+  active: boolean,
+  lock: unknown,
+): 'AB ON' | 'AB READY' | 'AB HOT' | 'AB FUEL' {
+  if (lock === 'heat') return 'AB HOT'
+  if (lock === 'fuel') return 'AB FUEL'
+  return active ? 'AB ON' : 'AB READY'
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
@@ -223,6 +233,7 @@ export class HUD {
   private readonly engFill: HTMLElement | null
   private readonly engMarker: HTMLElement | null
   private readonly engPanel: HTMLElement | null
+  private readonly abStateEl: HTMLElement | null
   private readonly adiBall: HTMLElement | null
   private readonly adiBankPtr: HTMLElement | null
   private readonly adiPitchEl: HTMLElement | null
@@ -299,6 +310,7 @@ export class HUD {
   private fuelEnduranceText = 'END --'
   private engineHeatValue = Number.NaN
   private engineHeatText = ''
+  private abStateText = 'AB READY'
   private radarText = ''
   private radarAriaText = ''
   private hintText = ''
@@ -379,6 +391,7 @@ export class HUD {
     this.engFill = root.getElementById('eng-fill')
     this.engMarker = root.getElementById('eng-marker')
     this.engPanel = root.getElementById('eng-panel')
+    this.abStateEl = root.getElementById('hud-ab-state')
     this.adiBall = root.getElementById('adi-ball')
     this.adiBankPtr = root.getElementById('adi-bank-ptr')
     this.adiPitchEl = root.getElementById('adi-pitch')
@@ -449,6 +462,8 @@ export class HUD {
     boost?: boolean
     /** Bounded engine stress fraction used by the compact temperature row. */
     engineHeat?: number
+    /** Current afterburner lockout source, if boost is unavailable. */
+    afterburnerLock?: 'fuel' | 'heat' | null
     gearDown?: boolean
     onGround?: boolean
     /** Aircraft pitch (rad), nose up positive. */
@@ -789,6 +804,16 @@ export class HUD {
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
+    }
+    if (this.abStateEl) {
+      const label = afterburnerHudLabel(opts.boost === true, opts.afterburnerLock)
+      if (label !== this.abStateText) this.abStateText = label
+      this.setText(this.abStateEl, this.abStateText)
+      this.setClass(this.abStateEl, 'ab-active', label === 'AB ON')
+      this.setClass(this.abStateEl, 'ab-hot', label === 'AB HOT')
+      this.setClass(this.abStateEl, 'ab-fuel', label === 'AB FUEL')
+      this.setClass(this.abStateEl, 'ab-ready', label === 'AB READY')
+      this.setAttribute(this.abStateEl, 'aria-label', `Afterburner ${label.slice(3).toLowerCase()}`)
     }
 
     if (this.gearEl && opts.gearDown !== undefined) {

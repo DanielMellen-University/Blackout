@@ -2041,8 +2041,16 @@ body,
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.eng-readout {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
 }
 
 #eng-panel .gauge-title {
@@ -2059,6 +2067,31 @@ body,
   letter-spacing: 0.02em;
   min-width: 2.6ch;
   text-align: right;
+}
+
+.eng-ab-state {
+  color: var(--ink-dim);
+  font-size: 0.54rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.eng-ab-state.ab-active {
+  color: #a9f5dd;
+}
+
+.eng-ab-state.ab-hot {
+  color: #ff9f9f;
+}
+
+.eng-ab-state.ab-fuel {
+  color: #ffcf83;
+}
+
+.eng-ab-state.ab-ready {
+  color: var(--ink-dim);
 }
 
 .eng-bar-wrap {
