@@ -86,7 +86,13 @@ import {
   type HudBannerTone,
 } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
-import { RADAR_RANGE_METERS, radarDiscoveryLabel, RadarSystem } from './systems/RadarSystem'
+import {
+  RADAR_RANGE_METERS,
+  radarDiscoveryLabel,
+  radarTargetArrivalLabel,
+  radarTargetArrivalRadius,
+  RadarSystem,
+} from './systems/RadarSystem'
 import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
 import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
@@ -1204,6 +1210,15 @@ async function boot(): Promise<void> {
           : gateScreenBearing(cameras.camera, returnTarget)
         navTarget = selectedRadarTarget.kind
         navApproach = null
+        const arrivalRadius = radarTargetArrivalRadius(selectedRadarTarget.kind)
+        if (
+          aircraft.status === 'ok' &&
+          arrivalRadius > 0 &&
+          navDist <= arrivalRadius
+        ) {
+          showBanner(radarTargetArrivalLabel(selectedRadarTarget.kind), 2000, 'success')
+          radar.clearTarget()
+        }
       }
       if (aircraft.status === 'ok' && !aircraft.onGround && nowMs >= radarDiscoveryCooldownUntil) {
         for (const contact of radarContacts) {

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   radarDiscoveryLabel,
   radarDistanceLabel,
+  radarTargetArrivalLabel,
+  radarTargetArrivalRadius,
   RadarSystem,
 } from '../src/systems/RadarSystem'
 
@@ -28,5 +30,14 @@ describe('radar exploration cues', () => {
     expect(second[0]?.id).toBe('village-2')
     expect(second[0]?.biome).toBe('tundra')
     expect(radarDistanceLabel(second[0]?.distance ?? Number.NaN)).toBe('900M')
+  })
+
+  it('gives settlement locks a bounded arrival envelope', () => {
+    expect(radarTargetArrivalRadius('city')).toBeGreaterThan(radarTargetArrivalRadius('village'))
+    expect(radarTargetArrivalRadius('village')).toBeGreaterThan(0)
+    expect(radarTargetArrivalRadius('gate')).toBe(0)
+    expect(radarTargetArrivalLabel('city')).toBe('CITY DESTINATION REACHED')
+    expect(radarTargetArrivalLabel('village')).toBe('VILLAGE DESTINATION REACHED')
+    expect(radarTargetArrivalLabel('gate')).toBe('')
   })
 })

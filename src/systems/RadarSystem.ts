@@ -197,6 +197,20 @@ export function radarDistanceLabel(distance: number): string {
   return `${(safe / 1000).toFixed(safe < 10_000 ? 1 : 0)}K`
 }
 
+/** Keep settlement arrival readable without requiring a landing or scene scan. */
+export function radarTargetArrivalRadius(kind: RadarContactKind): number {
+  if (kind === 'city') return 900
+  if (kind === 'village') return 420
+  return 0
+}
+
+/** One-shot destination copy for a selected radar settlement. */
+export function radarTargetArrivalLabel(kind: RadarContactKind): string {
+  if (kind === 'city') return 'CITY DESTINATION REACHED'
+  if (kind === 'village') return 'VILLAGE DESTINATION REACHED'
+  return ''
+}
+
 function radarKindPriority(kind: RadarContactKind): number {
   return kind === 'gate' ? 0 : kind === 'city' ? 1 : 2
 }
