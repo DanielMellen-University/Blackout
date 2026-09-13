@@ -612,7 +612,7 @@ export class MissionSystem {
     this.beaconMat.opacity = (pulse + near * 0.18) * gateBeaconDistanceOpacity(distance)
   }
 
-  update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'complete' {
+  update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'miss' | 'complete' {
     if (this.disposed) return 'none'
     this.resolvePresentationTime(nowMs)
     if (!finiteCoordinates(px, py, pz)) return 'none'
@@ -648,7 +648,10 @@ export class MissionSystem {
     _radial.set(ix - g.pos.x, iy - g.pos.y, iz - g.pos.z)
     _radial.addScaledVector(g.fwd, -_radial.dot(g.fwd))
     const radial = _radial.length()
-    if (radial > g.radius) return 'none'
+    if (radial > g.radius) {
+      this.lastPassQuality = 0
+      return 'miss'
+    }
 
     this.lastPassQuality = 1 - Math.min(1, radial / Math.max(1, g.radius))
     g.passed = true

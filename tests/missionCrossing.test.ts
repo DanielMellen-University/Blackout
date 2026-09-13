@@ -46,6 +46,25 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.update(aheadX, gate.y, aheadZ)).toBe('pass')
   })
 
+  it('reports a forward crossing outside the ring so the pilot can re-align', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    const gate = mission.activeGatePos()!
+    const ring = mission.root.getObjectByName('gate_0')!
+    const fwdX = Math.sin(ring.rotation.y)
+    const fwdZ = Math.cos(ring.rotation.y)
+    const behindX = gate.x - fwdX * 20
+    const behindZ = gate.z - fwdZ * 20
+    const missY = gate.y + 80
+    const aheadX = gate.x + fwdX * 20
+    const aheadZ = gate.z + fwdZ * 20
+    expect(mission.update(behindX, missY, behindZ)).toBe('none')
+    expect(mission.update(aheadX, missY, aheadZ)).toBe('miss')
+    expect(mission.activeGatePos()).toBe(gate)
+    expect(mission.lastPassQuality).toBe(0)
+    mission.dispose()
+  })
+
   it('reuses the HUD telemetry snapshot between frames', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)

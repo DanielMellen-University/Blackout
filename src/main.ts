@@ -909,6 +909,10 @@ async function boot(): Promise<void> {
             audio.playCue('gate')
             showBanner(`GATE CLEAR · ${challenge.gatePaceLabel}`, 1400, 'success')
           }
+          if (event === 'miss') {
+            audio.playCue('warning')
+            showBanner('GATE MISSED / RE-ALIGN', 1500, 'danger')
+          }
           if (event === 'complete') {
             challenge.recordGate(world.mission.lastPassQuality)
             audio.playCue('complete')
