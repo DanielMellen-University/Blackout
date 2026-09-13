@@ -42,7 +42,7 @@ import {
   ChallengeRun,
   COURSE_HISTORY_STORAGE_PREFIX,
   formatTime,
-  readCourseHistory,
+  repairCourseHistory,
 } from './systems/ChallengeRun'
 import {
   courseDefinitionForId,
@@ -127,7 +127,7 @@ async function boot(): Promise<void> {
       for (const option of Array.from(select.options)) {
         const course = courseDefinitionForId(option.value)
         const runId = courseRunId(course)
-        const history = runId ? readCourseHistory(qualityStorage, runId) : null
+        const history = runId ? repairCourseHistory(qualityStorage, runId) : null
         const historyLabel = history && history.completionCount > 0
           ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
           : ''
@@ -151,7 +151,7 @@ async function boot(): Promise<void> {
     const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
     const completed = curated.filter((course) => {
       const runId = courseRunId(course)
-      return runId !== null && (readCourseHistory(qualityStorage, runId)?.completionCount ?? 0) > 0
+      return runId !== null && (repairCourseHistory(qualityStorage, runId)?.completionCount ?? 0) > 0
     }).length
     titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE`
     titleProgress.setAttribute('aria-label', `${completed} of ${curated.length} curated courses complete`)

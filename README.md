@@ -27,6 +27,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The last selected course is remembered across reloads when browser storage is available, with a safe Random world fallback.
 - The title screen shows curated-course completion progress, refreshed only at startup and after a completed run.
 - Course progress and selection recover from cross-tab storage changes without adding per-frame reads.
+- Malformed course history is repaired into a canonical record the next time it is accessed.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

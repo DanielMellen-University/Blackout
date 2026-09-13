@@ -54,30 +54,96 @@ export interface CourseHistory {
   bestTimeSec: number
 }
 
+type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
+type HistoryRepairStore = Pick<ScoreStore, 'getItem'> & Partial<Pick<ScoreStore, 'setItem'>>
+
+interface ParsedCourseHistory {
+  history: CourseHistory
+  needsRepair: boolean
+}
+
 export function courseHistoryStorageKey(courseId: string): string {
   return COURSE_HISTORY_STORAGE_PREFIX + courseId
 }
 
 export function readCourseHistory(
-  storage: Pick<ScoreStore, 'getItem'> | null,
+  storage: HistoryReadStore,
   courseId: string,
 ): CourseHistory | null {
   try {
     const raw = storage?.getItem(courseHistoryStorageKey(courseId))
     if (!raw) return null
-    const parsed: unknown = JSON.parse(raw)
-    if (!parsed || typeof parsed !== 'object') return null
-    const record = parsed as Partial<CourseHistory>
-    const completionCount = Number.isFinite(record.completionCount) && record.completionCount! > 0
-      ? Math.floor(record.completionCount!)
-      : 0
-    const bestTimeSec = Number.isFinite(record.bestTimeSec) && record.bestTimeSec! >= 0
-      ? record.bestTimeSec!
-      : Number.POSITIVE_INFINITY
-    return { completionCount, bestTimeSec }
+    return parseCourseHistory(raw)?.history ?? null
   } catch {
     return null
   }
+}
+
+/**
+ * Read and repair one history record at most once. This is intentionally
+ * called from setup/results paths, never from the render loop.
+ */
+export function repairCourseHistory(
+  storage: HistoryRepairStore | null,
+  courseId: string,
+): CourseHistory | null {
+  try {
+    const raw = storage?.getItem(courseHistoryStorageKey(courseId))
+    if (!raw) return null
+    const parsed = parseCourseHistory(raw)
+    if (!parsed) return null
+    if (parsed.needsRepair) {
+      storage?.setItem?.(
+        courseHistoryStorageKey(courseId),
+        serializeCourseHistory(parsed.history),
+      )
+    }
+    return parsed.history
+  } catch {
+    return null
+  }
+}
+
+function parseCourseHistory(raw: string): ParsedCourseHistory | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+
+  const record = parsed as Record<string, unknown>
+  const rawCompletionCount = record.completionCount
+  const rawBestTimeSec = record.bestTimeSec
+  const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
+  const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
+    ? Math.max(0, Math.floor(rawCompletionCount))
+    : 0
+  const bestTimeSec = typeof rawBestTimeSec === 'number' && Number.isFinite(rawBestTimeSec) && rawBestTimeSec >= 0
+    ? rawBestTimeSec
+    : Number.POSITIVE_INFINITY
+  const needsRepair =
+    typeof rawCompletionCount !== 'number' ||
+    !Number.isFinite(rawCompletionCount) ||
+    rawCompletionCount < 0 ||
+    !Number.isInteger(rawCompletionCount) ||
+    (hasBestTime && (typeof rawBestTimeSec !== 'number' || !Number.isFinite(rawBestTimeSec) || rawBestTimeSec < 0)) ||
+    Object.keys(record).some((key) => key !== 'completionCount' && key !== 'bestTimeSec')
+  return {
+    history: { completionCount, bestTimeSec },
+    needsRepair,
+  }
+}
+
+function serializeCourseHistory(history: CourseHistory): string {
+  const record: Record<string, number> = {
+    completionCount: Math.max(0, Math.floor(history.completionCount)),
+  }
+  if (Number.isFinite(history.bestTimeSec) && history.bestTimeSec >= 0) {
+    record.bestTimeSec = history.bestTimeSec
+  }
+  return JSON.stringify(record)
 }
 
 /**
@@ -283,7 +349,7 @@ export class ChallengeRun {
   }
 
   private readHistory(): CourseHistory {
-    return readCourseHistory(this.storage, this.courseId) ?? {
+    return repairCourseHistory(this.storage, this.courseId) ?? {
       completionCount: 0,
       bestTimeSec: Number.POSITIVE_INFINITY,
     }

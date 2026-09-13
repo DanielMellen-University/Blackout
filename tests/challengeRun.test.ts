@@ -4,6 +4,7 @@ import {
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
+  repairCourseHistory,
   readCourseHistory,
   resultMedalClass,
 } from '../src/systems/ChallengeRun'
@@ -158,5 +159,26 @@ describe('ChallengeRun', () => {
       bestTimeSec: Number.POSITIVE_INFINITY,
     })
     expect(readCourseHistory(null, 'seed:none:orbit')).toBeNull()
+  })
+
+  it('repairs malformed completion history once and keeps a canonical record', () => {
+    const values = new Map<string, string>([
+      ['blackout.history.seed:repair:orbit', '{"completionCount":2.9,"bestTimeSec":null,"debug":"drop"}'],
+    ])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+
+    expect(repairCourseHistory(storage, 'seed:repair:orbit')).toEqual({
+      completionCount: 2,
+      bestTimeSec: Number.POSITIVE_INFINITY,
+    })
+    expect(values.get('blackout.history.seed:repair:orbit')).toBe('{"completionCount":2}')
+    expect(repairCourseHistory(storage, 'seed:repair:orbit')).toEqual({
+      completionCount: 2,
+      bestTimeSec: Number.POSITIVE_INFINITY,
+    })
+    expect(values.get('blackout.history.seed:repair:orbit')).toBe('{"completionCount":2}')
   })
 })
