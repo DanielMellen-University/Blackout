@@ -57,6 +57,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Completed-run results show remaining and spent fuel for each sortie.
 - A compact radar readout prioritizes the active gate and nearby generated settlements.
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
+- Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.
@@ -396,6 +397,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **2** | Engine power up |
 | **Space** | Afterburner |
 | **B (hold)** | Speed brake |
+| **G** | Toggle landing gear |
 
 | **Hold MMB + drag** | Look / pan (not cockpit) |
 | **Scroll** | Zoom (not cockpit) |
@@ -407,7 +409,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **R** | New world + runway |
 | **Esc** | Pause menu |
 
-**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Gear is automatic. Engine percent is the speed you want (50% ~ 1500 kts).
+**Takeoff:** Hold Shift to spool, build speed, then **W** to rotate. Press **G** for manual gear control; low altitude still deploys it automatically. Engine percent is the speed you want (50% ~ 1500 kts).
 
 Landing is gentle with gear down. After the circuit, land to score. Hard impacts explode; press **R** for a new world. Retry the same course from pause or the results screen. Fullscreen is a click toggle in the pause menu.
 

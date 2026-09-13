@@ -812,6 +812,14 @@ async function boot(): Promise<void> {
         showBanner(audioMuted ? 'AUDIO MUTED' : 'AUDIO LIVE', 1200)
       }
       if (input.consumeRadarTargetCycle()) radarTargetCycleQueued = true
+      if (input.consumeGearToggle()) {
+        const gearDown = aircraft.toggleGear()
+        showBanner(
+          gearDown ? 'GEAR DOWN / AUTO SAFETY' : 'GEAR UP / MANUAL OVERRIDE',
+          1500,
+          'info',
+        )
+      }
 
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()

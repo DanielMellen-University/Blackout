@@ -122,6 +122,8 @@ export class Aircraft {
   private afterburner: Object3D | null = null
   private readonly wheels: Object3D[] = []
   private wheelSpin = 0
+  /** True after a pilot gear command until the safety envelope takes over. */
+  private manualGearOverride = false
   private readonly navLightMaterials: MeshBasicMaterial[] = []
   private navLightOpacity = Number.NaN
   private presentationDaylight = 1
@@ -258,6 +260,7 @@ export class Aircraft {
     this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
     this.controls.gearDown = true
+    this.manualGearOverride = false
     this.controls.throttle = s.throttle
     this.wheelSpin = 0
     this.visualTimeMs = 0
@@ -366,11 +369,25 @@ export class Aircraft {
     if (this.status === 'landed') this.status = 'ok'
   }
 
+  /** Toggle the landing gear, retaining automatic low-altitude protection. */
+  toggleGear(): boolean {
+    if (this.disposed || this.status === 'crashed') return this.controls.gearDown
+    if (this.onGround) {
+      this.controls.gearDown = true
+      this.manualGearOverride = false
+      return true
+    }
+    this.manualGearOverride = true
+    this.controls.gearDown = !this.controls.gearDown
+    return this.controls.gearDown
+  }
+
   /** Gear down near the surface, up once you have height. */
   private autoGear(): void {
     if (this.status === 'crashed') return
     if (this.onGround) {
       this.controls.gearDown = true
+      this.manualGearOverride = false
       return
     }
     const agl = altitudeAgl(
@@ -379,8 +396,12 @@ export class Aircraft {
       this.position.z,
       this.controls.gearDown,
     )
-    if (agl < 16) this.controls.gearDown = true
-    else if (agl > 30) this.controls.gearDown = false
+    if (agl < 16) {
+      this.controls.gearDown = true
+      this.manualGearOverride = false
+    } else if (agl > 30 && !this.manualGearOverride) {
+      this.controls.gearDown = false
+    }
   }
 
   syncMesh(): void {

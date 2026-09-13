@@ -55,6 +55,20 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('queues landing-gear toggles only during live flight', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    fake.fire('keydown', 'KeyG')
+    expect(input.consumeGearToggle()).toBe(false)
+
+    input.flightLive = true
+    fake.fire('keydown', 'KeyG')
+    expect(input.consumeGearToggle()).toBe(true)
+    expect(input.consumeGearToggle()).toBe(false)
+
+    input.dispose()
+  })
+
   it('holds and releases the opt-in speed brake without changing default controls', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

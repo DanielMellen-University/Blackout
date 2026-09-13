@@ -40,7 +40,7 @@ export function navigationSectorLabel(sector: NavigationSector | null): string {
   return 'AHEAD'
 }
 
-export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · C VIEW'
+export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · G GEAR · C VIEW'
 
 export type WeatherCue = 'calm' | 'active' | 'severe'
 

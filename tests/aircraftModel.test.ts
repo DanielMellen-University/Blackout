@@ -91,6 +91,25 @@ describe('rebuilt aircraft', () => {
     expect(leftDoor.rotation.z).toBeGreaterThan(-.1)
   })
 
+  it('keeps a manual gear command at altitude but restores safety near the ground', () => {
+    setContactHeightSampler(() => 0)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+
+    expect(aircraft.toggleGear()).toBe(false)
+    aircraft.step(1 / 60)
+    expect(aircraft.controls.gearDown).toBe(false)
+
+    expect(aircraft.toggleGear()).toBe(true)
+    aircraft.step(1 / 60)
+    expect(aircraft.controls.gearDown).toBe(true)
+
+    aircraft.position.set(0, 10, 0)
+    expect(aircraft.toggleGear()).toBe(false)
+    aircraft.step(1 / 60)
+    expect(aircraft.controls.gearDown).toBe(true)
+  })
+
   it('avoids a second terrain query when auto-gear already knows the jet is grounded', () => {
     let samples = 0
     setContactHeightSampler(() => {
