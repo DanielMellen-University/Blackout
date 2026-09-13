@@ -428,6 +428,7 @@ async function boot(): Promise<void> {
     weather: '',
     dayPhase: '',
     mission: '',
+    missionPhase: 'ready',
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
@@ -1046,6 +1047,7 @@ async function boot(): Promise<void> {
       hudFrame.weather = world.atmosphere.weatherLabel
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`
+      hudFrame.missionPhase = challenge.phase
       hudFrame.navDist = nav.dist
       hudFrame.navBearing = cameras.mode === 'cockpit'
         ? nav.bearing

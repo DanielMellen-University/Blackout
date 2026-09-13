@@ -40,6 +40,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A compact radar readout prioritizes the active gate and nearby generated settlements.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - The altitude meter now turns amber or red for low terrain clearance and explains the cue to assistive tech while staying calm on the ground.
+- The mission row now uses restrained phase colors and polite announcements for takeoff, gate running, return, completion, and failure states.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

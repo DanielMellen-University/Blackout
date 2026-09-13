@@ -17,6 +17,8 @@ export type SpeedWarningLevel = 'normal' | 'redline' | 'overspeed'
 
 export type AltitudeCue = 'normal' | 'caution' | 'warning'
 
+export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | 'failed'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -119,6 +121,7 @@ export class HUD {
   private fuelAriaText = ''
   private radarText = ''
   private radarAriaText = ''
+  private missionPhaseValue: MissionPhaseCue | null = null
   private navBearingValue = Number.NaN
   private navBearingText = ''
   private navRangeMode = -1
@@ -225,6 +228,8 @@ export class HUD {
     mission?: string
     /** Remaining fuel as a normalized fraction. */
     fuel?: number
+    /** Current route phase used for a restrained mission-state cue. */
+    missionPhase?: MissionPhaseCue | string
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
     /** Next-gate range in meters; omit or 0 to hide. */
@@ -374,8 +379,19 @@ export class HUD {
     if (this.phaseEl && opts.dayPhase) {
       this.setText(this.phaseEl, opts.dayPhase)
     }
-    if (this.missionEl && opts.mission) {
+    if (this.missionEl && opts.mission !== undefined) {
       this.setText(this.missionEl, opts.mission)
+      this.setAttribute(this.missionEl, 'aria-live', 'polite')
+      this.setAttribute(this.missionEl, 'aria-atomic', 'true')
+      if (opts.missionPhase !== undefined) {
+        const phase = normalizeMissionPhase(opts.missionPhase)
+        if (phase !== this.missionPhaseValue) {
+          this.missionPhaseValue = phase
+          for (const candidate of MISSION_PHASES) {
+            this.setClass(this.missionEl, `phase-${candidate}`, candidate === phase)
+          }
+        }
+      }
     }
     if (this.fuelEl && opts.fuel !== undefined) {
       const percent = fuelPercent({ fraction: opts.fuel })
@@ -812,6 +828,7 @@ export class HUD {
 
 const HEADING_TAPE_STEP_DEG = 15
 const HEADING_TAPE_STEP_PX = 56
+const MISSION_PHASES: readonly MissionPhaseCue[] = ['ready', 'running', 'returning', 'complete', 'failed']
 
 /** Stable decimal formatting prevents float noise from invalidating HUD caches. */
 export function quantizeHudNumber(value: number, precision: number): number {
@@ -831,6 +848,15 @@ export function altitudeCue(altitude: number, onGround = false): AltitudeCue {
   if (safeAltitude <= 12) return 'warning'
   if (safeAltitude <= 48) return 'caution'
   return 'normal'
+}
+
+/** Normalize route phases before they become DOM class names or announcements. */
+export function normalizeMissionPhase(value: unknown): MissionPhaseCue {
+  return MISSION_PHASES.includes(value as MissionPhaseCue) ? value as MissionPhaseCue : 'ready'
+}
+
+export function missionPhaseClass(value: unknown): string {
+  return `phase-${normalizeMissionPhase(value)}`
 }
 
 export function formatHudNumber(value: number, precision: number): string {

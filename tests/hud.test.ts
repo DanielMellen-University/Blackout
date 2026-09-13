@@ -16,6 +16,8 @@ import {
   headingTapeLabel,
   headingTapeOffset,
   normalizeBannerTone,
+  normalizeMissionPhase,
+  missionPhaseClass,
   quantizeHudNumber,
   safeHudValue,
   speedWarningLevel,
@@ -181,5 +183,12 @@ describe('HUD value formatting', () => {
     expect(altitudeCue(32)).toBe('caution')
     expect(altitudeCue(49)).toBe('normal')
     expect(altitudeCue(Number.NaN)).toBe('normal')
+  })
+
+  it('normalizes mission phases before styling the live route row', () => {
+    expect(normalizeMissionPhase('returning')).toBe('returning')
+    expect(normalizeMissionPhase('unknown')).toBe('ready')
+    expect(missionPhaseClass('complete')).toBe('phase-complete')
+    expect(missionPhaseClass(null)).toBe('phase-ready')
   })
 })
