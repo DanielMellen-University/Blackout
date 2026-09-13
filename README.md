@@ -173,6 +173,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Altitude, vertical speed, and airspeed expose live semantic meter values, while HUD banners and cautions announce themselves at the right urgency for assistive tech.
 - Connected controllers poll at a bounded 30 Hz only during live flight, with stale axes and boost cleared immediately when focus is lost.
 - Touch-capable browsers get an optional event-driven flight deck during live flight for pitch, yaw, roll, throttle, and afterburner control.
+- Press **V** to toggle gentle pitch and bank trim assist. It only engages on released axes, so direct stick input always wins.
 - Keyboard and gamepad input now reject malformed frame deltas, axes, triggers, dead zones, and throttle values so one bad device sample cannot poison flight controls.
 - Engine resolution and flight integration also fail closed on malformed throttle, boost, and frame-delta values, keeping speed targets, afterburner state, and aircraft position finite.
 - Static runway and airfield meshes freeze their local transforms after construction, while the weather-driven windsock stays animatable for lower render-loop CPU cost.
@@ -404,6 +405,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **Space** | Afterburner |
 | **B (hold)** | Speed brake / wheel brakes |
 | **G** | Toggle landing gear |
+| **V** | Toggle pitch and bank trim assist |
 
 | **Hold MMB + drag** | Look / pan (not cockpit) |
 | **Scroll** | Zoom (not cockpit) |

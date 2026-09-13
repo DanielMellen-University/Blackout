@@ -49,6 +49,10 @@ export const flightConfig = {
   angularResponse: 12,
   angularDamping: 4.2,
   airControlFullSpeed: 38,
+  /** Optional trim assist gain. It only engages when its axis is released. */
+  stabilityAssistPitch: 1.15,
+  stabilityAssistRoll: 1.8,
+  stabilityAssistDeadzone: 0.08,
 
   gearHeight: 1.4,
   bellyHeight: 0.95,

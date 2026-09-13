@@ -1,4 +1,4 @@
-import { Box3, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Raycaster, Vector3 } from 'three'
+import { Box3, Euler, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
@@ -445,6 +445,36 @@ describe('rebuilt aircraft', () => {
 
     expect(forward(-1)).toBeLessThan(0)
     expect(forward(1)).toBeGreaterThan(0)
+  })
+
+  it('gently trims pitch and bank only when stability assist is enabled', () => {
+    const initial = new Quaternion().setFromEuler(new Euler(-0.34, 0, -0.42, 'XYZ'))
+    const assisted = new Aircraft()
+    assisted.position.set(0, 1000, 0)
+    assisted.velocity.set(0, 0, 200)
+    assisted.orientation.copy(initial)
+    assisted.controls.stabilityAssist = true
+
+    const unassisted = new Aircraft()
+    unassisted.position.set(0, 1000, 0)
+    unassisted.velocity.set(0, 0, 200)
+    unassisted.orientation.copy(initial)
+
+    const initialForward = new Vector3(0, 0, 1).applyQuaternion(initial)
+    const initialRight = new Vector3(1, 0, 0).applyQuaternion(initial)
+    for (let i = 0; i < 90; i++) {
+      assisted.step(1 / 60)
+      unassisted.step(1 / 60)
+    }
+
+    const assistedForward = new Vector3(0, 0, 1).applyQuaternion(assisted.orientation)
+    const assistedRight = new Vector3(1, 0, 0).applyQuaternion(assisted.orientation)
+    const unassistedForward = new Vector3(0, 0, 1).applyQuaternion(unassisted.orientation)
+    const unassistedRight = new Vector3(1, 0, 0).applyQuaternion(unassisted.orientation)
+    expect(Math.abs(assistedForward.y)).toBeLessThan(Math.abs(initialForward.y))
+    expect(Math.abs(assistedRight.y)).toBeLessThan(Math.abs(initialRight.y))
+    expect(Math.abs(assistedForward.y)).toBeLessThan(Math.abs(unassistedForward.y))
+    expect(Math.abs(assistedRight.y)).toBeLessThan(Math.abs(unassistedRight.y))
   })
 
   it('disposes replaced procedural model resources exactly once', () => {

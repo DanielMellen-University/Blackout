@@ -69,6 +69,26 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('toggles stability assist only during live flight', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    fake.fire('keydown', 'KeyV')
+    expect(input.consumeStabilityAssistToggle()).toBe(null)
+
+    input.flightLive = true
+    fake.fire('keydown', 'KeyV')
+    expect(input.consumeStabilityAssistToggle()).toBe(true)
+    expect(input.sampleWithDt(0).stabilityAssist).toBe(true)
+    expect(input.consumeStabilityAssistToggle()).toBe(null)
+
+    fake.fire('keyup', 'KeyV')
+    fake.fire('keydown', 'KeyV')
+    expect(input.consumeStabilityAssistToggle()).toBe(false)
+    expect(input.sampleWithDt(0).stabilityAssist).toBe(false)
+    input.dispose()
+  })
+
   it('holds and releases the opt-in speed brake without changing default controls', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

@@ -7,7 +7,7 @@ export const GAMEPAD_POLL_INTERVAL = 1 / 30
 
 /**
  * Maps keyboard into ControlState for arcade flight.
- * W/S pitch, A/D yaw, Q/E roll, Space boost, B speed brake, G gear, Shift/Ctrl throttle.
+ * W/S pitch, A/D yaw, Q/E roll, Space boost, B speed brake, G gear, V trim assist, Shift/Ctrl throttle.
  *
  * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
  * every frame so the ENG bar can track live.
@@ -34,11 +34,13 @@ export class InputManager {
   audioToggleQueued = false
   radarTargetCycleQueued = false
   gearToggleQueued = false
+  stabilityAssistToggleQueued = false
   /**
    * When false, keys are still tracked for stick continuity but C/R/N are not
    * queued and browser-default suppression is left to the UI capture flag.
    */
   flightLive = false
+  private stabilityAssist = false
 
   constructor(target: Window = window) {
     this.target = target
@@ -66,6 +68,7 @@ export class InputManager {
     this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll, this.touchRoll)
     this.controls.boost = this.keys.has('Space') || this.gamepadBoost || this.touchBoost
     this.controls.airbrake = this.keys.has('KeyB')
+    this.controls.stabilityAssist = this.stabilityAssist
 
     // Engine power: Shift up, Ctrl down
     const thrRate = flightConfig.throttleRate
@@ -92,6 +95,7 @@ export class InputManager {
     this.controls.roll = 0
     this.controls.yaw = 0
     this.controls.gearDown = true
+    this.controls.stabilityAssist = this.stabilityAssist
   }
 
   /** Feed the optional event-driven touch deck into the normal input sampler. */
@@ -111,6 +115,7 @@ export class InputManager {
     this.audioToggleQueued = false
     this.radarTargetCycleQueued = false
     this.gearToggleQueued = false
+    this.stabilityAssistToggleQueued = false
   }
 
   /** Drop a single code (e.g. Space used to start) without killing held stick. */
@@ -165,6 +170,15 @@ export class InputManager {
     if (!this.gearToggleQueued) return false
     this.gearToggleQueued = false
     return true
+  }
+
+  /** Consume the optional pitch and bank trim assist toggle, if queued. */
+  consumeStabilityAssistToggle(): boolean | null {
+    if (!this.stabilityAssistToggleQueued) return null
+    this.stabilityAssistToggleQueued = false
+    this.stabilityAssist = !this.stabilityAssist
+    this.controls.stabilityAssist = this.stabilityAssist
+    return this.stabilityAssist
   }
 
   private axis(positive: string, negative: string): number {
@@ -222,6 +236,7 @@ export class InputManager {
     if (e.code === 'KeyM') this.audioToggleQueued = true
     if (e.code === 'KeyT') this.radarTargetCycleQueued = true
     if (e.code === 'KeyG') this.gearToggleQueued = true
+    if (e.code === 'KeyV') this.stabilityAssistToggleQueued = true
   }
 
   private shouldPreventBrowserDefault(e: KeyboardEvent): boolean {
@@ -252,6 +267,7 @@ export class InputManager {
       e.code === 'KeyM' ||
       e.code === 'KeyB' ||
       e.code === 'KeyT' ||
+      e.code === 'KeyV' ||
       e.code === 'F5'
     )
   }

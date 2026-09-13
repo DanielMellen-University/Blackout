@@ -13,6 +13,8 @@ export interface ControlState {
   boost: boolean
   /** Speed brake / drag panels (B while held). */
   airbrake: boolean
+  /** Gentle pitch and bank trim when the pilot releases those axes. */
+  stabilityAssist: boolean
 }
 
 /** The two flight views toggled by C - see CameraSystem. */
@@ -37,5 +39,6 @@ export function createDefaultControls(): ControlState {
     gearDown: true,
     boost: false,
     airbrake: false,
+    stabilityAssist: false,
   }
 }

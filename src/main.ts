@@ -826,6 +826,14 @@ async function boot(): Promise<void> {
         const mode = cameras.toggleMode(aircraft)
         showBanner(cameraModeCue(mode), 1200, 'info')
       }
+      const stabilityAssist = input.consumeStabilityAssistToggle()
+      if (stabilityAssist !== null) {
+        showBanner(
+          stabilityAssist ? 'FLIGHT ASSIST ON / PITCH + BANK TRIM' : 'FLIGHT ASSIST OFF',
+          1600,
+          'info',
+        )
+      }
       if (input.consumeWeatherCycle()) {
         world.cycleWeather()
         showBanner(weatherCycleBanner(world.atmosphere.weatherLabel), 1800, 'info')

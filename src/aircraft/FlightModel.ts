@@ -11,6 +11,7 @@ import { flightConfig as C } from './flightConfig'
 
 const _fwd = new Vector3()
 const _up = new Vector3()
+const _right = new Vector3()
 const _velDir = new Vector3()
 const _flatFwd = new Vector3()
 const _worldUp = new Vector3(0, 1, 0)
@@ -97,9 +98,19 @@ export class FlightModel {
     // Slightly heavier pitch only at extreme speed (still flyable)
     const q = 1 / (1 + (airspeed / 1260) ** 2 * 0.22)
 
-    const tOx = -controls.pitch * C.pitchRate * auth * q
+    let tOx = -controls.pitch * C.pitchRate * auth * q
     const tOy = controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)
-    const tOz = -controls.roll * C.rollRate * (onGround ? auth * 0.28 : auth)
+    let tOz = -controls.roll * C.rollRate * (onGround ? auth * 0.28 : auth)
+    if (controls.stabilityAssist && !onGround) {
+      const deadzone = C.stabilityAssistDeadzone
+      if (Math.abs(controls.pitch) < deadzone) {
+        tOx += MathUtils.clamp(_fwd.y, -0.72, 0.72) * C.stabilityAssistPitch
+      }
+      if (Math.abs(controls.roll) < deadzone) {
+        const bankError = Math.atan2(_right.y, _up.y)
+        tOz -= MathUtils.clamp(bankError, -1.2, 1.2) * C.stabilityAssistRoll
+      }
+    }
 
     const kP = 1 - Math.exp(-C.pitchResponse * dt)
     const kA = 1 - Math.exp(-C.angularResponse * dt)
@@ -412,6 +423,7 @@ export class FlightModel {
   private axes(orientation: Quaternion): void {
     _fwd.set(0, 0, 1).applyQuaternion(orientation)
     _up.set(0, 1, 0).applyQuaternion(orientation)
+    _right.copy(_up).cross(_fwd).normalize()
   }
 }
 
