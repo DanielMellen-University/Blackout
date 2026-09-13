@@ -13,6 +13,8 @@ import {
   readMasteryBadges,
   repairBestCourseScore,
   repairMasteryBadges,
+  MAX_BEST_SCORE,
+  MAX_COMPLETION_COUNT,
 } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
@@ -244,5 +246,26 @@ describe('ChallengeRun', () => {
     expect(repairMasteryBadges(storage, 'seed:repair')).toEqual(['gold-run'])
     expect(values.get('blackout.badges.seed:repair')).toBe('["gold-run"]')
     expect(repairMasteryBadges(storage, 'seed:repair')).toEqual(['gold-run'])
+  })
+
+  it('prunes oversized local records to game-sized bounds', () => {
+    const values = new Map<string, string>([
+      ['blackout.best.seed:huge', String(Number.MAX_SAFE_INTEGER)],
+      ['blackout.history.seed:huge', JSON.stringify({
+        completionCount: Number.MAX_SAFE_INTEGER,
+        bestTimeSec: 12,
+      })],
+    ])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(repairBestCourseScore(storage, 'seed:huge')).toBe(MAX_BEST_SCORE)
+    expect(values.get('blackout.best.seed:huge')).toBe(String(MAX_BEST_SCORE))
+    expect(repairCourseHistory(storage, 'seed:huge')).toEqual({
+      completionCount: MAX_COMPLETION_COUNT,
+      bestTimeSec: 12,
+    })
+    expect(values.get('blackout.history.seed:huge')).toBe('{"completionCount":100000,"bestTimeSec":12}')
   })
 })

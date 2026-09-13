@@ -57,6 +57,8 @@ export const COURSE_BEST_STORAGE_PREFIX = 'blackout.best.'
 const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
+export const MAX_COMPLETION_COUNT = 100_000
+export const MAX_BEST_SCORE = 100_000
 
 export interface CourseHistory {
   completionCount: number
@@ -100,7 +102,7 @@ export function courseBestScoreStorageKey(courseId: string): string {
 export function readBestCourseScore(storage: HistoryReadStore, courseId: string): number {
   try {
     const parsed = Number(storage?.getItem(courseBestScoreStorageKey(courseId)) ?? 0)
-    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0
+    return Number.isFinite(parsed) && parsed > 0 ? Math.min(MAX_BEST_SCORE, Math.floor(parsed)) : 0
   } catch {
     return 0
   }
@@ -264,7 +266,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawBestTimeSec = record.bestTimeSec
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
-    ? Math.max(0, Math.floor(rawCompletionCount))
+    ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
   const bestTimeSec = typeof rawBestTimeSec === 'number' && Number.isFinite(rawBestTimeSec) && rawBestTimeSec >= 0
     ? rawBestTimeSec
@@ -273,6 +275,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
     rawCompletionCount < 0 ||
+    rawCompletionCount > MAX_COMPLETION_COUNT ||
     !Number.isInteger(rawCompletionCount) ||
     (hasBestTime && (typeof rawBestTimeSec !== 'number' || !Number.isFinite(rawBestTimeSec) || rawBestTimeSec < 0)) ||
     Object.keys(record).some((key) => key !== 'completionCount' && key !== 'bestTimeSec')
@@ -284,7 +287,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
 
 function serializeCourseHistory(history: CourseHistory): string {
   const record: Record<string, number> = {
-    completionCount: Math.max(0, Math.floor(history.completionCount)),
+    completionCount: Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(history.completionCount))),
   }
   if (Number.isFinite(history.bestTimeSec) && history.bestTimeSec >= 0) {
     record.bestTimeSec = history.bestTimeSec
@@ -401,7 +404,7 @@ export class ChallengeRun {
     const paceLabel = formatPaceDelta(paceDeltaSec)
     const comparisonBestSplits = this.bestGateSplits.slice()
     const history = this.readHistory()
-    history.completionCount += 1
+    history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
     const earnedBadges = masteryBadgesForRun(
@@ -486,7 +489,10 @@ export class ChallengeRun {
 
   private writeBest(score: number): void {
     try {
-      this.storage?.setItem(courseBestScoreStorageKey(this.courseId), String(Math.floor(score)))
+      this.storage?.setItem(
+        courseBestScoreStorageKey(this.courseId),
+        String(Math.min(MAX_BEST_SCORE, Math.max(0, Math.floor(score)))),
+      )
     } catch {
       // Private browsing/storage denial should never block a completed run.
     }
@@ -521,7 +527,7 @@ export class ChallengeRun {
 
   private writeHistory(history: CourseHistory): void {
     try {
-      this.storage?.setItem(courseHistoryStorageKey(this.courseId), JSON.stringify(history))
+      this.storage?.setItem(courseHistoryStorageKey(this.courseId), serializeCourseHistory(history))
     } catch {
       // Private browsing/storage denial should never block a completed run.
     }

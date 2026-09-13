@@ -495,7 +495,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night, and terrain-safe seeded route planning.
 
-The current ship is moving into gameplay expansion: route profiles and optional flight challenges will build on the existing scoring and same-course retry loop. Radar, weapons, and fuel remain out of scope until the challenge loop is worth mastering.
+The current ship has a varied, repeatable circuit with local records and mastery badges. The next phase adds lightweight arcade systems, starting with fuel and afterburner tradeoffs before radar or weapons.
 
 ## License
 
