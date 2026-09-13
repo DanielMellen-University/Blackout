@@ -101,6 +101,25 @@ it('uses the held speed brake to bleed airborne speed while preserving finite st
   expect(plane.speed).toBeGreaterThan(0)
 })
 
+it('uses the held brake as wheel braking during ground rollout', () => {
+  setContactHeightSampler(() => 0)
+  const unbraked = new Aircraft()
+  unbraked.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+  unbraked.controls.throttle = 0.35
+  unbraked.velocity.set(0, 0, 90)
+  unbraked.step(1 / 60)
+
+  const braked = new Aircraft()
+  braked.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+  braked.controls.throttle = 0.35
+  braked.controls.airbrake = true
+  braked.velocity.set(0, 0, 90)
+  braked.step(1 / 60)
+
+  expect(braked.speed).toBeLessThan(unbraked.speed - 1)
+  expect(Number.isFinite(braked.speed)).toBe(true)
+})
+
 it('keeps accelerating on a shallow slope instead of bleeding off', () => {
   setContactHeightSampler((_x, z) => 0.12 * z)
   const plane = new Aircraft()
