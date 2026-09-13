@@ -15,6 +15,8 @@ export type HudBannerTone = 'info' | 'success' | 'danger'
 
 export type SpeedWarningLevel = 'normal' | 'redline' | 'overspeed'
 
+export type AltitudeCue = 'normal' | 'caution' | 'warning'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -86,6 +88,7 @@ export class HUD {
   private altitudeValue = Number.NaN
   private altitudeText = ''
   private altitudeAriaText = ''
+  private altitudeCueValue: AltitudeCue | null = null
   private verticalSpeedValue = Number.NaN
   private verticalSpeedText = ''
   private verticalSpeedAriaText = ''
@@ -240,14 +243,24 @@ export class HUD {
   }): void {
     if (this.posEl) {
       const altitude = Number.isFinite(opts.y) ? Math.round(opts.y) : 0
-      if (altitude !== this.altitudeValue) {
+      const cue = altitudeCue(opts.y, opts.onGround === true)
+      const altitudeChanged = altitude !== this.altitudeValue
+      if (altitudeChanged) {
         this.altitudeValue = altitude
         this.altitudeText = String(altitude)
-        this.altitudeAriaText = `${this.altitudeText} metres`
+      }
+      if (cue !== this.altitudeCueValue || altitudeChanged) {
+        this.altitudeCueValue = cue
+        const cueText = cue === 'warning'
+          ? ', terrain clearance warning'
+          : cue === 'caution' ? ', low terrain clearance' : ''
+        this.altitudeAriaText = `${this.altitudeText} metres${cueText}`
       }
       this.setText(this.posEl, this.altitudeText)
       this.setAttribute(this.posEl, 'aria-valuenow', String(Math.max(0, altitude)))
       this.setAttribute(this.posEl, 'aria-valuetext', this.altitudeAriaText)
+      this.setClass(this.posEl, 'clearance-caution', cue === 'caution')
+      this.setClass(this.posEl, 'clearance-warning', cue === 'warning')
     }
 
     if (this.verticalSpeedEl) {
@@ -809,6 +822,15 @@ export function quantizeHudNumber(value: number, precision: number): number {
 /** Keep malformed live telemetry from reaching DOM text or CSS values. */
 export function safeHudValue(value: number, fallback = 0): number {
   return Number.isFinite(value) ? value : fallback
+}
+
+/** Keep terrain clearance legible without turning normal low-level flight into an alarm. */
+export function altitudeCue(altitude: number, onGround = false): AltitudeCue {
+  if (onGround || !Number.isFinite(altitude)) return 'normal'
+  const safeAltitude = Math.max(0, altitude)
+  if (safeAltitude <= 12) return 'warning'
+  if (safeAltitude <= 48) return 'caution'
+  return 'normal'
 }
 
 export function formatHudNumber(value: number, precision: number): string {

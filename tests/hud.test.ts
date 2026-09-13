@@ -3,6 +3,7 @@ import {
   afterburnerHeatIntensity,
   canopyTintIntensity,
   canopyWeatherIntensity,
+  altitudeCue,
   formatAudioState,
   formatRadarContacts,
   formatGForce,
@@ -172,5 +173,13 @@ describe('HUD value formatting', () => {
     expect(formatRadarContacts([
       { kind: 'village', label: '', distance: Number.NaN, bearing: Number.NaN },
     ])).toBe('CONTACT 0M ↑')
+  })
+
+  it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {
+    expect(altitudeCue(0, true)).toBe('normal')
+    expect(altitudeCue(10)).toBe('warning')
+    expect(altitudeCue(32)).toBe('caution')
+    expect(altitudeCue(49)).toBe('normal')
+    expect(altitudeCue(Number.NaN)).toBe('normal')
   })
 })
