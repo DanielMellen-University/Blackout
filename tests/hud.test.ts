@@ -11,6 +11,7 @@ import {
   formatHudNumber,
   formatVerticalSpeed,
   formatWind,
+  FLIGHT_CONTROLS_HINT,
   flightStateLabel,
   gateProximityHudActive,
   gearTransitionActive,
@@ -226,5 +227,11 @@ describe('HUD value formatting', () => {
     expect(navigationSector(-Math.PI / 2)).toBe('left')
     expect(navigationSector(Math.PI)).toBe('behind')
     expect(navigationSector(null)).toBe('ahead')
+  })
+
+  it('keeps the takeoff control hint compact and stable', () => {
+    expect(FLIGHT_CONTROLS_HINT).toContain('W/S PITCH')
+    expect(FLIGHT_CONTROLS_HINT).toContain('C VIEW')
+    expect(FLIGHT_CONTROLS_HINT.length).toBeLessThan(64)
   })
 })

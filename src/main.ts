@@ -72,7 +72,7 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { GameMenu } from './ui/GameMenu'
-import { HUD, type HudBannerTone } from './ui/HUD'
+import { FLIGHT_CONTROLS_HINT, HUD, type HudBannerTone } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
 import { RADAR_RANGE_METERS, RadarSystem } from './systems/RadarSystem'
 import { altitudeAgl } from './world/ground'
@@ -436,6 +436,7 @@ async function boot(): Promise<void> {
     navBearing: null,
     navAltDelta: 0,
     radar: [],
+    controlHint: null,
     timeMs: 0,
     banner: null,
     bannerTone: 'info',
@@ -444,6 +445,7 @@ async function boot(): Promise<void> {
     flightPathY: 50,
   }
   let prevWarning: string | null = null
+  let controlHintUntilMs = 0
 
   const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
@@ -519,6 +521,7 @@ async function boot(): Promise<void> {
     prevGLoadBand = 'normal'
     gLoadCueUntil = 0
     prevWarning = null
+    controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) showBanner(`SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}`, 5000)
   }
@@ -1062,6 +1065,9 @@ async function boot(): Promise<void> {
         : gateScreenBearing(cameras.camera, gate)
       hudFrame.navAltDelta = nav.altDelta
       hudFrame.radar = radarContacts
+      hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
+        ? FLIGHT_CONTROLS_HINT
+        : null
       hudFrame.timeMs = nowMs
       hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
       hudFrame.bannerTone = aircraft.status === 'crashed' ? 'danger' : bannerTone

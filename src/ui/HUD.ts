@@ -23,6 +23,8 @@ export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
 
 export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
 
+export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · C VIEW'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -75,6 +77,7 @@ export class HUD {
   private readonly missionEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
+  private readonly hintEl: HTMLElement | null
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
   private readonly heatVeilEl: HTMLElement | null
@@ -126,6 +129,7 @@ export class HUD {
   private fuelAriaText = ''
   private radarText = ''
   private radarAriaText = ''
+  private hintText = ''
   private windSpeedValue = Number.NaN
   private windDirectionValue = Number.NaN
   private windText = ''
@@ -195,6 +199,7 @@ export class HUD {
     this.missionEl = root.getElementById('hud-mission')
     this.fuelEl = root.getElementById('hud-fuel')
     this.radarEl = root.getElementById('hud-radar')
+    this.hintEl = root.getElementById('hud-hint')
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
     this.heatVeilEl = root.getElementById('heat-veil')
@@ -251,6 +256,8 @@ export class HUD {
     missionPhase?: MissionPhaseCue | string
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
+    /** Temporary control hint shown during the takeoff handoff. */
+    controlHint?: string | null
     /** Next-gate range in meters; omit or 0 to hide. */
     navDist?: number
     /** RAF timestamp shared by the main loop for time-based HUD cues. */
@@ -451,6 +458,12 @@ export class HUD {
       }
       this.setText(this.radarEl, this.radarText)
       this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
+    }
+    if (this.hintEl && opts.controlHint !== undefined) {
+      const hint = typeof opts.controlHint === 'string' ? opts.controlHint : ''
+      if (hint !== this.hintText) this.hintText = hint
+      this.setText(this.hintEl, this.hintText)
+      this.setHidden(this.hintEl, this.hintText.length === 0)
     }
     this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
 
