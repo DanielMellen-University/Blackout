@@ -151,6 +151,26 @@ describe('menu focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('returns focus to the flight canvas when pause opened after focus was lost', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const body = new FakeElement()
+    const canvas = new FakeElement()
+    vi.stubGlobal('document', { activeElement: body, body, fullscreenElement: null })
+    const fixture = menuFixture()
+    const menu = new GameMenu(
+      fixture.root as unknown as HTMLElement,
+      canvas as unknown as HTMLElement,
+    )
+
+    menu.openPause('focus')
+    menu.close()
+
+    expect(canvas.focus).toHaveBeenCalledWith({ preventScroll: true })
+    expect(body.focus).not.toHaveBeenCalled()
+    menu.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('explains why an automatic pause was triggered', () => {
     expect(pauseReasonLabel('focus')).toBe('FLIGHT PAUSED · WINDOW FOCUS LOST')
     expect(pauseReasonLabel('fullscreen')).toBe('FLIGHT PAUSED · FULLSCREEN EXITED')

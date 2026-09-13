@@ -36,6 +36,7 @@ export class GameMenu {
   private readonly fsState: HTMLElement
   private readonly btnClose: HTMLElement
   private pauseReason: PauseReason = 'manual'
+  private readonly flightFocus: HTMLElement | null
   private returnFocus: HTMLElement | null = null
   private disposed = false
   private readonly onKeyDown = (event: KeyboardEvent): void => {
@@ -54,8 +55,9 @@ export class GameMenu {
     }
   }
 
-  constructor(root: HTMLElement) {
+  constructor(root: HTMLElement, flightFocus: HTMLElement | null = null) {
     this.root = root
+    this.flightFocus = flightFocus
     this.panelRoot = must(root, '#menu-root')
     this.panelControls = must(root, '#menu-controls')
     this.panelInfo = must(root, '#menu-info')
@@ -129,8 +131,12 @@ export class GameMenu {
     this.root.removeAttribute('aria-describedby')
     const target = this.returnFocus
     this.returnFocus = null
-    if (target?.isConnected && !target.closest('[hidden]')) {
-      target.focus({ preventScroll: true })
+    const targetIsUsable = target?.isConnected && !target.closest('[hidden]') &&
+      (typeof document === 'undefined' || target !== document.body)
+    const fallback = this.mode === 'pause' ? this.flightFocus : null
+    const focusTarget = targetIsUsable ? target : fallback
+    if (focusTarget?.isConnected && !focusTarget.closest('[hidden]')) {
+      focusTarget.focus({ preventScroll: true })
     }
   }
 

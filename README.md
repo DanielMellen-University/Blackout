@@ -14,6 +14,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Settings, Controls, and Game info dialogs announce the heading for the panel that is actually visible
 - Modal dialogs keep frozen HUD telemetry out of the accessibility tree while Pause or Results has focus
 - Mouse exits from Pause now resync input and accessibility immediately, matching keyboard resume behavior
+- Pause opened after a focus loss now returns to the playable canvas instead of the browser body, keeping keyboard and mouse flight handoff reliable
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
 - Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.

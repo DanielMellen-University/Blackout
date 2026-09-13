@@ -111,7 +111,7 @@ async function boot(): Promise<void> {
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   if (!menuEl) throw new Error('#menu not found')
-  const menu = new GameMenu(menuEl)
+  const menu = new GameMenu(menuEl, canvas)
   const uiListeners = new ListenerBag()
 
   let qualityStorage: Storage | null = null
