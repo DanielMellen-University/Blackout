@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { RunResults } from '../src/ui/RunResults'
+import { resultFuelBandClass, RunResults } from '../src/ui/RunResults'
 
 class FakeClassList {
   private readonly values = new Set<string>()
@@ -93,6 +93,7 @@ function resultsFixture(): {
     ['result-landing', new FakeElement()],
     ['result-gates', new FakeElement()],
     ['result-fuel', new FakeElement()],
+    ['result-fuel-detail', new FakeElement()],
     ['result-score-detail', new FakeElement()],
     ['result-badges', new FakeElement()],
     ['result-splits', new FakeElement()],
@@ -121,6 +122,13 @@ const result = {
 }
 
 describe('run results focus flow', () => {
+  it('classifies result fuel bands without leaking malformed values', () => {
+    expect(resultFuelBandClass(72)).toBe('fuel-healthy')
+    expect(resultFuelBandClass(25)).toBe('fuel-low')
+    expect(resultFuelBandClass(10)).toBe('fuel-critical')
+    expect(resultFuelBandClass(Number.NaN)).toBe('fuel-critical')
+  })
+
   it('traps Tab and restores the flight focus target when hidden', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
@@ -133,7 +141,7 @@ describe('run results focus flow', () => {
       'GATE +20,000 · TIME +70,000 · LAND +10,000',
     )
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'NEW COURSE BEST · ENTER RETRY · R NEW WORLD',
+      'NEW COURSE BEST · SCORE 100,000 · FUEL 100% LEFT · ENTER RETRY · R NEW WORLD',
     )
 
     fixture.document.activeElement = fixture.newWorld
@@ -190,8 +198,9 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('PACE FOCUS')
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · LANDING ACE')
     expect(elementsFor(fixture.document, 'result-fuel')?.textContent).toBe('72%')
+    expect(elementsFor(fixture.document, 'result-fuel-detail')?.textContent).toBe('28% USED')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'NEW COURSE BEST · ENTER RETRY · R NEW WORLD',
+      'NEW COURSE BEST · SCORE 100,000 · FUEL 72% LEFT · ENTER RETRY · R NEW WORLD',
     )
     results.dispose()
     vi.unstubAllGlobals()

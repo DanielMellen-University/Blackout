@@ -47,6 +47,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A short takeoff hint surfaces the core pitch, yaw, roll, and camera controls, then disappears without persistent state.
 - Weather labels now distinguish active and severe fronts with restrained color and accessible wording, without adding flash effects.
 - Completed routes now include a clear retry or new-world handoff in the results dialog and its accessible description.
+- Results now summarize total score and fuel left in one line, with used-fuel detail and reserve-aware color for faster scanning.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

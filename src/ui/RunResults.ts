@@ -7,6 +7,7 @@ import {
 } from '../systems/ChallengeRun'
 
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
+const FUEL_CLASSES = ['fuel-healthy', 'fuel-low', 'fuel-critical'] as const
 
 /** Results screen for the takeoff → circuit → landing challenge loop. */
 export class RunResults {
@@ -18,6 +19,7 @@ export class RunResults {
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
   private readonly fuel: HTMLElement
+  private readonly fuelDetail: HTMLElement
   private readonly scoreDetail: HTMLElement
   private readonly badges: HTMLElement
   private readonly splits: HTMLElement
@@ -49,6 +51,7 @@ export class RunResults {
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
     this.fuel = must(root, 'result-fuel')
+    this.fuelDetail = must(root, 'result-fuel-detail')
     this.scoreDetail = must(root, 'result-score-detail')
     this.badges = must(root, 'result-badges')
     this.splits = must(root, 'result-splits')
@@ -71,10 +74,8 @@ export class RunResults {
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
     this.root.classList.add(resultMedalClass(result.medal))
     this.title.textContent = `${result.medal.toUpperCase()} RUN`
-    this.summary.textContent = result.isNewBest
-      ? 'NEW COURSE BEST · ENTER RETRY · R NEW WORLD'
-      : 'ROUTE COMPLETE · ENTER RETRY · R NEW WORLD'
     this.score.textContent = result.totalScore.toLocaleString()
+    this.score.setAttribute('aria-label', `Total score ${result.totalScore.toLocaleString()}`)
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
     this.gates.textContent = result.gateScore.toLocaleString()
@@ -86,6 +87,12 @@ export class RunResults {
       : 100 - fuelRemaining
     this.fuel.textContent = `${fuelRemaining}%`
     this.fuel.setAttribute('aria-label', `${fuelRemaining}% remaining, ${fuelUsed}% used`)
+    this.fuelDetail.textContent = fuelUsed > 0 ? `${fuelUsed}% USED` : 'NO BURN'
+    const fuelClass = resultFuelBandClass(fuelRemaining)
+    for (const className of FUEL_CLASSES) this.fuel.classList.remove(className)
+    this.fuel.classList.add(fuelClass)
+    const outcome = result.isNewBest ? 'NEW COURSE BEST' : 'ROUTE COMPLETE'
+    this.summary.textContent = `${outcome} · SCORE ${result.totalScore.toLocaleString()} · FUEL ${fuelRemaining}% LEFT · ENTER RETRY · R NEW WORLD`
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
@@ -143,4 +150,12 @@ function must(root: Document, id: string): HTMLElement {
   const el = root.getElementById(id)
   if (!el) throw new Error(`results missing #${id}`)
   return el
+}
+
+/** Keep result fuel emphasis aligned with the in-flight reserve thresholds. */
+export function resultFuelBandClass(remainingPercent: number): typeof FUEL_CLASSES[number] {
+  const safe = Number.isFinite(remainingPercent) ? Math.max(0, Math.min(100, remainingPercent)) : 0
+  if (safe <= 10) return 'fuel-critical'
+  if (safe <= 25) return 'fuel-low'
+  return 'fuel-healthy'
 }
