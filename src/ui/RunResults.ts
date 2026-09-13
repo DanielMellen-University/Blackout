@@ -12,6 +12,7 @@ const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-comp
 export class RunResults {
   private readonly root: HTMLElement
   private readonly title: HTMLElement
+  private readonly summary: HTMLElement
   private readonly score: HTMLElement
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
@@ -42,6 +43,7 @@ export class RunResults {
   constructor(root: Document = document) {
     this.root = must(root, 'run-results')
     this.title = must(root, 'result-title')
+    this.summary = must(root, 'result-summary')
     this.score = must(root, 'result-score')
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
@@ -54,6 +56,7 @@ export class RunResults {
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
     this.root.setAttribute('aria-labelledby', 'result-title')
+    this.root.setAttribute('aria-describedby', 'result-summary')
     this.root.addEventListener('keydown', this.onKeyDown)
   }
 
@@ -68,6 +71,9 @@ export class RunResults {
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
     this.root.classList.add(resultMedalClass(result.medal))
     this.title.textContent = `${result.medal.toUpperCase()} RUN`
+    this.summary.textContent = result.isNewBest
+      ? 'NEW COURSE BEST · ENTER RETRY · R NEW WORLD'
+      : 'ROUTE COMPLETE · ENTER RETRY · R NEW WORLD'
     this.score.textContent = result.totalScore.toLocaleString()
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`

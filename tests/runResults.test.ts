@@ -87,6 +87,7 @@ function resultsFixture(): {
   const elements = new Map<string, FakeElement>([
     ['run-results', root],
     ['result-title', new FakeElement()],
+    ['result-summary', new FakeElement()],
     ['result-score', new FakeElement()],
     ['result-time', new FakeElement()],
     ['result-landing', new FakeElement()],
@@ -130,6 +131,9 @@ describe('run results focus flow', () => {
     expect(fixture.retry.focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
       'GATE +20,000 · TIME +70,000 · LAND +10,000',
+    )
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
+      'NEW COURSE BEST · ENTER RETRY · R NEW WORLD',
     )
 
     fixture.document.activeElement = fixture.newWorld
@@ -186,6 +190,9 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('PACE FOCUS')
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · LANDING ACE')
     expect(elementsFor(fixture.document, 'result-fuel')?.textContent).toBe('72%')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
+      'NEW COURSE BEST · ENTER RETRY · R NEW WORLD',
+    )
     results.dispose()
     vi.unstubAllGlobals()
   })
