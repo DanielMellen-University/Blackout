@@ -72,7 +72,12 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { GameMenu } from './ui/GameMenu'
-import { FLIGHT_CONTROLS_HINT, HUD, type HudBannerTone } from './ui/HUD'
+import {
+  FLIGHT_CONTROLS_HINT,
+  hudBackgroundHidden,
+  HUD,
+  type HudBannerTone,
+} from './ui/HUD'
 import { RunResults } from './ui/RunResults'
 import { RADAR_RANGE_METERS, RadarSystem } from './systems/RadarSystem'
 import { altitudeAgl } from './world/ground'
@@ -454,6 +459,7 @@ async function boot(): Promise<void> {
   const syncInputContext = (): void => {
     const live = playing && !menu.paused && !results.open
     hud.setPaused(menu.paused)
+    hud.setBackgroundHidden(hudBackgroundHidden(menu.open, results.open))
     if (live === lastInputContextLive) return
     lastInputContextLive = live
     input.flightLive = live

@@ -25,6 +25,10 @@ export function pauseStateLabel(paused: boolean): string {
   return paused ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
 }
 
+export function hudBackgroundHidden(menuOpen: boolean, resultsOpen: boolean): boolean {
+  return menuOpen || resultsOpen
+}
+
 export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
 
 export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · C VIEW'
@@ -51,6 +55,7 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
 }
 
 export class HUD {
+  private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly gEl: HTMLElement | null
@@ -138,6 +143,7 @@ export class HUD {
   private radarAriaText = ''
   private hintText = ''
   private pausedValue: boolean | null = null
+  private hudBackgroundHiddenValue: boolean | null = null
   private windSpeedValue = Number.NaN
   private windDirectionValue = Number.NaN
   private windText = ''
@@ -177,6 +183,7 @@ export class HUD {
   private gearFlashUntil = 0
 
   constructor(root: Document = document) {
+    this.hudRoot = root.getElementById('hud')
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.gEl = root.getElementById('hud-g')
@@ -233,6 +240,13 @@ export class HUD {
     this.setText(this.pausedEl, label)
     this.setHidden(this.pausedEl, !paused)
     this.setAttribute(this.pausedEl, 'aria-label', paused ? 'Flight paused. Simulation held.' : '')
+  }
+
+  /** Keep stale telemetry out of the accessibility tree while a modal is open. */
+  setBackgroundHidden(hidden: boolean): void {
+    if (!this.hudRoot || hidden === this.hudBackgroundHiddenValue) return
+    this.hudBackgroundHiddenValue = hidden
+    this.setAttribute(this.hudRoot, 'aria-hidden', hidden ? 'true' : 'false')
   }
 
   update(opts: {

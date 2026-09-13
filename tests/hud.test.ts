@@ -16,6 +16,7 @@ import {
   gateProximityHudActive,
   gearTransitionActive,
   gForceTone,
+  hudBackgroundHidden,
   headingTapeLabel,
   headingTapeOffset,
   normalizeBannerTone,
@@ -223,6 +224,12 @@ describe('HUD value formatting', () => {
   it('keeps the paused-flight announcement explicit and compact', () => {
     expect(pauseStateLabel(true)).toBe('FLIGHT PAUSED · SIMULATION HOLD')
     expect(pauseStateLabel(false)).toBe('')
+  })
+
+  it('hides stale HUD telemetry whenever a modal owns focus', () => {
+    expect(hudBackgroundHidden(true, false)).toBe(true)
+    expect(hudBackgroundHidden(false, true)).toBe(true)
+    expect(hudBackgroundHidden(false, false)).toBe(false)
   })
 
   it('keeps navigation bearings wrapped and sector cues stable in hard turns', () => {
