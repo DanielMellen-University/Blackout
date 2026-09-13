@@ -59,6 +59,17 @@ export interface MissionRoutePoint {
 }
 
 export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom'
+export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
+
+export interface MissionRouteSummary {
+  profile: MissionRouteProfile
+  label: string
+  difficulty: MissionRouteDifficulty
+  lengthMeters: number
+  maxTurnDegrees: number
+  minClearanceMeters: number
+  maxAltitudeMeters: number
+}
 
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   orbit: 'ORBIT',
@@ -197,6 +208,74 @@ function routeOffsets(profile: MissionRouteProfile, seedPhase: number): RouteOff
   })
 }
 
+export function summarizeMissionRoute(
+  spawnX: number,
+  spawnY: number,
+  spawnZ: number,
+  route: readonly MissionRoutePoint[],
+  profile: MissionRouteProfile,
+): MissionRouteSummary {
+  const safeSpawnX = finiteOr(spawnX, 0)
+  const safeSpawnY = finiteOr(spawnY, 0)
+  const safeSpawnZ = finiteOr(spawnZ, 0)
+  let previousX = safeSpawnX
+  let previousY = safeSpawnY
+  let previousZ = safeSpawnZ
+  let previousDx = 0
+  let previousDz = 0
+  let lengthMeters = 0
+  let maxTurnDegrees = 0
+  let minClearanceMeters = Number.POSITIVE_INFINITY
+  let maxAltitudeMeters = safeSpawnY
+
+  for (const point of route) {
+    const dx = point.x - previousX
+    const dy = point.y - previousY
+    const dz = point.z - previousZ
+    const horizontalLength = Math.hypot(dx, dz)
+    lengthMeters += Math.hypot(dx, dy, dz)
+    maxAltitudeMeters = Math.max(maxAltitudeMeters, point.y)
+    if (horizontalLength > 1e-6 && Math.hypot(previousDx, previousDz) > 1e-6) {
+      const dot = (previousDx * dx + previousDz * dz) /
+        (Math.hypot(previousDx, previousDz) * horizontalLength)
+      maxTurnDegrees = Math.max(maxTurnDegrees, Math.acos(MathUtils.clamp(dot, -1, 1)) * 180 / Math.PI)
+    }
+
+    for (let sample = 1; sample <= ROUTE_SEGMENT_SAMPLES; sample++) {
+      const t = sample / (ROUTE_SEGMENT_SAMPLES + 1)
+      const x = previousX + dx * t
+      const y = previousY + dy * t
+      const z = previousZ + dz * t
+      const ground = sampleTerrainHeight(x, z)
+      if (Number.isFinite(ground)) minClearanceMeters = Math.min(minClearanceMeters, y - ground)
+    }
+
+    previousX = point.x
+    previousY = point.y
+    previousZ = point.z
+    previousDx = dx
+    previousDz = dz
+  }
+
+  if (!Number.isFinite(minClearanceMeters)) minClearanceMeters = ROUTE_CLEARANCE
+  const climbMeters = Math.max(0, maxAltitudeMeters - safeSpawnY)
+  const difficulty: MissionRouteDifficulty =
+    maxTurnDegrees >= 112 || climbMeters >= 420 || lengthMeters >= 7_200
+      ? 'technical'
+      : maxTurnDegrees >= 72 || climbMeters >= 240 || lengthMeters >= 5_400
+        ? 'standard'
+        : 'relaxed'
+  return {
+    profile,
+    label: routeProfileLabel(profile),
+    difficulty,
+    lengthMeters: finiteOr(lengthMeters, 0),
+    maxTurnDegrees: finiteOr(maxTurnDegrees, 0),
+    minClearanceMeters: Math.max(0, finiteOr(minClearanceMeters, ROUTE_CLEARANCE)),
+    maxAltitudeMeters: finiteOr(maxAltitudeMeters, safeSpawnY),
+  }
+}
+
 /**
  * Arcade checkpoint circuit around the airfield.
  * Large rings, climb slightly, fly through in order.
@@ -208,6 +287,16 @@ export class MissionSystem {
   private status: MissionStatus = 'idle'
   private liveLabel = '—'
   private profile: MissionRouteProfile = 'orbit'
+  private readonly summary: MissionRouteSummary = {
+    profile: 'orbit',
+    label: 'ORBIT',
+    difficulty: 'standard',
+    lengthMeters: 0,
+    maxTurnDegrees: 0,
+    minClearanceMeters: ROUTE_CLEARANCE,
+    maxAltitudeMeters: 0,
+  }
+  private routeBriefingText = 'ROUTE ORBIT / STANDARD / MIN CLR 120M'
   private readonly hudState: MissionHud = {
     status: 'idle',
     current: 0,
@@ -316,6 +405,25 @@ export class MissionSystem {
     this.lastPassQuality = 1
 
     const route = buildMissionRoute(safeSpawnX, safeSpawnY, safeSpawnZ, spawnYaw, this.profile)
+    const summary = summarizeMissionRoute(
+      safeSpawnX,
+      safeSpawnY,
+      safeSpawnZ,
+      route,
+      this.profile,
+    )
+    this.summary.profile = summary.profile
+    this.summary.label = summary.label
+    this.summary.difficulty = summary.difficulty
+    this.summary.lengthMeters = summary.lengthMeters
+    this.summary.maxTurnDegrees = summary.maxTurnDegrees
+    this.summary.minClearanceMeters = summary.minClearanceMeters
+    this.summary.maxAltitudeMeters = summary.maxAltitudeMeters
+    this.routeBriefingText = [
+      `ROUTE ${summary.label}`,
+      summary.difficulty.toUpperCase(),
+      `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
+    ].join(' / ')
     for (let i = 0; i < route.length; i++) {
       const point = route[i]!
       const gate = this.gatePool[i]!
@@ -444,6 +552,14 @@ export class MissionSystem {
 
   get routeProfileLabel(): string {
     return routeProfileLabel(this.profile)
+  }
+
+  get routeSummary(): MissionRouteSummary {
+    return this.summary
+  }
+
+  get routeBriefing(): string {
+    return this.routeBriefingText
   }
 
   hud(px: number, py: number, pz: number, headingYaw = 0): MissionHud {

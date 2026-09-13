@@ -8,6 +8,7 @@ import {
   buildMissionRoute,
   routeProfileForSpawn,
   routeProfileLabel,
+  summarizeMissionRoute,
   MissionSystem,
 } from '../src/systems/Mission'
 import { sampleTerrainHeight } from '../src/world/terrainSample'
@@ -174,6 +175,12 @@ describe('MissionSystem gate crossing', () => {
         previous = point
       }
     }
+
+    const summary = summarizeMissionRoute(0, 20, 0, routeA, 'orbit')
+    expect(summary.profile).toBe('orbit')
+    expect(summary.lengthMeters).toBeGreaterThan(0)
+    expect(summary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
+    expect(['relaxed', 'standard', 'technical']).toContain(summary.difficulty)
   })
 
   it('supports distinct readable route profiles without changing gate count', () => {
@@ -190,6 +197,16 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileForSpawn(0, 0, 0)).toBe('orbit')
     expect(routeProfileLabel('sweep')).toBe('SWEEP')
     expect(routeProfileLabel('slalom')).toBe('SLALOM')
+  })
+
+  it('exposes cached route feedback after mission start', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    expect(mission.routeSummary.label).toBe(mission.routeProfileLabel)
+    expect(mission.routeBriefing).toContain('MIN CLR')
+    expect(mission.routeBriefing).toContain(mission.routeProfileLabel)
+    expect(mission.routeSummary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
+    mission.dispose()
   })
 
   it('ignores late mission calls after idempotent teardown', () => {
