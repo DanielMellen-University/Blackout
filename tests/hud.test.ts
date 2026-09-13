@@ -169,5 +169,8 @@ describe('HUD value formatting', () => {
       { kind: 'city', label: 'CITY', distance: 4200, bearing: Math.PI / 2 },
     ])).toBe('GATE 1.2K ↑ · CITY 4.2K →')
     expect(formatRadarContacts([])).toBe('NO CONTACTS')
+    expect(formatRadarContacts([
+      { kind: 'village', label: '', distance: Number.NaN, bearing: Number.NaN },
+    ])).toBe('CONTACT 0M ↑')
   })
 })

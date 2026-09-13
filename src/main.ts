@@ -209,6 +209,8 @@ async function boot(): Promise<void> {
   let applyEffectsQuality: ((quality: RenderQuality) => void) | null = null
   let applyEffectsMotion: ((reduced: boolean) => void) | null = null
   let applyCameraQuality: ((quality: RenderQuality) => void) | null = null
+  let applyRadarQuality: ((quality: RenderQuality) => void) | null = null
+  let applyRadarMotion: ((reduced: boolean) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
   let shadowUpdateElapsed = SHADOW_UPDATE_STEP
@@ -223,6 +225,7 @@ async function boot(): Promise<void> {
     applyAircraftQuality?.(next)
     applyEffectsQuality?.(next)
     applyCameraQuality?.(next)
+    applyRadarQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -282,12 +285,14 @@ async function boot(): Promise<void> {
   const reducedMotionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null
+  let reducedMotion = false
   const syncReducedMotion = (): void => {
-    const reduced = !!reducedMotionQuery?.matches
-    aircraft.setReducedMotion(reduced)
-    cameras.setReducedMotion(reduced)
-    world.atmosphere.setReducedMotion(reduced)
-    applyEffectsMotion?.(reduced)
+    reducedMotion = !!reducedMotionQuery?.matches
+    aircraft.setReducedMotion(reducedMotion)
+    cameras.setReducedMotion(reducedMotion)
+    world.atmosphere.setReducedMotion(reducedMotion)
+    applyEffectsMotion?.(reducedMotion)
+    applyRadarMotion?.(reducedMotion)
   }
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
@@ -326,6 +331,10 @@ async function boot(): Promise<void> {
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const radar = new RadarSystem()
+  applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
+  applyRadarQuality(renderQuality)
+  applyRadarMotion = (reduced): void => radar.setReducedMotion(reduced)
+  applyRadarMotion(reducedMotion)
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
   debug?.syncPad()
 

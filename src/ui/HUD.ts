@@ -5,6 +5,7 @@
 import { displayedKnots } from '../core/airspeed'
 import { fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
 import {
+  MAX_RADAR_CONTACTS,
   radarBearingArrow,
   radarDistanceLabel,
   type RadarContact,
@@ -20,10 +21,17 @@ export function normalizeBannerTone(value: unknown): HudBannerTone {
 }
 
 export function formatRadarContacts(contacts: readonly RadarContact[]): string {
-  if (contacts.length === 0) return 'NO CONTACTS'
-  return contacts.map((contact) =>
-    `${contact.label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`,
-  ).join(' · ')
+  const labels: string[] = []
+  const limit = Math.min(MAX_RADAR_CONTACTS, contacts.length)
+  for (let index = 0; index < limit; index += 1) {
+    const contact = contacts[index]
+    if (!contact) continue
+    const label = typeof contact.label === 'string' && contact.label.length > 0
+      ? contact.label
+      : 'CONTACT'
+    labels.push(`${label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`)
+  }
+  return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
 }
 
 export class HUD {
@@ -106,6 +114,8 @@ export class HUD {
   private fuelValue = Number.NaN
   private fuelText = ''
   private fuelAriaText = ''
+  private radarText = ''
+  private radarAriaText = ''
   private navBearingValue = Number.NaN
   private navBearingText = ''
   private navRangeMode = -1
@@ -369,7 +379,13 @@ export class HUD {
       this.setClass(this.fuelEl, 'critical', fuelWarning === 'critical')
     }
     if (this.radarEl && opts.radar !== undefined) {
-      this.setText(this.radarEl, formatRadarContacts(opts.radar))
+      const radarText = formatRadarContacts(opts.radar)
+      if (radarText !== this.radarText) {
+        this.radarText = radarText
+        this.radarAriaText = radarText === 'NO CONTACTS' ? 'Radar: no contacts' : `Radar: ${radarText}`
+      }
+      this.setText(this.radarEl, this.radarText)
+      this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
     }
     this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
 

@@ -34,6 +34,34 @@ describe('arcade radar sweep', () => {
     expect(contacts.every(contact => Number.isFinite(contact.bearing))).toBe(true)
   })
 
+  it('trims the sweep on low quality and reduced-motion displays', () => {
+    const radar = new RadarSystem()
+    const landmarks = Array.from({ length: MAX_RADAR_CONTACTS }, (_, index) => ({
+      x: index * 100,
+      y: 0,
+      z: 100,
+      kind: 'village' as const,
+    }))
+    radar.setRenderQuality('low')
+    expect(radar.update(0, 0, 0, null, landmarks)).toHaveLength(3)
+    radar.setRenderQuality('balanced')
+    radar.setReducedMotion(true)
+    expect(radar.update(0, 0, 0, null, landmarks)).toHaveLength(4)
+    radar.setReducedMotion(false)
+    expect(radar.update(0, 0, 0, null, landmarks)).toHaveLength(MAX_RADAR_CONTACTS)
+  })
+
+  it('rejects malformed source positions instead of pinning a fake contact to the jet', () => {
+    const radar = new RadarSystem()
+    const contacts = radar.update(0, 0, 0, { x: Number.NaN, y: 100, z: Number.POSITIVE_INFINITY }, [
+      { x: Number.NaN, y: 0, z: 100, kind: 'city' },
+      { x: 0, y: 0, z: 500, kind: 'village' },
+    ])
+    expect(contacts).toHaveLength(1)
+    expect(contacts[0]!.kind).toBe('village')
+    expect(contacts[0]!.distance).toBe(500)
+  })
+
   it('keeps compact direction and range labels', () => {
     expect(radarBearingArrow(0)).toBe('↑')
     expect(radarBearingArrow(Math.PI / 2)).toBe('→')

@@ -1,3 +1,5 @@
+import type { RenderQuality } from '../core/RenderQuality'
+
 export type RadarContactKind = 'gate' | 'city' | 'village'
 
 export interface RadarLandmark {
@@ -33,6 +35,22 @@ export class RadarSystem {
     () => ({ kind: 'village', distance: 0, bearing: 0, label: '' }),
   )
   private readonly contacts: RadarContact[] = []
+  private visibleContactLimit = MAX_RADAR_CONTACTS
+
+  /** Reduce label crowding on constrained render and motion settings. */
+  setRenderQuality(quality: RenderQuality): void {
+    this.visibleContactLimit = quality === 'low' ? 3 : this.reducedMotion ? 4 : MAX_RADAR_CONTACTS
+  }
+
+  /** Keep the compact radar calm when the browser requests less motion. */
+  setReducedMotion(reduced: boolean): void {
+    this.reducedMotion = reduced
+    this.visibleContactLimit = this.reducedMotion
+      ? Math.min(this.visibleContactLimit, 4)
+      : this.visibleContactLimit === 4 ? MAX_RADAR_CONTACTS : this.visibleContactLimit
+  }
+
+  private reducedMotion = false
 
   update(
     px: number,
@@ -47,7 +65,7 @@ export class RadarSystem {
     const safeHeading = finiteOr(heading, 0)
     if (gate) this.addContact('gate', gate.x, gate.y, gate.z, safeX, safeZ, safeHeading)
     for (const landmark of landmarks) {
-      if (this.contacts.length >= MAX_RADAR_CONTACTS) break
+      if (this.contacts.length >= this.visibleContactLimit) break
       this.addContact(landmark.kind, landmark.x, landmark.y, landmark.z, safeX, safeZ, safeHeading)
     }
     this.contacts.sort((a, b) => {
@@ -66,17 +84,18 @@ export class RadarSystem {
     pz: number,
     heading: number,
   ): void {
-    if (this.contacts.length >= MAX_RADAR_CONTACTS) return
-    const dx = finiteOr(x, px) - px
-    const dz = finiteOr(z, pz) - pz
+    if (this.contacts.length >= this.visibleContactLimit) return
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return
+    const dx = x - px
+    const dz = z - pz
     const distance = Math.hypot(dx, dz)
     if (!Number.isFinite(distance) || distance > RADAR_RANGE_METERS) return
     const bearing = wrapAngle(Math.atan2(dx, dz) - heading)
     const contact = this.contactPool[this.contacts.length]!
-    contact.kind = kind
+    contact.kind = normalizeRadarKind(kind)
     contact.distance = distance
     contact.bearing = bearing
-    contact.label = radarContactLabel(kind)
+    contact.label = radarContactLabel(contact.kind)
     this.contacts.push(contact)
   }
 }
@@ -103,6 +122,10 @@ export function radarDistanceLabel(distance: number): string {
 
 function radarKindPriority(kind: RadarContactKind): number {
   return kind === 'gate' ? 0 : kind === 'city' ? 1 : 2
+}
+
+function normalizeRadarKind(value: unknown): RadarContactKind {
+  return value === 'gate' || value === 'city' ? value : 'village'
 }
 
 function wrapAngle(value: number): number {
