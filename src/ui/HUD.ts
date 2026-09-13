@@ -167,6 +167,17 @@ export function engineHeatCue(fraction: number): EngineHeatCue {
   return 'normal'
 }
 
+/** Announce only meaningful engine heat transitions, not every HUD frame. */
+export function engineHeatBanner(
+  cue: EngineHeatCue,
+  previous: EngineHeatCue | null,
+): string | null {
+  if (previous === null || cue === previous) return null
+  if (cue === 'critical') return 'ENGINE HEAT CRITICAL / REDUCE POWER'
+  if (cue === 'hot') return 'ENGINE HOT / REDUCE POWER'
+  return 'ENGINE COOLING'
+}
+
 /** Format a finite fuel endurance estimate for the compact HUD row. */
 export function formatFuelEndurance(seconds: number | null): string {
   if (seconds === null || !Number.isFinite(seconds)) return 'END --'

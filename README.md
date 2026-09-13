@@ -44,6 +44,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Fuel now resets per sortie, burns harder on afterburner, and warns before the tank is empty.
 - The fuel row now shows estimated endurance for the current throttle and afterburner request, making the power tradeoff readable before the reserve lockout.
 - A TEMP meter now tracks bounded engine heat from throttle and afterburner use, cooling at idle without changing the arcade thrust model.
+- Crossing a heat band now gives one concise `ENGINE HOT`, `ENGINE HEAT CRITICAL`, or `ENGINE COOLING` cue instead of repeated alarm spam.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - A landed jet can refill at the home strip while stationary, with a short hold-position cue that makes recovery sorties less punishing.
 - Completed-run results show remaining and spent fuel for each sortie.

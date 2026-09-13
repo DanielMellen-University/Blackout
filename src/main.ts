@@ -76,6 +76,8 @@ import {
   FLIGHT_CONTROLS_HINT,
   hudBackgroundHidden,
   HUD,
+  engineHeatBanner,
+  engineHeatCue,
   navigationApproachCue,
   weatherCycleBanner,
   waterSurfaceCue,
@@ -456,6 +458,7 @@ async function boot(): Promise<void> {
     flightPathY: 50,
   }
   let prevWarning: string | null = null
+  let prevEngineHeat: 'normal' | 'hot' | 'critical' | null = null
   let controlHintUntilMs = 0
   const radarDiscovered = new Set<string>()
   let radarDiscoveryCooldownUntil = 0
@@ -540,6 +543,7 @@ async function boot(): Promise<void> {
     prevGLoadBand = 'normal'
     gLoadCueUntil = 0
     prevWarning = null
+    prevEngineHeat = null
     radarDiscovered.clear()
     radarDiscoveryCooldownUntil = 0
     overWater = false
@@ -995,6 +999,22 @@ async function boot(): Promise<void> {
       showBanner('AFTERBURNER LOCKED / FUEL RESERVE', 2200, 'danger')
     }
     prevAfterburnerLockout = afterburnerLocked
+
+    const engineHeatState = engineHeatCue(aircraft.engineHeat.fraction)
+    if (engineHeatState !== prevEngineHeat) {
+      const heatBanner = engineHeatBanner(engineHeatState, prevEngineHeat)
+      if (
+        heatBanner &&
+        simLive &&
+        playing &&
+        !menu.paused &&
+        !results.open &&
+        aircraft.status !== 'crashed'
+      ) {
+        showBanner(heatBanner, engineHeatState === 'critical' ? 2600 : 1800, engineHeatState === 'critical' ? 'danger' : 'info')
+      }
+      prevEngineHeat = engineHeatState
+    }
 
     const gBand = gLoadCueBand(aircraft.loadFactor)
     if (
