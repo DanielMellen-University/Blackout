@@ -3,6 +3,7 @@ import { Aircraft } from '../src/aircraft/Aircraft'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import {
   evaluateWarnings,
+  gearWarningActive,
   lowAltitudeWarningActive,
   lowAltitudeWarningCeiling,
   overspeedWarningActive,
@@ -29,8 +30,8 @@ describe('flight cautions', () => {
     const aircraft = new Aircraft()
     const ground = sampleGroundHeight(0, 0)
     aircraft.position.set(0, ground + 31 + flightConfig.bellyHeight, 0)
-    aircraft.velocity.set(0, -10, 52)
-    aircraft.controls.gearDown = false
+    aircraft.velocity.set(0, -10, 80)
+    aircraft.controls.gearDown = true
 
     const warning = evaluateWarnings(aircraft, 31)
     expect(warning.text).toBe('LOW ALT')
@@ -39,6 +40,24 @@ describe('flight cautions', () => {
 
     aircraft.velocity.y = 0
     expect(evaluateWarnings(aircraft, 31).text).toBeNull()
+  })
+
+  it('warns about retracted gear only on a low approach', () => {
+    expect(gearWarningActive(35, 80, -8, false)).toBe(true)
+    expect(gearWarningActive(35, 80, 0, false)).toBe(false)
+    expect(gearWarningActive(6, 40, 0, false)).toBe(true)
+    expect(gearWarningActive(35, 80, -8, true)).toBe(false)
+    expect(gearWarningActive(Number.NaN, 80, -8, false)).toBe(false)
+
+    setContactHeightSampler(() => 0)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, -8, 80)
+    aircraft.controls.gearDown = false
+    const warning = evaluateWarnings(aircraft, 35)
+    expect(warning.text).toBe('GEAR')
+    expect(warning.gear).toBe(true)
+    expect(warning.level).toBe('caution')
   })
 
   it('reuses the stable no-warning state between frames', () => {

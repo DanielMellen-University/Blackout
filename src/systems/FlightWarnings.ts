@@ -48,6 +48,15 @@ const LOW_ALT_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
 }) as WarningState
+const GEAR_WARNING = Object.freeze({
+  text: 'GEAR',
+  level: 'caution',
+  stall: false,
+  lowAlt: false,
+  gear: true,
+  overspeed: false,
+  fuel: false,
+}) as WarningState
 const OVERSPEED_WARNING = Object.freeze({
   text: 'OVERSPEED',
   level: 'caution',
@@ -77,8 +86,7 @@ const FUEL_EMPTY_WARNING = Object.freeze({
 }) as WarningState
 
 /**
- * Arcade flight cautions: stall (AoA / low speed) and speed-scaled low altitude.
- * Automatic gear does not need a separate caution.
+ * Arcade flight cautions: stall, speed-scaled low altitude, and approach gear.
  */
 export function evaluateWarnings(
   aircraft: Aircraft,
@@ -105,10 +113,17 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
+  const gear = gearWarningActive(
+    altAgl,
+    speed,
+    aircraft.velocity.y,
+    aircraft.controls.gearDown,
+  )
   const overspeed = overspeedWarningActive(speed)
   const fuelLevel = fuelWarningLevel(aircraft.fuel)
 
   if (stall) return STALL_WARNING
+  if (gear) return GEAR_WARNING
   if (lowAlt) return LOW_ALT_WARNING
   if (overspeed) return OVERSPEED_WARNING
   if (fuelLevel === 'critical') return FUEL_EMPTY_WARNING
@@ -148,6 +163,21 @@ export function lowAltitudeWarningActive(
     safeSpeed > 35 &&
     descendingFast &&
     !approachConfigured
+}
+
+/** Warn about a retracted gear only during a low, descending approach. */
+export function gearWarningActive(
+  altAgl: number,
+  speed: number,
+  verticalSpeed: number,
+  gearDown: boolean,
+): boolean {
+  if (gearDown || !Number.isFinite(speed) || !Number.isFinite(altAgl)) return false
+  const safeSpeed = Math.max(0, speed)
+  const safeAlt = Math.max(0, altAgl)
+  if (safeSpeed <= 35 || safeAlt <= 1.5) return false
+  const descending = Number.isFinite(verticalSpeed) && verticalSpeed < -1.5 && safeAlt < 48
+  return safeAlt < 10 || descending
 }
 
 /** Warn only after the jet leaves the dry displayed airspeed envelope. */
