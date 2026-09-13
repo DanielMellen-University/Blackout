@@ -148,6 +148,7 @@ export class ChallengeRun {
       ? elapsedSec - bestElapsedSec!
       : Number.NaN
     const paceLabel = formatPaceDelta(paceDeltaSec)
+    const comparisonBestSplits = this.bestGateSplits.slice()
     if (isNewBest) {
       this.writeBest(totalScore)
       this.writeBestTrace()
@@ -166,7 +167,7 @@ export class ChallengeRun {
       bestScore,
       isNewBest,
       gateSplits: this.gateSplits.slice(),
-      bestGateSplits: this.bestGateSplits.slice(),
+      bestGateSplits: comparisonBestSplits,
       paceDeltaSec,
       paceLabel,
     }
@@ -252,6 +253,23 @@ export function formatPaceDelta(deltaSec: number): string {
   const safe = Math.abs(deltaSec)
   if (safe < 0.005) return 'ON PACE'
   return deltaSec < 0 ? `AHEAD ${safe.toFixed(2)}S` : `BEHIND ${safe.toFixed(2)}S`
+}
+
+/** Compact result-only split strip. Live HUD code never calls this formatter. */
+export function formatSplitTrace(
+  current: readonly number[] | undefined,
+  best: readonly number[] | undefined,
+): string {
+  if (!current || current.length === 0) return 'NO SPLIT TRACE'
+  return current.map((split, index) => {
+    const safeSplit = Number.isFinite(split) ? Math.max(0, split) : 0
+    const bestSplit = best?.[index]
+    const delta = Number.isFinite(bestSplit) ? safeSplit - bestSplit! : Number.NaN
+    const deltaLabel = Number.isFinite(delta)
+      ? ` ${delta < 0 ? '-' : '+'}${Math.abs(delta).toFixed(2)}`
+      : ''
+    return `G${index + 1} ${formatTime(safeSplit)}${deltaLabel}`
+  }).join(' · ')
 }
 
 /** Stable class hook for medal-specific results styling. */

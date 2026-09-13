@@ -92,6 +92,7 @@ function resultsFixture(): {
     ['result-landing', new FakeElement()],
     ['result-gates', new FakeElement()],
     ['result-score-detail', new FakeElement()],
+    ['result-splits', new FakeElement()],
     ['result-best', new FakeElement()],
     ['btn-retry', retry],
   ])
@@ -152,6 +153,25 @@ describe('run results focus flow', () => {
     results.show(result)
     results.hide()
     expect(results.open).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('renders the saved split comparison only on the results card', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      gateSplits: [1, 2],
+      bestGateSplits: [1.5, 2.5],
+      paceLabel: 'AHEAD 0.50S',
+    })
+    expect(elementsFor(fixture.document, 'result-splits')?.textContent).toBe(
+      'G1 0:01.00 -0.50 · G2 0:02.00 -0.50',
+    )
+    results.dispose()
     vi.unstubAllGlobals()
   })
 })

@@ -1,4 +1,4 @@
-import { formatTime, resultMedalClass, type ChallengeResult } from '../systems/ChallengeRun'
+import { formatSplitTrace, formatTime, resultMedalClass, type ChallengeResult } from '../systems/ChallengeRun'
 
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
 
@@ -11,6 +11,7 @@ export class RunResults {
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
   private readonly scoreDetail: HTMLElement
+  private readonly splits: HTMLElement
   private readonly best: HTMLElement
   private returnFocus: HTMLElement | null = null
   private disposed = false
@@ -38,6 +39,7 @@ export class RunResults {
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
     this.scoreDetail = must(root, 'result-score-detail')
+    this.splits = must(root, 'result-splits')
     this.best = must(root, 'result-best')
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
@@ -67,6 +69,7 @@ export class RunResults {
     ]
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
     this.scoreDetail.textContent = scoreParts.join(' · ')
+    this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
     this.best.textContent = result.isNewBest
       ? `NEW BEST · ${result.bestScore.toLocaleString()}`
       : `BEST · ${result.bestScore.toLocaleString()}`

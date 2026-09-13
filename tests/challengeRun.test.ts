@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { ChallengeRun, formatPaceDelta, formatTime, resultMedalClass } from '../src/systems/ChallengeRun'
+import {
+  ChallengeRun,
+  formatPaceDelta,
+  formatSplitTrace,
+  formatTime,
+  resultMedalClass,
+} from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
   it('starts the clock on the takeoff roll and scores a completed landing', () => {
@@ -130,7 +136,9 @@ describe('ChallengeRun', () => {
       rollRad: 0,
     })!
     expect(retryResult.paceLabel).toBe('AHEAD 1.00S')
-    expect(retryResult.bestGateSplits).toEqual([0.5, 1])
+    expect(retryResult.bestGateSplits).toEqual([1, 2])
+    expect(formatSplitTrace(retryResult.gateSplits, retryResult.bestGateSplits))
+      .toBe('G1 0:00.50 -0.50 · G2 0:01.00 -1.00')
     expect(formatPaceDelta(0)).toBe('ON PACE')
     expect(formatPaceDelta(Number.NaN)).toBe('FIRST RUN')
   })
