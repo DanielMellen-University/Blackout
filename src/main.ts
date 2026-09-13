@@ -79,6 +79,7 @@ import {
   engineHeatBanner,
   engineHeatCue,
   engineHeatRearmBanner,
+  engineFuelAvailabilityBanner,
   crosswindSpeedMps,
   navigationApproachCue,
   weatherCycleBanner,
@@ -402,6 +403,7 @@ async function boot(): Promise<void> {
   let prevAirbrake = false
   let prevAfterburnerLockout = false
   let prevAfterburnerHeatLockout = false
+  let prevFuelAvailable = true
   let prevGearDown = true
   let prevLightning = false
   let prevGLoadBand: GLoadCueBand = 'normal'
@@ -552,6 +554,7 @@ async function boot(): Promise<void> {
     prevAfterburner = false
     prevAfterburnerLockout = false
     prevAfterburnerHeatLockout = false
+    prevFuelAvailable = true
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
     prevGLoadBand = 'normal'
@@ -1068,6 +1071,21 @@ async function boot(): Promise<void> {
       showBanner(heatRearmBanner, 1600, 'success')
     }
     prevAfterburnerHeatLockout = afterburnerHeatLocked
+
+    const fuelAvailable = aircraft.engineState.fuelAvailable
+    const fuelOutBanner = engineFuelAvailabilityBanner(prevFuelAvailable, fuelAvailable)
+    if (
+      fuelOutBanner &&
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed'
+    ) {
+      audio.playCue('warning')
+      showBanner(fuelOutBanner, 3200, 'danger')
+    }
+    prevFuelAvailable = fuelAvailable
 
     const engineHeatState = engineHeatCue(aircraft.engineHeat.fraction)
     if (engineHeatState !== prevEngineHeat) {

@@ -18,6 +18,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   engineHeatCue,
   engineHeatBanner,
+  engineFuelAvailabilityBanner,
   engineHeatRearmBanner,
   afterburnerHudLabel,
   flightStateLabel,
@@ -240,6 +241,13 @@ describe('HUD value formatting', () => {
     expect(navigationTargetText('city')).toBe('CITY TARGET')
     expect(navigationTargetText('village')).toBe('VILLAGE TARGET')
     expect(navigationTargetLabel('unknown')).toBe('NEXT GATE')
+  })
+
+  it('announces only the powered-to-glide fuel transition', () => {
+    expect(engineFuelAvailabilityBanner(true, false)).toBe('ENGINE OUT / GLIDE TO BASE')
+    expect(engineFuelAvailabilityBanner(false, false)).toBeNull()
+    expect(engineFuelAvailabilityBanner(false, true)).toBeNull()
+    expect(engineFuelAvailabilityBanner(true, true)).toBeNull()
   })
 
   it('keeps water crossing cues calm and semantic', () => {

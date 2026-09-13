@@ -217,6 +217,14 @@ export function afterburnerHudLabel(
   return active ? 'AB ON' : 'AB READY'
 }
 
+/** Announce the single transition from powered flight to a fuel-out glide. */
+export function engineFuelAvailabilityBanner(
+  previousAvailable: boolean,
+  available: boolean,
+): string | null {
+  return previousAvailable && !available ? 'ENGINE OUT / GLIDE TO BASE' : null
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null

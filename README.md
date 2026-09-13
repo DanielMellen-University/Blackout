@@ -53,6 +53,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Speed-brake deployment now lifts the existing wind bed and plays one quiet open or close cue, keeping the audio graph pooled.
 - Crossing a gate plane outside the ring now gives a single `GATE MISSED / RE-ALIGN` cue, so the route tells you how to recover without advancing the checkpoint.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
+- Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - A landed jet can refill at the home strip while stationary, with a short hold-position cue that makes recovery sorties less punishing.
 - Completed-run results show remaining and spent fuel for each sortie.
 - A compact radar readout prioritizes the active gate and nearby generated settlements.
