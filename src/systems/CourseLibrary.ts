@@ -50,3 +50,9 @@ export function courseSeedForId(id: string | null | undefined): number | undefin
   const seed = courseDefinitionForId(id).seed
   return seed === null ? undefined : seed
 }
+
+/** Storage identity shared by the score, trace, and completion-history records. */
+export function courseRunId(course: CourseDefinition): string | null {
+  if (course.seed === null || course.profile === null) return null
+  return `seed:${course.seed}:${course.profile}`
+}

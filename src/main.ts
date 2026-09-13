@@ -38,8 +38,13 @@ import {
   shouldUpdateLiveHud,
   Time,
 } from './core/Time'
-import { ChallengeRun } from './systems/ChallengeRun'
-import { courseDefinitionForId, COURSE_LIBRARY, type CourseId } from './systems/CourseLibrary'
+import { ChallengeRun, formatTime, readCourseHistory } from './systems/ChallengeRun'
+import {
+  courseDefinitionForId,
+  courseRunId,
+  COURSE_LIBRARY,
+  type CourseId,
+} from './systems/CourseLibrary'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
@@ -90,6 +95,13 @@ async function boot(): Promise<void> {
   const menu = new GameMenu(menuEl)
   const uiListeners = new ListenerBag()
 
+  let qualityStorage: Storage | null = null
+  try {
+    qualityStorage = window.localStorage
+  } catch {
+    /* Private browsing can deny storage. The game remains fully playable. */
+  }
+
   const courseSelectors = [titleCourseSelect, courseSelect].filter(
     (select): select is HTMLSelectElement => select !== null,
   )
@@ -102,6 +114,21 @@ async function boot(): Promise<void> {
       return option
     }))
   }
+  const refreshCourseSelectorLabels = (): void => {
+    for (const select of courseSelectors) {
+      for (const option of Array.from(select.options)) {
+        const course = courseDefinitionForId(option.value)
+        const runId = courseRunId(course)
+        const history = runId ? readCourseHistory(qualityStorage, runId) : null
+        const historyLabel = history && history.completionCount > 0
+          ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
+          : ''
+        option.textContent = `${course.label}${historyLabel}`
+        option.title = course.detail
+      }
+    }
+  }
+  refreshCourseSelectorLabels()
   let selectedCourseId: CourseId = courseDefinitionForId(titleCourseSelect?.value).id
   for (const select of courseSelectors) select.value = selectedCourseId
 
@@ -109,12 +136,6 @@ async function boot(): Promise<void> {
   const titleStatus = document.getElementById('title-status')
   if (playBtn) playBtn.disabled = true
 
-  let qualityStorage: Storage | null = null
-  try {
-    qualityStorage = window.localStorage
-  } catch {
-    /* Private browsing can deny storage. The game remains fully playable. */
-  }
   const renderQualityFallback = defaultRenderQuality({
     hardwareConcurrency: navigator.hardwareConcurrency,
     deviceMemory: (navigator as Navigator & { deviceMemory?: number }).deviceMemory,
@@ -717,6 +738,7 @@ async function boot(): Promise<void> {
             if (finished) {
               audio.playCue('landed')
               results.show(finished)
+              refreshCourseSelectorLabels()
               syncInputContext()
               break
             }

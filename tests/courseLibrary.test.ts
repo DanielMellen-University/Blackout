@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { COURSE_LIBRARY, courseDefinitionForId, courseSeedForId } from '../src/systems/CourseLibrary'
+import {
+  COURSE_LIBRARY,
+  courseDefinitionForId,
+  courseRunId,
+  courseSeedForId,
+} from '../src/systems/CourseLibrary'
 import { clearOpsPad, findPlayableSpawn, isUsableAirfield } from '../src/world/terrainSample'
 import { setWorldSeed } from '../src/world/noise'
 
@@ -10,6 +15,8 @@ describe('course library', () => {
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('training-orbit')).toBe(1)
     expect(courseDefinitionForId('precision-slalom').profile).toBe('slalom')
+    expect(courseRunId(courseDefinitionForId('precision-slalom'))).toBe('seed:3:slalom')
+    expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
   })
 
   it('validates every curated seed to a usable dry airfield', () => {

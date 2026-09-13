@@ -4,6 +4,7 @@ import {
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
+  readCourseHistory,
   resultMedalClass,
 } from '../src/systems/ChallengeRun'
 
@@ -146,5 +147,16 @@ describe('ChallengeRun', () => {
       .toBe('G1 0:00.50 -0.50 · G2 0:01.00 -1.00')
     expect(formatPaceDelta(0)).toBe('ON PACE')
     expect(formatPaceDelta(Number.NaN)).toBe('FIRST RUN')
+  })
+
+  it('fails closed when completion history storage is malformed', () => {
+    const storage = {
+      getItem: () => '{"completionCount":"bad","bestTimeSec":null}',
+    }
+    expect(readCourseHistory(storage, 'seed:bad:orbit')).toEqual({
+      completionCount: 0,
+      bestTimeSec: Number.POSITIVE_INFINITY,
+    })
+    expect(readCourseHistory(null, 'seed:none:orbit')).toBeNull()
   })
 })

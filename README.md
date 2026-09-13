@@ -23,6 +23,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
 - The title and pause menus offer Random world plus three validated repeatable course seeds, with route profiles preserved on retry.
 - Results persist a completion count and fastest finish per course, making progression visible without introducing a campaign layer.
+- Course selectors reuse that history, showing curated-course run counts and fastest times without touching the flight loop.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
