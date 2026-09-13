@@ -10,6 +10,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Pause menu in flight (**Esc**): resume, fullscreen, quit to title
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
+- Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
 - Runway edge lights dim into daylight and brighten through dusk and night using the shared atmosphere clock.
@@ -474,9 +475,9 @@ Blackout/
 
 ## Roadmap
 
-Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night.
+Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night, and terrain-safe seeded route planning.
 
-The current ship focuses on a readable arcade flight loop, strong aircraft presentation, and a bounded streamed world. Out of scope for now: radar, weapons, fuel.
+The current ship is moving into gameplay expansion: route profiles and optional flight challenges will build on the existing scoring and same-course retry loop. Radar, weapons, and fuel remain out of scope until the challenge loop is worth mastering.
 
 ## License
 

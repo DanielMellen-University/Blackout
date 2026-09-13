@@ -5,8 +5,10 @@ import {
   gateBeaconDistanceOpacity,
   missionPassFlashOpacity,
   missionPassFlashScale,
+  buildMissionRoute,
   MissionSystem,
 } from '../src/systems/Mission'
+import { sampleTerrainHeight } from '../src/world/terrainSample'
 
 describe('MissionSystem gate crossing', () => {
   it('does not award a gate that the jet spawned beyond', () => {
@@ -26,9 +28,9 @@ describe('MissionSystem gate crossing', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)
     const gate = mission.activeGatePos()!
-    const t = 0.55
-    const fwdX = Math.cos(t)
-    const fwdZ = -Math.sin(t)
+    const ring = mission.root.getObjectByName('gate_0')!
+    const fwdX = Math.sin(ring.rotation.y)
+    const fwdZ = Math.cos(ring.rotation.y)
     const behindX = gate.x - fwdX * 20
     const behindZ = gate.z - fwdZ * 20
     const aheadX = gate.x + fwdX * 20
@@ -133,13 +135,43 @@ describe('MissionSystem gate crossing', () => {
     expect(Number.isFinite(nav.altDelta)).toBe(true)
 
     expect(mission.update(Number.NaN, gate.y, gate.z)).toBe('none')
-    const t = 0.55
-    const fwdX = Math.cos(t)
-    const fwdZ = -Math.sin(t)
+    const ring = mission.root.getObjectByName('gate_0')!
+    const fwdX = Math.sin(ring.rotation.y)
+    const fwdZ = Math.cos(ring.rotation.y)
     expect(mission.update(gate.x - fwdX * 20, gate.y, gate.z - fwdZ * 20)).toBe('none')
     expect(mission.update(gate.x + fwdX * 20, gate.y, gate.z + fwdZ * 20)).toBe('pass')
     expect(Number.isFinite(missionPassFlashScale(Number.NaN))).toBe(true)
     mission.dispose()
+  })
+
+  it('builds a varied route with a forward first leg and finite gate poses', () => {
+    const routeA = buildMissionRoute(0, 20, 0, 0)
+    const routeB = buildMissionRoute(1400, 20, -900, 0.8)
+    expect(routeA).toHaveLength(5)
+    expect(routeB).toHaveLength(5)
+    expect(routeA[0]!.z).toBeGreaterThan(0)
+    expect(routeA[0]!.fwdZ).toBeGreaterThan(0.9)
+    expect(routeA.map((point) => `${point.x.toFixed(2)}:${point.z.toFixed(2)}`))
+      .not.toEqual(routeB.map((point) => `${point.x.toFixed(2)}:${point.z.toFixed(2)}`))
+    for (const point of [...routeA, ...routeB]) {
+      expect(Number.isFinite(point.x)).toBe(true)
+      expect(Number.isFinite(point.y)).toBe(true)
+      expect(Number.isFinite(point.z)).toBe(true)
+      expect(Math.hypot(point.fwdX, point.fwdZ)).toBeCloseTo(1)
+    }
+
+    for (const route of [routeA, routeB]) {
+      let previous = { x: route === routeA ? 0 : 1400, y: 20, z: route === routeA ? 0 : -900 }
+      for (const point of route) {
+        for (const t of [0.2, 0.4, 0.6, 0.8]) {
+          const x = previous.x + (point.x - previous.x) * t
+          const y = previous.y + (point.y - previous.y) * t
+          const z = previous.z + (point.z - previous.z) * t
+          expect(y - sampleTerrainHeight(x, z)).toBeGreaterThanOrEqual(119.9)
+        }
+        previous = point
+      }
+    }
   })
 
   it('ignores late mission calls after idempotent teardown', () => {

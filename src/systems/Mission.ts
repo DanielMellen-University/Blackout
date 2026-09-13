@@ -39,12 +39,96 @@ interface Gate {
 }
 
 const GATE_COUNT = 5
-const CIRCUIT_R = 980
 const GATE_RADIUS = 38
+const ROUTE_RADIUS = 980
+const ROUTE_RADIUS_VARIATION = 150
+const ROUTE_ANGLE_VARIATION = 0.12
+const ROUTE_CLEARANCE = 120
+const ROUTE_SEGMENT_SAMPLES = 4
 const PRESENTATION_FALLBACK_STEP_MS = 1000 / 60
 const _to = new Vector3()
 const _radial = new Vector3()
 const _prevTo = new Vector3()
+
+export interface MissionRoutePoint {
+  x: number
+  y: number
+  z: number
+  fwdX: number
+  fwdZ: number
+}
+
+/**
+ * Build a varied route whose first leg follows the runway heading and whose
+ * sampled straight segments stay above the generated terrain.
+ */
+export function buildMissionRoute(
+  spawnX: number,
+  spawnY: number,
+  spawnZ: number,
+  spawnYaw: number,
+): MissionRoutePoint[] {
+  const safeSpawnX = finiteOr(spawnX, 0)
+  const safeSpawnY = finiteOr(spawnY, 0)
+  const safeSpawnZ = finiteOr(spawnZ, 0)
+  const safeSpawnYaw = finiteOr(spawnYaw, 0)
+  const seedPhase = Math.sin(safeSpawnX * 0.00031 + safeSpawnZ * 0.00017)
+  const points = Array.from({ length: GATE_COUNT }, (_, i) => {
+    const angle = safeSpawnYaw + seedPhase * ROUTE_ANGLE_VARIATION +
+      (i / GATE_COUNT) * Math.PI * 2 +
+      Math.sin(seedPhase * 2.1 + i * 1.73) * ROUTE_ANGLE_VARIATION
+    const radius = ROUTE_RADIUS +
+      Math.sin(seedPhase * 1.7 + i * 2.21) * ROUTE_RADIUS_VARIATION
+    return {
+      x: safeSpawnX + Math.sin(angle) * radius,
+      y: safeSpawnY + 104 + i * 22,
+      z: safeSpawnZ + Math.cos(angle) * radius,
+    }
+  })
+
+  let previousX = safeSpawnX
+  let previousY = safeSpawnY
+  let previousZ = safeSpawnZ
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i]!
+    let requiredY = Math.max(point.y, previousY)
+    for (let sample = 1; sample <= ROUTE_SEGMENT_SAMPLES; sample++) {
+      const t = sample / (ROUTE_SEGMENT_SAMPLES + 1)
+      const x = previousX + (point.x - previousX) * t
+      const z = previousZ + (point.z - previousZ) * t
+      const ground = sampleTerrainHeight(x, z)
+      if (Number.isFinite(ground)) {
+        const needed = ground + ROUTE_CLEARANCE
+        const endpointY = (needed - previousY * (1 - t)) / t
+        requiredY = Math.max(requiredY, endpointY)
+      }
+    }
+    point.y = Math.max(point.y, requiredY)
+    if (i > 0) points[i - 1]!.y = Math.max(points[i - 1]!.y, requiredY)
+    previousX = point.x
+    previousY = point.y
+    previousZ = point.z
+  }
+
+  let priorX = safeSpawnX
+  let priorZ = safeSpawnZ
+  return points.map((point) => {
+    const dx = point.x - priorX
+    const dz = point.z - priorZ
+    const length = Math.hypot(dx, dz)
+    const invLength = length > 1e-6 ? 1 / length : 0
+    const routePoint: MissionRoutePoint = {
+      x: point.x,
+      y: point.y,
+      z: point.z,
+      fwdX: dx * invLength,
+      fwdZ: dz * invLength,
+    }
+    priorX = point.x
+    priorZ = point.z
+    return routePoint
+  })
+}
 
 /**
  * Arcade checkpoint circuit around the airfield.
@@ -157,28 +241,22 @@ export class MissionSystem {
     const safeSpawnX = finiteOr(spawnX, 0)
     const safeSpawnY = finiteOr(spawnY, 0)
     const safeSpawnZ = finiteOr(spawnZ, 0)
-    const safeSpawnYaw = finiteOr(spawnYaw, 0)
     this.status = 'live'
     this.next = 0
     this.havePrev = false
     this.lastPassQuality = 1
 
-    for (let i = 0; i < GATE_COUNT; i++) {
-      const t = (i / GATE_COUNT) * Math.PI * 2 + safeSpawnYaw + 0.55
-      const x = safeSpawnX + Math.sin(t) * CIRCUIT_R
-      const z = safeSpawnZ + Math.cos(t) * CIRCUIT_R
-      const ground = sampleTerrainHeight(x, z)
-      const y = Math.max(safeSpawnY + 72 + i * 18, ground + 80)
-
-      // Tangent so you fly the circle
+    const route = buildMissionRoute(safeSpawnX, safeSpawnY, safeSpawnZ, spawnYaw)
+    for (let i = 0; i < route.length; i++) {
+      const point = route[i]!
       const gate = this.gatePool[i]!
-      const fwd = gate.fwd.set(Math.cos(t), 0, -Math.sin(t)).normalize()
+      const fwd = gate.fwd.set(point.fwdX, 0, point.fwdZ).normalize()
       const ring = gate.root.children[0] as Mesh
       // Torus lies in XY; stand it up and face along fwd
       ring.rotation.y = Math.atan2(fwd.x, fwd.z)
-      gate.root.position.set(x, y, z)
+      gate.root.position.set(point.x, point.y, point.z)
       gate.root.visible = true
-      gate.pos.set(x, y, z)
+      gate.pos.set(point.x, point.y, point.z)
       gate.passed = false
       gate.lastAlong = 0
       this.gates.push(gate)
