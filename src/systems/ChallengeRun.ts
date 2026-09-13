@@ -39,6 +39,8 @@ export interface ChallengeResult {
   completionCount?: number
   /** Fastest completed time recorded for this course. */
   bestTimeSec?: number
+  /** Route-selected scoring emphasis used for this run. */
+  scoringFocus?: ChallengeScoringFocus
 }
 
 export interface ScoreStore {
@@ -296,6 +298,7 @@ export class ChallengeRun {
       paceLabel,
       completionCount: history.completionCount,
       bestTimeSec: history.bestTimeSec,
+      scoringFocus: this.scoringFocus,
     }
     return this.result
   }

@@ -169,6 +169,7 @@ describe('run results focus flow', () => {
       paceLabel: 'AHEAD 0.50S',
       completionCount: 3,
       bestTimeSec: 38.4,
+      scoringFocus: 'pace',
     })
     expect(elementsFor(fixture.document, 'result-splits')?.textContent).toBe(
       'G1 0:01.00 -0.50 · G2 0:02.00 -0.50',
@@ -176,6 +177,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-best')?.textContent).toBe(
       'NEW BEST · 100,000 · RUN 3 · FASTEST 0:38.40',
     )
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('PACE FOCUS')
     results.dispose()
     vi.unstubAllGlobals()
   })

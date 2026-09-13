@@ -68,6 +68,7 @@ export class RunResults {
       `LAND +${result.landingScore.toLocaleString()}`,
     ]
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
+    if (result.scoringFocus) scoreParts.push(`${result.scoringFocus.toUpperCase()} FOCUS`)
     this.scoreDetail.textContent = scoreParts.join(' · ')
     this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
     const bestBits = [

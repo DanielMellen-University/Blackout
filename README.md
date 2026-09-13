@@ -29,6 +29,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Course progress and selection recover from cross-tab storage changes without adding per-frame reads.
 - Malformed course history is repaired into a canonical record the next time it is accessed.
 - Routes can draw a deterministic steady, tempo, or altitude rhythm, with scoring emphasis matched to the route flavor.
+- Completed runs explain which scoring focus shaped the final score.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
