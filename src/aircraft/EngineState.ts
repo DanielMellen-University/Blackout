@@ -12,6 +12,8 @@ export interface EngineState {
   lever: number
   afterburnerRequested: boolean
   afterburnerActive: boolean
+  /** Heat protection lockout state, while dry thrust remains available. */
+  afterburnerHeatLocked: boolean
   /** Commanded arcade airspeed in m/s. */
   targetSpeed: number
   /** Current engine-limited top speed in m/s. */
@@ -29,6 +31,7 @@ export function createEngineState(): EngineState {
     lever: 0,
     afterburnerRequested: false,
     afterburnerActive: false,
+    afterburnerHeatLocked: false,
     targetSpeed: 0,
     maxSpeed: C.maxSpeed,
     maxAcceleration: C.maxAccel,
@@ -42,6 +45,7 @@ export function resolveEngineState(
   controls: Pick<ControlState, 'throttle' | 'boost'>,
   out: EngineState,
   fuelFraction = 1,
+  afterburnerHeatLocked = false,
 ): EngineState {
   const lever = Number.isFinite(controls.throttle)
     ? MathUtils.clamp(controls.throttle, 0, 1)
@@ -50,6 +54,7 @@ export function resolveEngineState(
   const fuelAvailable = safeFuel > 0.0001
   const afterburnerRequested = controls.boost === true
   const afterburnerActive = fuelAvailable &&
+    !afterburnerHeatLocked &&
     safeFuel > FUEL_AFTERBURNER_RESERVE_FRACTION &&
     afterburnerRequested &&
     lever >= C.afterburnerMinThrottle
@@ -58,6 +63,7 @@ export function resolveEngineState(
   out.lever = lever
   out.afterburnerRequested = afterburnerRequested
   out.afterburnerActive = afterburnerActive
+  out.afterburnerHeatLocked = afterburnerHeatLocked === true
   // ENG remains a speed command. Afterburner raises the available envelope,
   // but it no longer bypasses a low or closed throttle lever.
   out.targetSpeed = fuelAvailable ? lever * maxSpeed : 0

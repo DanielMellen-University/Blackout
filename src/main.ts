@@ -984,9 +984,13 @@ async function boot(): Promise<void> {
       audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
     }
     prevAfterburner = afterburnerOn
-    const afterburnerLocked = aircraft.engineState.afterburnerRequested &&
+    const afterburnerFuelLocked = aircraft.engineState.afterburnerRequested &&
       aircraft.engineState.lever >= 0.05 &&
       aircraft.fuel.fraction <= FUEL_AFTERBURNER_RESERVE_FRACTION
+    const afterburnerHeatLocked = aircraft.engineState.afterburnerRequested &&
+      aircraft.engineState.lever >= 0.05 &&
+      aircraft.engineState.afterburnerHeatLocked
+    const afterburnerLocked = afterburnerFuelLocked || afterburnerHeatLocked
     if (
       simLive &&
       playing &&
@@ -997,7 +1001,11 @@ async function boot(): Promise<void> {
       !prevAfterburnerLockout
     ) {
       audio.playCue('warning')
-      showBanner('AFTERBURNER LOCKED / FUEL RESERVE', 2200, 'danger')
+      showBanner(
+        afterburnerHeatLocked ? 'AFTERBURNER LOCKED / ENGINE HEAT' : 'AFTERBURNER LOCKED / FUEL RESERVE',
+        2200,
+        'danger',
+      )
     }
     prevAfterburnerLockout = afterburnerLocked
 

@@ -270,7 +270,7 @@ export class Aircraft {
     this.vaporOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     if (this.gearNose) this.gearNose.rotation.y = 0
-    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction, this.engineHeat.afterburnerLocked)
     this.status = 'ok'
     this.mesh.visible = true
     this.snapDisplay()
@@ -322,7 +322,7 @@ export class Aircraft {
     this.groundCacheValid = false
     this.prevVelocity.copy(this.velocity)
     updateFuel(this.fuel, dt, this.controls.throttle, this.controls.boost)
-    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction, this.engineHeat.afterburnerLocked)
     updateEngineHeat(this.engineHeat, dt, this.controls.throttle, this.engineState.afterburnerActive)
     this.flight.step(this, dt)
     this.updateLoadFactor(dt)

@@ -46,6 +46,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A TEMP meter now tracks bounded engine heat from throttle and afterburner use, cooling at idle without changing the arcade thrust model.
 - Crossing a heat band now gives one concise `ENGINE HOT`, `ENGINE HEAT CRITICAL`, or `ENGINE COOLING` cue instead of repeated alarm spam.
 - Heat transition banners stay quiet during reset, pause, and crash recovery, then resume on the next live flight.
+- Sustained critical heat now locks afterburner while preserving dry thrust until the engine cools, adding a forgiving power-management decision.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - A landed jet can refill at the home strip while stationary, with a short hold-position cue that makes recovery sorties less punishing.
 - Completed-run results show remaining and spent fuel for each sortie.

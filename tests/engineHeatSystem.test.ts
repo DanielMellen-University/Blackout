@@ -13,6 +13,7 @@ describe('arcade engine heat system', () => {
     updateEngineHeat(boost, 2, 1, true)
     expect(boost.fraction).toBeGreaterThan(dry.fraction)
     expect(dry.fraction).toBeGreaterThan(0)
+    expect(boost.afterburnerLocked).toBe(false)
   })
 
   it('cools at idle and clamps malformed steps and state', () => {
@@ -31,6 +32,16 @@ describe('arcade engine heat system', () => {
     const state = createEngineHeatState()
     for (let i = 0; i < 200; i += 1) updateEngineHeat(state, 0.25, 1, true)
     expect(state.fraction).toBe(1)
+    expect(state.afterburnerLocked).toBe(true)
     expect(Number.isFinite(state.fraction)).toBe(true)
+  })
+
+  it('re-enables afterburner only after hysteretic cool-down', () => {
+    const state = createEngineHeatState()
+    for (let i = 0; i < 30; i += 1) updateEngineHeat(state, 0.25, 1, true)
+    expect(state.afterburnerLocked).toBe(true)
+    for (let i = 0; i < 30; i += 1) updateEngineHeat(state, 0.25, 0, false)
+    expect(state.fraction).toBeLessThan(0.58)
+    expect(state.afterburnerLocked).toBe(false)
   })
 })
