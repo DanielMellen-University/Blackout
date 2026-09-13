@@ -645,10 +645,16 @@ async function boot(): Promise<void> {
     menu.showView('info')
   })
   menuEl.querySelectorAll('[data-menu-close]').forEach((el) => {
-    uiListeners.add(el, 'click', () => menu.close())
+    uiListeners.add(el, 'click', () => {
+      menu.close()
+      syncInputContext()
+    })
   })
   menuEl.querySelectorAll('.menu-back').forEach((el) => {
-    uiListeners.add(el, 'click', () => menu.back())
+    uiListeners.add(el, 'click', () => {
+      menu.back()
+      syncInputContext()
+    })
   })
 
   const onGlobalKeyDown = (e: KeyboardEvent): void => {
