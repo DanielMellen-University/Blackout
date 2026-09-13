@@ -41,6 +41,7 @@ import {
   windDirectionDegrees,
   windSpeedMps,
   weatherCue,
+  weatherCycleBanner,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
@@ -290,5 +291,11 @@ describe('HUD value formatting', () => {
     expect(weatherCue('OVERCAST / SHIFTING')).toBe('active')
     expect(weatherCue('clear')).toBe('calm')
     expect(weatherCue(null)).toBe('calm')
+  })
+
+  it('announces manual weather shifts with a safe compact label', () => {
+    expect(weatherCycleBanner('RAIN / SHIFTING')).toBe('WEATHER SHIFT / RAIN / SHIFTING')
+    expect(weatherCycleBanner('')).toBe('WEATHER SHIFT / WEATHER')
+    expect(weatherCycleBanner(null)).toBe('WEATHER SHIFT / WEATHER')
   })
 })

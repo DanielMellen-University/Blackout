@@ -76,6 +76,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   hudBackgroundHidden,
   HUD,
+  weatherCycleBanner,
   waterSurfaceCue,
   type HudBannerTone,
 } from './ui/HUD'
@@ -786,7 +787,10 @@ async function boot(): Promise<void> {
         const mode = cameras.toggleMode(aircraft)
         showBanner(cameraModeCue(mode), 1200, 'info')
       }
-      if (input.consumeWeatherCycle()) world.cycleWeather()
+      if (input.consumeWeatherCycle()) {
+        world.cycleWeather()
+        showBanner(weatherCycleBanner(world.atmosphere.weatherLabel), 1800, 'info')
+      }
       if (input.consumeReset()) resetFlight(true, true)
       if (input.consumeAudioToggle()) {
         audioMuted = !audioMuted

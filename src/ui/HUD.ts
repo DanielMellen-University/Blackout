@@ -93,6 +93,14 @@ export function navigationAltitudeCue(
   return 'level'
 }
 
+/** Keep manual weather changes audible without exposing raw or empty labels. */
+export function weatherCycleBanner(label: unknown): string {
+  const safe = typeof label === 'string' && label.trim().length > 0
+    ? label.trim()
+    : 'WEATHER'
+  return `WEATHER SHIFT / ${safe}`
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
