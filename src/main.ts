@@ -394,6 +394,7 @@ async function boot(): Promise<void> {
 
   let playing = false
   let banner: string | null = null
+  let crashMessage = 'CRASH - press R'
   let bannerTone: HudBannerTone = 'info'
   let bannerUntil = 0
   let wasAirborne = false
@@ -545,6 +546,7 @@ async function boot(): Promise<void> {
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
     banner = null
+    crashMessage = 'CRASH - press R'
     bannerTone = 'info'
     wasAirborne = false
     prevAfterburner = false
@@ -868,6 +870,9 @@ async function boot(): Promise<void> {
           }
           if (touch === 'crash' || touch === 'ditch') {
             const ditching = touch === 'ditch'
+            crashMessage = ditching
+              ? 'DITCHING / WATER CONTACT - press R'
+              : 'CRASH - press R'
             _crashPoint.copy(aircraft.position)
             _crashVelocity.copy(aircraft.velocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
@@ -876,7 +881,7 @@ async function boot(): Promise<void> {
             crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
             audio.playCue('crash')
-            showBanner(ditching ? 'DITCHING / WATER CONTACT - press R' : 'CRASH - press R', 4200, 'danger')
+            showBanner(crashMessage, 4200, 'danger')
             break
           }
           const scoredTouch =
@@ -1303,7 +1308,7 @@ async function boot(): Promise<void> {
         ? FLIGHT_CONTROLS_HINT
         : null
       hudFrame.timeMs = nowMs
-      hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
+      hudFrame.banner = aircraft.status === 'crashed' ? crashMessage : banner
       hudFrame.bannerTone = aircraft.status === 'crashed' ? 'danger' : bannerTone
       hudFrame.flightPathVisible = flightPathMarker.visible
       hudFrame.flightPathX = flightPathMarker.x
