@@ -76,6 +76,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   hudBackgroundHidden,
   HUD,
+  navigationApproachCue,
   weatherCycleBanner,
   waterSurfaceCue,
   type HudBannerTone,
@@ -1066,6 +1067,7 @@ async function boot(): Promise<void> {
         : gateScreenBearing(cameras.camera, gate)
       let navDist = nav.dist
       let navAltDelta = nav.altDelta
+      let navApproach: 'aligned' | 'turn-left' | 'turn-right' | null = null
       if (returning) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navDist = Math.hypot(
@@ -1077,6 +1079,7 @@ async function boot(): Promise<void> {
         navBearing = cameras.mode === 'cockpit'
           ? cameraRelativeBearing(cameras.camera.position, cameras.camera.quaternion, returnTarget)
           : gateScreenBearing(cameras.camera, returnTarget)
+        navApproach = navigationApproachCue(pose.heading - world.spawn.yaw, 'base')
       }
       const radarContacts = radar.update(
         aircraft.position.x,
@@ -1158,6 +1161,7 @@ async function boot(): Promise<void> {
       hudFrame.navBearing = navBearing
       hudFrame.navAltDelta = navAltDelta
       hudFrame.navTarget = returning ? 'base' : 'gate'
+      hudFrame.navApproach = navApproach
       hudFrame.radar = radarContacts
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
         ? FLIGHT_CONTROLS_HINT

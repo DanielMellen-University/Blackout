@@ -24,6 +24,7 @@ import {
   normalizeFlightState,
   normalizeMissionPhase,
   navigationAltitudeCue,
+  navigationApproachCue,
   navigationBearingDegrees,
   navigationEtaSeconds,
   navigationRangeCue,
@@ -295,6 +296,16 @@ describe('HUD value formatting', () => {
     expect(navigationRangeCue(905, 900)).toBe('opening')
     expect(navigationRangeCue(904, 900)).toBe('steady')
     expect(navigationRangeCue(Number.NaN, 900)).toBe('closing')
+  })
+
+  it('keeps return approach alignment finite and runway-specific', () => {
+    expect(navigationApproachCue(0)).toBe('aligned')
+    expect(navigationApproachCue(7 * Math.PI / 180)).toBe('aligned')
+    expect(navigationApproachCue(30 * Math.PI / 180)).toBe('turn-left')
+    expect(navigationApproachCue(-30 * Math.PI / 180)).toBe('turn-right')
+    expect(navigationApproachCue(Math.PI * 2 + 30 * Math.PI / 180)).toBe('turn-left')
+    expect(navigationApproachCue(30 * Math.PI / 180, 'gate')).toBeNull()
+    expect(navigationApproachCue(Number.NaN)).toBeNull()
   })
 
   it('keeps route ETA bounded and only reports it while closing', () => {
