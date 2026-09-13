@@ -91,6 +91,7 @@ function resultsFixture(): {
     ['result-time', new FakeElement()],
     ['result-landing', new FakeElement()],
     ['result-gates', new FakeElement()],
+    ['result-fuel', new FakeElement()],
     ['result-score-detail', new FakeElement()],
     ['result-badges', new FakeElement()],
     ['result-splits', new FakeElement()],
@@ -170,6 +171,8 @@ describe('run results focus flow', () => {
       paceLabel: 'AHEAD 0.50S',
       completionCount: 3,
       bestTimeSec: 38.4,
+      fuelRemainingPercent: 72,
+      fuelUsedPercent: 28,
       scoringFocus: 'pace',
       masteryBadges: ['first-flight', 'landing-ace'],
       newMasteryBadges: ['landing-ace'],
@@ -182,6 +185,7 @@ describe('run results focus flow', () => {
     )
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('PACE FOCUS')
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · LANDING ACE')
+    expect(elementsFor(fixture.document, 'result-fuel')?.textContent).toBe('72%')
     results.dispose()
     vi.unstubAllGlobals()
   })
