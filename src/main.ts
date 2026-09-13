@@ -40,9 +40,11 @@ import {
 } from './core/Time'
 import {
   ChallengeRun,
+  COURSE_BADGES_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   formatTime,
   repairCourseHistory,
+  readMasteryBadges,
 } from './systems/ChallengeRun'
 import {
   courseDefinitionForId,
@@ -128,10 +130,13 @@ async function boot(): Promise<void> {
         const course = courseDefinitionForId(option.value)
         const runId = courseRunId(course)
         const history = runId ? repairCourseHistory(qualityStorage, runId) : null
+        const badgeCount = runId ? readMasteryBadges(qualityStorage, runId).length : 0
         const historyLabel = history && history.completionCount > 0
           ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
           : ''
+        const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/4 BADGES` : ''
         option.textContent = `${course.label}${historyLabel}`
+        if (badgeLabel) option.textContent += badgeLabel
         option.title = course.detail
       }
     }
@@ -153,8 +158,16 @@ async function boot(): Promise<void> {
       const runId = courseRunId(course)
       return runId !== null && (repairCourseHistory(qualityStorage, runId)?.completionCount ?? 0) > 0
     }).length
-    titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE`
-    titleProgress.setAttribute('aria-label', `${completed} of ${curated.length} curated courses complete`)
+    const earnedBadges = curated.reduce((total, course) => {
+      const runId = courseRunId(course)
+      return total + (runId ? readMasteryBadges(qualityStorage, runId).length : 0)
+    }, 0)
+    const badgeTotal = curated.length * 4
+    titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE · BADGES ${earnedBadges}/${badgeTotal}`
+    titleProgress.setAttribute(
+      'aria-label',
+      `${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned`,
+    )
   }
   refreshCourseProgress()
   if (playBtn) playBtn.disabled = true
@@ -501,7 +514,7 @@ async function boot(): Promise<void> {
       selectedCourseId = readSelectedCourseId(qualityStorage)
       for (const select of courseSelectors) select.value = selectedCourseId
     }
-    if (key === null || key.startsWith(COURSE_HISTORY_STORAGE_PREFIX)) {
+    if (key === null || key.startsWith(COURSE_HISTORY_STORAGE_PREFIX) || key.startsWith(COURSE_BADGES_STORAGE_PREFIX)) {
       refreshCourseSelectorLabels()
       refreshCourseProgress()
     }

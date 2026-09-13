@@ -208,4 +208,11 @@ describe('ChallengeRun', () => {
     ])
     expect(masteryBadgesForRun(0, Number.NaN, 0.89, 'complete')).toEqual([])
   })
+
+  it('filters malformed and duplicate persisted badges', () => {
+    const storage = {
+      getItem: () => '["gold-run","unknown","gold-run","landing-ace"]',
+    }
+    expect(readMasteryBadges(storage, 'seed:badges')).toEqual(['gold-run', 'landing-ace'])
+  })
 })

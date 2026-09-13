@@ -31,6 +31,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Routes can draw a deterministic steady, tempo, or altitude rhythm, with scoring emphasis matched to the route flavor.
 - Completed runs explain which scoring focus shaped the final score.
 - Clean completed runs can unlock local course mastery badges shown on the results card.
+- Title and course selectors show earned badge progress alongside completed-run history.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
