@@ -33,6 +33,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Clean completed runs can unlock local course mastery badges shown on the results card.
 - Title and course selectors show earned badge progress alongside completed-run history.
 - Curated course selectors also show each course's saved best score.
+- Course records self-heal malformed score and badge data without blocking launch.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

@@ -11,6 +11,8 @@ import {
   scoringWeightsForFocus,
   masteryBadgesForRun,
   readMasteryBadges,
+  repairBestCourseScore,
+  repairMasteryBadges,
 } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
@@ -226,5 +228,21 @@ describe('ChallengeRun', () => {
     values.set('blackout.best.seed:score', 'not-a-score')
     expect(readBestCourseScore(storage, 'seed:score')).toBe(0)
     expect(readBestCourseScore(null, 'seed:none')).toBe(0)
+  })
+
+  it('repairs malformed best scores and badge arrays to canonical records', () => {
+    const values = new Map<string, string>([
+      ['blackout.best.seed:repair', '91234.8'],
+      ['blackout.badges.seed:repair', '["gold-run","bad","gold-run"]'],
+    ])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(repairBestCourseScore(storage, 'seed:repair')).toBe(91234)
+    expect(values.get('blackout.best.seed:repair')).toBe('91234')
+    expect(repairMasteryBadges(storage, 'seed:repair')).toEqual(['gold-run'])
+    expect(values.get('blackout.badges.seed:repair')).toBe('["gold-run"]')
+    expect(repairMasteryBadges(storage, 'seed:repair')).toEqual(['gold-run'])
   })
 })

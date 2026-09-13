@@ -44,9 +44,9 @@ import {
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   formatTime,
-  readBestCourseScore,
+  repairBestCourseScore,
   repairCourseHistory,
-  readMasteryBadges,
+  repairMasteryBadges,
 } from './systems/ChallengeRun'
 import {
   courseDefinitionForId,
@@ -132,8 +132,8 @@ async function boot(): Promise<void> {
         const course = courseDefinitionForId(option.value)
         const runId = courseRunId(course)
         const history = runId ? repairCourseHistory(qualityStorage, runId) : null
-        const badgeCount = runId ? readMasteryBadges(qualityStorage, runId).length : 0
-        const bestScore = runId ? readBestCourseScore(qualityStorage, runId) : 0
+        const badgeCount = runId ? repairMasteryBadges(qualityStorage, runId).length : 0
+        const bestScore = runId ? repairBestCourseScore(qualityStorage, runId) : 0
         const historyLabel = history && history.completionCount > 0
           ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
           : ''
@@ -163,7 +163,7 @@ async function boot(): Promise<void> {
     }).length
     const earnedBadges = curated.reduce((total, course) => {
       const runId = courseRunId(course)
-      return total + (runId ? readMasteryBadges(qualityStorage, runId).length : 0)
+      return total + (runId ? repairMasteryBadges(qualityStorage, runId).length : 0)
     }, 0)
     const badgeTotal = curated.length * 4
     titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE · BADGES ${earnedBadges}/${badgeTotal}`

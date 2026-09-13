@@ -106,6 +106,22 @@ export function readBestCourseScore(storage: HistoryReadStore, courseId: string)
   }
 }
 
+export function repairBestCourseScore(
+  storage: HistoryRepairStore | null,
+  courseId: string,
+): number {
+  try {
+    const raw = storage?.getItem(courseBestScoreStorageKey(courseId))
+    if (raw === null || raw === undefined) return 0
+    const score = readBestCourseScore(storage, courseId)
+    const canonical = String(score)
+    if (raw !== canonical) storage?.setItem?.(courseBestScoreStorageKey(courseId), canonical)
+    return score
+  } catch {
+    return 0
+  }
+}
+
 const MASTERY_BADGES: readonly MasteryBadgeId[] = [
   'first-flight',
   'gate-master',
@@ -127,16 +143,51 @@ export function readMasteryBadges(
   try {
     const raw = storage?.getItem(courseBadgesStorageKey(courseId))
     if (!raw) return []
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter((value, index, values): value is MasteryBadgeId =>
-      typeof value === 'string' &&
-      (MASTERY_BADGES as readonly string[]).includes(value) &&
-      values.indexOf(value) === index,
-    ).slice(0, MASTERY_BADGES.length)
+    return parseMasteryBadges(raw)?.badges ?? []
   } catch {
     return []
   }
+}
+
+export function repairMasteryBadges(
+  storage: HistoryRepairStore | null,
+  courseId: string,
+): MasteryBadgeId[] {
+  try {
+    const raw = storage?.getItem(courseBadgesStorageKey(courseId))
+    if (raw === null || raw === undefined) return []
+    const parsed = parseMasteryBadges(raw)
+    const badges = parsed?.badges ?? []
+    if (!parsed || parsed.needsRepair) {
+      storage?.setItem?.(courseBadgesStorageKey(courseId), JSON.stringify(badges))
+    }
+    return badges
+  } catch {
+    return []
+  }
+}
+
+interface ParsedMasteryBadges {
+  badges: MasteryBadgeId[]
+  needsRepair: boolean
+}
+
+function parseMasteryBadges(raw: string): ParsedMasteryBadges | null {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  if (!Array.isArray(parsed)) return null
+  const badges = parsed.filter((value, index, values): value is MasteryBadgeId =>
+    typeof value === 'string' &&
+    (MASTERY_BADGES as readonly string[]).includes(value) &&
+    values.indexOf(value) === index,
+  ).slice(0, MASTERY_BADGES.length)
+  const needsRepair = badges.length !== parsed.length ||
+    badges.some((badge, index) => badge !== parsed[index])
+  return { badges, needsRepair }
 }
 
 function writeMasteryBadges(storage: ScoreStore | null, courseId: string, badges: readonly MasteryBadgeId[]): void {
@@ -359,7 +410,7 @@ export class ChallengeRun {
       landingQuality,
       medalFor(totalScore),
     )
-    const priorBadges = readMasteryBadges(this.storage, this.courseId)
+    const priorBadges = repairMasteryBadges(this.storage, this.courseId)
     const allBadges = [...priorBadges]
     for (const badge of earnedBadges) {
       if (!allBadges.includes(badge)) allBadges.push(badge)
