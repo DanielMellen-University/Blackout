@@ -7,7 +7,7 @@ import {
   type GroundSurfaceSample,
 } from '../world/ground'
 
-export type TouchResult = 'air' | 'roll' | 'landed' | 'crash'
+export type TouchResult = 'air' | 'roll' | 'landed' | 'crash' | 'ditch'
 
 export interface ContactClassification {
   airborne: boolean
@@ -131,7 +131,7 @@ export function classifyContact(input: ContactClassification): TouchResult {
     ? Math.acos(MathUtils.clamp(impact.surfaceNormal.y, -1, 1))
     : 0
 
-  if (surface === 'water' && airborne) return 'crash'
+  if (surface === 'water' && airborne) return 'ditch'
   if (input.upY < 0.35) return 'crash'
   if (Math.abs(input.pitch) > C.maxLandingPitch) return 'crash'
   if (Math.abs(input.roll) > C.maxLandingBank) return 'crash'

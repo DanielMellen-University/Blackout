@@ -866,7 +866,8 @@ async function boot(): Promise<void> {
             wasAirborne = true
             aircraft.clearLanded()
           }
-          if (touch === 'crash') {
+          if (touch === 'crash' || touch === 'ditch') {
+            const ditching = touch === 'ditch'
             _crashPoint.copy(aircraft.position)
             _crashVelocity.copy(aircraft.velocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
@@ -875,7 +876,7 @@ async function boot(): Promise<void> {
             crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
             audio.playCue('crash')
-            showBanner('CRASH - press R', 4200, 'danger')
+            showBanner(ditching ? 'DITCHING / WATER CONTACT - press R' : 'CRASH - press R', 4200, 'danger')
             break
           }
           const scoredTouch =

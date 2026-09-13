@@ -63,7 +63,7 @@ describe('classifyContact', () => {
       obstacle: false,
       surface: 'water',
     })
-    expect(result).toBe('crash')
+    expect(result).toBe('ditch')
   })
 
   it('crashes a gear-up high-speed contact', () => {
@@ -171,7 +171,7 @@ describe('collision query budget', () => {
     aircraft.position.set(0, 1.4, 0)
     aircraft.impact = impact({ surface: 'water' })
 
-    expect(new CollisionSystem().check(aircraft)).toBe('crash')
+    expect(new CollisionSystem().check(aircraft)).toBe('ditch')
     expect(surfaceSamples).toBe(0)
   })
 
