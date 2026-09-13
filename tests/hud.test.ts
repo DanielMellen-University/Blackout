@@ -6,6 +6,7 @@ import {
   altitudeCue,
   formatAudioState,
   formatRadarContacts,
+  waterSurfaceCue,
   formatGForce,
   formatHeading,
   formatHudNumber,
@@ -187,6 +188,12 @@ describe('HUD value formatting', () => {
     expect(formatRadarContacts([
       { kind: 'village', label: '', distance: Number.NaN, bearing: Number.NaN },
     ])).toBe('CONTACT 0M ↑')
+  })
+
+  it('keeps water crossing cues calm and semantic', () => {
+    expect(waterSurfaceCue('ocean')).toBe('SEA CROSSING')
+    expect(waterSurfaceCue('water')).toBe('INLAND WATER CROSSING')
+    expect(waterSurfaceCue(undefined)).toBe('INLAND WATER CROSSING')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

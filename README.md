@@ -48,6 +48,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.
+- Crossing a loaded river, lake, or sea now gives one calm water cue per crossing, using the rendered water level so the message follows the world instead of a second terrain model.
 - The F-35's cool night fill now scales more clearly through dusk and storm cover, keeping the stealth silhouette readable without extra lights, meshes, or draw calls.
 - The altitude meter now turns amber or red for low terrain clearance and explains the cue to assistive tech while staying calm on the ground.
 - The mission row now uses restrained phase colors and polite announcements for takeoff, gate running, return, completion, and failure states.

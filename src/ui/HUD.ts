@@ -54,6 +54,11 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
   return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
 }
 
+/** Keep water crossings readable without exposing raw terrain metadata. */
+export function waterSurfaceCue(biome: unknown): string {
+  return biome === 'ocean' ? 'SEA CROSSING' : 'INLAND WATER CROSSING'
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null

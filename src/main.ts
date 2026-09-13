@@ -76,11 +76,12 @@ import {
   FLIGHT_CONTROLS_HINT,
   hudBackgroundHidden,
   HUD,
+  waterSurfaceCue,
   type HudBannerTone,
 } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
 import { RADAR_RANGE_METERS, radarDiscoveryLabel, RadarSystem } from './systems/RadarSystem'
-import { altitudeAgl } from './world/ground'
+import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { sceneExposure } from './core/SceneExposure'
@@ -454,6 +455,8 @@ async function boot(): Promise<void> {
   let controlHintUntilMs = 0
   const radarDiscovered = new Set<string>()
   let radarDiscoveryCooldownUntil = 0
+  const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
+  let overWater = false
 
   const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
@@ -533,6 +536,7 @@ async function boot(): Promise<void> {
     prevWarning = null
     radarDiscovered.clear()
     radarDiscoveryCooldownUntil = 0
+    overWater = false
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) {
@@ -1044,6 +1048,16 @@ async function boot(): Promise<void> {
           radarDiscoveryCooldownUntil = nowMs + 2400
           showBanner(radarDiscoveryLabel(contact.kind, contact.biome), 2800, 'success')
           break
+        }
+      }
+      if (world.terrain.sampleMeshSurfaceInto(aircraft.position.x, aircraft.position.z, groundSurface)) {
+        const water = groundSurface.kind === 'water'
+        if (water !== overWater) {
+          overWater = water
+          if (water && aircraft.status === 'ok' && !aircraft.onGround && (!banner || bannerUntil <= nowMs)) {
+            const surface = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z)
+            showBanner(waterSurfaceCue(surface?.biome), 2600, 'info')
+          }
         }
       }
       if (shouldShowFlightPathMarker(
