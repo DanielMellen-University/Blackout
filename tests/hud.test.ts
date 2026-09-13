@@ -14,6 +14,7 @@ import {
   formatVerticalSpeed,
   formatWind,
   FLIGHT_CONTROLS_HINT,
+  engineHeatCue,
   flightStateLabel,
   gateProximityHudActive,
   gearTransitionActive,
@@ -173,6 +174,14 @@ describe('HUD value formatting', () => {
     expect(afterburnerHeatIntensity(5000, true)).toBeCloseTo(0.16)
     expect(afterburnerHeatIntensity(Number.NaN, true)).toBeCloseTo(0.06)
     expect(afterburnerHeatIntensity(1500, true, Number.NaN)).toBeCloseTo(0.11)
+  })
+
+  it('keeps engine heat bands restrained and finite-safe', () => {
+    expect(engineHeatCue(0.64)).toBe('normal')
+    expect(engineHeatCue(0.65)).toBe('hot')
+    expect(engineHeatCue(0.88)).toBe('critical')
+    expect(engineHeatCue(2)).toBe('critical')
+    expect(engineHeatCue(Number.NaN)).toBe('normal')
   })
 
   it('marks the nav cue near the active gate only inside the soft window', () => {

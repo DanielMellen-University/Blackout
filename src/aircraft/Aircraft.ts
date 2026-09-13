@@ -24,6 +24,7 @@ import { flightConfig } from './flightConfig'
 import { FlightModel } from './FlightModel'
 import type { RenderQuality } from '../core/RenderQuality'
 import { createFuelState, resetFuel, updateFuel, type FuelState } from './FuelSystem'
+import { createEngineHeatState, resetEngineHeat, updateEngineHeat, type EngineHeatState } from './EngineHeatSystem'
 
 const _box = new Box3()
 const _size = new Vector3()
@@ -75,6 +76,7 @@ export class Aircraft {
   private readonly prevOrientation = new Quaternion()
   private readonly prevVelocity = new Vector3()
   readonly engineState: EngineState = createEngineState()
+  readonly engineHeat: EngineHeatState = createEngineHeatState()
   readonly fuel: FuelState = createFuelState()
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
@@ -247,6 +249,7 @@ export class Aircraft {
     this.angularVelocity.set(0, 0, 0)
     this.prevVelocity.copy(this.velocity)
     resetFuel(this.fuel)
+    resetEngineHeat(this.engineHeat)
     this.loadFactor = 1
     this.impactVy = 0
     this.impact = null
@@ -320,6 +323,7 @@ export class Aircraft {
     this.prevVelocity.copy(this.velocity)
     updateFuel(this.fuel, dt, this.controls.throttle, this.controls.boost)
     resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
+    updateEngineHeat(this.engineHeat, dt, this.controls.throttle, this.engineState.afterburnerActive)
     this.flight.step(this, dt)
     this.updateLoadFactor(dt)
     this.autoGear()

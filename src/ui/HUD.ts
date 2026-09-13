@@ -17,6 +17,8 @@ export type SpeedWarningLevel = 'normal' | 'redline' | 'overspeed'
 
 export type AltitudeCue = 'normal' | 'caution' | 'warning'
 
+export type EngineHeatCue = 'normal' | 'hot' | 'critical'
+
 export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | 'failed'
 
 export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
@@ -156,6 +158,15 @@ export function weatherCycleBanner(label: unknown): string {
   return `WEATHER SHIFT / ${safe}`
 }
 
+/** Keep engine-stress feedback bounded and calm for arcade flight. */
+export function engineHeatCue(fraction: number): EngineHeatCue {
+  if (!Number.isFinite(fraction)) return 'normal'
+  const safe = Math.max(0, Math.min(1, fraction))
+  if (safe >= 0.88) return 'critical'
+  if (safe >= 0.65) return 'hot'
+  return 'normal'
+}
+
 /** Format a finite fuel endurance estimate for the compact HUD row. */
 export function formatFuelEndurance(seconds: number | null): string {
   if (seconds === null || !Number.isFinite(seconds)) return 'END --'
@@ -182,6 +193,7 @@ export class HUD {
   private readonly fpsEl: HTMLElement | null
   private readonly thrEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
+  private readonly engineHeatEl: HTMLElement | null
   private readonly stateEl: HTMLElement | null
   private readonly bannerEl: HTMLElement | null
   private readonly spdNeedle: SVGLineElement | null
@@ -262,6 +274,8 @@ export class HUD {
   private fuelAriaText = ''
   private fuelEnduranceValue = -1
   private fuelEnduranceText = 'END --'
+  private engineHeatValue = Number.NaN
+  private engineHeatText = ''
   private radarText = ''
   private radarAriaText = ''
   private hintText = ''
@@ -331,6 +345,7 @@ export class HUD {
     this.fpsEl = root.getElementById('hud-fps')
     this.thrEl = root.getElementById('hud-thr')
     this.gearEl = root.getElementById('hud-gear')
+    this.engineHeatEl = root.getElementById('hud-engine-heat')
     this.stateEl = root.getElementById('hud-state')
     this.bannerEl = root.getElementById('hud-banner')
     this.spdNeedle = root.getElementById('spd-needle') as SVGLineElement | null
@@ -405,6 +420,8 @@ export class HUD {
     fps: number
     throttle?: number
     boost?: boolean
+    /** Bounded engine stress fraction used by the compact temperature row. */
+    engineHeat?: number
     gearDown?: boolean
     onGround?: boolean
     /** Aircraft pitch (rad), nose up positive. */
@@ -674,6 +691,20 @@ export class HUD {
         this.fuelAriaText = `${percent}% fuel, ${this.fuelEnduranceText.toLowerCase()}`
         this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
       }
+    }
+    if (this.engineHeatEl && opts.engineHeat !== undefined) {
+      const safeHeat = Number.isFinite(opts.engineHeat) ? Math.max(0, Math.min(1, opts.engineHeat)) : 0
+      const percent = Math.round(safeHeat * 100)
+      if (percent !== this.engineHeatValue) {
+        this.engineHeatValue = percent
+        this.engineHeatText = `${percent}%`
+      }
+      this.setText(this.engineHeatEl, this.engineHeatText)
+      this.setAttribute(this.engineHeatEl, 'aria-valuenow', String(percent))
+      this.setAttribute(this.engineHeatEl, 'aria-valuetext', `${percent}% engine heat`)
+      const heatWarning = engineHeatCue(safeHeat)
+      this.setClass(this.engineHeatEl, 'hot', heatWarning !== 'normal')
+      this.setClass(this.engineHeatEl, 'critical', heatWarning === 'critical')
     }
     if (this.radarEl && opts.radar !== undefined) {
       const radarText = formatRadarContacts(opts.radar)
