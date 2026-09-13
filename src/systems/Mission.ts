@@ -415,13 +415,19 @@ export class MissionSystem {
   }
 
   /** Place a new circuit from the current runway spawn. */
-  start(spawnX: number, spawnY: number, spawnZ: number, spawnYaw: number): void {
+  start(
+    spawnX: number,
+    spawnY: number,
+    spawnZ: number,
+    spawnYaw: number,
+    requestedProfile?: MissionRouteProfile,
+  ): void {
     if (this.disposed) return
     this.clear()
     const safeSpawnX = finiteOr(spawnX, 0)
     const safeSpawnY = finiteOr(spawnY, 0)
     const safeSpawnZ = finiteOr(spawnZ, 0)
-    this.profile = routeProfileForSpawn(safeSpawnX, safeSpawnZ, spawnYaw)
+    this.profile = requestedProfile ?? routeProfileForSpawn(safeSpawnX, safeSpawnZ, spawnYaw)
     this.status = 'live'
     this.next = 0
     this.havePrev = false

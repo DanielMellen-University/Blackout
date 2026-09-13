@@ -22,6 +22,12 @@
             <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
             <button type="button" id="btn-info" class="btn-ghost">Game info</button>
           </div>
+          <label class="title-course" for="title-course">
+            <span>Course</span>
+            <select id="title-course" aria-label="Course">
+              <option value="random">Random world</option>
+            </select>
+          </label>
           <div class="title-takeoff" aria-label="Takeoff briefing">
             <strong>Takeoff brief</strong>
             <span><kbd>Shift</kbd> spool power · <kbd>W</kbd> rotate · gear automatic</span>
@@ -44,6 +50,10 @@
               <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">
                 Fullscreen <span id="menu-fs-state">OFF</span>
               </button>
+              <label class="menu-setting" for="menu-course">
+                <span>Course</span>
+                <select id="menu-course" aria-label="Course"></select>
+              </label>
               <label class="menu-setting" for="menu-quality">
                 <span>Graphics</span>
                 <select id="menu-quality" aria-label="Graphics quality">
@@ -95,6 +105,7 @@
               <li>Fly the glowing cyan rings in order. The top arrow points at the next gate.</li>
               <li>Takeoff: <kbd>Shift</kbd> to add power, then <kbd>W</kbd> at speed. Gear is automatic.</li>
               <li>After the circuit, return and land to score. <kbd>R</kbd> rolls a new world. Pause or results can retry the same course.</li>
+              <li>Choose Random world or a repeatable course seed before launch. New world applies the selected course.</li>
               <li>Engine percent is a speed target: 50% holds about 1500 kts. Afterburner needs throttle open.</li>
             </ul>
             <p class="menu-about">Blackout is a browser arcade F-35 toy. No fuel, radar, or weapons. Just fly.</p>

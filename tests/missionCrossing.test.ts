@@ -222,6 +222,17 @@ describe('MissionSystem gate crossing', () => {
     mission.dispose()
   })
 
+  it('preserves an explicitly selected course profile across route rebuilds', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0.8, 'orbit')
+    expect(mission.routeProfile).toBe('orbit')
+    expect(mission.routeSummary.challenge).toBe('approach')
+    mission.start(0, 20, 0, 0.8, 'slalom')
+    expect(mission.routeProfile).toBe('slalom')
+    expect(mission.routeSummary.challenge).toBe('precision')
+    mission.dispose()
+  })
+
   it('ignores late mission calls after idempotent teardown', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)

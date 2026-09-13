@@ -21,6 +21,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Best runs persist per course with gate split traces, so retries call out whether each clear is ahead or behind pace without spawning a ghost aircraft.
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
+- The title and pause menus offer Random world plus three validated repeatable course seeds, with route profiles preserved on retry.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

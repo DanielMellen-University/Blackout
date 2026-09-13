@@ -39,6 +39,7 @@ import {
   Time,
 } from './core/Time'
 import { ChallengeRun } from './systems/ChallengeRun'
+import { courseDefinitionForId, COURSE_LIBRARY, type CourseId } from './systems/CourseLibrary'
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
@@ -80,12 +81,29 @@ async function boot(): Promise<void> {
   const playBtn = document.getElementById('btn-play') as HTMLButtonElement | null
   const overlay = document.getElementById('overlay')
   const menuEl = document.getElementById('menu')
+  const titleCourseSelect = document.getElementById('title-course') as HTMLSelectElement | null
+  const courseSelect = document.getElementById('menu-course') as HTMLSelectElement | null
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   if (!menuEl) throw new Error('#menu not found')
   const menu = new GameMenu(menuEl)
   const uiListeners = new ListenerBag()
+
+  const courseSelectors = [titleCourseSelect, courseSelect].filter(
+    (select): select is HTMLSelectElement => select !== null,
+  )
+  for (const select of courseSelectors) {
+    select.replaceChildren(...COURSE_LIBRARY.map((course) => {
+      const option = document.createElement('option')
+      option.value = course.id
+      option.textContent = course.label
+      option.title = course.detail
+      return option
+    }))
+  }
+  let selectedCourseId: CourseId = courseDefinitionForId(titleCourseSelect?.value).id
+  for (const select of courseSelectors) select.value = selectedCourseId
 
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
@@ -348,7 +366,7 @@ async function boot(): Promise<void> {
   }
   let prevWarning: string | null = null
 
-  const courseId = (): string => `seed:${world.worldSeed}`
+  const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
   let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {
@@ -393,10 +411,17 @@ async function boot(): Promise<void> {
   const resetFlight = (newWorld: boolean, briefing = false): void => {
     results.hide()
     if (newWorld) {
-      world.reseed()
+      const course = courseDefinitionForId(selectedCourseId)
+      world.reseed(course.seed ?? undefined, course.profile ?? undefined)
       debug?.syncPad()
     } else {
-      world.mission.start(world.spawn.x, world.spawn.y, world.spawn.z, world.spawn.yaw)
+      world.mission.start(
+        world.spawn.x,
+        world.spawn.y,
+        world.spawn.z,
+        world.spawn.yaw,
+        world.mission.routeProfile,
+      )
     }
     aircraft.reset(world.spawn)
     cameras.setMode(cameras.mode, aircraft)
@@ -418,6 +443,13 @@ async function boot(): Promise<void> {
     if (briefing) showBanner(`SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}`, 5000)
   }
 
+  const onCourseChange = (event: Event): void => {
+    const select = event.currentTarget as HTMLSelectElement | null
+    selectedCourseId = courseDefinitionForId(select?.value).id
+    for (const other of courseSelectors) other.value = selectedCourseId
+  }
+  for (const select of courseSelectors) uiListeners.add(select, 'change', onCourseChange)
+
   const startGame = (): void => {
     if (playing) return
     playing = true
@@ -429,7 +461,7 @@ async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    resetFlight(false, true)
+    resetFlight(courseDefinitionForId(selectedCourseId).seed !== null, true)
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')

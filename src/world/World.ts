@@ -19,7 +19,7 @@ import {
   type FlatSpawn,
 } from './terrainSample'
 import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
-import { MissionSystem } from '../systems/Mission'
+import { MissionSystem, type MissionRouteProfile } from '../systems/Mission'
 import { SettlementSystem } from './SettlementSystem'
 import { disposeObjectTree } from '../core/dispose'
 
@@ -83,6 +83,7 @@ export class World {
   }
   private committed = false
   private disposed = false
+  private missionProfile: MissionRouteProfile | undefined
   private appliedWeather: WeatherEffectState | null = null
   private readonly weatherCandidate: WeatherEffectState = {
     rain: 0,
@@ -149,17 +150,19 @@ export class World {
    * Search and validation run before the live world is replaced. If anything
    * throws after a world already exists, the previous seed/pad stay in place.
    */
-  reseed(requestedSeed?: number): number {
+  reseed(requestedSeed?: number, requestedProfile?: MissionRouteProfile): number {
     if (this.disposed) return this.seed
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
       throw new Error('World seed must be finite')
     }
     const previousSeed = this.seed
+    const previousProfile = this.missionProfile
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
     const restore = (): void => {
       setWorldSeed(previousSeed)
       this.seed = previousSeed
+      this.missionProfile = previousProfile
       this.spawn = previousSpawn
       if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
       else clearOpsPad()
@@ -174,6 +177,7 @@ export class World {
         if (!pad) continue
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed
+        this.missionProfile = requestedProfile
         this.applySpawn(pad)
         this.terrain.clearAll()
         this.settlements.clearAll()
@@ -193,7 +197,7 @@ export class World {
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
         setAirfieldPapi(this.runway, this.spawn.x, this.spawn.y, this.spawn.z, this.atmosphere.daylight)
-        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw)
+        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw, this.missionProfile)
         this.committed = true
         return this.seed
       }
