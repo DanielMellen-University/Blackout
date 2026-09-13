@@ -4,6 +4,11 @@
  */
 import { displayedKnots } from '../core/airspeed'
 import { fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
+import {
+  radarBearingArrow,
+  radarDistanceLabel,
+  type RadarContact,
+} from '../systems/RadarSystem'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
@@ -12,6 +17,13 @@ export type SpeedWarningLevel = 'normal' | 'redline' | 'overspeed'
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
+}
+
+export function formatRadarContacts(contacts: readonly RadarContact[]): string {
+  if (contacts.length === 0) return 'NO CONTACTS'
+  return contacts.map((contact) =>
+    `${contact.label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`,
+  ).join(' · ')
 }
 
 export class HUD {
@@ -45,6 +57,7 @@ export class HUD {
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
+  private readonly radarEl: HTMLElement | null
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
   private readonly heatVeilEl: HTMLElement | null
@@ -151,6 +164,7 @@ export class HUD {
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
     this.fuelEl = root.getElementById('hud-fuel')
+    this.radarEl = root.getElementById('hud-radar')
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
     this.heatVeilEl = root.getElementById('heat-veil')
@@ -198,6 +212,8 @@ export class HUD {
     mission?: string
     /** Remaining fuel as a normalized fraction. */
     fuel?: number
+    /** Bounded navigation contacts prepared by RadarSystem. */
+    radar?: readonly RadarContact[]
     /** Next-gate range in meters; omit or 0 to hide. */
     navDist?: number
     /** RAF timestamp shared by the main loop for time-based HUD cues. */
@@ -351,6 +367,9 @@ export class HUD {
       const fuelWarning = fuelWarningLevel({ fraction: opts.fuel })
       this.setClass(this.fuelEl, 'low', fuelWarning !== 'normal')
       this.setClass(this.fuelEl, 'critical', fuelWarning === 'critical')
+    }
+    if (this.radarEl && opts.radar !== undefined) {
+      this.setText(this.radarEl, formatRadarContacts(opts.radar))
     }
     this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
 

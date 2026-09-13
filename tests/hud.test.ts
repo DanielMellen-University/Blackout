@@ -4,6 +4,7 @@ import {
   canopyTintIntensity,
   canopyWeatherIntensity,
   formatAudioState,
+  formatRadarContacts,
   formatGForce,
   formatHeading,
   formatHudNumber,
@@ -160,5 +161,13 @@ describe('HUD value formatting', () => {
     expect(normalizeBannerTone('danger')).toBe('danger')
     expect(normalizeBannerTone('warning')).toBe('info')
     expect(normalizeBannerTone(null)).toBe('info')
+  })
+
+  it('formats bounded radar contacts for a compact HUD readout', () => {
+    expect(formatRadarContacts([
+      { kind: 'gate', label: 'GATE', distance: 1200, bearing: 0 },
+      { kind: 'city', label: 'CITY', distance: 4200, bearing: Math.PI / 2 },
+    ])).toBe('GATE 1.2K ↑ · CITY 4.2K →')
+    expect(formatRadarContacts([])).toBe('NO CONTACTS')
   })
 })

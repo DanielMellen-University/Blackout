@@ -13,6 +13,7 @@ import {
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
+import type { RadarLandmark } from '../systems/RadarSystem'
 
 const LOAD_RADIUS = FOG_FAR
 const DETAIL_RADIUS = 4200
@@ -373,6 +374,7 @@ export class SettlementSystem {
   private readonly buildingSnow = { value: 0 }
   private readonly buildingDaylight = { value: 1 }
   private readonly loaded = new Map<string, LoadedSettlement>()
+  private readonly radarLandmarkCache: RadarLandmark[] = []
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
   private readonly checkedLinks = new Set<string>()
@@ -593,6 +595,28 @@ export class SettlementSystem {
     return this.queue.length + this.ready.length + this.linkQueue.length + this.readyRoads.length + (this.inFlight ? 1 : 0)
   }
   get roadCount(): number { return this.connections.size }
+
+  /** Return nearby loaded landmarks through a fixed-size reusable snapshot. */
+  getRadarLandmarks(x: number, z: number, maxRange: number): readonly RadarLandmark[] {
+    if (this.disposed) return this.radarLandmarkCache
+    const safeX = Number.isFinite(x) ? x : 0
+    const safeZ = Number.isFinite(z) ? z : 0
+    const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
+    let count = 0
+    for (const { plan } of this.loaded.values()) {
+      if (count >= MAX_LOADED_SETTLEMENTS) break
+      if (Math.hypot(plan.x - safeX, plan.z - safeZ) > range) continue
+      const landmark = this.radarLandmarkCache[count] ?? { x: 0, y: 0, z: 0, kind: 'village' as const }
+      landmark.x = plan.x
+      landmark.y = plan.y
+      landmark.z = plan.z
+      landmark.kind = plan.kind
+      this.radarLandmarkCache[count] = landmark
+      count++
+    }
+    this.radarLandmarkCache.length = count
+    return this.radarLandmarkCache
+  }
 
   clearAll(): void {
     for (const settlement of this.loaded.values()) this.remove(settlement)

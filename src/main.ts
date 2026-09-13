@@ -74,6 +74,7 @@ import { DebugOverlay } from './debug/DebugOverlay'
 import { GameMenu } from './ui/GameMenu'
 import { HUD, type HudBannerTone } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
+import { RADAR_RANGE_METERS, RadarSystem } from './systems/RadarSystem'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -324,6 +325,7 @@ async function boot(): Promise<void> {
   uiListeners.add(volumeRange, 'input', onVolumeInput)
   const results = new RunResults()
   const challenge = new ChallengeRun()
+  const radar = new RadarSystem()
   const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
   debug?.syncPad()
 
@@ -420,6 +422,7 @@ async function boot(): Promise<void> {
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
+    radar: [],
     timeMs: 0,
     banner: null,
     bannerTone: 'info',
@@ -986,6 +989,17 @@ async function boot(): Promise<void> {
         pose.heading,
       )
       const gate = world.mission.activeGatePos()
+      const radarContacts = radar.update(
+        aircraft.position.x,
+        aircraft.position.z,
+        pose.heading,
+        gate,
+        world.settlements.getRadarLandmarks(
+          aircraft.position.x,
+          aircraft.position.z,
+          RADAR_RANGE_METERS,
+        ),
+      )
       if (shouldShowFlightPathMarker(
         cameras.mode === 'cockpit',
         aircraft.onGround,
@@ -1028,6 +1042,7 @@ async function boot(): Promise<void> {
         ? nav.bearing
         : gateScreenBearing(cameras.camera, gate)
       hudFrame.navAltDelta = nav.altDelta
+      hudFrame.radar = radarContacts
       hudFrame.timeMs = nowMs
       hudFrame.banner = aircraft.status === 'crashed' ? 'CRASH - press R' : banner
       hudFrame.bannerTone = aircraft.status === 'crashed' ? 'danger' : bannerTone
