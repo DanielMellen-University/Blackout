@@ -47,7 +47,7 @@ export interface ScoreStore {
 
 const BEST_KEY = 'blackout.best.'
 const TRACE_KEY = 'blackout.trace.'
-const HISTORY_KEY = 'blackout.history.'
+export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 
 export interface CourseHistory {
   completionCount: number
@@ -55,7 +55,7 @@ export interface CourseHistory {
 }
 
 export function courseHistoryStorageKey(courseId: string): string {
-  return HISTORY_KEY + courseId
+  return COURSE_HISTORY_STORAGE_PREFIX + courseId
 }
 
 export function readCourseHistory(

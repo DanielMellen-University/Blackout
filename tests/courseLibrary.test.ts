@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   COURSE_LIBRARY,
+  COURSE_SELECTION_STORAGE_KEY,
   courseDefinitionForId,
   courseRunId,
   courseSeedForId,
@@ -30,7 +31,7 @@ describe('course library', () => {
     expect(readSelectedCourseId(storage)).toBe('random')
     writeSelectedCourseId(storage, 'range-sweep')
     expect(readSelectedCourseId(storage)).toBe('range-sweep')
-    values.set('blackout.course-selection', 'not-a-course')
+    values.set(COURSE_SELECTION_STORAGE_KEY, 'not-a-course')
     expect(readSelectedCourseId(storage)).toBe('random')
     expect(() => writeSelectedCourseId(null, 'training-orbit')).not.toThrow()
   })

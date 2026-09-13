@@ -2,7 +2,7 @@ import type { MissionRouteProfile } from './Mission'
 
 export type CourseId = 'random' | 'training-orbit' | 'range-sweep' | 'precision-slalom'
 
-const COURSE_SELECTION_KEY = 'blackout.course-selection'
+export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 
 export interface CourseDefinition {
   id: CourseId
@@ -63,7 +63,7 @@ export function readSelectedCourseId(
   storage: Pick<Storage, 'getItem'> | null,
 ): CourseId {
   try {
-    return courseDefinitionForId(storage?.getItem(COURSE_SELECTION_KEY)).id
+    return courseDefinitionForId(storage?.getItem(COURSE_SELECTION_STORAGE_KEY)).id
   } catch {
     return 'random'
   }
@@ -74,7 +74,7 @@ export function writeSelectedCourseId(
   id: CourseId,
 ): void {
   try {
-    storage?.setItem(COURSE_SELECTION_KEY, id)
+    storage?.setItem(COURSE_SELECTION_STORAGE_KEY, id)
   } catch {
     // Private browsing/storage denial should never block course selection.
   }

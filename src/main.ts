@@ -38,11 +38,17 @@ import {
   shouldUpdateLiveHud,
   Time,
 } from './core/Time'
-import { ChallengeRun, formatTime, readCourseHistory } from './systems/ChallengeRun'
+import {
+  ChallengeRun,
+  COURSE_HISTORY_STORAGE_PREFIX,
+  formatTime,
+  readCourseHistory,
+} from './systems/ChallengeRun'
 import {
   courseDefinitionForId,
   courseRunId,
   COURSE_LIBRARY,
+  COURSE_SELECTION_STORAGE_KEY,
   readSelectedCourseId,
   writeSelectedCourseId,
   type CourseId,
@@ -488,6 +494,19 @@ async function boot(): Promise<void> {
     for (const other of courseSelectors) other.value = selectedCourseId
   }
   for (const select of courseSelectors) uiListeners.add(select, 'change', onCourseChange)
+  const onProgressStorageChange = (event: Event): void => {
+    const storageEvent = event as StorageEvent
+    const key = storageEvent.key
+    if (key === COURSE_SELECTION_STORAGE_KEY || key === null) {
+      selectedCourseId = readSelectedCourseId(qualityStorage)
+      for (const select of courseSelectors) select.value = selectedCourseId
+    }
+    if (key === null || key.startsWith(COURSE_HISTORY_STORAGE_PREFIX)) {
+      refreshCourseSelectorLabels()
+      refreshCourseProgress()
+    }
+  }
+  uiListeners.add(window, 'storage', onProgressStorageChange)
 
   const startGame = (): void => {
     if (playing) return
