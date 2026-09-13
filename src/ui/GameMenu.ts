@@ -172,6 +172,8 @@ export class GameMenu {
     this.heading.textContent = pause ? 'Paused' : 'Settings'
     this.state.textContent = pause ? pauseReasonLabel(this.pauseReason) : ''
     this.state.hidden = !pause
+    if (pause) this.root.setAttribute('aria-describedby', 'menu-state')
+    else this.root.removeAttribute('aria-describedby')
     this.btnResume.hidden = !pause
     this.btnRetry.hidden = !pause
     this.btnNewWorld.hidden = !pause

@@ -10,6 +10,7 @@ class FakeElement {
   readonly focus = vi.fn()
   private readonly nodes = new Map<string, FakeElement>()
   private readonly lists = new Map<string, FakeElement[]>()
+  private readonly attributes = new Map<string, string>()
   private readonly listeners = new Map<string, Set<(...args: never[]) => void>>()
 
   set(selector: string, element: FakeElement): void {
@@ -49,7 +50,17 @@ class FakeElement {
     return null
   }
 
-  setAttribute(): void {}
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value)
+  }
+
+  removeAttribute(name: string): void {
+    this.attributes.delete(name)
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes.get(name) ?? null
+  }
 }
 
 function menuFixture(): { root: FakeElement; resume: FakeElement; state: FakeElement } {
@@ -100,6 +111,7 @@ describe('menu focus flow', () => {
     expect(fixture.resume.focus).toHaveBeenCalled()
     expect(fixture.state.textContent).toBe('FLIGHT PAUSED · SIMULATION HOLD')
     expect(fixture.state.hidden).toBe(false)
+    expect(fixture.root.getAttribute('aria-describedby')).toBe('menu-state')
     const preventDefault = vi.fn()
     fixture.root.dispatch('keydown', { key: 'Tab', shiftKey: false, preventDefault })
     expect(preventDefault).toHaveBeenCalled()
@@ -124,6 +136,7 @@ describe('menu focus flow', () => {
     menu.showTitlePage('controls')
     expect(fixture.state.textContent).toBe('')
     expect(fixture.state.hidden).toBe(true)
+    expect(fixture.root.getAttribute('aria-describedby')).toBeNull()
     menu.dispose()
     vi.unstubAllGlobals()
   })
