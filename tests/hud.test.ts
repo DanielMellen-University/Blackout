@@ -25,6 +25,7 @@ import {
   normalizeMissionPhase,
   navigationAltitudeCue,
   navigationBearingDegrees,
+  navigationRangeCue,
   navigationTargetLabel,
   navigationSector,
   normalizeNavigationBearing,
@@ -275,6 +276,14 @@ describe('HUD value formatting', () => {
     expect(navigationAltitudeCue(24, 'base')).toBe('level')
     expect(navigationAltitudeCue(26, 'base')).toBe('high')
     expect(navigationAltitudeCue(Number.NaN)).toBe('level')
+  })
+
+  it('turns navigation distance change into a deadbanded route trend', () => {
+    expect(navigationRangeCue(900, Number.NaN)).toBe('steady')
+    expect(navigationRangeCue(900, 905)).toBe('closing')
+    expect(navigationRangeCue(905, 900)).toBe('opening')
+    expect(navigationRangeCue(904, 900)).toBe('steady')
+    expect(navigationRangeCue(Number.NaN, 900)).toBe('closing')
   })
 
   it('keeps the takeoff control hint compact and stable', () => {

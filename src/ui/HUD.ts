@@ -81,6 +81,8 @@ export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' {
 
 export type NavigationAltitudeCue = 'high' | 'low' | 'level'
 
+export type NavigationRangeCue = 'closing' | 'opening' | 'steady'
+
 /** Convert target altitude error into a calm climb, descent, or level cue. */
 export function navigationAltitudeCue(
   altDelta: number,
@@ -91,6 +93,16 @@ export function navigationAltitudeCue(
   if (safe > threshold) return 'high'
   if (safe < -threshold) return 'low'
   return 'level'
+}
+
+/** Turn target distance change into a calm closing, opening, or steady cue. */
+export function navigationRangeCue(current: number, previous: number): NavigationRangeCue {
+  const safeCurrent = Number.isFinite(current) ? Math.max(0, current) : 0
+  if (!Number.isFinite(previous)) return 'steady'
+  const safePrevious = Math.max(0, previous)
+  const delta = safeCurrent - safePrevious
+  if (Math.abs(delta) <= 4) return 'steady'
+  return delta < 0 ? 'closing' : 'opening'
 }
 
 /** Keep manual weather changes audible without exposing raw or empty labels. */
@@ -146,6 +158,7 @@ export class HUD {
   private readonly navTargetEl: HTMLElement | null
   private readonly navArrowEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
+  private readonly navTrendEl: HTMLElement | null
   private readonly navAltEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
@@ -213,6 +226,10 @@ export class HUD {
   private navRangeMode = -1
   private navRangeStep = Number.NaN
   private navRangeText = ''
+  private navRangeValue = Number.NaN
+  private navRangeCueValue: NavigationRangeCue | null = null
+  private navRangeCueText = ''
+  private navTargetValue: 'NEXT GATE' | 'BASE' | null = null
   private navAltMode = -1
   private navAltStep = Number.NaN
   private navAltText = ''
@@ -280,6 +297,7 @@ export class HUD {
     this.navTargetEl = root.getElementById('nav-target')
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navRangeEl = root.getElementById('nav-range')
+    this.navTrendEl = root.getElementById('nav-trend')
     this.navAltEl = root.getElementById('nav-alt')
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
@@ -654,13 +672,23 @@ export class HUD {
       this.setClass(this.navCueEl, 'nav-alt-high', false)
       this.setClass(this.navCueEl, 'nav-alt-low', false)
       this.setClass(this.navCueEl, 'nav-alt-level', false)
+      this.setClass(this.navCueEl, 'nav-range-closing', false)
+      this.setClass(this.navCueEl, 'nav-range-opening', false)
+      this.setClass(this.navCueEl, 'nav-range-steady', false)
       this.setHidden(this.navCueEl, true)
       this.setNavigationSector(null)
+      this.navRangeValue = Number.NaN
+      this.navRangeCueValue = null
+      this.navTargetValue = null
       return
     }
     const safeDist = Math.max(0, safeHudValue(dist))
     const safeAltDelta = safeHudValue(altDelta)
     const targetLabel = navigationTargetLabel(target)
+    const previousDist = targetLabel === this.navTargetValue ? this.navRangeValue : Number.NaN
+    const rangeCue = navigationRangeCue(safeDist, previousDist)
+    this.navRangeValue = safeDist
+    this.navTargetValue = targetLabel
     const altitudeCue = navigationAltitudeCue(safeAltDelta, targetLabel === 'BASE' ? 'base' : 'gate')
     this.setHidden(this.navCueEl, false)
     this.setClass(this.navCueEl, 'near-gate', targetLabel !== 'BASE' && gateProximityHudActive(safeDist))
@@ -668,6 +696,9 @@ export class HUD {
     this.setClass(this.navCueEl, 'nav-alt-high', altitudeCue === 'high')
     this.setClass(this.navCueEl, 'nav-alt-low', altitudeCue === 'low')
     this.setClass(this.navCueEl, 'nav-alt-level', altitudeCue === 'level')
+    this.setClass(this.navCueEl, 'nav-range-closing', rangeCue === 'closing')
+    this.setClass(this.navCueEl, 'nav-range-opening', rangeCue === 'opening')
+    this.setClass(this.navCueEl, 'nav-range-steady', rangeCue === 'steady')
     if (this.navTargetEl) {
       this.setText(this.navTargetEl, targetLabel)
       this.setAttribute(this.navCueEl, 'aria-label', `${targetLabel} navigation`)
@@ -690,6 +721,15 @@ export class HUD {
         this.navRangeText = rangeMode ? `${(rangeStep / 10).toFixed(1)} KM` : `${rangeStep} M`
       }
       this.setText(this.navRangeEl, this.navRangeText)
+      const rangeLabel = rangeCue === 'closing' ? 'closing' : rangeCue === 'opening' ? 'opening' : 'holding'
+      this.setAttribute(this.navRangeEl, 'aria-label', `${rangeLabel}, ${this.navRangeText}`)
+    }
+    if (this.navTrendEl) {
+      if (rangeCue !== this.navRangeCueValue) {
+        this.navRangeCueValue = rangeCue
+        this.navRangeCueText = rangeCue === 'closing' ? 'CLOSE' : rangeCue === 'opening' ? 'OPEN' : 'HOLD'
+      }
+      this.setText(this.navTrendEl, this.navRangeCueText)
     }
     if (this.navAltEl) {
       const altMode = Math.abs(safeAltDelta) < 12 ? 0 : 1
