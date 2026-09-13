@@ -524,7 +524,10 @@ async function boot(): Promise<void> {
     prevWarning = null
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
-    if (briefing) showBanner(`SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}`, 5000)
+    if (briefing) {
+      const resetLabel = newWorld ? 'NEW WORLD' : 'RETRY SAME COURSE'
+      showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}`, 5000)
+    }
   }
 
   const onCourseChange = (event: Event): void => {
