@@ -392,6 +392,7 @@ async function boot(): Promise<void> {
   let bannerUntil = 0
   let wasAirborne = false
   let prevAfterburner = false
+  let prevAirbrake = false
   let prevAfterburnerLockout = false
   let prevAfterburnerHeatLockout = false
   let prevGearDown = true
@@ -987,6 +988,18 @@ async function boot(): Promise<void> {
       audio.playCue(afterburnerOn ? 'ab' : 'ab-off')
     }
     prevAfterburner = afterburnerOn
+    const airbrakeOpen = aircraft.controls.airbrake
+    if (
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      airbrakeOpen !== prevAirbrake
+    ) {
+      audio.playCue(airbrakeOpen ? 'airbrake-open' : 'airbrake-close')
+    }
+    prevAirbrake = airbrakeOpen
     const afterburnerFuelLocked = aircraft.engineState.afterburnerRequested &&
       aircraft.engineState.lever >= 0.05 &&
       aircraft.fuel.fraction <= FUEL_AFTERBURNER_RESERVE_FRACTION
@@ -1062,6 +1075,7 @@ async function boot(): Promise<void> {
 
     audioFrame.throttle = aircraft.engineState.lever
     audioFrame.boost = afterburnerOn
+    audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain

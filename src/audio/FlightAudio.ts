@@ -123,6 +123,8 @@ export class FlightAudio {
     dt: number
     /** True when the player is inside the camera-attached cockpit. */
     cockpit?: boolean
+    /** True while the pilot holds the speed brake. */
+    airbrake?: boolean
   }): void {
     if (this.disposed) return
     const ctx = this.ctx
@@ -151,8 +153,7 @@ export class FlightAudio {
 
     // Wind starts after a taxi crawl, strong by cruise (~400+ kts).
     const speed = Number.isFinite(opts.speed) ? Math.max(0, opts.speed) : 0
-    const windT = clamp01((speed - 18) / 280)
-    const wind = windT * windT
+    const wind = airbrakeWindEnvelope(speed, opts.airbrake === true)
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
     const whine = engineWhineLevel(opts.throttle, boost)
 
@@ -236,7 +237,9 @@ export class FlightAudio {
       | 'g-high'
       | 'g-negative'
       | 'gear-up'
-      | 'gear-down',
+      | 'gear-down'
+      | 'airbrake-open'
+      | 'airbrake-close',
   ): void {
     if (this.disposed) return
     const ctx = this.ctx
@@ -266,6 +269,10 @@ export class FlightAudio {
       // engine loop or turning boost into a repetitive alarm.
       this.noiseBurst(now, 0.14, 'brown', 0.1, 900, 260)
       this.tone(300, now, 0.14, 'triangle', 0.055, 120)
+    } else if (kind === 'airbrake-open' || kind === 'airbrake-close') {
+      const opening = kind === 'airbrake-open'
+      this.noiseBurst(now, 0.1, opening ? 'white' : 'brown', opening ? 0.075 : 0.055, opening ? 800 : 620, opening ? 2100 : 260)
+      this.tone(opening ? 260 : 340, now, 0.11, 'triangle', opening ? 0.045 : 0.035, opening ? 520 : 160)
     } else if (kind === 'thunder') {
       // Low, delayed-feeling roll: the sky flash stays readable without a sharp click.
       this.noiseBurst(now, 0.52, 'brown', 0.14, 150, 42)
@@ -567,6 +574,15 @@ export function engineWhineLevel(throttle: number, boost: boolean): number {
 /** Bounded precipitation bed level shared by the audio update and tests. */
 export function precipitationAudioLevel(rain: number, snow: number): number {
   return clamp01(clamp01(rain) * 0.9 + clamp01(snow) * 0.18)
+}
+
+/** Add a bounded speed-brake hiss to the existing wind bed without new nodes. */
+export function airbrakeWindEnvelope(speed: number, active: boolean): number {
+  const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+  const windT = clamp01((safeSpeed - 18) / 280)
+  const base = windT * windT
+  if (!active) return base
+  return clamp01(base + 0.1 + windT * 0.12)
 }
 
 /** Classify meaningful pilot-load transitions without reacting to tiny drift. */

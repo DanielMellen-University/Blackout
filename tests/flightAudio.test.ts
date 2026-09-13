@@ -4,6 +4,7 @@ import {
   FLIGHT_AUDIO_LIMITER,
   FlightAudio,
   audioContextUsable,
+  airbrakeWindEnvelope,
   enginePlaybackRate,
   engineWhineLevel,
   flightAudioViewMix,
@@ -86,6 +87,14 @@ describe('flight audio automation', () => {
     expect(precipitationAudioLevel(4, 4)).toBeLessThanOrEqual(1)
     expect(precipitationAudioLevel(-1, -1)).toBe(0)
     expect(precipitationAudioLevel(Number.NaN, Number.NaN)).toBe(0)
+  })
+
+  it('adds a bounded speed-brake hiss without changing the base wind envelope', () => {
+    expect(airbrakeWindEnvelope(0, false)).toBe(0)
+    expect(airbrakeWindEnvelope(140, false)).toBeGreaterThan(0)
+    expect(airbrakeWindEnvelope(140, true)).toBeGreaterThan(airbrakeWindEnvelope(140, false))
+    expect(airbrakeWindEnvelope(Number.NaN, true)).toBeCloseTo(0.1)
+    expect(airbrakeWindEnvelope(Number.POSITIVE_INFINITY, true)).toBeCloseTo(0.1)
   })
 
   it('only announces meaningful high or negative load bands', () => {

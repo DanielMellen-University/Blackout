@@ -50,6 +50,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - When heat protection clears, the game announces `AFTERBURNER READY / ENGINE COOL` once, unless the fuel reserve lockout is still active.
 - The engine panel keeps afterburner availability visible as `AB ON`, `AB READY`, `AB HOT`, or `AB FUEL` after transient banners fade.
 - Hold `B` to deploy the speed brake for predictable arcade deceleration, with a live `BRK OPEN` cockpit cue and matching control-surface flare.
+- Speed-brake deployment now lifts the existing wind bed and plays one quiet open or close cue, keeping the audio graph pooled.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - A landed jet can refill at the home strip while stationary, with a short hold-position cue that makes recovery sorties less punishing.
 - Completed-run results show remaining and spent fuel for each sortie.
