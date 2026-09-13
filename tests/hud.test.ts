@@ -25,6 +25,7 @@ import {
   normalizeMissionPhase,
   navigationAltitudeCue,
   navigationBearingDegrees,
+  navigationEtaSeconds,
   navigationRangeCue,
   navigationTargetLabel,
   navigationSector,
@@ -284,6 +285,14 @@ describe('HUD value formatting', () => {
     expect(navigationRangeCue(905, 900)).toBe('opening')
     expect(navigationRangeCue(904, 900)).toBe('steady')
     expect(navigationRangeCue(Number.NaN, 900)).toBe('closing')
+  })
+
+  it('keeps route ETA bounded and only reports it while closing', () => {
+    expect(navigationEtaSeconds(1000, 100, 'closing')).toBe(10)
+    expect(navigationEtaSeconds(6100, 100, 'closing')).toBe(61)
+    expect(navigationEtaSeconds(1000, 100, 'opening')).toBeNull()
+    expect(navigationEtaSeconds(1000, 0, 'closing')).toBeNull()
+    expect(navigationEtaSeconds(Number.NaN, 100, 'closing')).toBeNull()
   })
 
   it('keeps the takeoff control hint compact and stable', () => {

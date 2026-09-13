@@ -105,6 +105,16 @@ export function navigationRangeCue(current: number, previous: number): Navigatio
   return delta < 0 ? 'closing' : 'opening'
 }
 
+/** Estimate target arrival time only while the route is visibly closing. */
+export function navigationEtaSeconds(
+  distance: number,
+  speed: number,
+  rangeCue: NavigationRangeCue,
+): number | null {
+  if (rangeCue !== 'closing' || !Number.isFinite(distance) || !Number.isFinite(speed) || speed < 1) return null
+  return Math.min(5999, Math.max(0, Math.round(Math.max(0, distance) / speed)))
+}
+
 /** Keep manual weather changes audible without exposing raw or empty labels. */
 export function weatherCycleBanner(label: unknown): string {
   const safe = typeof label === 'string' && label.trim().length > 0
@@ -159,6 +169,7 @@ export class HUD {
   private readonly navArrowEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
   private readonly navTrendEl: HTMLElement | null
+  private readonly navEtaEl: HTMLElement | null
   private readonly navAltEl: HTMLElement | null
 
   /** Display range for the airspeed dial (knots). */
@@ -230,6 +241,8 @@ export class HUD {
   private navRangeCueValue: NavigationRangeCue | null = null
   private navRangeCueText = ''
   private navTargetValue: 'NEXT GATE' | 'BASE' | null = null
+  private navEtaValue = -1
+  private navEtaText = '--'
   private navAltMode = -1
   private navAltStep = Number.NaN
   private navAltText = ''
@@ -298,6 +311,7 @@ export class HUD {
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navRangeEl = root.getElementById('nav-range')
     this.navTrendEl = root.getElementById('nav-trend')
+    this.navEtaEl = root.getElementById('nav-eta')
     this.navAltEl = root.getElementById('nav-alt')
     this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
@@ -606,7 +620,7 @@ export class HUD {
       this.setText(this.hintEl, this.hintText)
       this.setHidden(this.hintEl, this.hintText.length === 0)
     }
-    this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0, opts.navTarget)
+    this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0, opts.navTarget, opts.speed)
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
@@ -663,6 +677,7 @@ export class HUD {
     dist: number,
     altDelta: number,
     target: unknown = 'gate',
+    speed = 0,
   ): void {
     if (!this.navCueEl) return
     const safeBearing = normalizeNavigationBearing(bearing)
@@ -680,6 +695,8 @@ export class HUD {
       this.navRangeValue = Number.NaN
       this.navRangeCueValue = null
       this.navTargetValue = null
+      this.navEtaValue = -1
+      this.navEtaText = 'ETA --'
       return
     }
     const safeDist = Math.max(0, safeHudValue(dist))
@@ -687,6 +704,7 @@ export class HUD {
     const targetLabel = navigationTargetLabel(target)
     const previousDist = targetLabel === this.navTargetValue ? this.navRangeValue : Number.NaN
     const rangeCue = navigationRangeCue(safeDist, previousDist)
+    const etaSeconds = navigationEtaSeconds(safeDist, speed, rangeCue)
     this.navRangeValue = safeDist
     this.navTargetValue = targetLabel
     const altitudeCue = navigationAltitudeCue(safeAltDelta, targetLabel === 'BASE' ? 'base' : 'gate')
@@ -730,6 +748,19 @@ export class HUD {
         this.navRangeCueText = rangeCue === 'closing' ? 'CLOSE' : rangeCue === 'opening' ? 'OPEN' : 'HOLD'
       }
       this.setText(this.navTrendEl, this.navRangeCueText)
+    }
+    if (this.navEtaEl) {
+      const etaValue = etaSeconds === null ? -1 : etaSeconds
+      if (etaValue !== this.navEtaValue) {
+        this.navEtaValue = etaValue
+        this.navEtaText = etaSeconds === null
+          ? 'ETA --'
+          : `ETA ${Math.floor(etaSeconds / 60)}:${String(etaSeconds % 60).padStart(2, '0')}`
+      }
+      this.setText(this.navEtaEl, this.navEtaText)
+      this.setAttribute(this.navEtaEl, 'aria-label', etaSeconds === null
+        ? 'estimated arrival unavailable'
+        : `estimated arrival ${this.navEtaText.slice(4)}`)
     }
     if (this.navAltEl) {
       const altMode = Math.abs(safeAltDelta) < 12 ? 0 : 1
