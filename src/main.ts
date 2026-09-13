@@ -415,7 +415,7 @@ async function boot(): Promise<void> {
     gLoadCueUntil = 0
     prevWarning = null
     time.reset()
-    if (briefing) showBanner('SPOOL ENGINE / W TO ROTATE', 5000)
+    if (briefing) showBanner(`SPOOL ENGINE / W TO ROTATE · ${world.mission.routeProfileLabel}`, 5000)
   }
 
   const startGame = (): void => {

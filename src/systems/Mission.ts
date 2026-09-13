@@ -58,6 +58,32 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom'
+
+const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
+  orbit: 'ORBIT',
+  sweep: 'SWEEP',
+  slalom: 'SLALOM',
+}
+
+export function routeProfileForSpawn(
+  spawnX: number,
+  spawnZ: number,
+  spawnYaw = 0,
+): MissionRouteProfile {
+  const safeX = finiteOr(spawnX, 0)
+  const safeZ = finiteOr(spawnZ, 0)
+  const safeYaw = finiteOr(spawnYaw, 0)
+  const hash = Math.abs(Math.floor(
+    safeX * 0.0023 + safeZ * 0.0017 + safeYaw * 2.7,
+  ))
+  return (['orbit', 'sweep', 'slalom'] as const)[hash % 3]!
+}
+
+export function routeProfileLabel(profile: MissionRouteProfile): string {
+  return ROUTE_PROFILE_LABELS[profile] ?? ROUTE_PROFILE_LABELS.orbit
+}
+
 /**
  * Build a varied route whose first leg follows the runway heading and whose
  * sampled straight segments stay above the generated terrain.
@@ -67,24 +93,23 @@ export function buildMissionRoute(
   spawnY: number,
   spawnZ: number,
   spawnYaw: number,
+  profile = routeProfileForSpawn(spawnX, spawnZ, spawnYaw),
 ): MissionRoutePoint[] {
   const safeSpawnX = finiteOr(spawnX, 0)
   const safeSpawnY = finiteOr(spawnY, 0)
   const safeSpawnZ = finiteOr(spawnZ, 0)
   const safeSpawnYaw = finiteOr(spawnYaw, 0)
   const seedPhase = Math.sin(safeSpawnX * 0.00031 + safeSpawnZ * 0.00017)
-  const points = Array.from({ length: GATE_COUNT }, (_, i) => {
-    const angle = safeSpawnYaw + seedPhase * ROUTE_ANGLE_VARIATION +
-      (i / GATE_COUNT) * Math.PI * 2 +
-      Math.sin(seedPhase * 2.1 + i * 1.73) * ROUTE_ANGLE_VARIATION
-    const radius = ROUTE_RADIUS +
-      Math.sin(seedPhase * 1.7 + i * 2.21) * ROUTE_RADIUS_VARIATION
-    return {
-      x: safeSpawnX + Math.sin(angle) * radius,
-      y: safeSpawnY + 104 + i * 22,
-      z: safeSpawnZ + Math.cos(angle) * radius,
-    }
-  })
+  const forwardX = Math.sin(safeSpawnYaw)
+  const forwardZ = Math.cos(safeSpawnYaw)
+  const rightX = Math.cos(safeSpawnYaw)
+  const rightZ = -Math.sin(safeSpawnYaw)
+  const offsets = routeOffsets(profile, seedPhase)
+  const points = offsets.map((offset, i) => ({
+    x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
+    y: safeSpawnY + offset.height + i * (profile === 'slalom' ? 12 : 22),
+    z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
+  }))
 
   let previousX = safeSpawnX
   let previousY = safeSpawnY
@@ -130,6 +155,48 @@ export function buildMissionRoute(
   })
 }
 
+interface RouteOffset {
+  forward: number
+  right: number
+  height: number
+}
+
+function routeOffsets(profile: MissionRouteProfile, seedPhase: number): RouteOffset[] {
+  if (profile === 'sweep') {
+    const spread = 560 + seedPhase * 90
+    return [
+      { forward: 760, right: 0, height: 118 },
+      { forward: 1040, right: spread, height: 142 },
+      { forward: 360, right: spread * 1.08, height: 170 },
+      { forward: -420, right: spread * 0.62, height: 198 },
+      { forward: -760, right: -120, height: 168 },
+    ]
+  }
+  if (profile === 'slalom') {
+    const spread = 520 + seedPhase * 80
+    return [
+      { forward: 680, right: 0, height: 98 },
+      { forward: 1040, right: -spread, height: 154 },
+      { forward: 520, right: spread * 0.96, height: 116 },
+      { forward: -180, right: -spread * 1.08, height: 176 },
+      { forward: -760, right: spread * 0.12, height: 142 },
+    ]
+  }
+
+  return Array.from({ length: GATE_COUNT }, (_, i) => {
+    const angle = seedPhase * ROUTE_ANGLE_VARIATION +
+      (i / GATE_COUNT) * Math.PI * 2 +
+      Math.sin(seedPhase * 2.1 + i * 1.73) * ROUTE_ANGLE_VARIATION
+    const radius = ROUTE_RADIUS +
+      Math.sin(seedPhase * 1.7 + i * 2.21) * ROUTE_RADIUS_VARIATION
+    return {
+      forward: Math.cos(angle) * radius,
+      right: Math.sin(angle) * radius,
+      height: 104,
+    }
+  })
+}
+
 /**
  * Arcade checkpoint circuit around the airfield.
  * Large rings, climb slightly, fly through in order.
@@ -140,6 +207,7 @@ export class MissionSystem {
   private next = 0
   private status: MissionStatus = 'idle'
   private liveLabel = '—'
+  private profile: MissionRouteProfile = 'orbit'
   private readonly hudState: MissionHud = {
     status: 'idle',
     current: 0,
@@ -241,12 +309,13 @@ export class MissionSystem {
     const safeSpawnX = finiteOr(spawnX, 0)
     const safeSpawnY = finiteOr(spawnY, 0)
     const safeSpawnZ = finiteOr(spawnZ, 0)
+    this.profile = routeProfileForSpawn(safeSpawnX, safeSpawnZ, spawnYaw)
     this.status = 'live'
     this.next = 0
     this.havePrev = false
     this.lastPassQuality = 1
 
-    const route = buildMissionRoute(safeSpawnX, safeSpawnY, safeSpawnZ, spawnYaw)
+    const route = buildMissionRoute(safeSpawnX, safeSpawnY, safeSpawnZ, spawnYaw, this.profile)
     for (let i = 0; i < route.length; i++) {
       const point = route[i]!
       const gate = this.gatePool[i]!
@@ -367,6 +436,14 @@ export class MissionSystem {
 
   get totalGates(): number {
     return this.gates.length
+  }
+
+  get routeProfile(): MissionRouteProfile {
+    return this.profile
+  }
+
+  get routeProfileLabel(): string {
+    return routeProfileLabel(this.profile)
   }
 
   hud(px: number, py: number, pz: number, headingYaw = 0): MissionHud {

@@ -6,6 +6,8 @@ import {
   missionPassFlashOpacity,
   missionPassFlashScale,
   buildMissionRoute,
+  routeProfileForSpawn,
+  routeProfileLabel,
   MissionSystem,
 } from '../src/systems/Mission'
 import { sampleTerrainHeight } from '../src/world/terrainSample'
@@ -172,6 +174,22 @@ describe('MissionSystem gate crossing', () => {
         previous = point
       }
     }
+  })
+
+  it('supports distinct readable route profiles without changing gate count', () => {
+    const orbit = buildMissionRoute(0, 20, 0, 0, 'orbit')
+    const sweep = buildMissionRoute(0, 20, 0, 0, 'sweep')
+    const slalom = buildMissionRoute(0, 20, 0, 0, 'slalom')
+    expect(orbit).toHaveLength(5)
+    expect(sweep).toHaveLength(5)
+    expect(slalom).toHaveLength(5)
+    expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
+    expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
+    expect(sweep[0]!.z).toBeGreaterThan(0)
+    expect(slalom[0]!.z).toBeGreaterThan(0)
+    expect(routeProfileForSpawn(0, 0, 0)).toBe('orbit')
+    expect(routeProfileLabel('sweep')).toBe('SWEEP')
+    expect(routeProfileLabel('slalom')).toBe('SLALOM')
   })
 
   it('ignores late mission calls after idempotent teardown', () => {
