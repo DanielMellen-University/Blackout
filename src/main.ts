@@ -139,6 +139,18 @@ async function boot(): Promise<void> {
 
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
+  const titleProgress = document.getElementById('title-progress')
+  const refreshCourseProgress = (): void => {
+    if (!titleProgress) return
+    const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
+    const completed = curated.filter((course) => {
+      const runId = courseRunId(course)
+      return runId !== null && (readCourseHistory(qualityStorage, runId)?.completionCount ?? 0) > 0
+    }).length
+    titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE`
+    titleProgress.setAttribute('aria-label', `${completed} of ${curated.length} curated courses complete`)
+  }
+  refreshCourseProgress()
   if (playBtn) playBtn.disabled = true
 
   const renderQualityFallback = defaultRenderQuality({
@@ -745,6 +757,7 @@ async function boot(): Promise<void> {
               audio.playCue('landed')
               results.show(finished)
               refreshCourseSelectorLabels()
+              refreshCourseProgress()
               syncInputContext()
               break
             }
