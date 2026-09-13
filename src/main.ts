@@ -459,6 +459,7 @@ async function boot(): Promise<void> {
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   let overWater = false
   let refueling = false
+  const returnTarget = new Vector3()
 
   const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
@@ -1055,6 +1056,24 @@ async function boot(): Promise<void> {
         pose.heading,
       )
       const gate = world.mission.activeGatePos()
+      const returning = challenge.phase === 'returning'
+      let navBearing = cameras.mode === 'cockpit'
+        ? nav.bearing
+        : gateScreenBearing(cameras.camera, gate)
+      let navDist = nav.dist
+      let navAltDelta = nav.altDelta
+      if (returning) {
+        returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
+        navDist = Math.hypot(
+          returnTarget.x - aircraft.position.x,
+          returnTarget.y - aircraft.position.y,
+          returnTarget.z - aircraft.position.z,
+        )
+        navAltDelta = returnTarget.y - aircraft.position.y
+        navBearing = cameras.mode === 'cockpit'
+          ? cameraRelativeBearing(cameras.camera.position, cameras.camera.quaternion, returnTarget)
+          : gateScreenBearing(cameras.camera, returnTarget)
+      }
       const radarContacts = radar.update(
         aircraft.position.x,
         aircraft.position.z,
@@ -1131,11 +1150,10 @@ async function boot(): Promise<void> {
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
       hudFrame.missionTotal = challenge.totalGates
-      hudFrame.navDist = nav.dist
-      hudFrame.navBearing = cameras.mode === 'cockpit'
-        ? nav.bearing
-        : gateScreenBearing(cameras.camera, gate)
-      hudFrame.navAltDelta = nav.altDelta
+      hudFrame.navDist = navDist
+      hudFrame.navBearing = navBearing
+      hudFrame.navAltDelta = navAltDelta
+      hudFrame.navTarget = returning ? 'base' : 'gate'
       hudFrame.radar = radarContacts
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
         ? FLIGHT_CONTROLS_HINT

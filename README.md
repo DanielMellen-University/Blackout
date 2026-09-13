@@ -54,6 +54,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The altitude meter now turns amber or red for low terrain clearance and explains the cue to assistive tech while staying calm on the ground.
 - The mission row now uses restrained phase colors and polite announcements for takeoff, gate running, return, completion, and failure states.
 - A compact gate progress bar tracks cleared checkpoints and exposes the same count semantically, making route progress readable without adding scene work.
+- After the final gate, the navigation cue switches to `BASE` and guides the return to the home strip with the same distance and altitude readout.
 - The weather block now reports wind speed and direction from the live front, with a calm fallback for malformed telemetry.
 - The state row now distinguishes ground, airborne, and crashed aircraft with cached accessible labels.
 - Navigation guidance now eases through hard turns, highlights reverse targets, and disables motion in Low or reduced-motion modes.

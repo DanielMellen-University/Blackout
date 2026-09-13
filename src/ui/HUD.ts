@@ -74,6 +74,11 @@ export function missionProgressText(current: number, total: number): string {
   return `${safeCurrent} of ${safeTotal} gates cleared`
 }
 
+/** Restrict the navigation target label to the two supported route states. */
+export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' {
+  return target === 'base' ? 'BASE' : 'NEXT GATE'
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
@@ -116,6 +121,7 @@ export class HUD {
   private readonly heatVeilEl: HTMLElement | null
   private readonly flightPathEl: HTMLElement | null
   private readonly navCueEl: HTMLElement | null
+  private readonly navTargetEl: HTMLElement | null
   private readonly navArrowEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
   private readonly navAltEl: HTMLElement | null
@@ -249,6 +255,7 @@ export class HUD {
     this.heatVeilEl = root.getElementById('heat-veil')
     this.flightPathEl = root.getElementById('flight-path-marker')
     this.navCueEl = root.getElementById('nav-cue')
+    this.navTargetEl = root.getElementById('nav-target')
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navRangeEl = root.getElementById('nav-range')
     this.navAltEl = root.getElementById('nav-alt')
@@ -330,6 +337,8 @@ export class HUD {
     timeMs?: number
     /** Radians, 0 = ahead, + = right of nose. */
     navBearing?: number | null
+    /** Navigation target kind for the cue header. */
+    navTarget?: 'gate' | 'base' | string
     navAltDelta?: number
     banner?: string | null
     bannerTone?: HudBannerTone
@@ -557,7 +566,7 @@ export class HUD {
       this.setText(this.hintEl, this.hintText)
       this.setHidden(this.hintEl, this.hintText.length === 0)
     }
-    this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0)
+    this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0, opts.navTarget)
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
@@ -613,6 +622,7 @@ export class HUD {
     bearing: number | null,
     dist: number,
     altDelta: number,
+    target: unknown = 'gate',
   ): void {
     if (!this.navCueEl) return
     const safeBearing = normalizeNavigationBearing(bearing)
@@ -624,8 +634,14 @@ export class HUD {
     }
     const safeDist = Math.max(0, safeHudValue(dist))
     const safeAltDelta = safeHudValue(altDelta)
+    const targetLabel = navigationTargetLabel(target)
     this.setHidden(this.navCueEl, false)
-    this.setClass(this.navCueEl, 'near-gate', gateProximityHudActive(safeDist))
+    this.setClass(this.navCueEl, 'near-gate', targetLabel !== 'BASE' && gateProximityHudActive(safeDist))
+    this.setClass(this.navCueEl, 'return-home', targetLabel === 'BASE')
+    if (this.navTargetEl) {
+      this.setText(this.navTargetEl, targetLabel)
+      this.setAttribute(this.navCueEl, 'aria-label', `${targetLabel} navigation`)
+    }
     this.setNavigationSector(navigationSector(safeBearing))
     const deg = navigationBearingDegrees(safeBearing)
     if (this.navArrowEl) {

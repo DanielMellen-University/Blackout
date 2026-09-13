@@ -24,6 +24,7 @@ import {
   normalizeFlightState,
   normalizeMissionPhase,
   navigationBearingDegrees,
+  navigationTargetLabel,
   navigationSector,
   normalizeNavigationBearing,
   pauseStateLabel,
@@ -258,6 +259,12 @@ describe('HUD value formatting', () => {
     expect(navigationSector(-Math.PI / 2)).toBe('left')
     expect(navigationSector(Math.PI)).toBe('behind')
     expect(navigationSector(null)).toBe('ahead')
+  })
+
+  it('labels the return cue as base and fails closed to the next gate', () => {
+    expect(navigationTargetLabel('base')).toBe('BASE')
+    expect(navigationTargetLabel('gate')).toBe('NEXT GATE')
+    expect(navigationTargetLabel(null)).toBe('NEXT GATE')
   })
 
   it('keeps the takeoff control hint compact and stable', () => {
