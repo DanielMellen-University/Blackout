@@ -13,6 +13,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.
 - Route profiles now include orbit, sweep, and slalom layouts, with the active profile called out in the takeoff briefing.
 - The takeoff briefing also reports route difficulty and minimum sampled terrain clearance, so the challenge is readable before the first input.
+- Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
 - Runway edge lights dim into daylight and brighten through dusk and night using the shared atmosphere clock.

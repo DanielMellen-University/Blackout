@@ -60,10 +60,13 @@ export interface MissionRoutePoint {
 
 export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
+export type MissionChallenge = 'approach' | 'range' | 'precision'
 
 export interface MissionRouteSummary {
   profile: MissionRouteProfile
   label: string
+  challenge: MissionChallenge
+  challengeLabel: string
   difficulty: MissionRouteDifficulty
   lengthMeters: number
   maxTurnDegrees: number
@@ -75,6 +78,12 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   orbit: 'ORBIT',
   sweep: 'SWEEP',
   slalom: 'SLALOM',
+}
+
+const MISSION_CHALLENGE_LABELS: Record<MissionChallenge, string> = {
+  approach: 'APPROACH',
+  range: 'RANGE',
+  precision: 'PRECISION',
 }
 
 export function routeProfileForSpawn(
@@ -93,6 +102,16 @@ export function routeProfileForSpawn(
 
 export function routeProfileLabel(profile: MissionRouteProfile): string {
   return ROUTE_PROFILE_LABELS[profile] ?? ROUTE_PROFILE_LABELS.orbit
+}
+
+export function missionChallengeForProfile(profile: MissionRouteProfile): MissionChallenge {
+  if (profile === 'sweep') return 'range'
+  if (profile === 'slalom') return 'precision'
+  return 'approach'
+}
+
+export function missionChallengeLabel(challenge: MissionChallenge): string {
+  return MISSION_CHALLENGE_LABELS[challenge] ?? MISSION_CHALLENGE_LABELS.approach
 }
 
 /**
@@ -268,6 +287,8 @@ export function summarizeMissionRoute(
   return {
     profile,
     label: routeProfileLabel(profile),
+    challenge: missionChallengeForProfile(profile),
+    challengeLabel: missionChallengeLabel(missionChallengeForProfile(profile)),
     difficulty,
     lengthMeters: finiteOr(lengthMeters, 0),
     maxTurnDegrees: finiteOr(maxTurnDegrees, 0),
@@ -290,13 +311,15 @@ export class MissionSystem {
   private readonly summary: MissionRouteSummary = {
     profile: 'orbit',
     label: 'ORBIT',
+    challenge: 'approach',
+    challengeLabel: 'APPROACH',
     difficulty: 'standard',
     lengthMeters: 0,
     maxTurnDegrees: 0,
     minClearanceMeters: ROUTE_CLEARANCE,
     maxAltitudeMeters: 0,
   }
-  private routeBriefingText = 'ROUTE ORBIT / STANDARD / MIN CLR 120M'
+  private routeBriefingText = 'ROUTE ORBIT / APPROACH / STANDARD / MIN CLR 120M'
   private readonly hudState: MissionHud = {
     status: 'idle',
     current: 0,
@@ -414,6 +437,8 @@ export class MissionSystem {
     )
     this.summary.profile = summary.profile
     this.summary.label = summary.label
+    this.summary.challenge = summary.challenge
+    this.summary.challengeLabel = summary.challengeLabel
     this.summary.difficulty = summary.difficulty
     this.summary.lengthMeters = summary.lengthMeters
     this.summary.maxTurnDegrees = summary.maxTurnDegrees
@@ -421,6 +446,7 @@ export class MissionSystem {
     this.summary.maxAltitudeMeters = summary.maxAltitudeMeters
     this.routeBriefingText = [
       `ROUTE ${summary.label}`,
+      summary.challengeLabel,
       summary.difficulty.toUpperCase(),
       `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
     ].join(' / ')
@@ -428,6 +454,7 @@ export class MissionSystem {
       const point = route[i]!
       const gate = this.gatePool[i]!
       const fwd = gate.fwd.set(point.fwdX, 0, point.fwdZ).normalize()
+      gate.radius = summary.challenge === 'precision' ? GATE_RADIUS * 0.78 - 2 : GATE_RADIUS - 2
       const ring = gate.root.children[0] as Mesh
       // Torus lies in XY; stand it up and face along fwd
       ring.rotation.y = Math.atan2(fwd.x, fwd.z)
@@ -453,7 +480,8 @@ export class MissionSystem {
         this.passFlash.visible = false
         this.passFlashMat.opacity = 0
       } else {
-        this.passFlash.scale.setScalar(missionPassFlashScale(progress))
+        const baseScale = this.summary.challenge === 'precision' ? 0.82 : 1
+        this.passFlash.scale.setScalar(baseScale * missionPassFlashScale(progress))
         this.passFlashMat.opacity = missionPassFlashOpacity(progress)
       }
     }
@@ -475,7 +503,8 @@ export class MissionSystem {
     }
     const ring = g.root.children[0]
     if (ring) {
-      const s = 1.02 + Math.sin(now * 0.005) * 0.05 + near * 0.09
+      const baseScale = this.summary.challenge === 'precision' ? 0.82 : 1
+      const s = baseScale * (1.02 + Math.sin(now * 0.005) * 0.05 + near * 0.09)
       ring.scale.setScalar(s)
     }
     this.liveMat.opacity = 0.85 + near * 0.12
@@ -615,7 +644,7 @@ export class MissionSystem {
       if (g.passed) ring.material = this.doneMat
       else if (i === this.next) ring.material = this.liveMat
       else ring.material = this.waitMat
-      ring.scale.setScalar(1)
+      ring.scale.setScalar(this.summary.challenge === 'precision' ? 0.82 : 1)
     }
     this.placeBeacon()
   }
@@ -626,7 +655,7 @@ export class MissionSystem {
     flash.position.copy(gate.pos)
     const ring = gate.root.children[0]
     if (ring) flash.rotation.copy(ring.rotation)
-    flash.scale.setScalar(1)
+    flash.scale.setScalar(this.summary.challenge === 'precision' ? 0.82 : 1)
     this.passFlashStartedAt = this.presentationTimeMs
     this.passFlashMat.opacity = missionPassFlashOpacity(0)
     flash.visible = true

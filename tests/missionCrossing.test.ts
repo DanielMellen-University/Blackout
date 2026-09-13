@@ -178,6 +178,8 @@ describe('MissionSystem gate crossing', () => {
 
     const summary = summarizeMissionRoute(0, 20, 0, routeA, 'orbit')
     expect(summary.profile).toBe('orbit')
+    expect(summary.challenge).toBe('approach')
+    expect(summary.challengeLabel).toBe('APPROACH')
     expect(summary.lengthMeters).toBeGreaterThan(0)
     expect(summary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
     expect(['relaxed', 'standard', 'technical']).toContain(summary.difficulty)
@@ -206,6 +208,17 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.routeBriefing).toContain('MIN CLR')
     expect(mission.routeBriefing).toContain(mission.routeProfileLabel)
     expect(mission.routeSummary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
+    mission.dispose()
+  })
+
+  it('turns slalom routes into a tighter precision challenge', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0.8)
+    const ring = mission.root.getObjectByName('gate_0')!
+    expect(mission.routeProfile).toBe('slalom')
+    expect(mission.routeSummary.challenge).toBe('precision')
+    expect(mission.routeBriefing).toContain('PRECISION')
+    expect(ring.scale.x).toBeCloseTo(0.82)
     mission.dispose()
   })
 
