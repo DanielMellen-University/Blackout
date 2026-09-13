@@ -190,6 +190,12 @@ export function formatFuelEndurance(seconds: number | null): string {
     : `END ${minutes}:${String(secs).padStart(2, '0')}`
 }
 
+/** Keep live pace feedback readable while allowing a safe pre-run fallback. */
+export function missionPaceLabel(value: unknown): string {
+  if (typeof value !== 'string' || value.trim().length === 0) return 'READY'
+  return value.trim()
+}
+
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
@@ -223,6 +229,7 @@ export class HUD {
   private readonly windEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
+  private readonly paceEl: HTMLElement | null
   private readonly missionProgressEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
   private readonly fuelEnduranceEl: HTMLElement | null
@@ -305,6 +312,7 @@ export class HUD {
   private missionProgressTotal = -1
   private missionProgressPercentText = ''
   private missionProgressAriaText = ''
+  private paceText = 'READY'
   private flightStateValue: FlightStateCue | null = null
   private flightStateText = ''
   private flightStateAriaText = ''
@@ -377,6 +385,7 @@ export class HUD {
     this.windEl = root.getElementById('hud-wind')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
+    this.paceEl = root.getElementById('hud-pace')
     this.missionProgressEl = root.getElementById('hud-gate-progress')
     this.fuelEl = root.getElementById('hud-fuel')
     this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
@@ -461,6 +470,8 @@ export class HUD {
     weatherKind?: string
     dayPhase?: string
     mission?: string
+    /** Live checkpoint pace context, or null before the first clear. */
+    pace?: string | null
     /** Remaining fuel as a normalized fraction. */
     fuel?: number
     /** Current route phase used for a restrained mission-state cue. */
@@ -678,6 +689,15 @@ export class HUD {
           }
         }
       }
+    }
+    if (this.paceEl && opts.pace !== undefined) {
+      const pace = missionPaceLabel(opts.pace)
+      if (pace !== this.paceText) this.paceText = pace
+      this.setText(this.paceEl, this.paceText)
+      this.setAttribute(this.paceEl, 'aria-label', `Gate pace: ${this.paceText}`)
+      this.setClass(this.paceEl, 'pace-ahead', this.paceText.startsWith('AHEAD'))
+      this.setClass(this.paceEl, 'pace-behind', this.paceText.startsWith('BEHIND'))
+      this.setClass(this.paceEl, 'pace-on', this.paceText === 'ON PACE' || this.paceText === 'FIRST RUN')
     }
     if (this.missionProgressEl && (opts.missionCurrent !== undefined || opts.missionTotal !== undefined)) {
       const current = Number.isFinite(opts.missionCurrent) ? Math.max(0, Math.floor(opts.missionCurrent!)) : 0

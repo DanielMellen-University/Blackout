@@ -1183,6 +1183,7 @@ async function boot(): Promise<void> {
       hudFrame.windZ = precipitation.windZ
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`
+      hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
       hudFrame.missionTotal = challenge.totalGates

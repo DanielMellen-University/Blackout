@@ -64,6 +64,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - While closing on a gate or base, the navigation cue also shows a bounded arrival estimate and falls back to `ETA --` when it cannot make a useful estimate.
 - The bearing arrow now includes a cached `LEFT`, `RIGHT`, `AHEAD`, or `BEHIND` label so turn direction stays readable during fast turns and low-contrast weather.
 - The navigation target now identifies the active checkpoint as `GATE n/total`, then switches back to `BASE` for the return leg.
+- The mission HUD now retains the latest gate pace result after the clear banner fades, showing `AHEAD`, `BEHIND`, `ON PACE`, or `FIRST RUN`.
 - During the return leg, the navigation cue compares the jet to the home runway and shows `ALIGN`, `TURN L`, or `TURN R` for a cleaner landing approach.
 - During the return leg, the wind row also reports runway-relative crosswind as `XW`, highlighting stronger crosswind conditions without changing flight physics.
 - Pressing `N` to cycle weather now announces the incoming front immediately, keeping the existing weather control discoverable without adding simulation work.

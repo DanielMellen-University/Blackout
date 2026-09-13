@@ -42,6 +42,7 @@ import {
   missionPhaseClass,
   missionProgressPercent,
   missionProgressText,
+  missionPaceLabel,
   quantizeHudNumber,
   safeHudValue,
   speedWarningLevel,
@@ -229,6 +230,13 @@ describe('HUD value formatting', () => {
     expect(missionProgressPercent(Number.NaN, Number.NaN)).toBe(0)
     expect(missionProgressText(2, 5)).toBe('2 of 5 gates cleared')
     expect(missionProgressText(9, 5)).toBe('5 of 5 gates cleared')
+  })
+
+  it('keeps live pace feedback safe before and after a gate clear', () => {
+    expect(missionPaceLabel(null)).toBe('READY')
+    expect(missionPaceLabel('AHEAD 0.50S')).toBe('AHEAD 0.50S')
+    expect(missionPaceLabel('  ON PACE  ')).toBe('ON PACE')
+    expect(missionPaceLabel('')).toBe('READY')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

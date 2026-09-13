@@ -320,6 +320,8 @@ export class ChallengeRun {
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
+  private gatePaceLabelDelta = Number.NaN
+  private gatePaceLabelValue = 'FIRST RUN'
   private readonly storage: ScoreStore | null
   private clockLabelMinutes = -1
   private clockLabelCentis = -1
@@ -340,6 +342,8 @@ export class ChallengeRun {
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
+    this.gatePaceLabelDelta = Number.NaN
+    this.gatePaceLabelValue = 'FIRST RUN'
     this.result = null
     this.clockLabelMinutes = -1
     this.clockLabelCentis = -1
@@ -367,6 +371,7 @@ export class ChallengeRun {
     this.gateSplits[gateIndex] = split
     const bestSplit = this.bestGateSplits[gateIndex]
     this.lastPaceDeltaSec = Number.isFinite(bestSplit) ? split - bestSplit! : Number.NaN
+    this.gatePaceLabelDelta = Number.NaN
     if (this.totalGates > 0 && this.gatesPassed >= this.totalGates) {
       this.phase = 'returning'
     }
@@ -484,7 +489,11 @@ export class ChallengeRun {
 
   /** Compare the most recently cleared gate with the best saved trace. */
   get gatePaceLabel(): string {
-    return formatPaceDelta(this.lastPaceDeltaSec)
+    if (!Object.is(this.lastPaceDeltaSec, this.gatePaceLabelDelta)) {
+      this.gatePaceLabelDelta = this.lastPaceDeltaSec
+      this.gatePaceLabelValue = formatPaceDelta(this.lastPaceDeltaSec)
+    }
+    return this.gatePaceLabelValue
   }
 
   private readBest(): number {
