@@ -125,6 +125,8 @@ export class GameMenu {
     this.pauseReason = 'manual'
     this.state.textContent = ''
     this.state.hidden = true
+    this.root.setAttribute('aria-labelledby', 'menu-heading')
+    this.root.removeAttribute('aria-describedby')
     const target = this.returnFocus
     this.returnFocus = null
     if (target?.isConnected && !target.closest('[hidden]')) {
@@ -157,6 +159,19 @@ export class GameMenu {
     this.panelRoot.hidden = view !== 'root'
     this.panelControls.hidden = view !== 'controls'
     this.panelInfo.hidden = view !== 'info'
+    const headingId = view === 'root'
+      ? 'menu-heading'
+      : view === 'controls' ? 'menu-controls-heading' : 'menu-info-heading'
+    this.root.setAttribute('aria-labelledby', headingId)
+    if (view === 'root' && this.mode === 'pause' && this.open) {
+      this.state.textContent = pauseReasonLabel(this.pauseReason)
+      this.state.hidden = false
+      this.root.setAttribute('aria-describedby', 'menu-state')
+    } else {
+      this.state.textContent = ''
+      this.state.hidden = true
+      this.root.removeAttribute('aria-describedby')
+    }
     this.focusHeading()
   }
 
