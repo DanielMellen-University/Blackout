@@ -33,6 +33,7 @@ import {
   verticalSpeedTone,
   windDirectionDegrees,
   windSpeedMps,
+  weatherCue,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
@@ -233,5 +234,15 @@ describe('HUD value formatting', () => {
     expect(FLIGHT_CONTROLS_HINT).toContain('W/S PITCH')
     expect(FLIGHT_CONTROLS_HINT).toContain('C VIEW')
     expect(FLIGHT_CONTROLS_HINT.length).toBeLessThan(64)
+  })
+
+  it('classifies severe weather without trusting malformed labels', () => {
+    expect(weatherCue('storm')).toBe('severe')
+    expect(weatherCue('THUNDERSTORM')).toBe('severe')
+    expect(weatherCue('blizzard')).toBe('severe')
+    expect(weatherCue('rain')).toBe('active')
+    expect(weatherCue('OVERCAST / SHIFTING')).toBe('active')
+    expect(weatherCue('clear')).toBe('calm')
+    expect(weatherCue(null)).toBe('calm')
   })
 })

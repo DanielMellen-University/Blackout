@@ -45,6 +45,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The state row now distinguishes ground, airborne, and crashed aircraft with cached accessible labels.
 - Navigation guidance now eases through hard turns, highlights reverse targets, and disables motion in Low or reduced-motion modes.
 - A short takeoff hint surfaces the core pitch, yaw, roll, and camera controls, then disappears without persistent state.
+- Weather labels now distinguish active and severe fronts with restrained color and accessible wording, without adding flash effects.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

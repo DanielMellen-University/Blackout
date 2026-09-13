@@ -25,6 +25,8 @@ export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
 
 export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · C VIEW'
 
+export type WeatherCue = 'calm' | 'active' | 'severe'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -134,6 +136,8 @@ export class HUD {
   private windDirectionValue = Number.NaN
   private windText = ''
   private windAriaText = ''
+  private weatherCueValue: WeatherCue | null = null
+  private weatherAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
   private flightStateValue: FlightStateCue | null = null
   private flightStateText = ''
@@ -248,6 +252,8 @@ export class HUD {
     warningLevel?: 'none' | 'caution' | 'warning'
     clock?: string
     weather?: string
+    /** Weather profile ID used for compact severity styling. */
+    weatherKind?: string
     dayPhase?: string
     mission?: string
     /** Remaining fuel as a normalized fraction. */
@@ -401,6 +407,17 @@ export class HUD {
     }
     if (this.weatherEl && opts.weather) {
       this.setText(this.weatherEl, opts.weather)
+      const cue = weatherCue(opts.weatherKind ?? opts.weather)
+      if (cue !== this.weatherCueValue) {
+        this.weatherCueValue = cue
+        this.weatherAriaText = cue === 'severe'
+          ? `Severe weather: ${opts.weather}`
+          : cue === 'active' ? `Active weather: ${opts.weather}` : `Weather: ${opts.weather}`
+      }
+      this.setAttribute(this.weatherEl, 'aria-label', this.weatherAriaText)
+      this.setAttribute(this.weatherEl, 'aria-live', 'polite')
+      this.setClass(this.weatherEl, 'weather-active', cue === 'active')
+      this.setClass(this.weatherEl, 'weather-severe', cue === 'severe')
     }
     if (this.windEl && (opts.windX !== undefined || opts.windZ !== undefined)) {
       const windX = Number.isFinite(opts.windX) ? opts.windX! : Number.NaN
@@ -941,6 +958,20 @@ export function formatWind(windX: number, windZ: number): string {
   const speed = Math.round(windSpeedMps(windX, windZ))
   if (speed < 1) return 'CALM'
   return `${speed} M/S ${String(windDirectionDegrees(windX, windZ)).padStart(3, '0')}°`
+}
+
+/** Classify weather IDs or labels without trusting arbitrary runtime strings. */
+export function weatherCue(value: unknown): WeatherCue {
+  if (typeof value !== 'string') return 'calm'
+  const normalized = value.toLowerCase()
+  if (normalized.includes('storm') || normalized.includes('blizzard')) return 'severe'
+  if (
+    normalized.includes('rain') ||
+    normalized.includes('snow') ||
+    normalized.includes('fog') ||
+    normalized.includes('overcast')
+  ) return 'active'
+  return 'calm'
 }
 
 /** Normalize route phases before they become DOM class names or announcements. */
