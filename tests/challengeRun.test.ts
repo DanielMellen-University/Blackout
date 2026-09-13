@@ -120,7 +120,10 @@ describe('ChallengeRun', () => {
     })!
     expect(firstResult.paceLabel).toBe('FIRST RUN')
     expect(firstResult.gateSplits).toEqual([1, 2])
+    expect(firstResult.completionCount).toBe(1)
+    expect(firstResult.bestTimeSec).toBe(2)
     expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
+    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2}')
 
     const retry = new ChallengeRun(scoreStore)
     retry.reset('seed:trace', 2)
@@ -137,6 +140,8 @@ describe('ChallengeRun', () => {
     })!
     expect(retryResult.paceLabel).toBe('AHEAD 1.00S')
     expect(retryResult.bestGateSplits).toEqual([1, 2])
+    expect(retryResult.completionCount).toBe(2)
+    expect(retryResult.bestTimeSec).toBe(1)
     expect(formatSplitTrace(retryResult.gateSplits, retryResult.bestGateSplits))
       .toBe('G1 0:00.50 -0.50 · G2 0:01.00 -1.00')
     expect(formatPaceDelta(0)).toBe('ON PACE')

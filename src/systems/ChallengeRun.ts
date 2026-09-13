@@ -34,6 +34,10 @@ export interface ChallengeResult {
   paceDeltaSec?: number
   /** Human-readable final pace comparison. */
   paceLabel?: string
+  /** Number of completed runs recorded for this course. */
+  completionCount?: number
+  /** Fastest completed time recorded for this course. */
+  bestTimeSec?: number
 }
 
 interface ScoreStore {
@@ -43,6 +47,12 @@ interface ScoreStore {
 
 const BEST_KEY = 'blackout.best.'
 const TRACE_KEY = 'blackout.trace.'
+const HISTORY_KEY = 'blackout.history.'
+
+interface CourseHistory {
+  completionCount: number
+  bestTimeSec: number
+}
 
 /**
  * State and scoring for one repeatable circuit attempt.
@@ -149,6 +159,10 @@ export class ChallengeRun {
       : Number.NaN
     const paceLabel = formatPaceDelta(paceDeltaSec)
     const comparisonBestSplits = this.bestGateSplits.slice()
+    const history = this.readHistory()
+    history.completionCount += 1
+    history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
+    this.writeHistory(history)
     if (isNewBest) {
       this.writeBest(totalScore)
       this.writeBestTrace()
@@ -170,6 +184,8 @@ export class ChallengeRun {
       bestGateSplits: comparisonBestSplits,
       paceDeltaSec,
       paceLabel,
+      completionCount: history.completionCount,
+      bestTimeSec: history.bestTimeSec,
     }
     return this.result
   }
@@ -235,6 +251,36 @@ export class ChallengeRun {
   private writeBestTrace(): void {
     try {
       this.storage?.setItem(TRACE_KEY + this.courseId, JSON.stringify(this.gateSplits))
+    } catch {
+      // Private browsing/storage denial should never block a completed run.
+    }
+  }
+
+  private readHistory(): CourseHistory {
+    try {
+      const raw = this.storage?.getItem(HISTORY_KEY + this.courseId)
+      if (!raw) return { completionCount: 0, bestTimeSec: Number.POSITIVE_INFINITY }
+      const parsed: unknown = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') {
+        return { completionCount: 0, bestTimeSec: Number.POSITIVE_INFINITY }
+      }
+      const record = parsed as Partial<CourseHistory>
+      return {
+        completionCount: Number.isFinite(record.completionCount) && record.completionCount! > 0
+          ? Math.floor(record.completionCount!)
+          : 0,
+        bestTimeSec: Number.isFinite(record.bestTimeSec) && record.bestTimeSec! >= 0
+          ? record.bestTimeSec!
+          : Number.POSITIVE_INFINITY,
+      }
+    } catch {
+      return { completionCount: 0, bestTimeSec: Number.POSITIVE_INFINITY }
+    }
+  }
+
+  private writeHistory(history: CourseHistory): void {
+    try {
+      this.storage?.setItem(HISTORY_KEY + this.courseId, JSON.stringify(history))
     } catch {
       // Private browsing/storage denial should never block a completed run.
     }

@@ -70,9 +70,13 @@ export class RunResults {
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
     this.scoreDetail.textContent = scoreParts.join(' · ')
     this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
-    this.best.textContent = result.isNewBest
-      ? `NEW BEST · ${result.bestScore.toLocaleString()}`
-      : `BEST · ${result.bestScore.toLocaleString()}`
+    const bestBits = [
+      result.isNewBest ? 'NEW BEST' : 'BEST',
+      result.bestScore.toLocaleString(),
+    ]
+    if (Number.isFinite(result.completionCount)) bestBits.push(`RUN ${Math.max(1, Math.floor(result.completionCount!))}`)
+    if (Number.isFinite(result.bestTimeSec)) bestBits.push(`FASTEST ${formatTime(result.bestTimeSec!)}`)
+    this.best.textContent = bestBits.join(' · ')
     this.best.classList.toggle('new-best', result.isNewBest)
     this.root.hidden = false
     document.getElementById('btn-retry')?.focus({ preventScroll: true })
