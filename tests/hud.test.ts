@@ -29,6 +29,7 @@ import {
   navigationRangeCue,
   navigationSectorLabel,
   navigationTargetLabel,
+  navigationTargetText,
   navigationSector,
   normalizeNavigationBearing,
   pauseStateLabel,
@@ -274,6 +275,10 @@ describe('HUD value formatting', () => {
     expect(navigationTargetLabel('base')).toBe('BASE')
     expect(navigationTargetLabel('gate')).toBe('NEXT GATE')
     expect(navigationTargetLabel(null)).toBe('NEXT GATE')
+    expect(navigationTargetText('gate', 1, 5)).toBe('GATE 2/5')
+    expect(navigationTargetText('gate', 9, 5)).toBe('GATE 5/5')
+    expect(navigationTargetText('base', 1, 5)).toBe('BASE')
+    expect(navigationTargetText('gate', Number.NaN, Number.NaN)).toBe('NEXT GATE')
   })
 
   it('turns navigation altitude error into a bounded climb or descent cue', () => {

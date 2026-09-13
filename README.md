@@ -59,6 +59,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The navigation cue now shows whether the target range is closing, opening, or holding, with a calm deadband to avoid turbulence flicker.
 - While closing on a gate or base, the navigation cue also shows a bounded arrival estimate and falls back to `ETA --` when it cannot make a useful estimate.
 - The bearing arrow now includes a cached `LEFT`, `RIGHT`, `AHEAD`, or `BEHIND` label so turn direction stays readable during fast turns and low-contrast weather.
+- The navigation target now identifies the active checkpoint as `GATE n/total`, then switches back to `BASE` for the return leg.
 - Pressing `N` to cycle weather now announces the incoming front immediately, keeping the existing weather control discoverable without adding simulation work.
 - The weather block now reports wind speed and direction from the live front, with a calm fallback for malformed telemetry.
 - The state row now distinguishes ground, airborne, and crashed aircraft with cached accessible labels.

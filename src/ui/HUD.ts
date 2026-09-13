@@ -86,6 +86,17 @@ export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' {
   return target === 'base' ? 'BASE' : 'NEXT GATE'
 }
 
+/** Include the active checkpoint number when mission counts are available. */
+export function navigationTargetText(target: unknown, current?: number, total?: number): string {
+  if (target === 'base') return 'BASE'
+  const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total!)) : 0
+  if (safeTotal <= 0) return 'NEXT GATE'
+  const safeCurrent = Number.isFinite(current)
+    ? Math.min(safeTotal - 1, Math.max(0, Math.floor(current!)))
+    : 0
+  return `GATE ${safeCurrent + 1}/${safeTotal}`
+}
+
 export type NavigationAltitudeCue = 'high' | 'low' | 'level'
 
 export type NavigationRangeCue = 'closing' | 'opening' | 'steady'
@@ -630,7 +641,15 @@ export class HUD {
       this.setText(this.hintEl, this.hintText)
       this.setHidden(this.hintEl, this.hintText.length === 0)
     }
-    this.updateNav(opts.navBearing ?? null, opts.navDist ?? 0, opts.navAltDelta ?? 0, opts.navTarget, opts.speed)
+    this.updateNav(
+      opts.navBearing ?? null,
+      opts.navDist ?? 0,
+      opts.navAltDelta ?? 0,
+      opts.navTarget,
+      opts.speed,
+      opts.missionCurrent,
+      opts.missionTotal,
+    )
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
@@ -688,6 +707,8 @@ export class HUD {
     altDelta: number,
     target: unknown = 'gate',
     speed = 0,
+    missionCurrent?: number,
+    missionTotal?: number,
   ): void {
     if (!this.navCueEl) return
     const safeBearing = normalizeNavigationBearing(bearing)
@@ -714,6 +735,7 @@ export class HUD {
     const safeDist = Math.max(0, safeHudValue(dist))
     const safeAltDelta = safeHudValue(altDelta)
     const targetLabel = navigationTargetLabel(target)
+    const targetText = navigationTargetText(target, missionCurrent, missionTotal)
     const previousDist = targetLabel === this.navTargetValue ? this.navRangeValue : Number.NaN
     const rangeCue = navigationRangeCue(safeDist, previousDist)
     const etaSeconds = navigationEtaSeconds(safeDist, speed, rangeCue)
@@ -730,11 +752,11 @@ export class HUD {
     this.setClass(this.navCueEl, 'nav-range-opening', rangeCue === 'opening')
     this.setClass(this.navCueEl, 'nav-range-steady', rangeCue === 'steady')
     if (this.navTargetEl) {
-      this.setText(this.navTargetEl, targetLabel)
+      this.setText(this.navTargetEl, targetText)
     }
     const sector = navigationSector(safeBearing)
     this.setNavigationSector(sector)
-    this.setAttribute(this.navCueEl, 'aria-label', `${targetLabel} navigation, ${navigationSectorLabel(sector)}`)
+    this.setAttribute(this.navCueEl, 'aria-label', `${targetText} navigation, ${navigationSectorLabel(sector)}`)
     if (this.navTurnEl) {
       const turnText = navigationSectorLabel(sector)
       if (turnText !== this.navTurnText) this.navTurnText = turnText
