@@ -18,6 +18,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   engineHeatCue,
   engineHeatBanner,
+  engineHeatRearmBanner,
   flightStateLabel,
   gateProximityHudActive,
   gearTransitionActive,
@@ -190,6 +191,9 @@ describe('HUD value formatting', () => {
     expect(engineHeatBanner('critical', 'hot')).toBe('ENGINE HEAT CRITICAL / REDUCE POWER')
     expect(engineHeatBanner('normal', 'critical')).toBe('ENGINE COOLING')
     expect(engineHeatBanner('normal', null)).toBeNull()
+    expect(engineHeatRearmBanner(false, true)).toBeNull()
+    expect(engineHeatRearmBanner(true, true)).toBeNull()
+    expect(engineHeatRearmBanner(true, false)).toBe('AFTERBURNER READY / ENGINE COOL')
   })
 
   it('marks the nav cue near the active gate only inside the soft window', () => {

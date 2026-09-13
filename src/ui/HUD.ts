@@ -178,6 +178,11 @@ export function engineHeatBanner(
   return 'ENGINE COOLING'
 }
 
+/** Announce the single transition from heat lockout back to boost-ready. */
+export function engineHeatRearmBanner(previousLocked: boolean, locked: boolean): string | null {
+  return previousLocked && !locked ? 'AFTERBURNER READY / ENGINE COOL' : null
+}
+
 /** Format a finite fuel endurance estimate for the compact HUD row. */
 export function formatFuelEndurance(seconds: number | null): string {
   if (seconds === null || !Number.isFinite(seconds)) return 'END --'
