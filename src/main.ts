@@ -41,8 +41,10 @@ import {
 import {
   ChallengeRun,
   COURSE_BADGES_STORAGE_PREFIX,
+  COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   formatTime,
+  readBestCourseScore,
   repairCourseHistory,
   readMasteryBadges,
 } from './systems/ChallengeRun'
@@ -131,12 +133,13 @@ async function boot(): Promise<void> {
         const runId = courseRunId(course)
         const history = runId ? repairCourseHistory(qualityStorage, runId) : null
         const badgeCount = runId ? readMasteryBadges(qualityStorage, runId).length : 0
+        const bestScore = runId ? readBestCourseScore(qualityStorage, runId) : 0
         const historyLabel = history && history.completionCount > 0
           ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
           : ''
         const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/4 BADGES` : ''
-        option.textContent = `${course.label}${historyLabel}`
-        if (badgeLabel) option.textContent += badgeLabel
+        const scoreLabel = bestScore > 0 ? ` · BEST ${bestScore.toLocaleString()}` : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${badgeLabel}`
         option.title = course.detail
       }
     }
@@ -514,7 +517,12 @@ async function boot(): Promise<void> {
       selectedCourseId = readSelectedCourseId(qualityStorage)
       for (const select of courseSelectors) select.value = selectedCourseId
     }
-    if (key === null || key.startsWith(COURSE_HISTORY_STORAGE_PREFIX) || key.startsWith(COURSE_BADGES_STORAGE_PREFIX)) {
+    if (
+      key === null ||
+      key.startsWith(COURSE_HISTORY_STORAGE_PREFIX) ||
+      key.startsWith(COURSE_BADGES_STORAGE_PREFIX) ||
+      key.startsWith(COURSE_BEST_STORAGE_PREFIX)
+    ) {
       refreshCourseSelectorLabels()
       refreshCourseProgress()
     }

@@ -6,6 +6,7 @@ import {
   formatTime,
   repairCourseHistory,
   readCourseHistory,
+  readBestCourseScore,
   resultMedalClass,
   scoringWeightsForFocus,
   masteryBadgesForRun,
@@ -214,5 +215,16 @@ describe('ChallengeRun', () => {
       getItem: () => '["gold-run","unknown","gold-run","landing-ace"]',
     }
     expect(readMasteryBadges(storage, 'seed:badges')).toEqual(['gold-run', 'landing-ace'])
+  })
+
+  it('reads a finite persisted best score without leaking malformed values', () => {
+    const values = new Map<string, string>([
+      ['blackout.best.seed:score', '91234.8'],
+    ])
+    const storage = { getItem: (key: string) => values.get(key) ?? null }
+    expect(readBestCourseScore(storage, 'seed:score')).toBe(91234)
+    values.set('blackout.best.seed:score', 'not-a-score')
+    expect(readBestCourseScore(storage, 'seed:score')).toBe(0)
+    expect(readBestCourseScore(null, 'seed:none')).toBe(0)
   })
 })

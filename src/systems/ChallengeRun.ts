@@ -53,7 +53,7 @@ export interface ScoreStore {
   setItem(key: string, value: string): void
 }
 
-const BEST_KEY = 'blackout.best.'
+export const COURSE_BEST_STORAGE_PREFIX = 'blackout.best.'
 const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
@@ -91,6 +91,19 @@ export function courseHistoryStorageKey(courseId: string): string {
 
 export function courseBadgesStorageKey(courseId: string): string {
   return COURSE_BADGES_STORAGE_PREFIX + courseId
+}
+
+export function courseBestScoreStorageKey(courseId: string): string {
+  return COURSE_BEST_STORAGE_PREFIX + courseId
+}
+
+export function readBestCourseScore(storage: HistoryReadStore, courseId: string): number {
+  try {
+    const parsed = Number(storage?.getItem(courseBestScoreStorageKey(courseId)) ?? 0)
+    return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0
+  } catch {
+    return 0
+  }
 }
 
 const MASTERY_BADGES: readonly MasteryBadgeId[] = [
@@ -414,8 +427,7 @@ export class ChallengeRun {
 
   private readBest(): number {
     try {
-      const parsed = Number(this.storage?.getItem(BEST_KEY + this.courseId) ?? 0)
-      return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 0
+      return readBestCourseScore(this.storage, this.courseId)
     } catch {
       return 0
     }
@@ -423,7 +435,7 @@ export class ChallengeRun {
 
   private writeBest(score: number): void {
     try {
-      this.storage?.setItem(BEST_KEY + this.courseId, String(Math.floor(score)))
+      this.storage?.setItem(courseBestScoreStorageKey(this.courseId), String(Math.floor(score)))
     } catch {
       // Private browsing/storage denial should never block a completed run.
     }
