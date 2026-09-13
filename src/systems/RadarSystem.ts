@@ -7,6 +7,10 @@ export interface RadarLandmark {
   y: number
   z: number
   kind: 'city' | 'village'
+  /** Stable streamed id used for one-shot discovery feedback. */
+  id?: string
+  /** Source biome keeps the discovery cue tied to the generated world. */
+  biome?: string
 }
 
 export interface RadarContact {
@@ -14,6 +18,8 @@ export interface RadarContact {
   distance: number
   bearing: number
   label: string
+  id?: string
+  biome?: string
 }
 
 export interface RadarGate {
@@ -32,7 +38,7 @@ export const MAX_RADAR_CONTACTS = 6
 export class RadarSystem {
   private readonly contactPool: RadarContact[] = Array.from(
     { length: MAX_RADAR_CONTACTS },
-    () => ({ kind: 'village', distance: 0, bearing: 0, label: '' }),
+    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', id: '', biome: '' }),
   )
   private readonly contacts: RadarContact[] = []
   private visibleContactLimit = MAX_RADAR_CONTACTS
@@ -66,7 +72,17 @@ export class RadarSystem {
     if (gate) this.addContact('gate', gate.x, gate.y, gate.z, safeX, safeZ, safeHeading)
     for (const landmark of landmarks) {
       if (this.contacts.length >= this.visibleContactLimit) break
-      this.addContact(landmark.kind, landmark.x, landmark.y, landmark.z, safeX, safeZ, safeHeading)
+      this.addContact(
+        landmark.kind,
+        landmark.x,
+        landmark.y,
+        landmark.z,
+        safeX,
+        safeZ,
+        safeHeading,
+        landmark.id,
+        landmark.biome,
+      )
     }
     this.contacts.sort((a, b) => {
       const priority = radarKindPriority(a.kind) - radarKindPriority(b.kind)
@@ -83,6 +99,8 @@ export class RadarSystem {
     px: number,
     pz: number,
     heading: number,
+    id?: string,
+    biome?: string,
   ): void {
     if (this.contacts.length >= this.visibleContactLimit) return
     if (!Number.isFinite(x) || !Number.isFinite(z)) return
@@ -96,6 +114,8 @@ export class RadarSystem {
     contact.distance = distance
     contact.bearing = bearing
     contact.label = radarContactLabel(contact.kind)
+    contact.id = typeof id === 'string' ? id : ''
+    contact.biome = typeof biome === 'string' ? biome : ''
     this.contacts.push(contact)
   }
 }
@@ -104,6 +124,16 @@ export function radarContactLabel(kind: RadarContactKind): string {
   if (kind === 'gate') return 'GATE'
   if (kind === 'city') return 'CITY'
   return 'VILLAGE'
+}
+
+/** One-shot exploration copy for a newly entered city or village range. */
+export function radarDiscoveryLabel(kind: RadarContactKind, biome: unknown): string {
+  if (kind === 'gate') return ''
+  const label = radarContactLabel(kind)
+  const safeBiome = typeof biome === 'string' && /^[a-z]+$/.test(biome)
+    ? biome.toUpperCase()
+    : 'UNKNOWN'
+  return `${label} CONTACT · ${safeBiome} TERRAIN`
 }
 
 export function radarBearingArrow(bearing: number): string {

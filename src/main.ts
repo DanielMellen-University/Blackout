@@ -79,7 +79,7 @@ import {
   type HudBannerTone,
 } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
-import { RADAR_RANGE_METERS, RadarSystem } from './systems/RadarSystem'
+import { RADAR_RANGE_METERS, radarDiscoveryLabel, RadarSystem } from './systems/RadarSystem'
 import { altitudeAgl } from './world/ground'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -452,6 +452,8 @@ async function boot(): Promise<void> {
   }
   let prevWarning: string | null = null
   let controlHintUntilMs = 0
+  const radarDiscovered = new Set<string>()
+  let radarDiscoveryCooldownUntil = 0
 
   const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
@@ -529,6 +531,8 @@ async function boot(): Promise<void> {
     prevGLoadBand = 'normal'
     gLoadCueUntil = 0
     prevWarning = null
+    radarDiscovered.clear()
+    radarDiscoveryCooldownUntil = 0
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) {
@@ -1033,6 +1037,15 @@ async function boot(): Promise<void> {
           RADAR_RANGE_METERS,
         ),
       )
+      if (aircraft.status === 'ok' && !aircraft.onGround && nowMs >= radarDiscoveryCooldownUntil) {
+        for (const contact of radarContacts) {
+          if (contact.kind === 'gate' || !contact.id || radarDiscovered.has(contact.id)) continue
+          radarDiscovered.add(contact.id)
+          radarDiscoveryCooldownUntil = nowMs + 2400
+          showBanner(radarDiscoveryLabel(contact.kind, contact.biome), 2800, 'success')
+          break
+        }
+      }
       if (shouldShowFlightPathMarker(
         cameras.mode === 'cockpit',
         aircraft.onGround,
