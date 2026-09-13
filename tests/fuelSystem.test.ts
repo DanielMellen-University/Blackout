@@ -5,6 +5,7 @@ import {
   createFuelState,
   fuelPercent,
   fuelWarningLevel,
+  refuelFuel,
   resetFuel,
   updateFuel,
 } from '../src/aircraft/FuelSystem'
@@ -32,6 +33,21 @@ describe('arcade fuel system', () => {
     resetFuel(state)
     expect(state.remaining).toBe(100)
     expect(state.fraction).toBe(1)
+  })
+
+  it('refuels finite state without exceeding capacity', () => {
+    const fuel = createFuelState()
+    fuel.remaining = 12
+    fuel.fraction = .12
+    refuelFuel(fuel, .25, 8)
+    expect(fuel.remaining).toBeCloseTo(14)
+    expect(fuel.fraction).toBeCloseTo(.14)
+
+    refuelFuel(fuel, Number.NaN, Number.NaN)
+    expect(Number.isFinite(fuel.remaining)).toBe(true)
+    refuelFuel(fuel, 100, 1000)
+    expect(fuel.remaining).toBe(fuel.capacity)
+    expect(fuel.fraction).toBe(1)
   })
 
   it('exposes stable warning bands for the HUD', () => {

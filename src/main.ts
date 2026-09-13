@@ -82,6 +82,7 @@ import {
 import { RunResults } from './ui/RunResults'
 import { RADAR_RANGE_METERS, radarDiscoveryLabel, RadarSystem } from './systems/RadarSystem'
 import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
+import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { sceneExposure } from './core/SceneExposure'
@@ -457,6 +458,7 @@ async function boot(): Promise<void> {
   let radarDiscoveryCooldownUntil = 0
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   let overWater = false
+  let refueling = false
 
   const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
@@ -537,6 +539,7 @@ async function boot(): Promise<void> {
     radarDiscovered.clear()
     radarDiscoveryCooldownUntil = 0
     overWater = false
+    refueling = false
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) {
@@ -794,6 +797,28 @@ async function boot(): Promise<void> {
         aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
         aircraft.step(dt, nowMs)
+
+        const atAirfield = Math.hypot(
+          aircraft.position.x - world.spawn.x,
+          aircraft.position.z - world.spawn.z,
+        ) <= 75
+        const refuelEligible = wasAirborne &&
+          aircraft.status !== 'crashed' &&
+          aircraft.onGround &&
+          aircraft.controls.gearDown &&
+          aircraft.controls.throttle <= .08 &&
+          aircraft.speed <= 3.5 &&
+          atAirfield
+        if (refuelEligible) {
+          const before = aircraft.fuel.fraction
+          refuelFuel(aircraft.fuel, dt)
+          if (aircraft.fuel.fraction > before + .00001) {
+            if (!refueling) showBanner('REFUELING / HOLD POSITION', 1400, 'info')
+            refueling = aircraft.fuel.fraction < .9999
+          }
+        } else {
+          refueling = false
+        }
 
         const touch = collision.check(aircraft)
         if (aircraft.status !== 'crashed') {

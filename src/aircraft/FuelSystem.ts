@@ -12,6 +12,8 @@ export const FUEL_LOW_FRACTION = 0.25
 export const FUEL_CRITICAL_FRACTION = 0.1
 /** Keep a small reserve so afterburner cannot strand the aircraft at zero. */
 export const FUEL_AFTERBURNER_RESERVE_FRACTION = 0.05
+/** Arcade refuel rate when the aircraft is stationary on the home strip. */
+export const AIRFIELD_REFUEL_RATE = 8
 
 /** Fuel units per second at idle, before throttle and afterburner multipliers. */
 const IDLE_BURN_RATE = 0.008
@@ -53,6 +55,26 @@ export function updateFuel(
     (afterburner ? AFTERBURNER_BURN_RATE : 0)
   state.capacity = safeCapacity
   state.remaining = MathUtils.clamp(safeRemaining - burnRate * safeDt, 0, safeCapacity)
+  state.fraction = safeCapacity > 0 ? state.remaining / safeCapacity : 0
+  return state
+}
+
+/** Refill a grounded sortie without allowing malformed state to leak forward. */
+export function refuelFuel(
+  state: FuelState,
+  dt: number,
+  rate = AIRFIELD_REFUEL_RATE,
+): FuelState {
+  const safeDt = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, 0.25) : 0
+  const safeRate = Number.isFinite(rate) ? Math.max(0, rate) : AIRFIELD_REFUEL_RATE
+  const safeCapacity = Number.isFinite(state.capacity) && state.capacity > 0
+    ? state.capacity
+    : FUEL_CAPACITY
+  const safeRemaining = Number.isFinite(state.remaining)
+    ? MathUtils.clamp(state.remaining, 0, safeCapacity)
+    : safeCapacity
+  state.capacity = safeCapacity
+  state.remaining = MathUtils.clamp(safeRemaining + safeRate * safeDt, 0, safeCapacity)
   state.fraction = safeCapacity > 0 ? state.remaining / safeCapacity : 0
   return state
 }
