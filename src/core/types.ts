@@ -11,6 +11,8 @@ export interface ControlState {
   gearDown: boolean
   /** Afterburner / thrust boost (Space). */
   boost: boolean
+  /** Speed brake / drag panels (B while held). */
+  airbrake: boolean
 }
 
 /** The two flight views toggled by C - see CameraSystem. */
@@ -34,5 +36,6 @@ export function createDefaultControls(): ControlState {
     throttle: 0,
     gearDown: true,
     boost: false,
+    airbrake: false,
   }
 }

@@ -41,6 +41,20 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('holds and releases the opt-in speed brake without changing default controls', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    expect(input.sampleWithDt(0).airbrake).toBe(false)
+    fake.fire('keydown', 'KeyB')
+    expect(input.sampleWithDt(0).airbrake).toBe(true)
+    fake.fire('keyup', 'KeyB')
+    expect(input.sampleWithDt(0).airbrake).toBe(false)
+
+    input.dispose()
+  })
+
   it('clears queued one-shot controls when focus leaves the window', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

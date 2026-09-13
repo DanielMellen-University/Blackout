@@ -83,6 +83,24 @@ it('does not slam the brakes after a powered dive', () => {
   expect(plane.speed).toBeGreaterThan(held + 15)
 })
 
+it('uses the held speed brake to bleed airborne speed while preserving finite state', () => {
+  setContactHeightSampler(() => 0)
+  const plane = new Aircraft()
+  plane.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
+  plane.controls.gearDown = false
+  plane.controls.throttle = 1
+  plane.velocity.set(0, 0, 900)
+  for (let i = 0; i < 30; i++) plane.step(1 / 60)
+  const unbraked = plane.speed
+
+  plane.controls.airbrake = true
+  for (let i = 0; i < 60; i++) plane.step(1 / 60)
+
+  expect(plane.speed).toBeLessThan(unbraked)
+  expect(Number.isFinite(plane.speed)).toBe(true)
+  expect(plane.speed).toBeGreaterThan(0)
+})
+
 it('keeps accelerating on a shallow slope instead of bleeding off', () => {
   setContactHeightSampler((_x, z) => 0.12 * z)
   const plane = new Aircraft()

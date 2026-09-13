@@ -1187,6 +1187,7 @@ async function boot(): Promise<void> {
       hudFrame.cameraMode = cameras.modeLabel
       hudFrame.fps = time.fps
       hudFrame.throttle = aircraft.engineState.lever
+      hudFrame.airbrake = aircraft.controls.airbrake
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
       hudFrame.boost = aircraft.engineState.afterburnerActive

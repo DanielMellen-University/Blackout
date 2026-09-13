@@ -224,6 +224,7 @@ export class HUD {
   private readonly audioEl: HTMLElement | null
   private readonly fpsEl: HTMLElement | null
   private readonly thrEl: HTMLElement | null
+  private readonly airbrakeEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
   private readonly engineHeatEl: HTMLElement | null
   private readonly stateEl: HTMLElement | null
@@ -382,6 +383,7 @@ export class HUD {
     this.audioEl = root.getElementById('hud-audio')
     this.fpsEl = root.getElementById('hud-fps')
     this.thrEl = root.getElementById('hud-thr')
+    this.airbrakeEl = root.getElementById('hud-airbrake')
     this.gearEl = root.getElementById('hud-gear')
     this.engineHeatEl = root.getElementById('hud-engine-heat')
     this.stateEl = root.getElementById('hud-state')
@@ -460,6 +462,7 @@ export class HUD {
     fps: number
     throttle?: number
     boost?: boolean
+    airbrake?: boolean
     /** Bounded engine stress fraction used by the compact temperature row. */
     engineHeat?: number
     /** Current afterburner lockout source, if boost is unavailable. */
@@ -804,6 +807,12 @@ export class HUD {
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
+    }
+    if (this.airbrakeEl && opts.airbrake !== undefined) {
+      const open = opts.airbrake === true
+      this.setText(this.airbrakeEl, open ? 'OPEN' : 'CLOSED')
+      this.setClass(this.airbrakeEl, 'airbrake-open', open)
+      this.setAttribute(this.airbrakeEl, 'aria-label', open ? 'Speed brake open' : 'Speed brake closed')
     }
     if (this.abStateEl) {
       const label = afterburnerHudLabel(opts.boost === true, opts.afterburnerLock)

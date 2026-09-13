@@ -215,6 +215,9 @@ export class FlightModel {
         _velDir.copy(velocity).multiplyScalar(1 / s2)
         let extra = 0
         if (controls.gearDown) extra += C.gearDrag * s2 * 0.55
+        if (controls.airbrake && !onGround) {
+          extra += C.airbrakeStrength * MathUtils.clamp(s2 / 160, 0.2, 1)
+        }
         extra += stick * 1.4 * MathUtils.clamp(s2 / 160, 0.2, 1.2)
         if (onGround && lever < 0.08 && !boost) extra += C.rollingDecel * 0.45
         if (extra > 0) {

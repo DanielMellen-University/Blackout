@@ -6,7 +6,7 @@ export const GAMEPAD_POLL_INTERVAL = 1 / 30
 
 /**
  * Maps keyboard into ControlState for arcade flight.
- * W/S pitch, A/D yaw, Q/E roll, Space boost, Shift/Ctrl throttle. Gear is automatic.
+ * W/S pitch, A/D yaw, Q/E roll, Space boost, B speed brake, Shift/Ctrl throttle. Gear is automatic.
  *
  * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
  * every frame so the ENG bar can track live.
@@ -56,6 +56,7 @@ export class InputManager {
     this.controls.yaw = mergeAxis(this.axis('KeyD', 'KeyA'), this.gamepadYaw)
     this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll)
     this.controls.boost = this.keys.has('Space') || this.gamepadBoost
+    this.controls.airbrake = this.keys.has('KeyB')
 
     // Engine power: Shift up, Ctrl down
     const thrRate = flightConfig.throttleRate
@@ -76,6 +77,7 @@ export class InputManager {
   resetFlightControls(throttle = 0): void {
     this.controls.throttle = clamp01(throttle)
     this.controls.boost = false
+    this.controls.airbrake = false
     this.controls.pitch = 0
     this.controls.roll = 0
     this.controls.yaw = 0
@@ -100,6 +102,7 @@ export class InputManager {
     this.keys.clear()
     this.clearGamepadState()
     this.controls.boost = false
+    this.controls.airbrake = false
     this.controls.pitch = 0
     this.controls.roll = 0
     this.controls.yaw = 0
@@ -211,6 +214,7 @@ export class InputManager {
       e.code === 'KeyC' ||
       e.code === 'KeyN' ||
       e.code === 'KeyM' ||
+      e.code === 'KeyB' ||
       e.code === 'F5'
     )
   }
