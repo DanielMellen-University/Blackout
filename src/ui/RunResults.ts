@@ -1,4 +1,10 @@
-import { formatSplitTrace, formatTime, resultMedalClass, type ChallengeResult } from '../systems/ChallengeRun'
+import {
+  formatSplitTrace,
+  formatTime,
+  masteryBadgeLabel,
+  resultMedalClass,
+  type ChallengeResult,
+} from '../systems/ChallengeRun'
 
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
 
@@ -11,6 +17,7 @@ export class RunResults {
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
   private readonly scoreDetail: HTMLElement
+  private readonly badges: HTMLElement
   private readonly splits: HTMLElement
   private readonly best: HTMLElement
   private returnFocus: HTMLElement | null = null
@@ -39,6 +46,7 @@ export class RunResults {
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
     this.scoreDetail = must(root, 'result-score-detail')
+    this.badges = must(root, 'result-badges')
     this.splits = must(root, 'result-splits')
     this.best = must(root, 'result-best')
     this.root.setAttribute('role', 'dialog')
@@ -70,6 +78,13 @@ export class RunResults {
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
     if (result.scoringFocus) scoreParts.push(`${result.scoringFocus.toUpperCase()} FOCUS`)
     this.scoreDetail.textContent = scoreParts.join(' · ')
+    const newBadges = result.newMasteryBadges ?? []
+    const allBadges = result.masteryBadges ?? []
+    this.badges.textContent = newBadges.length > 0
+      ? `NEW BADGE${newBadges.length === 1 ? '' : 'S'} · ${newBadges.map(masteryBadgeLabel).join(' · ')}`
+      : allBadges.length > 0
+        ? `BADGES ${allBadges.length}/${4}`
+        : ''
     this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
     const bestBits = [
       result.isNewBest ? 'NEW BEST' : 'BEST',

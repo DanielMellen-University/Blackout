@@ -92,6 +92,7 @@ function resultsFixture(): {
     ['result-landing', new FakeElement()],
     ['result-gates', new FakeElement()],
     ['result-score-detail', new FakeElement()],
+    ['result-badges', new FakeElement()],
     ['result-splits', new FakeElement()],
     ['result-best', new FakeElement()],
     ['btn-retry', retry],
@@ -170,6 +171,8 @@ describe('run results focus flow', () => {
       completionCount: 3,
       bestTimeSec: 38.4,
       scoringFocus: 'pace',
+      masteryBadges: ['first-flight', 'landing-ace'],
+      newMasteryBadges: ['landing-ace'],
     })
     expect(elementsFor(fixture.document, 'result-splits')?.textContent).toBe(
       'G1 0:01.00 -0.50 · G2 0:02.00 -0.50',
@@ -178,6 +181,7 @@ describe('run results focus flow', () => {
       'NEW BEST · 100,000 · RUN 3 · FASTEST 0:38.40',
     )
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('PACE FOCUS')
+    expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · LANDING ACE')
     results.dispose()
     vi.unstubAllGlobals()
   })

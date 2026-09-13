@@ -8,6 +8,8 @@ import {
   readCourseHistory,
   resultMedalClass,
   scoringWeightsForFocus,
+  masteryBadgesForRun,
+  readMasteryBadges,
 } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
@@ -41,6 +43,9 @@ describe('ChallengeRun', () => {
     expect(result!.gateScore).toBe(15_000)
     expect(result!.totalScore).toBeGreaterThan(0)
     expect(result!.isNewBest).toBe(true)
+    expect(result!.newMasteryBadges).toEqual(['first-flight', 'landing-ace', 'gold-run'])
+    expect(readMasteryBadges({ getItem: (key) => store.get(key) ?? null }, 'seed:1'))
+      .toEqual(['first-flight', 'landing-ace', 'gold-run'])
     expect(run.phase).toBe('complete')
   })
 
@@ -192,5 +197,15 @@ describe('ChallengeRun', () => {
     expect(scoringWeightsForFocus('gates').gate).toBeGreaterThan(scoringWeightsForFocus('balanced').gate)
     expect(scoringWeightsForFocus('pace').time).toBeGreaterThan(scoringWeightsForFocus('balanced').time)
     expect(scoringWeightsForFocus('landing').landing).toBeGreaterThan(scoringWeightsForFocus('balanced').landing)
+  })
+
+  it('awards mastery badges from finite run quality thresholds', () => {
+    expect(masteryBadgesForRun(1, 1, 1, 'gold')).toEqual([
+      'first-flight',
+      'gate-master',
+      'landing-ace',
+      'gold-run',
+    ])
+    expect(masteryBadgesForRun(0, Number.NaN, 0.89, 'complete')).toEqual([])
   })
 })

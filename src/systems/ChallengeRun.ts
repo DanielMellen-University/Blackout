@@ -7,6 +7,7 @@ export type ChallengePhase =
 
 export type Medal = 'gold' | 'silver' | 'bronze' | 'complete'
 export type ChallengeScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
+export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'gold-run'
 
 export interface LandingMetrics {
   /** Downward speed at first contact, in m/s (negative = descending). */
@@ -41,6 +42,10 @@ export interface ChallengeResult {
   bestTimeSec?: number
   /** Route-selected scoring emphasis used for this run. */
   scoringFocus?: ChallengeScoringFocus
+  /** All mastery badges earned on this course after this run. */
+  masteryBadges?: MasteryBadgeId[]
+  /** Badges earned for the first time on this run. */
+  newMasteryBadges?: MasteryBadgeId[]
 }
 
 export interface ScoreStore {
@@ -51,6 +56,7 @@ export interface ScoreStore {
 const BEST_KEY = 'blackout.best.'
 const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
+export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 
 export interface CourseHistory {
   completionCount: number
@@ -81,6 +87,65 @@ interface ParsedCourseHistory {
 
 export function courseHistoryStorageKey(courseId: string): string {
   return COURSE_HISTORY_STORAGE_PREFIX + courseId
+}
+
+export function courseBadgesStorageKey(courseId: string): string {
+  return COURSE_BADGES_STORAGE_PREFIX + courseId
+}
+
+const MASTERY_BADGES: readonly MasteryBadgeId[] = [
+  'first-flight',
+  'gate-master',
+  'landing-ace',
+  'gold-run',
+]
+
+export function masteryBadgeLabel(badge: MasteryBadgeId): string {
+  if (badge === 'first-flight') return 'FIRST FLIGHT'
+  if (badge === 'gate-master') return 'GATE MASTER'
+  if (badge === 'landing-ace') return 'LANDING ACE'
+  return 'GOLD RUN'
+}
+
+export function readMasteryBadges(
+  storage: HistoryReadStore,
+  courseId: string,
+): MasteryBadgeId[] {
+  try {
+    const raw = storage?.getItem(courseBadgesStorageKey(courseId))
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((value, index, values): value is MasteryBadgeId =>
+      typeof value === 'string' &&
+      (MASTERY_BADGES as readonly string[]).includes(value) &&
+      values.indexOf(value) === index,
+    ).slice(0, MASTERY_BADGES.length)
+  } catch {
+    return []
+  }
+}
+
+function writeMasteryBadges(storage: ScoreStore | null, courseId: string, badges: readonly MasteryBadgeId[]): void {
+  try {
+    storage?.setItem(courseBadgesStorageKey(courseId), JSON.stringify(badges.slice(0, MASTERY_BADGES.length)))
+  } catch {
+    // Private browsing/storage denial should never block a completed run.
+  }
+}
+
+export function masteryBadgesForRun(
+  completionCount: number,
+  gateQuality: number,
+  landingQuality: number,
+  medal: Medal,
+): MasteryBadgeId[] {
+  const badges: MasteryBadgeId[] = []
+  if (completionCount >= 1) badges.push('first-flight')
+  if (gateQuality >= 0.9) badges.push('gate-master')
+  if (landingQuality >= 0.9) badges.push('landing-ace')
+  if (medal === 'gold') badges.push('gold-run')
+  return badges
 }
 
 export function readCourseHistory(
@@ -275,6 +340,19 @@ export class ChallengeRun {
     history.completionCount += 1
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
+    const earnedBadges = masteryBadgesForRun(
+      history.completionCount,
+      clamp01(gateQuality),
+      landingQuality,
+      medalFor(totalScore),
+    )
+    const priorBadges = readMasteryBadges(this.storage, this.courseId)
+    const allBadges = [...priorBadges]
+    for (const badge of earnedBadges) {
+      if (!allBadges.includes(badge)) allBadges.push(badge)
+    }
+    const newBadges = earnedBadges.filter((badge) => !priorBadges.includes(badge))
+    writeMasteryBadges(this.storage, this.courseId, allBadges)
     if (isNewBest) {
       this.writeBest(totalScore)
       this.writeBestTrace()
@@ -299,6 +377,8 @@ export class ChallengeRun {
       completionCount: history.completionCount,
       bestTimeSec: history.bestTimeSec,
       scoringFocus: this.scoringFocus,
+      masteryBadges: allBadges,
+      newMasteryBadges: newBadges,
     }
     return this.result
   }
