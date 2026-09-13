@@ -60,11 +60,13 @@ export class RunResults {
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
     this.gates.textContent = result.gateScore.toLocaleString()
-    this.scoreDetail.textContent = [
+    const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
       `LAND +${result.landingScore.toLocaleString()}`,
-    ].join(' · ')
+    ]
+    if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
+    this.scoreDetail.textContent = scoreParts.join(' · ')
     this.best.textContent = result.isNewBest
       ? `NEW BEST · ${result.bestScore.toLocaleString()}`
       : `BEST · ${result.bestScore.toLocaleString()}`

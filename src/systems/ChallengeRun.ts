@@ -26,6 +26,14 @@ export interface ChallengeResult {
   medal: Medal
   bestScore: number
   isNewBest: boolean
+  /** Gate split trace for this run, captured only when a gate is cleared. */
+  gateSplits?: number[]
+  /** Persisted best-run gate split trace, if this course has one. */
+  bestGateSplits?: number[]
+  /** Signed final pace delta versus the persisted trace, in seconds. */
+  paceDeltaSec?: number
+  /** Human-readable final pace comparison. */
+  paceLabel?: string
 }
 
 interface ScoreStore {
@@ -34,6 +42,7 @@ interface ScoreStore {
 }
 
 const BEST_KEY = 'blackout.best.'
+const TRACE_KEY = 'blackout.trace.'
 
 /**
  * State and scoring for one repeatable circuit attempt.
@@ -52,6 +61,9 @@ export class ChallengeRun {
 
   private courseId = 'default'
   private gateQualityTotal = 0
+  private readonly gateSplits: number[] = []
+  private bestGateSplits: number[] = []
+  private lastPaceDeltaSec = Number.NaN
   private readonly storage: ScoreStore | null
   private clockLabelMinutes = -1
   private clockLabelCentis = -1
@@ -68,6 +80,9 @@ export class ChallengeRun {
     this.elapsedSec = 0
     this.gatesPassed = 0
     this.gateQualityTotal = 0
+    this.gateSplits.length = 0
+    this.bestGateSplits = this.readBestTrace()
+    this.lastPaceDeltaSec = Number.NaN
     this.result = null
     this.clockLabelMinutes = -1
     this.clockLabelCentis = -1
@@ -88,8 +103,13 @@ export class ChallengeRun {
     if (this.phase === 'ready') this.phase = 'running'
     if (this.gatesPassed >= this.totalGates) return
 
+    const gateIndex = this.gatesPassed
     this.gatesPassed += 1
     this.gateQualityTotal += clamp01(quality)
+    const split = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
+    this.gateSplits[gateIndex] = split
+    const bestSplit = this.bestGateSplits[gateIndex]
+    this.lastPaceDeltaSec = Number.isFinite(bestSplit) ? split - bestSplit! : Number.NaN
     if (this.totalGates > 0 && this.gatesPassed >= this.totalGates) {
       this.phase = 'returning'
     }
@@ -123,7 +143,16 @@ export class ChallengeRun {
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
-    if (isNewBest) this.writeBest(totalScore)
+    const bestElapsedSec = this.bestGateSplits[this.totalGates - 1]
+    const paceDeltaSec = Number.isFinite(bestElapsedSec)
+      ? elapsedSec - bestElapsedSec!
+      : Number.NaN
+    const paceLabel = formatPaceDelta(paceDeltaSec)
+    if (isNewBest) {
+      this.writeBest(totalScore)
+      this.writeBestTrace()
+      this.bestGateSplits = this.gateSplits.slice()
+    }
 
     this.phase = 'complete'
     this.result = {
@@ -136,6 +165,10 @@ export class ChallengeRun {
       medal: medalFor(totalScore),
       bestScore,
       isNewBest,
+      gateSplits: this.gateSplits.slice(),
+      bestGateSplits: this.bestGateSplits.slice(),
+      paceDeltaSec,
+      paceLabel,
     }
     return this.result
   }
@@ -164,6 +197,11 @@ export class ChallengeRun {
     return `GATE ${Math.min(this.gatesPassed + 1, this.totalGates)}/${this.totalGates}`
   }
 
+  /** Compare the most recently cleared gate with the best saved trace. */
+  get gatePaceLabel(): string {
+    return formatPaceDelta(this.lastPaceDeltaSec)
+  }
+
   private readBest(): number {
     try {
       const parsed = Number(this.storage?.getItem(BEST_KEY + this.courseId) ?? 0)
@@ -180,6 +218,26 @@ export class ChallengeRun {
       // Private browsing/storage denial should never block a completed run.
     }
   }
+
+  private readBestTrace(): number[] {
+    try {
+      const raw = this.storage?.getItem(TRACE_KEY + this.courseId)
+      if (!raw) return []
+      const parsed: unknown = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      return parsed.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value >= 0)
+    } catch {
+      return []
+    }
+  }
+
+  private writeBestTrace(): void {
+    try {
+      this.storage?.setItem(TRACE_KEY + this.courseId, JSON.stringify(this.gateSplits))
+    } catch {
+      // Private browsing/storage denial should never block a completed run.
+    }
+  }
 }
 
 export function formatTime(seconds: number): string {
@@ -187,6 +245,13 @@ export function formatTime(seconds: number): string {
   const mins = Math.floor(safe / 60)
   const secs = safe - mins * 60
   return `${mins}:${secs.toFixed(2).padStart(5, '0')}`
+}
+
+export function formatPaceDelta(deltaSec: number): string {
+  if (!Number.isFinite(deltaSec)) return 'FIRST RUN'
+  const safe = Math.abs(deltaSec)
+  if (safe < 0.005) return 'ON PACE'
+  return deltaSec < 0 ? `AHEAD ${safe.toFixed(2)}S` : `BEHIND ${safe.toFixed(2)}S`
 }
 
 /** Stable class hook for medal-specific results styling. */

@@ -19,6 +19,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Runway edge lights dim into daylight and brighten through dusk and night using the shared atmosphere clock.
 - Runway daylight updates use the shared edge-light material directly, avoiding per-frame runway tree traversals.
 - Crash boom (arcing fireballs) or scored landing; **R** new world
+- Best runs persist per course with gate split traces, so retries call out whether each clear is ahead or behind pace without spawning a ghost aircraft.
 - Cameras: stable external chase and cockpit view, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.

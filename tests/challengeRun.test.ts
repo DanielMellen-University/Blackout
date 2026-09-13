@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ChallengeRun, formatTime, resultMedalClass } from '../src/systems/ChallengeRun'
+import { ChallengeRun, formatPaceDelta, formatTime, resultMedalClass } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
   it('starts the clock on the takeoff roll and scores a completed landing', () => {
@@ -92,5 +92,46 @@ describe('ChallengeRun', () => {
     expect(run.clockLabel).toBe(first)
     run.update(0.01, 8)
     expect(run.clockLabel).not.toBe(first)
+  })
+
+  it('persists gate splits and reports ahead or behind pace on retry', () => {
+    const store = new Map<string, string>()
+    const scoreStore = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => store.set(key, value),
+    }
+    const first = new ChallengeRun(scoreStore)
+    first.reset('seed:trace', 2)
+    first.update(1, 8)
+    first.recordGate(1)
+    first.update(1, 8)
+    first.recordGate(1)
+    const firstResult = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(firstResult.paceLabel).toBe('FIRST RUN')
+    expect(firstResult.gateSplits).toEqual([1, 2])
+    expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
+
+    const retry = new ChallengeRun(scoreStore)
+    retry.reset('seed:trace', 2)
+    retry.update(0.5, 8)
+    retry.recordGate(1)
+    expect(retry.gatePaceLabel).toBe('AHEAD 0.50S')
+    retry.update(0.5, 8)
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.paceLabel).toBe('AHEAD 1.00S')
+    expect(retryResult.bestGateSplits).toEqual([0.5, 1])
+    expect(formatPaceDelta(0)).toBe('ON PACE')
+    expect(formatPaceDelta(Number.NaN)).toBe('FIRST RUN')
   })
 })
