@@ -233,6 +233,7 @@ export class FlightAudio {
       | 'ab-off'
       | 'thunder'
       | 'warning'
+      | 'pull-up'
       | 'overspeed'
       | 'g-high'
       | 'g-negative'
@@ -289,6 +290,11 @@ export class FlightAudio {
       // terrain cautions without turning the cue into a harsh alarm.
       this.tone(680, now, 0.08, 'sine', 0.06, 520)
       this.tone(470, now + 0.1, 0.1, 'sine', 0.05, 360)
+    } else if (kind === 'pull-up') {
+      // A short double pulse marks the predictive terrain warning without
+      // repeating while the HUD holds the sustained state.
+      this.tone(860, now, 0.08, 'triangle', 0.075, 780)
+      this.tone(650, now + 0.12, 0.1, 'triangle', 0.06, 560)
     } else if (kind === 'g-high') {
       // A restrained rising cue marks a real high-load transition once.
       this.tone(430, now, 0.08, 'triangle', 0.045, 690)

@@ -70,6 +70,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The F-35's cool night fill now scales more clearly through dusk and storm cover, keeping the stealth silhouette readable without extra lights, meshes, or draw calls.
 - The altitude meter now turns amber or red for low terrain clearance and explains the cue to assistive tech while staying calm on the ground.
 - Fast descents with only a few seconds of terrain clearance now raise a bounded `PULL UP` warning before impact, while normal approach sinks stay quiet.
+- `PULL UP` has its own restrained double-pulse audio cue, edge-triggered through the existing warning path so it stays distinct without alarm spam.
 - The mission row now uses restrained phase colors and polite announcements for takeoff, gate running, return, completion, and failure states.
 - A compact gate progress bar tracks cleared checkpoints and exposes the same count semantically, making route progress readable without adding scene work.
 - After the final gate, the navigation cue switches to `BASE` and guides the return to the home strip with the same distance and altitude readout.
