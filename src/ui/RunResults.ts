@@ -1,6 +1,7 @@
 import {
   formatSplitTrace,
   formatTime,
+  MASTERY_BADGE_COUNT,
   masteryBadgeLabel,
   resultMedalClass,
   type ChallengeResult,
@@ -128,7 +129,7 @@ export class RunResults {
     this.badges.textContent = newBadges.length > 0
       ? `NEW BADGE${newBadges.length === 1 ? '' : 'S'} · ${newBadges.map(masteryBadgeLabel).join(' · ')}`
       : allBadges.length > 0
-        ? `BADGES ${allBadges.length}/${4}`
+        ? `BADGES ${allBadges.length}/${MASTERY_BADGE_COUNT}`
         : ''
     this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
     const bestBits = [

@@ -7,7 +7,7 @@ export type ChallengePhase =
 
 export type Medal = 'gold' | 'silver' | 'bronze' | 'complete'
 export type ChallengeScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
-export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'gold-run'
+export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'streak-hunter' | 'gold-run'
 
 export interface LandingMetrics {
   /** Downward speed at first contact, in m/s (negative = descending). */
@@ -171,15 +171,19 @@ const MASTERY_BADGES: readonly MasteryBadgeId[] = [
   'first-flight',
   'gate-master',
   'landing-ace',
+  'streak-hunter',
   'gold-run',
 ]
+export const MASTERY_BADGE_COUNT = MASTERY_BADGES.length
 
 const GATE_STREAK_THRESHOLD = 0.82
+const STREAK_HUNTER_THRESHOLD = 3
 
 export function masteryBadgeLabel(badge: MasteryBadgeId): string {
   if (badge === 'first-flight') return 'FIRST FLIGHT'
   if (badge === 'gate-master') return 'GATE MASTER'
   if (badge === 'landing-ace') return 'LANDING ACE'
+  if (badge === 'streak-hunter') return 'STREAK HUNTER'
   return 'GOLD RUN'
 }
 
@@ -231,7 +235,7 @@ function parseMasteryBadges(raw: string): ParsedMasteryBadges | null {
     typeof value === 'string' &&
     (MASTERY_BADGES as readonly string[]).includes(value) &&
     values.indexOf(value) === index,
-  ).slice(0, MASTERY_BADGES.length)
+  ).slice(0, MASTERY_BADGE_COUNT)
   const needsRepair = badges.length !== parsed.length ||
     badges.some((badge, index) => badge !== parsed[index])
   return { badges, needsRepair }
@@ -239,7 +243,7 @@ function parseMasteryBadges(raw: string): ParsedMasteryBadges | null {
 
 function writeMasteryBadges(storage: ScoreStore | null, courseId: string, badges: readonly MasteryBadgeId[]): void {
   try {
-    storage?.setItem(courseBadgesStorageKey(courseId), JSON.stringify(badges.slice(0, MASTERY_BADGES.length)))
+    storage?.setItem(courseBadgesStorageKey(courseId), JSON.stringify(badges.slice(0, MASTERY_BADGE_COUNT)))
   } catch {
     // Private browsing/storage denial should never block a completed run.
   }
@@ -250,11 +254,15 @@ export function masteryBadgesForRun(
   gateQuality: number,
   landingQuality: number,
   medal: Medal,
+  precisionStreak = 0,
 ): MasteryBadgeId[] {
   const badges: MasteryBadgeId[] = []
   if (completionCount >= 1) badges.push('first-flight')
   if (gateQuality >= 0.9) badges.push('gate-master')
   if (landingQuality >= 0.9) badges.push('landing-ace')
+  if (Number.isFinite(precisionStreak) && precisionStreak >= STREAK_HUNTER_THRESHOLD) {
+    badges.push('streak-hunter')
+  }
   if (medal === 'gold') badges.push('gold-run')
   return badges
 }
@@ -481,6 +489,7 @@ export class ChallengeRun {
       clamp01(gateQuality),
       landingQuality,
       medalFor(totalScore),
+      this.bestGateQualityStreak,
     )
     const priorBadges = repairMasteryBadges(this.storage, this.courseId)
     const allBadges = [...priorBadges]

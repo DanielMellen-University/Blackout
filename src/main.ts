@@ -47,6 +47,7 @@ import {
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
   formatTime,
+  MASTERY_BADGE_COUNT,
   repairBestCoursePrecisionStreak,
   repairBestCourseScore,
   repairCourseHistory,
@@ -176,7 +177,7 @@ async function boot(): Promise<void> {
         const historyLabel = history && history.completionCount > 0
           ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
           : ''
-        const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/4 BADGES` : ''
+        const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/${MASTERY_BADGE_COUNT} BADGES` : ''
         const scoreLabel = bestScore > 0 ? ` · BEST ${bestScore.toLocaleString()}` : ''
         const streakLabel = bestPrecisionStreak >= 2 ? ` · STREAK X${bestPrecisionStreak}` : ''
         option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${badgeLabel}`
@@ -205,7 +206,7 @@ async function boot(): Promise<void> {
       const runId = courseRunId(course)
       return total + (runId ? repairMasteryBadges(qualityStorage, runId).length : 0)
     }, 0)
-    const badgeTotal = curated.length * 4
+    const badgeTotal = curated.length * MASTERY_BADGE_COUNT
     titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE · BADGES ${earnedBadges}/${badgeTotal}`
     titleProgress.setAttribute(
       'aria-label',

@@ -16,6 +16,7 @@ import {
   MAX_BEST_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PRECISION_STREAK,
+  MASTERY_BADGE_COUNT,
   readBestCoursePrecisionStreak,
   repairBestCoursePrecisionStreak,
 } from '../src/systems/ChallengeRun'
@@ -295,6 +296,14 @@ describe('ChallengeRun', () => {
       'gold-run',
     ])
     expect(masteryBadgesForRun(0, Number.NaN, 0.89, 'complete')).toEqual([])
+    expect(masteryBadgesForRun(1, 1, 1, 'gold', 3)).toEqual([
+      'first-flight',
+      'gate-master',
+      'landing-ace',
+      'streak-hunter',
+      'gold-run',
+    ])
+    expect(MASTERY_BADGE_COUNT).toBe(5)
   })
 
   it('filters malformed and duplicate persisted badges', () => {
