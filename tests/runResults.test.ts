@@ -194,6 +194,8 @@ describe('run results focus flow', () => {
       courseBestPrecisionStreak: 4,
       peakSpeedKts: 962,
       peakAltitudeM: 1_240,
+      courseBestPeakSpeedKts: 1_020,
+      courseBestPeakAltitudeM: 1_800,
     })
     expect(elementsFor(fixture.document, 'result-splits')?.textContent).toBe(
       'G1 0:01.00 -0.50 · G2 0:02.00 -0.50',
@@ -209,6 +211,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-streak-detail')?.textContent).toBe('COURSE BEST X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('TOP 962KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('ALT 1,240M')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
       'NEW COURSE BEST · SCORE 100,000 · FUEL 72% LEFT · ENTER RETRY · R NEW WORLD',
     )

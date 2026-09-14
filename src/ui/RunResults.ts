@@ -129,6 +129,12 @@ export class RunResults {
     if (Number.isFinite(result.peakAltitudeM)) {
       scoreParts.push(`ALT ${Math.max(0, Math.round(result.peakAltitudeM!)).toLocaleString()}M`)
     }
+    if (Number.isFinite(result.courseBestPeakSpeedKts) && result.courseBestPeakSpeedKts! > (result.peakSpeedKts ?? 0)) {
+      scoreParts.push(`COURSE TOP ${Math.max(0, Math.round(result.courseBestPeakSpeedKts!)).toLocaleString()}KT`)
+    }
+    if (Number.isFinite(result.courseBestPeakAltitudeM) && result.courseBestPeakAltitudeM! > (result.peakAltitudeM ?? 0)) {
+      scoreParts.push(`COURSE ALT ${Math.max(0, Math.round(result.courseBestPeakAltitudeM!)).toLocaleString()}M`)
+    }
     this.scoreDetail.textContent = scoreParts.join(' · ')
     const newBadges = result.newMasteryBadges ?? []
     const allBadges = result.masteryBadges ?? []

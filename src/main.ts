@@ -180,7 +180,13 @@ async function boot(): Promise<void> {
         const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/${MASTERY_BADGE_COUNT} BADGES` : ''
         const scoreLabel = bestScore > 0 ? ` · BEST ${bestScore.toLocaleString()}` : ''
         const streakLabel = bestPrecisionStreak >= 2 ? ` · STREAK X${bestPrecisionStreak}` : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${badgeLabel}`
+        const peakSpeedLabel = history && Number.isFinite(history.peakSpeedKts)
+          ? ` · TOP ${Math.max(0, Math.floor(history.peakSpeedKts!))}KT`
+          : ''
+        const peakAltitudeLabel = history && Number.isFinite(history.peakAltitudeM)
+          ? ` · ALT ${Math.max(0, Math.floor(history.peakAltitudeM!)).toLocaleString()}M`
+          : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${badgeLabel}`
         option.title = course.detail
       }
     }

@@ -15,6 +15,8 @@ import {
   repairMasteryBadges,
   MAX_BEST_SCORE,
   MAX_COMPLETION_COUNT,
+  MAX_PEAK_ALTITUDE_M,
+  MAX_PEAK_SPEED_KTS,
   MAX_PRECISION_STREAK,
   MASTERY_BADGE_COUNT,
   readBestCoursePrecisionStreak,
@@ -177,7 +179,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.completionCount).toBe(1)
     expect(firstResult.bestTimeSec).toBe(2)
     expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
-    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2}')
+    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16}')
 
     const retry = new ChallengeRun(scoreStore)
     retry.reset('seed:trace', 2)
@@ -196,6 +198,7 @@ describe('ChallengeRun', () => {
     expect(retryResult.bestGateSplits).toEqual([1, 2])
     expect(retryResult.completionCount).toBe(2)
     expect(retryResult.bestTimeSec).toBe(1)
+    expect(retryResult.courseBestPeakSpeedKts).toBe(16)
     expect(formatSplitTrace(retryResult.gateSplits, retryResult.bestGateSplits))
       .toBe('G1 0:00.50 -0.50 · G2 0:01.00 -1.00')
     expect(formatPaceDelta(0)).toBe('ON PACE')
@@ -268,6 +271,42 @@ describe('ChallengeRun', () => {
       bestTimeSec: Number.POSITIVE_INFINITY,
     })
     expect(values.get('blackout.history.seed:repair:orbit')).toBe('{"completionCount":2}')
+  })
+
+  it('keeps course peak records bounded across completed runs', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const first = new ChallengeRun(storage)
+    first.reset('seed:peaks', 1)
+    first.update(0.1, 120, 300)
+    first.recordGate(1)
+    const firstResult = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(firstResult.courseBestPeakSpeedKts).toBe(233)
+    expect(firstResult.courseBestPeakAltitudeM).toBe(300)
+    expect(values.get('blackout.history.seed:peaks')).toBe(
+      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300}',
+    )
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:peaks', 1)
+    retry.update(0.1, 80, 100)
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.courseBestPeakSpeedKts).toBe(233)
+    expect(retryResult.courseBestPeakAltitudeM).toBe(300)
   })
 
   it('keeps route scoring emphasis explicit and sum-stable', () => {
@@ -382,6 +421,21 @@ describe('ChallengeRun', () => {
       bestTimeSec: 12,
     })
     expect(values.get('blackout.history.seed:huge')).toBe('{"completionCount":100000,"bestTimeSec":12}')
+    values.set('blackout.history.seed:huge', JSON.stringify({
+      completionCount: Number.MAX_SAFE_INTEGER,
+      bestTimeSec: 12,
+      peakSpeedKts: Number.MAX_SAFE_INTEGER,
+      peakAltitudeM: Number.MAX_SAFE_INTEGER,
+    }))
+    expect(repairCourseHistory(storage, 'seed:huge')).toEqual({
+      completionCount: MAX_COMPLETION_COUNT,
+      bestTimeSec: 12,
+      peakSpeedKts: MAX_PEAK_SPEED_KTS,
+      peakAltitudeM: MAX_PEAK_ALTITUDE_M,
+    })
+    expect(values.get('blackout.history.seed:huge')).toBe(
+      '{"completionCount":100000,"bestTimeSec":12,"peakSpeedKts":20000,"peakAltitudeM":100000}',
+    )
     values.set('blackout.streak.seed:huge', String(Number.MAX_SAFE_INTEGER))
     expect(repairBestCoursePrecisionStreak(storage, 'seed:huge')).toBe(MAX_PRECISION_STREAK)
     expect(values.get('blackout.streak.seed:huge')).toBe(String(MAX_PRECISION_STREAK))

@@ -58,6 +58,10 @@ export interface ChallengeResult {
   peakSpeedKts?: number
   /** Highest finite height above the home strip reached during this sortie. */
   peakAltitudeM?: number
+  /** Fastest peak speed ever recorded for this course, in knots. */
+  courseBestPeakSpeedKts?: number
+  /** Highest altitude ever recorded for this course, in metres. */
+  courseBestPeakAltitudeM?: number
 }
 
 export interface ScoreStore {
@@ -73,10 +77,14 @@ export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
 export const MAX_BEST_SCORE = 100_000
 export const MAX_PRECISION_STREAK = 1_000
+export const MAX_PEAK_SPEED_KTS = 20_000
+export const MAX_PEAK_ALTITUDE_M = 100_000
 
 export interface CourseHistory {
   completionCount: number
   bestTimeSec: number
+  peakSpeedKts?: number
+  peakAltitudeM?: number
 }
 
 interface ScoringWeights {
@@ -321,13 +329,26 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const record = parsed as Record<string, unknown>
   const rawCompletionCount = record.completionCount
   const rawBestTimeSec = record.bestTimeSec
+  const rawPeakSpeedKts = record.peakSpeedKts
+  const rawPeakAltitudeM = record.peakAltitudeM
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
+  const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
+  const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
   const bestTimeSec = typeof rawBestTimeSec === 'number' && Number.isFinite(rawBestTimeSec) && rawBestTimeSec >= 0
     ? rawBestTimeSec
     : Number.POSITIVE_INFINITY
+  const peakSpeedKts = typeof rawPeakSpeedKts === 'number' && Number.isFinite(rawPeakSpeedKts) && rawPeakSpeedKts > 0
+    ? Math.min(MAX_PEAK_SPEED_KTS, Math.floor(rawPeakSpeedKts))
+    : 0
+  const peakAltitudeM = typeof rawPeakAltitudeM === 'number' && Number.isFinite(rawPeakAltitudeM) && rawPeakAltitudeM > 0
+    ? Math.min(MAX_PEAK_ALTITUDE_M, Math.floor(rawPeakAltitudeM))
+    : 0
+  const history: CourseHistory = { completionCount, bestTimeSec }
+  if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
+  if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -335,9 +356,13 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     rawCompletionCount > MAX_COMPLETION_COUNT ||
     !Number.isInteger(rawCompletionCount) ||
     (hasBestTime && (typeof rawBestTimeSec !== 'number' || !Number.isFinite(rawBestTimeSec) || rawBestTimeSec < 0)) ||
-    Object.keys(record).some((key) => key !== 'completionCount' && key !== 'bestTimeSec')
+    (hasPeakSpeed && (typeof rawPeakSpeedKts !== 'number' || !Number.isFinite(rawPeakSpeedKts) || rawPeakSpeedKts <= 0 || rawPeakSpeedKts !== peakSpeedKts)) ||
+    (hasPeakAltitude && (typeof rawPeakAltitudeM !== 'number' || !Number.isFinite(rawPeakAltitudeM) || rawPeakAltitudeM <= 0 || rawPeakAltitudeM !== peakAltitudeM)) ||
+    Object.keys(record).some((key) =>
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM',
+    )
   return {
-    history: { completionCount, bestTimeSec },
+    history,
     needsRepair,
   }
 }
@@ -348,6 +373,12 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.bestTimeSec) && history.bestTimeSec >= 0) {
     record.bestTimeSec = history.bestTimeSec
+  }
+  if (Number.isFinite(history.peakSpeedKts) && history.peakSpeedKts! > 0) {
+    record.peakSpeedKts = Math.min(MAX_PEAK_SPEED_KTS, Math.floor(history.peakSpeedKts!))
+  }
+  if (Number.isFinite(history.peakAltitudeM) && history.peakAltitudeM! > 0) {
+    record.peakAltitudeM = Math.min(MAX_PEAK_ALTITUDE_M, Math.floor(history.peakAltitudeM!))
   }
   return JSON.stringify(record)
 }
@@ -492,6 +523,12 @@ export class ChallengeRun {
       this.writeBestPrecisionStreak(courseBestPrecisionStreak)
     }
     const history = this.readHistory()
+    const peakSpeedKts = Math.round(this.peakSpeedMps * 1.943844492)
+    const peakAltitudeM = Math.round(this.peakAltitudeM)
+    const courseBestPeakSpeedKts = Math.max(history.peakSpeedKts ?? 0, peakSpeedKts)
+    const courseBestPeakAltitudeM = Math.max(history.peakAltitudeM ?? 0, peakAltitudeM)
+    if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
+    if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
@@ -539,8 +576,10 @@ export class ChallengeRun {
       fuelUsedPercent,
       bestPrecisionStreak: this.bestGateQualityStreak,
       courseBestPrecisionStreak,
-      peakSpeedKts: Math.round(this.peakSpeedMps * 1.943844492),
-      peakAltitudeM: Math.round(this.peakAltitudeM),
+      peakSpeedKts,
+      peakAltitudeM,
+      courseBestPeakSpeedKts,
+      courseBestPeakAltitudeM,
     }
     return this.result
   }
