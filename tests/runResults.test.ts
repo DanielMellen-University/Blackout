@@ -221,6 +221,7 @@ describe('run results focus flow', () => {
       weatherScore: 400,
       destinationScore: 1_200,
       destinationCount: 3,
+      courseBestDestinationCount: 4,
       courseBestApproachScore: 650,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
@@ -250,6 +251,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('WEATHER +400')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST +1,200')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE DEST X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
@@ -273,11 +275,12 @@ describe('run results focus flow', () => {
       newPeakAltitudeRecord: true,
       newComboRecord: true,
       newApproachRecord: true,
+      newDestinationRecord: true,
       newMasteryBadges: ['streak-hunter'],
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS',
     )
     results.dispose()
     vi.unstubAllGlobals()

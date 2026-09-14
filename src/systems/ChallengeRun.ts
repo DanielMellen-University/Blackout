@@ -106,6 +106,10 @@ export interface ChallengeResult {
   destinationScore?: number
   /** Number of streamed settlement targets reached during this sortie. */
   destinationCount?: number
+  /** Highest streamed settlement count recorded for this course. */
+  courseBestDestinationCount?: number
+  /** Whether this sortie set a new course destination record. */
+  newDestinationRecord?: boolean
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -145,6 +149,7 @@ export interface CourseHistory {
   stuntRolls?: number
   combo?: number
   approachScore?: number
+  destinations?: number
 }
 
 interface ScoringWeights {
@@ -444,12 +449,14 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawStuntRolls = record.stuntRolls
   const rawCombo = record.combo
   const rawApproachScore = record.approachScore
+  const rawDestinations = record.destinations
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
   const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
   const hasStuntRolls = Object.prototype.hasOwnProperty.call(record, 'stuntRolls')
   const hasCombo = Object.prototype.hasOwnProperty.call(record, 'combo')
   const hasApproachScore = Object.prototype.hasOwnProperty.call(record, 'approachScore')
+  const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
@@ -471,12 +478,16 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const approachScore = typeof rawApproachScore === 'number' && Number.isFinite(rawApproachScore) && rawApproachScore > 0
     ? Math.min(MAX_APPROACH_SCORE, Math.floor(rawApproachScore))
     : 0
+  const destinations = typeof rawDestinations === 'number' && Number.isFinite(rawDestinations) && rawDestinations > 0
+    ? Math.min(MAX_DESTINATION_COUNT, Math.floor(rawDestinations))
+    : 0
   const history: CourseHistory = { completionCount, bestTimeSec }
   if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
   if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
   if (stuntRolls > 0) history.stuntRolls = stuntRolls
   if (combo > 0) history.combo = combo
   if (approachScore > 0) history.approachScore = approachScore
+  if (destinations > 0) history.destinations = destinations
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -489,8 +500,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasStuntRolls && (typeof rawStuntRolls !== 'number' || !Number.isFinite(rawStuntRolls) || rawStuntRolls <= 0 || rawStuntRolls !== stuntRolls)) ||
     (hasCombo && (typeof rawCombo !== 'number' || !Number.isFinite(rawCombo) || rawCombo <= 0 || rawCombo !== combo)) ||
     (hasApproachScore && (typeof rawApproachScore !== 'number' || !Number.isFinite(rawApproachScore) || rawApproachScore <= 0 || rawApproachScore !== approachScore)) ||
+    (hasDestinations && (typeof rawDestinations !== 'number' || !Number.isFinite(rawDestinations) || rawDestinations <= 0 || rawDestinations !== destinations)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations',
     )
   return {
     history,
@@ -519,6 +531,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.approachScore) && history.approachScore! > 0) {
     record.approachScore = Math.min(MAX_APPROACH_SCORE, Math.floor(history.approachScore!))
+  }
+  if (Number.isFinite(history.destinations) && history.destinations! > 0) {
+    record.destinations = Math.min(MAX_DESTINATION_COUNT, Math.floor(history.destinations!))
   }
   return JSON.stringify(record)
 }
@@ -724,6 +739,7 @@ export class ChallengeRun {
     const previousStuntRolls = history.stuntRolls ?? 0
     const previousCombo = history.combo ?? 0
     const previousApproachScore = history.approachScore ?? 0
+    const previousDestinationCount = history.destinations ?? 0
     const newPeakSpeedRecord = peakSpeedKts > previousPeakSpeedKts
     const newPeakAltitudeRecord = peakAltitudeM > previousPeakAltitudeM
     const newStuntRecord = this.stuntRollCount > previousStuntRolls
@@ -734,11 +750,14 @@ export class ChallengeRun {
     const courseBestCombo = Math.max(previousCombo, this.bestCombo)
     const newApproachRecord = approachScore > previousApproachScore
     const courseBestApproachScore = Math.max(previousApproachScore, approachScore)
+    const newDestinationRecord = this.destinationCount > previousDestinationCount
+    const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
     if (courseBestCombo > 0) history.combo = courseBestCombo
     if (courseBestApproachScore > 0) history.approachScore = courseBestApproachScore
+    if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
@@ -807,6 +826,8 @@ export class ChallengeRun {
       weatherScore: weatherScore > 0 ? weatherScore : undefined,
       destinationScore: this.destinationScore > 0 ? this.destinationScore : undefined,
       destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
+      courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
+      newDestinationRecord,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,

@@ -79,6 +79,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Curated courses remember the best approach bonus, turning clean returns into a replayable landing target.
 - A safe centered return can earn the `APPROACH ACE` mastery badge alongside the existing course badges.
 - Lock a city or village with `T` and fly into its arrival radius to add a capped destination bonus to the sortie.
+- Curated courses remember the most settlements reached in one sortie, creating a replayable exploration target.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.

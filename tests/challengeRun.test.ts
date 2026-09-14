@@ -209,7 +209,12 @@ describe('ChallengeRun', () => {
   })
 
   it('awards bounded city and village destination rewards during a live sortie', () => {
-    const run = new ChallengeRun(null)
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
     run.reset('seed:destination-score', 1)
     run.recordDestination('city')
     run.update(0.1, 8)
@@ -226,8 +231,34 @@ describe('ChallengeRun', () => {
     })!
     expect(result.destinationCount).toBe(MAX_DESTINATION_COUNT)
     expect(result.destinationScore).toBe(MAX_DESTINATION_SCORE)
+    expect(result.courseBestDestinationCount).toBe(MAX_DESTINATION_COUNT)
+    expect(result.newDestinationRecord).toBe(true)
+    expect(values.get('blackout.history.seed:destination-score')).toContain('"destinations":6')
     expect(result.totalScore).toBe(
       result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.destinationScore!,
+    )
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:destination-score', 1)
+    retry.update(0.1, 8)
+    retry.recordDestination('village')
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.courseBestDestinationCount).toBe(MAX_DESTINATION_COUNT)
+    expect(retryResult.newDestinationRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:destination-score',
+      '{"completionCount":2,"bestTimeSec":4,"destinations":999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:destination-score')?.destinations).toBe(MAX_DESTINATION_COUNT)
+    expect(values.get('blackout.history.seed:destination-score')).toBe(
+      '{"completionCount":2,"bestTimeSec":4,"destinations":6}',
     )
   })
 

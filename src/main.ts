@@ -201,7 +201,10 @@ async function boot(): Promise<void> {
         const approachLabel = history && Number.isFinite(history.approachScore) && history.approachScore! > 0
           ? ` · APPROACH +${Math.max(0, Math.floor(history.approachScore!))}`
           : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${badgeLabel}`
+        const destinationLabel = history && Number.isFinite(history.destinations) && history.destinations! > 0
+          ? ` · DEST X${Math.max(0, Math.floor(history.destinations!))}`
+          : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${badgeLabel}`
         option.title = course.detail
       }
     }
