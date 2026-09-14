@@ -513,6 +513,7 @@ async function boot(): Promise<void> {
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
+    combo: 0,
     radar: [],
     controlHint: null,
     timeMs: 0,
@@ -1484,6 +1485,7 @@ async function boot(): Promise<void> {
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
       hudFrame.missionTotal = challenge.totalGates
+      hudFrame.combo = combo.current
       hudFrame.navDist = navDist
       hudFrame.navBearing = navBearing
       hudFrame.navAltDelta = navAltDelta

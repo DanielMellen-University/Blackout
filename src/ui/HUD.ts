@@ -10,6 +10,7 @@ import {
   radarDistanceLabel,
   type RadarContact,
 } from '../systems/RadarSystem'
+import { MAX_COMBO_COUNT } from '../systems/FlightCombo'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
@@ -84,6 +85,14 @@ export function missionProgressText(current: number, total: number): string {
     ? Math.min(safeTotal, Math.max(0, Math.floor(current)))
     : 0
   return `${safeCurrent} of ${safeTotal} gates cleared`
+}
+
+/** Keep the live combo readout finite and compact for visual and assistive output. */
+export function comboHudLabel(value: number): string {
+  const safe = Number.isFinite(value)
+    ? Math.max(0, Math.min(MAX_COMBO_COUNT, Math.floor(value)))
+    : 0
+  return safe > 0 ? `X${safe}` : ''
 }
 
 /** Restrict the navigation target label to the two supported route states. */
@@ -337,6 +346,8 @@ export class HUD {
   private readonly missionEl: HTMLElement | null
   private readonly paceEl: HTMLElement | null
   private readonly missionProgressEl: HTMLElement | null
+  private readonly comboRowEl: HTMLElement | null
+  private readonly comboEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
   private readonly fuelEnduranceEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
@@ -425,6 +436,9 @@ export class HUD {
   private missionProgressTotal = -1
   private missionProgressPercentText = ''
   private missionProgressAriaText = ''
+  private comboValue = -1
+  private comboText = ''
+  private comboAriaText = ''
   private paceText = 'READY'
   private flightStateValue: FlightStateCue | null = null
   private flightStateText = ''
@@ -505,6 +519,8 @@ export class HUD {
     this.missionEl = root.getElementById('hud-mission')
     this.paceEl = root.getElementById('hud-pace')
     this.missionProgressEl = root.getElementById('hud-gate-progress')
+    this.comboRowEl = root.getElementById('hud-combo-row')
+    this.comboEl = root.getElementById('hud-combo')
     this.fuelEl = root.getElementById('hud-fuel')
     this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
     this.radarEl = root.getElementById('hud-radar')
@@ -606,6 +622,8 @@ export class HUD {
     /** Cleared and total gates for the compact route progress meter. */
     missionCurrent?: number
     missionTotal?: number
+    /** Current event-driven clean-flight combo count. */
+    combo?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
     /** Opt-in pitch and bank trim state. */
@@ -850,6 +868,20 @@ export class HUD {
       this.setAttribute(this.missionProgressEl, 'aria-valuemax', String(total))
       this.setAttribute(this.missionProgressEl, 'aria-valuenow', String(Math.min(current, total)))
       this.setAttribute(this.missionProgressEl, 'aria-valuetext', this.missionProgressAriaText)
+    }
+    if (this.comboRowEl && this.comboEl && opts.combo !== undefined) {
+      const combo = Number.isFinite(opts.combo)
+        ? Math.max(0, Math.min(MAX_COMBO_COUNT, Math.floor(opts.combo)))
+        : 0
+      if (combo !== this.comboValue) {
+        this.comboValue = combo
+        this.comboText = comboHudLabel(combo)
+        this.comboAriaText = combo > 0 ? `clean-flight combo ${combo}` : ''
+      }
+      this.setHidden(this.comboRowEl, combo <= 0)
+      this.setText(this.comboEl, this.comboText)
+      this.setAttribute(this.comboEl, 'aria-label', this.comboAriaText)
+      this.setClass(this.comboEl, 'combo-live', combo >= 2)
     }
     if (this.fuelEl && opts.fuel !== undefined) {
       const percent = fuelPercent({ fraction: opts.fuel })
