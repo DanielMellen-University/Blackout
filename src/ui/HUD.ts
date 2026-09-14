@@ -44,6 +44,8 @@ export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · V TRIM 
 
 export type WeatherCue = 'calm' | 'active' | 'severe'
 
+export type CrosswindSide = 'left' | 'right' | 'calm'
+
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
 export function normalizeBannerTone(value: unknown): HudBannerTone {
   return value === 'success' || value === 'danger' ? value : 'info'
@@ -339,6 +341,7 @@ export class HUD {
   private windSpeedValue = Number.NaN
   private windDirectionValue = Number.NaN
   private windCrosswindValue = Number.NaN
+  private windCrosswindSideValue: CrosswindSide = 'calm'
   private windCrosswindVisible = false
   private windText = ''
   private windAriaText = ''
@@ -503,6 +506,8 @@ export class HUD {
     windZ?: number
     /** Runway-relative crosswind used on the return leg, in metres per second. */
     crosswind?: number | null
+    /** Side of the runway toward which the live crosswind vector points. */
+    crosswindSide?: CrosswindSide
     /** Active caution / warning (STALL, LOW ALT, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
@@ -694,22 +699,25 @@ export class HUD {
       const crosswind = crosswindVisible && Number.isFinite(opts.crosswind)
         ? Math.max(0, opts.crosswind!)
         : 0
+      const crosswindSide = crosswindVisible ? normalizeCrosswindSide(opts.crosswindSide) : 'calm'
       const crosswindStep = crosswindVisible ? Math.round(crosswind) : -1
       if (
         speedStep !== this.windSpeedValue ||
         direction !== this.windDirectionValue ||
         crosswindStep !== this.windCrosswindValue ||
-        crosswindVisible !== this.windCrosswindVisible
+        crosswindVisible !== this.windCrosswindVisible ||
+        crosswindSide !== this.windCrosswindSideValue
       ) {
         this.windSpeedValue = speedStep
         this.windDirectionValue = direction
         this.windCrosswindValue = crosswindStep
         this.windCrosswindVisible = crosswindVisible
+        this.windCrosswindSideValue = crosswindSide
         const baseWindText = formatWind(windX, windZ)
-        this.windText = crosswindVisible ? `${baseWindText} · ${formatCrosswind(crosswind)}` : baseWindText
+        this.windText = crosswindVisible ? `${baseWindText} · ${formatCrosswind(crosswind, crosswindSide)}` : baseWindText
         this.windAriaText = baseWindText === 'CALM'
-          ? crosswindVisible ? `Calm wind, ${formatCrosswind(crosswind).toLowerCase()}` : 'Calm wind'
-          : `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees${crosswindVisible ? `, ${formatCrosswind(crosswind).toLowerCase()}` : ''}`
+          ? crosswindVisible ? `Calm wind, ${formatCrosswind(crosswind, crosswindSide).toLowerCase()}` : 'Calm wind'
+          : `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees${crosswindVisible ? `, ${formatCrosswind(crosswind, crosswindSide).toLowerCase()}` : ''}`
       }
       this.setText(this.windEl, this.windText)
       this.setAttribute(this.windEl, 'aria-label', this.windAriaText)
@@ -1398,10 +1406,28 @@ export function crosswindSpeedMps(windX: number, windZ: number, runwayYaw: numbe
   return Math.abs(windX * Math.cos(runwayYaw) - windZ * Math.sin(runwayYaw))
 }
 
+/** Resolve which runway side the wind vector pushes toward. */
+export function crosswindDirection(
+  windX: number,
+  windZ: number,
+  runwayYaw: number,
+): CrosswindSide {
+  if (!Number.isFinite(windX) || !Number.isFinite(windZ) || !Number.isFinite(runwayYaw)) return 'calm'
+  const component = windX * Math.cos(runwayYaw) - windZ * Math.sin(runwayYaw)
+  if (Math.abs(component) < 0.5) return 'calm'
+  return component > 0 ? 'right' : 'left'
+}
+
+function normalizeCrosswindSide(value: unknown): CrosswindSide {
+  return value === 'left' || value === 'right' ? value : 'calm'
+}
+
 /** Format runway-relative crosswind as a compact return-leg cue. */
-export function formatCrosswind(crosswind: number): string {
+export function formatCrosswind(crosswind: number, side: CrosswindSide = 'calm'): string {
   const safe = Number.isFinite(crosswind) ? Math.max(0, crosswind) : 0
-  return safe < 1 ? 'XW CALM' : `XW ${Math.round(safe)} M/S`
+  if (safe < 1) return 'XW CALM'
+  const sideLabel = side === 'left' ? 'L' : side === 'right' ? 'R' : ''
+  return sideLabel ? `XW ${sideLabel} ${Math.round(safe)} M/S` : `XW ${Math.round(safe)} M/S`
 }
 
 /** Direction the weather vector travels toward, in degrees from world north. */

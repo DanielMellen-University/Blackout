@@ -82,10 +82,12 @@ import {
   engineHeatRearmBanner,
   engineFuelAvailabilityBanner,
   emergencyReturnActive,
+  crosswindDirection,
   crosswindSpeedMps,
   navigationApproachCue,
   weatherCycleBanner,
   waterSurfaceCue,
+  type CrosswindSide,
   type HudBannerTone,
 } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
@@ -1207,6 +1209,7 @@ async function boot(): Promise<void> {
       let navAltDelta = nav.altDelta
       let navApproach: 'aligned' | 'turn-left' | 'turn-right' | null = null
       let navCrosswind: number | null = null
+      let navCrosswindSide: CrosswindSide = 'calm'
       if (returning || emergencyReturn) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navDist = Math.hypot(
@@ -1220,6 +1223,11 @@ async function boot(): Promise<void> {
           : gateScreenBearing(cameras.camera, returnTarget)
         navApproach = navigationApproachCue(pose.heading - world.spawn.yaw, 'base')
         navCrosswind = crosswindSpeedMps(
+          precipitation.windX,
+          precipitation.windZ,
+          world.spawn.yaw,
+        )
+        navCrosswindSide = crosswindDirection(
           precipitation.windX,
           precipitation.windZ,
           world.spawn.yaw,
@@ -1349,6 +1357,7 @@ async function boot(): Promise<void> {
       hudFrame.navTarget = navTarget
       hudFrame.navApproach = navApproach
       hudFrame.crosswind = navCrosswind
+      hudFrame.crosswindSide = navCrosswindSide
       hudFrame.radar = radarContacts
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
         ? FLIGHT_CONTROLS_HINT
