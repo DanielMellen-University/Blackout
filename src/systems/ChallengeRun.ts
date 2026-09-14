@@ -135,6 +135,8 @@ const MASTERY_BADGES: readonly MasteryBadgeId[] = [
   'gold-run',
 ]
 
+const GATE_STREAK_THRESHOLD = 0.82
+
 export function masteryBadgeLabel(badge: MasteryBadgeId): string {
   if (badge === 'first-flight') return 'FIRST FLIGHT'
   if (badge === 'gate-master') return 'GATE MASTER'
@@ -317,6 +319,7 @@ export class ChallengeRun {
   private courseId = 'default'
   private scoringFocus: ChallengeScoringFocus = 'balanced'
   private gateQualityTotal = 0
+  private gateQualityStreak = 0
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -339,6 +342,7 @@ export class ChallengeRun {
     this.elapsedSec = 0
     this.gatesPassed = 0
     this.gateQualityTotal = 0
+    this.gateQualityStreak = 0
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -366,7 +370,11 @@ export class ChallengeRun {
 
     const gateIndex = this.gatesPassed
     this.gatesPassed += 1
-    this.gateQualityTotal += clamp01(quality)
+    const safeQuality = clamp01(quality)
+    this.gateQualityTotal += safeQuality
+    this.gateQualityStreak = safeQuality >= GATE_STREAK_THRESHOLD
+      ? this.gateQualityStreak + 1
+      : 0
     const split = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     this.gateSplits[gateIndex] = split
     const bestSplit = this.bestGateSplits[gateIndex]
@@ -494,6 +502,11 @@ export class ChallengeRun {
       this.gatePaceLabelValue = formatPaceDelta(this.lastPaceDeltaSec)
     }
     return this.gatePaceLabelValue
+  }
+
+  /** Keep the precision streak visible only after it becomes meaningful. */
+  get gateStreakLabel(): string {
+    return this.gateQualityStreak >= 2 ? `STREAK X${this.gateQualityStreak}` : ''
   }
 
   private readBest(): number {

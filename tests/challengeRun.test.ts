@@ -68,6 +68,17 @@ describe('ChallengeRun', () => {
     ).toBeNull()
   })
 
+  it('tracks meaningful consecutive precision gate streaks without changing score state', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:streak', 3)
+    run.recordGate(0.9)
+    expect(run.gateStreakLabel).toBe('')
+    run.recordGate(0.82)
+    expect(run.gateStreakLabel).toBe('STREAK X2')
+    run.recordGate(0.4)
+    expect(run.gateStreakLabel).toBe('')
+  })
+
   it('formats time with centiseconds', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
     expect(formatTime(Number.NaN)).toBe('0:00.00')

@@ -971,7 +971,8 @@ async function boot(): Promise<void> {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
             audio.playCue('gate')
-            showBanner(`GATE ${gateQualityLabel(quality)} · ${challenge.gatePaceLabel}`, 1400, 'success')
+            const streak = challenge.gateStreakLabel
+            showBanner(`GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''} · ${challenge.gatePaceLabel}`, 1400, 'success')
           }
           if (event === 'miss') {
             audio.playCue('warning')
@@ -981,7 +982,8 @@ async function boot(): Promise<void> {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
             audio.playCue('complete')
-            showBanner(`FINAL GATE ${gateQualityLabel(quality)} · RETURN & LAND`, 4200)
+            const streak = challenge.gateStreakLabel
+            showBanner(`FINAL GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''} · RETURN & LAND`, 4200)
           }
         }
 
