@@ -70,7 +70,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Free-flight HUD and results copy identify scenic sorties clearly, while the same safe landing handoff and score detail remain intact.
 - Airborne climb milestones at 500M, 1,500M, 3,000M, and 6,000M give free flight short-lived reward cues and retain the highest reached tier in results.
 - Press `Y` during flight to copy a replay link. Opening it restores the same procedural world seed and route.
-- Chain clean gates and barrel rolls without a miss to build combo rewards and a capped score bonus.
+- Chain clean gates and barrel rolls within 8 seconds to build combo rewards and a capped score bonus.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.

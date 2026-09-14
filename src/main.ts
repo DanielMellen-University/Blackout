@@ -938,6 +938,7 @@ async function boot(): Promise<void> {
         aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
         aircraft.step(dt, nowMs)
+        if (combo.update(dt)) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
 
         const atAirfield = Math.hypot(
           aircraft.position.x - world.spawn.x,

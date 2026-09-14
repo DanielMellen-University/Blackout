@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FlightComboTracker, MAX_COMBO_COUNT } from '../src/systems/FlightCombo'
+import { COMBO_WINDOW_SEC, FlightComboTracker, MAX_COMBO_COUNT } from '../src/systems/FlightCombo'
 
 describe('FlightComboTracker', () => {
   it('emits only the authored milestone thresholds and keeps the chain bounded', () => {
@@ -34,5 +34,19 @@ describe('FlightComboTracker', () => {
     combo.reset()
     expect(combo.current).toBe(0)
     expect(combo.best).toBe(0)
+  })
+
+  it('expires an idle chain after the bounded timing window', () => {
+    const combo = new FlightComboTracker()
+    combo.record('gate')
+    combo.record('stunt')
+    for (let i = 0; i < Math.floor(COMBO_WINDOW_SEC / 0.5) - 1; i += 1) {
+      expect(combo.update(0.5)).toBe(false)
+    }
+    expect(combo.current).toBe(2)
+    expect(combo.update(0.5)).toBe(true)
+    expect(combo.current).toBe(0)
+    expect(combo.best).toBe(2)
+    expect(combo.update(Number.NaN)).toBe(false)
   })
 })
