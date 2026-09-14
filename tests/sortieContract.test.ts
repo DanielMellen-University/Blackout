@@ -35,12 +35,35 @@ describe('sortie contracts', () => {
       if (tracker.kind === 'altitude') tracker.recordAltitude(99_999)
       if (tracker.kind === 'stunt') tracker.recordStunt(99)
       if (tracker.kind === 'scout') tracker.recordDestination(99)
+      if (tracker.kind === 'low-level') {
+        tracker.recordLowLevel(180, 5)
+        tracker.recordLowLevel(180, 5)
+      }
       const score = tracker.finish(0, 1)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level']))
+  })
+
+  it('accumulates only airborne time inside the terrain-hugger band', () => {
+    const tracker = new SortieContractTracker()
+    tracker.reset(11, 5)
+    expect(tracker.kind).toBe('low-level')
+    tracker.recordLowLevel(18, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordLowLevel(180, 4, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordLowLevel(180, 4)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordLowLevel(480, 10)
+    expect(tracker.complete).toBe(false)
+    tracker.recordLowLevel(180, 5)
+    tracker.recordLowLevel(180, 1)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {

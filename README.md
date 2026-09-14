@@ -92,7 +92,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, or fuel-saving landing.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, or terrain-hugger low pass.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.

@@ -385,6 +385,28 @@ describe('ChallengeRun', () => {
     expect(run.consumeContractCompletionCue()).toBeNull()
   })
 
+  it('turns low-level contract time into a bounded terrain-hugger reward', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:low-level', 1, 'balanced', 11)
+    expect(run.contractLabel).toBe('CONTRACT TERRAIN HUGGER')
+    run.update(4, 8, 180)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+    run.update(5, 8, 180)
+    run.update(1, 8, 180)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('TERRAIN HUGGER')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('low-level')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('persists cumulative contract wins and repairs oversized counts', () => {
     const values = new Map<string, string>()
     const storage = {

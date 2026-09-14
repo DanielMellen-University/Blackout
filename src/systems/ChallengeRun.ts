@@ -736,6 +736,9 @@ export class ChallengeRun {
     const safeAltitude = Number.isFinite(altitudeM) ? Math.max(0, altitudeM) : 0
     this.peakSpeedMps = Math.max(this.peakSpeedMps, Math.min(safeSpeed, 10_000))
     this.peakAltitudeM = Math.max(this.peakAltitudeM, Math.min(safeAltitude, 100_000))
+    const wasContractComplete = this.contract.complete
+    this.contract.recordLowLevel(safeAltitude, safeDt, safeSpeed > 5)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'
     }
