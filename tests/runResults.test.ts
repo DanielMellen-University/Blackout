@@ -196,6 +196,8 @@ describe('run results focus flow', () => {
       peakSpeedKts: 962,
       peakAltitudeM: 1_240,
       altitudeMilestoneM: 1_500,
+      bestCombo: 4,
+      comboScore: 900,
       courseBestPeakSpeedKts: 1_020,
       courseBestPeakAltitudeM: 1_800,
       landingLabel: 'BUTTER',
@@ -216,6 +218,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('TOP 962KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('ALT 1,240M')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CLIMB 1,500M')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO X4')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO +900')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(

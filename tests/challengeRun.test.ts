@@ -138,6 +138,26 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('adds a capped clean-flight combo bonus without changing runs that never chain', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:combo', 1)
+    run.update(0.1, 8)
+    run.recordCombo(2)
+    run.recordCombo(999)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.bestCombo).toBe(20)
+    expect(result.comboScore).toBe(5_700)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.comboScore!,
+    )
+  })
+
   it('persists the best barrel-roll count and repairs oversized records', () => {
     const values = new Map<string, string>()
     const storage = {

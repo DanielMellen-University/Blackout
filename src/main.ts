@@ -67,6 +67,7 @@ import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
 import { StuntTracker } from './systems/StuntTracker'
+import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
 import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
 import {
@@ -394,6 +395,7 @@ async function boot(): Promise<void> {
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const stunts = new StuntTracker()
+  const combo = new FlightComboTracker()
   const altitudeMilestones = new AltitudeMilestoneTracker()
   const radar = new RadarSystem()
   applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
@@ -549,6 +551,13 @@ async function boot(): Promise<void> {
     bannerUntil = performance.now() + ms
   }
 
+  const recordComboAction = (action: 'gate' | 'stunt'): FlightComboEvent | null => {
+    const event = combo.record(action)
+    if (!event) return null
+    challenge.recordCombo(event.combo)
+    return event
+  }
+
   const onContextLost = (event: Event): void => {
     // Prevent the browser from discarding the context before Three.js can
     // participate in its restore path. Rendering is gated until restoration.
@@ -595,6 +604,7 @@ async function boot(): Promise<void> {
     crashFx.reset()
     landingFx.reset()
     stunts.reset()
+    combo.reset()
     altitudeMilestones.reset()
     input.clearQueued()
     input.resetFlightControls(0)
@@ -970,6 +980,7 @@ async function boot(): Promise<void> {
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
             aircraft.crash()
             challenge.fail()
+            combo.break()
             crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
             audio.playCue('crash')
@@ -1031,7 +1042,17 @@ async function boot(): Promise<void> {
           if (stunt) {
             challenge.recordStunt(stunt.rolls)
             audio.playCue('stunt')
-            showBanner(`BARREL ROLL X${stunt.totalRolls}`, 1500, 'success')
+            let comboMilestone = 0
+            for (let roll = 0; roll < stunt.rolls; roll += 1) {
+              const comboEvent = recordComboAction('stunt')
+              if (comboEvent?.milestone) comboMilestone = comboEvent.combo
+            }
+            if (comboMilestone > 0) audio.playCue('streak')
+            showBanner(
+              `BARREL ROLL X${stunt.totalRolls}${comboMilestone > 0 ? ` · COMBO X${comboMilestone}` : ''}`,
+              1500,
+              'success',
+            )
           }
           const event = world.mission.update(
             aircraft.position.x,
@@ -1042,20 +1063,34 @@ async function boot(): Promise<void> {
           if (event === 'pass') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
+            const comboEligible = Number.isFinite(quality) && quality >= 0.82
+            const comboEvent = comboEligible ? recordComboAction('gate') : null
+            if (!comboEligible) combo.break()
             const streak = challenge.gateStreakLabel
-            audio.playCue(streak ? 'streak' : 'gate')
-            showBanner(`GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''} · ${challenge.gatePaceLabel}`, 1400, 'success')
+            audio.playCue(streak || comboEvent?.milestone ? 'streak' : 'gate')
+            showBanner(
+              `GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''}${comboEvent?.milestone ? ` · COMBO X${comboEvent.combo}` : ''} · ${challenge.gatePaceLabel}`,
+              1400,
+              'success',
+            )
           }
           if (event === 'miss') {
+            combo.break()
             audio.playCue('warning')
             showBanner('GATE MISSED / RE-ALIGN', 1500, 'danger')
           }
           if (event === 'complete') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
+            const comboEligible = Number.isFinite(quality) && quality >= 0.82
+            const comboEvent = comboEligible ? recordComboAction('gate') : null
+            if (!comboEligible) combo.break()
             audio.playCue('complete')
             const streak = challenge.gateStreakLabel
-            showBanner(`FINAL GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''} · RETURN & LAND`, 4200)
+            showBanner(
+              `FINAL GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''}${comboEvent?.milestone ? ` · COMBO X${comboEvent.combo}` : ''} · RETURN & LAND`,
+              4200,
+            )
           }
         }
 

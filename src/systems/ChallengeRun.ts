@@ -1,4 +1,5 @@
 import { MAX_STUNT_ROLLS } from './StuntTracker'
+import { MAX_COMBO_COUNT } from './FlightCombo'
 
 export type ChallengePhase =
   | 'ready'
@@ -83,6 +84,10 @@ export interface ChallengeResult {
   freeFlight?: boolean
   /** Highest climb milestone reached during this sortie, in metres. */
   altitudeMilestoneM?: number
+  /** Longest clean gate and stunt chain reached during this sortie. */
+  bestCombo?: number
+  /** Capped score bonus awarded for combo milestones. */
+  comboScore?: number
 }
 
 export interface ScoreStore {
@@ -448,6 +453,7 @@ export class ChallengeRun {
   private peakSpeedMps = 0
   private peakAltitudeM = 0
   private stuntRollCount = 0
+  private bestCombo = 0
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -477,6 +483,7 @@ export class ChallengeRun {
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
     this.stuntRollCount = 0
+    this.bestCombo = 0
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -542,6 +549,12 @@ export class ChallengeRun {
     this.altitudeMilestone = Math.max(0, Math.min(100_000, Math.floor(altitudeM)))
   }
 
+  /** Retain the highest event-driven clean-flight combo without trusting input. */
+  recordCombo(combo: number): void {
+    if (this.phase === 'complete' || this.phase === 'failed' || !Number.isFinite(combo)) return
+    this.bestCombo = Math.max(this.bestCombo, Math.min(MAX_COMBO_COUNT, Math.floor(combo)))
+  }
+
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
     if (this.phase !== 'returning') return null
 
@@ -570,7 +583,10 @@ export class ChallengeRun {
     )
     const landingScore = Math.round(weights.landing * landingQuality)
     const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
-    const totalScore = gateScore + timeScore + landingScore + stuntScore
+    const comboScore = this.bestCombo > 1
+      ? Math.min(6_000, (this.bestCombo - 1) * 300)
+      : 0
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -663,6 +679,8 @@ export class ChallengeRun {
       newStuntRecord,
       freeFlight: this.freeFlight,
       altitudeMilestoneM: this.altitudeMilestone,
+      bestCombo: this.bestCombo > 0 ? this.bestCombo : undefined,
+      comboScore: comboScore > 0 ? comboScore : undefined,
     }
     return this.result
   }

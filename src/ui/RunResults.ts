@@ -150,6 +150,16 @@ export class RunResults {
       scoreParts.push(`ROLLS X${stuntRolls}`)
       if (stuntScore > 0) scoreParts.push(`ROLL +${stuntScore.toLocaleString()}`)
     }
+    const bestCombo = Number.isFinite(result.bestCombo)
+      ? Math.max(0, Math.floor(result.bestCombo!))
+      : 0
+    const comboScore = Number.isFinite(result.comboScore)
+      ? Math.max(0, Math.floor(result.comboScore!))
+      : 0
+    if (bestCombo > 1) {
+      scoreParts.push(`COMBO X${bestCombo}`)
+      if (comboScore > 0) scoreParts.push(`COMBO +${comboScore.toLocaleString()}`)
+    }
     const courseBestStuntRolls = Number.isFinite(result.courseBestStuntRolls)
       ? Math.max(0, Math.floor(result.courseBestStuntRolls!))
       : 0
