@@ -110,6 +110,12 @@ export interface ChallengeResult {
   courseBestDestinationCount?: number
   /** Whether this sortie set a new course destination record. */
   newDestinationRecord?: boolean
+  /** Consecutive completed sorties for this course after this run. */
+  runStreak?: number
+  /** Highest consecutive completed-sortie streak recorded for this course. */
+  courseBestRunStreak?: number
+  /** Whether this sortie set a new course run-streak record. */
+  newRunStreakRecord?: boolean
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -140,6 +146,7 @@ export const MAX_APPROACH_SCORE = 500
 export const MAX_WEATHER_SCORE = 500
 export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
+export const MAX_RUN_STREAK = 1_000
 
 export interface CourseHistory {
   completionCount: number
@@ -150,6 +157,8 @@ export interface CourseHistory {
   combo?: number
   approachScore?: number
   destinations?: number
+  runStreak?: number
+  runStreakRecord?: number
 }
 
 interface ScoringWeights {
@@ -450,6 +459,8 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawCombo = record.combo
   const rawApproachScore = record.approachScore
   const rawDestinations = record.destinations
+  const rawRunStreak = record.runStreak
+  const rawRunStreakRecord = record.runStreakRecord
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
   const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
@@ -457,6 +468,8 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasCombo = Object.prototype.hasOwnProperty.call(record, 'combo')
   const hasApproachScore = Object.prototype.hasOwnProperty.call(record, 'approachScore')
   const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
+  const hasRunStreak = Object.prototype.hasOwnProperty.call(record, 'runStreak')
+  const hasRunStreakRecord = Object.prototype.hasOwnProperty.call(record, 'runStreakRecord')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
@@ -481,6 +494,15 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const destinations = typeof rawDestinations === 'number' && Number.isFinite(rawDestinations) && rawDestinations > 0
     ? Math.min(MAX_DESTINATION_COUNT, Math.floor(rawDestinations))
     : 0
+  const runStreak = typeof rawRunStreak === 'number' && Number.isFinite(rawRunStreak) && rawRunStreak > 0
+    ? Math.min(MAX_RUN_STREAK, Math.floor(rawRunStreak))
+    : 0
+  const runStreakRecord = Math.max(
+    runStreak,
+    typeof rawRunStreakRecord === 'number' && Number.isFinite(rawRunStreakRecord) && rawRunStreakRecord > 0
+      ? Math.min(MAX_RUN_STREAK, Math.floor(rawRunStreakRecord))
+      : 0,
+  )
   const history: CourseHistory = { completionCount, bestTimeSec }
   if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
   if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
@@ -488,6 +510,8 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (combo > 0) history.combo = combo
   if (approachScore > 0) history.approachScore = approachScore
   if (destinations > 0) history.destinations = destinations
+  if (runStreak > 0) history.runStreak = runStreak
+  if (runStreakRecord > 0) history.runStreakRecord = runStreakRecord
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -501,8 +525,11 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasCombo && (typeof rawCombo !== 'number' || !Number.isFinite(rawCombo) || rawCombo <= 0 || rawCombo !== combo)) ||
     (hasApproachScore && (typeof rawApproachScore !== 'number' || !Number.isFinite(rawApproachScore) || rawApproachScore <= 0 || rawApproachScore !== approachScore)) ||
     (hasDestinations && (typeof rawDestinations !== 'number' || !Number.isFinite(rawDestinations) || rawDestinations <= 0 || rawDestinations !== destinations)) ||
+    (hasRunStreak && (typeof rawRunStreak !== 'number' || !Number.isFinite(rawRunStreak) || rawRunStreak <= 0 || rawRunStreak !== runStreak)) ||
+    (hasRunStreakRecord && (typeof rawRunStreakRecord !== 'number' || !Number.isFinite(rawRunStreakRecord) || rawRunStreakRecord <= 0 || rawRunStreakRecord !== runStreakRecord)) ||
+    (!hasRunStreakRecord && runStreak > 0) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'runStreak' && key !== 'runStreakRecord',
     )
   return {
     history,
@@ -534,6 +561,16 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.destinations) && history.destinations! > 0) {
     record.destinations = Math.min(MAX_DESTINATION_COUNT, Math.floor(history.destinations!))
+  }
+  const runStreak = Number.isFinite(history.runStreak) && history.runStreak! > 0
+    ? Math.min(MAX_RUN_STREAK, Math.floor(history.runStreak!))
+    : 0
+  const runStreakRecord = Number.isFinite(history.runStreakRecord) && history.runStreakRecord! > 0
+    ? Math.min(MAX_RUN_STREAK, Math.floor(history.runStreakRecord!))
+    : 0
+  if (runStreak > 0) record.runStreak = runStreak
+  if (Math.max(runStreak, runStreakRecord) > 0) {
+    record.runStreakRecord = Math.max(runStreak, runStreakRecord)
   }
   return JSON.stringify(record)
 }
@@ -740,6 +777,8 @@ export class ChallengeRun {
     const previousCombo = history.combo ?? 0
     const previousApproachScore = history.approachScore ?? 0
     const previousDestinationCount = history.destinations ?? 0
+    const previousRunStreak = history.runStreak ?? 0
+    const previousRunStreakRecord = history.runStreakRecord ?? 0
     const newPeakSpeedRecord = peakSpeedKts > previousPeakSpeedKts
     const newPeakAltitudeRecord = peakAltitudeM > previousPeakAltitudeM
     const newStuntRecord = this.stuntRollCount > previousStuntRolls
@@ -752,12 +791,17 @@ export class ChallengeRun {
     const courseBestApproachScore = Math.max(previousApproachScore, approachScore)
     const newDestinationRecord = this.destinationCount > previousDestinationCount
     const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
+    const runStreak = Math.min(MAX_RUN_STREAK, previousRunStreak + 1)
+    const courseBestRunStreak = Math.max(previousRunStreakRecord, runStreak)
+    const newRunStreakRecord = runStreak >= 2 && runStreak > previousRunStreakRecord
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
     if (courseBestCombo > 0) history.combo = courseBestCombo
     if (courseBestApproachScore > 0) history.approachScore = courseBestApproachScore
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
+    history.runStreak = runStreak
+    history.runStreakRecord = courseBestRunStreak
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
@@ -828,6 +872,9 @@ export class ChallengeRun {
       destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
       courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
       newDestinationRecord,
+      runStreak,
+      courseBestRunStreak,
+      newRunStreakRecord,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
@@ -837,7 +884,13 @@ export class ChallengeRun {
   }
 
   fail(): void {
-    if (this.phase !== 'complete') this.phase = 'failed'
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    this.phase = 'failed'
+    const history = this.readHistory()
+    if ((history.runStreak ?? 0) > 0) {
+      history.runStreak = 0
+      this.writeHistory(history)
+    }
   }
 
   get clockLabel(): string {

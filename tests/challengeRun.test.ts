@@ -22,6 +22,7 @@ import {
   MAX_APPROACH_SCORE,
   MAX_DESTINATION_COUNT,
   MAX_DESTINATION_SCORE,
+  MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
@@ -262,6 +263,59 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('tracks consecutive completed sorties, resets on failure, and repairs oversized records', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const complete = (run: ChallengeRun): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
+      run.reset('seed:run-streak', 1)
+      run.update(0.1, 8)
+      run.recordGate(1)
+      return run.finishLanding({
+        verticalSpeed: -1,
+        groundSpeed: 20,
+        pitchRad: 0,
+        rollRad: 0,
+      })!
+    }
+
+    const first = complete(new ChallengeRun(storage))
+    expect(first.runStreak).toBe(1)
+    expect(first.courseBestRunStreak).toBe(1)
+    expect(first.newRunStreakRecord).toBe(false)
+
+    const second = complete(new ChallengeRun(storage))
+    expect(second.runStreak).toBe(2)
+    expect(second.courseBestRunStreak).toBe(2)
+    expect(second.newRunStreakRecord).toBe(true)
+    expect(values.get('blackout.history.seed:run-streak')).toContain('"runStreak":2')
+    expect(values.get('blackout.history.seed:run-streak')).toContain('"runStreakRecord":2')
+
+    const failed = new ChallengeRun(storage)
+    failed.reset('seed:run-streak', 1)
+    failed.update(0.1, 8)
+    failed.fail()
+    expect(readCourseHistory(storage, 'seed:run-streak')?.runStreak).toBeUndefined()
+    expect(readCourseHistory(storage, 'seed:run-streak')?.runStreakRecord).toBe(2)
+
+    const afterFailure = complete(new ChallengeRun(storage))
+    expect(afterFailure.runStreak).toBe(1)
+    expect(afterFailure.courseBestRunStreak).toBe(2)
+    expect(afterFailure.newRunStreakRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:run-streak',
+      '{"completionCount":2,"bestTimeSec":4,"runStreak":9999,"runStreakRecord":-4,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:run-streak')?.runStreak).toBe(MAX_RUN_STREAK)
+    expect(repairCourseHistory(storage, 'seed:run-streak')?.runStreakRecord).toBe(MAX_RUN_STREAK)
+    expect(values.get('blackout.history.seed:run-streak')).toBe(
+      `{"completionCount":2,"bestTimeSec":4,"runStreak":${MAX_RUN_STREAK},"runStreakRecord":${MAX_RUN_STREAK}}`,
+    )
+  })
+
   it('persists the best runway approach score and repairs oversized records', () => {
     const values = new Map<string, string>()
     const storage = {
@@ -284,7 +338,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
     expect(firstResult.newApproachRecord).toBe(true)
     expect(values.get('blackout.history.seed:approach-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"approachScore":500}',
+      '{"completionCount":1,"bestTimeSec":0,"approachScore":500,"runStreak":1,"runStreakRecord":1}',
     )
 
     const retry = new ChallengeRun(storage)
@@ -365,7 +419,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.courseBestStuntRolls).toBe(3)
     expect(firstResult.newStuntRecord).toBe(true)
     expect(values.get('blackout.history.seed:stunt-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3}',
+      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"runStreak":1,"runStreakRecord":1}',
     )
 
     const retry = new ChallengeRun(storage)
@@ -483,7 +537,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.completionCount).toBe(1)
     expect(firstResult.bestTimeSec).toBe(2)
     expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
-    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16}')
+    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"runStreak":1,"runStreakRecord":1}')
 
     const retry = new ChallengeRun(scoreStore)
     retry.reset('seed:trace', 2)
@@ -598,7 +652,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.newPeakSpeedRecord).toBe(true)
     expect(firstResult.newPeakAltitudeRecord).toBe(true)
     expect(values.get('blackout.history.seed:peaks')).toBe(
-      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300}',
+      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"runStreak":1,"runStreakRecord":1}',
     )
 
     const retry = new ChallengeRun(storage)

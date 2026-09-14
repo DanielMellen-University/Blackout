@@ -222,6 +222,8 @@ describe('run results focus flow', () => {
       destinationScore: 1_200,
       destinationCount: 3,
       courseBestDestinationCount: 4,
+      runStreak: 3,
+      courseBestRunStreak: 4,
       courseBestApproachScore: 650,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
@@ -252,6 +254,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST +1,200')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE DEST X4')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('RUN STREAK X3')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE RUN STREAK X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
@@ -276,11 +280,12 @@ describe('run results focus flow', () => {
       newComboRecord: true,
       newApproachRecord: true,
       newDestinationRecord: true,
+      newRunStreakRecord: true,
       newMasteryBadges: ['streak-hunter'],
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS / RUN STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

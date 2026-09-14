@@ -203,6 +203,16 @@ export class RunResults {
     if (courseBestDestinationCount > destinationCount) {
       scoreParts.push(`COURSE DEST X${courseBestDestinationCount}`)
     }
+    const runStreak = Number.isFinite(result.runStreak)
+      ? Math.max(0, Math.floor(result.runStreak!))
+      : 0
+    if (runStreak > 1) scoreParts.push(`RUN STREAK X${runStreak}`)
+    const courseBestRunStreak = Number.isFinite(result.courseBestRunStreak)
+      ? Math.max(0, Math.floor(result.courseBestRunStreak!))
+      : 0
+    if (courseBestRunStreak > runStreak && courseBestRunStreak > 1) {
+      scoreParts.push(`COURSE RUN STREAK X${courseBestRunStreak}`)
+    }
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0
@@ -234,6 +244,7 @@ export class RunResults {
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
+      result.newRunStreakRecord ? 'RUN STREAK' : '',
     ].filter(Boolean)
     const recordLabel = newRecords.length > 0
       ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`

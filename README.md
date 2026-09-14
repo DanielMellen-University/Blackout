@@ -91,6 +91,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A compact radar readout prioritizes the active gate and nearby generated settlements.
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
+- Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
