@@ -18,6 +18,7 @@ export class RunResults {
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
+  private readonly streak: HTMLElement
   private readonly fuel: HTMLElement
   private readonly fuelDetail: HTMLElement
   private readonly scoreDetail: HTMLElement
@@ -50,6 +51,7 @@ export class RunResults {
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
+    this.streak = must(root, 'result-streak')
     this.fuel = must(root, 'result-fuel')
     this.fuelDetail = must(root, 'result-fuel-detail')
     this.scoreDetail = must(root, 'result-score-detail')
@@ -79,6 +81,16 @@ export class RunResults {
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
     this.gates.textContent = result.gateScore.toLocaleString()
+    const precisionStreak = Number.isFinite(result.bestPrecisionStreak)
+      ? Math.max(0, Math.floor(result.bestPrecisionStreak!))
+      : 0
+    this.streak.textContent = precisionStreak >= 2 ? `X${precisionStreak}` : 'NONE'
+    this.streak.setAttribute(
+      'aria-label',
+      precisionStreak >= 2
+        ? `Best precision streak ${precisionStreak} gates`
+        : 'No precision streak',
+    )
     const fuelRemaining = Number.isFinite(result.fuelRemainingPercent)
       ? Math.max(0, Math.min(100, Math.round(result.fuelRemainingPercent!)))
       : 100

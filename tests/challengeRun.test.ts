@@ -77,6 +77,13 @@ describe('ChallengeRun', () => {
     expect(run.gateStreakLabel).toBe('STREAK X2')
     run.recordGate(0.4)
     expect(run.gateStreakLabel).toBe('')
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })
+    expect(result?.bestPrecisionStreak).toBe(2)
   })
 
   it('formats time with centiseconds', () => {

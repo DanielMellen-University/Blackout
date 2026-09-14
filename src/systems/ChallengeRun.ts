@@ -50,6 +50,8 @@ export interface ChallengeResult {
   fuelRemainingPercent?: number
   /** Fuel spent during this sortie, rounded to a whole percent. */
   fuelUsedPercent?: number
+  /** Longest consecutive high-center gate streak in this sortie. */
+  bestPrecisionStreak?: number
 }
 
 export interface ScoreStore {
@@ -320,6 +322,7 @@ export class ChallengeRun {
   private scoringFocus: ChallengeScoringFocus = 'balanced'
   private gateQualityTotal = 0
   private gateQualityStreak = 0
+  private bestGateQualityStreak = 0
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -343,6 +346,7 @@ export class ChallengeRun {
     this.gatesPassed = 0
     this.gateQualityTotal = 0
     this.gateQualityStreak = 0
+    this.bestGateQualityStreak = 0
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -375,6 +379,7 @@ export class ChallengeRun {
     this.gateQualityStreak = safeQuality >= GATE_STREAK_THRESHOLD
       ? this.gateQualityStreak + 1
       : 0
+    this.bestGateQualityStreak = Math.max(this.bestGateQualityStreak, this.gateQualityStreak)
     const split = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     this.gateSplits[gateIndex] = split
     const bestSplit = this.bestGateSplits[gateIndex]
@@ -467,6 +472,7 @@ export class ChallengeRun {
       newMasteryBadges: newBadges,
       fuelRemainingPercent,
       fuelUsedPercent,
+      bestPrecisionStreak: this.bestGateQualityStreak,
     }
     return this.result
   }
