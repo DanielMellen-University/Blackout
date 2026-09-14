@@ -1,6 +1,6 @@
 import type { MissionRouteProfile } from './Mission'
 
-export type CourseId = 'random' | 'training-orbit' | 'range-sweep' | 'precision-slalom'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 
@@ -20,6 +20,13 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'New terrain and route every time',
     seed: null,
     profile: null,
+  },
+  {
+    id: 'free-flight',
+    label: 'Free flight',
+    detail: 'Explore the terrain with no checkpoint clock',
+    seed: null,
+    profile: 'free',
   },
   {
     id: 'training-orbit',

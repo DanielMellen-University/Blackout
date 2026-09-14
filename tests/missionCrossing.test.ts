@@ -233,6 +233,22 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('slalom')).toBe('SLALOM')
   })
 
+  it('supports a no-gate free-flight profile', () => {
+    expect(buildMissionRoute(0, 20, 0, 0, 'free')).toHaveLength(0)
+    expect(routeProfileLabel('free')).toBe('FREE FLIGHT')
+    const summary = summarizeMissionRoute(0, 20, 0, [], 'free')
+    expect(summary.lengthMeters).toBe(0)
+    expect(summary.label).toBe('FREE FLIGHT')
+
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0, 'free')
+    expect(mission.totalGates).toBe(0)
+    expect(mission.routeBriefing).toContain('FREE FLIGHT')
+    expect(mission.activeGatePos()).toBeNull()
+    expect(mission.update(0, 20, 0)).toBe('none')
+    mission.dispose()
+  })
+
   it('adds deterministic route rhythm modifiers without changing the pooled gate count', () => {
     const steady = buildMissionRoute(0, 100_000, 0, 0, 'orbit', 'steady')
     const tempo = buildMissionRoute(0, 100_000, 0, 0, 'orbit', 'tempo')

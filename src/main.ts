@@ -520,7 +520,9 @@ async function boot(): Promise<void> {
   let refueling = false
   const returnTarget = new Vector3()
 
-  const courseId = (): string => `seed:${world.worldSeed}:${world.mission.routeProfile}`
+  const courseId = (): string => world.mission.routeProfile === 'free'
+    ? 'free-flight'
+    : `seed:${world.worldSeed}:${world.mission.routeProfile}`
 
   let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {
@@ -654,7 +656,7 @@ async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    resetFlight(courseDefinitionForId(selectedCourseId).seed !== null, true)
+    resetFlight(courseDefinitionForId(selectedCourseId).id !== 'random', true)
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')

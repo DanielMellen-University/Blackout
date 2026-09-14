@@ -13,10 +13,13 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(4)
+    expect(COURSE_LIBRARY).toHaveLength(5)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
+    expect(courseSeedForId('free-flight')).toBeUndefined()
     expect(courseSeedForId('training-orbit')).toBe(1)
+    expect(courseDefinitionForId('free-flight').profile).toBe('free')
+    expect(courseRunId(courseDefinitionForId('free-flight'))).toBeNull()
     expect(courseDefinitionForId('precision-slalom').profile).toBe('slalom')
     expect(courseRunId(courseDefinitionForId('precision-slalom'))).toBe('seed:3:slalom')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()

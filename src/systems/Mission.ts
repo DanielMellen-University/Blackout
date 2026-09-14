@@ -58,7 +58,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -95,6 +95,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   orbit: 'ORBIT',
   sweep: 'SWEEP',
   slalom: 'SLALOM',
+  free: 'FREE FLIGHT',
 }
 
 const MISSION_CHALLENGE_LABELS: Record<MissionChallenge, string> = {
@@ -195,6 +196,7 @@ export function buildMissionRoute(
   const forwardZ = Math.cos(safeSpawnYaw)
   const rightX = Math.cos(safeSpawnYaw)
   const rightZ = -Math.sin(safeSpawnYaw)
+  if (profile === 'free') return []
   const offsets = routeOffsets(profile, seedPhase, modifier)
   const points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
@@ -516,7 +518,7 @@ export class MissionSystem {
     const safeSpawnY = finiteOr(spawnY, 0)
     const safeSpawnZ = finiteOr(spawnZ, 0)
     this.profile = requestedProfile ?? routeProfileForSpawn(safeSpawnX, safeSpawnZ, spawnYaw)
-    this.status = 'live'
+    this.status = 'idle'
     this.next = 0
     this.havePrev = false
     this.lastPassQuality = 1
@@ -552,14 +554,16 @@ export class MissionSystem {
     this.summary.maxTurnDegrees = summary.maxTurnDegrees
     this.summary.minClearanceMeters = summary.minClearanceMeters
     this.summary.maxAltitudeMeters = summary.maxAltitudeMeters
-    this.routeBriefingText = [
-      `ROUTE ${summary.label}`,
-      summary.challengeLabel,
-      summary.modifierLabel,
-      summary.scoringFocusLabel,
-      summary.difficulty.toUpperCase(),
-      `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
-    ].join(' / ')
+    this.routeBriefingText = this.profile === 'free'
+      ? `FREE FLIGHT / EXPLORE / ${summary.modifierLabel} / ${summary.scoringFocusLabel}`
+      : [
+        `ROUTE ${summary.label}`,
+        summary.challengeLabel,
+        summary.modifierLabel,
+        summary.scoringFocusLabel,
+        summary.difficulty.toUpperCase(),
+        `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
+      ].join(' / ')
     for (let i = 0; i < route.length; i++) {
       const point = route[i]!
       const gate = this.gatePool[i]!
@@ -575,7 +579,8 @@ export class MissionSystem {
       gate.lastAlong = 0
       this.gates.push(gate)
     }
-    this.liveLabel = `GATE 1/${this.gates.length}`
+    this.status = route.length > 0 ? 'live' : 'idle'
+    this.liveLabel = route.length > 0 ? `GATE 1/${this.gates.length}` : 'FREE FLIGHT'
     this.paint()
     this.placeBeacon()
   }
