@@ -91,6 +91,7 @@ function resultsFixture(): {
     ['result-score', new FakeElement()],
     ['result-time', new FakeElement()],
     ['result-landing', new FakeElement()],
+    ['result-landing-detail', new FakeElement()],
     ['result-gates', new FakeElement()],
     ['result-streak', new FakeElement()],
     ['result-streak-detail', new FakeElement()],
@@ -196,6 +197,7 @@ describe('run results focus flow', () => {
       peakAltitudeM: 1_240,
       courseBestPeakSpeedKts: 1_020,
       courseBestPeakAltitudeM: 1_800,
+      landingLabel: 'BUTTER',
     })
     expect(elementsFor(fixture.document, 'result-splits')?.textContent).toBe(
       'G1 0:01.00 -0.50 · G2 0:02.00 -0.50',
@@ -209,6 +211,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-fuel-detail')?.textContent).toBe('28% USED')
     expect(elementsFor(fixture.document, 'result-streak')?.textContent).toBe('X3')
     expect(elementsFor(fixture.document, 'result-streak-detail')?.textContent).toBe('COURSE BEST X4')
+    expect(elementsFor(fixture.document, 'result-landing-detail')?.textContent).toBe('BUTTER')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('TOP 962KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('ALT 1,240M')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')

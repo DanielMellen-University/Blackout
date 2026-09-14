@@ -8,6 +8,7 @@ export type ChallengePhase =
 export type Medal = 'gold' | 'silver' | 'bronze' | 'complete'
 export type ChallengeScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
 export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'streak-hunter' | 'gold-run'
+export type LandingQualityLabel = 'BUTTER' | 'SMOOTH' | 'FIRM' | 'HARD'
 
 export interface LandingMetrics {
   /** Downward speed at first contact, in m/s (negative = descending). */
@@ -24,6 +25,8 @@ export interface ChallengeResult {
   timeScore: number
   landingScore: number
   landingQuality: number
+  /** Human-readable touchdown quality band. */
+  landingLabel?: LandingQualityLabel
   totalScore: number
   medal: Medal
   bestScore: number
@@ -103,6 +106,14 @@ export function scoringWeightsForFocus(focus: ChallengeScoringFocus): ScoringWei
   if (focus === 'pace') return { gate: 18_000, time: 76_000, landing: 6_000, minimumTime: 6_000 }
   if (focus === 'landing') return { gate: 18_000, time: 60_000, landing: 22_000, minimumTime: 5_000 }
   return { gate: 20_000, time: 70_000, landing: 10_000, minimumTime: 5_000 }
+}
+
+export function landingQualityLabel(quality: number): LandingQualityLabel {
+  const safe = Number.isFinite(quality) ? Math.max(0, Math.min(1, quality)) : 0
+  if (safe >= 0.92) return 'BUTTER'
+  if (safe >= 0.78) return 'SMOOTH'
+  if (safe >= 0.6) return 'FIRM'
+  return 'HARD'
 }
 
 type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
@@ -567,6 +578,7 @@ export class ChallengeRun {
       timeScore,
       landingScore,
       landingQuality,
+      landingLabel: landingQualityLabel(landingQuality),
       totalScore,
       medal: medalFor(totalScore),
       bestScore,

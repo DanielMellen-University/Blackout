@@ -18,6 +18,7 @@ export class RunResults {
   private readonly score: HTMLElement
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
+  private readonly landingDetail: HTMLElement
   private readonly gates: HTMLElement
   private readonly streak: HTMLElement
   private readonly streakDetail: HTMLElement
@@ -52,6 +53,7 @@ export class RunResults {
     this.score = must(root, 'result-score')
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
+    this.landingDetail = must(root, 'result-landing-detail')
     this.gates = must(root, 'result-gates')
     this.streak = must(root, 'result-streak')
     this.streakDetail = must(root, 'result-streak-detail')
@@ -83,6 +85,8 @@ export class RunResults {
     this.score.setAttribute('aria-label', `Total score ${result.totalScore.toLocaleString()}`)
     this.time.textContent = formatTime(result.elapsedSec)
     this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
+    this.landingDetail.textContent = result.landingLabel ?? 'HARD'
+    this.landingDetail.setAttribute('aria-label', `Landing quality ${result.landingLabel ?? 'HARD'}`)
     this.gates.textContent = result.gateScore.toLocaleString()
     const precisionStreak = Number.isFinite(result.bestPrecisionStreak)
       ? Math.max(0, Math.floor(result.bestPrecisionStreak!))

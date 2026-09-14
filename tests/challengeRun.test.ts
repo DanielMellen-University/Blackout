@@ -4,6 +4,7 @@ import {
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
+  landingQualityLabel,
   repairCourseHistory,
   readCourseHistory,
   readBestCourseScore,
@@ -98,6 +99,14 @@ describe('ChallengeRun', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
     expect(formatTime(Number.NaN)).toBe('0:00.00')
     expect(formatTime(Number.POSITIVE_INFINITY)).toBe('0:00.00')
+  })
+
+  it('keeps landing quality bands finite and readable', () => {
+    expect(landingQualityLabel(1)).toBe('BUTTER')
+    expect(landingQualityLabel(0.8)).toBe('SMOOTH')
+    expect(landingQualityLabel(0.6)).toBe('FIRM')
+    expect(landingQualityLabel(0.2)).toBe('HARD')
+    expect(landingQualityLabel(Number.NaN)).toBe('HARD')
   })
 
   it('keeps malformed telemetry from poisoning a run result', () => {
