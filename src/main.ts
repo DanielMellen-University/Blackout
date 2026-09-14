@@ -960,7 +960,11 @@ async function boot(): Promise<void> {
               rollRad: pose.roll,
             }, aircraft.fuel.fraction)
             if (finished) {
-              audio.playCue('landed')
+              audio.playCue(
+                finished.landingLabel === 'BUTTER'
+                  ? 'landing-soft'
+                  : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
+              )
               results.show(finished)
               refreshCourseSelectorLabels()
               refreshCourseProgress()

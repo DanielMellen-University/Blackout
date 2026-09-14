@@ -229,6 +229,8 @@ export class FlightAudio {
       | 'streak'
       | 'complete'
       | 'landed'
+      | 'landing-soft'
+      | 'landing-hard'
       | 'crash'
       | 'ab'
       | 'ab-off'
@@ -266,6 +268,16 @@ export class FlightAudio {
       this.noiseBurst(now, 0.12, 'brown', 0.22, 180, 90)
       this.tone(380, now + 0.02, 0.14, 'sine', 0.12)
       this.tone(560, now + 0.12, 0.22, 'sine', 0.14)
+    } else if (kind === 'landing-soft') {
+      // A restrained clean-touchdown reward, lighter than the normal rollout cue.
+      this.noiseBurst(now, 0.08, 'brown', 0.12, 220, 110)
+      this.tone(520, now, 0.12, 'sine', 0.09, 680)
+      this.tone(760, now + 0.1, 0.2, 'sine', 0.1)
+    } else if (kind === 'landing-hard') {
+      // Firm warning cue stays below the crash envelope and remains event-only.
+      this.noiseBurst(now, 0.16, 'brown', 0.28, 150, 70)
+      this.tone(260, now, 0.16, 'triangle', 0.1, 170)
+      this.tone(170, now + 0.1, 0.2, 'triangle', 0.08, 110)
     } else if (kind === 'ab') {
       // Rising whoosh on engage (not every AB frame).
       this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)
