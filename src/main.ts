@@ -22,6 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
+import { copyWorldSeed } from './core/WorldSeed'
 import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
   lockGameKeyboard,
@@ -875,6 +876,18 @@ async function boot(): Promise<void> {
       if (input.consumeWeatherCycle()) {
         world.cycleWeather()
         showBanner(weatherCycleBanner(world.atmosphere.weatherLabel), 1800, 'info')
+      }
+      if (input.consumeWorldSeedCopy()) {
+        const seed = world.worldSeed
+        const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
+        void copyWorldSeed(seed, clipboard).then((copied) => {
+          if (disposed) return
+          showBanner(
+            copied ? `WORLD SEED ${Math.trunc(seed)} COPIED` : `WORLD SEED ${Math.trunc(seed)} / COPY BLOCKED`,
+            2200,
+            copied ? 'success' : 'danger',
+          )
+        })
       }
       if (input.consumeReset()) resetFlight(true, true)
       if (input.consumeAudioToggle()) {

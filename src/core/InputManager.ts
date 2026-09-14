@@ -35,6 +35,7 @@ export class InputManager {
   radarTargetCycleQueued = false
   gearToggleQueued = false
   stabilityAssistToggleQueued = false
+  worldSeedCopyQueued = false
   /**
    * When false, keys are still tracked for stick continuity but C/R/N are not
    * queued and browser-default suppression is left to the UI capture flag.
@@ -107,7 +108,7 @@ export class InputManager {
     this.touchBoost = state?.boost === true
   }
 
-  /** Forget one-shot C / R / N / M / T / G so the title screen cannot leak into Play. */
+  /** Forget one-shot C / R / N / M / T / G / Y so the title screen cannot leak into Play. */
   clearQueued(): void {
     this.cameraToggleQueued = false
     this.resetQueued = false
@@ -116,6 +117,7 @@ export class InputManager {
     this.radarTargetCycleQueued = false
     this.gearToggleQueued = false
     this.stabilityAssistToggleQueued = false
+    this.worldSeedCopyQueued = false
   }
 
   /** Drop a single code (e.g. Space used to start) without killing held stick. */
@@ -181,6 +183,12 @@ export class InputManager {
     return this.stabilityAssist
   }
 
+  consumeWorldSeedCopy(): boolean {
+    if (!this.worldSeedCopyQueued) return false
+    this.worldSeedCopyQueued = false
+    return true
+  }
+
   private axis(positive: string, negative: string): number {
     return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
@@ -237,6 +245,7 @@ export class InputManager {
     if (e.code === 'KeyT') this.radarTargetCycleQueued = true
     if (e.code === 'KeyG') this.gearToggleQueued = true
     if (e.code === 'KeyV') this.stabilityAssistToggleQueued = true
+    if (e.code === 'KeyY') this.worldSeedCopyQueued = true
   }
 
   private shouldPreventBrowserDefault(e: KeyboardEvent): boolean {
@@ -268,6 +277,7 @@ export class InputManager {
       e.code === 'KeyB' ||
       e.code === 'KeyT' ||
       e.code === 'KeyV' ||
+      e.code === 'KeyY' ||
       e.code === 'F5'
     )
   }

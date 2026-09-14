@@ -55,6 +55,21 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('queues world-seed sharing only during live flight', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    fake.fire('keydown', 'KeyY')
+    expect(input.consumeWorldSeedCopy()).toBe(false)
+
+    input.flightLive = true
+    fake.fire('keydown', 'KeyY')
+    expect(input.consumeWorldSeedCopy()).toBe(true)
+    expect(input.consumeWorldSeedCopy()).toBe(false)
+
+    input.dispose()
+  })
+
   it('queues landing-gear toggles only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)
