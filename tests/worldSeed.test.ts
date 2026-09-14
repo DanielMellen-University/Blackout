@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { copyWorldSeed, formatWorldSeed } from '../src/core/WorldSeed'
+import {
+  copyWorldSeed,
+  copyWorldSeedLink,
+  formatWorldSeed,
+  parseWorldSeed,
+  worldSeedReplayUrl,
+} from '../src/core/WorldSeed'
 
 describe('world seed sharing', () => {
   it('formats only finite integer seed values', () => {
@@ -15,6 +21,27 @@ describe('world seed sharing', () => {
     expect(writeText).toHaveBeenCalledWith('9876')
     await expect(copyWorldSeed(Number.NaN, { writeText })).resolves.toBe(false)
     await expect(copyWorldSeed(12, null)).resolves.toBe(false)
+  })
+
+  it('parses only safe integer URL seeds', () => {
+    expect(parseWorldSeed(' 9876 ')).toBe(9876)
+    expect(parseWorldSeed('-42')).toBe(-42)
+    expect(parseWorldSeed('1.5')).toBeNull()
+    expect(parseWorldSeed('12e2')).toBeNull()
+    expect(parseWorldSeed(String(Number.MAX_SAFE_INTEGER) + '0')).toBeNull()
+    expect(parseWorldSeed(null)).toBeNull()
+  })
+
+  it('builds replay links while preserving existing query state', async () => {
+    const href = 'http://localhost:5173/dev/terrain.html?debug=1#flight'
+    const link = worldSeedReplayUrl(href, 1234.9)
+    expect(link).toContain('/dev/terrain.html?debug=1&seed=1234')
+    expect(link).toContain('#flight')
+
+    const writeText = vi.fn(async () => {})
+    await expect(copyWorldSeedLink(1234.9, { writeText }, href)).resolves.toBe(true)
+    expect(writeText).toHaveBeenCalledWith(link)
+    await expect(copyWorldSeedLink(1234, { writeText }, 'not a URL')).resolves.toBe(false)
   })
 
   it('swallows clipboard permission failures', async () => {

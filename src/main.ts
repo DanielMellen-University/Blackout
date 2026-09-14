@@ -22,7 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
-import { copyWorldSeed } from './core/WorldSeed'
+import { copyWorldSeedLink, formatWorldSeed, parseWorldSeed } from './core/WorldSeed'
 import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
   lockGameKeyboard,
@@ -199,7 +199,11 @@ async function boot(): Promise<void> {
   }
   refreshCourseSelectorLabels()
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
-  if (titleCourseSelect?.value && selectedCourseId === 'random') {
+  let replaySeed = parseWorldSeed(
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('seed') : null,
+  )
+  if (replaySeed !== null) selectedCourseId = 'random'
+  if (replaySeed === null && titleCourseSelect?.value && selectedCourseId === 'random') {
     selectedCourseId = courseDefinitionForId(titleCourseSelect.value).id
   }
   for (const select of courseSelectors) select.value = selectedCourseId
@@ -296,6 +300,7 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
+  if (replaySeed !== null) world.reseed(replaySeed)
   applyShadowQuality = (mapSize: number): void => {
     const safeSize = Number.isFinite(mapSize) ? Math.max(256, Math.floor(mapSize)) : 1024
     if (world.sun.shadow.mapSize.x === safeSize && world.sun.shadow.mapSize.y === safeSize) return
@@ -574,6 +579,7 @@ async function boot(): Promise<void> {
     if (newWorld) {
       const course = courseDefinitionForId(selectedCourseId)
       world.reseed(course.seed ?? undefined, course.profile ?? undefined)
+      replaySeed = null
       debug?.syncPad()
     } else {
       world.mission.start(
@@ -617,7 +623,11 @@ async function boot(): Promise<void> {
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) {
-      const resetLabel = newWorld ? 'NEW WORLD' : 'RETRY SAME COURSE'
+      const resetLabel = newWorld
+        ? 'NEW WORLD'
+        : replaySeed !== null
+          ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
+          : 'RETRY SAME COURSE'
       showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}`, 5000)
     }
   }
@@ -625,6 +635,7 @@ async function boot(): Promise<void> {
   const onCourseChange = (event: Event): void => {
     const select = event.currentTarget as HTMLSelectElement | null
     selectedCourseId = courseDefinitionForId(select?.value).id
+    replaySeed = null
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     for (const other of courseSelectors) other.value = selectedCourseId
   }
@@ -634,6 +645,7 @@ async function boot(): Promise<void> {
     const key = storageEvent.key
     if (key === COURSE_SELECTION_STORAGE_KEY || key === null) {
       selectedCourseId = readSelectedCourseId(qualityStorage)
+      replaySeed = null
       for (const select of courseSelectors) select.value = selectedCourseId
     }
     if (
@@ -880,10 +892,13 @@ async function boot(): Promise<void> {
       if (input.consumeWorldSeedCopy()) {
         const seed = world.worldSeed
         const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
-        void copyWorldSeed(seed, clipboard).then((copied) => {
+        const href = typeof window !== 'undefined' ? window.location.href : ''
+        void copyWorldSeedLink(seed, clipboard, href).then((copied) => {
           if (disposed) return
           showBanner(
-            copied ? `WORLD SEED ${Math.trunc(seed)} COPIED` : `WORLD SEED ${Math.trunc(seed)} / COPY BLOCKED`,
+            copied
+              ? `REPLAY LINK COPIED / SEED ${formatWorldSeed(seed)}`
+              : `SEED ${formatWorldSeed(seed)} / COPY BLOCKED`,
             2200,
             copied ? 'success' : 'danger',
           )

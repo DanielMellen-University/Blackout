@@ -69,7 +69,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - `Free flight` is an optional no-checkpoint course for exploring streamed terrain, settlements, and weather before returning to land.
 - Free-flight HUD and results copy identify scenic sorties clearly, while the same safe landing handoff and score detail remain intact.
 - Airborne climb milestones at 500M, 1,500M, 3,000M, and 6,000M give free flight short-lived reward cues and retain the highest reached tier in results.
-- Press `Y` during flight to copy the current procedural world seed for replaying a terrain discovery.
+- Press `Y` during flight to copy a replay link. Opening it restores the same procedural world seed and route.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.
@@ -440,7 +440,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **N** | Weather |
 | **T** | Cycle radar settlement target |
 | **M** | Mute / unmute audio |
-| **Y** | Copy current world seed |
+| **Y** | Copy replay link with current world seed |
 | **Gamepad** | Left stick pitch/roll, LT/RT throttle, A / Cross afterburner |
 | **Touch** | Live-flight pitch, yaw, roll, throttle, and afterburner deck on touch-capable browsers |
 | **R** | New world + runway |
