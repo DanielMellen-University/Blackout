@@ -135,6 +135,7 @@
               <li>Press <kbd>T</kbd> to lock the next radar settlement. The navigation cue guides you there until you cycle again.</li>
               <li>Press <kbd>Y</kbd> during flight to copy a replay link. Opening it restores the same procedural world seed.</li>
               <li>Chain clean gates and barrel rolls within 8 seconds to build combo rewards and a capped score bonus.</li>
+              <li>Seeded sorties show a TASK row with live bonus-contract progress, then mark it DONE when you meet the objective.</li>
               <li>Touch down with fuel remaining for a small efficiency bonus; afterburner speed is still worth the burn when you need it.</li>
               <li>Center the jet on the home strip and match its heading for a small approach bonus.</li>
               <li>Clean landings through rain, snow, or strong gusts earn a capped weather-handling bonus.</li>
@@ -232,6 +233,10 @@
             aria-valuenow="0"
             aria-valuetext="0 of 5 gates cleared"
           ></div>
+          <div id="hud-contract-row" class="hud-row" hidden>
+            <span class="label">TASK</span>
+            <span id="hud-contract" aria-label=""></span>
+          </div>
           <div id="hud-combo-row" class="hud-row" hidden>
             <span class="label">COMBO</span>
             <span id="hud-combo" class="hud-combo" aria-label=""></span>

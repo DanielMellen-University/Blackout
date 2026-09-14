@@ -353,6 +353,8 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:contract', 1, 'balanced', 0)
     expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
+    expect(run.contractProgress).toBe(0)
+    expect(run.contractComplete).toBe(false)
     expect(run.contractBriefing).toContain('LAND UNDER')
     run.update(0.1, 8)
     run.recordGate(1)

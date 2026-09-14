@@ -549,6 +549,9 @@ async function boot(): Promise<void> {
     dayPhase: '',
     mission: '',
     missionPhase: 'ready',
+    contractLabel: '',
+    contractProgress: 0,
+    contractComplete: false,
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
@@ -1544,6 +1547,9 @@ async function boot(): Promise<void> {
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       const contractLabel = challenge.contractLabel
       hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}${contractLabel ? ` · ${contractLabel}` : ''}`
+      hudFrame.contractLabel = contractLabel
+      hudFrame.contractProgress = challenge.contractProgress
+      hudFrame.contractComplete = challenge.contractComplete
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed

@@ -220,6 +220,9 @@ export class RunResults {
     if (result.contractLabel) {
       scoreParts.push(`${result.contractComplete ? 'CONTRACT COMPLETE' : 'CONTRACT OPEN'} · ${result.contractLabel}`)
       if (result.contractDetail) scoreParts.push(result.contractDetail)
+      if (!result.contractComplete && Number.isFinite(result.contractProgress)) {
+        scoreParts.push(`PROGRESS ${Math.round(Math.max(0, Math.min(1, result.contractProgress!)) * 100)}%`)
+      }
       const contractScore = Number.isFinite(result.contractScore)
         ? Math.max(0, Math.floor(result.contractScore!))
         : 0

@@ -1037,6 +1037,16 @@ export class ChallengeRun {
     return this.contract.hudLabel
   }
 
+  /** Cached contract progress for the live HUD task row. */
+  get contractProgress(): number {
+    return this.contract.progress
+  }
+
+  /** Whether the current bonus contract has reached its target. */
+  get contractComplete(): boolean {
+    return this.contract.complete
+  }
+
   get contractBriefing(): string {
     return this.contract.enabled ? `${this.contract.label} / ${this.contract.detail}` : ''
   }

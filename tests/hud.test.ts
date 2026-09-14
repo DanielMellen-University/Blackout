@@ -55,6 +55,8 @@ import {
   missionProgressPercent,
   missionProgressText,
   missionPaceLabel,
+  contractProgressLabel,
+  contractProgressAriaLabel,
   quantizeHudNumber,
   safeHudValue,
   speedWarningLevel,
@@ -286,6 +288,19 @@ describe('HUD value formatting', () => {
     expect(missionPaceLabel('AHEAD 0.50S')).toBe('AHEAD 0.50S')
     expect(missionPaceLabel('  ON PACE  ')).toBe('ON PACE')
     expect(missionPaceLabel('')).toBe('READY')
+  })
+
+  it('keeps contract task wording bounded and accessible', () => {
+    expect(contractProgressLabel('CONTRACT SPEED RUN', 0.42, false)).toBe('CONTRACT SPEED RUN 42%')
+    expect(contractProgressLabel('CONTRACT SPEED RUN', 9, false)).toBe('CONTRACT SPEED RUN 100%')
+    expect(contractProgressLabel('CONTRACT SPEED RUN', Number.NaN, false)).toBe('CONTRACT SPEED RUN 0%')
+    expect(contractProgressLabel('CONTRACT SPEED RUN', 0.42, true)).toBe('CONTRACT SPEED RUN DONE')
+    expect(contractProgressLabel('', 1, true)).toBe('')
+    expect(contractProgressAriaLabel('CONTRACT SPEED RUN', 0.42, false))
+      .toBe('Contract speed run, 42 percent complete')
+    expect(contractProgressAriaLabel('CONTRACT SPEED RUN', 0.42, true))
+      .toBe('Contract speed run complete')
+    expect(contractProgressAriaLabel(null, 1, false)).toBe('')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

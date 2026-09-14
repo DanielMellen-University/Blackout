@@ -286,6 +286,34 @@ export function missionPaceLabel(value: unknown): string {
   return value.trim()
 }
 
+/** Keep the optional sortie contract visible without exposing raw tracker state. */
+export function contractProgressLabel(
+  label: unknown,
+  progress: number,
+  complete: boolean,
+): string {
+  if (typeof label !== 'string' || label.trim().length === 0) return ''
+  const safeProgress = Number.isFinite(progress)
+    ? Math.max(0, Math.min(1, progress))
+    : 0
+  return `${label.trim()} ${complete === true ? 'DONE' : `${Math.round(safeProgress * 100)}%`}`
+}
+
+/** Describe the contract row to assistive technology using the same bounded state. */
+export function contractProgressAriaLabel(
+  label: unknown,
+  progress: number,
+  complete: boolean,
+): string {
+  if (typeof label !== 'string' || label.trim().length === 0) return ''
+  const cleanLabel = label.trim().replace(/^CONTRACT\s+/i, '')
+  if (complete === true) return `Contract ${cleanLabel.toLowerCase()} complete`
+  const safeProgress = Number.isFinite(progress)
+    ? Math.round(Math.max(0, Math.min(1, progress)) * 100)
+    : 0
+  return `Contract ${cleanLabel.toLowerCase()}, ${safeProgress} percent complete`
+}
+
 /** Describe afterburner availability without exposing internal lockout state. */
 export function afterburnerHudLabel(
   active: boolean,
@@ -346,6 +374,8 @@ export class HUD {
   private readonly missionEl: HTMLElement | null
   private readonly paceEl: HTMLElement | null
   private readonly missionProgressEl: HTMLElement | null
+  private readonly contractRowEl: HTMLElement | null
+  private readonly contractEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
   private readonly comboEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
@@ -436,6 +466,11 @@ export class HUD {
   private missionProgressTotal = -1
   private missionProgressPercentText = ''
   private missionProgressAriaText = ''
+  private contractLabelValue = ''
+  private contractProgressValue = -1
+  private contractCompleteValue: boolean | null = null
+  private contractText = ''
+  private contractAriaText = ''
   private comboValue = -1
   private comboText = ''
   private comboAriaText = ''
@@ -519,6 +554,8 @@ export class HUD {
     this.missionEl = root.getElementById('hud-mission')
     this.paceEl = root.getElementById('hud-pace')
     this.missionProgressEl = root.getElementById('hud-gate-progress')
+    this.contractRowEl = root.getElementById('hud-contract-row')
+    this.contractEl = root.getElementById('hud-contract')
     this.comboRowEl = root.getElementById('hud-combo-row')
     this.comboEl = root.getElementById('hud-combo')
     this.fuelEl = root.getElementById('hud-fuel')
@@ -622,6 +659,10 @@ export class HUD {
     /** Cleared and total gates for the compact route progress meter. */
     missionCurrent?: number
     missionTotal?: number
+    /** Optional bonus-contract label and bounded progress for the task row. */
+    contractLabel?: string | null
+    contractProgress?: number
+    contractComplete?: boolean
     /** Current event-driven clean-flight combo count. */
     combo?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
@@ -868,6 +909,29 @@ export class HUD {
       this.setAttribute(this.missionProgressEl, 'aria-valuemax', String(total))
       this.setAttribute(this.missionProgressEl, 'aria-valuenow', String(Math.min(current, total)))
       this.setAttribute(this.missionProgressEl, 'aria-valuetext', this.missionProgressAriaText)
+    }
+    if (this.contractRowEl && this.contractEl && opts.contractLabel !== undefined) {
+      const label = typeof opts.contractLabel === 'string' ? opts.contractLabel : ''
+      const progress = Number.isFinite(opts.contractProgress) ? opts.contractProgress! : 0
+      const complete = opts.contractComplete === true
+      const progressPercent = Math.round(Math.max(0, Math.min(1, progress)) * 100)
+      if (
+        label !== this.contractLabelValue ||
+        progressPercent !== this.contractProgressValue ||
+        complete !== this.contractCompleteValue
+      ) {
+        this.contractLabelValue = label
+        this.contractProgressValue = progressPercent
+        this.contractCompleteValue = complete
+        this.contractText = contractProgressLabel(label, progressPercent / 100, complete)
+        this.contractAriaText = contractProgressAriaLabel(label, progressPercent / 100, complete)
+      }
+      const visible = this.contractText.length > 0
+      this.setHidden(this.contractRowEl, !visible)
+      this.setText(this.contractEl, this.contractText)
+      this.setAttribute(this.contractEl, 'aria-label', this.contractAriaText)
+      this.setClass(this.contractEl, 'contract-open', visible && !complete)
+      this.setClass(this.contractEl, 'contract-complete', visible && complete)
     }
     if (this.comboRowEl && this.comboEl && opts.combo !== undefined) {
       const combo = Number.isFinite(opts.combo)
