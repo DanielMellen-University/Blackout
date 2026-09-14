@@ -12,7 +12,7 @@ import {
   resolveLoadFactor,
   wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
-import { contactSweepNeedsDetailedProbes } from '../src/aircraft/FlightModel'
+import { contactSweepNeedsDetailedProbes, runwayGripForWeather } from '../src/aircraft/FlightModel'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
 
@@ -522,6 +522,31 @@ describe('rebuilt aircraft', () => {
     runway.setWeatherWind(Number.POSITIVE_INFINITY, Number.NaN)
     expect(runway.weatherWindX).toBe(0)
     expect(runway.weatherWindZ).toBe(0)
+  })
+
+  it('reduces runway grip for precipitation without leaving the forgiving envelope', () => {
+    expect(runwayGripForWeather(0, 0)).toBe(1)
+    expect(runwayGripForWeather(1, 0)).toBeCloseTo(0.86, 6)
+    expect(runwayGripForWeather(0, 1)).toBeCloseTo(0.76, 6)
+    expect(runwayGripForWeather(Number.NaN, Number.POSITIVE_INFINITY)).toBe(1)
+
+    setContactHeightSampler(() => 0)
+    const dry = new Aircraft()
+    const wet = new Aircraft()
+    dry.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    wet.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    dry.velocity.set(0, 0, 40)
+    wet.velocity.set(0, 0, 40)
+    dry.controls.airbrake = true
+    wet.controls.airbrake = true
+    wet.setWeatherSurface(1, 0)
+    dry.step(1 / 60)
+    wet.step(1 / 60)
+    expect(wet.weatherSurfaceGrip).toBeCloseTo(0.86, 6)
+    expect(wet.velocity.length()).toBeGreaterThan(dry.velocity.length())
+
+    wet.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    expect(wet.weatherSurfaceGrip).toBe(1)
   })
 
   it('disposes replaced procedural model resources exactly once', () => {

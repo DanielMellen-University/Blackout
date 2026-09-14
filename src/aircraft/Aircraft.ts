@@ -21,7 +21,7 @@ import {
   type EngineState,
 } from './EngineState'
 import { flightConfig } from './flightConfig'
-import { FlightModel } from './FlightModel'
+import { FlightModel, runwayGripForWeather } from './FlightModel'
 import type { RenderQuality } from '../core/RenderQuality'
 import { createFuelState, resetFuel, updateFuel, type FuelState } from './FuelSystem'
 import { createEngineHeatState, resetEngineHeat, updateEngineHeat, type EngineHeatState } from './EngineHeatSystem'
@@ -83,6 +83,8 @@ export class Aircraft {
   /** Horizontal wind vector supplied by the world before physics steps. */
   weatherWindX = 0
   weatherWindZ = 0
+  /** Blended precipitation grip multiplier used only during ground rollout. */
+  weatherSurfaceGrip = 1
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
     point: new Vector3(),
@@ -270,6 +272,7 @@ export class Aircraft {
     this.weatherGust = 0
     this.weatherWindX = 0
     this.weatherWindZ = 0
+    this.weatherSurfaceGrip = 1
     this.flight.reset()
     this.wheelSpin = 0
     this.visualTimeMs = 0
@@ -353,6 +356,13 @@ export class Aircraft {
   setWeatherWind(windX: number, windZ: number): void {
     this.weatherWindX = Number.isFinite(windX) ? MathUtils.clamp(windX, -40, 40) : 0
     this.weatherWindZ = Number.isFinite(windZ) ? MathUtils.clamp(windZ, -40, 40) : 0
+  }
+
+  /** Feed blended rain and snow into the forgiving ground-roll grip model. */
+  setWeatherSurface(rain: number, snow: number): void {
+    const next = runwayGripForWeather(rain, snow)
+    if (Math.abs(next - this.weatherSurfaceGrip) < 0.002) return
+    this.weatherSurfaceGrip = next
   }
 
   crash(): void {

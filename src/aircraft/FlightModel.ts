@@ -25,6 +25,13 @@ const CONTACT_BROADPHASE_MARGIN = 24
 const CONTACT_BROADPHASE_TRAVEL_FACTOR = 0.75
 const CONTACT_BROADPHASE_TRAVEL_CAP = 32
 
+/** Convert blended precipitation into a forgiving runway-grip multiplier. */
+export function runwayGripForWeather(rain: number, snow: number): number {
+  const safeRain = Number.isFinite(rain) ? MathUtils.clamp(rain, 0, 1) : 0
+  const safeSnow = Number.isFinite(snow) ? MathUtils.clamp(snow, 0, 1) : 0
+  return MathUtils.clamp(1 - safeRain * 0.14 - safeSnow * 0.24, 0.72, 1)
+}
+
 interface SurfaceHit {
   depth: number
   normal: Vector3
@@ -226,7 +233,9 @@ export class FlightModel {
       const capAccel = engine.maxAcceleration
       const idle = lever < C.idleLever && !boost
       const capDecel =
-        onGround && idle ? C.maxBrakeDecel : idle ? C.maxDecel : C.coastDecel
+        onGround && idle
+          ? C.maxBrakeDecel * MathUtils.clamp(aircraft.weatherSurfaceGrip, 0.72, 1)
+          : idle ? C.maxDecel : C.coastDecel
       const requestedAlong = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
       // Wheel brakes hold the jet against throttle creep while stationary or
       // taxiing. They still permit the speed-hold path to bleed momentum.
@@ -262,13 +271,16 @@ export class FlightModel {
           if (onGround) {
             // Reuse the same B command as wheel brakes during rollout. Scale
             // gently at taxi speed so a parked jet remains easy to position.
-            extra += C.wheelBrakeDecel * MathUtils.clamp(s2 / 80, 0.25, 1)
+            extra += C.wheelBrakeDecel * MathUtils.clamp(aircraft.weatherSurfaceGrip, 0.72, 1) *
+              MathUtils.clamp(s2 / 80, 0.25, 1)
           } else {
             extra += C.airbrakeStrength * MathUtils.clamp(s2 / 160, 0.2, 1)
           }
         }
         extra += stick * 1.4 * MathUtils.clamp(s2 / 160, 0.2, 1.2)
-        if (onGround && lever < 0.08 && !boost) extra += C.rollingDecel * 0.45
+        if (onGround && lever < 0.08 && !boost) {
+          extra += C.rollingDecel * 0.45 * MathUtils.clamp(aircraft.weatherSurfaceGrip, 0.72, 1)
+        }
         if (extra > 0) {
           velocity.addScaledVector(_velDir, -extra * dt)
           if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)

@@ -828,6 +828,7 @@ async function boot(): Promise<void> {
       const weather = world.atmosphere.weatherSnapshot
       aircraft.setWeatherGust(weather.gust)
       aircraft.setWeatherWind(weather.windX, weather.windZ)
+      aircraft.setWeatherSurface(weather.rain, weather.snow)
 
       if (input.consumeCameraToggle()) {
         const mode = cameras.toggleMode(aircraft)
