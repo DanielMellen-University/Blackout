@@ -54,6 +54,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crossing a gate plane outside the ring now gives a single `GATE MISSED / RE-ALIGN` cue, so the route tells you how to recover without advancing the checkpoint.
 - Gate clears now grade the existing radial pass quality as `PERFECT`, `CLEAN`, or `EDGE`, making route precision visible without changing score math.
 - Consecutive `PERFECT` or high-center gate passes now show a lightweight `STREAK Xn` banner, rewarding precision without changing score math or persistence.
+- Streak milestones use a short three-note reward cue instead of the ordinary gate chime, with no persistent audio nodes.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.

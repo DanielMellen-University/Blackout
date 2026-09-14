@@ -226,6 +226,7 @@ export class FlightAudio {
   playCue(
     kind:
       | 'gate'
+      | 'streak'
       | 'complete'
       | 'landed'
       | 'crash'
@@ -251,6 +252,11 @@ export class FlightAudio {
     if (kind === 'gate') {
       this.tone(740, now, 0.11, 'sine', 0.18)
       this.tone(980, now + 0.08, 0.14, 'sine', 0.14)
+    } else if (kind === 'streak') {
+      // Bright three-note reward for a precision streak milestone.
+      this.tone(620, now, 0.08, 'triangle', 0.12, 760)
+      this.tone(820, now + 0.07, 0.09, 'triangle', 0.11, 980)
+      this.tone(1040, now + 0.14, 0.13, 'sine', 0.1, 1120)
     } else if (kind === 'complete') {
       this.tone(520, now, 0.13, 'triangle', 0.16)
       this.tone(660, now + 0.11, 0.13, 'triangle', 0.16)

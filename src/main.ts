@@ -970,8 +970,8 @@ async function boot(): Promise<void> {
           if (event === 'pass') {
             const quality = world.mission.lastPassQuality
             challenge.recordGate(quality)
-            audio.playCue('gate')
             const streak = challenge.gateStreakLabel
+            audio.playCue(streak ? 'streak' : 'gate')
             showBanner(`GATE ${gateQualityLabel(quality)}${streak ? ` · ${streak}` : ''} · ${challenge.gatePaceLabel}`, 1400, 'success')
           }
           if (event === 'miss') {
