@@ -15,6 +15,7 @@ export interface WarningState {
   gear: boolean
   overspeed: boolean
   fuel: boolean
+  terrainClosure: boolean
 }
 
 const _fwd = new Vector3()
@@ -29,6 +30,7 @@ const NONE_WARNING = Object.freeze({
   gear: false,
   overspeed: false,
   fuel: false,
+  terrainClosure: false,
 }) as WarningState
 const STALL_WARNING = Object.freeze({
   text: 'STALL',
@@ -38,6 +40,7 @@ const STALL_WARNING = Object.freeze({
   gear: false,
   overspeed: false,
   fuel: false,
+  terrainClosure: false,
 }) as WarningState
 const LOW_ALT_WARNING = Object.freeze({
   text: 'LOW ALT',
@@ -47,6 +50,7 @@ const LOW_ALT_WARNING = Object.freeze({
   gear: false,
   overspeed: false,
   fuel: false,
+  terrainClosure: false,
 }) as WarningState
 const GEAR_WARNING = Object.freeze({
   text: 'GEAR',
@@ -56,6 +60,7 @@ const GEAR_WARNING = Object.freeze({
   gear: true,
   overspeed: false,
   fuel: false,
+  terrainClosure: false,
 }) as WarningState
 const OVERSPEED_WARNING = Object.freeze({
   text: 'OVERSPEED',
@@ -65,6 +70,7 @@ const OVERSPEED_WARNING = Object.freeze({
   gear: false,
   overspeed: true,
   fuel: false,
+  terrainClosure: false,
 }) as WarningState
 const FUEL_LOW_WARNING = Object.freeze({
   text: 'FUEL LOW',
@@ -74,6 +80,7 @@ const FUEL_LOW_WARNING = Object.freeze({
   gear: false,
   overspeed: false,
   fuel: true,
+  terrainClosure: false,
 }) as WarningState
 const FUEL_EMPTY_WARNING = Object.freeze({
   text: 'FUEL EMPTY',
@@ -83,6 +90,18 @@ const FUEL_EMPTY_WARNING = Object.freeze({
   gear: false,
   overspeed: false,
   fuel: true,
+  terrainClosure: false,
+}) as WarningState
+
+const TERRAIN_CLOSURE_WARNING = Object.freeze({
+  text: 'PULL UP',
+  level: 'warning',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+  overspeed: false,
+  fuel: false,
+  terrainClosure: true,
 }) as WarningState
 
 /**
@@ -119,10 +138,16 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
+  const terrainClosure = terrainClosureWarningActive(
+    altAgl,
+    speed,
+    aircraft.velocity.y,
+  )
   const overspeed = overspeedWarningActive(speed)
   const fuelLevel = fuelWarningLevel(aircraft.fuel)
 
   if (stall) return STALL_WARNING
+  if (terrainClosure) return TERRAIN_CLOSURE_WARNING
   if (gear) return GEAR_WARNING
   if (lowAlt) return LOW_ALT_WARNING
   if (overspeed) return OVERSPEED_WARNING
@@ -183,4 +208,18 @@ export function gearWarningActive(
 /** Warn only after the jet leaves the dry displayed airspeed envelope. */
 export function overspeedWarningActive(speed: number): boolean {
   return Number.isFinite(speed) && speed > C.maxSpeed
+}
+
+/** Predict a fast sink into terrain before the normal low-altitude caution arrives. */
+export function terrainClosureWarningActive(
+  altAgl: number,
+  speed: number,
+  verticalSpeed: number,
+): boolean {
+  if (!Number.isFinite(altAgl) || !Number.isFinite(speed) || !Number.isFinite(verticalSpeed)) return false
+  const safeAlt = Math.max(0, altAgl)
+  const safeSpeed = Math.max(0, speed)
+  if (safeAlt <= 2 || safeSpeed < 84 || verticalSpeed >= -8) return false
+  const secondsToTerrain = safeAlt / Math.max(8, -verticalSpeed)
+  return secondsToTerrain <= 2.6
 }

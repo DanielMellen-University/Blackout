@@ -8,6 +8,7 @@ import {
   lowAltitudeWarningCeiling,
   overspeedWarningActive,
   stallWarningActive,
+  terrainClosureWarningActive,
 } from '../src/systems/FlightWarnings'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
 
@@ -84,6 +85,22 @@ describe('flight cautions', () => {
     expect(overspeedWarningActive(flightConfig.maxSpeed)).toBe(false)
     expect(overspeedWarningActive(flightConfig.maxSpeed + 0.1)).toBe(true)
     expect(overspeedWarningActive(Number.NaN)).toBe(false)
+  })
+
+  it('predicts fast terrain closure without alarming normal approaches', () => {
+    expect(terrainClosureWarningActive(20, 90, -10)).toBe(true)
+    expect(terrainClosureWarningActive(40, 90, -10)).toBe(false)
+    expect(terrainClosureWarningActive(20, 60, -10)).toBe(false)
+    expect(terrainClosureWarningActive(20, 90, -4)).toBe(false)
+    expect(terrainClosureWarningActive(Number.NaN, 90, -10)).toBe(false)
+
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, -10, 90)
+    const warning = evaluateWarnings(aircraft, 20)
+    expect(warning.text).toBe('PULL UP')
+    expect(warning.level).toBe('warning')
+    expect(warning.terrainClosure).toBe(true)
   })
 
   it('labels an overspeed transition without changing caution priority', () => {
