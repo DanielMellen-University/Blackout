@@ -37,6 +37,8 @@ import {
   navigationApproachCue,
   navigationLateralCue,
   navigationLateralLabel,
+  navigationSpeedCue,
+  navigationSpeedLabel,
   navigationBearingDegrees,
   navigationEtaSeconds,
   navigationRangeCue,
@@ -398,6 +400,18 @@ describe('HUD value formatting', () => {
     expect(navigationLateralLabel('left')).toBe('LINE L')
     expect(navigationLateralLabel('right')).toBe('LINE R')
     expect(navigationLateralLabel(null)).toBe('')
+  })
+
+  it('keeps the return speed window bounded and explicit', () => {
+    expect(navigationSpeedCue(45)).toBe('slow')
+    expect(navigationSpeedCue(55)).toBe('on-speed')
+    expect(navigationSpeedCue(71)).toBe('fast')
+    expect(navigationSpeedCue(55, 'gate')).toBeNull()
+    expect(navigationSpeedCue(Number.NaN)).toBeNull()
+    expect(navigationSpeedLabel('slow')).toBe('SPD SLOW')
+    expect(navigationSpeedLabel('on-speed')).toBe('SPD OK')
+    expect(navigationSpeedLabel('fast')).toBe('SPD FAST')
+    expect(navigationSpeedLabel(null)).toBe('')
   })
 
   it('keeps route ETA bounded and only reports it while closing', () => {
