@@ -160,6 +160,10 @@ export class RunResults {
       scoreParts.push(`COMBO X${bestCombo}`)
       if (comboScore > 0) scoreParts.push(`COMBO +${comboScore.toLocaleString()}`)
     }
+    const fuelScore = Number.isFinite(result.fuelScore)
+      ? Math.max(0, Math.floor(result.fuelScore!))
+      : 0
+    if (fuelScore > 0) scoreParts.push(`FUEL +${fuelScore.toLocaleString()}`)
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0

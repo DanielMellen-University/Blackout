@@ -88,6 +88,8 @@ export interface ChallengeResult {
   bestCombo?: number
   /** Capped score bonus awarded for combo milestones. */
   comboScore?: number
+  /** Capped score bonus awarded for preserving fuel through touchdown. */
+  fuelScore?: number
   /** Highest combo ever recorded for this course. */
   courseBestCombo?: number
   /** Whether this sortie set a new course combo record. */
@@ -109,6 +111,7 @@ export const MAX_BEST_SCORE = 110_000
 export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
+export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
 
 export interface CourseHistory {
   completionCount: number
@@ -139,6 +142,11 @@ export function landingQualityLabel(quality: number): LandingQualityLabel {
   if (safe >= 0.78) return 'SMOOTH'
   if (safe >= 0.6) return 'FIRM'
   return 'HARD'
+}
+
+/** Reward a completed landing for preserving fuel, with a finite cap. */
+export function fuelEfficiencyScore(fraction: number): number {
+  return Math.round(clamp01(fraction) * MAX_FUEL_EFFICIENCY_SCORE)
 }
 
 type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
@@ -576,6 +584,7 @@ export class ChallengeRun {
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     const fuelRemainingPercent = Math.round(clamp01(fuelFraction) * 100)
     const fuelUsedPercent = 100 - fuelRemainingPercent
+    const fuelScore = fuelEfficiencyScore(fuelFraction)
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
     const weights = scoringWeightsForFocus(this.scoringFocus)
@@ -601,7 +610,7 @@ export class ChallengeRun {
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -700,6 +709,7 @@ export class ChallengeRun {
       altitudeMilestoneM: this.altitudeMilestone,
       bestCombo: this.bestCombo > 0 ? this.bestCombo : undefined,
       comboScore: comboScore > 0 ? comboScore : undefined,
+      fuelScore: fuelScore > 0 ? fuelScore : undefined,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
       newComboRecord,
     }

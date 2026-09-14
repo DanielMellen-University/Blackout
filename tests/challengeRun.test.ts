@@ -4,6 +4,7 @@ import {
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
+  fuelEfficiencyScore,
   landingQualityLabel,
   repairCourseHistory,
   readCourseHistory,
@@ -134,7 +135,7 @@ describe('ChallengeRun', () => {
     expect(result.stuntRolls).toBe(2)
     expect(result.stuntScore).toBe(1_500)
     expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.stuntScore!,
+      result.gateScore + result.timeScore + result.landingScore + result.stuntScore! + result.fuelScore!,
     )
   })
 
@@ -154,8 +155,16 @@ describe('ChallengeRun', () => {
     expect(result.bestCombo).toBe(20)
     expect(result.comboScore).toBe(5_700)
     expect(result.totalScore).toBe(
-      result.gateScore + result.timeScore + result.landingScore + result.comboScore!,
+      result.gateScore + result.timeScore + result.landingScore + result.comboScore! + result.fuelScore!,
     )
+  })
+
+  it('keeps fuel efficiency rewards finite and capped', () => {
+    expect(fuelEfficiencyScore(1)).toBe(1_000)
+    expect(fuelEfficiencyScore(0.72)).toBe(720)
+    expect(fuelEfficiencyScore(-1)).toBe(0)
+    expect(fuelEfficiencyScore(Number.NaN)).toBe(0)
+    expect(fuelEfficiencyScore(99)).toBe(1_000)
   })
 
   it('persists the best combo per course and repairs oversized records', () => {
