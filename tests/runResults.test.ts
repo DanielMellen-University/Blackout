@@ -233,6 +233,8 @@ describe('run results focus flow', () => {
       contractWins: 3,
       courseBestContractWins: 4,
       deadstickScore: 1_500,
+      courseMasteryTier: 'ace',
+      courseMasteryTierLabel: 'ACE',
       courseBestApproachScore: 650,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
@@ -271,6 +273,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEADSTICK +1,500')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT WINS X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACTS X4')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TIER ACE')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')

@@ -47,6 +47,8 @@ import {
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
+  courseMasteryTierForProgress,
+  courseMasteryTierLabel,
   formatTime,
   landingWeatherRisk,
   MASTERY_BADGE_COUNT,
@@ -210,7 +212,16 @@ async function boot(): Promise<void> {
         const contractWinsLabel = history && Number.isFinite(history.contractWins) && history.contractWins! > 0
           ? ` · CONTRACTS X${Math.max(0, Math.floor(history.contractWins!))}`
           : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${runStreakLabel}${contractWinsLabel}${badgeLabel}`
+        const masteryTier = courseMasteryTierForProgress({
+          completionCount: history?.completionCount,
+          bestScore,
+          badgeCount,
+          contractWins: history?.contractWins,
+        })
+        const masteryTierLabel = masteryTier === 'rookie'
+          ? ''
+          : ` · ${courseMasteryTierLabel(masteryTier)}`
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${runStreakLabel}${contractWinsLabel}${masteryTierLabel}${badgeLabel}`
         option.title = course.detail
       }
     }

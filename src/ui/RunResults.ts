@@ -235,6 +235,9 @@ export class RunResults {
     if (courseBestContractWins > contractWins) {
       scoreParts.push(`COURSE CONTRACTS X${courseBestContractWins}`)
     }
+    if (result.courseMasteryTierLabel) {
+      scoreParts.push(`COURSE TIER ${result.courseMasteryTierLabel}`)
+    }
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0

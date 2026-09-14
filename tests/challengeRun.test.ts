@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   ChallengeRun,
+  courseMasteryTierForProgress,
+  courseMasteryTierLabel,
   deadstickLandingScore,
   formatPaceDelta,
   formatSplitTrace,
@@ -71,6 +73,8 @@ describe('ChallengeRun', () => {
     expect(result!.peakSpeedKts).toBe(16)
     expect(result!.peakAltitudeM).toBe(140)
     expect(result!.newMasteryBadges).toEqual(['first-flight', 'landing-ace', 'gold-run'])
+    expect(result!.courseMasteryTier).toBe('pilot')
+    expect(result!.courseMasteryTierLabel).toBe('PILOT')
     expect(readMasteryBadges({ getItem: (key) => store.get(key) ?? null }, 'seed:1'))
       .toEqual(['first-flight', 'landing-ace', 'gold-run'])
     expect(run.phase).toBe('complete')
@@ -811,6 +815,17 @@ describe('ChallengeRun', () => {
     }, Number.NaN)!
     expect(malformed.fuelRemainingPercent).toBe(0)
     expect(malformed.fuelUsedPercent).toBe(100)
+  })
+
+  it('derives readable course mastery tiers from bounded progress', () => {
+    expect(courseMasteryTierForProgress({})).toBe('rookie')
+    expect(courseMasteryTierForProgress({ completionCount: 1 })).toBe('pilot')
+    expect(courseMasteryTierForProgress({ completionCount: 3, bestScore: 76_000, badgeCount: 2 })).toBe('veteran')
+    expect(courseMasteryTierForProgress({ completionCount: 5, bestScore: 88_000, badgeCount: 3, contractWins: 2 })).toBe('ace')
+    expect(courseMasteryTierForProgress({ completionCount: 10, bestScore: 100_000, badgeCount: 6, contractWins: 5 })).toBe('legend')
+    expect(courseMasteryTierForProgress({ completionCount: Number.NaN, bestScore: Number.POSITIVE_INFINITY })).toBe('rookie')
+    expect(courseMasteryTierLabel('rookie')).toBe('ROOKIE')
+    expect(courseMasteryTierLabel('legend')).toBe('LEGEND')
   })
 
   it('awards mastery badges from finite run quality thresholds', () => {

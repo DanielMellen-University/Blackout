@@ -137,6 +137,10 @@ export interface ChallengeResult {
   courseBestContractWins?: number
   /** Whether this sortie set a new completed-contract record. */
   newContractRecord?: boolean
+  /** Derived long-term mastery tier for this course. */
+  courseMasteryTier?: CourseMasteryTier
+  /** Human-readable mastery tier label. */
+  courseMasteryTierLabel?: string
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -170,6 +174,36 @@ export const MAX_DESTINATION_COUNT = 6
 export const MAX_RUN_STREAK = 1_000
 export const MAX_CONTRACT_WINS = 1_000
 export const MAX_DEADSTICK_SCORE = 1_500
+
+export type CourseMasteryTier = 'rookie' | 'pilot' | 'veteran' | 'ace' | 'legend'
+
+export interface CourseMasteryProgress {
+  completionCount?: number
+  bestScore?: number
+  badgeCount?: number
+  contractWins?: number
+}
+
+/** Derive a stable, bounded course rank from the records already in storage. */
+export function courseMasteryTierForProgress(progress: CourseMasteryProgress): CourseMasteryTier {
+  const runs = safeCount(progress.completionCount, MAX_COMPLETION_COUNT)
+  const score = safeCount(progress.bestScore, MAX_BEST_SCORE)
+  const badges = safeCount(progress.badgeCount, MASTERY_BADGE_COUNT)
+  const contracts = safeCount(progress.contractWins, MAX_CONTRACT_WINS)
+  if (runs >= 10 && score >= 100_000 && badges >= MASTERY_BADGE_COUNT && contracts >= 5) return 'legend'
+  if (runs >= 5 && score >= 88_000 && badges >= 3 && contracts >= 2) return 'ace'
+  if (runs >= 3 && score >= 76_000 && badges >= 2) return 'veteran'
+  if (runs >= 1) return 'pilot'
+  return 'rookie'
+}
+
+export function courseMasteryTierLabel(tier: CourseMasteryTier): string {
+  if (tier === 'pilot') return 'PILOT'
+  if (tier === 'veteran') return 'VETERAN'
+  if (tier === 'ace') return 'ACE'
+  if (tier === 'legend') return 'LEGEND'
+  return 'ROOKIE'
+}
 
 export interface CourseHistory {
   completionCount: number
@@ -892,6 +926,12 @@ export class ChallengeRun {
       this.writeBestTrace()
       this.bestGateSplits = this.gateSplits.slice()
     }
+    const courseMasteryTier = courseMasteryTierForProgress({
+      completionCount: history.completionCount,
+      bestScore,
+      badgeCount: allBadges.length,
+      contractWins: history.contractWins,
+    })
 
     this.phase = 'complete'
     this.result = {
@@ -952,6 +992,8 @@ export class ChallengeRun {
       contractWins: contractWins > 0 ? contractWins : undefined,
       courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,
       newContractRecord,
+      courseMasteryTier,
+      courseMasteryTierLabel: courseMasteryTierLabel(courseMasteryTier),
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
@@ -1131,6 +1173,10 @@ function medalFor(score: number): Medal {
 
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+}
+
+function safeCount(value: number | undefined, max: number): number {
+  return Number.isFinite(value) ? Math.min(max, Math.max(0, Math.floor(value!))) : 0
 }
 
 function finiteOr(value: number, fallback = 0): number {
