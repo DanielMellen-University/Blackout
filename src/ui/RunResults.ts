@@ -133,6 +133,16 @@ export class RunResults {
     if (Number.isFinite(result.peakAltitudeM)) {
       scoreParts.push(`ALT ${Math.max(0, Math.round(result.peakAltitudeM!)).toLocaleString()}M`)
     }
+    const stuntRolls = Number.isFinite(result.stuntRolls)
+      ? Math.max(0, Math.floor(result.stuntRolls!))
+      : 0
+    const stuntScore = Number.isFinite(result.stuntScore)
+      ? Math.max(0, Math.floor(result.stuntScore!))
+      : 0
+    if (stuntRolls > 0) {
+      scoreParts.push(`ROLLS X${stuntRolls}`)
+      if (stuntScore > 0) scoreParts.push(`ROLL +${stuntScore.toLocaleString()}`)
+    }
     if (Number.isFinite(result.courseBestPeakSpeedKts) && result.courseBestPeakSpeedKts! > (result.peakSpeedKts ?? 0)) {
       scoreParts.push(`COURSE TOP ${Math.max(0, Math.round(result.courseBestPeakSpeedKts!)).toLocaleString()}KT`)
     }

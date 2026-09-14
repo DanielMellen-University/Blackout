@@ -231,6 +231,7 @@ export class FlightAudio {
       | 'landed'
       | 'landing-soft'
       | 'landing-hard'
+      | 'stunt'
       | 'crash'
       | 'ab'
       | 'ab-off'
@@ -278,6 +279,11 @@ export class FlightAudio {
       this.noiseBurst(now, 0.16, 'brown', 0.28, 150, 70)
       this.tone(260, now, 0.16, 'triangle', 0.1, 170)
       this.tone(170, now + 0.1, 0.2, 'triangle', 0.08, 110)
+    } else if (kind === 'stunt') {
+      // A bright airshow reward keeps a completed roll distinct from warnings.
+      this.tone(660, now, 0.08, 'triangle', 0.1, 820)
+      this.tone(880, now + 0.08, 0.1, 'sine', 0.09, 1080)
+      this.tone(1180, now + 0.17, 0.16, 'sine', 0.08, 1320)
     } else if (kind === 'ab') {
       // Rising whoosh on engage (not every AB frame).
       this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)

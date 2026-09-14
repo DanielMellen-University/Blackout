@@ -1,3 +1,5 @@
+import { MAX_STUNT_ROLLS } from './StuntTracker'
+
 export type ChallengePhase =
   | 'ready'
   | 'running'
@@ -69,6 +71,10 @@ export interface ChallengeResult {
   newPeakSpeedRecord?: boolean
   /** Whether this sortie set a new course peak-altitude record. */
   newPeakAltitudeRecord?: boolean
+  /** Number of completed airborne barrel rolls in this sortie. */
+  stuntRolls?: number
+  /** Bounded score bonus awarded for completed barrel rolls. */
+  stuntScore?: number
 }
 
 export interface ScoreStore {
@@ -82,7 +88,7 @@ const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
-export const MAX_BEST_SCORE = 100_000
+export const MAX_BEST_SCORE = 110_000
 export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
@@ -420,6 +426,7 @@ export class ChallengeRun {
   private bestGateQualityStreak = 0
   private peakSpeedMps = 0
   private peakAltitudeM = 0
+  private stuntRollCount = 0
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -446,6 +453,7 @@ export class ChallengeRun {
     this.bestGateQualityStreak = 0
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
+    this.stuntRollCount = 0
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -492,6 +500,16 @@ export class ChallengeRun {
     }
   }
 
+  /** Record a completed airshow maneuver without touching the flight loop. */
+  recordStunt(rolls = 1): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    if (this.phase === 'ready') this.phase = 'running'
+    const safeRolls = Number.isFinite(rolls)
+      ? Math.max(0, Math.min(MAX_STUNT_ROLLS, Math.floor(rolls)))
+      : 0
+    this.stuntRollCount = Math.min(MAX_STUNT_ROLLS, this.stuntRollCount + safeRolls)
+  }
+
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
     if (this.phase !== 'returning') return null
 
@@ -519,7 +537,8 @@ export class ChallengeRun {
       1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
     )
     const landingScore = Math.round(weights.landing * landingQuality)
-    const totalScore = gateScore + timeScore + landingScore
+    const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
+    const totalScore = gateScore + timeScore + landingScore + stuntScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -602,6 +621,8 @@ export class ChallengeRun {
       courseBestPeakAltitudeM,
       newPeakSpeedRecord,
       newPeakAltitudeRecord,
+      stuntRolls: this.stuntRollCount,
+      stuntScore,
     }
     return this.result
   }

@@ -95,6 +95,25 @@ describe('ChallengeRun', () => {
     expect(result?.bestPrecisionStreak).toBe(2)
   })
 
+  it('adds a bounded barrel-roll bonus to the completed sortie', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:stunt', 1)
+    run.update(0.1, 8)
+    run.recordStunt(2)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.stuntRolls).toBe(2)
+    expect(result.stuntScore).toBe(1_500)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.stuntScore!,
+    )
+  })
+
   it('formats time with centiseconds', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
     expect(formatTime(Number.NaN)).toBe('0:00.00')

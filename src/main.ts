@@ -65,6 +65,7 @@ import {
 import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
+import { StuntTracker } from './systems/StuntTracker'
 import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
 import {
   audioVolumePercent,
@@ -382,6 +383,7 @@ async function boot(): Promise<void> {
   uiListeners.add(volumeRange, 'input', onVolumeInput)
   const results = new RunResults()
   const challenge = new ChallengeRun()
+  const stunts = new StuntTracker()
   const radar = new RadarSystem()
   applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
   applyRadarQuality(renderQuality)
@@ -578,6 +580,7 @@ async function boot(): Promise<void> {
     cameras.setMode(cameras.mode, aircraft)
     crashFx.reset()
     landingFx.reset()
+    stunts.reset()
     input.clearQueued()
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
@@ -979,6 +982,12 @@ async function boot(): Promise<void> {
         }
 
         if (aircraft.status !== 'crashed') {
+          const stunt = stunts.update(dt, !aircraft.onGround, aircraft.angularVelocity.z)
+          if (stunt) {
+            challenge.recordStunt(stunt.rolls)
+            audio.playCue('stunt')
+            showBanner(`BARREL ROLL X${stunt.totalRolls}`, 1500, 'success')
+          }
           const event = world.mission.update(
             aircraft.position.x,
             aircraft.position.y,
