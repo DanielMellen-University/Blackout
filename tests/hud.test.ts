@@ -23,6 +23,7 @@ import {
   emergencyReturnActive,
   engineHeatRearmBanner,
   afterburnerHudLabel,
+  stabilityAssistLabel,
   flightStateLabel,
   gateProximityHudActive,
   gearTransitionActive,
@@ -465,5 +466,11 @@ describe('HUD value formatting', () => {
     expect(formatFuelEndurance(3661)).toBe('END 1:01:01')
     expect(formatFuelEndurance(null)).toBe('END --')
     expect(formatFuelEndurance(Number.NaN)).toBe('END --')
+  })
+
+  it('keeps the optional flight-assist state explicit after its banner fades', () => {
+    expect(stabilityAssistLabel(true)).toBe('TRIM ON')
+    expect(stabilityAssistLabel(false)).toBe('TRIM OFF')
+    expect(stabilityAssistLabel('on')).toBe('TRIM OFF')
   })
 })

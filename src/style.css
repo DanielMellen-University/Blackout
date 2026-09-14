@@ -1209,6 +1209,18 @@ body,
   animation: radar-scan 2.6s linear infinite;
 }
 
+.hud-assist {
+  margin-top: 5px;
+  color: var(--accent);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.hud-assist[hidden] {
+  display: none !important;
+}
+
 @keyframes radar-scan {
   from {
     transform: translateX(0);

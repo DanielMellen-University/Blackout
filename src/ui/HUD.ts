@@ -287,6 +287,11 @@ export function afterburnerHudLabel(
   return active ? 'AB ON' : 'AB READY'
 }
 
+/** Keep the opt-in flight-assist state visible after its toggle banner fades. */
+export function stabilityAssistLabel(active: unknown): string {
+  return active === true ? 'TRIM ON' : 'TRIM OFF'
+}
+
 /** Announce the single transition from powered flight to a fuel-out glide. */
 export function engineFuelAvailabilityBanner(
   previousAvailable: boolean,
@@ -335,6 +340,7 @@ export class HUD {
   private readonly fuelEl: HTMLElement | null
   private readonly fuelEnduranceEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
+  private readonly assistEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
   private readonly pausedEl: HTMLElement | null
   private readonly speedJuiceEl: HTMLElement | null
@@ -401,6 +407,7 @@ export class HUD {
   private abStateText = 'AB READY'
   private radarText = ''
   private radarAriaText = ''
+  private stabilityAssistValue: boolean | null = null
   private hintText = ''
   private pausedValue: boolean | null = null
   private hudBackgroundHiddenValue: boolean | null = null
@@ -501,6 +508,7 @@ export class HUD {
     this.fuelEl = root.getElementById('hud-fuel')
     this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
     this.radarEl = root.getElementById('hud-radar')
+    this.assistEl = root.getElementById('hud-assist')
     this.hintEl = root.getElementById('hud-hint')
     this.pausedEl = root.getElementById('hud-paused')
     this.speedJuiceEl = root.getElementById('speed-juice')
@@ -600,6 +608,8 @@ export class HUD {
     missionTotal?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
+    /** Opt-in pitch and bank trim state. */
+    stabilityAssist?: boolean
     /** Temporary control hint shown during the takeoff handoff. */
     controlHint?: string | null
     /** Next-gate range in meters; omit or 0 to hide. */
@@ -892,6 +902,16 @@ export class HUD {
       this.setText(this.radarEl, this.radarText)
       this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
       this.setClass(this.radarEl, 'radar-active', radarText !== 'NO CONTACTS')
+    }
+    if (this.assistEl && opts.stabilityAssist !== undefined) {
+      const active = opts.stabilityAssist === true
+      if (active !== this.stabilityAssistValue) this.stabilityAssistValue = active
+      this.setText(this.assistEl, stabilityAssistLabel(active))
+      this.setHidden(this.assistEl, !active)
+      this.setAttribute(this.assistEl, 'aria-label', active
+        ? 'Flight assist enabled: pitch and bank trim'
+        : 'Flight assist disabled')
+      this.setClass(this.assistEl, 'assist-active', active)
     }
     if (this.hintEl && opts.controlHint !== undefined) {
       const hint = typeof opts.controlHint === 'string' ? opts.controlHint : ''
