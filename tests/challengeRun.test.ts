@@ -20,6 +20,8 @@ import {
   repairMasteryBadges,
   MAX_BEST_SCORE,
   MAX_APPROACH_SCORE,
+  MAX_DESTINATION_COUNT,
+  MAX_DESTINATION_SCORE,
   MAX_WEATHER_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
@@ -203,6 +205,29 @@ describe('ChallengeRun', () => {
     expect(result.weatherScore).toBe(MAX_WEATHER_SCORE)
     expect(result.totalScore).toBe(
       result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.weatherScore!,
+    )
+  })
+
+  it('awards bounded city and village destination rewards during a live sortie', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:destination-score', 1)
+    run.recordDestination('city')
+    run.update(0.1, 8)
+    run.recordDestination('city')
+    run.recordDestination('village')
+    run.recordDestination('invalid' as 'city')
+    for (let index = 0; index < MAX_DESTINATION_COUNT + 2; index += 1) run.recordDestination('city')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.destinationCount).toBe(MAX_DESTINATION_COUNT)
+    expect(result.destinationScore).toBe(MAX_DESTINATION_SCORE)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.destinationScore!,
     )
   })
 

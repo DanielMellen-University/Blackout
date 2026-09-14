@@ -189,6 +189,14 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.weatherScore!))
       : 0
     if (weatherScore > 0) scoreParts.push(`WEATHER +${weatherScore.toLocaleString()}`)
+    const destinationCount = Number.isFinite(result.destinationCount)
+      ? Math.max(0, Math.floor(result.destinationCount!))
+      : 0
+    const destinationScore = Number.isFinite(result.destinationScore)
+      ? Math.max(0, Math.floor(result.destinationScore!))
+      : 0
+    if (destinationCount > 0) scoreParts.push(`DEST X${destinationCount}`)
+    if (destinationScore > 0) scoreParts.push(`DEST +${destinationScore.toLocaleString()}`)
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0

@@ -1441,6 +1441,9 @@ async function boot(): Promise<void> {
           arrivalRadius > 0 &&
           navDist <= arrivalRadius
         ) {
+          if (selectedRadarTarget.kind === 'city' || selectedRadarTarget.kind === 'village') {
+            challenge.recordDestination(selectedRadarTarget.kind)
+          }
           showBanner(radarTargetArrivalLabel(selectedRadarTarget.kind), 2000, 'success')
           radar.clearTarget()
         }

@@ -102,6 +102,10 @@ export interface ChallengeResult {
   approachScore?: number
   /** Capped score bonus awarded for landing through active weather. */
   weatherScore?: number
+  /** Capped score bonus awarded for reaching streamed city or village targets. */
+  destinationScore?: number
+  /** Number of streamed settlement targets reached during this sortie. */
+  destinationCount?: number
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -123,13 +127,15 @@ const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
-export const MAX_BEST_SCORE = 111_000
+export const MAX_BEST_SCORE = 113_000
 export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
 export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
 export const MAX_APPROACH_SCORE = 500
 export const MAX_WEATHER_SCORE = 500
+export const MAX_DESTINATION_SCORE = 1_200
+export const MAX_DESTINATION_COUNT = 6
 
 export interface CourseHistory {
   completionCount: number
@@ -539,6 +545,8 @@ export class ChallengeRun {
   private gateQualityTotal = 0
   private gateQualityStreak = 0
   private bestGateQualityStreak = 0
+  private destinationScore = 0
+  private destinationCount = 0
   private peakSpeedMps = 0
   private peakAltitudeM = 0
   private stuntRollCount = 0
@@ -569,6 +577,8 @@ export class ChallengeRun {
     this.gateQualityTotal = 0
     this.gateQualityStreak = 0
     this.bestGateQualityStreak = 0
+    this.destinationScore = 0
+    this.destinationCount = 0
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
     this.stuntRollCount = 0
@@ -644,6 +654,16 @@ export class ChallengeRun {
     this.bestCombo = Math.max(this.bestCombo, Math.min(MAX_COMBO_COUNT, Math.floor(combo)))
   }
 
+  /** Add one bounded reward when a selected streamed settlement is reached. */
+  recordDestination(kind: 'city' | 'village'): void {
+    if (this.phase !== 'running' && this.phase !== 'returning') return
+    if (kind !== 'city' && kind !== 'village') return
+    if (this.destinationCount >= MAX_DESTINATION_COUNT) return
+    const reward = kind === 'city' ? 600 : 300
+    this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
+    this.destinationCount += 1
+  }
+
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
     if (this.phase !== 'returning') return null
 
@@ -678,7 +698,7 @@ export class ChallengeRun {
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + this.destinationScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -785,6 +805,8 @@ export class ChallengeRun {
       fuelScore: fuelScore > 0 ? fuelScore : undefined,
       approachScore: approachScore > 0 ? approachScore : undefined,
       weatherScore: weatherScore > 0 ? weatherScore : undefined,
+      destinationScore: this.destinationScore > 0 ? this.destinationScore : undefined,
+      destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
