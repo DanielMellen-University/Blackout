@@ -74,6 +74,7 @@ import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
 import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
+import { SupersonicTracker } from './systems/Supersonic'
 import {
   audioVolumePercent,
   normalizeAudioVolume,
@@ -429,6 +430,7 @@ async function boot(): Promise<void> {
   const stunts = new StuntTracker()
   const combo = new FlightComboTracker()
   const altitudeMilestones = new AltitudeMilestoneTracker()
+  const supersonic = new SupersonicTracker()
   const radar = new RadarSystem()
   applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
   applyRadarQuality(renderQuality)
@@ -654,6 +656,7 @@ async function boot(): Promise<void> {
       )
     }
     aircraft.reset(world.spawn)
+    supersonic.reset(aircraft.speed)
     cameras.setMode(cameras.mode, aircraft)
     crashFx.reset()
     landingFx.reset()
@@ -991,6 +994,10 @@ async function boot(): Promise<void> {
         aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
         aircraft.step(dt, nowMs)
+        if (supersonic.update(aircraft.speed) === 'boom') {
+          audio.playCue('sonic-boom')
+          if (!banner || bannerUntil <= nowMs) showBanner('MACH 1 / SONIC BOOM', 1500, 'success')
+        }
         if (combo.update(dt)) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
 
         const atAirfield = Math.hypot(

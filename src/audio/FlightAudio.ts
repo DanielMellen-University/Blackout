@@ -245,7 +245,8 @@ export class FlightAudio {
       | 'gear-up'
       | 'gear-down'
       | 'airbrake-open'
-      | 'airbrake-close',
+      | 'airbrake-close'
+      | 'sonic-boom',
   ): void {
     if (this.disposed) return
     const ctx = this.ctx
@@ -304,6 +305,11 @@ export class FlightAudio {
       const opening = kind === 'airbrake-open'
       this.noiseBurst(now, 0.1, opening ? 'white' : 'brown', opening ? 0.075 : 0.055, opening ? 800 : 620, opening ? 2100 : 260)
       this.tone(opening ? 260 : 340, now, 0.11, 'triangle', opening ? 0.045 : 0.035, opening ? 520 : 160)
+    } else if (kind === 'sonic-boom') {
+      // A low, short pressure wave marks Mach crossing without a harsh click.
+      this.noiseBurst(now, 0.34, 'brown', 0.2, 150, 48)
+      this.tone(96, now, 0.38, 'triangle', 0.1, 42)
+      this.tone(180, now + 0.018, 0.2, 'sine', 0.06, 72)
     } else if (kind === 'thunder') {
       // Low, delayed-feeling roll: the sky flash stays readable without a sharp click.
       this.noiseBurst(now, 0.52, 'brown', 0.14, 150, 42)
