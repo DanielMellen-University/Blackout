@@ -221,6 +221,16 @@ export class RunResults {
         : 0
       if (contractScore > 0) scoreParts.push(`CONTRACT +${contractScore.toLocaleString()}`)
     }
+    const contractWins = Number.isFinite(result.contractWins)
+      ? Math.max(0, Math.floor(result.contractWins!))
+      : 0
+    if (contractWins > 0) scoreParts.push(`CONTRACT WINS X${contractWins}`)
+    const courseBestContractWins = Number.isFinite(result.courseBestContractWins)
+      ? Math.max(0, Math.floor(result.courseBestContractWins!))
+      : 0
+    if (courseBestContractWins > contractWins) {
+      scoreParts.push(`COURSE CONTRACTS X${courseBestContractWins}`)
+    }
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0
@@ -253,6 +263,7 @@ export class RunResults {
       result.newApproachRecord ? 'APPROACH' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
       result.newRunStreakRecord ? 'RUN STREAK' : '',
+      result.newContractRecord ? 'CONTRACTS' : '',
     ].filter(Boolean)
     const recordLabel = newRecords.length > 0
       ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`

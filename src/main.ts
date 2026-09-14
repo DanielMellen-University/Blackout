@@ -207,7 +207,10 @@ async function boot(): Promise<void> {
         const runStreakLabel = history && Number.isFinite(history.runStreakRecord) && history.runStreakRecord! >= 2
           ? ` · RUN STREAK X${Math.max(0, Math.floor(history.runStreakRecord!))}`
           : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${runStreakLabel}${badgeLabel}`
+        const contractWinsLabel = history && Number.isFinite(history.contractWins) && history.contractWins! > 0
+          ? ` · CONTRACTS X${Math.max(0, Math.floor(history.contractWins!))}`
+          : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${runStreakLabel}${contractWinsLabel}${badgeLabel}`
         option.title = course.detail
       }
     }

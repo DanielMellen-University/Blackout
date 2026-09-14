@@ -129,6 +129,12 @@ export interface ChallengeResult {
   contractProgress?: number
   /** Finite bonus awarded for completing the assigned contract. */
   contractScore?: number
+  /** Number of completed bonus contracts on this course after this run. */
+  contractWins?: number
+  /** Highest completed-contract count recorded for this course. */
+  courseBestContractWins?: number
+  /** Whether this sortie set a new completed-contract record. */
+  newContractRecord?: boolean
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -160,6 +166,7 @@ export const MAX_WEATHER_SCORE = 500
 export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
 export const MAX_RUN_STREAK = 1_000
+export const MAX_CONTRACT_WINS = 1_000
 
 export interface CourseHistory {
   completionCount: number
@@ -172,6 +179,7 @@ export interface CourseHistory {
   destinations?: number
   runStreak?: number
   runStreakRecord?: number
+  contractWins?: number
 }
 
 interface ScoringWeights {
@@ -474,6 +482,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawDestinations = record.destinations
   const rawRunStreak = record.runStreak
   const rawRunStreakRecord = record.runStreakRecord
+  const rawContractWins = record.contractWins
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
   const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
@@ -483,6 +492,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
   const hasRunStreak = Object.prototype.hasOwnProperty.call(record, 'runStreak')
   const hasRunStreakRecord = Object.prototype.hasOwnProperty.call(record, 'runStreakRecord')
+  const hasContractWins = Object.prototype.hasOwnProperty.call(record, 'contractWins')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
@@ -516,6 +526,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
       ? Math.min(MAX_RUN_STREAK, Math.floor(rawRunStreakRecord))
       : 0,
   )
+  const contractWins = typeof rawContractWins === 'number' && Number.isFinite(rawContractWins) && rawContractWins > 0
+    ? Math.min(MAX_CONTRACT_WINS, Math.floor(rawContractWins))
+    : 0
   const history: CourseHistory = { completionCount, bestTimeSec }
   if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
   if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
@@ -525,6 +538,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (destinations > 0) history.destinations = destinations
   if (runStreak > 0) history.runStreak = runStreak
   if (runStreakRecord > 0) history.runStreakRecord = runStreakRecord
+  if (contractWins > 0) history.contractWins = contractWins
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -541,8 +555,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasRunStreak && (typeof rawRunStreak !== 'number' || !Number.isFinite(rawRunStreak) || rawRunStreak <= 0 || rawRunStreak !== runStreak)) ||
     (hasRunStreakRecord && (typeof rawRunStreakRecord !== 'number' || !Number.isFinite(rawRunStreakRecord) || rawRunStreakRecord <= 0 || rawRunStreakRecord !== runStreakRecord)) ||
     (!hasRunStreakRecord && runStreak > 0) ||
+    (hasContractWins && (typeof rawContractWins !== 'number' || !Number.isFinite(rawContractWins) || rawContractWins <= 0 || rawContractWins !== contractWins)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'runStreak' && key !== 'runStreakRecord',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins',
     )
   return {
     history,
@@ -584,6 +599,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   if (runStreak > 0) record.runStreak = runStreak
   if (Math.max(runStreak, runStreakRecord) > 0) {
     record.runStreakRecord = Math.max(runStreak, runStreakRecord)
+  }
+  if (Number.isFinite(history.contractWins) && history.contractWins! > 0) {
+    record.contractWins = Math.min(MAX_CONTRACT_WINS, Math.floor(history.contractWins!))
   }
   return JSON.stringify(record)
 }
@@ -782,6 +800,7 @@ export class ChallengeRun {
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
     const contractScore = this.contract.finish(elapsedSec, fuelFraction)
+    const contractComplete = this.contract.enabled && this.contract.complete
     const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + this.destinationScore + contractScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
@@ -811,6 +830,7 @@ export class ChallengeRun {
     const previousDestinationCount = history.destinations ?? 0
     const previousRunStreak = history.runStreak ?? 0
     const previousRunStreakRecord = history.runStreakRecord ?? 0
+    const previousContractWins = history.contractWins ?? 0
     const newPeakSpeedRecord = peakSpeedKts > previousPeakSpeedKts
     const newPeakAltitudeRecord = peakAltitudeM > previousPeakAltitudeM
     const newStuntRecord = this.stuntRollCount > previousStuntRolls
@@ -826,6 +846,9 @@ export class ChallengeRun {
     const runStreak = Math.min(MAX_RUN_STREAK, previousRunStreak + 1)
     const courseBestRunStreak = Math.max(previousRunStreakRecord, runStreak)
     const newRunStreakRecord = runStreak >= 2 && runStreak > previousRunStreakRecord
+    const contractWins = Math.min(MAX_CONTRACT_WINS, previousContractWins + (contractComplete ? 1 : 0))
+    const courseBestContractWins = contractWins
+    const newContractRecord = contractComplete && contractWins > previousContractWins
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
@@ -834,6 +857,7 @@ export class ChallengeRun {
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
     history.runStreak = runStreak
     history.runStreakRecord = courseBestRunStreak
+    if (contractWins > 0) history.contractWins = contractWins
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
@@ -913,6 +937,9 @@ export class ChallengeRun {
       contractComplete: this.contract.enabled ? this.contract.complete : undefined,
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
       contractScore: contractScore > 0 ? contractScore : undefined,
+      contractWins: contractWins > 0 ? contractWins : undefined,
+      courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,
+      newContractRecord,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,

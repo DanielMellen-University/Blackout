@@ -230,6 +230,8 @@ describe('run results focus flow', () => {
       contractComplete: true,
       contractProgress: 1,
       contractScore: 2_000,
+      contractWins: 3,
+      courseBestContractWins: 4,
       courseBestApproachScore: 650,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
@@ -265,6 +267,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT COMPLETE · FUEL SAVER')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('LAND WITH 75% FUEL')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT +2,000')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT WINS X3')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACTS X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
@@ -290,11 +294,12 @@ describe('run results focus flow', () => {
       newApproachRecord: true,
       newDestinationRecord: true,
       newRunStreakRecord: true,
+      newContractRecord: true,
       newMasteryBadges: ['streak-hunter'],
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS / RUN STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS / RUN STREAK / CONTRACTS',
     )
     results.dispose()
     vi.unstubAllGlobals()

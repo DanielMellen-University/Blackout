@@ -22,6 +22,7 @@ import {
   MAX_APPROACH_SCORE,
   MAX_DESTINATION_COUNT,
   MAX_DESTINATION_SCORE,
+  MAX_CONTRACT_WINS,
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
   MAX_COMPLETION_COUNT,
@@ -334,6 +335,9 @@ describe('ChallengeRun', () => {
     expect(result.contractComplete).toBe(true)
     expect(result.contractProgress).toBe(1)
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.contractWins).toBe(1)
+    expect(result.courseBestContractWins).toBe(1)
+    expect(result.newContractRecord).toBe(true)
     expect(result.totalScore).toBe(
       result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.contractScore!,
     )
@@ -346,6 +350,48 @@ describe('ChallengeRun', () => {
     run.recordStunt(2)
     expect(run.consumeContractCompletionCue()).toBe('AIRSHOW')
     expect(run.consumeContractCompletionCue()).toBeNull()
+  })
+
+  it('persists cumulative contract wins and repairs oversized counts', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const finish = (fuel: number): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
+      const run = new ChallengeRun(storage)
+      run.reset('seed:contract-wins', 1, 'balanced', 1)
+      run.update(0.1, 8)
+      run.recordGate(1)
+      return run.finishLanding({
+        verticalSpeed: -1,
+        groundSpeed: 20,
+        pitchRad: 0,
+        rollRad: 0,
+      }, fuel)!
+    }
+
+    const first = finish(1)
+    expect(first.contractKind).toBe('fuel')
+    expect(first.contractWins).toBe(1)
+    expect(first.newContractRecord).toBe(true)
+    const second = finish(1)
+    expect(second.contractWins).toBe(2)
+    expect(second.courseBestContractWins).toBe(2)
+    expect(second.newContractRecord).toBe(true)
+    const incomplete = finish(0)
+    expect(incomplete.contractComplete).toBe(false)
+    expect(incomplete.contractWins).toBe(2)
+    expect(incomplete.newContractRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:contract-wins',
+      '{"completionCount":3,"bestTimeSec":2,"contractWins":9999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:contract-wins')?.contractWins).toBe(MAX_CONTRACT_WINS)
+    expect(values.get('blackout.history.seed:contract-wins')).toBe(
+      `{"completionCount":3,"bestTimeSec":2,"contractWins":${MAX_CONTRACT_WINS}}`,
+    )
   })
 
   it('persists the best runway approach score and repairs oversized records', () => {
