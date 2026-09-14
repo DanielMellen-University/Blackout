@@ -821,7 +821,9 @@ async function boot(): Promise<void> {
       visualDt = frameDt
       simDt = steps * stepDt
       const dt = stepDt
-      aircraft.setWeatherGust(world.atmosphere.weatherSnapshot.gust)
+      const weather = world.atmosphere.weatherSnapshot
+      aircraft.setWeatherGust(weather.gust)
+      aircraft.setWeatherWind(weather.windX, weather.windZ)
 
       if (input.consumeCameraToggle()) {
         const mode = cameras.toggleMode(aircraft)

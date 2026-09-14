@@ -187,6 +187,19 @@ export class FlightModel {
       velocity.y = 0
     }
 
+    // Crosswind is strongest during approach and fades at fighter speeds.
+    // Keep it airborne-only so runway steering remains predictable.
+    if (!onGround && (aircraft.weatherWindX !== 0 || aircraft.weatherWindZ !== 0)) {
+      const falloff = MathUtils.clamp(
+        1 - airspeed / C.weatherWindSpeedFalloff,
+        0.04,
+        1,
+      )
+      const windAccel = C.weatherWindAcceleration * falloff * (1 + aircraft.weatherGust * 0.18)
+      velocity.x += aircraft.weatherWindX * windAccel * dt
+      velocity.z += aircraft.weatherWindZ * windAccel * dt
+    }
+
     // --- THE turn: snap velocity onto the nose ---
     const spd = velocity.length()
     if (!onGround && spd > 3) {

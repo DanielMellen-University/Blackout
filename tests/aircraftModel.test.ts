@@ -502,6 +502,28 @@ describe('rebuilt aircraft', () => {
     expect(storm.weatherGust).toBe(0)
   })
 
+  it('applies approach-scale crosswind in the air without changing ground steering', () => {
+    setContactHeightSampler(() => 0)
+    const approach = new Aircraft()
+    approach.position.set(0, 120, 0)
+    approach.velocity.set(0, 0, 48)
+    approach.setWeatherWind(20, 0)
+    for (let i = 0; i < 60; i++) approach.step(1 / 60)
+    expect(approach.position.x).toBeGreaterThan(0.25)
+    expect(approach.weatherWindX).toBe(20)
+
+    const runway = new Aircraft()
+    runway.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    runway.velocity.set(0, 0, 40)
+    runway.setWeatherWind(40, 0)
+    runway.step(1 / 60)
+    expect(Math.abs(runway.position.x)).toBeLessThan(0.01)
+
+    runway.setWeatherWind(Number.POSITIVE_INFINITY, Number.NaN)
+    expect(runway.weatherWindX).toBe(0)
+    expect(runway.weatherWindZ).toBe(0)
+  })
+
   it('disposes replaced procedural model resources exactly once', () => {
     const model = createF35Model()
     const body = model.getObjectByName('BlendedFuselage') as Mesh

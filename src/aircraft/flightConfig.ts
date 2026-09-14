@@ -57,6 +57,9 @@ export const flightConfig = {
   turbulencePitch: 0.16,
   turbulenceRoll: 0.24,
   turbulenceYaw: 0.08,
+  /** Arcade lateral wind response, strongest during approach speeds. */
+  weatherWindAcceleration: 0.18,
+  weatherWindSpeedFalloff: 240,
 
   gearHeight: 1.4,
   bellyHeight: 0.95,

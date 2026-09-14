@@ -80,6 +80,9 @@ export class Aircraft {
   readonly fuel: FuelState = createFuelState()
   /** Bounded weather gust strength supplied by the world before physics steps. */
   weatherGust = 0
+  /** Horizontal wind vector supplied by the world before physics steps. */
+  weatherWindX = 0
+  weatherWindZ = 0
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
     point: new Vector3(),
@@ -265,6 +268,8 @@ export class Aircraft {
     this.manualGearOverride = false
     this.controls.throttle = s.throttle
     this.weatherGust = 0
+    this.weatherWindX = 0
+    this.weatherWindZ = 0
     this.flight.reset()
     this.wheelSpin = 0
     this.visualTimeMs = 0
@@ -342,6 +347,12 @@ export class Aircraft {
     const safe = Number.isFinite(gust) ? MathUtils.clamp(gust, 0, 1) : 0
     if (Math.abs(safe - this.weatherGust) < 0.002) return
     this.weatherGust = safe
+  }
+
+  /** Feed the bounded horizontal wind vector into the fixed-step flight model. */
+  setWeatherWind(windX: number, windZ: number): void {
+    this.weatherWindX = Number.isFinite(windX) ? MathUtils.clamp(windX, -40, 40) : 0
+    this.weatherWindZ = Number.isFinite(windZ) ? MathUtils.clamp(windZ, -40, 40) : 0
   }
 
   crash(): void {
