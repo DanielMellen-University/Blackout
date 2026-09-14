@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ChallengeRun,
+  deadstickLandingScore,
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
@@ -23,6 +24,7 @@ import {
   MAX_DESTINATION_COUNT,
   MAX_DESTINATION_SCORE,
   MAX_CONTRACT_WINS,
+  MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
   MAX_COMPLETION_COUNT,
@@ -208,6 +210,31 @@ describe('ChallengeRun', () => {
     expect(result.weatherScore).toBe(MAX_WEATHER_SCORE)
     expect(result.totalScore).toBe(
       result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.weatherScore!,
+    )
+  })
+
+  it('rewards controlled deadstick landings without trusting malformed fuel', () => {
+    expect(deadstickLandingScore(0, 1)).toBe(MAX_DEADSTICK_SCORE)
+    expect(deadstickLandingScore(0, 0.5)).toBe(750)
+    expect(deadstickLandingScore(0.01, 1)).toBe(0)
+    expect(deadstickLandingScore(-1, 1)).toBe(0)
+    expect(deadstickLandingScore(Number.NaN, 1)).toBe(0)
+    expect(deadstickLandingScore(0, Number.NaN)).toBe(0)
+  })
+
+  it('includes the deadstick bonus when an empty tank reaches touchdown', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:deadstick', 1)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    }, 0)!
+    expect(result.deadstickScore).toBe(MAX_DEADSTICK_SCORE)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.deadstickScore! + (result.fuelScore ?? 0),
     )
   })
 

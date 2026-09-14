@@ -129,6 +129,8 @@ export interface ChallengeResult {
   contractProgress?: number
   /** Finite bonus awarded for completing the assigned contract. */
   contractScore?: number
+  /** Capped bonus for a successful landing after fuel exhaustion. */
+  deadstickScore?: number
   /** Number of completed bonus contracts on this course after this run. */
   contractWins?: number
   /** Highest completed-contract count recorded for this course. */
@@ -156,7 +158,7 @@ const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
-export const MAX_BEST_SCORE = 115_000
+export const MAX_BEST_SCORE = 117_000
 export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
@@ -167,6 +169,7 @@ export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
 export const MAX_RUN_STREAK = 1_000
 export const MAX_CONTRACT_WINS = 1_000
+export const MAX_DEADSTICK_SCORE = 1_500
 
 export interface CourseHistory {
   completionCount: number
@@ -229,6 +232,13 @@ export function landingApproachScore(metrics: Pick<LandingMetrics, 'baseDistance
 export function weatherLandingScore(risk: number, landingQuality = 1): number {
   if (!Number.isFinite(risk) || !Number.isFinite(landingQuality)) return 0
   return Math.round(MAX_WEATHER_SCORE * clamp01(risk) * clamp01(landingQuality))
+}
+
+/** Reward a controlled touchdown after the engine has run dry. */
+export function deadstickLandingScore(fuelFraction: number, landingQuality = 1): number {
+  if (!Number.isFinite(fuelFraction) || !Number.isFinite(landingQuality)) return 0
+  if (fuelFraction < 0 || fuelFraction > 0.001) return 0
+  return Math.round(MAX_DEADSTICK_SCORE * clamp01(landingQuality))
 }
 
 /** Collapse the active front into one finite touchdown-risk scalar. */
@@ -795,13 +805,14 @@ export class ChallengeRun {
     )
     const landingScore = Math.round(weights.landing * landingQuality)
     const weatherScore = weatherLandingScore(metrics.weatherRisk ?? Number.NaN, landingQuality)
+    const deadstickScore = deadstickLandingScore(fuelFraction, landingQuality)
     const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
     const contractScore = this.contract.finish(elapsedSec, fuelFraction)
     const contractComplete = this.contract.enabled && this.contract.complete
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + this.destinationScore + contractScore
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + deadstickScore + this.destinationScore + contractScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -937,6 +948,7 @@ export class ChallengeRun {
       contractComplete: this.contract.enabled ? this.contract.complete : undefined,
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
       contractScore: contractScore > 0 ? contractScore : undefined,
+      deadstickScore: deadstickScore > 0 ? deadstickScore : undefined,
       contractWins: contractWins > 0 ? contractWins : undefined,
       courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,
       newContractRecord,
