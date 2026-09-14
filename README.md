@@ -77,6 +77,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Centered, runway-aligned touchdowns receive a small capped approach bonus while forgiving off-field landings still score normally.
 - Clean touchdowns through rain, snow, and strong gusts earn a capped weather-handling bonus that scales with landing quality.
 - Curated courses remember the best approach bonus, turning clean returns into a replayable landing target.
+- A safe centered return can earn the `APPROACH ACE` mastery badge alongside the existing course badges.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.

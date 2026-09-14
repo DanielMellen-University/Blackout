@@ -613,7 +613,38 @@ describe('ChallengeRun', () => {
       'streak-hunter',
       'gold-run',
     ])
-    expect(MASTERY_BADGE_COUNT).toBe(5)
+    expect(masteryBadgesForRun(1, 1, 0.8, 'complete', 0, 450)).toEqual([
+      'first-flight',
+      'gate-master',
+      'approach-ace',
+    ])
+    expect(masteryBadgesForRun(1, 1, 0.7, 'complete', 0, 450)).toEqual([
+      'first-flight',
+      'gate-master',
+    ])
+    expect(MASTERY_BADGE_COUNT).toBe(6)
+  })
+
+  it('persists an approach ace badge from a safe centered landing', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('seed:approach-badge', 1)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      baseDistanceM: 0,
+      runwayLateralM: 0,
+      headingErrorRad: 0,
+    })!
+    expect(result.newMasteryBadges).toContain('approach-ace')
+    expect(readMasteryBadges(storage, 'seed:approach-badge')).toContain('approach-ace')
   })
 
   it('filters malformed and duplicate persisted badges', () => {

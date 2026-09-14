@@ -279,6 +279,22 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('labels a newly earned approach ace badge', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      newMasteryBadges: ['approach-ace'],
+      masteryBadges: ['approach-ace'],
+    })
+    expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · APPROACH ACE')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('labels a free-flight result as a scenic sortie', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()

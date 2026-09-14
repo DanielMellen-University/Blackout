@@ -10,7 +10,7 @@ export type ChallengePhase =
 
 export type Medal = 'gold' | 'silver' | 'bronze' | 'complete'
 export type ChallengeScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
-export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'streak-hunter' | 'gold-run'
+export type MasteryBadgeId = 'first-flight' | 'gate-master' | 'landing-ace' | 'approach-ace' | 'streak-hunter' | 'gold-run'
 export type LandingQualityLabel = 'BUTTER' | 'SMOOTH' | 'FIRM' | 'HARD'
 
 export interface LandingMetrics {
@@ -280,6 +280,7 @@ const MASTERY_BADGES: readonly MasteryBadgeId[] = [
   'first-flight',
   'gate-master',
   'landing-ace',
+  'approach-ace',
   'streak-hunter',
   'gold-run',
 ]
@@ -287,11 +288,13 @@ export const MASTERY_BADGE_COUNT = MASTERY_BADGES.length
 
 const GATE_STREAK_THRESHOLD = 0.82
 const STREAK_HUNTER_THRESHOLD = 3
+const APPROACH_ACE_THRESHOLD = 400
 
 export function masteryBadgeLabel(badge: MasteryBadgeId): string {
   if (badge === 'first-flight') return 'FIRST FLIGHT'
   if (badge === 'gate-master') return 'GATE MASTER'
   if (badge === 'landing-ace') return 'LANDING ACE'
+  if (badge === 'approach-ace') return 'APPROACH ACE'
   if (badge === 'streak-hunter') return 'STREAK HUNTER'
   return 'GOLD RUN'
 }
@@ -364,11 +367,15 @@ export function masteryBadgesForRun(
   landingQuality: number,
   medal: Medal,
   precisionStreak = 0,
+  approachScore = 0,
 ): MasteryBadgeId[] {
   const badges: MasteryBadgeId[] = []
   if (completionCount >= 1) badges.push('first-flight')
   if (gateQuality >= 0.9) badges.push('gate-master')
   if (landingQuality >= 0.9) badges.push('landing-ace')
+  if (Number.isFinite(approachScore) && approachScore >= APPROACH_ACE_THRESHOLD && landingQuality >= 0.78) {
+    badges.push('approach-ace')
+  }
   if (Number.isFinite(precisionStreak) && precisionStreak >= STREAK_HUNTER_THRESHOLD) {
     badges.push('streak-hunter')
   }
@@ -721,6 +728,7 @@ export class ChallengeRun {
       landingQuality,
       medalFor(totalScore),
       this.bestGateQualityStreak,
+      approachScore,
     )
     const priorBadges = repairMasteryBadges(this.storage, this.courseId)
     const allBadges = [...priorBadges]
