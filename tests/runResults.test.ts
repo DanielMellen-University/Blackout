@@ -93,6 +93,7 @@ function resultsFixture(): {
     ['result-landing', new FakeElement()],
     ['result-gates', new FakeElement()],
     ['result-streak', new FakeElement()],
+    ['result-streak-detail', new FakeElement()],
     ['result-fuel', new FakeElement()],
     ['result-fuel-detail', new FakeElement()],
     ['result-score-detail', new FakeElement()],
@@ -190,6 +191,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['first-flight', 'landing-ace'],
       newMasteryBadges: ['landing-ace'],
       bestPrecisionStreak: 3,
+      courseBestPrecisionStreak: 4,
     })
     expect(elementsFor(fixture.document, 'result-splits')?.textContent).toBe(
       'G1 0:01.00 -0.50 · G2 0:02.00 -0.50',
@@ -202,6 +204,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-fuel')?.textContent).toBe('72%')
     expect(elementsFor(fixture.document, 'result-fuel-detail')?.textContent).toBe('28% USED')
     expect(elementsFor(fixture.document, 'result-streak')?.textContent).toBe('X3')
+    expect(elementsFor(fixture.document, 'result-streak-detail')?.textContent).toBe('COURSE BEST X4')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
       'NEW COURSE BEST · SCORE 100,000 · FUEL 72% LEFT · ENTER RETRY · R NEW WORLD',
     )

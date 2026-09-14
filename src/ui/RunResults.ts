@@ -19,6 +19,7 @@ export class RunResults {
   private readonly landing: HTMLElement
   private readonly gates: HTMLElement
   private readonly streak: HTMLElement
+  private readonly streakDetail: HTMLElement
   private readonly fuel: HTMLElement
   private readonly fuelDetail: HTMLElement
   private readonly scoreDetail: HTMLElement
@@ -52,6 +53,7 @@ export class RunResults {
     this.landing = must(root, 'result-landing')
     this.gates = must(root, 'result-gates')
     this.streak = must(root, 'result-streak')
+    this.streakDetail = must(root, 'result-streak-detail')
     this.fuel = must(root, 'result-fuel')
     this.fuelDetail = must(root, 'result-fuel-detail')
     this.scoreDetail = must(root, 'result-score-detail')
@@ -84,12 +86,20 @@ export class RunResults {
     const precisionStreak = Number.isFinite(result.bestPrecisionStreak)
       ? Math.max(0, Math.floor(result.bestPrecisionStreak!))
       : 0
+    const courseBestPrecisionStreak = Number.isFinite(result.courseBestPrecisionStreak)
+      ? Math.max(0, Math.floor(result.courseBestPrecisionStreak!))
+      : precisionStreak
     this.streak.textContent = precisionStreak >= 2 ? `X${precisionStreak}` : 'NONE'
+    this.streakDetail.textContent = courseBestPrecisionStreak >= 2
+      ? `COURSE BEST X${courseBestPrecisionStreak}`
+      : 'NO COURSE STREAK'
     this.streak.setAttribute(
       'aria-label',
       precisionStreak >= 2
-        ? `Best precision streak ${precisionStreak} gates`
-        : 'No precision streak',
+        ? `Best sortie precision streak ${precisionStreak} gates; course best ${courseBestPrecisionStreak}`
+        : courseBestPrecisionStreak >= 2
+          ? `No precision streak this sortie; course best ${courseBestPrecisionStreak}`
+          : 'No precision streak',
     )
     const fuelRemaining = Number.isFinite(result.fuelRemainingPercent)
       ? Math.max(0, Math.min(100, Math.round(result.fuelRemainingPercent!)))

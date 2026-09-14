@@ -52,6 +52,8 @@ export interface ChallengeResult {
   fuelUsedPercent?: number
   /** Longest consecutive high-center gate streak in this sortie. */
   bestPrecisionStreak?: number
+  /** Longest precision streak ever recorded for this course. */
+  courseBestPrecisionStreak?: number
 }
 
 export interface ScoreStore {
@@ -60,11 +62,13 @@ export interface ScoreStore {
 }
 
 export const COURSE_BEST_STORAGE_PREFIX = 'blackout.best.'
+export const COURSE_STREAK_STORAGE_PREFIX = 'blackout.streak.'
 const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
 export const MAX_BEST_SCORE = 100_000
+export const MAX_PRECISION_STREAK = 1_000
 
 export interface CourseHistory {
   completionCount: number
@@ -105,6 +109,10 @@ export function courseBestScoreStorageKey(courseId: string): string {
   return COURSE_BEST_STORAGE_PREFIX + courseId
 }
 
+export function courseBestPrecisionStreakStorageKey(courseId: string): string {
+  return COURSE_STREAK_STORAGE_PREFIX + courseId
+}
+
 export function readBestCourseScore(storage: HistoryReadStore, courseId: string): number {
   try {
     const parsed = Number(storage?.getItem(courseBestScoreStorageKey(courseId)) ?? 0)
@@ -125,6 +133,35 @@ export function repairBestCourseScore(
     const canonical = String(score)
     if (raw !== canonical) storage?.setItem?.(courseBestScoreStorageKey(courseId), canonical)
     return score
+  } catch {
+    return 0
+  }
+}
+
+export function readBestCoursePrecisionStreak(storage: HistoryReadStore, courseId: string): number {
+  try {
+    const parsed = Number(storage?.getItem(courseBestPrecisionStreakStorageKey(courseId)) ?? 0)
+    return Number.isFinite(parsed) && parsed > 0
+      ? Math.min(MAX_PRECISION_STREAK, Math.floor(parsed))
+      : 0
+  } catch {
+    return 0
+  }
+}
+
+export function repairBestCoursePrecisionStreak(
+  storage: HistoryRepairStore | null,
+  courseId: string,
+): number {
+  try {
+    const raw = storage?.getItem(courseBestPrecisionStreakStorageKey(courseId))
+    if (raw === null || raw === undefined) return 0
+    const streak = readBestCoursePrecisionStreak(storage, courseId)
+    const canonical = String(streak)
+    if (raw !== canonical) {
+      storage?.setItem?.(courseBestPrecisionStreakStorageKey(courseId), canonical)
+    }
+    return streak
   } catch {
     return 0
   }
@@ -427,6 +464,14 @@ export class ChallengeRun {
       : Number.NaN
     const paceLabel = formatPaceDelta(paceDeltaSec)
     const comparisonBestSplits = this.bestGateSplits.slice()
+    const previousBestPrecisionStreak = readBestCoursePrecisionStreak(this.storage, this.courseId)
+    const courseBestPrecisionStreak = Math.max(
+      previousBestPrecisionStreak,
+      this.bestGateQualityStreak,
+    )
+    if (courseBestPrecisionStreak > previousBestPrecisionStreak) {
+      this.writeBestPrecisionStreak(courseBestPrecisionStreak)
+    }
     const history = this.readHistory()
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
@@ -473,6 +518,7 @@ export class ChallengeRun {
       fuelRemainingPercent,
       fuelUsedPercent,
       bestPrecisionStreak: this.bestGateQualityStreak,
+      courseBestPrecisionStreak,
     }
     return this.result
   }
@@ -528,6 +574,17 @@ export class ChallengeRun {
       this.storage?.setItem(
         courseBestScoreStorageKey(this.courseId),
         String(Math.min(MAX_BEST_SCORE, Math.max(0, Math.floor(score)))),
+      )
+    } catch {
+      // Private browsing/storage denial should never block a completed run.
+    }
+  }
+
+  private writeBestPrecisionStreak(streak: number): void {
+    try {
+      this.storage?.setItem(
+        courseBestPrecisionStreakStorageKey(this.courseId),
+        String(Math.min(MAX_PRECISION_STREAK, Math.max(0, Math.floor(streak)))),
       )
     } catch {
       // Private browsing/storage denial should never block a completed run.

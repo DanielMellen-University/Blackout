@@ -45,7 +45,9 @@ import {
   COURSE_BADGES_STORAGE_PREFIX,
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
+  COURSE_STREAK_STORAGE_PREFIX,
   formatTime,
+  repairBestCoursePrecisionStreak,
   repairBestCourseScore,
   repairCourseHistory,
   repairMasteryBadges,
@@ -168,12 +170,16 @@ async function boot(): Promise<void> {
         const history = runId ? repairCourseHistory(qualityStorage, runId) : null
         const badgeCount = runId ? repairMasteryBadges(qualityStorage, runId).length : 0
         const bestScore = runId ? repairBestCourseScore(qualityStorage, runId) : 0
+        const bestPrecisionStreak = runId
+          ? repairBestCoursePrecisionStreak(qualityStorage, runId)
+          : 0
         const historyLabel = history && history.completionCount > 0
           ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
           : ''
         const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/4 BADGES` : ''
         const scoreLabel = bestScore > 0 ? ` · BEST ${bestScore.toLocaleString()}` : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${badgeLabel}`
+        const streakLabel = bestPrecisionStreak >= 2 ? ` · STREAK X${bestPrecisionStreak}` : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${badgeLabel}`
         option.title = course.detail
       }
     }
@@ -615,7 +621,8 @@ async function boot(): Promise<void> {
       key === null ||
       key.startsWith(COURSE_HISTORY_STORAGE_PREFIX) ||
       key.startsWith(COURSE_BADGES_STORAGE_PREFIX) ||
-      key.startsWith(COURSE_BEST_STORAGE_PREFIX)
+      key.startsWith(COURSE_BEST_STORAGE_PREFIX) ||
+      key.startsWith(COURSE_STREAK_STORAGE_PREFIX)
     ) {
       refreshCourseSelectorLabels()
       refreshCourseProgress()

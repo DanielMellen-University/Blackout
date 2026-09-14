@@ -15,6 +15,9 @@ import {
   repairMasteryBadges,
   MAX_BEST_SCORE,
   MAX_COMPLETION_COUNT,
+  MAX_PRECISION_STREAK,
+  readBestCoursePrecisionStreak,
+  repairBestCoursePrecisionStreak,
 } from '../src/systems/ChallengeRun'
 
 describe('ChallengeRun', () => {
@@ -179,6 +182,42 @@ describe('ChallengeRun', () => {
     expect(formatPaceDelta(Number.NaN)).toBe('FIRST RUN')
   })
 
+  it('persists the best precision streak per course without changing score math', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('seed:streak-record', 3)
+    run.recordGate(0.9)
+    run.recordGate(0.82)
+    run.recordGate(0.4)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.bestPrecisionStreak).toBe(2)
+    expect(result.courseBestPrecisionStreak).toBe(2)
+    expect(readBestCoursePrecisionStreak(storage, 'seed:streak-record')).toBe(2)
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:streak-record', 3)
+    retry.recordGate(0.9)
+    retry.recordGate(0.4)
+    retry.recordGate(0.9)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.bestPrecisionStreak).toBe(1)
+    expect(retryResult.courseBestPrecisionStreak).toBe(2)
+  })
+
   it('fails closed when completion history storage is malformed', () => {
     const storage = {
       getItem: () => '{"completionCount":"bad","bestTimeSec":null}',
@@ -290,6 +329,10 @@ describe('ChallengeRun', () => {
     expect(repairMasteryBadges(storage, 'seed:repair')).toEqual(['gold-run'])
     expect(values.get('blackout.badges.seed:repair')).toBe('["gold-run"]')
     expect(repairMasteryBadges(storage, 'seed:repair')).toEqual(['gold-run'])
+
+    values.set('blackout.streak.seed:repair', '4.7')
+    expect(repairBestCoursePrecisionStreak(storage, 'seed:repair')).toBe(4)
+    expect(values.get('blackout.streak.seed:repair')).toBe('4')
   })
 
   it('prunes oversized local records to game-sized bounds', () => {
@@ -311,5 +354,8 @@ describe('ChallengeRun', () => {
       bestTimeSec: 12,
     })
     expect(values.get('blackout.history.seed:huge')).toBe('{"completionCount":100000,"bestTimeSec":12}')
+    values.set('blackout.streak.seed:huge', String(Number.MAX_SAFE_INTEGER))
+    expect(repairBestCoursePrecisionStreak(storage, 'seed:huge')).toBe(MAX_PRECISION_STREAK)
+    expect(values.get('blackout.streak.seed:huge')).toBe(String(MAX_PRECISION_STREAK))
   })
 })
