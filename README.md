@@ -74,6 +74,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Chain clean gates and barrel rolls within 8 seconds to build combo rewards and a capped score bonus.
 - Completed landings award a small capped fuel-efficiency bonus for preserving reserve through the sortie.
 - Centered, runway-aligned touchdowns receive a small capped approach bonus while forgiving off-field landings still score normally.
+- Curated courses remember the best approach bonus, turning clean returns into a replayable landing target.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.

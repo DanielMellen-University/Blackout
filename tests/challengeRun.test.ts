@@ -17,6 +17,7 @@ import {
   repairBestCourseScore,
   repairMasteryBadges,
   MAX_BEST_SCORE,
+  MAX_APPROACH_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
   MAX_PEAK_SPEED_KTS,
@@ -173,6 +174,57 @@ describe('ChallengeRun', () => {
     expect(landingApproachScore({ baseDistanceM: 90, runwayLateralM: 20, headingErrorRad: Math.PI / 6 })).toBeGreaterThan(0)
     expect(landingApproachScore({ baseDistanceM: 999, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
     expect(landingApproachScore({ baseDistanceM: Number.NaN, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
+  })
+
+  it('persists the best runway approach score and repairs oversized records', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const first = new ChallengeRun(storage)
+    first.reset('seed:approach-record', 1)
+    first.recordGate(1)
+    const firstResult = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      baseDistanceM: 0,
+      runwayLateralM: 0,
+      headingErrorRad: 0,
+    })!
+    expect(firstResult.approachScore).toBe(MAX_APPROACH_SCORE)
+    expect(firstResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
+    expect(firstResult.newApproachRecord).toBe(true)
+    expect(values.get('blackout.history.seed:approach-record')).toBe(
+      '{"completionCount":1,"bestTimeSec":0,"approachScore":500}',
+    )
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:approach-record', 1)
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      baseDistanceM: 90,
+      runwayLateralM: 20,
+      headingErrorRad: Math.PI / 6,
+    })!
+    expect(retryResult.approachScore).toBeGreaterThan(0)
+    expect(retryResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
+    expect(retryResult.newApproachRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:approach-record',
+      '{"completionCount":2,"bestTimeSec":4,"approachScore":9999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:approach-record')?.approachScore).toBe(MAX_APPROACH_SCORE)
+    expect(values.get('blackout.history.seed:approach-record')).toBe(
+      '{"completionCount":2,"bestTimeSec":4,"approachScore":500}',
+    )
   })
 
   it('persists the best combo per course and repairs oversized records', () => {

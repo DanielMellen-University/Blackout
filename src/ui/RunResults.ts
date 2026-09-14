@@ -203,6 +203,9 @@ export class RunResults {
     if (Number.isFinite(result.courseBestPeakAltitudeM) && result.courseBestPeakAltitudeM! > (result.peakAltitudeM ?? 0)) {
       scoreParts.push(`COURSE ALT ${Math.max(0, Math.round(result.courseBestPeakAltitudeM!)).toLocaleString()}M`)
     }
+    if (Number.isFinite(result.courseBestApproachScore) && result.courseBestApproachScore! > (result.approachScore ?? 0)) {
+      scoreParts.push(`COURSE APPROACH +${Math.max(0, Math.floor(result.courseBestApproachScore!)).toLocaleString()}`)
+    }
     this.scoreDetail.textContent = scoreParts.join(' · ')
     const newBadges = result.newMasteryBadges ?? []
     const allBadges = result.masteryBadges ?? []
@@ -211,6 +214,7 @@ export class RunResults {
       result.newPeakAltitudeRecord ? 'ALTITUDE' : '',
       result.newStuntRecord ? 'ROLLS' : '',
       result.newComboRecord ? 'COMBO' : '',
+      result.newApproachRecord ? 'APPROACH' : '',
     ].filter(Boolean)
     const recordLabel = newRecords.length > 0
       ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`
