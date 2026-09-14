@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   afterburnerHeatIntensity,
+  biomeSurveyAriaLabel,
+  biomeSurveyHudLabel,
   canopyTintIntensity,
   canopyWeatherIntensity,
   crosswindDirection,
@@ -252,6 +254,14 @@ describe('HUD value formatting', () => {
     expect(navigationTargetText('city')).toBe('CITY TARGET')
     expect(navigationTargetText('village')).toBe('VILLAGE TARGET')
     expect(navigationTargetLabel('unknown')).toBe('NEXT GATE')
+  })
+
+  it('keeps the live biome survey counter bounded and accessible', () => {
+    expect(biomeSurveyHudLabel(3)).toBe('X3')
+    expect(biomeSurveyHudLabel(Number.MAX_SAFE_INTEGER)).toBe('X15')
+    expect(biomeSurveyHudLabel(Number.NaN)).toBe('--')
+    expect(biomeSurveyAriaLabel(3)).toBe('3 distinct biomes surveyed')
+    expect(biomeSurveyAriaLabel(-4)).toBe('0 distinct biomes surveyed')
   })
 
   it('announces only the powered-to-glide fuel transition', () => {

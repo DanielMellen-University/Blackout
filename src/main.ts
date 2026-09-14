@@ -556,6 +556,7 @@ async function boot(): Promise<void> {
     contractLabel: '',
     contractProgress: 0,
     contractComplete: false,
+    biomeCount: 0,
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
@@ -1172,6 +1173,14 @@ async function boot(): Promise<void> {
           const sampled = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z) ??
             sampleTerrainSurface(aircraft.position.x, aircraft.position.z)
           challenge.recordBiome(sampled.biome)
+          const biomeCue = challenge.consumeBiomeSurveyCue()
+          if (biomeCue && (!banner || bannerUntil <= nowMs)) {
+            showBanner(
+              `BIOME SURVEY / ${biomeCue.replace('-', ' ').toUpperCase()} / X${challenge.biomeCount}`,
+              1300,
+              'success',
+            )
+          }
           biomeSurveyCooldown = 0.65
         }
 
@@ -1565,6 +1574,7 @@ async function boot(): Promise<void> {
       hudFrame.contractLabel = contractLabel
       hudFrame.contractProgress = challenge.contractProgress
       hudFrame.contractComplete = challenge.contractComplete
+      hudFrame.biomeCount = challenge.biomeCount
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed

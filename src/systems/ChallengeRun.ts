@@ -703,6 +703,7 @@ export class ChallengeRun {
   private destinationCount = 0
   private surveyedBiomeMask = 0
   private surveyedBiomeCount = 0
+  private surveyedBiomeCue: Biome | null = null
   private peakSpeedMps = 0
   private peakAltitudeM = 0
   private stuntRollCount = 0
@@ -744,6 +745,7 @@ export class ChallengeRun {
     this.destinationCount = 0
     this.surveyedBiomeMask = 0
     this.surveyedBiomeCount = 0
+    this.surveyedBiomeCue = null
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
     this.stuntRollCount = 0
@@ -853,11 +855,21 @@ export class ChallengeRun {
     if ((this.surveyedBiomeMask & bit) !== 0) return
     this.surveyedBiomeMask |= bit
     this.surveyedBiomeCount = Math.min(MAX_BIOME_COUNT, this.surveyedBiomeCount + 1)
+    if (this.phase === 'running' || this.phase === 'returning') {
+      this.surveyedBiomeCue = biome as Biome
+    }
   }
 
   /** Number of unique natural biomes seen so far in this sortie. */
   get biomeCount(): number {
     return this.surveyedBiomeCount
+  }
+
+  /** Consume one event-driven cue for the latest newly surveyed biome. */
+  consumeBiomeSurveyCue(): Biome | null {
+    const cue = this.surveyedBiomeCue
+    this.surveyedBiomeCue = null
+    return cue
   }
 
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {

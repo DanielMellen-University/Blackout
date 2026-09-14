@@ -81,6 +81,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Lock a city or village with `T` and fly into its arrival radius to add a capped destination bonus to the sortie.
 - Curated courses remember the most settlements reached in one sortie, creating a replayable exploration target.
 - Completed sorties now record the distinct natural biomes surveyed, awarding a capped exploration bonus and a per-course variety record.
+- The live HUD keeps the survey count visible and gives one calm discovery cue when a new biome is entered, making exploration progress readable before landing.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.

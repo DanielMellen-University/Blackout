@@ -11,6 +11,7 @@ import {
   type RadarContact,
 } from '../systems/RadarSystem'
 import { MAX_COMBO_COUNT } from '../systems/FlightCombo'
+import { MAX_BIOME_COUNT } from '../systems/ChallengeRun'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
@@ -93,6 +94,22 @@ export function comboHudLabel(value: number): string {
     ? Math.max(0, Math.min(MAX_COMBO_COUNT, Math.floor(value)))
     : 0
   return safe > 0 ? `X${safe}` : ''
+}
+
+/** Keep the live biome survey counter finite and compact for cockpit output. */
+export function biomeSurveyHudLabel(value: number): string {
+  const safe = Number.isFinite(value)
+    ? Math.max(0, Math.min(MAX_BIOME_COUNT, Math.floor(value)))
+    : 0
+  return safe > 0 ? `X${safe}` : '--'
+}
+
+/** Describe the bounded biome survey counter to assistive technology. */
+export function biomeSurveyAriaLabel(value: number): string {
+  const safe = Number.isFinite(value)
+    ? Math.max(0, Math.min(MAX_BIOME_COUNT, Math.floor(value)))
+    : 0
+  return `${safe} distinct biomes surveyed`
 }
 
 /** Restrict the navigation target label to the two supported route states. */
@@ -376,6 +393,8 @@ export class HUD {
   private readonly missionProgressEl: HTMLElement | null
   private readonly contractRowEl: HTMLElement | null
   private readonly contractEl: HTMLElement | null
+  private readonly biomeRowEl: HTMLElement | null
+  private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
   private readonly comboEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
@@ -471,6 +490,9 @@ export class HUD {
   private contractCompleteValue: boolean | null = null
   private contractText = ''
   private contractAriaText = ''
+  private biomeCountValue = -1
+  private biomeText = '--'
+  private biomeAriaText = '0 distinct biomes surveyed'
   private comboValue = -1
   private comboText = ''
   private comboAriaText = ''
@@ -556,6 +578,8 @@ export class HUD {
     this.missionProgressEl = root.getElementById('hud-gate-progress')
     this.contractRowEl = root.getElementById('hud-contract-row')
     this.contractEl = root.getElementById('hud-contract')
+    this.biomeRowEl = root.getElementById('hud-biome-row')
+    this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
     this.comboEl = root.getElementById('hud-combo')
     this.fuelEl = root.getElementById('hud-fuel')
@@ -663,6 +687,8 @@ export class HUD {
     contractLabel?: string | null
     contractProgress?: number
     contractComplete?: boolean
+    /** Distinct natural biomes surveyed during the current sortie. */
+    biomeCount?: number
     /** Current event-driven clean-flight combo count. */
     combo?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
@@ -932,6 +958,19 @@ export class HUD {
       this.setAttribute(this.contractEl, 'aria-label', this.contractAriaText)
       this.setClass(this.contractEl, 'contract-open', visible && !complete)
       this.setClass(this.contractEl, 'contract-complete', visible && complete)
+    }
+    if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
+      const count = Number.isFinite(opts.biomeCount)
+        ? Math.max(0, Math.min(MAX_BIOME_COUNT, Math.floor(opts.biomeCount!)))
+        : 0
+      if (count !== this.biomeCountValue) {
+        this.biomeCountValue = count
+        this.biomeText = biomeSurveyHudLabel(count)
+        this.biomeAriaText = biomeSurveyAriaLabel(count)
+      }
+      this.setHidden(this.biomeRowEl, count <= 0)
+      this.setText(this.biomeEl, this.biomeText)
+      this.setAttribute(this.biomeEl, 'aria-label', this.biomeAriaText)
     }
     if (this.comboRowEl && this.comboEl && opts.combo !== undefined) {
       const combo = Number.isFinite(opts.combo)

@@ -306,13 +306,18 @@ describe('ChallengeRun', () => {
     }
     const run = new ChallengeRun(storage)
     run.reset('seed:biome-survey', 1)
+    run.recordBiome('plains')
+    expect(run.consumeBiomeSurveyCue()).toBeNull()
+    run.update(0.1, 8)
+    run.recordBiome('forest')
+    expect(run.consumeBiomeSurveyCue()).toBe('forest')
+    expect(run.consumeBiomeSurveyCue()).toBeNull()
     for (const biome of [
       'plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills',
       'mountain', 'snow', 'water', 'ocean', 'tundra', 'savanna', 'volcanic', 'saltflat',
       'plains', 'runway', 'unknown',
     ]) run.recordBiome(biome)
     expect(run.biomeCount).toBe(MAX_BIOME_COUNT)
-    run.update(0.1, 8)
     run.recordGate(1)
     const result = run.finishLanding({
       verticalSpeed: -1,
