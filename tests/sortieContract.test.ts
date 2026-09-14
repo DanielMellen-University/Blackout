@@ -40,12 +40,17 @@ describe('sortie contracts', () => {
         tracker.recordLowLevel(180, 5)
       }
       if (tracker.kind === 'biome') tracker.recordBiome(99)
+      if (tracker.kind === 'speed-band') {
+        tracker.recordSpeedBand(220, 5)
+        tracker.recordSpeedBand(220, 5)
+        tracker.recordSpeedBand(220, 5)
+      }
       const score = tracker.finish(0, 1)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -76,6 +81,31 @@ describe('sortie contracts', () => {
     tracker.recordBiome(3)
     expect(tracker.complete).toBe(false)
     tracker.recordBiome(4)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne time inside the energy speed band', () => {
+    const tracker = new SortieContractTracker()
+    let speedBandSeed = -1
+    for (let seed = 0; seed < 256; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'speed-band') {
+        speedBandSeed = seed
+        break
+      }
+    }
+    expect(speedBandSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(speedBandSeed, 5)
+    tracker.recordSpeedBand(220, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordSpeedBand(120, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordSpeedBand(220, 4)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordSpeedBand(220, 5)
+    tracker.recordSpeedBand(220, 5)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

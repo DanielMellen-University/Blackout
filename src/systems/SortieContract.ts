@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -14,6 +14,9 @@ const LOW_LEVEL_MIN_ALTITUDE_M = 24
 const LOW_LEVEL_MAX_ALTITUDE_M = 360
 const LOW_LEVEL_TARGET_SECONDS = 10
 const BIOME_TARGET_COUNT = 4
+const SPEED_BAND_MIN_MPS = 160
+const SPEED_BAND_MAX_MPS = 320
+const SPEED_BAND_TARGET_SECONDS = 12
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -23,6 +26,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'fuel', label: 'FUEL SAVER', target: 0.75 },
   { kind: 'low-level', label: 'TERRAIN HUGGER', target: LOW_LEVEL_TARGET_SECONDS },
   { kind: 'biome', label: 'BIOME TOUR', target: BIOME_TARGET_COUNT },
+  { kind: 'speed-band', label: 'ENERGY BAND', target: SPEED_BAND_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -33,6 +37,7 @@ export class SortieContractTracker {
   private progressValue = 0
   private completeValue = false
   private lowLevelSeconds = 0
+  private speedBandSeconds = 0
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -41,6 +46,7 @@ export class SortieContractTracker {
     this.progressValue = 0
     this.completeValue = false
     this.lowLevelSeconds = 0
+    this.speedBandSeconds = 0
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -58,9 +64,11 @@ export class SortieContractTracker {
             ? `REACH ${Math.round(target)} SETTLEMENTS`
           : base.kind === 'fuel'
               ? `LAND WITH ${Math.round(target * 100)}% FUEL`
-              : base.kind === 'low-level'
-                ? `STAY ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
-                : `SURVEY ${Math.round(target)} DISTINCT BIOMES`
+          : base.kind === 'low-level'
+            ? `STAY ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
+            : base.kind === 'biome'
+              ? `SURVEY ${Math.round(target)} DISTINCT BIOMES`
+              : `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     this.definition = { ...base, target, detail }
     this.detailValue = detail
     this.hudLabelValue = `CONTRACT ${base.label}`
@@ -100,6 +108,18 @@ export class SortieContractTracker {
     if (safeAltitude < LOW_LEVEL_MIN_ALTITUDE_M || safeAltitude > LOW_LEVEL_MAX_ALTITUDE_M) return
     this.lowLevelSeconds = Math.min(this.definition.target, this.lowLevelSeconds + safeDt)
     this.progressValue = clamp01(this.lowLevelSeconds / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Accumulate bounded airborne time inside a forgiving cruise-speed band. */
+  recordSpeedBand(speedMps: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'speed-band' || this.completeValue || !airborne) return
+    if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
+    const safeSpeed = Math.max(0, speedMps)
+    const safeDt = Math.max(0, Math.min(5, dt))
+    if (safeSpeed < SPEED_BAND_MIN_MPS || safeSpeed > SPEED_BAND_MAX_MPS) return
+    this.speedBandSeconds = Math.min(this.definition.target, this.speedBandSeconds + safeDt)
+    this.progressValue = clamp01(this.speedBandSeconds / this.definition.target)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -153,10 +173,12 @@ function indexForSeed(seed: number): number {
   const safe = Math.trunc(seed)
   const mixed = (safe ^ (safe >>> 16) ^ Math.imul(safe, 0x45d9f3b)) >>> 0
   // Preserve the original five-contract mapping for existing seeds while
-  // reserving deterministic slices for the terrain-hugger and biome-tour objectives.
-  const legacyContractCount = CONTRACTS.length - 2
-  if (mixed % 13 === 9) return CONTRACTS.length - 2
-  if (mixed % 17 === 13) return CONTRACTS.length - 1
+  // reserving deterministic slices for the terrain-hugger, biome-tour, and
+  // energy-band objectives.
+  const legacyContractCount = CONTRACTS.length - 3
+  if (mixed % 13 === 9) return CONTRACTS.length - 3
+  if (mixed % 17 === 13) return CONTRACTS.length - 2
+  if (mixed % 19 === 7) return CONTRACTS.length - 1
   return mixed % legacyContractCount
 }
 
