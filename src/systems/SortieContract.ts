@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -13,6 +13,7 @@ export const MAX_CONTRACT_SCORE = 2_000
 const LOW_LEVEL_MIN_ALTITUDE_M = 24
 const LOW_LEVEL_MAX_ALTITUDE_M = 360
 const LOW_LEVEL_TARGET_SECONDS = 10
+const BIOME_TARGET_COUNT = 4
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -21,6 +22,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'scout', label: 'SCOUT', target: 2 },
   { kind: 'fuel', label: 'FUEL SAVER', target: 0.75 },
   { kind: 'low-level', label: 'TERRAIN HUGGER', target: LOW_LEVEL_TARGET_SECONDS },
+  { kind: 'biome', label: 'BIOME TOUR', target: BIOME_TARGET_COUNT },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -54,9 +56,11 @@ export class SortieContractTracker {
           ? `COMPLETE ${Math.round(target)} BARREL ROLLS`
           : base.kind === 'scout'
             ? `REACH ${Math.round(target)} SETTLEMENTS`
-            : base.kind === 'fuel'
+          : base.kind === 'fuel'
               ? `LAND WITH ${Math.round(target * 100)}% FUEL`
-              : `STAY ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
+              : base.kind === 'low-level'
+                ? `STAY ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
+                : `SURVEY ${Math.round(target)} DISTINCT BIOMES`
     this.definition = { ...base, target, detail }
     this.detailValue = detail
     this.hudLabelValue = `CONTRACT ${base.label}`
@@ -76,6 +80,13 @@ export class SortieContractTracker {
 
   recordDestination(count: number): void {
     if (this.definition?.kind !== 'scout' || this.completeValue || !Number.isFinite(count)) return
+    this.progressValue = clamp01(count / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Update the biome-tour objective from the bounded distinct-biome count. */
+  recordBiome(count: number): void {
+    if (this.definition?.kind !== 'biome' || this.completeValue || !Number.isFinite(count)) return
     this.progressValue = clamp01(count / this.definition.target)
     if (this.progressValue >= 1) this.completeValue = true
   }
@@ -142,9 +153,11 @@ function indexForSeed(seed: number): number {
   const safe = Math.trunc(seed)
   const mixed = (safe ^ (safe >>> 16) ^ Math.imul(safe, 0x45d9f3b)) >>> 0
   // Preserve the original five-contract mapping for existing seeds while
-  // reserving a small deterministic slice for the terrain-hugger objective.
-  if (mixed % 13 === 9) return CONTRACTS.length - 1
-  return mixed % (CONTRACTS.length - 1)
+  // reserving deterministic slices for the terrain-hugger and biome-tour objectives.
+  const legacyContractCount = CONTRACTS.length - 2
+  if (mixed % 13 === 9) return CONTRACTS.length - 2
+  if (mixed % 17 === 13) return CONTRACTS.length - 1
+  return mixed % legacyContractCount
 }
 
 function clamp01(value: number): number {

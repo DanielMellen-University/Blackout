@@ -39,12 +39,13 @@ describe('sortie contracts', () => {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
       }
+      if (tracker.kind === 'biome') tracker.recordBiome(99)
       const score = tracker.finish(0, 1)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -61,6 +62,20 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(false)
     tracker.recordLowLevel(180, 5)
     tracker.recordLowLevel(180, 1)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('turns distinct biome progress into a bounded biome-tour reward', () => {
+    const tracker = new SortieContractTracker()
+    tracker.reset(8, 5)
+    expect(tracker.kind).toBe('biome')
+    tracker.recordBiome(1)
+    expect(tracker.progress).toBeCloseTo(0.25)
+    tracker.recordBiome(3)
+    expect(tracker.complete).toBe(false)
+    tracker.recordBiome(4)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

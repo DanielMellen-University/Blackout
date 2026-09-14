@@ -469,6 +469,31 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires distinct biome progress into the biome-tour contract', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:biome-contract', 1, 'balanced', 8)
+    expect(run.contractLabel).toBe('CONTRACT BIOME TOUR')
+    run.recordBiome('plains')
+    run.update(0.1, 8)
+    run.recordBiome('forest')
+    run.recordBiome('desert')
+    run.recordBiome('mountain')
+    expect(run.contractComplete).toBe(true)
+    expect(run.contractProgress).toBe(1)
+    expect(run.consumeContractCompletionCue()).toBe('BIOME TOUR')
+    expect(run.consumeContractCompletionCue()).toBeNull()
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('biome')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('persists cumulative contract wins and repairs oversized counts', () => {
     const values = new Map<string, string>()
     const storage = {

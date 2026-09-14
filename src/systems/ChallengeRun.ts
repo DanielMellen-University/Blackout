@@ -855,6 +855,9 @@ export class ChallengeRun {
     if ((this.surveyedBiomeMask & bit) !== 0) return
     this.surveyedBiomeMask |= bit
     this.surveyedBiomeCount = Math.min(MAX_BIOME_COUNT, this.surveyedBiomeCount + 1)
+    const wasContractComplete = this.contract.complete
+    this.contract.recordBiome(this.surveyedBiomeCount)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'running' || this.phase === 'returning') {
       this.surveyedBiomeCue = biome as Biome
     }
