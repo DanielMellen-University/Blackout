@@ -75,6 +75,10 @@ export interface ChallengeResult {
   stuntRolls?: number
   /** Bounded score bonus awarded for completed barrel rolls. */
   stuntScore?: number
+  /** Highest completed barrel-roll count ever recorded for this course. */
+  courseBestStuntRolls?: number
+  /** Whether this sortie set a new course barrel-roll record. */
+  newStuntRecord?: boolean
 }
 
 export interface ScoreStore {
@@ -98,6 +102,7 @@ export interface CourseHistory {
   bestTimeSec: number
   peakSpeedKts?: number
   peakAltitudeM?: number
+  stuntRolls?: number
 }
 
 interface ScoringWeights {
@@ -352,9 +357,11 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawBestTimeSec = record.bestTimeSec
   const rawPeakSpeedKts = record.peakSpeedKts
   const rawPeakAltitudeM = record.peakAltitudeM
+  const rawStuntRolls = record.stuntRolls
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
   const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
+  const hasStuntRolls = Object.prototype.hasOwnProperty.call(record, 'stuntRolls')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
@@ -367,9 +374,13 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const peakAltitudeM = typeof rawPeakAltitudeM === 'number' && Number.isFinite(rawPeakAltitudeM) && rawPeakAltitudeM > 0
     ? Math.min(MAX_PEAK_ALTITUDE_M, Math.floor(rawPeakAltitudeM))
     : 0
+  const stuntRolls = typeof rawStuntRolls === 'number' && Number.isFinite(rawStuntRolls) && rawStuntRolls > 0
+    ? Math.min(MAX_STUNT_ROLLS, Math.floor(rawStuntRolls))
+    : 0
   const history: CourseHistory = { completionCount, bestTimeSec }
   if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
   if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
+  if (stuntRolls > 0) history.stuntRolls = stuntRolls
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -379,8 +390,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasBestTime && (typeof rawBestTimeSec !== 'number' || !Number.isFinite(rawBestTimeSec) || rawBestTimeSec < 0)) ||
     (hasPeakSpeed && (typeof rawPeakSpeedKts !== 'number' || !Number.isFinite(rawPeakSpeedKts) || rawPeakSpeedKts <= 0 || rawPeakSpeedKts !== peakSpeedKts)) ||
     (hasPeakAltitude && (typeof rawPeakAltitudeM !== 'number' || !Number.isFinite(rawPeakAltitudeM) || rawPeakAltitudeM <= 0 || rawPeakAltitudeM !== peakAltitudeM)) ||
+    (hasStuntRolls && (typeof rawStuntRolls !== 'number' || !Number.isFinite(rawStuntRolls) || rawStuntRolls <= 0 || rawStuntRolls !== stuntRolls)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls',
     )
   return {
     history,
@@ -400,6 +412,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.peakAltitudeM) && history.peakAltitudeM! > 0) {
     record.peakAltitudeM = Math.min(MAX_PEAK_ALTITUDE_M, Math.floor(history.peakAltitudeM!))
+  }
+  if (Number.isFinite(history.stuntRolls) && history.stuntRolls! > 0) {
+    record.stuntRolls = Math.min(MAX_STUNT_ROLLS, Math.floor(history.stuntRolls!))
   }
   return JSON.stringify(record)
 }
@@ -561,12 +576,16 @@ export class ChallengeRun {
     const peakAltitudeM = Math.round(this.peakAltitudeM)
     const previousPeakSpeedKts = history.peakSpeedKts ?? 0
     const previousPeakAltitudeM = history.peakAltitudeM ?? 0
+    const previousStuntRolls = history.stuntRolls ?? 0
     const newPeakSpeedRecord = peakSpeedKts > previousPeakSpeedKts
     const newPeakAltitudeRecord = peakAltitudeM > previousPeakAltitudeM
+    const newStuntRecord = this.stuntRollCount > previousStuntRolls
     const courseBestPeakSpeedKts = Math.max(previousPeakSpeedKts, peakSpeedKts)
     const courseBestPeakAltitudeM = Math.max(previousPeakAltitudeM, peakAltitudeM)
+    const courseBestStuntRolls = Math.max(previousStuntRolls, this.stuntRollCount)
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
+    if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
@@ -623,6 +642,8 @@ export class ChallengeRun {
       newPeakAltitudeRecord,
       stuntRolls: this.stuntRollCount,
       stuntScore,
+      courseBestStuntRolls,
+      newStuntRecord,
     }
     return this.result
   }

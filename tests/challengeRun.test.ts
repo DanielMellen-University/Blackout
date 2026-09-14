@@ -114,6 +114,50 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('persists the best barrel-roll count and repairs oversized records', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const first = new ChallengeRun(storage)
+    first.reset('seed:stunt-record', 1)
+    first.recordStunt(3)
+    first.recordGate(1)
+    const firstResult = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(firstResult.courseBestStuntRolls).toBe(3)
+    expect(firstResult.newStuntRecord).toBe(true)
+    expect(values.get('blackout.history.seed:stunt-record')).toBe(
+      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3}',
+    )
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:stunt-record', 1)
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.courseBestStuntRolls).toBe(3)
+    expect(retryResult.newStuntRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:stunt-record',
+      '{"completionCount":2,"bestTimeSec":4,"stuntRolls":999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:stunt-record')?.stuntRolls).toBe(12)
+    expect(values.get('blackout.history.seed:stunt-record')).toBe(
+      '{"completionCount":2,"bestTimeSec":4,"stuntRolls":12}',
+    )
+  })
+
   it('formats time with centiseconds', () => {
     expect(formatTime(75.5)).toBe('1:15.50')
     expect(formatTime(Number.NaN)).toBe('0:00.00')

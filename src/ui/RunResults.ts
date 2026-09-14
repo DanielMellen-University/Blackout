@@ -143,6 +143,12 @@ export class RunResults {
       scoreParts.push(`ROLLS X${stuntRolls}`)
       if (stuntScore > 0) scoreParts.push(`ROLL +${stuntScore.toLocaleString()}`)
     }
+    const courseBestStuntRolls = Number.isFinite(result.courseBestStuntRolls)
+      ? Math.max(0, Math.floor(result.courseBestStuntRolls!))
+      : 0
+    if (courseBestStuntRolls > stuntRolls) {
+      scoreParts.push(`COURSE ROLLS X${courseBestStuntRolls}`)
+    }
     if (Number.isFinite(result.courseBestPeakSpeedKts) && result.courseBestPeakSpeedKts! > (result.peakSpeedKts ?? 0)) {
       scoreParts.push(`COURSE TOP ${Math.max(0, Math.round(result.courseBestPeakSpeedKts!)).toLocaleString()}KT`)
     }
@@ -155,6 +161,7 @@ export class RunResults {
     const newRecords = [
       result.newPeakSpeedRecord ? 'SPEED' : '',
       result.newPeakAltitudeRecord ? 'ALTITUDE' : '',
+      result.newStuntRecord ? 'ROLLS' : '',
     ].filter(Boolean)
     const recordLabel = newRecords.length > 0
       ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`

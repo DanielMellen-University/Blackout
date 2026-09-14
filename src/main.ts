@@ -187,7 +187,10 @@ async function boot(): Promise<void> {
         const peakAltitudeLabel = history && Number.isFinite(history.peakAltitudeM)
           ? ` · ALT ${Math.max(0, Math.floor(history.peakAltitudeM!)).toLocaleString()}M`
           : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${badgeLabel}`
+        const stuntLabel = history && Number.isFinite(history.stuntRolls) && history.stuntRolls! > 0
+          ? ` · ROLLS X${Math.max(0, Math.floor(history.stuntRolls!))}`
+          : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${badgeLabel}`
         option.title = course.detail
       }
     }
