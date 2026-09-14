@@ -80,6 +80,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A safe centered return can earn the `APPROACH ACE` mastery badge alongside the existing course badges.
 - Lock a city or village with `T` and fly into its arrival radius to add a capped destination bonus to the sortie.
 - Curated courses remember the most settlements reached in one sortie, creating a replayable exploration target.
+- Completed sorties now record the distinct natural biomes surveyed, awarding a capped exploration bonus and a per-course variety record.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.
@@ -605,7 +606,7 @@ Blackout/
 
 Shipped: flight, circuit, crash boom, airfield, menus, streaming world, day/night, and terrain-safe seeded route planning.
 
-The current ship has a varied, repeatable circuit with local records and mastery badges. The next phase adds lightweight arcade systems, starting with fuel and afterburner tradeoffs before radar or weapons.
+The current ship has a varied, repeatable circuit with local records, mastery badges, fuel and afterburner tradeoffs, radar destinations, bonus contracts, and biome survey records. The next phase continues adding bounded arcade decisions before any combat layer.
 
 ## License
 

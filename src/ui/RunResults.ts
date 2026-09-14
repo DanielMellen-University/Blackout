@@ -201,11 +201,25 @@ export class RunResults {
       : 0
     if (destinationCount > 0) scoreParts.push(`DEST X${destinationCount}`)
     if (destinationScore > 0) scoreParts.push(`DEST +${destinationScore.toLocaleString()}`)
+    const biomeCount = Number.isFinite(result.biomeCount)
+      ? Math.max(0, Math.floor(result.biomeCount!))
+      : 0
+    const biomeScore = Number.isFinite(result.biomeScore)
+      ? Math.max(0, Math.floor(result.biomeScore!))
+      : 0
+    if (biomeCount > 0) scoreParts.push(`BIOMES X${biomeCount}`)
+    if (biomeScore > 0) scoreParts.push(`BIOME +${biomeScore.toLocaleString()}`)
     const courseBestDestinationCount = Number.isFinite(result.courseBestDestinationCount)
       ? Math.max(0, Math.floor(result.courseBestDestinationCount!))
       : 0
     if (courseBestDestinationCount > destinationCount) {
       scoreParts.push(`COURSE DEST X${courseBestDestinationCount}`)
+    }
+    const courseBestBiomeCount = Number.isFinite(result.courseBestBiomeCount)
+      ? Math.max(0, Math.floor(result.courseBestBiomeCount!))
+      : 0
+    if (courseBestBiomeCount > biomeCount) {
+      scoreParts.push(`COURSE BIOMES X${courseBestBiomeCount}`)
     }
     const runStreak = Number.isFinite(result.runStreak)
       ? Math.max(0, Math.floor(result.runStreak!))
@@ -272,6 +286,7 @@ export class RunResults {
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
+      result.newBiomeRecord ? 'BIOMES' : '',
       result.newRunStreakRecord ? 'RUN STREAK' : '',
       result.newContractRecord ? 'CONTRACTS' : '',
     ].filter(Boolean)

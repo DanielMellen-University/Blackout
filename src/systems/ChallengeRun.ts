@@ -1,6 +1,7 @@
 import { MAX_STUNT_ROLLS } from './StuntTracker'
 import { MAX_COMBO_COUNT } from './FlightCombo'
 import { SortieContractTracker, type SortieContractKind } from './SortieContract'
+import type { Biome } from '../world/terrainSample'
 
 export type ChallengePhase =
   | 'ready'
@@ -111,6 +112,14 @@ export interface ChallengeResult {
   courseBestDestinationCount?: number
   /** Whether this sortie set a new course destination record. */
   newDestinationRecord?: boolean
+  /** Number of distinct natural biomes surveyed during this sortie. */
+  biomeCount?: number
+  /** Capped score bonus awarded for surveying distinct biomes. */
+  biomeScore?: number
+  /** Highest distinct-biome count ever recorded for this course. */
+  courseBestBiomeCount?: number
+  /** Whether this sortie set a new course biome-survey record. */
+  newBiomeRecord?: boolean
   /** Consecutive completed sorties for this course after this run. */
   runStreak?: number
   /** Highest consecutive completed-sortie streak recorded for this course. */
@@ -171,9 +180,16 @@ export const MAX_APPROACH_SCORE = 500
 export const MAX_WEATHER_SCORE = 500
 export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
+export const MAX_BIOME_SCORE = 1_800
+export const MAX_BIOME_COUNT = 15
 export const MAX_RUN_STREAK = 1_000
 export const MAX_CONTRACT_WINS = 1_000
 export const MAX_DEADSTICK_SCORE = 1_500
+
+const SURVEYABLE_BIOMES: readonly Biome[] = [
+  'plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills',
+  'mountain', 'snow', 'water', 'ocean', 'tundra', 'savanna', 'volcanic', 'saltflat',
+]
 
 export type CourseMasteryTier = 'rookie' | 'pilot' | 'veteran' | 'ace' | 'legend'
 
@@ -214,6 +230,7 @@ export interface CourseHistory {
   combo?: number
   approachScore?: number
   destinations?: number
+  biomes?: number
   runStreak?: number
   runStreakRecord?: number
   contractWins?: number
@@ -524,6 +541,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawCombo = record.combo
   const rawApproachScore = record.approachScore
   const rawDestinations = record.destinations
+  const rawBiomes = record.biomes
   const rawRunStreak = record.runStreak
   const rawRunStreakRecord = record.runStreakRecord
   const rawContractWins = record.contractWins
@@ -534,6 +552,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasCombo = Object.prototype.hasOwnProperty.call(record, 'combo')
   const hasApproachScore = Object.prototype.hasOwnProperty.call(record, 'approachScore')
   const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
+  const hasBiomes = Object.prototype.hasOwnProperty.call(record, 'biomes')
   const hasRunStreak = Object.prototype.hasOwnProperty.call(record, 'runStreak')
   const hasRunStreakRecord = Object.prototype.hasOwnProperty.call(record, 'runStreakRecord')
   const hasContractWins = Object.prototype.hasOwnProperty.call(record, 'contractWins')
@@ -561,6 +580,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const destinations = typeof rawDestinations === 'number' && Number.isFinite(rawDestinations) && rawDestinations > 0
     ? Math.min(MAX_DESTINATION_COUNT, Math.floor(rawDestinations))
     : 0
+  const biomes = typeof rawBiomes === 'number' && Number.isFinite(rawBiomes) && rawBiomes > 0
+    ? Math.min(MAX_BIOME_COUNT, Math.floor(rawBiomes))
+    : 0
   const runStreak = typeof rawRunStreak === 'number' && Number.isFinite(rawRunStreak) && rawRunStreak > 0
     ? Math.min(MAX_RUN_STREAK, Math.floor(rawRunStreak))
     : 0
@@ -580,6 +602,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (combo > 0) history.combo = combo
   if (approachScore > 0) history.approachScore = approachScore
   if (destinations > 0) history.destinations = destinations
+  if (biomes > 0) history.biomes = biomes
   if (runStreak > 0) history.runStreak = runStreak
   if (runStreakRecord > 0) history.runStreakRecord = runStreakRecord
   if (contractWins > 0) history.contractWins = contractWins
@@ -596,12 +619,13 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasCombo && (typeof rawCombo !== 'number' || !Number.isFinite(rawCombo) || rawCombo <= 0 || rawCombo !== combo)) ||
     (hasApproachScore && (typeof rawApproachScore !== 'number' || !Number.isFinite(rawApproachScore) || rawApproachScore <= 0 || rawApproachScore !== approachScore)) ||
     (hasDestinations && (typeof rawDestinations !== 'number' || !Number.isFinite(rawDestinations) || rawDestinations <= 0 || rawDestinations !== destinations)) ||
+    (hasBiomes && (typeof rawBiomes !== 'number' || !Number.isFinite(rawBiomes) || rawBiomes <= 0 || rawBiomes !== biomes)) ||
     (hasRunStreak && (typeof rawRunStreak !== 'number' || !Number.isFinite(rawRunStreak) || rawRunStreak <= 0 || rawRunStreak !== runStreak)) ||
     (hasRunStreakRecord && (typeof rawRunStreakRecord !== 'number' || !Number.isFinite(rawRunStreakRecord) || rawRunStreakRecord <= 0 || rawRunStreakRecord !== runStreakRecord)) ||
     (!hasRunStreakRecord && runStreak > 0) ||
     (hasContractWins && (typeof rawContractWins !== 'number' || !Number.isFinite(rawContractWins) || rawContractWins <= 0 || rawContractWins !== contractWins)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins',
     )
   return {
     history,
@@ -633,6 +657,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.destinations) && history.destinations! > 0) {
     record.destinations = Math.min(MAX_DESTINATION_COUNT, Math.floor(history.destinations!))
+  }
+  if (Number.isFinite(history.biomes) && history.biomes! > 0) {
+    record.biomes = Math.min(MAX_BIOME_COUNT, Math.floor(history.biomes!))
   }
   const runStreak = Number.isFinite(history.runStreak) && history.runStreak! > 0
     ? Math.min(MAX_RUN_STREAK, Math.floor(history.runStreak!))
@@ -674,6 +701,8 @@ export class ChallengeRun {
   private bestGateQualityStreak = 0
   private destinationScore = 0
   private destinationCount = 0
+  private surveyedBiomeMask = 0
+  private surveyedBiomeCount = 0
   private peakSpeedMps = 0
   private peakAltitudeM = 0
   private stuntRollCount = 0
@@ -713,6 +742,8 @@ export class ChallengeRun {
     this.bestGateQualityStreak = 0
     this.destinationScore = 0
     this.destinationCount = 0
+    this.surveyedBiomeMask = 0
+    this.surveyedBiomeCount = 0
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
     this.stuntRollCount = 0
@@ -812,6 +843,23 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
+  /** Record one distinct natural biome encountered during the sortie. */
+  recordBiome(biome: string): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    if (typeof biome !== 'string') return
+    const index = SURVEYABLE_BIOMES.indexOf(biome as Biome)
+    if (index < 0) return
+    const bit = 1 << index
+    if ((this.surveyedBiomeMask & bit) !== 0) return
+    this.surveyedBiomeMask |= bit
+    this.surveyedBiomeCount = Math.min(MAX_BIOME_COUNT, this.surveyedBiomeCount + 1)
+  }
+
+  /** Number of unique natural biomes seen so far in this sortie. */
+  get biomeCount(): number {
+    return this.surveyedBiomeCount
+  }
+
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
     if (this.phase !== 'returning') return null
 
@@ -847,9 +895,10 @@ export class ChallengeRun {
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
+    const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
     const contractScore = this.contract.finish(elapsedSec, fuelFraction)
     const contractComplete = this.contract.enabled && this.contract.complete
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + deadstickScore + this.destinationScore + contractScore
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + deadstickScore + this.destinationScore + biomeScore + contractScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -876,6 +925,7 @@ export class ChallengeRun {
     const previousCombo = history.combo ?? 0
     const previousApproachScore = history.approachScore ?? 0
     const previousDestinationCount = history.destinations ?? 0
+    const previousBiomeCount = history.biomes ?? 0
     const previousRunStreak = history.runStreak ?? 0
     const previousRunStreakRecord = history.runStreakRecord ?? 0
     const previousContractWins = history.contractWins ?? 0
@@ -891,6 +941,8 @@ export class ChallengeRun {
     const courseBestApproachScore = Math.max(previousApproachScore, approachScore)
     const newDestinationRecord = this.destinationCount > previousDestinationCount
     const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
+    const newBiomeRecord = this.surveyedBiomeCount > previousBiomeCount
+    const courseBestBiomeCount = Math.max(previousBiomeCount, this.surveyedBiomeCount)
     const runStreak = Math.min(MAX_RUN_STREAK, previousRunStreak + 1)
     const courseBestRunStreak = Math.max(previousRunStreakRecord, runStreak)
     const newRunStreakRecord = runStreak >= 2 && runStreak > previousRunStreakRecord
@@ -903,6 +955,7 @@ export class ChallengeRun {
     if (courseBestCombo > 0) history.combo = courseBestCombo
     if (courseBestApproachScore > 0) history.approachScore = courseBestApproachScore
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
+    if (courseBestBiomeCount > 0) history.biomes = courseBestBiomeCount
     history.runStreak = runStreak
     history.runStreakRecord = courseBestRunStreak
     if (contractWins > 0) history.contractWins = contractWins
@@ -982,6 +1035,10 @@ export class ChallengeRun {
       destinationCount: this.destinationCount > 0 ? this.destinationCount : undefined,
       courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
       newDestinationRecord,
+      biomeCount: this.surveyedBiomeCount > 0 ? this.surveyedBiomeCount : undefined,
+      biomeScore: biomeScore > 0 ? biomeScore : undefined,
+      courseBestBiomeCount: courseBestBiomeCount > 0 ? courseBestBiomeCount : undefined,
+      newBiomeRecord,
       runStreak,
       courseBestRunStreak,
       newRunStreakRecord,

@@ -117,6 +117,7 @@ import {
   RadarSystem,
 } from './systems/RadarSystem'
 import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
+import { sampleTerrainSurface } from './world/terrainSample'
 import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -206,6 +207,9 @@ async function boot(): Promise<void> {
         const destinationLabel = history && Number.isFinite(history.destinations) && history.destinations! > 0
           ? ` · DEST X${Math.max(0, Math.floor(history.destinations!))}`
           : ''
+        const biomeLabel = history && Number.isFinite(history.biomes) && history.biomes! > 0
+          ? ` · BIOMES X${Math.max(0, Math.floor(history.biomes!))}`
+          : ''
         const runStreakLabel = history && Number.isFinite(history.runStreakRecord) && history.runStreakRecord! >= 2
           ? ` · RUN STREAK X${Math.max(0, Math.floor(history.runStreakRecord!))}`
           : ''
@@ -221,7 +225,7 @@ async function boot(): Promise<void> {
         const masteryTierLabel = masteryTier === 'rookie'
           ? ''
           : ` · ${courseMasteryTierLabel(masteryTier)}`
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${runStreakLabel}${contractWinsLabel}${masteryTierLabel}${badgeLabel}`
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${biomeLabel}${runStreakLabel}${contractWinsLabel}${masteryTierLabel}${badgeLabel}`
         option.title = course.detail
       }
     }
@@ -572,6 +576,7 @@ async function boot(): Promise<void> {
   let radarDiscoveryCooldownUntil = 0
   let radarTargetCycleQueued = false
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
+  let biomeSurveyCooldown = 0
   let overWater = false
   let refueling = false
   const returnTarget = new Vector3()
@@ -657,6 +662,7 @@ async function boot(): Promise<void> {
     input.clearQueued()
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
+    challenge.recordBiome(world.spawn.biome)
     banner = null
     crashMessage = 'CRASH - press R'
     bannerTone = 'info'
@@ -676,6 +682,7 @@ async function boot(): Promise<void> {
     radarDiscoveryCooldownUntil = 0
     radar.clearTarget()
     radarTargetCycleQueued = false
+    biomeSurveyCooldown = 0
     overWater = false
     refueling = false
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
@@ -1158,6 +1165,14 @@ async function boot(): Promise<void> {
         if (contractCue) {
           audio.playCue('streak')
           showBanner(`CONTRACT COMPLETE / ${contractCue}`, 1800, 'success')
+        }
+
+        biomeSurveyCooldown = Math.max(0, biomeSurveyCooldown - dt)
+        if (biomeSurveyCooldown <= 0 && aircraft.status === 'ok' && !aircraft.onGround) {
+          const sampled = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z) ??
+            sampleTerrainSurface(aircraft.position.x, aircraft.position.z)
+          challenge.recordBiome(sampled.biome)
+          biomeSurveyCooldown = 0.65
         }
 
         challenge.update(dt, aircraft.speed, Math.max(0, aircraft.position.y - world.spawn.y))

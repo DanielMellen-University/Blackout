@@ -25,6 +25,8 @@ import {
   MAX_APPROACH_SCORE,
   MAX_DESTINATION_COUNT,
   MAX_DESTINATION_SCORE,
+  MAX_BIOME_COUNT,
+  MAX_BIOME_SCORE,
   MAX_CONTRACT_WINS,
   MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
@@ -293,6 +295,61 @@ describe('ChallengeRun', () => {
     expect(repairCourseHistory(storage, 'seed:destination-score')?.destinations).toBe(MAX_DESTINATION_COUNT)
     expect(values.get('blackout.history.seed:destination-score')).toBe(
       '{"completionCount":2,"bestTimeSec":4,"destinations":6}',
+    )
+  })
+
+  it('awards a bounded survey bonus for distinct natural biomes', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('seed:biome-survey', 1)
+    for (const biome of [
+      'plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills',
+      'mountain', 'snow', 'water', 'ocean', 'tundra', 'savanna', 'volcanic', 'saltflat',
+      'plains', 'runway', 'unknown',
+    ]) run.recordBiome(biome)
+    expect(run.biomeCount).toBe(MAX_BIOME_COUNT)
+    run.update(0.1, 8)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.biomeCount).toBe(MAX_BIOME_COUNT)
+    expect(result.biomeScore).toBe(MAX_BIOME_SCORE)
+    expect(result.courseBestBiomeCount).toBe(MAX_BIOME_COUNT)
+    expect(result.newBiomeRecord).toBe(true)
+    expect(values.get('blackout.history.seed:biome-survey')).toContain(`"biomes":${MAX_BIOME_COUNT}`)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.biomeScore!,
+    )
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:biome-survey', 1)
+    retry.update(0.1, 8)
+    retry.recordBiome('plains')
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.courseBestBiomeCount).toBe(MAX_BIOME_COUNT)
+    expect(retryResult.newBiomeRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:biome-survey',
+      '{"completionCount":2,"bestTimeSec":4,"biomes":999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:biome-survey')?.biomes).toBe(MAX_BIOME_COUNT)
+    expect(values.get('blackout.history.seed:biome-survey')).toBe(
+      `{"completionCount":2,"bestTimeSec":4,"biomes":${MAX_BIOME_COUNT}}`,
     )
   })
 
