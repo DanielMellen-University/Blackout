@@ -28,8 +28,14 @@ export class RunResults {
   private readonly badges: HTMLElement
   private readonly splits: HTMLElement
   private readonly best: HTMLElement
+  private readonly shareReplay: HTMLButtonElement | null
   private returnFocus: HTMLElement | null = null
   private disposed = false
+  private shareReplayHandler: (() => void) | null = null
+  private readonly onShareReplay = (): void => {
+    if (this.disposed) return
+    this.shareReplayHandler?.()
+  }
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || !this.open || event.key !== 'Tab') return
     const focusable = this.activeFocusable()
@@ -63,19 +69,30 @@ export class RunResults {
     this.badges = must(root, 'result-badges')
     this.splits = must(root, 'result-splits')
     this.best = must(root, 'result-best')
+    this.shareReplay = root.getElementById('btn-share-replay') as HTMLButtonElement | null
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
     this.root.setAttribute('aria-labelledby', 'result-title')
     this.root.setAttribute('aria-describedby', 'result-summary')
     this.root.addEventListener('keydown', this.onKeyDown)
+    this.shareReplay?.addEventListener('click', this.onShareReplay)
   }
 
   get open(): boolean {
     return !this.disposed && !this.root.hidden
   }
 
+  setShareReplayHandler(handler: (() => void) | null): void {
+    if (this.disposed) return
+    this.shareReplayHandler = handler
+  }
+
   show(result: ChallengeResult): void {
     if (this.disposed) return
+    if (this.shareReplay) {
+      this.shareReplay.textContent = 'Copy replay link'
+      this.shareReplay.setAttribute('aria-label', 'Copy replay link for this sortie')
+    }
     const active = document.activeElement
     this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
@@ -230,6 +247,8 @@ export class RunResults {
     if (this.disposed) return
     this.disposed = true
     this.root.removeEventListener('keydown', this.onKeyDown)
+    this.shareReplay?.removeEventListener('click', this.onShareReplay)
+    this.shareReplayHandler = null
     this.returnFocus = null
   }
 

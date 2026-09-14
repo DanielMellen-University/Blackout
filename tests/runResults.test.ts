@@ -83,6 +83,7 @@ function resultsFixture(): {
   const root = new FakeElement()
   const retry = new FakeElement()
   const newWorld = new FakeElement()
+  const shareReplay = new FakeElement()
   const source = new FakeElement()
   const elements = new Map<string, FakeElement>([
     ['run-results', root],
@@ -102,6 +103,7 @@ function resultsFixture(): {
     ['result-splits', new FakeElement()],
     ['result-best', new FakeElement()],
     ['btn-retry', retry],
+    ['btn-share-replay', shareReplay],
   ])
   root.setList(
     'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
@@ -170,6 +172,22 @@ describe('run results focus flow', () => {
     results.show(result)
     results.hide()
     expect(results.open).toBe(false)
+    vi.unstubAllGlobals()
+  })
+
+  it('dispatches replay sharing through a disposable results action', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    const share = elementsFor(fixture.document, 'btn-share-replay')!
+    const handler = vi.fn()
+    results.setShareReplayHandler(handler)
+    share.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    results.dispose()
+    share.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
   })
 

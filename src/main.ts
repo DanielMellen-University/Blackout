@@ -412,6 +412,20 @@ async function boot(): Promise<void> {
   let disposed = false
   let contextLost = false
   let resizeFrame: number | null = null
+  const shareReplayButton = document.getElementById('btn-share-replay') as HTMLButtonElement | null
+  results.setShareReplayHandler(() => {
+    const seed = world.worldSeed
+    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
+    const href = typeof window !== 'undefined' ? window.location.href : ''
+    void copyWorldSeedLink(seed, clipboard, href).then((copied) => {
+      if (disposed || !shareReplayButton) return
+      shareReplayButton.textContent = copied ? 'Replay link copied' : 'Copy blocked'
+      shareReplayButton.setAttribute(
+        'aria-label',
+        copied ? 'Replay link copied' : 'Copy replay link blocked by browser permissions',
+      )
+    })
+  })
   const disposeRuntime = (): void => {
     if (disposed) return
     disposed = true
