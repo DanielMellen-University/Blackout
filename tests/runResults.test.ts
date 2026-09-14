@@ -219,6 +219,26 @@ describe('run results focus flow', () => {
     results.dispose()
     vi.unstubAllGlobals()
   })
+
+  it('celebrates new course flight records without replacing badge feedback', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      newPeakSpeedRecord: true,
+      newPeakAltitudeRecord: true,
+      newMasteryBadges: ['streak-hunter'],
+      masteryBadges: ['streak-hunter'],
+    })
+    expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE',
+    )
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
 })
 
 function elementsFor(document: FakeDocument, id: string): FakeElement | null {

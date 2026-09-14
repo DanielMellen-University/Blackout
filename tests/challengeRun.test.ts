@@ -291,6 +291,8 @@ describe('ChallengeRun', () => {
     })!
     expect(firstResult.courseBestPeakSpeedKts).toBe(233)
     expect(firstResult.courseBestPeakAltitudeM).toBe(300)
+    expect(firstResult.newPeakSpeedRecord).toBe(true)
+    expect(firstResult.newPeakAltitudeRecord).toBe(true)
     expect(values.get('blackout.history.seed:peaks')).toBe(
       '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300}',
     )
@@ -307,6 +309,8 @@ describe('ChallengeRun', () => {
     })!
     expect(retryResult.courseBestPeakSpeedKts).toBe(233)
     expect(retryResult.courseBestPeakAltitudeM).toBe(300)
+    expect(retryResult.newPeakSpeedRecord).toBe(false)
+    expect(retryResult.newPeakAltitudeRecord).toBe(false)
   })
 
   it('keeps route scoring emphasis explicit and sum-stable', () => {

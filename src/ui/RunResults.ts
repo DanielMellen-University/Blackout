@@ -138,11 +138,21 @@ export class RunResults {
     this.scoreDetail.textContent = scoreParts.join(' · ')
     const newBadges = result.newMasteryBadges ?? []
     const allBadges = result.masteryBadges ?? []
-    this.badges.textContent = newBadges.length > 0
+    const newRecords = [
+      result.newPeakSpeedRecord ? 'SPEED' : '',
+      result.newPeakAltitudeRecord ? 'ALTITUDE' : '',
+    ].filter(Boolean)
+    const recordLabel = newRecords.length > 0
+      ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`
+      : ''
+    const badgeLabel = newBadges.length > 0
       ? `NEW BADGE${newBadges.length === 1 ? '' : 'S'} · ${newBadges.map(masteryBadgeLabel).join(' · ')}`
-      : allBadges.length > 0
+      : ''
+    this.badges.textContent = badgeLabel && recordLabel
+      ? `${badgeLabel} · ${recordLabel}`
+      : badgeLabel || recordLabel || (allBadges.length > 0
         ? `BADGES ${allBadges.length}/${MASTERY_BADGE_COUNT}`
-        : ''
+        : '')
     this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
     const bestBits = [
       result.isNewBest ? 'NEW BEST' : 'BEST',

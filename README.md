@@ -60,6 +60,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - A three-gate precision chain unlocks the local `STREAK HUNTER` mastery badge, expanding course progression without network state.
 - Completed-run score detail now reports peak speed and height above the home strip, turning each sortie into a compact flight log without adding scene work.
 - Repeatable course selectors retain the fastest and highest recorded sortie, so route mastery includes how you fly, not only how quickly you finish.
+- New course speed and altitude records are called out on the results card without interrupting the existing badge handoff.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.

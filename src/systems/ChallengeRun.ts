@@ -62,6 +62,10 @@ export interface ChallengeResult {
   courseBestPeakSpeedKts?: number
   /** Highest altitude ever recorded for this course, in metres. */
   courseBestPeakAltitudeM?: number
+  /** Whether this sortie set a new course peak-speed record. */
+  newPeakSpeedRecord?: boolean
+  /** Whether this sortie set a new course peak-altitude record. */
+  newPeakAltitudeRecord?: boolean
 }
 
 export interface ScoreStore {
@@ -525,8 +529,12 @@ export class ChallengeRun {
     const history = this.readHistory()
     const peakSpeedKts = Math.round(this.peakSpeedMps * 1.943844492)
     const peakAltitudeM = Math.round(this.peakAltitudeM)
-    const courseBestPeakSpeedKts = Math.max(history.peakSpeedKts ?? 0, peakSpeedKts)
-    const courseBestPeakAltitudeM = Math.max(history.peakAltitudeM ?? 0, peakAltitudeM)
+    const previousPeakSpeedKts = history.peakSpeedKts ?? 0
+    const previousPeakAltitudeM = history.peakAltitudeM ?? 0
+    const newPeakSpeedRecord = peakSpeedKts > previousPeakSpeedKts
+    const newPeakAltitudeRecord = peakAltitudeM > previousPeakAltitudeM
+    const courseBestPeakSpeedKts = Math.max(previousPeakSpeedKts, peakSpeedKts)
+    const courseBestPeakAltitudeM = Math.max(previousPeakAltitudeM, peakAltitudeM)
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
@@ -580,6 +588,8 @@ export class ChallengeRun {
       peakAltitudeM,
       courseBestPeakSpeedKts,
       courseBestPeakAltitudeM,
+      newPeakSpeedRecord,
+      newPeakAltitudeRecord,
     }
     return this.result
   }
