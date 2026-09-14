@@ -58,9 +58,9 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
-export type MissionChallenge = 'approach' | 'range' | 'precision'
+export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
 export type MissionScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
 
@@ -95,6 +95,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   orbit: 'ORBIT',
   sweep: 'SWEEP',
   slalom: 'SLALOM',
+  ridge: 'RIDGE RUN',
   free: 'FREE FLIGHT',
 }
 
@@ -102,6 +103,7 @@ const MISSION_CHALLENGE_LABELS: Record<MissionChallenge, string> = {
   approach: 'APPROACH',
   range: 'RANGE',
   precision: 'PRECISION',
+  altitude: 'CLIMB',
 }
 
 const ROUTE_MODIFIER_LABELS: Record<MissionRouteModifier, string> = {
@@ -128,7 +130,7 @@ export function routeProfileForSpawn(
   const hash = Math.abs(Math.floor(
     safeX * 0.0023 + safeZ * 0.0017 + safeYaw * 2.7,
   ))
-  return (['orbit', 'sweep', 'slalom'] as const)[hash % 3]!
+  return (['orbit', 'sweep', 'slalom', 'ridge'] as const)[hash % 4]!
 }
 
 export function routeProfileLabel(profile: MissionRouteProfile): string {
@@ -138,6 +140,7 @@ export function routeProfileLabel(profile: MissionRouteProfile): string {
 export function missionChallengeForProfile(profile: MissionRouteProfile): MissionChallenge {
   if (profile === 'sweep') return 'range'
   if (profile === 'slalom') return 'precision'
+  if (profile === 'ridge') return 'altitude'
   return 'approach'
 }
 
@@ -154,7 +157,7 @@ export function routeModifierForSpawn(
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
-  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : 0
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : 0
   const hash = Math.abs(Math.floor(
     safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
   ))
@@ -200,7 +203,7 @@ export function buildMissionRoute(
   const offsets = routeOffsets(profile, seedPhase, modifier)
   const points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
-    y: safeSpawnY + offset.height + i * (profile === 'slalom' ? 12 : 22),
+    y: safeSpawnY + offset.height + i * (profile === 'slalom' ? 12 : profile === 'ridge' ? 30 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
@@ -288,6 +291,16 @@ function routeOffsets(
       { forward: 520, right: spread * 0.96, height: 116 },
       { forward: -180, right: -spread * 1.08, height: 176 },
       { forward: -760, right: spread * 0.12, height: 142 },
+    ].map(shape)
+  }
+  if (profile === 'ridge') {
+    const weave = 320 + seedPhase * 70
+    return [
+      { forward: 720, right: 0, height: 170 },
+      { forward: 1380, right: weave, height: 260 },
+      { forward: 2200, right: -weave * 0.35, height: 430 },
+      { forward: 2850, right: weave * 0.9, height: 600 },
+      { forward: 2080, right: -weave * 1.1, height: 500 },
     ].map(shape)
   }
 

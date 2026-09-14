@@ -195,8 +195,13 @@ describe('MissionSystem gate crossing', () => {
       expect(Math.hypot(point.fwdX, point.fwdZ)).toBeCloseTo(1)
     }
 
-    for (const route of [routeA, routeB]) {
-      let previous = { x: route === routeA ? 0 : 1400, y: 20, z: route === routeA ? 0 : -900 }
+    const routeC = buildMissionRoute(0, 20, 0, 0, 'ridge')
+    for (const [route, start] of [
+      [routeA, { x: 0, y: 20, z: 0 }],
+      [routeB, { x: 1400, y: 20, z: -900 }],
+      [routeC, { x: 0, y: 20, z: 0 }],
+    ] as const) {
+      let previous = start
       for (const point of route) {
         for (const t of [0.2, 0.4, 0.6, 0.8]) {
           const x = previous.x + (point.x - previous.x) * t
@@ -221,16 +226,21 @@ describe('MissionSystem gate crossing', () => {
     const orbit = buildMissionRoute(0, 20, 0, 0, 'orbit')
     const sweep = buildMissionRoute(0, 20, 0, 0, 'sweep')
     const slalom = buildMissionRoute(0, 20, 0, 0, 'slalom')
+    const ridge = buildMissionRoute(0, 20, 0, 0, 'ridge')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
+    expect(ridge).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
+    expect(ridge[3]!.y).toBeGreaterThan(orbit[3]!.y)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
     expect(routeProfileForSpawn(0, 0, 0)).toBe('orbit')
+    expect(routeProfileForSpawn(0, 0, 1.2)).toBe('ridge')
     expect(routeProfileLabel('sweep')).toBe('SWEEP')
     expect(routeProfileLabel('slalom')).toBe('SLALOM')
+    expect(routeProfileLabel('ridge')).toBe('RIDGE RUN')
   })
 
   it('supports a no-gate free-flight profile', () => {
@@ -284,6 +294,17 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.routeSummary.challenge).toBe('precision')
     expect(mission.routeBriefing).toContain('PRECISION')
     expect(ring.scale.x).toBeCloseTo(0.82)
+    mission.dispose()
+  })
+
+  it('turns ridge routes into a high-altitude challenge', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0.8, 'ridge')
+    expect(mission.routeProfile).toBe('ridge')
+    expect(mission.routeSummary.challenge).toBe('altitude')
+    expect(mission.routeSummary.challengeLabel).toBe('CLIMB')
+    expect(mission.routeSummary.maxAltitudeMeters).toBeGreaterThan(500)
+    expect(mission.routeBriefing).toContain('CLIMB')
     mission.dispose()
   })
 

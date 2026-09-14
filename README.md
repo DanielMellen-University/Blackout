@@ -17,6 +17,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Pause opened after a focus loss now returns to the playable canvas instead of the browser body, keeping keyboard and mouse flight handoff reliable
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
+- Route variety: orbit, sweep, precision slalom, and high-altitude ridge-run circuits
 - Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.
 - Route profiles now include orbit, sweep, and slalom layouts, with the active profile called out in the takeoff briefing.
 - The takeoff briefing also reports route difficulty and minimum sampled terrain clearance, so the challenge is readable before the first input.
