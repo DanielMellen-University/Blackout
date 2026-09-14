@@ -158,6 +158,39 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('persists the best combo per course and repairs oversized records', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const first = new ChallengeRun(storage)
+    first.reset('seed:combo-record', 1)
+    first.update(0.1, 8)
+    first.recordCombo(6)
+    first.recordGate(1)
+    const result = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.courseBestCombo).toBe(6)
+    expect(result.newComboRecord).toBe(true)
+    expect(values.get('blackout.history.seed:combo-record')).toContain('"combo":6')
+
+    values.set(
+      'blackout.history.seed:combo-record',
+      '{"completionCount":2,"bestTimeSec":4,"combo":999,"extra":true}',
+    )
+    const repaired = new ChallengeRun(storage)
+    repaired.reset('seed:combo-record', 1)
+    repaired.recordGate(1)
+    repaired.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 })
+    expect(values.get('blackout.history.seed:combo-record')).toContain('"combo":20')
+    expect(values.get('blackout.history.seed:combo-record')).not.toContain('extra')
+  })
+
   it('persists the best barrel-roll count and repairs oversized records', () => {
     const values = new Map<string, string>()
     const storage = {

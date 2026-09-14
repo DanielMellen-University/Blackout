@@ -193,7 +193,10 @@ async function boot(): Promise<void> {
         const stuntLabel = history && Number.isFinite(history.stuntRolls) && history.stuntRolls! > 0
           ? ` · ROLLS X${Math.max(0, Math.floor(history.stuntRolls!))}`
           : ''
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${badgeLabel}`
+        const comboLabel = history && Number.isFinite(history.combo) && history.combo! > 1
+          ? ` · COMBO X${Math.max(0, Math.floor(history.combo!))}`
+          : ''
+        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${badgeLabel}`
         option.title = course.detail
       }
     }

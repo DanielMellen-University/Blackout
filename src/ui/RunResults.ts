@@ -160,6 +160,12 @@ export class RunResults {
       scoreParts.push(`COMBO X${bestCombo}`)
       if (comboScore > 0) scoreParts.push(`COMBO +${comboScore.toLocaleString()}`)
     }
+    const courseBestCombo = Number.isFinite(result.courseBestCombo)
+      ? Math.max(0, Math.floor(result.courseBestCombo!))
+      : 0
+    if (courseBestCombo > bestCombo) {
+      scoreParts.push(`COURSE COMBO X${courseBestCombo}`)
+    }
     const courseBestStuntRolls = Number.isFinite(result.courseBestStuntRolls)
       ? Math.max(0, Math.floor(result.courseBestStuntRolls!))
       : 0
@@ -179,6 +185,7 @@ export class RunResults {
       result.newPeakSpeedRecord ? 'SPEED' : '',
       result.newPeakAltitudeRecord ? 'ALTITUDE' : '',
       result.newStuntRecord ? 'ROLLS' : '',
+      result.newComboRecord ? 'COMBO' : '',
     ].filter(Boolean)
     const recordLabel = newRecords.length > 0
       ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`
