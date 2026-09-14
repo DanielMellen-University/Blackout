@@ -86,6 +86,7 @@ describe('ChallengeRun', () => {
     run.update(0.5, 8, 160)
     expect(run.phase).toBe('returning')
     expect(run.objectiveLabel).toBe('FREE FLIGHT / RETURN & LAND')
+    run.recordAltitudeMilestone(1_500)
     const result = run.finishLanding({
       verticalSpeed: -1,
       groundSpeed: 20,
@@ -95,6 +96,7 @@ describe('ChallengeRun', () => {
     expect(result).not.toBeNull()
     expect(result!.gateScore).toBe(0)
     expect(result!.freeFlight).toBe(true)
+    expect(result!.altitudeMilestoneM).toBe(1_500)
     expect(run.phase).toBe('complete')
     expect(run.objectiveLabel).toBe('FREE FLIGHT COMPLETE')
   })

@@ -137,6 +137,9 @@ export class RunResults {
     if (Number.isFinite(result.peakAltitudeM)) {
       scoreParts.push(`ALT ${Math.max(0, Math.round(result.peakAltitudeM!)).toLocaleString()}M`)
     }
+    if (Number.isFinite(result.altitudeMilestoneM) && result.altitudeMilestoneM! > 0) {
+      scoreParts.push(`CLIMB ${Math.max(0, Math.floor(result.altitudeMilestoneM!)).toLocaleString()}M`)
+    }
     const stuntRolls = Number.isFinite(result.stuntRolls)
       ? Math.max(0, Math.floor(result.stuntRolls!))
       : 0

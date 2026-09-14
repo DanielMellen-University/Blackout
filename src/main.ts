@@ -66,6 +66,7 @@ import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
 import { StuntTracker } from './systems/StuntTracker'
+import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
 import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
 import {
   audioVolumePercent,
@@ -387,6 +388,7 @@ async function boot(): Promise<void> {
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const stunts = new StuntTracker()
+  const altitudeMilestones = new AltitudeMilestoneTracker()
   const radar = new RadarSystem()
   applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
   applyRadarQuality(renderQuality)
@@ -586,6 +588,7 @@ async function boot(): Promise<void> {
     crashFx.reset()
     landingFx.reset()
     stunts.reset()
+    altitudeMilestones.reset()
     input.clearQueued()
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
@@ -987,6 +990,15 @@ async function boot(): Promise<void> {
         }
 
         if (aircraft.status !== 'crashed') {
+          const altitudeMilestone = altitudeMilestones.update(
+            aircraft.position.y - world.spawn.y,
+            !aircraft.onGround,
+          )
+          if (altitudeMilestone) {
+            challenge.recordAltitudeMilestone(altitudeMilestone.thresholdM)
+            audio.playCue('milestone')
+            showBanner(`ALTITUDE ${altitudeMilestone.thresholdM.toLocaleString()}M`, 1700, 'success')
+          }
           const stunt = stunts.update(dt, !aircraft.onGround, aircraft.angularVelocity.z)
           if (stunt) {
             challenge.recordStunt(stunt.rolls)

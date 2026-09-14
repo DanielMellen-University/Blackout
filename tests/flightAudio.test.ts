@@ -134,6 +134,7 @@ describe('flight audio automation', () => {
     audio.playCue('landing-soft')
     audio.playCue('landing-hard')
     audio.playCue('stunt')
+    audio.playCue('milestone')
     audio.silence()
     expect(audio.isDisposed).toBe(true)
   })

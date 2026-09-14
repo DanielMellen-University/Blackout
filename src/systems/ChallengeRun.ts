@@ -81,6 +81,8 @@ export interface ChallengeResult {
   newStuntRecord?: boolean
   /** Whether this result came from the no-checkpoint exploration course. */
   freeFlight?: boolean
+  /** Highest climb milestone reached during this sortie, in metres. */
+  altitudeMilestoneM?: number
 }
 
 export interface ScoreStore {
@@ -439,6 +441,7 @@ export class ChallengeRun {
   private courseId = 'default'
   private scoringFocus: ChallengeScoringFocus = 'balanced'
   private freeFlight = false
+  private altitudeMilestone = 0
   private gateQualityTotal = 0
   private gateQualityStreak = 0
   private bestGateQualityStreak = 0
@@ -464,6 +467,7 @@ export class ChallengeRun {
     this.totalGates = Math.max(0, Math.floor(totalGates))
     this.scoringFocus = scoringFocus
     this.freeFlight = courseId === 'free-flight'
+    this.altitudeMilestone = 0
     this.phase = 'ready'
     this.elapsedSec = 0
     this.gatesPassed = 0
@@ -529,6 +533,13 @@ export class ChallengeRun {
       ? Math.max(0, Math.min(MAX_STUNT_ROLLS, Math.floor(rolls)))
       : 0
     this.stuntRollCount = Math.min(MAX_STUNT_ROLLS, this.stuntRollCount + safeRolls)
+  }
+
+  /** Retain the highest reached climb milestone without affecting scoring. */
+  recordAltitudeMilestone(altitudeM: number): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    if (!Number.isFinite(altitudeM)) return
+    this.altitudeMilestone = Math.max(0, Math.min(100_000, Math.floor(altitudeM)))
   }
 
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
@@ -651,6 +662,7 @@ export class ChallengeRun {
       courseBestStuntRolls,
       newStuntRecord,
       freeFlight: this.freeFlight,
+      altitudeMilestoneM: this.altitudeMilestone,
     }
     return this.result
   }

@@ -68,6 +68,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Curated course history now keeps the best barrel-roll count, so stunt mastery survives retries and appears in course selectors.
 - `Free flight` is an optional no-checkpoint course for exploring streamed terrain, settlements, and weather before returning to land.
 - Free-flight HUD and results copy identify scenic sorties clearly, while the same safe landing handoff and score detail remain intact.
+- Airborne climb milestones at 500M, 1,500M, 3,000M, and 6,000M give free flight short-lived reward cues and retain the highest reached tier in results.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.

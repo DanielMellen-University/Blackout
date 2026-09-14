@@ -232,6 +232,7 @@ export class FlightAudio {
       | 'landing-soft'
       | 'landing-hard'
       | 'stunt'
+      | 'milestone'
       | 'crash'
       | 'ab'
       | 'ab-off'
@@ -284,6 +285,11 @@ export class FlightAudio {
       this.tone(660, now, 0.08, 'triangle', 0.1, 820)
       this.tone(880, now + 0.08, 0.1, 'sine', 0.09, 1080)
       this.tone(1180, now + 0.17, 0.16, 'sine', 0.08, 1320)
+    } else if (kind === 'milestone') {
+      // A short ascending chime marks a climb milestone without a sustained bed.
+      this.tone(480, now, 0.09, 'triangle', 0.08, 620)
+      this.tone(720, now + 0.08, 0.1, 'sine', 0.075, 920)
+      this.tone(1_040, now + 0.18, 0.18, 'sine', 0.065, 1_180)
     } else if (kind === 'ab') {
       // Rising whoosh on engage (not every AB frame).
       this.noiseBurst(now, 0.22, 'white', 0.2, 700, 2800)
