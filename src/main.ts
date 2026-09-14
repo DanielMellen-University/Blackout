@@ -85,10 +85,12 @@ import {
   crosswindDirection,
   crosswindSpeedMps,
   navigationApproachCue,
+  navigationLateralCue,
   weatherCycleBanner,
   waterSurfaceCue,
   type CrosswindSide,
   type HudBannerTone,
+  type NavigationLateralCue,
 } from './ui/HUD'
 import { RunResults } from './ui/RunResults'
 import {
@@ -1210,6 +1212,7 @@ async function boot(): Promise<void> {
       let navApproach: 'aligned' | 'turn-left' | 'turn-right' | null = null
       let navCrosswind: number | null = null
       let navCrosswindSide: CrosswindSide = 'calm'
+      let navLateral: NavigationLateralCue | null = null
       if (returning || emergencyReturn) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navDist = Math.hypot(
@@ -1222,6 +1225,9 @@ async function boot(): Promise<void> {
           ? cameraRelativeBearing(cameras.camera.position, cameras.camera.quaternion, returnTarget)
           : gateScreenBearing(cameras.camera, returnTarget)
         navApproach = navigationApproachCue(pose.heading - world.spawn.yaw, 'base')
+        const lateralOffset = (aircraft.position.x - world.spawn.x) * Math.cos(world.spawn.yaw) +
+          (aircraft.position.z - world.spawn.z) * -Math.sin(world.spawn.yaw)
+        navLateral = navigationLateralCue(lateralOffset, 'base')
         navCrosswind = crosswindSpeedMps(
           precipitation.windX,
           precipitation.windZ,
@@ -1358,6 +1364,7 @@ async function boot(): Promise<void> {
       hudFrame.navApproach = navApproach
       hudFrame.crosswind = navCrosswind
       hudFrame.crosswindSide = navCrosswindSide
+      hudFrame.navLateral = navLateral
       hudFrame.radar = radarContacts
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
         ? FLIGHT_CONTROLS_HINT

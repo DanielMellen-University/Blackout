@@ -118,6 +118,8 @@ export type NavigationRangeCue = 'closing' | 'opening' | 'steady'
 
 export type NavigationApproachCue = 'aligned' | 'turn-left' | 'turn-right'
 
+export type NavigationLateralCue = 'center' | 'left' | 'right'
+
 /** Convert target altitude error into a calm climb, descent, or level cue. */
 export function navigationAltitudeCue(
   altDelta: number,
@@ -161,6 +163,24 @@ export function navigationApproachCue(
   if (delta < -Math.PI) delta += Math.PI * 2
   if (Math.abs(delta) <= 8 * (Math.PI / 180)) return 'aligned'
   return delta > 0 ? 'turn-left' : 'turn-right'
+}
+
+/** Resolve a bounded correction back toward the home-runway centerline. */
+export function navigationLateralCue(
+  lateralOffset: number,
+  target: unknown = 'base',
+): NavigationLateralCue | null {
+  if (target !== 'base' || !Number.isFinite(lateralOffset)) return null
+  if (lateralOffset > 12) return 'left'
+  if (lateralOffset < -12) return 'right'
+  return 'center'
+}
+
+export function navigationLateralLabel(cue: NavigationLateralCue | null): string {
+  if (cue === 'left') return 'LINE L'
+  if (cue === 'right') return 'LINE R'
+  if (cue === 'center') return 'LINE OK'
+  return ''
 }
 
 /** Keep manual weather changes audible without exposing raw or empty labels. */
@@ -283,6 +303,7 @@ export class HUD {
   private readonly navArrowEl: HTMLElement | null
   private readonly navTurnEl: HTMLElement | null
   private readonly navApproachEl: HTMLElement | null
+  private readonly navLateralEl: HTMLElement | null
   private readonly navRangeEl: HTMLElement | null
   private readonly navTrendEl: HTMLElement | null
   private readonly navEtaEl: HTMLElement | null
@@ -361,6 +382,7 @@ export class HUD {
   private navSectorValue: NavigationSector | null = null
   private navTurnText = ''
   private navApproachText = ''
+  private navLateralText = ''
   private navRangeMode = -1
   private navRangeStep = Number.NaN
   private navRangeText = ''
@@ -443,6 +465,7 @@ export class HUD {
     this.navArrowEl = root.getElementById('nav-arrow')
     this.navTurnEl = root.getElementById('nav-turn')
     this.navApproachEl = root.getElementById('nav-approach')
+    this.navLateralEl = root.getElementById('nav-line')
     this.navRangeEl = root.getElementById('nav-range')
     this.navTrendEl = root.getElementById('nav-trend')
     this.navEtaEl = root.getElementById('nav-eta')
@@ -540,6 +563,8 @@ export class HUD {
     navTarget?: 'gate' | 'base' | string
     /** Return-leg runway alignment cue. */
     navApproach?: NavigationApproachCue | null
+    /** Return-leg runway centerline correction cue. */
+    navLateral?: NavigationLateralCue | null
     navAltDelta?: number
     banner?: string | null
     bannerTone?: HudBannerTone
@@ -830,6 +855,7 @@ export class HUD {
       opts.missionCurrent,
       opts.missionTotal,
       opts.navApproach,
+      opts.navLateral,
     )
 
     if (opts.throttle !== undefined) {
@@ -907,6 +933,7 @@ export class HUD {
     missionCurrent?: number,
     missionTotal?: number,
     approach?: NavigationApproachCue | null,
+    lateral?: NavigationLateralCue | null,
   ): void {
     if (!this.navCueEl) return
     const safeBearing = normalizeNavigationBearing(bearing)
@@ -922,12 +949,17 @@ export class HUD {
       this.setClass(this.navCueEl, 'nav-approach-aligned', false)
       this.setClass(this.navCueEl, 'nav-approach-left', false)
       this.setClass(this.navCueEl, 'nav-approach-right', false)
+      this.setClass(this.navCueEl, 'nav-lateral-center', false)
+      this.setClass(this.navCueEl, 'nav-lateral-left', false)
+      this.setClass(this.navCueEl, 'nav-lateral-right', false)
       this.setHidden(this.navCueEl, true)
       this.setNavigationSector(null)
       if (this.navTurnEl) this.setText(this.navTurnEl, '')
       this.navTurnText = ''
       if (this.navApproachEl) this.setText(this.navApproachEl, '')
       this.navApproachText = ''
+      if (this.navLateralEl) this.setText(this.navLateralEl, '')
+      this.navLateralText = ''
       this.navRangeValue = Number.NaN
       this.navRangeCueValue = null
       this.navTargetValue = null
@@ -940,6 +972,7 @@ export class HUD {
     const targetLabel = navigationTargetLabel(target)
     const targetText = navigationTargetText(target, missionCurrent, missionTotal)
     const approachCue = targetLabel === 'BASE' ? (approach ?? null) : null
+    const lateralCue = targetLabel === 'BASE' ? (lateral ?? null) : null
     const previousDist = targetLabel === this.navTargetValue ? this.navRangeValue : Number.NaN
     const rangeCue = navigationRangeCue(safeDist, previousDist)
     const etaSeconds = navigationEtaSeconds(safeDist, speed, rangeCue)
@@ -958,6 +991,9 @@ export class HUD {
     this.setClass(this.navCueEl, 'nav-approach-aligned', approachCue === 'aligned')
     this.setClass(this.navCueEl, 'nav-approach-left', approachCue === 'turn-left')
     this.setClass(this.navCueEl, 'nav-approach-right', approachCue === 'turn-right')
+    this.setClass(this.navCueEl, 'nav-lateral-center', lateralCue === 'center')
+    this.setClass(this.navCueEl, 'nav-lateral-left', lateralCue === 'left')
+    this.setClass(this.navCueEl, 'nav-lateral-right', lateralCue === 'right')
     if (this.navTargetEl) {
       this.setText(this.navTargetEl, targetText)
     }
@@ -967,7 +1003,11 @@ export class HUD {
       ? 'aligned with runway'
       : approachCue === 'turn-left' ? 'turn left to align with runway'
         : approachCue === 'turn-right' ? 'turn right to align with runway' : ''
-    this.setAttribute(this.navCueEl, 'aria-label', `${targetText} navigation, ${navigationSectorLabel(sector)}${approachLabel ? `, ${approachLabel}` : ''}`)
+    const lateralLabel = lateralCue === 'left'
+      ? 'steer left toward runway centerline'
+      : lateralCue === 'right' ? 'steer right toward runway centerline'
+        : lateralCue === 'center' ? 'on runway centerline' : ''
+    this.setAttribute(this.navCueEl, 'aria-label', `${targetText} navigation, ${navigationSectorLabel(sector)}${approachLabel ? `, ${approachLabel}` : ''}${lateralLabel ? `, ${lateralLabel}` : ''}`)
     if (this.navTurnEl) {
       const turnText = navigationSectorLabel(sector)
       if (turnText !== this.navTurnText) this.navTurnText = turnText
@@ -980,6 +1020,11 @@ export class HUD {
           : approachCue === 'turn-right' ? 'TURN R' : ''
       if (approachText !== this.navApproachText) this.navApproachText = approachText
       this.setText(this.navApproachEl, this.navApproachText)
+    }
+    if (this.navLateralEl) {
+      const lateralText = navigationLateralLabel(lateralCue)
+      if (lateralText !== this.navLateralText) this.navLateralText = lateralText
+      this.setText(this.navLateralEl, this.navLateralText)
     }
     const deg = navigationBearingDegrees(safeBearing)
     if (this.navArrowEl) {

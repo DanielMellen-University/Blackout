@@ -35,6 +35,8 @@ import {
   normalizeMissionPhase,
   navigationAltitudeCue,
   navigationApproachCue,
+  navigationLateralCue,
+  navigationLateralLabel,
   navigationBearingDegrees,
   navigationEtaSeconds,
   navigationRangeCue,
@@ -384,6 +386,18 @@ describe('HUD value formatting', () => {
     expect(navigationApproachCue(Math.PI * 2 + 30 * Math.PI / 180)).toBe('turn-left')
     expect(navigationApproachCue(30 * Math.PI / 180, 'gate')).toBeNull()
     expect(navigationApproachCue(Number.NaN)).toBeNull()
+  })
+
+  it('keeps the return localizer bounded and explicit', () => {
+    expect(navigationLateralCue(0)).toBe('center')
+    expect(navigationLateralCue(30)).toBe('left')
+    expect(navigationLateralCue(-30)).toBe('right')
+    expect(navigationLateralCue(30, 'gate')).toBeNull()
+    expect(navigationLateralCue(Number.NaN)).toBeNull()
+    expect(navigationLateralLabel('center')).toBe('LINE OK')
+    expect(navigationLateralLabel('left')).toBe('LINE L')
+    expect(navigationLateralLabel('right')).toBe('LINE R')
+    expect(navigationLateralLabel(null)).toBe('')
   })
 
   it('keeps route ETA bounded and only reports it while closing', () => {

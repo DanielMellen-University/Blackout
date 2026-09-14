@@ -79,6 +79,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - The navigation target now identifies the active checkpoint as `GATE n/total`, then switches back to `BASE` for the return leg.
 - The mission HUD now retains the latest gate pace result after the clear banner fades, showing `AHEAD`, `BEHIND`, `ON PACE`, or `FIRST RUN`.
 - During the return leg, the navigation cue compares the jet to the home runway and shows `ALIGN`, `TURN L`, or `TURN R` for a cleaner landing approach.
+- The return navigation cue also shows `LINE L`, `LINE R`, or `LINE OK` from the runway centerline, making the final approach easier to place.
 - During the return leg, the wind row also reports runway-relative crosswind as `XW`, highlighting stronger crosswind conditions without changing flight physics.
 - The return-leg crosswind cue identifies whether the wind pushes left or right across the runway, not just its magnitude.
 - Pressing `N` to cycle weather now announces the incoming front immediately, keeping the existing weather control discoverable without adding simulation work.
