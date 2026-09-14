@@ -39,6 +39,8 @@ import {
   navigationLateralLabel,
   navigationSpeedCue,
   navigationSpeedLabel,
+  navigationGlideCue,
+  navigationGlideLabel,
   navigationBearingDegrees,
   navigationEtaSeconds,
   navigationRangeCue,
@@ -412,6 +414,19 @@ describe('HUD value formatting', () => {
     expect(navigationSpeedLabel('on-speed')).toBe('SPD OK')
     expect(navigationSpeedLabel('fast')).toBe('SPD FAST')
     expect(navigationSpeedLabel(null)).toBe('')
+  })
+
+  it('keeps the return glide window bounded and explicit', () => {
+    expect(navigationGlideCue(1000, 100)).toBe('on-slope')
+    expect(navigationGlideCue(1000, 140)).toBe('high')
+    expect(navigationGlideCue(1000, 10)).toBe('low')
+    expect(navigationGlideCue(1000, 100, 'gate')).toBeNull()
+    expect(navigationGlideCue(Number.NaN, 100)).toBeNull()
+    expect(navigationGlideCue(1000, Number.NaN)).toBeNull()
+    expect(navigationGlideLabel('high')).toBe('GS HIGH')
+    expect(navigationGlideLabel('on-slope')).toBe('GS OK')
+    expect(navigationGlideLabel('low')).toBe('GS LOW')
+    expect(navigationGlideLabel(null)).toBe('')
   })
 
   it('keeps route ETA bounded and only reports it while closing', () => {

@@ -81,6 +81,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - During the return leg, the navigation cue compares the jet to the home runway and shows `ALIGN`, `TURN L`, or `TURN R` for a cleaner landing approach.
 - The return navigation cue also shows `LINE L`, `LINE R`, or `LINE OK` from the runway centerline, making the final approach easier to place.
 - Base return also carries `SPD SLOW`, `SPD OK`, or `SPD FAST`, keeping landing energy readable before touchdown.
+- Base return also carries `GS HIGH`, `GS OK`, or `GS LOW`, turning the existing altitude and range data into a simple glide-slope cue.
 - During the return leg, the wind row also reports runway-relative crosswind as `XW`, highlighting stronger crosswind conditions without changing flight physics.
 - The return-leg crosswind cue identifies whether the wind pushes left or right across the runway, not just its magnitude.
 - Rain and snow now reduce runway grip during rollout, keeping the arcade envelope forgiving while making wet-weather landings require more braking room.
