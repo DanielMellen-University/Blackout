@@ -78,6 +78,8 @@ export class Aircraft {
   readonly engineState: EngineState = createEngineState()
   readonly engineHeat: EngineHeatState = createEngineHeatState()
   readonly fuel: FuelState = createFuelState()
+  /** Bounded weather gust strength supplied by the world before physics steps. */
+  weatherGust = 0
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
     point: new Vector3(),
@@ -262,6 +264,8 @@ export class Aircraft {
     this.controls.gearDown = true
     this.manualGearOverride = false
     this.controls.throttle = s.throttle
+    this.weatherGust = 0
+    this.flight.reset()
     this.wheelSpin = 0
     this.visualTimeMs = 0
     this.navLightOpacity = Number.NaN
@@ -331,6 +335,13 @@ export class Aircraft {
     this.updateLoadFactor(dt)
     this.autoGear()
     this.updateVisuals(dt, nowMs)
+  }
+
+  /** Feed the current front's gust strength into the fixed-step flight model. */
+  setWeatherGust(gust: number): void {
+    const safe = Number.isFinite(gust) ? MathUtils.clamp(gust, 0, 1) : 0
+    if (Math.abs(safe - this.weatherGust) < 0.002) return
+    this.weatherGust = safe
   }
 
   crash(): void {

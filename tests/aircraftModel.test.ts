@@ -477,6 +477,31 @@ describe('rebuilt aircraft', () => {
     expect(Math.abs(assistedRight.y)).toBeLessThan(Math.abs(unassistedRight.y))
   })
 
+  it('keeps clear air steady and bounds storm turbulence in airborne flight', () => {
+    setContactHeightSampler(() => 0)
+    const calm = new Aircraft()
+    const storm = new Aircraft()
+    calm.position.set(0, 1000, 0)
+    storm.position.set(0, 1000, 0)
+    calm.velocity.set(0, 0, 200)
+    storm.velocity.set(0, 0, 200)
+    storm.setWeatherGust(1)
+
+    calm.step(1 / 60)
+    storm.step(1 / 60)
+    expect(calm.angularVelocity.length()).toBeCloseTo(0, 6)
+    expect(storm.angularVelocity.length()).toBeGreaterThan(0)
+
+    for (let i = 0; i < 180; i++) storm.step(1 / 60)
+    expect(Number.isFinite(storm.angularVelocity.length())).toBe(true)
+    expect(storm.angularVelocity.length()).toBeLessThan(1.5)
+
+    storm.setWeatherGust(0)
+    expect(storm.weatherGust).toBe(0)
+    storm.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    expect(storm.weatherGust).toBe(0)
+  })
+
   it('disposes replaced procedural model resources exactly once', () => {
     const model = createF35Model()
     const body = model.getObjectByName('BlendedFuselage') as Mesh

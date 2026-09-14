@@ -55,6 +55,7 @@ const CONTACT_POINTS: ReadonlyArray<readonly [number, number, number]> = [
  * Body: +X right, +Y up, +Z nose.
  */
 export class FlightModel {
+  private turbulencePhase = 0
   /** Reused contact result; each sweep consumes it before the next probe. */
   private readonly hitResult: SurfaceHit = {
     depth: 0,
@@ -67,6 +68,10 @@ export class FlightModel {
   private readonly surfaceSample: GroundSurfaceSample = {
     height: 0,
     kind: 'land',
+  }
+
+  reset(): void {
+    this.turbulencePhase = 0
   }
 
   step(aircraft: Aircraft, dt: number): void {
@@ -110,6 +115,15 @@ export class FlightModel {
         const bankError = Math.atan2(_right.y, _up.y)
         tOz -= MathUtils.clamp(bankError, -1.2, 1.2) * C.stabilityAssistRoll
       }
+    }
+    if (!onGround && aircraft.weatherGust > 0.001 && airspeed > C.minSpeed * 0.55) {
+      this.turbulencePhase += dt * (0.8 + aircraft.weatherGust * 2.4)
+      const gust = aircraft.weatherGust * (controls.stabilityAssist ? 0.62 : 1)
+      tOx += Math.sin(this.turbulencePhase * 1.13 + 0.4) * gust * C.turbulencePitch
+      tOz += Math.sin(this.turbulencePhase * 0.79 + 1.8) * gust * C.turbulenceRoll
+      const yawGust = Math.sin(this.turbulencePhase * 0.47 + 3.1) * gust * C.turbulenceYaw
+      // Weather yaw is deliberately weaker than pilot rudder authority.
+      angularVelocity.y += yawGust * dt
     }
 
     const kP = 1 - Math.exp(-C.pitchResponse * dt)

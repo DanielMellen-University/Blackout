@@ -53,6 +53,10 @@ export const flightConfig = {
   stabilityAssistPitch: 1.15,
   stabilityAssistRoll: 1.8,
   stabilityAssistDeadzone: 0.08,
+  /** Subtle airborne weather torque, scaled by the active front's gust value. */
+  turbulencePitch: 0.16,
+  turbulenceRoll: 0.24,
+  turbulenceYaw: 0.08,
 
   gearHeight: 1.4,
   bellyHeight: 0.95,
