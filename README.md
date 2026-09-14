@@ -73,6 +73,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Chain clean gates and barrel rolls within 8 seconds to build combo rewards and a capped score bonus.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
+- Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.

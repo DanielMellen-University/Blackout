@@ -3,6 +3,7 @@ import type { MissionRouteProfile } from './Mission'
 export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
+export const RANDOM_COURSE_RUN_ID = 'random-world'
 
 export interface CourseDefinition {
   id: CourseId
@@ -64,6 +65,18 @@ export function courseSeedForId(id: string | null | undefined): number | undefin
 export function courseRunId(course: CourseDefinition): string | null {
   if (course.seed === null || course.profile === null) return null
   return `seed:${course.seed}:${course.profile}`
+}
+
+/** Keep random sorties in one bounded record bucket instead of one key per seed. */
+export function courseSessionId(
+  selectedCourseId: CourseId,
+  worldSeed: number,
+  profile: MissionRouteProfile,
+): string {
+  if (selectedCourseId === 'random') return RANDOM_COURSE_RUN_ID
+  if (profile === 'free') return 'free-flight'
+  const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
+  return `seed:${safeSeed}:${profile}`
 }
 
 export function readSelectedCourseId(

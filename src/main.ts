@@ -59,6 +59,7 @@ import {
   courseRunId,
   COURSE_LIBRARY,
   COURSE_SELECTION_STORAGE_KEY,
+  courseSessionId,
   readSelectedCourseId,
   writeSelectedCourseId,
   type CourseId,
@@ -534,9 +535,11 @@ async function boot(): Promise<void> {
   let refueling = false
   const returnTarget = new Vector3()
 
-  const courseId = (): string => world.mission.routeProfile === 'free'
-    ? 'free-flight'
-    : `seed:${world.worldSeed}:${world.mission.routeProfile}`
+  const courseId = (): string => courseSessionId(
+    selectedCourseId,
+    world.worldSeed,
+    world.mission.routeProfile,
+  )
 
   let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {

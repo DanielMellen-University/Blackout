@@ -4,6 +4,7 @@ import {
   COURSE_SELECTION_STORAGE_KEY,
   courseDefinitionForId,
   courseRunId,
+  courseSessionId,
   courseSeedForId,
   readSelectedCourseId,
   writeSelectedCourseId,
@@ -23,6 +24,10 @@ describe('course library', () => {
     expect(courseDefinitionForId('precision-slalom').profile).toBe('slalom')
     expect(courseRunId(courseDefinitionForId('precision-slalom'))).toBe('seed:3:slalom')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
+    expect(courseSessionId('random', 42, 'orbit')).toBe('random-world')
+    expect(courseSessionId('free-flight', 42, 'free')).toBe('free-flight')
+    expect(courseSessionId('training-orbit', 1, 'orbit')).toBe('seed:1:orbit')
+    expect(courseSessionId('training-orbit', Number.NaN, 'orbit')).toBe('seed:0:orbit')
   })
 
   it('persists only valid course ids and fails closed on storage denial', () => {
