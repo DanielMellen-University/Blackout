@@ -1025,11 +1025,20 @@ async function boot(): Promise<void> {
             aircraft.markLanded()
             wasAirborne = false
             const pose = attitudeFromOrientation(aircraft.orientation)
+            const baseDx = aircraft.position.x - world.spawn.x
+            const baseDz = aircraft.position.z - world.spawn.z
+            const runwayRightX = Math.cos(world.spawn.yaw)
+            const runwayRightZ = -Math.sin(world.spawn.yaw)
+            const runwayLateralM = baseDx * runwayRightX + baseDz * runwayRightZ
+            const headingDelta = pose.heading - world.spawn.yaw
             const finished = challenge.finishLanding({
               verticalSpeed: aircraft.impactVy || aircraft.velocity.y,
               groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
               pitchRad: pose.pitch,
               rollRad: pose.roll,
+              baseDistanceM: Math.hypot(baseDx, baseDz),
+              runwayLateralM,
+              headingErrorRad: Math.atan2(Math.sin(headingDelta), Math.cos(headingDelta)),
             }, aircraft.fuel.fraction)
             if (finished) {
               audio.playCue(

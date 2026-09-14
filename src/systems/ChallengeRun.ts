@@ -20,6 +20,12 @@ export interface LandingMetrics {
   groundSpeed: number
   pitchRad: number
   rollRad: number
+  /** Horizontal distance from the home-strip center at touchdown. */
+  baseDistanceM?: number
+  /** Signed runway-local lateral offset at touchdown. */
+  runwayLateralM?: number
+  /** Absolute heading error from the runway centerline at touchdown. */
+  headingErrorRad?: number
 }
 
 export interface ChallengeResult {
@@ -90,6 +96,8 @@ export interface ChallengeResult {
   comboScore?: number
   /** Capped score bonus awarded for preserving fuel through touchdown. */
   fuelScore?: number
+  /** Capped score bonus awarded for a centered, aligned home-strip approach. */
+  approachScore?: number
   /** Highest combo ever recorded for this course. */
   courseBestCombo?: number
   /** Whether this sortie set a new course combo record. */
@@ -107,11 +115,12 @@ const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
-export const MAX_BEST_SCORE = 110_000
+export const MAX_BEST_SCORE = 111_000
 export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
 export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
+export const MAX_APPROACH_SCORE = 500
 
 export interface CourseHistory {
   completionCount: number
@@ -147,6 +156,22 @@ export function landingQualityLabel(quality: number): LandingQualityLabel {
 /** Reward a completed landing for preserving fuel, with a finite cap. */
 export function fuelEfficiencyScore(fraction: number): number {
   return Math.round(clamp01(fraction) * MAX_FUEL_EFFICIENCY_SCORE)
+}
+
+/** Reward a safe runway approach without making off-field landings fail. */
+export function landingApproachScore(metrics: Pick<LandingMetrics, 'baseDistanceM' | 'runwayLateralM' | 'headingErrorRad'>): number {
+  if (
+    !Number.isFinite(metrics.baseDistanceM)
+    || !Number.isFinite(metrics.runwayLateralM)
+    || !Number.isFinite(metrics.headingErrorRad)
+  ) return 0
+  const distance = Math.max(0, metrics.baseDistanceM!)
+  const lateral = Math.abs(metrics.runwayLateralM!)
+  const heading = Math.abs(metrics.headingErrorRad!)
+  const distanceFactor = 1 - clamp01(distance / 180)
+  const lateralFactor = 1 - clamp01(lateral / 55)
+  const headingFactor = 1 - clamp01(heading / (Math.PI / 3))
+  return Math.round(MAX_APPROACH_SCORE * distanceFactor * lateralFactor * headingFactor)
 }
 
 type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
@@ -585,6 +610,7 @@ export class ChallengeRun {
     const fuelRemainingPercent = Math.round(clamp01(fuelFraction) * 100)
     const fuelUsedPercent = 100 - fuelRemainingPercent
     const fuelScore = fuelEfficiencyScore(fuelFraction)
+    const approachScore = landingApproachScore(metrics)
     const gateQuality =
       this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
     const weights = scoringWeightsForFocus(this.scoringFocus)
@@ -610,7 +636,7 @@ export class ChallengeRun {
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -710,6 +736,7 @@ export class ChallengeRun {
       bestCombo: this.bestCombo > 0 ? this.bestCombo : undefined,
       comboScore: comboScore > 0 ? comboScore : undefined,
       fuelScore: fuelScore > 0 ? fuelScore : undefined,
+      approachScore: approachScore > 0 ? approachScore : undefined,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
       newComboRecord,
     }

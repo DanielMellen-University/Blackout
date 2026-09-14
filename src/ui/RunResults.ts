@@ -181,6 +181,10 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.fuelScore!))
       : 0
     if (fuelScore > 0) scoreParts.push(`FUEL +${fuelScore.toLocaleString()}`)
+    const approachScore = Number.isFinite(result.approachScore)
+      ? Math.max(0, Math.floor(result.approachScore!))
+      : 0
+    if (approachScore > 0) scoreParts.push(`APPROACH +${approachScore.toLocaleString()}`)
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0

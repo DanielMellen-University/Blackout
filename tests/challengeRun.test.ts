@@ -5,6 +5,7 @@ import {
   formatSplitTrace,
   formatTime,
   fuelEfficiencyScore,
+  landingApproachScore,
   landingQualityLabel,
   repairCourseHistory,
   readCourseHistory,
@@ -165,6 +166,13 @@ describe('ChallengeRun', () => {
     expect(fuelEfficiencyScore(-1)).toBe(0)
     expect(fuelEfficiencyScore(Number.NaN)).toBe(0)
     expect(fuelEfficiencyScore(99)).toBe(1_000)
+  })
+
+  it('rewards a centered, aligned runway approach without rewarding malformed telemetry', () => {
+    expect(landingApproachScore({ baseDistanceM: 0, runwayLateralM: 0, headingErrorRad: 0 })).toBe(500)
+    expect(landingApproachScore({ baseDistanceM: 90, runwayLateralM: 20, headingErrorRad: Math.PI / 6 })).toBeGreaterThan(0)
+    expect(landingApproachScore({ baseDistanceM: 999, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
+    expect(landingApproachScore({ baseDistanceM: Number.NaN, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
   })
 
   it('persists the best combo per course and repairs oversized records', () => {
