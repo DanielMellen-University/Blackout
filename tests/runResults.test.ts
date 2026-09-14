@@ -242,6 +242,19 @@ describe('run results focus flow', () => {
     results.dispose()
     vi.unstubAllGlobals()
   })
+
+  it('labels a free-flight result as a scenic sortie', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({ ...result, freeFlight: true })
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('FREE FLIGHT COMPLETE')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('SCENIC SORTIE COMPLETE')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
 })
 
 function elementsFor(document: FakeDocument, id: string): FakeElement | null {

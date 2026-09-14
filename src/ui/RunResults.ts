@@ -80,7 +80,9 @@ export class RunResults {
     this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
     this.root.classList.add(resultMedalClass(result.medal))
-    this.title.textContent = `${result.medal.toUpperCase()} RUN`
+    this.title.textContent = result.freeFlight
+      ? 'FREE FLIGHT COMPLETE'
+      : `${result.medal.toUpperCase()} RUN`
     this.score.textContent = result.totalScore.toLocaleString()
     this.score.setAttribute('aria-label', `Total score ${result.totalScore.toLocaleString()}`)
     this.time.textContent = formatTime(result.elapsedSec)
@@ -118,7 +120,9 @@ export class RunResults {
     const fuelClass = resultFuelBandClass(fuelRemaining)
     for (const className of FUEL_CLASSES) this.fuel.classList.remove(className)
     this.fuel.classList.add(fuelClass)
-    const outcome = result.isNewBest ? 'NEW COURSE BEST' : 'ROUTE COMPLETE'
+    const outcome = result.freeFlight
+      ? 'SCENIC SORTIE COMPLETE'
+      : result.isNewBest ? 'NEW COURSE BEST' : 'ROUTE COMPLETE'
     this.summary.textContent = `${outcome} · SCORE ${result.totalScore.toLocaleString()} · FUEL ${fuelRemaining}% LEFT · ENTER RETRY · R NEW WORLD`
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,

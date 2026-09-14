@@ -80,10 +80,12 @@ describe('ChallengeRun', () => {
   it('arms a no-gate free-flight sortie on takeoff and completes on landing', () => {
     const run = new ChallengeRun(null)
     run.reset('free-flight', 0)
+    expect(run.objectiveLabel).toBe('FREE FLIGHT / TAKE OFF')
     run.update(0.5, 0)
     expect(run.phase).toBe('ready')
     run.update(0.5, 8, 160)
     expect(run.phase).toBe('returning')
+    expect(run.objectiveLabel).toBe('FREE FLIGHT / RETURN & LAND')
     const result = run.finishLanding({
       verticalSpeed: -1,
       groundSpeed: 20,
@@ -92,7 +94,9 @@ describe('ChallengeRun', () => {
     })
     expect(result).not.toBeNull()
     expect(result!.gateScore).toBe(0)
+    expect(result!.freeFlight).toBe(true)
     expect(run.phase).toBe('complete')
+    expect(run.objectiveLabel).toBe('FREE FLIGHT COMPLETE')
   })
 
   it('tracks meaningful consecutive precision gate streaks without changing score state', () => {

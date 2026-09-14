@@ -67,6 +67,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Complete an airborne barrel roll for a bright one-shot cue and a capped score bonus; the results card records the stunt count.
 - Curated course history now keeps the best barrel-roll count, so stunt mastery survives retries and appears in course selectors.
 - `Free flight` is an optional no-checkpoint course for exploring streamed terrain, settlements, and weather before returning to land.
+- Free-flight HUD and results copy identify scenic sorties clearly, while the same safe landing handoff and score detail remain intact.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.

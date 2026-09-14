@@ -79,6 +79,8 @@ export interface ChallengeResult {
   courseBestStuntRolls?: number
   /** Whether this sortie set a new course barrel-roll record. */
   newStuntRecord?: boolean
+  /** Whether this result came from the no-checkpoint exploration course. */
+  freeFlight?: boolean
 }
 
 export interface ScoreStore {
@@ -436,6 +438,7 @@ export class ChallengeRun {
 
   private courseId = 'default'
   private scoringFocus: ChallengeScoringFocus = 'balanced'
+  private freeFlight = false
   private gateQualityTotal = 0
   private gateQualityStreak = 0
   private bestGateQualityStreak = 0
@@ -460,6 +463,7 @@ export class ChallengeRun {
     this.courseId = courseId
     this.totalGates = Math.max(0, Math.floor(totalGates))
     this.scoringFocus = scoringFocus
+    this.freeFlight = courseId === 'free-flight'
     this.phase = 'ready'
     this.elapsedSec = 0
     this.gatesPassed = 0
@@ -646,6 +650,7 @@ export class ChallengeRun {
       stuntScore,
       courseBestStuntRolls,
       newStuntRecord,
+      freeFlight: this.freeFlight,
     }
     return this.result
   }
@@ -667,9 +672,9 @@ export class ChallengeRun {
   }
 
   get objectiveLabel(): string {
-    if (this.phase === 'ready') return 'TAKE OFF'
-    if (this.phase === 'returning') return 'RETURN & LAND'
-    if (this.phase === 'complete') return 'RUN COMPLETE'
+    if (this.phase === 'ready') return this.freeFlight ? 'FREE FLIGHT / TAKE OFF' : 'TAKE OFF'
+    if (this.phase === 'returning') return this.freeFlight ? 'FREE FLIGHT / RETURN & LAND' : 'RETURN & LAND'
+    if (this.phase === 'complete') return this.freeFlight ? 'FREE FLIGHT COMPLETE' : 'RUN COMPLETE'
     if (this.phase === 'failed') return 'RUN FAILED'
     return `GATE ${Math.min(this.gatesPassed + 1, this.totalGates)}/${this.totalGates}`
   }
