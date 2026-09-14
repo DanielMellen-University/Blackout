@@ -227,13 +227,16 @@ describe('MissionSystem gate crossing', () => {
     const sweep = buildMissionRoute(0, 20, 0, 0, 'sweep')
     const slalom = buildMissionRoute(0, 20, 0, 0, 'slalom')
     const ridge = buildMissionRoute(0, 20, 0, 0, 'ridge')
+    const canyon = buildMissionRoute(0, 20, 0, 0, 'canyon')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
     expect(ridge).toHaveLength(5)
+    expect(canyon).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(ridge[3]!.y).toBeGreaterThan(orbit[3]!.y)
+    expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
     expect(routeProfileForSpawn(0, 0, 0)).toBe('orbit')
@@ -241,6 +244,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('sweep')).toBe('SWEEP')
     expect(routeProfileLabel('slalom')).toBe('SLALOM')
     expect(routeProfileLabel('ridge')).toBe('RIDGE RUN')
+    expect(routeProfileLabel('canyon')).toBe('CANYON RUN')
   })
 
   it('supports a no-gate free-flight profile', () => {
@@ -305,6 +309,17 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.routeSummary.challengeLabel).toBe('CLIMB')
     expect(mission.routeSummary.maxAltitudeMeters).toBeGreaterThan(500)
     expect(mission.routeBriefing).toContain('CLIMB')
+    mission.dispose()
+  })
+
+  it('turns canyon routes into a low-weave precision challenge', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0.8, 'canyon')
+    expect(mission.routeProfile).toBe('canyon')
+    expect(mission.routeSummary.challenge).toBe('precision')
+    expect(mission.routeSummary.challengeLabel).toBe('PRECISION')
+    expect(mission.routeSummary.lengthMeters).toBeGreaterThan(2_000)
+    expect(mission.routeBriefing).toContain('CANYON RUN')
     mission.dispose()
   })
 

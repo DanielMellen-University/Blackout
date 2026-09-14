@@ -17,9 +17,9 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Pause opened after a focus loss now returns to the playable canvas instead of the browser body, keeping keyboard and mouse flight handoff reliable
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
-- Route variety: orbit, sweep, precision slalom, and high-altitude ridge-run circuits
+- Route variety: orbit, sweep, precision slalom, high-altitude ridge-run, and low-weave canyon-run circuits
 - Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.
-- Route profiles now include orbit, sweep, and slalom layouts, with the active profile called out in the takeoff briefing.
+- Route profiles include orbit, sweep, slalom, ridge-run, and canyon-run layouts, with the active profile called out in the takeoff briefing.
 - The takeoff briefing also reports route difficulty and minimum sampled terrain clearance, so the challenge is readable before the first input.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
@@ -29,7 +29,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Best runs persist per course with gate split traces, so retries call out whether each clear is ahead or behind pace without spawning a ghost aircraft.
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
-- The title and pause menus offer Random world plus three validated repeatable course seeds, with route profiles preserved on retry.
+- The title and pause menus offer Random world plus four validated repeatable course seeds, with route profiles preserved on retry.
 - Results persist a completion count and fastest finish per course, making progression visible without introducing a campaign layer.
 - Course selectors reuse that history, showing curated-course run counts and fastest times without touching the flight loop.
 - The last selected course is remembered across reloads when browser storage is available, with a safe Random world fallback.
@@ -96,6 +96,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.
 - Course progress now resolves to Rookie, Pilot, Veteran, Ace, or Legend tiers from existing runs, scores, badges, and contract wins.
+- A fifth `Canyon run` route adds a low-weave precision circuit through the terrain, using the same fixed gate pool and clearance planner.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
