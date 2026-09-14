@@ -639,7 +639,7 @@ async function boot(): Promise<void> {
     altitudeMilestones.reset()
     input.clearQueued()
     input.resetFlightControls(0)
-    challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
+    challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
     banner = null
     crashMessage = 'CRASH - press R'
     bannerTone = 'info'
@@ -669,7 +669,8 @@ async function boot(): Promise<void> {
         : replaySeed !== null
           ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
           : 'RETRY SAME COURSE'
-      showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}`, 5000)
+      const contractBriefing = challenge.contractBriefing
+      showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}${contractBriefing ? ` · ${contractBriefing}` : ''}`, 5000)
     }
   }
 
@@ -1136,6 +1137,12 @@ async function boot(): Promise<void> {
           }
         }
 
+        const contractCue = challenge.consumeContractCompletionCue()
+        if (contractCue) {
+          audio.playCue('streak')
+          showBanner(`CONTRACT COMPLETE / ${contractCue}`, 1800, 'success')
+        }
+
         challenge.update(dt, aircraft.speed, Math.max(0, aircraft.position.y - world.spawn.y))
       }
 
@@ -1521,7 +1528,8 @@ async function boot(): Promise<void> {
       hudFrame.windX = precipitation.windX
       hudFrame.windZ = precipitation.windZ
       hudFrame.dayPhase = world.atmosphere.phaseLabel
-      hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`
+      const contractLabel = challenge.contractLabel
+      hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}${contractLabel ? ` · ${contractLabel}` : ''}`
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
@@ -1566,7 +1574,7 @@ async function boot(): Promise<void> {
   document.addEventListener('visibilitychange', onFlightVisibilityPause)
   window.addEventListener('blur', onWindowBlur)
 
-  challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus)
+      challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB
   // exists, let it hydrate in the background instead of blocking the title

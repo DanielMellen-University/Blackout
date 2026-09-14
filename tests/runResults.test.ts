@@ -224,6 +224,12 @@ describe('run results focus flow', () => {
       courseBestDestinationCount: 4,
       runStreak: 3,
       courseBestRunStreak: 4,
+      contractKind: 'fuel',
+      contractLabel: 'FUEL SAVER',
+      contractDetail: 'LAND WITH 75% FUEL',
+      contractComplete: true,
+      contractProgress: 1,
+      contractScore: 2_000,
       courseBestApproachScore: 650,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
@@ -256,6 +262,9 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE DEST X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('RUN STREAK X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE RUN STREAK X4')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT COMPLETE · FUEL SAVER')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('LAND WITH 75% FUEL')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT +2,000')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')

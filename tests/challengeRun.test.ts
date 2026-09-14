@@ -32,6 +32,7 @@ import {
   readBestCoursePrecisionStreak,
   repairBestCoursePrecisionStreak,
 } from '../src/systems/ChallengeRun'
+import { MAX_CONTRACT_SCORE } from '../src/systems/SortieContract'
 
 describe('ChallengeRun', () => {
   it('starts the clock on the takeoff roll and scores a completed landing', () => {
@@ -314,6 +315,37 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:run-streak')).toBe(
       `{"completionCount":2,"bestTimeSec":4,"runStreak":${MAX_RUN_STREAK},"runStreakRecord":${MAX_RUN_STREAK}}`,
     )
+  })
+
+  it('assigns and scores a deterministic touchdown contract', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:contract', 1, 'balanced', 0)
+    expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
+    expect(run.contractBriefing).toContain('LAND UNDER')
+    run.update(0.1, 8)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('pace')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractProgress).toBe(1)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.contractScore!,
+    )
+  })
+
+  it('emits one live cue when an event contract is completed', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:contract-event', 1, 'balanced', 6)
+    expect(run.contractLabel).toBe('CONTRACT AIRSHOW')
+    run.recordStunt(2)
+    expect(run.consumeContractCompletionCue()).toBe('AIRSHOW')
+    expect(run.consumeContractCompletionCue()).toBeNull()
   })
 
   it('persists the best runway approach score and repairs oversized records', () => {

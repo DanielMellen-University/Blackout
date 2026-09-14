@@ -213,6 +213,14 @@ export class RunResults {
     if (courseBestRunStreak > runStreak && courseBestRunStreak > 1) {
       scoreParts.push(`COURSE RUN STREAK X${courseBestRunStreak}`)
     }
+    if (result.contractLabel) {
+      scoreParts.push(`${result.contractComplete ? 'CONTRACT COMPLETE' : 'CONTRACT OPEN'} · ${result.contractLabel}`)
+      if (result.contractDetail) scoreParts.push(result.contractDetail)
+      const contractScore = Number.isFinite(result.contractScore)
+        ? Math.max(0, Math.floor(result.contractScore!))
+        : 0
+      if (contractScore > 0) scoreParts.push(`CONTRACT +${contractScore.toLocaleString()}`)
+    }
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0

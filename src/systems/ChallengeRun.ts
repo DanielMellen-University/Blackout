@@ -1,5 +1,6 @@
 import { MAX_STUNT_ROLLS } from './StuntTracker'
 import { MAX_COMBO_COUNT } from './FlightCombo'
+import { SortieContractTracker, type SortieContractKind } from './SortieContract'
 
 export type ChallengePhase =
   | 'ready'
@@ -116,6 +117,18 @@ export interface ChallengeResult {
   courseBestRunStreak?: number
   /** Whether this sortie set a new course run-streak record. */
   newRunStreakRecord?: boolean
+  /** Deterministic bonus contract assigned to this sortie. */
+  contractKind?: SortieContractKind
+  /** Short contract name for HUD and results. */
+  contractLabel?: string
+  /** Contract completion instruction. */
+  contractDetail?: string
+  /** Whether the assigned contract was completed. */
+  contractComplete?: boolean
+  /** Contract progress at touchdown, normalized to 0..1. */
+  contractProgress?: number
+  /** Finite bonus awarded for completing the assigned contract. */
+  contractScore?: number
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -137,7 +150,7 @@ const TRACE_KEY = 'blackout.trace.'
 export const COURSE_HISTORY_STORAGE_PREFIX = 'blackout.history.'
 export const COURSE_BADGES_STORAGE_PREFIX = 'blackout.badges.'
 export const MAX_COMPLETION_COUNT = 100_000
-export const MAX_BEST_SCORE = 113_000
+export const MAX_BEST_SCORE = 115_000
 export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
@@ -603,6 +616,8 @@ export class ChallengeRun {
   private peakAltitudeM = 0
   private stuntRollCount = 0
   private bestCombo = 0
+  private readonly contract = new SortieContractTracker()
+  private contractCuePending = false
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -617,7 +632,12 @@ export class ChallengeRun {
     this.storage = storage
   }
 
-  reset(courseId: string, totalGates: number, scoringFocus: ChallengeScoringFocus = 'balanced'): void {
+  reset(
+    courseId: string,
+    totalGates: number,
+    scoringFocus: ChallengeScoringFocus = 'balanced',
+    contractSeed?: number,
+  ): void {
     this.courseId = courseId
     this.totalGates = Math.max(0, Math.floor(totalGates))
     this.scoringFocus = scoringFocus
@@ -635,6 +655,8 @@ export class ChallengeRun {
     this.peakAltitudeM = 0
     this.stuntRollCount = 0
     this.bestCombo = 0
+    this.contract.reset(contractSeed, this.totalGates)
+    this.contractCuePending = false
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -690,14 +712,20 @@ export class ChallengeRun {
     const safeRolls = Number.isFinite(rolls)
       ? Math.max(0, Math.min(MAX_STUNT_ROLLS, Math.floor(rolls)))
       : 0
+    const wasComplete = this.contract.complete
     this.stuntRollCount = Math.min(MAX_STUNT_ROLLS, this.stuntRollCount + safeRolls)
+    this.contract.recordStunt(this.stuntRollCount)
+    this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
   /** Retain the highest reached climb milestone without affecting scoring. */
   recordAltitudeMilestone(altitudeM: number): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
     if (!Number.isFinite(altitudeM)) return
+    const wasComplete = this.contract.complete
     this.altitudeMilestone = Math.max(0, Math.min(100_000, Math.floor(altitudeM)))
+    this.contract.recordAltitude(this.altitudeMilestone)
+    this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
   /** Retain the highest event-driven clean-flight combo without trusting input. */
@@ -712,8 +740,11 @@ export class ChallengeRun {
     if (kind !== 'city' && kind !== 'village') return
     if (this.destinationCount >= MAX_DESTINATION_COUNT) return
     const reward = kind === 'city' ? 600 : 300
+    const wasComplete = this.contract.complete
     this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
     this.destinationCount += 1
+    this.contract.recordDestination(this.destinationCount)
+    this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
@@ -750,7 +781,8 @@ export class ChallengeRun {
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + this.destinationScore
+    const contractScore = this.contract.finish(elapsedSec, fuelFraction)
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + this.destinationScore + contractScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -875,6 +907,12 @@ export class ChallengeRun {
       runStreak,
       courseBestRunStreak,
       newRunStreakRecord,
+      contractKind: this.contract.kind ?? undefined,
+      contractLabel: this.contract.enabled ? this.contract.label : undefined,
+      contractDetail: this.contract.enabled ? this.contract.detail : undefined,
+      contractComplete: this.contract.enabled ? this.contract.complete : undefined,
+      contractProgress: this.contract.enabled ? this.contract.progress : undefined,
+      contractScore: contractScore > 0 ? contractScore : undefined,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
@@ -911,6 +949,22 @@ export class ChallengeRun {
     if (this.phase === 'complete') return this.freeFlight ? 'FREE FLIGHT COMPLETE' : 'RUN COMPLETE'
     if (this.phase === 'failed') return 'RUN FAILED'
     return `GATE ${Math.min(this.gatesPassed + 1, this.totalGates)}/${this.totalGates}`
+  }
+
+  /** Static contract cue kept separate from the phase objective for HUD caching. */
+  get contractLabel(): string {
+    return this.contract.hudLabel
+  }
+
+  get contractBriefing(): string {
+    return this.contract.enabled ? `${this.contract.label} / ${this.contract.detail}` : ''
+  }
+
+  /** Consume one event-driven contract-completion cue for the live HUD. */
+  consumeContractCompletionCue(): string | null {
+    if (!this.contractCuePending) return null
+    this.contractCuePending = false
+    return this.contract.label || null
   }
 
   /** Compare the most recently cleared gate with the best saved trace. */
