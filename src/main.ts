@@ -70,6 +70,7 @@ import {
   writeAudioVolume,
 } from './audio/AudioPreferences'
 import { evaluateWarnings } from './systems/FlightWarnings'
+import { gateQualityLabel } from './systems/Mission'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { GameMenu } from './ui/GameMenu'
@@ -967,18 +968,20 @@ async function boot(): Promise<void> {
             nowMs,
           )
           if (event === 'pass') {
-            challenge.recordGate(world.mission.lastPassQuality)
+            const quality = world.mission.lastPassQuality
+            challenge.recordGate(quality)
             audio.playCue('gate')
-            showBanner(`GATE CLEAR · ${challenge.gatePaceLabel}`, 1400, 'success')
+            showBanner(`GATE ${gateQualityLabel(quality)} · ${challenge.gatePaceLabel}`, 1400, 'success')
           }
           if (event === 'miss') {
             audio.playCue('warning')
             showBanner('GATE MISSED / RE-ALIGN', 1500, 'danger')
           }
           if (event === 'complete') {
-            challenge.recordGate(world.mission.lastPassQuality)
+            const quality = world.mission.lastPassQuality
+            challenge.recordGate(quality)
             audio.playCue('complete')
-            showBanner('RETURN & LAND', 4200)
+            showBanner(`FINAL GATE ${gateQualityLabel(quality)} · RETURN & LAND`, 4200)
           }
         }
 

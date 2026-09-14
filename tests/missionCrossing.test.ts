@@ -14,10 +14,19 @@ import {
   scoringFocusLabel,
   summarizeMissionRoute,
   MissionSystem,
+  gateQualityLabel,
 } from '../src/systems/Mission'
 import { sampleTerrainHeight } from '../src/world/terrainSample'
 
 describe('MissionSystem gate crossing', () => {
+  it('maps finite gate quality into readable event labels', () => {
+    expect(gateQualityLabel(1)).toBe('PERFECT')
+    expect(gateQualityLabel(0.6)).toBe('CLEAN')
+    expect(gateQualityLabel(0.2)).toBe('EDGE')
+    expect(gateQualityLabel(0)).toBe('MISS')
+    expect(gateQualityLabel(Number.NaN)).toBe('MISS')
+  })
+
   it('does not award a gate that the jet spawned beyond', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)

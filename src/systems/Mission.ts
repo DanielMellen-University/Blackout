@@ -64,6 +64,17 @@ export type MissionChallenge = 'approach' | 'range' | 'precision'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
 export type MissionScoringFocus = 'balanced' | 'gates' | 'pace' | 'landing'
 
+export type GateQualityLabel = 'PERFECT' | 'CLEAN' | 'EDGE' | 'MISS'
+
+/** Turn a normalized ring-center score into one stable event label. */
+export function gateQualityLabel(quality: number): GateQualityLabel {
+  const safe = Number.isFinite(quality) ? MathUtils.clamp(quality, 0, 1) : 0
+  if (safe >= 0.82) return 'PERFECT'
+  if (safe >= 0.5) return 'CLEAN'
+  if (safe > 0) return 'EDGE'
+  return 'MISS'
+}
+
 export interface MissionRouteSummary {
   profile: MissionRouteProfile
   label: string

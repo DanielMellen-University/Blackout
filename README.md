@@ -52,6 +52,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Hold `B` to deploy the speed brake for predictable airborne deceleration, or wheel brakes during rollout. Wheel brakes hold the jet against throttle creep until released, with a live `BRK OPEN` cue and matching control-surface flare.
 - Speed-brake deployment now lifts the existing wind bed and plays one quiet open or close cue, keeping the audio graph pooled.
 - Crossing a gate plane outside the ring now gives a single `GATE MISSED / RE-ALIGN` cue, so the route tells you how to recover without advancing the checkpoint.
+- Gate clears now grade the existing radial pass quality as `PERFECT`, `CLEAN`, or `EDGE`, making route precision visible without changing score math.
 - A low-fuel caution protects a small reserve so afterburner cannot strand the aircraft.
 - Fuel starvation now announces `ENGINE OUT / GLIDE TO BASE` once, keeping the recovery decision readable without adding a new simulation path.
 - During an engine-out sortie, the navigation cue diverts to the home strip until fuel is restored or the sortie resets, while gate scoring rules stay unchanged.
