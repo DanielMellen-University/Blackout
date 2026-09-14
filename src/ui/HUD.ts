@@ -12,10 +12,39 @@ import {
 } from '../systems/RadarSystem'
 import { MAX_COMBO_COUNT } from '../systems/FlightCombo'
 import { MAX_BIOME_COUNT } from '../systems/ChallengeRun'
+import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
 export type SpeedWarningLevel = 'normal' | 'redline' | 'overspeed'
+
+export type MachCue = 'subsonic' | 'transonic' | 'supersonic'
+
+/** Convert finite airspeed into a bounded Mach ratio for cockpit telemetry. */
+export function machNumber(speedMps: number, soundSpeedMps = SUPERSONIC_THRESHOLD_MPS): number {
+  if (!Number.isFinite(speedMps) || !Number.isFinite(soundSpeedMps) || soundSpeedMps <= 0) return 0
+  return Math.min(20, Math.max(0, speedMps) / soundSpeedMps)
+}
+
+/** Keep the Mach readout calm near the transonic boundary instead of flickering. */
+export function machCue(value: number): MachCue {
+  if (!Number.isFinite(value)) return 'subsonic'
+  if (value >= 1) return 'supersonic'
+  if (value >= 0.85) return 'transonic'
+  return 'subsonic'
+}
+
+export function machLabel(value: number): string {
+  const safe = Number.isFinite(value) ? Math.min(20, Math.max(0, value)) : 0
+  return `M${safe.toFixed(2)}`
+}
+
+export function machAriaLabel(value: number): string {
+  const label = machLabel(value)
+  const cue = machCue(value)
+  const description = cue === 'supersonic' ? 'supersonic' : cue === 'transonic' ? 'transonic' : 'subsonic'
+  return `${label}, ${description}`
+}
 
 export type AltitudeCue = 'normal' | 'caution' | 'warning'
 
@@ -359,6 +388,7 @@ export class HUD {
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly gEl: HTMLElement | null
+  private readonly machEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
   private readonly speedoPanel: HTMLElement | null
   private readonly camEl: HTMLElement | null
@@ -437,6 +467,10 @@ export class HUD {
   private verticalSpeedAriaText = ''
   private gValue = Number.NaN
   private gText = ''
+  private machValue = Number.NaN
+  private machText = 'M0.00'
+  private machAriaText = 'M0.00, subsonic'
+  private machCueValue: MachCue | null = null
   private throttleValue = Number.NaN
   private throttleText = ''
   private speedValue = Number.NaN
@@ -544,6 +578,7 @@ export class HUD {
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.gEl = root.getElementById('hud-g')
+    this.machEl = root.getElementById('hud-mach')
     this.spdEl = root.getElementById('hud-spd')
     this.speedoPanel = root.getElementById('speedo-panel')
     this.camEl = root.getElementById('hud-cam')
@@ -633,6 +668,8 @@ export class HUD {
     verticalSpeed?: number
     /** Smoothed acceleration along the pilot body-up axis, in G. */
     gForce?: number
+    /** Current true airspeed as a Mach ratio, or derived from speed when omitted. */
+    mach?: number
     speed: number
     cameraMode: string
     /** Aircraft heading (rad, 0 = north / +Z). */
@@ -771,6 +808,25 @@ export class HUD {
       const tone = gForceTone(shown)
       this.setClass(this.gEl, 'high-g', tone === 'high')
       this.setClass(this.gEl, 'negative-g', tone === 'negative')
+    }
+
+    if (this.machEl) {
+      const mach = opts.mach === undefined
+        ? machNumber(opts.speed)
+        : Number.isFinite(opts.mach) ? Math.min(20, Math.max(0, opts.mach)) : 0
+      const shown = Math.round(mach * 100) / 100
+      const cue = machCue(mach)
+      if (shown !== this.machValue || cue !== this.machCueValue) {
+        this.machValue = shown
+        this.machCueValue = cue
+        this.machText = machLabel(shown)
+        this.machAriaText = machAriaLabel(shown)
+      }
+      this.setText(this.machEl, this.machText)
+      this.setAttribute(this.machEl, 'aria-label', this.machAriaText)
+      this.setAttribute(this.machEl, 'aria-valuenow', String(shown))
+      this.setClass(this.machEl, 'transonic', cue === 'transonic')
+      this.setClass(this.machEl, 'supersonic', cue === 'supersonic')
     }
 
     const rawKts = displayedKnots(opts.speed)

@@ -90,6 +90,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   hudBackgroundHidden,
   HUD,
+  machNumber,
   engineHeatBanner,
   engineHeatCue,
   engineHeatRearmBanner,
@@ -529,6 +530,7 @@ async function boot(): Promise<void> {
     y: 0,
     verticalSpeed: 0,
     gForce: 1,
+    mach: 0,
     speed: 0,
     cameraMode: '',
     heading: 0,
@@ -1546,6 +1548,7 @@ async function boot(): Promise<void> {
       hudFrame.verticalSpeed = aircraft.onGround ? 0 : aircraft.velocity.y
       hudFrame.gForce = aircraft.loadFactor
       hudFrame.speed = aircraft.speed
+      hudFrame.mach = machNumber(aircraft.speed)
       hudFrame.cameraMode = cameras.modeLabel
       hudFrame.fps = time.fps
       hudFrame.throttle = aircraft.engineState.lever

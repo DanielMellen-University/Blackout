@@ -83,6 +83,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Completed sorties now record the distinct natural biomes surveyed, awarding a capped exploration bonus and a per-course variety record.
 - The live HUD keeps the survey count visible and gives one calm discovery cue when a new biome is entered, making exploration progress readable before landing.
 - Crossing Mach 1 triggers one restrained sonic-boom cue with hysteresis, so high-speed flight has a clear event without repeated audio chatter.
+- The live cockpit HUD now shows a cached Mach readout with subsonic, transonic, and supersonic bands, making the crossing cue readable without adding render work.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.

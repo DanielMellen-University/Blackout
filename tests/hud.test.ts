@@ -56,6 +56,10 @@ import {
   missionPhaseClass,
   missionProgressPercent,
   missionProgressText,
+  machAriaLabel,
+  machCue,
+  machLabel,
+  machNumber,
   missionPaceLabel,
   contractProgressLabel,
   contractProgressAriaLabel,
@@ -120,6 +124,20 @@ describe('HUD value formatting', () => {
     expect(formatVerticalSpeed(-3.6)).toBe('-4')
     expect(formatVerticalSpeed(0.2)).toBe('0')
     expect(formatVerticalSpeed(Number.NaN)).toBe('0')
+  })
+
+  it('keeps Mach telemetry finite and readable across speed bands', () => {
+    expect(machNumber(340)).toBeCloseTo(1)
+    expect(machNumber(170)).toBeCloseTo(0.5)
+    expect(machNumber(Number.NaN)).toBe(0)
+    expect(machNumber(340, 0)).toBe(0)
+    expect(machCue(0.84)).toBe('subsonic')
+    expect(machCue(0.85)).toBe('transonic')
+    expect(machCue(1)).toBe('supersonic')
+    expect(machCue(Number.NaN)).toBe('subsonic')
+    expect(machLabel(1)).toBe('M1.00')
+    expect(machLabel(Number.NaN)).toBe('M0.00')
+    expect(machAriaLabel(0.9)).toBe('M0.90, transonic')
   })
 
   it('formats bounded fighter G-load cues with distinct stress tones', () => {
