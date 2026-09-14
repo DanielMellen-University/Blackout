@@ -995,7 +995,7 @@ async function boot(): Promise<void> {
           }
         }
 
-        challenge.update(dt, aircraft.speed)
+        challenge.update(dt, aircraft.speed, Math.max(0, aircraft.position.y - world.spawn.y))
       }
 
       world.mission.tick(

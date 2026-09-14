@@ -123,6 +123,12 @@ export class RunResults {
     ]
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
     if (result.scoringFocus) scoreParts.push(`${result.scoringFocus.toUpperCase()} FOCUS`)
+    if (Number.isFinite(result.peakSpeedKts)) {
+      scoreParts.push(`TOP ${Math.max(0, Math.round(result.peakSpeedKts!))}KT`)
+    }
+    if (Number.isFinite(result.peakAltitudeM)) {
+      scoreParts.push(`ALT ${Math.max(0, Math.round(result.peakAltitudeM!)).toLocaleString()}M`)
+    }
     this.scoreDetail.textContent = scoreParts.join(' · ')
     const newBadges = result.newMasteryBadges ?? []
     const allBadges = result.masteryBadges ?? []

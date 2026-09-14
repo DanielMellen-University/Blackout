@@ -54,6 +54,10 @@ export interface ChallengeResult {
   bestPrecisionStreak?: number
   /** Longest precision streak ever recorded for this course. */
   courseBestPrecisionStreak?: number
+  /** Highest finite airspeed reached during this sortie, in knots. */
+  peakSpeedKts?: number
+  /** Highest finite height above the home strip reached during this sortie. */
+  peakAltitudeM?: number
 }
 
 export interface ScoreStore {
@@ -368,6 +372,8 @@ export class ChallengeRun {
   private gateQualityTotal = 0
   private gateQualityStreak = 0
   private bestGateQualityStreak = 0
+  private peakSpeedMps = 0
+  private peakAltitudeM = 0
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -392,6 +398,8 @@ export class ChallengeRun {
     this.gateQualityTotal = 0
     this.gateQualityStreak = 0
     this.bestGateQualityStreak = 0
+    this.peakSpeedMps = 0
+    this.peakAltitudeM = 0
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -403,9 +411,12 @@ export class ChallengeRun {
   }
 
   /** Advance simulation time and arm the clock once the takeoff roll begins. */
-  update(dt: number, speed: number): void {
+  update(dt: number, speed: number, altitudeM = 0): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+    const safeAltitude = Number.isFinite(altitudeM) ? Math.max(0, altitudeM) : 0
+    this.peakSpeedMps = Math.max(this.peakSpeedMps, Math.min(safeSpeed, 10_000))
+    this.peakAltitudeM = Math.max(this.peakAltitudeM, Math.min(safeAltitude, 100_000))
     if (this.phase === 'ready' && safeSpeed > 5) this.phase = 'running'
     if (this.phase === 'running' || this.phase === 'returning') {
       this.elapsedSec += safeDt
@@ -528,6 +539,8 @@ export class ChallengeRun {
       fuelUsedPercent,
       bestPrecisionStreak: this.bestGateQualityStreak,
       courseBestPrecisionStreak,
+      peakSpeedKts: Math.round(this.peakSpeedMps * 1.943844492),
+      peakAltitudeM: Math.round(this.peakAltitudeM),
     }
     return this.result
   }

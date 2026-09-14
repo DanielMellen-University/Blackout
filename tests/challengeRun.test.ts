@@ -34,7 +34,7 @@ describe('ChallengeRun', () => {
     expect(run.phase).toBe('ready')
     run.update(0.5, 0)
     expect(run.phase).toBe('ready')
-    run.update(0.5, 8)
+    run.update(0.5, 8, 140)
     expect(run.phase).toBe('running')
     expect(run.elapsedSec).toBeCloseTo(0.5)
 
@@ -52,6 +52,8 @@ describe('ChallengeRun', () => {
     expect(result!.gateScore).toBe(15_000)
     expect(result!.totalScore).toBeGreaterThan(0)
     expect(result!.isNewBest).toBe(true)
+    expect(result!.peakSpeedKts).toBe(16)
+    expect(result!.peakAltitudeM).toBe(140)
     expect(result!.newMasteryBadges).toEqual(['first-flight', 'landing-ace', 'gold-run'])
     expect(readMasteryBadges({ getItem: (key) => store.get(key) ?? null }, 'seed:1'))
       .toEqual(['first-flight', 'landing-ace', 'gold-run'])
@@ -133,6 +135,23 @@ describe('ChallengeRun', () => {
     expect(run.clockLabel).toBe(first)
     run.update(0.01, 8)
     expect(run.clockLabel).not.toBe(first)
+  })
+
+  it('keeps peak sortie telemetry finite and outside score math', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:telemetry', 1)
+    run.update(0.1, 120, 300)
+    run.update(0.1, 80, 900)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.peakSpeedKts).toBe(233)
+    expect(result.peakAltitudeM).toBe(900)
+    expect(Number.isFinite(result.totalScore)).toBe(true)
   })
 
   it('persists gate splits and reports ahead or behind pace on retry', () => {
