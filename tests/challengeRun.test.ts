@@ -6,18 +6,21 @@ import {
   formatTime,
   fuelEfficiencyScore,
   landingApproachScore,
+  landingWeatherRisk,
   landingQualityLabel,
   repairCourseHistory,
   readCourseHistory,
   readBestCourseScore,
   resultMedalClass,
   scoringWeightsForFocus,
+  weatherLandingScore,
   masteryBadgesForRun,
   readMasteryBadges,
   repairBestCourseScore,
   repairMasteryBadges,
   MAX_BEST_SCORE,
   MAX_APPROACH_SCORE,
+  MAX_WEATHER_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
   MAX_PEAK_SPEED_KTS,
@@ -174,6 +177,33 @@ describe('ChallengeRun', () => {
     expect(landingApproachScore({ baseDistanceM: 90, runwayLateralM: 20, headingErrorRad: Math.PI / 6 })).toBeGreaterThan(0)
     expect(landingApproachScore({ baseDistanceM: 999, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
     expect(landingApproachScore({ baseDistanceM: Number.NaN, runwayLateralM: 0, headingErrorRad: 0 })).toBe(0)
+  })
+
+  it('keeps weather-handling rewards finite and quality-sensitive', () => {
+    expect(landingWeatherRisk({ rain: 0, snow: 0, gust: 0.18 })).toBe(0)
+    expect(landingWeatherRisk({ rain: 0.76, snow: 0, gust: 0.3 })).toBe(0.76)
+    expect(landingWeatherRisk({ rain: Number.NaN, snow: 1, gust: 0 })).toBe(1)
+    expect(weatherLandingScore(1)).toBe(MAX_WEATHER_SCORE)
+    expect(weatherLandingScore(0.8, 0.5)).toBe(200)
+    expect(weatherLandingScore(Number.NaN, 1)).toBe(0)
+    expect(weatherLandingScore(2, -1)).toBe(0)
+  })
+
+  it('includes the weather-handling bonus in a completed touchdown result', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:weather-score', 1)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      weatherRisk: 1,
+    })!
+    expect(result.weatherScore).toBe(MAX_WEATHER_SCORE)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.weatherScore!,
+    )
   })
 
   it('persists the best runway approach score and repairs oversized records', () => {

@@ -48,6 +48,7 @@ import {
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
   formatTime,
+  landingWeatherRisk,
   MASTERY_BADGE_COUNT,
   repairBestCoursePrecisionStreak,
   repairBestCourseScore,
@@ -1042,6 +1043,7 @@ async function boot(): Promise<void> {
               baseDistanceM: Math.hypot(baseDx, baseDz),
               runwayLateralM,
               headingErrorRad: Math.atan2(Math.sin(headingDelta), Math.cos(headingDelta)),
+              weatherRisk: landingWeatherRisk(weather),
             }, aircraft.fuel.fraction)
             if (finished) {
               audio.playCue(

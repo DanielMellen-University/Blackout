@@ -26,6 +26,8 @@ export interface LandingMetrics {
   runwayLateralM?: number
   /** Absolute heading error from the runway centerline at touchdown. */
   headingErrorRad?: number
+  /** Normalized precipitation and gust risk at touchdown. */
+  weatherRisk?: number
 }
 
 export interface ChallengeResult {
@@ -98,6 +100,8 @@ export interface ChallengeResult {
   fuelScore?: number
   /** Capped score bonus awarded for a centered, aligned home-strip approach. */
   approachScore?: number
+  /** Capped score bonus awarded for landing through active weather. */
+  weatherScore?: number
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -125,6 +129,7 @@ export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
 export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
 export const MAX_APPROACH_SCORE = 500
+export const MAX_WEATHER_SCORE = 500
 
 export interface CourseHistory {
   completionCount: number
@@ -177,6 +182,20 @@ export function landingApproachScore(metrics: Pick<LandingMetrics, 'baseDistance
   const lateralFactor = 1 - clamp01(lateral / 55)
   const headingFactor = 1 - clamp01(heading / (Math.PI / 3))
   return Math.round(MAX_APPROACH_SCORE * distanceFactor * lateralFactor * headingFactor)
+}
+
+/** Reward a clean touchdown through bounded precipitation or gust risk. */
+export function weatherLandingScore(risk: number, landingQuality = 1): number {
+  if (!Number.isFinite(risk) || !Number.isFinite(landingQuality)) return 0
+  return Math.round(MAX_WEATHER_SCORE * clamp01(risk) * clamp01(landingQuality))
+}
+
+/** Collapse the active front into one finite touchdown-risk scalar. */
+export function landingWeatherRisk(weather: { rain: number; snow: number; gust: number }): number {
+  const rain = clamp01(weather.rain)
+  const snow = clamp01(weather.snow)
+  const gust = Math.max(0, clamp01(weather.gust) - 0.18)
+  return Math.max(rain, snow, gust)
 }
 
 type HistoryReadStore = Pick<ScoreStore, 'getItem'> | null
@@ -647,11 +666,12 @@ export class ChallengeRun {
       1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
     )
     const landingScore = Math.round(weights.landing * landingQuality)
+    const weatherScore = weatherLandingScore(metrics.weatherRisk ?? Number.NaN, landingQuality)
     const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
     const comboScore = this.bestCombo > 1
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -756,6 +776,7 @@ export class ChallengeRun {
       comboScore: comboScore > 0 ? comboScore : undefined,
       fuelScore: fuelScore > 0 ? fuelScore : undefined,
       approachScore: approachScore > 0 ? approachScore : undefined,
+      weatherScore: weatherScore > 0 ? weatherScore : undefined,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,

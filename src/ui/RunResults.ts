@@ -185,6 +185,10 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.approachScore!))
       : 0
     if (approachScore > 0) scoreParts.push(`APPROACH +${approachScore.toLocaleString()}`)
+    const weatherScore = Number.isFinite(result.weatherScore)
+      ? Math.max(0, Math.floor(result.weatherScore!))
+      : 0
+    if (weatherScore > 0) scoreParts.push(`WEATHER +${weatherScore.toLocaleString()}`)
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0
