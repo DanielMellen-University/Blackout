@@ -43,11 +43,5 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "$(cat <<'EOF'
-[10.116] Ship Night Ops landing bonus
-
-Restore ChallengeRun after failed connector pushes, apply Night Ops scoring,
-wire finish/results, tests, and playbook to CURRENT_CHUNK 10.117.
-EOF
-)"
+          git commit -m "[10.116] Ship Night Ops landing bonus"
           git push origin HEAD:main
