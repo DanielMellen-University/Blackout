@@ -17,6 +17,7 @@ import {
   resultMedalClass,
   scoringWeightsForFocus,
   weatherLandingScore,
+  nightLandingScore,
   masteryBadgesForRun,
   readMasteryBadges,
   repairBestCourseScore,
@@ -31,6 +32,7 @@ import {
   MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
+  MAX_NIGHT_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
   MAX_PEAK_SPEED_KTS,
@@ -216,6 +218,35 @@ describe('ChallengeRun', () => {
     expect(result.weatherScore).toBe(MAX_WEATHER_SCORE)
     expect(result.totalScore).toBe(
       result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.weatherScore!,
+    )
+  })
+
+  it('keeps night-ops landing rewards finite and quality-sensitive', () => {
+    expect(nightLandingScore(1)).toBe(0)
+    expect(nightLandingScore(0.42)).toBe(0)
+    expect(nightLandingScore(0)).toBe(MAX_NIGHT_SCORE)
+    expect(nightLandingScore(0.21)).toBe(250)
+    expect(nightLandingScore(0, 0.5)).toBe(250)
+    expect(nightLandingScore(Number.NaN, 1)).toBe(0)
+    expect(nightLandingScore(0, Number.NaN)).toBe(0)
+    expect(nightLandingScore(-1, 1)).toBe(MAX_NIGHT_SCORE)
+    expect(nightLandingScore(2, -1)).toBe(0)
+  })
+
+  it('includes the night-ops bonus in a completed touchdown result', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:night-score', 1)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      daylight: 0,
+    })!
+    expect(result.nightScore).toBe(MAX_NIGHT_SCORE)
+    expect(result.totalScore).toBe(
+      result.gateScore + result.timeScore + result.landingScore + result.fuelScore! + result.nightScore!,
     )
   })
 

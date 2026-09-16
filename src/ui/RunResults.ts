@@ -193,6 +193,10 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.weatherScore!))
       : 0
     if (weatherScore > 0) scoreParts.push(`WEATHER +${weatherScore.toLocaleString()}`)
+    const nightScore = Number.isFinite(result.nightScore)
+      ? Math.max(0, Math.floor(result.nightScore!))
+      : 0
+    if (nightScore > 0) scoreParts.push(`NIGHT +${nightScore.toLocaleString()}`)
     const destinationCount = Number.isFinite(result.destinationCount)
       ? Math.max(0, Math.floor(result.destinationCount!))
       : 0

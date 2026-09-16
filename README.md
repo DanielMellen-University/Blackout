@@ -76,6 +76,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Completed landings award a small capped fuel-efficiency bonus for preserving reserve through the sortie.
 - Centered, runway-aligned touchdowns receive a small capped approach bonus while forgiving off-field landings still score normally.
 - Clean touchdowns through rain, snow, and strong gusts earn a capped weather-handling bonus that scales with landing quality.
+- Clean night and dusk touchdowns earn a capped Night Ops bonus that scales with darkness and landing quality.
 - Curated courses remember the best approach bonus, turning clean returns into a replayable landing target.
 - A safe centered return can earn the `APPROACH ACE` mastery badge alongside the existing course badges.
 - Lock a city or village with `T` and fly into its arrival radius to add a capped destination bonus to the sortie.

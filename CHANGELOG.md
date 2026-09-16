@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-16
+
+### Ship
+
+- Add a capped Night Ops landing bonus that rewards clean dusk and night touchdowns from the shared atmosphere daylight envelope, shown as NIGHT on the results card.
+
 ## 2026-09-12
 
 ### Ship

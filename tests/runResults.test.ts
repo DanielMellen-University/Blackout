@@ -219,6 +219,7 @@ describe('run results focus flow', () => {
       fuelScore: 720,
       approachScore: 500,
       weatherScore: 400,
+      nightScore: 350,
       destinationScore: 1_200,
       destinationCount: 3,
       courseBestDestinationCount: 4,
@@ -262,6 +263,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('FUEL +720')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('APPROACH +500')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('WEATHER +400')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('NIGHT +350')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEST +1,200')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE DEST X4')

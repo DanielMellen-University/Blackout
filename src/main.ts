@@ -1085,6 +1085,7 @@ async function boot(): Promise<void> {
               runwayLateralM,
               headingErrorRad: Math.atan2(Math.sin(headingDelta), Math.cos(headingDelta)),
               weatherRisk: landingWeatherRisk(weather),
+              daylight: world.atmosphere.daylight,
             }, aircraft.fuel.fraction)
             if (finished) {
               audio.playCue(
