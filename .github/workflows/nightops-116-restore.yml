@@ -1,0 +1,53 @@
+name: restore-10.116-nightops
+on:
+  push:
+    paths:
+      - 'dev/TRIGGER_NIGHTOPS_116'
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore Night Ops 10.116 tree
+        run: |
+          set -euo pipefail
+          BASE=$(git rev-parse --verify edf06d4^{commit})
+          echo "Base $BASE"
+          files=(
+            src/systems/ChallengeRun.ts
+            src/main.ts
+            src/ui/RunResults.ts
+            tests/challengeRun.test.ts
+            tests/runResults.test.ts
+            CHANGELOG.md
+            README.md
+            .agents.md
+          )
+          git checkout "$BASE" -- "${files[@]}"
+          git apply --verbose dev/10.116-all.patch
+          rm -f \
+            dev/nightops_probe.b64gz \
+            dev/nightLandingScore.snippet.ts \
+            dev/ChallengeRun.ts.b64gz \
+            dev/TRIGGER_NIGHTOPS_116 \
+            .github/workflows/nightops-116-restore.yml \
+            dev/10.116-all.patch
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "$(cat <<'EOF'
+[10.116] Ship Night Ops landing bonus
+
+Restore ChallengeRun after failed connector pushes, apply Night Ops scoring,
+wire finish/results, tests, and playbook to CURRENT_CHUNK 10.117.
+EOF
+)"
+          git push origin HEAD:main
