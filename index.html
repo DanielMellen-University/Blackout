@@ -39,12 +39,12 @@
             <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
             <button type="button" id="btn-info" class="btn-ghost">Game info</button>
           </div>
-          <label class="title-course" for="title-course">
-            <span>Course</span>
-            <select id="title-course" aria-label="Course">
-              <option value="random">Random world</option>
-            </select>
-          </label>
+          <div id="title-course-picker" class="course-picker">
+            <p class="course-picker-kicker" id="title-course-label">World</p>
+            <div class="course-picker-list" role="radiogroup" aria-labelledby="title-course-label"></div>
+            <p class="course-picker-detail"></p>
+            <p class="course-picker-stats" hidden></p>
+          </div>
           <div class="title-takeoff" aria-label="Takeoff briefing">
             <strong>Takeoff brief</strong>
             <span><kbd>Shift</kbd> spool power · <kbd>W</kbd> rotate · <kbd>G</kbd> gear</span>
@@ -69,10 +69,12 @@
               <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">
                 Fullscreen <span id="menu-fs-state">OFF</span>
               </button>
-              <label class="menu-setting" for="menu-course">
-                <span>Course</span>
-                <select id="menu-course" aria-label="Course"></select>
-              </label>
+              <div id="menu-course-picker" class="course-picker course-picker-compact">
+                <p class="course-picker-kicker" id="menu-course-label">Course</p>
+                <div class="course-picker-list" role="radiogroup" aria-labelledby="menu-course-label"></div>
+                <p class="course-picker-detail"></p>
+                <p class="course-picker-stats" hidden></p>
+              </div>
               <label class="menu-setting" for="menu-quality">
                 <span>Graphics</span>
                 <select id="menu-quality" aria-label="Graphics quality">

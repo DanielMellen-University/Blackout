@@ -47,9 +47,6 @@ import {
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
-  courseMasteryTierForProgress,
-  courseMasteryTierLabel,
-  formatTime,
   landingWeatherRisk,
   MASTERY_BADGE_COUNT,
   repairBestCoursePrecisionStreak,
@@ -85,6 +82,7 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
+import { CoursePicker, coursePickerCopy } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
@@ -145,15 +143,20 @@ async function boot(): Promise<void> {
   const playBtn = document.getElementById('btn-play') as HTMLButtonElement | null
   const overlay = document.getElementById('overlay')
   const menuEl = document.getElementById('menu')
-  const titleCourseSelect = document.getElementById('title-course') as HTMLSelectElement | null
-  const courseSelect = document.getElementById('menu-course') as HTMLSelectElement | null
+  const titleCoursePickerRoot = document.getElementById('title-course-picker')
+  const menuCoursePickerRoot = document.getElementById('menu-course-picker')
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   const touchRoot = document.getElementById('touch-controls')
   if (!menuEl) throw new Error('#menu not found')
+  if (!titleCoursePickerRoot || !menuCoursePickerRoot) throw new Error('course picker not found')
   const menu = new GameMenu(menuEl, canvas)
   const uiListeners = new ListenerBag()
+  const coursePickers = [
+    new CoursePicker(titleCoursePickerRoot),
+    new CoursePicker(menuCoursePickerRoot),
+  ]
 
   let qualityStorage: Storage | null = null
   try {
@@ -162,86 +165,36 @@ async function boot(): Promise<void> {
     /* Private browsing can deny storage. The game remains fully playable. */
   }
 
-  const courseSelectors = [titleCourseSelect, courseSelect].filter(
-    (select): select is HTMLSelectElement => select !== null,
-  )
-  for (const select of courseSelectors) {
-    select.replaceChildren(...COURSE_LIBRARY.map((course) => {
-      const option = document.createElement('option')
-      option.value = course.id
-      option.textContent = course.label
-      option.title = course.detail
-      return option
-    }))
-  }
-  const refreshCourseSelectorLabels = (): void => {
-    for (const select of courseSelectors) {
-      for (const option of Array.from(select.options)) {
-        const course = courseDefinitionForId(option.value)
-        const runId = courseRunId(course)
-        const history = runId ? repairCourseHistory(qualityStorage, runId) : null
-        const badgeCount = runId ? repairMasteryBadges(qualityStorage, runId).length : 0
-        const bestScore = runId ? repairBestCourseScore(qualityStorage, runId) : 0
-        const bestPrecisionStreak = runId
-          ? repairBestCoursePrecisionStreak(qualityStorage, runId)
-          : 0
-        const historyLabel = history && history.completionCount > 0
-          ? ` · ${history.completionCount} RUNS · ${Number.isFinite(history.bestTimeSec) ? formatTime(history.bestTimeSec) : 'NO TIME'}`
-          : ''
-        const badgeLabel = badgeCount > 0 ? ` · ${badgeCount}/${MASTERY_BADGE_COUNT} BADGES` : ''
-        const scoreLabel = bestScore > 0 ? ` · BEST ${bestScore.toLocaleString()}` : ''
-        const streakLabel = bestPrecisionStreak >= 2 ? ` · STREAK X${bestPrecisionStreak}` : ''
-        const peakSpeedLabel = history && Number.isFinite(history.peakSpeedKts)
-          ? ` · TOP ${Math.max(0, Math.floor(history.peakSpeedKts!))}KT`
-          : ''
-        const peakAltitudeLabel = history && Number.isFinite(history.peakAltitudeM)
-          ? ` · ALT ${Math.max(0, Math.floor(history.peakAltitudeM!)).toLocaleString()}M`
-          : ''
-        const stuntLabel = history && Number.isFinite(history.stuntRolls) && history.stuntRolls! > 0
-          ? ` · ROLLS X${Math.max(0, Math.floor(history.stuntRolls!))}`
-          : ''
-        const comboLabel = history && Number.isFinite(history.combo) && history.combo! > 1
-          ? ` · COMBO X${Math.max(0, Math.floor(history.combo!))}`
-          : ''
-        const approachLabel = history && Number.isFinite(history.approachScore) && history.approachScore! > 0
-          ? ` · APPROACH +${Math.max(0, Math.floor(history.approachScore!))}`
-          : ''
-        const destinationLabel = history && Number.isFinite(history.destinations) && history.destinations! > 0
-          ? ` · DEST X${Math.max(0, Math.floor(history.destinations!))}`
-          : ''
-        const biomeLabel = history && Number.isFinite(history.biomes) && history.biomes! > 0
-          ? ` · BIOMES X${Math.max(0, Math.floor(history.biomes!))}`
-          : ''
-        const runStreakLabel = history && Number.isFinite(history.runStreakRecord) && history.runStreakRecord! >= 2
-          ? ` · RUN STREAK X${Math.max(0, Math.floor(history.runStreakRecord!))}`
-          : ''
-        const contractWinsLabel = history && Number.isFinite(history.contractWins) && history.contractWins! > 0
-          ? ` · CONTRACTS X${Math.max(0, Math.floor(history.contractWins!))}`
-          : ''
-        const masteryTier = courseMasteryTierForProgress({
-          completionCount: history?.completionCount,
-          bestScore,
-          badgeCount,
-          contractWins: history?.contractWins,
-        })
-        const masteryTierLabel = masteryTier === 'rookie'
-          ? ''
-          : ` · ${courseMasteryTierLabel(masteryTier)}`
-        option.textContent = `${course.label}${historyLabel}${scoreLabel}${streakLabel}${peakSpeedLabel}${peakAltitudeLabel}${stuntLabel}${comboLabel}${approachLabel}${destinationLabel}${biomeLabel}${runStreakLabel}${contractWinsLabel}${masteryTierLabel}${badgeLabel}`
-        option.title = course.detail
-      }
-    }
-  }
-  refreshCourseSelectorLabels()
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
   let replaySeed = parseWorldSeed(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('seed') : null,
   )
   if (replaySeed !== null) selectedCourseId = 'random'
-  if (replaySeed === null && titleCourseSelect?.value && selectedCourseId === 'random') {
-    selectedCourseId = courseDefinitionForId(titleCourseSelect.value).id
+
+  const refreshCourseSelectorLabels = (): void => {
+    const items = COURSE_LIBRARY.map((course) => {
+      const runId = courseRunId(course)
+      const history = runId ? repairCourseHistory(qualityStorage, runId) : null
+      const copy = coursePickerCopy({
+        course,
+        history,
+        bestScore: runId ? repairBestCourseScore(qualityStorage, runId) : 0,
+        badgeCount: runId ? repairMasteryBadges(qualityStorage, runId).length : 0,
+        bestPrecisionStreak: runId
+          ? repairBestCoursePrecisionStreak(qualityStorage, runId)
+          : 0,
+      })
+      return {
+        id: course.id,
+        label: course.label,
+        detail: copy.detail,
+        meta: copy.meta,
+        stats: copy.stats,
+      }
+    })
+    for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
   }
-  for (const select of courseSelectors) select.value = selectedCourseId
+  refreshCourseSelectorLabels()
 
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
@@ -462,6 +415,7 @@ async function boot(): Promise<void> {
     disposed = true
     releaseBrowserUi()
     uiListeners.dispose()
+    for (const picker of coursePickers) picker.dispose()
     menu.dispose()
     results.dispose()
     touchControls?.dispose()
@@ -704,21 +658,20 @@ async function boot(): Promise<void> {
     }
   }
 
-  const onCourseChange = (event: Event): void => {
-    const select = event.currentTarget as HTMLSelectElement | null
-    selectedCourseId = courseDefinitionForId(select?.value).id
+  const onCourseChange = (id: string): void => {
+    selectedCourseId = courseDefinitionForId(id).id
     replaySeed = null
     writeSelectedCourseId(qualityStorage, selectedCourseId)
-    for (const other of courseSelectors) other.value = selectedCourseId
+    for (const picker of coursePickers) picker.setValue(selectedCourseId)
   }
-  for (const select of courseSelectors) uiListeners.add(select, 'change', onCourseChange)
+  for (const picker of coursePickers) picker.onChange(onCourseChange)
   const onProgressStorageChange = (event: Event): void => {
     const storageEvent = event as StorageEvent
     const key = storageEvent.key
     if (key === COURSE_SELECTION_STORAGE_KEY || key === null) {
       selectedCourseId = readSelectedCourseId(qualityStorage)
       replaySeed = null
-      for (const select of courseSelectors) select.value = selectedCourseId
+      for (const picker of coursePickers) picker.setValue(selectedCourseId)
     }
     if (
       key === null ||

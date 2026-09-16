@@ -29,7 +29,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Best runs persist per course with gate split traces, so retries call out whether each clear is ahead or behind pace without spawning a ghost aircraft.
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
-- The title and pause menus offer Random world plus four validated repeatable course seeds, with route profiles preserved on retry.
+- The title and pause menus offer a card world picker for Random world, Free flight, and the curated course seeds, with route profiles preserved on retry.
 - Results persist a completion count and fastest finish per course, making progression visible without introducing a campaign layer.
 - Course selectors reuse that history, showing curated-course run counts and fastest times without touching the flight loop.
 - The last selected course is remembered across reloads when browser storage is available, with a safe Random world fallback.
@@ -39,8 +39,8 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Routes can draw a deterministic steady, tempo, or altitude rhythm, with scoring emphasis matched to the route flavor.
 - Completed runs explain which scoring focus shaped the final score.
 - Clean completed runs can unlock local course mastery badges shown on the results card.
-- Title and course selectors show earned badge progress alongside completed-run history.
-- Curated course selectors also show each course's saved best score.
+- Title and pause world pickers show compact run and rank meta on each card, with best time, score, streak, and badge progress on the selected world.
+- Curated course cards also keep each course's saved best score on the selected-world line.
 - Course records self-heal malformed score and badge data without blocking launch.
 - Fuel now resets per sortie, burns harder on afterburner, and warns before the tank is empty.
 - The fuel row now shows estimated endurance for the current throttle and afterburner request, making the power tradeoff readable before the reserve lockout.

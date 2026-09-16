@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Replace the stuffed native world dropdown with a two-column card picker, keeping course names short and moving mastery stats onto the selected world.
 - Invert A/D yaw so A yaws right and D yaws left, matching the live flight stick instead of the previous left/right convention.
 - Add a capped Night Ops landing bonus that rewards clean dusk and night touchdowns from the shared atmosphere daylight envelope, shown as NIGHT on the results card.
 
