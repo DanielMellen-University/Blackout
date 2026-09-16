@@ -1,1 +1,1 @@
-@file:///workspace/Blackout/src/systems/ChallengeRun.ts
+{{file:/workspace/Blackout/src/systems/ChallengeRun.ts}}
