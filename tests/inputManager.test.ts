@@ -26,6 +26,19 @@ function fakeWindow(): { target: Window; fire(type: string, code: string): void 
 }
 
 describe('flight input one-shot controls', () => {
+  it('maps A to yaw right and D to yaw left', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    fake.fire('keydown', 'KeyA')
+    expect(input.sampleWithDt(0).yaw).toBe(1)
+    fake.fire('keyup', 'KeyA')
+    fake.fire('keydown', 'KeyD')
+    expect(input.sampleWithDt(0).yaw).toBe(-1)
+
+    input.dispose()
+  })
+
   it('queues the audio toggle only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

@@ -432,7 +432,7 @@ describe('rebuilt aircraft', () => {
     expect(rightTail.rotation.y).toBeCloseTo(0)
   })
 
-  it('turns the nose in the same direction as the A/D yaw mapping', () => {
+  it('turns the nose right for positive yaw and left for negative yaw', () => {
     setContactHeightSampler(() => 0)
     const forward = (yaw: number): number => {
       const aircraft = new Aircraft()

@@ -4,7 +4,7 @@ export interface ControlState {
   pitch: number
   /** Roll stick: +Q = roll right, -E = roll left. */
   roll: number
-  /** Yaw / rudder: +D = yaw right, -A = yaw left. */
+  /** Yaw / rudder: +A = yaw right, -D = yaw left. */
   yaw: number
   /** 0-1 throttle. Shift raises, Ctrl/1 lowers. */
   throttle: number

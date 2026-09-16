@@ -294,7 +294,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Afterburner now adds a restrained edge heat veil that scales with speed, stays boost-only, and respects reduced-motion settings.
 - Clean touchdowns and fast rollouts kick up pooled ground scrub dust and tire smoke without per-landing allocation churn.
 - Approaching the live checkpoint softens a proximity pulse on the ring and HUD cue, separate from the brighter gate-pass flash.
-- Airborne yaw and runway steering now honor the HUD control convention: A turns left and D turns right, with regression coverage for both nose directions.
+- Airborne yaw and runway steering now honor the HUD control convention: A turns right and D turns left, with regression coverage for both nose directions.
 - Aircraft model replacement disposes removed geometry and materials so visual asset reloads do not leak GPU resources.
 - Deployed landing wheels now spin with rollout speed and reset cleanly between runs, using the existing gear meshes with no added draw calls.
 - Aircraft animation caches gear, control-surface, afterburner, and nozzle nodes so each physics step avoids repeated scene-tree searches.
@@ -450,7 +450,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | Input | Action |
 |-------|--------|
 | **W / S** | Pitch up / down |
-| **A / D** | Yaw left / right |
+| **A / D** | Yaw right / left |
 | **Q / E** | Roll (Q right, E left) |
 | **Shift** | Engine power up (speed target) |
 | **Ctrl** or **1** | Engine power down |
