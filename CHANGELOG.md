@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-18
+
+### Ship
+
+- Add arcade high-G vision feedback from the existing pilot load scalar: a dark tunnel vignette on hard positive G, a restrained red wash on strong negative G, hysteretic BLACKOUT / REDOUT banners, and no new scene work.
+
 ## 2026-09-16
 
 ### Ship

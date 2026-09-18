@@ -77,6 +77,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Centered, runway-aligned touchdowns receive a small capped approach bonus while forgiving off-field landings still score normally.
 - Clean touchdowns through rain, snow, and strong gusts earn a capped weather-handling bonus that scales with landing quality.
 - Clean night and dusk touchdowns earn a capped Night Ops bonus that scales with darkness and landing quality.
+- Hard positive G tunnels vision into a dark vignette with one `BLACKOUT` cue; strong negative G adds a restrained red wash and one `REDOUT` cue, both from the existing pilot load scalar.
 - Curated courses remember the best approach bonus, turning clean returns into a replayable landing target.
 - A safe centered return can earn the `APPROACH ACE` mastery badge alongside the existing course badges.
 - Lock a city or village with `T` and fly into its arrival radius to add a capped destination bonus to the sortie.
