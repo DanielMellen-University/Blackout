@@ -19,7 +19,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git apply --verbose dev/10.117-veil.patch
+          cat dev/10.117-veil.a.patch dev/10.117-veil.b.patch > /tmp/veil.patch
+          cat dev/10.117-docs.a.patch dev/10.117-docs.b.patch > /tmp/docs.patch
+
+          git apply --verbose /tmp/veil.patch
           git add index.html src/style.css src/ui/HUD.ts
           git commit -m "[10.117] Wire blackout and redout HUD veil"
 
@@ -27,10 +30,10 @@ jobs:
           git add src/main.ts
           git commit -m "[10.117] Announce BLACKOUT and REDOUT banners"
 
-          git apply --verbose dev/10.117-docs.patch
+          git apply --verbose /tmp/docs.patch
           rm -f .github/workflows/ship-10.117-remaining.yml
           rm -f dev/TRIGGER_10_117
-          rm -f dev/10.117-veil.patch dev/10.117-banners.patch dev/10.117-docs.patch
+          rm -f dev/10.117-*.patch
           git add -A
           git commit -m "[10.117] Document high-G vision feedback"
 
