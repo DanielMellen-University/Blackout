@@ -112,6 +112,10 @@ body,
     animation: none;
   }
 
+  #g-load-veil.is-active {
+    animation: none;
+  }
+
   #flight-path-marker {
     transition: none;
   }
@@ -182,6 +186,54 @@ body,
 
 #heat-veil.is-active {
   animation: heat-veil-breathe 1.8s ease-in-out infinite;
+}
+
+/* Arcade high-G vision: dark tunnel on positive load, restrained red wash on negative. */
+#g-load-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  --g-load-blackout: 0;
+  --g-load-redout: 0;
+  background:
+    radial-gradient(
+      ellipse at center,
+      transparent calc(58% - var(--g-load-blackout) * 28%),
+      rgba(4, 6, 10, calc(var(--g-load-blackout) * 0.72)) 78%,
+      rgba(0, 0, 0, calc(var(--g-load-blackout) * 0.92)) 100%
+    ),
+    radial-gradient(
+      ellipse at center,
+      rgba(120, 16, 22, calc(var(--g-load-redout) * 0.18)) 0%,
+      rgba(90, 8, 14, calc(var(--g-load-redout) * 0.28)) 55%,
+      rgba(40, 0, 4, calc(var(--g-load-redout) * 0.12)) 100%
+    );
+  mix-blend-mode: multiply;
+  transition: opacity 0.2s ease;
+}
+
+#g-load-veil.is-active {
+  animation: g-load-veil-breathe 2.4s ease-in-out infinite;
+}
+
+#g-load-veil.is-blackout {
+  mix-blend-mode: multiply;
+}
+
+#g-load-veil.is-redout {
+  mix-blend-mode: soft-light;
+}
+
+@keyframes g-load-veil-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(0.94);
+  }
 }
 
 /* Flight velocity-vector cue: a quiet marker over the real flight path. */
@@ -276,6 +328,7 @@ body,
 .quality-lite #speed-juice.is-active,
 .quality-lite #canopy-tint.is-active,
 .quality-lite #heat-veil.is-active,
+.quality-lite #g-load-veil.is-active,
 .quality-lite #nav-cue.near-gate,
 .quality-lite #flight-path-marker {
   animation: none;
