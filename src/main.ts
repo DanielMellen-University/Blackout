@@ -71,6 +71,11 @@ import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
 import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
+import {
+  GLoadFeedbackTracker,
+  gLoadVisionBanner,
+  type GLoadVisionBand,
+} from './systems/GLoadFeedback'
 import { SupersonicTracker } from './systems/Supersonic'
 import {
   audioVolumePercent,
@@ -460,6 +465,8 @@ async function boot(): Promise<void> {
   let prevLightning = false
   let prevGLoadBand: GLoadCueBand = 'normal'
   let gLoadCueUntil = 0
+  const gLoadFeedback = new GLoadFeedbackTracker()
+  let prevGLoadVision: GLoadVisionBand | null = null
   let audioMuted = false
   const onVisibilityChange = (): void => {
     if (document.hidden) {
@@ -636,6 +643,8 @@ async function boot(): Promise<void> {
     prevLightning = false
     prevGLoadBand = 'normal'
     gLoadCueUntil = 0
+    gLoadFeedback.reset(1)
+    prevGLoadVision = null
     prevWarning = null
     prevEngineHeat = null
     radarDiscovered.clear()
@@ -1319,6 +1328,23 @@ async function boot(): Promise<void> {
       gLoadCueUntil = nowMs + 450
     }
     prevGLoadBand = gBand
+
+    const visionBand = gLoadFeedback.update(aircraft.loadFactor)
+    if (visionBand !== prevGLoadVision) {
+      const visionBanner = gLoadVisionBanner(visionBand, prevGLoadVision)
+      if (
+        visionBanner &&
+        simLive &&
+        playing &&
+        !menu.paused &&
+        !results.open &&
+        aircraft.status !== 'crashed'
+      ) {
+        audio.playCue(visionBand === 'blackout' ? 'g-high' : 'g-negative')
+        showBanner(visionBanner, 2200, 'danger')
+      }
+      prevGLoadVision = visionBand
+    }
 
     audioFrame.throttle = aircraft.engineState.lever
     audioFrame.boost = afterburnerOn
