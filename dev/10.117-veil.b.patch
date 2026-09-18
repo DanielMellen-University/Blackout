@@ -1,0 +1,66 @@
+ .quality-lite #heat-veil.is-active,
++.quality-lite #g-load-veil.is-active,
+ .quality-lite #nav-cue.near-gate,
+ .quality-lite #flight-path-marker {
+   animation: none;
+diff --git a/src/ui/HUD.ts b/src/ui/HUD.ts
+index 8f65e8b..733a41a 100644
+--- a/src/ui/HUD.ts
++++ b/src/ui/HUD.ts
+@@ -13,6 +13,10 @@ import {
+ import { MAX_COMBO_COUNT } from '../systems/FlightCombo'
+ import { MAX_BIOME_COUNT } from '../systems/ChallengeRun'
+ import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
++import {
++  blackoutVignetteIntensity,
++  redoutWashIntensity,
++} from '../systems/GLoadFeedback'
+ 
+ export type HudBannerTone = 'info' | 'success' | 'danger'
+ 
+@@ -436,6 +440,7 @@ export class HUD {
+   private readonly speedJuiceEl: HTMLElement | null
+   private readonly canopyTintEl: HTMLElement | null
+   private readonly heatVeilEl: HTMLElement | null
++  private readonly gLoadVeilEl: HTMLElement | null
+   private readonly flightPathEl: HTMLElement | null
+   private readonly navCueEl: HTMLElement | null
+   private readonly navTargetEl: HTMLElement | null
+@@ -626,6 +631,7 @@ export class HUD {
+     this.speedJuiceEl = root.getElementById('speed-juice')
+     this.canopyTintEl = root.getElementById('canopy-tint')
+     this.heatVeilEl = root.getElementById('heat-veil')
++    this.gLoadVeilEl = root.getElementById('g-load-veil')
+     this.flightPathEl = root.getElementById('flight-path-marker')
+     this.navCueEl = root.getElementById('nav-cue')
+     this.navTargetEl = root.getElementById('nav-target')
+@@ -862,6 +868,7 @@ export class HUD {
+       opts.snow ?? 0,
+     )
+     this.updateHeatVeil(kts, !!opts.boost)
++    this.updateGLoadVeil(opts.gForce)
+     this.updateFlightPath(
+       opts.flightPathVisible === true,
+       opts.flightPathX ?? 50,
+@@ -1526,6 +1533,21 @@ export class HUD {
+     this.setStyle(this.heatVeilEl, 'opacity', formatHudNumber(intensity, 1000))
+   }
+ 
++  /** Drive the arcade blackout / redout veil from the existing pilot load scalar. */
++  private updateGLoadVeil(loadFactor: number | undefined): void {
++    if (!this.gLoadVeilEl) return
++    const safe = loadFactor === undefined ? 1 : loadFactor
++    const blackout = blackoutVignetteIntensity(safe)
++    const redout = redoutWashIntensity(safe)
++    const active = blackout > 0.01 || redout > 0.01
++    this.setClass(this.gLoadVeilEl, 'is-active', active)
++    this.setClass(this.gLoadVeilEl, 'is-blackout', blackout >= redout && blackout > 0.01)
++    this.setClass(this.gLoadVeilEl, 'is-redout', redout > blackout && redout > 0.01)
++    this.setStyle(this.gLoadVeilEl, 'opacity', formatHudNumber(Math.max(blackout, redout), 1000))
++    this.setStyle(this.gLoadVeilEl, '--g-load-blackout', formatHudNumber(blackout, 1000))
++    this.setStyle(this.gLoadVeilEl, '--g-load-redout', formatHudNumber(redout, 1000))
++  }
++
+   private updateFlightPath(visible: boolean, x: number, y: number): void {
+     if (!this.flightPathEl) return
+     this.setHidden(this.flightPathEl, !visible)
