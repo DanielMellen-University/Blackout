@@ -130,6 +130,7 @@ import { sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
 import { startupFailureMessage } from './core/startupFailure'
 import { appReleaseLabel } from './core/Version'
+import { headingFromOrientation } from './core/attitude'
 import {
   defaultRenderQuality,
   hudUpdateDue,
@@ -622,6 +623,7 @@ async function boot(): Promise<void> {
       )
     }
     aircraft.reset(world.spawn)
+    _stableHeading = world.spawn.yaw
     supersonic.reset(aircraft.speed)
     cameras.setMode(cameras.mode, aircraft)
     crashFx.reset()
@@ -1633,6 +1635,7 @@ const _localUp = new Vector3()
 const _crashPoint = new Vector3()
 const _crashVelocity = new Vector3()
 const _attitude = { pitch: 0, roll: 0, heading: 0 }
+let _stableHeading = 0
 const flightPathMarker: FlightPathMarkerPosition = {
   x: 50,
   y: 50,
@@ -1650,7 +1653,8 @@ function attitudeFromOrientation(orientation: Quaternion): {
 } {
   _fwd.set(0, 0, 1).applyQuaternion(orientation)
   const pitch = Math.asin(MathUtils.clamp(_fwd.y, -1, 1))
-  const heading = Math.atan2(_fwd.x, _fwd.z)
+  const heading = headingFromOrientation(orientation, _stableHeading)
+  _stableHeading = heading
 
   _inv.copy(orientation).invert()
   _localUp.set(0, 1, 0).applyQuaternion(_inv)

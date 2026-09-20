@@ -6,6 +6,7 @@ import {
   CAMERA_MODES,
   type CameraMode,
 } from '../core/types'
+import { headingFromOrientation } from '../core/attitude'
 import { cameraMinY } from '../world/ground'
 import { STREAM_RADIUS_M } from '../world/TerrainSystem'
 import { CockpitMode } from './CockpitMode'
@@ -18,7 +19,6 @@ const _pivot = new Vector3()
 const _desired = new Vector3()
 const _toCam = new Vector3()
 const _groundSample = new Vector3()
-const _forward = new Vector3()
 const _aircraftDelta = new Vector3()
 const _headingQuat = new Quaternion()
 const _bearingDelta = new Vector3()
@@ -340,10 +340,7 @@ export class CameraSystem {
    * Aircraft heading around world Y from body +Z forward.
    */
   private aircraftHeading(aircraft: Aircraft): number {
-    _forward.set(0, 0, 1).applyQuaternion(aircraft.displayOrientation)
-    if (Math.hypot(_forward.x, _forward.z) > 0.08) {
-      this.stableHeading = Math.atan2(_forward.x, _forward.z)
-    }
+    this.stableHeading = headingFromOrientation(aircraft.displayOrientation, this.stableHeading)
     return this.stableHeading
   }
 
