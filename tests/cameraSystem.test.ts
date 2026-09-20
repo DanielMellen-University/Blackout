@@ -374,4 +374,23 @@ describe('external camera framing', () => {
     expect(lowest).toBeGreaterThanOrEqual(floor - 1e-6)
     cameras.dispose()
   })
+
+  it('stops the external rig before a loaded obstacle on the sightline', () => {
+    setGroundHeightSampler(() => 0)
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 20, 0)
+    aircraft.snapDisplay()
+    cameras.setObstacleSampler((_x, _y, z) => z < -8)
+    cameras.setMode('chase', aircraft)
+
+    expect(cameras.camera.position.z).toBeGreaterThan(-8)
+    cameras.dispose()
+  })
 })

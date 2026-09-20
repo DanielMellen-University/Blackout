@@ -29,6 +29,7 @@ const _Y_UP = new Vector3(0, 1, 0)
 
 /** External / chase-style modes only. Cockpit is `CockpitMode`. */
 type ChaseMode = Exclude<CameraMode, 'cockpit'>
+export type CameraObstacleSampler = (x: number, y: number, z: number) => boolean
 
 interface ModeConfig {
   lookOffset: Vector3
@@ -140,6 +141,7 @@ export class CameraSystem {
   private reducedMotion = false
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
+  private obstacleSampler: CameraObstacleSampler | null = null
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -168,6 +170,12 @@ export class CameraSystem {
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
     this.renderQuality = quality
+  }
+
+  /** Supply lightweight world colliders so external framing avoids buildings. */
+  setObstacleSampler(sampler: CameraObstacleSampler | null): void {
+    if (this.disposed) return
+    this.obstacleSampler = sampler
   }
 
   get prefersReducedMotion(): boolean {
@@ -288,6 +296,7 @@ export class CameraSystem {
     c.removeEventListener('auxclick', this.onAuxClick, cap)
     c.removeEventListener('mousedown', this.onMouseDownBlock, cap)
     this.cockpit.dispose()
+    this.obstacleSampler = null
     this.camera.removeFromParent()
   }
 
@@ -489,7 +498,8 @@ export class CameraSystem {
       const t = i / samples
       _groundSample.copy(pivot).addScaledVector(_toCam, t)
       const floor = cameraMinY(_groundSample.x, _groundSample.z, this.groundClearance)
-      if (_groundSample.y >= floor) continue
+      const blocked = this.obstacleSampler?.(_groundSample.x, _groundSample.y, _groundSample.z) === true
+      if (_groundSample.y >= floor && !blocked) continue
 
       const safeT = Math.max(0.06, (i - 1.25) / samples)
       out.copy(pivot).addScaledVector(_toCam, safeT)
