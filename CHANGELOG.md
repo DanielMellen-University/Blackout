@@ -10,6 +10,7 @@
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.
 - Stop external camera framing before loaded settlement and airfield colliders, using the existing bounded occlusion probes without adding render-loop allocations.
+- Add a persisted keyboard yaw direction preference with safe storage repair while leaving gamepad and touch controls unchanged.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

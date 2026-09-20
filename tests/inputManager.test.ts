@@ -39,6 +39,20 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('supports the persisted A-left / D-right keyboard preference', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.setKeyboardYawPreference('a-left')
+
+    fake.fire('keydown', 'KeyA')
+    expect(input.sampleWithDt(0).yaw).toBe(-1)
+    fake.fire('keyup', 'KeyA')
+    fake.fire('keydown', 'KeyD')
+    expect(input.sampleWithDt(0).yaw).toBe(1)
+
+    input.dispose()
+  })
+
   it('queues the audio toggle only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

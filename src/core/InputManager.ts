@@ -1,5 +1,9 @@
 import { flightConfig } from '../aircraft/flightConfig'
 import { createDefaultControls, type ControlState } from './types'
+import {
+  normalizeKeyboardYawPreference,
+  type KeyboardYawPreference,
+} from './FlightPreferences'
 import type { TouchInputState } from './TouchControls'
 
 /** Keep controller latency below one frame budget without polling every step. */
@@ -7,7 +11,7 @@ export const GAMEPAD_POLL_INTERVAL = 1 / 30
 
 /**
  * Maps keyboard into ControlState for arcade flight.
- * W/S pitch, A/D yaw (A right, D left), Q/E roll, Space boost, B speed brake, G gear, V trim assist, Shift/Ctrl throttle.
+ * W/S pitch, A/D yaw (configurable direction), Q/E roll, Space boost, B speed brake, G gear, V trim assist, Shift/Ctrl throttle.
  *
  * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
  * every frame so the ENG bar can track live.
@@ -27,6 +31,7 @@ export class InputManager {
   private touchYaw = 0
   private touchThrottle = 0
   private touchBoost = false
+  private keyboardYawPreference: KeyboardYawPreference = 'a-right'
 
   cameraToggleQueued = false
   resetQueued = false
@@ -50,6 +55,14 @@ export class InputManager {
     target.addEventListener('blur', this.onBlur)
   }
 
+  setKeyboardYawPreference(preference: KeyboardYawPreference): void {
+    this.keyboardYawPreference = normalizeKeyboardYawPreference(preference)
+  }
+
+  get keyboardYaw(): KeyboardYawPreference {
+    return this.keyboardYawPreference
+  }
+
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown)
     this.target.removeEventListener('keyup', this.onKeyUp)
@@ -65,7 +78,10 @@ export class InputManager {
     else this.clearGamepadState()
 
     this.controls.pitch = mergeAxis(this.axis('KeyW', 'KeyS'), this.gamepadPitch, this.touchPitch)
-    this.controls.yaw = mergeAxis(this.axis('KeyA', 'KeyD'), this.gamepadYaw, this.touchYaw)
+    const keyboardYaw = this.keyboardYawPreference === 'a-left'
+      ? this.axis('KeyD', 'KeyA')
+      : this.axis('KeyA', 'KeyD')
+    this.controls.yaw = mergeAxis(keyboardYaw, this.gamepadYaw, this.touchYaw)
     this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll, this.touchRoll)
     this.controls.boost = this.keys.has('Space') || this.gamepadBoost || this.touchBoost
     this.controls.airbrake = this.keys.has('KeyB')

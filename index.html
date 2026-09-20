@@ -91,6 +91,13 @@
                   <output id="menu-volume-value" for="menu-volume">100%</output>
                 </span>
               </label>
+              <label class="menu-setting" for="menu-yaw">
+                <span>Keyboard yaw</span>
+                <select id="menu-yaw" aria-label="Keyboard yaw direction">
+                  <option value="a-right">A right / D left</option>
+                  <option value="a-left">A left / D right</option>
+                </select>
+              </label>
               <button type="button" id="menu-open-controls" class="btn-ghost">Controls</button>
               <button type="button" id="menu-open-info" class="btn-ghost">Game info</button>
               <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>
@@ -103,7 +110,7 @@
             <h2 id="menu-controls-heading">Controls</h2>
             <div class="ctrl-table">
               <div><kbd>W</kbd><kbd>S</kbd></div><div>Pitch</div>
-              <div><kbd>A</kbd><kbd>D</kbd></div><div>Yaw</div>
+              <div><kbd>A</kbd><kbd>D</kbd></div><div id="controls-yaw-label">Yaw (A right / D left by default)</div>
               <div><kbd>Q</kbd><kbd>E</kbd></div><div>Roll</div>
               <div><kbd>Shift</kbd> / <kbd>2</kbd></div><div>Engine +</div>
               <div><kbd>Ctrl</kbd> / <kbd>1</kbd></div><div>Engine − / brake</div>
@@ -155,6 +162,7 @@
               <li>A PRECISION APPROACH contract may ask for a centered, aligned touchdown on the home strip.</li>
               <li>Looping or pitching vertical keeps the last reliable heading on the HUD and return cue instead of flipping the navigation arrow.</li>
               <li>The external camera shortens its chase line before loaded buildings and airfield structures instead of clipping through them.</li>
+              <li>Keyboard yaw direction is configurable in Settings and persists between sessions; gamepad and touch yaw remain unchanged.</li>
               <li>Hard positive G tunnels vision into a dark vignette; strong negative G adds a restrained red wash with one BLACKOUT or REDOUT cue.</li>
               <li>Try the Ridge run course for a high-altitude gate line over the mountain shoulders.</li>
             </ul>

@@ -132,6 +132,13 @@ import { startupFailureMessage } from './core/startupFailure'
 import { appReleaseLabel } from './core/Version'
 import { headingFromOrientation } from './core/attitude'
 import {
+  keyboardYawPreferenceLabel,
+  normalizeKeyboardYawPreference,
+  readKeyboardYawPreference,
+  writeKeyboardYawPreference,
+  type KeyboardYawPreference,
+} from './core/FlightPreferences'
+import {
   defaultRenderQuality,
   hudUpdateDue,
   normalizeRenderQuality,
@@ -155,6 +162,8 @@ async function boot(): Promise<void> {
   const titleCoursePickerRoot = document.getElementById('title-course-picker')
   const menuCoursePickerRoot = document.getElementById('menu-course-picker')
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
+  const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
+  const yawLabel = document.getElementById('controls-yaw-label')
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   const touchRoot = document.getElementById('touch-controls')
@@ -235,6 +244,7 @@ async function boot(): Promise<void> {
   })
   let renderQuality: RenderQuality = readRenderQuality(qualityStorage, renderQualityFallback)
   const initialAudioVolume = readAudioVolume(qualityStorage)
+  const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -351,6 +361,8 @@ async function boot(): Promise<void> {
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
   const input = new InputManager()
+  input.setKeyboardYawPreference(initialKeyboardYaw)
+  if (yawSelect) yawSelect.value = initialKeyboardYaw
   const touchDevice = touchInputSupported(
     typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
     typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
@@ -376,6 +388,22 @@ async function boot(): Promise<void> {
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
   const audio = new FlightAudio()
+  const applyKeyboardYaw = (next: KeyboardYawPreference): void => {
+    const preference = normalizeKeyboardYawPreference(next)
+    input.setKeyboardYawPreference(preference)
+    if (yawSelect) yawSelect.value = preference
+    if (yawLabel) yawLabel.textContent = `Yaw (${keyboardYawPreferenceLabel(preference)})`
+    writeKeyboardYawPreference(qualityStorage, preference)
+  }
+  applyKeyboardYaw(initialKeyboardYaw)
+  const onKeyboardYawChange = (): void => {
+    if (!yawSelect) return
+    applyKeyboardYaw(yawSelect.value as KeyboardYawPreference)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`KEYBOARD YAW ${keyboardYawPreferenceLabel(input.keyboardYaw)}`, 1500, 'info')
+    }
+  }
+  uiListeners.add(yawSelect, 'change', onKeyboardYawChange)
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)
     audio.setVolume(volume)
