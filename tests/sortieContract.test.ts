@@ -45,12 +45,17 @@ describe('sortie contracts', () => {
         tracker.recordSpeedBand(220, 5)
         tracker.recordSpeedBand(220, 5)
       }
+      if (tracker.kind === 'weather') {
+        tracker.recordWeather(0.5, 0, 5)
+        tracker.recordWeather(0, 0.7, 5)
+        tracker.recordWeather(0.6, 0, 5)
+      }
       const score = tracker.finish(0, 1)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -106,6 +111,31 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBeCloseTo(1 / 3)
     tracker.recordSpeedBand(220, 5)
     tracker.recordSpeedBand(220, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne time during meaningful precipitation', () => {
+    const tracker = new SortieContractTracker()
+    let weatherSeed = -1
+    for (let seed = 0; seed < 512; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'weather') {
+        weatherSeed = seed
+        break
+      }
+    }
+    expect(weatherSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(weatherSeed, 5)
+    tracker.recordWeather(0.8, 0, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWeather(0.1, 0.1, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWeather(0.35, 0, 4)
+    expect(tracker.progress).toBeCloseTo(4 / 14)
+    tracker.recordWeather(0, 0.8, 5)
+    tracker.recordWeather(0.8, 0, 5)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

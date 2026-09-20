@@ -525,6 +525,28 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires precipitation time into the storm-run contract', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:weather-contract', 1, 'balanced', 10)
+    expect(run.contractLabel).toBe('CONTRACT STORM RUN')
+    run.update(5, 8, 180, 0.6, 0)
+    expect(run.contractProgress).toBeCloseTo(5 / 14)
+    run.update(5, 8, 180, 0, 0.7)
+    run.update(4, 8, 180, 0.6, 0)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('STORM RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('weather')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('persists cumulative contract wins and repairs oversized counts', () => {
     const values = new Map<string, string>()
     const storage = {

@@ -775,7 +775,7 @@ export class ChallengeRun {
   }
 
   /** Advance simulation time and arm the clock once the takeoff roll begins. */
-  update(dt: number, speed: number, altitudeM = 0): void {
+  update(dt: number, speed: number, altitudeM = 0, rain = 0, snow = 0): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
     const safeAltitude = Number.isFinite(altitudeM) ? Math.max(0, altitudeM) : 0
@@ -784,6 +784,7 @@ export class ChallengeRun {
     const wasContractComplete = this.contract.complete
     this.contract.recordLowLevel(safeAltitude, safeDt, safeSpeed > 5)
     this.contract.recordSpeedBand(safeSpeed, safeDt, safeSpeed > 5)
+    this.contract.recordWeather(rain, snow, safeDt, safeSpeed > 5)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'

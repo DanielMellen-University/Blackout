@@ -1159,7 +1159,13 @@ async function boot(): Promise<void> {
           biomeSurveyCooldown = 0.65
         }
 
-        challenge.update(dt, aircraft.speed, Math.max(0, aircraft.position.y - world.spawn.y))
+        challenge.update(
+          dt,
+          aircraft.speed,
+          Math.max(0, aircraft.position.y - world.spawn.y),
+          weather.rain,
+          weather.snow,
+        )
       }
 
       world.mission.tick(
