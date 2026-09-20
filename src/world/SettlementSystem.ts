@@ -15,7 +15,8 @@ import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } f
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
 
-const LOAD_RADIUS = FOG_FAR
+// Terrain horizon growth must not quadruple settlement planning work.
+const LOAD_RADIUS = Math.min(FOG_FAR, 15120)
 const DETAIL_RADIUS = 4200
 const ROAD_LOAD_RADIUS = LOAD_RADIUS + 3000
 const ROAD_KEEP_RADIUS = ROAD_LOAD_RADIUS + 5000

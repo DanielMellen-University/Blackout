@@ -121,7 +121,8 @@ function frameWorld(destination){
     controls.target.set(reviewPeakX,nearbyPeak-900,reviewPeakZ);controls.update()
   }
   // Warm the review scene even when a background browser throttles animation.
-  for(let i=0;i<400;i++) world.terrain.update(x,z,1/30)
+  // Workers fill coverage asynchronously while the review keeps rendering.
+  world.terrain.update(x,z,1/30)
   // Keep settlement streaming focused with the reviewed destination. Without
   // this kick, the previous airfield cell could remain authoritative while
   // the camera was already looking at a city or village several kilometres

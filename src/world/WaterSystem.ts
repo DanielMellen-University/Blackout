@@ -8,7 +8,7 @@ interface BasinVertex { x: number; z: number; y: number; depth: number }
 /** Cached warped shoreline samples reused by every terrain tile touching a basin. */
 const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
 
-function makeWaterMaterial(
+export function makeWaterMaterial(
   clock: { value: number },
   weather: WaterWeatherUniforms | undefined,
   polygonOffset = -1,

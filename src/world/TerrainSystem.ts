@@ -1,28 +1,22 @@
 import {
-  BufferAttribute,
-  BufferGeometry,
   Color,
   DoubleSide,
   Fog,
-  Float32BufferAttribute,
   FrontSide,
   Group,
   InstancedMesh,
   MathUtils,
   Mesh,
   MeshStandardMaterial,
-  PlaneGeometry,
   Scene,
   Vector2,
-  type Object3D,
 } from 'three'
-import { hash2 } from './noise'
+import { getWorldSeed, hash2 } from './noise'
 import {
-  applySlopeShading,
-  biomeColor,
   sampleClimate,
   terrainSurfaceFromClimate,
   opsPadBlend,
+  getOpsPad,
   type TerrainSurface,
 } from './terrainSample'
 import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
@@ -32,64 +26,52 @@ import {
   setGroundSurfaceSampler,
   type GroundSurfaceSample,
 } from './ground'
-import { buildWaterMesh } from './WaterSystem'
-import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
+import { makeWaterMaterial } from './WaterSystem'
+import {
+  CHUNK_SIZE, deserializeTerrainGeometry, generateTerrainGeometry,
+  type TerrainGeometryData, type TerrainLod,
+} from './TerrainGeometry'
+import { TerrainWorkerPool, type TerrainBuildRequest } from './TerrainWorkerPool'
+export { CHUNK_SIZE, segsForLod, waterSegsForLod, pondIntersectsBounds,
+  buildTerrainSkirtGeometry, type TerrainLod } from './TerrainGeometry'
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
 import { disposeObjectTree } from '../core/dispose'
 
 /**
  * Streaming envelope.
  * Terrain is generated past the fog wall so new chunks never appear
- * in clear view. Fog fully covers ~2 chunk rings before the stream edge.
+ * in clear view. Fog covers eight chunk rings before the stream edge.
  * Distance LOD + cheap far tiles keep the wider ring affordable.
  */
-export const CHUNK_SIZE = 420
 /**
  * Stream half-width in chunks (diameter ~2× this).
- * Twice the previous 20-cell radius, with coarse distant tiles.
+ * Twice the previous 40-cell radius, with coarse distant tiles.
  */
-export const VIEW_RADIUS = 40
+export const VIEW_RADIUS = 80
 /**
  * Chunk rings kept past the fog horizon. Generation / fade happens
  * inside this hidden margin so you never watch tiles pop in.
  */
-export const FOG_MARGIN_CHUNKS = 4
+export const FOG_MARGIN_CHUNKS = 8
 /** Stylized instanced vegetation v2 stays inside the near-field budget. */
 export const ENABLE_VEGETATION = true
 /** Detailed props only near the jet (cells). */
 const PROP_RADIUS = 2
 /** Soft opacity fade across the fog margin. */
 const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
-/** Seconds-ish ease for spawn/despawn opacity. */
-const FADE_RATE = 1.6
-/** Near-field mesh density (player ring). */
-const SEGS_NEAR = 24
-/** Mid ring — still readable through light fog. */
-const SEGS_MID = 12
-/** Far ring — silhouette only (heavy fog). */
-const SEGS_FAR = 6
-/** Keep nearby shores smooth while coarsening water hidden in the fog. */
-const WATER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 7, 1: 20, 2: 60 }
-/** Per-LOD caps prevent a large sea from consuming the terrain build budget. */
-const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 56, 1: 40, 2: 24 }
-/** Rivers need a tighter grid nearby, but remain bounded in the fog ring. */
-const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 10, 1: 26, 2: 70 }
-const RIVER_MAX_SEGS = 64
-/** Build cost budget per frame (props cost more, far LODs cost less). */
-const BUILD_BUDGET = 2.4
-/** Hide quadtree T-junctions without making vertical dams through water. */
-const TERRAIN_SKIRT_DEPTH = 60
+/** Short smoothstep appearance transition, independent of frame rate. */
+const FADE_SECONDS = .65
+/** Main-thread mesh attachment stays bounded, even when workers complete together. */
+const UPLOAD_BUDGET_MS = 2
+const MAX_UPLOADS_PER_FRAME = 16
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /**
- * Fog fully opaque at this range — two chunks inside the stream edge
+ * Fog fully opaque at this range, eight chunks inside the stream edge
  * (VIEW_RADIUS - FOG_MARGIN) * CHUNK_SIZE.
  */
 export const FOG_FAR = (VIEW_RADIUS - FOG_MARGIN_CHUNKS) * CHUNK_SIZE
 /** Clear air near the jet; linear fog ramps out to FOG_FAR. */
 export const FOG_NEAR = Math.round(FOG_FAR * 0.34)
-
-/** 0 = near (player ring), 1 = mid, 2 = far silhouette. */
-export type TerrainLod = 0 | 1 | 2
 
 export function lodFromDist(dist: number): TerrainLod {
   if (dist <= 3) return 0
@@ -119,158 +101,6 @@ export function terrainSnowCoverage(snow: number, height: number, normalY: numbe
   const altitudeSnow = MathUtils.smoothstep(height, 1400, 3200)
   const slopeExposure = MathUtils.smoothstep(normalY, .42, .94)
   return MathUtils.clamp(snow, 0, 1) * slopeExposure * (.32 + altitudeSnow * .48)
-}
-
-/** True when a streamed tile overlaps an analytic pond that coarse vertices can miss. */
-export function pondIntersectsBounds(originX: number, originZ: number, span: number): boolean {
-  const minX = originX, minZ = originZ, maxX = originX + span, maxZ = originZ + span
-  const minCx = Math.floor(minX / CATCHMENT_SIZE), maxCx = Math.floor((maxX - 1) / CATCHMENT_SIZE)
-  const minCz = Math.floor(minZ / CATCHMENT_SIZE), maxCz = Math.floor((maxZ - 1) / CATCHMENT_SIZE)
-  for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
-    for (const basin of waterLandmarks(cx, cz)) {
-      if (!basin.pond) continue
-      const nearestX = Math.max(minX, Math.min(maxX, basin.x))
-      const nearestZ = Math.max(minZ, Math.min(maxZ, basin.z))
-      if (Math.hypot(nearestX - basin.x, nearestZ - basin.z) < basin.radius * 1.7 + 120) return true
-    }
-  }
-  return false
-}
-
-function basinsInBounds(originX: number, originZ: number, span: number): WaterBasin[] {
-  const result: WaterBasin[] = []
-  const minCx = Math.floor((originX - span * .8) / CATCHMENT_SIZE)
-  const maxCx = Math.floor((originX + span * 1.8) / CATCHMENT_SIZE)
-  const minCz = Math.floor((originZ - span * .8) / CATCHMENT_SIZE)
-  const maxCz = Math.floor((originZ + span * 1.8) / CATCHMENT_SIZE)
-  for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
-    for (const basin of waterLandmarks(cx, cz)) {
-      const extent = basin.radius * 1.75 + span * .72
-      const centerX = originX + span * .5, centerZ = originZ + span * .5
-      if (Math.abs(basin.x - centerX) <= extent && Math.abs(basin.z - centerZ) <= extent) {
-        result.push(basin)
-      }
-    }
-  }
-  return result
-}
-
-export function segsForLod(lod: TerrainLod): number {
-  if (lod === 0) return SEGS_NEAR
-  if (lod === 1) return SEGS_MID
-  return SEGS_FAR
-}
-
-/** Water-only grid budget; distant water can be coarser behind the fog. */
-export function waterSegsForLod(lod: TerrainLod, span: number): number {
-  return Math.min(WATER_MAX_SEGS[lod], Math.max(segsForLod(lod),
-    Math.ceil(span / WATER_TARGET_CELL_M[lod])))
-}
-
-/**
- * Build one non-indexed skirt strip for each dry tile edge. The strips are
- * merged into the terrain draw, so the quadtree gets crack coverage without
- * adding one draw call per streamed tile. Wet edges stay open for clipped
- * lakes and rivers, avoiding the old artificial dark water dams.
- */
-export function buildTerrainSkirtGeometry(
-  heights: Float32Array,
-  waterLevels: Float32Array,
-  colors: Float32Array,
-  segs: number,
-  span: number,
-  depth = TERRAIN_SKIRT_DEPTH,
-  edges: readonly [boolean, boolean, boolean, boolean] = [true, true, true, true],
-): BufferGeometry | null {
-  const stride = segs + 1
-  if (heights.length !== stride * stride || waterLevels.length !== heights.length ||
-    colors.length !== heights.length * 3 || segs < 1 || depth <= 0) return null
-  const positions: number[] = []
-  const skirtColors: number[] = []
-  const half = span * .5
-  const cell = span / segs
-  const add = (a: number, b: number): void => {
-    // One wet point is enough to leave the whole edge open. This is slightly
-    // conservative, but keeps a shoreline from acquiring a single isolated
-    // wall segment when the analytic water surface crosses the edge.
-    if (waterLevels[a]! > heights[a]! + .2 || waterLevels[b]! > heights[b]! + .2) return
-    const ax = -half + (a % stride) * cell
-    const az = -half + Math.floor(a / stride) * cell
-    const bx = -half + (b % stride) * cell
-    const bz = -half + Math.floor(b / stride) * cell
-    const values = [
-      [ax, heights[a]!, az], [bx, heights[b]!, bz],
-      [ax, heights[a]! - depth, az], [bx, heights[b]! - depth, bz],
-    ] as const
-    for (const [i, j, k] of [[0, 1, 2], [1, 3, 2]] as const) {
-      for (const index of [i, j, k]) {
-        const point = values[index]!
-        positions.push(point[0], point[1], point[2])
-        const source = index === 3 ? b : index === 2 ? a : index === 1 ? b : a
-        const shade = index >= 2 ? .97 : 1
-        skirtColors.push(colors[source * 3]! * shade, colors[source * 3 + 1]! * shade,
-          colors[source * 3 + 2]! * shade)
-      }
-    }
-  }
-  if (edges[0]) for (let ix = 0; ix < segs; ix++) add(ix, ix + 1)
-  if (edges[1]) for (let iz = 0; iz < segs; iz++) add(iz * stride + segs, (iz + 1) * stride + segs)
-  if (edges[2]) for (let ix = segs; ix > 0; ix--) add(segs * stride + ix, segs * stride + ix - 1)
-  if (edges[3]) for (let iz = segs; iz > 0; iz--) add(iz * stride, (iz - 1) * stride)
-  if (!positions.length) return null
-  const geometry = new BufferGeometry()
-  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('color', new Float32BufferAttribute(skirtColors, 3))
-  geometry.computeVertexNormals()
-  geometry.computeBoundingSphere()
-  return geometry
-}
-
-function mergeTerrainSkirt(
-  terrain: BufferGeometry,
-  skirt: BufferGeometry,
-): BufferGeometry {
-  const mainPos = terrain.getAttribute('position') as BufferAttribute
-  const mainColor = terrain.getAttribute('color') as BufferAttribute
-  const mainNormal = terrain.getAttribute('normal') as BufferAttribute
-  const skirtPos = skirt.getAttribute('position') as BufferAttribute
-  const skirtColor = skirt.getAttribute('color') as BufferAttribute
-  const skirtNormal = skirt.getAttribute('normal') as BufferAttribute
-  const position = new Float32Array(mainPos.count * 3 + skirtPos.count * 3)
-  const color = new Float32Array(mainColor.count * 3 + skirtColor.count * 3)
-  const normal = new Float32Array(mainNormal.count * 3 + skirtNormal.count * 3)
-  position.set(mainPos.array as Float32Array)
-  position.set(skirtPos.array as Float32Array, mainPos.count * 3)
-  color.set(mainColor.array as Float32Array)
-  color.set(skirtColor.array as Float32Array, mainColor.count * 3)
-  normal.set(mainNormal.array as Float32Array)
-  normal.set(skirtNormal.array as Float32Array, mainNormal.count * 3)
-  const merged = new BufferGeometry()
-  merged.setAttribute('position', new BufferAttribute(position, 3))
-  merged.setAttribute('color', new BufferAttribute(color, 3))
-  merged.setAttribute('normal', new BufferAttribute(normal, 3))
-  const uv = terrain.getAttribute('uv') as BufferAttribute | undefined
-  if (uv) {
-    const mergedUv = new Float32Array(uv.count * 2 + skirtPos.count * 2)
-    mergedUv.set(uv.array as Float32Array)
-    merged.setAttribute('uv', new BufferAttribute(mergedUv, 2))
-  }
-  const mainIndex = terrain.index?.array
-  if (mainIndex) {
-    const index = new Uint32Array(mainIndex.length + skirtPos.count)
-    index.set(mainIndex as Uint16Array | Uint32Array)
-    for (let i = 0; i < skirtPos.count; i++) index[mainIndex.length + i] = mainPos.count + i
-    merged.setIndex(new BufferAttribute(index, 1))
-  }
-  merged.computeBoundingSphere()
-  return merged
-}
-
-function buildCost(dist: number, withProps: boolean): number {
-  if (withProps) return 2.2
-  if (dist <= 5) return 1
-  if (dist <= 11) return 0.45
-  return 0.22
 }
 
 /**
@@ -315,6 +145,7 @@ interface Chunk {
   heights: Float32Array
   /** Current opacity 0–1 (lerped each frame). */
   alpha: number
+  fadeAge: number
   /** Desired opacity (distance fade or 0 while unloading). */
   targetAlpha: number
   /** Marked for removal after fade-out completes. */
@@ -324,6 +155,7 @@ interface Chunk {
   /** Cached near-field props root and meshes; avoids scene-tree searches every frame. */
   props: Group | null
   propMeshes: Mesh[]
+  materials: MeshStandardMaterial[]
 }
 
 interface PendingChunk {
@@ -342,6 +174,13 @@ export class TerrainSystem {
   private readonly chunks = new Map<string, Chunk>()
   private readonly pending: PendingChunk[] = []
   private readonly pendingKeys = new Set<string>()
+  private readonly ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[] = []
+  private readonly activeKeys = new Set<string>()
+  private readonly retiring: Chunk[] = []
+  private generation = 0
+  private nextRequest = 0
+  private disposed = false
+  private readonly workers: TerrainWorkerPool
   private desiredTiles = new Map<string, { cx: number; cz: number; size: number; dist: number }>()
   private readonly replacementKeys = new Map<string, string[]>()
   private readonly scene: Scene
@@ -368,6 +207,21 @@ export class TerrainSystem {
 
   constructor(scene: Scene) {
     this.scene = scene
+    this.workers = new TerrainWorkerPool((job, data) => {
+      if (this.disposed || job.generation !== this.generation) return
+      this.ready.push({ job, data })
+      this.dispatchWorkers()
+    }, job => {
+      if (this.disposed || job.generation !== this.generation) return
+      const key = tileKey(job.cx, job.cz, job.size)
+      this.activeKeys.delete(key)
+      const tile = this.desiredTiles.get(key)
+      if (tile && !this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
+        this.pending.push({ ...tile, rebuild: this.chunks.has(key) })
+        this.pendingKeys.add(key)
+        this.sortPending()
+      }
+    })
     this.root.name = 'TerrainSystem'
     scene.add(this.root)
 
@@ -480,6 +334,14 @@ export class TerrainSystem {
   }
 
   clearAll(): void {
+    this.generation++
+    this.ready.length = 0
+    this.activeKeys.clear()
+    for (const chunk of this.retiring) {
+      chunk.root.removeFromParent()
+      this.disposeChunk(chunk)
+    }
+    this.retiring.length = 0
     for (const chunk of this.chunks.values()) {
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
@@ -495,6 +357,8 @@ export class TerrainSystem {
 
   /** Release streamed geometry and the shared near-field prop factory. */
   dispose(): void {
+    this.disposed = true
+    this.workers.dispose()
     this.clearAll()
     this.vegFactory?.disposeShared()
     this.vegFactory = null
@@ -510,7 +374,9 @@ export class TerrainSystem {
    * builds a small budget, and eases chunk/prop opacity in and out.
    */
   update(worldX: number, worldZ: number, dt = 1 / 60): void {
-    this.waterClock.value += Math.max(0, dt)
+    if (this.disposed) return
+    dt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, .1)) : 0
+    this.waterClock.value += dt
     this.focusX = worldX
     this.focusZ = worldZ
     const cx = Math.floor(worldX / CHUNK_SIZE)
@@ -524,6 +390,11 @@ export class TerrainSystem {
 
     this.drainBuildQueue()
     this.updateFades(cx, cz, dt)
+  }
+
+  get streamingStats(): { loaded: number; pending: number; inFlight: number; ready: number; workers: number } {
+    return { loaded: this.chunks.size, pending: this.pending.length,
+      inFlight: this.workers.busy, ready: this.ready.length, workers: this.workers.size }
   }
 
   /** Test/debug: current LOD and grid density for a cell. */
@@ -633,11 +504,11 @@ export class TerrainSystem {
           const wantProps = ENABLE_VEGETATION && dist <= PROP_RADIUS + (existing.hasProps ? 1 : 0)
           const needsRebuild =
             lod !== existing.lod || wantProps !== existing.hasProps
-          if (needsRebuild && !this.pendingKeys.has(key)) {
+          if (needsRebuild && !this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
             this.pending.push({ cx: kx, cz: kz, size, dist, rebuild: true })
             this.pendingKeys.add(key)
           }
-        } else if (!this.pendingKeys.has(key)) {
+        } else if (!this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
           this.pending.push({
             cx: kx,
             cz: kz,
@@ -652,7 +523,7 @@ export class TerrainSystem {
     for (const p of this.pending) {
       p.dist = Math.hypot(p.cx + p.size / 2 - cx - .5, p.cz + p.size / 2 - cz - .5)
     }
-    this.pending.sort((a, b) => terrainBuildPriority(a) - terrainBuildPriority(b) || a.dist - b.dist)
+    this.sortPending()
 
     // Soft unload: mark out-of-range chunks to fade, don't hard-delete
     this.replacementKeys.clear()
@@ -682,41 +553,112 @@ export class TerrainSystem {
     }
   }
 
+  private sortPending(): void {
+    this.pending.sort((a, b) => terrainBuildPriority(a) - terrainBuildPriority(b) || a.dist - b.dist)
+  }
+
+  private requestFor(job: PendingChunk): TerrainBuildRequest | null {
+    const key = tileKey(job.cx, job.cz, job.size)
+    const tile = this.desiredTiles.get(key)
+    if (!tile) return null
+    const existing = this.chunks.get(key)
+    const lod = existing ? lodWithHysteresis(tile.dist, existing.lod) : lodFromDist(tile.dist)
+    const withProps = ENABLE_VEGETATION && tile.dist <= PROP_RADIUS + (existing?.hasProps ? 1 : 0)
+    if (existing && lod === existing.lod && withProps === existing.hasProps) return null
+    return { id: ++this.nextRequest, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad(),
+      cx: job.cx, cz: job.cz, size: job.size, lod, withProps,
+      skirtEdges: this.skirtEdgesForTile(job.cx, job.cz, job.size, lod) }
+  }
+
+  private install(job: TerrainBuildRequest, data: TerrainGeometryData): void {
+    const key = tileKey(job.cx, job.cz, job.size)
+    this.activeKeys.delete(key)
+    if (job.generation !== this.generation || !this.desiredTiles.has(key)) return
+    const tile = this.desiredTiles.get(key)!
+    const previous = this.chunks.get(key)
+    const lod = previous ? lodWithHysteresis(tile.dist, previous.lod) : lodFromDist(tile.dist)
+    const withProps = ENABLE_VEGETATION && tile.dist <= PROP_RADIUS + (previous?.hasProps ? 1 : 0)
+    if (previous && lod === previous.lod && withProps === previous.hasProps) return
+    if (lod !== job.lod || withProps !== job.withProps) {
+      const tile = this.desiredTiles.get(key)!
+      this.pending.push({ ...tile, rebuild: this.chunks.has(key) })
+      this.pendingKeys.add(key)
+      this.sortPending()
+      return
+    }
+    const existing = this.chunks.get(key)
+    const chunk = this.buildChunk(job, data)
+    if (existing) {
+      // Keep the previous surface until its replacement has faded fully in.
+      if (existing.props) existing.props.visible = false
+      this.retiring.push(existing)
+      this.offsetFallback(existing)
+    }
+    this.chunks.set(key, chunk)
+  }
+
   private drainBuildQueue(): void {
-    let spent = 0
-    const deadline = performance.now() + 2
-    while (spent < BUILD_BUDGET && this.pending.length > 0 && (spent === 0 || performance.now() < deadline)) {
-      const job = this.pending.shift()!
-      const key = tileKey(job.cx, job.cz, job.size)
+    const deadline = performance.now() + UPLOAD_BUDGET_MS
+    let uploads = 0
+    // Completion order varies between workers; uploads follow current proximity.
+    this.ready.sort((a, b) => {
+      const distance = (job: TerrainBuildRequest) => this.desiredTiles.get(tileKey(job.cx, job.cz, job.size))?.dist ?? Infinity
+      return distance(a.job) - distance(b.job)
+    })
+    while (this.ready.length && uploads < MAX_UPLOADS_PER_FRAME &&
+      (uploads === 0 || performance.now() < deadline)) {
+      const result = this.ready.shift()!
+      this.install(result.job, result.data)
+      uploads++
+    }
+    this.dispatchWorkers()
+    if (this.workers.size > 0) return
+    // Unsupported/failed workers retain deterministic streaming with a strict
+    // inter-build deadline. Browser workers are the normal generation path.
+    while (this.pending.length && uploads < MAX_UPLOADS_PER_FRAME &&
+      (uploads === 0 || performance.now() < deadline)) {
+      const pending = this.pending.shift()!
+      this.pendingKeys.delete(tileKey(pending.cx, pending.cz, pending.size))
+      const job = this.requestFor(pending)
+      if (!job) continue
+      this.install(job, generateTerrainGeometry(job.cx * CHUNK_SIZE, job.cz * CHUNK_SIZE,
+        job.lod, job.size, job.skirtEdges))
+      uploads++
+    }
+  }
+
+  private dispatchWorkers(): void {
+    // Never queue more than one request per worker. Fast turns reprioritize all
+    // unstarted work on the next cell crossing rather than draining an old FIFO.
+    while (this.pending.length && this.workers.available && this.ready.length < MAX_UPLOADS_PER_FRAME) {
+      const pending = this.pending.shift()!
+      const key = tileKey(pending.cx, pending.cz, pending.size)
       this.pendingKeys.delete(key)
+      const job = this.requestFor(pending)
+      if (!job) continue
+      this.activeKeys.add(key)
+      if (!this.workers.submit(job)) break
+    }
+  }
 
-      const pcx = Math.floor(this.focusX / CHUNK_SIZE)
-      const pcz = Math.floor(this.focusZ / CHUNK_SIZE)
-      const dist = Math.hypot(job.cx + job.size / 2 - pcx - .5, job.cz + job.size / 2 - pcz - .5)
-      if (!this.desiredTiles.has(key)) continue
-
-      const existing = this.chunks.get(key)
-      const withProps = ENABLE_VEGETATION && dist <= PROP_RADIUS + (existing?.hasProps ? 1 : 0)
-      if (existing) {
-        if (!job.rebuild) continue
-        const lod = lodWithHysteresis(dist, existing.lod)
-        if (lod === existing.lod && withProps === existing.hasProps) continue
-        this.rebuildChunk(existing, lod, withProps)
-        spent += buildCost(dist, withProps)
-        continue
+  private offsetFallback(chunk: Chunk): void {
+    for (const mesh of chunk.root.children) {
+      if (!(mesh instanceof Mesh)) continue
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials) {
+        material.polygonOffset = true
+        material.polygonOffsetFactor = 2
+        material.polygonOffsetUnits = 2
       }
-
-      this.chunks.set(key, this.buildChunk(job.cx, job.cz, withProps, dist, job.size))
-      spent += job.size > 1 ? .65 : buildCost(dist, withProps)
     }
   }
 
   /**
-   * Lerp opacity toward targets; dispose only after fade-out finishes.
-   * Settled fully-opaque tiles skip material walks (big win with ~1k chunks).
+   * Fade new coverage in and keep fallback geometry through the transition.
+   * Settled tiles skip material updates.
    */
-  private updateFades(pcx: number, pcz: number, dt: number): void {
-    const fadeK = 1 - Math.exp(-dt * FADE_RATE)
+  private updateFades(_pcx: number, _pcz: number, dt: number): void {
+    const fadeK = 1 - Math.exp(-dt * 6)
     const fadeStart = VIEW_RADIUS - FADE_CELLS
     const toRemove: string[] = []
 
@@ -725,15 +667,21 @@ export class TerrainSystem {
       // Keep old coverage until every replacement leaf has finished building.
       // This handles both splitting a distant tile and merging near tiles.
       if (chunk.fadingOut) {
-        const waiting = this.replacementKeys.get(key)?.some(nextKey => !this.chunks.has(nextKey))
-        if (waiting) continue
-        // Coverage is complete. Retire the old tile atomically instead of
-        // drawing two overlapping generations for several seconds in flight.
-        toRemove.push(key)
+        const waiting = this.replacementKeys.get(key)?.some(nextKey => (this.chunks.get(nextKey)?.fadeAge ?? 0) < FADE_SECONDS)
+        if (waiting) { this.offsetFallback(chunk); continue }
+        // Replacement coverage has completed its fade; retire the old surface.
+        if (this.replacementKeys.get(key)?.length) {
+          toRemove.push(key)
+          continue
+        }
+        chunk.alpha *= 1 - fadeK
+        this.applyChunkAlpha(chunk)
+        if (chunk.alpha <= .01) toRemove.push(key)
         continue
       }
+      chunk.fadeAge += dt
       if (!chunk.fadingOut) {
-        const cellDist = tileDistance(chunk.cx, chunk.cz, chunk.size, pcx + .5, pcz + .5)
+        const cellDist = tileDistance(chunk.cx, chunk.cz, chunk.size, this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE)
         chunk.targetAlpha =
           1 - MathUtils.smoothstep(cellDist, fadeStart, VIEW_RADIUS + 0.35)
       } else {
@@ -750,7 +698,7 @@ export class TerrainSystem {
         continue
       }
 
-      chunk.alpha = MathUtils.lerp(chunk.alpha, chunk.targetAlpha, fadeK)
+      chunk.alpha = MathUtils.smoothstep(chunk.fadeAge, 0, FADE_SECONDS) * chunk.targetAlpha
       if (Math.abs(chunk.alpha - chunk.targetAlpha) < 0.008) {
         chunk.alpha = chunk.targetAlpha
       }
@@ -762,6 +710,15 @@ export class TerrainSystem {
       if (chunk.fadingOut && chunk.alpha <= 0.01) {
         toRemove.push(key)
       }
+    }
+
+    for (let i = this.retiring.length - 1; i >= 0; i--) {
+      const old = this.retiring[i]!
+      const replacement = this.chunks.get(old.key)
+      if (replacement && replacement.fadeAge < FADE_SECONDS && this.desiredTiles.has(old.key)) continue
+      old.root.removeFromParent()
+      this.disposeChunk(old)
+      this.retiring.splice(i, 1)
     }
 
     for (const key of toRemove) {
@@ -780,17 +737,7 @@ export class TerrainSystem {
     chunk.root.visible = a > 0.005
     if (!chunk.root.visible) return
 
-    chunk.root.traverse((obj) => {
-      if (!(obj instanceof Mesh)) return
-      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-      for (const mat of mats) {
-        if (!(mat instanceof MeshStandardMaterial)) continue
-        const transparent = a < 0.995
-        mat.transparent = transparent
-        mat.opacity = a
-        mat.depthWrite = a > 0.12
-      }
-    })
+    for (const material of chunk.materials) material.opacity = a
     const props = chunk.props
     if (props) props.userData.alpha = -1
     this.fadeProps(chunk)
@@ -859,126 +806,59 @@ export class TerrainSystem {
     return [finerAt('north'), finerAt('east'), finerAt('south'), finerAt('west')]
   }
 
-  private buildChunk(
-    cx: number,
-    cz: number,
-    withProps: boolean,
-    dist: number,
-    size = 1,
-  ): Chunk {
+  private buildChunk(job: TerrainBuildRequest, data: TerrainGeometryData): Chunk {
+    const { cx, cz, size, lod, withProps } = job
     const root = new Group()
     root.name = `chunk_${cx}_${cz}`
     const originX = cx * CHUNK_SIZE
     const originZ = cz * CHUNK_SIZE
-    const lod = lodFromDist(dist)
-
-    const built = this.buildHeightMesh(originX, originZ, lod, size, false,
-      this.skirtEdgesForTile(cx, cz, size, lod))
-    root.add(built.mesh)
-    if (built.water) root.add(built.water)
-    let props: Group | null = null
-    let propMeshes: Mesh[] = []
-    if (withProps) {
-      props = this.buildProps(originX, originZ, cx, cz, built.heights, built.segs)
-      props.name = 'TerrainProps'
-      propMeshes = this.collectPropMeshes(props)
-      root.add(props)
+    const mesh = new Mesh(deserializeTerrainGeometry(data.ground), lod === 0 ? this.groundMatNear : this.groundMatFar)
+    mesh.name = 'TerrainChunk'
+    mesh.position.set(originX + CHUNK_SIZE * size / 2, 0, originZ + CHUNK_SIZE * size / 2)
+    mesh.receiveShadow = lod === 0
+    root.add(mesh)
+    if (data.water) {
+      const water = new Mesh(deserializeTerrainGeometry(data.water), makeWaterMaterial(this.waterClock,
+        { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ }))
+      water.name = 'WaterSurface'
+      water.position.copy(mesh.position)
+      root.add(water)
     }
-
-    // Near ground must be present immediately, especially underneath the jet.
-    const initialAlpha = 1
-    this.stampChunkMeshes(root, initialAlpha)
+    const props = withProps ? this.buildProps(originX, originZ, cx, cz, data.heights, data.segs) : null
+    if (props) { props.name = 'TerrainProps'; root.add(props) }
+    this.stampChunkMeshes(root, 0)
+    // Once a tile is opaque, skip fragment hash work without a shader recompile.
+    for (const child of root.children) {
+      if (!(child instanceof Mesh)) continue
+      const materials = Array.isArray(child.material) ? child.material : [child.material]
+      for (const material of materials) {
+        const configure = material.onBeforeCompile
+        const cacheKey = material.customProgramCacheKey()
+        material.onBeforeCompile = (shader: Parameters<MeshStandardMaterial['onBeforeCompile']>[0],
+          renderer: Parameters<MeshStandardMaterial['onBeforeCompile']>[1]) => {
+          configure.call(material, shader, renderer)
+          shader.fragmentShader = shader.fragmentShader.replace('#include <alphahash_fragment>',
+            'if (diffuseColor.a < 1.0) {\n#include <alphahash_fragment>\n}')
+        }
+        material.customProgramCacheKey = () => `${cacheKey}-stream-fade-v1`
+      }
+    }
     root.matrixAutoUpdate = false
     root.updateMatrix()
     root.updateMatrixWorld(true)
-
     this.root.add(root)
     const chunk: Chunk = {
-      key: tileKey(cx, cz, size),
-      size,
-      waterLevels: built.waterLevels,
-      cx,
-      cz,
-      root,
-      lod,
-      segs: built.segs,
-      hasProps: withProps,
-      originX,
-      originZ,
-      heights: built.heights,
-      alpha: initialAlpha,
-      targetAlpha: 1,
-      fadingOut: false,
-      appliedAlpha: -1,
-      props,
-      propMeshes,
+      key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
+      cx, cz, root, lod, segs: data.segs, hasProps: withProps, originX, originZ,
+      heights: data.heights, alpha: 0, fadeAge: 0, targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
+      props, propMeshes: props ? this.collectPropMeshes(props) : [],
+      materials: root.children.flatMap(child => child instanceof Mesh
+        ? (Array.isArray(child.material) ? child.material : [child.material])
+          .filter((material): material is MeshStandardMaterial => material instanceof MeshStandardMaterial)
+        : []),
     }
     this.applyChunkAlpha(chunk)
     return chunk
-  }
-
-  private rebuildChunk(
-    chunk: Chunk,
-    lod: TerrainLod,
-    withProps: boolean,
-  ): void {
-    const keepAlpha = chunk.alpha
-    const remove: Object3D[] = []
-    for (const child of chunk.root.children) {
-      if (child.name === 'TerrainChunk' || child.name === 'WaterSurface') remove.push(child)
-      if (child.name === 'TerrainProps' && !withProps) remove.push(child)
-    }
-    for (const child of remove) {
-      chunk.root.remove(child)
-      if (child === chunk.props) {
-        chunk.props = null
-        chunk.propMeshes = []
-      }
-      if (child instanceof Mesh) {
-        child.geometry.dispose()
-        const mats = Array.isArray(child.material) ? child.material : [child.material]
-        for (const m of mats) m.dispose()
-      } else {
-        child.traverse((obj) => {
-          if (!(obj instanceof Mesh)) return
-          if (obj instanceof InstancedMesh) obj.dispose()
-          const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-          for (const m of mats) m.dispose()
-        })
-      }
-    }
-
-    const built = this.buildHeightMesh(chunk.originX, chunk.originZ, lod, chunk.size, false,
-      this.skirtEdgesForTile(chunk.cx, chunk.cz, chunk.size, lod))
-    this.stampChunkMeshes(built.mesh, keepAlpha)
-    chunk.root.add(built.mesh)
-    if (built.water) {
-      this.stampChunkMeshes(built.water, keepAlpha)
-      chunk.root.add(built.water)
-    }
-    if (withProps && !chunk.hasProps) {
-      const props = this.buildProps(chunk.originX, chunk.originZ, chunk.cx, chunk.cz, built.heights, built.segs)
-      props.name = 'TerrainProps'
-      chunk.props = props
-      chunk.propMeshes = this.collectPropMeshes(props)
-      this.stampChunkMeshes(props, keepAlpha)
-      chunk.root.add(props)
-      chunk.hasProps = true
-    }
-    if (!withProps) {
-      chunk.hasProps = false
-      chunk.props = null
-      chunk.propMeshes = []
-    }
-
-    chunk.lod = lod
-    chunk.segs = built.segs
-    chunk.heights = built.heights
-    chunk.waterLevels = built.waterLevels
-    chunk.alpha = keepAlpha
-    chunk.appliedAlpha = -1
-    chunk.root.updateMatrixWorld(true)
-    this.applyChunkAlpha(chunk)
   }
 
   private stampChunkMeshes(root: Group | Mesh, opacity: number): void {
@@ -986,7 +866,9 @@ export class TerrainSystem {
       if (!(obj instanceof Mesh)) return
       if (obj.name === 'WaterSurface') {
         obj.material.opacity = opacity
-        obj.material.transparent = opacity < .995
+        obj.material.transparent = false
+        obj.material.alphaHash = true
+        obj.material.depthWrite = true
         obj.matrixAutoUpdate = false
         obj.updateMatrix()
         return
@@ -994,19 +876,21 @@ export class TerrainSystem {
       if (Array.isArray(obj.material)) {
         obj.material = obj.material.map((m) => {
           const c = m.clone()
-          c.transparent = opacity < 0.995
+          c.transparent = false
+        c.alphaHash = true
           c.opacity = opacity
           if (c instanceof MeshStandardMaterial) {
-            c.depthWrite = opacity > 0.12
+            c.depthWrite = true
           }
           return c
         })
       } else {
         const c = obj.material.clone()
-        c.transparent = opacity < 0.995
+        c.transparent = false
+        c.alphaHash = true
         c.opacity = opacity
         if (c instanceof MeshStandardMaterial) {
-          c.depthWrite = opacity > 0.12
+          c.depthWrite = true
           if (obj.name === 'TerrainChunk') this.configureWeatherMaterial(c)
         }
         obj.material = c
@@ -1014,154 +898,6 @@ export class TerrainSystem {
       obj.matrixAutoUpdate = false
       obj.updateMatrix()
     })
-  }
-
-  private buildHeightMesh(
-    originX: number,
-    originZ: number,
-    lod: TerrainLod,
-    size = 1,
-    waterDetail = false,
-    skirtEdges: readonly [boolean, boolean, boolean, boolean] | null = null,
-  ): { mesh: Mesh; water: Mesh | null; heights: Float32Array; waterLevels: Float32Array; segs: number } {
-    const near = lod === 0
-    const span = CHUNK_SIZE * size
-    const baseSegs = size > 1 ? SEGS_MID : segsForLod(lod)
-    const reaches = riverReachesInBounds(originX, originZ, originX + span, originZ + span)
-    const riverTargetCell = RIVER_TARGET_CELL_M[lod]
-    const riverSegs = Math.min(RIVER_MAX_SEGS, Math.max(baseSegs, Math.ceil(span / riverTargetCell)))
-    const hasRiver = reaches.length > 0
-    const waterSegs = waterSegsForLod(lod, span)
-    const detailSegs = hasRiver ? Math.max(waterSegs, riverSegs) : waterSegs
-    const segs = waterDetail ? detailSegs : baseSegs
-    let geo: BufferGeometry = new PlaneGeometry(span, span, segs, segs)
-    geo.rotateX(-Math.PI / 2)
-
-    const pos = geo.attributes.position as BufferAttribute
-    const colors = new Float32Array(pos.count * 3)
-    const waterLevels = new Float32Array(pos.count)
-    const basinMask = new Float32Array(pos.count)
-    const half = span * 0.5
-    const stride = segs + 1
-    const cell = span / segs
-
-    for (let i = 0; i < pos.count; i++) {
-      const wx = originX + half + pos.getX(i)
-      const wz = originZ + half + pos.getZ(i)
-      const climate = sampleClimate(wx, wz)
-      const h = climate.height
-      waterLevels[i] = climate.waterLevel ?? 0
-      // Rivers are rendered by the analytic ribbon below. Only fixed-level
-      // basins remain on the clipped terrain grid, preventing blocky river
-      // strips from fighting the smooth channel surface.
-      basinMask[i] = climate.biome === 'ocean' ||
-        (climate.biome === 'water' &&
-          climate.features.lake + climate.features.pond > climate.features.river * .55) ? 1 : 0
-      pos.setY(i, h)
-      const [r, g, b] = biomeColor(
-        climate.biome,
-        h,
-        climate.moisture,
-        wx,
-        wz,
-        climate.features,
-        climate.coastal,
-        climate.land,
-        climate.biomeB,
-        climate.biomeMix,
-        climate.biomeWeights,
-        climate.landform,
-      )
-      colors[i * 3] = r
-      colors[i * 3 + 1] = g
-      colors[i * 3 + 2] = b
-    }
-
-    const heights = new Float32Array(stride * stride)
-    for (let i = 0; i < stride * stride; i++) heights[i] = pos.getY(i)
-    const containsWater = heights.some((height, index) => waterLevels[index]! > height + .01)
-    // The broad quadtree uses only 12 samples for a 3.36 km tile. That is
-    // excellent for dry fog silhouettes but makes a lake shore read as a
-    // dozen huge teeth. Rebuild just wet tiles at a capped world-space cell
-    // size, so water and its underlying bed stay on the same precise grid.
-    // Analytic ponds can fit between coarse far-grid vertices, leaving only a
-    // thin clipped rim. Their deterministic bounds promote the tile before
-    // water extraction, while the same cap still bounds the rebuild cost.
-    const touchesPond = !waterDetail && pondIntersectsBounds(originX, originZ, span)
-    const touchesHydrology = !containsWater && !waterDetail && (hasRiver || touchesPond)
-    if ((containsWater || touchesHydrology) && !waterDetail && detailSegs > segs) {
-      geo.dispose()
-      return this.buildHeightMesh(originX, originZ, lod, size, true, skirtEdges)
-    }
-
-    // Neighbour samples outside the tile give shared edges the same normal.
-    // Clamping to an edge vertex used to halve the slope along every seam.
-    const gradientX = new Float32Array(heights.length)
-    const gradientZ = new Float32Array(heights.length)
-    for (let iz = 0; iz < stride; iz++) for (let ix = 0; ix < stride; ix++) {
-      const i = iz * stride + ix
-      const wx = originX + ix * cell
-      const wz = originZ + iz * cell
-      const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleClimate(wx - cell, wz).height)
-      const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleClimate(wx + cell, wz).height)
-      const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleClimate(wx, wz - cell).height)
-      const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleClimate(wx, wz + cell).height)
-      gradientX[i] = (hr - hl) / (2 * cell)
-      gradientZ[i] = (hu - hd) / (2 * cell)
-    }
-    {
-      for (let iz = 0; iz < stride; iz++) {
-        for (let ix = 0; ix < stride; ix++) {
-          const i = iz * stride + ix
-          const dx = gradientX[i]!
-          const dz = gradientZ[i]!
-          const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
-          const shaded = applySlopeShading(
-            [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
-            slope,
-          )
-          colors[i * 3] = shaded[0]
-          colors[i * 3 + 1] = shaded[1]
-          colors[i * 3 + 2] = shaded[2]
-        }
-      }
-    }
-
-    geo.setAttribute('color', new BufferAttribute(colors, 3))
-    // Shared world-space edge samples keep neighbouring tiles aligned. A
-    // merged dry-edge skirt covers the remaining T-junctions between quadtree
-    // LODs while wet edges stay open for independent water clipping.
-    geo.computeVertexNormals()
-    const normals = geo.attributes.normal as BufferAttribute
-    for (let i = 0; i < heights.length; i++) {
-      const dx = gradientX[i]!
-      const dz = gradientZ[i]!
-      const length = Math.hypot(dx, 1, dz)
-      normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
-    }
-    const skirt = lod === 0 || !skirtEdges ? null : buildTerrainSkirtGeometry(
-      heights, waterLevels, colors, segs, span, TERRAIN_SKIRT_DEPTH, skirtEdges,
-    )
-    if (skirt) {
-      const merged = mergeTerrainSkirt(geo, skirt)
-      geo.dispose()
-      skirt.dispose()
-      geo = merged
-    }
-    const mesh = new Mesh(geo, near ? this.groundMatNear : this.groundMatFar)
-    mesh.position.set(originX + half, 0, originZ + half)
-    // Shadows only matter up close (sun shadow camera is local)
-    mesh.receiveShadow = near
-    mesh.castShadow = false
-    mesh.name = 'TerrainChunk'
-    // Each tile receives the clipped portion of every touching reach. Exact
-    // rectangle clipping means adjacent terrain leaves meet without gaps or
-    // overlapping river surfaces during LOD transitions.
-    const rivers = reaches
-    const water = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ, this.waterClock,
-      { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ }, basinMask, rivers,
-      basinsInBounds(originX, originZ, span))
-    return { mesh, water, heights, waterLevels, segs }
   }
 
   private buildProps(

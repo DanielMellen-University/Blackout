@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Terrain streaming benchmark</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#92afbc;color:#f2f6f7;font:13px/1.5 system-ui,sans-serif}canvas{display:block}aside{position:fixed;left:18px;top:18px;width:min(345px,calc(100vw - 36px));max-height:calc(100vh - 36px);overflow:auto;padding:20px;background:#10202bea;border:1px solid #64808d;border-radius:12px;box-shadow:0 8px 35px #0004}h1{font-size:18px;margin:0 0 12px}p{color:#bbced8;margin:10px 0}label{display:inline-flex;align-items:center;gap:8px}input,select,button{font:inherit;color:inherit;background:#223b4a;border:1px solid #64808d;border-radius:5px;padding:6px 9px}input{width:85px}button{cursor:pointer}button:hover{background:#355568}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}dl{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:0}dt{color:#bbced8}dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}.note{font-size:11px}#status{color:#b9f2ce}#error{color:#ffc6b6;white-space:pre-wrap}a{color:#aeddfb}
+</style>
+</head>
+<body>
+<aside>
+<h1>Terrain streaming benchmark</h1>
+<div class="controls"><label>Seed <input id="seed" type="number" value="1337" step="1"></label><button id="start">Restart loading</button></div>
+<div class="controls"><button id="flight">Start maximum-speed flight</button><button id="export">Export results</button></div>
+<p id="status">Starting…</p>
+<dl id="stats"></dl>
+<p class="note">Fixed route: straight northeast, 5,000 m altitude. Flight begins after initial coverage loads. Frame figures include terrain rendering at pixel ratio 1. This isolates terrain; use the full game to validate the complete 60 FPS budget. Hidden-tab time is excluded.</p>
+<p class="note"><a href="/dev/terrain.html">Landscape review</a></p>
+<p id="error" role="alert"></p>
+</aside>
+<script type="module">
+import * as T from 'three'
+import { TerrainSystem, CHUNK_SIZE, VIEW_RADIUS, FOG_FAR } from '/src/world/TerrainSystem.ts'
+import { planTerrainTiles } from '/src/world/TerrainLayout.ts'
+import { setWorldSeed } from '/src/world/noise.ts'
+import { clearOpsPad } from '/src/world/terrainSample.ts'
+import { flightConfig } from '/src/aircraft/flightConfig.ts'
+const $=id=>document.getElementById(id)
+const params=new URLSearchParams(location.search)
+$('seed').value=params.get('seed')??'1337'
+const renderer=new T.WebGLRenderer({antialias:true})
+renderer.setPixelRatio(1)
+renderer.setSize(innerWidth,innerHeight)
+renderer.toneMapping=T.ACESFilmicToneMapping
+renderer.toneMappingExposure=1.1
+document.body.append(renderer.domElement)
+const scene=new T.Scene()
+scene.background=new T.Color('#9bb9c9')
+scene.add(new T.HemisphereLight(0xe7f3ff,0x566849,2))
+const sun=new T.DirectionalLight(0xffefdc,2.8)
+sun.position.set(-4000,8000,6000);scene.add(sun)
+const camera=new T.PerspectiveCamera(60,innerWidth/innerHeight,1,CHUNK_SIZE*VIEW_RADIUS*1.8)
+let terrain,started=0,previous=0,activeMs=0,startupMs=null,seed=1337,x=0,z=0,distance=0,flightRequested=params.get('flight')==='1',flying=false
+let frames=[],updateTimes=[],renderTimes=[],startupFrames=[],startupUpdates=[],flightFrames=[],flightUpdates=[],flightElapsed=0,lastPaint=0,lastStats=null
+const cap=18000
+const initialTiles=planTerrainTiles(.5,.5,VIEW_RADIUS).length
+function record(target,value){target.push(value);if(target.length>cap)target.shift()}
+function quantile(values,q){if(!values.length)return null;const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.min(sorted.length-1,Math.floor(sorted.length*q))]}
+function summary(values){return{samples:values.length,medianMs:quantile(values,.5),p95Ms:quantile(values,.95),maxMs:values.length?Math.max(...values):null}}
+function streamStats(){return terrain.streamingStats??{loaded:terrain.root.children.length,pending:terrain.pending?.length??0,inFlight:0,ready:0,workers:0}}
+function report(){return{seed,radiusCells:VIEW_RADIUS,radiusM:VIEW_RADIUS*CHUNK_SIZE,fogFarM:FOG_FAR,viewport:{width:innerWidth,height:innerHeight,pixelRatio:renderer.getPixelRatio()},initialTiles,startupMs,activeMs,flightSeconds:flightElapsed,distanceM:distance,speedMps:flightConfig.maxSpeedBoost,streaming:lastStats,frames:summary(frames),startupFrames:summary(startupFrames),startupTerrainUpdate:summary(startupUpdates),flightFrames:summary(flightFrames),terrainUpdate:summary(updateTimes),flightTerrainUpdate:summary(flightUpdates),renderSubmission:summary(renderTimes),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles}}
+window.terrainBenchmark={get report(){return report()},get terrain(){return terrain},restart:start}
+function start(){
+ terrain?.dispose();seed=Number($('seed').value);if(!Number.isFinite(seed))seed=1337
+ setWorldSeed(seed);clearOpsPad();terrain=new TerrainSystem(scene)
+ scene.fog.color.copy(scene.background)
+ x=z=distance=activeMs=flightElapsed=0;startupMs=null;flying=false
+ frames=[];updateTimes=[];renderTimes=[];startupFrames=[];startupUpdates=[];flightFrames=[];flightUpdates=[]
+ previous=0;started=performance.now();lastStats=null
+ $('flight').textContent=flightRequested?'Cancel automatic flight':'Start maximum-speed flight'
+}
+$('start').onclick=start
+$('flight').onclick=()=>{flightRequested=!flightRequested;flying=flightRequested&&startupMs!==null;$('flight').textContent=flightRequested?'Stop flight':'Start maximum-speed flight'}
+$('export').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(report(),null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=`terrain-streaming-seed-${seed}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)})
+document.addEventListener('visibilitychange',()=>{previous=0})
+window.addEventListener('error',event=>{$('error').textContent=event.message})
+window.addEventListener('unhandledrejection',event=>{$('error').textContent=String(event.reason)})
+function value(n,suffix='',digits=1){return n===null?'—':n.toFixed(digits)+suffix}
+function paint(){
+ const r=report(),s=lastStats,f=r.frames
+ $('status').textContent=startupMs===null?'Loading initial coverage…':flying?'Maximum-speed sustained flight':'Initial coverage loaded'
+ const entries=[['Seed',seed],['Render radius',value(r.radiusM/1000,' km')],['Fog horizon',value(FOG_FAR/1000,' km')],['Startup coverage',value(startupMs===null?null:startupMs/1000,' s',2)],['Startup frame p95',value(r.startupFrames.p95Ms,' ms')],['Startup update p95',value(r.startupTerrainUpdate.p95Ms,' ms',2)],['Loaded / pending',`${s.loaded} / ${s.pending}`],['In flight / ready',`${s.inFlight} / ${s.ready}`],['Workers',s.workers],['Median FPS',value(f.medianMs?1000/f.medianMs:null,'',0)],['95th-percentile frame',value(f.p95Ms,' ms')],['Terrain update p95',value(r.terrainUpdate.p95Ms,' ms',2)],['Flight median FPS',value(r.flightFrames.medianMs?1000/r.flightFrames.medianMs:null,'',0)],['Flight frame p95',value(r.flightFrames.p95Ms,' ms')],['Flight time / distance',`${value(flightElapsed,' s',0)} / ${value(distance/1000,' km')}`],['Flight speed',value(flightConfig.maxSpeedBoost,' m/s',0)],['Draws / triangles',`${r.drawCalls} / ${r.triangles.toLocaleString()}`]]
+ $('stats').replaceChildren(...entries.flatMap(([key,val])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=key;dd.textContent=String(val);return[dt,dd]}))
+}
+function tick(now){
+ requestAnimationFrame(tick)
+ if(document.hidden){previous=0;return}
+ const delta=previous?now-previous:0;previous=now
+ if(delta>0){activeMs+=delta;record(frames,delta);if(startupMs===null)record(startupFrames,delta);else if(flying)record(flightFrames,delta)}
+ const dt=Math.min(delta/1000,0.1)
+ if(flying){const movement=flightConfig.maxSpeedBoost*dt;x+=movement/Math.SQRT2;z-=movement/Math.SQRT2;distance+=movement;flightElapsed+=dt}
+ camera.position.set(x,5000,z)
+ camera.lookAt(x+7000,800,z-7000)
+ const updateStart=performance.now();terrain.update(x,z,dt||1/60);const updateMs=performance.now()-updateStart
+ record(updateTimes,updateMs);if(startupMs===null)record(startupUpdates,updateMs);if(flying)record(flightUpdates,updateMs)
+ lastStats=streamStats()
+ if(startupMs===null&&lastStats.pending===0&&lastStats.inFlight===0&&lastStats.ready===0&&lastStats.loaded>=initialTiles){startupMs=activeMs||performance.now()-started;flying=flightRequested}
+ const renderStart=performance.now();renderer.render(scene,camera);record(renderTimes,performance.now()-renderStart)
+ if(now-lastPaint>250){lastPaint=now;paint()}
+}
+start();requestAnimationFrame(tick)
+</script>
+</body>
+</html>

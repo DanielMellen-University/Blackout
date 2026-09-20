@@ -57,7 +57,7 @@ describe('terrain LOD bands', () => {
   it('keeps nearby water detailed and distant water bounded', () => {
     expect(waterSegsForLod(0, CHUNK_SIZE)).toBe(56)
     expect(waterSegsForLod(1, CHUNK_SIZE * 2)).toBe(40)
-    expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(21)
+    expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(16)
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBeLessThan(waterSegsForLod(1, CHUNK_SIZE * 2))
   })
 
@@ -121,7 +121,8 @@ describe('TerrainSystem streaming LOD', () => {
         terrain.update(x, 210, 1 / 60)
         peakTiles = Math.max(peakTiles, terrain.root.children.length)
       }
-      expect(peakTiles).toBeLessThan(750)
+      // The doubled horizon and 650 ms replacement fades keep a bounded overlap.
+      expect(peakTiles).toBeLessThan(850)
       pump(terrain, x, 210, 400)
       const expected = planTerrainTiles(Math.floor(x / CHUNK_SIZE) + .5, .5, VIEW_RADIUS)
       expect(terrain.root.children.length).toBe(expected.length)

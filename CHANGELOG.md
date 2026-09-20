@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-09-20
+
+### Ship
+
+- Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
+- Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
+- Fade new chunks in over 650 ms and retain old terrain through detail transitions.
+- Add a fixed-seed terrain loading and maximum-speed flight benchmark, plus worker lifecycle and streaming regressions.
+
 ## 2026-09-18
 
 ### Ship

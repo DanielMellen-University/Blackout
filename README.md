@@ -376,8 +376,8 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - Terrain vertex colors now carry the landform signal too, giving ridges, alpine valleys, plateaus, and calderas distinct readable shading even on distant low-detail tiles.
 - Snow and mountain palettes add stable exposed-rock bands and cool alpine-valley shading so high relief stays readable instead of becoming one white sheet.
 - Mostly dry land with uncommon, compact inland seas, irregular lakes, and meandering rivers that vary in width and descend from lake outlets to sea level. Seas stay regional landmarks rather than swallowing whole flight routes. Water is separate geometry over a sediment bed, with calm reflections and fine ripples.
-- Streaming terrain (16.8 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks use bounded instanced streaming in the near field.
-- Terrain generation is frame-budgeted; cached catchments, spatially indexed river reaches, and coarse distant tiles keep generation and draw calls bounded. Rendering resolution adapts gradually under sustained load.
+- Streaming terrain (33.6 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks use bounded instanced streaming in the near field.
+- Terrain and water geometry generate in a bounded background worker pool with transferable buffers. Near chunks load first, uploads have a frame budget, and new coverage fades in over 650 ms while previous detail stays underneath. Coarse outer tiles keep the doubled horizon affordable; rendering resolution adapts gradually under sustained load.
 - World-cloud transforms use a fixed 30 Hz budget; lighting, rain, snow, and lightning remain frame-responsive so weather stays smooth without spending a full matrix rewrite every render frame.
 - Weather fronts turn wind along the shortest arc while interpolating speed separately, avoiding an artificial calm pocket when a storm changes direction.
 - Salt flats carry broad deterministic crust and damp-playa bands instead of a single pale sheet, using the existing terrain vertex-color path.
@@ -489,8 +489,9 @@ The terrain review uses fixed seeds and deterministic feature searches for
 smooth green hills, alpine massifs, irregular lakes, river valleys, inland seas
 and badlands, plus a
 flight benchmark at either 400 m/s or the current maximum afterburner speed,
-with draw counts and frame timings. Streaming prioritizes contact detail, then
-missing coverage and coarse replacements, before distant detail rebuilds.
+with draw counts and frame timings. Streaming prioritizes contact detail, then the nearest missing coverage, before distant
+detail rebuilds. `/dev/streaming.html` isolates terrain loading and maximum-speed
+streaming with fixed seeds, load times, frame percentiles, worker queues, and JSON export.
 Near-field vegetation roots and meshes are cached per streamed tile, so the
 per-frame fade path does not repeatedly search or traverse the scene tree.
 Geography is deterministic for a seed and coordinate; this generator changes old landscapes.

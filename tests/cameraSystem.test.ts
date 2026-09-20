@@ -116,8 +116,8 @@ describe('external camera framing', () => {
     const cameras = new CameraSystem(canvas)
 
     expect(cameras.camera.far).toBe(CAMERA_FAR)
-    expect(cameras.camera.far).toBeGreaterThan(16_800)
-    expect(cameras.camera.far).toBeLessThan(30_000)
+    expect(cameras.camera.far).toBeGreaterThan(33_600)
+    expect(cameras.camera.far).toBeLessThan(55_000)
     cameras.dispose()
   })
 
