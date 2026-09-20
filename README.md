@@ -20,7 +20,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
 - Route variety: orbit, sweep, precision slalom, high-altitude ridge-run, and low-weave canyon-run circuits
-- Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate sampled terrain clearance between gates.
+- Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate an adaptive terrain corridor between gates so the intended flight line stays clear.
 - Route profiles include orbit, sweep, slalom, ridge-run, and canyon-run layouts, with the active profile called out in the takeoff briefing.
 - The takeoff briefing also reports route difficulty and minimum sampled terrain clearance, so the challenge is readable before the first input.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.

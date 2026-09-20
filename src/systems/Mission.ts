@@ -44,7 +44,9 @@ const ROUTE_RADIUS = 980
 const ROUTE_RADIUS_VARIATION = 150
 const ROUTE_ANGLE_VARIATION = 0.12
 const ROUTE_CLEARANCE = 120
-const ROUTE_SEGMENT_SAMPLES = 4
+const ROUTE_SAMPLE_SPACING = 80
+const ROUTE_MIN_SEGMENT_SAMPLES = 12
+const ROUTE_MAX_SEGMENT_SAMPLES = 48
 const PRESENTATION_FALLBACK_STEP_MS = 1000 / 60
 const _to = new Vector3()
 const _radial = new Vector3()
@@ -215,8 +217,11 @@ export function buildMissionRoute(
   for (let i = 0; i < points.length; i++) {
     const point = points[i]!
     let requiredY = Math.max(point.y, previousY)
-    for (let sample = 1; sample <= ROUTE_SEGMENT_SAMPLES; sample++) {
-      const t = sample / (ROUTE_SEGMENT_SAMPLES + 1)
+    const dx = point.x - previousX
+    const dz = point.z - previousZ
+    const samples = routeSegmentSampleCount(dx, dz)
+    for (let sample = 1; sample <= samples; sample++) {
+      const t = sample / samples
       const x = previousX + (point.x - previousX) * t
       const z = previousZ + (point.z - previousZ) * t
       const ground = sampleTerrainHeight(x, z)
@@ -364,8 +369,9 @@ export function summarizeMissionRoute(
       maxTurnDegrees = Math.max(maxTurnDegrees, Math.acos(MathUtils.clamp(dot, -1, 1)) * 180 / Math.PI)
     }
 
-    for (let sample = 1; sample <= ROUTE_SEGMENT_SAMPLES; sample++) {
-      const t = sample / (ROUTE_SEGMENT_SAMPLES + 1)
+    const samples = routeSegmentSampleCount(dx, dz)
+    for (let sample = 1; sample <= samples; sample++) {
+      const t = sample / samples
       const x = previousX + dx * t
       const y = previousY + dy * t
       const z = previousZ + dz * t
@@ -403,6 +409,19 @@ export function summarizeMissionRoute(
     minClearanceMeters: Math.max(0, finiteOr(minClearanceMeters, ROUTE_CLEARANCE)),
     maxAltitudeMeters: finiteOr(maxAltitudeMeters, safeSpawnY),
   }
+}
+
+/**
+ * Keep route construction cheap on short legs while bounding the terrain
+ * distance between clearance probes on long, fast-flight legs.
+ */
+function routeSegmentSampleCount(dx: number, dz: number): number {
+  const length = Math.hypot(dx, dz)
+  if (!Number.isFinite(length)) return ROUTE_MIN_SEGMENT_SAMPLES
+  return Math.min(
+    ROUTE_MAX_SEGMENT_SAMPLES,
+    Math.max(ROUTE_MIN_SEGMENT_SAMPLES, Math.ceil(length / ROUTE_SAMPLE_SPACING)),
+  )
 }
 
 /**

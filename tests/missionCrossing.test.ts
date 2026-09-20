@@ -16,7 +16,7 @@ import {
   MissionSystem,
   gateQualityLabel,
 } from '../src/systems/Mission'
-import { sampleTerrainHeight } from '../src/world/terrainSample'
+import { clearOpsPad, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
 
 describe('MissionSystem gate crossing', () => {
   it('maps finite gate quality into readable event labels', () => {
@@ -222,6 +222,48 @@ describe('MissionSystem gate crossing', () => {
     expect(['relaxed', 'standard', 'technical']).toContain(summary.difficulty)
   })
 
+  it('keeps every generated route leg above terrain between gates', () => {
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon'] as const
+    const starts = [
+      { x: 0, y: 20, z: 0, yaw: 0 },
+      { x: 1_400, y: 20, z: -900, yaw: 0.8 },
+    ]
+
+    try {
+      for (const start of starts) {
+        setOpsPad(start.x, start.z, start.y, start.yaw)
+        for (const profile of profiles) {
+          const route = buildMissionRoute(
+            start.x,
+            start.y,
+            start.z,
+            start.yaw,
+            profile,
+          )
+          let previous = start
+          for (const point of route) {
+            const dx = point.x - previous.x
+            const dz = point.z - previous.z
+            const samples = Math.max(12, Math.ceil(Math.hypot(dx, dz) / 80))
+            for (let sample = 1; sample <= samples; sample++) {
+              const t = sample / samples
+              const x = previous.x + dx * t
+              const y = previous.y + (point.y - previous.y) * t
+              const z = previous.z + dz * t
+              expect(
+                y - sampleTerrainHeight(x, z),
+                `${profile} from ${start.x},${start.z} leg ${point.x.toFixed(0)},${point.z.toFixed(0)} sample ${sample}/${samples}`,
+              ).toBeGreaterThanOrEqual(119.5)
+            }
+            previous = point
+          }
+        }
+      }
+    } finally {
+      clearOpsPad()
+    }
+  })
+
   it('supports distinct readable route profiles without changing gate count', () => {
     const orbit = buildMissionRoute(0, 20, 0, 0, 'orbit')
     const sweep = buildMissionRoute(0, 20, 0, 0, 'sweep')
@@ -235,7 +277,7 @@ describe('MissionSystem gate crossing', () => {
     expect(canyon).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
-    expect(ridge[3]!.y).toBeGreaterThan(orbit[3]!.y)
+    expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
