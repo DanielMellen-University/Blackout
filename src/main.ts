@@ -77,6 +77,7 @@ import {
   type GLoadVisionBand,
 } from './systems/GLoadFeedback'
 import { SupersonicTracker } from './systems/Supersonic'
+import { GhostReplay } from './systems/GhostReplay'
 import {
   audioVolumePercent,
   normalizeAudioVolume,
@@ -419,6 +420,7 @@ async function boot(): Promise<void> {
   uiListeners.add(volumeRange, 'input', onVolumeInput)
   const results = new RunResults()
   const challenge = new ChallengeRun()
+  const ghost = new GhostReplay(world.scene, qualityStorage)
   const stunts = new StuntTracker()
   const combo = new FlightComboTracker()
   const altitudeMilestones = new AltitudeMilestoneTracker()
@@ -473,6 +475,7 @@ async function boot(): Promise<void> {
     }
     canvas.removeEventListener('webglcontextlost', onContextLost)
     canvas.removeEventListener('webglcontextrestored', onContextRestored)
+    ghost.dispose()
     world.dispose()
     crashFx.dispose()
     landingFx.dispose()
@@ -663,6 +666,8 @@ async function boot(): Promise<void> {
     input.clearQueued()
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
+    ghost.reset(courseId())
+    ghost.setVisible(playing)
     challenge.recordBiome(world.spawn.biome)
     banner = null
     crashMessage = 'CRASH - press R'
@@ -1084,6 +1089,8 @@ async function boot(): Promise<void> {
               daylight: world.atmosphere.daylight,
             }, aircraft.fuel.fraction)
             if (finished) {
+              ghost.commitIfBest(finished.isNewBest, finished.totalScore)
+              ghost.setVisible(false)
               audio.playCue(
                 finished.landingLabel === 'BUTTER'
                   ? 'landing-soft'
@@ -1197,6 +1204,7 @@ async function boot(): Promise<void> {
           weather.rain,
           weather.snow,
         )
+        ghost.record(challenge.elapsedSec, aircraft.position)
       }
 
       world.mission.tick(
@@ -1209,6 +1217,10 @@ async function boot(): Promise<void> {
         banner = null
       }
       aircraft.present(alpha)
+      ghost.update(
+        challenge.elapsedSec,
+        playing && !menu.paused && !results.open && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
+      )
     }
 
     if (shouldAdvanceWorld(simLive, simDt, visualDt)) {
