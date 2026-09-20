@@ -7,6 +7,7 @@
 - Establish a single v0.11.0 release identity across package metadata, runtime title UI, and build validation while keeping roadmap chunks internal.
 - Add a deterministic STORM RUN contract that rewards bounded airborne time in meaningful rain or snow without adding scene work.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
+- Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

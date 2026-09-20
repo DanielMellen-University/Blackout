@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -18,6 +18,7 @@ const SPEED_BAND_MIN_MPS = 160
 const SPEED_BAND_MAX_MPS = 320
 const SPEED_BAND_TARGET_SECONDS = 12
 const WEATHER_TARGET_SECONDS = 14
+const APPROACH_TARGET_SCORE = 360
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -29,6 +30,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'biome', label: 'BIOME TOUR', target: BIOME_TARGET_COUNT },
   { kind: 'speed-band', label: 'ENERGY BAND', target: SPEED_BAND_TARGET_SECONDS },
   { kind: 'weather', label: 'STORM RUN', target: WEATHER_TARGET_SECONDS },
+  { kind: 'approach', label: 'PRECISION APPROACH', target: APPROACH_TARGET_SCORE },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -74,7 +76,9 @@ export class SortieContractTracker {
               ? `SURVEY ${Math.round(target)} DISTINCT BIOMES`
               : base.kind === 'speed-band'
                 ? `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                : `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
+                : base.kind === 'weather'
+                  ? `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
+                  : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = detail
     this.hudLabelValue = `CONTRACT ${base.label}`
@@ -142,7 +146,7 @@ export class SortieContractTracker {
   }
 
   /** Resolve contracts whose success depends on the final touchdown telemetry. */
-  finish(elapsedSec: number, fuelFraction: number): number {
+  finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
     if (this.definition.kind === 'pace') {
       this.completeValue = Number.isFinite(elapsedSec) && elapsedSec <= this.definition.target
@@ -154,6 +158,10 @@ export class SortieContractTracker {
       this.progressValue = Number.isFinite(fuelFraction)
         ? clamp01(fuelFraction / this.definition.target)
         : 0
+    } else if (this.definition.kind === 'approach') {
+      const safeApproach = Number.isFinite(approachScore) ? Math.max(0, approachScore) : 0
+      this.completeValue = safeApproach >= this.definition.target
+      this.progressValue = clamp01(safeApproach / this.definition.target)
     }
     return this.completeValue ? MAX_CONTRACT_SCORE : 0
   }
@@ -192,12 +200,13 @@ function indexForSeed(seed: number): number {
   const mixed = (safe ^ (safe >>> 16) ^ Math.imul(safe, 0x45d9f3b)) >>> 0
   // Preserve the original five-contract mapping for existing seeds while
   // reserving deterministic slices for terrain-hugger, biome-tour,
-  // energy-band, and storm-run objectives.
-  const legacyContractCount = CONTRACTS.length - 4
-  if (mixed % 13 === 9) return CONTRACTS.length - 4
-  if (mixed % 17 === 13) return CONTRACTS.length - 3
-  if (mixed % 19 === 7) return CONTRACTS.length - 2
-  if (mixed % 23 === 11) return CONTRACTS.length - 1
+  // energy-band, storm-run, and precision-approach objectives.
+  const legacyContractCount = 5
+  if (mixed % 13 === 9) return 5
+  if (mixed % 17 === 13) return 6
+  if (mixed % 19 === 7) return 7
+  if (mixed % 23 === 11) return 8
+  if (mixed % 29 === 17) return 9
   return mixed % legacyContractCount
 }
 

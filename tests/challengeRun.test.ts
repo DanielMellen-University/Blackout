@@ -547,6 +547,33 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires a centered touchdown into the precision-approach contract', () => {
+    const run = new ChallengeRun(null)
+    let approachSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:approach-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT PRECISION APPROACH') {
+        approachSeed = seed
+        break
+      }
+    }
+    expect(approachSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:approach-contract', 1, 'balanced', approachSeed)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      baseDistanceM: 0,
+      runwayLateralM: 0,
+      headingErrorRad: 0,
+    })!
+    expect(result.contractKind).toBe('approach')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('persists cumulative contract wins and repairs oversized counts', () => {
     const values = new Map<string, string>()
     const storage = {

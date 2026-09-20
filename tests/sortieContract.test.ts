@@ -50,12 +50,12 @@ describe('sortie contracts', () => {
         tracker.recordWeather(0, 0.7, 5)
         tracker.recordWeather(0.6, 0, 5)
       }
-      const score = tracker.finish(0, 1)
+      const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -139,6 +139,28 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('turns centered touchdown quality into a precision-approach contract', () => {
+    const tracker = new SortieContractTracker()
+    let approachSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'approach') {
+        approachSeed = seed
+        break
+      }
+    }
+    expect(approachSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(approachSeed, 5)
+    expect(tracker.label).toBe('PRECISION APPROACH')
+    expect(tracker.detail).toBe('LAND CENTERED AND ALIGNED')
+    expect(tracker.finish(99, 1, 359)).toBe(0)
+    expect(tracker.complete).toBe(false)
+    expect(tracker.progress).toBeCloseTo(359 / 360)
+    expect(tracker.finish(99, 1, 500)).toBe(MAX_CONTRACT_SCORE)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {
