@@ -4,6 +4,8 @@ Browser-based arcade flight simulator. Pilot an F-35, take off, fly hard, and ei
 
 Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a modern browser once the app is running.
 
+Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such as `10.119` are tracked separately from the public semantic version.
+
 ## Features
 
 - Title screen: Play, Controls, Game info
@@ -347,24 +349,24 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 - HUD text readouts now use the same cached-write strategy as styles and attributes, avoiding repeated DOM reads while preserving exact telemetry values.
 - The engine percentage readout now caches its rounded string too, removing another steady-flight template allocation without changing gauge responsiveness.
 - HUD gauge needles, arcs, and attitude transforms now reuse their quantized strings before the DOM write cache, trimming more steady-flight formatting churn.
-- Version 7 adds restrained high-speed edge streaks that scale with IAS and warm up under afterburner, with reduced-motion support and no new scene draw calls.
-- Version 7 external chase framing adds a tiny smooth afterburner sway, leaving cockpit mode untouched and keeping motion below the impact-shake envelope.
-- Version 7 engine audio now spools the procedural loop with throttle and afterburner through coalesced playback-rate automation, so power changes affect tone as well as loudness.
-- Version 7 adds restrained directional gear transition clicks, making the automatic landing-gear cycle readable without adding an audio asset or a persistent alert.
-- Version 7 adds a pooled checkpoint pass flash that expands and fades at the cleared gate, making high-speed gate crossings readable without spawning new geometry.
-- Version 7 gives automatic gear transitions a short HUD pulse with reduced-motion support, matching the directional audio cue without adding a persistent alert.
-- Version 7 adds a restrained procedural precipitation bed: rain and snow now alter one pooled, coalesced audio layer without sample assets or extra scene work.
-- Version 7 adds a small airborne-touchdown camera pulse, keeping clean landings physical while staying far below the crash-shake envelope.
-- Version 7 adds a rare procedural dorsal anti-collision strobe to the F-35 silhouette, hidden between flashes so it adds detail without a steady draw cost.
-- Version 7 results now expose the gate-score contribution alongside total, time, and landing quality so circuit performance is readable after touchdown.
+- Phase 7 adds restrained high-speed edge streaks that scale with IAS and warm up under afterburner, with reduced-motion support and no new scene draw calls.
+- Phase 7 external chase framing adds a tiny smooth afterburner sway, leaving cockpit mode untouched and keeping motion below the impact-shake envelope.
+- Phase 7 engine audio now spools the procedural loop with throttle and afterburner through coalesced playback-rate automation, so power changes affect tone as well as loudness.
+- Phase 7 adds restrained directional gear transition clicks, making the automatic landing-gear cycle readable without adding an audio asset or a persistent alert.
+- Phase 7 adds a pooled checkpoint pass flash that expands and fades at the cleared gate, making high-speed gate crossings readable without spawning new geometry.
+- Phase 7 gives automatic gear transitions a short HUD pulse with reduced-motion support, matching the directional audio cue without adding a persistent alert.
+- Phase 7 adds a restrained procedural precipitation bed: rain and snow now alter one pooled, coalesced audio layer without sample assets or extra scene work.
+- Phase 7 adds a small airborne-touchdown camera pulse, keeping clean landings physical while staying far below the crash-shake envelope.
+- Phase 7 adds a rare procedural dorsal anti-collision strobe to the F-35 silhouette, hidden between flashes so it adds detail without a steady draw cost.
+- Phase 7 results now expose the gate-score contribution alongside total, time, and landing quality so circuit performance is readable after touchdown.
 - Results now tint the panel by medal tier and briefly call out a new best, with reduced-motion-safe presentation.
-- Version 7 adds edge-triggered procedural thunder for the existing rate-limited lightning flashes, keeping storms audible without repeated alarms.
-- Version 7 crash effects now reuse a fixed particle pool across retries, removing repeated mesh and material allocation without changing the explosion envelope.
+- Phase 7 adds edge-triggered procedural thunder for the existing rate-limited lightning flashes, keeping storms audible without repeated alarms.
+- Phase 7 crash effects now reuse a fixed particle pool across retries, removing repeated mesh and material allocation without changing the explosion envelope.
 - Crash bursts are seeded from their impact state, so retries are visually repeatable while retaining the same pooled effect budget.
 - If Chrome exits fullscreen on Escape during flight, the next canvas click now safely re-enters it without affecting menu or title interactions.
-- Version 7 mission gates now reuse one fixed five-ring pool across retries, keeping circuit resets allocation-stable without changing the route.
-- Version 7 event audio now reuses fixed procedural white and brown noise buffers, keeping repeated cues from rebuilding PCM data.
-- Version 7 collision checks now reuse attitude and contact records at the fixed physics rate, removing another steady-flight allocation without changing landing rules.
+- Phase 7 mission gates now reuse one fixed five-ring pool across retries, keeping circuit resets allocation-stable without changing the route.
+- Phase 7 event audio now reuses fixed procedural white and brown noise buffers, keeping repeated cues from rebuilding PCM data.
+- Phase 7 collision checks now reuse attitude and contact records at the fixed physics rate, removing another steady-flight allocation without changing landing rules.
 - Infinite geographic provinces: broad alpine massifs, smooth green hills, dunes, weathered mesas with stepped shelves, basalt uplands, salt flats, tundra, savanna, forests and rainforest regions.
 - Landforms have distinct regional families: long rounded ridge chains with carved alpine valleys, dry plateaus and terraces, dune fields, and rare smooth volcanic cones with calderas. Green lowlands remain rolling instead of needle-like.
 - Dry foothills sometimes spread into broad alluvial-fan ramps with gentle lobes and mineral bands before transitioning into dunes or mesas.

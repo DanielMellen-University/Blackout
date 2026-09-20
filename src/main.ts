@@ -129,6 +129,7 @@ import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
 import { startupFailureMessage } from './core/startupFailure'
+import { appReleaseLabel } from './core/Version'
 import {
   defaultRenderQuality,
   hudUpdateDue,
@@ -145,6 +146,8 @@ async function boot(): Promise<void> {
   if (!canvas) throw new Error('#game canvas not found')
 
   const titleScreen = document.getElementById('title-screen')
+  const titleVersion = document.getElementById('title-version')
+  if (titleVersion) titleVersion.textContent = appReleaseLabel()
   const playBtn = document.getElementById('btn-play') as HTMLButtonElement | null
   const overlay = document.getElementById('overlay')
   const menuEl = document.getElementById('menu')

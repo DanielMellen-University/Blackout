@@ -1953,7 +1953,7 @@ export function gearTransitionActive(now: number, until: number): boolean {
   return Number.isFinite(now) && Number.isFinite(until) && now < until
 }
 
-/** Edge-streak intensity for the version-7 high-speed HUD treatment. */
+/** Edge-streak intensity for the Phase 7 high-speed HUD treatment. */
 export function speedJuiceIntensity(knots: number, maxKts = 3000): number {
   const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
   const safeMaxKts = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 3000

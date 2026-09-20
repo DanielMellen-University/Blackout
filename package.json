@@ -1,12 +1,13 @@
 {
   "name": "blackout",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.11.0",
   "type": "module",
   "description": "Browser-based arcade F-35 flight simulator",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run version:check && tsc && vite build",
+    "version:check": "node scripts/check-version.mjs",
     "preview": "vite preview",
     "test": "vitest run"
   },
