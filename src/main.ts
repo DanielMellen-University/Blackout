@@ -86,6 +86,8 @@ import {
   pilotRankLabel,
   pilotRankNextGoalLabel,
   pilotRankRank,
+  pilotCommendationsForProgress,
+  PILOT_COMMENDATION_COUNT,
   type PilotRank,
   type PilotCareerProgress,
 } from './systems/CareerProgression'
@@ -281,6 +283,9 @@ async function boot(): Promise<void> {
       totalBadges: 0,
       totalContractWins: 0,
       legendCourses: 0,
+      totalFlightDistanceM: 0,
+      bestPeakSpeedKts: 0,
+      bestPeakAltitudeM: 0,
     }
     for (const course of curated) {
       const runId = courseRunId(course)
@@ -296,6 +301,17 @@ async function boot(): Promise<void> {
       career.totalContractWins += Number.isFinite(history?.contractWins)
         ? Math.max(0, history?.contractWins ?? 0)
         : 0
+      career.totalFlightDistanceM = (career.totalFlightDistanceM ?? 0) + (Number.isFinite(history?.flightDistanceM)
+        ? Math.max(0, history?.flightDistanceM ?? 0)
+        : 0)
+      career.bestPeakSpeedKts = Math.max(
+        career.bestPeakSpeedKts ?? 0,
+        Number.isFinite(history?.peakSpeedKts) ? Math.max(0, history?.peakSpeedKts ?? 0) : 0,
+      )
+      career.bestPeakAltitudeM = Math.max(
+        career.bestPeakAltitudeM ?? 0,
+        Number.isFinite(history?.peakAltitudeM) ? Math.max(0, history?.peakAltitudeM ?? 0) : 0,
+      )
       if (courseMasteryTierForProgress({
         completionCount: runCount,
         bestScore: record.bestScore,
@@ -310,6 +326,7 @@ async function boot(): Promise<void> {
     currentPilotRank = rank
     const rankLabel = pilotRankLabel(rank)
     const nextRank = pilotRankNextGoalLabel(rank)
+    const commendations = pilotCommendationsForProgress(career)
     const badgeTotal = curated.length * MASTERY_BADGE_COUNT
     const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
     const labels = [
@@ -317,10 +334,11 @@ async function boot(): Promise<void> {
       `COURSES ${completed}/${curated.length} COMPLETE`,
       `BADGES ${earnedBadges}/${badgeTotal}`,
       masteryLabel,
+      `COMMENDATIONS ${commendations.length}/${PILOT_COMMENDATION_COUNT}`,
       nextRank,
     ].filter(Boolean)
     titleProgress.textContent = labels.join(' · ')
-    titleProgress.setAttribute('aria-label', `${pilotRankAriaLabel(rank, career)}, ${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery${nextRank ? `, ${nextRank.toLowerCase()}` : ''}`)
+    titleProgress.setAttribute('aria-label', `${pilotRankAriaLabel(rank, career)}, ${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery, ${commendations.length} of ${PILOT_COMMENDATION_COUNT} career commendations earned${nextRank ? `, ${nextRank.toLowerCase()}` : ''}`)
   }
   const refreshCourseUi = (): void => {
     courseRecordCache.clear()

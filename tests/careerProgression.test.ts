@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   pilotRankAriaLabel,
+  pilotCommendationLabel,
+  pilotCommendationsForProgress,
   pilotRankForProgress,
   pilotRankLabel,
   pilotRankNextGoalLabel,
   pilotRankRank,
+  PILOT_COMMENDATION_COUNT,
   type PilotCareerProgress,
 } from '../src/systems/CareerProgression'
 
@@ -71,5 +74,25 @@ describe('CareerProgression', () => {
       totalRuns: 12,
       totalBestScore: 300_000,
     })).toContain('Pilot rank ACE')
+  })
+
+  it('derives bounded cross-course commendations from stored telemetry', () => {
+    expect(PILOT_COMMENDATION_COUNT).toBe(5)
+    expect(pilotCommendationsForProgress({
+      ...base,
+      totalRuns: 1,
+      completedCourses: 7,
+      totalFlightDistanceM: 100_000,
+      bestPeakSpeedKts: 900,
+      bestPeakAltitudeM: 6_000,
+    })).toEqual(['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul'])
+    expect(pilotCommendationLabel('long-haul')).toBe('LONG HAUL')
+    expect(pilotCommendationsForProgress({
+      ...base,
+      totalRuns: Number.NaN,
+      totalFlightDistanceM: Number.POSITIVE_INFINITY,
+      bestPeakSpeedKts: -4,
+      bestPeakAltitudeM: Number.NaN,
+    })).toEqual([])
   })
 })

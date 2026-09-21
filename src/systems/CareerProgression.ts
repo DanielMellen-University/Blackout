@@ -8,7 +8,13 @@ export interface PilotCareerProgress {
   totalBadges: number
   totalContractWins: number
   legendCourses: number
+  totalFlightDistanceM?: number
+  bestPeakSpeedKts?: number
+  bestPeakAltitudeM?: number
 }
+
+export type PilotCommendationId = 'first-sortie' | 'course-collector' | 'speed-demon' | 'high-flyer' | 'long-haul'
+export const PILOT_COMMENDATION_COUNT = 5
 
 const MAX_COURSES = 64
 const MAX_RUNS = 100_000
@@ -54,6 +60,30 @@ export function pilotRankNextGoalLabel(rank: PilotRank): string {
   return ''
 }
 
+/** Derive bounded cross-course commendations from existing flight records. */
+export function pilotCommendationsForProgress(progress: PilotCareerProgress): PilotCommendationId[] {
+  const commendations: PilotCommendationId[] = []
+  const courses = safeCount(progress.completedCourses, MAX_COURSES)
+  const runs = safeCount(progress.totalRuns, MAX_RUNS)
+  const distance = safeMetric(progress.totalFlightDistanceM, 128_000_000)
+  const speed = safeMetric(progress.bestPeakSpeedKts, 20_000)
+  const altitude = safeMetric(progress.bestPeakAltitudeM, 100_000)
+  if (runs >= 1) commendations.push('first-sortie')
+  if (courses >= 7) commendations.push('course-collector')
+  if (speed >= 900) commendations.push('speed-demon')
+  if (altitude >= 6_000) commendations.push('high-flyer')
+  if (distance >= 100_000) commendations.push('long-haul')
+  return commendations
+}
+
+export function pilotCommendationLabel(id: PilotCommendationId): string {
+  if (id === 'first-sortie') return 'FIRST SORTIE'
+  if (id === 'course-collector') return 'COURSE COLLECTOR'
+  if (id === 'speed-demon') return 'SPEED DEMON'
+  if (id === 'high-flyer') return 'HIGH FLYER'
+  return 'LONG HAUL'
+}
+
 /** Accessible aggregate summary for the title progression line. */
 export function pilotRankAriaLabel(
   rank: PilotRank,
@@ -68,4 +98,10 @@ export function pilotRankAriaLabel(
 
 function safeCount(value: number, cap: number): number {
   return Number.isFinite(value) ? Math.min(cap, Math.max(0, Math.floor(value))) : 0
+}
+
+function safeMetric(value: number | undefined, cap: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(cap, Math.max(0, value))
+    : 0
 }
