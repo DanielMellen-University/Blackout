@@ -1067,6 +1067,18 @@ export class ChallengeRun {
     return this.surveyedBiomeCount
   }
 
+  get currentFlightDistanceM(): number {
+    return this.flightDistanceM
+  }
+
+  get currentPeakPositiveG(): number {
+    return this.peakPositiveG
+  }
+
+  get currentPeakNegativeG(): number {
+    return this.peakNegativeG
+  }
+
   /** Consume one event-driven cue for the latest newly surveyed biome. */
   consumeBiomeSurveyCue(): Biome | null {
     const cue = this.surveyedBiomeCue

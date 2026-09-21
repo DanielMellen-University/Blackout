@@ -206,6 +206,35 @@ export function routeRiskAriaLabel(difficulty: unknown, modifier: unknown): stri
   return label ? `Route risk ${label.toLowerCase().replace(' · ', ', ')}` : ''
 }
 
+/** Keep the live flight log compact while coalescing unchanged telemetry buckets. */
+export function flightLogHudLabel(
+  distanceM: number,
+  peakPositiveG: number,
+  peakNegativeG: number,
+): string {
+  const distance = Number.isFinite(distanceM) ? Math.max(0, Math.min(2_000_000, distanceM)) : 0
+  const positive = Number.isFinite(peakPositiveG) ? Math.max(0, Math.min(20, peakPositiveG)) : 0
+  const negative = Number.isFinite(peakNegativeG) ? Math.max(-9, Math.min(0, peakNegativeG)) : 0
+  const parts: string[] = []
+  if (distance >= 1) parts.push(`DIST ${formatFlightLogDistance(distance)}`)
+  if (positive > 1 || negative < 0) parts.push(`G +${positive.toFixed(1)}/${negative.toFixed(1)}`)
+  return parts.join(' · ')
+}
+
+export function flightLogAriaLabel(
+  distanceM: number,
+  peakPositiveG: number,
+  peakNegativeG: number,
+): string {
+  const label = flightLogHudLabel(distanceM, peakPositiveG, peakNegativeG)
+  return label ? `Flight log ${label.toLowerCase().replace(' · ', ', ')}` : ''
+}
+
+function formatFlightLogDistance(distanceM: number): string {
+  if (distanceM < 1_000) return `${Math.round(distanceM)}M`
+  return `${(distanceM / 1_000).toFixed(distanceM < 10_000 ? 1 : 0)}KM`
+}
+
 /** Reuse an unchanged mission label so the live render loop stays allocation-light. */
 export function createMissionHudLabelCache(): (
   routeLabel: unknown,
@@ -557,6 +586,8 @@ export class HUD {
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly gEl: HTMLElement | null
+  private readonly flightLogRowEl: HTMLElement | null
+  private readonly flightLogEl: HTMLElement | null
   private readonly machEl: HTMLElement | null
   private readonly spdEl: HTMLElement | null
   private readonly speedoPanel: HTMLElement | null
@@ -645,6 +676,10 @@ export class HUD {
   private verticalSpeedAriaText = ''
   private gValue = Number.NaN
   private gText = ''
+  private flightLogText = ''
+  private flightLogDistanceValue = -1
+  private flightLogPositiveGValue = Number.NaN
+  private flightLogNegativeGValue = Number.NaN
   private machValue = Number.NaN
   private machText = 'M0.00'
   private machAriaText = 'M0.00, subsonic'
@@ -768,6 +803,8 @@ export class HUD {
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.gEl = root.getElementById('hud-g')
+    this.flightLogRowEl = root.getElementById('hud-flight-log-row')
+    this.flightLogEl = root.getElementById('hud-flight-log')
     this.machEl = root.getElementById('hud-mach')
     this.spdEl = root.getElementById('hud-spd')
     this.speedoPanel = root.getElementById('speedo-panel')
@@ -866,6 +903,10 @@ export class HUD {
     verticalSpeed?: number
     /** Smoothed acceleration along the pilot body-up axis, in G. */
     gForce?: number
+    /** Fixed-step flight distance and peak load-factor telemetry. */
+    flightDistanceM?: number
+    peakPositiveG?: number
+    peakNegativeG?: number
     /** Current true airspeed as a Mach ratio, or derived from speed when omitted. */
     mach?: number
     speed: number
@@ -1020,6 +1061,32 @@ export class HUD {
       const tone = gForceTone(shown)
       this.setClass(this.gEl, 'high-g', tone === 'high')
       this.setClass(this.gEl, 'negative-g', tone === 'negative')
+    }
+
+    if (this.flightLogRowEl && this.flightLogEl && (
+      opts.flightDistanceM !== undefined ||
+      opts.peakPositiveG !== undefined ||
+      opts.peakNegativeG !== undefined
+    )) {
+      const distance = Number.isFinite(opts.flightDistanceM) ? Math.max(0, opts.flightDistanceM!) : 0
+      const positive = Number.isFinite(opts.peakPositiveG) ? opts.peakPositiveG! : 0
+      const negative = Number.isFinite(opts.peakNegativeG) ? opts.peakNegativeG! : 0
+      const distanceStep = Math.round(distance / 100) * 100
+      const positiveStep = Math.round(positive * 10) / 10
+      const negativeStep = Math.round(negative * 10) / 10
+      if (
+        distanceStep !== this.flightLogDistanceValue ||
+        positiveStep !== this.flightLogPositiveGValue ||
+        negativeStep !== this.flightLogNegativeGValue
+      ) {
+        this.flightLogDistanceValue = distanceStep
+        this.flightLogPositiveGValue = positiveStep
+        this.flightLogNegativeGValue = negativeStep
+        this.flightLogText = flightLogHudLabel(distanceStep, positiveStep, negativeStep)
+      }
+      this.setText(this.flightLogEl, this.flightLogText)
+      this.setHidden(this.flightLogRowEl, this.flightLogText.length === 0)
+      this.setAttribute(this.flightLogEl, 'aria-label', flightLogAriaLabel(distanceStep, positiveStep, negativeStep))
     }
 
     if (this.machEl) {

@@ -69,6 +69,8 @@ import {
   createMissionHudLabelCache,
   routeRiskAriaLabel,
   routeRiskHudLabel,
+  flightLogAriaLabel,
+  flightLogHudLabel,
   ghostPaceLabel,
   ghostPaceAriaLabel,
   contractProgressLabel,
@@ -163,6 +165,13 @@ describe('HUD value formatting', () => {
     expect(ghostPaceLabel(Number.NaN)).toBe('')
     expect(ghostPaceAriaLabel(-1.2)).toBe('Best-run ghost pace ahead by 1.2s')
     expect(ghostPaceAriaLabel(1.2)).toBe('Best-run ghost pace behind by 1.2s')
+  })
+
+  it('keeps live flight-log telemetry compact and finite', () => {
+    expect(flightLogHudLabel(2_450, 5.25, -1.4)).toBe('DIST 2.5KM · G +5.3/-1.4')
+    expect(flightLogHudLabel(0, 1, 0)).toBe('')
+    expect(flightLogHudLabel(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN)).toBe('')
+    expect(flightLogAriaLabel(2_450, 5.25, -1.4)).toBe('Flight log dist 2.5km, g +5.3/-1.4')
   })
 
   it('formats bounded fighter G-load cues with distinct stress tones', () => {

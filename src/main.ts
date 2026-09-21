@@ -591,6 +591,9 @@ async function boot(): Promise<void> {
     y: 0,
     verticalSpeed: 0,
     gForce: 1,
+    flightDistanceM: 0,
+    peakPositiveG: 1,
+    peakNegativeG: 0,
     mach: 0,
     speed: 0,
     cameraMode: '',
@@ -1680,6 +1683,9 @@ async function boot(): Promise<void> {
       hudFrame.y = alt
       hudFrame.verticalSpeed = aircraft.onGround ? 0 : aircraft.velocity.y
       hudFrame.gForce = aircraft.loadFactor
+      hudFrame.flightDistanceM = challenge.currentFlightDistanceM
+      hudFrame.peakPositiveG = challenge.currentPeakPositiveG
+      hudFrame.peakNegativeG = challenge.currentPeakNegativeG
       hudFrame.speed = aircraft.speed
       hudFrame.mach = machNumber(aircraft.speed)
       hudFrame.cameraMode = cameras.modeLabel
