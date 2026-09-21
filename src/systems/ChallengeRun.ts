@@ -138,6 +138,8 @@ export interface ChallengeResult {
   contractDetail?: string
   /** Whether the assigned contract was completed. */
   contractComplete?: boolean
+  /** Whether the assigned contract became impossible during the sortie. */
+  contractFailed?: boolean
   /** Contract progress at touchdown, normalized to 0..1. */
   contractProgress?: number
   /** Finite bonus awarded for completing the assigned contract. */
@@ -832,12 +834,19 @@ export class ChallengeRun {
     this.bestGateQualityStreak = Math.max(this.bestGateQualityStreak, this.gateQualityStreak)
     const split = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     this.gateSplits[gateIndex] = split
+    this.contract.recordCleanGate(false, this.gatesPassed, this.totalGates)
     const bestSplit = this.bestGateSplits[gateIndex]
     this.lastPaceDeltaSec = Number.isFinite(bestSplit) ? split - bestSplit! : Number.NaN
     this.gatePaceLabelDelta = Number.NaN
     if (this.totalGates > 0 && this.gatesPassed >= this.totalGates) {
       this.phase = 'returning'
     }
+  }
+
+  /** Record a missed gate for the optional no-miss circuit contract. */
+  recordGateMiss(): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    this.contract.recordCleanGate(true, this.gatesPassed, this.totalGates)
   }
 
   /** Record a completed airshow maneuver without touching the flight loop. */
@@ -1108,6 +1117,7 @@ export class ChallengeRun {
       contractLabel: this.contract.enabled ? this.contract.label : undefined,
       contractDetail: this.contract.enabled ? this.contract.detail : undefined,
       contractComplete: this.contract.enabled ? this.contract.complete : undefined,
+      contractFailed: this.contract.enabled ? this.contract.failed : undefined,
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
       contractScore: contractScore > 0 ? contractScore : undefined,
       deadstickScore: deadstickScore > 0 ? deadstickScore : undefined,
@@ -1172,6 +1182,10 @@ export class ChallengeRun {
   /** Whether the current bonus contract has reached its target. */
   get contractComplete(): boolean {
     return this.contract.complete
+  }
+
+  get contractFailed(): boolean {
+    return this.contract.failed
   }
 
   get contractBriefing(): string {

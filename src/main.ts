@@ -611,6 +611,7 @@ async function boot(): Promise<void> {
     contractDetail: '',
     contractProgress: 0,
     contractComplete: false,
+    contractFailed: false,
     biomeCount: 0,
     navDist: 0,
     navBearing: null,
@@ -1210,6 +1211,7 @@ async function boot(): Promise<void> {
             )
           }
           if (event === 'miss') {
+            challenge.recordGateMiss()
             combo.break()
             audio.playCue('warning')
             showBanner('GATE MISSED / RE-ALIGN', 1500, 'danger')
@@ -1680,6 +1682,7 @@ async function boot(): Promise<void> {
       hudFrame.contractDetail = challenge.contractDetail ?? ''
       hudFrame.contractProgress = challenge.contractProgress
       hudFrame.contractComplete = challenge.contractComplete
+      hudFrame.contractFailed = challenge.contractFailed
       hudFrame.biomeCount = challenge.biomeCount
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.ghostPace = (

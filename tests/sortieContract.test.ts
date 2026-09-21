@@ -106,12 +106,16 @@ describe('sortie contracts', () => {
         tracker.recordMach(360, 5)
         tracker.recordMach(360, 5)
       }
+      if (tracker.kind === 'clean') {
+        tracker.recordCleanGate(false, 1, 5)
+        tracker.recordCleanGate(false, 5, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -452,6 +456,29 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('fails the clean-circuit contract permanently after a gate miss', () => {
+    const tracker = new SortieContractTracker()
+    let cleanSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'clean') {
+        cleanSeed = seed
+        break
+      }
+    }
+    expect(cleanSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(cleanSeed, 5)
+    expect(tracker.label).toBe('CLEAN CIRCUIT')
+    tracker.recordCleanGate(false, 2, 5)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordCleanGate(true, 2, 5)
+    expect(tracker.failed).toBe(true)
+    expect(tracker.complete).toBe(false)
+    tracker.recordCleanGate(false, 5, 5)
+    expect(tracker.complete).toBe(false)
+    expect(tracker.finish(99, 1)).toBe(0)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {

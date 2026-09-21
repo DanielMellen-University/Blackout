@@ -360,12 +360,13 @@ export function contractProgressLabel(
   label: unknown,
   progress: number,
   complete: boolean,
+  failed = false,
 ): string {
   if (typeof label !== 'string' || label.trim().length === 0) return ''
   const safeProgress = Number.isFinite(progress)
     ? Math.max(0, Math.min(1, progress))
     : 0
-  return `${label.trim()} ${complete === true ? 'DONE' : `${Math.round(safeProgress * 100)}%`}`
+  return `${label.trim()} ${failed === true ? 'FAILED' : complete === true ? 'DONE' : `${Math.round(safeProgress * 100)}%`}`
 }
 
 /** Describe the contract row to assistive technology using the same bounded state. */
@@ -373,9 +374,11 @@ export function contractProgressAriaLabel(
   label: unknown,
   progress: number,
   complete: boolean,
+  failed = false,
 ): string {
   if (typeof label !== 'string' || label.trim().length === 0) return ''
   const cleanLabel = label.trim().replace(/^CONTRACT\s+/i, '')
+  if (failed === true) return `Contract ${cleanLabel.toLowerCase()} failed`
   if (complete === true) return `Contract ${cleanLabel.toLowerCase()} complete`
   const safeProgress = Number.isFinite(progress)
     ? Math.round(Math.max(0, Math.min(1, progress)) * 100)
@@ -561,6 +564,7 @@ export class HUD {
   private contractLabelValue = ''
   private contractProgressValue = -1
   private contractCompleteValue: boolean | null = null
+  private contractFailedValue: boolean | null = null
   private contractText = ''
   private contractAriaText = ''
   private contractDetailText = ''
@@ -773,6 +777,7 @@ export class HUD {
     contractDetail?: string | null
     contractProgress?: number
     contractComplete?: boolean
+    contractFailed?: boolean
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
@@ -1056,17 +1061,20 @@ export class HUD {
       const label = typeof opts.contractLabel === 'string' ? opts.contractLabel : ''
       const progress = Number.isFinite(opts.contractProgress) ? opts.contractProgress! : 0
       const complete = opts.contractComplete === true
+      const failed = opts.contractFailed === true
       const progressPercent = Math.round(Math.max(0, Math.min(1, progress)) * 100)
       if (
         label !== this.contractLabelValue ||
         progressPercent !== this.contractProgressValue ||
-        complete !== this.contractCompleteValue
+        complete !== this.contractCompleteValue ||
+        failed !== this.contractFailedValue
       ) {
         this.contractLabelValue = label
         this.contractProgressValue = progressPercent
         this.contractCompleteValue = complete
-        this.contractText = contractProgressLabel(label, progressPercent / 100, complete)
-        this.contractAriaText = contractProgressAriaLabel(label, progressPercent / 100, complete)
+        this.contractFailedValue = failed
+        this.contractText = contractProgressLabel(label, progressPercent / 100, complete, failed)
+        this.contractAriaText = contractProgressAriaLabel(label, progressPercent / 100, complete, failed)
       }
       const visible = this.contractText.length > 0
       this.setHidden(this.contractRowEl, !visible)
@@ -1074,6 +1082,7 @@ export class HUD {
       this.setAttribute(this.contractEl, 'aria-label', this.contractAriaText)
       this.setClass(this.contractEl, 'contract-open', visible && !complete)
       this.setClass(this.contractEl, 'contract-complete', visible && complete)
+      this.setClass(this.contractEl, 'contract-failed', visible && failed)
       if (this.contractDetailEl) {
         const detail = contractDetailLabel(opts.contractDetail)
         if (detail !== this.contractDetailText) this.contractDetailText = detail

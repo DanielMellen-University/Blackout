@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -57,6 +57,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'front', label: 'FRONT CHASER', target: FRONT_TARGET_SECONDS },
   { kind: 'boost', label: 'BURN RUN', target: BOOST_TARGET_SECONDS },
   { kind: 'mach', label: 'MACH RUN', target: MACH_TARGET_SECONDS },
+  { kind: 'clean', label: 'CLEAN CIRCUIT', target: 1 },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -78,6 +79,8 @@ export class SortieContractTracker {
   private frontSeconds = 0
   private boostSeconds = 0
   private machSeconds = 0
+  private cleanGateCount = 0
+  private cleanFailed = false
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -97,6 +100,8 @@ export class SortieContractTracker {
     this.frontSeconds = 0
     this.boostSeconds = 0
     this.machSeconds = 0
+    this.cleanGateCount = 0
+    this.cleanFailed = false
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -140,6 +145,8 @@ export class SortieContractTracker {
                           ? `HOLD AFTERBURNER ABOVE ${Math.round(BOOST_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
                         : base.kind === 'mach'
                           ? `BREAK MACH 1 FOR ${Math.round(target)}S`
+                        : base.kind === 'clean'
+                          ? 'CLEAR EVERY GATE WITHOUT A MISS'
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = detail
@@ -303,6 +310,20 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
+  /** Track a no-miss circuit objective without adding mission state. */
+  recordCleanGate(missed: boolean, passed: number, total: number): void {
+    if (this.definition?.kind !== 'clean' || this.completeValue || this.cleanFailed) return
+    if (missed === true) {
+      this.cleanFailed = true
+      this.progressValue = 0
+      return
+    }
+    if (!Number.isFinite(passed) || !Number.isFinite(total) || total <= 0) return
+    this.cleanGateCount = Math.max(this.cleanGateCount, Math.min(total, Math.floor(passed)))
+    this.progressValue = clamp01(this.cleanGateCount / total)
+    if (this.cleanGateCount >= total) this.completeValue = true
+  }
+
   /** Resolve contracts whose success depends on the final touchdown telemetry. */
   finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
@@ -351,6 +372,10 @@ export class SortieContractTracker {
   get complete(): boolean {
     return this.completeValue
   }
+
+  get failed(): boolean {
+    return this.cleanFailed
+  }
 }
 
 function indexForSeed(seed: number): number {
@@ -359,7 +384,8 @@ function indexForSeed(seed: number): number {
   // Preserve the original five-contract mapping for existing seeds while
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
-  // crosswind, G-control, deadstick, weather-front, afterburner, and Mach objectives.
+  // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
+  // no-miss circuit objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -375,6 +401,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 67 === 53) return 16
   if (mixed % 71 === 61) return 17
   if (mixed % 73 === 23) return 18
+  if (mixed % 79 === 29) return 19
   return mixed % legacyContractCount
 }
 

@@ -236,9 +236,12 @@ export class RunResults {
       scoreParts.push(`COURSE RUN STREAK X${courseBestRunStreak}`)
     }
     if (result.contractLabel) {
-      scoreParts.push(`${result.contractComplete ? 'CONTRACT COMPLETE' : 'CONTRACT OPEN'} · ${result.contractLabel}`)
+      const contractState = result.contractFailed
+        ? 'CONTRACT FAILED'
+        : result.contractComplete ? 'CONTRACT COMPLETE' : 'CONTRACT OPEN'
+      scoreParts.push(`${contractState} · ${result.contractLabel}`)
       if (result.contractDetail) scoreParts.push(result.contractDetail)
-      if (!result.contractComplete && Number.isFinite(result.contractProgress)) {
+      if (!result.contractComplete && !result.contractFailed && Number.isFinite(result.contractProgress)) {
         scoreParts.push(`PROGRESS ${Math.round(Math.max(0, Math.min(1, result.contractProgress!)) * 100)}%`)
       }
       const contractScore = Number.isFinite(result.contractScore)

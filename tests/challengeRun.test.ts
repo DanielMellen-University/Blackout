@@ -795,6 +795,36 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('marks a clean-circuit contract failed after a missed gate', () => {
+    const run = new ChallengeRun(null)
+    let cleanSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:clean-contract', 2, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT CLEAN CIRCUIT') {
+        cleanSeed = seed
+        break
+      }
+    }
+    expect(cleanSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:clean-contract', 2, 'balanced', cleanSeed)
+    run.update(0.1, 8)
+    run.recordGateMiss()
+    expect(run.contractFailed).toBe(true)
+    run.recordGate(1)
+    expect(run.contractComplete).toBe(false)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('clean')
+    expect(result.contractFailed).toBe(true)
+    expect(result.contractComplete).toBe(false)
+    expect(result.contractScore).toBeUndefined()
+  })
+
   it('wires weather-front transitions into the front-chaser contract', () => {
     const run = new ChallengeRun(null)
     let frontSeed = -1
