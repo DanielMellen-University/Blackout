@@ -18,6 +18,7 @@
 - Add a persisted keyboard roll direction preference while leaving gamepad and touch roll conventions unchanged.
 - Add a persisted keyboard pitch direction preference while leaving gamepad and touch pitch conventions unchanged.
 - Harden release validation across package metadata, the lockfile, runtime title fallback, README, and the first changelog heading so version drift fails the build.
+- Add a deterministic WATER RUN contract that rewards bounded airborne time over the rendered river, lake, or sea surface without adding terrain queries or scene work.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

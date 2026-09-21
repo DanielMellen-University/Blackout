@@ -50,12 +50,19 @@ describe('sortie contracts', () => {
         tracker.recordWeather(0, 0.7, 5)
         tracker.recordWeather(0.6, 0, 5)
       }
+      if (tracker.kind === 'water') {
+        tracker.recordWater(true, 5, false)
+        tracker.recordWater(false, 5)
+        tracker.recordWater(true, 5)
+        tracker.recordWater(true, 5)
+        tracker.recordWater(true, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -136,6 +143,31 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBeCloseTo(4 / 14)
     tracker.recordWeather(0, 0.8, 5)
     tracker.recordWeather(0.8, 0, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne time over rendered water', () => {
+    const tracker = new SortieContractTracker()
+    let waterSeed = -1
+    for (let seed = 0; seed < 512; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'water') {
+        waterSeed = seed
+        break
+      }
+    }
+    expect(waterSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(waterSeed, 5)
+    tracker.recordWater(true, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWater(false, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWater(true, 4)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordWater(true, 5)
+    tracker.recordWater(true, 5)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

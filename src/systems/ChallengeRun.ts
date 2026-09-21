@@ -877,6 +877,14 @@ export class ChallengeRun {
     }
   }
 
+  /** Record one bounded water-surface interval for the optional water-run contract. */
+  recordWater(isWater: boolean, dt: number, airborne = true): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    const wasContractComplete = this.contract.complete
+    this.contract.recordWater(isWater, dt, airborne)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
+  }
+
   /** Number of unique natural biomes seen so far in this sortie. */
   get biomeCount(): number {
     return this.surveyedBiomeCount

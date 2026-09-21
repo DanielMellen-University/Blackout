@@ -98,6 +98,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The live cockpit HUD now shows a cached Mach readout with subsonic, transonic, and supersonic bands, making the crossing cue readable without adding render work.
 - Seeded sorties can now assign an `ENERGY BAND` contract: hold a forgiving 311 to 622 knot cruise window while airborne to build progress toward the full contract reward.
 - Seeded sorties can also assign a `STORM RUN` contract: stay airborne in meaningful rain or snow to build a bounded weather-flight reward.
+- Seeded sorties can also assign a `WATER RUN` contract: stay airborne over a rendered river, lake, or sea to build a bounded low-level exploration reward.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.
@@ -110,7 +111,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, or precision approach.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, or precision approach.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.

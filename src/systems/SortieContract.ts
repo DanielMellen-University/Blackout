@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -19,6 +19,7 @@ const SPEED_BAND_MAX_MPS = 320
 const SPEED_BAND_TARGET_SECONDS = 12
 const WEATHER_TARGET_SECONDS = 14
 const APPROACH_TARGET_SCORE = 360
+const WATER_TARGET_SECONDS = 12
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -31,6 +32,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'speed-band', label: 'ENERGY BAND', target: SPEED_BAND_TARGET_SECONDS },
   { kind: 'weather', label: 'STORM RUN', target: WEATHER_TARGET_SECONDS },
   { kind: 'approach', label: 'PRECISION APPROACH', target: APPROACH_TARGET_SCORE },
+  { kind: 'water', label: 'WATER RUN', target: WATER_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -43,6 +45,7 @@ export class SortieContractTracker {
   private lowLevelSeconds = 0
   private speedBandSeconds = 0
   private weatherSeconds = 0
+  private waterSeconds = 0
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -53,6 +56,7 @@ export class SortieContractTracker {
     this.lowLevelSeconds = 0
     this.speedBandSeconds = 0
     this.weatherSeconds = 0
+    this.waterSeconds = 0
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -77,8 +81,10 @@ export class SortieContractTracker {
               : base.kind === 'speed-band'
                 ? `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
                 : base.kind === 'weather'
-                  ? `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
-                  : 'LAND CENTERED AND ALIGNED'
+                ? `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
+                  : base.kind === 'water'
+                    ? `FLY OVER WATER FOR ${Math.round(target)}S`
+                    : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = detail
     this.hudLabelValue = `CONTRACT ${base.label}`
@@ -145,6 +151,16 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
+  /** Accumulate bounded airborne time over the rendered water surface. */
+  recordWater(isWater: boolean, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'water' || this.completeValue || !airborne || isWater !== true) return
+    if (!Number.isFinite(dt)) return
+    const safeDt = Math.max(0, Math.min(5, dt))
+    this.waterSeconds = Math.min(this.definition.target, this.waterSeconds + safeDt)
+    this.progressValue = clamp01(this.waterSeconds / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
   /** Resolve contracts whose success depends on the final touchdown telemetry. */
   finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
@@ -207,6 +223,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 19 === 7) return 7
   if (mixed % 23 === 11) return 8
   if (mixed % 29 === 17) return 9
+  if (mixed % 37 === 19) return 10
   return mixed % legacyContractCount
 }
 

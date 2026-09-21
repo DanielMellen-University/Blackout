@@ -547,6 +547,39 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires rendered water time into the water-run contract', () => {
+    const run = new ChallengeRun(null)
+    let waterSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:water-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT WATER RUN') {
+        waterSeed = seed
+        break
+      }
+    }
+    expect(waterSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:water-contract', 1, 'balanced', waterSeed)
+    run.update(0.1, 8)
+    run.recordWater(false, 5)
+    expect(run.contractProgress).toBe(0)
+    run.recordWater(true, 5)
+    expect(run.contractProgress).toBeCloseTo(5 / 12)
+    run.recordWater(true, 5)
+    run.recordWater(true, 5)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('WATER RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('water')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
