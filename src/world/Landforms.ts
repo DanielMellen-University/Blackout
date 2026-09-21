@@ -2,6 +2,39 @@ import { clamp01, fbm, hash2, smoothstep, valueNoise } from './noise'
 
 const VOLCANO_CELL = 24000
 
+/** Scalar landform output. Terrain samplers can reuse this record in place. */
+export interface LandformSample {
+  height: number
+  moisture: number
+  temperature: number
+  highlands: number
+  foothills: number
+  ridge: number
+  alpineValley: number
+  plateau: number
+  badlands: number
+  dunes: number
+  alluvial: number
+  karst: number
+  glacial: number
+  cold: number
+  hot: number
+  dry: number
+  ravine: number
+  volcanic: number
+  caldera: number
+  salt: number
+}
+
+function createLandformSample(): LandformSample {
+  return {
+    height: 0, moisture: 0, temperature: 0, highlands: 0, foothills: 0,
+    ridge: 0, alpineValley: 0, plateau: 0, badlands: 0, dunes: 0,
+    alluvial: 0, karst: 0, glacial: 0, cold: 0, hot: 0, dry: 0,
+    ravine: 0, volcanic: 0, caldera: 0, salt: 0,
+  }
+}
+
 /** Smooth mask for one rare regional volcanic cone and its summit caldera. */
 function volcanicLandmark(x: number, z: number): { uplift: number; mask: number; caldera: number } {
   const cx = Math.floor(x / VOLCANO_CELL)
@@ -33,7 +66,12 @@ function volcanicLandmark(x: number, z: number): { uplift: number; mask: number;
  * Green country stays smooth. Strong ledges and bowls are confined to dry,
  * alpine, or volcanic provinces where they read as intentional geology.
  */
-export function sampleLandforms(x: number, z: number) {
+export function sampleLandforms(x: number, z: number): LandformSample {
+  return sampleLandformsInto(createLandformSample(), x, z)
+}
+
+/** Write one landform sample into caller-owned storage to avoid terrain churn. */
+export function sampleLandformsInto(out: LandformSample, x: number, z: number): LandformSample {
   const wx = x + (fbm(x / 11000, z / 11000, 2) - .5) * 2200
   const wz = z + (fbm(x / 11000 + 51, z / 11000 - 39, 2) - .5) * 2200
 
@@ -167,26 +205,25 @@ export function sampleLandforms(x: number, z: number) {
     (1 - landmark.mask)
   height += (90 + detail * .1 - height) * salt
 
-  return {
-    height,
-    moisture,
-    temperature,
-    highlands,
-    foothills,
-    ridge,
-    alpineValley,
-    plateau,
-    badlands,
-    dunes,
-    alluvial: alluvialProvince * fanLobe,
-    karst: karstProvince * (.38 + karstSink * .62),
-    glacial: glacialProvince,
-    cold,
-    hot,
-    dry,
-    ravine,
-    volcanic,
-    caldera: landmark.caldera,
-    salt,
-  }
+  out.height = height
+  out.moisture = moisture
+  out.temperature = temperature
+  out.highlands = highlands
+  out.foothills = foothills
+  out.ridge = ridge
+  out.alpineValley = alpineValley
+  out.plateau = plateau
+  out.badlands = badlands
+  out.dunes = dunes
+  out.alluvial = alluvialProvince * fanLobe
+  out.karst = karstProvince * (.38 + karstSink * .62)
+  out.glacial = glacialProvince
+  out.cold = cold
+  out.hot = hot
+  out.dry = dry
+  out.ravine = ravine
+  out.volcanic = volcanic
+  out.caldera = landmark.caldera
+  out.salt = salt
+  return out
 }

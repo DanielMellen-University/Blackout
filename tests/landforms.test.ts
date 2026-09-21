@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { sampleLandforms } from '../src/world/Landforms'
+import { sampleLandforms, sampleLandformsInto } from '../src/world/Landforms'
 import { setWorldSeed } from '../src/world/noise'
 
 describe('regional landform families', () => {
+  it('reuses caller-owned landform storage without changing the sample', () => {
+    setWorldSeed(1)
+    const expected = sampleLandforms(-1375, 8420)
+    const storage = {
+      height: 0, moisture: 0, temperature: 0, highlands: 0, foothills: 0,
+      ridge: 0, alpineValley: 0, plateau: 0, badlands: 0, dunes: 0,
+      alluvial: 0, karst: 0, glacial: 0, cold: 0, hot: 0, dry: 0,
+      ravine: 0, volcanic: 0, caldera: 0, salt: 0,
+    }
+    const first = sampleLandformsInto(storage, -1375, 8420)
+    expect(first).toBe(storage)
+    expect(first).toEqual(expected)
+    const firstSnapshot = { ...first }
+    const second = sampleLandformsInto(storage, 7625, 3420)
+    expect(second).toBe(storage)
+    for (const value of Object.values(second)) expect(Number.isFinite(value)).toBe(true)
+    expect(second).not.toEqual(firstSnapshot)
+  })
+
   it('produces ridges, alpine valleys, plateaus and volcanic calderas', () => {
     setWorldSeed(1337)
     let peak = -Infinity

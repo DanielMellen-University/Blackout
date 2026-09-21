@@ -1,5 +1,5 @@
 import { smoothstep } from './noise'
-import { sampleLandforms } from './Landforms'
+import { sampleLandformsInto, type LandformSample } from './Landforms'
 import { sampleHydrologyInto, type HydrologySample } from './Hydrology'
 import type { Biome, Climate } from './terrainSample'
 
@@ -8,10 +8,16 @@ import type { Biome, Climate } from './terrainSample'
 const hydrologyScratch: HydrologySample = {
   height: 0, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0,
 }
+const landformScratch: LandformSample = {
+  height: 0, moisture: 0, temperature: 0, highlands: 0, foothills: 0,
+  ridge: 0, alpineValley: 0, plateau: 0, badlands: 0, dunes: 0,
+  alluvial: 0, karst: 0, glacial: 0, cold: 0, hot: 0, dry: 0,
+  ravine: 0, volcanic: 0, caldera: 0, salt: 0,
+}
 
 /** Landform and drainage fields meet here; water rendering is independent. */
 export function sampleGeography(x: number, z: number): Climate {
-  const landform = sampleLandforms(x, z)
+  const landform = sampleLandformsInto(landformScratch, x, z)
   const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height)
   const { height, waterLevel, river, lake, pond, stream, coastal } = hydrology
   const { moisture, temperature, cold, hot, dunes, badlands, karst, volcanic, salt } = landform

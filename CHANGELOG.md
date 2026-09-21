@@ -35,6 +35,7 @@
 - Keep radar focused on the best bounded contact set by tier and distance, preventing streamed settlement order from hiding nearby targets.
 - Reuse caller-owned scalar hydrology storage during geography sampling, removing one temporary object per terrain vertex without changing water or biome output.
 - Add a deterministic BURN RUN contract that rewards bounded high-speed airborne afterburner time through existing engine-state telemetry without adding scene work.
+- Reuse caller-owned scalar landform storage during geography sampling, removing another temporary object per terrain vertex without changing terrain output.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.
