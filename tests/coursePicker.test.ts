@@ -50,6 +50,12 @@ describe('course picker copy', () => {
       peakSpeedKts: 962,
       peakAltitudeM: 1_240,
     })).toBe('LOG TOP 962KT ALT 1,240M')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
+      runStreak: 4,
+      contractWins: 3,
+    })).toBe('LOG RUN STREAK X4 CONTRACT WINS X3')
   })
 
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {
@@ -101,7 +107,7 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS · ACE')
-    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · CONTRACT X4 · ACE · NEXT LEGEND / 10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER · 3/6 BADGES · TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
+    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · CONTRACT X4 · ACE · NEXT LEGEND / 10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER · 3/6 BADGES · LOG CONTRACT WINS X2 · TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TOP')).toBe(false)
     expect(copy.stats.includes('ROLLS')).toBe(false)
