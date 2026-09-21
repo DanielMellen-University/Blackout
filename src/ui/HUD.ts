@@ -401,6 +401,13 @@ export function weatherTransitionLabel(transitioning: boolean): string {
   return transitioning === true ? 'SHIFT' : ''
 }
 
+/** Keep the visible weather label synchronized with the active front target. */
+export function weatherDisplayLabel(value: unknown, transitioning: boolean): string {
+  const label = typeof value === 'string' ? value.trim() : ''
+  if (!label) return ''
+  return transitioning === true ? `${label} · ${weatherTransitionLabel(true)}` : label
+}
+
 /** Keep engine-stress feedback bounded and calm for arcade flight. */
 export function engineHeatCue(fraction: number): EngineHeatCue {
   if (!Number.isFinite(fraction)) return 'normal'
@@ -668,6 +675,7 @@ export class HUD {
   private windAriaText = ''
   private weatherCueValue: WeatherCue | null = null
   private weatherTransitionValue: boolean | null = null
+  private weatherLabelValue = ''
   private weatherText = ''
   private weatherAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
@@ -1087,12 +1095,16 @@ export class HUD {
     if (this.weatherEl && opts.weather) {
       const transitioning = opts.weatherTransitioning === true
       const cue = weatherCue(opts.weatherKind ?? opts.weather)
-      if (cue !== this.weatherCueValue || transitioning !== this.weatherTransitionValue || this.weatherText.length === 0) {
+      if (
+        cue !== this.weatherCueValue ||
+        transitioning !== this.weatherTransitionValue ||
+        opts.weather !== this.weatherLabelValue ||
+        this.weatherText.length === 0
+      ) {
         this.weatherCueValue = cue
         this.weatherTransitionValue = transitioning
-        this.weatherText = transitioning
-          ? `${opts.weather} · ${weatherTransitionLabel(true)}`
-          : opts.weather
+        this.weatherLabelValue = opts.weather
+        this.weatherText = weatherDisplayLabel(opts.weather, transitioning)
         this.weatherAriaText = cue === 'severe'
           ? `Severe weather: ${opts.weather}`
           : cue === 'active' ? `Active weather: ${opts.weather}` : `Weather: ${opts.weather}`

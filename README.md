@@ -123,6 +123,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Consecutive contract clears pay a capped chain bonus on top of the normal contract payout, while the first clear keeps the original score balance.
 - The weather readout now marks an active front blend as `SHIFT`, giving FRONT CHASER pilots a clear cue without exposing raw transition telemetry.
 - The wind readout now adds bounded `GUST` and `GUST HIGH` cues, making storm handling readable before the aircraft starts getting thrown around.
+- Weather front labels now refresh when a shifting target changes, so rain, snow, and fog copy cannot remain stale during a transition.
 - Random sorties now rotate through the validated COASTAL and RIVER route profiles as well as the original inland shapes, increasing route variety without adding geometry or draw calls.
 - The live mission row now names the active route profile, so coastal and river sorties remain identifiable after the launch briefing fades.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.

@@ -84,6 +84,7 @@ import {
   windGustCue,
   weatherCue,
   weatherCycleBanner,
+  weatherDisplayLabel,
   weatherTransitionLabel,
 } from '../src/ui/HUD'
 
@@ -398,6 +399,9 @@ describe('HUD value formatting', () => {
     expect(weatherTransitionLabel(true)).toBe('SHIFT')
     expect(weatherTransitionLabel(false)).toBe('')
     expect(weatherTransitionLabel(Number.NaN as unknown as boolean)).toBe('')
+    expect(weatherDisplayLabel('RAIN FRONT', true)).toBe('RAIN FRONT · SHIFT')
+    expect(weatherDisplayLabel('  SNOW SHOWERS  ', false)).toBe('SNOW SHOWERS')
+    expect(weatherDisplayLabel('', true)).toBe('')
   })
 
   it('keeps route identity in the live mission row within a bounded label', () => {
