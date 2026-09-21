@@ -80,6 +80,11 @@ describe('sortie contracts', () => {
         tracker.recordGust(0.8, 5)
         tracker.recordGust(0.8, 5)
       }
+      if (tracker.kind === 'range') {
+        tracker.recordDistance(5_000, false)
+        tracker.recordDistance(5_000)
+        tracker.recordDistance(7_000)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -170,7 +175,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range']))
   })
 
   it('accumulates only airborne time through strong gusts', () => {
@@ -194,6 +199,30 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBeCloseTo(0.4)
     tracker.recordGust(0.8, 6)
     tracker.recordGust(0.8, 1)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne distance for the range-run contract', () => {
+    const tracker = new SortieContractTracker()
+    let rangeSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'range') {
+        rangeSeed = seed
+        break
+      }
+    }
+    expect(rangeSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(rangeSeed, 5)
+    expect(tracker.label).toBe('RANGE RUN')
+    tracker.recordDistance(5_000, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordDistance(Number.NaN)
+    expect(tracker.progress).toBe(0)
+    tracker.recordDistance(5_000)
+    expect(tracker.progress).toBeCloseTo(5 / 12)
+    tracker.recordDistance(7_000)
     expect(tracker.complete).toBe(true)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })

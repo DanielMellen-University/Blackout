@@ -1078,6 +1078,7 @@ export class ChallengeRun {
     this.contract.recordNight(daylight, safeDt, airborne)
     this.contract.recordDry(afterburner, safeSpeed, safeDt, airborne)
     this.contract.recordGust(weatherGust, safeDt, airborne)
+    this.contract.recordDistance(safeDistance, airborne)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'

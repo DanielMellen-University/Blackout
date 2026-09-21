@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -54,6 +54,8 @@ const RADAR_RUN_DETAIL = 'LOCK ONE RADAR CONTACT THEN ARRIVE'
 const GUST_MIN_FRACTION = 0.62
 const GUST_TARGET_SECONDS = 10
 const GUST_RUN_DETAIL = 'FLY THROUGH STRONG GUSTS FOR 10S'
+const RANGE_TARGET_METERS = 12_000
+const RANGE_RUN_DETAIL = 'FLY 12KM BEFORE LANDING'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -85,6 +87,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'dry', label: 'DRY RUN', target: DRY_TARGET_SECONDS },
   { kind: 'target', label: 'RADAR RUN', target: 1 },
   { kind: 'gust', label: 'GUST RIDER', target: GUST_TARGET_SECONDS },
+  { kind: 'range', label: 'RANGE RUN', target: RANGE_TARGET_METERS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -119,6 +122,7 @@ export class SortieContractTracker {
   private radarLockKind: 'city' | 'village' | null = null
   private radarLockId = ''
   private gustSeconds = 0
+  private rangeMeters = 0
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -151,6 +155,7 @@ export class SortieContractTracker {
     this.radarLockKind = null
     this.radarLockId = ''
     this.gustSeconds = 0
+    this.rangeMeters = 0
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -234,6 +239,16 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.gustSeconds = Math.min(this.definition.target, this.gustSeconds + safeDt)
     this.progressValue = clamp01(this.gustSeconds / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Accumulate bounded airborne distance for the exploration contract. */
+  recordDistance(distanceM: number, airborne = true): void {
+    if (this.definition?.kind !== 'range' || this.completeValue || !airborne) return
+    if (!Number.isFinite(distanceM)) return
+    const safeDistance = Math.max(0, Math.min(10_000, distanceM))
+    this.rangeMeters = Math.min(this.definition.target, this.rangeMeters + safeDistance)
+    this.progressValue = clamp01(this.rangeMeters / this.definition.target)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -522,7 +537,7 @@ function indexForSeed(seed: number): number {
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
-  // night-flight, butter-landing, dry-run, radar-run, and gust-rider objectives.
+  // night-flight, butter-landing, dry-run, radar-run, gust-rider, and range-run objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -548,6 +563,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 113 === 67) return 26
   if (mixed % 127 === 83) return 27
   if (mixed % 131 === 97) return 28
+  if (mixed % 137 === 107) return 29
   return mixed % legacyContractCount
 }
 
@@ -606,6 +622,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'dry': return `HOLD DRY POWER ABOVE ${Math.round(DRY_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'target': return RADAR_RUN_DETAIL
     case 'gust': return GUST_RUN_DETAIL
+    case 'range': return RANGE_RUN_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }

@@ -640,6 +640,29 @@ describe('ChallengeRun', () => {
     expect(run.consumeContractCompletionCue()).toBe('GUST RIDER')
   })
 
+  it('wires fixed-step flight distance into the range-run contract', () => {
+    const run = new ChallengeRun(null)
+    let rangeSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      run.reset('seed:range-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT RANGE RUN') {
+        rangeSeed = seed
+        break
+      }
+    }
+    expect(rangeSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:range-contract', 1, 'balanced', rangeSeed)
+    expect(run.contractBriefing).toContain('FLY 12KM BEFORE LANDING')
+    run.update(0.1, 8)
+    run.update(1, 8, 180, 0, 0, false, false, 0, 0, 1, 1, false, false, 180, 1, 5_000)
+    expect(run.contractProgress).toBe(0)
+    run.update(1, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 5_000)
+    expect(run.contractProgress).toBeCloseTo(5 / 12)
+    run.update(1, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 7_000)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('RANGE RUN')
+  })
+
   it('turns low-level contract time into a bounded terrain-hugger reward', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:low-level', 1, 'balanced', 11)
