@@ -1310,6 +1310,29 @@ body,
   text-shadow: 0 0 10px rgba(61, 206, 168, 0.28);
 }
 
+.hud-contract-values {
+  display: flex;
+  min-width: 0;
+  max-width: 210px;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.hud-contract-detail {
+  max-width: 210px;
+  color: var(--ink-dim) !important;
+  font-size: 0.5rem;
+  font-weight: 500 !important;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.hud-contract-detail[hidden] {
+  display: none !important;
+}
+
 #hud-biome {
   color: var(--accent);
 }

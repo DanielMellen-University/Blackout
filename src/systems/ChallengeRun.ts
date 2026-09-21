@@ -1158,6 +1158,11 @@ export class ChallengeRun {
     return this.contract.hudLabel
   }
 
+  /** Cached contract instruction for the live HUD task detail line. */
+  get contractDetail(): string {
+    return this.contract.detail
+  }
+
   /** Cached contract progress for the live HUD task row. */
   get contractProgress(): number {
     return this.contract.progress

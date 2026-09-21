@@ -65,6 +65,8 @@ import {
   ghostPaceAriaLabel,
   contractProgressLabel,
   contractProgressAriaLabel,
+  contractDetailLabel,
+  contractDetailAriaLabel,
   quantizeHudNumber,
   safeHudValue,
   speedWarningLevel,
@@ -341,6 +343,12 @@ describe('HUD value formatting', () => {
     expect(contractProgressAriaLabel('CONTRACT SPEED RUN', 0.42, true))
       .toBe('Contract speed run complete')
     expect(contractProgressAriaLabel(null, 1, false)).toBe('')
+    expect(contractDetailLabel('  HOLD AFTERBURNER ABOVE 428 KTS FOR 8S  '))
+      .toBe('HOLD AFTERBURNER ABOVE 428 KTS FOR 8S')
+    expect(contractDetailLabel('x'.repeat(200))).toHaveLength(120)
+    expect(contractDetailLabel(Number.NaN)).toBe('')
+    expect(contractDetailAriaLabel('HOLD AFTERBURNER ABOVE 428 KTS FOR 8S'))
+      .toBe('Contract instruction: hold afterburner above 428 kts for 8s')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

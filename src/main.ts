@@ -608,6 +608,7 @@ async function boot(): Promise<void> {
     missionPhase: 'ready',
     ghostPace: null,
     contractLabel: '',
+    contractDetail: '',
     contractProgress: 0,
     contractComplete: false,
     biomeCount: 0,
@@ -1676,6 +1677,7 @@ async function boot(): Promise<void> {
       const contractLabel = challenge.contractLabel
       hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}${contractLabel ? ` · ${contractLabel}` : ''}`
       hudFrame.contractLabel = contractLabel
+      hudFrame.contractDetail = challenge.contractDetail ?? ''
       hudFrame.contractProgress = challenge.contractProgress
       hudFrame.contractComplete = challenge.contractComplete
       hudFrame.biomeCount = challenge.biomeCount

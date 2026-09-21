@@ -383,6 +383,18 @@ export function contractProgressAriaLabel(
   return `Contract ${cleanLabel.toLowerCase()}, ${safeProgress} percent complete`
 }
 
+/** Keep the contract instruction bounded for the live task detail line. */
+export function contractDetailLabel(value: unknown): string {
+  if (typeof value !== 'string') return ''
+  return value.trim().slice(0, 120)
+}
+
+/** Describe the same bounded task instruction to assistive technology. */
+export function contractDetailAriaLabel(value: unknown): string {
+  const detail = contractDetailLabel(value)
+  return detail ? `Contract instruction: ${detail.toLowerCase()}` : ''
+}
+
 /** Describe afterburner availability without exposing internal lockout state. */
 export function afterburnerHudLabel(
   active: boolean,
@@ -448,6 +460,7 @@ export class HUD {
   private readonly missionProgressEl: HTMLElement | null
   private readonly contractRowEl: HTMLElement | null
   private readonly contractEl: HTMLElement | null
+  private readonly contractDetailEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -550,6 +563,7 @@ export class HUD {
   private contractCompleteValue: boolean | null = null
   private contractText = ''
   private contractAriaText = ''
+  private contractDetailText = ''
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
@@ -642,6 +656,7 @@ export class HUD {
     this.missionProgressEl = root.getElementById('hud-gate-progress')
     this.contractRowEl = root.getElementById('hud-contract-row')
     this.contractEl = root.getElementById('hud-contract')
+    this.contractDetailEl = root.getElementById('hud-contract-detail')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -754,6 +769,8 @@ export class HUD {
     missionTotal?: number
     /** Optional bonus-contract label and bounded progress for the task row. */
     contractLabel?: string | null
+    /** Full bounded instruction for the active bonus contract. */
+    contractDetail?: string | null
     contractProgress?: number
     contractComplete?: boolean
     /** Distinct natural biomes surveyed during the current sortie. */
@@ -1057,6 +1074,13 @@ export class HUD {
       this.setAttribute(this.contractEl, 'aria-label', this.contractAriaText)
       this.setClass(this.contractEl, 'contract-open', visible && !complete)
       this.setClass(this.contractEl, 'contract-complete', visible && complete)
+      if (this.contractDetailEl) {
+        const detail = contractDetailLabel(opts.contractDetail)
+        if (detail !== this.contractDetailText) this.contractDetailText = detail
+        this.setText(this.contractDetailEl, this.contractDetailText)
+        this.setAttribute(this.contractDetailEl, 'aria-label', contractDetailAriaLabel(this.contractDetailText))
+        this.setHidden(this.contractDetailEl, !visible || this.contractDetailText.length === 0)
+      }
     }
     if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
       const count = Number.isFinite(opts.biomeCount)
