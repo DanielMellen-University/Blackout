@@ -60,7 +60,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -100,6 +100,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   ridge: 'RIDGE RUN',
   canyon: 'CANYON RUN',
   coast: 'COASTAL RUN',
+  river: 'RIVER RUN',
   free: 'FREE FLIGHT',
 }
 
@@ -147,6 +148,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'ridge') return 'altitude'
   if (profile === 'canyon') return 'precision'
   if (profile === 'coast') return 'range'
+  if (profile === 'river') return 'range'
   return 'approach'
 }
 
@@ -163,7 +165,7 @@ export function routeModifierForSpawn(
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
-  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : 0
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : 0
   const hash = Math.abs(Math.floor(
     safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
   ))
@@ -209,7 +211,7 @@ export function buildMissionRoute(
   const offsets = routeOffsets(profile, seedPhase, modifier)
   const points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
-      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' ? 12 : profile === 'ridge' ? 30 : profile === 'coast' ? 16 : 22),
+      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' ? 12 : profile === 'ridge' ? 30 : profile === 'coast' || profile === 'river' ? 16 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
@@ -330,6 +332,16 @@ function routeOffsets(
       { forward: 1_900, right: sweep * .18, height: 122 },
       { forward: 2_520, right: -sweep * 1.05, height: 138 },
       { forward: 3_180, right: -sweep * .28, height: 126 },
+    ].map(shape)
+  }
+  if (profile === 'river') {
+    const bend = 360 + seedPhase * 110
+    return [
+      { forward: 620, right: 0, height: 72 },
+      { forward: 1_180, right: bend, height: 88 },
+      { forward: 1_780, right: bend * .16, height: 96 },
+      { forward: 2_440, right: -bend * 1.08, height: 110 },
+      { forward: 3_060, right: -bend * .28, height: 118 },
     ].map(shape)
   }
 

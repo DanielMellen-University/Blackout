@@ -223,7 +223,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -271,16 +271,19 @@ describe('MissionSystem gate crossing', () => {
     const ridge = buildMissionRoute(0, 20, 0, 0, 'ridge')
     const canyon = buildMissionRoute(0, 20, 0, 0, 'canyon')
     const coast = buildMissionRoute(0, 20, 0, 0, 'coast')
+    const river = buildMissionRoute(0, 20, 0, 0, 'river')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
     expect(ridge).toHaveLength(5)
     expect(canyon).toHaveLength(5)
     expect(coast).toHaveLength(5)
+    expect(river).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
     expect(summarizeMissionRoute(0, 20, 0, coast, 'coast').challenge).toBe('range')
+    expect(summarizeMissionRoute(0, 20, 0, river, 'river').challenge).toBe('range')
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
@@ -291,6 +294,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('ridge')).toBe('RIDGE RUN')
     expect(routeProfileLabel('canyon')).toBe('CANYON RUN')
     expect(routeProfileLabel('coast')).toBe('COASTAL RUN')
+    expect(routeProfileLabel('river')).toBe('RIVER RUN')
   })
 
   it('supports a no-gate free-flight profile', () => {
