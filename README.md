@@ -403,6 +403,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Streaming terrain (33.6 km radius), adaptive detail tiles and smoothly blended biomes. Trees and rocks use bounded instanced streaming in the near field.
 - Geography sampling reuses scalar hydrology storage in place, removing a temporary object per terrain vertex while keeping rivers, lakes, seas, and biome output identical.
 - The same terrain path now reuses scalar landform storage in place, trimming another per-vertex allocation while keeping generated relief and biome blending identical.
+- Volcanic landmark sampling also reuses its bounded scratch record, keeping rare cone and caldera relief allocation-free on the terrain hot path.
 - Terrain and water geometry generate in a bounded background worker pool with transferable buffers. Near chunks load first, uploads have a frame budget, and new coverage fades in over 650 ms while previous detail stays underneath. Coarse outer tiles keep the doubled horizon affordable; rendering resolution adapts gradually under sustained load.
 - World-cloud transforms use a fixed 30 Hz budget; lighting, rain, snow, and lightning remain frame-responsive so weather stays smooth without spending a full matrix rewrite every render frame.
 - Weather fronts turn wind along the shortest arc while interpolating speed separately, avoiding an artificial calm pocket when a storm changes direction.

@@ -35,12 +35,25 @@ function createLandformSample(): LandformSample {
   }
 }
 
+interface VolcanicLandmarkSample {
+  uplift: number
+  mask: number
+  caldera: number
+}
+
+const volcanicScratch: VolcanicLandmarkSample = { uplift: 0, mask: 0, caldera: 0 }
+
 /** Smooth mask for one rare regional volcanic cone and its summit caldera. */
-function volcanicLandmark(x: number, z: number): { uplift: number; mask: number; caldera: number } {
+function volcanicLandmarkInto(out: VolcanicLandmarkSample, x: number, z: number): VolcanicLandmarkSample {
   const cx = Math.floor(x / VOLCANO_CELL)
   const cz = Math.floor(z / VOLCANO_CELL)
   const present = hash2(cx + 417, cz - 283)
-  if (present < .82) return { uplift: 0, mask: 0, caldera: 0 }
+  if (present < .82) {
+    out.uplift = 0
+    out.mask = 0
+    out.caldera = 0
+    return out
+  }
 
   // The center stays far enough from the cell border that the mask reaches
   // zero before the neighboring cell takes over. This preserves continuity.
@@ -49,16 +62,20 @@ function volcanicLandmark(x: number, z: number): { uplift: number; mask: number;
   const radius = 2600 + hash2(cx + 11, cz + 107) * 1500
   const distance = Math.hypot(x - centerX, z - centerZ)
   const cone = 1 - smoothstep(radius * .18, radius, distance)
-  if (cone <= 0) return { uplift: 0, mask: 0, caldera: 0 }
+  if (cone <= 0) {
+    out.uplift = 0
+    out.mask = 0
+    out.caldera = 0
+    return out
+  }
 
   const shoulder = Math.pow(cone, 1.35)
   const caldera = 1 - smoothstep(radius * .04, radius * .19, distance)
   const height = 1900 + hash2(cx - 17, cz + 209) * 1700
-  return {
-    uplift: shoulder * height - caldera * height * .28,
-    mask: smoothstep(0, .34, cone),
-    caldera,
-  }
+  out.uplift = shoulder * height - caldera * height * .28
+  out.mask = smoothstep(0, .34, cone)
+  out.caldera = caldera
+  return out
 }
 
 /**
@@ -195,7 +212,7 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
     (1 - smoothstep(.025, .13, ravineLine))
   height -= ravine * (110 + plateau * 90)
 
-  const landmark = volcanicLandmark(x, z)
+  const landmark = volcanicLandmarkInto(volcanicScratch, x, z)
   const volcanicProvince = smoothstep(.8, .95, province) *
     smoothstep(.35, .65, highlands)
   const volcanic = Math.max(volcanicProvince, landmark.mask)
