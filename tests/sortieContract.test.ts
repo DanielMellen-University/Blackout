@@ -74,6 +74,12 @@ describe('sortie contracts', () => {
         tracker.recordRadarLock(true, 'city', 'city-1')
         tracker.recordDestination(1, 'city', 'city-1')
       }
+      if (tracker.kind === 'gust') {
+        tracker.recordGust(0.8, 5, false)
+        tracker.recordGust(0.4, 5)
+        tracker.recordGust(0.8, 5)
+        tracker.recordGust(0.8, 5)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -164,7 +170,32 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust']))
+  })
+
+  it('accumulates only airborne time through strong gusts', () => {
+    const tracker = new SortieContractTracker()
+    let gustSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'gust') {
+        gustSeed = seed
+        break
+      }
+    }
+    expect(gustSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(gustSeed, 5)
+    expect(tracker.label).toBe('GUST RIDER')
+    tracker.recordGust(0.8, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordGust(0.4, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordGust(0.8, 4)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordGust(0.8, 6)
+    tracker.recordGust(0.8, 1)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('requires a radar lock before a target arrival can complete the contract', () => {

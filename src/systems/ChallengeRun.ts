@@ -1044,6 +1044,7 @@ export class ChallengeRun {
     terrainClearanceM = altitudeM,
     daylight = 1,
     distanceM = 0,
+    weatherGust = 0,
   ): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
@@ -1076,6 +1077,7 @@ export class ChallengeRun {
     this.contract.recordLevelFlight(safeAltitude, safeDt, airborne)
     this.contract.recordNight(daylight, safeDt, airborne)
     this.contract.recordDry(afterburner, safeSpeed, safeDt, airborne)
+    this.contract.recordGust(weatherGust, safeDt, airborne)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'

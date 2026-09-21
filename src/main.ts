@@ -1439,6 +1439,7 @@ async function boot(): Promise<void> {
           terrainClearanceM,
           world.atmosphere.daylight,
           Math.max(0, aircraft.speed * dt),
+          weather.gust,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }

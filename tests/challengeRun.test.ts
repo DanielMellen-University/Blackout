@@ -619,6 +619,27 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires weather gust telemetry into the gust-rider contract', () => {
+    const run = new ChallengeRun(null)
+    let gustSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      run.reset('seed:gust-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT GUST RIDER') {
+        gustSeed = seed
+        break
+      }
+    }
+    expect(gustSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:gust-contract', 1, 'balanced', gustSeed)
+    expect(run.contractBriefing).toContain('FLY THROUGH STRONG GUSTS')
+    run.update(4, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 0, 0.8)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+    run.update(6, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 0, 0.8)
+    run.update(1, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 0, 0.8)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('GUST RIDER')
+  })
+
   it('turns low-level contract time into a bounded terrain-hugger reward', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:low-level', 1, 'balanced', 11)

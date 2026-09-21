@@ -31,6 +31,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The last camera view selected with `C` persists across reloads while the title hero still opens in its composed external framing.
 - The `V` flight-assist choice persists across reloads, so gentle pitch and bank trim stays enabled for pilots who prefer it.
 - A seeded `RADAR RUN` contract now rewards selecting a city or village with `T` before reaching it, giving target lock a clear sortie purpose without adding world entities.
+- A seeded `GUST RIDER` contract can now reward staying airborne through strong gusts, turning existing storm telemetry into a bounded handling decision without changing flight physics.
 - Radar-run objectives bind to the exact streamed contact that was locked, so reaching a different settlement cannot accidentally complete the task.
 - If a selected settlement streams out of range, the radar clears the stale lock and gives one `RADAR LOCK LOST` cue instead of leaving navigation pointed at missing world data.
 - A selected radar contact now keeps its display slot when nearby contacts crowd the sweep, so the navigation lock remains stable until the settlement actually leaves range.
@@ -166,7 +167,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, combo run, precision chain, night flight, butter landing, or dry run.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, combo run, precision chain, night flight, butter landing, dry run, radar run, or gust rider.
 - Curated course cards preview their deterministic bonus task before takeoff, so route selection can be deliberate instead of a launch-time surprise.
 - Curated course cards also preview the deterministic weather front for each seeded route, so pilots can choose a sortie with eyes open.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
