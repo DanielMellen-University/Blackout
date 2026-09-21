@@ -24,6 +24,7 @@
 - Add a deterministic THERMAL CONTROL contract that rewards bounded cool-engine cruise time without changing the flight model or adding scene work.
 - Harden persisted gate split traces with a small size cap and monotonic finite validation so malformed local records cannot distort pace guidance or grow memory use.
 - Synchronize the runtime roadmap pointer with the internal playbook so stale or malformed chunk IDs fail the version check before release.
+- Keep workerless terrain streaming responsive by reducing only far fog-hidden fallback meshes while preserving full near-field and worker-backed detail.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

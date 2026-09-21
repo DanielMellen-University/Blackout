@@ -5,6 +5,7 @@ import { buildWaterMesh } from './WaterSystem'
 
 export const CHUNK_SIZE = 420
 export type TerrainLod = 0 | 1 | 2
+export type TerrainGeometryQuality = 'full' | 'fallback'
 const SEGS_NEAR = 24
 const SEGS_MID = 12
 const SEGS_FAR = 6
@@ -218,17 +219,29 @@ export function generateTerrainGeometry(
   lod: TerrainLod,
   size = 1,
   skirtEdges: readonly [boolean, boolean, boolean, boolean] | null = null,
+  quality: TerrainGeometryQuality = 'full',
 ): TerrainGeometryData {
   const span = CHUNK_SIZE * size
-  const baseSegs = size > 1 ? SEGS_MID : segsForLod(lod)
-  const reaches = riverReachesInBounds(originX, originZ, originX + span, originZ + span)
+  // Older browsers can lack module workers, so the synchronous fallback must
+  // stay responsive while the full worker path retains the authored horizon.
+  // Far fallback tiles are hidden behind fog and rebuild at full detail when
+  // they approach the jet.
+  const reducedFar = quality === 'fallback' && lod === 2
+  const baseSegs = reducedFar
+    ? (size > 1 ? 8 : 4)
+    : size > 1 ? SEGS_MID : segsForLod(lod)
+  const reaches = reducedFar
+    ? []
+    : riverReachesInBounds(originX, originZ, originX + span, originZ + span)
   const riverSegs = Math.min(RIVER_MAX_SEGS[lod],
     Math.max(baseSegs, Math.ceil(span / RIVER_TARGET_CELL_M[lod])))
   const detailSegs = Math.max(baseSegs, waterSegsForLod(lod, span), reaches.length ? riverSegs : 0)
   // Analytic hydrology determines the grid before expensive colors/normals.
   // Ocean detection still probes the base grid; shared vertices are reused
   // if that probe promotes the tile, instead of constructing two meshes.
-  let segs = reaches.length || pondIntersectsBounds(originX, originZ, span) ? detailSegs : baseSegs
+  let segs = reducedFar
+    ? baseSegs
+    : reaches.length || pondIntersectsBounds(originX, originZ, span) ? detailSegs : baseSegs
   const climateCache = new Map<string, Climate>()
   const climatesForGrid = (count: number): Climate[] => {
     const samples: Climate[] = []
@@ -245,7 +258,7 @@ export function generateTerrainGeometry(
     return samples
   }
   let climates = climatesForGrid(segs)
-  if (segs < detailSegs && climates.some(climate => (climate.waterLevel ?? 0) > climate.height + .01)) {
+  if (!reducedFar && segs < detailSegs && climates.some(climate => (climate.waterLevel ?? 0) > climate.height + .01)) {
     segs = detailSegs
     climates = climatesForGrid(segs)
   }
@@ -329,8 +342,10 @@ export function generateTerrainGeometry(
     skirt.dispose()
     geo = merged
   }
-  const waterMesh = buildWaterMesh(heights, waterLevels, segs, span, originX, originZ,
-    { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span))
+  const waterMesh = reducedFar
+    ? null
+    : buildWaterMesh(heights, waterLevels, segs, span, originX, originZ,
+      { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span))
   const ground = serializeGeometry(geo)
   const water = waterMesh ? serializeGeometry(waterMesh.geometry) : null
   geo.dispose()

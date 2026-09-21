@@ -621,8 +621,9 @@ export class TerrainSystem {
       this.pendingKeys.delete(tileKey(pending.cx, pending.cz, pending.size))
       const job = this.requestFor(pending)
       if (!job) continue
+      const quality = pending.dist > 8 ? 'fallback' : 'full'
       this.install(job, generateTerrainGeometry(job.cx * CHUNK_SIZE, job.cz * CHUNK_SIZE,
-        job.lod, job.size, job.skirtEdges))
+        job.lod, job.size, job.skirtEdges, quality))
       uploads++
     }
   }

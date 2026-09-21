@@ -25,6 +25,7 @@ import {
 import { waterLandmarks } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
 import { sampleTerrainHeight } from '../src/world/terrainSample'
+import { generateTerrainGeometry } from '../src/world/TerrainGeometry'
 
 function pump(terrain: TerrainSystem, x: number, z: number, frames: number): void {
   for (let i = 0; i < frames; i++) terrain.update(x, z, 1 / 60)
@@ -59,6 +60,15 @@ describe('terrain LOD bands', () => {
     expect(waterSegsForLod(1, CHUNK_SIZE * 2)).toBe(40)
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBe(16)
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBeLessThan(waterSegsForLod(1, CHUNK_SIZE * 2))
+  })
+
+  it('reduces far fallback geometry without changing near detail', () => {
+    const full = generateTerrainGeometry(0, 0, 2)
+    const fallback = generateTerrainGeometry(0, 0, 2, 1, null, 'fallback')
+    const near = generateTerrainGeometry(0, 0, 0, 1, null, 'fallback')
+    expect(fallback.segs).toBeLessThan(full.segs)
+    expect(fallback.water).toBeNull()
+    expect(near.segs).toBe(segsForLod(0))
   })
 
   it('accumulates snow on flat lowlands and leaves steep faces exposed', () => {
