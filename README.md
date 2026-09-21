@@ -114,7 +114,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, or combo run.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, combo run, or precision chain.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.
@@ -132,6 +132,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - SETTLEMENT TOUR keeps its live TASK instruction explicit with cached `CITY OPEN/OK` and `VILLAGE OPEN/OK` status, including on results.
 - Bonus contracts can also include `COMBO RUN`, rewarding a three-link chain built from clean gates and barrel rolls through the existing combo timer.
 - COMBO RUN keeps a cached `CURRENT Xn` milestone in the TASK instruction, so the objective stays readable when the compact combo row is hidden.
+- Bonus contracts can also include `PRECISION CHAIN`, rewarding three consecutive high-quality gate clears while a rough pass resets only that chain.
 - `TERRAIN HUGGER` now measures radio altitude against the rendered terrain surface, so the low-pass objective follows actual ridges and valleys instead of the spawn strip.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.

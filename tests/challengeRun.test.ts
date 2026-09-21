@@ -897,6 +897,38 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires gate quality into the precision-chain contract', () => {
+    const run = new ChallengeRun(null)
+    let precisionSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:precision-contract', 5, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT PRECISION CHAIN') {
+        precisionSeed = seed
+        break
+      }
+    }
+    expect(precisionSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:precision-contract', 5, 'balanced', precisionSeed)
+    run.recordGate(0.9)
+    run.recordGate(0.4)
+    expect(run.contractProgress).toBe(0)
+    run.recordGate(0.9)
+    expect(run.contractProgress).toBeCloseTo(1 / 3)
+    run.recordGate(0.9)
+    run.recordGate(0.9)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('PRECISION CHAIN')
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('precision')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('marks a clean-circuit contract failed after a missed gate', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1

@@ -40,6 +40,11 @@ describe('sortie contracts', () => {
         tracker.recordDestination(2, 'village')
       }
       if (tracker.kind === 'combo') tracker.recordCombo(3)
+      if (tracker.kind === 'precision') {
+        tracker.recordPrecisionGate(0.9)
+        tracker.recordPrecisionGate(0.9)
+        tracker.recordPrecisionGate(0.9)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -125,7 +130,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -570,6 +575,32 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.detail).toBe('BUILD COMBO X3 / CURRENT X3')
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('requires consecutive high-quality gates for a precision chain', () => {
+    const tracker = new SortieContractTracker()
+    let precisionSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'precision') {
+        precisionSeed = seed
+        break
+      }
+    }
+    expect(precisionSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(precisionSeed, 5)
+    expect(tracker.label).toBe('PRECISION CHAIN')
+    expect(tracker.detail).toBe('CLEAR 3 PERFECT GATES IN A ROW')
+    tracker.recordPrecisionGate(0.9)
+    tracker.recordPrecisionGate(0.4)
+    expect(tracker.progress).toBe(0)
+    tracker.recordPrecisionGate(0.9)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordPrecisionGate(0.9)
+    tracker.recordPrecisionGate(0.9)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
