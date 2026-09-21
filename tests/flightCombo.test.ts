@@ -38,6 +38,14 @@ describe('FlightComboTracker', () => {
 
   it('expires an idle chain after the bounded timing window', () => {
     const combo = new FlightComboTracker()
+    expect(combo.remainingSeconds).toBe(0)
+    combo.record('gate')
+    combo.record('stunt')
+    expect(combo.remainingSeconds).toBe(COMBO_WINDOW_SEC)
+    combo.update(0.5)
+    combo.update(0.5)
+    expect(combo.remainingSeconds).toBe(COMBO_WINDOW_SEC - 1)
+    combo.reset()
     combo.record('gate')
     combo.record('stunt')
     for (let i = 0; i < Math.floor(COMBO_WINDOW_SEC / 0.5) - 1; i += 1) {

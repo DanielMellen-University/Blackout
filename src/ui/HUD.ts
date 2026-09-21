@@ -10,7 +10,7 @@ import {
   radarDistanceLabel,
   type RadarContact,
 } from '../systems/RadarSystem'
-import { MAX_COMBO_COUNT } from '../systems/FlightCombo'
+import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
 import { landingQualityLabel, MAX_BIOME_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import {
@@ -258,11 +258,15 @@ export function createMissionHudLabelCache(): (
 }
 
 /** Keep the live combo readout finite and compact for visual and assistive output. */
-export function comboHudLabel(value: number): string {
+export function comboHudLabel(value: number, remainingSeconds?: number): string {
   const safe = Number.isFinite(value)
     ? Math.max(0, Math.min(MAX_COMBO_COUNT, Math.floor(value)))
     : 0
-  return safe > 0 ? `X${safe}` : ''
+  if (safe <= 0) return ''
+  const remaining = Number.isFinite(remainingSeconds)
+    ? Math.max(0, Math.min(COMBO_WINDOW_SEC, Math.ceil(remainingSeconds!)))
+    : 0
+  return remaining > 0 ? `X${safe} · ${remaining}S` : `X${safe}`
 }
 
 /** Keep the live biome survey counter finite and compact for cockpit output. */
@@ -798,6 +802,7 @@ export class HUD {
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
   private comboValue = -1
+  private comboRemainingValue = -1
   private comboText = ''
   private comboAriaText = ''
   private paceText = 'READY'
@@ -1035,6 +1040,8 @@ export class HUD {
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
     combo?: number
+    /** Whole seconds remaining before the clean-flight combo expires. */
+    comboRemaining?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
     /** Opt-in pitch and bank trim state. */
@@ -1431,10 +1438,16 @@ export class HUD {
       const combo = Number.isFinite(opts.combo)
         ? Math.max(0, Math.min(MAX_COMBO_COUNT, Math.floor(opts.combo)))
         : 0
-      if (combo !== this.comboValue) {
+      const remaining = Number.isFinite(opts.comboRemaining)
+        ? Math.max(0, Math.min(COMBO_WINDOW_SEC, Math.ceil(opts.comboRemaining!)))
+        : 0
+      if (combo !== this.comboValue || remaining !== this.comboRemainingValue) {
         this.comboValue = combo
-        this.comboText = comboHudLabel(combo)
-        this.comboAriaText = combo > 0 ? `clean-flight combo ${combo}` : ''
+        this.comboRemainingValue = remaining
+        this.comboText = comboHudLabel(combo, remaining)
+        this.comboAriaText = combo > 0
+          ? remaining > 0 ? `clean-flight combo ${combo}, ${remaining} seconds remaining` : `clean-flight combo ${combo}`
+          : ''
       }
       this.setHidden(this.comboRowEl, combo <= 0)
       this.setText(this.comboEl, this.comboText)

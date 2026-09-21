@@ -82,6 +82,7 @@ import {
   contractProgressAriaLabel,
   contractDetailLabel,
   contractDetailAriaLabel,
+  comboHudLabel,
   quantizeHudNumber,
   safeHudValue,
   speedWarningLevel,
@@ -407,6 +408,13 @@ describe('HUD value formatting', () => {
     expect(contractDetailLabel(Number.NaN)).toBe('')
     expect(contractDetailAriaLabel('HOLD AFTERBURNER ABOVE 428 KTS FOR 8S'))
       .toBe('Contract instruction: hold afterburner above 428 kts for 8s')
+  })
+
+  it('keeps the live combo expiry readable and bounded', () => {
+    expect(comboHudLabel(2, 8)).toBe('X2 · 8S')
+    expect(comboHudLabel(2, 0)).toBe('X2')
+    expect(comboHudLabel(Number.NaN, 8)).toBe('')
+    expect(comboHudLabel(2, Number.POSITIVE_INFINITY)).toBe('X2')
   })
 
   it('keeps the persisted contract chain compact and finite', () => {

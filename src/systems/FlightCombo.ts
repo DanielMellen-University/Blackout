@@ -42,6 +42,12 @@ export class FlightComboTracker {
     return true
   }
 
+  /** Whole seconds left to keep the live chain, clamped for HUD use. */
+  get remainingSeconds(): number {
+    if (this.current <= 0) return 0
+    return Math.max(0, Math.ceil(COMBO_WINDOW_SEC - this.quietSeconds))
+  }
+
   record(action: FlightComboAction): FlightComboEvent | null {
     if (action !== 'gate' && action !== 'stunt') return null
     this.current = Math.min(MAX_COMBO_COUNT, this.current + 1)
