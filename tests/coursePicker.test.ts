@@ -38,6 +38,12 @@ describe('course picker copy', () => {
       destinations: 3,
       biomes: 4,
     })).toBe('LOG DEST X3 BIOMES X4')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
+      stuntRolls: 3,
+      combo: 6,
+    })).toBe('LOG ROLLS X3 COMBO X6')
   })
 
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {
