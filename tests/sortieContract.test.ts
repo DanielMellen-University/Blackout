@@ -239,6 +239,7 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBe(0)
     tracker.recordHighDive(1_800)
     expect(tracker.progress).toBe(0.5)
+    expect(tracker.detail).toBe('CLIMB COMPLETE / RECOVER BELOW 420M')
     tracker.recordHighDive(421)
     expect(tracker.complete).toBe(false)
     tracker.recordHighDive(420)

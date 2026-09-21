@@ -497,6 +497,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - World-cloud transforms use a fixed 30 Hz budget; lighting, rain, snow, and lightning remain frame-responsive so weather stays smooth without spending a full matrix rewrite every render frame.
 - Cloud formation silhouettes and deck ordering use a stable layout stream, so replay links keep the same sky across reloads while live weather and precipitation remain dynamic.
 - Rare seeded sorties can now assign a HIGH DIVE contract: reach 1,800M, then recover below 420M while airborne, using bounded challenge state and no scene growth.
+- HIGH DIVE now changes its HUD instruction to a recovery-only cue as soon as the climb is complete, so the remaining objective stays unambiguous.
 - Cloud authoring now bakes puff transforms into compact records before rendering, releasing hidden per-puff scene objects while preserving the same instanced silhouettes and weather motion.
 - Water crossings now identify the existing hydrology body as SEA, LAKE, RIVER, STREAM, POND, or INLAND, making the terrain variety readable without extra geometry or polling.
 - Rare seeded sorties can now assign WATER SKIM, rewarding eight seconds of controlled 18-180M flight over a rendered water surface through the existing survey cadence.

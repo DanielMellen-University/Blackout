@@ -59,6 +59,7 @@ const RANGE_RUN_DETAIL = 'FLY 12KM BEFORE LANDING'
 const HIGH_DIVE_TOP_M = 1_800
 const HIGH_DIVE_EXIT_M = 420
 const HIGH_DIVE_DETAIL = 'REACH 1,800M THEN RECOVER BELOW 420M'
+const HIGH_DIVE_RECOVERY_DETAIL = 'CLIMB COMPLETE / RECOVER BELOW 420M'
 const WATER_SKIM_MIN_ALTITUDE_M = 18
 const WATER_SKIM_MAX_ALTITUDE_M = 180
 const WATER_SKIM_TARGET_SECONDS = 8
@@ -317,6 +318,7 @@ export class SortieContractTracker {
       if (safeAltitude < HIGH_DIVE_TOP_M) return
       this.highDiveReached = true
       this.progressValue = 0.5
+      this.detailValue = HIGH_DIVE_RECOVERY_DETAIL
       return
     }
     if (safeAltitude > HIGH_DIVE_EXIT_M) return
