@@ -19,6 +19,8 @@ import {
   formatFuelEndurance,
   refuelAriaLabel,
   refuelHudLabel,
+  landingPreviewAriaLabel,
+  landingPreviewHudLabel,
   formatCrosswind,
   formatHudNumber,
   formatVerticalSpeed,
@@ -625,6 +627,15 @@ describe('HUD value formatting', () => {
     expect(refuelHudLabel(true, Number.NaN)).toBe('REFUEL 0%')
     expect(refuelAriaLabel(true, .42)).toBe('Refueling at 42%')
     expect(refuelAriaLabel(false, .42)).toBe('')
+  })
+
+  it('keeps touchdown forecasts aligned with the result quality bands', () => {
+    expect(landingPreviewHudLabel(null)).toBe('')
+    expect(landingPreviewHudLabel(0.93)).toBe('BUTTER')
+    expect(landingPreviewHudLabel(0.8)).toBe('SMOOTH')
+    expect(landingPreviewHudLabel(0.6)).toBe('FIRM')
+    expect(landingPreviewHudLabel(Number.NaN)).toBe('')
+    expect(landingPreviewAriaLabel(0.93)).toBe('Predicted touchdown butter')
   })
 
   it('keeps the optional flight-assist state explicit after its banner fades', () => {

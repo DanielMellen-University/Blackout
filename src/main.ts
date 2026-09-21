@@ -48,6 +48,7 @@ import {
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
   landingWeatherRisk,
+  landingQualityForMetrics,
   MASTERY_BADGE_COUNT,
   repairBestCoursePrecisionStreak,
   repairBestCourseScore,
@@ -604,6 +605,7 @@ async function boot(): Promise<void> {
     engineHeat: 0,
     fuel: 1,
     refueling: false,
+    landingPreview: null,
     boost: false,
     gearDown: false,
     onGround: false,
@@ -1697,6 +1699,14 @@ async function boot(): Promise<void> {
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
       hudFrame.refueling = refueling
+      hudFrame.landingPreview = (returning || emergencyReturn) && navDist <= 3_000 && aircraft.controls.gearDown
+        ? landingQualityForMetrics({
+          verticalSpeed: aircraft.velocity.y,
+          groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
+          pitchRad: pose.pitch,
+          rollRad: pose.roll,
+        })
+        : null
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.afterburnerLock = aircraft.engineState.afterburnerHeatLocked
         ? 'heat'

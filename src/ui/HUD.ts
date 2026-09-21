@@ -11,7 +11,7 @@ import {
   type RadarContact,
 } from '../systems/RadarSystem'
 import { MAX_COMBO_COUNT } from '../systems/FlightCombo'
-import { MAX_BIOME_COUNT } from '../systems/ChallengeRun'
+import { landingQualityLabel, MAX_BIOME_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import {
   blackoutVignetteIntensity,
@@ -503,6 +503,18 @@ export function refuelAriaLabel(refueling: unknown, fraction: number): string {
   return label ? `Refueling at ${label.slice(7)}` : ''
 }
 
+/** Keep the final approach quality forecast compact and aligned with results. */
+export function landingPreviewHudLabel(quality: number | null | undefined): string {
+  if (quality === null || quality === undefined || !Number.isFinite(quality)) return ''
+  return landingQualityLabel(quality)
+}
+
+/** Describe the same touchdown forecast without exposing raw scoring math. */
+export function landingPreviewAriaLabel(quality: number | null | undefined): string {
+  const label = landingPreviewHudLabel(quality)
+  return label ? `Predicted touchdown ${label.toLowerCase()}` : ''
+}
+
 /** Keep live pace feedback readable while allowing a safe pre-run fallback. */
 export function missionPaceLabel(value: unknown): string {
   if (typeof value !== 'string' || value.trim().length === 0) return 'READY'
@@ -651,6 +663,8 @@ export class HUD {
   private readonly fuelEnduranceEl: HTMLElement | null
   private readonly refuelRowEl: HTMLElement | null
   private readonly refuelEl: HTMLElement | null
+  private readonly landingRowEl: HTMLElement | null
+  private readonly landingEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
   private readonly assistEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
@@ -728,6 +742,9 @@ export class HUD {
   private refuelPercentValue = -1
   private refuelText = ''
   private refuelAriaText = ''
+  private landingPreviewValue = Number.NaN
+  private landingPreviewText = ''
+  private landingPreviewAriaText = ''
   private engineHeatValue = Number.NaN
   private engineHeatText = ''
   private abStateText = 'AB READY'
@@ -874,6 +891,8 @@ export class HUD {
     this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
     this.refuelRowEl = root.getElementById('hud-refuel-row')
     this.refuelEl = root.getElementById('hud-refuel')
+    this.landingRowEl = root.getElementById('hud-landing-row')
+    this.landingEl = root.getElementById('hud-landing')
     this.radarEl = root.getElementById('hud-radar')
     this.assistEl = root.getElementById('hud-assist')
     this.hintEl = root.getElementById('hud-hint')
@@ -986,6 +1005,8 @@ export class HUD {
     fuel?: number
     /** Whether the aircraft is currently refilling while parked on the home strip. */
     refueling?: boolean
+    /** Predicted final touchdown quality shown only on the close return approach. */
+    landingPreview?: number | null
     /** Current route phase used for a restrained mission-state cue. */
     missionPhase?: MissionPhaseCue | string
     /** Cleared and total gates for the compact route progress meter. */
@@ -1450,6 +1471,20 @@ export class HUD {
       this.setHidden(this.refuelRowEl, !active)
       this.setText(this.refuelEl, this.refuelText)
       this.setAttribute(this.refuelEl, 'aria-label', this.refuelAriaText)
+    }
+    if (this.landingRowEl && this.landingEl && opts.landingPreview !== undefined) {
+      const quality = opts.landingPreview === null || !Number.isFinite(opts.landingPreview)
+        ? Number.NaN
+        : Math.max(0, Math.min(1, opts.landingPreview))
+      if (quality !== this.landingPreviewValue) {
+        this.landingPreviewValue = quality
+        this.landingPreviewText = landingPreviewHudLabel(quality)
+        this.landingPreviewAriaText = landingPreviewAriaLabel(quality)
+      }
+      const visible = Number.isFinite(quality)
+      this.setHidden(this.landingRowEl, !visible)
+      this.setText(this.landingEl, this.landingPreviewText)
+      this.setAttribute(this.landingEl, 'aria-label', this.landingPreviewAriaText)
     }
     if (this.engineHeatEl && opts.engineHeat !== undefined) {
       const safeHeat = Number.isFinite(opts.engineHeat) ? Math.max(0, Math.min(1, opts.engineHeat)) : 0

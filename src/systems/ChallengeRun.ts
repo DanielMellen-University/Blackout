@@ -302,6 +302,23 @@ export function landingQualityLabel(quality: number): LandingQualityLabel {
   return 'HARD'
 }
 
+/** Compute the finite touchdown-quality score shared by results and approach preview. */
+export function landingQualityForMetrics(
+  metrics: Pick<LandingMetrics, 'verticalSpeed' | 'groundSpeed' | 'pitchRad' | 'rollRad'>,
+): number {
+  const verticalSpeed = finiteOr(metrics.verticalSpeed)
+  const groundSpeed = Math.max(0, finiteOr(metrics.groundSpeed))
+  const rollRad = finiteOr(metrics.rollRad)
+  const pitchRad = finiteOr(metrics.pitchRad)
+  const sinkPenalty = Math.max(0, Math.max(0, -verticalSpeed) - 1.2) / 5
+  const speedPenalty = Math.max(0, groundSpeed - 32) / 38
+  const bankPenalty = Math.abs(rollRad) / (Math.PI / 5)
+  const pitchPenalty = Math.max(0, Math.abs(pitchRad) - 0.22) / 0.65
+  return clamp01(
+    1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
+  )
+}
+
 /** Reward a completed landing for preserving fuel, with a finite cap. */
 export function fuelEfficiencyScore(fraction: number): number {
   return Math.round(clamp01(fraction) * MAX_FUEL_EFFICIENCY_SCORE)
@@ -1102,18 +1119,7 @@ export class ChallengeRun {
     // A brisk, clean circuit scores well; time can never erase completion.
     const timeScore = Math.round(Math.max(weights.minimumTime, weights.time - elapsedSec * 320))
 
-    const verticalSpeed = finiteOr(metrics.verticalSpeed)
-    const groundSpeed = Math.max(0, finiteOr(metrics.groundSpeed))
-    const rollRad = finiteOr(metrics.rollRad)
-    const pitchRad = finiteOr(metrics.pitchRad)
-    const sink = Math.max(0, -verticalSpeed)
-    const sinkPenalty = Math.max(0, sink - 1.2) / 5
-    const speedPenalty = Math.max(0, groundSpeed - 32) / 38
-    const bankPenalty = Math.abs(rollRad) / (Math.PI / 5)
-    const pitchPenalty = Math.max(0, Math.abs(pitchRad) - 0.22) / 0.65
-    const landingQuality = clamp01(
-      1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
-    )
+    const landingQuality = landingQualityForMetrics(metrics)
     const landingScore = Math.round(weights.landing * landingQuality)
     const weatherScore = weatherLandingScore(metrics.weatherRisk ?? Number.NaN, landingQuality)
     const nightScore = nightLandingScore(metrics.daylight ?? Number.NaN, landingQuality)

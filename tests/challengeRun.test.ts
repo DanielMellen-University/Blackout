@@ -11,6 +11,7 @@ import {
   landingApproachScore,
   landingWeatherRisk,
   landingQualityLabel,
+  landingQualityForMetrics,
   repairCourseHistory,
   readCourseHistory,
   readBestCourseScore,
@@ -1337,6 +1338,21 @@ describe('ChallengeRun', () => {
     expect(landingQualityLabel(0.6)).toBe('FIRM')
     expect(landingQualityLabel(0.2)).toBe('HARD')
     expect(landingQualityLabel(Number.NaN)).toBe('HARD')
+  })
+
+  it('shares finite touchdown-quality math between preview and results', () => {
+    expect(landingQualityForMetrics({
+      verticalSpeed: -1.2,
+      groundSpeed: 32,
+      pitchRad: 0.22,
+      rollRad: 0,
+    })).toBe(1)
+    expect(landingQualityForMetrics({
+      verticalSpeed: -20,
+      groundSpeed: 400,
+      pitchRad: Number.NaN,
+      rollRad: Number.POSITIVE_INFINITY,
+    })).toBe(0)
   })
 
   it('keeps malformed telemetry from poisoning a run result', () => {
