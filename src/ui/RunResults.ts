@@ -7,14 +7,15 @@ import {
   type ChallengeResult,
 } from '../systems/ChallengeRun'
 
-/** Return the compact telemetry records that deserve a touchdown cue. */
+/** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
-  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord'>,
+  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord'>,
 ): string {
   return [
     result.newFlightDistanceRecord ? 'DISTANCE' : '',
     result.newPositiveGRecord ? 'POS G' : '',
     result.newNegativeGRecord ? 'NEG G' : '',
+    result.newLandingQualityRecord ? 'LANDING' : '',
   ].filter(Boolean).join(' / ')
 }
 

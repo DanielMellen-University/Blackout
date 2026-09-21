@@ -149,6 +149,8 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({})).toBe('')
     expect(flightRecordCueLabel({ newFlightDistanceRecord: true })).toBe('DISTANCE')
     expect(flightRecordCueLabel({ newPositiveGRecord: true, newNegativeGRecord: true })).toBe('POS G / NEG G')
+    expect(flightRecordCueLabel({ newLandingQualityRecord: true })).toBe('LANDING')
+    expect(flightRecordCueLabel({ newFlightDistanceRecord: true, newLandingQualityRecord: true })).toBe('DISTANCE / LANDING')
   })
 
   it('traps Tab and restores the flight focus target when hidden', () => {
