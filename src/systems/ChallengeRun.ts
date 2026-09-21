@@ -1227,6 +1227,14 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
   }
 
+  /** Record one distinct rendered waterway family for WATERWAY TOUR. */
+  recordWaterBody(body: string | undefined, airborne = true): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    const wasContractComplete = this.contract.complete
+    this.contract.recordWaterBody(body, airborne)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
+  }
+
   /** Number of unique natural biomes seen so far in this sortie. */
   get biomeCount(): number {
     return this.surveyedBiomeCount

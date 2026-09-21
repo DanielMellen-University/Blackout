@@ -105,6 +105,12 @@ describe('sortie contracts', () => {
         tracker.recordRidgeRun('mountain', 120, 5)
         tracker.recordRidgeRun('volcanic', 120, 5)
       }
+      if (tracker.kind === 'waterway-tour') {
+        tracker.recordWaterBody('river', false)
+        tracker.recordWaterBody('river')
+        tracker.recordWaterBody('stream')
+        tracker.recordWaterBody('lake')
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -195,7 +201,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour']))
   })
 
   it('accumulates only low airborne passes over water for WATER SKIM', () => {
@@ -279,6 +285,33 @@ describe('sortie contracts', () => {
     tracker.recordRidgeRun('volcanic', 120, 5)
     tracker.recordRidgeRun('hills', 120, 1)
     expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('tracks distinct waterway families for WATERWAY TOUR', () => {
+    const tracker = new SortieContractTracker()
+    let waterwaySeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'waterway-tour') {
+        waterwaySeed = seed
+        break
+      }
+    }
+    expect(waterwaySeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(waterwaySeed, 5)
+    expect(tracker.label).toBe('WATERWAY TOUR')
+    expect(tracker.detail).toBe('VISIT TWO WATERWAYS / RIVER OPEN / LAKE OPEN / SEA OPEN')
+    tracker.recordWaterBody(undefined)
+    tracker.recordWaterBody('river', false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWaterBody('river')
+    tracker.recordWaterBody('stream')
+    expect(tracker.progress).toBeCloseTo(0.5)
+    expect(tracker.detail).toContain('RIVER OK')
+    tracker.recordWaterBody('lake')
+    expect(tracker.complete).toBe(true)
+    expect(tracker.detail).toContain('LAKE OK')
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 

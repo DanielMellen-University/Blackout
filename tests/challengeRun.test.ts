@@ -809,6 +809,39 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires rendered water-body labels into WATERWAY TOUR', () => {
+    const run = new ChallengeRun(null)
+    let waterwaySeed = -1
+    for (let seed = 0; seed < 2_048; seed += 1) {
+      run.reset('seed:waterway-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT WATERWAY TOUR') {
+        waterwaySeed = seed
+        break
+      }
+    }
+    expect(waterwaySeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:waterway-contract', 1, 'balanced', waterwaySeed)
+    expect(run.contractBriefing).toContain('VISIT TWO WATERWAYS')
+    run.update(0.1, 8)
+    run.recordWaterBody('river')
+    expect(run.contractProgress).toBeCloseTo(0.5)
+    run.recordWaterBody('stream')
+    expect(run.contractProgress).toBeCloseTo(0.5)
+    run.recordWaterBody('lake')
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('WATERWAY TOUR')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('waterway-tour')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires high-speed speed-brake time into the brake-check contract', () => {
     const run = new ChallengeRun(null)
     let brakeSeed = -1

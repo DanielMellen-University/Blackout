@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -68,6 +68,8 @@ const RIDGE_RUN_MIN_CLEARANCE_M = 35
 const RIDGE_RUN_MAX_CLEARANCE_M = 260
 const RIDGE_RUN_TARGET_SECONDS = 10
 const RIDGE_RUN_DETAIL = 'HOLD RIDGE ALT 35-260M FOR 10S'
+const WATERWAY_TOUR_TARGET = 2
+const WATERWAY_TOUR_DETAIL = 'VISIT TWO WATERWAYS'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -103,6 +105,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'high-dive', label: 'HIGH DIVE', target: 1 },
   { kind: 'water-skim', label: 'WATER SKIM', target: WATER_SKIM_TARGET_SECONDS },
   { kind: 'ridge-run', label: 'RIDGE RUN', target: RIDGE_RUN_TARGET_SECONDS },
+  { kind: 'waterway-tour', label: 'WATERWAY TOUR', target: WATERWAY_TOUR_TARGET },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -143,6 +146,7 @@ export class SortieContractTracker {
   private highDiveReached = false
   private waterSkimSeconds = 0
   private ridgeRunSeconds = 0
+  private waterwayMask = 0
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
@@ -183,6 +187,7 @@ export class SortieContractTracker {
     this.highDiveReached = false
     this.waterSkimSeconds = 0
     this.ridgeRunSeconds = 0
+    this.waterwayMask = 0
     this.gustDetailBucket = -1
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
@@ -210,7 +215,9 @@ export class SortieContractTracker {
                 ? WATER_SKIM_DETAIL
                 : base.kind === 'ridge-run'
                   ? RIDGE_RUN_DETAIL
-                : detail
+                  : base.kind === 'waterway-tour'
+                    ? waterwayTourDetail(0)
+                  : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -359,6 +366,18 @@ export class SortieContractTracker {
     this.ridgeRunSeconds = Math.min(this.definition.target, this.ridgeRunSeconds + safeDt)
     this.progressValue = clamp01(this.ridgeRunSeconds / this.definition.target)
     this.updateProgressDetail(this.ridgeRunSeconds, 'S', 1)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Track distinct rendered waterway families without creating scene state. */
+  recordWaterBody(body: string | undefined, airborne = true): void {
+    if (this.definition?.kind !== 'waterway-tour' || this.completeValue || !airborne) return
+    const bit = waterwayBit(body)
+    if (bit === 0 || (this.waterwayMask & bit) !== 0) return
+    this.waterwayMask |= bit
+    const count = waterwayCount(this.waterwayMask)
+    this.progressValue = clamp01(count / this.definition.target)
+    this.detailValue = waterwayTourDetail(this.waterwayMask)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -668,7 +687,7 @@ function indexForSeed(seed: number): number {
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
   // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
-  // high-dive, water-skim, and ridge-run objectives.
+  // high-dive, water-skim, ridge-run, and waterway-tour objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -698,6 +717,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 149 === 131) return 30
   if (mixed % 157 === 139) return 31
   if (mixed % 163 === 151) return 32
+  if (mixed % 167 === 157) return 33
   return mixed % legacyContractCount
 }
 
@@ -760,6 +780,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'high-dive': return HIGH_DIVE_DETAIL
     case 'water-skim': return WATER_SKIM_DETAIL
     case 'ridge-run': return RIDGE_RUN_DETAIL
+    case 'waterway-tour': return WATERWAY_TOUR_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }
@@ -770,6 +791,21 @@ function clamp01(value: number): number {
 
 function isRidgeBiome(biome: string): boolean {
   return biome === 'hills' || biome === 'mountain' || biome === 'snow' || biome === 'tundra' || biome === 'volcanic'
+}
+
+function waterwayBit(body: string | undefined): number {
+  if (body === 'river' || body === 'stream') return 1
+  if (body === 'lake' || body === 'pond' || body === 'inland') return 2
+  if (body === 'sea') return 4
+  return 0
+}
+
+function waterwayCount(mask: number): number {
+  return ((mask & 1) !== 0 ? 1 : 0) + ((mask & 2) !== 0 ? 1 : 0) + ((mask & 4) !== 0 ? 1 : 0)
+}
+
+function waterwayTourDetail(mask: number): string {
+  return `${WATERWAY_TOUR_DETAIL} / RIVER ${mask & 1 ? 'OK' : 'OPEN'} / LAKE ${mask & 2 ? 'OK' : 'OPEN'} / SEA ${mask & 4 ? 'OK' : 'OPEN'}`
 }
 
 function settlementTourDetail(city: boolean, village: boolean): string {
