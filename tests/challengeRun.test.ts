@@ -60,7 +60,7 @@ describe('ChallengeRun', () => {
     expect(run.phase).toBe('ready')
     run.update(0.5, 0)
     expect(run.phase).toBe('ready')
-    run.update(0.5, 8, 140)
+    run.update(0.5, 8, 140, 0, 0, false, true, 0, 0, 4.25, 1, false, false, 140, 1, 160)
     expect(run.phase).toBe('running')
     expect(run.elapsedSec).toBeCloseTo(0.5)
 
@@ -80,6 +80,9 @@ describe('ChallengeRun', () => {
     expect(result!.isNewBest).toBe(true)
     expect(result!.peakSpeedKts).toBe(16)
     expect(result!.peakAltitudeM).toBe(140)
+    expect(result!.flightDistanceM).toBe(160)
+    expect(result!.peakPositiveG).toBe(4.25)
+    expect(result!.peakNegativeG).toBe(0)
     expect(result!.newMasteryBadges).toEqual(['first-flight', 'landing-ace', 'gold-run'])
     expect(result!.courseMasteryTier).toBe('pilot')
     expect(result!.courseMasteryTierLabel).toBe('PILOT')

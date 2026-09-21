@@ -154,6 +154,14 @@ export class RunResults {
     if (Number.isFinite(result.peakAltitudeM)) {
       scoreParts.push(`ALT ${Math.max(0, Math.round(result.peakAltitudeM!)).toLocaleString()}M`)
     }
+    if (Number.isFinite(result.flightDistanceM) && result.flightDistanceM! > 0) {
+      scoreParts.push(`DIST ${formatDistance(result.flightDistanceM!)}`)
+    }
+    if (Number.isFinite(result.peakPositiveG) || Number.isFinite(result.peakNegativeG)) {
+      const positive = Number.isFinite(result.peakPositiveG) ? Math.max(0, result.peakPositiveG!) : 1
+      const negative = Number.isFinite(result.peakNegativeG) ? Math.min(0, result.peakNegativeG!) : 0
+      scoreParts.push(`G +${positive.toFixed(1)}/${negative.toFixed(1)}`)
+    }
     if (Number.isFinite(result.altitudeMilestoneM) && result.altitudeMilestoneM! > 0) {
       scoreParts.push(`CLIMB ${Math.max(0, Math.floor(result.altitudeMilestoneM!)).toLocaleString()}M`)
     }
@@ -367,6 +375,13 @@ function must(root: Document, id: string): HTMLElement {
   const el = root.getElementById(id)
   if (!el) throw new Error(`results missing #${id}`)
   return el
+}
+
+/** Keep the flight-log distance compact on results without hiding short sorties. */
+export function formatDistance(distanceM: number): string {
+  const safe = Number.isFinite(distanceM) ? Math.max(0, Math.min(2_000_000, distanceM)) : 0
+  if (safe < 1_000) return `${Math.round(safe)}M`
+  return `${(safe / 1_000).toFixed(safe < 10_000 ? 1 : 0)}KM`
 }
 
 /** Keep result fuel emphasis aligned with the in-flight reserve thresholds. */

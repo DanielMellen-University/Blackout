@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { resultFuelBandClass, RunResults } from '../src/ui/RunResults'
+import { formatDistance, resultFuelBandClass, RunResults } from '../src/ui/RunResults'
 
 class FakeClassList {
   private readonly values = new Set<string>()
@@ -134,6 +134,12 @@ describe('run results focus flow', () => {
     expect(resultFuelBandClass(Number.NaN)).toBe('fuel-critical')
   })
 
+  it('formats bounded flight-log distance for short and long sorties', () => {
+    expect(formatDistance(420)).toBe('420M')
+    expect(formatDistance(2_450)).toBe('2.5KM')
+    expect(formatDistance(Number.NaN)).toBe('0M')
+  })
+
   it('traps Tab and restores the flight focus target when hidden', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
@@ -213,6 +219,9 @@ describe('run results focus flow', () => {
       courseBestPrecisionStreak: 4,
       peakSpeedKts: 962,
       peakAltitudeM: 1_240,
+      flightDistanceM: 2_450,
+      peakPositiveG: 5.25,
+      peakNegativeG: -1.4,
       altitudeMilestoneM: 1_500,
       bestCombo: 4,
       comboScore: 900,
@@ -260,6 +269,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-landing-detail')?.textContent).toBe('BUTTER')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('TOP 962KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('ALT 1,240M')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DIST 2.5KM')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('G +5.3/-1.4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CLIMB 1,500M')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO +900')

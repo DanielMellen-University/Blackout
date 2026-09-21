@@ -84,6 +84,12 @@ export interface ChallengeResult {
   newPeakSpeedRecord?: boolean
   /** Whether this sortie set a new course peak-altitude record. */
   newPeakAltitudeRecord?: boolean
+  /** Bounded distance flown during this sortie, in metres. */
+  flightDistanceM?: number
+  /** Highest positive load factor reached during this sortie. */
+  peakPositiveG?: number
+  /** Lowest negative load factor reached during this sortie. */
+  peakNegativeG?: number
   /** Number of completed airborne barrel rolls in this sortie. */
   stuntRolls?: number
   /** Bounded score bonus awarded for completed barrel rolls. */
@@ -767,6 +773,9 @@ export class ChallengeRun {
   private surveyedBiomeCue: Biome | null = null
   private peakSpeedMps = 0
   private peakAltitudeM = 0
+  private flightDistanceM = 0
+  private peakPositiveG = 1
+  private peakNegativeG = 0
   private stuntRollCount = 0
   private bestCombo = 0
   private contractStreakValue = 0
@@ -811,6 +820,9 @@ export class ChallengeRun {
     this.surveyedBiomeCue = null
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
+    this.flightDistanceM = 0
+    this.peakPositiveG = 1
+    this.peakNegativeG = 0
     this.stuntRollCount = 0
     this.bestCombo = 0
     this.contract.reset(contractSeed, this.totalGates)
@@ -847,6 +859,7 @@ export class ChallengeRun {
     afterburner = false,
     terrainClearanceM = altitudeM,
     daylight = 1,
+    distanceM = 0,
   ): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
@@ -854,8 +867,16 @@ export class ChallengeRun {
     const safeTerrainClearance = Number.isFinite(terrainClearanceM)
       ? Math.max(0, Math.min(100_000, terrainClearanceM))
       : safeAltitude
+    const safeLoadFactor = Number.isFinite(loadFactor)
+      ? Math.max(-9, Math.min(20, loadFactor))
+      : 1
+    const safeDistance = Number.isFinite(distanceM)
+      ? Math.max(0, Math.min(2_000_000, distanceM))
+      : 0
     this.peakSpeedMps = Math.max(this.peakSpeedMps, Math.min(safeSpeed, 10_000))
     this.peakAltitudeM = Math.max(this.peakAltitudeM, Math.min(safeAltitude, 100_000))
+    this.peakPositiveG = Math.max(this.peakPositiveG, safeLoadFactor)
+    this.peakNegativeG = Math.min(this.peakNegativeG, safeLoadFactor)
     const wasContractComplete = this.contract.complete
     this.contract.recordLowLevel(safeTerrainClearance, safeDt, safeSpeed > 5)
     this.contract.recordSpeedBand(safeSpeed, safeDt, safeSpeed > 5)
@@ -863,7 +884,7 @@ export class ChallengeRun {
     this.contract.recordBrake(safeSpeed, safeDt, airbrake, airborne)
     this.contract.recordHeat(engineHeat, safeSpeed, safeDt, airborne)
     this.contract.recordCrosswind(crosswindMps, safeDt, airborne)
-    this.contract.recordGControl(loadFactor, safeSpeed, safeDt, airborne)
+    this.contract.recordGControl(safeLoadFactor, safeSpeed, safeDt, airborne)
     this.contract.recordDeadstick(fuelFraction, airborne)
     this.contract.recordFront(weatherTransitioning, safeDt, airborne)
     this.contract.recordBoost(afterburner, safeSpeed, safeDt, airborne)
@@ -876,6 +897,7 @@ export class ChallengeRun {
     }
     if (this.phase === 'running' || this.phase === 'returning') {
       this.elapsedSec += safeDt
+      this.flightDistanceM = Math.min(2_000_000, this.flightDistanceM + safeDistance)
     }
   }
 
@@ -1067,6 +1089,9 @@ export class ChallengeRun {
     }
     const peakSpeedKts = Math.round(this.peakSpeedMps * 1.943844492)
     const peakAltitudeM = Math.round(this.peakAltitudeM)
+    const flightDistanceM = Math.round(this.flightDistanceM)
+    const peakPositiveG = Number(this.peakPositiveG.toFixed(2))
+    const peakNegativeG = Number(this.peakNegativeG.toFixed(2))
     const previousPeakSpeedKts = history.peakSpeedKts ?? 0
     const previousPeakAltitudeM = history.peakAltitudeM ?? 0
     const previousStuntRolls = history.stuntRolls ?? 0
@@ -1174,6 +1199,9 @@ export class ChallengeRun {
       courseBestPrecisionStreak,
       peakSpeedKts,
       peakAltitudeM,
+      flightDistanceM,
+      peakPositiveG,
+      peakNegativeG,
       courseBestPeakSpeedKts,
       courseBestPeakAltitudeM,
       newPeakSpeedRecord,
