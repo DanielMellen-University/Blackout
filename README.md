@@ -74,6 +74,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Completed-run score detail now also reports flight distance and peak positive/negative G, using fixed-step telemetry with no score or scene cost.
 - Curated course history now retains best distance and positive/negative G records, so flight logs keep a long-term mastery target alongside score and pace.
 - Curated course cards preview those persistent flight-log records as a compact `LOG` line, making route mastery visible before takeoff.
+- Curated course history now retains the best touchdown quality band, so landing mastery survives retries and appears beside the saved flight log.
 - During flight, the HUD keeps the same distance and peak-G log live in a cached `LOG` row, so pilots can manage a record attempt without opening results.
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.

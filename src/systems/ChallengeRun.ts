@@ -186,6 +186,10 @@ export interface ChallengeResult {
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
   newApproachRecord?: boolean
+  /** Best touchdown-quality score retained for this course. */
+  courseBestLandingQuality?: number
+  /** Whether this sortie set a new course touchdown-quality record. */
+  newLandingQualityRecord?: boolean
   /** Highest combo ever recorded for this course. */
   courseBestCombo?: number
   /** Whether this sortie set a new course combo record. */
@@ -209,6 +213,7 @@ export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
 export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
 export const MAX_APPROACH_SCORE = 500
+export const MAX_LANDING_QUALITY = 1
 export const MAX_WEATHER_SCORE = 500
 export const MAX_NIGHT_SCORE = 500
 export const MAX_DESTINATION_SCORE = 1_200
@@ -268,6 +273,7 @@ export interface CourseHistory {
   stuntRolls?: number
   combo?: number
   approachScore?: number
+  landingQuality?: number
   destinations?: number
   biomes?: number
   runStreak?: number
@@ -614,6 +620,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawStuntRolls = record.stuntRolls
   const rawCombo = record.combo
   const rawApproachScore = record.approachScore
+  const rawLandingQuality = record.landingQuality
   const rawDestinations = record.destinations
   const rawBiomes = record.biomes
   const rawRunStreak = record.runStreak
@@ -630,6 +637,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasStuntRolls = Object.prototype.hasOwnProperty.call(record, 'stuntRolls')
   const hasCombo = Object.prototype.hasOwnProperty.call(record, 'combo')
   const hasApproachScore = Object.prototype.hasOwnProperty.call(record, 'approachScore')
+  const hasLandingQuality = Object.prototype.hasOwnProperty.call(record, 'landingQuality')
   const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
   const hasBiomes = Object.prototype.hasOwnProperty.call(record, 'biomes')
   const hasRunStreak = Object.prototype.hasOwnProperty.call(record, 'runStreak')
@@ -660,6 +668,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     : 0
   const approachScore = typeof rawApproachScore === 'number' && Number.isFinite(rawApproachScore) && rawApproachScore > 0
     ? Math.min(MAX_APPROACH_SCORE, Math.floor(rawApproachScore))
+    : 0
+  const landingQuality = typeof rawLandingQuality === 'number' && Number.isFinite(rawLandingQuality) && rawLandingQuality > 0
+    ? Math.min(MAX_LANDING_QUALITY, Number(rawLandingQuality.toFixed(3)))
     : 0
   const destinations = typeof rawDestinations === 'number' && Number.isFinite(rawDestinations) && rawDestinations > 0
     ? Math.min(MAX_DESTINATION_COUNT, Math.floor(rawDestinations))
@@ -703,6 +714,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (stuntRolls > 0) history.stuntRolls = stuntRolls
   if (combo > 0) history.combo = combo
   if (approachScore > 0) history.approachScore = approachScore
+  if (landingQuality > 0) history.landingQuality = landingQuality
   if (destinations > 0) history.destinations = destinations
   if (biomes > 0) history.biomes = biomes
   if (runStreak > 0) history.runStreak = runStreak
@@ -725,6 +737,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasStuntRolls && (typeof rawStuntRolls !== 'number' || !Number.isFinite(rawStuntRolls) || rawStuntRolls <= 0 || rawStuntRolls !== stuntRolls)) ||
     (hasCombo && (typeof rawCombo !== 'number' || !Number.isFinite(rawCombo) || rawCombo <= 0 || rawCombo !== combo)) ||
     (hasApproachScore && (typeof rawApproachScore !== 'number' || !Number.isFinite(rawApproachScore) || rawApproachScore <= 0 || rawApproachScore !== approachScore)) ||
+    (hasLandingQuality && (typeof rawLandingQuality !== 'number' || !Number.isFinite(rawLandingQuality) || rawLandingQuality <= 0 || rawLandingQuality !== landingQuality)) ||
     (hasDestinations && (typeof rawDestinations !== 'number' || !Number.isFinite(rawDestinations) || rawDestinations <= 0 || rawDestinations !== destinations)) ||
     (hasBiomes && (typeof rawBiomes !== 'number' || !Number.isFinite(rawBiomes) || rawBiomes <= 0 || rawBiomes !== biomes)) ||
     (hasRunStreak && (typeof rawRunStreak !== 'number' || !Number.isFinite(rawRunStreak) || rawRunStreak <= 0 || rawRunStreak !== runStreak)) ||
@@ -738,7 +751,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasPeakPositiveG && (typeof rawPeakPositiveG !== 'number' || !Number.isFinite(rawPeakPositiveG) || rawPeakPositiveG <= 1 || rawPeakPositiveG !== peakPositiveG)) ||
     (hasPeakNegativeG && (typeof rawPeakNegativeG !== 'number' || !Number.isFinite(rawPeakNegativeG) || rawPeakNegativeG >= 0 || rawPeakNegativeG !== peakNegativeG)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG',
     )
   return {
     history,
@@ -776,6 +789,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.approachScore) && history.approachScore! > 0) {
     record.approachScore = Math.min(MAX_APPROACH_SCORE, Math.floor(history.approachScore!))
+  }
+  if (Number.isFinite(history.landingQuality) && history.landingQuality! > 0) {
+    record.landingQuality = Math.min(MAX_LANDING_QUALITY, Number(history.landingQuality!.toFixed(3)))
   }
   if (Number.isFinite(history.destinations) && history.destinations! > 0) {
     record.destinations = Math.min(MAX_DESTINATION_COUNT, Math.floor(history.destinations!))
@@ -1164,6 +1180,7 @@ export class ChallengeRun {
     const previousStuntRolls = history.stuntRolls ?? 0
     const previousCombo = history.combo ?? 0
     const previousApproachScore = history.approachScore ?? 0
+    const previousLandingQuality = history.landingQuality ?? 0
     const previousDestinationCount = history.destinations ?? 0
     const previousBiomeCount = history.biomes ?? 0
     const previousRunStreak = history.runStreak ?? 0
@@ -1184,6 +1201,8 @@ export class ChallengeRun {
     const courseBestCombo = Math.max(previousCombo, this.bestCombo)
     const newApproachRecord = approachScore > previousApproachScore
     const courseBestApproachScore = Math.max(previousApproachScore, approachScore)
+    const newLandingQualityRecord = landingQuality > previousLandingQuality
+    const courseBestLandingQuality = Math.max(previousLandingQuality, landingQuality)
     const newDestinationRecord = this.destinationCount > previousDestinationCount
     const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
     const newBiomeRecord = this.surveyedBiomeCount > previousBiomeCount
@@ -1212,6 +1231,7 @@ export class ChallengeRun {
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
     if (courseBestCombo > 0) history.combo = courseBestCombo
     if (courseBestApproachScore > 0) history.approachScore = courseBestApproachScore
+    if (courseBestLandingQuality > 0) history.landingQuality = courseBestLandingQuality
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
     if (courseBestBiomeCount > 0) history.biomes = courseBestBiomeCount
     history.runStreak = runStreak
@@ -1335,6 +1355,8 @@ export class ChallengeRun {
       courseMasteryTierLabel: courseMasteryTierLabel(courseMasteryTier),
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
+      courseBestLandingQuality: courseBestLandingQuality > 0 ? courseBestLandingQuality : undefined,
+      newLandingQualityRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
       newComboRecord,
     }

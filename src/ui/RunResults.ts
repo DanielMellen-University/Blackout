@@ -325,6 +325,9 @@ export class RunResults {
     if (Number.isFinite(result.courseBestApproachScore) && result.courseBestApproachScore! > (result.approachScore ?? 0)) {
       scoreParts.push(`COURSE APPROACH +${Math.max(0, Math.floor(result.courseBestApproachScore!)).toLocaleString()}`)
     }
+    if (Number.isFinite(result.courseBestLandingQuality) && result.courseBestLandingQuality! > result.landingQuality) {
+      scoreParts.push(`COURSE LAND ${Math.round(Math.max(0, Math.min(1, result.courseBestLandingQuality!)) * 100)}%`)
+    }
     this.scoreDetail.textContent = scoreParts.join(' · ')
     const newBadges = result.newMasteryBadges ?? []
     const allBadges = result.masteryBadges ?? []
@@ -337,6 +340,7 @@ export class RunResults {
       result.newStuntRecord ? 'ROLLS' : '',
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',
+      result.newLandingQualityRecord ? 'LANDING' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
       result.newBiomeRecord ? 'BIOMES' : '',
       result.newRunStreakRecord ? 'RUN STREAK' : '',

@@ -17,6 +17,11 @@ describe('course picker copy', () => {
       peakNegativeG: -1.75,
     })).toBe('LOG 12KM G+6.3 G-1.8')
     expect(courseFlightLogLabel({ completionCount: 1, bestTimeSec: 90 })).toBe('')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
+      landingQuality: 0.95,
+    })).toBe('LOG LAND BUTTER')
   })
 
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {

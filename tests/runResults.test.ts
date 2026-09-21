@@ -241,6 +241,7 @@ describe('run results focus flow', () => {
       comboScore: 900,
       fuelScore: 720,
       approachScore: 500,
+      landingQuality: 0.8,
       weatherScore: 400,
       nightScore: 350,
       destinationScore: 1_200,
@@ -263,6 +264,7 @@ describe('run results focus flow', () => {
       courseMasteryTier: 'ace',
       courseMasteryTierLabel: 'ACE',
       courseBestApproachScore: 650,
+      courseBestLandingQuality: 0.95,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
       courseBestPeakAltitudeM: 1_800,
@@ -311,6 +313,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACT STREAK X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TIER ACE')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE LAND 95%')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
@@ -336,6 +339,7 @@ describe('run results focus flow', () => {
       newNegativeGRecord: true,
       newComboRecord: true,
       newApproachRecord: true,
+      newLandingQualityRecord: true,
       newDestinationRecord: true,
       newRunStreakRecord: true,
       newContractRecord: true,
@@ -344,7 +348,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

@@ -2,6 +2,7 @@ import {
   courseMasteryTierForProgress,
   courseMasteryTierLabel,
   formatTime,
+  landingQualityLabel,
   MASTERY_BADGE_COUNT,
   type CourseHistory,
 } from '../systems/ChallengeRun'
@@ -89,6 +90,9 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   }
   if (Number.isFinite(history.peakNegativeG) && history.peakNegativeG! < 0) {
     parts.push(`G${history.peakNegativeG!.toFixed(1)}`)
+  }
+  if (Number.isFinite(history.landingQuality) && history.landingQuality! > 0) {
+    parts.push(`LAND ${landingQualityLabel(history.landingQuality!)}`)
   }
   return parts.length > 0 ? `LOG ${parts.join(' ')}` : ''
 }
