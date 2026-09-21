@@ -495,6 +495,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Shared summit noise evaluation keeps mountain uplift deterministic while avoiding duplicate FBM work per terrain sample.
 - Terrain and water geometry generate in a bounded background worker pool with transferable buffers. Near chunks load first, uploads have a frame budget, and new coverage fades in over 650 ms while previous detail stays underneath. Coarse outer tiles keep the doubled horizon affordable; rendering resolution adapts gradually under sustained load.
 - World-cloud transforms use a fixed 30 Hz budget; lighting, rain, snow, and lightning remain frame-responsive so weather stays smooth without spending a full matrix rewrite every render frame.
+- Cloud formation silhouettes and deck ordering use a stable layout stream, so replay links keep the same sky across reloads while live weather and precipitation remain dynamic.
 - Weather fronts turn wind along the shortest arc while interpolating speed separately, avoiding an artificial calm pocket when a storm changes direction.
 - Salt flats carry broad deterministic crust and damp-playa bands instead of a single pale sheet, using the existing terrain vertex-color path.
 - Tundra carries broad frost and wind-scoured scree bands so cold lowlands do not collapse into one gray-green material.

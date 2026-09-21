@@ -60,6 +60,24 @@ const CLOUD_FADE_OUT = CLOUD_DESPAWN
  */
 type CloudLayer = 'cumulus' | 'stratus' | 'cirrus'
 
+type RandomSource = () => number
+
+/**
+ * Cloud formations are authored once per atmosphere instance, so their
+ * silhouette should not change just because the page was reloaded. Keep the
+ * seeded stream local to cloud layout generation; weather and precipitation
+ * retain their intentionally live randomness.
+ */
+export function createCloudLayoutRandom(seed: number): RandomSource {
+  let state = (seed >>> 0) || 0x9e3779b9
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = Math.imul(state ^ (state >>> 15), 1 | state)
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 interface CloudLayerSpec {
   yMin: number
   yMax: number
@@ -76,25 +94,25 @@ const CLOUD_LAYER: Record<CloudLayer, CloudLayerSpec> = {
   cirrus: { yMin: 3600, yMax: 5600, opacityMul: 0.42, windMul: 1.8 },
 }
 
-function cloudAltitude(layer: CloudLayer): number {
+function cloudAltitude(layer: CloudLayer, random: RandomSource): number {
   const s = CLOUD_LAYER[layer]
-  return s.yMin + Math.random() * (s.yMax - s.yMin)
+  return s.yMin + random() * (s.yMax - s.yMin)
 }
 
 /**
  * Formation size multiplier. Most clouds are modest; a long tail hits ~10×.
  * Power curve: u^2.4 keeps giants rare (~5% above 5×, ~1% near 10×).
  */
-function cloudSizeMul(): number {
-  const u = Math.random()
+function cloudSizeMul(random: RandomSource): number {
+  const u = random()
   // 0.45× … 10× — small puffs through continental-scale banks
   return 0.45 + Math.pow(u, 2.4) * 9.55
 }
 
 /** Horizontal spawn in stream disk around (0,0) or offset later. */
-function cloudSpawnXZ(radiusScale = 0.92): { x: number; z: number } {
-  const ang = Math.random() * Math.PI * 2
-  const r = Math.sqrt(Math.random()) * CLOUD_DESPAWN * radiusScale
+function cloudSpawnXZ(random: RandomSource, radiusScale = 0.92): { x: number; z: number } {
+  const ang = random() * Math.PI * 2
+  const r = Math.sqrt(random()) * CLOUD_DESPAWN * radiusScale
   return { x: Math.cos(ang) * r, z: Math.sin(ang) * r }
 }
 
@@ -385,17 +403,18 @@ export class Atmosphere {
       ...Array(16).fill('stratus' as CloudLayer),
       ...Array(10).fill('cirrus' as CloudLayer),
     ]
+    const cloudRandom = createCloudLayoutRandom(0x434c4f55)
     for (let i = layerPlan.length - 1; i > 0; i--) {
-      const j = (Math.random() * (i + 1)) | 0
+      const j = (cloudRandom() * (i + 1)) | 0
       const tmp = layerPlan[i]!
       layerPlan[i] = layerPlan[j]!
       layerPlan[j] = tmp
     }
 
     for (const layer of layerPlan) {
-      const cluster = this.buildCloudCluster(layer, puffGeo, puffMat)
-      const xz = cloudSpawnXZ()
-      this.cloudWorld.push(new Vector3(xz.x, cloudAltitude(layer), xz.z))
+      const cluster = this.buildCloudCluster(layer, puffGeo, puffMat, cloudRandom)
+      const xz = cloudSpawnXZ(cloudRandom)
+      this.cloudWorld.push(new Vector3(xz.x, cloudAltitude(layer, cloudRandom), xz.z))
       this.cloudAlpha.push(0)
       this.cloudLayers.push(layer)
       this.cloudClusters.push(cluster)
@@ -764,9 +783,10 @@ export class Atmosphere {
     layer: CloudLayer,
     puffGeo: IcosahedronGeometry,
     baseMat: MeshBasicMaterial,
+    random: RandomSource,
   ): Group {
     const cluster = new Group()
-    const size = cloudSizeMul()
+    const size = cloudSizeMul(random)
     cluster.userData.layer = layer
     cluster.userData.sizeMul = size
 
@@ -776,21 +796,21 @@ export class Atmosphere {
     if (layer === 'cumulus') {
       // Heaps grow *up* from the cloud base — never hang below cluster Y
       // (big 10× banks used to bury mountains under their undersides)
-      const nPuffs = 10 + ((Math.random() * 8) | 0) + puffBonus
+      const nPuffs = 10 + ((random() * 8) | 0) + puffBonus
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, baseMat)
         const edge = p / nPuffs
         const radial =
-          (0.15 + edge * 0.85) * (180 + Math.random() * 220) * size
-        const ang = Math.random() * Math.PI * 2
-        const elev = Math.random() * Math.PI * 0.5 // upper hemisphere only
-        const sx = ((edge < 0.35 ? 110 : 70) + Math.random() * 90) * size
-        const sy = sx * (0.5 + Math.random() * 0.4)
-        const sz = sx * (0.85 + Math.random() * 0.55)
-        mesh.scale.set(sx * (0.85 + Math.random() * 0.55), sy, sz)
+          (0.15 + edge * 0.85) * (180 + random() * 220) * size
+        const ang = random() * Math.PI * 2
+        const elev = random() * Math.PI * 0.5 // upper hemisphere only
+        const sx = ((edge < 0.35 ? 110 : 70) + random() * 90) * size
+        const sy = sx * (0.5 + random() * 0.4)
+        const sz = sx * (0.85 + random() * 0.55)
+        mesh.scale.set(sx * (0.85 + random() * 0.55), sy, sz)
         // Icosahedron ±scale from center → put center so underside ≈ bulkY
         const bulkY =
-          Math.sin(elev) * radial * 0.65 + Math.random() * 50 * size
+          Math.sin(elev) * radial * 0.65 + random() * 50 * size
         mesh.position.set(
           Math.cos(ang) * Math.cos(elev) * radial,
           bulkY + sy,
@@ -800,44 +820,44 @@ export class Atmosphere {
       }
     } else if (layer === 'stratus') {
       // Flat deck sitting on its base; thickness grows upward only
-      const nPuffs = 14 + ((Math.random() * 10) | 0) + puffBonus
+      const nPuffs = 14 + ((random() * 10) | 0) + puffBonus
       const span = 700 * size
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, baseMat)
-        const s = (140 + Math.random() * 160) * size
+        const s = (140 + random() * 160) * size
       const sy =
-        s * (0.26 + Math.random() * 0.2) * Math.min(1.2, 0.78 + size * 0.08)
+        s * (0.26 + random() * 0.2) * Math.min(1.2, 0.78 + size * 0.08)
         mesh.scale.set(
-          s * (1.1 + Math.random() * 0.7),
+          s * (1.1 + random() * 0.7),
           sy,
-          s * (1.1 + Math.random() * 0.7),
+          s * (1.1 + random() * 0.7),
         )
-        const bulkY = Math.random() * 40 * Math.min(size, 2.5)
+        const bulkY = random() * 40 * Math.min(size, 2.5)
         mesh.position.set(
-          (Math.random() - 0.5) * span,
+          (random() - 0.5) * span,
           bulkY + sy,
-          (Math.random() - 0.5) * span,
+          (random() - 0.5) * span,
         )
         cluster.add(mesh)
       }
     } else {
       // Cirrus: thin high streaks — also base-aligned (very thin anyway)
-      const nPuffs = 5 + ((Math.random() * 5) | 0) + Math.min(4, puffBonus)
-      const streakAng = Math.random() * Math.PI * 2
+      const nPuffs = 5 + ((random() * 5) | 0) + Math.min(4, puffBonus)
+      const streakAng = random() * Math.PI * 2
       const dirX = Math.cos(streakAng)
       const dirZ = Math.sin(streakAng)
       const length = 900 * size
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, baseMat)
         const along = (p / Math.max(1, nPuffs - 1) - 0.5) * length
-        const side = (Math.random() - 0.5) * 80 * Math.sqrt(size)
-        const s = (90 + Math.random() * 120) * size
+        const side = (random() - 0.5) * 80 * Math.sqrt(size)
+        const s = (90 + random() * 120) * size
         const sy = s * 0.12
         mesh.scale.set(s * 2.4, sy, s * 0.55)
         mesh.rotation.y = -streakAng
         mesh.position.set(
           dirX * along - dirZ * side,
-          sy + Math.random() * 30,
+          sy + random() * 30,
           dirZ * along + dirX * side,
         )
         cluster.add(mesh)

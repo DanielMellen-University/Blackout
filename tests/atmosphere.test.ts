@@ -3,12 +3,26 @@ import {
   atmosphereNeedsUpdate,
   cloudPuffBudget,
   cloudPuffCount,
+  createCloudLayoutRandom,
   lightningCooldown,
   lightningFlashEnvelope,
 } from '../src/world/Atmosphere'
 import { sceneExposure } from '../src/core/SceneExposure'
 
 describe('lightning comfort', () => {
+  it('keeps cloud layout streams stable for replayable skies', () => {
+    const first = createCloudLayoutRandom(0x434c4f55)
+    const second = createCloudLayoutRandom(0x434c4f55)
+    const alternate = createCloudLayoutRandom(0x12345678)
+    const firstValues = Array.from({ length: 8 }, () => first())
+    const secondValues = Array.from({ length: 8 }, () => second())
+    const alternateValues = Array.from({ length: 8 }, () => alternate())
+
+    expect(secondValues).toEqual(firstValues)
+    expect(alternateValues).not.toEqual(firstValues)
+    expect(firstValues.every((value) => value >= 0 && value < 1)).toBe(true)
+  })
+
   it('uses a capped, eased single-flash envelope', () => {
     const peak = 0.44
 
