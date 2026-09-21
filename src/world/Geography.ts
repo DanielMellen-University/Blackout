@@ -1,12 +1,19 @@
 import { smoothstep } from './noise'
 import { sampleLandforms } from './Landforms'
-import { sampleHydrology } from './Hydrology'
+import { sampleHydrologyInto, type HydrologySample } from './Hydrology'
 import type { Biome, Climate } from './terrainSample'
+
+// Geography is sampled for every terrain vertex. Reuse this short-lived
+// hydrology record instead of allocating one object per vertex.
+const hydrologyScratch: HydrologySample = {
+  height: 0, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0,
+}
 
 /** Landform and drainage fields meet here; water rendering is independent. */
 export function sampleGeography(x: number, z: number): Climate {
   const landform = sampleLandforms(x, z)
-  const { height, waterLevel, river, lake, pond, stream, coastal } = sampleHydrology(x, z, landform.height)
+  const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height)
+  const { height, waterLevel, river, lake, pond, stream, coastal } = hydrology
   const { moisture, temperature, cold, hot, dunes, badlands, karst, volcanic, salt } = landform
   const alpine = smoothstep(650, 1900, height)
   const snow = smoothstep(2600 - cold * 1100 + hot * 700, 3600 - cold * 900 + hot * 700, height)

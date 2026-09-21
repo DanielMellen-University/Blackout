@@ -16,6 +16,16 @@ export interface WaterBasin {
   x: number; z: number; radius: number; aspect: number; angle: number; phase: number
   level: number; sea: boolean; pond: boolean
 }
+/** Scalar hydrology output. Callers sampling many terrain points can reuse it. */
+export interface HydrologySample {
+  height: number
+  waterLevel: number
+  river: number
+  lake: number
+  pond: number
+  stream: number
+  coastal: number
+}
 type Basin = WaterBasin
 /** A cached analytic river segment, shared by terrain carving and water rendering. */
 export interface RiverReach {
@@ -560,7 +570,14 @@ function catchment(cx: number, cz: number): Catchment {
 }
 
 /** Lakes/seas have fixed levels. River reaches grade continuously downstream. */
-export function sampleHydrology(x: number, z: number, ground: number) {
+export function sampleHydrology(x: number, z: number, ground: number): HydrologySample {
+  return sampleHydrologyInto({
+    height: ground, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0,
+  }, x, z, ground)
+}
+
+/** Write one hydrology sample into caller-owned storage to avoid hot-path churn. */
+export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, ground: number): HydrologySample {
   const cx = Math.floor(x / CATCHMENT_SIZE), cz = Math.floor(z / CATCHMENT_SIZE)
   const region = catchment(cx, cz)
   const localX = x - cx * CATCHMENT_SIZE, localZ = z - cz * CATCHMENT_SIZE
@@ -668,7 +685,14 @@ export function sampleHydrology(x: number, z: number, ground: number) {
     else if (basin.pond) pond = 1 - smoothstep(0, 120, Math.max(0, d))
     else lake = 1 - smoothstep(0, 160, Math.max(0, d))
   }
-  return { height, waterLevel, river, lake, pond, stream, coastal }
+  out.height = height
+  out.waterLevel = waterLevel
+  out.river = river
+  out.lake = lake
+  out.pond = pond
+  out.stream = stream
+  out.coastal = coastal
+  return out
 }
 
 /** Read-only landmarks for repeatable visual review and hydrology tests. */

@@ -1,10 +1,26 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, waterLandmarks } from '../src/world/Hydrology'
+import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, sampleHydrology, sampleHydrologyInto, waterLandmarks } from '../src/world/Hydrology'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
 
 describe('natural drainage', () => {
+  it('reuses caller-owned hydrology storage without changing the sample', () => {
+    setWorldSeed(1)
+    const x = -1375, z = 8420, ground = 615
+    const expected = sampleHydrology(x, z, ground)
+    const storage = { height: 0, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0 }
+    const first = sampleHydrologyInto(storage, x, z, ground)
+    expect(first).toBe(storage)
+    expect(first).toEqual(expected)
+    const firstSnapshot = { ...first }
+
+    const second = sampleHydrologyInto(storage, x + 9000, z - 5000, ground + 140)
+    expect(second).toBe(storage)
+    for (const value of Object.values(second)) expect(Number.isFinite(value)).toBe(true)
+    expect(second).not.toEqual(firstSnapshot)
+  })
+
   it('keeps rivers connected and descending, with varying widths', () => {
     setWorldSeed(1)
     const reaches = riverReaches(-1, -1)
