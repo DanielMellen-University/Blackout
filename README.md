@@ -38,6 +38,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Crash boom (arcing fireballs) or scored landing; **R** new world
 - Best runs persist per course with gate split traces and a lightweight external ghost path, so retries call out pace while the previous best remains visible in the air.
 - External retries show a cached GHOST pace row while the best-run marker is active, calling out whether the current run is ahead, behind, or even without adding simulation work.
+- Press `X` during an external-view retry to toggle the pooled best-run ghost path without affecting cockpit view or simulation timing.
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
 - The title and pause menus offer a card world picker for Random world, Free flight, and the curated course seeds, with route profiles preserved on retry.
 - Results persist a completion count and fastest finish per course, making progression visible without introducing a campaign layer.
@@ -552,6 +553,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 | **B (hold)** | Speed brake / wheel brakes |
 | **G** | Toggle landing gear |
 | **V** | Toggle pitch and bank trim assist |
+| **X** | Toggle best-run ghost path (external view) |
 
 | **Hold MMB + drag** | Look / pan (not cockpit) |
 | **Scroll** | Zoom (not cockpit) |

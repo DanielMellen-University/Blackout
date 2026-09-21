@@ -649,6 +649,7 @@ async function boot(): Promise<void> {
   window.addEventListener('beforeunload', disposeRuntime, { once: true })
 
   let playing = false
+  let ghostVisible = true
   let banner: string | null = null
   let crashMessage = 'CRASH - press R'
   let bannerTone: HudBannerTone = 'info'
@@ -846,7 +847,7 @@ async function boot(): Promise<void> {
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
     ghost.reset(courseId())
-    ghost.setVisible(playing)
+    ghost.setVisible(playing && ghostVisible)
     challenge.recordBiome(world.spawn.biome)
     banner = null
     crashMessage = 'CRASH - press R'
@@ -1131,6 +1132,11 @@ async function boot(): Promise<void> {
       if (input.consumeCameraToggle()) {
         const mode = cameras.toggleMode(aircraft)
         showBanner(cameraModeCue(mode), 1200, 'info')
+      }
+      if (input.consumeGhostToggle()) {
+        ghostVisible = !ghostVisible
+        ghost.setVisible(ghostVisible && playing)
+        showBanner(ghostVisible ? 'GHOST PATH ON' : 'GHOST PATH OFF', 1200, 'info')
       }
       const stabilityAssist = input.consumeStabilityAssistToggle()
       if (stabilityAssist !== null) {

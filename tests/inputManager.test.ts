@@ -125,6 +125,21 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('queues best-run ghost visibility toggles only during live flight', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    fake.fire('keydown', 'KeyX')
+    expect(input.consumeGhostToggle()).toBe(false)
+
+    input.flightLive = true
+    fake.fire('keydown', 'KeyX')
+    expect(input.consumeGhostToggle()).toBe(true)
+    expect(input.consumeGhostToggle()).toBe(false)
+
+    input.dispose()
+  })
+
   it('queues landing-gear toggles only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)
