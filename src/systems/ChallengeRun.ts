@@ -1161,7 +1161,7 @@ export class ChallengeRun {
   }
 
   /** Add one bounded reward when a selected streamed settlement is reached. */
-  recordDestination(kind: 'city' | 'village'): void {
+  recordDestination(kind: 'city' | 'village', id?: string): void {
     if (this.phase !== 'running' && this.phase !== 'returning') return
     if (kind !== 'city' && kind !== 'village') return
     if (this.destinationCount >= MAX_DESTINATION_COUNT) return
@@ -1169,15 +1169,15 @@ export class ChallengeRun {
     const wasComplete = this.contract.complete
     this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
     this.destinationCount += 1
-    this.contract.recordDestination(this.destinationCount, kind)
+    this.contract.recordDestination(this.destinationCount, kind, id)
     this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
   /** Record an explicit radar target selection without adding scene state. */
-  recordRadarLock(selected: boolean): void {
+  recordRadarLock(selected: boolean, kind?: 'city' | 'village', id?: string): void {
     if (this.phase === 'complete' || this.phase === 'failed' || selected !== true) return
     const wasComplete = this.contract.complete
-    this.contract.recordRadarLock(true)
+    this.contract.recordRadarLock(true, kind, id)
     this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 

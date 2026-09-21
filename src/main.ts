@@ -1746,7 +1746,10 @@ async function boot(): Promise<void> {
       if (radarTargetCycleQueued) {
         radarTargetCycleQueued = false
         const selected = radar.cycleTarget()
-        challenge.recordRadarLock(selected !== null)
+        const selectedKind = selected?.kind === 'city' || selected?.kind === 'village'
+          ? selected.kind
+          : undefined
+        challenge.recordRadarLock(selected !== null, selectedKind, selected?.id)
         showBanner(
           selected ? `RADAR LOCK / ${selected.label}` : 'NO SETTLEMENTS IN RANGE',
           1400,
@@ -1777,7 +1780,7 @@ async function boot(): Promise<void> {
           navDist <= arrivalRadius
         ) {
           if (selectedRadarTarget.kind === 'city' || selectedRadarTarget.kind === 'village') {
-            challenge.recordDestination(selectedRadarTarget.kind)
+            challenge.recordDestination(selectedRadarTarget.kind, selectedRadarTarget.id)
           }
           showBanner(radarTargetArrivalLabel(selectedRadarTarget.kind), 2000, 'success')
           radar.clearTarget()

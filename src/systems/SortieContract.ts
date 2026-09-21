@@ -112,6 +112,8 @@ export class SortieContractTracker {
   private nightSeconds = 0
   private drySeconds = 0
   private radarLocked = false
+  private radarLockKind: 'city' | 'village' | null = null
+  private radarLockId = ''
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -141,6 +143,8 @@ export class SortieContractTracker {
     this.nightSeconds = 0
     this.drySeconds = 0
     this.radarLocked = false
+    this.radarLockKind = null
+    this.radarLockId = ''
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -171,10 +175,17 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
-  recordDestination(count: number, kind?: 'city' | 'village'): void {
+  recordDestination(count: number, kind?: 'city' | 'village', id?: string): void {
     if (this.completeValue) return
     if (this.definition?.kind === 'target') {
-      if (!this.radarLocked || (kind !== 'city' && kind !== 'village')) return
+      if (
+        !this.radarLocked ||
+        (kind !== 'city' && kind !== 'village') ||
+        kind !== this.radarLockKind ||
+        typeof id !== 'string' ||
+        id.length === 0 ||
+        id !== this.radarLockId
+      ) return
       this.progressValue = 1
       this.completeValue = true
       return
@@ -194,9 +205,18 @@ export class SortieContractTracker {
   }
 
   /** Require an explicit radar selection before a target arrival can score. */
-  recordRadarLock(selected: boolean): void {
-    if (this.definition?.kind !== 'target' || this.completeValue || selected !== true) return
+  recordRadarLock(selected: boolean, kind?: 'city' | 'village', id?: string): void {
+    if (
+      this.definition?.kind !== 'target' ||
+      this.completeValue ||
+      selected !== true ||
+      (kind !== 'city' && kind !== 'village') ||
+      typeof id !== 'string' ||
+      id.length === 0
+    ) return
     this.radarLocked = true
+    this.radarLockKind = kind
+    this.radarLockId = id.slice(0, 128)
     this.progressValue = 0.5
   }
 
