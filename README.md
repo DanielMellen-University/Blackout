@@ -39,6 +39,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Best runs persist per course with gate split traces and a lightweight external ghost path, so retries call out pace while the previous best remains visible in the air.
 - External retries show a cached GHOST pace row while the best-run marker is active, calling out whether the current run is ahead, behind, or even without adding simulation work.
 - Press `X` during an external-view retry to toggle the pooled best-run ghost path without affecting cockpit view or simulation timing.
+- Turning the ghost off also removes its ahead/behind pace row, so replay telemetry never survives a deliberate visibility toggle.
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
 - The title and pause menus offer a card world picker for Random world, Free flight, and the curated course seeds, with route profiles preserved on retry.
 - Results persist a completion count and fastest finish per course, making progression visible without introducing a campaign layer.

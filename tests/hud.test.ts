@@ -77,6 +77,7 @@ import {
   flightLogHudLabel,
   ghostPaceLabel,
   ghostPaceAriaLabel,
+  visibleGhostPaceDelta,
   contractProgressLabel,
   contractProgressAriaLabel,
   contractDetailLabel,
@@ -169,6 +170,12 @@ describe('HUD value formatting', () => {
     expect(ghostPaceLabel(Number.NaN)).toBe('')
     expect(ghostPaceAriaLabel(-1.2)).toBe('Best-run ghost pace ahead by 1.2s')
     expect(ghostPaceAriaLabel(1.2)).toBe('Best-run ghost pace behind by 1.2s')
+  })
+
+  it('hides ghost pace telemetry when the path is toggled off', () => {
+    expect(visibleGhostPaceDelta(-1.2, true)).toBe(-1.2)
+    expect(visibleGhostPaceDelta(-1.2, false)).toBeNull()
+    expect(visibleGhostPaceDelta(Number.NaN, true)).toBeNull()
   })
 
   it('keeps live flight-log telemetry compact and finite', () => {

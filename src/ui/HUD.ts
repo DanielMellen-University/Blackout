@@ -540,6 +540,16 @@ export function ghostPaceAriaLabel(delta: number | null | undefined): string {
     : `Best-run ghost pace behind by ${label.slice(7).toLowerCase()}`
 }
 
+/** Hide ghost pace telemetry together with the optional ghost path. */
+export function visibleGhostPaceDelta(
+  delta: number | null | undefined,
+  visible: boolean,
+): number | null {
+  return visible === true && delta !== null && delta !== undefined && Number.isFinite(delta)
+    ? delta
+    : null
+}
+
 /** Keep the optional sortie contract visible without exposing raw tracker state. */
 export function contractProgressLabel(
   label: unknown,

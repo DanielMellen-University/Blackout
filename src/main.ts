@@ -127,6 +127,7 @@ import {
   navigationGlideCue,
   weatherCycleBanner,
   waterSurfaceCue,
+  visibleGhostPaceDelta,
   type CrosswindSide,
   type HudBannerTone,
   type NavigationLateralCue,
@@ -1864,11 +1865,11 @@ async function boot(): Promise<void> {
       hudFrame.contractStreak = challenge.contractStreak
       hudFrame.biomeCount = challenge.biomeCount
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
-      hudFrame.ghostPace = (
+      hudFrame.ghostPace = visibleGhostPaceDelta((
         (challenge.phase === 'running' || challenge.phase === 'returning') &&
         cameras.mode !== 'cockpit' &&
         aircraft.status === 'ok'
-      ) ? ghost.paceDelta(challenge.elapsedSec) : null
+      ) ? ghost.paceDelta(challenge.elapsedSec) : null, ghostVisible)
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
       hudFrame.missionTotal = challenge.totalGates
