@@ -118,4 +118,14 @@ describe('arcade radar sweep', () => {
     radar.clearTarget()
     expect(radar.selectedTarget()).toBeNull()
   })
+
+  it('clears a selected contact and emits one cue when it leaves range', () => {
+    const radar = new RadarSystem()
+    radar.update(0, 0, 0, null, [{ x: 0, y: 20, z: 600, kind: 'city', id: 'city-1' }])
+    expect(radar.cycleTarget()?.id).toBe('city-1')
+    radar.update(0, 0, 0, null, [])
+    expect(radar.selectedTarget()).toBeNull()
+    expect(radar.consumeLockLost()).toBe(true)
+    expect(radar.consumeLockLost()).toBe(false)
+  })
 })

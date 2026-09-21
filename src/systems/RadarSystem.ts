@@ -57,6 +57,7 @@ export class RadarSystem {
   private readonly contacts: RadarContact[] = []
   private visibleContactLimit = MAX_RADAR_CONTACTS
   private selectedTargetId = ''
+  private lockLostPending = false
 
   /** Reduce label crowding on constrained render and motion settings. */
   setRenderQuality(quality: RenderQuality): void {
@@ -104,10 +105,23 @@ export class RadarSystem {
       const priority = radarKindPriority(a.kind) - radarKindPriority(b.kind)
       return priority || a.distance - b.distance
     })
+    let selectedPresent = this.selectedTargetId === ''
     for (const contact of this.contacts) {
       contact.selected = contact.id !== '' && contact.id === this.selectedTargetId
+      selectedPresent ||= contact.selected
+    }
+    if (this.selectedTargetId !== '' && !selectedPresent) {
+      this.selectedTargetId = ''
+      this.lockLostPending = true
     }
     return this.contacts
+  }
+
+  /** Consume one bounded cue when a previously selected contact leaves range. */
+  consumeLockLost(): boolean {
+    if (!this.lockLostPending) return false
+    this.lockLostPending = false
+    return true
   }
 
   /** Cycle the selected settlement target in the current fixed contact pool. */
@@ -142,6 +156,7 @@ export class RadarSystem {
 
   clearTarget(): void {
     this.selectedTargetId = ''
+    this.lockLostPending = false
     for (const contact of this.contacts) contact.selected = false
   }
 

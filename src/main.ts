@@ -1742,6 +1742,9 @@ async function boot(): Promise<void> {
           ),
         )
         radarNextUpdateMs = nowMs + RADAR_UPDATE_INTERVAL_MS
+        if (radar.consumeLockLost() && (!banner || bannerUntil <= nowMs)) {
+          showBanner('RADAR LOCK LOST', 1400, 'danger')
+        }
       }
       if (radarTargetCycleQueued) {
         radarTargetCycleQueued = false

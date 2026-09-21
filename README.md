@@ -32,6 +32,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The `V` flight-assist choice persists across reloads, so gentle pitch and bank trim stays enabled for pilots who prefer it.
 - A seeded `RADAR RUN` contract now rewards selecting a city or village with `T` before reaching it, giving target lock a clear sortie purpose without adding world entities.
 - Radar-run objectives bind to the exact streamed contact that was locked, so reaching a different settlement cannot accidentally complete the task.
+- If a selected settlement streams out of range, the radar clears the stale lock and gives one `RADAR LOCK LOST` cue instead of leaving navigation pointed at missing world data.
 - Settings persist a keyboard yaw choice between A right / D left and A left / D right; gamepad and touch yaw stay on their hardware conventions.
 - Settings also persist keyboard roll direction between Q right / E left and Q left / E right; gamepad and touch roll stay on their hardware conventions.
 - Settings also persist keyboard pitch direction between W up / S down and W down / S up; gamepad and touch pitch stay on their hardware conventions.
