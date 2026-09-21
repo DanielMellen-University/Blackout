@@ -214,18 +214,36 @@ async function boot(): Promise<void> {
   )
   if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
 
+  type CourseRecordSnapshot = {
+    history: ReturnType<typeof repairCourseHistory>
+    bestScore: number
+    badgeCount: number
+    bestPrecisionStreak: number
+  }
+  const courseRecordCache = new Map<string, CourseRecordSnapshot>()
+  const readCourseRecord = (runId: string): CourseRecordSnapshot => {
+    const cached = courseRecordCache.get(runId)
+    if (cached) return cached
+    const snapshot: CourseRecordSnapshot = {
+      history: repairCourseHistory(qualityStorage, runId),
+      bestScore: repairBestCourseScore(qualityStorage, runId),
+      badgeCount: repairMasteryBadges(qualityStorage, runId).length,
+      bestPrecisionStreak: repairBestCoursePrecisionStreak(qualityStorage, runId),
+    }
+    courseRecordCache.set(runId, snapshot)
+    return snapshot
+  }
+
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
       const runId = courseRunId(course)
-      const history = runId ? repairCourseHistory(qualityStorage, runId) : null
+      const record = runId ? readCourseRecord(runId) : null
       const copy = coursePickerCopy({
         course,
-        history,
-        bestScore: runId ? repairBestCourseScore(qualityStorage, runId) : 0,
-        badgeCount: runId ? repairMasteryBadges(qualityStorage, runId).length : 0,
-        bestPrecisionStreak: runId
-          ? repairBestCoursePrecisionStreak(qualityStorage, runId)
-          : 0,
+        history: record?.history ?? null,
+        bestScore: record?.bestScore ?? 0,
+        badgeCount: record?.badgeCount ?? 0,
+        bestPrecisionStreak: record?.bestPrecisionStreak ?? 0,
       })
       return {
         id: course.id,
@@ -237,8 +255,6 @@ async function boot(): Promise<void> {
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
   }
-  refreshCourseSelectorLabels()
-
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
   const titleProgress = document.getElementById('title-progress')
@@ -251,16 +267,15 @@ async function boot(): Promise<void> {
     for (const course of curated) {
       const runId = courseRunId(course)
       if (!runId) continue
-      const history = repairCourseHistory(qualityStorage, runId)
-      const badges = repairMasteryBadges(qualityStorage, runId)
-      const bestScore = repairBestCourseScore(qualityStorage, runId)
+      const record = readCourseRecord(runId)
+      const history = record.history
       const runCount = history?.completionCount ?? 0
       if (runCount > 0) completed += 1
-      earnedBadges += badges.length
+      earnedBadges += record.badgeCount
       if (courseMasteryTierForProgress({
         completionCount: runCount,
-        bestScore,
-        badgeCount: badges.length,
+        bestScore: record.bestScore,
+        badgeCount: record.badgeCount,
         contractWins: history?.contractWins,
         landingQuality: history?.landingQuality,
       }) === 'legend') mastered += 1
@@ -273,7 +288,12 @@ async function boot(): Promise<void> {
       `${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery`,
     )
   }
-  refreshCourseProgress()
+  const refreshCourseUi = (): void => {
+    courseRecordCache.clear()
+    refreshCourseSelectorLabels()
+    refreshCourseProgress()
+  }
+  refreshCourseUi()
   if (playBtn) playBtn.disabled = true
 
   const renderQualityFallback = defaultRenderQuality({
@@ -827,8 +847,7 @@ async function boot(): Promise<void> {
       key.startsWith(COURSE_BEST_STORAGE_PREFIX) ||
       key.startsWith(COURSE_STREAK_STORAGE_PREFIX)
     ) {
-      refreshCourseSelectorLabels()
-      refreshCourseProgress()
+      refreshCourseUi()
     }
   }
   uiListeners.add(window, 'storage', onProgressStorageChange)
@@ -1198,8 +1217,7 @@ async function boot(): Promise<void> {
               )
               if (flightRecordCueLabel(finished) || finished.masteryTierPromoted) audio.playCue('milestone')
               results.show(finished)
-              refreshCourseSelectorLabels()
-              refreshCourseProgress()
+              refreshCourseUi()
               syncInputContext()
               break
             }
