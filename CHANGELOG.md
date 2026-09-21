@@ -44,6 +44,7 @@
 - Guard zero-gate sorties from receiving the gate-only CLEAN CIRCUIT contract, preventing impossible Free flight tasks without changing contract rotation elsewhere.
 - Arm the existing contract-completion cue when a CLEAN CIRCUIT clears its final gate, while keeping missed circuits permanently failed and silent on success.
 - Add a deterministic LEVEL FLIGHT contract that rewards a bounded, stable altitude hold through scalar telemetry only, with no scene growth.
+- Add a one-shot CLEAN CIRCUIT failure cue through the existing warning and banner path, keeping missed sorties recoverable without adding scene resources.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

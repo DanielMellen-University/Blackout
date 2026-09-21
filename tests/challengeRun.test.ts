@@ -840,6 +840,8 @@ describe('ChallengeRun', () => {
     run.update(0.1, 8)
     run.recordGateMiss()
     expect(run.contractFailed).toBe(true)
+    expect(run.consumeContractFailureCue()).toBe('CLEAN CIRCUIT')
+    expect(run.consumeContractFailureCue()).toBeNull()
     run.recordGate(1)
     expect(run.contractComplete).toBe(false)
     run.recordGate(1)

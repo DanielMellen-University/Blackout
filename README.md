@@ -126,6 +126,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Bonus contracts can also include `CLEAN CIRCUIT`, which makes a no-miss gate run explicit and marks the task failed immediately after an off-ring crossing.
 - Free flight never receives a gate-only contract, so exploration sorties cannot be assigned an impossible objective.
 - A successful CLEAN CIRCUIT now emits the same completion cue as other contracts when its final gate clears; missed circuits stay visibly failed without a false success cue.
+- Missing a gate on CLEAN CIRCUIT now emits one explicit contract-failure cue through the existing warning path while the sortie remains recoverable.
 - Bonus contracts can also include `LEVEL FLIGHT`, rewarding a steady 180 to 600 metre altitude hold within a small drift window for a short airborne stretch.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.

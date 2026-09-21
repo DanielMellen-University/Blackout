@@ -1236,6 +1236,11 @@ async function boot(): Promise<void> {
           audio.playCue('streak')
           showBanner(`CONTRACT COMPLETE / ${contractCue}`, 1800, 'success')
         }
+        const contractFailureCue = challenge.consumeContractFailureCue()
+        if (contractFailureCue) {
+          audio.playCue('warning')
+          showBanner(`CONTRACT FAILED / ${contractFailureCue}`, 1800, 'danger')
+        }
 
         biomeSurveyCooldown = Math.max(0, biomeSurveyCooldown - dt)
         if (biomeSurveyCooldown <= 0 && aircraft.status === 'ok' && !aircraft.onGround) {

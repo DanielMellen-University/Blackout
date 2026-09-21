@@ -725,6 +725,7 @@ export class ChallengeRun {
   private bestCombo = 0
   private readonly contract = new SortieContractTracker()
   private contractCuePending = false
+  private contractFailureCuePending = false
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
   private lastPaceDeltaSec = Number.NaN
@@ -767,6 +768,7 @@ export class ChallengeRun {
     this.bestCombo = 0
     this.contract.reset(contractSeed, this.totalGates)
     this.contractCuePending = false
+    this.contractFailureCuePending = false
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
@@ -849,7 +851,16 @@ export class ChallengeRun {
   /** Record a missed gate for the optional no-miss circuit contract. */
   recordGateMiss(): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
+    const wasContractFailed = this.contract.failed
     this.contract.recordCleanGate(true, this.gatesPassed, this.totalGates)
+    this.contractFailureCuePending ||= !wasContractFailed && this.contract.failed
+  }
+
+  /** Consume the one-shot label for a contract that became permanently failed. */
+  consumeContractFailureCue(): string | null {
+    if (!this.contractFailureCuePending) return null
+    this.contractFailureCuePending = false
+    return this.contract.label || null
   }
 
   /** Record a completed airshow maneuver without touching the flight loop. */
