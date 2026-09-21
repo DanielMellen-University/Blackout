@@ -15,6 +15,7 @@ import {
   summarizeMissionRoute,
   MissionSystem,
   gateQualityLabel,
+  type MissionRouteProfile,
 } from '../src/systems/Mission'
 import { clearOpsPad, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
 
@@ -295,6 +296,15 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('canyon')).toBe('CANYON RUN')
     expect(routeProfileLabel('coast')).toBe('COASTAL RUN')
     expect(routeProfileLabel('river')).toBe('RIVER RUN')
+  })
+
+  it('exposes the validated coastal and river profiles to random sorties', () => {
+    const profiles = new Set<MissionRouteProfile>()
+    for (let x = 0; x <= 5_000; x += 25) {
+      profiles.add(routeProfileForSpawn(x, 0, 0))
+    }
+    expect(profiles.has('coast')).toBe(true)
+    expect(profiles.has('river')).toBe(true)
   })
 
   it('supports a no-gate free-flight profile', () => {
