@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -59,6 +59,10 @@ const RANGE_RUN_DETAIL = 'FLY 12KM BEFORE LANDING'
 const HIGH_DIVE_TOP_M = 1_800
 const HIGH_DIVE_EXIT_M = 420
 const HIGH_DIVE_DETAIL = 'REACH 1,800M THEN RECOVER BELOW 420M'
+const WATER_SKIM_MIN_ALTITUDE_M = 18
+const WATER_SKIM_MAX_ALTITUDE_M = 180
+const WATER_SKIM_TARGET_SECONDS = 8
+const WATER_SKIM_DETAIL = 'SKIM WATER AT 18-180M FOR 8S'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -92,6 +96,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'gust', label: 'GUST RIDER', target: GUST_TARGET_SECONDS },
   { kind: 'range', label: 'RANGE RUN', target: RANGE_TARGET_METERS },
   { kind: 'high-dive', label: 'HIGH DIVE', target: 1 },
+  { kind: 'water-skim', label: 'WATER SKIM', target: WATER_SKIM_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -130,6 +135,7 @@ export class SortieContractTracker {
   private gustSeconds = 0
   private rangeMeters = 0
   private highDiveReached = false
+  private waterSkimSeconds = 0
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
@@ -168,6 +174,7 @@ export class SortieContractTracker {
     this.gustSeconds = 0
     this.rangeMeters = 0
     this.highDiveReached = false
+    this.waterSkimSeconds = 0
     this.gustDetailBucket = -1
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
@@ -191,7 +198,9 @@ export class SortieContractTracker {
             ? rangeRunDetail(0, target)
             : base.kind === 'high-dive'
               ? HIGH_DIVE_DETAIL
-              : detail
+              : base.kind === 'water-skim'
+                ? WATER_SKIM_DETAIL
+                : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -313,6 +322,19 @@ export class SortieContractTracker {
     if (safeAltitude > HIGH_DIVE_EXIT_M) return
     this.progressValue = 1
     this.completeValue = true
+  }
+
+  /** Accumulate bounded low-altitude airborne time over a rendered water surface. */
+  recordWaterSkim(isWater: boolean, altitudeM: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'water-skim' || this.completeValue || !airborne || isWater !== true) return
+    if (!Number.isFinite(altitudeM) || !Number.isFinite(dt)) return
+    const safeAltitude = Math.max(0, Math.min(100_000, altitudeM))
+    if (safeAltitude < WATER_SKIM_MIN_ALTITUDE_M || safeAltitude > WATER_SKIM_MAX_ALTITUDE_M) return
+    const safeDt = Math.max(0, Math.min(5, dt))
+    this.waterSkimSeconds = Math.min(this.definition.target, this.waterSkimSeconds + safeDt)
+    this.progressValue = clamp01(this.waterSkimSeconds / this.definition.target)
+    this.updateProgressDetail(this.waterSkimSeconds, 'S', 1)
+    if (this.progressValue >= 1) this.completeValue = true
   }
 
   /** Turn the existing gate-and-stunt chain into a bounded arcade objective. */
@@ -621,7 +643,7 @@ function indexForSeed(seed: number): number {
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
   // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
-  // and high-dive objectives.
+  // high-dive, and water-skim objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -649,6 +671,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 131 === 97) return 28
   if (mixed % 137 === 107) return 29
   if (mixed % 149 === 131) return 30
+  if (mixed % 157 === 139) return 31
   return mixed % legacyContractCount
 }
 
@@ -709,6 +732,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'gust': return GUST_RUN_DETAIL
     case 'range': return RANGE_RUN_DETAIL
     case 'high-dive': return HIGH_DIVE_DETAIL
+    case 'water-skim': return WATER_SKIM_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }

@@ -91,6 +91,13 @@ describe('sortie contracts', () => {
         tracker.recordHighDive(421)
         tracker.recordHighDive(420)
       }
+      if (tracker.kind === 'water-skim') {
+        tracker.recordWaterSkim(true, 18, 5, false)
+        tracker.recordWaterSkim(false, 80, 5)
+        tracker.recordWaterSkim(true, 181, 5)
+        tracker.recordWaterSkim(true, 80, 5)
+        tracker.recordWaterSkim(true, 80, 3)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -181,7 +188,35 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim']))
+  })
+
+  it('accumulates only low airborne passes over water for WATER SKIM', () => {
+    const tracker = new SortieContractTracker()
+    let skimSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'water-skim') {
+        skimSeed = seed
+        break
+      }
+    }
+    expect(skimSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(skimSeed, 5)
+    expect(tracker.label).toBe('WATER SKIM')
+    expect(tracker.detail).toBe('SKIM WATER AT 18-180M FOR 8S')
+    tracker.recordWaterSkim(true, 80, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWaterSkim(false, 80, 5)
+    tracker.recordWaterSkim(true, 17, 5)
+    tracker.recordWaterSkim(true, 181, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordWaterSkim(true, 80, 3)
+    expect(tracker.progress).toBeCloseTo(3 / 8)
+    expect(tracker.detail).toContain('CURRENT 3S')
+    tracker.recordWaterSkim(true, 80, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('requires a high climb before the recovery dive can complete', () => {

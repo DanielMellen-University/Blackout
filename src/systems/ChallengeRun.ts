@@ -1211,6 +1211,14 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
   }
 
+  /** Record one bounded low pass over a rendered water body for WATER SKIM. */
+  recordWaterSkim(isWater: boolean, altitudeM: number, dt: number, airborne = true): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    const wasContractComplete = this.contract.complete
+    this.contract.recordWaterSkim(isWater, altitudeM, dt, airborne)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
+  }
+
   /** Number of unique natural biomes seen so far in this sortie. */
   get biomeCount(): number {
     return this.surveyedBiomeCount

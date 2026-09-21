@@ -1434,6 +1434,7 @@ async function boot(): Promise<void> {
             sampleTerrainSurface(aircraft.position.x, aircraft.position.z)
           challenge.recordBiome(sampled.biome)
           challenge.recordWater(sampled.kind === 'water', 0.65, true)
+          challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
           const biomeCue = challenge.consumeBiomeSurveyCue()
           if (biomeCue && (!banner || bannerUntil <= nowMs)) {
             showBanner(
