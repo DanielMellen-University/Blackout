@@ -601,6 +601,7 @@ async function boot(): Promise<void> {
     clock: '',
     weather: '',
     weatherKind: 'clear',
+    weatherTransitioning: false,
     windX: 0,
     windZ: 0,
     dayPhase: '',
@@ -1683,6 +1684,7 @@ async function boot(): Promise<void> {
       hudFrame.clock = challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
       hudFrame.weatherKind = world.atmosphere.weather
+      hudFrame.weatherTransitioning = world.atmosphere.weatherTransitioning
       hudFrame.windX = precipitation.windX
       hudFrame.windZ = precipitation.windZ
       hudFrame.dayPhase = world.atmosphere.phaseLabel

@@ -79,6 +79,7 @@ import {
   windSpeedMps,
   weatherCue,
   weatherCycleBanner,
+  weatherTransitionLabel,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
@@ -362,6 +363,12 @@ describe('HUD value formatting', () => {
     expect(contractStreakHudLabel(Number.NaN)).toBe('--')
     expect(contractStreakAriaLabel(3)).toBe('contract chain 3 completed')
     expect(contractStreakAriaLabel(0)).toBe('no completed contract chain')
+  })
+
+  it('keeps weather-front transitions compact and explicit', () => {
+    expect(weatherTransitionLabel(true)).toBe('SHIFT')
+    expect(weatherTransitionLabel(false)).toBe('')
+    expect(weatherTransitionLabel(Number.NaN as unknown as boolean)).toBe('')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

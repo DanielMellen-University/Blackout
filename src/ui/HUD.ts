@@ -305,6 +305,11 @@ export function weatherCycleBanner(label: unknown): string {
   return `WEATHER SHIFT / ${safe}`
 }
 
+/** Keep the active weather-front transition legible without raw blend values. */
+export function weatherTransitionLabel(transitioning: boolean): string {
+  return transitioning === true ? 'SHIFT' : ''
+}
+
 /** Keep engine-stress feedback bounded and calm for arcade flight. */
 export function engineHeatCue(fraction: number): EngineHeatCue {
   if (!Number.isFinite(fraction)) return 'normal'
@@ -569,6 +574,8 @@ export class HUD {
   private windText = ''
   private windAriaText = ''
   private weatherCueValue: WeatherCue | null = null
+  private weatherTransitionValue: boolean | null = null
+  private weatherText = ''
   private weatherAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
   private missionProgressCurrent = -1
@@ -777,6 +784,8 @@ export class HUD {
     weather?: string
     /** Weather profile ID used for compact severity styling. */
     weatherKind?: string
+    /** Whether the live weather front is blending between profiles. */
+    weatherTransitioning?: boolean
     dayPhase?: string
     mission?: string
     /** Live checkpoint pace context, or null before the first clear. */
@@ -981,14 +990,20 @@ export class HUD {
       this.setText(this.clockEl, opts.clock)
     }
     if (this.weatherEl && opts.weather) {
-      this.setText(this.weatherEl, opts.weather)
+      const transitioning = opts.weatherTransitioning === true
       const cue = weatherCue(opts.weatherKind ?? opts.weather)
-      if (cue !== this.weatherCueValue) {
+      if (cue !== this.weatherCueValue || transitioning !== this.weatherTransitionValue || this.weatherText.length === 0) {
         this.weatherCueValue = cue
+        this.weatherTransitionValue = transitioning
+        this.weatherText = transitioning
+          ? `${opts.weather} · ${weatherTransitionLabel(true)}`
+          : opts.weather
         this.weatherAriaText = cue === 'severe'
           ? `Severe weather: ${opts.weather}`
           : cue === 'active' ? `Active weather: ${opts.weather}` : `Weather: ${opts.weather}`
+        if (transitioning) this.weatherAriaText += ', front shifting'
       }
+      this.setText(this.weatherEl, this.weatherText)
       this.setAttribute(this.weatherEl, 'aria-label', this.weatherAriaText)
       this.setAttribute(this.weatherEl, 'aria-live', 'polite')
       this.setClass(this.weatherEl, 'weather-active', cue === 'active')
