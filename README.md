@@ -28,6 +28,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The external camera also shortens its sightline before loaded buildings and airfield structures, keeping the chase view readable around settlements without extra scene geometry.
 - Settings persist a keyboard yaw choice between A right / D left and A left / D right; gamepad and touch yaw stay on their hardware conventions.
 - Settings also persist keyboard roll direction between Q right / E left and Q left / E right; gamepad and touch roll stay on their hardware conventions.
+- Settings also persist keyboard pitch direction between W up / S down and W down / S up; gamepad and touch pitch stay on their hardware conventions.
 - The takeoff briefing also reports route difficulty and minimum sampled terrain clearance, so the challenge is readable before the first input.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)

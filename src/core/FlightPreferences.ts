@@ -1,11 +1,14 @@
 /** Keyboard-only flight preferences kept separate from simulation state. */
 export type KeyboardYawPreference = 'a-right' | 'a-left'
 export type KeyboardRollPreference = 'q-right' | 'q-left'
+export type KeyboardPitchPreference = 'w-up' | 'w-down'
 
 export const KEYBOARD_YAW_STORAGE_KEY = 'blackout.keyboardYaw'
 export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-right'
 export const KEYBOARD_ROLL_STORAGE_KEY = 'blackout.keyboardRoll'
 export const DEFAULT_KEYBOARD_ROLL: KeyboardRollPreference = 'q-right'
+export const KEYBOARD_PITCH_STORAGE_KEY = 'blackout.keyboardPitch'
+export const DEFAULT_KEYBOARD_PITCH: KeyboardPitchPreference = 'w-up'
 
 export function normalizeKeyboardYawPreference(
   value: unknown,
@@ -83,4 +86,43 @@ export function keyboardRollPreferenceLabel(preference: KeyboardRollPreference):
   return normalizeKeyboardRollPreference(preference) === 'q-left'
     ? 'Q LEFT / E RIGHT'
     : 'Q RIGHT / E LEFT'
+}
+
+export function normalizeKeyboardPitchPreference(
+  value: unknown,
+  fallback: KeyboardPitchPreference = DEFAULT_KEYBOARD_PITCH,
+): KeyboardPitchPreference {
+  if (value === 'w-up' || value === 'w-down') return value
+  return fallback === 'w-down' ? 'w-down' : DEFAULT_KEYBOARD_PITCH
+}
+
+export function readKeyboardPitchPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: KeyboardPitchPreference = DEFAULT_KEYBOARD_PITCH,
+): KeyboardPitchPreference {
+  try {
+    return normalizeKeyboardPitchPreference(storage?.getItem(KEYBOARD_PITCH_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeKeyboardPitchPreference(undefined, fallback)
+  }
+}
+
+export function writeKeyboardPitchPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  preference: KeyboardPitchPreference,
+): void {
+  try {
+    storage?.setItem(
+      KEYBOARD_PITCH_STORAGE_KEY,
+      normalizeKeyboardPitchPreference(preference),
+    )
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function keyboardPitchPreferenceLabel(preference: KeyboardPitchPreference): string {
+  return normalizeKeyboardPitchPreference(preference) === 'w-down'
+    ? 'W DOWN / S UP'
+    : 'W UP / S DOWN'
 }

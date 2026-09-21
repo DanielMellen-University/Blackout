@@ -3,6 +3,8 @@ import { createDefaultControls, type ControlState } from './types'
 import {
   normalizeKeyboardYawPreference,
   normalizeKeyboardRollPreference,
+  normalizeKeyboardPitchPreference,
+  type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
 } from './FlightPreferences'
@@ -35,6 +37,7 @@ export class InputManager {
   private touchBoost = false
   private keyboardYawPreference: KeyboardYawPreference = 'a-right'
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
+  private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
 
   cameraToggleQueued = false
   resetQueued = false
@@ -74,6 +77,14 @@ export class InputManager {
     return this.keyboardRollPreference
   }
 
+  setKeyboardPitchPreference(preference: KeyboardPitchPreference): void {
+    this.keyboardPitchPreference = normalizeKeyboardPitchPreference(preference)
+  }
+
+  get keyboardPitch(): KeyboardPitchPreference {
+    return this.keyboardPitchPreference
+  }
+
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown)
     this.target.removeEventListener('keyup', this.onKeyUp)
@@ -88,7 +99,10 @@ export class InputManager {
     if (this.flightLive) this.updateGamepad(step)
     else this.clearGamepadState()
 
-    this.controls.pitch = mergeAxis(this.axis('KeyW', 'KeyS'), this.gamepadPitch, this.touchPitch)
+    const keyboardPitch = this.keyboardPitchPreference === 'w-down'
+      ? this.axis('KeyS', 'KeyW')
+      : this.axis('KeyW', 'KeyS')
+    this.controls.pitch = mergeAxis(keyboardPitch, this.gamepadPitch, this.touchPitch)
     const keyboardYaw = this.keyboardYawPreference === 'a-left'
       ? this.axis('KeyD', 'KeyA')
       : this.axis('KeyA', 'KeyD')

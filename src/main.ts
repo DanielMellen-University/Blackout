@@ -141,6 +141,11 @@ import {
   normalizeKeyboardRollPreference,
   readKeyboardRollPreference,
   writeKeyboardRollPreference,
+  keyboardPitchPreferenceLabel,
+  normalizeKeyboardPitchPreference,
+  readKeyboardPitchPreference,
+  writeKeyboardPitchPreference,
+  type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
 } from './core/FlightPreferences'
@@ -170,8 +175,10 @@ async function boot(): Promise<void> {
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
+  const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
+  const pitchLabel = document.getElementById('controls-pitch-label')
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   const touchRoot = document.getElementById('touch-controls')
@@ -254,6 +261,7 @@ async function boot(): Promise<void> {
   const initialAudioVolume = readAudioVolume(qualityStorage)
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
+  const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -372,8 +380,10 @@ async function boot(): Promise<void> {
   const input = new InputManager()
   input.setKeyboardYawPreference(initialKeyboardYaw)
   input.setKeyboardRollPreference(initialKeyboardRoll)
+  input.setKeyboardPitchPreference(initialKeyboardPitch)
   if (yawSelect) yawSelect.value = initialKeyboardYaw
   if (rollSelect) rollSelect.value = initialKeyboardRoll
+  if (pitchSelect) pitchSelect.value = initialKeyboardPitch
   const touchDevice = touchInputSupported(
     typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
     typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
@@ -431,6 +441,22 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(rollSelect, 'change', onKeyboardRollChange)
+  const applyKeyboardPitch = (next: KeyboardPitchPreference): void => {
+    const preference = normalizeKeyboardPitchPreference(next)
+    input.setKeyboardPitchPreference(preference)
+    if (pitchSelect) pitchSelect.value = preference
+    if (pitchLabel) pitchLabel.textContent = `Pitch (${keyboardPitchPreferenceLabel(preference)})`
+    writeKeyboardPitchPreference(qualityStorage, preference)
+  }
+  applyKeyboardPitch(initialKeyboardPitch)
+  const onKeyboardPitchChange = (): void => {
+    if (!pitchSelect) return
+    applyKeyboardPitch(pitchSelect.value as KeyboardPitchPreference)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`KEYBOARD PITCH ${keyboardPitchPreferenceLabel(input.keyboardPitch)}`, 1500, 'info')
+    }
+  }
+  uiListeners.add(pitchSelect, 'change', onKeyboardPitchChange)
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)
     audio.setVolume(volume)

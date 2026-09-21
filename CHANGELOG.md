@@ -16,6 +16,8 @@
 - Add the repeatable Coastal Run course, a lower sweeping route that reuses the validated terrain corridor planner.
 - Add a cached GHOST pace row that compares live external runs with the saved best trace without adding simulation or storage work.
 - Add a persisted keyboard roll direction preference while leaving gamepad and touch roll conventions unchanged.
+- Add a persisted keyboard pitch direction preference while leaving gamepad and touch pitch conventions unchanged.
+- Harden release validation across package metadata, the lockfile, runtime title fallback, README, and the first changelog heading so version drift fails the build.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.
