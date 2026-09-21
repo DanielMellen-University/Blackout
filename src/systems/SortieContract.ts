@@ -137,7 +137,7 @@ export class SortieContractTracker {
           : base.kind === 'fuel'
               ? `LAND WITH ${Math.round(target * 100)}% FUEL`
           : base.kind === 'low-level'
-            ? `STAY ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
+            ? `HOLD RADIO ALT ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
             : base.kind === 'biome'
               ? `SURVEY ${Math.round(target)} DISTINCT BIOMES`
               : base.kind === 'speed-band'

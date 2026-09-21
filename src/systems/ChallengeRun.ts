@@ -794,14 +794,18 @@ export class ChallengeRun {
     fuelFraction = 1,
     weatherTransitioning = false,
     afterburner = false,
+    terrainClearanceM = altitudeM,
   ): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
     const safeAltitude = Number.isFinite(altitudeM) ? Math.max(0, altitudeM) : 0
+    const safeTerrainClearance = Number.isFinite(terrainClearanceM)
+      ? Math.max(0, Math.min(100_000, terrainClearanceM))
+      : safeAltitude
     this.peakSpeedMps = Math.max(this.peakSpeedMps, Math.min(safeSpeed, 10_000))
     this.peakAltitudeM = Math.max(this.peakAltitudeM, Math.min(safeAltitude, 100_000))
     const wasContractComplete = this.contract.complete
-    this.contract.recordLowLevel(safeAltitude, safeDt, safeSpeed > 5)
+    this.contract.recordLowLevel(safeTerrainClearance, safeDt, safeSpeed > 5)
     this.contract.recordSpeedBand(safeSpeed, safeDt, safeSpeed > 5)
     this.contract.recordWeather(rain, snow, safeDt, safeSpeed > 5)
     this.contract.recordBrake(safeSpeed, safeDt, airbrake, airborne)

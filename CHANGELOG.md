@@ -46,6 +46,7 @@
 - Add a deterministic LEVEL FLIGHT contract that rewards a bounded, stable altitude hold through scalar telemetry only, with no scene growth.
 - Add a one-shot CLEAN CIRCUIT failure cue through the existing warning and banner path, keeping missed sorties recoverable without adding scene resources.
 - Add a deterministic SETTLEMENT TOUR contract that requires one city and one village arrival through existing radar destinations, with two bounded flags and no scene growth.
+- Make TERRAIN HUGGER use the already-cached rendered radio altitude, so low-pass progress follows ridges and valleys without adding terrain queries or allocations.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

@@ -633,6 +633,7 @@ async function boot(): Promise<void> {
   let radarDiscoveryCooldownUntil = 0
   let radarTargetCycleQueued = false
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
+  let terrainClearanceM = 0
   let biomeSurveyCooldown = 0
   let overWater = false
   let refueling = false
@@ -1089,6 +1090,7 @@ async function boot(): Promise<void> {
             aircraft.position.z,
             aircraft.controls.gearDown,
           )
+          terrainClearanceM = alt
           if (!aircraft.onGround && alt > 8) {
             wasAirborne = true
             aircraft.clearLanded()
@@ -1273,6 +1275,7 @@ async function boot(): Promise<void> {
           aircraft.fuel.fraction,
           world.atmosphere.weatherTransitioning,
           aircraft.engineState.afterburnerActive,
+          terrainClearanceM,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }

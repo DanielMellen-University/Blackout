@@ -501,6 +501,16 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('uses rendered terrain clearance for terrain-hugger progress', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:terrain-clearance-contract', 1, 'balanced', 11)
+    expect(run.contractLabel).toBe('CONTRACT TERRAIN HUGGER')
+    run.update(4, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 480)
+    expect(run.contractProgress).toBe(0)
+    run.update(4, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+  })
+
   it('wires distinct biome progress into the biome-tour contract', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:biome-contract', 1, 'balanced', 8)
