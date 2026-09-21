@@ -177,6 +177,8 @@ export class TerrainSystem {
   private readonly ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[] = []
   private readonly activeKeys = new Set<string>()
   private readonly retiring: Chunk[] = []
+  /** Reused fade-removal list keeps the per-frame stream path allocation-free. */
+  private readonly fadeRemovals: string[] = []
   private generation = 0
   private nextRequest = 0
   private disposed = false
@@ -602,8 +604,9 @@ export class TerrainSystem {
     let uploads = 0
     // Completion order varies between workers; uploads follow current proximity.
     this.ready.sort((a, b) => {
-      const distance = (job: TerrainBuildRequest) => this.desiredTiles.get(tileKey(job.cx, job.cz, job.size))?.dist ?? Infinity
-      return distance(a.job) - distance(b.job)
+      const aDistance = this.desiredTiles.get(tileKey(a.job.cx, a.job.cz, a.job.size))?.dist ?? Infinity
+      const bDistance = this.desiredTiles.get(tileKey(b.job.cx, b.job.cz, b.job.size))?.dist ?? Infinity
+      return aDistance - bDistance
     })
     while (this.ready.length && uploads < MAX_UPLOADS_PER_FRAME &&
       (uploads === 0 || performance.now() < deadline)) {
@@ -661,7 +664,8 @@ export class TerrainSystem {
   private updateFades(_pcx: number, _pcz: number, dt: number): void {
     const fadeK = 1 - Math.exp(-dt * 6)
     const fadeStart = VIEW_RADIUS - FADE_CELLS
-    const toRemove: string[] = []
+    const toRemove = this.fadeRemovals
+    toRemove.length = 0
 
     for (const [key, chunk] of this.chunks) {
       this.fadeProps(chunk)
@@ -757,8 +761,18 @@ export class TerrainSystem {
     if (Math.abs((props.userData.alpha ?? -1) - alpha) < .02) return
     props.userData.alpha = alpha
     for (const obj of chunk.propMeshes) {
-      const materials = Array.isArray(obj.material) ? obj.material : [obj.material]
-      for (const material of materials) {
+      if (Array.isArray(obj.material)) {
+        for (const material of obj.material) {
+          material.opacity = alpha
+          material.transparent = false
+          if (!material.alphaHash) {
+            material.alphaHash = true
+            material.needsUpdate = true
+          }
+          material.depthWrite = true
+        }
+      } else {
+        const material = obj.material
         material.opacity = alpha
         material.transparent = false
         if (!material.alphaHash) {

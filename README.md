@@ -94,6 +94,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Consecutive completed sorties now add a small capped RUN STREAK payout after the first clean finish, making repeat course practice pay off.
 - Course cards retain the best RUN STREAK after a failed retry, and a new streak record reuses the milestone cue on touchdown.
 - Course cards also retain the best CONTRACT STREAK after a failed retry, with new chain records using the same milestone cue.
+- Terrain streaming now reuses its fade-removal buffer and avoids nested upload-sort closures, trimming steady-state allocation pressure without changing the visible stream.
 - During flight, the HUD keeps the same distance and peak-G log live in a cached `LOG` row, so pilots can manage a record attempt without opening results.
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.
