@@ -260,6 +260,14 @@ describe('visible mesh contact sampling', () => {
     expect(sampleGroundHeight(x, z)).toBeCloseTo(meshH!, 5)
   })
 
+  it('invalidates the cached contact cell when streamed terrain is cleared', () => {
+    const terrain = new TerrainSystem(new Scene())
+    pump(terrain, 210, 210, 40)
+    expect(terrain.sampleMeshHeight(0, 0)).not.toBeNull()
+    terrain.clearAll()
+    expect(terrain.sampleMeshHeight(0, 0)).toBeNull()
+  })
+
   it('matches heights and lighting normals across neighbouring near tiles', () => {
     const terrain = new TerrainSystem(new Scene())
     pump(terrain, 210, 210, 12)

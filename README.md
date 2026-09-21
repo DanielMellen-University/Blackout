@@ -37,6 +37,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - `GUST RIDER` and `RANGE RUN` task details now show cached current seconds and kilometres, keeping live progress readable without per-frame string churn.
 - Scalar contracts now expose coarse current progress in the task detail, so altitude, weather, speed, and route objectives stay readable during the run without fixed-step string churn.
 - The live COMBO row now shows whole seconds remaining before the clean-flight chain expires, making the next gate or stunt decision readable without a new timer loop.
+- Terrain contact probes now reuse the last sampled near-cell lookup and invalidate it safely across streaming replacement and teardown, trimming repeated physics-map key work without changing collision results.
 - Radar-run objectives bind to the exact streamed contact that was locked, so reaching a different settlement cannot accidentally complete the task.
 - If a selected settlement streams out of range, the radar clears the stale lock and gives one `RADAR LOCK LOST` cue instead of leaving navigation pointed at missing world data.
 - A selected radar contact now keeps its display slot when nearby contacts crowd the sweep, so the navigation lock remains stable until the settlement actually leaves range.

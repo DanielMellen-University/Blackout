@@ -188,6 +188,10 @@ export class TerrainSystem {
   private readonly scene: Scene
   private lastCx = Number.NaN
   private lastCz = Number.NaN
+  /** Reuse the common near-cell lookup used by collision and contact probes. */
+  private sampledChunk: Chunk | null = null
+  private sampledChunkCx = Number.NaN
+  private sampledChunkCz = Number.NaN
   private focusX = 0
   private focusZ = 0
   private readonly waterClock = { value: 0 }
@@ -355,6 +359,7 @@ export class TerrainSystem {
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
+    this.invalidateSampleChunk()
   }
 
   /** Release streamed geometry and the shared near-field prop factory. */
@@ -416,9 +421,7 @@ export class TerrainSystem {
   }
 
   sampleMeshHeight(x: number, z: number): number | null {
-    const cx = Math.floor(x / CHUNK_SIZE)
-    const cz = Math.floor(z / CHUNK_SIZE)
-    const chunk = this.chunks.get(`${cx},${cz}`)
+    const chunk = this.sampledChunkAt(x, z)
     if (!chunk || chunk.heights.length !== (chunk.segs + 1) * (chunk.segs + 1)) return null
     const bed = interpolateGridHeight(
       chunk.heights,
@@ -440,9 +443,7 @@ export class TerrainSystem {
   }
 
   sampleMeshSurface(x: number, z: number): TerrainSurface | null {
-    const cx = Math.floor(x / CHUNK_SIZE)
-    const cz = Math.floor(z / CHUNK_SIZE)
-    const chunk = this.chunks.get(`${cx},${cz}`)
+    const chunk = this.sampledChunkAt(x, z)
     if (!chunk || chunk.heights.length !== (chunk.segs + 1) * (chunk.segs + 1)) {
       return null
     }
@@ -464,9 +465,7 @@ export class TerrainSystem {
 
   /** Fill only the contact fields needed by physics and collision checks. */
   sampleMeshSurfaceInto(x: number, z: number, out: GroundSurfaceSample): boolean {
-    const cx = Math.floor(x / CHUNK_SIZE)
-    const cz = Math.floor(z / CHUNK_SIZE)
-    const chunk = this.chunks.get(`${cx},${cz}`)
+    const chunk = this.sampledChunkAt(x, z)
     if (!chunk || chunk.heights.length !== (chunk.segs + 1) * (chunk.segs + 1)) {
       return false
     }
@@ -489,6 +488,22 @@ export class TerrainSystem {
     out.height = Math.max(bed, level)
     out.kind = bed < level ? 'water' : 'land'
     return true
+  }
+
+  private sampledChunkAt(x: number, z: number): Chunk | null {
+    const cx = Math.floor(x / CHUNK_SIZE)
+    const cz = Math.floor(z / CHUNK_SIZE)
+    if (cx === this.sampledChunkCx && cz === this.sampledChunkCz) return this.sampledChunk
+    this.sampledChunkCx = cx
+    this.sampledChunkCz = cz
+    this.sampledChunk = this.chunks.get(`${cx},${cz}`) ?? null
+    return this.sampledChunk
+  }
+
+  private invalidateSampleChunk(): void {
+    this.sampledChunk = null
+    this.sampledChunkCx = Number.NaN
+    this.sampledChunkCz = Number.NaN
   }
 
   private scheduleAround(cx: number, cz: number): void {
@@ -597,6 +612,7 @@ export class TerrainSystem {
       this.offsetFallback(existing)
     }
     this.chunks.set(key, chunk)
+    if (job.size === 1) this.invalidateSampleChunk()
   }
 
   private drainBuildQueue(): void {
@@ -721,6 +737,7 @@ export class TerrainSystem {
       const old = this.retiring[i]!
       const replacement = this.chunks.get(old.key)
       if (replacement && replacement.fadeAge < FADE_SECONDS && this.desiredTiles.has(old.key)) continue
+      if (this.sampledChunk === old) this.invalidateSampleChunk()
       old.root.removeFromParent()
       this.disposeChunk(old)
       this.retiring.splice(i, 1)
@@ -729,6 +746,7 @@ export class TerrainSystem {
     for (const key of toRemove) {
       const chunk = this.chunks.get(key)
       if (!chunk) continue
+      if (this.sampledChunk === chunk) this.invalidateSampleChunk()
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
       this.chunks.delete(key)
