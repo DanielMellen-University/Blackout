@@ -26,7 +26,7 @@ describe('course picker copy', () => {
       completionCount: 1,
       bestTimeSec: 90,
       landingQuality: 0.95,
-    })).toBe('LOG LAND BUTTER')
+    })).toBe('LOG LAND BUTTER 95%')
     expect(courseFlightLogLabel({
       completionCount: 1,
       bestTimeSec: 90,
