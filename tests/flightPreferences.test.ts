@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_KEYBOARD_YAW,
+  DEFAULT_KEYBOARD_ROLL,
+  KEYBOARD_ROLL_STORAGE_KEY,
   KEYBOARD_YAW_STORAGE_KEY,
+  keyboardRollPreferenceLabel,
   keyboardYawPreferenceLabel,
+  normalizeKeyboardRollPreference,
   normalizeKeyboardYawPreference,
+  readKeyboardRollPreference,
   readKeyboardYawPreference,
+  writeKeyboardRollPreference,
   writeKeyboardYawPreference,
 } from '../src/core/FlightPreferences'
 
@@ -35,5 +41,19 @@ describe('keyboard flight preferences', () => {
     }
     expect(readKeyboardYawPreference(storage, 'a-left')).toBe('a-left')
     expect(() => writeKeyboardYawPreference(storage, 'a-right')).not.toThrow()
+  })
+
+  it('normalizes and persists the keyboard roll preference independently', () => {
+    const values = new Map<string, string>([[KEYBOARD_ROLL_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeKeyboardRollPreference('q-left')).toBe('q-left')
+    expect(normalizeKeyboardRollPreference('bad')).toBe(DEFAULT_KEYBOARD_ROLL)
+    expect(readKeyboardRollPreference(storage)).toBe(DEFAULT_KEYBOARD_ROLL)
+    writeKeyboardRollPreference(storage, 'q-left')
+    expect(values.get(KEYBOARD_ROLL_STORAGE_KEY)).toBe('q-left')
+    expect(keyboardRollPreferenceLabel('q-left')).toBe('Q LEFT / E RIGHT')
   })
 })

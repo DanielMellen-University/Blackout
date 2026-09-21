@@ -137,6 +137,11 @@ import {
   normalizeKeyboardYawPreference,
   readKeyboardYawPreference,
   writeKeyboardYawPreference,
+  keyboardRollPreferenceLabel,
+  normalizeKeyboardRollPreference,
+  readKeyboardRollPreference,
+  writeKeyboardRollPreference,
+  type KeyboardRollPreference,
   type KeyboardYawPreference,
 } from './core/FlightPreferences'
 import {
@@ -164,7 +169,9 @@ async function boot(): Promise<void> {
   const menuCoursePickerRoot = document.getElementById('menu-course-picker')
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
+  const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
+  const rollLabel = document.getElementById('controls-roll-label')
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   const touchRoot = document.getElementById('touch-controls')
@@ -246,6 +253,7 @@ async function boot(): Promise<void> {
   let renderQuality: RenderQuality = readRenderQuality(qualityStorage, renderQualityFallback)
   const initialAudioVolume = readAudioVolume(qualityStorage)
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
+  const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -363,7 +371,9 @@ async function boot(): Promise<void> {
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
   const input = new InputManager()
   input.setKeyboardYawPreference(initialKeyboardYaw)
+  input.setKeyboardRollPreference(initialKeyboardRoll)
   if (yawSelect) yawSelect.value = initialKeyboardYaw
+  if (rollSelect) rollSelect.value = initialKeyboardRoll
   const touchDevice = touchInputSupported(
     typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
     typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
@@ -405,6 +415,22 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(yawSelect, 'change', onKeyboardYawChange)
+  const applyKeyboardRoll = (next: KeyboardRollPreference): void => {
+    const preference = normalizeKeyboardRollPreference(next)
+    input.setKeyboardRollPreference(preference)
+    if (rollSelect) rollSelect.value = preference
+    if (rollLabel) rollLabel.textContent = `Roll (${keyboardRollPreferenceLabel(preference)})`
+    writeKeyboardRollPreference(qualityStorage, preference)
+  }
+  applyKeyboardRoll(initialKeyboardRoll)
+  const onKeyboardRollChange = (): void => {
+    if (!rollSelect) return
+    applyKeyboardRoll(rollSelect.value as KeyboardRollPreference)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`KEYBOARD ROLL ${keyboardRollPreferenceLabel(input.keyboardRoll)}`, 1500, 'info')
+    }
+  }
+  uiListeners.add(rollSelect, 'change', onKeyboardRollChange)
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)
     audio.setVolume(volume)

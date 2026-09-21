@@ -2,6 +2,8 @@ import { flightConfig } from '../aircraft/flightConfig'
 import { createDefaultControls, type ControlState } from './types'
 import {
   normalizeKeyboardYawPreference,
+  normalizeKeyboardRollPreference,
+  type KeyboardRollPreference,
   type KeyboardYawPreference,
 } from './FlightPreferences'
 import type { TouchInputState } from './TouchControls'
@@ -32,6 +34,7 @@ export class InputManager {
   private touchThrottle = 0
   private touchBoost = false
   private keyboardYawPreference: KeyboardYawPreference = 'a-right'
+  private keyboardRollPreference: KeyboardRollPreference = 'q-right'
 
   cameraToggleQueued = false
   resetQueued = false
@@ -63,6 +66,14 @@ export class InputManager {
     return this.keyboardYawPreference
   }
 
+  setKeyboardRollPreference(preference: KeyboardRollPreference): void {
+    this.keyboardRollPreference = normalizeKeyboardRollPreference(preference)
+  }
+
+  get keyboardRoll(): KeyboardRollPreference {
+    return this.keyboardRollPreference
+  }
+
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown)
     this.target.removeEventListener('keyup', this.onKeyUp)
@@ -82,7 +93,10 @@ export class InputManager {
       ? this.axis('KeyD', 'KeyA')
       : this.axis('KeyA', 'KeyD')
     this.controls.yaw = mergeAxis(keyboardYaw, this.gamepadYaw, this.touchYaw)
-    this.controls.roll = mergeAxis(this.axis('KeyQ', 'KeyE'), this.gamepadRoll, this.touchRoll)
+    const keyboardRoll = this.keyboardRollPreference === 'q-left'
+      ? this.axis('KeyE', 'KeyQ')
+      : this.axis('KeyQ', 'KeyE')
+    this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll, this.touchRoll)
     this.controls.boost = this.keys.has('Space') || this.gamepadBoost || this.touchBoost
     this.controls.airbrake = this.keys.has('KeyB')
     this.controls.stabilityAssist = this.stabilityAssist

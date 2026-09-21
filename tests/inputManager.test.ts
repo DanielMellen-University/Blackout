@@ -53,6 +53,20 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('supports the persisted Q-left / E-right keyboard preference', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.setKeyboardRollPreference('q-left')
+
+    fake.fire('keydown', 'KeyQ')
+    expect(input.sampleWithDt(0).roll).toBe(-1)
+    fake.fire('keyup', 'KeyQ')
+    fake.fire('keydown', 'KeyE')
+    expect(input.sampleWithDt(0).roll).toBe(1)
+
+    input.dispose()
+  })
+
   it('queues the audio toggle only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)
