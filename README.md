@@ -131,6 +131,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Bonus contracts can also include `SETTLEMENT TOUR`, rewarding one city arrival and one village arrival through the existing radar target path.
 - SETTLEMENT TOUR keeps its live TASK instruction explicit with cached `CITY OPEN/OK` and `VILLAGE OPEN/OK` status, including on results.
 - Bonus contracts can also include `COMBO RUN`, rewarding a three-link chain built from clean gates and barrel rolls through the existing combo timer.
+- COMBO RUN keeps a cached `CURRENT Xn` milestone in the TASK instruction, so the objective stays readable when the compact combo row is hidden.
 - `TERRAIN HUGGER` now measures radio altitude against the rendered terrain surface, so the low-pass objective follows actual ridges and valleys instead of the spawn strip.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.

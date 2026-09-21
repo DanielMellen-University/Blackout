@@ -42,6 +42,7 @@ const LEVEL_MAX_DRIFT_M = 24
 const LEVEL_TARGET_SECONDS = 10
 const SETTLEMENT_TOUR_DETAIL = 'VISIT ONE CITY AND ONE VILLAGE'
 const COMBO_TARGET = 3
+const COMBO_RUN_DETAIL = 'BUILD COMBO X3'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -172,12 +173,14 @@ export class SortieContractTracker {
                         : base.kind === 'tour'
                           ? SETTLEMENT_TOUR_DETAIL
                         : base.kind === 'combo'
-                          ? `BUILD COMBO X${Math.round(target)}`
+                          ? COMBO_RUN_DETAIL
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = base.kind === 'tour'
       ? settlementTourDetail(false, false)
-      : detail
+      : base.kind === 'combo'
+        ? comboRunDetail(0)
+        : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -212,7 +215,9 @@ export class SortieContractTracker {
   /** Turn the existing gate-and-stunt chain into a bounded arcade objective. */
   recordCombo(combo: number): void {
     if (this.definition?.kind !== 'combo' || this.completeValue || !Number.isFinite(combo)) return
-    this.progressValue = clamp01(Math.floor(combo) / this.definition.target)
+    const safeCombo = Math.max(0, Math.floor(combo))
+    this.detailValue = comboRunDetail(safeCombo)
+    this.progressValue = clamp01(safeCombo / this.definition.target)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -483,4 +488,8 @@ function clamp01(value: number): number {
 
 function settlementTourDetail(city: boolean, village: boolean): string {
   return `${SETTLEMENT_TOUR_DETAIL} / CITY ${city ? 'OK' : 'OPEN'} / VILLAGE ${village ? 'OK' : 'OPEN'}`
+}
+
+function comboRunDetail(combo: number): string {
+  return `${COMBO_RUN_DETAIL} / CURRENT X${Math.max(0, Math.min(COMBO_TARGET, combo))}`
 }
