@@ -3,6 +3,7 @@ import {
   ChallengeRun,
   courseMasteryTierForProgress,
   courseMasteryTierLabel,
+  courseMasteryNextTierLabel,
   deadstickLandingScore,
   formatPaceDelta,
   formatSplitTrace,
@@ -1752,6 +1753,9 @@ describe('ChallengeRun', () => {
     expect(courseMasteryTierForProgress({ completionCount: Number.NaN, bestScore: Number.POSITIVE_INFINITY })).toBe('rookie')
     expect(courseMasteryTierLabel('rookie')).toBe('ROOKIE')
     expect(courseMasteryTierLabel('legend')).toBe('LEGEND')
+    expect(courseMasteryNextTierLabel('pilot')).toBe('VETERAN')
+    expect(courseMasteryNextTierLabel('ace')).toBe('LEGEND')
+    expect(courseMasteryNextTierLabel('legend')).toBe('')
   })
 
   it('awards mastery badges from finite run quality thresholds', () => {

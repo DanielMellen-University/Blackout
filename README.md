@@ -78,6 +78,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Setting a new touchdown-quality course record now adds the existing restrained milestone chime to the landing handoff, making a better landing audible without adding a new audio layer.
 - Course mastery tiers now respect the saved touchdown grade as well as runs, score, badges, and contracts, so a rough landing cannot masquerade as a fully mastered route.
 - Results now call out a newly promoted course mastery tier and reuse the existing milestone chime, making long-term progression visible without adding a new runtime system.
+- Played course cards now show the next mastery tier target, keeping long-term route progression readable before launch without render-loop or storage work.
 - During flight, the HUD keeps the same distance and peak-G log live in a cached `LOG` row, so pilots can manage a record attempt without opening results.
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.

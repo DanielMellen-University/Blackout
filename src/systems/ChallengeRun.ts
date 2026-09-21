@@ -270,6 +270,14 @@ export function courseMasteryTierLabel(tier: CourseMasteryTier): string {
   return 'ROOKIE'
 }
 
+/** Keep the next long-term course target compact enough for picker cards. */
+export function courseMasteryNextTierLabel(tier: CourseMasteryTier): string {
+  if (tier === 'pilot') return 'VETERAN'
+  if (tier === 'veteran') return 'ACE'
+  if (tier === 'ace') return 'LEGEND'
+  return ''
+}
+
 function courseMasteryTierRank(tier: CourseMasteryTier): number {
   if (tier === 'legend') return 4
   if (tier === 'ace') return 3
