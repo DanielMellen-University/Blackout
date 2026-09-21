@@ -107,6 +107,9 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(history.landingQuality) && history.landingQuality! > 0) {
     parts.push(`LAND ${landingQualityLabel(history.landingQuality!)}`)
   }
+  if (Number.isFinite(history.approachScore) && history.approachScore! > 0) {
+    parts.push(`APP +${Math.min(500, Math.floor(history.approachScore!))}`)
+  }
   return parts.length > 0 ? `LOG ${parts.join(' ')}` : ''
 }
 
