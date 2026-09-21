@@ -160,6 +160,7 @@ export class RunResults {
       `TIME +${result.timeScore.toLocaleString()}`,
       `LAND +${result.landingScore.toLocaleString()}`,
     ]
+    if (result.scoreCapped) scoreParts.push('SCORE CAP')
     if (result.newMedalRecord) scoreParts.push('NEW MEDAL')
     if (result.courseBestMedal && result.courseBestMedal !== result.medal) {
       scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)

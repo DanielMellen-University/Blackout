@@ -7,6 +7,7 @@ import {
   courseMasteryNextTierGoalLabel,
   deadstickLandingScore,
   altitudeMilestoneScore,
+  boundedScore,
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
@@ -75,6 +76,40 @@ describe('ChallengeRun', () => {
     expect(altitudeMilestoneScore(3_000)).toBe(900)
     expect(altitudeMilestoneScore(6_000)).toBe(MAX_ALTITUDE_MILESTONE_SCORE)
     expect(altitudeMilestoneScore(99_999)).toBe(MAX_ALTITUDE_MILESTONE_SCORE)
+  })
+
+  it('keeps stacked rewards aligned with the persisted score ceiling', () => {
+    expect(boundedScore(117_500)).toBe(117_500)
+    expect(boundedScore(117_501)).toBe(MAX_BEST_SCORE)
+    expect(boundedScore(Number.NaN)).toBe(0)
+
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('seed:score-cap', 1, 'balanced', 42)
+    run.update(0.1, 8)
+    run.recordAltitudeMilestone(6_000)
+    run.recordStunt(12)
+    run.recordCombo(20)
+    for (let index = 0; index < 6; index += 1) run.recordDestination('city')
+    for (const biome of ['plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills', 'mountain', 'snow', 'water', 'ocean', 'tundra', 'savanna', 'volcanic', 'saltflat']) {
+      run.recordBiome(biome)
+    }
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+      weatherRisk: 1,
+      daylight: 0,
+    }, 0)!
+    expect(result.scoreCapped).toBe(true)
+    expect(result.totalScore).toBe(MAX_BEST_SCORE)
+    expect(readBestCourseScore(storage, 'seed:score-cap')).toBe(MAX_BEST_SCORE)
   })
 
   it('starts the clock on the takeoff roll and scores a completed landing', () => {

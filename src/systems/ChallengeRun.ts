@@ -43,6 +43,8 @@ export interface ChallengeResult {
   /** Human-readable touchdown quality band. */
   landingLabel?: LandingQualityLabel
   totalScore: number
+  /** Whether bonus stacking reached the finite course-score ceiling. */
+  scoreCapped?: boolean
   medal: Medal
   /** Highest score medal retained for this course through the best-score record. */
   courseBestMedal?: Medal
@@ -410,6 +412,13 @@ export function altitudeMilestoneScore(altitudeM: number): number {
   if (safe >= 1_500) return 500
   if (safe >= 500) return 200
   return 0
+}
+
+/** Keep persisted and displayed course scores on the same finite ceiling. */
+export function boundedScore(value: number): number {
+  return Number.isFinite(value)
+    ? Math.min(MAX_BEST_SCORE, Math.max(0, Math.floor(value)))
+    : 0
 }
 
 /** Reward a controlled touchdown after the engine has run dry. */
@@ -1217,7 +1226,9 @@ export class ChallengeRun {
     const contractStreakBonus = contractComplete
       ? contractStreakBonusForStreak(history.contractStreak ?? 0)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + altitudeScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
+    const rawTotalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + altitudeScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
+    const totalScore = boundedScore(rawTotalScore)
+    const scoreCapped = rawTotalScore > totalScore
     const previousBest = this.readBest()
     const medal = medalFor(totalScore)
     const courseBestMedal = medalFor(Math.max(previousBest, totalScore))
@@ -1364,6 +1375,7 @@ export class ChallengeRun {
       landingQuality,
       landingLabel: landingQualityLabel(landingQuality),
       totalScore,
+      scoreCapped,
       medal,
       courseBestMedal,
       newMedalRecord,

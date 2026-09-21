@@ -90,6 +90,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Course-card landing records now include the exact saved percentage beside the `BUTTER`, `SMOOTH`, `FIRM`, or `HARD` grade.
 - Courses now retain their best touchdown fuel reserve, preview it on cards, and call out a new fuel record through the existing milestone cue.
 - Course cards and results now keep the best score medal visible, and a new medal tier reuses the existing milestone cue.
+- Stacked sortie rewards now share the persisted score ceiling, and capped debriefs identify the SCORE CAP instead of drifting from the saved best.
 - During flight, the HUD keeps the same distance and peak-G log live in a cached `LOG` row, so pilots can manage a record attempt without opening results.
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.
