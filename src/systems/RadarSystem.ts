@@ -227,6 +227,9 @@ export function radarBearingArrow(bearing: number): string {
   if (Math.abs(safe) < Math.PI / 8) return '↑'
   if (safe > 0 && safe < Math.PI * .375) return '↗'
   if (safe < 0 && safe > -Math.PI * .375) return '↖'
+  if (Math.abs(safe) >= Math.PI * .875) return '↓'
+  if (safe > Math.PI * .625) return '↘'
+  if (safe < -Math.PI * .625) return '↙'
   return safe > 0 ? '→' : '←'
 }
 
