@@ -64,6 +64,7 @@ import {
   machNumber,
   missionPaceLabel,
   missionHudLabel,
+  createMissionHudLabelCache,
   ghostPaceLabel,
   ghostPaceAriaLabel,
   contractProgressLabel,
@@ -377,6 +378,14 @@ describe('HUD value formatting', () => {
       .toBe('RIVER RUN · RANGE GATE 1/5 · CONTRACT WATER RUN')
     expect(missionHudLabel('', '  TAKE OFF  ')).toBe('TAKE OFF')
     expect(missionHudLabel('x'.repeat(200), 'y'.repeat(200))).toHaveLength(120)
+  })
+
+  it('reuses the cached mission label until one of its inputs changes', () => {
+    const cache = createMissionHudLabelCache()
+    const first = cache('RIVER RUN', 'RANGE GATE 1/5', 'CONTRACT WATER RUN')
+    expect(cache('RIVER RUN', 'RANGE GATE 1/5', 'CONTRACT WATER RUN')).toBe(first)
+    expect(cache('RIVER RUN', 'RANGE GATE 2/5', 'CONTRACT WATER RUN'))
+      .toBe('RIVER RUN · RANGE GATE 2/5 · CONTRACT WATER RUN')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

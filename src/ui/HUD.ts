@@ -129,6 +129,28 @@ export function missionHudLabel(routeLabel: unknown, objective: unknown, contrac
   return [route, task, contract].filter(Boolean).join(' · ').slice(0, 120)
 }
 
+/** Reuse an unchanged mission label so the live render loop stays allocation-light. */
+export function createMissionHudLabelCache(): (
+  routeLabel: unknown,
+  objective: unknown,
+  contractLabel?: unknown,
+) => string {
+  let lastRoute: unknown = Symbol('unset')
+  let lastObjective: unknown = Symbol('unset')
+  let lastContract: unknown = Symbol('unset')
+  let cached = ''
+  return (routeLabel, objective, contractLabel): string => {
+    if (routeLabel === lastRoute && objective === lastObjective && contractLabel === lastContract) {
+      return cached
+    }
+    lastRoute = routeLabel
+    lastObjective = objective
+    lastContract = contractLabel
+    cached = missionHudLabel(routeLabel, objective, contractLabel)
+    return cached
+  }
+}
+
 /** Keep the live combo readout finite and compact for visual and assistive output. */
 export function comboHudLabel(value: number): string {
   const safe = Number.isFinite(value)

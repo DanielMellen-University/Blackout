@@ -92,9 +92,9 @@ import { CoursePicker, coursePickerCopy } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
+  createMissionHudLabelCache,
   hudBackgroundHidden,
   HUD,
-  missionHudLabel,
   machNumber,
   engineHeatBanner,
   engineHeatCue,
@@ -394,6 +394,7 @@ async function boot(): Promise<void> {
     : null
   const time = new Time()
   const hud = new HUD()
+  const missionLabelCache = createMissionHudLabelCache()
   const collision = new CollisionSystem((jet) =>
     world.hitObstacle(jet.position.x, jet.position.y, jet.position.z),
   )
@@ -1690,7 +1691,7 @@ async function boot(): Promise<void> {
       hudFrame.windZ = precipitation.windZ
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       const contractLabel = challenge.contractLabel
-      hudFrame.mission = missionHudLabel(
+      hudFrame.mission = missionLabelCache(
         world.mission.routeSummary.label,
         `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`,
         contractLabel,
