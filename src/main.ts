@@ -1276,6 +1276,7 @@ async function boot(): Promise<void> {
           world.atmosphere.weatherTransitioning,
           aircraft.engineState.afterburnerActive,
           terrainClearanceM,
+          world.atmosphere.daylight,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }

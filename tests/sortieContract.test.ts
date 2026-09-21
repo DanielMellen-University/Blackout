@@ -45,6 +45,12 @@ describe('sortie contracts', () => {
         tracker.recordPrecisionGate(0.9)
         tracker.recordPrecisionGate(0.9)
       }
+      if (tracker.kind === 'night') {
+        tracker.recordNight(0.8, 5)
+        tracker.recordNight(0.2, 5)
+        tracker.recordNight(0.2, 5)
+        tracker.recordNight(0.2, 2)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -130,7 +136,31 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night']))
+  })
+
+  it('accumulates only airborne time through the dusk envelope', () => {
+    const tracker = new SortieContractTracker()
+    let nightSeed = -1
+    for (let seed = 0; seed < 2_048; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'night') {
+        nightSeed = seed
+        break
+      }
+    }
+    expect(nightSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(nightSeed, 5)
+    tracker.recordNight(0.2, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordNight(0.5, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordNight(0.2, 5)
+    expect(tracker.progress).toBeCloseTo(5 / 12)
+    tracker.recordNight(0.2, 7)
+    tracker.recordNight(0.2, 2)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {

@@ -929,6 +929,37 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires atmosphere daylight into the night-flight contract', () => {
+    const run = new ChallengeRun(null)
+    let nightSeed = -1
+    for (let seed = 0; seed < 2_048; seed += 1) {
+      run.reset('seed:night-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT NIGHT FLIGHT') {
+        nightSeed = seed
+        break
+      }
+    }
+    expect(nightSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:night-contract', 1, 'balanced', nightSeed)
+    run.update(0.1, 8)
+    run.update(4, 220, 300, 0, 0, false, true, 0, 0, 1, 1, false, false, 300, 0.2)
+    expect(run.contractProgress).toBeCloseTo(1 / 3)
+    run.update(5, 220, 300, 0, 0, false, true, 0, 0, 1, 1, false, false, 300, 0.2)
+    run.update(3, 220, 300, 0, 0, false, true, 0, 0, 1, 1, false, false, 300, 0.2)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('NIGHT FLIGHT')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('night')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('marks a clean-circuit contract failed after a missed gate', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1

@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -45,6 +45,8 @@ const COMBO_TARGET = 3
 const COMBO_RUN_DETAIL = 'BUILD COMBO X3'
 const PRECISION_CHAIN_TARGET = 3
 const PRECISION_GATE_THRESHOLD = 0.82
+const NIGHT_MAX_DAYLIGHT = 0.38
+const NIGHT_TARGET_SECONDS = 12
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -71,6 +73,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'tour', label: 'SETTLEMENT TOUR', target: 2 },
   { kind: 'combo', label: 'COMBO RUN', target: COMBO_TARGET },
   { kind: 'precision', label: 'PRECISION CHAIN', target: PRECISION_CHAIN_TARGET },
+  { kind: 'night', label: 'NIGHT FLIGHT', target: NIGHT_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -99,6 +102,7 @@ export class SortieContractTracker {
   private visitedCity = false
   private visitedVillage = false
   private precisionStreak = 0
+  private nightSeconds = 0
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -125,6 +129,7 @@ export class SortieContractTracker {
     this.visitedCity = false
     this.visitedVillage = false
     this.precisionStreak = 0
+    this.nightSeconds = 0
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -181,6 +186,8 @@ export class SortieContractTracker {
                           ? COMBO_RUN_DETAIL
                         : base.kind === 'precision'
                           ? `CLEAR ${Math.round(target)} PERFECT GATES IN A ROW`
+                        : base.kind === 'night'
+                          ? `FLY AFTER DARK FOR ${Math.round(target)}S`
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = base.kind === 'tour'
@@ -235,6 +242,18 @@ export class SortieContractTracker {
       ? Math.min(this.definition.target, this.precisionStreak + 1)
       : 0
     this.progressValue = clamp01(this.precisionStreak / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Accumulate bounded airborne time through the existing dusk and night envelope. */
+  recordNight(daylight: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'night' || this.completeValue || !airborne) return
+    if (!Number.isFinite(daylight) || !Number.isFinite(dt)) return
+    const safeDaylight = Math.max(0, Math.min(1, daylight))
+    if (safeDaylight > NIGHT_MAX_DAYLIGHT) return
+    const safeDt = Math.max(0, Math.min(5, dt))
+    this.nightSeconds = Math.min(this.definition.target, this.nightSeconds + safeDt)
+    this.progressValue = clamp01(this.nightSeconds / this.definition.target)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -476,7 +495,8 @@ function indexForSeed(seed: number): number {
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
-  // no-miss circuit, level-flight, settlement-tour, combo, and precision objectives.
+  // no-miss circuit, level-flight, settlement-tour, combo, precision, and
+  // night-flight objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -497,6 +517,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 89 === 7) return 21
   if (mixed % 97 === 13) return 22
   if (mixed % 101 === 17) return 23
+  if (mixed % 107 === 31) return 24
   return mixed % legacyContractCount
 }
 

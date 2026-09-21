@@ -51,6 +51,7 @@
 - Add a deterministic COMBO RUN contract that rewards building a three-link gate-and-stunt chain through existing combo telemetry without adding scene state.
 - Keep COMBO RUN's current chain milestone in the cached TASK detail, updating only on combo events instead of allocating strings every frame.
 - Add a deterministic PRECISION CHAIN contract that turns the existing high-quality gate streak into a three-clear objective with recoverable resets and no scene growth.
+- Add a deterministic NIGHT FLIGHT contract that rewards a bounded airborne stretch through the existing dusk and night envelope without adding scene work.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.
