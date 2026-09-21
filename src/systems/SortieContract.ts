@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -56,6 +56,9 @@ const GUST_TARGET_SECONDS = 10
 const GUST_RUN_DETAIL = 'FLY THROUGH STRONG GUSTS FOR 10S'
 const RANGE_TARGET_METERS = 12_000
 const RANGE_RUN_DETAIL = 'FLY 12KM BEFORE LANDING'
+const HIGH_DIVE_TOP_M = 1_800
+const HIGH_DIVE_EXIT_M = 420
+const HIGH_DIVE_DETAIL = 'REACH 1,800M THEN RECOVER BELOW 420M'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -88,6 +91,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'target', label: 'RADAR RUN', target: 1 },
   { kind: 'gust', label: 'GUST RIDER', target: GUST_TARGET_SECONDS },
   { kind: 'range', label: 'RANGE RUN', target: RANGE_TARGET_METERS },
+  { kind: 'high-dive', label: 'HIGH DIVE', target: 1 },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -125,6 +129,7 @@ export class SortieContractTracker {
   private radarLockId = ''
   private gustSeconds = 0
   private rangeMeters = 0
+  private highDiveReached = false
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
@@ -162,6 +167,7 @@ export class SortieContractTracker {
     this.radarLockId = ''
     this.gustSeconds = 0
     this.rangeMeters = 0
+    this.highDiveReached = false
     this.gustDetailBucket = -1
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
@@ -183,7 +189,9 @@ export class SortieContractTracker {
           ? gustRunDetail(0, target)
           : base.kind === 'range'
             ? rangeRunDetail(0, target)
-            : detail
+            : base.kind === 'high-dive'
+              ? HIGH_DIVE_DETAIL
+              : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -289,6 +297,22 @@ export class SortieContractTracker {
       this.detailValue = rangeRunDetail(this.rangeMeters, this.definition.target)
     }
     if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Require a high climb followed by an airborne recovery dive. */
+  recordHighDive(altitudeM: number, airborne = true): void {
+    if (this.definition?.kind !== 'high-dive' || this.completeValue || !airborne) return
+    if (!Number.isFinite(altitudeM)) return
+    const safeAltitude = Math.max(0, Math.min(100_000, altitudeM))
+    if (!this.highDiveReached) {
+      if (safeAltitude < HIGH_DIVE_TOP_M) return
+      this.highDiveReached = true
+      this.progressValue = 0.5
+      return
+    }
+    if (safeAltitude > HIGH_DIVE_EXIT_M) return
+    this.progressValue = 1
+    this.completeValue = true
   }
 
   /** Turn the existing gate-and-stunt chain into a bounded arcade objective. */
@@ -596,7 +620,8 @@ function indexForSeed(seed: number): number {
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
-  // night-flight, butter-landing, dry-run, radar-run, gust-rider, and range-run objectives.
+  // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
+  // and high-dive objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -623,6 +648,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 127 === 83) return 27
   if (mixed % 131 === 97) return 28
   if (mixed % 137 === 107) return 29
+  if (mixed % 149 === 131) return 30
   return mixed % legacyContractCount
 }
 
@@ -682,6 +708,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'target': return RADAR_RUN_DETAIL
     case 'gust': return GUST_RUN_DETAIL
     case 'range': return RANGE_RUN_DETAIL
+    case 'high-dive': return HIGH_DIVE_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }

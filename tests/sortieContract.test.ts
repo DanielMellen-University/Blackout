@@ -85,6 +85,12 @@ describe('sortie contracts', () => {
         tracker.recordDistance(5_000)
         tracker.recordDistance(7_000)
       }
+      if (tracker.kind === 'high-dive') {
+        tracker.recordHighDive(1_800, false)
+        tracker.recordHighDive(1_800)
+        tracker.recordHighDive(421)
+        tracker.recordHighDive(420)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -175,7 +181,35 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive']))
+  })
+
+  it('requires a high climb before the recovery dive can complete', () => {
+    const tracker = new SortieContractTracker()
+    let highDiveSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'high-dive') {
+        highDiveSeed = seed
+        break
+      }
+    }
+    expect(highDiveSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(highDiveSeed, 5)
+    expect(tracker.label).toBe('HIGH DIVE')
+    expect(tracker.detail).toBe('REACH 1,800M THEN RECOVER BELOW 420M')
+    tracker.recordHighDive(1_800, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordHighDive(1_799)
+    expect(tracker.progress).toBe(0)
+    tracker.recordHighDive(1_800)
+    expect(tracker.progress).toBe(0.5)
+    tracker.recordHighDive(421)
+    expect(tracker.complete).toBe(false)
+    tracker.recordHighDive(420)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('accumulates only airborne time through strong gusts', () => {
