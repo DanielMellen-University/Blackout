@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coursePickerCopy } from '../src/ui/CoursePicker'
+import { courseFlightLogLabel, coursePickerCopy } from '../src/ui/CoursePicker'
 
 const orbit = {
   seed: 1 as number | null,
@@ -8,6 +8,17 @@ const orbit = {
 }
 
 describe('course picker copy', () => {
+  it('previews persistent flight-log records when a course has them', () => {
+    expect(courseFlightLogLabel({
+      completionCount: 4,
+      bestTimeSec: 88,
+      flightDistanceM: 12_450,
+      peakPositiveG: 6.25,
+      peakNegativeG: -1.75,
+    })).toBe('LOG 12KM G+6.3 G-1.8')
+    expect(courseFlightLogLabel({ completionCount: 1, bestTimeSec: 90 })).toBe('')
+  })
+
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {
     expect(coursePickerCopy({
       course: { seed: null, profile: null, detail: 'New terrain and route every time' },

@@ -66,12 +66,30 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   if (contractStreak >= 2) statsParts.push(`CONTRACT X${contractStreak}`)
   if (tierLabel) statsParts.push(tierLabel)
   if (badgeCount > 0) statsParts.push(`${badgeCount}/${MASTERY_BADGE_COUNT} BADGES`)
+  const flightLogLabel = courseFlightLogLabel(input.history)
+  if (flightLogLabel) statsParts.push(flightLogLabel)
   const contractLabel = sortieContractLabelForSeed(input.course.seed ?? undefined)
   if (contractLabel) statsParts.push(`TASK ${contractLabel}`)
   const weatherLabel = courseWeatherPreviewLabel(input.course.seed ?? undefined)
   if (weatherLabel) statsParts.push(`WX ${weatherLabel}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
+}
+
+/** Keep persistent telemetry readable on the selected course line without exposing storage details. */
+export function courseFlightLogLabel(history: CourseHistory | null): string {
+  if (!history) return ''
+  const parts: string[] = []
+  if (Number.isFinite(history.flightDistanceM) && history.flightDistanceM! > 0) {
+    parts.push(formatCourseDistance(history.flightDistanceM!))
+  }
+  if (Number.isFinite(history.peakPositiveG) && history.peakPositiveG! > 1) {
+    parts.push(`G+${history.peakPositiveG!.toFixed(1)}`)
+  }
+  if (Number.isFinite(history.peakNegativeG) && history.peakNegativeG! < 0) {
+    parts.push(`G${history.peakNegativeG!.toFixed(1)}`)
+  }
+  return parts.length > 0 ? `LOG ${parts.join(' ')}` : ''
 }
 
 /** Keep the launch card honest about the deterministic weather waiting in the world. */
@@ -219,6 +237,12 @@ export class CoursePicker {
 
 function finiteCount(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value!)) : 0
+}
+
+function formatCourseDistance(distanceM: number): string {
+  const safe = Math.max(0, Math.min(2_000_000, distanceM))
+  if (safe < 1_000) return `${Math.round(safe)}M`
+  return `${(safe / 1_000).toFixed(safe < 10_000 ? 1 : 0)}KM`
 }
 
 function must(root: HTMLElement, sel: string): HTMLElement {

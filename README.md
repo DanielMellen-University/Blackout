@@ -73,6 +73,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Completed-run score detail now reports peak speed and height above the home strip, turning each sortie into a compact flight log without adding scene work.
 - Completed-run score detail now also reports flight distance and peak positive/negative G, using fixed-step telemetry with no score or scene cost.
 - Curated course history now retains best distance and positive/negative G records, so flight logs keep a long-term mastery target alongside score and pace.
+- Curated course cards preview those persistent flight-log records as a compact `LOG` line, making route mastery visible before takeoff.
 - Repeatable course selectors retain the fastest and highest recorded sortie, so route mastery includes how you fly, not only how quickly you finish.
 - New course speed and altitude records are called out on the results card without interrupting the existing badge handoff.
 - When `V` flight assist is enabled, the HUD keeps a quiet `TRIM ON` state visible after the toggle banner fades.
