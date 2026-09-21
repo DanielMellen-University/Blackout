@@ -79,6 +79,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.
 - A deterministic `BUTTER LANDING` contract can now require a `BUTTER`-quality touchdown, reusing the existing bounded landing score without adding scene state.
 - A deterministic `DRY RUN` contract can now reward high-speed military-power flight without afterburner, reusing existing engine-state telemetry and bounded contract time.
+- Curated course cards now preview the full deterministic contract instruction, and their task text is included in each card's accessible label before launch.
 - The close gear-down return now shows a cached `LAND` quality forecast using the exact result formula, keeping corrections readable before touchdown without duplicating physics.
 - Repeatable course selectors retain the fastest and highest recorded sortie, so route mastery includes how you fly, not only how quickly you finish.
 - New course speed and altitude records are called out on the results card without interrupting the existing badge handoff.

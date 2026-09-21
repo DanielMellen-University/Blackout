@@ -144,62 +144,8 @@ export class SortieContractTracker {
     // A no-miss circuit has no meaningful completion state in Free flight.
     // Leave the bonus slot empty instead of assigning an impossible task.
     if (base.kind === 'clean' && safeGates <= 0) return
-    const target = base.kind === 'pace'
-      ? Math.max(48, 53 + safeGates * 3)
-      : base.target
-    const detail = base.kind === 'pace'
-      ? `LAND UNDER ${Math.round(target)}S`
-      : base.kind === 'altitude'
-        ? `REACH ${Math.round(target).toLocaleString()}M`
-        : base.kind === 'stunt'
-          ? `COMPLETE ${Math.round(target)} BARREL ROLLS`
-          : base.kind === 'scout'
-            ? `REACH ${Math.round(target)} SETTLEMENTS`
-          : base.kind === 'fuel'
-              ? `LAND WITH ${Math.round(target * 100)}% FUEL`
-          : base.kind === 'low-level'
-            ? `HOLD RADIO ALT ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
-            : base.kind === 'biome'
-              ? `SURVEY ${Math.round(target)} DISTINCT BIOMES`
-              : base.kind === 'speed-band'
-                ? `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                : base.kind === 'weather'
-                ? `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
-                  : base.kind === 'water'
-                    ? `FLY OVER WATER FOR ${Math.round(target)}S`
-                    : base.kind === 'brake'
-                      ? `DEPLOY BRAKE ABOVE ${Math.round(BRAKE_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                      : base.kind === 'heat'
-                        ? `KEEP HEAT BELOW ${Math.round(HEAT_MAX_FRACTION * 100)}% ABOVE ${Math.round(HEAT_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                        : base.kind === 'crosswind'
-                          ? `HOLD CROSSWIND ABOVE ${Math.round(CROSSWIND_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                        : base.kind === 'g-control'
-                          ? `HOLD ${Math.round(G_CONTROL_MIN_MPS * 1.943844492)}+ KTS BETWEEN ${G_CONTROL_MIN}G AND ${G_CONTROL_MAX}G FOR ${Math.round(target)}S`
-                        : base.kind === 'deadstick'
-                          ? 'GLIDE TO BASE AFTER FUEL OUT'
-                        : base.kind === 'front'
-                          ? `FLY DURING WEATHER SHIFT FOR ${Math.round(target)}S`
-                        : base.kind === 'boost'
-                          ? `HOLD AFTERBURNER ABOVE ${Math.round(BOOST_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                        : base.kind === 'mach'
-                          ? `BREAK MACH 1 FOR ${Math.round(target)}S`
-                        : base.kind === 'clean'
-                          ? 'CLEAR EVERY GATE WITHOUT A MISS'
-                        : base.kind === 'level'
-                          ? `HOLD ${Math.round(LEVEL_MIN_ALTITUDE_M)}-${Math.round(LEVEL_MAX_ALTITUDE_M)}M WITHIN +/-${Math.round(LEVEL_MAX_DRIFT_M)}M FOR ${Math.round(target)}S`
-                        : base.kind === 'tour'
-                          ? SETTLEMENT_TOUR_DETAIL
-                        : base.kind === 'combo'
-                          ? COMBO_RUN_DETAIL
-                        : base.kind === 'precision'
-                          ? `CLEAR ${Math.round(target)} PERFECT GATES IN A ROW`
-                        : base.kind === 'night'
-                          ? `FLY AFTER DARK FOR ${Math.round(target)}S`
-                        : base.kind === 'butter'
-                          ? 'LAND WITH A BUTTER TOUCHDOWN'
-                        : base.kind === 'dry'
-                          ? `HOLD DRY POWER ABOVE ${Math.round(DRY_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
-                        : 'LAND CENTERED AND ALIGNED'
+    const target = contractTargetFor(base, safeGates)
+    const detail = contractDetailFor(base.kind, target)
     this.definition = { ...base, target, detail }
     this.detailValue = base.kind === 'tour'
       ? settlementTourDetail(false, false)
@@ -556,6 +502,54 @@ export function sortieContractLabelForSeed(seed: number | undefined, totalGates 
   const contract = CONTRACTS[indexForSeed(seed)]
   if (!contract || (contract.kind === 'clean' && safeGates <= 0)) return ''
   return contract.label
+}
+
+/** Preview the deterministic contract instruction without creating tracker state. */
+export function sortieContractDetailForSeed(seed: number | undefined, totalGates = 5): string {
+  if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
+  const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
+  const contract = CONTRACTS[indexForSeed(seed)]
+  if (!contract || (contract.kind === 'clean' && safeGates <= 0)) return ''
+  return contractDetailFor(contract.kind, contractTargetFor(contract, safeGates))
+}
+
+function contractTargetFor(
+  contract: Omit<SortieContractDefinition, 'detail'>,
+  safeGates: number,
+): number {
+  return contract.kind === 'pace' ? Math.max(48, 53 + safeGates * 3) : contract.target
+}
+
+function contractDetailFor(kind: SortieContractKind, target: number): string {
+  switch (kind) {
+    case 'pace': return `LAND UNDER ${Math.round(target)}S`
+    case 'altitude': return `REACH ${Math.round(target).toLocaleString()}M`
+    case 'stunt': return `COMPLETE ${Math.round(target)} BARREL ROLLS`
+    case 'scout': return `REACH ${Math.round(target)} SETTLEMENTS`
+    case 'fuel': return `LAND WITH ${Math.round(target * 100)}% FUEL`
+    case 'low-level': return `HOLD RADIO ALT ${Math.round(LOW_LEVEL_MIN_ALTITUDE_M)}-${Math.round(LOW_LEVEL_MAX_ALTITUDE_M)}M FOR ${Math.round(target)}S`
+    case 'biome': return `SURVEY ${Math.round(target)} DISTINCT BIOMES`
+    case 'speed-band': return `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    case 'weather': return `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
+    case 'water': return `FLY OVER WATER FOR ${Math.round(target)}S`
+    case 'brake': return `DEPLOY BRAKE ABOVE ${Math.round(BRAKE_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    case 'heat': return `KEEP HEAT BELOW ${Math.round(HEAT_MAX_FRACTION * 100)}% ABOVE ${Math.round(HEAT_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    case 'crosswind': return `HOLD CROSSWIND ABOVE ${Math.round(CROSSWIND_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    case 'g-control': return `HOLD ${Math.round(G_CONTROL_MIN_MPS * 1.943844492)}+ KTS BETWEEN ${G_CONTROL_MIN}G AND ${G_CONTROL_MAX}G FOR ${Math.round(target)}S`
+    case 'deadstick': return 'GLIDE TO BASE AFTER FUEL OUT'
+    case 'front': return `FLY DURING WEATHER SHIFT FOR ${Math.round(target)}S`
+    case 'boost': return `HOLD AFTERBURNER ABOVE ${Math.round(BOOST_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    case 'mach': return `BREAK MACH 1 FOR ${Math.round(target)}S`
+    case 'clean': return 'CLEAR EVERY GATE WITHOUT A MISS'
+    case 'level': return `HOLD ${Math.round(LEVEL_MIN_ALTITUDE_M)}-${Math.round(LEVEL_MAX_ALTITUDE_M)}M WITHIN +/-${Math.round(LEVEL_MAX_DRIFT_M)}M FOR ${Math.round(target)}S`
+    case 'tour': return SETTLEMENT_TOUR_DETAIL
+    case 'combo': return COMBO_RUN_DETAIL
+    case 'precision': return `CLEAR ${Math.round(target)} PERFECT GATES IN A ROW`
+    case 'night': return `FLY AFTER DARK FOR ${Math.round(target)}S`
+    case 'butter': return 'LAND WITH A BUTTER TOUCHDOWN'
+    case 'dry': return `HOLD DRY POWER ABOVE ${Math.round(DRY_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    default: return 'LAND CENTERED AND ALIGNED'
+  }
 }
 
 function clamp01(value: number): number {

@@ -6,7 +6,7 @@ import {
   type CourseHistory,
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
-import { sortieContractLabelForSeed } from '../systems/SortieContract'
+import { sortieContractDetailForSeed, sortieContractLabelForSeed } from '../systems/SortieContract'
 import { WEATHER_LABELS, weatherIdForSeed } from '../world/WeatherDirector'
 
 export interface CoursePickerItem {
@@ -69,7 +69,8 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   const flightLogLabel = courseFlightLogLabel(input.history)
   if (flightLogLabel) statsParts.push(flightLogLabel)
   const contractLabel = sortieContractLabelForSeed(input.course.seed ?? undefined)
-  if (contractLabel) statsParts.push(`TASK ${contractLabel}`)
+  const contractDetail = sortieContractDetailForSeed(input.course.seed ?? undefined)
+  if (contractLabel) statsParts.push(`TASK ${contractLabel}${contractDetail ? ` / ${contractDetail}` : ''}`)
   const weatherLabel = courseWeatherPreviewLabel(input.course.seed ?? undefined)
   if (weatherLabel) statsParts.push(`WX ${weatherLabel}`)
 
@@ -158,7 +159,8 @@ export class CoursePicker {
     button.className = 'course-option'
     button.dataset.courseId = item.id
     button.setAttribute('role', 'radio')
-    button.setAttribute('aria-label', item.meta ? `${item.label}, ${item.meta}` : item.label)
+    const accessibleLabel = [item.label, item.meta, item.stats].filter(Boolean).join(', ')
+    button.setAttribute('aria-label', accessibleLabel)
     const name = document.createElement('span')
     name.className = 'course-option-name'
     name.textContent = item.label
