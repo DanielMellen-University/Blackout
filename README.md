@@ -46,6 +46,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The title screen shows curated-course completion progress, refreshed only at startup and after a completed run.
 - Course progress and selection recover from cross-tab storage changes without adding per-frame reads.
 - Malformed course history is repaired into a canonical record the next time it is accessed.
+- Gate split traces are bounded and reject oversized, negative, non-finite, or non-monotonic local records before they affect pace guidance.
 - Routes can draw a deterministic steady, tempo, or altitude rhythm, with scoring emphasis matched to the route flavor.
 - Completed runs explain which scoring focus shaped the final score.
 - Clean completed runs can unlock local course mastery badges shown on the results card.

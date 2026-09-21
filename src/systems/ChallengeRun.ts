@@ -190,6 +190,7 @@ export const MAX_BIOME_COUNT = 15
 export const MAX_RUN_STREAK = 1_000
 export const MAX_CONTRACT_WINS = 1_000
 export const MAX_DEADSTICK_SCORE = 1_500
+export const MAX_STORED_GATE_SPLITS = 8
 
 const SURVEYABLE_BIOMES: readonly Biome[] = [
   'plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills',
@@ -1217,8 +1218,16 @@ export class ChallengeRun {
       const raw = this.storage?.getItem(TRACE_KEY + this.courseId)
       if (!raw) return []
       const parsed: unknown = JSON.parse(raw)
-      if (!Array.isArray(parsed)) return []
-      return parsed.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value >= 0)
+      if (!Array.isArray(parsed) || parsed.length === 0 || parsed.length > MAX_STORED_GATE_SPLITS) return []
+      const splits: number[] = []
+      let previous = -Infinity
+      for (const value of parsed) {
+        const split = Number(value)
+        if (!Number.isFinite(split) || split < 0 || split < previous) return []
+        splits.push(split)
+        previous = split
+      }
+      return splits
     } catch {
       return []
     }

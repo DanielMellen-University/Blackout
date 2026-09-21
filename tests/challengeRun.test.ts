@@ -37,6 +37,7 @@ import {
   MAX_PEAK_ALTITUDE_M,
   MAX_PEAK_SPEED_KTS,
   MAX_PRECISION_STREAK,
+  MAX_STORED_GATE_SPLITS,
   MASTERY_BADGE_COUNT,
   readBestCoursePrecisionStreak,
   repairBestCoursePrecisionStreak,
@@ -955,6 +956,30 @@ describe('ChallengeRun', () => {
       .toBe('G1 0:00.50 -0.50 · G2 0:01.00 -1.00')
     expect(formatPaceDelta(0)).toBe('ON PACE')
     expect(formatPaceDelta(Number.NaN)).toBe('FIRST RUN')
+  })
+
+  it('rejects oversized and non-monotonic stored gate traces', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    values.set(
+      'blackout.trace.seed:oversized',
+      JSON.stringify(Array.from({ length: MAX_STORED_GATE_SPLITS + 1 }, (_, index) => index)),
+    )
+    const oversized = new ChallengeRun(storage)
+    oversized.reset('seed:oversized', 2)
+    oversized.update(1, 8)
+    oversized.recordGate(1)
+    expect(oversized.gatePaceLabel).toBe('FIRST RUN')
+
+    values.set('blackout.trace.seed:descending', '[2,1]')
+    const descending = new ChallengeRun(storage)
+    descending.reset('seed:descending', 2)
+    descending.update(1, 8)
+    descending.recordGate(1)
+    expect(descending.gatePaceLabel).toBe('FIRST RUN')
   })
 
   it('persists the best precision streak per course without changing score math', () => {
