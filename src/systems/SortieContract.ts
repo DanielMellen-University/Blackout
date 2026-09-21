@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -48,6 +48,8 @@ const PRECISION_GATE_THRESHOLD = 0.82
 const NIGHT_MAX_DAYLIGHT = 0.38
 const NIGHT_TARGET_SECONDS = 12
 const BUTTER_LANDING_THRESHOLD = 0.92
+const DRY_MIN_MPS = 280
+const DRY_TARGET_SECONDS = 12
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -76,6 +78,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'precision', label: 'PRECISION CHAIN', target: PRECISION_CHAIN_TARGET },
   { kind: 'night', label: 'NIGHT FLIGHT', target: NIGHT_TARGET_SECONDS },
   { kind: 'butter', label: 'BUTTER LANDING', target: BUTTER_LANDING_THRESHOLD },
+  { kind: 'dry', label: 'DRY RUN', target: DRY_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -105,6 +108,7 @@ export class SortieContractTracker {
   private visitedVillage = false
   private precisionStreak = 0
   private nightSeconds = 0
+  private drySeconds = 0
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -132,6 +136,7 @@ export class SortieContractTracker {
     this.visitedVillage = false
     this.precisionStreak = 0
     this.nightSeconds = 0
+    this.drySeconds = 0
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -192,6 +197,8 @@ export class SortieContractTracker {
                           ? `FLY AFTER DARK FOR ${Math.round(target)}S`
                         : base.kind === 'butter'
                           ? 'LAND WITH A BUTTER TOUCHDOWN'
+                        : base.kind === 'dry'
+                          ? `HOLD DRY POWER ABOVE ${Math.round(DRY_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = base.kind === 'tour'
@@ -258,6 +265,17 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.nightSeconds = Math.min(this.definition.target, this.nightSeconds + safeDt)
     this.progressValue = clamp01(this.nightSeconds / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Accumulate bounded high-speed airborne time without afterburner. */
+  recordDry(afterburner: boolean, speedMps: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'dry' || this.completeValue || !airborne || afterburner === true) return
+    if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
+    if (Math.max(0, speedMps) < DRY_MIN_MPS) return
+    const safeDt = Math.max(0, Math.min(5, dt))
+    this.drySeconds = Math.min(this.definition.target, this.drySeconds + safeDt)
+    this.progressValue = clamp01(this.drySeconds / this.definition.target)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -504,7 +522,7 @@ function indexForSeed(seed: number): number {
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
-  // night-flight, and butter-landing objectives.
+  // night-flight, butter-landing, and dry-run objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -527,6 +545,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 101 === 17) return 23
   if (mixed % 107 === 31) return 24
   if (mixed % 109 === 47) return 25
+  if (mixed % 113 === 67) return 26
   return mixed % legacyContractCount
 }
 

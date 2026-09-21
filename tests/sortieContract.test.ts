@@ -58,6 +58,14 @@ describe('sortie contracts', () => {
         tracker.recordNight(0.2, 5)
         tracker.recordNight(0.2, 2)
       }
+      if (tracker.kind === 'dry') {
+        tracker.recordDry(false, 300, 5, false)
+        tracker.recordDry(true, 300, 5)
+        tracker.recordDry(false, 240, 5)
+        tracker.recordDry(false, 300, 5)
+        tracker.recordDry(false, 300, 5)
+        tracker.recordDry(false, 300, 5)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -148,7 +156,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry']))
   })
 
   it('accumulates only airborne time through the dusk envelope', () => {
@@ -665,6 +673,34 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 1, 0, 0.92)).toBe(MAX_CONTRACT_SCORE)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
+  })
+
+  it('accumulates only high-speed airborne time on dry power', () => {
+    const tracker = new SortieContractTracker()
+    let drySeed = -1
+    for (let seed = 0; seed < 2_048; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'dry') {
+        drySeed = seed
+        break
+      }
+    }
+    expect(drySeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(drySeed, 5)
+    expect(tracker.label).toBe('DRY RUN')
+    expect(tracker.detail).toContain('HOLD DRY POWER ABOVE')
+    tracker.recordDry(false, 300, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordDry(true, 300, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordDry(false, 240, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordDry(false, 300, 4)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordDry(false, 300, 5)
+    tracker.recordDry(false, 300, 3)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('does not assign a gate-only contract to a no-gate sortie', () => {

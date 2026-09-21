@@ -78,6 +78,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.
 - A deterministic `BUTTER LANDING` contract can now require a `BUTTER`-quality touchdown, reusing the existing bounded landing score without adding scene state.
+- A deterministic `DRY RUN` contract can now reward high-speed military-power flight without afterburner, reusing existing engine-state telemetry and bounded contract time.
 - The close gear-down return now shows a cached `LAND` quality forecast using the exact result formula, keeping corrections readable before touchdown without duplicating physics.
 - Repeatable course selectors retain the fastest and highest recorded sortie, so route mastery includes how you fly, not only how quickly you finish.
 - New course speed and altitude records are called out on the results card without interrupting the existing badge handoff.
@@ -123,7 +124,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, combo run, precision chain, or night flight.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, combo run, precision chain, night flight, butter landing, or dry run.
 - Curated course cards preview their deterministic bonus task before takeoff, so route selection can be deliberate instead of a launch-time surprise.
 - Curated course cards also preview the deterministic weather front for each seeded route, so pilots can choose a sortie with eyes open.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
