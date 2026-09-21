@@ -64,3 +64,9 @@ export function sampleGeography(x: number, z: number): Climate {
     },
   }
 }
+
+/** Height-only geography path for terrain normal probes that need no climate object. */
+export function sampleGeographyHeight(x: number, z: number): number {
+  const landform = sampleLandformsInto(landformScratch, x, z)
+  return sampleHydrologyInto(hydrologyScratch, x, z, landform.height).height
+}

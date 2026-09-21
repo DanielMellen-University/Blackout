@@ -500,6 +500,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Cloud authoring now bakes puff transforms into compact records before rendering, releasing hidden per-puff scene objects while preserving the same instanced silhouettes and weather motion.
 - Water crossings now identify the existing hydrology body as SEA, LAKE, RIVER, STREAM, POND, or INLAND, making the terrain variety readable without extra geometry or polling.
 - Rare seeded sorties can now assign WATER SKIM, rewarding eight seconds of controlled 18-180M flight over a rendered water surface through the existing survey cadence.
+- Terrain boundary normal probes now use a height-only geography path, preserving exact relief while avoiding full climate-object construction for worker-side edge samples.
 - Weather fronts turn wind along the shortest arc while interpolating speed separately, avoiding an artificial calm pocket when a storm changes direction.
 - Salt flats carry broad deterministic crust and damp-playa bands instead of a single pale sheet, using the existing terrain vertex-color path.
 - Tundra carries broad frost and wind-scoured scree bands so cold lowlands do not collapse into one gray-green material.

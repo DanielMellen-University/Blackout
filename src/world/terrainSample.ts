@@ -1,5 +1,5 @@
 import { clamp01, smoothstep, valueNoise } from './noise'
-import { sampleGeography } from './Geography'
+import { sampleGeography, sampleGeographyHeight } from './Geography'
 
 /**
  * Resolved geographic surfaces, local airfield grading, spawn selection and
@@ -523,6 +523,13 @@ export function sampleTerrainSurface(x: number, z: number): TerrainSurface {
 /** Resolved rendered/contact surface height. */
 export function sampleTerrainHeight(x: number, z: number): number {
   return sampleTerrainSurface(x, z).height
+}
+
+/** Height-only terrain probe for worker-side boundary normals and skirts. */
+export function sampleTerrainHeightFast(x: number, z: number): number {
+  const naturalHeight = sampleGeographyHeight(x, z)
+  const padT = padBlend(x, z)
+  return padT > 0 ? naturalHeight * (1 - padT) + opsY * padT : naturalHeight
 }
 
 function biomeColorSolid(

@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
-import { applySlopeShading, biomeColor, sampleClimate, type Climate } from './terrainSample'
+import { applySlopeShading, biomeColor, sampleClimate, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
 
@@ -296,10 +296,10 @@ export function generateTerrainGeometry(
     const i = iz * stride + ix
     const wx = originX + ix * cell
     const wz = originZ + iz * cell
-    const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleClimate(wx - cell, wz).height)
-    const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleClimate(wx + cell, wz).height)
-    const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleClimate(wx, wz - cell).height)
-    const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleClimate(wx, wz + cell).height)
+    const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleTerrainHeightFast(wx - cell, wz))
+    const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleTerrainHeightFast(wx + cell, wz))
+    const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleTerrainHeightFast(wx, wz - cell))
+    const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleTerrainHeightFast(wx, wz + cell))
     gradientX[i] = (hr - hl) / (2 * cell)
     gradientZ[i] = (hu - hd) / (2 * cell)
   }
