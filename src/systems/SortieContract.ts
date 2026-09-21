@@ -123,6 +123,8 @@ export class SortieContractTracker {
   private radarLockId = ''
   private gustSeconds = 0
   private rangeMeters = 0
+  private gustDetailBucket = -1
+  private rangeDetailBucket = -1
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -156,6 +158,8 @@ export class SortieContractTracker {
     this.radarLockId = ''
     this.gustSeconds = 0
     this.rangeMeters = 0
+    this.gustDetailBucket = -1
+    this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -170,7 +174,11 @@ export class SortieContractTracker {
       ? settlementTourDetail(false, false)
       : base.kind === 'combo'
         ? comboRunDetail(0)
-        : detail
+        : base.kind === 'gust'
+          ? gustRunDetail(0, target)
+          : base.kind === 'range'
+            ? rangeRunDetail(0, target)
+            : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -239,6 +247,11 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.gustSeconds = Math.min(this.definition.target, this.gustSeconds + safeDt)
     this.progressValue = clamp01(this.gustSeconds / this.definition.target)
+    const detailBucket = Math.floor(this.gustSeconds * 10)
+    if (detailBucket !== this.gustDetailBucket) {
+      this.gustDetailBucket = detailBucket
+      this.detailValue = gustRunDetail(this.gustSeconds, this.definition.target)
+    }
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -249,6 +262,11 @@ export class SortieContractTracker {
     const safeDistance = Math.max(0, Math.min(10_000, distanceM))
     this.rangeMeters = Math.min(this.definition.target, this.rangeMeters + safeDistance)
     this.progressValue = clamp01(this.rangeMeters / this.definition.target)
+    const detailBucket = Math.floor(this.rangeMeters / 100)
+    if (detailBucket !== this.rangeDetailBucket) {
+      this.rangeDetailBucket = detailBucket
+      this.detailValue = rangeRunDetail(this.rangeMeters, this.definition.target)
+    }
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -637,4 +655,14 @@ function settlementTourDetail(city: boolean, village: boolean): string {
 
 function comboRunDetail(combo: number): string {
   return `${COMBO_RUN_DETAIL} / CURRENT X${Math.max(0, Math.min(COMBO_TARGET, combo))}`
+}
+
+function gustRunDetail(seconds: number, target: number): string {
+  const safeSeconds = Number.isFinite(seconds) ? Math.max(0, Math.min(target, seconds)) : 0
+  return `${GUST_RUN_DETAIL} / CURRENT ${safeSeconds.toFixed(1)}S`
+}
+
+function rangeRunDetail(distanceM: number, target: number): string {
+  const safeDistance = Number.isFinite(distanceM) ? Math.max(0, Math.min(target, distanceM)) : 0
+  return `${RANGE_RUN_DETAIL} / CURRENT ${(safeDistance / 1_000).toFixed(1)}KM`
 }

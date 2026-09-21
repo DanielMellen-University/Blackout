@@ -197,9 +197,11 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBe(0)
     tracker.recordGust(0.8, 4)
     expect(tracker.progress).toBeCloseTo(0.4)
+    expect(tracker.detail).toContain('CURRENT 4.0S')
     tracker.recordGust(0.8, 6)
     tracker.recordGust(0.8, 1)
     expect(tracker.complete).toBe(true)
+    expect(tracker.detail).toContain('CURRENT 10.0S')
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
@@ -222,8 +224,10 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBe(0)
     tracker.recordDistance(5_000)
     expect(tracker.progress).toBeCloseTo(5 / 12)
+    expect(tracker.detail).toContain('CURRENT 5.0KM')
     tracker.recordDistance(7_000)
     expect(tracker.complete).toBe(true)
+    expect(tracker.detail).toContain('CURRENT 12.0KM')
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
