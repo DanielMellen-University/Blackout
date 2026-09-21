@@ -222,6 +222,9 @@ describe('run results focus flow', () => {
       flightDistanceM: 2_450,
       peakPositiveG: 5.25,
       peakNegativeG: -1.4,
+      courseBestFlightDistanceM: 3_100,
+      courseBestPositiveG: 6.1,
+      courseBestNegativeG: -2.2,
       altitudeMilestoneM: 1_500,
       bestCombo: 4,
       comboScore: 900,
@@ -271,6 +274,9 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('ALT 1,240M')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DIST 2.5KM')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('G +5.3/-1.4')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE DIST 3.1KM')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE G+6.1')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE G-2.2')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CLIMB 1,500M')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO +900')
@@ -314,6 +320,9 @@ describe('run results focus flow', () => {
       ...result,
       newPeakSpeedRecord: true,
       newPeakAltitudeRecord: true,
+      newFlightDistanceRecord: true,
+      newPositiveGRecord: true,
+      newNegativeGRecord: true,
       newComboRecord: true,
       newApproachRecord: true,
       newDestinationRecord: true,
@@ -324,7 +333,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

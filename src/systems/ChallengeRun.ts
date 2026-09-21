@@ -90,6 +90,18 @@ export interface ChallengeResult {
   peakPositiveG?: number
   /** Lowest negative load factor reached during this sortie. */
   peakNegativeG?: number
+  /** Best distance record retained for this course, in metres. */
+  courseBestFlightDistanceM?: number
+  /** Best positive-G record retained for this course. */
+  courseBestPositiveG?: number
+  /** Lowest negative-G record retained for this course. */
+  courseBestNegativeG?: number
+  /** Whether this sortie set a new course distance record. */
+  newFlightDistanceRecord?: boolean
+  /** Whether this sortie set a new course positive-G record. */
+  newPositiveGRecord?: boolean
+  /** Whether this sortie set a new course negative-G record. */
+  newNegativeGRecord?: boolean
   /** Number of completed airborne barrel rolls in this sortie. */
   stuntRolls?: number
   /** Bounded score bonus awarded for completed barrel rolls. */
@@ -209,6 +221,9 @@ export const MAX_CONTRACT_STREAK = 1_000
 export const MAX_CONTRACT_STREAK_BONUS = 1_000
 export const MAX_DEADSTICK_SCORE = 1_500
 export const MAX_STORED_GATE_SPLITS = 8
+export const MAX_FLIGHT_DISTANCE_M = 2_000_000
+export const MAX_PEAK_POSITIVE_G = 20
+export const MIN_PEAK_NEGATIVE_G = -9
 
 const SURVEYABLE_BIOMES: readonly Biome[] = [
   'plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills',
@@ -260,6 +275,9 @@ export interface CourseHistory {
   contractWins?: number
   contractStreak?: number
   contractStreakRecord?: number
+  flightDistanceM?: number
+  peakPositiveG?: number
+  peakNegativeG?: number
 }
 
 interface ScoringWeights {
@@ -586,6 +604,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawContractWins = record.contractWins
   const rawContractStreak = record.contractStreak
   const rawContractStreakRecord = record.contractStreakRecord
+  const rawFlightDistanceM = record.flightDistanceM
+  const rawPeakPositiveG = record.peakPositiveG
+  const rawPeakNegativeG = record.peakNegativeG
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
   const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
@@ -599,6 +620,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasContractWins = Object.prototype.hasOwnProperty.call(record, 'contractWins')
   const hasContractStreak = Object.prototype.hasOwnProperty.call(record, 'contractStreak')
   const hasContractStreakRecord = Object.prototype.hasOwnProperty.call(record, 'contractStreakRecord')
+  const hasFlightDistance = Object.prototype.hasOwnProperty.call(record, 'flightDistanceM')
+  const hasPeakPositiveG = Object.prototype.hasOwnProperty.call(record, 'peakPositiveG')
+  const hasPeakNegativeG = Object.prototype.hasOwnProperty.call(record, 'peakNegativeG')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
@@ -647,6 +671,15 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
       ? Math.min(MAX_CONTRACT_STREAK, Math.floor(rawContractStreakRecord))
       : 0,
   )
+  const flightDistanceM = typeof rawFlightDistanceM === 'number' && Number.isFinite(rawFlightDistanceM) && rawFlightDistanceM > 0
+    ? Math.min(MAX_FLIGHT_DISTANCE_M, Math.floor(rawFlightDistanceM))
+    : 0
+  const peakPositiveG = typeof rawPeakPositiveG === 'number' && Number.isFinite(rawPeakPositiveG) && rawPeakPositiveG > 1
+    ? Math.min(MAX_PEAK_POSITIVE_G, Number(rawPeakPositiveG.toFixed(2)))
+    : 0
+  const peakNegativeG = typeof rawPeakNegativeG === 'number' && Number.isFinite(rawPeakNegativeG) && rawPeakNegativeG < 0
+    ? Math.max(MIN_PEAK_NEGATIVE_G, Number(rawPeakNegativeG.toFixed(2)))
+    : 0
   const history: CourseHistory = { completionCount, bestTimeSec }
   if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
   if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
@@ -660,6 +693,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (contractWins > 0) history.contractWins = contractWins
   if (contractStreak > 0) history.contractStreak = contractStreak
   if (contractStreakRecord > 0) history.contractStreakRecord = contractStreakRecord
+  if (flightDistanceM > 0) history.flightDistanceM = flightDistanceM
+  if (peakPositiveG > 1) history.peakPositiveG = peakPositiveG
+  if (peakNegativeG < 0) history.peakNegativeG = peakNegativeG
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -681,8 +717,11 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasContractStreak && (typeof rawContractStreak !== 'number' || !Number.isFinite(rawContractStreak) || rawContractStreak <= 0 || rawContractStreak !== contractStreak)) ||
     (hasContractStreakRecord && (typeof rawContractStreakRecord !== 'number' || !Number.isFinite(rawContractStreakRecord) || rawContractStreakRecord <= 0 || rawContractStreakRecord !== contractStreakRecord)) ||
     (!hasContractStreakRecord && contractStreak > 0) ||
+    (hasFlightDistance && (typeof rawFlightDistanceM !== 'number' || !Number.isFinite(rawFlightDistanceM) || rawFlightDistanceM <= 0 || rawFlightDistanceM !== flightDistanceM)) ||
+    (hasPeakPositiveG && (typeof rawPeakPositiveG !== 'number' || !Number.isFinite(rawPeakPositiveG) || rawPeakPositiveG <= 1 || rawPeakPositiveG !== peakPositiveG)) ||
+    (hasPeakNegativeG && (typeof rawPeakNegativeG !== 'number' || !Number.isFinite(rawPeakNegativeG) || rawPeakNegativeG >= 0 || rawPeakNegativeG !== peakNegativeG)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG',
     )
   return {
     history,
@@ -702,6 +741,15 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.peakAltitudeM) && history.peakAltitudeM! > 0) {
     record.peakAltitudeM = Math.min(MAX_PEAK_ALTITUDE_M, Math.floor(history.peakAltitudeM!))
+  }
+  if (Number.isFinite(history.flightDistanceM) && history.flightDistanceM! > 0) {
+    record.flightDistanceM = Math.min(MAX_FLIGHT_DISTANCE_M, Math.floor(history.flightDistanceM!))
+  }
+  if (Number.isFinite(history.peakPositiveG) && history.peakPositiveG! > 1) {
+    record.peakPositiveG = Math.min(MAX_PEAK_POSITIVE_G, Number(history.peakPositiveG!.toFixed(2)))
+  }
+  if (Number.isFinite(history.peakNegativeG) && history.peakNegativeG! < 0) {
+    record.peakNegativeG = Math.max(MIN_PEAK_NEGATIVE_G, Number(history.peakNegativeG!.toFixed(2)))
   }
   if (Number.isFinite(history.stuntRolls) && history.stuntRolls! > 0) {
     record.stuntRolls = Math.min(MAX_STUNT_ROLLS, Math.floor(history.stuntRolls!))
@@ -1104,6 +1152,9 @@ export class ChallengeRun {
     const previousContractWins = history.contractWins ?? 0
     const previousContractStreak = history.contractStreak ?? 0
     const previousContractStreakRecord = history.contractStreakRecord ?? 0
+    const previousFlightDistanceM = history.flightDistanceM ?? 0
+    const previousPeakPositiveG = history.peakPositiveG ?? 0
+    const previousPeakNegativeG = history.peakNegativeG ?? 0
     const newPeakSpeedRecord = peakSpeedKts > previousPeakSpeedKts
     const newPeakAltitudeRecord = peakAltitudeM > previousPeakAltitudeM
     const newStuntRecord = this.stuntRollCount > previousStuntRolls
@@ -1129,6 +1180,14 @@ export class ChallengeRun {
       : 0
     const courseBestContractStreak = Math.max(previousContractStreakRecord, contractStreak)
     const newContractStreakRecord = contractComplete && contractStreak >= 2 && contractStreak > previousContractStreakRecord
+    const courseBestFlightDistanceM = Math.max(previousFlightDistanceM, flightDistanceM)
+    const courseBestPositiveG = Math.max(previousPeakPositiveG, peakPositiveG > 1 ? peakPositiveG : 0)
+    const courseBestNegativeG = peakNegativeG < 0
+      ? Math.min(previousPeakNegativeG < 0 ? previousPeakNegativeG : 0, peakNegativeG)
+      : previousPeakNegativeG
+    const newFlightDistanceRecord = courseBestFlightDistanceM > previousFlightDistanceM
+    const newPositiveGRecord = courseBestPositiveG > previousPeakPositiveG
+    const newNegativeGRecord = courseBestNegativeG < previousPeakNegativeG
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
@@ -1141,6 +1200,9 @@ export class ChallengeRun {
     if (contractWins > 0) history.contractWins = contractWins
     history.contractStreak = contractStreak
     history.contractStreakRecord = courseBestContractStreak
+    if (courseBestFlightDistanceM > 0) history.flightDistanceM = courseBestFlightDistanceM
+    if (courseBestPositiveG > 1) history.peakPositiveG = courseBestPositiveG
+    if (courseBestNegativeG < 0) history.peakNegativeG = courseBestNegativeG
     this.contractStreakValue = contractStreak
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
@@ -1202,6 +1264,12 @@ export class ChallengeRun {
       flightDistanceM,
       peakPositiveG,
       peakNegativeG,
+      courseBestFlightDistanceM: courseBestFlightDistanceM > 0 ? courseBestFlightDistanceM : undefined,
+      courseBestPositiveG: courseBestPositiveG > 1 ? courseBestPositiveG : undefined,
+      courseBestNegativeG: courseBestNegativeG < 0 ? courseBestNegativeG : undefined,
+      newFlightDistanceRecord,
+      newPositiveGRecord,
+      newNegativeGRecord,
       courseBestPeakSpeedKts,
       courseBestPeakAltitudeM,
       newPeakSpeedRecord,

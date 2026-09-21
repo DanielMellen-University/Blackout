@@ -162,6 +162,15 @@ export class RunResults {
       const negative = Number.isFinite(result.peakNegativeG) ? Math.min(0, result.peakNegativeG!) : 0
       scoreParts.push(`G +${positive.toFixed(1)}/${negative.toFixed(1)}`)
     }
+    if (Number.isFinite(result.courseBestFlightDistanceM) && result.courseBestFlightDistanceM! > (result.flightDistanceM ?? 0)) {
+      scoreParts.push(`COURSE DIST ${formatDistance(result.courseBestFlightDistanceM!)}`)
+    }
+    if (Number.isFinite(result.courseBestPositiveG) && result.courseBestPositiveG! > (result.peakPositiveG ?? 0)) {
+      scoreParts.push(`COURSE G+${result.courseBestPositiveG!.toFixed(1)}`)
+    }
+    if (Number.isFinite(result.courseBestNegativeG) && result.courseBestNegativeG! < (result.peakNegativeG ?? 0)) {
+      scoreParts.push(`COURSE G${result.courseBestNegativeG!.toFixed(1)}`)
+    }
     if (Number.isFinite(result.altitudeMilestoneM) && result.altitudeMilestoneM! > 0) {
       scoreParts.push(`CLIMB ${Math.max(0, Math.floor(result.altitudeMilestoneM!)).toLocaleString()}M`)
     }
@@ -311,6 +320,9 @@ export class RunResults {
     const newRecords = [
       result.newPeakSpeedRecord ? 'SPEED' : '',
       result.newPeakAltitudeRecord ? 'ALTITUDE' : '',
+      result.newFlightDistanceRecord ? 'DISTANCE' : '',
+      result.newPositiveGRecord ? 'POS G' : '',
+      result.newNegativeGRecord ? 'NEG G' : '',
       result.newStuntRecord ? 'ROLLS' : '',
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',

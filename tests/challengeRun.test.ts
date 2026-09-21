@@ -1395,6 +1395,50 @@ describe('ChallengeRun', () => {
     expect(Number.isFinite(result.totalScore)).toBe(true)
   })
 
+  it('persists best distance and load-factor records without changing score math', () => {
+    const store = new Map<string, string>()
+    const scoreStore = {
+      getItem: (key: string) => store.get(key) ?? null,
+      setItem: (key: string, value: string) => store.set(key, value),
+    }
+    const first = new ChallengeRun(scoreStore)
+    first.reset('seed:flight-log', 1)
+    first.update(1, 120, 500, 0, 0, false, true, 0, 0, 4.5, 1, false, false, 500, 1, 240)
+    first.recordGate(1)
+    const firstResult = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(firstResult.courseBestFlightDistanceM).toBe(240)
+    expect(firstResult.courseBestPositiveG).toBe(4.5)
+    expect(firstResult.courseBestNegativeG).toBeUndefined()
+    expect(firstResult.newFlightDistanceRecord).toBe(true)
+    expect(firstResult.newPositiveGRecord).toBe(true)
+    expect(JSON.parse(store.get('blackout.history.seed:flight-log')!)).toMatchObject({
+      flightDistanceM: 240,
+      peakPositiveG: 4.5,
+    })
+
+    const retry = new ChallengeRun(scoreStore)
+    retry.reset('seed:flight-log', 1)
+    retry.update(1, 90, 500, 0, 0, false, true, 0, 0, -1.25, 1, false, false, 500, 1, 80)
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(retryResult.courseBestFlightDistanceM).toBe(240)
+    expect(retryResult.courseBestPositiveG).toBe(4.5)
+    expect(retryResult.courseBestNegativeG).toBe(-1.25)
+    expect(retryResult.newFlightDistanceRecord).toBe(false)
+    expect(retryResult.newPositiveGRecord).toBe(false)
+    expect(retryResult.newNegativeGRecord).toBe(true)
+  })
+
   it('persists gate splits and reports ahead or behind pace on retry', () => {
     const store = new Map<string, string>()
     const scoreStore = {
