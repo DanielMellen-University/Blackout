@@ -580,6 +580,36 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires high-speed speed-brake time into the brake-check contract', () => {
+    const run = new ChallengeRun(null)
+    let brakeSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:brake-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT BRAKE CHECK') {
+        brakeSeed = seed
+        break
+      }
+    }
+    expect(brakeSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:brake-contract', 1, 'balanced', brakeSeed)
+    run.update(0.1, 8)
+    run.update(2, 240, 180, 0, 0, true, true)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+    run.update(3, 240, 180, 0, 0, true, true)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('BRAKE CHECK')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('brake')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1

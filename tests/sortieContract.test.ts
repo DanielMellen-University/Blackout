@@ -57,12 +57,17 @@ describe('sortie contracts', () => {
         tracker.recordWater(true, 5)
         tracker.recordWater(true, 5)
       }
+      if (tracker.kind === 'brake') {
+        tracker.recordBrake(240, 5, false)
+        tracker.recordBrake(120, 5, true)
+        tracker.recordBrake(240, 5, true)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -193,6 +198,32 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 1, 500)).toBe(MAX_CONTRACT_SCORE)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
+  })
+
+  it('accumulates only high-speed airborne time with the speed brake open', () => {
+    const tracker = new SortieContractTracker()
+    let brakeSeed = -1
+    for (let seed = 0; seed < 512; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'brake') {
+        brakeSeed = seed
+        break
+      }
+    }
+    expect(brakeSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(brakeSeed, 5)
+    tracker.recordBrake(240, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordBrake(120, 5, true)
+    expect(tracker.progress).toBe(0)
+    tracker.recordBrake(240, 2, true, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordBrake(240, 2, true)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordBrake(240, 3, true)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {

@@ -20,6 +20,7 @@
 - Harden release validation across package metadata, the lockfile, runtime title fallback, README, and the first changelog heading so version drift fails the build.
 - Add a deterministic WATER RUN contract that rewards bounded airborne time over the rendered river, lake, or sea surface without adding terrain queries or scene work.
 - Add a wide, horizon-stable ORBIT camera mode to the existing C cycle, preserving the last external framing when returning from cockpit view.
+- Add a deterministic BRAKE CHECK contract that rewards bounded high-speed speed-brake use without adding scene work or unbounded state.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

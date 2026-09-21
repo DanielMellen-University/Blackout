@@ -1257,6 +1257,8 @@ async function boot(): Promise<void> {
           Math.max(0, aircraft.position.y - world.spawn.y),
           weather.rain,
           weather.snow,
+          aircraft.controls.airbrake,
+          !aircraft.onGround,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }
