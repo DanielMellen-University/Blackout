@@ -104,7 +104,7 @@ export class RunResults {
     this.shareReplayHandler = handler
   }
 
-  show(result: ChallengeResult, pilotRank?: PilotRank): void {
+  show(result: ChallengeResult, pilotRank?: PilotRank, pilotRankPromoted = false): void {
     if (this.disposed) return
     if (this.shareReplay) {
       this.shareReplay.textContent = 'Copy replay link'
@@ -164,7 +164,7 @@ export class RunResults {
       `LAND +${result.landingScore.toLocaleString()}`,
     ]
     if (result.scoreCapped) scoreParts.push('SCORE CAP')
-    if (pilotRank) scoreParts.push(`CAREER ${pilotRankLabel(pilotRank)}`)
+    if (pilotRank) scoreParts.push(`CAREER ${pilotRankLabel(pilotRank)}${pilotRankPromoted ? ' UP' : ''}`)
     if (result.newMedalRecord) scoreParts.push('NEW MEDAL')
     if (result.courseBestMedal && result.courseBestMedal !== result.medal) {
       scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)

@@ -204,9 +204,9 @@ describe('run results focus flow', () => {
     vi.stubGlobal('document', fixture.document)
     const results = new RunResults(fixture.document as unknown as Document)
 
-    results.show(result, 'ace')
+    results.show(result, 'ace', true)
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
-      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · CAREER ACE')
+      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · CAREER ACE UP')
 
     results.dispose()
     vi.unstubAllGlobals()

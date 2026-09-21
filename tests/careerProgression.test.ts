@@ -4,6 +4,7 @@ import {
   pilotRankForProgress,
   pilotRankLabel,
   pilotRankNextGoalLabel,
+  pilotRankRank,
   type PilotCareerProgress,
 } from '../src/systems/CareerProgression'
 
@@ -60,6 +61,8 @@ describe('CareerProgression', () => {
 
   it('keeps labels compact and accessible', () => {
     expect(pilotRankLabel('flight-lead')).toBe('FLIGHT LEAD')
+    expect(pilotRankRank('cadet')).toBeLessThan(pilotRankRank('wingman'))
+    expect(pilotRankRank('ace')).toBeLessThan(pilotRankRank('legend'))
     expect(pilotRankNextGoalLabel('wingman')).toBe('NEXT FLIGHT LEAD / 2 COURSES / 5 RUNS / 130K SCORE')
     expect(pilotRankNextGoalLabel('legend')).toBe('')
     expect(pilotRankAriaLabel('ace', {

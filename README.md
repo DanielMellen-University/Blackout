@@ -84,6 +84,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Played course cards now show the bounded requirements behind their next mastery tier, turning `NEXT ACE` or `NEXT LEGEND` into an actionable route goal.
 - The title progress line now derives a bounded cross-course pilot rank from existing completions, best scores, badges, and contract wins, with the next rank target shown without adding flight-loop work.
 - Completed-run debriefs now repeat the repaired cross-course pilot rank beside the score breakdown, so rank progress remains visible after launch.
+- Crossing a career-rank threshold now reuses the milestone cue and marks the debrief with `CAREER ... UP`, keeping promotion feedback bounded and event-driven.
 - Course cards now include the saved runway-approach record in their compact flight log, so centered landing skill has a visible repeatable target before launch.
 - Course cards also preview saved settlement and biome discovery records, keeping exploration mastery visible alongside flight and landing skill.
 - Course cards now preview saved barrel-roll and combo records too, making airshow and precision-chain mastery visible before launch.

@@ -36,6 +36,15 @@ export function pilotRankLabel(rank: PilotRank): string {
   return rank.toUpperCase()
 }
 
+/** Compare ranks without relying on their display labels. */
+export function pilotRankRank(rank: PilotRank): number {
+  if (rank === 'legend') return 4
+  if (rank === 'ace') return 3
+  if (rank === 'flight-lead') return 2
+  if (rank === 'wingman') return 1
+  return 0
+}
+
 /** Keep the next rank target visible without exposing raw storage details. */
 export function pilotRankNextGoalLabel(rank: PilotRank): string {
   if (rank === 'cadet') return 'NEXT WINGMAN / 1 RUN'

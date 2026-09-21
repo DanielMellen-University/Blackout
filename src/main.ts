@@ -85,6 +85,7 @@ import {
   pilotRankForProgress,
   pilotRankLabel,
   pilotRankNextGoalLabel,
+  pilotRankRank,
   type PilotRank,
   type PilotCareerProgress,
 } from './systems/CareerProgression'
@@ -1241,6 +1242,7 @@ async function boot(): Promise<void> {
               daylight: world.atmosphere.daylight,
             }, aircraft.fuel.fraction)
             if (finished) {
+              const previousPilotRank = currentPilotRank
               ghost.commitIfBest(finished.isNewBest, finished.totalScore)
               ghost.setVisible(false)
               audio.playCue(
@@ -1248,9 +1250,12 @@ async function boot(): Promise<void> {
                   ? 'landing-soft'
                   : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
               )
-              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted) audio.playCue('milestone')
               refreshCourseUi()
-              results.show(finished, currentPilotRank)
+              const careerRankPromoted = pilotRankRank(currentPilotRank) > pilotRankRank(previousPilotRank)
+              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted || careerRankPromoted) {
+                audio.playCue('milestone')
+              }
+              results.show(finished, currentPilotRank, careerRankPromoted)
               syncInputContext()
               break
             }
