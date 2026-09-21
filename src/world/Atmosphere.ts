@@ -541,6 +541,11 @@ export class Atmosphere {
     return this.weatherDirector.snapshotInto(this.weatherState)
   }
 
+  /** True while the current weather front is blending toward its target. */
+  get weatherTransitioning(): boolean {
+    return this.weatherDirector.transitioning
+  }
+
   /** True while the current storm flash envelope is active. */
   get lightningActive(): boolean {
     return !this.reducedMotion && this.lightningFlashAge < LIGHTNING_DURATION_SEC

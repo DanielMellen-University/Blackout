@@ -114,7 +114,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, or precision approach.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, or precision approach.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.
@@ -128,6 +128,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Seeded sorties can assign `G CONTROL`, rewarding high-speed flight inside a safe smoothed load envelope without changing the flight model.
 - Seeded sorties can assign `DEADSTICK`, requiring an airborne fuel-out before the final landing while reusing the existing glide-to-base guidance.
 - The curated course picker now includes `River run`, a low meandering inland-water route validated by the same terrain corridor planner.
+- Seeded sorties can assign `FRONT CHASER`, rewarding airborne time while the existing weather front blends between states.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.

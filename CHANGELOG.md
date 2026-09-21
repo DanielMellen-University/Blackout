@@ -31,6 +31,7 @@
 - Add a deterministic G CONTROL contract that rewards bounded high-speed flight inside the existing smoothed load envelope without changing physics.
 - Add a deterministic DEADSTICK contract that requires airborne fuel exhaustion before the scored landing, reusing existing glide guidance.
 - Add the curated RIVER RUN course with a low meandering route through inland water country while preserving fixed gates and adaptive clearance checks.
+- Add a deterministic FRONT CHASER contract that rewards bounded airborne time during an existing weather transition without adding scene work.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

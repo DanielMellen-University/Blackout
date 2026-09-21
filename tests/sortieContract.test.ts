@@ -85,12 +85,19 @@ describe('sortie contracts', () => {
         tracker.recordGControl(2, 180, 5)
       }
       if (tracker.kind === 'deadstick') tracker.recordDeadstick(0, true)
+      if (tracker.kind === 'front') {
+        tracker.recordFront(true, 5, false)
+        tracker.recordFront(false, 5)
+        tracker.recordFront(true, 5)
+        tracker.recordFront(true, 5)
+        tracker.recordFront(true, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -351,6 +358,32 @@ describe('sortie contracts', () => {
     tracker.recordDeadstick(0, true)
     expect(tracker.progress).toBe(1)
     expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne time during a weather-front shift', () => {
+    const tracker = new SortieContractTracker()
+    let frontSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'front') {
+        frontSeed = seed
+        break
+      }
+    }
+    expect(frontSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(frontSeed, 5)
+    expect(tracker.label).toBe('FRONT CHASER')
+    tracker.recordFront(true, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordFront(false, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordFront(true, 4)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordFront(true, 5)
+    tracker.recordFront(true, 3)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 

@@ -788,6 +788,7 @@ export class ChallengeRun {
     crosswindMps = 0,
     loadFactor = 1,
     fuelFraction = 1,
+    weatherTransitioning = false,
   ): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
@@ -803,6 +804,7 @@ export class ChallengeRun {
     this.contract.recordCrosswind(crosswindMps, safeDt, airborne)
     this.contract.recordGControl(loadFactor, safeSpeed, safeDt, airborne)
     this.contract.recordDeadstick(fuelFraction, airborne)
+    this.contract.recordFront(weatherTransitioning, safeDt, airborne)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'

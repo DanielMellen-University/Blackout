@@ -734,6 +734,39 @@ describe('ChallengeRun', () => {
     expect(result?.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires weather-front transitions into the front-chaser contract', () => {
+    const run = new ChallengeRun(null)
+    let frontSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:front-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT FRONT CHASER') {
+        frontSeed = seed
+        break
+      }
+    }
+    expect(frontSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:front-contract', 1, 'balanced', frontSeed)
+    run.update(0.1, 8)
+    run.update(4, 180, 180, 0, 0, false, true, 0, 0, 1, 1, false)
+    expect(run.contractProgress).toBe(0)
+    run.update(4, 180, 180, 0, 0, false, true, 0, 0, 1, 1, true)
+    expect(run.contractProgress).toBeCloseTo(1 / 3)
+    run.update(5, 180, 180, 0, 0, false, true, 0, 0, 1, 1, true)
+    run.update(3, 180, 180, 0, 0, false, true, 0, 0, 1, 1, true)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('FRONT CHASER')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('front')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
