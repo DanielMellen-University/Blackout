@@ -21,7 +21,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Pause opened after a focus loss now returns to the playable canvas instead of the browser body, keeping keyboard and mouse flight handoff reliable
 - Pause and settings panels stay bounded and scrollable on short browser windows, keeping every control reachable by mouse or keyboard.
 - Checkpoint circuit (5 rings; HUD arrow, range, and a beacon on the live gate)
-- Route variety: orbit, sweep, precision slalom, high-altitude ridge-run, and low-weave canyon-run circuits
+- Route variety: orbit, sweep, precision slalom, high-altitude ridge-run, low-weave canyon-run, and low coastal-run circuits
 - Checkpoint routes now vary by world seed, lead with a runway-aligned first gate, and validate an adaptive terrain corridor between gates so the intended flight line stays clear.
 - Route profiles include orbit, sweep, slalom, ridge-run, and canyon-run layouts, with the active profile called out in the takeoff briefing.
 - Heading guidance stays stable through loops and near-vertical climbs, so the HUD, return cue, and chase camera do not flip when the nose loses a meaningful horizontal bearing.
