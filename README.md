@@ -28,6 +28,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Route profiles include orbit, sweep, slalom, ridge-run, and canyon-run layouts, with the active profile called out in the takeoff briefing.
 - Heading guidance stays stable through loops and near-vertical climbs, so the HUD, return cue, and chase camera do not flip when the nose loses a meaningful horizontal bearing.
 - The external camera also shortens its sightline before loaded buildings and airfield structures, keeping the chase view readable around settlements without extra scene geometry.
+- The last camera view selected with `C` persists across reloads while the title hero still opens in its composed external framing.
 - Settings persist a keyboard yaw choice between A right / D left and A left / D right; gamepad and touch yaw stay on their hardware conventions.
 - Settings also persist keyboard roll direction between Q right / E left and Q left / E right; gamepad and touch roll stay on their hardware conventions.
 - Settings also persist keyboard pitch direction between W up / S down and W down / S up; gamepad and touch pitch stay on their hardware conventions.

@@ -1,3 +1,5 @@
+import { CAMERA_MODES, type CameraMode } from './types'
+
 /** Keyboard-only flight preferences kept separate from simulation state. */
 export type KeyboardYawPreference = 'a-right' | 'a-left'
 export type KeyboardRollPreference = 'q-right' | 'q-left'
@@ -11,6 +13,8 @@ export const KEYBOARD_PITCH_STORAGE_KEY = 'blackout.keyboardPitch'
 export const DEFAULT_KEYBOARD_PITCH: KeyboardPitchPreference = 'w-up'
 export const GHOST_VISIBILITY_STORAGE_KEY = 'blackout.ghostVisible'
 export const DEFAULT_GHOST_VISIBLE = true
+export const CAMERA_MODE_STORAGE_KEY = 'blackout.cameraMode'
+export const DEFAULT_CAMERA_MODE: CameraMode = 'chase'
 
 export function normalizeKeyboardYawPreference(
   value: unknown,
@@ -159,6 +163,36 @@ export function writeGhostVisibilityPreference(
       GHOST_VISIBILITY_STORAGE_KEY,
       normalizeGhostVisibilityPreference(visible) ? 'true' : 'false',
     )
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function normalizeCameraMode(
+  value: unknown,
+  fallback: CameraMode = DEFAULT_CAMERA_MODE,
+): CameraMode {
+  if (CAMERA_MODES.includes(value as CameraMode)) return value as CameraMode
+  return CAMERA_MODES.includes(fallback) ? fallback : DEFAULT_CAMERA_MODE
+}
+
+export function readCameraModePreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: CameraMode = DEFAULT_CAMERA_MODE,
+): CameraMode {
+  try {
+    return normalizeCameraMode(storage?.getItem(CAMERA_MODE_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeCameraMode(undefined, fallback)
+  }
+}
+
+export function writeCameraModePreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  mode: CameraMode,
+): void {
+  try {
+    storage?.setItem(CAMERA_MODE_STORAGE_KEY, normalizeCameraMode(mode))
   } catch {
     /* Storage is optional. */
   }

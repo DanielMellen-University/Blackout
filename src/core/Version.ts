@@ -1,6 +1,6 @@
 /** Public release identity. Keep this separate from internal roadmap chunk IDs. */
 export const APP_VERSION = '0.11.0' as const
-export const ROADMAP_CHUNK = '10.226' as const
+export const ROADMAP_CHUNK = '10.227' as const
 export const RELEASE_NAME = 'Systems expansion' as const
 
 export function appVersionLabel(): string {

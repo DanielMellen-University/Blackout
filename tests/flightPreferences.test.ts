@@ -5,6 +5,8 @@ import {
   DEFAULT_KEYBOARD_PITCH,
   DEFAULT_GHOST_VISIBLE,
   GHOST_VISIBILITY_STORAGE_KEY,
+  CAMERA_MODE_STORAGE_KEY,
+  DEFAULT_CAMERA_MODE,
   KEYBOARD_PITCH_STORAGE_KEY,
   KEYBOARD_ROLL_STORAGE_KEY,
   KEYBOARD_YAW_STORAGE_KEY,
@@ -15,14 +17,17 @@ import {
   normalizeKeyboardYawPreference,
   normalizeKeyboardPitchPreference,
   normalizeGhostVisibilityPreference,
+  normalizeCameraMode,
   readKeyboardRollPreference,
   readKeyboardYawPreference,
   readKeyboardPitchPreference,
   readGhostVisibilityPreference,
+  readCameraModePreference,
   writeKeyboardRollPreference,
   writeKeyboardYawPreference,
   writeKeyboardPitchPreference,
   writeGhostVisibilityPreference,
+  writeCameraModePreference,
 } from '../src/core/FlightPreferences'
 
 describe('keyboard flight preferences', () => {
@@ -107,5 +112,19 @@ describe('keyboard flight preferences', () => {
     }
     expect(readGhostVisibilityPreference(storage, false)).toBe(false)
     expect(() => writeGhostVisibilityPreference(storage, true)).not.toThrow()
+  })
+
+  it('persists a valid camera mode and falls back on malformed values', () => {
+    const values = new Map<string, string>([[CAMERA_MODE_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeCameraMode('orbit')).toBe('orbit')
+    expect(normalizeCameraMode('bad')).toBe(DEFAULT_CAMERA_MODE)
+    expect(readCameraModePreference(storage)).toBe(DEFAULT_CAMERA_MODE)
+    writeCameraModePreference(storage, 'cockpit')
+    expect(values.get(CAMERA_MODE_STORAGE_KEY)).toBe('cockpit')
+    expect(readCameraModePreference(storage)).toBe('cockpit')
   })
 })

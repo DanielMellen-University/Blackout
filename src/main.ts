@@ -169,6 +169,8 @@ import {
   writeKeyboardPitchPreference,
   readGhostVisibilityPreference,
   writeGhostVisibilityPreference,
+  readCameraModePreference,
+  writeCameraModePreference,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -377,6 +379,7 @@ async function boot(): Promise<void> {
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
+  const initialCameraMode = readCameraModePreference(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -658,6 +661,7 @@ async function boot(): Promise<void> {
 
   let playing = false
   let ghostVisible = initialGhostVisible
+  let cameraPreference = initialCameraMode
   let banner: string | null = null
   let crashMessage = 'CRASH - press R'
   let bannerTone: HudBannerTone = 'info'
@@ -928,6 +932,7 @@ async function boot(): Promise<void> {
   const startGame = (): void => {
     if (playing) return
     playing = true
+    cameras.setMode(cameraPreference, aircraft)
     world.setSettlementsVisible(true)
     menu.close()
     results.hide()
@@ -1139,6 +1144,8 @@ async function boot(): Promise<void> {
 
       if (input.consumeCameraToggle()) {
         const mode = cameras.toggleMode(aircraft)
+        cameraPreference = mode
+        writeCameraModePreference(qualityStorage, mode)
         showBanner(cameraModeCue(mode), 1200, 'info')
       }
       if (input.consumeGhostToggle()) {
