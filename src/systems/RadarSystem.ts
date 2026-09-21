@@ -185,10 +185,10 @@ export class RadarSystem {
       for (let index = 1; index < this.contacts.length; index += 1) {
         const current = this.contacts[index]!
         const worst = this.contacts[worstIndex]!
-        if (contactIsWorse(current, worst)) worstIndex = index
+        if (contactIsWorse(current, worst, this.selectedTargetId)) worstIndex = index
       }
       const worst = this.contacts[worstIndex]!
-      if (!candidateBeats(candidatePriority, distance, worst)) return
+      if (!candidateBeats(candidatePriority, distance, id, worst, this.selectedTargetId)) return
       contactIndex = worstIndex
     } else {
       this.contacts.push(this.contactPool[contactIndex]!)
@@ -254,14 +254,27 @@ function radarKindPriority(kind: RadarContactKind): number {
   return kind === 'gate' ? 0 : kind === 'city' ? 1 : 2
 }
 
-function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact): boolean {
+function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact, selectedId: string): boolean {
+  const candidateSelected = candidate.id !== '' && candidate.id === selectedId
+  const currentSelected = currentWorst.id !== '' && currentWorst.id === selectedId
+  if (candidateSelected !== currentSelected) return !candidateSelected
   const candidatePriority = radarKindPriority(candidate.kind)
   const worstPriority = radarKindPriority(currentWorst.kind)
   return candidatePriority > worstPriority ||
     (candidatePriority === worstPriority && candidate.distance > currentWorst.distance)
 }
 
-function candidateBeats(priority: number, distance: number, currentWorst: RadarContact): boolean {
+function candidateBeats(
+  priority: number,
+  distance: number,
+  id: string | undefined,
+  currentWorst: RadarContact,
+  selectedId: string,
+): boolean {
+  const candidateSelected = typeof id === 'string' && id !== '' && id === selectedId
+  const currentSelected = currentWorst.id !== '' && currentWorst.id === selectedId
+  if (currentSelected) return false
+  if (candidateSelected) return true
   const worstPriority = radarKindPriority(currentWorst.kind)
   return priority < worstPriority || (priority === worstPriority && distance < currentWorst.distance)
 }

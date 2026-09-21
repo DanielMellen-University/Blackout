@@ -128,4 +128,22 @@ describe('arcade radar sweep', () => {
     expect(radar.consumeLockLost()).toBe(true)
     expect(radar.consumeLockLost()).toBe(false)
   })
+
+  it('retains the selected contact when crowded radar would otherwise evict it', () => {
+    const radar = new RadarSystem()
+    radar.setRenderQuality('low')
+    radar.update(0, 0, 0, null, [{ x: 7_600, y: 20, z: 0, kind: 'city', id: 'city-target' }])
+    expect(radar.cycleTarget()?.id).toBe('city-target')
+    const crowded = Array.from({ length: 8 }, (_, index) => ({
+      x: 100 + index * 40,
+      y: 20,
+      z: 0,
+      kind: 'city' as const,
+      id: `city-${index}`,
+    }))
+    crowded.push({ x: 7_600, y: 20, z: 0, kind: 'city', id: 'city-target' })
+    radar.update(0, 0, 0, null, crowded)
+    expect(radar.selectedTarget()?.id).toBe('city-target')
+    expect(radar.consumeLockLost()).toBe(false)
+  })
 })
