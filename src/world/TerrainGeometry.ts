@@ -242,18 +242,16 @@ export function generateTerrainGeometry(
   let segs = reducedFar
     ? baseSegs
     : reaches.length || pondIntersectsBounds(originX, originZ, span) ? detailSegs : baseSegs
-  const climateCache = new Map<string, Climate>()
+  // Sampling is deterministic for a world coordinate. Avoid a string-keyed
+  // cache here: every vertex otherwise creates a coordinate string and a Map
+  // entry even when the tile is never promoted to water detail. Promotion
+  // recomputes the few shared coordinates instead of carrying that churn into
+  // every worker request.
   const climatesForGrid = (count: number): Climate[] => {
-    const samples: Climate[] = []
+    const samples = new Array<Climate>((count + 1) * (count + 1))
     for (let iz = 0; iz <= count; iz++) for (let ix = 0; ix <= count; ix++) {
       const wx = originX + ix * span / count, wz = originZ + iz * span / count
-      const key = `${wx},${wz}`
-      let climate = climateCache.get(key)
-      if (!climate) {
-        climate = sampleClimate(wx, wz)
-        climateCache.set(key, climate)
-      }
-      samples.push(climate)
+      samples[iz * (count + 1) + ix] = sampleClimate(wx, wz)
     }
     return samples
   }
