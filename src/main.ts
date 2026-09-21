@@ -603,6 +603,7 @@ async function boot(): Promise<void> {
     throttle: 0,
     engineHeat: 0,
     fuel: 1,
+    refueling: false,
     boost: false,
     gearDown: false,
     onGround: false,
@@ -1695,6 +1696,7 @@ async function boot(): Promise<void> {
       hudFrame.airbrake = aircraft.controls.airbrake
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
+      hudFrame.refueling = refueling
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.afterburnerLock = aircraft.engineState.afterburnerHeatLocked
         ? 'heat'

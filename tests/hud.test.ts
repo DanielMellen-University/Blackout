@@ -17,6 +17,8 @@ import {
   formatGForce,
   formatHeading,
   formatFuelEndurance,
+  refuelAriaLabel,
+  refuelHudLabel,
   formatCrosswind,
   formatHudNumber,
   formatVerticalSpeed,
@@ -615,6 +617,14 @@ describe('HUD value formatting', () => {
     expect(formatFuelEndurance(3661)).toBe('END 1:01:01')
     expect(formatFuelEndurance(null)).toBe('END --')
     expect(formatFuelEndurance(Number.NaN)).toBe('END --')
+  })
+
+  it('keeps grounded refueling visible and finite', () => {
+    expect(refuelHudLabel(false, .42)).toBe('')
+    expect(refuelHudLabel(true, .42)).toBe('REFUEL 42%')
+    expect(refuelHudLabel(true, Number.NaN)).toBe('REFUEL 0%')
+    expect(refuelAriaLabel(true, .42)).toBe('Refueling at 42%')
+    expect(refuelAriaLabel(false, .42)).toBe('')
   })
 
   it('keeps the optional flight-assist state explicit after its banner fades', () => {

@@ -490,6 +490,19 @@ export function formatFuelEndurance(seconds: number | null): string {
     : `END ${minutes}:${String(secs).padStart(2, '0')}`
 }
 
+/** Keep the grounded airfield refuel state visible after its launch banner fades. */
+export function refuelHudLabel(refueling: unknown, fraction: number): string {
+  if (refueling !== true) return ''
+  const percent = fuelPercent({ fraction })
+  return `REFUEL ${percent}%`
+}
+
+/** Describe the same bounded refuel state for assistive technology. */
+export function refuelAriaLabel(refueling: unknown, fraction: number): string {
+  const label = refuelHudLabel(refueling, fraction)
+  return label ? `Refueling at ${label.slice(7)}` : ''
+}
+
 /** Keep live pace feedback readable while allowing a safe pre-run fallback. */
 export function missionPaceLabel(value: unknown): string {
   if (typeof value !== 'string' || value.trim().length === 0) return 'READY'
@@ -636,6 +649,8 @@ export class HUD {
   private readonly comboEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
   private readonly fuelEnduranceEl: HTMLElement | null
+  private readonly refuelRowEl: HTMLElement | null
+  private readonly refuelEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
   private readonly assistEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
@@ -709,6 +724,10 @@ export class HUD {
   private fuelAriaText = ''
   private fuelEnduranceValue = -1
   private fuelEnduranceText = 'END --'
+  private refuelValue: boolean | null = null
+  private refuelPercentValue = -1
+  private refuelText = ''
+  private refuelAriaText = ''
   private engineHeatValue = Number.NaN
   private engineHeatText = ''
   private abStateText = 'AB READY'
@@ -853,6 +872,8 @@ export class HUD {
     this.comboEl = root.getElementById('hud-combo')
     this.fuelEl = root.getElementById('hud-fuel')
     this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
+    this.refuelRowEl = root.getElementById('hud-refuel-row')
+    this.refuelEl = root.getElementById('hud-refuel')
     this.radarEl = root.getElementById('hud-radar')
     this.assistEl = root.getElementById('hud-assist')
     this.hintEl = root.getElementById('hud-hint')
@@ -963,6 +984,8 @@ export class HUD {
     ghostPace?: number | null
     /** Remaining fuel as a normalized fraction. */
     fuel?: number
+    /** Whether the aircraft is currently refilling while parked on the home strip. */
+    refueling?: boolean
     /** Current route phase used for a restrained mission-state cue. */
     missionPhase?: MissionPhaseCue | string
     /** Cleared and total gates for the compact route progress meter. */
@@ -1414,6 +1437,19 @@ export class HUD {
         this.fuelAriaText = `${percent}% fuel, ${this.fuelEnduranceText.toLowerCase()}`
         this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
       }
+    }
+    if (this.refuelRowEl && this.refuelEl && opts.refueling !== undefined) {
+      const active = opts.refueling === true
+      const percent = fuelPercent({ fraction: opts.fuel ?? 0 })
+      if (active !== this.refuelValue || percent !== this.refuelPercentValue) {
+        this.refuelValue = active
+        this.refuelPercentValue = percent
+        this.refuelText = refuelHudLabel(active, opts.fuel ?? 0)
+        this.refuelAriaText = refuelAriaLabel(active, opts.fuel ?? 0)
+      }
+      this.setHidden(this.refuelRowEl, !active)
+      this.setText(this.refuelEl, this.refuelText)
+      this.setAttribute(this.refuelEl, 'aria-label', this.refuelAriaText)
     }
     if (this.engineHeatEl && opts.engineHeat !== undefined) {
       const safeHeat = Number.isFinite(opts.engineHeat) ? Math.max(0, Math.min(1, opts.engineHeat)) : 0
