@@ -81,6 +81,13 @@ import {
 import { SupersonicTracker } from './systems/Supersonic'
 import { GhostReplay } from './systems/GhostReplay'
 import {
+  pilotRankAriaLabel,
+  pilotRankForProgress,
+  pilotRankLabel,
+  pilotRankNextGoalLabel,
+  type PilotCareerProgress,
+} from './systems/CareerProgression'
+import {
   audioVolumePercent,
   normalizeAudioVolume,
   readAudioVolume,
@@ -264,6 +271,14 @@ async function boot(): Promise<void> {
     let completed = 0
     let earnedBadges = 0
     let mastered = 0
+    const career: PilotCareerProgress = {
+      completedCourses: 0,
+      totalRuns: 0,
+      totalBestScore: 0,
+      totalBadges: 0,
+      totalContractWins: 0,
+      legendCourses: 0,
+    }
     for (const course of curated) {
       const runId = courseRunId(course)
       if (!runId) continue
@@ -272,6 +287,12 @@ async function boot(): Promise<void> {
       const runCount = history?.completionCount ?? 0
       if (runCount > 0) completed += 1
       earnedBadges += record.badgeCount
+      career.totalRuns += Number.isFinite(runCount) ? Math.max(0, runCount) : 0
+      career.totalBestScore += Number.isFinite(record.bestScore) ? Math.max(0, record.bestScore) : 0
+      career.totalBadges += record.badgeCount
+      career.totalContractWins += Number.isFinite(history?.contractWins)
+        ? Math.max(0, history?.contractWins ?? 0)
+        : 0
       if (courseMasteryTierForProgress({
         completionCount: runCount,
         bestScore: record.bestScore,
@@ -280,13 +301,22 @@ async function boot(): Promise<void> {
         landingQuality: history?.landingQuality,
       }) === 'legend') mastered += 1
     }
+    career.completedCourses = completed
+    career.legendCourses = mastered
+    const rank = pilotRankForProgress(career)
+    const rankLabel = pilotRankLabel(rank)
+    const nextRank = pilotRankNextGoalLabel(rank)
     const badgeTotal = curated.length * MASTERY_BADGE_COUNT
     const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
-    titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE · BADGES ${earnedBadges}/${badgeTotal} · ${masteryLabel}`
-    titleProgress.setAttribute(
-      'aria-label',
-      `${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery`,
-    )
+    const labels = [
+      `RANK ${rankLabel}`,
+      `COURSES ${completed}/${curated.length} COMPLETE`,
+      `BADGES ${earnedBadges}/${badgeTotal}`,
+      masteryLabel,
+      nextRank,
+    ].filter(Boolean)
+    titleProgress.textContent = labels.join(' · ')
+    titleProgress.setAttribute('aria-label', `${pilotRankAriaLabel(rank, career)}, ${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery${nextRank ? `, ${nextRank.toLowerCase()}` : ''}`)
   }
   const refreshCourseUi = (): void => {
     courseRecordCache.clear()

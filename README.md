@@ -82,6 +82,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The title progress line now includes how many curated courses have reached Legend mastery, alongside completion and badge totals.
 - Course selector and title-progress refreshes now share one bounded repaired-record snapshot, reducing duplicate local-storage parsing during startup, cross-tab updates, and result handoff.
 - Played course cards now show the bounded requirements behind their next mastery tier, turning `NEXT ACE` or `NEXT LEGEND` into an actionable route goal.
+- The title progress line now derives a bounded cross-course pilot rank from existing completions, best scores, badges, and contract wins, with the next rank target shown without adding flight-loop work.
 - Course cards now include the saved runway-approach record in their compact flight log, so centered landing skill has a visible repeatable target before launch.
 - Course cards also preview saved settlement and biome discovery records, keeping exploration mastery visible alongside flight and landing skill.
 - Course cards now preview saved barrel-roll and combo records too, making airshow and precision-chain mastery visible before launch.
