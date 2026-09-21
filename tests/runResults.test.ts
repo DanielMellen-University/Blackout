@@ -166,7 +166,7 @@ describe('run results focus flow', () => {
     results.show(result)
     expect(fixture.retry.focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
-      'GATE +20,000 · TIME +70,000 · LAND +10,000',
+      'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT',
     )
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
       'NEW COURSE BEST · SCORE 100,000 · FUEL 100% LEFT · ENTER RETRY · R NEW WORLD',
@@ -206,7 +206,7 @@ describe('run results focus flow', () => {
 
     results.show(result, 'ace', true)
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
-      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · CAREER ACE UP')
+      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · CAREER ACE UP')
 
     results.dispose()
     vi.unstubAllGlobals()
@@ -221,6 +221,26 @@ describe('run results focus flow', () => {
     results.show(result, 'wingman', false, ['FIRST SORTIE', 'SPEED DEMON'])
     expect(elementsFor(fixture.document, 'result-badges')?.textContent)
       .toBe('NEW COMMENDATIONS · FIRST SORTIE / SPEED DEMON')
+
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('shows the deterministic precision sortie style in score detail', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      landingQuality: 0.96,
+      landingLabel: 'BUTTER',
+      bestPrecisionStreak: 3,
+      approachScore: 460,
+    })
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
+      .toContain('STYLE PRECISION · BUTTER TOUCHDOWN')
 
     results.dispose()
     vi.unstubAllGlobals()

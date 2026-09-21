@@ -42,6 +42,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Turning the ghost off also removes its ahead/behind pace row, so replay telemetry never survives a deliberate visibility toggle.
 - The `X` ghost-path preference persists across reloads, so replay visibility stays where the pilot left it without touching flight timing.
 - Completion results include a compact G1 to G5 split strip with signed deltas against the previous best trace.
+- Completion results also assign a deterministic sortie style such as PRECISION, SPEED, EXPLORER, or SURVIVOR from the telemetry already earned during the run.
 - The title and pause menus offer a card world picker for Random world, Free flight, and the curated course seeds, with route profiles preserved on retry.
 - Results persist a completion count and fastest finish per course, making progression visible without introducing a campaign layer.
 - Course selectors reuse that history, showing curated-course run counts and fastest times without touching the flight loop.
