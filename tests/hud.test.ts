@@ -21,6 +21,7 @@ import {
   formatHudNumber,
   formatVerticalSpeed,
   formatWind,
+  formatWindGust,
   FLIGHT_CONTROLS_HINT,
   engineHeatCue,
   engineHeatBanner,
@@ -80,6 +81,7 @@ import {
   verticalSpeedTone,
   windDirectionDegrees,
   windSpeedMps,
+  windGustCue,
   weatherCue,
   weatherCycleBanner,
   weatherTransitionLabel,
@@ -270,6 +272,16 @@ describe('HUD value formatting', () => {
     expect(normalizeBannerTone('danger')).toBe('danger')
     expect(normalizeBannerTone('warning')).toBe('info')
     expect(normalizeBannerTone(null)).toBe('info')
+  })
+
+  it('turns bounded gust intensity into a calm, active, or severe cue', () => {
+    expect(windGustCue(-1)).toBe('calm')
+    expect(windGustCue(0.27)).toBe('calm')
+    expect(windGustCue(0.28)).toBe('active')
+    expect(formatWindGust(0.28)).toBe('GUST')
+    expect(windGustCue(0.72)).toBe('severe')
+    expect(formatWindGust(1)).toBe('GUST HIGH')
+    expect(formatWindGust(Number.NaN)).toBe('')
   })
 
   it('formats bounded radar contacts for a compact HUD readout', () => {

@@ -79,6 +79,8 @@ export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · V TRIM 
 
 export type WeatherCue = 'calm' | 'active' | 'severe'
 
+export type WindGustCue = 'calm' | 'active' | 'severe'
+
 export type CrosswindSide = 'left' | 'right' | 'calm'
 
 /** Normalize banner tone input so stale callers cannot add arbitrary classes. */
@@ -661,6 +663,7 @@ export class HUD {
   private windCrosswindValue = Number.NaN
   private windCrosswindSideValue: CrosswindSide = 'calm'
   private windCrosswindVisible = false
+  private windGustCueValue: WindGustCue = 'calm'
   private windText = ''
   private windAriaText = ''
   private weatherCueValue: WeatherCue | null = null
@@ -863,6 +866,8 @@ export class HUD {
     /** Live world wind vector in metres per second. */
     windX?: number
     windZ?: number
+    /** Bounded weather gust intensity used for a compact wind-risk cue. */
+    weatherGust?: number
     /** Runway-relative crosswind used on the return leg, in metres per second. */
     crosswind?: number | null
     /** Side of the runway toward which the live crosswind vector points. */
@@ -1111,27 +1116,39 @@ export class HUD {
         : 0
       const crosswindSide = crosswindVisible ? normalizeCrosswindSide(opts.crosswindSide) : 'calm'
       const crosswindStep = crosswindVisible ? Math.round(crosswind) : -1
+      const gustCue = windGustCue(opts.weatherGust ?? 0)
       if (
         speedStep !== this.windSpeedValue ||
         direction !== this.windDirectionValue ||
         crosswindStep !== this.windCrosswindValue ||
         crosswindVisible !== this.windCrosswindVisible ||
-        crosswindSide !== this.windCrosswindSideValue
+        crosswindSide !== this.windCrosswindSideValue ||
+        gustCue !== this.windGustCueValue
       ) {
         this.windSpeedValue = speedStep
         this.windDirectionValue = direction
         this.windCrosswindValue = crosswindStep
         this.windCrosswindVisible = crosswindVisible
         this.windCrosswindSideValue = crosswindSide
+        this.windGustCueValue = gustCue
         const baseWindText = formatWind(windX, windZ)
-        this.windText = crosswindVisible ? `${baseWindText} · ${formatCrosswind(crosswind, crosswindSide)}` : baseWindText
+        const crosswindText = crosswindVisible ? formatCrosswind(crosswind, crosswindSide) : ''
+        const gustText = formatWindGust(opts.weatherGust ?? 0)
+        this.windText = [baseWindText, crosswindText, gustText].filter(Boolean).join(' · ')
+        const gustAria = gustCue === 'severe' ? 'strong gusts' : gustCue === 'active' ? 'active gusts' : ''
         this.windAriaText = baseWindText === 'CALM'
-          ? crosswindVisible ? `Calm wind, ${formatCrosswind(crosswind, crosswindSide).toLowerCase()}` : 'Calm wind'
-          : `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees${crosswindVisible ? `, ${formatCrosswind(crosswind, crosswindSide).toLowerCase()}` : ''}`
+          ? ['Calm wind', crosswindText.toLowerCase(), gustAria].filter(Boolean).join(', ')
+          : [
+            `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees`,
+            crosswindText.toLowerCase(),
+            gustAria,
+          ].filter(Boolean).join(', ')
       }
       this.setText(this.windEl, this.windText)
       this.setAttribute(this.windEl, 'aria-label', this.windAriaText)
       this.setClass(this.windEl, 'crosswind-active', crosswindVisible && crosswind >= 8)
+      this.setClass(this.windEl, 'gust-active', gustCue !== 'calm')
+      this.setClass(this.windEl, 'gust-severe', gustCue === 'severe')
     }
     if (this.phaseEl && opts.dayPhase) {
       this.setText(this.phaseEl, opts.dayPhase)
@@ -2022,6 +2039,19 @@ export function formatWind(windX: number, windZ: number): string {
   const speed = Math.round(windSpeedMps(windX, windZ))
   if (speed < 1) return 'CALM'
   return `${speed} M/S ${String(windDirectionDegrees(windX, windZ)).padStart(3, '0')}°`
+}
+
+/** Keep gust risk visible without exposing the raw weather scalar. */
+export function windGustCue(value: number): WindGustCue {
+  const safe = Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+  if (safe >= 0.72) return 'severe'
+  if (safe >= 0.28) return 'active'
+  return 'calm'
+}
+
+export function formatWindGust(value: number): string {
+  const cue = windGustCue(value)
+  return cue === 'severe' ? 'GUST HIGH' : cue === 'active' ? 'GUST' : ''
 }
 
 /** Classify weather IDs or labels without trusting arbitrary runtime strings. */

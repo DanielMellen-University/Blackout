@@ -1689,6 +1689,7 @@ async function boot(): Promise<void> {
       hudFrame.weatherTransitioning = world.atmosphere.weatherTransitioning
       hudFrame.windX = precipitation.windX
       hudFrame.windZ = precipitation.windZ
+      hudFrame.weatherGust = precipitation.gust
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       const contractLabel = challenge.contractLabel
       hudFrame.mission = missionLabelCache(
