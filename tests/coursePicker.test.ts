@@ -32,6 +32,12 @@ describe('course picker copy', () => {
       bestTimeSec: 90,
       approachScore: 500,
     })).toBe('LOG APP +500')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
+      destinations: 3,
+      biomes: 4,
+    })).toBe('LOG DEST X3 BIOMES X4')
   })
 
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {

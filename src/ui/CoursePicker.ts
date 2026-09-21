@@ -110,6 +110,12 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(history.approachScore) && history.approachScore! > 0) {
     parts.push(`APP +${Math.min(500, Math.floor(history.approachScore!))}`)
   }
+  if (Number.isFinite(history.destinations) && history.destinations! > 0) {
+    parts.push(`DEST X${Math.min(6, Math.floor(history.destinations!))}`)
+  }
+  if (Number.isFinite(history.biomes) && history.biomes! > 0) {
+    parts.push(`BIOMES X${Math.min(15, Math.floor(history.biomes!))}`)
+  }
   return parts.length > 0 ? `LOG ${parts.join(' ')}` : ''
 }
 
