@@ -145,6 +145,12 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(history.contractWins) && history.contractWins! > 0) {
     parts.push(`CONTRACT WINS X${Math.min(1_000, Math.floor(history.contractWins!))}`)
   }
+  const contractStreakRecord = Number.isFinite(history.contractStreakRecord)
+    ? history.contractStreakRecord!
+    : history.contractStreak
+  if (Number.isFinite(contractStreakRecord) && contractStreakRecord! > 1) {
+    parts.push(`CONTRACT STREAK X${Math.min(1_000, Math.floor(contractStreakRecord!))}`)
+  }
   return parts.length > 0 ? `LOG ${parts.join(' ')}` : ''
 }
 

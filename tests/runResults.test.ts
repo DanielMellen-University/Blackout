@@ -154,6 +154,7 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({ newFuelRecord: true })).toBe('FUEL')
     expect(flightRecordCueLabel({ newMedalRecord: true })).toBe('MEDAL')
     expect(flightRecordCueLabel({ newRunStreakRecord: true })).toBe('RUN STREAK')
+    expect(flightRecordCueLabel({ newContractStreakRecord: true })).toBe('CONTRACT STREAK')
   })
 
   it('traps Tab and restores the flight focus target when hidden', () => {
