@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { APP_VERSION, RELEASE_NAME, ROADMAP_CHUNK, appReleaseLabel, appVersionLabel } from '../src/core/Version'
 
 describe('release version identity', () => {
@@ -8,5 +9,11 @@ describe('release version identity', () => {
     expect(RELEASE_NAME).toBe('Systems expansion')
     expect(appVersionLabel()).toBe(`v${APP_VERSION}`)
     expect(appReleaseLabel()).toBe(`v${APP_VERSION} / ${RELEASE_NAME}`)
+  })
+
+  it('keeps the runtime roadmap chunk aligned with the agent playbook', () => {
+    const agents = readFileSync(new URL('../.agents.md', import.meta.url), 'utf8')
+    const currentChunk = agents.match(/\*\*CURRENT_CHUNK:\*\* `([^`]+)`/)?.[1]
+    expect(currentChunk).toBe(ROADMAP_CHUNK)
   })
 })

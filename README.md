@@ -6,7 +6,7 @@ Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a moder
 
 The production compiler runs with strict nullability and unchecked-index checks so terrain, flight, and UI changes fail fast at build time.
 
-Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such as `10.119` are tracked separately from the public semantic version.
+Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such as `10.119` are tracked separately from the public semantic version, and builds reject stale roadmap pointers.
 
 ## Features
 
