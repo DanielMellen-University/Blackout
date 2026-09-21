@@ -242,6 +242,8 @@ export interface CourseMasteryProgress {
   bestScore?: number
   badgeCount?: number
   contractWins?: number
+  /** Best persisted touchdown quality, defaulting to legacy-compatible full credit when absent. */
+  landingQuality?: number
 }
 
 /** Derive a stable, bounded course rank from the records already in storage. */
@@ -250,9 +252,10 @@ export function courseMasteryTierForProgress(progress: CourseMasteryProgress): C
   const score = safeCount(progress.bestScore, MAX_BEST_SCORE)
   const badges = safeCount(progress.badgeCount, MASTERY_BADGE_COUNT)
   const contracts = safeCount(progress.contractWins, MAX_CONTRACT_WINS)
-  if (runs >= 10 && score >= 100_000 && badges >= MASTERY_BADGE_COUNT && contracts >= 5) return 'legend'
-  if (runs >= 5 && score >= 88_000 && badges >= 3 && contracts >= 2) return 'ace'
-  if (runs >= 3 && score >= 76_000 && badges >= 2) return 'veteran'
+  const landingQuality = progress.landingQuality === undefined ? 1 : clamp01(progress.landingQuality)
+  if (runs >= 10 && score >= 100_000 && badges >= MASTERY_BADGE_COUNT && contracts >= 5 && landingQuality >= 0.92) return 'legend'
+  if (runs >= 5 && score >= 88_000 && badges >= 3 && contracts >= 2 && landingQuality >= 0.78) return 'ace'
+  if (runs >= 3 && score >= 76_000 && badges >= 2 && landingQuality >= 0.6) return 'veteran'
   if (runs >= 1) return 'pilot'
   return 'rookie'
 }
@@ -1271,6 +1274,7 @@ export class ChallengeRun {
       bestScore,
       badgeCount: allBadges.length,
       contractWins: history.contractWins,
+      landingQuality: history.landingQuality,
     })
 
     this.phase = 'complete'

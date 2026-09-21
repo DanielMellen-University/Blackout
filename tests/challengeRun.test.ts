@@ -1722,6 +1722,8 @@ describe('ChallengeRun', () => {
     expect(courseMasteryTierForProgress({ completionCount: 3, bestScore: 76_000, badgeCount: 2 })).toBe('veteran')
     expect(courseMasteryTierForProgress({ completionCount: 5, bestScore: 88_000, badgeCount: 3, contractWins: 2 })).toBe('ace')
     expect(courseMasteryTierForProgress({ completionCount: 10, bestScore: 100_000, badgeCount: 6, contractWins: 5 })).toBe('legend')
+    expect(courseMasteryTierForProgress({ completionCount: 5, bestScore: 88_000, badgeCount: 3, contractWins: 2, landingQuality: 0.7 })).toBe('veteran')
+    expect(courseMasteryTierForProgress({ completionCount: 10, bestScore: 100_000, badgeCount: 6, contractWins: 5, landingQuality: 0.8 })).toBe('ace')
     expect(courseMasteryTierForProgress({ completionCount: Number.NaN, bestScore: Number.POSITIVE_INFINITY })).toBe('rookie')
     expect(courseMasteryTierLabel('rookie')).toBe('ROOKIE')
     expect(courseMasteryTierLabel('legend')).toBe('LEGEND')

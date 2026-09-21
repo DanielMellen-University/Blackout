@@ -43,6 +43,7 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     bestScore,
     badgeCount,
     contractWins: input.history?.contractWins,
+    landingQuality: input.history?.landingQuality,
   })
   const tierLabel = tier === 'rookie' ? '' : courseMasteryTierLabel(tier)
 

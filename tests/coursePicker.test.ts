@@ -94,4 +94,22 @@ describe('course picker copy', () => {
     expect(copy.meta).toBe('NEW')
     expect(copy.stats).toBe('TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
   })
+
+  it('lets a rough saved touchdown lower the displayed mastery tier', () => {
+    const copy = coursePickerCopy({
+      course: orbit,
+      history: {
+        completionCount: 5,
+        bestTimeSec: 98.4,
+        contractWins: 2,
+        contractStreakRecord: 4,
+        landingQuality: 0.7,
+      },
+      bestScore: 88_000,
+      badgeCount: 3,
+      bestPrecisionStreak: 4,
+    })
+    expect(copy.meta).toBe('5 RUNS · VETERAN')
+    expect(copy.stats).toContain('VETERAN')
+  })
 })
