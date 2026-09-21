@@ -9,7 +9,7 @@ import {
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
-  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'newFuelRecord'>,
+  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'newFuelRecord' | 'newMedalRecord'>,
 ): string {
   return [
     result.newFlightDistanceRecord ? 'DISTANCE' : '',
@@ -17,6 +17,7 @@ export function flightRecordCueLabel(
     result.newNegativeGRecord ? 'NEG G' : '',
     result.newLandingQualityRecord ? 'LANDING' : '',
     result.newFuelRecord ? 'FUEL' : '',
+    result.newMedalRecord ? 'MEDAL' : '',
   ].filter(Boolean).join(' / ')
 }
 
@@ -159,6 +160,10 @@ export class RunResults {
       `TIME +${result.timeScore.toLocaleString()}`,
       `LAND +${result.landingScore.toLocaleString()}`,
     ]
+    if (result.newMedalRecord) scoreParts.push('NEW MEDAL')
+    if (result.courseBestMedal && result.courseBestMedal !== result.medal) {
+      scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)
+    }
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
     if (result.scoringFocus) scoreParts.push(`${result.scoringFocus.toUpperCase()} FOCUS`)
     if (Number.isFinite(result.peakSpeedKts)) {
@@ -350,6 +355,7 @@ export class RunResults {
       result.newApproachRecord ? 'APPROACH' : '',
       result.newLandingQualityRecord ? 'LANDING' : '',
       result.newFuelRecord ? 'FUEL' : '',
+      result.newMedalRecord ? 'MEDAL' : '',
       result.masteryTierPromoted ? 'MASTERY' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
       result.newBiomeRecord ? 'BIOMES' : '',

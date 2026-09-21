@@ -152,6 +152,7 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({ newLandingQualityRecord: true })).toBe('LANDING')
     expect(flightRecordCueLabel({ newFlightDistanceRecord: true, newLandingQualityRecord: true })).toBe('DISTANCE / LANDING')
     expect(flightRecordCueLabel({ newFuelRecord: true })).toBe('FUEL')
+    expect(flightRecordCueLabel({ newMedalRecord: true })).toBe('MEDAL')
   })
 
   it('traps Tab and restores the flight focus target when hidden', () => {
@@ -346,6 +347,7 @@ describe('run results focus flow', () => {
       newApproachRecord: true,
       newLandingQualityRecord: true,
       newFuelRecord: true,
+      newMedalRecord: true,
       masteryTierPromoted: true,
       newDestinationRecord: true,
       newRunStreakRecord: true,
@@ -355,8 +357,27 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / FUEL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / FUEL / MEDAL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the all-time medal visible when a slower run lands below it', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      medal: 'silver',
+      totalScore: 80_000,
+      bestScore: 100_000,
+      courseBestMedal: 'gold',
+      isNewBest: false,
+    })
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE GOLD')
     results.dispose()
     vi.unstubAllGlobals()
   })

@@ -14,6 +14,8 @@ import {
   landingWeatherRisk,
   landingQualityLabel,
   landingQualityForMetrics,
+  medalForScore,
+  medalRank,
   repairCourseHistory,
   readCourseHistory,
   readBestCourseScore,
@@ -52,6 +54,17 @@ import {
 import { MAX_CONTRACT_SCORE } from '../src/systems/SortieContract'
 
 describe('ChallengeRun', () => {
+  it('keeps score medal tiers finite and ordered', () => {
+    expect(medalForScore(0)).toBe('complete')
+    expect(medalForScore(63_999)).toBe('complete')
+    expect(medalForScore(64_000)).toBe('bronze')
+    expect(medalForScore(76_000)).toBe('silver')
+    expect(medalForScore(88_000)).toBe('gold')
+    expect(medalRank('complete')).toBeLessThan(medalRank('bronze'))
+    expect(medalRank('bronze')).toBeLessThan(medalRank('silver'))
+    expect(medalRank('silver')).toBeLessThan(medalRank('gold'))
+  })
+
   it('starts the clock on the takeoff roll and scores a completed landing', () => {
     const store = new Map<string, string>()
     const run = new ChallengeRun({
@@ -82,6 +95,8 @@ describe('ChallengeRun', () => {
     expect(result!.gateScore).toBe(15_000)
     expect(result!.totalScore).toBeGreaterThan(0)
     expect(result!.isNewBest).toBe(true)
+    expect(result!.courseBestMedal).toBe(result!.medal)
+    expect(result!.newMedalRecord).toBe(true)
     expect(result!.peakSpeedKts).toBe(16)
     expect(result!.peakAltitudeM).toBe(140)
     expect(result!.flightDistanceM).toBe(160)

@@ -112,7 +112,7 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS · ACE')
-    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · CONTRACT X4 · ACE · NEXT LEGEND / 10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER · 3/6 BADGES · LOG CONTRACT WINS X2 · TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
+    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · MEDAL GOLD · STREAK X4 · CONTRACT X4 · ACE · NEXT LEGEND / 10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER · 3/6 BADGES · LOG CONTRACT WINS X2 · TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TOP')).toBe(false)
     expect(copy.stats.includes('ROLLS')).toBe(false)

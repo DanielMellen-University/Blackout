@@ -5,6 +5,7 @@ import {
   courseMasteryNextTierGoalLabel,
   formatTime,
   landingQualityLabel,
+  medalForScore,
   MASTERY_BADGE_COUNT,
   type CourseHistory,
 } from '../systems/ChallengeRun'
@@ -74,7 +75,10 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     const bestTime = input.history?.bestTimeSec
     statsParts.push(Number.isFinite(bestTime) ? formatTime(bestTime!) : 'NO TIME')
   }
-  if (bestScore > 0) statsParts.push(`BEST ${bestScore.toLocaleString()}`)
+  if (bestScore > 0) {
+    statsParts.push(`BEST ${bestScore.toLocaleString()}`)
+    statsParts.push(`MEDAL ${medalForScore(bestScore).toUpperCase()}`)
+  }
   if (streak >= 2) statsParts.push(`STREAK X${streak}`)
   if (contractStreak >= 2) statsParts.push(`CONTRACT X${contractStreak}`)
   if (tierLabel) statsParts.push(tierLabel)

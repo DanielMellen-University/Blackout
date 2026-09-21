@@ -44,6 +44,10 @@ export interface ChallengeResult {
   landingLabel?: LandingQualityLabel
   totalScore: number
   medal: Medal
+  /** Highest score medal retained for this course through the best-score record. */
+  courseBestMedal?: Medal
+  /** Whether this sortie moved the course to a higher score medal tier. */
+  newMedalRecord?: boolean
   bestScore: number
   isNewBest: boolean
   /** Gate split trace for this run, captured only when a gate is cleared. */
@@ -1200,6 +1204,9 @@ export class ChallengeRun {
       : 0
     const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
     const previousBest = this.readBest()
+    const medal = medalFor(totalScore)
+    const courseBestMedal = medalFor(Math.max(previousBest, totalScore))
+    const newMedalRecord = medalRank(medal) > medalRank(medalFor(previousBest))
     const previousCourseMasteryTier = courseMasteryTierForProgress({
       completionCount: history.completionCount,
       bestScore: previousBest,
@@ -1309,7 +1316,7 @@ export class ChallengeRun {
       history.completionCount,
       clamp01(gateQuality),
       landingQuality,
-      medalFor(totalScore),
+      medal,
       this.bestGateQualityStreak,
       approachScore,
     )
@@ -1342,7 +1349,9 @@ export class ChallengeRun {
       landingQuality,
       landingLabel: landingQualityLabel(landingQuality),
       totalScore,
-      medal: medalFor(totalScore),
+      medal,
+      courseBestMedal,
+      newMedalRecord,
       bestScore,
       isNewBest,
       gateSplits: this.gateSplits.slice(),
@@ -1622,11 +1631,24 @@ export function resultMedalClass(medal: Medal): string {
   return `medal-${medal}`
 }
 
-function medalFor(score: number): Medal {
+/** Derive the finite score tier shared by results and course records. */
+export function medalForScore(score: number): Medal {
   if (score >= 88_000) return 'gold'
   if (score >= 76_000) return 'silver'
   if (score >= 64_000) return 'bronze'
   return 'complete'
+}
+
+function medalFor(score: number): Medal {
+  return medalForScore(score)
+}
+
+/** Compare score tiers without relying on their display order. */
+export function medalRank(medal: Medal): number {
+  if (medal === 'gold') return 3
+  if (medal === 'silver') return 2
+  if (medal === 'bronze') return 1
+  return 0
 }
 
 function clamp01(value: number): number {
