@@ -1224,7 +1224,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
     expect(firstResult.newApproachRecord).toBe(true)
     expect(values.get('blackout.history.seed:approach-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"approachScore":500,"landingQuality":1,"runStreak":1,"runStreakRecord":1}',
+      '{"completionCount":1,"bestTimeSec":0,"approachScore":500,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}',
     )
 
     const retry = new ChallengeRun(storage)
@@ -1319,6 +1319,47 @@ describe('ChallengeRun', () => {
     expect(result.courseBestLandingQuality).toBe(1)
   })
 
+  it('persists the best fuel reserve and rejects malformed reserve records', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const first = new ChallengeRun(storage)
+    first.reset('seed:fuel-record', 1)
+    first.recordGate(1)
+    const firstResult = first.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    }, 0.72)!
+    expect(firstResult.courseBestFuelRemainingPercent).toBe(72)
+    expect(firstResult.newFuelRecord).toBe(true)
+    expect(values.get('blackout.history.seed:fuel-record')).toContain('"fuelRemainingPercent":72')
+
+    const retry = new ChallengeRun(storage)
+    retry.reset('seed:fuel-record', 1)
+    retry.recordGate(1)
+    const retryResult = retry.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    }, 0.4)!
+    expect(retryResult.courseBestFuelRemainingPercent).toBe(72)
+    expect(retryResult.newFuelRecord).toBe(false)
+
+    values.set(
+      'blackout.history.seed:fuel-record',
+      '{"completionCount":2,"bestTimeSec":4,"fuelRemainingPercent":999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:fuel-record')?.fuelRemainingPercent).toBe(100)
+    expect(values.get('blackout.history.seed:fuel-record')).toBe(
+      '{"completionCount":2,"bestTimeSec":4,"fuelRemainingPercent":100}',
+    )
+  })
+
   it('persists the best combo per course and repairs oversized records', () => {
     const values = new Map<string, string>()
     const storage = {
@@ -1371,7 +1412,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.courseBestStuntRolls).toBe(3)
     expect(firstResult.newStuntRecord).toBe(true)
     expect(values.get('blackout.history.seed:stunt-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"landingQuality":1,"runStreak":1,"runStreakRecord":1}',
+      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}',
     )
 
     const retry = new ChallengeRun(storage)
@@ -1548,7 +1589,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.completionCount).toBe(1)
     expect(firstResult.bestTimeSec).toBe(2)
     expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
-    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"landingQuality":1,"runStreak":1,"runStreakRecord":1}')
+    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}')
 
     const retry = new ChallengeRun(scoreStore)
     retry.reset('seed:trace', 2)
@@ -1687,7 +1728,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.newPeakSpeedRecord).toBe(true)
     expect(firstResult.newPeakAltitudeRecord).toBe(true)
     expect(values.get('blackout.history.seed:peaks')).toBe(
-      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"landingQuality":1,"runStreak":1,"runStreakRecord":1}',
+      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}',
     )
 
     const retry = new ChallengeRun(storage)

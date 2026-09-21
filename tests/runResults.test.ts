@@ -151,6 +151,7 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({ newPositiveGRecord: true, newNegativeGRecord: true })).toBe('POS G / NEG G')
     expect(flightRecordCueLabel({ newLandingQualityRecord: true })).toBe('LANDING')
     expect(flightRecordCueLabel({ newFlightDistanceRecord: true, newLandingQualityRecord: true })).toBe('DISTANCE / LANDING')
+    expect(flightRecordCueLabel({ newFuelRecord: true })).toBe('FUEL')
   })
 
   it('traps Tab and restores the flight focus target when hidden', () => {
@@ -267,6 +268,7 @@ describe('run results focus flow', () => {
       courseMasteryTierLabel: 'ACE',
       courseBestApproachScore: 650,
       courseBestLandingQuality: 0.95,
+      courseBestFuelRemainingPercent: 90,
       courseBestCombo: 6,
       courseBestPeakSpeedKts: 1_020,
       courseBestPeakAltitudeM: 1_800,
@@ -316,6 +318,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TIER ACE')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE LAND 95%')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE FUEL 90%')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
@@ -342,6 +345,7 @@ describe('run results focus flow', () => {
       newComboRecord: true,
       newApproachRecord: true,
       newLandingQualityRecord: true,
+      newFuelRecord: true,
       masteryTierPromoted: true,
       newDestinationRecord: true,
       newRunStreakRecord: true,
@@ -351,7 +355,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / FUEL / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

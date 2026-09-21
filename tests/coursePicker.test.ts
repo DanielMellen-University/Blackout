@@ -56,6 +56,11 @@ describe('course picker copy', () => {
       runStreak: 4,
       contractWins: 3,
     })).toBe('LOG RUN STREAK X4 CONTRACT WINS X3')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
+      fuelRemainingPercent: 72,
+    })).toBe('LOG FUEL 72%')
   })
 
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {

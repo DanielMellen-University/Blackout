@@ -9,13 +9,14 @@ import {
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
-  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord'>,
+  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'newFuelRecord'>,
 ): string {
   return [
     result.newFlightDistanceRecord ? 'DISTANCE' : '',
     result.newPositiveGRecord ? 'POS G' : '',
     result.newNegativeGRecord ? 'NEG G' : '',
     result.newLandingQualityRecord ? 'LANDING' : '',
+    result.newFuelRecord ? 'FUEL' : '',
   ].filter(Boolean).join(' / ')
 }
 
@@ -332,6 +333,9 @@ export class RunResults {
     if (Number.isFinite(result.courseBestLandingQuality) && result.courseBestLandingQuality! > result.landingQuality) {
       scoreParts.push(`COURSE LAND ${Math.round(Math.max(0, Math.min(1, result.courseBestLandingQuality!)) * 100)}%`)
     }
+    if (Number.isFinite(result.courseBestFuelRemainingPercent) && result.courseBestFuelRemainingPercent! > (result.fuelRemainingPercent ?? 0)) {
+      scoreParts.push(`COURSE FUEL ${Math.round(Math.max(0, Math.min(100, result.courseBestFuelRemainingPercent!)))}%`)
+    }
     this.scoreDetail.textContent = scoreParts.join(' · ')
     const newBadges = result.newMasteryBadges ?? []
     const allBadges = result.masteryBadges ?? []
@@ -345,6 +349,7 @@ export class RunResults {
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',
       result.newLandingQualityRecord ? 'LANDING' : '',
+      result.newFuelRecord ? 'FUEL' : '',
       result.masteryTierPromoted ? 'MASTERY' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
       result.newBiomeRecord ? 'BIOMES' : '',

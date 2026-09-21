@@ -114,6 +114,9 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
     const landingQuality = Math.max(0, Math.min(1, history.landingQuality!))
     parts.push(`LAND ${landingQualityLabel(landingQuality)} ${Math.round(landingQuality * 100)}%`)
   }
+  if (Number.isFinite(history.fuelRemainingPercent) && history.fuelRemainingPercent! > 0) {
+    parts.push(`FUEL ${Math.min(100, Math.floor(history.fuelRemainingPercent!))}%`)
+  }
   if (Number.isFinite(history.approachScore) && history.approachScore! > 0) {
     parts.push(`APP +${Math.min(500, Math.floor(history.approachScore!))}`)
   }

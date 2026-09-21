@@ -192,6 +192,10 @@ export interface ChallengeResult {
   courseBestLandingQuality?: number
   /** Whether this sortie set a new course touchdown-quality record. */
   newLandingQualityRecord?: boolean
+  /** Best fuel reserve retained for this course, as a whole percentage. */
+  courseBestFuelRemainingPercent?: number
+  /** Whether this sortie set a new course fuel-reserve record. */
+  newFuelRecord?: boolean
   /** Highest combo ever recorded for this course. */
   courseBestCombo?: number
   /** Whether this sortie set a new course combo record. */
@@ -214,6 +218,7 @@ export const MAX_PRECISION_STREAK = 1_000
 export const MAX_PEAK_SPEED_KTS = 20_000
 export const MAX_PEAK_ALTITUDE_M = 100_000
 export const MAX_FUEL_EFFICIENCY_SCORE = 1_000
+export const MAX_FUEL_REMAINING_PERCENT = 100
 export const MAX_APPROACH_SCORE = 500
 export const MAX_LANDING_QUALITY = 1
 export const MAX_WEATHER_SCORE = 500
@@ -303,6 +308,7 @@ export interface CourseHistory {
   combo?: number
   approachScore?: number
   landingQuality?: number
+  fuelRemainingPercent?: number
   destinations?: number
   biomes?: number
   runStreak?: number
@@ -650,6 +656,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawCombo = record.combo
   const rawApproachScore = record.approachScore
   const rawLandingQuality = record.landingQuality
+  const rawFuelRemainingPercent = record.fuelRemainingPercent
   const rawDestinations = record.destinations
   const rawBiomes = record.biomes
   const rawRunStreak = record.runStreak
@@ -667,6 +674,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasCombo = Object.prototype.hasOwnProperty.call(record, 'combo')
   const hasApproachScore = Object.prototype.hasOwnProperty.call(record, 'approachScore')
   const hasLandingQuality = Object.prototype.hasOwnProperty.call(record, 'landingQuality')
+  const hasFuelRemainingPercent = Object.prototype.hasOwnProperty.call(record, 'fuelRemainingPercent')
   const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
   const hasBiomes = Object.prototype.hasOwnProperty.call(record, 'biomes')
   const hasRunStreak = Object.prototype.hasOwnProperty.call(record, 'runStreak')
@@ -700,6 +708,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     : 0
   const landingQuality = typeof rawLandingQuality === 'number' && Number.isFinite(rawLandingQuality) && rawLandingQuality > 0
     ? Math.min(MAX_LANDING_QUALITY, Number(rawLandingQuality.toFixed(3)))
+    : 0
+  const fuelRemainingPercent = typeof rawFuelRemainingPercent === 'number' && Number.isFinite(rawFuelRemainingPercent) && rawFuelRemainingPercent > 0
+    ? Math.min(MAX_FUEL_REMAINING_PERCENT, Math.floor(rawFuelRemainingPercent))
     : 0
   const destinations = typeof rawDestinations === 'number' && Number.isFinite(rawDestinations) && rawDestinations > 0
     ? Math.min(MAX_DESTINATION_COUNT, Math.floor(rawDestinations))
@@ -744,6 +755,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (combo > 0) history.combo = combo
   if (approachScore > 0) history.approachScore = approachScore
   if (landingQuality > 0) history.landingQuality = landingQuality
+  if (fuelRemainingPercent > 0) history.fuelRemainingPercent = fuelRemainingPercent
   if (destinations > 0) history.destinations = destinations
   if (biomes > 0) history.biomes = biomes
   if (runStreak > 0) history.runStreak = runStreak
@@ -767,6 +779,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasCombo && (typeof rawCombo !== 'number' || !Number.isFinite(rawCombo) || rawCombo <= 0 || rawCombo !== combo)) ||
     (hasApproachScore && (typeof rawApproachScore !== 'number' || !Number.isFinite(rawApproachScore) || rawApproachScore <= 0 || rawApproachScore !== approachScore)) ||
     (hasLandingQuality && (typeof rawLandingQuality !== 'number' || !Number.isFinite(rawLandingQuality) || rawLandingQuality <= 0 || rawLandingQuality !== landingQuality)) ||
+    (hasFuelRemainingPercent && (typeof rawFuelRemainingPercent !== 'number' || !Number.isFinite(rawFuelRemainingPercent) || rawFuelRemainingPercent <= 0 || rawFuelRemainingPercent !== fuelRemainingPercent)) ||
     (hasDestinations && (typeof rawDestinations !== 'number' || !Number.isFinite(rawDestinations) || rawDestinations <= 0 || rawDestinations !== destinations)) ||
     (hasBiomes && (typeof rawBiomes !== 'number' || !Number.isFinite(rawBiomes) || rawBiomes <= 0 || rawBiomes !== biomes)) ||
     (hasRunStreak && (typeof rawRunStreak !== 'number' || !Number.isFinite(rawRunStreak) || rawRunStreak <= 0 || rawRunStreak !== runStreak)) ||
@@ -780,7 +793,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasPeakPositiveG && (typeof rawPeakPositiveG !== 'number' || !Number.isFinite(rawPeakPositiveG) || rawPeakPositiveG <= 1 || rawPeakPositiveG !== peakPositiveG)) ||
     (hasPeakNegativeG && (typeof rawPeakNegativeG !== 'number' || !Number.isFinite(rawPeakNegativeG) || rawPeakNegativeG >= 0 || rawPeakNegativeG !== peakNegativeG)) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'fuelRemainingPercent' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG',
     )
   return {
     history,
@@ -821,6 +834,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.landingQuality) && history.landingQuality! > 0) {
     record.landingQuality = Math.min(MAX_LANDING_QUALITY, Number(history.landingQuality!.toFixed(3)))
+  }
+  if (Number.isFinite(history.fuelRemainingPercent) && history.fuelRemainingPercent! > 0) {
+    record.fuelRemainingPercent = Math.min(MAX_FUEL_REMAINING_PERCENT, Math.floor(history.fuelRemainingPercent!))
   }
   if (Number.isFinite(history.destinations) && history.destinations! > 0) {
     record.destinations = Math.min(MAX_DESTINATION_COUNT, Math.floor(history.destinations!))
@@ -1220,6 +1236,7 @@ export class ChallengeRun {
     // Legacy histories predate touchdown persistence. Treat an existing completed course
     // as fully qualified until a real quality record is present, avoiding a surprise tier drop.
     const previousLandingQuality = history.landingQuality ?? (history.completionCount > 0 ? 1 : 0)
+    const previousFuelRemainingPercent = history.fuelRemainingPercent ?? 0
     const previousDestinationCount = history.destinations ?? 0
     const previousBiomeCount = history.biomes ?? 0
     const previousRunStreak = history.runStreak ?? 0
@@ -1242,6 +1259,8 @@ export class ChallengeRun {
     const courseBestApproachScore = Math.max(previousApproachScore, approachScore)
     const newLandingQualityRecord = landingQuality > previousLandingQuality
     const courseBestLandingQuality = Math.max(previousLandingQuality, landingQuality)
+    const newFuelRecord = fuelRemainingPercent > previousFuelRemainingPercent
+    const courseBestFuelRemainingPercent = Math.max(previousFuelRemainingPercent, fuelRemainingPercent)
     const newDestinationRecord = this.destinationCount > previousDestinationCount
     const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
     const newBiomeRecord = this.surveyedBiomeCount > previousBiomeCount
@@ -1271,6 +1290,7 @@ export class ChallengeRun {
     if (courseBestCombo > 0) history.combo = courseBestCombo
     if (courseBestApproachScore > 0) history.approachScore = courseBestApproachScore
     if (courseBestLandingQuality > 0) history.landingQuality = courseBestLandingQuality
+    if (courseBestFuelRemainingPercent > 0) history.fuelRemainingPercent = courseBestFuelRemainingPercent
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
     if (courseBestBiomeCount > 0) history.biomes = courseBestBiomeCount
     history.runStreak = runStreak
@@ -1398,6 +1418,8 @@ export class ChallengeRun {
       newApproachRecord,
       courseBestLandingQuality: courseBestLandingQuality > 0 ? courseBestLandingQuality : undefined,
       newLandingQualityRecord,
+      courseBestFuelRemainingPercent: courseBestFuelRemainingPercent > 0 ? courseBestFuelRemainingPercent : undefined,
+      newFuelRecord,
       courseBestCombo: courseBestCombo > 0 ? courseBestCombo : undefined,
       newComboRecord,
     }
