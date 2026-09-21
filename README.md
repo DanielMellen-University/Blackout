@@ -30,6 +30,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The external camera also shortens its sightline before loaded buildings and airfield structures, keeping the chase view readable around settlements without extra scene geometry.
 - The last camera view selected with `C` persists across reloads while the title hero still opens in its composed external framing.
 - The `V` flight-assist choice persists across reloads, so gentle pitch and bank trim stays enabled for pilots who prefer it.
+- Flight assist is also available as a persistent Settings checkbox, while the in-flight `V` shortcut remains available for quick changes.
 - A seeded `RADAR RUN` contract now rewards selecting a city or village with `T` before reaching it, giving target lock a clear sortie purpose without adding world entities.
 - A seeded `GUST RIDER` contract can now reward staying airborne through strong gusts, turning existing storm telemetry into a bounded handling decision without changing flight physics.
 - Radar-run objectives bind to the exact streamed contact that was locked, so reaching a different settlement cannot accidentally complete the task.

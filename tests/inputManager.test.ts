@@ -179,6 +179,20 @@ describe('flight input one-shot controls', () => {
     const input = new InputManager(fake.target)
 
     input.setStabilityAssist(true)
+    expect(input.stabilityAssistEnabled).toBe(true)
+    expect(input.sampleWithDt(0).stabilityAssist).toBe(true)
+    input.setStabilityAssist(false)
+    expect(input.stabilityAssistEnabled).toBe(false)
+    expect(input.sampleWithDt(0).stabilityAssist).toBe(false)
+
+    input.dispose()
+  })
+
+  it('keeps the stability-assist control state synchronized when changed by settings', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    input.setStabilityAssist(true)
     expect(input.sampleWithDt(0).stabilityAssist).toBe(true)
     input.setStabilityAssist(false)
     expect(input.sampleWithDt(0).stabilityAssist).toBe(false)

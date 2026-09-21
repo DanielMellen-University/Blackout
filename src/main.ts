@@ -204,6 +204,7 @@ async function boot(): Promise<void> {
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
+  const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
   const pitchLabel = document.getElementById('controls-pitch-label')
@@ -509,6 +510,7 @@ async function boot(): Promise<void> {
   if (yawSelect) yawSelect.value = initialKeyboardYaw
   if (rollSelect) rollSelect.value = initialKeyboardRoll
   if (pitchSelect) pitchSelect.value = initialKeyboardPitch
+  if (stabilityAssistToggle) stabilityAssistToggle.checked = initialStabilityAssist
   const touchDevice = touchInputSupported(
     typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
     typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
@@ -583,6 +585,24 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(pitchSelect, 'change', onKeyboardPitchChange)
+  const applyStabilityAssist = (next: boolean): void => {
+    const enabled = next === true
+    input.setStabilityAssist(enabled)
+    if (stabilityAssistToggle) stabilityAssistToggle.checked = enabled
+    writeStabilityAssistPreference(qualityStorage, enabled)
+  }
+  const onStabilityAssistChange = (): void => {
+    const enabled = stabilityAssistToggle?.checked === true
+    applyStabilityAssist(enabled)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(
+        input.stabilityAssistEnabled ? 'FLIGHT ASSIST ON / PITCH + BANK TRIM' : 'FLIGHT ASSIST OFF',
+        1600,
+        'info',
+      )
+    }
+  }
+  uiListeners.add(stabilityAssistToggle, 'change', onStabilityAssistChange)
   const applyAudioVolume = (next: number): void => {
     const volume = normalizeAudioVolume(next)
     audio.setVolume(volume)
