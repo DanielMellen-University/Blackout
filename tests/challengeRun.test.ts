@@ -673,6 +673,37 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires smoothed load telemetry into the G-control contract', () => {
+    const run = new ChallengeRun(null)
+    let gControlSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:g-control-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT G CONTROL') {
+        gControlSeed = seed
+        break
+      }
+    }
+    expect(gControlSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:g-control-contract', 1, 'balanced', gControlSeed)
+    run.update(0.1, 8)
+    run.update(4, 180, 180, 0, 0, false, true, 0, 0, 2)
+    expect(run.contractProgress).toBeCloseTo(1 / 3)
+    run.update(5, 180, 180, 0, 0, false, true, 0, 0, 2)
+    run.update(3, 180, 180, 0, 0, false, true, 0, 0, 2)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('G CONTROL')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('g-control')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1

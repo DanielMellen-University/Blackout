@@ -76,12 +76,20 @@ describe('sortie contracts', () => {
         tracker.recordCrosswind(12, 5)
         tracker.recordCrosswind(12, 5)
       }
+      if (tracker.kind === 'g-control') {
+        tracker.recordGControl(2, 180, 5, false)
+        tracker.recordGControl(5, 180, 5)
+        tracker.recordGControl(2, 90, 5)
+        tracker.recordGControl(2, 180, 5)
+        tracker.recordGControl(2, 180, 5)
+        tracker.recordGControl(2, 180, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -291,6 +299,35 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only high-speed time inside the G-control envelope', () => {
+    const tracker = new SortieContractTracker()
+    let gControlSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'g-control') {
+        gControlSeed = seed
+        break
+      }
+    }
+    expect(gControlSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(gControlSeed, 5)
+    expect(tracker.label).toBe('G CONTROL')
+    tracker.recordGControl(2, 180, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordGControl(5, 180, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordGControl(2, 90, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordGControl(2, 180, 4)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordGControl(2, 180, 5)
+    tracker.recordGControl(2, 180, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    tracker.finish(99, 0)
+    expect(tracker.complete).toBe(true)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {
