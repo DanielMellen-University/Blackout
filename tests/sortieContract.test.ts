@@ -110,12 +110,17 @@ describe('sortie contracts', () => {
         tracker.recordCleanGate(false, 1, 5)
         tracker.recordCleanGate(false, 5, 5)
       }
+      if (tracker.kind === 'level') {
+        tracker.recordLevelFlight(180, 5, false)
+        tracker.recordLevelFlight(180, 5)
+        tracker.recordLevelFlight(198, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -479,6 +484,36 @@ describe('sortie contracts', () => {
     tracker.recordCleanGate(false, 5, 5)
     expect(tracker.complete).toBe(false)
     expect(tracker.finish(99, 1)).toBe(0)
+  })
+
+  it('requires a stable altitude window for level flight', () => {
+    const tracker = new SortieContractTracker()
+    let levelSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'level') {
+        levelSeed = seed
+        break
+      }
+    }
+    expect(levelSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(levelSeed, 5)
+    expect(tracker.label).toBe('LEVEL FLIGHT')
+    expect(tracker.detail).toContain('WITHIN +/-24M')
+    tracker.recordLevelFlight(180, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordLevelFlight(120, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordLevelFlight(300, 5)
+    expect(tracker.progress).toBeCloseTo(0.5)
+    tracker.recordLevelFlight(340, 1)
+    expect(tracker.progress).toBe(0)
+    tracker.recordLevelFlight(340, 5)
+    expect(tracker.progress).toBeCloseTo(0.5)
+    tracker.recordLevelFlight(322, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('does not assign a gate-only contract to a no-gate sortie', () => {

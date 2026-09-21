@@ -114,7 +114,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Press `T` to cycle a radar settlement target. The existing navigation cue can guide to the selected city or village, while gates and base return retain priority.
 - Reaching a selected city or village now announces the destination and releases the lock, so exploration has a clear finish state without changing mission scoring.
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
-- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, or precision approach.
+- Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, or level flight.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.
@@ -126,6 +126,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Bonus contracts can also include `CLEAN CIRCUIT`, which makes a no-miss gate run explicit and marks the task failed immediately after an off-ring crossing.
 - Free flight never receives a gate-only contract, so exploration sorties cannot be assigned an impossible objective.
 - A successful CLEAN CIRCUIT now emits the same completion cue as other contracts when its final gate clears; missed circuits stay visibly failed without a false success cue.
+- Bonus contracts can also include `LEVEL FLIGHT`, rewarding a steady 180 to 600 metre altitude hold within a small drift window for a short airborne stretch.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
 - A bounded `FLARE` cue appears in the final gear-down landing window, replacing low-altitude alarm noise with a clear prompt to ease the sink rate.

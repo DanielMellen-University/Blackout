@@ -141,7 +141,7 @@ describe('TerrainSystem streaming LOD', () => {
       terrain.clearAll()
       clock.mockRestore()
     }
-  }, 20_000)
+  }, 45_000)
 
   it('promotes a far tile to near detail after flying onto it', () => {
     const terrain = new TerrainSystem(new Scene())

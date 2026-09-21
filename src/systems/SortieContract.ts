@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -36,6 +36,10 @@ const BOOST_MIN_MPS = 220
 const BOOST_TARGET_SECONDS = 8
 const MACH_MIN_MPS = 340
 const MACH_TARGET_SECONDS = 10
+const LEVEL_MIN_ALTITUDE_M = 180
+const LEVEL_MAX_ALTITUDE_M = 600
+const LEVEL_MAX_DRIFT_M = 24
+const LEVEL_TARGET_SECONDS = 10
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -58,6 +62,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'boost', label: 'BURN RUN', target: BOOST_TARGET_SECONDS },
   { kind: 'mach', label: 'MACH RUN', target: MACH_TARGET_SECONDS },
   { kind: 'clean', label: 'CLEAN CIRCUIT', target: 1 },
+  { kind: 'level', label: 'LEVEL FLIGHT', target: LEVEL_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -81,6 +86,8 @@ export class SortieContractTracker {
   private machSeconds = 0
   private cleanGateCount = 0
   private cleanFailed = false
+  private levelSeconds = 0
+  private levelReferenceM = Number.NaN
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -102,6 +109,8 @@ export class SortieContractTracker {
     this.machSeconds = 0
     this.cleanGateCount = 0
     this.cleanFailed = false
+    this.levelSeconds = 0
+    this.levelReferenceM = Number.NaN
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -150,6 +159,8 @@ export class SortieContractTracker {
                           ? `BREAK MACH 1 FOR ${Math.round(target)}S`
                         : base.kind === 'clean'
                           ? 'CLEAR EVERY GATE WITHOUT A MISS'
+                        : base.kind === 'level'
+                          ? `HOLD ${Math.round(LEVEL_MIN_ALTITUDE_M)}-${Math.round(LEVEL_MAX_ALTITUDE_M)}M WITHIN +/-${Math.round(LEVEL_MAX_DRIFT_M)}M FOR ${Math.round(target)}S`
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = detail
@@ -313,6 +324,30 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
+  /** Accumulate bounded airborne time while holding a forgiving altitude window. */
+  recordLevelFlight(altitudeM: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'level' || this.completeValue || !airborne) return
+    if (!Number.isFinite(altitudeM) || !Number.isFinite(dt)) return
+    const safeAltitude = Math.max(0, altitudeM)
+    const safeDt = Math.max(0, Math.min(5, dt))
+    if (safeAltitude < LEVEL_MIN_ALTITUDE_M || safeAltitude > LEVEL_MAX_ALTITUDE_M) {
+      this.levelSeconds = 0
+      this.levelReferenceM = Number.NaN
+      this.progressValue = 0
+      return
+    }
+    if (!Number.isFinite(this.levelReferenceM)) this.levelReferenceM = safeAltitude
+    if (Math.abs(safeAltitude - this.levelReferenceM) > LEVEL_MAX_DRIFT_M) {
+      this.levelSeconds = 0
+      this.levelReferenceM = safeAltitude
+      this.progressValue = 0
+      return
+    }
+    this.levelSeconds = Math.min(this.definition.target, this.levelSeconds + safeDt)
+    this.progressValue = clamp01(this.levelSeconds / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
   /** Track a no-miss circuit objective without adding mission state. */
   recordCleanGate(missed: boolean, passed: number, total: number): void {
     if (this.definition?.kind !== 'clean' || this.completeValue || this.cleanFailed) return
@@ -388,7 +423,7 @@ function indexForSeed(seed: number): number {
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
-  // no-miss circuit objectives.
+  // no-miss circuit and level-flight objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -405,6 +440,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 71 === 61) return 17
   if (mixed % 73 === 23) return 18
   if (mixed % 79 === 29) return 19
+  if (mixed % 83 === 71) return 20
   return mixed % legacyContractCount
 }
 

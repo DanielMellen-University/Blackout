@@ -795,6 +795,36 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires stable altitude time into the level-flight contract', () => {
+    const run = new ChallengeRun(null)
+    let levelSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:level-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT LEVEL FLIGHT') {
+        levelSeed = seed
+        break
+      }
+    }
+    expect(levelSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:level-contract', 1, 'balanced', levelSeed)
+    run.update(0.1, 8)
+    run.update(5, 8, 300)
+    expect(run.contractProgress).toBeCloseTo(0.5)
+    run.update(5, 8, 318)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('LEVEL FLIGHT')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('level')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('marks a clean-circuit contract failed after a missed gate', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1
