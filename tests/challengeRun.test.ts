@@ -6,6 +6,7 @@ import {
   courseMasteryNextTierLabel,
   courseMasteryNextTierGoalLabel,
   deadstickLandingScore,
+  altitudeMilestoneScore,
   formatPaceDelta,
   formatSplitTrace,
   formatTime,
@@ -42,6 +43,7 @@ import {
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
   MAX_NIGHT_SCORE,
+  MAX_ALTITUDE_MILESTONE_SCORE,
   MAX_COMPLETION_COUNT,
   MAX_PEAK_ALTITUDE_M,
   MAX_PEAK_SPEED_KTS,
@@ -63,6 +65,16 @@ describe('ChallengeRun', () => {
     expect(medalRank('complete')).toBeLessThan(medalRank('bronze'))
     expect(medalRank('bronze')).toBeLessThan(medalRank('silver'))
     expect(medalRank('silver')).toBeLessThan(medalRank('gold'))
+  })
+
+  it('turns climb tiers into a bounded score decision', () => {
+    expect(altitudeMilestoneScore(Number.NaN)).toBe(0)
+    expect(altitudeMilestoneScore(499)).toBe(0)
+    expect(altitudeMilestoneScore(500)).toBe(200)
+    expect(altitudeMilestoneScore(1_500)).toBe(500)
+    expect(altitudeMilestoneScore(3_000)).toBe(900)
+    expect(altitudeMilestoneScore(6_000)).toBe(MAX_ALTITUDE_MILESTONE_SCORE)
+    expect(altitudeMilestoneScore(99_999)).toBe(MAX_ALTITUDE_MILESTONE_SCORE)
   })
 
   it('starts the clock on the takeoff roll and scores a completed landing', () => {
@@ -145,6 +157,7 @@ describe('ChallengeRun', () => {
     expect(result!.gateScore).toBe(0)
     expect(result!.freeFlight).toBe(true)
     expect(result!.altitudeMilestoneM).toBe(1_500)
+    expect(result!.altitudeScore).toBe(500)
     expect(run.phase).toBe('complete')
     expect(run.objectiveLabel).toBe('FREE FLIGHT COMPLETE')
   })

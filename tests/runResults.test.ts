@@ -241,6 +241,7 @@ describe('run results focus flow', () => {
       courseBestPositiveG: 6.1,
       courseBestNegativeG: -2.2,
       altitudeMilestoneM: 1_500,
+      altitudeScore: 500,
       bestCombo: 4,
       comboScore: 900,
       fuelScore: 720,
@@ -296,6 +297,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE G+6.1')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE G-2.2')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CLIMB 1,500M')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CLIMB +500')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COMBO +900')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('FUEL +720')

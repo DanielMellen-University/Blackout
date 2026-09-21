@@ -118,6 +118,8 @@ export interface ChallengeResult {
   freeFlight?: boolean
   /** Highest climb milestone reached during this sortie, in metres. */
   altitudeMilestoneM?: number
+  /** Capped score bonus awarded for the highest climb milestone reached. */
+  altitudeScore?: number
   /** Longest clean gate and stunt chain reached during this sortie. */
   bestCombo?: number
   /** Capped score bonus awarded for combo milestones. */
@@ -227,6 +229,7 @@ export const MAX_APPROACH_SCORE = 500
 export const MAX_LANDING_QUALITY = 1
 export const MAX_WEATHER_SCORE = 500
 export const MAX_NIGHT_SCORE = 500
+export const MAX_ALTITUDE_MILESTONE_SCORE = 1_500
 export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
 export const MAX_BIOME_SCORE = 1_800
@@ -396,6 +399,17 @@ export function nightLandingScore(daylight: number, landingQuality = 1): number 
   if (!Number.isFinite(daylight) || !Number.isFinite(landingQuality)) return 0
   const nightFactor = clamp01((0.42 - daylight) / 0.42)
   return Math.round(MAX_NIGHT_SCORE * nightFactor * clamp01(landingQuality))
+}
+
+/** Reward the highest reached climb tier without allowing altitude to dominate a run. */
+export function altitudeMilestoneScore(altitudeM: number): number {
+  if (!Number.isFinite(altitudeM)) return 0
+  const safe = Math.max(0, altitudeM)
+  if (safe >= 6_000) return MAX_ALTITUDE_MILESTONE_SCORE
+  if (safe >= 3_000) return 900
+  if (safe >= 1_500) return 500
+  if (safe >= 500) return 200
+  return 0
 }
 
 /** Reward a controlled touchdown after the engine has run dry. */
@@ -1189,6 +1203,7 @@ export class ChallengeRun {
     const landingScore = Math.round(weights.landing * landingQuality)
     const weatherScore = weatherLandingScore(metrics.weatherRisk ?? Number.NaN, landingQuality)
     const nightScore = nightLandingScore(metrics.daylight ?? Number.NaN, landingQuality)
+    const altitudeScore = altitudeMilestoneScore(this.altitudeMilestone)
     const deadstickScore = deadstickLandingScore(fuelFraction, landingQuality)
     const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
     const comboScore = this.bestCombo > 1
@@ -1202,7 +1217,7 @@ export class ChallengeRun {
     const contractStreakBonus = contractComplete
       ? contractStreakBonusForStreak(history.contractStreak ?? 0)
       : 0
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + altitudeScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
     const previousBest = this.readBest()
     const medal = medalFor(totalScore)
     const courseBestMedal = medalFor(Math.max(previousBest, totalScore))
@@ -1414,6 +1429,7 @@ export class ChallengeRun {
       contractScore: contractScore > 0 ? contractScore : undefined,
       contractStreakBonus: contractStreakBonus > 0 ? contractStreakBonus : undefined,
       deadstickScore: deadstickScore > 0 ? deadstickScore : undefined,
+      altitudeScore: altitudeScore > 0 ? altitudeScore : undefined,
       contractWins: contractWins > 0 ? contractWins : undefined,
       courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,
       newContractRecord,
