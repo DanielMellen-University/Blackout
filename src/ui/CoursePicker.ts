@@ -7,6 +7,7 @@ import {
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
 import { sortieContractLabelForSeed } from '../systems/SortieContract'
+import { WEATHER_LABELS, weatherIdForSeed } from '../world/WeatherDirector'
 
 export interface CoursePickerItem {
   id: string
@@ -67,8 +68,16 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   if (badgeCount > 0) statsParts.push(`${badgeCount}/${MASTERY_BADGE_COUNT} BADGES`)
   const contractLabel = sortieContractLabelForSeed(input.course.seed ?? undefined)
   if (contractLabel) statsParts.push(`TASK ${contractLabel}`)
+  const weatherLabel = courseWeatherPreviewLabel(input.course.seed ?? undefined)
+  if (weatherLabel) statsParts.push(`WX ${weatherLabel}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
+}
+
+/** Keep the launch card honest about the deterministic weather waiting in the world. */
+export function courseWeatherPreviewLabel(seed: number | undefined): string {
+  if (!Number.isFinite(seed)) return ''
+  return WEATHER_LABELS[weatherIdForSeed(seed!)] ?? ''
 }
 
 /**

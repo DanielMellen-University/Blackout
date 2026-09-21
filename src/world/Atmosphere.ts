@@ -31,6 +31,8 @@ import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
   WEATHER_LABELS,
   WeatherDirector,
+  timeOfDayForSeed,
+  weatherIdForSeed,
   type WeatherId,
   type WeatherSnapshot,
 } from './WeatherDirector'
@@ -482,27 +484,8 @@ export class Atmosphere {
   /** Fully random time of day + weighted weather (on world reseed). */
   randomizeWeather(seed: number): void {
     if (this.disposed) return
-    // Full 0–1 clock (any hour equally likely)
-    const tRoll = Math.abs(Math.sin(seed * 78.233) * 43758.5453)
-    this.timeOfDay = tRoll - Math.floor(tRoll)
-
-    // Weather chances: clear common, precip/fog/snow all possible
-    const roll = Math.abs(Math.sin(seed * 12.9898) * 23421.631) % 1
-    let w: WeatherId
-    if (roll < 0.28) w = 'clear'
-    else if (roll < 0.48) w = 'cloudy'
-    else if (roll < 0.62) w = 'overcast'
-    else if (roll < 0.74) w = 'fog'
-    else if (roll < 0.84) w = 'rain'
-    else if (roll < 0.9) w = 'storm'
-    else if (roll < 0.96) w = 'snow'
-    else w = 'blizzard'
-
-    // Night slightly more fog/snow chance
-    if ((this.timeOfDay < 0.2 || this.timeOfDay > 0.8) && roll > 0.55 && roll < 0.7) {
-      const nightRoll = Math.abs(Math.sin(seed * 7.139)) % 1
-      w = nightRoll < 0.5 ? 'fog' : 'snow'
-    }
+    this.timeOfDay = timeOfDayForSeed(seed)
+    const w = weatherIdForSeed(seed, this.timeOfDay)
 
     this.weatherDirector.randomize(seed, w)
     this.weather = w

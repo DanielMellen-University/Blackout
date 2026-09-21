@@ -57,7 +57,7 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS · ACE')
-    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · CONTRACT X4 · ACE · 3/6 BADGES · TASK FUEL SAVER')
+    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · CONTRACT X4 · ACE · 3/6 BADGES · TASK FUEL SAVER · WX SNOW SHOWERS')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TOP')).toBe(false)
     expect(copy.stats.includes('ROLLS')).toBe(false)
@@ -76,6 +76,6 @@ describe('course picker copy', () => {
       bestPrecisionStreak: Number.NaN,
     })
     expect(copy.meta).toBe('NEW')
-    expect(copy.stats).toBe('TASK FUEL SAVER')
+    expect(copy.stats).toBe('TASK FUEL SAVER · WX SNOW SHOWERS')
   })
 })

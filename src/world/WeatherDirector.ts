@@ -32,6 +32,34 @@ export const WEATHER_LABELS: Record<WeatherId, string> = {
   blizzard: 'BLIZZARD',
 }
 
+/** Match the world clock used by Atmosphere.randomizeWeather without creating an Atmosphere. */
+export function timeOfDayForSeed(seed: number): number {
+  const safeSeed = Number.isFinite(seed) ? seed : 0
+  const tRoll = Math.abs(Math.sin(safeSeed * 78.233) * 43758.5453)
+  return tRoll - Math.floor(tRoll)
+}
+
+/** Resolve the same seeded weather front used when a world is reseeded. */
+export function weatherIdForSeed(seed: number, timeOfDay = timeOfDayForSeed(seed)): WeatherId {
+  const safeSeed = Number.isFinite(seed) ? seed : 0
+  const roll = Math.abs(Math.sin(safeSeed * 12.9898) * 23421.631) % 1
+  let weather: WeatherId
+  if (roll < 0.28) weather = 'clear'
+  else if (roll < 0.48) weather = 'cloudy'
+  else if (roll < 0.62) weather = 'overcast'
+  else if (roll < 0.74) weather = 'fog'
+  else if (roll < 0.84) weather = 'rain'
+  else if (roll < 0.9) weather = 'storm'
+  else if (roll < 0.96) weather = 'snow'
+  else weather = 'blizzard'
+
+  if ((timeOfDay < 0.2 || timeOfDay > 0.8) && roll > 0.55 && roll < 0.7) {
+    const nightRoll = Math.abs(Math.sin(safeSeed * 7.139)) % 1
+    weather = nightRoll < 0.5 ? 'fog' : 'snow'
+  }
+  return weather
+}
+
 export interface WeatherProfile {
   fogNearMul: number
   fogFarMul: number

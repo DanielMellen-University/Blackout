@@ -5,6 +5,8 @@ import {
   WeatherDirector,
   blendWind,
   blendWeatherProfile,
+  timeOfDayForSeed,
+  weatherIdForSeed,
 } from '../src/world/WeatherDirector'
 
 describe('weather director', () => {
@@ -37,6 +39,13 @@ describe('weather director', () => {
     second.update(500)
     expect(first.targetId).toBe(second.targetId)
     expect(first.snapshot()).toEqual(second.snapshot())
+  })
+
+  it('shares the world seed resolver with preflight previews', () => {
+    expect(timeOfDayForSeed(1)).toBeCloseTo(0.182916352, 8)
+    expect(weatherIdForSeed(1)).toBe('snow')
+    expect(weatherIdForSeed(1337)).toBe('cloudy')
+    expect(weatherIdForSeed(1)).toBe(weatherIdForSeed(1))
   })
 
   it('fills a caller-owned runtime snapshot without changing public snapshots', () => {

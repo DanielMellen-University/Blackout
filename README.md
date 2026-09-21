@@ -116,6 +116,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Consecutive completed sorties now form a bounded per-course run streak that resets after a crash and appears in the selector and results card.
 - Every seeded sortie now receives one deterministic bonus contract, such as a speed run, skyline climb, airshow, scouting sweep, fuel-saving landing, terrain-hugger low pass, biome tour, storm run, water run, brake check, thermal control, crosswind, G control, deadstick, front chaser, precision approach, clean circuit, level flight, settlement tour, combo run, precision chain, or night flight.
 - Curated course cards preview their deterministic bonus task before takeoff, so route selection can be deliberate instead of a launch-time surprise.
+- Curated course cards also preview the deterministic weather front for each seeded route, so pilots can choose a sortie with eyes open.
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - Consecutive completed bonus contracts now build a bounded per-course contract streak; a failed landing or crash breaks the chain while the best streak stays recorded.
