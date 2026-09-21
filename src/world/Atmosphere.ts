@@ -62,6 +62,21 @@ type CloudLayer = 'cumulus' | 'stratus' | 'cirrus'
 
 type RandomSource = () => number
 
+interface CloudPuffLayout {
+  x: number
+  y: number
+  z: number
+  sx: number
+  sy: number
+  sz: number
+  rotationY: number
+}
+
+interface CloudClusterLayout {
+  puffs: CloudPuffLayout[]
+  instanceOffset: number
+}
+
 /**
  * Cloud formations are authored once per atmosphere instance, so their
  * silhouette should not change just because the page was reloaded. Keep the
@@ -280,7 +295,7 @@ export class Atmosphere {
   private precipitationScale = 1
 
   private readonly cloudRoot = new Group()
-  private readonly cloudClusters: Group[] = []
+  private readonly cloudClusters: CloudClusterLayout[] = []
   private readonly cloudInstances = {} as Record<CloudLayer, InstancedMesh>
   private readonly cloudPuffCounts: Record<CloudLayer, number> = {
     cumulus: 0,
@@ -303,6 +318,8 @@ export class Atmosphere {
   /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
   private readonly cloudAlpha: number[] = []
   private readonly cloudLayers: CloudLayer[] = []
+  /** Base material used while authoring puff layouts; batches own the clones. */
+  private cloudBaseMaterial: MeshBasicMaterial | null = null
   /** Seeded cloud placement keeps a world reviewable after a reseed. */
   private cloudSeed = 1337
   private cloudRecycle = 0
@@ -396,6 +413,7 @@ export class Atmosphere {
       opacity: 0.6,
       depthWrite: false,
     })
+    this.cloudBaseMaterial = puffMat
 
     // Mix: mostly mid/low heaps + broad decks + sparse high cirrus
     const layerPlan: CloudLayer[] = [
@@ -412,13 +430,15 @@ export class Atmosphere {
     }
 
     for (const layer of layerPlan) {
-      const cluster = this.buildCloudCluster(layer, puffGeo, puffMat, cloudRandom)
+      const authoredCluster = this.buildCloudCluster(layer, puffGeo, puffMat, cloudRandom)
+      const cluster = this.flattenCloudCluster(authoredCluster)
+      authoredCluster.clear()
       const xz = cloudSpawnXZ(cloudRandom)
       this.cloudWorld.push(new Vector3(xz.x, cloudAltitude(layer, cloudRandom), xz.z))
       this.cloudAlpha.push(0)
       this.cloudLayers.push(layer)
       this.cloudClusters.push(cluster)
-      this.cloudPuffCounts[layer] += cluster.children.length
+      this.cloudPuffCounts[layer] += cluster.puffs.length
     }
 
     // Three deck-wide batches replace hundreds of individual cloud draw calls.
@@ -441,8 +461,8 @@ export class Atmosphere {
     for (let i = 0; i < this.cloudClusters.length; i++) {
       const layer = this.cloudLayers[i]!
       const cluster = this.cloudClusters[i]!
-      cluster.userData.instanceOffset = offsets[layer]
-      offsets[layer] += cluster.children.length
+      cluster.instanceOffset = offsets[layer]
+      offsets[layer] += cluster.puffs.length
       this.cloudLayerCutoffs[layer].push(offsets[layer])
     }
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
@@ -591,10 +611,9 @@ export class Atmosphere {
     this.snowField.dispose()
     this.sky.dispose()
 
-    const cloudResources = new Group()
-    cloudResources.add(this.cloudRoot)
-    for (const cluster of this.cloudClusters) cloudResources.add(cluster)
-    disposeObjectTree(cloudResources)
+    disposeObjectTree(this.cloudRoot)
+    this.cloudBaseMaterial?.dispose()
+    this.cloudBaseMaterial = null
     this.cloudClusters.length = 0
     this.cloudWorld.length = 0
     this.cloudAlpha.length = 0
@@ -787,8 +806,6 @@ export class Atmosphere {
   ): Group {
     const cluster = new Group()
     const size = cloudSizeMul(random)
-    cluster.userData.layer = layer
-    cluster.userData.sizeMul = size
 
     // Larger formations get a few more puffs so they read as banks, not one blob
     const puffBonus = size > 3 ? 4 : size > 1.5 ? 2 : 0
@@ -867,6 +884,23 @@ export class Atmosphere {
     return cluster
   }
 
+  /** Copy static authoring transforms into a compact layout and drop the hidden puff meshes. */
+  private flattenCloudCluster(cluster: Group): CloudClusterLayout {
+    const puffs = cluster.children.map((object): CloudPuffLayout => {
+      const mesh = object as Mesh
+      return {
+        x: mesh.position.x,
+        y: mesh.position.y,
+        z: mesh.position.z,
+        sx: mesh.scale.x,
+        sy: mesh.scale.y,
+        sz: mesh.scale.z,
+        rotationY: mesh.rotation.y,
+      }
+    })
+    return { puffs, instanceOffset: 0 }
+  }
+
   /**
    * World-space layered clouds, streamed like terrain:
    * - High realistic altitudes (cumulus / stratus / cirrus decks)
@@ -940,7 +974,7 @@ export class Atmosphere {
       const wpos = this.cloudWorld[i]!
       const layer = this.cloudLayers[i]!
       const spec = CLOUD_LAYER[layer]
-      const instanceOffset = cluster.userData.instanceOffset as number
+      const instanceOffset = cluster.instanceOffset
       if (instanceOffset >= this.cloudDrawCounts[layer]) {
         this.cloudAlpha[i] = 0
         continue
@@ -1004,26 +1038,26 @@ export class Atmosphere {
   }
 
   private setCloudClusterMatrices(
-    cluster: Group,
+    cluster: CloudClusterLayout,
     layer: CloudLayer,
     worldPosition: Vector3,
     scaleMul: number,
   ): void {
     const instances = this.cloudInstances[layer]
-    const offset = cluster.userData.instanceOffset as number
-    for (let i = 0; i < cluster.children.length; i++) {
+    const offset = cluster.instanceOffset
+    for (let i = 0; i < cluster.puffs.length; i++) {
       if (scaleMul <= 0) {
         instances.setMatrixAt(offset + i, _hiddenCloudMatrix)
         continue
       }
-      const puff = cluster.children[i] as Mesh
+      const puff = cluster.puffs[i]!
       _cloudObject.position.set(
-        worldPosition.x + puff.position.x,
-        worldPosition.y + puff.position.y,
-        worldPosition.z + puff.position.z,
+        worldPosition.x + puff.x,
+        worldPosition.y + puff.y,
+        worldPosition.z + puff.z,
       )
-      _cloudObject.rotation.set(0, puff.rotation.y, 0)
-      _cloudObject.scale.copy(puff.scale).multiplyScalar(scaleMul)
+      _cloudObject.rotation.set(0, puff.rotationY, 0)
+      _cloudObject.scale.set(puff.sx, puff.sy, puff.sz).multiplyScalar(scaleMul)
       _cloudObject.updateMatrix()
       instances.setMatrixAt(offset + i, _cloudObject.matrix)
     }
