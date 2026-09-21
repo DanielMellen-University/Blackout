@@ -67,6 +67,8 @@ import {
   missionPaceLabel,
   missionHudLabel,
   createMissionHudLabelCache,
+  routeRiskAriaLabel,
+  routeRiskHudLabel,
   ghostPaceLabel,
   ghostPaceAriaLabel,
   contractProgressLabel,
@@ -417,6 +419,13 @@ describe('HUD value formatting', () => {
     expect(cache('RIVER RUN', 'RANGE GATE 1/5', 'CONTRACT WATER RUN')).toBe(first)
     expect(cache('RIVER RUN', 'RANGE GATE 2/5', 'CONTRACT WATER RUN'))
       .toBe('RIVER RUN · RANGE GATE 2/5 · CONTRACT WATER RUN')
+  })
+
+  it('keeps route risk copy compact and fails closed for unknown values', () => {
+    expect(routeRiskHudLabel('technical', 'tempo')).toBe('TECHNICAL · TEMPO')
+    expect(routeRiskAriaLabel('technical', 'tempo')).toBe('Route risk technical, tempo')
+    expect(routeRiskHudLabel('free', 'unknown')).toBe('')
+    expect(routeRiskAriaLabel('free', 'unknown')).toBe('')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

@@ -190,6 +190,22 @@ export function missionHudLabel(routeLabel: unknown, objective: unknown, contrac
   return [route, task, contract].filter(Boolean).join(' · ').slice(0, 120)
 }
 
+/** Keep route difficulty and rhythm visible after the launch briefing fades. */
+export function routeRiskHudLabel(difficulty: unknown, modifier: unknown): string {
+  const safeDifficulty = difficulty === 'relaxed' ? 'RELAXED'
+    : difficulty === 'technical' ? 'TECHNICAL'
+      : difficulty === 'standard' ? 'STANDARD' : ''
+  const safeModifier = modifier === 'steady' ? 'STEADY'
+    : modifier === 'tempo' ? 'TEMPO'
+      : modifier === 'altitude' ? 'ALTITUDE' : ''
+  return [safeDifficulty, safeModifier].filter(Boolean).join(' · ')
+}
+
+export function routeRiskAriaLabel(difficulty: unknown, modifier: unknown): string {
+  const label = routeRiskHudLabel(difficulty, modifier)
+  return label ? `Route risk ${label.toLowerCase().replace(' · ', ', ')}` : ''
+}
+
 /** Reuse an unchanged mission label so the live render loop stays allocation-light. */
 export function createMissionHudLabelCache(): (
   routeLabel: unknown,
@@ -572,6 +588,8 @@ export class HUD {
   private readonly windEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
+  private readonly routeRiskRowEl: HTMLElement | null
+  private readonly routeRiskEl: HTMLElement | null
   private readonly paceEl: HTMLElement | null
   private readonly ghostPaceRowEl: HTMLElement | null
   private readonly ghostPaceEl: HTMLElement | null
@@ -679,6 +697,8 @@ export class HUD {
   private weatherText = ''
   private weatherAriaText = ''
   private missionPhaseValue: MissionPhaseCue | null = null
+  private routeRiskText = ''
+  private routeRiskAriaText = ''
   private missionProgressCurrent = -1
   private missionProgressTotal = -1
   private missionProgressPercentText = ''
@@ -779,6 +799,8 @@ export class HUD {
     this.windEl = root.getElementById('hud-wind')
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
+    this.routeRiskRowEl = root.getElementById('hud-route-risk-row')
+    this.routeRiskEl = root.getElementById('hud-route-risk')
     this.paceEl = root.getElementById('hud-pace')
     this.ghostPaceRowEl = root.getElementById('hud-ghost-pace-row')
     this.ghostPaceEl = root.getElementById('hud-ghost-pace')
@@ -891,6 +913,9 @@ export class HUD {
     weatherTransitioning?: boolean
     dayPhase?: string
     mission?: string
+    /** Compact route difficulty and rhythm cue, or empty for Free flight. */
+    routeRisk?: string | null
+    routeRiskAria?: string | null
     /** Live checkpoint pace context, or null before the first clear. */
     pace?: string | null
     /** Signed elapsed-time delta against the saved best-run ghost. */
@@ -1178,6 +1203,15 @@ export class HUD {
           }
         }
       }
+    }
+    if (this.routeRiskRowEl && this.routeRiskEl && opts.routeRisk !== undefined) {
+      const text = typeof opts.routeRisk === 'string' ? opts.routeRisk : ''
+      if (text !== this.routeRiskText) this.routeRiskText = text
+      const aria = typeof opts.routeRiskAria === 'string' ? opts.routeRiskAria : ''
+      if (aria !== this.routeRiskAriaText) this.routeRiskAriaText = aria
+      this.setHidden(this.routeRiskRowEl, this.routeRiskText.length === 0)
+      this.setText(this.routeRiskEl, this.routeRiskText)
+      this.setAttribute(this.routeRiskEl, 'aria-label', this.routeRiskAriaText)
     }
     if (this.paceEl && opts.pace !== undefined) {
       const pace = missionPaceLabel(opts.pace)

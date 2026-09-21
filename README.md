@@ -126,6 +126,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Weather front labels now refresh when a shifting target changes, so rain, snow, and fog copy cannot remain stale during a transition.
 - Random sorties now rotate through the validated COASTAL and RIVER route profiles as well as the original inland shapes, increasing route variety without adding geometry or draw calls.
 - The live mission row now names the active route profile, so coastal and river sorties remain identifiable after the launch briefing fades.
+- A compact RISK row keeps generated route difficulty and rhythm visible during flight, so technical, tempo, and altitude lines remain readable after the briefing.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.
 - Course progress now resolves to Rookie, Pilot, Veteran, Ace, or Legend tiers from existing runs, scores, badges, and contract wins.
 - A fifth `Canyon run` route adds a low-weave precision circuit through the terrain, using the same fixed gate pool and clearance planner.

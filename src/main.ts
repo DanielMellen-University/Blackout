@@ -96,6 +96,8 @@ import {
   hudBackgroundHidden,
   HUD,
   machNumber,
+  routeRiskAriaLabel,
+  routeRiskHudLabel,
   engineHeatBanner,
   engineHeatCue,
   engineHeatRearmBanner,
@@ -610,6 +612,8 @@ async function boot(): Promise<void> {
     windZ: 0,
     dayPhase: '',
     mission: '',
+    routeRisk: '',
+    routeRiskAria: '',
     missionPhase: 'ready',
     ghostPace: null,
     contractLabel: '',
@@ -1706,6 +1710,13 @@ async function boot(): Promise<void> {
         `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`,
         contractLabel,
       )
+      const routeSummary = world.mission.routeSummary
+      hudFrame.routeRisk = routeSummary.profile === 'free'
+        ? ''
+        : routeRiskHudLabel(routeSummary.difficulty, routeSummary.modifier)
+      hudFrame.routeRiskAria = routeSummary.profile === 'free'
+        ? ''
+        : routeRiskAriaLabel(routeSummary.difficulty, routeSummary.modifier)
       hudFrame.contractLabel = contractLabel
       hudFrame.contractDetail = challenge.contractDetail ?? ''
       hudFrame.contractProgress = challenge.contractProgress
