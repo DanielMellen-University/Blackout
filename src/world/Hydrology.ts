@@ -207,7 +207,7 @@ function routeFlow(grid: FlowGrid, seaCell: number | null): void {
   order.sort((a, b) => grid.filled[b]! - grid.filled[a]!)
   for (const id of order) {
     const parent = grid.parent[id]!
-    if (parent >= 0) grid.flow[parent] += grid.flow[id]!
+    if (parent >= 0) grid.flow[parent] = grid.flow[parent]! + grid.flow[id]!
   }
 }
 

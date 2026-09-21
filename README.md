@@ -4,6 +4,8 @@ Browser-based arcade flight simulator. Pilot an F-35, take off, fly hard, and ei
 
 Built with **TypeScript**, **Three.js**, and **Vite**. No install beyond a modern browser once the app is running.
 
+The production compiler runs with strict nullability and unchecked-index checks so terrain, flight, and UI changes fail fast at build time.
+
 Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such as `10.119` are tracked separately from the public semantic version.
 
 ## Features
