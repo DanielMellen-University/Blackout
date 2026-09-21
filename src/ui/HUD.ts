@@ -190,7 +190,12 @@ function radarBearingDirection(bearing: number): string {
 
 /** Keep water crossings readable without exposing raw terrain metadata. */
 export function waterSurfaceCue(biome: unknown): string {
-  return biome === 'ocean' ? 'SEA CROSSING' : 'INLAND WATER CROSSING'
+  if (biome === 'ocean' || biome === 'sea') return 'SEA CROSSING'
+  if (biome === 'lake') return 'LAKE CROSSING'
+  if (biome === 'river') return 'RIVER CROSSING'
+  if (biome === 'stream') return 'STREAM CROSSING'
+  if (biome === 'pond') return 'POND CROSSING'
+  return 'INLAND WATER CROSSING'
 }
 
 /** Clamp route progress before it reaches the visual and semantic meters. */

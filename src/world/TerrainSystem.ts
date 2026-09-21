@@ -15,6 +15,7 @@ import { getWorldSeed, hash2 } from './noise'
 import {
   sampleClimate,
   terrainSurfaceFromClimate,
+  waterBodyFromClimate,
   opsPadBlend,
   getOpsPad,
   type TerrainSurface,
@@ -457,9 +458,13 @@ export class TerrainSystem {
     )
     const level = interpolateGridHeight(chunk.waterLevels, chunk.segs, chunk.originX, chunk.originZ, x, z)
     const wet = bed < level
+    const climate = sampleClimate(x, z)
+    const biome = wet ? (level <= 0 ? 'ocean' : 'water') : climate.biome
     return {
-      height: Math.max(bed, level), kind: wet ? 'water' : 'land',
-      biome: wet ? (level <= 0 ? 'ocean' : 'water') : sampleClimate(x, z).biome,
+      height: Math.max(bed, level),
+      kind: wet ? 'water' : 'land',
+      biome,
+      waterBody: wet ? waterBodyFromClimate({ biome, features: climate.features }) : undefined,
     }
   }
 

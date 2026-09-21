@@ -378,6 +378,11 @@ describe('HUD value formatting', () => {
 
   it('keeps water crossing cues calm and semantic', () => {
     expect(waterSurfaceCue('ocean')).toBe('SEA CROSSING')
+    expect(waterSurfaceCue('sea')).toBe('SEA CROSSING')
+    expect(waterSurfaceCue('lake')).toBe('LAKE CROSSING')
+    expect(waterSurfaceCue('river')).toBe('RIVER CROSSING')
+    expect(waterSurfaceCue('stream')).toBe('STREAM CROSSING')
+    expect(waterSurfaceCue('pond')).toBe('POND CROSSING')
     expect(waterSurfaceCue('water')).toBe('INLAND WATER CROSSING')
     expect(waterSurfaceCue(undefined)).toBe('INLAND WATER CROSSING')
   })

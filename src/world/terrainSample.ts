@@ -116,6 +116,7 @@ export interface Climate {
 }
 
 export type TerrainSurfaceKind = 'land' | 'water'
+export type TerrainWaterBody = 'sea' | 'lake' | 'river' | 'stream' | 'pond' | 'inland'
 
 /**
  * The physical and rendered top of the world at one horizontal position.
@@ -130,21 +131,38 @@ export interface TerrainSurface {
   height: number
   kind: TerrainSurfaceKind
   biome: Biome
+  /** Hydrology body used for readable water-crossing feedback. */
+  waterBody?: TerrainWaterBody
 }
 
 export const INLAND_WATER_LEVEL = 0.35
 
+export function waterBodyFromClimate(
+  climate: Pick<Climate, 'biome'> & { features?: TerrainFeatures },
+): TerrainWaterBody | undefined {
+  if (climate.biome === 'ocean') return 'sea'
+  if (climate.biome !== 'water') return undefined
+  const features = climate.features
+  if (!features) return 'inland'
+  if (features.stream >= 0.45 && features.stream >= features.river) return 'stream'
+  if (features.river >= 0.45) return 'river'
+  if (features.pond >= features.lake && features.pond >= 0.45) return 'pond'
+  if (features.lake >= 0.45) return 'lake'
+  return 'inland'
+}
+
 export function terrainSurfaceFromClimate(
-  climate: Pick<Climate, 'height' | 'biome' | 'waterLevel'>,
+  climate: Pick<Climate, 'height' | 'biome' | 'waterLevel'> & { features?: TerrainFeatures },
 ): TerrainSurface {
   if (climate.biome === 'ocean') {
-    return { height: SEA_LEVEL, kind: 'water', biome: climate.biome }
+    return { height: SEA_LEVEL, kind: 'water', biome: climate.biome, waterBody: 'sea' }
   }
   if (climate.biome === 'water') {
     return {
       height: climate.waterLevel ?? INLAND_WATER_LEVEL,
       kind: 'water',
       biome: climate.biome,
+      waterBody: waterBodyFromClimate(climate),
     }
   }
   return { height: climate.height, kind: 'land', biome: climate.biome }

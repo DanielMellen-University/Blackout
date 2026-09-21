@@ -1828,7 +1828,7 @@ async function boot(): Promise<void> {
           overWater = water
           if (water && aircraft.status === 'ok' && !aircraft.onGround && (!banner || bannerUntil <= nowMs)) {
             const surface = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z)
-            showBanner(waterSurfaceCue(surface?.biome), 2600, 'info')
+            showBanner(waterSurfaceCue(surface?.waterBody ?? surface?.biome), 2600, 'info')
           }
         }
       }
