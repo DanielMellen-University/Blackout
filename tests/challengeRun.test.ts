@@ -40,6 +40,8 @@ import {
   MAX_CONTRACT_STREAK,
   MAX_CONTRACT_STREAK_BONUS,
   contractStreakBonusForStreak,
+  runStreakBonusForStreak,
+  MAX_RUN_STREAK_SCORE,
   MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
@@ -110,6 +112,37 @@ describe('ChallengeRun', () => {
     expect(result.scoreCapped).toBe(true)
     expect(result.totalScore).toBe(MAX_BEST_SCORE)
     expect(readBestCourseScore(storage, 'seed:score-cap')).toBe(MAX_BEST_SCORE)
+  })
+
+  it('turns repeat completions into a bounded streak payout', () => {
+    expect(runStreakBonusForStreak(0)).toBe(0)
+    expect(runStreakBonusForStreak(1)).toBe(0)
+    expect(runStreakBonusForStreak(2)).toBe(250)
+    expect(runStreakBonusForStreak(99)).toBe(MAX_RUN_STREAK_SCORE)
+    expect(runStreakBonusForStreak(Number.NaN)).toBe(0)
+
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const land = (run: ChallengeRun): NonNullable<ChallengeRun['result']> => {
+      run.reset('seed:run-streak-score', 1)
+      run.update(0.1, 8)
+      run.recordGate(1)
+      return run.finishLanding({
+        verticalSpeed: -1,
+        groundSpeed: 20,
+        pitchRad: 0,
+        rollRad: 0,
+      })!
+    }
+    const first = land(new ChallengeRun(storage))
+    const second = land(new ChallengeRun(storage))
+    expect(first.runStreak).toBe(1)
+    expect(first.runStreakScore).toBeUndefined()
+    expect(second.runStreak).toBe(2)
+    expect(second.runStreakScore).toBe(250)
   })
 
   it('starts the clock on the takeoff roll and scores a completed landing', () => {

@@ -221,6 +221,10 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.fuelScore!))
       : 0
     if (fuelScore > 0) scoreParts.push(`FUEL +${fuelScore.toLocaleString()}`)
+    const runStreakScore = Number.isFinite(result.runStreakScore)
+      ? Math.max(0, Math.floor(result.runStreakScore!))
+      : 0
+    if (runStreakScore > 0) scoreParts.push(`RUN STREAK +${runStreakScore.toLocaleString()}`)
     const deadstickScore = Number.isFinite(result.deadstickScore)
       ? Math.max(0, Math.floor(result.deadstickScore!))
       : 0

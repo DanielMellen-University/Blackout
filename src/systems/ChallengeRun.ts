@@ -128,6 +128,8 @@ export interface ChallengeResult {
   comboScore?: number
   /** Capped score bonus awarded for preserving fuel through touchdown. */
   fuelScore?: number
+  /** Capped score bonus awarded for consecutive completed sorties. */
+  runStreakScore?: number
   /** Capped score bonus awarded for a centered, aligned home-strip approach. */
   approachScore?: number
   /** Capped score bonus awarded for landing through active weather. */
@@ -237,6 +239,7 @@ export const MAX_DESTINATION_COUNT = 6
 export const MAX_BIOME_SCORE = 1_800
 export const MAX_BIOME_COUNT = 15
 export const MAX_RUN_STREAK = 1_000
+export const MAX_RUN_STREAK_SCORE = 2_000
 export const MAX_CONTRACT_WINS = 1_000
 export const MAX_CONTRACT_STREAK = 1_000
 export const MAX_CONTRACT_STREAK_BONUS = 1_000
@@ -432,6 +435,12 @@ export function deadstickLandingScore(fuelFraction: number, landingQuality = 1):
 export function contractStreakBonusForStreak(streak: number): number {
   if (!Number.isFinite(streak)) return 0
   return Math.min(MAX_CONTRACT_STREAK_BONUS, Math.max(0, Math.floor(streak)) * 250)
+}
+
+/** Reward repeatable clean completions without letting streaks dominate score. */
+export function runStreakBonusForStreak(streak: number): number {
+  if (!Number.isFinite(streak)) return 0
+  return Math.min(MAX_RUN_STREAK_SCORE, Math.max(0, Math.floor(streak) - 1) * 250)
 }
 
 /** Collapse the active front into one finite touchdown-risk scalar. */
@@ -1222,11 +1231,14 @@ export class ChallengeRun {
     const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore, landingQuality)
     const contractComplete = this.contract.enabled && this.contract.complete
     const history = this.readHistory()
+    const previousRunStreak = history.runStreak ?? 0
+    const runStreak = Math.min(MAX_RUN_STREAK, previousRunStreak + 1)
+    const runStreakScore = runStreakBonusForStreak(runStreak)
     const priorBadges = repairMasteryBadges(this.storage, this.courseId)
     const contractStreakBonus = contractComplete
       ? contractStreakBonusForStreak(history.contractStreak ?? 0)
       : 0
-    const rawTotalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + altitudeScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
+    const rawTotalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + runStreakScore + approachScore + weatherScore + nightScore + altitudeScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
     const totalScore = boundedScore(rawTotalScore)
     const scoreCapped = rawTotalScore > totalScore
     const previousBest = this.readBest()
@@ -1272,7 +1284,6 @@ export class ChallengeRun {
     const previousFuelRemainingPercent = history.fuelRemainingPercent ?? 0
     const previousDestinationCount = history.destinations ?? 0
     const previousBiomeCount = history.biomes ?? 0
-    const previousRunStreak = history.runStreak ?? 0
     const previousRunStreakRecord = history.runStreakRecord ?? 0
     const previousContractWins = history.contractWins ?? 0
     const previousContractStreak = history.contractStreak ?? 0
@@ -1298,7 +1309,6 @@ export class ChallengeRun {
     const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
     const newBiomeRecord = this.surveyedBiomeCount > previousBiomeCount
     const courseBestBiomeCount = Math.max(previousBiomeCount, this.surveyedBiomeCount)
-    const runStreak = Math.min(MAX_RUN_STREAK, previousRunStreak + 1)
     const courseBestRunStreak = Math.max(previousRunStreakRecord, runStreak)
     const newRunStreakRecord = runStreak >= 2 && runStreak > previousRunStreakRecord
     const contractWins = Math.min(MAX_CONTRACT_WINS, previousContractWins + (contractComplete ? 1 : 0))
@@ -1418,6 +1428,7 @@ export class ChallengeRun {
       bestCombo: this.bestCombo > 0 ? this.bestCombo : undefined,
       comboScore: comboScore > 0 ? comboScore : undefined,
       fuelScore: fuelScore > 0 ? fuelScore : undefined,
+      runStreakScore: runStreakScore > 0 ? runStreakScore : undefined,
       approachScore: approachScore > 0 ? approachScore : undefined,
       weatherScore: weatherScore > 0 ? weatherScore : undefined,
       nightScore: nightScore > 0 ? nightScore : undefined,
