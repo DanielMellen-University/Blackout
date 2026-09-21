@@ -4,6 +4,7 @@ import { flightConfig } from '../src/aircraft/flightConfig'
 import {
   evaluateWarnings,
   flareWarningActive,
+  goAroundWarningActive,
   gearWarningActive,
   lowAltitudeWarningActive,
   lowAltitudeWarningCeiling,
@@ -77,6 +78,23 @@ describe('flight cautions', () => {
     expect(warning.text).toBe('FLARE')
     expect(warning.level).toBe('caution')
     expect(warning.flare).toBe(true)
+  })
+
+  it('flags an unstable approach before the flare cue', () => {
+    expect(goAroundWarningActive(8, 52, -10, true)).toBe(true)
+    expect(goAroundWarningActive(8, 28, -2, true)).toBe(true)
+    expect(goAroundWarningActive(8, 52, -3, true)).toBe(false)
+    expect(goAroundWarningActive(32, 52, -10, true)).toBe(false)
+    expect(goAroundWarningActive(8, 52, -10, false)).toBe(false)
+
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, -10, 52)
+    aircraft.controls.gearDown = true
+    const warning = evaluateWarnings(aircraft, 8)
+    expect(warning.text).toBe('GO AROUND')
+    expect(warning.level).toBe('warning')
+    expect(warning.goAround).toBe(true)
   })
 
   it('reuses the stable no-warning state between frames', () => {

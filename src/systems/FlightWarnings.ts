@@ -14,6 +14,7 @@ export interface WarningState {
   lowAlt: boolean
   gear: boolean
   flare: boolean
+  goAround: boolean
   overspeed: boolean
   fuel: boolean
   terrainClosure: boolean
@@ -30,6 +31,7 @@ const NONE_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: false,
   terrainClosure: false,
@@ -41,6 +43,7 @@ const STALL_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: false,
   terrainClosure: false,
@@ -52,6 +55,7 @@ const LOW_ALT_WARNING = Object.freeze({
   lowAlt: true,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: false,
   terrainClosure: false,
@@ -63,6 +67,7 @@ const GEAR_WARNING = Object.freeze({
   lowAlt: false,
   gear: true,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: false,
   terrainClosure: false,
@@ -74,6 +79,7 @@ const OVERSPEED_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: true,
   fuel: false,
   terrainClosure: false,
@@ -85,6 +91,7 @@ const FUEL_LOW_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: true,
   terrainClosure: false,
@@ -96,6 +103,7 @@ const FUEL_EMPTY_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: true,
   terrainClosure: false,
@@ -108,6 +116,7 @@ const TERRAIN_CLOSURE_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: false,
+  goAround: false,
   overspeed: false,
   fuel: false,
   terrainClosure: true,
@@ -119,13 +128,26 @@ const FLARE_WARNING = Object.freeze({
   lowAlt: false,
   gear: false,
   flare: true,
+  goAround: false,
+  overspeed: false,
+  fuel: false,
+  terrainClosure: false,
+}) as WarningState
+const GO_AROUND_WARNING = Object.freeze({
+  text: 'GO AROUND',
+  level: 'warning',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+  flare: false,
+  goAround: true,
   overspeed: false,
   fuel: false,
   terrainClosure: false,
 }) as WarningState
 
 /**
- * Arcade flight cautions: stall, speed-scaled low altitude, approach gear, and flare.
+ * Arcade flight cautions: stall, speed-scaled low altitude, approach gear, flare, and go-around.
  */
 export function evaluateWarnings(
   aircraft: Aircraft,
@@ -164,6 +186,12 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
+  const goAround = goAroundWarningActive(
+    altAgl,
+    speed,
+    aircraft.velocity.y,
+    aircraft.controls.gearDown,
+  )
   const terrainClosure = terrainClosureWarningActive(
     altAgl,
     speed,
@@ -175,6 +203,7 @@ export function evaluateWarnings(
   if (stall) return STALL_WARNING
   if (terrainClosure) return TERRAIN_CLOSURE_WARNING
   if (gear) return GEAR_WARNING
+  if (goAround) return GO_AROUND_WARNING
   if (flare) return FLARE_WARNING
   if (lowAlt) return LOW_ALT_WARNING
   if (overspeed) return OVERSPEED_WARNING
@@ -247,6 +276,24 @@ export function flareWarningActive(
   return safeAlt > 1.5 && safeAlt <= 14 &&
     safeSpeed >= 38 && safeSpeed <= 78 &&
     verticalSpeed < -0.8 && verticalSpeed > -7.5
+}
+
+/** Flag an unstable low approach before it turns into a hard touchdown. */
+export function goAroundWarningActive(
+  altAgl: number,
+  speed: number,
+  verticalSpeed: number,
+  gearDown: boolean,
+): boolean {
+  if (!gearDown || !Number.isFinite(altAgl) || !Number.isFinite(speed) || !Number.isFinite(verticalSpeed)) {
+    return false
+  }
+  const safeAlt = Math.max(0, altAgl)
+  const safeSpeed = Math.max(0, speed)
+  if (safeAlt <= 1.5 || safeAlt > 28) return false
+  const fastSink = verticalSpeed < -8.5 && safeSpeed >= 34
+  const deepStall = safeSpeed < 34 && safeAlt > 4
+  return fastSink || deepStall
 }
 
 /** Warn only after the jet leaves the dry displayed airspeed envelope. */
