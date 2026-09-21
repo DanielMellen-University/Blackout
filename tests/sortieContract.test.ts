@@ -27,7 +27,7 @@ describe('sortie contracts', () => {
 
   it('covers every contract kind with bounded event and touchdown completion', () => {
     const kinds = new Set<SortieContractKind>()
-    for (let seed = 0; seed < 64; seed += 1) {
+    for (let seed = 0; seed < 512; seed += 1) {
       const tracker = new SortieContractTracker()
       tracker.reset(seed, 5)
       if (!tracker.kind) continue
@@ -70,12 +70,18 @@ describe('sortie contracts', () => {
         tracker.recordHeat(0.5, 220, 5)
         tracker.recordHeat(0.5, 220, 5)
       }
+      if (tracker.kind === 'crosswind') {
+        tracker.recordCrosswind(12, 5, false)
+        tracker.recordCrosswind(4, 5)
+        tracker.recordCrosswind(12, 5)
+        tracker.recordCrosswind(12, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -256,6 +262,32 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBeCloseTo(1 / 3)
     tracker.recordHeat(0.5, 220, 5)
     tracker.recordHeat(0.5, 220, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne time through meaningful crosswind', () => {
+    const tracker = new SortieContractTracker()
+    let crosswindSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'crosswind') {
+        crosswindSeed = seed
+        break
+      }
+    }
+    expect(crosswindSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(crosswindSeed, 5)
+    expect(tracker.label).toBe('CROSSWIND')
+    tracker.recordCrosswind(12, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordCrosswind(8, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordCrosswind(12, 4)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordCrosswind(12, 5)
+    tracker.recordCrosswind(12, 1)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

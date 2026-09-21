@@ -124,6 +124,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
 - A bounded `FLARE` cue appears in the final gear-down landing window, replacing low-altitude alarm noise with a clear prompt to ease the sink rate.
 - An unstable low approach raises `GO AROUND` before touchdown when sink rate or energy leaves the forgiving landing envelope.
+- Seeded sorties can assign `CROSSWIND`, rewarding controlled airborne time through meaningful runway-relative wind already applied by the flight model.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.

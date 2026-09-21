@@ -27,6 +27,7 @@
 - Keep workerless terrain streaming responsive by reducing only far fog-hidden fallback meshes while preserving full near-field and worker-backed detail.
 - Add a bounded gear-down FLARE cue for the final landing window, making sink-rate timing readable without scene growth or new audio nodes.
 - Add a bounded GO AROUND cue for unstable low approaches, preserving predictive terrain-closure priority and the existing audio budget.
+- Add a deterministic CROSSWIND contract that rewards bounded airborne time through meaningful runway-relative wind without adding scene work.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

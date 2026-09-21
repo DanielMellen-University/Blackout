@@ -642,6 +642,37 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires runway-relative wind into the crosswind contract', () => {
+    const run = new ChallengeRun(null)
+    let crosswindSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:crosswind-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT CROSSWIND') {
+        crosswindSeed = seed
+        break
+      }
+    }
+    expect(crosswindSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:crosswind-contract', 1, 'balanced', crosswindSeed)
+    run.update(0.1, 8)
+    run.update(4, 220, 180, 0, 0, false, true, 0, 12)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+    run.update(5, 220, 180, 0, 0, false, true, 0, 12)
+    run.update(1, 220, 180, 0, 0, false, true, 0, 12)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('CROSSWIND')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('crosswind')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
