@@ -294,12 +294,15 @@ async function boot(): Promise<void> {
       totalFlightDistanceM: 0,
       bestPeakSpeedKts: 0,
       bestPeakAltitudeM: 0,
+      styleVarietyCount: 0,
     }
+    const styleVariety = new Set<string>()
     for (const course of curated) {
       const runId = courseRunId(course)
       if (!runId) continue
       const record = readCourseRecord(runId)
       const history = record.history
+      if (history?.sortieStyle) styleVariety.add(history.sortieStyle)
       const runCount = history?.completionCount ?? 0
       if (runCount > 0) completed += 1
       earnedBadges += record.badgeCount
@@ -330,6 +333,7 @@ async function boot(): Promise<void> {
     }
     career.completedCourses = completed
     career.legendCourses = mastered
+    career.styleVarietyCount = styleVariety.size
     const rank = pilotRankForProgress(career)
     currentPilotRank = rank
     const rankLabel = pilotRankLabel(rank)

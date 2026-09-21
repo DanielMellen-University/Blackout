@@ -78,7 +78,7 @@ describe('CareerProgression', () => {
   })
 
   it('derives bounded cross-course commendations from stored telemetry', () => {
-    expect(PILOT_COMMENDATION_COUNT).toBe(5)
+    expect(PILOT_COMMENDATION_COUNT).toBe(6)
     expect(pilotCommendationsForProgress({
       ...base,
       totalRuns: 1,
@@ -86,8 +86,10 @@ describe('CareerProgression', () => {
       totalFlightDistanceM: 100_000,
       bestPeakSpeedKts: 900,
       bestPeakAltitudeM: 6_000,
-    })).toEqual(['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul'])
+      styleVarietyCount: 3,
+    })).toEqual(['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul', 'style-variety'])
     expect(pilotCommendationLabel('long-haul')).toBe('LONG HAUL')
+    expect(pilotCommendationLabel('style-variety')).toBe('STYLE VARIETY')
     expect(pilotCommendationsLabel(['first-sortie', 'high-flyer'])).toBe('EARNED · FIRST SORTIE · HIGH FLYER')
     expect(pilotCommendationsLabel([])).toBe('EARNED · NONE')
     expect(pilotCommendationsForProgress({
@@ -96,6 +98,7 @@ describe('CareerProgression', () => {
       totalFlightDistanceM: Number.POSITIVE_INFINITY,
       bestPeakSpeedKts: -4,
       bestPeakAltitudeM: Number.NaN,
+      styleVarietyCount: Number.POSITIVE_INFINITY,
     })).toEqual([])
   })
 })

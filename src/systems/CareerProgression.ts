@@ -11,10 +11,12 @@ export interface PilotCareerProgress {
   totalFlightDistanceM?: number
   bestPeakSpeedKts?: number
   bestPeakAltitudeM?: number
+  /** Number of distinct persisted best-score sortie styles across courses. */
+  styleVarietyCount?: number
 }
 
-export type PilotCommendationId = 'first-sortie' | 'course-collector' | 'speed-demon' | 'high-flyer' | 'long-haul'
-export const PILOT_COMMENDATION_COUNT = 5
+export type PilotCommendationId = 'first-sortie' | 'course-collector' | 'speed-demon' | 'high-flyer' | 'long-haul' | 'style-variety'
+export const PILOT_COMMENDATION_COUNT = 6
 
 const MAX_COURSES = 64
 const MAX_RUNS = 100_000
@@ -68,11 +70,13 @@ export function pilotCommendationsForProgress(progress: PilotCareerProgress): Pi
   const distance = safeMetric(progress.totalFlightDistanceM, 128_000_000)
   const speed = safeMetric(progress.bestPeakSpeedKts, 20_000)
   const altitude = safeMetric(progress.bestPeakAltitudeM, 100_000)
+  const styleVariety = safeCount(progress.styleVarietyCount, 5)
   if (runs >= 1) commendations.push('first-sortie')
   if (courses >= 7) commendations.push('course-collector')
   if (speed >= 900) commendations.push('speed-demon')
   if (altitude >= 6_000) commendations.push('high-flyer')
   if (distance >= 100_000) commendations.push('long-haul')
+  if (styleVariety >= 3) commendations.push('style-variety')
   return commendations
 }
 
@@ -81,7 +85,8 @@ export function pilotCommendationLabel(id: PilotCommendationId): string {
   if (id === 'course-collector') return 'COURSE COLLECTOR'
   if (id === 'speed-demon') return 'SPEED DEMON'
   if (id === 'high-flyer') return 'HIGH FLYER'
-  return 'LONG HAUL'
+  if (id === 'long-haul') return 'LONG HAUL'
+  return 'STYLE VARIETY'
 }
 
 /** Keep earned commendation names compact for title and accessibility copy. */
@@ -102,8 +107,10 @@ export function pilotRankAriaLabel(
   return `Pilot rank ${label}, ${courses} courses completed, ${runs} total runs, ${score.toLocaleString()} aggregate best score`
 }
 
-function safeCount(value: number, cap: number): number {
-  return Number.isFinite(value) ? Math.min(cap, Math.max(0, Math.floor(value))) : 0
+function safeCount(value: number | undefined, cap: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(cap, Math.max(0, Math.floor(value)))
+    : 0
 }
 
 function safeMetric(value: number | undefined, cap: number): number {
