@@ -88,6 +88,7 @@ import {
   pilotRankRank,
   pilotCommendationLabel,
   pilotCommendationsForProgress,
+  pilotCommendationsLabel,
   PILOT_COMMENDATION_COUNT,
   type PilotCommendationId,
   type PilotRank,
@@ -271,6 +272,7 @@ async function boot(): Promise<void> {
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
   const titleProgress = document.getElementById('title-progress')
+  const titleCommendations = document.getElementById('title-commendations')
   let currentPilotRank: PilotRank = 'cadet'
   let currentPilotCommendations: PilotCommendationId[] = []
   const refreshCourseProgress = (): void => {
@@ -343,6 +345,12 @@ async function boot(): Promise<void> {
     ].filter(Boolean)
     titleProgress.textContent = labels.join(' · ')
     titleProgress.setAttribute('aria-label', `${pilotRankAriaLabel(rank, career)}, ${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery, ${commendations.length} of ${PILOT_COMMENDATION_COUNT} career commendations earned${nextRank ? `, ${nextRank.toLowerCase()}` : ''}`)
+    if (titleCommendations) {
+      const label = pilotCommendationsLabel(commendations)
+      titleCommendations.textContent = label
+      titleCommendations.setAttribute('aria-label', `Career commendations: ${label.replace('EARNED · ', '').replaceAll(' · ', ', ')}`)
+      titleCommendations.hidden = commendations.length === 0
+    }
   }
   const refreshCourseUi = (): void => {
     courseRecordCache.clear()

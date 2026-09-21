@@ -3,6 +3,7 @@ import {
   pilotRankAriaLabel,
   pilotCommendationLabel,
   pilotCommendationsForProgress,
+  pilotCommendationsLabel,
   pilotRankForProgress,
   pilotRankLabel,
   pilotRankNextGoalLabel,
@@ -87,6 +88,8 @@ describe('CareerProgression', () => {
       bestPeakAltitudeM: 6_000,
     })).toEqual(['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul'])
     expect(pilotCommendationLabel('long-haul')).toBe('LONG HAUL')
+    expect(pilotCommendationsLabel(['first-sortie', 'high-flyer'])).toBe('EARNED · FIRST SORTIE · HIGH FLYER')
+    expect(pilotCommendationsLabel([])).toBe('EARNED · NONE')
     expect(pilotCommendationsForProgress({
       ...base,
       totalRuns: Number.NaN,

@@ -84,6 +84,12 @@ export function pilotCommendationLabel(id: PilotCommendationId): string {
   return 'LONG HAUL'
 }
 
+/** Keep earned commendation names compact for title and accessibility copy. */
+export function pilotCommendationsLabel(ids: readonly PilotCommendationId[]): string {
+  const labels = ids.slice(0, PILOT_COMMENDATION_COUNT).map(pilotCommendationLabel)
+  return labels.length > 0 ? `EARNED · ${labels.join(' · ')}` : 'EARNED · NONE'
+}
+
 /** Accessible aggregate summary for the title progression line. */
 export function pilotRankAriaLabel(
   rank: PilotRank,
