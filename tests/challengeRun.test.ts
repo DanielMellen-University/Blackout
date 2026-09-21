@@ -88,6 +88,7 @@ describe('ChallengeRun', () => {
     expect(result!.newMasteryBadges).toEqual(['first-flight', 'landing-ace', 'gold-run'])
     expect(result!.courseMasteryTier).toBe('pilot')
     expect(result!.courseMasteryTierLabel).toBe('PILOT')
+    expect(result!.masteryTierPromoted).toBe(true)
     expect(readMasteryBadges({ getItem: (key) => store.get(key) ?? null }, 'seed:1'))
       .toEqual(['first-flight', 'landing-ace', 'gold-run'])
     expect(run.phase).toBe('complete')
@@ -1290,6 +1291,30 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:landing-record')).toBe(
       '{"completionCount":2,"bestTimeSec":4,"landingQuality":1}',
     )
+  })
+
+  it('does not demote legacy mastery before a touchdown record exists', () => {
+    const values = new Map<string, string>([
+      ['blackout.history.seed:legacy-mastery', '{"completionCount":5,"bestTimeSec":4,"approachScore":500,"contractWins":2}'],
+      ['blackout.best.seed:legacy-mastery', '88000'],
+      ['blackout.badges.seed:legacy-mastery', '["first-flight","gate-master","landing-ace"]'],
+    ])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('seed:legacy-mastery', 1)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -3.5,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.courseMasteryTier).toBe('ace')
+    expect(result.masteryTierPromoted).toBe(false)
+    expect(result.courseBestLandingQuality).toBe(1)
   })
 
   it('persists the best combo per course and repairs oversized records', () => {

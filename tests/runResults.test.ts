@@ -342,6 +342,7 @@ describe('run results focus flow', () => {
       newComboRecord: true,
       newApproachRecord: true,
       newLandingQualityRecord: true,
+      masteryTierPromoted: true,
       newDestinationRecord: true,
       newRunStreakRecord: true,
       newContractRecord: true,
@@ -350,7 +351,7 @@ describe('run results focus flow', () => {
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / DISTANCE / POS G / NEG G / COMBO / APPROACH / LANDING / MASTERY / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

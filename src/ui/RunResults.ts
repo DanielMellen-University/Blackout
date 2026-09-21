@@ -305,6 +305,9 @@ export class RunResults {
     if (result.courseMasteryTierLabel) {
       scoreParts.push(`COURSE TIER ${result.courseMasteryTierLabel}`)
     }
+    if (result.masteryTierPromoted && result.courseMasteryTierLabel) {
+      scoreParts.push(`PROMOTED ${result.courseMasteryTierLabel}`)
+    }
     const courseBestCombo = Number.isFinite(result.courseBestCombo)
       ? Math.max(0, Math.floor(result.courseBestCombo!))
       : 0
@@ -342,6 +345,7 @@ export class RunResults {
       result.newComboRecord ? 'COMBO' : '',
       result.newApproachRecord ? 'APPROACH' : '',
       result.newLandingQualityRecord ? 'LANDING' : '',
+      result.masteryTierPromoted ? 'MASTERY' : '',
       result.newDestinationRecord ? 'DESTINATIONS' : '',
       result.newBiomeRecord ? 'BIOMES' : '',
       result.newRunStreakRecord ? 'RUN STREAK' : '',

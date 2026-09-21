@@ -1182,7 +1182,7 @@ async function boot(): Promise<void> {
                   ? 'landing-soft'
                   : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
               )
-              if (flightRecordCueLabel(finished)) audio.playCue('milestone')
+              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted) audio.playCue('milestone')
               results.show(finished)
               refreshCourseSelectorLabels()
               refreshCourseProgress()

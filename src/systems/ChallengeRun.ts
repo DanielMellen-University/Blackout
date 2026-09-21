@@ -182,6 +182,8 @@ export interface ChallengeResult {
   courseMasteryTier?: CourseMasteryTier
   /** Human-readable mastery tier label. */
   courseMasteryTierLabel?: string
+  /** Whether this sortie promoted the course to a higher mastery tier. */
+  masteryTierPromoted?: boolean
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -266,6 +268,14 @@ export function courseMasteryTierLabel(tier: CourseMasteryTier): string {
   if (tier === 'ace') return 'ACE'
   if (tier === 'legend') return 'LEGEND'
   return 'ROOKIE'
+}
+
+function courseMasteryTierRank(tier: CourseMasteryTier): number {
+  if (tier === 'legend') return 4
+  if (tier === 'ace') return 3
+  if (tier === 'veteran') return 2
+  if (tier === 'pilot') return 1
+  return 0
 }
 
 export interface CourseHistory {
@@ -1152,11 +1162,19 @@ export class ChallengeRun {
     const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore, landingQuality)
     const contractComplete = this.contract.enabled && this.contract.complete
     const history = this.readHistory()
+    const priorBadges = repairMasteryBadges(this.storage, this.courseId)
     const contractStreakBonus = contractComplete
       ? contractStreakBonusForStreak(history.contractStreak ?? 0)
       : 0
     const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
     const previousBest = this.readBest()
+    const previousCourseMasteryTier = courseMasteryTierForProgress({
+      completionCount: history.completionCount,
+      bestScore: previousBest,
+      badgeCount: priorBadges.length,
+      contractWins: history.contractWins,
+      landingQuality: history.landingQuality,
+    })
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
     const bestElapsedSec = this.bestGateSplits[this.totalGates - 1]
@@ -1183,7 +1201,9 @@ export class ChallengeRun {
     const previousStuntRolls = history.stuntRolls ?? 0
     const previousCombo = history.combo ?? 0
     const previousApproachScore = history.approachScore ?? 0
-    const previousLandingQuality = history.landingQuality ?? 0
+    // Legacy histories predate touchdown persistence. Treat an existing completed course
+    // as fully qualified until a real quality record is present, avoiding a surprise tier drop.
+    const previousLandingQuality = history.landingQuality ?? (history.completionCount > 0 ? 1 : 0)
     const previousDestinationCount = history.destinations ?? 0
     const previousBiomeCount = history.biomes ?? 0
     const previousRunStreak = history.runStreak ?? 0
@@ -1257,7 +1277,6 @@ export class ChallengeRun {
       this.bestGateQualityStreak,
       approachScore,
     )
-    const priorBadges = repairMasteryBadges(this.storage, this.courseId)
     const allBadges = [...priorBadges]
     for (const badge of earnedBadges) {
       if (!allBadges.includes(badge)) allBadges.push(badge)
@@ -1276,6 +1295,7 @@ export class ChallengeRun {
       contractWins: history.contractWins,
       landingQuality: history.landingQuality,
     })
+    const masteryTierPromoted = courseMasteryTierRank(courseMasteryTier) > courseMasteryTierRank(previousCourseMasteryTier)
 
     this.phase = 'complete'
     this.result = {
@@ -1357,6 +1377,7 @@ export class ChallengeRun {
       newContractStreakRecord,
       courseMasteryTier,
       courseMasteryTierLabel: courseMasteryTierLabel(courseMasteryTier),
+      masteryTierPromoted,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestLandingQuality: courseBestLandingQuality > 0 ? courseBestLandingQuality : undefined,
