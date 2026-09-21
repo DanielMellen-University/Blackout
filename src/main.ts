@@ -118,6 +118,8 @@ import {
 import { RunResults } from './ui/RunResults'
 import {
   RADAR_RANGE_METERS,
+  RADAR_UPDATE_INTERVAL_MS,
+  radarUpdateDue,
   radarDiscoveryLabel,
   radarTargetArrivalLabel,
   radarTargetArrivalRadius,
@@ -636,6 +638,8 @@ async function boot(): Promise<void> {
   const radarDiscovered = new Set<string>()
   let radarDiscoveryCooldownUntil = 0
   let radarTargetCycleQueued = false
+  let radarNextUpdateMs = Number.NaN
+  let radarContacts: ReturnType<RadarSystem['update']> = []
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   let terrainClearanceM = 0
   let biomeSurveyCooldown = 0
@@ -750,6 +754,8 @@ async function boot(): Promise<void> {
     radarDiscoveryCooldownUntil = 0
     radar.clearTarget()
     radarTargetCycleQueued = false
+    radarNextUpdateMs = Number.NaN
+    radarContacts = []
     biomeSurveyCooldown = 0
     overWater = false
     refueling = false
@@ -1571,17 +1577,20 @@ async function boot(): Promise<void> {
           world.spawn.yaw,
         )
       }
-      const radarContacts = radar.update(
-        aircraft.position.x,
-        aircraft.position.z,
-        pose.heading,
-        gate,
-        world.settlements.getRadarLandmarks(
+      if (radarUpdateDue(nowMs, radarNextUpdateMs) || radarContacts.length === 0) {
+        radarContacts = radar.update(
           aircraft.position.x,
           aircraft.position.z,
-          RADAR_RANGE_METERS,
-        ),
-      )
+          pose.heading,
+          gate,
+          world.settlements.getRadarLandmarks(
+            aircraft.position.x,
+            aircraft.position.z,
+            RADAR_RANGE_METERS,
+          ),
+        )
+        radarNextUpdateMs = nowMs + RADAR_UPDATE_INTERVAL_MS
+      }
       if (radarTargetCycleQueued) {
         radarTargetCycleQueued = false
         const selected = radar.cycleTarget()

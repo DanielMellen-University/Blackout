@@ -35,8 +35,15 @@ export interface RadarGate {
 
 export const RADAR_RANGE_METERS = 8_000
 export const MAX_RADAR_CONTACTS = 6
+/** Radar labels and target positions remain readable at a bounded 10 Hz sweep. */
+export const RADAR_UPDATE_INTERVAL_MS = 100
 /** Bound source work even if a caller hands radar an unexpectedly large list. */
 export const MAX_RADAR_LANDMARK_SCAN = 128
+
+export function radarUpdateDue(nowMs: number, nextUpdateMs: number): boolean {
+  if (!Number.isFinite(nowMs) || !Number.isFinite(nextUpdateMs)) return true
+  return nowMs >= nextUpdateMs
+}
 
 /**
  * Reusable, low-cost navigation sweep for the HUD. Contacts are rebuilt only

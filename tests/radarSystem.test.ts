@@ -2,13 +2,23 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_RADAR_CONTACTS,
   RADAR_RANGE_METERS,
+  RADAR_UPDATE_INTERVAL_MS,
   RadarSystem,
+  radarUpdateDue,
   type RadarLandmark,
   radarBearingArrow,
   radarDistanceLabel,
 } from '../src/systems/RadarSystem'
 
 describe('arcade radar sweep', () => {
+  it('keeps the sweep cadence finite and immediately due after reset', () => {
+    expect(RADAR_UPDATE_INTERVAL_MS).toBe(100)
+    expect(radarUpdateDue(0, Number.NaN)).toBe(true)
+    expect(radarUpdateDue(99, 100)).toBe(false)
+    expect(radarUpdateDue(100, 100)).toBe(true)
+    expect(radarUpdateDue(Number.NaN, 100)).toBe(true)
+  })
+
   it('keeps the gate first and sorts landmark contacts by tier and range', () => {
     const radar = new RadarSystem()
     const contacts = radar.update(0, 0, 0, { x: 0, y: 100, z: 1000 }, [

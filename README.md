@@ -154,6 +154,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The curated course picker now includes `River run`, a low meandering inland-water route validated by the same terrain corridor planner.
 - Seeded sorties can assign `FRONT CHASER`, rewarding airborne time while the existing weather front blends between states.
 - Radar keeps higher-tier and nearer settlement contacts even when streamed landmarks arrive in a noisy order, with a fixed scan budget.
+- Radar settlement rescans run at a bounded 10 Hz cadence and refresh immediately after a reset, reducing repeated source sorting without making target guidance feel stale.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.
