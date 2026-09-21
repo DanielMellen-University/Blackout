@@ -61,6 +61,8 @@ import {
   machLabel,
   machNumber,
   missionPaceLabel,
+  ghostPaceLabel,
+  ghostPaceAriaLabel,
   contractProgressLabel,
   contractProgressAriaLabel,
   quantizeHudNumber,
@@ -138,6 +140,16 @@ describe('HUD value formatting', () => {
     expect(machLabel(1)).toBe('M1.00')
     expect(machLabel(Number.NaN)).toBe('M0.00')
     expect(machAriaLabel(0.9)).toBe('M0.90, transonic')
+  })
+
+  it('keeps best-run ghost pacing readable around the zero crossing', () => {
+    expect(ghostPaceLabel(null)).toBe('')
+    expect(ghostPaceLabel(-1.26)).toBe('AHEAD 1.3S')
+    expect(ghostPaceLabel(1.24)).toBe('BEHIND 1.2S')
+    expect(ghostPaceLabel(0.02)).toBe('EVEN')
+    expect(ghostPaceLabel(Number.NaN)).toBe('')
+    expect(ghostPaceAriaLabel(-1.2)).toBe('Best-run ghost pace ahead by 1.2s')
+    expect(ghostPaceAriaLabel(1.2)).toBe('Best-run ghost pace behind by 1.2s')
   })
 
   it('formats bounded fighter G-load cues with distinct stress tones', () => {

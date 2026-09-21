@@ -209,6 +209,13 @@ export class GhostReplay {
     return this.ghostCount
   }
 
+  /** Signed live-run delta against the stored best trace duration. */
+  paceDelta(time: number): number | null {
+    if (this.disposed || this.ghostCount < 2 || !Number.isFinite(time)) return null
+    const duration = this.ghostTimes[this.ghostCount - 1]!
+    return Math.max(-9_999, Math.min(9_999, time - duration))
+  }
+
   dispose(): void {
     if (this.disposed) return
     this.disposed = true

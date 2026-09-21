@@ -336,6 +336,25 @@ export function missionPaceLabel(value: unknown): string {
   return value.trim()
 }
 
+/** Keep best-run ghost pacing compact and calm around the zero crossing. */
+export function ghostPaceLabel(delta: number | null | undefined): string {
+  if (delta === null || delta === undefined || !Number.isFinite(delta)) return ''
+  const safe = Math.max(-9_999, Math.min(9_999, delta))
+  if (Math.abs(safe) < 0.05) return 'EVEN'
+  const seconds = Math.abs(Math.round(safe * 10) / 10).toFixed(1)
+  return safe < 0 ? `AHEAD ${seconds}S` : `BEHIND ${seconds}S`
+}
+
+/** Describe ghost pacing without exposing the signed implementation detail. */
+export function ghostPaceAriaLabel(delta: number | null | undefined): string {
+  const label = ghostPaceLabel(delta)
+  if (!label) return ''
+  if (label === 'EVEN') return 'Best-run ghost pace even'
+  return label.startsWith('AHEAD')
+    ? `Best-run ghost pace ahead by ${label.slice(6).toLowerCase()}`
+    : `Best-run ghost pace behind by ${label.slice(7).toLowerCase()}`
+}
+
 /** Keep the optional sortie contract visible without exposing raw tracker state. */
 export function contractProgressLabel(
   label: unknown,
@@ -424,6 +443,8 @@ export class HUD {
   private readonly phaseEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
   private readonly paceEl: HTMLElement | null
+  private readonly ghostPaceRowEl: HTMLElement | null
+  private readonly ghostPaceEl: HTMLElement | null
   private readonly missionProgressEl: HTMLElement | null
   private readonly contractRowEl: HTMLElement | null
   private readonly contractEl: HTMLElement | null
@@ -536,6 +557,7 @@ export class HUD {
   private comboText = ''
   private comboAriaText = ''
   private paceText = 'READY'
+  private ghostPaceText = ''
   private flightStateValue: FlightStateCue | null = null
   private flightStateText = ''
   private flightStateAriaText = ''
@@ -615,6 +637,8 @@ export class HUD {
     this.phaseEl = root.getElementById('hud-phase')
     this.missionEl = root.getElementById('hud-mission')
     this.paceEl = root.getElementById('hud-pace')
+    this.ghostPaceRowEl = root.getElementById('hud-ghost-pace-row')
+    this.ghostPaceEl = root.getElementById('hud-ghost-pace')
     this.missionProgressEl = root.getElementById('hud-gate-progress')
     this.contractRowEl = root.getElementById('hud-contract-row')
     this.contractEl = root.getElementById('hud-contract')
@@ -719,6 +743,8 @@ export class HUD {
     mission?: string
     /** Live checkpoint pace context, or null before the first clear. */
     pace?: string | null
+    /** Signed elapsed-time delta against the saved best-run ghost. */
+    ghostPace?: number | null
     /** Remaining fuel as a normalized fraction. */
     fuel?: number
     /** Current route phase used for a restrained mission-state cue. */
@@ -984,6 +1010,16 @@ export class HUD {
       this.setClass(this.paceEl, 'pace-ahead', this.paceText.startsWith('AHEAD'))
       this.setClass(this.paceEl, 'pace-behind', this.paceText.startsWith('BEHIND'))
       this.setClass(this.paceEl, 'pace-on', this.paceText === 'ON PACE' || this.paceText === 'FIRST RUN')
+    }
+    if (this.ghostPaceRowEl && this.ghostPaceEl && opts.ghostPace !== undefined) {
+      const text = ghostPaceLabel(opts.ghostPace)
+      if (text !== this.ghostPaceText) this.ghostPaceText = text
+      this.setHidden(this.ghostPaceRowEl, text.length === 0)
+      this.setText(this.ghostPaceEl, this.ghostPaceText)
+      this.setAttribute(this.ghostPaceEl, 'aria-label', ghostPaceAriaLabel(opts.ghostPace))
+      this.setClass(this.ghostPaceEl, 'pace-ahead', text.startsWith('AHEAD'))
+      this.setClass(this.ghostPaceEl, 'pace-behind', text.startsWith('BEHIND'))
+      this.setClass(this.ghostPaceEl, 'pace-on', text === 'EVEN')
     }
     if (this.missionProgressEl && (opts.missionCurrent !== undefined || opts.missionTotal !== undefined)) {
       const current = Number.isFinite(opts.missionCurrent) ? Math.max(0, Math.floor(opts.missionCurrent!)) : 0

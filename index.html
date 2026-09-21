@@ -153,6 +153,7 @@
               <li>Replay curated courses to beat their saved approach record and sharpen your return.</li>
               <li>Try Coastal run for a lower sweeping route that follows changing terrain and shoreline relief.</li>
               <li>Repeat a curated course in external view to race the faint best-run ghost path; the trace stays local and is replaced only by a higher score.</li>
+              <li>The live GHOST row compares your elapsed time with that saved trace and stays hidden when no best run exists.</li>
               <li>Land centered and aligned with a safe touchdown to earn the APPROACH ACE mastery badge.</li>
               <li>Use T to lock a radar settlement and reach it for a capped destination bonus before returning home.</li>
               <li>Fly across different terrain provinces to build a bounded biome survey record and exploration bonus.</li>
@@ -251,6 +252,10 @@
           <div class="hud-row">
             <span class="label">PACE</span>
             <span id="hud-pace">READY</span>
+          </div>
+          <div id="hud-ghost-pace-row" class="hud-row" hidden>
+            <span class="label">GHOST</span>
+            <span id="hud-ghost-pace" aria-label=""></span>
           </div>
           <div
             id="hud-gate-progress"

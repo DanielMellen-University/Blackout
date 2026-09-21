@@ -14,6 +14,7 @@
 - Add a bounded best-run ghost path for repeatable courses, using fixed buffers and one local-storage write only when a sortie sets a new best.
 - Enable strict nullability and unchecked-index checking in the production TypeScript build, fixing the hydrology flow accumulation boundary.
 - Add the repeatable Coastal Run course, a lower sweeping route that reuses the validated terrain corridor planner.
+- Add a cached GHOST pace row that compares live external runs with the saved best trace without adding simulation or storage work.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

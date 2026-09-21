@@ -554,6 +554,7 @@ async function boot(): Promise<void> {
     dayPhase: '',
     mission: '',
     missionPhase: 'ready',
+    ghostPace: null,
     contractLabel: '',
     contractProgress: 0,
     contractComplete: false,
@@ -1618,6 +1619,11 @@ async function boot(): Promise<void> {
       hudFrame.contractComplete = challenge.contractComplete
       hudFrame.biomeCount = challenge.biomeCount
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
+      hudFrame.ghostPace = (
+        (challenge.phase === 'running' || challenge.phase === 'returning') &&
+        cameras.mode !== 'cockpit' &&
+        aircraft.status === 'ok'
+      ) ? ghost.paceDelta(challenge.elapsedSec) : null
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
       hudFrame.missionTotal = challenge.totalGates

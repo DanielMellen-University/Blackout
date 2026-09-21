@@ -45,6 +45,7 @@ describe('GhostReplay', () => {
     loaded.update(0.01 + GHOST_SAMPLE_INTERVAL * 0.5, true)
     expect(loaded.root.visible).toBe(true)
     expect(loaded.root.children[1]?.visible).toBe(true)
+    expect(loaded.paceDelta(0.01 + GHOST_SAMPLE_INTERVAL * 2 + 1.25)).toBeCloseTo(1.25)
   })
 
   it('rejects random courses, malformed traces, and over-capacity records', () => {
