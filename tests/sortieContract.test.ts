@@ -98,6 +98,13 @@ describe('sortie contracts', () => {
         tracker.recordWaterSkim(true, 80, 5)
         tracker.recordWaterSkim(true, 80, 3)
       }
+      if (tracker.kind === 'ridge-run') {
+        tracker.recordRidgeRun('plains', 120, 5)
+        tracker.recordRidgeRun('mountain', 20, 5)
+        tracker.recordRidgeRun('mountain', 280, 5)
+        tracker.recordRidgeRun('mountain', 120, 5)
+        tracker.recordRidgeRun('volcanic', 120, 5)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -188,7 +195,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run']))
   })
 
   it('accumulates only low airborne passes over water for WATER SKIM', () => {
@@ -245,6 +252,33 @@ describe('sortie contracts', () => {
     tracker.recordHighDive(420)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only controlled low passes through ridge biomes', () => {
+    const tracker = new SortieContractTracker()
+    let ridgeSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'ridge-run') {
+        ridgeSeed = seed
+        break
+      }
+    }
+    expect(ridgeSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(ridgeSeed, 5)
+    expect(tracker.label).toBe('RIDGE RUN')
+    expect(tracker.detail).toBe('HOLD RIDGE ALT 35-260M FOR 10S')
+    tracker.recordRidgeRun('plains', 120, 5)
+    tracker.recordRidgeRun('mountain', 34, 5)
+    tracker.recordRidgeRun('mountain', 261, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordRidgeRun('mountain', 120, 4)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    expect(tracker.detail).toContain('CURRENT 4S')
+    tracker.recordRidgeRun('volcanic', 120, 5)
+    tracker.recordRidgeRun('hills', 120, 1)
+    expect(tracker.complete).toBe(true)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 

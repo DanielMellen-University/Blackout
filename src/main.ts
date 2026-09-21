@@ -1435,6 +1435,7 @@ async function boot(): Promise<void> {
           challenge.recordBiome(sampled.biome)
           challenge.recordWater(sampled.kind === 'water', 0.65, true)
           challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
+          challenge.recordRidgeRun(sampled.biome, terrainClearanceM, 0.65, true)
           const biomeCue = challenge.consumeBiomeSurveyCue()
           if (biomeCue && (!banner || bannerUntil <= nowMs)) {
             showBanner(

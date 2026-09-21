@@ -164,6 +164,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Seeded sorties can also assign a `WATER RUN` contract: stay airborne over a rendered river, lake, or sea to build a bounded low-level exploration reward.
 - Seeded sorties can also assign a `BRAKE CHECK` contract: deploy the speed brake above 428 knots while airborne to practice high-speed energy control.
 - Seeded sorties can also assign a `THERMAL CONTROL` contract: hold a controlled engine temperature above 350 knots while airborne instead of living on afterburner.
+- Seeded sorties can also assign a `RIDGE RUN` contract: hold a controlled 35-260M low pass through hills, mountains, snow, tundra, or volcanic terrain for ten seconds.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.
@@ -501,6 +502,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Cloud authoring now bakes puff transforms into compact records before rendering, releasing hidden per-puff scene objects while preserving the same instanced silhouettes and weather motion.
 - Water crossings now identify the existing hydrology body as SEA, LAKE, RIVER, STREAM, POND, or INLAND, making the terrain variety readable without extra geometry or polling.
 - Rare seeded sorties can now assign WATER SKIM, rewarding eight seconds of controlled 18-180M flight over a rendered water surface through the existing survey cadence.
+- Rare seeded sorties can now assign RIDGE RUN, rewarding ten seconds of controlled low flight through high-relief biomes using the same bounded survey cadence.
 - Terrain boundary normal probes now use a height-only geography path, preserving exact relief while avoiding full climate-object construction for worker-side edge samples.
 - Weather fronts turn wind along the shortest arc while interpolating speed separately, avoiding an artificial calm pocket when a storm changes direction.
 - Salt flats carry broad deterministic crust and damp-playa bands instead of a single pale sheet, using the existing terrain vertex-color path.

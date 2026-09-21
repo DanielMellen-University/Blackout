@@ -775,6 +775,40 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires terrain surveys into the ridge-run contract', () => {
+    const run = new ChallengeRun(null)
+    let ridgeSeed = -1
+    for (let seed = 0; seed < 2_048; seed += 1) {
+      run.reset('seed:ridge-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT RIDGE RUN') {
+        ridgeSeed = seed
+        break
+      }
+    }
+    expect(ridgeSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:ridge-contract', 1, 'balanced', ridgeSeed)
+    expect(run.contractBriefing).toContain('HOLD RIDGE ALT')
+    run.update(0.1, 8)
+    run.recordRidgeRun('plains', 120, 5)
+    expect(run.contractProgress).toBe(0)
+    run.recordRidgeRun('mountain', 120, 4)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+    run.recordRidgeRun('volcanic', 120, 5)
+    run.recordRidgeRun('hills', 120, 1)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('RIDGE RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('ridge-run')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires high-speed speed-brake time into the brake-check contract', () => {
     const run = new ChallengeRun(null)
     let brakeSeed = -1

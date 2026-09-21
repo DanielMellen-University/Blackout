@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -64,6 +64,10 @@ const WATER_SKIM_MIN_ALTITUDE_M = 18
 const WATER_SKIM_MAX_ALTITUDE_M = 180
 const WATER_SKIM_TARGET_SECONDS = 8
 const WATER_SKIM_DETAIL = 'SKIM WATER AT 18-180M FOR 8S'
+const RIDGE_RUN_MIN_CLEARANCE_M = 35
+const RIDGE_RUN_MAX_CLEARANCE_M = 260
+const RIDGE_RUN_TARGET_SECONDS = 10
+const RIDGE_RUN_DETAIL = 'HOLD RIDGE ALT 35-260M FOR 10S'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -98,6 +102,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'range', label: 'RANGE RUN', target: RANGE_TARGET_METERS },
   { kind: 'high-dive', label: 'HIGH DIVE', target: 1 },
   { kind: 'water-skim', label: 'WATER SKIM', target: WATER_SKIM_TARGET_SECONDS },
+  { kind: 'ridge-run', label: 'RIDGE RUN', target: RIDGE_RUN_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -137,6 +142,7 @@ export class SortieContractTracker {
   private rangeMeters = 0
   private highDiveReached = false
   private waterSkimSeconds = 0
+  private ridgeRunSeconds = 0
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
@@ -176,6 +182,7 @@ export class SortieContractTracker {
     this.rangeMeters = 0
     this.highDiveReached = false
     this.waterSkimSeconds = 0
+    this.ridgeRunSeconds = 0
     this.gustDetailBucket = -1
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
@@ -201,6 +208,8 @@ export class SortieContractTracker {
               ? HIGH_DIVE_DETAIL
               : base.kind === 'water-skim'
                 ? WATER_SKIM_DETAIL
+                : base.kind === 'ridge-run'
+                  ? RIDGE_RUN_DETAIL
                 : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
@@ -336,6 +345,20 @@ export class SortieContractTracker {
     this.waterSkimSeconds = Math.min(this.definition.target, this.waterSkimSeconds + safeDt)
     this.progressValue = clamp01(this.waterSkimSeconds / this.definition.target)
     this.updateProgressDetail(this.waterSkimSeconds, 'S', 1)
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Accumulate a controlled low pass through high-relief terrain biomes. */
+  recordRidgeRun(biome: string, terrainClearanceM: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'ridge-run' || this.completeValue || !airborne) return
+    if (!Number.isFinite(terrainClearanceM) || !Number.isFinite(dt)) return
+    if (!isRidgeBiome(biome)) return
+    const safeClearance = Math.max(0, Math.min(100_000, terrainClearanceM))
+    if (safeClearance < RIDGE_RUN_MIN_CLEARANCE_M || safeClearance > RIDGE_RUN_MAX_CLEARANCE_M) return
+    const safeDt = Math.max(0, Math.min(5, dt))
+    this.ridgeRunSeconds = Math.min(this.definition.target, this.ridgeRunSeconds + safeDt)
+    this.progressValue = clamp01(this.ridgeRunSeconds / this.definition.target)
+    this.updateProgressDetail(this.ridgeRunSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -645,7 +668,7 @@ function indexForSeed(seed: number): number {
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
   // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
-  // high-dive, and water-skim objectives.
+  // high-dive, water-skim, and ridge-run objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -674,6 +697,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 137 === 107) return 29
   if (mixed % 149 === 131) return 30
   if (mixed % 157 === 139) return 31
+  if (mixed % 163 === 151) return 32
   return mixed % legacyContractCount
 }
 
@@ -735,12 +759,17 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'range': return RANGE_RUN_DETAIL
     case 'high-dive': return HIGH_DIVE_DETAIL
     case 'water-skim': return WATER_SKIM_DETAIL
+    case 'ridge-run': return RIDGE_RUN_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }
 
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+}
+
+function isRidgeBiome(biome: string): boolean {
+  return biome === 'hills' || biome === 'mountain' || biome === 'snow' || biome === 'tundra' || biome === 'volcanic'
 }
 
 function settlementTourDetail(city: boolean, village: boolean): string {
