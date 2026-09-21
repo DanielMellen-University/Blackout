@@ -1259,6 +1259,7 @@ async function boot(): Promise<void> {
           weather.snow,
           aircraft.controls.airbrake,
           !aircraft.onGround,
+          aircraft.engineHeat.fraction,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }

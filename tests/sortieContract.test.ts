@@ -62,12 +62,20 @@ describe('sortie contracts', () => {
         tracker.recordBrake(120, 5, true)
         tracker.recordBrake(240, 5, true)
       }
+      if (tracker.kind === 'heat') {
+        tracker.recordHeat(0.5, 220, 5, false)
+        tracker.recordHeat(0.9, 220, 5)
+        tracker.recordHeat(0.5, 120, 5)
+        tracker.recordHeat(0.5, 220, 5)
+        tracker.recordHeat(0.5, 220, 5)
+        tracker.recordHeat(0.5, 220, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -221,6 +229,33 @@ describe('sortie contracts', () => {
     tracker.recordBrake(240, 2, true)
     expect(tracker.progress).toBeCloseTo(0.4)
     tracker.recordBrake(240, 3, true)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only controlled engine heat at cruise speed', () => {
+    const tracker = new SortieContractTracker()
+    let heatSeed = -1
+    for (let seed = 0; seed < 512; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'heat') {
+        heatSeed = seed
+        break
+      }
+    }
+    expect(heatSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(heatSeed, 5)
+    tracker.recordHeat(0.5, 220, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordHeat(0.9, 220, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordHeat(0.5, 120, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordHeat(0.5, 220, 4)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordHeat(0.5, 220, 5)
+    tracker.recordHeat(0.5, 220, 5)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

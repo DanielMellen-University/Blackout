@@ -610,6 +610,37 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires controlled engine heat into the thermal-control contract', () => {
+    const run = new ChallengeRun(null)
+    let heatSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:heat-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT THERMAL CONTROL') {
+        heatSeed = seed
+        break
+      }
+    }
+    expect(heatSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:heat-contract', 1, 'balanced', heatSeed)
+    run.update(0.1, 8)
+    run.update(4, 220, 180, 0, 0, false, true, 0.5)
+    expect(run.contractProgress).toBeCloseTo(1 / 3)
+    run.update(5, 220, 180, 0, 0, false, true, 0.5)
+    run.update(5, 220, 180, 0, 0, false, true, 0.5)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('THERMAL CONTROL')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('heat')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
