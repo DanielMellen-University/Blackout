@@ -122,6 +122,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - A fifth `Canyon run` route adds a low-weave precision circuit through the terrain, using the same fixed gate pool and clearance planner.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
+- A bounded `FLARE` cue appears in the final gear-down landing window, replacing low-altitude alarm noise with a clear prompt to ease the sink rate.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.

@@ -3,6 +3,7 @@ import { Aircraft } from '../src/aircraft/Aircraft'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import {
   evaluateWarnings,
+  flareWarningActive,
   gearWarningActive,
   lowAltitudeWarningActive,
   lowAltitudeWarningCeiling,
@@ -59,6 +60,23 @@ describe('flight cautions', () => {
     expect(warning.text).toBe('GEAR')
     expect(warning.gear).toBe(true)
     expect(warning.level).toBe('caution')
+  })
+
+  it('marks the bounded flare window on a configured approach', () => {
+    expect(flareWarningActive(8, 52, -2.2, true)).toBe(true)
+    expect(flareWarningActive(1, 52, -2.2, true)).toBe(false)
+    expect(flareWarningActive(8, 90, -2.2, true)).toBe(false)
+    expect(flareWarningActive(8, 52, 0, true)).toBe(false)
+    expect(flareWarningActive(8, 52, -2.2, false)).toBe(false)
+
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, -2.2, 52)
+    aircraft.controls.gearDown = true
+    const warning = evaluateWarnings(aircraft, 8)
+    expect(warning.text).toBe('FLARE')
+    expect(warning.level).toBe('caution')
+    expect(warning.flare).toBe(true)
   })
 
   it('reuses the stable no-warning state between frames', () => {
