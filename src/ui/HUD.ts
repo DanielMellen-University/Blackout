@@ -101,6 +101,65 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
   return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
 }
 
+/** Reuse radar copy while contacts remain in the same visible display buckets. */
+export function createRadarContactsLabelCache(): (contacts: readonly RadarContact[]) => string {
+  const previous = Array.from({ length: MAX_RADAR_CONTACTS }, () => ({
+    kind: '',
+    distanceBucket: Number.NaN,
+    bearingSector: Number.NaN,
+    label: '',
+    selected: false,
+  }))
+  let previousCount = -1
+  let cached = 'NO CONTACTS'
+  return (contacts): string => {
+    const limit = Math.min(MAX_RADAR_CONTACTS, contacts.length)
+    let changed = limit !== previousCount
+    for (let index = 0; index < MAX_RADAR_CONTACTS; index += 1) {
+      const contact = index < limit ? contacts[index] : undefined
+      const kind = contact?.kind ?? ''
+      const distanceBucket = contact ? radarDistanceBucket(contact.distance) : Number.NaN
+      const bearingSector = contact ? radarBearingSector(contact.bearing) : Number.NaN
+      const label = typeof contact?.label === 'string' && contact.label.length > 0
+        ? contact.label
+        : contact ? 'CONTACT' : ''
+      const selected = contact?.selected === true
+      const entry = previous[index]!
+      if (
+        entry.kind !== kind ||
+        entry.distanceBucket !== distanceBucket ||
+        entry.bearingSector !== bearingSector ||
+        entry.label !== label ||
+        entry.selected !== selected
+      ) changed = true
+      entry.kind = kind
+      entry.distanceBucket = distanceBucket
+      entry.bearingSector = bearingSector
+      entry.label = label
+      entry.selected = selected
+    }
+    if (!changed) return cached
+    previousCount = limit
+    cached = formatRadarContacts(contacts)
+    return cached
+  }
+}
+
+function radarDistanceBucket(distance: number): number {
+  const safe = Number.isFinite(distance) ? Math.max(0, distance) : 0
+  if (safe < 1000) return Math.round(safe)
+  if (safe < 10_000) return Math.round(safe / 100) * 100
+  return Math.round(safe / 1000) * 1000
+}
+
+function radarBearingSector(bearing: number): number {
+  const safe = Number.isFinite(bearing) ? Math.atan2(Math.sin(bearing), Math.cos(bearing)) : 0
+  if (Math.abs(safe) < Math.PI / 8) return 0
+  if (safe > 0 && safe < Math.PI * .375) return 1
+  if (safe < 0 && safe > -Math.PI * .375) return -1
+  return safe > 0 ? 2 : -2
+}
+
 /** Keep water crossings readable without exposing raw terrain metadata. */
 export function waterSurfaceCue(biome: unknown): string {
   return biome === 'ocean' ? 'SEA CROSSING' : 'INLAND WATER CROSSING'
@@ -549,6 +608,7 @@ export class HUD {
   private readonly attributeCache = new WeakMap<Element, Map<string, string>>()
   private readonly classCache = new WeakMap<Element, Map<string, boolean>>()
   private readonly textCache = new WeakMap<Element, string>()
+  private readonly radarLabelCache = createRadarContactsLabelCache()
   private altitudeValue = Number.NaN
   private altitudeText = ''
   private altitudeAriaText = ''
@@ -1240,7 +1300,7 @@ export class HUD {
       this.setClass(this.engineHeatEl, 'critical', heatWarning === 'critical')
     }
     if (this.radarEl && opts.radar !== undefined) {
-      const radarText = formatRadarContacts(opts.radar)
+      const radarText = this.radarLabelCache(opts.radar)
       if (radarText !== this.radarText) {
         this.radarText = radarText
         this.radarAriaText = radarText === 'NO CONTACTS' ? 'Radar: no contacts' : `Radar: ${radarText}`

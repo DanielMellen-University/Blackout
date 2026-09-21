@@ -12,6 +12,7 @@ import {
   altitudeCue,
   formatAudioState,
   formatRadarContacts,
+  createRadarContactsLabelCache,
   waterSurfaceCue,
   formatGForce,
   formatHeading,
@@ -283,6 +284,20 @@ describe('HUD value formatting', () => {
     expect(formatRadarContacts([
       { kind: 'city', label: 'CITY', distance: 800, bearing: 0, selected: true },
     ])).toBe('> CITY 800M ↑')
+  })
+
+  it('reuses radar copy while displayed distance and bearing buckets stay stable', () => {
+    const cache = createRadarContactsLabelCache()
+    const contacts = [{ kind: 'gate' as const, label: 'GATE', distance: 1240, bearing: 0 }]
+    const first = cache(contacts)
+    expect(first).toBe('GATE 1.2K ↑')
+    expect(cache(contacts)).toBe(first)
+    contacts[0].distance = 1210
+    expect(cache(contacts)).toBe(first)
+    contacts[0].distance = 1350
+    expect(cache(contacts)).toBe('GATE 1.4K ↑')
+    contacts[0].bearing = Math.PI / 2
+    expect(cache(contacts)).toBe('GATE 1.4K →')
   })
 
   it('keeps optional radar targets explicit in the navigation label', () => {
