@@ -77,6 +77,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - During flight, the HUD keeps the same distance and peak-G log live in a cached `LOG` row, so pilots can manage a record attempt without opening results.
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.
+- A deterministic `BUTTER LANDING` contract can now require a `BUTTER`-quality touchdown, reusing the existing bounded landing score without adding scene state.
 - Repeatable course selectors retain the fastest and highest recorded sortie, so route mastery includes how you fly, not only how quickly you finish.
 - New course speed and altitude records are called out on the results card without interrupting the existing badge handoff.
 - When `V` flight assist is enabled, the HUD keeps a quiet `TRIM ON` state visible after the toggle banner fades.

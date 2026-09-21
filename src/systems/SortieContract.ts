@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -47,6 +47,7 @@ const PRECISION_CHAIN_TARGET = 3
 const PRECISION_GATE_THRESHOLD = 0.82
 const NIGHT_MAX_DAYLIGHT = 0.38
 const NIGHT_TARGET_SECONDS = 12
+const BUTTER_LANDING_THRESHOLD = 0.92
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -74,6 +75,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'combo', label: 'COMBO RUN', target: COMBO_TARGET },
   { kind: 'precision', label: 'PRECISION CHAIN', target: PRECISION_CHAIN_TARGET },
   { kind: 'night', label: 'NIGHT FLIGHT', target: NIGHT_TARGET_SECONDS },
+  { kind: 'butter', label: 'BUTTER LANDING', target: BUTTER_LANDING_THRESHOLD },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -188,6 +190,8 @@ export class SortieContractTracker {
                           ? `CLEAR ${Math.round(target)} PERFECT GATES IN A ROW`
                         : base.kind === 'night'
                           ? `FLY AFTER DARK FOR ${Math.round(target)}S`
+                        : base.kind === 'butter'
+                          ? 'LAND WITH A BUTTER TOUCHDOWN'
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = base.kind === 'tour'
@@ -435,7 +439,7 @@ export class SortieContractTracker {
   }
 
   /** Resolve contracts whose success depends on the final touchdown telemetry. */
-  finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
+  finish(elapsedSec: number, fuelFraction: number, approachScore = 0, landingQuality = 0): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
     if (this.definition.kind === 'pace') {
       this.completeValue = Number.isFinite(elapsedSec) && elapsedSec <= this.definition.target
@@ -451,6 +455,10 @@ export class SortieContractTracker {
       const safeApproach = Number.isFinite(approachScore) ? Math.max(0, approachScore) : 0
       this.completeValue = safeApproach >= this.definition.target
       this.progressValue = clamp01(safeApproach / this.definition.target)
+    } else if (this.definition.kind === 'butter') {
+      const safeQuality = Number.isFinite(landingQuality) ? clamp01(landingQuality) : 0
+      this.completeValue = safeQuality >= this.definition.target
+      this.progressValue = clamp01(safeQuality / this.definition.target)
     }
     return this.completeValue ? MAX_CONTRACT_SCORE : 0
   }
@@ -495,8 +503,8 @@ function indexForSeed(seed: number): number {
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
-  // no-miss circuit, level-flight, settlement-tour, combo, precision, and
-  // night-flight objectives.
+  // no-miss circuit, level-flight, settlement-tour, combo, precision,
+  // night-flight, and butter-landing objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -518,6 +526,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 97 === 13) return 22
   if (mixed % 101 === 17) return 23
   if (mixed % 107 === 31) return 24
+  if (mixed % 109 === 47) return 25
   return mixed % legacyContractCount
 }
 

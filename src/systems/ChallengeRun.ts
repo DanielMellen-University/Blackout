@@ -1123,7 +1123,7 @@ export class ChallengeRun {
       ? Math.min(6_000, (this.bestCombo - 1) * 300)
       : 0
     const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
-    const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore)
+    const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore, landingQuality)
     const contractComplete = this.contract.enabled && this.contract.complete
     const history = this.readHistory()
     const contractStreakBonus = contractComplete

@@ -138,12 +138,17 @@ describe('sortie contracts', () => {
         tracker.recordLevelFlight(180, 5)
         tracker.recordLevelFlight(198, 5)
       }
-      const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
+      const score = tracker.finish(
+        0,
+        1,
+        tracker.kind === 'approach' ? 500 : 0,
+        tracker.kind === 'butter' ? 1 : 0,
+      )
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter']))
   })
 
   it('accumulates only airborne time through the dusk envelope', () => {
@@ -639,6 +644,27 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('requires a finite butter-quality touchdown for the landing contract', () => {
+    const tracker = new SortieContractTracker()
+    let butterSeed = -1
+    for (let seed = 0; seed < 2_048; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'butter') {
+        butterSeed = seed
+        break
+      }
+    }
+    expect(butterSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(butterSeed, 5)
+    expect(tracker.label).toBe('BUTTER LANDING')
+    expect(tracker.detail).toBe('LAND WITH A BUTTER TOUCHDOWN')
+    expect(tracker.finish(99, 1, 0, 0.91)).toBe(0)
+    expect(tracker.progress).toBeCloseTo(0.91 / 0.92)
+    expect(tracker.finish(99, 1, 0, 0.92)).toBe(MAX_CONTRACT_SCORE)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
   })
 
   it('does not assign a gate-only contract to a no-gate sortie', () => {
