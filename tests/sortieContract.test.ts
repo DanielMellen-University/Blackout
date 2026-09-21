@@ -35,6 +35,10 @@ describe('sortie contracts', () => {
       if (tracker.kind === 'altitude') tracker.recordAltitude(99_999)
       if (tracker.kind === 'stunt') tracker.recordStunt(99)
       if (tracker.kind === 'scout') tracker.recordDestination(99)
+      if (tracker.kind === 'tour') {
+        tracker.recordDestination(1, 'city')
+        tracker.recordDestination(2, 'village')
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -120,7 +124,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -511,6 +515,30 @@ describe('sortie contracts', () => {
     tracker.recordLevelFlight(340, 5)
     expect(tracker.progress).toBeCloseTo(0.5)
     tracker.recordLevelFlight(322, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('requires both settlement tiers for a settlement tour', () => {
+    const tracker = new SortieContractTracker()
+    let tourSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'tour') {
+        tourSeed = seed
+        break
+      }
+    }
+    expect(tourSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(tourSeed, 5)
+    expect(tracker.label).toBe('SETTLEMENT TOUR')
+    expect(tracker.detail).toBe('VISIT ONE CITY AND ONE VILLAGE')
+    tracker.recordDestination(1, 'city')
+    expect(tracker.progress).toBeCloseTo(0.5)
+    tracker.recordDestination(2, 'city')
+    expect(tracker.progress).toBeCloseTo(0.5)
+    tracker.recordDestination(2, 'village')
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)

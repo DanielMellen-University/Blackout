@@ -825,6 +825,38 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires city and village arrivals into the settlement-tour contract', () => {
+    const run = new ChallengeRun(null)
+    let tourSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:tour-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT SETTLEMENT TOUR') {
+        tourSeed = seed
+        break
+      }
+    }
+    expect(tourSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:tour-contract', 1, 'balanced', tourSeed)
+    run.update(0.1, 8)
+    run.recordDestination('city')
+    expect(run.contractProgress).toBeCloseTo(0.5)
+    run.recordDestination('city')
+    expect(run.contractProgress).toBeCloseTo(0.5)
+    run.recordDestination('village')
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('SETTLEMENT TOUR')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('tour')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('marks a clean-circuit contract failed after a missed gate', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1

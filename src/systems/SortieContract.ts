@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -63,6 +63,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'mach', label: 'MACH RUN', target: MACH_TARGET_SECONDS },
   { kind: 'clean', label: 'CLEAN CIRCUIT', target: 1 },
   { kind: 'level', label: 'LEVEL FLIGHT', target: LEVEL_TARGET_SECONDS },
+  { kind: 'tour', label: 'SETTLEMENT TOUR', target: 2 },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -88,6 +89,8 @@ export class SortieContractTracker {
   private cleanFailed = false
   private levelSeconds = 0
   private levelReferenceM = Number.NaN
+  private visitedCity = false
+  private visitedVillage = false
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -111,6 +114,8 @@ export class SortieContractTracker {
     this.cleanFailed = false
     this.levelSeconds = 0
     this.levelReferenceM = Number.NaN
+    this.visitedCity = false
+    this.visitedVillage = false
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -161,6 +166,8 @@ export class SortieContractTracker {
                           ? 'CLEAR EVERY GATE WITHOUT A MISS'
                         : base.kind === 'level'
                           ? `HOLD ${Math.round(LEVEL_MIN_ALTITUDE_M)}-${Math.round(LEVEL_MAX_ALTITUDE_M)}M WITHIN +/-${Math.round(LEVEL_MAX_DRIFT_M)}M FOR ${Math.round(target)}S`
+                        : base.kind === 'tour'
+                          ? 'VISIT ONE CITY AND ONE VILLAGE'
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = detail
@@ -179,10 +186,19 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
-  recordDestination(count: number): void {
-    if (this.definition?.kind !== 'scout' || this.completeValue || !Number.isFinite(count)) return
-    this.progressValue = clamp01(count / this.definition.target)
-    if (this.progressValue >= 1) this.completeValue = true
+  recordDestination(count: number, kind?: 'city' | 'village'): void {
+    if (this.completeValue) return
+    if (this.definition?.kind === 'scout') {
+      if (!Number.isFinite(count)) return
+      this.progressValue = clamp01(count / this.definition.target)
+      if (this.progressValue >= 1) this.completeValue = true
+      return
+    }
+    if (this.definition?.kind !== 'tour' || (kind !== 'city' && kind !== 'village')) return
+    if (kind === 'city') this.visitedCity = true
+    if (kind === 'village') this.visitedVillage = true
+    this.progressValue = (this.visitedCity ? 0.5 : 0) + (this.visitedVillage ? 0.5 : 0)
+    if (this.visitedCity && this.visitedVillage) this.completeValue = true
   }
 
   /** Update the biome-tour objective from the bounded distinct-biome count. */
@@ -423,7 +439,7 @@ function indexForSeed(seed: number): number {
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
-  // no-miss circuit and level-flight objectives.
+  // no-miss circuit, level-flight, and settlement-tour objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -441,6 +457,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 73 === 23) return 18
   if (mixed % 79 === 29) return 19
   if (mixed % 83 === 71) return 20
+  if (mixed % 89 === 7) return 21
   return mixed % legacyContractCount
 }
 

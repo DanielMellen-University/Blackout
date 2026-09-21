@@ -901,7 +901,7 @@ export class ChallengeRun {
     const wasComplete = this.contract.complete
     this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
     this.destinationCount += 1
-    this.contract.recordDestination(this.destinationCount)
+    this.contract.recordDestination(this.destinationCount, kind)
     this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
