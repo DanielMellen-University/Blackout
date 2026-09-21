@@ -84,12 +84,13 @@ describe('sortie contracts', () => {
         tracker.recordGControl(2, 180, 5)
         tracker.recordGControl(2, 180, 5)
       }
+      if (tracker.kind === 'deadstick') tracker.recordDeadstick(0, true)
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -328,6 +329,29 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBe(1)
     tracker.finish(99, 0)
     expect(tracker.complete).toBe(true)
+  })
+
+  it('keeps the deadstick contract open until an airborne fuel-out', () => {
+    const tracker = new SortieContractTracker()
+    let deadstickSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'deadstick') {
+        deadstickSeed = seed
+        break
+      }
+    }
+    expect(deadstickSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(deadstickSeed, 5)
+    expect(tracker.label).toBe('DEADSTICK')
+    tracker.recordDeadstick(0, false)
+    expect(tracker.complete).toBe(false)
+    tracker.recordDeadstick(0.01, true)
+    expect(tracker.complete).toBe(false)
+    tracker.recordDeadstick(0, true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {

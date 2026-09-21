@@ -29,6 +29,7 @@
 - Add a bounded GO AROUND cue for unstable low approaches, preserving predictive terrain-closure priority and the existing audio budget.
 - Add a deterministic CROSSWIND contract that rewards bounded airborne time through meaningful runway-relative wind without adding scene work.
 - Add a deterministic G CONTROL contract that rewards bounded high-speed flight inside the existing smoothed load envelope without changing physics.
+- Add a deterministic DEADSTICK contract that requires airborne fuel exhaustion before the scored landing, reusing existing glide guidance.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

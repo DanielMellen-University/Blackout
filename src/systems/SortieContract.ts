@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -48,6 +48,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'heat', label: 'THERMAL CONTROL', target: HEAT_TARGET_SECONDS },
   { kind: 'crosswind', label: 'CROSSWIND', target: CROSSWIND_TARGET_SECONDS },
   { kind: 'g-control', label: 'G CONTROL', target: G_CONTROL_TARGET_SECONDS },
+  { kind: 'deadstick', label: 'DEADSTICK', target: 1 },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -65,6 +66,7 @@ export class SortieContractTracker {
   private heatSeconds = 0
   private crosswindSeconds = 0
   private gControlSeconds = 0
+  private deadstickTriggered = false
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -80,6 +82,7 @@ export class SortieContractTracker {
     this.heatSeconds = 0
     this.crosswindSeconds = 0
     this.gControlSeconds = 0
+    this.deadstickTriggered = false
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -115,6 +118,8 @@ export class SortieContractTracker {
                           ? `HOLD CROSSWIND ABOVE ${Math.round(CROSSWIND_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
                         : base.kind === 'g-control'
                           ? `HOLD ${Math.round(G_CONTROL_MIN_MPS * 1.943844492)}+ KTS BETWEEN ${G_CONTROL_MIN}G AND ${G_CONTROL_MAX}G FOR ${Math.round(target)}S`
+                        : base.kind === 'deadstick'
+                          ? 'GLIDE TO BASE AFTER FUEL OUT'
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = detail
@@ -237,6 +242,15 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
+  /** Complete only after an airborne sortie actually runs the tank dry. */
+  recordDeadstick(fuelFraction: number, airborne = true): void {
+    if (this.definition?.kind !== 'deadstick' || this.completeValue || !airborne || this.deadstickTriggered) return
+    if (!Number.isFinite(fuelFraction) || fuelFraction > 0.0001) return
+    this.deadstickTriggered = true
+    this.progressValue = 1
+    this.completeValue = true
+  }
+
   /** Resolve contracts whose success depends on the final touchdown telemetry. */
   finish(elapsedSec: number, fuelFraction: number, approachScore = 0): number {
     if (!this.definition || this.completeValue) return this.completeValue ? MAX_CONTRACT_SCORE : 0
@@ -293,7 +307,7 @@ function indexForSeed(seed: number): number {
   // Preserve the original five-contract mapping for existing seeds while
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
-  // crosswind, and G-control objectives.
+  // crosswind, G-control, and deadstick objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -305,6 +319,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 43 === 31) return 12
   if (mixed % 47 === 37) return 13
   if (mixed % 53 === 41) return 14
+  if (mixed % 59 === 47) return 15
   return mixed % legacyContractCount
 }
 

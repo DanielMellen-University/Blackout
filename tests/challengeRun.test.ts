@@ -704,6 +704,36 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires fuel-out recovery into the deadstick contract', () => {
+    const run = new ChallengeRun(null)
+    let deadstickSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:deadstick-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT DEADSTICK') {
+        deadstickSeed = seed
+        break
+      }
+    }
+    expect(deadstickSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:deadstick-contract', 1, 'balanced', deadstickSeed)
+    run.update(0.1, 8)
+    run.update(1, 180, 180, 0, 0, false, false, 0, 0, 1, 0)
+    expect(run.contractComplete).toBe(false)
+    run.update(1, 180, 180, 0, 0, false, true, 0, 0, 1, 0.00005)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('DEADSTICK')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    }, 0)
+    expect(result?.contractKind).toBe('deadstick')
+    expect(result?.contractComplete).toBe(true)
+    expect(result?.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires a centered touchdown into the precision-approach contract', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1

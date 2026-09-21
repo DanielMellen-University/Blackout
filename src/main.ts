@@ -1262,6 +1262,7 @@ async function boot(): Promise<void> {
           aircraft.engineHeat.fraction,
           crosswindSpeedMps(weather.windX, weather.windZ, world.spawn.yaw),
           aircraft.loadFactor,
+          aircraft.fuel.fraction,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }
