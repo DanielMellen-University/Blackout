@@ -85,6 +85,7 @@ import {
   pilotRankForProgress,
   pilotRankLabel,
   pilotRankNextGoalLabel,
+  type PilotRank,
   type PilotCareerProgress,
 } from './systems/CareerProgression'
 import {
@@ -265,6 +266,7 @@ async function boot(): Promise<void> {
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
   const titleProgress = document.getElementById('title-progress')
+  let currentPilotRank: PilotRank = 'cadet'
   const refreshCourseProgress = (): void => {
     if (!titleProgress) return
     const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
@@ -304,6 +306,7 @@ async function boot(): Promise<void> {
     career.completedCourses = completed
     career.legendCourses = mastered
     const rank = pilotRankForProgress(career)
+    currentPilotRank = rank
     const rankLabel = pilotRankLabel(rank)
     const nextRank = pilotRankNextGoalLabel(rank)
     const badgeTotal = curated.length * MASTERY_BADGE_COUNT
@@ -1246,8 +1249,8 @@ async function boot(): Promise<void> {
                   : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
               )
               if (flightRecordCueLabel(finished) || finished.masteryTierPromoted) audio.playCue('milestone')
-              results.show(finished)
               refreshCourseUi()
+              results.show(finished, currentPilotRank)
               syncInputContext()
               break
             }

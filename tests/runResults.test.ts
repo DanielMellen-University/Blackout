@@ -198,6 +198,20 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('repeats the repaired career rank in the score breakdown', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show(result, 'ace')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
+      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · CAREER ACE')
+
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('dispatches replay sharing through a disposable results action', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
