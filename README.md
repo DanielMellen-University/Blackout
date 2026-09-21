@@ -82,6 +82,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Free-flight HUD and results copy identify scenic sorties clearly, while the same safe landing handoff and score detail remain intact.
 - Airborne climb milestones at 500M, 1,500M, 3,000M, and 6,000M give free flight short-lived reward cues and retain the highest reached tier in results.
 - Press `Y` during flight to copy a replay link. Opening it restores the same procedural world seed and route.
+- Replay links also preserve the selected curated route profile, so a shared course reopens with the same gates and deterministic contract instead of only matching terrain.
 - The results screen also offers `Copy replay link`, so a completed sortie can be shared after landing.
 - Chain clean gates and barrel rolls within 8 seconds to build combo rewards and a capped score bonus.
 - Completed landings award a small capped fuel-efficiency bonus for preserving reserve through the sortie.

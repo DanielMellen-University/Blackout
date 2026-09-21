@@ -204,10 +204,13 @@ async function boot(): Promise<void> {
   }
 
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
+  const replayCourseId = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search).get('course')
+    : null
   let replaySeed = parseWorldSeed(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('seed') : null,
   )
-  if (replaySeed !== null) selectedCourseId = 'random'
+  if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
 
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
@@ -329,7 +332,10 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
-  if (replaySeed !== null) world.reseed(replaySeed)
+  if (replaySeed !== null) {
+    const replayCourse = courseDefinitionForId(selectedCourseId)
+    world.reseed(replaySeed, replayCourse.profile ?? undefined)
+  }
   applyShadowQuality = (mapSize: number): void => {
     const safeSize = Number.isFinite(mapSize) ? Math.max(256, Math.floor(mapSize)) : 1024
     if (world.sun.shadow.mapSize.x === safeSize && world.sun.shadow.mapSize.y === safeSize) return
@@ -499,7 +505,7 @@ async function boot(): Promise<void> {
     const seed = world.worldSeed
     const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
     const href = typeof window !== 'undefined' ? window.location.href : ''
-    void copyWorldSeedLink(seed, clipboard, href).then((copied) => {
+    void copyWorldSeedLink(seed, clipboard, href, selectedCourseId).then((copied) => {
       if (disposed || !shareReplayButton) return
       shareReplayButton.textContent = copied ? 'Replay link copied' : 'Copy blocked'
       shareReplayButton.setAttribute(
@@ -708,9 +714,10 @@ async function boot(): Promise<void> {
 
   const resetFlight = (newWorld: boolean, briefing = false): void => {
     results.hide()
+    const replaying = replaySeed !== null
     if (newWorld) {
       const course = courseDefinitionForId(selectedCourseId)
-      world.reseed(course.seed ?? undefined, course.profile ?? undefined)
+      world.reseed(replaying ? replaySeed! : course.seed ?? undefined, course.profile ?? undefined)
       replaySeed = null
       debug?.syncPad()
     } else {
@@ -767,7 +774,9 @@ async function boot(): Promise<void> {
     time.reset()
     if (briefing) {
       const resetLabel = newWorld
-        ? 'NEW WORLD'
+        ? replaying
+          ? `REPLAY SEED ${formatWorldSeed(world.worldSeed)}`
+          : 'NEW WORLD'
         : replaySeed !== null
           ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
           : 'RETRY SAME COURSE'
@@ -1036,7 +1045,7 @@ async function boot(): Promise<void> {
         const seed = world.worldSeed
         const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
         const href = typeof window !== 'undefined' ? window.location.href : ''
-        void copyWorldSeedLink(seed, clipboard, href).then((copied) => {
+        void copyWorldSeedLink(seed, clipboard, href, selectedCourseId).then((copied) => {
           if (disposed) return
           showBanner(
             copied

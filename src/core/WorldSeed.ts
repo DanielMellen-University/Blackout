@@ -16,11 +16,16 @@ export function parseWorldSeed(value: unknown): number | null {
 }
 
 /** Build a replay URL while preserving the current app route and diagnostics. */
-export function worldSeedReplayUrl(href: string, seed: number): string | null {
+export function worldSeedReplayUrl(href: string, seed: number, courseId?: string): string | null {
   if (typeof href !== 'string' || href.trim() === '' || !Number.isFinite(seed)) return null
   try {
     const url = new URL(href)
     url.searchParams.set('seed', formatWorldSeed(seed))
+    if (typeof courseId === 'string' && /^[a-z0-9-]{1,32}$/.test(courseId) && courseId !== 'random') {
+      url.searchParams.set('course', courseId)
+    } else {
+      url.searchParams.delete('course')
+    }
     return url.toString()
   } catch {
     return null
@@ -46,8 +51,9 @@ export async function copyWorldSeedLink(
   seed: number,
   clipboard: ClipboardWriter | null | undefined,
   href: string,
+  courseId?: string,
 ): Promise<boolean> {
-  const link = worldSeedReplayUrl(href, seed)
+  const link = worldSeedReplayUrl(href, seed, courseId)
   if (!link || !clipboard || typeof clipboard.writeText !== 'function') return false
   try {
     await clipboard.writeText(link)

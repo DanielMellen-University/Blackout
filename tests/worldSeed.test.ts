@@ -37,10 +37,14 @@ describe('world seed sharing', () => {
     const link = worldSeedReplayUrl(href, 1234.9)
     expect(link).toContain('/dev/terrain.html?debug=1&seed=1234')
     expect(link).toContain('#flight')
+    const courseLink = worldSeedReplayUrl(href, 1234.9, 'coastal-run')
+    expect(courseLink).toContain('seed=1234')
+    expect(courseLink).toContain('course=coastal-run')
+    expect(worldSeedReplayUrl(href, 1234, 'not a course')).not.toContain('course=')
 
     const writeText = vi.fn(async () => {})
-    await expect(copyWorldSeedLink(1234.9, { writeText }, href)).resolves.toBe(true)
-    expect(writeText).toHaveBeenCalledWith(link)
+    await expect(copyWorldSeedLink(1234.9, { writeText }, href, 'river-run')).resolves.toBe(true)
+    expect(writeText).toHaveBeenCalledWith(worldSeedReplayUrl(href, 1234.9, 'river-run'))
     await expect(copyWorldSeedLink(1234, { writeText }, 'not a URL')).resolves.toBe(false)
   })
 
