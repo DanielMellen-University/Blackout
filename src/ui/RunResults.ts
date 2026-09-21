@@ -7,6 +7,17 @@ import {
   type ChallengeResult,
 } from '../systems/ChallengeRun'
 
+/** Return the compact telemetry records that deserve a touchdown cue. */
+export function flightRecordCueLabel(
+  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord'>,
+): string {
+  return [
+    result.newFlightDistanceRecord ? 'DISTANCE' : '',
+    result.newPositiveGRecord ? 'POS G' : '',
+    result.newNegativeGRecord ? 'NEG G' : '',
+  ].filter(Boolean).join(' / ')
+}
+
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
 const FUEL_CLASSES = ['fuel-healthy', 'fuel-low', 'fuel-critical'] as const
 

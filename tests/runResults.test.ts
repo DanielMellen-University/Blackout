@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { formatDistance, resultFuelBandClass, RunResults } from '../src/ui/RunResults'
+import {
+  flightRecordCueLabel,
+  formatDistance,
+  resultFuelBandClass,
+  RunResults,
+} from '../src/ui/RunResults'
 
 class FakeClassList {
   private readonly values = new Set<string>()
@@ -138,6 +143,12 @@ describe('run results focus flow', () => {
     expect(formatDistance(420)).toBe('420M')
     expect(formatDistance(2_450)).toBe('2.5KM')
     expect(formatDistance(Number.NaN)).toBe('0M')
+  })
+
+  it('only cues new flight telemetry records', () => {
+    expect(flightRecordCueLabel({})).toBe('')
+    expect(flightRecordCueLabel({ newFlightDistanceRecord: true })).toBe('DISTANCE')
+    expect(flightRecordCueLabel({ newPositiveGRecord: true, newNegativeGRecord: true })).toBe('POS G / NEG G')
   })
 
   it('traps Tab and restores the flight focus target when hidden', () => {

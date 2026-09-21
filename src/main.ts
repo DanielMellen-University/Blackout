@@ -117,7 +117,7 @@ import {
   type NavigationSpeedCue,
   type NavigationGlideCue,
 } from './ui/HUD'
-import { RunResults } from './ui/RunResults'
+import { flightRecordCueLabel, RunResults } from './ui/RunResults'
 import {
   RADAR_RANGE_METERS,
   RADAR_UPDATE_INTERVAL_MS,
@@ -1179,6 +1179,7 @@ async function boot(): Promise<void> {
                   ? 'landing-soft'
                   : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
               )
+              if (flightRecordCueLabel(finished)) audio.playCue('milestone')
               results.show(finished)
               refreshCourseSelectorLabels()
               refreshCourseProgress()
