@@ -9,6 +9,7 @@ export interface FlightComboEvent {
 /** Keep the airshow reward finite even if a malformed event source misbehaves. */
 export const MAX_COMBO_COUNT = 20
 export const COMBO_WINDOW_SEC = 8
+export const COMBO_WARNING_SEC = 2
 const COMBO_MILESTONES = [2, 4, 8, 12, 16] as const
 
 /** Event-driven combo tracking for clean gates and airborne stunts. */
@@ -17,18 +18,24 @@ export class FlightComboTracker {
   best = 0
   private nextMilestone = 0
   private quietSeconds = 0
+  private expiryWarningArmed = false
+  private expiryWarningPending = false
 
   reset(): void {
     this.current = 0
     this.best = 0
     this.nextMilestone = 0
     this.quietSeconds = 0
+    this.expiryWarningArmed = false
+    this.expiryWarningPending = false
   }
 
   break(): void {
     this.current = 0
     this.nextMilestone = 0
     this.quietSeconds = 0
+    this.expiryWarningArmed = false
+    this.expiryWarningPending = false
   }
 
   /** Expire an idle chain without allocating or touching the render path. */
@@ -37,8 +44,19 @@ export class FlightComboTracker {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 0.5)) : 0
     if (safeDt <= 0) return false
     this.quietSeconds += safeDt
+    if (!this.expiryWarningArmed && this.quietSeconds >= COMBO_WINDOW_SEC - COMBO_WARNING_SEC) {
+      this.expiryWarningArmed = true
+      this.expiryWarningPending = true
+    }
     if (this.quietSeconds < COMBO_WINDOW_SEC) return false
     this.break()
+    return true
+  }
+
+  /** Consume one warning when the live chain enters its final seconds. */
+  consumeExpiryWarning(): boolean {
+    if (!this.expiryWarningPending) return false
+    this.expiryWarningPending = false
     return true
   }
 
@@ -53,6 +71,8 @@ export class FlightComboTracker {
     this.current = Math.min(MAX_COMBO_COUNT, this.current + 1)
     this.best = Math.max(this.best, this.current)
     this.quietSeconds = 0
+    this.expiryWarningArmed = false
+    this.expiryWarningPending = false
     let milestone = false
     while (
       this.nextMilestone < COMBO_MILESTONES.length &&

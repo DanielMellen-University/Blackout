@@ -1231,7 +1231,9 @@ async function boot(): Promise<void> {
           audio.playCue('sonic-boom')
           if (!banner || bannerUntil <= nowMs) showBanner('MACH 1 / SONIC BOOM', 1500, 'success')
         }
-        if (combo.update(dt)) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
+        const comboExpired = combo.update(dt)
+        if (combo.consumeExpiryWarning()) showBanner('COMBO ENDING / HIT A GATE OR STUNT', 1100, 'info')
+        if (comboExpired) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
 
         const atAirfield = Math.hypot(
           aircraft.position.x - world.spawn.x,

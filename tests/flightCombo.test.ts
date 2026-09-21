@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMBO_WINDOW_SEC, FlightComboTracker, MAX_COMBO_COUNT } from '../src/systems/FlightCombo'
+import { COMBO_WARNING_SEC, COMBO_WINDOW_SEC, FlightComboTracker, MAX_COMBO_COUNT } from '../src/systems/FlightCombo'
 
 describe('FlightComboTracker', () => {
   it('emits only the authored milestone thresholds and keeps the chain bounded', () => {
@@ -56,5 +56,16 @@ describe('FlightComboTracker', () => {
     expect(combo.current).toBe(0)
     expect(combo.best).toBe(2)
     expect(combo.update(Number.NaN)).toBe(false)
+  })
+
+  it('emits one final-window warning without repeating it every frame', () => {
+    const combo = new FlightComboTracker()
+    combo.record('gate')
+    for (let i = 0; i < Math.floor((COMBO_WINDOW_SEC - COMBO_WARNING_SEC) / 0.5); i += 1) {
+      expect(combo.update(0.5)).toBe(false)
+    }
+    expect(combo.remainingSeconds).toBe(COMBO_WARNING_SEC)
+    expect(combo.consumeExpiryWarning()).toBe(true)
+    expect(combo.consumeExpiryWarning()).toBe(false)
   })
 })
