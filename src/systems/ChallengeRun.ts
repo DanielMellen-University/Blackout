@@ -760,6 +760,7 @@ export class ChallengeRun {
   private peakAltitudeM = 0
   private stuntRollCount = 0
   private bestCombo = 0
+  private contractStreakValue = 0
   private readonly contract = new SortieContractTracker()
   private contractCuePending = false
   private contractFailureCuePending = false
@@ -804,6 +805,10 @@ export class ChallengeRun {
     this.stuntRollCount = 0
     this.bestCombo = 0
     this.contract.reset(contractSeed, this.totalGates)
+    const history = this.readHistory()
+    this.contractStreakValue = this.contract.enabled
+      ? Math.min(MAX_CONTRACT_STREAK, Math.max(0, Math.floor(history.contractStreak ?? 0)))
+      : 0
     this.contractCuePending = false
     this.contractFailureCuePending = false
     this.gateSplits.length = 0
@@ -1099,6 +1104,7 @@ export class ChallengeRun {
     if (contractWins > 0) history.contractWins = contractWins
     history.contractStreak = contractStreak
     history.contractStreakRecord = courseBestContractStreak
+    this.contractStreakValue = contractStreak
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
     this.writeHistory(history)
@@ -1214,6 +1220,7 @@ export class ChallengeRun {
     if ((history.runStreak ?? 0) > 0 || (history.contractStreak ?? 0) > 0) {
       history.runStreak = 0
       history.contractStreak = 0
+      this.contractStreakValue = 0
       this.writeHistory(history)
     }
   }
@@ -1260,6 +1267,11 @@ export class ChallengeRun {
 
   get contractFailed(): boolean {
     return this.contract.failed
+  }
+
+  /** Cached completed-contract chain entering the current seeded sortie. */
+  get contractStreak(): number {
+    return this.contract.enabled ? this.contractStreakValue : 0
   }
 
   get contractBriefing(): string {

@@ -3,6 +3,8 @@ import {
   afterburnerHeatIntensity,
   biomeSurveyAriaLabel,
   biomeSurveyHudLabel,
+  contractStreakAriaLabel,
+  contractStreakHudLabel,
   canopyTintIntensity,
   canopyWeatherIntensity,
   crosswindDirection,
@@ -352,6 +354,14 @@ describe('HUD value formatting', () => {
     expect(contractDetailLabel(Number.NaN)).toBe('')
     expect(contractDetailAriaLabel('HOLD AFTERBURNER ABOVE 428 KTS FOR 8S'))
       .toBe('Contract instruction: hold afterburner above 428 kts for 8s')
+  })
+
+  it('keeps the persisted contract chain compact and finite', () => {
+    expect(contractStreakHudLabel(3)).toBe('X3')
+    expect(contractStreakHudLabel(Number.MAX_SAFE_INTEGER)).toBe('X1000')
+    expect(contractStreakHudLabel(Number.NaN)).toBe('--')
+    expect(contractStreakAriaLabel(3)).toBe('contract chain 3 completed')
+    expect(contractStreakAriaLabel(0)).toBe('no completed contract chain')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

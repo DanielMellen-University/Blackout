@@ -118,6 +118,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The live HUD now keeps the active contract objective and bounded completion percentage visible, then marks it DONE when the target is reached.
 - Completed bonus contracts now accumulate as bounded per-course wins, so mastering a route has a persistent progression target beyond the score.
 - Consecutive completed bonus contracts now build a bounded per-course contract streak; a failed landing or crash breaks the chain while the best streak stays recorded.
+- The live HUD now keeps the incoming contract chain visible as a compact CHAIN row, so replay pressure is readable before touchdown without per-frame storage work.
 - A successful landing with an empty tank now earns a capped `DEADSTICK` bonus, making engine-out recovery a meaningful risk-reward choice.
 - Course progress now resolves to Rookie, Pilot, Veteran, Ace, or Legend tiers from existing runs, scores, badges, and contract wins.
 - A fifth `Canyon run` route adds a low-weave precision circuit through the terrain, using the same fixed gate pool and clearance planner.

@@ -612,6 +612,7 @@ async function boot(): Promise<void> {
     contractProgress: 0,
     contractComplete: false,
     contractFailed: false,
+    contractStreak: 0,
     biomeCount: 0,
     navDist: 0,
     navBearing: null,
@@ -1692,6 +1693,7 @@ async function boot(): Promise<void> {
       hudFrame.contractProgress = challenge.contractProgress
       hudFrame.contractComplete = challenge.contractComplete
       hudFrame.contractFailed = challenge.contractFailed
+      hudFrame.contractStreak = challenge.contractStreak
       hudFrame.biomeCount = challenge.biomeCount
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.ghostPace = (

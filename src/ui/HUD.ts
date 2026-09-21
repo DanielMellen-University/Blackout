@@ -145,6 +145,18 @@ export function biomeSurveyAriaLabel(value: number): string {
   return `${safe} distinct biomes surveyed`
 }
 
+/** Keep the persisted contract chain compact and finite for the live HUD. */
+export function contractStreakHudLabel(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, Math.min(1_000, Math.floor(value))) : 0
+  return safe > 0 ? `X${safe}` : '--'
+}
+
+/** Describe the persisted contract chain without exposing storage details. */
+export function contractStreakAriaLabel(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, Math.min(1_000, Math.floor(value))) : 0
+  return safe > 0 ? `contract chain ${safe} completed` : 'no completed contract chain'
+}
+
 /** Restrict the navigation target label to the two supported route states. */
 export function navigationTargetLabel(target: unknown): 'NEXT GATE' | 'BASE' | 'CITY' | 'VILLAGE' {
   if (target === 'base') return 'BASE'
@@ -464,6 +476,8 @@ export class HUD {
   private readonly contractRowEl: HTMLElement | null
   private readonly contractEl: HTMLElement | null
   private readonly contractDetailEl: HTMLElement | null
+  private readonly contractStreakRowEl: HTMLElement | null
+  private readonly contractStreakEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -568,6 +582,9 @@ export class HUD {
   private contractText = ''
   private contractAriaText = ''
   private contractDetailText = ''
+  private contractStreakValue = -1
+  private contractStreakText = '--'
+  private contractStreakAriaText = 'no completed contract chain'
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
@@ -661,6 +678,8 @@ export class HUD {
     this.contractRowEl = root.getElementById('hud-contract-row')
     this.contractEl = root.getElementById('hud-contract')
     this.contractDetailEl = root.getElementById('hud-contract-detail')
+    this.contractStreakRowEl = root.getElementById('hud-contract-streak-row')
+    this.contractStreakEl = root.getElementById('hud-contract-streak')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -778,6 +797,8 @@ export class HUD {
     contractProgress?: number
     contractComplete?: boolean
     contractFailed?: boolean
+    /** Completed bonus-contract chain entering this sortie. */
+    contractStreak?: number
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
@@ -1090,6 +1111,19 @@ export class HUD {
         this.setAttribute(this.contractDetailEl, 'aria-label', contractDetailAriaLabel(this.contractDetailText))
         this.setHidden(this.contractDetailEl, !visible || this.contractDetailText.length === 0)
       }
+    }
+    if (this.contractStreakRowEl && this.contractStreakEl && opts.contractStreak !== undefined) {
+      const streak = Number.isFinite(opts.contractStreak)
+        ? Math.max(0, Math.min(1_000, Math.floor(opts.contractStreak!)))
+        : 0
+      if (streak !== this.contractStreakValue) {
+        this.contractStreakValue = streak
+        this.contractStreakText = contractStreakHudLabel(streak)
+        this.contractStreakAriaText = contractStreakAriaLabel(streak)
+      }
+      this.setHidden(this.contractStreakRowEl, streak <= 0)
+      this.setText(this.contractStreakEl, this.contractStreakText)
+      this.setAttribute(this.contractStreakEl, 'aria-label', this.contractStreakAriaText)
     }
     if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
       const count = Number.isFinite(opts.biomeCount)
