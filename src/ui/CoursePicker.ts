@@ -2,6 +2,7 @@ import {
   courseMasteryTierForProgress,
   courseMasteryTierLabel,
   courseMasteryNextTierLabel,
+  courseMasteryNextTierGoalLabel,
   formatTime,
   landingQualityLabel,
   MASTERY_BADGE_COUNT,
@@ -55,6 +56,7 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   })
   const tierLabel = tier === 'rookie' ? '' : courseMasteryTierLabel(tier)
   const nextTierLabel = courseMasteryNextTierLabel(tier)
+  const nextTierGoal = courseMasteryNextTierGoalLabel(tier)
 
   let meta = 'NEW'
   if (runs > 0) {
@@ -76,7 +78,7 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   if (streak >= 2) statsParts.push(`STREAK X${streak}`)
   if (contractStreak >= 2) statsParts.push(`CONTRACT X${contractStreak}`)
   if (tierLabel) statsParts.push(tierLabel)
-  if (nextTierLabel) statsParts.push(`NEXT ${nextTierLabel}`)
+  if (nextTierLabel) statsParts.push(`NEXT ${nextTierLabel}${nextTierGoal ? ` / ${nextTierGoal}` : ''}`)
   if (badgeCount > 0) statsParts.push(`${badgeCount}/${MASTERY_BADGE_COUNT} BADGES`)
   const flightLogLabel = courseFlightLogLabel(input.history)
   if (flightLogLabel) statsParts.push(flightLogLabel)

@@ -278,6 +278,14 @@ export function courseMasteryNextTierLabel(tier: CourseMasteryTier): string {
   return ''
 }
 
+/** Explain the next tier's bounded requirements without exposing storage details. */
+export function courseMasteryNextTierGoalLabel(tier: CourseMasteryTier): string {
+  if (tier === 'pilot') return '3 RUNS / 76K / 2 BADGES / LAND FIRM'
+  if (tier === 'veteran') return '5 RUNS / 88K / 3 BADGES / 2 CONTRACTS / LAND SMOOTH'
+  if (tier === 'ace') return '10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER'
+  return ''
+}
+
 function courseMasteryTierRank(tier: CourseMasteryTier): number {
   if (tier === 'legend') return 4
   if (tier === 'ace') return 3

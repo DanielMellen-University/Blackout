@@ -4,6 +4,7 @@ import {
   courseMasteryTierForProgress,
   courseMasteryTierLabel,
   courseMasteryNextTierLabel,
+  courseMasteryNextTierGoalLabel,
   deadstickLandingScore,
   formatPaceDelta,
   formatSplitTrace,
@@ -1756,6 +1757,8 @@ describe('ChallengeRun', () => {
     expect(courseMasteryNextTierLabel('pilot')).toBe('VETERAN')
     expect(courseMasteryNextTierLabel('ace')).toBe('LEGEND')
     expect(courseMasteryNextTierLabel('legend')).toBe('')
+    expect(courseMasteryNextTierGoalLabel('veteran')).toBe('5 RUNS / 88K / 3 BADGES / 2 CONTRACTS / LAND SMOOTH')
+    expect(courseMasteryNextTierGoalLabel('legend')).toBe('')
   })
 
   it('awards mastery badges from finite run quality thresholds', () => {
