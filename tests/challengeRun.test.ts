@@ -867,6 +867,36 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires the existing combo chain into the combo-run contract', () => {
+    const run = new ChallengeRun(null)
+    let comboSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:combo-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT COMBO RUN') {
+        comboSeed = seed
+        break
+      }
+    }
+    expect(comboSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:combo-contract', 1, 'balanced', comboSeed)
+    run.update(0.1, 8)
+    run.recordCombo(2)
+    expect(run.contractProgress).toBeCloseTo(2 / 3)
+    run.recordCombo(3)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('COMBO RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('combo')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('marks a clean-circuit contract failed after a missed gate', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1

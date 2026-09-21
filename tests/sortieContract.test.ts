@@ -39,6 +39,7 @@ describe('sortie contracts', () => {
         tracker.recordDestination(1, 'city')
         tracker.recordDestination(2, 'village')
       }
+      if (tracker.kind === 'combo') tracker.recordCombo(3)
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -124,7 +125,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -543,6 +544,30 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.detail).toBe('VISIT ONE CITY AND ONE VILLAGE / CITY OK / VILLAGE OK')
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('turns the existing combo chain into a bounded contract', () => {
+    const tracker = new SortieContractTracker()
+    let comboSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'combo') {
+        comboSeed = seed
+        break
+      }
+    }
+    expect(comboSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(comboSeed, 5)
+    expect(tracker.label).toBe('COMBO RUN')
+    expect(tracker.detail).toBe('BUILD COMBO X3')
+    tracker.recordCombo(2)
+    expect(tracker.progress).toBeCloseTo(2 / 3)
+    tracker.recordCombo(2)
+    expect(tracker.progress).toBeCloseTo(2 / 3)
+    tracker.recordCombo(3)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 

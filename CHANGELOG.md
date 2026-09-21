@@ -48,6 +48,7 @@
 - Add a deterministic SETTLEMENT TOUR contract that requires one city and one village arrival through existing radar destinations, with two bounded flags and no scene growth.
 - Make TERRAIN HUGGER use the already-cached rendered radio altitude, so low-pass progress follows ridges and valleys without adding terrain queries or allocations.
 - Keep SETTLEMENT TOUR's two destination tiers visible as cached OPEN or OK status in the TASK row and results without per-frame string work.
+- Add a deterministic COMBO RUN contract that rewards building a three-link gate-and-stunt chain through existing combo telemetry without adding scene state.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

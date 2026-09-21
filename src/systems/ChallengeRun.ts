@@ -893,7 +893,10 @@ export class ChallengeRun {
   /** Retain the highest event-driven clean-flight combo without trusting input. */
   recordCombo(combo: number): void {
     if (this.phase === 'complete' || this.phase === 'failed' || !Number.isFinite(combo)) return
+    const wasContractComplete = this.contract.complete
     this.bestCombo = Math.max(this.bestCombo, Math.min(MAX_COMBO_COUNT, Math.floor(combo)))
+    this.contract.recordCombo(this.bestCombo)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
   }
 
   /** Add one bounded reward when a selected streamed settlement is reached. */

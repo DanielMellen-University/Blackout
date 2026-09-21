@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -41,6 +41,7 @@ const LEVEL_MAX_ALTITUDE_M = 600
 const LEVEL_MAX_DRIFT_M = 24
 const LEVEL_TARGET_SECONDS = 10
 const SETTLEMENT_TOUR_DETAIL = 'VISIT ONE CITY AND ONE VILLAGE'
+const COMBO_TARGET = 3
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -65,6 +66,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'clean', label: 'CLEAN CIRCUIT', target: 1 },
   { kind: 'level', label: 'LEVEL FLIGHT', target: LEVEL_TARGET_SECONDS },
   { kind: 'tour', label: 'SETTLEMENT TOUR', target: 2 },
+  { kind: 'combo', label: 'COMBO RUN', target: COMBO_TARGET },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -169,6 +171,8 @@ export class SortieContractTracker {
                           ? `HOLD ${Math.round(LEVEL_MIN_ALTITUDE_M)}-${Math.round(LEVEL_MAX_ALTITUDE_M)}M WITHIN +/-${Math.round(LEVEL_MAX_DRIFT_M)}M FOR ${Math.round(target)}S`
                         : base.kind === 'tour'
                           ? SETTLEMENT_TOUR_DETAIL
+                        : base.kind === 'combo'
+                          ? `BUILD COMBO X${Math.round(target)}`
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
     this.detailValue = base.kind === 'tour'
@@ -203,6 +207,13 @@ export class SortieContractTracker {
     this.detailValue = settlementTourDetail(this.visitedCity, this.visitedVillage)
     this.progressValue = (this.visitedCity ? 0.5 : 0) + (this.visitedVillage ? 0.5 : 0)
     if (this.visitedCity && this.visitedVillage) this.completeValue = true
+  }
+
+  /** Turn the existing gate-and-stunt chain into a bounded arcade objective. */
+  recordCombo(combo: number): void {
+    if (this.definition?.kind !== 'combo' || this.completeValue || !Number.isFinite(combo)) return
+    this.progressValue = clamp01(Math.floor(combo) / this.definition.target)
+    if (this.progressValue >= 1) this.completeValue = true
   }
 
   /** Update the biome-tour objective from the bounded distinct-biome count. */
@@ -443,7 +454,7 @@ function indexForSeed(seed: number): number {
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
-  // no-miss circuit, level-flight, and settlement-tour objectives.
+  // no-miss circuit, level-flight, settlement-tour, and combo objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -462,6 +473,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 79 === 29) return 19
   if (mixed % 83 === 71) return 20
   if (mixed % 89 === 7) return 21
+  if (mixed % 97 === 13) return 22
   return mixed % legacyContractCount
 }
 
