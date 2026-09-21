@@ -12,6 +12,7 @@ import {
   altitudeCue,
   formatAudioState,
   formatRadarContacts,
+  formatRadarContactsAria,
   createRadarContactsLabelCache,
   waterSurfaceCue,
   formatGForce,
@@ -320,6 +321,14 @@ describe('HUD value formatting', () => {
     expect(formatRadarContacts([
       { kind: 'city', label: 'CITY', distance: 800, bearing: 0, selected: true },
     ])).toBe('> CITY 800M ↑')
+  })
+
+  it('describes radar lock state and direction without visual glyphs', () => {
+    expect(formatRadarContactsAria([
+      { kind: 'gate', label: 'GATE', distance: 1200, bearing: 0 },
+      { kind: 'city', label: 'CITY', distance: 800, bearing: Math.PI / 2, selected: true },
+    ])).toBe('Radar: gate 1.2k ahead; selected city 800m right')
+    expect(formatRadarContactsAria([])).toBe('Radar: no contacts')
   })
 
   it('reuses radar copy while displayed distance and bearing buckets stay stable', () => {

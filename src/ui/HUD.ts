@@ -103,6 +103,24 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
   return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
 }
 
+/** Give assistive technology the radar lock state without exposing the visual glyphs. */
+export function formatRadarContactsAria(contacts: readonly RadarContact[]): string {
+  const labels: string[] = []
+  const limit = Math.min(MAX_RADAR_CONTACTS, contacts.length)
+  for (let index = 0; index < limit; index += 1) {
+    const contact = contacts[index]
+    if (!contact) continue
+    const label = typeof contact.label === 'string' && contact.label.length > 0
+      ? contact.label.toLowerCase()
+      : 'contact'
+    const selected = contact.selected === true ? 'selected ' : ''
+    const distance = radarDistanceLabel(contact.distance).toLowerCase()
+    const direction = radarBearingDirection(contact.bearing)
+    labels.push(`${selected}${label} ${distance} ${direction}`)
+  }
+  return labels.length > 0 ? `Radar: ${labels.join('; ')}` : 'Radar: no contacts'
+}
+
 /** Reuse radar copy while contacts remain in the same visible display buckets. */
 export function createRadarContactsLabelCache(): (contacts: readonly RadarContact[]) => string {
   const previous = Array.from({ length: MAX_RADAR_CONTACTS }, () => ({
@@ -160,6 +178,14 @@ function radarBearingSector(bearing: number): number {
   if (safe > 0 && safe < Math.PI * .375) return 1
   if (safe < 0 && safe > -Math.PI * .375) return -1
   return safe > 0 ? 2 : -2
+}
+
+function radarBearingDirection(bearing: number): string {
+  const arrow = radarBearingArrow(bearing)
+  if (arrow === '↑') return 'ahead'
+  if (arrow === '↗' || arrow === '→') return 'right'
+  if (arrow === '↖' || arrow === '←') return 'left'
+  return 'behind'
 }
 
 /** Keep water crossings readable without exposing raw terrain metadata. */
@@ -1527,7 +1553,7 @@ export class HUD {
       const radarText = this.radarLabelCache(opts.radar)
       if (radarText !== this.radarText) {
         this.radarText = radarText
-        this.radarAriaText = radarText === 'NO CONTACTS' ? 'Radar: no contacts' : `Radar: ${radarText}`
+        this.radarAriaText = formatRadarContactsAria(opts.radar)
       }
       this.setText(this.radarEl, this.radarText)
       this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
