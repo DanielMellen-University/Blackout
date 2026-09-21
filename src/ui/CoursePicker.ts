@@ -11,6 +11,7 @@ import {
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from '../systems/SortieContract'
+import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
 import { WEATHER_LABELS, weatherIdForSeed } from '../world/WeatherDirector'
 
 export interface CoursePickerItem {
@@ -151,6 +152,8 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(contractStreakRecord) && contractStreakRecord! > 1) {
     parts.push(`CONTRACT STREAK X${Math.min(1_000, Math.floor(contractStreakRecord!))}`)
   }
+  const sortieStyle = normalizeSortieStyle(history.sortieStyle)
+  if (sortieStyle) parts.push(`STYLE ${sortieStyleLabel(sortieStyle)}`)
   return parts.length > 0 ? `LOG ${parts.join(' ')}` : ''
 }
 

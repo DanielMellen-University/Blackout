@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { sortieStyleForResult } from '../src/systems/FlightStyle'
+import {
+  normalizeSortieStyle,
+  sortieStyleForResult,
+  sortieStyleLabel,
+} from '../src/systems/FlightStyle'
 
 describe('sortie style debrief classifier', () => {
   it('prioritizes deadstick recovery over other telemetry', () => {
@@ -40,5 +44,12 @@ describe('sortie style debrief classifier', () => {
       landingQuality: Number.NaN,
       fuelRemainingPercent: Number.NaN,
     })).toEqual({ id: 'balanced', label: 'BALANCED', detail: 'HARD CIRCUIT' })
+  })
+
+  it('normalizes persisted style identifiers without leaking unknown values', () => {
+    expect(normalizeSortieStyle('explorer')).toBe('explorer')
+    expect(sortieStyleLabel('survivor')).toBe('SURVIVOR')
+    expect(normalizeSortieStyle('unknown')).toBeUndefined()
+    expect(normalizeSortieStyle(null)).toBeUndefined()
   })
 })

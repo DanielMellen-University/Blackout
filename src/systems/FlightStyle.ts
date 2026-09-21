@@ -1,6 +1,12 @@
-import { landingQualityLabel, type ChallengeResult } from './ChallengeRun'
-
 export type SortieStyleId = 'precision' | 'speed' | 'explorer' | 'survivor' | 'balanced'
+
+export const SORTIE_STYLE_IDS: readonly SortieStyleId[] = [
+  'precision',
+  'speed',
+  'explorer',
+  'survivor',
+  'balanced',
+]
 
 export interface SortieStyleSummary {
   id: SortieStyleId
@@ -8,23 +14,23 @@ export interface SortieStyleSummary {
   detail: string
 }
 
-type SortieStyleInput = Pick<ChallengeResult,
-  | 'landingQuality'
-  | 'landingLabel'
-  | 'bestPrecisionStreak'
-  | 'approachScore'
-  | 'destinationCount'
-  | 'biomeCount'
-  | 'peakSpeedKts'
-  | 'timeScore'
-  | 'scoringFocus'
-  | 'deadstickScore'
-  | 'fuelRemainingPercent'
->
+export interface SortieStyleInput {
+  landingQuality?: number
+  landingLabel?: string
+  bestPrecisionStreak?: number
+  approachScore?: number
+  destinationCount?: number
+  biomeCount?: number
+  peakSpeedKts?: number
+  timeScore?: number
+  scoringFocus?: 'balanced' | 'gates' | 'pace' | 'landing'
+  deadstickScore?: number
+  fuelRemainingPercent?: number
+}
 
 /**
  * Derive one stable debrief identity from telemetry the run already records.
- * This stays presentation-only: no simulation state or persistence is added.
+ * The classifier itself stays allocation-light and adds no simulation state.
  */
 export function sortieStyleForResult(result: SortieStyleInput): SortieStyleSummary {
   const landingQuality = clamp01(result.landingQuality)
@@ -38,7 +44,7 @@ export function sortieStyleForResult(result: SortieStyleInput): SortieStyleSumma
   const fuelRemaining = clampPercent(result.fuelRemainingPercent)
   const landingLabel = typeof result.landingLabel === 'string' && result.landingLabel.trim().length > 0
     ? result.landingLabel.trim().toUpperCase()
-    : landingQualityLabel(landingQuality)
+    : landingQualityBand(landingQuality)
 
   if (deadstickScore > 0) {
     return { id: 'survivor', label: 'SURVIVOR', detail: 'DEADSTICK RECOVERY' }
@@ -62,6 +68,16 @@ export function sortieStyleForResult(result: SortieStyleInput): SortieStyleSumma
   return { id: 'balanced', label: 'BALANCED', detail: `${landingLabel} CIRCUIT` }
 }
 
+export function normalizeSortieStyle(value: unknown): SortieStyleId | undefined {
+  return typeof value === 'string' && (SORTIE_STYLE_IDS as readonly string[]).includes(value)
+    ? value as SortieStyleId
+    : undefined
+}
+
+export function sortieStyleLabel(style: SortieStyleId): string {
+  return style.toUpperCase()
+}
+
 function clamp01(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value!)) : 0
 }
@@ -72,4 +88,11 @@ function clampPercent(value: number | undefined): number {
 
 function safeCount(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value!)) : 0
+}
+
+function landingQualityBand(value: number): string {
+  if (value >= 0.92) return 'BUTTER'
+  if (value >= 0.78) return 'SMOOTH'
+  if (value >= 0.6) return 'FIRM'
+  return 'HARD'
 }

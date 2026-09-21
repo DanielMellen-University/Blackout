@@ -7,7 +7,7 @@ import {
   type ChallengeResult,
 } from '../systems/ChallengeRun'
 import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
-import { sortieStyleForResult } from '../systems/FlightStyle'
+import { sortieStyleForResult, sortieStyleLabel } from '../systems/FlightStyle'
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
@@ -169,8 +169,14 @@ export class RunResults {
       `TIME +${result.timeScore.toLocaleString()}`,
       `LAND +${result.landingScore.toLocaleString()}`,
     ]
-    const sortieStyle = sortieStyleForResult(result)
+    const sortieStyle = result.sortieStyle
+      ? {
+          label: sortieStyleLabel(result.sortieStyle),
+          detail: result.sortieStyleDetail ?? '',
+        }
+      : sortieStyleForResult(result)
     scoreParts.push(`STYLE ${sortieStyle.label}`, sortieStyle.detail)
+    if (result.newSortieStyleRecord) scoreParts.push('STYLE RECORD')
     if (result.scoreCapped) scoreParts.push('SCORE CAP')
     if (pilotRank) scoreParts.push(`CAREER ${pilotRankLabel(pilotRank)}${pilotRankPromoted ? ' UP' : ''}`)
     if (result.newMedalRecord) scoreParts.push('NEW MEDAL')

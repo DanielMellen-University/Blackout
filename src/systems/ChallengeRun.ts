@@ -1,6 +1,11 @@
 import { MAX_STUNT_ROLLS } from './StuntTracker'
 import { MAX_COMBO_COUNT } from './FlightCombo'
 import { SortieContractTracker, type SortieContractKind } from './SortieContract'
+import {
+  normalizeSortieStyle,
+  sortieStyleForResult,
+  type SortieStyleId,
+} from './FlightStyle'
 import type { Biome } from '../world/terrainSample'
 
 export type ChallengePhase =
@@ -194,6 +199,14 @@ export interface ChallengeResult {
   courseMasteryTierLabel?: string
   /** Whether this sortie promoted the course to a higher mastery tier. */
   masteryTierPromoted?: boolean
+  /** Style identity derived from this sortie's existing bounded telemetry. */
+  sortieStyle?: SortieStyleId
+  /** Compact style detail used by the debrief. */
+  sortieStyleDetail?: string
+  /** Style identity attached to the persisted best-score record. */
+  courseBestSortieStyle?: SortieStyleId
+  /** Whether this sortie changed the persisted best-score style identity. */
+  newSortieStyleRecord?: boolean
   /** Best centered, aligned home-strip approach bonus recorded for this course. */
   courseBestApproachScore?: number
   /** Whether this sortie set a new course approach record. */
@@ -331,6 +344,8 @@ export interface CourseHistory {
   flightDistanceM?: number
   peakPositiveG?: number
   peakNegativeG?: number
+  /** Style attached to the persisted best-score record. */
+  sortieStyle?: SortieStyleId
 }
 
 interface ScoringWeights {
@@ -703,6 +718,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawFlightDistanceM = record.flightDistanceM
   const rawPeakPositiveG = record.peakPositiveG
   const rawPeakNegativeG = record.peakNegativeG
+  const rawSortieStyle = record.sortieStyle
   const hasBestTime = Object.prototype.hasOwnProperty.call(record, 'bestTimeSec')
   const hasPeakSpeed = Object.prototype.hasOwnProperty.call(record, 'peakSpeedKts')
   const hasPeakAltitude = Object.prototype.hasOwnProperty.call(record, 'peakAltitudeM')
@@ -721,6 +737,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasFlightDistance = Object.prototype.hasOwnProperty.call(record, 'flightDistanceM')
   const hasPeakPositiveG = Object.prototype.hasOwnProperty.call(record, 'peakPositiveG')
   const hasPeakNegativeG = Object.prototype.hasOwnProperty.call(record, 'peakNegativeG')
+  const hasSortieStyle = Object.prototype.hasOwnProperty.call(record, 'sortieStyle')
   const completionCount = typeof rawCompletionCount === 'number' && Number.isFinite(rawCompletionCount)
     ? Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(rawCompletionCount)))
     : 0
@@ -784,6 +801,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const peakNegativeG = typeof rawPeakNegativeG === 'number' && Number.isFinite(rawPeakNegativeG) && rawPeakNegativeG < 0
     ? Math.max(MIN_PEAK_NEGATIVE_G, Number(rawPeakNegativeG.toFixed(2)))
     : 0
+  const sortieStyle = normalizeSortieStyle(rawSortieStyle)
   const history: CourseHistory = { completionCount, bestTimeSec }
   if (peakSpeedKts > 0) history.peakSpeedKts = peakSpeedKts
   if (peakAltitudeM > 0) history.peakAltitudeM = peakAltitudeM
@@ -802,6 +820,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (flightDistanceM > 0) history.flightDistanceM = flightDistanceM
   if (peakPositiveG > 1) history.peakPositiveG = peakPositiveG
   if (peakNegativeG < 0) history.peakNegativeG = peakNegativeG
+  if (sortieStyle) history.sortieStyle = sortieStyle
   const needsRepair =
     typeof rawCompletionCount !== 'number' ||
     !Number.isFinite(rawCompletionCount) ||
@@ -828,8 +847,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasFlightDistance && (typeof rawFlightDistanceM !== 'number' || !Number.isFinite(rawFlightDistanceM) || rawFlightDistanceM <= 0 || rawFlightDistanceM !== flightDistanceM)) ||
     (hasPeakPositiveG && (typeof rawPeakPositiveG !== 'number' || !Number.isFinite(rawPeakPositiveG) || rawPeakPositiveG <= 1 || rawPeakPositiveG !== peakPositiveG)) ||
     (hasPeakNegativeG && (typeof rawPeakNegativeG !== 'number' || !Number.isFinite(rawPeakNegativeG) || rawPeakNegativeG >= 0 || rawPeakNegativeG !== peakNegativeG)) ||
+    (hasSortieStyle && !sortieStyle) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'fuelRemainingPercent' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'fuelRemainingPercent' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG' && key !== 'sortieStyle',
     )
   return {
     history,
@@ -838,7 +858,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
 }
 
 function serializeCourseHistory(history: CourseHistory): string {
-  const record: Record<string, number> = {
+  const record: Record<string, number | string> = {
     completionCount: Math.min(MAX_COMPLETION_COUNT, Math.max(0, Math.floor(history.completionCount))),
   }
   if (Number.isFinite(history.bestTimeSec) && history.bestTimeSec >= 0) {
@@ -903,6 +923,8 @@ function serializeCourseHistory(history: CourseHistory): string {
   if (Math.max(contractStreak, contractStreakRecord) > 0) {
     record.contractStreakRecord = Math.max(contractStreak, contractStreakRecord)
   }
+  const sortieStyle = normalizeSortieStyle(history.sortieStyle)
+  if (sortieStyle) record.sortieStyle = sortieStyle
   return JSON.stringify(record)
 }
 
@@ -1327,6 +1349,26 @@ export class ChallengeRun {
     const newFlightDistanceRecord = courseBestFlightDistanceM > previousFlightDistanceM
     const newPositiveGRecord = courseBestPositiveG > previousPeakPositiveG
     const newNegativeGRecord = courseBestNegativeG < previousPeakNegativeG
+    const sortieStyle = sortieStyleForResult({
+      landingQuality,
+      landingLabel: landingQualityLabel(landingQuality),
+      bestPrecisionStreak: this.bestGateQualityStreak,
+      approachScore,
+      destinationCount: this.destinationCount,
+      biomeCount: this.surveyedBiomeCount,
+      peakSpeedKts,
+      timeScore,
+      scoringFocus: this.scoringFocus,
+      deadstickScore,
+      fuelRemainingPercent,
+    })
+    const previousSortieStyle = normalizeSortieStyle(history.sortieStyle)
+    const courseBestSortieStyle = isNewBest || !previousSortieStyle
+      ? sortieStyle.id
+      : previousSortieStyle
+    const newSortieStyleRecord = !previousSortieStyle || (
+      isNewBest && previousSortieStyle !== sortieStyle.id
+    )
     if (courseBestPeakSpeedKts > 0) history.peakSpeedKts = courseBestPeakSpeedKts
     if (courseBestPeakAltitudeM > 0) history.peakAltitudeM = courseBestPeakAltitudeM
     if (courseBestStuntRolls > 0) history.stuntRolls = courseBestStuntRolls
@@ -1344,6 +1386,7 @@ export class ChallengeRun {
     if (courseBestFlightDistanceM > 0) history.flightDistanceM = courseBestFlightDistanceM
     if (courseBestPositiveG > 1) history.peakPositiveG = courseBestPositiveG
     if (courseBestNegativeG < 0) history.peakNegativeG = courseBestNegativeG
+    history.sortieStyle = courseBestSortieStyle
     this.contractStreakValue = contractStreak
     history.completionCount = Math.min(MAX_COMPLETION_COUNT, history.completionCount + 1)
     history.bestTimeSec = Math.min(history.bestTimeSec, elapsedSec)
@@ -1462,6 +1505,10 @@ export class ChallengeRun {
       courseMasteryTier,
       courseMasteryTierLabel: courseMasteryTierLabel(courseMasteryTier),
       masteryTierPromoted,
+      sortieStyle: sortieStyle.id,
+      sortieStyleDetail: sortieStyle.detail,
+      courseBestSortieStyle,
+      newSortieStyleRecord,
       courseBestApproachScore: courseBestApproachScore > 0 ? courseBestApproachScore : undefined,
       newApproachRecord,
       courseBestLandingQuality: courseBestLandingQuality > 0 ? courseBestLandingQuality : undefined,

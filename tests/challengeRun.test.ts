@@ -1320,7 +1320,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.courseBestApproachScore).toBe(MAX_APPROACH_SCORE)
     expect(firstResult.newApproachRecord).toBe(true)
     expect(values.get('blackout.history.seed:approach-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"approachScore":500,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}',
+      '{"completionCount":1,"bestTimeSec":0,"approachScore":500,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"precision"}',
     )
 
     const retry = new ChallengeRun(storage)
@@ -1508,7 +1508,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.courseBestStuntRolls).toBe(3)
     expect(firstResult.newStuntRecord).toBe(true)
     expect(values.get('blackout.history.seed:stunt-record')).toBe(
-      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}',
+      '{"completionCount":1,"bestTimeSec":0,"stuntRolls":3,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}',
     )
 
     const retry = new ChallengeRun(storage)
@@ -1685,7 +1685,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.completionCount).toBe(1)
     expect(firstResult.bestTimeSec).toBe(2)
     expect(store.get('blackout.trace.seed:trace')).toBe('[1,2]')
-    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}')
+    expect(store.get('blackout.history.seed:trace')).toBe('{"completionCount":1,"bestTimeSec":2,"peakSpeedKts":16,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}')
 
     const retry = new ChallengeRun(scoreStore)
     retry.reset('seed:trace', 2)
@@ -1803,6 +1803,48 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:repair:orbit')).toBe('{"completionCount":2}')
   })
 
+  it('persists the style attached to the best-score record', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
+    run.reset('seed:style-record', 1)
+    run.update(0.1, 120, 300)
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+
+    expect(result.sortieStyle).toBe('balanced')
+    expect(result.courseBestSortieStyle).toBe('balanced')
+    expect(result.newSortieStyleRecord).toBe(true)
+    expect(JSON.parse(values.get('blackout.history.seed:style-record')!)).toMatchObject({
+      sortieStyle: 'balanced',
+    })
+    expect(readCourseHistory(storage, 'seed:style-record')?.sortieStyle).toBe('balanced')
+  })
+
+  it('repairs an unknown persisted style without leaking it to the picker', () => {
+    const values = new Map<string, string>([
+      ['blackout.history.seed:style-repair', '{"completionCount":1,"bestTimeSec":12,"sortieStyle":"bogus"}'],
+    ])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+
+    expect(repairCourseHistory(storage, 'seed:style-repair')).toEqual({
+      completionCount: 1,
+      bestTimeSec: 12,
+    })
+    expect(values.get('blackout.history.seed:style-repair')).toBe('{"completionCount":1,"bestTimeSec":12}')
+  })
+
   it('keeps course peak records bounded across completed runs', () => {
     const values = new Map<string, string>()
     const storage = {
@@ -1824,7 +1866,7 @@ describe('ChallengeRun', () => {
     expect(firstResult.newPeakSpeedRecord).toBe(true)
     expect(firstResult.newPeakAltitudeRecord).toBe(true)
     expect(values.get('blackout.history.seed:peaks')).toBe(
-      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1}',
+      '{"completionCount":1,"bestTimeSec":0.1,"peakSpeedKts":233,"peakAltitudeM":300,"landingQuality":1,"fuelRemainingPercent":100,"runStreak":1,"runStreakRecord":1,"sortieStyle":"balanced"}',
     )
 
     const retry = new ChallengeRun(storage)

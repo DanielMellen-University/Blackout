@@ -73,6 +73,11 @@ describe('course picker copy', () => {
       bestTimeSec: 90,
       fuelRemainingPercent: 72,
     })).toBe('LOG FUEL 72%')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
+      sortieStyle: 'precision',
+    })).toBe('LOG STYLE PRECISION')
   })
 
   it('keeps unplayed worlds on short card meta without stuffing stats into the name', () => {
