@@ -43,6 +43,7 @@ import {
 } from './core/Time'
 import {
   ChallengeRun,
+  courseMasteryTierForProgress,
   COURSE_BADGES_STORAGE_PREFIX,
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
@@ -89,7 +90,7 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
-import { CoursePicker, coursePickerCopy } from './ui/CoursePicker'
+import { CoursePicker, courseMasteryProgressLabel, coursePickerCopy } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
@@ -244,19 +245,32 @@ async function boot(): Promise<void> {
   const refreshCourseProgress = (): void => {
     if (!titleProgress) return
     const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
-    const completed = curated.filter((course) => {
+    let completed = 0
+    let earnedBadges = 0
+    let mastered = 0
+    for (const course of curated) {
       const runId = courseRunId(course)
-      return runId !== null && (repairCourseHistory(qualityStorage, runId)?.completionCount ?? 0) > 0
-    }).length
-    const earnedBadges = curated.reduce((total, course) => {
-      const runId = courseRunId(course)
-      return total + (runId ? repairMasteryBadges(qualityStorage, runId).length : 0)
-    }, 0)
+      if (!runId) continue
+      const history = repairCourseHistory(qualityStorage, runId)
+      const badges = repairMasteryBadges(qualityStorage, runId)
+      const bestScore = repairBestCourseScore(qualityStorage, runId)
+      const runCount = history?.completionCount ?? 0
+      if (runCount > 0) completed += 1
+      earnedBadges += badges.length
+      if (courseMasteryTierForProgress({
+        completionCount: runCount,
+        bestScore,
+        badgeCount: badges.length,
+        contractWins: history?.contractWins,
+        landingQuality: history?.landingQuality,
+      }) === 'legend') mastered += 1
+    }
     const badgeTotal = curated.length * MASTERY_BADGE_COUNT
-    titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE · BADGES ${earnedBadges}/${badgeTotal}`
+    const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
+    titleProgress.textContent = `COURSES ${completed}/${curated.length} COMPLETE · BADGES ${earnedBadges}/${badgeTotal} · ${masteryLabel}`
     titleProgress.setAttribute(
       'aria-label',
-      `${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned`,
+      `${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery`,
     )
   }
   refreshCourseProgress()

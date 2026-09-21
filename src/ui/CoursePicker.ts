@@ -27,6 +27,13 @@ export interface CoursePickerCopyInput {
   bestPrecisionStreak: number
 }
 
+/** Format the bounded title-screen count of fully mastered curated courses. */
+export function courseMasteryProgressLabel(mastered: number, total: number): string {
+  const safeTotal = finiteCount(total)
+  const safeMastered = Math.min(safeTotal, finiteCount(mastered))
+  return `LEGEND ${safeMastered}/${safeTotal}`
+}
+
 /** Compact card meta plus a selected-world stats line, never a stuffed option label. */
 export function coursePickerCopy(input: CoursePickerCopyInput): {
   detail: string

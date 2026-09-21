@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { courseFlightLogLabel, coursePickerCopy } from '../src/ui/CoursePicker'
+import { courseFlightLogLabel, courseMasteryProgressLabel, coursePickerCopy } from '../src/ui/CoursePicker'
 
 const orbit = {
   seed: 1 as number | null,
@@ -8,6 +8,11 @@ const orbit = {
 }
 
 describe('course picker copy', () => {
+  it('formats a bounded title-screen mastery summary', () => {
+    expect(courseMasteryProgressLabel(3, 7)).toBe('LEGEND 3/7')
+    expect(courseMasteryProgressLabel(99, 4)).toBe('LEGEND 4/4')
+    expect(courseMasteryProgressLabel(Number.NaN, Number.POSITIVE_INFINITY)).toBe('LEGEND 0/0')
+  })
   it('previews persistent flight-log records when a course has them', () => {
     expect(courseFlightLogLabel({
       completionCount: 4,
