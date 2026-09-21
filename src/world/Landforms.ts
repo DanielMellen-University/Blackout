@@ -112,8 +112,9 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
   const ridgeBand = 1 - Math.abs(ridgeNoise * 2 - 1)
   const ridge = smoothstep(.58, .94, ridgeBand) * highlands
   const ridgeSpine = Math.pow(Math.max(0, smoothstep(.58, .94, ridgeBand)), 1.9) * highlands
-  const summit = .32 + fbm(wx / 4600 - 47, wz / 4600 + 116, 2) * .68
-  const summitRefined = .22 + fbm(wx / 4600 - 47, wz / 4600 + 116, 2) * .78
+  const summitNoise = fbm(wx / 4600 - 47, wz / 4600 + 116, 2)
+  const summit = .32 + summitNoise * .68
+  const summitRefined = .22 + summitNoise * .78
   const summitFold = fbm(wx / 2600 + 173, wz / 2600 - 94, 2)
   // A second, tighter scale breaks the broad massif field into linked peaks.
   // Keep this as a signed, bounded sculpt rather than a raw high-frequency
