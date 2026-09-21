@@ -85,6 +85,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Course cards now include the saved runway-approach record in their compact flight log, so centered landing skill has a visible repeatable target before launch.
 - Course cards also preview saved settlement and biome discovery records, keeping exploration mastery visible alongside flight and landing skill.
 - Course cards now preview saved barrel-roll and combo records too, making airshow and precision-chain mastery visible before launch.
+- Course cards now preview saved peak speed and altitude too, so high-speed and high-altitude route records remain visible before launch.
 - During flight, the HUD keeps the same distance and peak-G log live in a cached `LOG` row, so pilots can manage a record attempt without opening results.
 - Setting a new distance or G-load course record now adds one restrained milestone chime to the touchdown handoff, so the achievement is audible before the results card opens.
 - Airfield refueling now keeps a cached `REFUEL xx%` HUD row visible while the jet is stopped on the home strip, so the refill window stays readable after its banner fades.

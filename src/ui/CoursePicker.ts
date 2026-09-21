@@ -98,6 +98,12 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(history.flightDistanceM) && history.flightDistanceM! > 0) {
     parts.push(formatCourseDistance(history.flightDistanceM!))
   }
+  if (Number.isFinite(history.peakSpeedKts) && history.peakSpeedKts! > 0) {
+    parts.push(`TOP ${Math.min(20_000, Math.floor(history.peakSpeedKts!)).toLocaleString()}KT`)
+  }
+  if (Number.isFinite(history.peakAltitudeM) && history.peakAltitudeM! > 0) {
+    parts.push(`ALT ${Math.min(100_000, Math.floor(history.peakAltitudeM!)).toLocaleString()}M`)
+  }
   if (Number.isFinite(history.peakPositiveG) && history.peakPositiveG! > 1) {
     parts.push(`G+${history.peakPositiveG!.toFixed(1)}`)
   }
