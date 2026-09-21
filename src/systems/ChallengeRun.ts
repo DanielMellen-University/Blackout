@@ -144,6 +144,8 @@ export interface ChallengeResult {
   contractProgress?: number
   /** Finite bonus awarded for completing the assigned contract. */
   contractScore?: number
+  /** Capped bonus awarded for completing a contract while a chain is active. */
+  contractStreakBonus?: number
   /** Capped bonus for a successful landing after fuel exhaustion. */
   deadstickScore?: number
   /** Number of completed bonus contracts on this course after this run. */
@@ -198,6 +200,7 @@ export const MAX_BIOME_COUNT = 15
 export const MAX_RUN_STREAK = 1_000
 export const MAX_CONTRACT_WINS = 1_000
 export const MAX_CONTRACT_STREAK = 1_000
+export const MAX_CONTRACT_STREAK_BONUS = 1_000
 export const MAX_DEADSTICK_SCORE = 1_500
 export const MAX_STORED_GATE_SPLITS = 8
 
@@ -314,6 +317,12 @@ export function deadstickLandingScore(fuelFraction: number, landingQuality = 1):
   if (!Number.isFinite(fuelFraction) || !Number.isFinite(landingQuality)) return 0
   if (fuelFraction < 0 || fuelFraction > 0.001) return 0
   return Math.round(MAX_DEADSTICK_SCORE * clamp01(landingQuality))
+}
+
+/** Reward an active contract chain without allowing runaway score growth. */
+export function contractStreakBonusForStreak(streak: number): number {
+  if (!Number.isFinite(streak)) return 0
+  return Math.min(MAX_CONTRACT_STREAK_BONUS, Math.max(0, Math.floor(streak)) * 250)
 }
 
 /** Collapse the active front into one finite touchdown-risk scalar. */
@@ -1034,7 +1043,11 @@ export class ChallengeRun {
     const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
     const contractScore = this.contract.finish(elapsedSec, fuelFraction, approachScore)
     const contractComplete = this.contract.enabled && this.contract.complete
-    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + deadstickScore + this.destinationScore + biomeScore + contractScore
+    const history = this.readHistory()
+    const contractStreakBonus = contractComplete
+      ? contractStreakBonusForStreak(history.contractStreak ?? 0)
+      : 0
+    const totalScore = gateScore + timeScore + landingScore + stuntScore + comboScore + fuelScore + approachScore + weatherScore + nightScore + deadstickScore + this.destinationScore + biomeScore + contractScore + contractStreakBonus
     const previousBest = this.readBest()
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
@@ -1052,7 +1065,6 @@ export class ChallengeRun {
     if (courseBestPrecisionStreak > previousBestPrecisionStreak) {
       this.writeBestPrecisionStreak(courseBestPrecisionStreak)
     }
-    const history = this.readHistory()
     const peakSpeedKts = Math.round(this.peakSpeedMps * 1.943844492)
     const peakAltitudeM = Math.round(this.peakAltitudeM)
     const previousPeakSpeedKts = history.peakSpeedKts ?? 0
@@ -1196,6 +1208,7 @@ export class ChallengeRun {
       contractFailed: this.contract.enabled ? this.contract.failed : undefined,
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
       contractScore: contractScore > 0 ? contractScore : undefined,
+      contractStreakBonus: contractStreakBonus > 0 ? contractStreakBonus : undefined,
       deadstickScore: deadstickScore > 0 ? deadstickScore : undefined,
       contractWins: contractWins > 0 ? contractWins : undefined,
       courseBestContractWins: courseBestContractWins > 0 ? courseBestContractWins : undefined,

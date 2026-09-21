@@ -54,6 +54,7 @@
 - Add a deterministic NIGHT FLIGHT contract that rewards a bounded airborne stretch through the existing dusk and night envelope without adding scene work.
 - Persist a bounded per-course contract streak so consecutive bonus-contract clears create a replay target without adding render-loop or scene state.
 - Keep the current contract chain visible in a cached HUD row, with a bounded accessible label and no render-loop storage work.
+- Add a capped contract-chain score payout on top of the normal contract reward, keeping the first clear unchanged and making repeat mastery matter.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

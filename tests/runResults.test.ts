@@ -231,6 +231,7 @@ describe('run results focus flow', () => {
       contractComplete: true,
       contractProgress: 1,
       contractScore: 2_000,
+      contractStreakBonus: 250,
       contractWins: 3,
       courseBestContractWins: 4,
       contractStreak: 3,
@@ -274,6 +275,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT COMPLETE · FUEL SAVER')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('LAND WITH 75% FUEL')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT +2,000')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CHAIN +250')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEADSTICK +1,500')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT WINS X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACTS X4')

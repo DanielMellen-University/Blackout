@@ -30,6 +30,8 @@ import {
   MAX_BIOME_SCORE,
   MAX_CONTRACT_WINS,
   MAX_CONTRACT_STREAK,
+  MAX_CONTRACT_STREAK_BONUS,
+  contractStreakBonusForStreak,
   MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
@@ -1139,11 +1141,13 @@ describe('ChallengeRun', () => {
     expect(first.contractStreak).toBe(1)
     expect(first.courseBestContractStreak).toBe(1)
     expect(first.newContractStreakRecord).toBe(false)
+    expect(first.contractStreakBonus).toBeUndefined()
 
     const second = complete()
     expect(second.contractStreak).toBe(2)
     expect(second.courseBestContractStreak).toBe(2)
     expect(second.newContractStreakRecord).toBe(true)
+    expect(second.contractStreakBonus).toBe(250)
     expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreak":2')
     expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreakRecord":2')
 
@@ -1181,6 +1185,13 @@ describe('ChallengeRun', () => {
     crashed.fail()
     expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreak).toBeUndefined()
     expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreakRecord).toBe(MAX_CONTRACT_STREAK)
+  })
+
+  it('keeps contract chain payouts finite and capped', () => {
+    expect(contractStreakBonusForStreak(0)).toBe(0)
+    expect(contractStreakBonusForStreak(3)).toBe(750)
+    expect(contractStreakBonusForStreak(Number.NaN)).toBe(0)
+    expect(contractStreakBonusForStreak(Number.MAX_SAFE_INTEGER)).toBe(MAX_CONTRACT_STREAK_BONUS)
   })
 
   it('persists the best runway approach score and repairs oversized records', () => {

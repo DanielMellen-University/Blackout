@@ -248,6 +248,10 @@ export class RunResults {
         ? Math.max(0, Math.floor(result.contractScore!))
         : 0
       if (contractScore > 0) scoreParts.push(`CONTRACT +${contractScore.toLocaleString()}`)
+      const contractStreakBonus = Number.isFinite(result.contractStreakBonus)
+        ? Math.max(0, Math.floor(result.contractStreakBonus!))
+        : 0
+      if (contractStreakBonus > 0) scoreParts.push(`CHAIN +${contractStreakBonus.toLocaleString()}`)
     }
     const contractWins = Number.isFinite(result.contractWins)
       ? Math.max(0, Math.floor(result.contractWins!))
