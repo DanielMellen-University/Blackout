@@ -63,6 +63,7 @@ import {
   machLabel,
   machNumber,
   missionPaceLabel,
+  missionHudLabel,
   ghostPaceLabel,
   ghostPaceAriaLabel,
   contractProgressLabel,
@@ -369,6 +370,13 @@ describe('HUD value formatting', () => {
     expect(weatherTransitionLabel(true)).toBe('SHIFT')
     expect(weatherTransitionLabel(false)).toBe('')
     expect(weatherTransitionLabel(Number.NaN as unknown as boolean)).toBe('')
+  })
+
+  it('keeps route identity in the live mission row within a bounded label', () => {
+    expect(missionHudLabel('RIVER RUN', 'RANGE GATE 1/5', 'CONTRACT WATER RUN'))
+      .toBe('RIVER RUN · RANGE GATE 1/5 · CONTRACT WATER RUN')
+    expect(missionHudLabel('', '  TAKE OFF  ')).toBe('TAKE OFF')
+    expect(missionHudLabel('x'.repeat(200), 'y'.repeat(200))).toHaveLength(120)
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

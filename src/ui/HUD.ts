@@ -121,6 +121,14 @@ export function missionProgressText(current: number, total: number): string {
   return `${safeCurrent} of ${safeTotal} gates cleared`
 }
 
+/** Keep route identity visible in the live mission row without unbounded copy. */
+export function missionHudLabel(routeLabel: unknown, objective: unknown, contractLabel?: unknown): string {
+  const route = typeof routeLabel === 'string' ? routeLabel.trim() : ''
+  const task = typeof objective === 'string' ? objective.trim() : ''
+  const contract = typeof contractLabel === 'string' ? contractLabel.trim() : ''
+  return [route, task, contract].filter(Boolean).join(' · ').slice(0, 120)
+}
+
 /** Keep the live combo readout finite and compact for visual and assistive output. */
 export function comboHudLabel(value: number): string {
   const safe = Number.isFinite(value)

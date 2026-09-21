@@ -57,6 +57,7 @@
 - Add a capped contract-chain score payout on top of the normal contract reward, keeping the first clear unchanged and making repeat mastery matter.
 - Mark active weather-front blending as SHIFT in the cached weather readout, with an accessible front-shifting label and no scene or audio work.
 - Include the existing terrain-validated COASTAL and RIVER route profiles in random sortie rotation, adding variety without new scene geometry or draw calls.
+- Keep the active route profile name in the bounded live mission row, making newly randomized coastal and river lines readable after briefing banners fade.
 - Double terrain streaming radius from 16.8 km to 33.6 km with larger outer tiles and bounded far-water detail.
 - Generate terrain and water geometry in background workers, transfer mesh buffers without copying, and prioritize nearby chunks with bounded render-thread uploads.
 - Fade new chunks in over 650 ms and retain old terrain through detail transitions.

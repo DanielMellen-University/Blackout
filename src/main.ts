@@ -94,6 +94,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   hudBackgroundHidden,
   HUD,
+  missionHudLabel,
   machNumber,
   engineHeatBanner,
   engineHeatCue,
@@ -1689,7 +1690,11 @@ async function boot(): Promise<void> {
       hudFrame.windZ = precipitation.windZ
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       const contractLabel = challenge.contractLabel
-      hudFrame.mission = `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}${contractLabel ? ` · ${contractLabel}` : ''}`
+      hudFrame.mission = missionHudLabel(
+        world.mission.routeSummary.label,
+        `${world.mission.routeSummary.challengeLabel} ${challenge.objectiveLabel}`,
+        contractLabel,
+      )
       hudFrame.contractLabel = contractLabel
       hudFrame.contractDetail = challenge.contractDetail ?? ''
       hudFrame.contractProgress = challenge.contractProgress
