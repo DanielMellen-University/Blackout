@@ -40,6 +40,7 @@ const LEVEL_MIN_ALTITUDE_M = 180
 const LEVEL_MAX_ALTITUDE_M = 600
 const LEVEL_MAX_DRIFT_M = 24
 const LEVEL_TARGET_SECONDS = 10
+const SETTLEMENT_TOUR_DETAIL = 'VISIT ONE CITY AND ONE VILLAGE'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -167,10 +168,12 @@ export class SortieContractTracker {
                         : base.kind === 'level'
                           ? `HOLD ${Math.round(LEVEL_MIN_ALTITUDE_M)}-${Math.round(LEVEL_MAX_ALTITUDE_M)}M WITHIN +/-${Math.round(LEVEL_MAX_DRIFT_M)}M FOR ${Math.round(target)}S`
                         : base.kind === 'tour'
-                          ? 'VISIT ONE CITY AND ONE VILLAGE'
+                          ? SETTLEMENT_TOUR_DETAIL
                         : 'LAND CENTERED AND ALIGNED'
     this.definition = { ...base, target, detail }
-    this.detailValue = detail
+    this.detailValue = base.kind === 'tour'
+      ? settlementTourDetail(false, false)
+      : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -197,6 +200,7 @@ export class SortieContractTracker {
     if (this.definition?.kind !== 'tour' || (kind !== 'city' && kind !== 'village')) return
     if (kind === 'city') this.visitedCity = true
     if (kind === 'village') this.visitedVillage = true
+    this.detailValue = settlementTourDetail(this.visitedCity, this.visitedVillage)
     this.progressValue = (this.visitedCity ? 0.5 : 0) + (this.visitedVillage ? 0.5 : 0)
     if (this.visitedCity && this.visitedVillage) this.completeValue = true
   }
@@ -463,4 +467,8 @@ function indexForSeed(seed: number): number {
 
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
+}
+
+function settlementTourDetail(city: boolean, village: boolean): string {
+  return `${SETTLEMENT_TOUR_DETAIL} / CITY ${city ? 'OK' : 'OPEN'} / VILLAGE ${village ? 'OK' : 'OPEN'}`
 }

@@ -129,6 +129,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Missing a gate on CLEAN CIRCUIT now emits one explicit contract-failure cue through the existing warning path while the sortie remains recoverable.
 - Bonus contracts can also include `LEVEL FLIGHT`, rewarding a steady 180 to 600 metre altitude hold within a small drift window for a short airborne stretch.
 - Bonus contracts can also include `SETTLEMENT TOUR`, rewarding one city arrival and one village arrival through the existing radar target path.
+- SETTLEMENT TOUR keeps its live TASK instruction explicit with cached `CITY OPEN/OK` and `VILLAGE OPEN/OK` status, including on results.
 - `TERRAIN HUGGER` now measures radio altitude against the rendered terrain surface, so the low-pass objective follows actual ridges and valleys instead of the spawn strip.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
