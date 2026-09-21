@@ -35,6 +35,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - A seeded `GUST RIDER` contract can now reward staying airborne through strong gusts, turning existing storm telemetry into a bounded handling decision without changing flight physics.
 - A seeded `RANGE RUN` contract can now reward covering 12 kilometres of airborne distance before landing, using fixed-step telemetry so long sorties stay meaningful without adding world state.
 - `GUST RIDER` and `RANGE RUN` task details now show cached current seconds and kilometres, keeping live progress readable without per-frame string churn.
+- Scalar contracts now expose coarse current progress in the task detail, so altitude, weather, speed, and route objectives stay readable during the run without fixed-step string churn.
 - Radar-run objectives bind to the exact streamed contact that was locked, so reaching a different settlement cannot accidentally complete the task.
 - If a selected settlement streams out of range, the radar clears the stale lock and gives one `RADAR LOCK LOST` cue instead of leaving navigation pointed at missing world data.
 - A selected radar contact now keeps its display slot when nearby contacts crowd the sweep, so the navigation lock remains stable until the settlement actually leaves range.

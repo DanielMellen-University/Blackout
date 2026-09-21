@@ -94,6 +94,8 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
 export class SortieContractTracker {
   private definition: SortieContractDefinition | null = null
   private detailValue = ''
+  private detailBaseValue = ''
+  private detailProgressBucket = -1
   private hudLabelValue = ''
   private progressValue = 0
   private completeValue = false
@@ -129,6 +131,8 @@ export class SortieContractTracker {
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
     this.detailValue = ''
+    this.detailBaseValue = ''
+    this.detailProgressBucket = -1
     this.hudLabelValue = ''
     this.progressValue = 0
     this.completeValue = false
@@ -170,6 +174,7 @@ export class SortieContractTracker {
     const target = contractTargetFor(base, safeGates)
     const detail = contractDetailFor(base.kind, target)
     this.definition = { ...base, target, detail }
+    this.detailBaseValue = detail
     this.detailValue = base.kind === 'tour'
       ? settlementTourDetail(false, false)
       : base.kind === 'combo'
@@ -182,15 +187,30 @@ export class SortieContractTracker {
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
+  /** Update readable task progress only when its display bucket changes. */
+  private updateProgressDetail(current: number, unit: string, step: number, decimals = 0): void {
+    if (!this.definition || !Number.isFinite(current) || !Number.isFinite(step) || step <= 0) return
+    const safeCurrent = Math.max(0, Math.min(this.definition.target, current))
+    const bucket = Math.floor(safeCurrent / step)
+    if (bucket === this.detailProgressBucket) return
+    this.detailProgressBucket = bucket
+    const display = decimals > 0
+      ? (bucket * step).toFixed(decimals)
+      : String(Math.round(bucket * step))
+    this.detailValue = `${this.detailBaseValue} / CURRENT ${display}${unit}`
+  }
+
   recordAltitude(altitudeM: number): void {
     if (this.definition?.kind !== 'altitude' || this.completeValue || !Number.isFinite(altitudeM)) return
     this.progressValue = clamp01(altitudeM / this.definition.target)
+    this.updateProgressDetail(altitudeM, 'M', 100)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
   recordStunt(rolls: number): void {
     if (this.definition?.kind !== 'stunt' || this.completeValue || !Number.isFinite(rolls)) return
     this.progressValue = clamp01(rolls / this.definition.target)
+    this.updateProgressDetail(rolls, ' ROLLS', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -212,6 +232,7 @@ export class SortieContractTracker {
     if (this.definition?.kind === 'scout') {
       if (!Number.isFinite(count)) return
       this.progressValue = clamp01(count / this.definition.target)
+      this.updateProgressDetail(count, ' SETTLEMENTS', 1)
       if (this.progressValue >= 1) this.completeValue = true
       return
     }
@@ -286,6 +307,7 @@ export class SortieContractTracker {
       ? Math.min(this.definition.target, this.precisionStreak + 1)
       : 0
     this.progressValue = clamp01(this.precisionStreak / this.definition.target)
+    this.updateProgressDetail(this.precisionStreak, ' GATES', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -298,6 +320,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.nightSeconds = Math.min(this.definition.target, this.nightSeconds + safeDt)
     this.progressValue = clamp01(this.nightSeconds / this.definition.target)
+    this.updateProgressDetail(this.nightSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -309,6 +332,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.drySeconds = Math.min(this.definition.target, this.drySeconds + safeDt)
     this.progressValue = clamp01(this.drySeconds / this.definition.target)
+    this.updateProgressDetail(this.drySeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -316,6 +340,7 @@ export class SortieContractTracker {
   recordBiome(count: number): void {
     if (this.definition?.kind !== 'biome' || this.completeValue || !Number.isFinite(count)) return
     this.progressValue = clamp01(count / this.definition.target)
+    this.updateProgressDetail(count, ' BIOMES', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -328,6 +353,7 @@ export class SortieContractTracker {
     if (safeAltitude < LOW_LEVEL_MIN_ALTITUDE_M || safeAltitude > LOW_LEVEL_MAX_ALTITUDE_M) return
     this.lowLevelSeconds = Math.min(this.definition.target, this.lowLevelSeconds + safeDt)
     this.progressValue = clamp01(this.lowLevelSeconds / this.definition.target)
+    this.updateProgressDetail(this.lowLevelSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -340,6 +366,7 @@ export class SortieContractTracker {
     if (safeSpeed < SPEED_BAND_MIN_MPS || safeSpeed > SPEED_BAND_MAX_MPS) return
     this.speedBandSeconds = Math.min(this.definition.target, this.speedBandSeconds + safeDt)
     this.progressValue = clamp01(this.speedBandSeconds / this.definition.target)
+    this.updateProgressDetail(this.speedBandSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -352,6 +379,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.weatherSeconds = Math.min(this.definition.target, this.weatherSeconds + safeDt)
     this.progressValue = clamp01(this.weatherSeconds / this.definition.target)
+    this.updateProgressDetail(this.weatherSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -362,6 +390,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.waterSeconds = Math.min(this.definition.target, this.waterSeconds + safeDt)
     this.progressValue = clamp01(this.waterSeconds / this.definition.target)
+    this.updateProgressDetail(this.waterSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -373,6 +402,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.brakeSeconds = Math.min(this.definition.target, this.brakeSeconds + safeDt)
     this.progressValue = clamp01(this.brakeSeconds / this.definition.target)
+    this.updateProgressDetail(this.brakeSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -384,6 +414,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.heatSeconds = Math.min(this.definition.target, this.heatSeconds + safeDt)
     this.progressValue = clamp01(this.heatSeconds / this.definition.target)
+    this.updateProgressDetail(this.heatSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -395,6 +426,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.crosswindSeconds = Math.min(this.definition.target, this.crosswindSeconds + safeDt)
     this.progressValue = clamp01(this.crosswindSeconds / this.definition.target)
+    this.updateProgressDetail(this.crosswindSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -407,6 +439,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.gControlSeconds = Math.min(this.definition.target, this.gControlSeconds + safeDt)
     this.progressValue = clamp01(this.gControlSeconds / this.definition.target)
+    this.updateProgressDetail(this.gControlSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -426,6 +459,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.frontSeconds = Math.min(this.definition.target, this.frontSeconds + safeDt)
     this.progressValue = clamp01(this.frontSeconds / this.definition.target)
+    this.updateProgressDetail(this.frontSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -437,6 +471,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.boostSeconds = Math.min(this.definition.target, this.boostSeconds + safeDt)
     this.progressValue = clamp01(this.boostSeconds / this.definition.target)
+    this.updateProgressDetail(this.boostSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -448,6 +483,7 @@ export class SortieContractTracker {
     const safeDt = Math.max(0, Math.min(5, dt))
     this.machSeconds = Math.min(this.definition.target, this.machSeconds + safeDt)
     this.progressValue = clamp01(this.machSeconds / this.definition.target)
+    this.updateProgressDetail(this.machSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -461,6 +497,7 @@ export class SortieContractTracker {
       this.levelSeconds = 0
       this.levelReferenceM = Number.NaN
       this.progressValue = 0
+      this.updateProgressDetail(0, 'S', 1)
       return
     }
     if (!Number.isFinite(this.levelReferenceM)) this.levelReferenceM = safeAltitude
@@ -468,10 +505,12 @@ export class SortieContractTracker {
       this.levelSeconds = 0
       this.levelReferenceM = safeAltitude
       this.progressValue = 0
+      this.updateProgressDetail(0, 'S', 1)
       return
     }
     this.levelSeconds = Math.min(this.definition.target, this.levelSeconds + safeDt)
     this.progressValue = clamp01(this.levelSeconds / this.definition.target)
+    this.updateProgressDetail(this.levelSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -481,11 +520,13 @@ export class SortieContractTracker {
     if (missed === true) {
       this.cleanFailed = true
       this.progressValue = 0
+      this.updateProgressDetail(0, ' GATES', 1)
       return
     }
     if (!Number.isFinite(passed) || !Number.isFinite(total) || total <= 0) return
     this.cleanGateCount = Math.max(this.cleanGateCount, Math.min(total, Math.floor(passed)))
     this.progressValue = clamp01(this.cleanGateCount / total)
+    this.updateProgressDetail(this.cleanGateCount, ' GATES', 1)
     if (this.cleanGateCount >= total) this.completeValue = true
   }
 
