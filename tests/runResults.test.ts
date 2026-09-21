@@ -153,6 +153,7 @@ describe('run results focus flow', () => {
     expect(flightRecordCueLabel({ newFlightDistanceRecord: true, newLandingQualityRecord: true })).toBe('DISTANCE / LANDING')
     expect(flightRecordCueLabel({ newFuelRecord: true })).toBe('FUEL')
     expect(flightRecordCueLabel({ newMedalRecord: true })).toBe('MEDAL')
+    expect(flightRecordCueLabel({ newRunStreakRecord: true })).toBe('RUN STREAK')
   })
 
   it('traps Tab and restores the flight focus target when hidden', () => {

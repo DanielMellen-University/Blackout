@@ -59,6 +59,12 @@ describe('course picker copy', () => {
     expect(courseFlightLogLabel({
       completionCount: 1,
       bestTimeSec: 90,
+      runStreak: 0,
+      runStreakRecord: 5,
+    })).toBe('LOG RUN STREAK X5')
+    expect(courseFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 90,
       fuelRemainingPercent: 72,
     })).toBe('LOG FUEL 72%')
   })

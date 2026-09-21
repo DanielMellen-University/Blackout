@@ -136,8 +136,11 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(history.combo) && history.combo! > 1) {
     parts.push(`COMBO X${Math.min(20, Math.floor(history.combo!))}`)
   }
-  if (Number.isFinite(history.runStreak) && history.runStreak! > 1) {
-    parts.push(`RUN STREAK X${Math.min(1_000, Math.floor(history.runStreak!))}`)
+  const runStreakRecord = Number.isFinite(history.runStreakRecord)
+    ? history.runStreakRecord!
+    : history.runStreak
+  if (Number.isFinite(runStreakRecord) && runStreakRecord! > 1) {
+    parts.push(`RUN STREAK X${Math.min(1_000, Math.floor(runStreakRecord!))}`)
   }
   if (Number.isFinite(history.contractWins) && history.contractWins! > 0) {
     parts.push(`CONTRACT WINS X${Math.min(1_000, Math.floor(history.contractWins!))}`)

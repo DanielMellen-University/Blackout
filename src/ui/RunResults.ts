@@ -9,7 +9,7 @@ import {
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
-  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'newFuelRecord' | 'newMedalRecord'>,
+  result: Pick<ChallengeResult, 'newFlightDistanceRecord' | 'newPositiveGRecord' | 'newNegativeGRecord' | 'newLandingQualityRecord' | 'newFuelRecord' | 'newMedalRecord' | 'newRunStreakRecord'>,
 ): string {
   return [
     result.newFlightDistanceRecord ? 'DISTANCE' : '',
@@ -18,6 +18,7 @@ export function flightRecordCueLabel(
     result.newLandingQualityRecord ? 'LANDING' : '',
     result.newFuelRecord ? 'FUEL' : '',
     result.newMedalRecord ? 'MEDAL' : '',
+    result.newRunStreakRecord ? 'RUN STREAK' : '',
   ].filter(Boolean).join(' / ')
 }
 
