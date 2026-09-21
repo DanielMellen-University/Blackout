@@ -122,6 +122,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - A fifth `Canyon run` route adds a low-weave precision circuit through the terrain, using the same fixed gate pool and clearance planner.
 - Bonus contracts can include `BURN RUN`, rewarding controlled high-speed afterburner time while reusing the existing fuel and heat safeguards.
 - The live TASK row keeps each contract's instruction visible during flight, so the target remains readable after transient briefing banners fade.
+- Bonus contracts can also include `MACH RUN`, rewarding controlled supersonic airborne time through the existing speed telemetry.
 - Press `G` to toggle the articulated landing gear at altitude. Ground and low-altitude safety still deploy it automatically.
 - Retracted gear now raises a conservative `GEAR` approach caution only during a low descent, so manual gear control stays readable without takeoff alarm spam.
 - A bounded `FLARE` cue appears in the final gear-down landing window, replacing low-altitude alarm noise with a clear prompt to ease the sink rate.

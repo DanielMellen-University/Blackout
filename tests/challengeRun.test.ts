@@ -764,6 +764,37 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires supersonic time into the Mach-run contract', () => {
+    const run = new ChallengeRun(null)
+    let machSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:mach-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT MACH RUN') {
+        machSeed = seed
+        break
+      }
+    }
+    expect(machSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:mach-contract', 1, 'balanced', machSeed)
+    run.update(0.1, 8)
+    run.update(4, 360, 180)
+    expect(run.contractProgress).toBeCloseTo(0.4)
+    run.update(5, 360, 180)
+    run.update(1, 360, 180)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('MACH RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('mach')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires weather-front transitions into the front-chaser contract', () => {
     const run = new ChallengeRun(null)
     let frontSeed = -1

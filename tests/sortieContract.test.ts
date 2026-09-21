@@ -99,12 +99,19 @@ describe('sortie contracts', () => {
         tracker.recordBoost(true, 260, 4)
         tracker.recordBoost(true, 260, 5)
       }
+      if (tracker.kind === 'mach') {
+        tracker.recordMach(360, 5, false)
+        tracker.recordMach(300, 5)
+        tracker.recordMach(360, 4)
+        tracker.recordMach(360, 5)
+        tracker.recordMach(360, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -416,6 +423,32 @@ describe('sortie contracts', () => {
     tracker.recordBoost(true, 260, 3)
     expect(tracker.progress).toBeCloseTo(3 / 8)
     tracker.recordBoost(true, 260, 5)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only airborne time above the supersonic threshold', () => {
+    const tracker = new SortieContractTracker()
+    let machSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'mach') {
+        machSeed = seed
+        break
+      }
+    }
+    expect(machSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(machSeed, 5)
+    expect(tracker.label).toBe('MACH RUN')
+    tracker.recordMach(360, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordMach(300, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordMach(360, 4)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordMach(360, 5)
+    tracker.recordMach(360, 1)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

@@ -807,6 +807,7 @@ export class ChallengeRun {
     this.contract.recordDeadstick(fuelFraction, airborne)
     this.contract.recordFront(weatherTransitioning, safeDt, airborne)
     this.contract.recordBoost(afterburner, safeSpeed, safeDt, airborne)
+    this.contract.recordMach(safeSpeed, safeDt, airborne)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'
