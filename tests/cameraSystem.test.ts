@@ -27,10 +27,34 @@ describe('external camera framing', () => {
     setGroundHeightSampler(null)
   })
 
-  it('toggles only between external and cockpit views', () => {
-    expect(CAMERA_MODES).toEqual(['chase', 'cockpit'])
+  it('toggles between chase, wide orbit, and cockpit views', () => {
+    expect(CAMERA_MODES).toEqual(['chase', 'orbit', 'cockpit'])
     expect(cameraModeCue('chase')).toBe('EXTERNAL VIEW')
+    expect(cameraModeCue('orbit')).toBe('ORBIT VIEW')
     expect(cameraModeCue('cockpit')).toBe('COCKPIT VIEW')
+  })
+
+  it('keeps the orbit view wide and horizon-stable', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15_000, 0)
+    aircraft.snapDisplay()
+
+    cameras.setMode('orbit', aircraft)
+    expect(cameras.mode).toBe('orbit')
+    expect(cameras.camera.fov).toBe(57)
+    expect(cameras.camera.position.distanceTo(aircraft.displayPosition)).toBeGreaterThan(25)
+    expect(cameras.camera.up.y).toBe(1)
+
+    cameras.setMode('cockpit', aircraft)
+    expect(cameras.camera.fov).toBe(74)
+    cameras.dispose()
   })
 
   it('restores the last external framing after a cockpit toggle', () => {

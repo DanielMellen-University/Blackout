@@ -63,6 +63,18 @@ const MODE_CONFIG: Record<ChaseMode, ModeConfig> = {
     followStiffness: 9,
     yawOnly: true,
   },
+  orbit: {
+    lookOffset: new Vector3(0, 1.6, 0),
+    fov: 57,
+    lookLead: 0.025,
+    maxLookLead: 8,
+    minDist: 16,
+    maxDist: 48,
+    defaultYaw: 0.55,
+    defaultPitch: 0.34,
+    defaultDistance: 30,
+    followStiffness: 5.5,
+  },
 }
 
 const PITCH_LIMIT = Math.PI / 2 - 0.05
@@ -86,7 +98,9 @@ export const CAMERA_FAR = STREAM_RADIUS_M * 1.5
 
 /** Short feedback copy used when the pilot toggles between flight views. */
 export function cameraModeCue(mode: CameraMode): string {
-  return mode === 'cockpit' ? 'COCKPIT VIEW' : 'EXTERNAL VIEW'
+  if (mode === 'cockpit') return 'COCKPIT VIEW'
+  if (mode === 'orbit') return 'ORBIT VIEW'
+  return 'EXTERNAL VIEW'
 }
 
 /**
@@ -465,7 +479,7 @@ export class CameraSystem {
 
     this.camera.lookAt(this.lookSmoothed)
 
-    const targetBank = this.reducedMotion
+    const targetBank = this.reducedMotion || this.mode === 'orbit'
       ? 0
       : cameraBankAngle(aircraft.displayOrientation, MAX_EXTERNAL_BANK)
     this.externalBank = snap || dt <= 0

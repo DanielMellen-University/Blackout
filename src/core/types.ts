@@ -17,16 +17,18 @@ export interface ControlState {
   stabilityAssist: boolean
 }
 
-/** The two flight views toggled by C - see CameraSystem. */
-export type CameraMode = 'chase' | 'cockpit'
+/** The flight views toggled by C - see CameraSystem. */
+export type CameraMode = 'chase' | 'orbit' | 'cockpit'
 
 export const CAMERA_MODES: readonly CameraMode[] = [
   'chase',
+  'orbit',
   'cockpit',
 ] as const
 
 export const CAMERA_MODE_LABELS: Record<CameraMode, string> = {
   chase: 'external',
+  orbit: 'orbit',
   cockpit: 'cockpit',
 }
 

@@ -153,7 +153,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Completed routes now include a clear retry or new-world handoff in the results dialog and its accessible description.
 - Results now summarize total score and fuel left in one line, with used-fuel detail and reserve-aware color for faster scanning.
 - Retry actions now say “same course,” while reset briefings identify NEW WORLD versus RETRY SAME COURSE before the next takeoff.
-- Cameras: stable external chase and cockpit view, toggled with **C**
+- Cameras: stable chase, wide orbit, and first-person cockpit views, toggled with **C**
 - Cockpit view now has a restrained camera-attached canopy frame and coaming, while the external view keeps the same clean aircraft silhouette.
 - Reduced-motion preferences now suppress crash, touchdown, and afterburner camera motion as well as the existing CSS pulses, and live preference changes apply immediately.
 - Reduced-motion preferences also suppress storm lightning flashes and their thunder cue while keeping precipitation and cloud weather active.
@@ -169,7 +169,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The title overlay keeps the runway and F-35 silhouette visible behind the briefing so the first screen still feels like a flight game.
 - First-person mode now renders its camera-attached canopy rails, brow, and coaming while removing them cleanly on teardown.
 - Cockpit view now projects a restrained velocity-vector marker from the jet's real motion, making slips and climbs readable without adding scene geometry.
-- Toggling `C` now announces the active cockpit or external view with a short in-flight cue.
+- Toggling `C` now announces the active chase, orbit, or cockpit view with a short in-flight cue.
 - WebGL context loss now gates render submissions and shows a recovery cue, keeping simulation state safe through browser GPU resets.
 - Expired crash particles are compacted out of the live update list, trimming the effect's CPU tail without changing its fixed visual pool.
 - Expired landing dust and smoke are compacted in place, keeping repeated touchdown effects allocation-stable without per-frame array shifts.
@@ -203,7 +203,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Chase-camera ground occlusion uses a distance-aware probe budget, reducing close-rig terrain queries while retaining full coverage for long user-zoomed sightlines.
 - The external camera far plane now tracks the streamed terrain and cloud envelope instead of an oversized 60 km range, preserving depth precision without clipping visible scenery.
 - The external chase camera now carries a capped, reduced-motion-aware bank cue from the aircraft roll, adding turn drama while keeping the horizon readable.
-- Toggling cockpit view now restores the last external chase yaw, pitch, and zoom instead of resetting the pilot's framing on every return.
+- Toggling cockpit view now restores the last external framing, including chase or orbit yaw, pitch, and zoom, instead of resetting the pilot's view on every return.
 - Camera resize handling now keeps zero-sized or malformed viewport reports out of projection math and skips redundant projection rebuilds during resize bursts.
 - External and cockpit camera paths now fail closed on malformed vectors, quaternions, speed envelopes, and motion phases, preventing a bad frame from producing non-finite lens transforms.
 - Tone-mapping exposure now follows the continuous daylight factor instead of jumping at phase labels, keeping dawn, dusk, and storm-bloom transitions visually smooth.
@@ -475,7 +475,7 @@ Open the URL Vite prints (usually `http://localhost:5173`).
 
 | **Hold MMB + drag** | Look / pan (not cockpit) |
 | **Scroll** | Zoom (not cockpit) |
-| **C** | Toggle external / cockpit camera |
+| **C** | Cycle chase / orbit / cockpit camera |
 | **N** | Weather |
 | **T** | Cycle radar settlement target |
 | **M** | Mute / unmute audio |
@@ -610,7 +610,7 @@ Blackout/
 │   ├── main.ts
 │   ├── core/                # input, time, fullscreen lock
 │   ├── aircraft/            # state, mesh, flight model
-│   ├── camera/              # chase / cockpit
+│   ├── camera/              # chase / orbit / cockpit
 │   ├── world/               # terrain, sky, airfield
 │   ├── ui/                  # HUD, menus
 │   ├── systems/             # collision, mission, crash FX
