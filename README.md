@@ -86,6 +86,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Completed-run debriefs now repeat the repaired cross-course pilot rank beside the score breakdown, so rank progress remains visible after launch.
 - Crossing a career-rank threshold now reuses the milestone cue and marks the debrief with `CAREER ... UP`, keeping promotion feedback bounded and event-driven.
 - The title screen also tracks five bounded career commendations from existing sortie telemetry, turning first flight, course collection, speed, altitude, and distance into persistent goals without new storage keys.
+- Newly earned commendations are called out once in the completed-run debrief and reuse the existing milestone cue, keeping progression feedback event-driven.
 - Course cards now include the saved runway-approach record in their compact flight log, so centered landing skill has a visible repeatable target before launch.
 - Course cards also preview saved settlement and biome discovery records, keeping exploration mastery visible alongside flight and landing skill.
 - Course cards now preview saved barrel-roll and combo records too, making airshow and precision-chain mastery visible before launch.

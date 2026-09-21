@@ -86,8 +86,10 @@ import {
   pilotRankLabel,
   pilotRankNextGoalLabel,
   pilotRankRank,
+  pilotCommendationLabel,
   pilotCommendationsForProgress,
   PILOT_COMMENDATION_COUNT,
+  type PilotCommendationId,
   type PilotRank,
   type PilotCareerProgress,
 } from './systems/CareerProgression'
@@ -270,6 +272,7 @@ async function boot(): Promise<void> {
   const titleStatus = document.getElementById('title-status')
   const titleProgress = document.getElementById('title-progress')
   let currentPilotRank: PilotRank = 'cadet'
+  let currentPilotCommendations: PilotCommendationId[] = []
   const refreshCourseProgress = (): void => {
     if (!titleProgress) return
     const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
@@ -327,6 +330,7 @@ async function boot(): Promise<void> {
     const rankLabel = pilotRankLabel(rank)
     const nextRank = pilotRankNextGoalLabel(rank)
     const commendations = pilotCommendationsForProgress(career)
+    currentPilotCommendations = commendations
     const badgeTotal = curated.length * MASTERY_BADGE_COUNT
     const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
     const labels = [
@@ -1261,6 +1265,7 @@ async function boot(): Promise<void> {
             }, aircraft.fuel.fraction)
             if (finished) {
               const previousPilotRank = currentPilotRank
+              const previousPilotCommendations = currentPilotCommendations
               ghost.commitIfBest(finished.isNewBest, finished.totalScore)
               ghost.setVisible(false)
               audio.playCue(
@@ -1270,10 +1275,13 @@ async function boot(): Promise<void> {
               )
               refreshCourseUi()
               const careerRankPromoted = pilotRankRank(currentPilotRank) > pilotRankRank(previousPilotRank)
-              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted || careerRankPromoted) {
+              const newCareerCommendations = currentPilotCommendations
+                .filter(id => !previousPilotCommendations.includes(id))
+                .map(pilotCommendationLabel)
+              if (flightRecordCueLabel(finished) || finished.masteryTierPromoted || careerRankPromoted || newCareerCommendations.length > 0) {
                 audio.playCue('milestone')
               }
-              results.show(finished, currentPilotRank, careerRankPromoted)
+              results.show(finished, currentPilotRank, careerRankPromoted, newCareerCommendations)
               syncInputContext()
               break
             }

@@ -212,6 +212,20 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('surfaces new career commendations beside other debrief records', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show(result, 'wingman', false, ['FIRST SORTIE', 'SPEED DEMON'])
+    expect(elementsFor(fixture.document, 'result-badges')?.textContent)
+      .toBe('NEW COMMENDATIONS · FIRST SORTIE / SPEED DEMON')
+
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('dispatches replay sharing through a disposable results action', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()

@@ -104,7 +104,12 @@ export class RunResults {
     this.shareReplayHandler = handler
   }
 
-  show(result: ChallengeResult, pilotRank?: PilotRank, pilotRankPromoted = false): void {
+  show(
+    result: ChallengeResult,
+    pilotRank?: PilotRank,
+    pilotRankPromoted = false,
+    newCareerCommendations: readonly string[] = [],
+  ): void {
     if (this.disposed) return
     if (this.shareReplay) {
       this.shareReplay.textContent = 'Copy replay link'
@@ -382,11 +387,19 @@ export class RunResults {
     const badgeLabel = newBadges.length > 0
       ? `NEW BADGE${newBadges.length === 1 ? '' : 'S'} · ${newBadges.map(masteryBadgeLabel).join(' · ')}`
       : ''
-    this.badges.textContent = badgeLabel && recordLabel
-      ? `${badgeLabel} · ${recordLabel}`
-      : badgeLabel || recordLabel || (allBadges.length > 0
+    const commendationLabel = newCareerCommendations.length > 0
+      ? `NEW COMMENDATION${newCareerCommendations.length === 1 ? '' : 'S'} · ${newCareerCommendations.join(' / ')}`
+      : ''
+    const feedbackLabels = [
+      badgeLabel,
+      recordLabel,
+      commendationLabel,
+    ].filter(Boolean)
+    this.badges.textContent = feedbackLabels.length > 0
+      ? feedbackLabels.join(' · ')
+      : allBadges.length > 0
         ? `BADGES ${allBadges.length}/${MASTERY_BADGE_COUNT}`
-        : '')
+        : ''
     this.splits.textContent = formatSplitTrace(result.gateSplits, result.bestGateSplits)
     const bestBits = [
       result.isNewBest ? 'NEW BEST' : 'BEST',
