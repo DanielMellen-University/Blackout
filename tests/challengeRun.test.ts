@@ -734,6 +734,36 @@ describe('ChallengeRun', () => {
     expect(result?.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires active afterburner time into the burn-run contract', () => {
+    const run = new ChallengeRun(null)
+    let boostSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:boost-contract', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT BURN RUN') {
+        boostSeed = seed
+        break
+      }
+    }
+    expect(boostSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:boost-contract', 1, 'balanced', boostSeed)
+    run.update(0.1, 8)
+    run.update(3, 260, 180, 0, 0, false, true, 0, 0, 1, 1, false, true)
+    expect(run.contractProgress).toBeCloseTo(3 / 8)
+    run.update(5, 260, 180, 0, 0, false, true, 0, 0, 1, 1, false, true)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('BURN RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('boost')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('wires weather-front transitions into the front-chaser contract', () => {
     const run = new ChallengeRun(null)
     let frontSeed = -1

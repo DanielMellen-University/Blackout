@@ -92,12 +92,19 @@ describe('sortie contracts', () => {
         tracker.recordFront(true, 5)
         tracker.recordFront(true, 5)
       }
+      if (tracker.kind === 'boost') {
+        tracker.recordBoost(true, 260, 5, false)
+        tracker.recordBoost(false, 260, 5)
+        tracker.recordBoost(true, 180, 5)
+        tracker.recordBoost(true, 260, 4)
+        tracker.recordBoost(true, 260, 5)
+      }
       const score = tracker.finish(0, 1, tracker.kind === 'approach' ? 500 : 0)
       expect(tracker.complete).toBe(true)
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost']))
   })
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
@@ -382,6 +389,33 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBeCloseTo(1 / 3)
     tracker.recordFront(true, 5)
     tracker.recordFront(true, 3)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+    expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('accumulates only high-speed airborne time with afterburner active', () => {
+    const tracker = new SortieContractTracker()
+    let boostSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'boost') {
+        boostSeed = seed
+        break
+      }
+    }
+    expect(boostSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(boostSeed, 5)
+    expect(tracker.label).toBe('BURN RUN')
+    tracker.recordBoost(true, 260, 5, false)
+    expect(tracker.progress).toBe(0)
+    tracker.recordBoost(false, 260, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordBoost(true, 180, 5)
+    expect(tracker.progress).toBe(0)
+    tracker.recordBoost(true, 260, 3)
+    expect(tracker.progress).toBeCloseTo(3 / 8)
+    tracker.recordBoost(true, 260, 5)
     expect(tracker.complete).toBe(true)
     expect(tracker.progress).toBe(1)
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)

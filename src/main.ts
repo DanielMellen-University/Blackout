@@ -1264,6 +1264,7 @@ async function boot(): Promise<void> {
           aircraft.loadFactor,
           aircraft.fuel.fraction,
           world.atmosphere.weatherTransitioning,
+          aircraft.engineState.afterburnerActive,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }
