@@ -834,7 +834,9 @@ export class ChallengeRun {
     this.bestGateQualityStreak = Math.max(this.bestGateQualityStreak, this.gateQualityStreak)
     const split = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     this.gateSplits[gateIndex] = split
+    const wasContractComplete = this.contract.complete
     this.contract.recordCleanGate(false, this.gatesPassed, this.totalGates)
+    this.contractCuePending ||= !wasContractComplete && this.contract.complete
     const bestSplit = this.bestGateSplits[gateIndex]
     this.lastPaceDeltaSec = Number.isFinite(bestSplit) ? split - bestSplit! : Number.NaN
     this.gatePaceLabelDelta = Number.NaN

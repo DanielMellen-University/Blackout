@@ -813,6 +813,7 @@ describe('ChallengeRun', () => {
     run.recordGate(1)
     expect(run.contractComplete).toBe(false)
     run.recordGate(1)
+    expect(run.consumeContractCompletionCue()).toBeNull()
     const result = run.finishLanding({
       verticalSpeed: -1,
       groundSpeed: 20,
@@ -823,6 +824,26 @@ describe('ChallengeRun', () => {
     expect(result.contractFailed).toBe(true)
     expect(result.contractComplete).toBe(false)
     expect(result.contractScore).toBeUndefined()
+  })
+
+  it('emits the completion cue when every clean-circuit gate is passed', () => {
+    const run = new ChallengeRun(null)
+    let cleanSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:clean-contract', 2, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT CLEAN CIRCUIT') {
+        cleanSeed = seed
+        break
+      }
+    }
+    expect(cleanSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:clean-contract', 2, 'balanced', cleanSeed)
+    run.update(0.1, 8)
+    run.recordGate(1)
+    expect(run.consumeContractCompletionCue()).toBeNull()
+    run.recordGate(1)
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('CLEAN CIRCUIT')
   })
 
   it('wires weather-front transitions into the front-chaser contract', () => {
