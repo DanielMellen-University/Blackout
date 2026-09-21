@@ -6,6 +6,7 @@ import {
   type CourseHistory,
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
+import { sortieContractLabelForSeed } from '../systems/SortieContract'
 
 export interface CoursePickerItem {
   id: string
@@ -64,6 +65,8 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   if (contractStreak >= 2) statsParts.push(`CONTRACT X${contractStreak}`)
   if (tierLabel) statsParts.push(tierLabel)
   if (badgeCount > 0) statsParts.push(`${badgeCount}/${MASTERY_BADGE_COUNT} BADGES`)
+  const contractLabel = sortieContractLabelForSeed(input.course.seed ?? undefined)
+  if (contractLabel) statsParts.push(`TASK ${contractLabel}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
 }

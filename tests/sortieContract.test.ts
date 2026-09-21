@@ -2,10 +2,17 @@ import { describe, expect, it } from 'vitest'
 import {
   MAX_CONTRACT_SCORE,
   SortieContractTracker,
+  sortieContractLabelForSeed,
   type SortieContractKind,
 } from '../src/systems/SortieContract'
 
 describe('sortie contracts', () => {
+  it('previews deterministic seeded tasks without assigning Free flight a contract', () => {
+    expect(sortieContractLabelForSeed(undefined)).toBe('')
+    expect(sortieContractLabelForSeed(42)).toBe('BIOME TOUR')
+    expect(sortieContractLabelForSeed(42)).toBe(sortieContractLabelForSeed(42))
+  })
+
   it('assigns a deterministic contract without allocating runtime state', () => {
     const first = new SortieContractTracker()
     const second = new SortieContractTracker()

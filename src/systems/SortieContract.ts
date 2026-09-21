@@ -521,6 +521,15 @@ function indexForSeed(seed: number): number {
   return mixed % legacyContractCount
 }
 
+/** Preview the deterministic contract on a seeded course without creating tracker state. */
+export function sortieContractLabelForSeed(seed: number | undefined, totalGates = 5): string {
+  if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
+  const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
+  const contract = CONTRACTS[indexForSeed(seed)]
+  if (!contract || (contract.kind === 'clean' && safeGates <= 0)) return ''
+  return contract.label
+}
+
 function clamp01(value: number): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0
 }
