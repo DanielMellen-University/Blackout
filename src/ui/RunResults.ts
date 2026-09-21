@@ -259,6 +259,16 @@ export class RunResults {
     if (courseBestContractWins > contractWins) {
       scoreParts.push(`COURSE CONTRACTS X${courseBestContractWins}`)
     }
+    const contractStreak = Number.isFinite(result.contractStreak)
+      ? Math.max(0, Math.floor(result.contractStreak!))
+      : 0
+    const courseBestContractStreak = Number.isFinite(result.courseBestContractStreak)
+      ? Math.max(0, Math.floor(result.courseBestContractStreak!))
+      : 0
+    if (contractStreak > 1) scoreParts.push(`CONTRACT STREAK X${contractStreak}`)
+    if (courseBestContractStreak > contractStreak && courseBestContractStreak > 1) {
+      scoreParts.push(`COURSE CONTRACT STREAK X${courseBestContractStreak}`)
+    }
     if (result.courseMasteryTierLabel) {
       scoreParts.push(`COURSE TIER ${result.courseMasteryTierLabel}`)
     }
@@ -296,6 +306,7 @@ export class RunResults {
       result.newBiomeRecord ? 'BIOMES' : '',
       result.newRunStreakRecord ? 'RUN STREAK' : '',
       result.newContractRecord ? 'CONTRACTS' : '',
+      result.newContractStreakRecord ? 'CONTRACT STREAK' : '',
     ].filter(Boolean)
     const recordLabel = newRecords.length > 0
       ? `NEW RECORD${newRecords.length === 1 ? '' : 'S'} · ${newRecords.join(' / ')}`

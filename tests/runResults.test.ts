@@ -233,6 +233,8 @@ describe('run results focus flow', () => {
       contractScore: 2_000,
       contractWins: 3,
       courseBestContractWins: 4,
+      contractStreak: 3,
+      courseBestContractStreak: 4,
       deadstickScore: 1_500,
       courseMasteryTier: 'ace',
       courseMasteryTierLabel: 'ACE',
@@ -275,6 +277,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DEADSTICK +1,500')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT WINS X3')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACTS X4')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('CONTRACT STREAK X3')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE CONTRACT STREAK X4')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TIER ACE')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE APPROACH +650')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE COMBO X6')
@@ -302,11 +306,12 @@ describe('run results focus flow', () => {
       newDestinationRecord: true,
       newRunStreakRecord: true,
       newContractRecord: true,
+      newContractStreakRecord: true,
       newMasteryBadges: ['streak-hunter'],
       masteryBadges: ['streak-hunter'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe(
-      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS / RUN STREAK / CONTRACTS',
+      'NEW BADGE · STREAK HUNTER · NEW RECORDS · SPEED / ALTITUDE / COMBO / APPROACH / DESTINATIONS / RUN STREAK / CONTRACTS / CONTRACT STREAK',
     )
     results.dispose()
     vi.unstubAllGlobals()

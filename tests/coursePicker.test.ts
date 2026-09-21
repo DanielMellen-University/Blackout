@@ -49,6 +49,7 @@ describe('course picker copy', () => {
         completionCount: 5,
         bestTimeSec: 98.4,
         contractWins: 2,
+        contractStreakRecord: 4,
       },
       bestScore: 88_000,
       badgeCount: 3,
@@ -56,7 +57,7 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS · ACE')
-    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · ACE · 3/6 BADGES')
+    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · STREAK X4 · CONTRACT X4 · ACE · 3/6 BADGES')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TOP')).toBe(false)
     expect(copy.stats.includes('ROLLS')).toBe(false)

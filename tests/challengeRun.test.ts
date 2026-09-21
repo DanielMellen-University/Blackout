@@ -29,6 +29,7 @@ import {
   MAX_BIOME_COUNT,
   MAX_BIOME_SCORE,
   MAX_CONTRACT_WINS,
+  MAX_CONTRACT_STREAK,
   MAX_DEADSTICK_SCORE,
   MAX_RUN_STREAK,
   MAX_WEATHER_SCORE,
@@ -1113,6 +1114,73 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:contract-wins')).toBe(
       `{"completionCount":3,"bestTimeSec":2,"contractWins":${MAX_CONTRACT_WINS}}`,
     )
+  })
+
+  it('builds a contract streak and resets it after an incomplete contract', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const complete = (): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
+      const run = new ChallengeRun(storage)
+      run.reset('seed:contract-streak', 1, 'balanced', 0)
+      run.update(0.1, 8)
+      run.recordGate(1)
+      return run.finishLanding({
+        verticalSpeed: -1,
+        groundSpeed: 20,
+        pitchRad: 0,
+        rollRad: 0,
+      })!
+    }
+
+    const first = complete()
+    expect(first.contractStreak).toBe(1)
+    expect(first.courseBestContractStreak).toBe(1)
+    expect(first.newContractStreakRecord).toBe(false)
+
+    const second = complete()
+    expect(second.contractStreak).toBe(2)
+    expect(second.courseBestContractStreak).toBe(2)
+    expect(second.newContractStreakRecord).toBe(true)
+    expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreak":2')
+    expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreakRecord":2')
+
+    const incomplete = new ChallengeRun(storage)
+    incomplete.reset('seed:contract-streak', 1, 'balanced', 0)
+    incomplete.update(0.1, 8)
+    incomplete.recordGate(1)
+    for (let i = 0; i < 12; i += 1) incomplete.update(5, 8)
+    const failedContract = incomplete.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(failedContract.contractComplete).toBe(false)
+    expect(failedContract.contractStreak).toBeUndefined()
+    expect(failedContract.courseBestContractStreak).toBe(2)
+    expect(failedContract.newContractStreakRecord).toBe(false)
+    expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreak).toBeUndefined()
+    expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreakRecord).toBe(2)
+
+    values.set(
+      'blackout.history.seed:contract-streak',
+      '{"completionCount":3,"bestTimeSec":2,"contractStreak":9999,"contractStreakRecord":-4,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:contract-streak')?.contractStreak).toBe(MAX_CONTRACT_STREAK)
+    expect(repairCourseHistory(storage, 'seed:contract-streak')?.contractStreakRecord).toBe(MAX_CONTRACT_STREAK)
+    expect(values.get('blackout.history.seed:contract-streak')).toBe(
+      `{"completionCount":3,"bestTimeSec":2,"contractStreak":${MAX_CONTRACT_STREAK},"contractStreakRecord":${MAX_CONTRACT_STREAK}}`,
+    )
+
+    const crashed = new ChallengeRun(storage)
+    crashed.reset('seed:contract-streak', 1, 'balanced', 0)
+    crashed.update(0.1, 8)
+    crashed.fail()
+    expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreak).toBeUndefined()
+    expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreakRecord).toBe(MAX_CONTRACT_STREAK)
   })
 
   it('persists the best runway approach score and repairs oversized records', () => {

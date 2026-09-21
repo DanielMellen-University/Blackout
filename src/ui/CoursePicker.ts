@@ -34,6 +34,7 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   const bestScore = finiteCount(input.bestScore)
   const badgeCount = finiteCount(input.badgeCount)
   const streak = finiteCount(input.bestPrecisionStreak)
+  const contractStreak = finiteCount(input.history?.contractStreakRecord)
   const tier = courseMasteryTierForProgress({
     completionCount: runs,
     bestScore,
@@ -60,6 +61,7 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   }
   if (bestScore > 0) statsParts.push(`BEST ${bestScore.toLocaleString()}`)
   if (streak >= 2) statsParts.push(`STREAK X${streak}`)
+  if (contractStreak >= 2) statsParts.push(`CONTRACT X${contractStreak}`)
   if (tierLabel) statsParts.push(tierLabel)
   if (badgeCount > 0) statsParts.push(`${badgeCount}/${MASTERY_BADGE_COUNT} BADGES`)
 
