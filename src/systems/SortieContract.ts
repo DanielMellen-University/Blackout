@@ -106,6 +106,9 @@ export class SortieContractTracker {
 
     const base = CONTRACTS[indexForSeed(seed)]!
     const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
+    // A no-miss circuit has no meaningful completion state in Free flight.
+    // Leave the bonus slot empty instead of assigning an impossible task.
+    if (base.kind === 'clean' && safeGates <= 0) return
     const target = base.kind === 'pace'
       ? Math.max(48, 53 + safeGates * 3)
       : base.target

@@ -481,6 +481,22 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 1)).toBe(0)
   })
 
+  it('does not assign a gate-only contract to a no-gate sortie', () => {
+    const tracker = new SortieContractTracker()
+    let cleanSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'clean') {
+        cleanSeed = seed
+        break
+      }
+    }
+    expect(cleanSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(cleanSeed, 0)
+    expect(tracker.enabled).toBe(false)
+    expect(tracker.label).toBe('')
+  })
+
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {
     for (let seed = 0; seed < 20; seed += 1) {
       const tracker = new SortieContractTracker()
