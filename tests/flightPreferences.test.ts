@@ -7,6 +7,8 @@ import {
   GHOST_VISIBILITY_STORAGE_KEY,
   CAMERA_MODE_STORAGE_KEY,
   DEFAULT_CAMERA_MODE,
+  DEFAULT_STABILITY_ASSIST,
+  STABILITY_ASSIST_STORAGE_KEY,
   KEYBOARD_PITCH_STORAGE_KEY,
   KEYBOARD_ROLL_STORAGE_KEY,
   KEYBOARD_YAW_STORAGE_KEY,
@@ -18,16 +20,19 @@ import {
   normalizeKeyboardPitchPreference,
   normalizeGhostVisibilityPreference,
   normalizeCameraMode,
+  normalizeStabilityAssistPreference,
   readKeyboardRollPreference,
   readKeyboardYawPreference,
   readKeyboardPitchPreference,
   readGhostVisibilityPreference,
   readCameraModePreference,
+  readStabilityAssistPreference,
   writeKeyboardRollPreference,
   writeKeyboardYawPreference,
   writeKeyboardPitchPreference,
   writeGhostVisibilityPreference,
   writeCameraModePreference,
+  writeStabilityAssistPreference,
 } from '../src/core/FlightPreferences'
 
 describe('keyboard flight preferences', () => {
@@ -126,5 +131,19 @@ describe('keyboard flight preferences', () => {
     writeCameraModePreference(storage, 'cockpit')
     expect(values.get(CAMERA_MODE_STORAGE_KEY)).toBe('cockpit')
     expect(readCameraModePreference(storage)).toBe('cockpit')
+  })
+
+  it('persists stability assist independently with a safe boolean fallback', () => {
+    const values = new Map<string, string>([[STABILITY_ASSIST_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeStabilityAssistPreference('1')).toBe(true)
+    expect(normalizeStabilityAssistPreference('bad')).toBe(DEFAULT_STABILITY_ASSIST)
+    expect(readStabilityAssistPreference(storage)).toBe(DEFAULT_STABILITY_ASSIST)
+    writeStabilityAssistPreference(storage, true)
+    expect(values.get(STABILITY_ASSIST_STORAGE_KEY)).toBe('true')
+    expect(readStabilityAssistPreference(storage)).toBe(true)
   })
 })

@@ -174,6 +174,18 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('restores a persisted stability-assist state before flight input samples', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    input.setStabilityAssist(true)
+    expect(input.sampleWithDt(0).stabilityAssist).toBe(true)
+    input.setStabilityAssist(false)
+    expect(input.sampleWithDt(0).stabilityAssist).toBe(false)
+
+    input.dispose()
+  })
+
   it('holds and releases the opt-in speed brake without changing default controls', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

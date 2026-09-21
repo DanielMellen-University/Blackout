@@ -171,6 +171,8 @@ import {
   writeGhostVisibilityPreference,
   readCameraModePreference,
   writeCameraModePreference,
+  readStabilityAssistPreference,
+  writeStabilityAssistPreference,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -380,6 +382,7 @@ async function boot(): Promise<void> {
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialCameraMode = readCameraModePreference(qualityStorage)
+  const initialStabilityAssist = readStabilityAssistPreference(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -502,6 +505,7 @@ async function boot(): Promise<void> {
   input.setKeyboardYawPreference(initialKeyboardYaw)
   input.setKeyboardRollPreference(initialKeyboardRoll)
   input.setKeyboardPitchPreference(initialKeyboardPitch)
+  input.setStabilityAssist(initialStabilityAssist)
   if (yawSelect) yawSelect.value = initialKeyboardYaw
   if (rollSelect) rollSelect.value = initialKeyboardRoll
   if (pitchSelect) pitchSelect.value = initialKeyboardPitch
@@ -1156,6 +1160,7 @@ async function boot(): Promise<void> {
       }
       const stabilityAssist = input.consumeStabilityAssistToggle()
       if (stabilityAssist !== null) {
+        writeStabilityAssistPreference(qualityStorage, stabilityAssist)
         showBanner(
           stabilityAssist ? 'FLIGHT ASSIST ON / PITCH + BANK TRIM' : 'FLIGHT ASSIST OFF',
           1600,

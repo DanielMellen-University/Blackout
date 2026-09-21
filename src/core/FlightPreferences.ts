@@ -15,6 +15,8 @@ export const GHOST_VISIBILITY_STORAGE_KEY = 'blackout.ghostVisible'
 export const DEFAULT_GHOST_VISIBLE = true
 export const CAMERA_MODE_STORAGE_KEY = 'blackout.cameraMode'
 export const DEFAULT_CAMERA_MODE: CameraMode = 'chase'
+export const STABILITY_ASSIST_STORAGE_KEY = 'blackout.stabilityAssist'
+export const DEFAULT_STABILITY_ASSIST = false
 
 export function normalizeKeyboardYawPreference(
   value: unknown,
@@ -193,6 +195,40 @@ export function writeCameraModePreference(
 ): void {
   try {
     storage?.setItem(CAMERA_MODE_STORAGE_KEY, normalizeCameraMode(mode))
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function normalizeStabilityAssistPreference(
+  value: unknown,
+  fallback = DEFAULT_STABILITY_ASSIST,
+): boolean {
+  if (value === true || value === 'true' || value === '1') return true
+  if (value === false || value === 'false' || value === '0') return false
+  return fallback
+}
+
+export function readStabilityAssistPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback = DEFAULT_STABILITY_ASSIST,
+): boolean {
+  try {
+    return normalizeStabilityAssistPreference(storage?.getItem(STABILITY_ASSIST_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeStabilityAssistPreference(undefined, fallback)
+  }
+}
+
+export function writeStabilityAssistPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  enabled: boolean,
+): void {
+  try {
+    storage?.setItem(
+      STABILITY_ASSIST_STORAGE_KEY,
+      normalizeStabilityAssistPreference(enabled) ? 'true' : 'false',
+    )
   } catch {
     /* Storage is optional. */
   }

@@ -82,6 +82,11 @@ export class InputManager {
     this.keyboardPitchPreference = normalizeKeyboardPitchPreference(preference)
   }
 
+  setStabilityAssist(enabled: boolean): void {
+    this.stabilityAssist = enabled === true
+    this.controls.stabilityAssist = this.stabilityAssist
+  }
+
   get keyboardPitch(): KeyboardPitchPreference {
     return this.keyboardPitchPreference
   }
