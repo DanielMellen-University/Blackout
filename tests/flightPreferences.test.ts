@@ -3,6 +3,8 @@ import {
   DEFAULT_KEYBOARD_YAW,
   DEFAULT_KEYBOARD_ROLL,
   DEFAULT_KEYBOARD_PITCH,
+  DEFAULT_GHOST_VISIBLE,
+  GHOST_VISIBILITY_STORAGE_KEY,
   KEYBOARD_PITCH_STORAGE_KEY,
   KEYBOARD_ROLL_STORAGE_KEY,
   KEYBOARD_YAW_STORAGE_KEY,
@@ -12,12 +14,15 @@ import {
   normalizeKeyboardRollPreference,
   normalizeKeyboardYawPreference,
   normalizeKeyboardPitchPreference,
+  normalizeGhostVisibilityPreference,
   readKeyboardRollPreference,
   readKeyboardYawPreference,
   readKeyboardPitchPreference,
+  readGhostVisibilityPreference,
   writeKeyboardRollPreference,
   writeKeyboardYawPreference,
   writeKeyboardPitchPreference,
+  writeGhostVisibilityPreference,
 } from '../src/core/FlightPreferences'
 
 describe('keyboard flight preferences', () => {
@@ -76,5 +81,31 @@ describe('keyboard flight preferences', () => {
     expect(values.get(KEYBOARD_PITCH_STORAGE_KEY)).toBe('w-down')
     expect(readKeyboardPitchPreference(storage)).toBe('w-down')
     expect(keyboardPitchPreferenceLabel('w-down')).toBe('W DOWN / S UP')
+  })
+
+  it('persists ghost visibility without coupling it to keyboard preferences', () => {
+    const values = new Map<string, string>([[GHOST_VISIBILITY_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeGhostVisibilityPreference('false')).toBe(false)
+    expect(normalizeGhostVisibilityPreference('1')).toBe(true)
+    expect(normalizeGhostVisibilityPreference('bad')).toBe(DEFAULT_GHOST_VISIBLE)
+    expect(readGhostVisibilityPreference(storage)).toBe(DEFAULT_GHOST_VISIBLE)
+    writeGhostVisibilityPreference(storage, false)
+    expect(values.get(GHOST_VISIBILITY_STORAGE_KEY)).toBe('false')
+    expect(readGhostVisibilityPreference(storage)).toBe(false)
+    writeGhostVisibilityPreference(storage, true)
+    expect(values.get(GHOST_VISIBILITY_STORAGE_KEY)).toBe('true')
+  })
+
+  it('survives ghost preference storage failures', () => {
+    const storage = {
+      getItem: () => { throw new Error('blocked') },
+      setItem: () => { throw new Error('blocked') },
+    }
+    expect(readGhostVisibilityPreference(storage, false)).toBe(false)
+    expect(() => writeGhostVisibilityPreference(storage, true)).not.toThrow()
   })
 })

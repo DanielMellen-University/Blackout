@@ -167,6 +167,8 @@ import {
   normalizeKeyboardPitchPreference,
   readKeyboardPitchPreference,
   writeKeyboardPitchPreference,
+  readGhostVisibilityPreference,
+  writeGhostVisibilityPreference,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -370,6 +372,7 @@ async function boot(): Promise<void> {
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
+  const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialQualityProfile = renderQualityProfile(renderQuality)
 
   const renderer = new WebGLRenderer({
@@ -650,7 +653,7 @@ async function boot(): Promise<void> {
   window.addEventListener('beforeunload', disposeRuntime, { once: true })
 
   let playing = false
-  let ghostVisible = true
+  let ghostVisible = initialGhostVisible
   let banner: string | null = null
   let crashMessage = 'CRASH - press R'
   let bannerTone: HudBannerTone = 'info'
@@ -1136,6 +1139,7 @@ async function boot(): Promise<void> {
       }
       if (input.consumeGhostToggle()) {
         ghostVisible = !ghostVisible
+        writeGhostVisibilityPreference(qualityStorage, ghostVisible)
         ghost.setVisible(ghostVisible && playing)
         showBanner(ghostVisible ? 'GHOST PATH ON' : 'GHOST PATH OFF', 1200, 'info')
       }

@@ -9,6 +9,8 @@ export const KEYBOARD_ROLL_STORAGE_KEY = 'blackout.keyboardRoll'
 export const DEFAULT_KEYBOARD_ROLL: KeyboardRollPreference = 'q-right'
 export const KEYBOARD_PITCH_STORAGE_KEY = 'blackout.keyboardPitch'
 export const DEFAULT_KEYBOARD_PITCH: KeyboardPitchPreference = 'w-up'
+export const GHOST_VISIBILITY_STORAGE_KEY = 'blackout.ghostVisible'
+export const DEFAULT_GHOST_VISIBLE = true
 
 export function normalizeKeyboardYawPreference(
   value: unknown,
@@ -125,4 +127,39 @@ export function keyboardPitchPreferenceLabel(preference: KeyboardPitchPreference
   return normalizeKeyboardPitchPreference(preference) === 'w-down'
     ? 'W DOWN / S UP'
     : 'W UP / S DOWN'
+}
+
+/** Keep the replay path preference finite-safe across storage versions. */
+export function normalizeGhostVisibilityPreference(
+  value: unknown,
+  fallback = DEFAULT_GHOST_VISIBLE,
+): boolean {
+  if (value === true || value === 'true' || value === '1') return true
+  if (value === false || value === 'false' || value === '0') return false
+  return fallback
+}
+
+export function readGhostVisibilityPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback = DEFAULT_GHOST_VISIBLE,
+): boolean {
+  try {
+    return normalizeGhostVisibilityPreference(storage?.getItem(GHOST_VISIBILITY_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeGhostVisibilityPreference(undefined, fallback)
+  }
+}
+
+export function writeGhostVisibilityPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  visible: boolean,
+): void {
+  try {
+    storage?.setItem(
+      GHOST_VISIBILITY_STORAGE_KEY,
+      normalizeGhostVisibilityPreference(visible) ? 'true' : 'false',
+    )
+  } catch {
+    /* Storage is optional. */
+  }
 }
