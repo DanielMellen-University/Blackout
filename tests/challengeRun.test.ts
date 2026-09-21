@@ -586,6 +586,39 @@ describe('ChallengeRun', () => {
     expect(run.consumeContractCompletionCue()).toBeNull()
   })
 
+  it('requires a selected radar destination for the radar-run contract', () => {
+    const run = new ChallengeRun(null)
+    let targetSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      run.reset('seed:radar-run', 1, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT RADAR RUN') {
+        targetSeed = seed
+        break
+      }
+    }
+    expect(targetSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:radar-run', 1, 'balanced', targetSeed)
+    expect(run.contractBriefing).toContain('LOCK ONE RADAR CONTACT')
+    run.update(0.1, 8)
+    run.recordDestination('city')
+    expect(run.contractComplete).toBe(false)
+    run.recordRadarLock(true)
+    expect(run.contractProgress).toBeCloseTo(0.5)
+    run.recordDestination('city')
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractCompletionCue()).toBe('RADAR RUN')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.contractKind).toBe('target')
+    expect(result.contractComplete).toBe(true)
+    expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
+  })
+
   it('turns low-level contract time into a bounded terrain-hugger reward', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:low-level', 1, 'balanced', 11)

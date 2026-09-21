@@ -1173,6 +1173,14 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
+  /** Record an explicit radar target selection without adding scene state. */
+  recordRadarLock(selected: boolean): void {
+    if (this.phase === 'complete' || this.phase === 'failed' || selected !== true) return
+    const wasComplete = this.contract.complete
+    this.contract.recordRadarLock(true)
+    this.contractCuePending ||= !wasComplete && this.contract.complete
+  }
+
   /** Record one distinct natural biome encountered during the sortie. */
   recordBiome(biome: string): void {
     if (this.phase === 'complete' || this.phase === 'failed') return

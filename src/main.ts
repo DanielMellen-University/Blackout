@@ -1746,6 +1746,7 @@ async function boot(): Promise<void> {
       if (radarTargetCycleQueued) {
         radarTargetCycleQueued = false
         const selected = radar.cycleTarget()
+        challenge.recordRadarLock(selected !== null)
         showBanner(
           selected ? `RADAR LOCK / ${selected.label}` : 'NO SETTLEMENTS IN RANGE',
           1400,

@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -50,6 +50,7 @@ const NIGHT_TARGET_SECONDS = 12
 const BUTTER_LANDING_THRESHOLD = 0.92
 const DRY_MIN_MPS = 280
 const DRY_TARGET_SECONDS = 12
+const RADAR_RUN_DETAIL = 'LOCK ONE RADAR CONTACT THEN ARRIVE'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -79,6 +80,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'night', label: 'NIGHT FLIGHT', target: NIGHT_TARGET_SECONDS },
   { kind: 'butter', label: 'BUTTER LANDING', target: BUTTER_LANDING_THRESHOLD },
   { kind: 'dry', label: 'DRY RUN', target: DRY_TARGET_SECONDS },
+  { kind: 'target', label: 'RADAR RUN', target: 1 },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -109,6 +111,7 @@ export class SortieContractTracker {
   private precisionStreak = 0
   private nightSeconds = 0
   private drySeconds = 0
+  private radarLocked = false
 
   reset(seed: number | undefined, totalGates: number): void {
     this.definition = null
@@ -137,6 +140,7 @@ export class SortieContractTracker {
     this.precisionStreak = 0
     this.nightSeconds = 0
     this.drySeconds = 0
+    this.radarLocked = false
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
     const base = CONTRACTS[indexForSeed(seed)]!
@@ -169,6 +173,12 @@ export class SortieContractTracker {
 
   recordDestination(count: number, kind?: 'city' | 'village'): void {
     if (this.completeValue) return
+    if (this.definition?.kind === 'target') {
+      if (!this.radarLocked || (kind !== 'city' && kind !== 'village')) return
+      this.progressValue = 1
+      this.completeValue = true
+      return
+    }
     if (this.definition?.kind === 'scout') {
       if (!Number.isFinite(count)) return
       this.progressValue = clamp01(count / this.definition.target)
@@ -181,6 +191,13 @@ export class SortieContractTracker {
     this.detailValue = settlementTourDetail(this.visitedCity, this.visitedVillage)
     this.progressValue = (this.visitedCity ? 0.5 : 0) + (this.visitedVillage ? 0.5 : 0)
     if (this.visitedCity && this.visitedVillage) this.completeValue = true
+  }
+
+  /** Require an explicit radar selection before a target arrival can score. */
+  recordRadarLock(selected: boolean): void {
+    if (this.definition?.kind !== 'target' || this.completeValue || selected !== true) return
+    this.radarLocked = true
+    this.progressValue = 0.5
   }
 
   /** Turn the existing gate-and-stunt chain into a bounded arcade objective. */
@@ -468,7 +485,7 @@ function indexForSeed(seed: number): number {
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
-  // night-flight, butter-landing, and dry-run objectives.
+  // night-flight, butter-landing, dry-run, and radar-run objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -492,6 +509,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 107 === 31) return 24
   if (mixed % 109 === 47) return 25
   if (mixed % 113 === 67) return 26
+  if (mixed % 127 === 83) return 27
   return mixed % legacyContractCount
 }
 
@@ -548,6 +566,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'night': return `FLY AFTER DARK FOR ${Math.round(target)}S`
     case 'butter': return 'LAND WITH A BUTTER TOUCHDOWN'
     case 'dry': return `HOLD DRY POWER ABOVE ${Math.round(DRY_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
+    case 'target': return RADAR_RUN_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }
