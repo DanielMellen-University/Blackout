@@ -129,6 +129,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Seeded sorties can assign `DEADSTICK`, requiring an airborne fuel-out before the final landing while reusing the existing glide-to-base guidance.
 - The curated course picker now includes `River run`, a low meandering inland-water route validated by the same terrain corridor planner.
 - Seeded sorties can assign `FRONT CHASER`, rewarding airborne time while the existing weather front blends between states.
+- Radar keeps higher-tier and nearer settlement contacts even when streamed landmarks arrive in a noisy order, with a fixed scan budget.
 - Radar trims contact density on Low and reduced-motion settings and ignores malformed landmarks, keeping its labels readable and trustworthy.
 - Live radar contacts now carry a restrained sweep cue, while Low and reduced-motion settings keep the readout static.
 - Entering a generated city or village's radar range announces its biome once per sortie, turning the streamed settlements into destinations without adding scene work.

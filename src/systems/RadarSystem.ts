@@ -35,6 +35,8 @@ export interface RadarGate {
 
 export const RADAR_RANGE_METERS = 8_000
 export const MAX_RADAR_CONTACTS = 6
+/** Bound source work even if a caller hands radar an unexpectedly large list. */
+export const MAX_RADAR_LANDMARK_SCAN = 128
 
 /**
  * Reusable, low-cost navigation sweep for the HUD. Contacts are rebuilt only
@@ -76,8 +78,9 @@ export class RadarSystem {
     const safeZ = finiteOr(pz, 0)
     const safeHeading = finiteOr(heading, 0)
     if (gate) this.addContact('gate', gate.x, gate.y, gate.z, safeX, safeZ, safeHeading)
-    for (const landmark of landmarks) {
-      if (this.contacts.length >= this.visibleContactLimit) break
+    const landmarkLimit = Math.min(MAX_RADAR_LANDMARK_SCAN, landmarks.length)
+    for (let index = 0; index < landmarkLimit; index += 1) {
+      const landmark = landmarks[index]!
       this.addContact(
         landmark.kind,
         landmark.x,
@@ -146,15 +149,30 @@ export class RadarSystem {
     id?: string,
     biome?: string,
   ): void {
-    if (this.contacts.length >= this.visibleContactLimit) return
     if (!Number.isFinite(x) || !Number.isFinite(z)) return
     const dx = x - px
     const dz = z - pz
     const distance = Math.hypot(dx, dz)
     if (!Number.isFinite(distance) || distance > RADAR_RANGE_METERS) return
     const bearing = wrapAngle(Math.atan2(dx, dz) - heading)
-    const contact = this.contactPool[this.contacts.length]!
-    contact.kind = normalizeRadarKind(kind)
+    const normalizedKind = normalizeRadarKind(kind)
+    const candidatePriority = radarKindPriority(normalizedKind)
+    let contactIndex = this.contacts.length
+    if (contactIndex >= this.visibleContactLimit) {
+      let worstIndex = 0
+      for (let index = 1; index < this.contacts.length; index += 1) {
+        const current = this.contacts[index]!
+        const worst = this.contacts[worstIndex]!
+        if (contactIsWorse(current, worst)) worstIndex = index
+      }
+      const worst = this.contacts[worstIndex]!
+      if (!candidateBeats(candidatePriority, distance, worst)) return
+      contactIndex = worstIndex
+    } else {
+      this.contacts.push(this.contactPool[contactIndex]!)
+    }
+    const contact = this.contacts[contactIndex]!
+    contact.kind = normalizedKind
     contact.distance = distance
     contact.bearing = bearing
     contact.label = radarContactLabel(contact.kind)
@@ -163,7 +181,6 @@ export class RadarSystem {
     contact.z = z
     contact.id = typeof id === 'string' ? id : ''
     contact.biome = typeof biome === 'string' ? biome : ''
-    this.contacts.push(contact)
   }
 }
 
@@ -213,6 +230,18 @@ export function radarTargetArrivalLabel(kind: RadarContactKind): string {
 
 function radarKindPriority(kind: RadarContactKind): number {
   return kind === 'gate' ? 0 : kind === 'city' ? 1 : 2
+}
+
+function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact): boolean {
+  const candidatePriority = radarKindPriority(candidate.kind)
+  const worstPriority = radarKindPriority(currentWorst.kind)
+  return candidatePriority > worstPriority ||
+    (candidatePriority === worstPriority && candidate.distance > currentWorst.distance)
+}
+
+function candidateBeats(priority: number, distance: number, currentWorst: RadarContact): boolean {
+  const worstPriority = radarKindPriority(currentWorst.kind)
+  return priority < worstPriority || (priority === worstPriority && distance < currentWorst.distance)
 }
 
 function normalizeRadarKind(value: unknown): RadarContactKind {

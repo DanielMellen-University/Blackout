@@ -3,6 +3,7 @@ import {
   MAX_RADAR_CONTACTS,
   RADAR_RANGE_METERS,
   RadarSystem,
+  type RadarLandmark,
   radarBearingArrow,
   radarDistanceLabel,
 } from '../src/systems/RadarSystem'
@@ -32,6 +33,22 @@ describe('arcade radar sweep', () => {
     expect(contacts).toHaveLength(MAX_RADAR_CONTACTS)
     expect(contacts.every(contact => contact.distance <= RADAR_RANGE_METERS)).toBe(true)
     expect(contacts.every(contact => Number.isFinite(contact.bearing))).toBe(true)
+  })
+
+  it('keeps higher-tier and nearer contacts when source order is noisy', () => {
+    const radar = new RadarSystem()
+    const landmarks: RadarLandmark[] = Array.from({ length: MAX_RADAR_CONTACTS }, (_, index) => ({
+      x: 7_000 + index * 20,
+      y: 0,
+      z: 0,
+      kind: 'village' as const,
+    }))
+    landmarks.push({ x: 140, y: 0, z: 0, kind: 'city' as const })
+    landmarks.push({ x: 80, y: 0, z: 0, kind: 'village' as const })
+    const contacts = radar.update(0, 0, 0, null, landmarks)
+    expect(contacts.some(contact => contact.kind === 'city' && contact.distance === 140)).toBe(true)
+    expect(contacts.some(contact => contact.kind === 'village' && contact.distance === 80)).toBe(true)
+    expect(contacts).toHaveLength(MAX_RADAR_CONTACTS)
   })
 
   it('trims the sweep on low quality and reduced-motion displays', () => {
