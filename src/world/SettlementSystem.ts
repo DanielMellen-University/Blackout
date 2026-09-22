@@ -428,7 +428,9 @@ export class SettlementSystem {
         if (this.inFlight?.generation === this.generation) {
           if (this.inFlight.type === 'settlement') {
             this.checked.delete(this.inFlight.key)
-            this.queue.unshift(this.inFlight)
+            // The queue is reverse-prioritized and consumed with pop().
+            // Append the failed job so it remains the next retry.
+            this.queue.push(this.inFlight)
           } else {
             // Keep the canonical edge marked while the synchronous fallback
             // consumes it. Otherwise a second endpoint can enqueue a duplicate.
@@ -836,8 +838,10 @@ export class SettlementSystem {
         const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - z
         const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - x
         const bz = (b.cz + .5) * SETTLEMENT_CELL_SIZE - z
-        return queueScore(a) - queueScore(b)
-          || Math.hypot(ax, az) - Math.hypot(bx, bz)
+        // Keep the farthest job at index zero so pop() consumes the nearest
+        // cell without shifting every queued plan on each dispatch.
+        return queueScore(b) - queueScore(a)
+          || Math.hypot(bx, bz) - Math.hypot(ax, az)
       })
     }
     this.retryProtectedAnchors(x, z)
@@ -847,14 +851,14 @@ export class SettlementSystem {
     // budget before a nearby city or village finishes planning.
     if (this.ready.length > 1) {
       this.ready.sort((a, b) => {
-        const priority = settlementLoadPriority(a.plan) - settlementLoadPriority(b.plan)
+        const priority = settlementLoadPriority(b.plan) - settlementLoadPriority(a.plan)
         if (priority) return priority
         const ad = Math.hypot(a.plan.x - x, a.plan.z - z)
         const bd = Math.hypot(b.plan.x - x, b.plan.z - z)
-        return ad - bd
+        return bd - ad
       })
     }
-    const ready = this.ready.shift()
+    const ready = this.ready.pop()
     if (ready && this.checked.has(ready.key)) {
       if (this.canLoad(ready.plan, x, z)) this.loaded.set(ready.key, this.build(ready.plan))
       else this.ready.push(ready)
@@ -871,7 +875,7 @@ export class SettlementSystem {
     }
     // Terrain suitability runs off the render thread. One in-flight request
     // bounds worker traffic; stale replies after reseeds are discarded.
-    const job = this.inFlight ? undefined : this.queue.shift()
+    const job = this.inFlight ? undefined : this.queue.pop()
     if (job) {
       this.checked.add(job.key)
       if (this.worker) {
