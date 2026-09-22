@@ -1065,24 +1065,25 @@ export class ChallengeRun {
     this.peakPositiveG = Math.max(this.peakPositiveG, safeLoadFactor)
     this.peakNegativeG = Math.min(this.peakNegativeG, safeLoadFactor)
     const wasContractComplete = this.contract.complete
-    this.contract.recordLowLevel(safeTerrainClearance, safeDt, safeSpeed > 5)
-    this.contract.recordSpeedBand(safeSpeed, safeDt, safeSpeed > 5)
-    this.contract.recordFuel(fuelFraction)
-    this.contract.recordWeather(rain, snow, safeDt, safeSpeed > 5)
-    this.contract.recordBrake(safeSpeed, safeDt, airbrake, airborne)
-    this.contract.recordHeat(engineHeat, safeSpeed, safeDt, airborne)
-    this.contract.recordCrosswind(crosswindMps, safeDt, airborne)
-    this.contract.recordGControl(safeLoadFactor, safeSpeed, safeDt, airborne)
-    this.contract.recordDeadstick(fuelFraction, airborne)
-    this.contract.recordFront(weatherTransitioning, safeDt, airborne)
-    this.contract.recordBoost(afterburner, safeSpeed, safeDt, airborne)
-    this.contract.recordMach(safeSpeed, safeDt, airborne)
-    this.contract.recordLevelFlight(safeAltitude, safeDt, airborne)
-    this.contract.recordNight(daylight, safeDt, airborne)
-    this.contract.recordDry(afterburner, safeSpeed, safeDt, airborne)
-    this.contract.recordGust(weatherGust, safeDt, airborne)
-    this.contract.recordDistance(safeDistance, airborne)
-    this.contract.recordHighDive(safeAltitude, airborne)
+    this.contract.recordFixedStep(
+      safeDt,
+      safeSpeed,
+      safeAltitude,
+      rain,
+      snow,
+      airbrake,
+      airborne,
+      engineHeat,
+      crosswindMps,
+      safeLoadFactor,
+      fuelFraction,
+      weatherTransitioning,
+      afterburner,
+      safeTerrainClearance,
+      daylight,
+      safeDistance,
+      weatherGust,
+    )
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
       this.phase = this.totalGates > 0 ? 'running' : 'returning'

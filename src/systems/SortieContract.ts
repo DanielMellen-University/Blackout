@@ -222,6 +222,53 @@ export class SortieContractTracker {
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
+  /**
+   * Feed one fixed-step telemetry sample to the active contract only.
+   * Contract assignment is exclusive, so dispatching the hot path once avoids
+   * calling every recorder's kind guard on every simulation tick.
+   */
+  recordFixedStep(
+    dt: number,
+    speedMps: number,
+    altitudeM: number,
+    rain: number,
+    snow: number,
+    airbrake: boolean,
+    airborne: boolean,
+    engineHeat: number,
+    crosswindMps: number,
+    loadFactor: number,
+    fuelFraction: number,
+    weatherTransitioning: boolean,
+    afterburner: boolean,
+    terrainClearanceM: number,
+    daylight: number,
+    distanceM: number,
+    weatherGust: number,
+  ): void {
+    switch (this.definition?.kind) {
+      case 'low-level': this.recordLowLevel(terrainClearanceM, dt, speedMps > 5); break
+      case 'speed-band': this.recordSpeedBand(speedMps, dt, speedMps > 5); break
+      case 'fuel': this.recordFuel(fuelFraction); break
+      case 'weather': this.recordWeather(rain, snow, dt, speedMps > 5); break
+      case 'brake': this.recordBrake(speedMps, dt, airbrake, airborne); break
+      case 'heat': this.recordHeat(engineHeat, speedMps, dt, airborne); break
+      case 'crosswind': this.recordCrosswind(crosswindMps, dt, airborne); break
+      case 'g-control': this.recordGControl(loadFactor, speedMps, dt, airborne); break
+      case 'deadstick': this.recordDeadstick(fuelFraction, airborne); break
+      case 'front': this.recordFront(weatherTransitioning, dt, airborne); break
+      case 'boost': this.recordBoost(afterburner, speedMps, dt, airborne); break
+      case 'mach': this.recordMach(speedMps, dt, airborne); break
+      case 'level': this.recordLevelFlight(altitudeM, dt, airborne); break
+      case 'night': this.recordNight(daylight, dt, airborne); break
+      case 'dry': this.recordDry(afterburner, speedMps, dt, airborne); break
+      case 'gust': this.recordGust(weatherGust, dt, airborne); break
+      case 'range': this.recordDistance(distanceM, airborne); break
+      case 'high-dive': this.recordHighDive(altitudeM, airborne); break
+      default: break
+    }
+  }
+
   /** Update readable task progress only when its display bucket changes. */
   private updateProgressDetail(current: number, unit: string, step: number, decimals = 0): void {
     if (!this.definition || !Number.isFinite(current) || !Number.isFinite(step) || step <= 0) return

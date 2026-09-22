@@ -1023,6 +1023,36 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('dispatches fixed-step telemetry through only the active contract path', () => {
+    const tracker = new SortieContractTracker()
+    let lowLevelSeed = -1
+    let rangeSeed = -1
+    let fuelSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'low-level' && lowLevelSeed < 0) lowLevelSeed = seed
+      if (tracker.kind === 'range' && rangeSeed < 0) rangeSeed = seed
+      if (tracker.kind === 'fuel' && fuelSeed < 0) fuelSeed = seed
+      if (lowLevelSeed >= 0 && rangeSeed >= 0 && fuelSeed >= 0) break
+    }
+    expect(lowLevelSeed).toBeGreaterThanOrEqual(0)
+    expect(rangeSeed).toBeGreaterThanOrEqual(0)
+    expect(fuelSeed).toBeGreaterThanOrEqual(0)
+
+    tracker.reset(lowLevelSeed, 5)
+    tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
+    expect(tracker.progress).toBeCloseTo(0.5)
+
+    tracker.reset(rangeSeed, 5)
+    tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
+    expect(tracker.progress).toBeCloseTo(0.5)
+
+    tracker.reset(fuelSeed, 5)
+    tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
+    expect(tracker.progress).toBeCloseTo(2 / 3)
+    expect(tracker.complete).toBe(false)
+  })
+
   it('does not assign a gate-only contract to a no-gate sortie', () => {
     const tracker = new SortieContractTracker()
     let cleanSeed = -1
