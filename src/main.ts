@@ -1787,6 +1787,11 @@ async function boot(): Promise<void> {
             aircraft.position.z,
             RADAR_RANGE_METERS,
           ),
+          world.traffic.getRadarLandmarks(
+            aircraft.position.x,
+            aircraft.position.z,
+            RADAR_RANGE_METERS,
+          ),
         )
         radarNextUpdateMs = nowMs + RADAR_UPDATE_INTERVAL_MS
         if (radar.consumeLockLost() && (!banner || bannerUntil <= nowMs)) {
@@ -1838,7 +1843,7 @@ async function boot(): Promise<void> {
       }
       if (aircraft.status === 'ok' && !aircraft.onGround && nowMs >= radarDiscoveryCooldownUntil) {
         for (const contact of radarContacts) {
-          if (contact.kind === 'gate' || !contact.id || radarDiscovered.has(contact.id)) continue
+          if (contact.kind === 'gate' || contact.kind === 'traffic' || !contact.id || radarDiscovered.has(contact.id)) continue
           radarDiscovered.add(contact.id)
           radarDiscoveryCooldownUntil = nowMs + 2400
           showBanner(radarDiscoveryLabel(contact.kind, contact.biome), 2800, 'success')

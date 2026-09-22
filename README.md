@@ -64,6 +64,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Radar sweeps now use a stable bounded insertion pass for gate/tier/range ordering, avoiding generic sort machinery while keeping target cycling unchanged.
 - Retiring terrain replacements now use swap-pop cleanup, trimming fade teardown churn without changing streaming coverage or replacement order.
 - Distant air traffic now adds six deterministic low-poly jet silhouettes on a bounded 12 Hz pool, with cell recycling, title hiding, and Low-quality instance reduction.
+- Nearby traffic now appears as low-priority `TRAFFIC` radar contacts without stealing city or village destination locks.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower

@@ -1,12 +1,12 @@
 import type { RenderQuality } from '../core/RenderQuality'
 
-export type RadarContactKind = 'gate' | 'city' | 'village'
+export type RadarContactKind = 'gate' | 'city' | 'village' | 'traffic'
 
 export interface RadarLandmark {
   x: number
   y: number
   z: number
-  kind: 'city' | 'village'
+  kind: 'city' | 'village' | 'traffic'
   /** Stable streamed id used for one-shot discovery feedback. */
   id?: string
   /** Source biome keeps the discovery cue tied to the generated world. */
@@ -80,6 +80,7 @@ export class RadarSystem {
     heading: number,
     gate: RadarGate | null,
     landmarks: readonly RadarLandmark[],
+    traffic: readonly RadarLandmark[] = [],
   ): readonly RadarContact[] {
     this.contacts.length = 0
     const safeX = finiteOr(px, 0)
@@ -91,6 +92,21 @@ export class RadarSystem {
       const landmark = landmarks[index]!
       this.addContact(
         landmark.kind,
+        landmark.x,
+        landmark.y,
+        landmark.z,
+        safeX,
+        safeZ,
+        safeHeading,
+        landmark.id,
+        landmark.biome,
+      )
+    }
+    const trafficLimit = Math.min(MAX_RADAR_LANDMARK_SCAN, traffic.length)
+    for (let index = 0; index < trafficLimit; index += 1) {
+      const landmark = traffic[index]!
+      this.addContact(
+        'traffic',
         landmark.x,
         landmark.y,
         landmark.z,
@@ -127,7 +143,7 @@ export class RadarSystem {
     let next: RadarContact | null = null
     let foundSelected = false
     for (const contact of this.contacts) {
-      if (!contact.id || contact.kind === 'gate') continue
+      if (!contact.id || contact.kind === 'gate' || contact.kind === 'traffic') continue
       if (!first) first = contact
       if (foundSelected && !next) next = contact
       if (contact.id === this.selectedTargetId) foundSelected = true
@@ -143,10 +159,12 @@ export class RadarSystem {
   }
 
   /** Return the selected settlement only while it remains in the current range. */
-  selectedTarget(): RadarContact | null {
+  selectedTarget(): (RadarContact & { kind: 'city' | 'village' }) | null {
     if (!this.selectedTargetId) return null
     for (const contact of this.contacts) {
-      if (contact.id === this.selectedTargetId && contact.kind !== 'gate') return contact
+      if (contact.id === this.selectedTargetId && (contact.kind === 'city' || contact.kind === 'village')) {
+        return contact as RadarContact & { kind: 'city' | 'village' }
+      }
     }
     return null
   }
@@ -206,12 +224,13 @@ export class RadarSystem {
 export function radarContactLabel(kind: RadarContactKind): string {
   if (kind === 'gate') return 'GATE'
   if (kind === 'city') return 'CITY'
+  if (kind === 'traffic') return 'TRAFFIC'
   return 'VILLAGE'
 }
 
 /** One-shot exploration copy for a newly entered city or village range. */
 export function radarDiscoveryLabel(kind: RadarContactKind, biome: unknown): string {
-  if (kind === 'gate') return ''
+  if (kind === 'gate' || kind === 'traffic') return ''
   const label = radarContactLabel(kind)
   const safeBiome = typeof biome === 'string' && /^[a-z]+$/.test(biome)
     ? biome.toUpperCase()
@@ -251,7 +270,7 @@ export function radarTargetArrivalLabel(kind: RadarContactKind): string {
 }
 
 function radarKindPriority(kind: RadarContactKind): number {
-  return kind === 'gate' ? 0 : kind === 'city' ? 1 : 2
+  return kind === 'gate' ? 0 : kind === 'city' ? 1 : kind === 'village' ? 2 : 3
 }
 
 /** Stable bounded ordering without invoking Array.sort on every radar sweep. */
@@ -297,7 +316,7 @@ function candidateBeats(
 }
 
 function normalizeRadarKind(value: unknown): RadarContactKind {
-  return value === 'gate' || value === 'city' ? value : 'village'
+  return value === 'gate' || value === 'city' || value === 'traffic' ? value : 'village'
 }
 
 function wrapAngle(value: number): number {

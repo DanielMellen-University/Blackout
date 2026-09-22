@@ -30,6 +30,19 @@ describe('arcade radar sweep', () => {
     expect(contacts[0]!.bearing).toBe(0)
   })
 
+  it('keeps traffic below settlements and out of destination cycling', () => {
+    const radar = new RadarSystem()
+    const contacts = radar.update(0, 0, 0, null, [
+      { x: 300, y: 0, z: 0, kind: 'city', id: 'city-1' },
+    ], [
+      { x: 100, y: 600, z: 0, kind: 'traffic', id: 'traffic-1' },
+    ])
+    expect(contacts.map(contact => contact.kind)).toEqual(['city', 'traffic'])
+    expect(contacts[1]!.label).toBe('TRAFFIC')
+    expect(radar.cycleTarget()?.id).toBe('city-1')
+    expect(radar.cycleTarget()?.id).toBe('city-1')
+  })
+
   it('caps contacts and ignores distant or malformed positions', () => {
     const radar = new RadarSystem()
     const landmarks = Array.from({ length: MAX_RADAR_CONTACTS + 3 }, (_, index) => ({

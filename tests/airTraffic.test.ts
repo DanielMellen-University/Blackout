@@ -47,6 +47,19 @@ describe('bounded air traffic', () => {
     traffic.dispose()
   })
 
+  it('exposes nearby traffic through a pooled radar snapshot', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    traffic.reset(1234, 5_000, 0, 5_000)
+    const contacts = traffic.getRadarLandmarks(5_000, 5_000, 8_000)
+    expect(contacts).toHaveLength(AIR_TRAFFIC_COUNT)
+    expect(contacts.every(contact => contact.kind === 'traffic')).toBe(true)
+    expect(new Set(contacts.map(contact => contact.id)).size).toBe(AIR_TRAFFIC_COUNT)
+    traffic.setRenderQuality('low')
+    expect(traffic.getRadarLandmarks(5_000, 5_000, 8_000)).toHaveLength(3)
+    traffic.dispose()
+  })
+
   it('updates on a fixed cadence and recycles at cell boundaries', () => {
     const parent = new Group()
     const traffic = new AirTrafficSystem(parent)

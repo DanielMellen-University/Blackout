@@ -13,6 +13,7 @@ import {
   Vector3,
 } from 'three'
 import type { RenderQuality } from '../core/RenderQuality'
+import type { RadarLandmark } from '../systems/RadarSystem'
 
 /** Fixed traffic pool. Distant silhouettes add life without growing the scene. */
 export const AIR_TRAFFIC_COUNT = 6
@@ -68,6 +69,11 @@ export class AirTrafficSystem {
   private readonly geometry: BufferGeometry
   private readonly material: MeshBasicMaterial
   private readonly mesh: InstancedMesh
+  private readonly radarPool: RadarLandmark[] = Array.from(
+    { length: AIR_TRAFFIC_COUNT },
+    (_, index) => ({ x: 0, y: 0, z: 0, kind: 'traffic' as const, id: `traffic-${index}` }),
+  )
+  private readonly radarCache: RadarLandmark[] = []
   private readonly slots: TrafficSlot[] = Array.from(
     { length: AIR_TRAFFIC_COUNT },
     () => ({
@@ -123,6 +129,21 @@ export class AirTrafficSystem {
 
   get updateRevision(): number {
     return this.revision
+  }
+
+  /** Return a pooled nearby snapshot for the radar sweep. */
+  getRadarLandmarks(x: number, z: number, maxRange: number): readonly RadarLandmark[] {
+    const safeX = Number.isFinite(x) ? x : this.lastPlayerX
+    const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
+    const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
+    this.radarCache.length = 0
+    for (let index = 0; index < this.activeCount; index += 1) {
+      const contact = this.radarPool[index]!
+      const distance = Math.hypot(contact.x - safeX, contact.z - safeZ)
+      if (!trafficInRange(distance) || distance > range) continue
+      this.radarCache.push(contact)
+    }
+    return this.radarCache
   }
 
   /** Rebuild only the fixed slot data when a world or traffic cell changes. */
@@ -200,6 +221,7 @@ export class AirTrafficSystem {
       slot.phase = random(8) * Math.PI * 2
       slot.pitchPhase = random(9) * Math.PI * 2
       slot.scale = 0.72 + random(10) * 0.42
+      this.radarPool[index]!.id = `traffic:${cellX}:${cellZ}:${index}`
     }
   }
 
@@ -219,6 +241,10 @@ export class AirTrafficSystem {
       const z = this.anchorZ + slot.offsetZ + sin * slot.radiusZ
       const pitchWave = phase * 1.7 + slot.pitchPhase
       const y = this.baseY + slot.altitude + Math.sin(pitchWave) * slot.verticalSpan
+      const contact = this.radarPool[index]!
+      contact.x = x
+      contact.y = y
+      contact.z = z
       const distance = Math.hypot(x - playerX, z - playerZ)
       if (!trafficInRange(distance)) {
         _matrix.makeScale(0, 0, 0)
