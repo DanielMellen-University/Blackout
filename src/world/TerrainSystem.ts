@@ -178,6 +178,8 @@ export class TerrainSystem {
   private pendingSorted = false
   private readonly pendingKeys = new Set<string>()
   private readonly ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[] = []
+  /** Completed results retain their nearest-first order between stream reschedules. */
+  private readySorted = false
   private readonly activeKeys = new Set<string>()
   private readonly retiring: Chunk[] = []
   /** Reused fade-removal list keeps the per-frame stream path allocation-free. */
@@ -219,6 +221,7 @@ export class TerrainSystem {
     this.workers = new TerrainWorkerPool((job, data) => {
       if (this.disposed || job.generation !== this.generation) return
       this.ready.push({ job, data })
+      this.readySorted = false
       this.dispatchWorkers()
     }, job => {
       if (this.disposed || job.generation !== this.generation) return
@@ -346,6 +349,7 @@ export class TerrainSystem {
   clearAll(): void {
     this.generation++
     this.ready.length = 0
+    this.readySorted = false
     this.activeKeys.clear()
     for (const chunk of this.retiring) {
       chunk.root.removeFromParent()
@@ -516,6 +520,7 @@ export class TerrainSystem {
   }
 
   private scheduleAround(cx: number, cz: number): void {
+    this.readySorted = false
     const needed = new Set<string>()
     this.desiredTiles.clear()
     for (const tile of planTerrainTiles(cx + .5, cz + .5, VIEW_RADIUS)) {
@@ -634,12 +639,13 @@ export class TerrainSystem {
     // Completion order varies between workers; uploads follow current proximity.
     // Sort farthest-first so pop() removes the nearest result without shifting
     // every remaining ready item on each upload.
-    if (this.ready.length > 1) {
+    if (this.ready.length > 1 && !this.readySorted) {
       this.ready.sort((a, b) => {
         const aDistance = this.desiredTiles.get(tileKey(a.job.cx, a.job.cz, a.job.size))?.dist ?? Infinity
         const bDistance = this.desiredTiles.get(tileKey(b.job.cx, b.job.cz, b.job.size))?.dist ?? Infinity
         return bDistance - aDistance
       })
+      this.readySorted = true
     }
     while (this.ready.length && uploads < MAX_UPLOADS_PER_FRAME &&
       (uploads === 0 || performance.now() < deadline)) {
