@@ -73,6 +73,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Distant traffic now leaves a subtle pooled contrail, with Low quality disabling the batch and Balanced/High keeping it capped to the six-jet pool.
 - Distant traffic now carries subtle deterministic anti-collision beacons, with Low quality disabling the fixed beacon batch so the sky stays readable without extra scene growth.
 - External supersonic flight now carries a restrained pooled Mach-cone silhouette that fades in with airspeed, while Low, cockpit, ground, and reduced-motion paths keep it hidden.
+- Fast airborne land passes now leave a restrained pooled ground wake driven by cached clearance, while water, ground, cockpit, Low, and reduced-motion paths keep it hidden.
 - Low passes over rivers, lakes, and seas now leave a subtle three-strip water wake driven by existing surface and clearance sampling, with no particle growth.
 - Water-wake instance transforms are uploaded on construction, so the first skim frame renders immediately instead of waiting for a warm-up update.
 - External high-speed flight now adds a restrained pooled airflow streak effect that scales with airspeed and afterburner, while Low, cockpit view, and reduced-motion settings keep it off.
