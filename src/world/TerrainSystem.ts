@@ -174,6 +174,8 @@ export class TerrainSystem {
   readonly root = new Group()
   private readonly chunks = new Map<string, Chunk>()
   private readonly pending: PendingChunk[] = []
+  /** Pending work stays reverse-prioritized so dispatch can pop without shifts. */
+  private pendingSorted = false
   private readonly pendingKeys = new Set<string>()
   private readonly ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[] = []
   private readonly activeKeys = new Set<string>()
@@ -226,6 +228,7 @@ export class TerrainSystem {
       if (tile && !this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
         this.pending.push({ ...tile, rebuild: this.chunks.has(key) })
         this.pendingKeys.add(key)
+        this.pendingSorted = false
         this.sortPending()
       }
     })
@@ -356,6 +359,7 @@ export class TerrainSystem {
     this.chunks.clear()
     this.pending.length = 0
     this.pendingKeys.clear()
+    this.pendingSorted = false
     this.desiredTiles.clear()
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
@@ -529,6 +533,7 @@ export class TerrainSystem {
           if (needsRebuild && !this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
             this.pending.push({ cx: kx, cz: kz, size, dist, rebuild: true })
             this.pendingKeys.add(key)
+            this.pendingSorted = false
           }
         } else if (!this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
           this.pending.push({
@@ -539,6 +544,7 @@ export class TerrainSystem {
             rebuild: false,
           })
           this.pendingKeys.add(key)
+          this.pendingSorted = false
         }
     }
 
@@ -576,7 +582,8 @@ export class TerrainSystem {
   }
 
   private sortPending(): void {
-    this.pending.sort((a, b) => terrainBuildPriority(a) - terrainBuildPriority(b) || a.dist - b.dist)
+    this.pending.sort((a, b) => terrainBuildPriority(b) - terrainBuildPriority(a) || b.dist - a.dist)
+    this.pendingSorted = true
   }
 
   private requestFor(job: PendingChunk): TerrainBuildRequest | null {
@@ -605,6 +612,7 @@ export class TerrainSystem {
       const tile = this.desiredTiles.get(key)!
       this.pending.push({ ...tile, rebuild: this.chunks.has(key) })
       this.pendingKeys.add(key)
+      this.pendingSorted = false
       this.sortPending()
       return
     }
@@ -645,7 +653,7 @@ export class TerrainSystem {
     // inter-build deadline. Browser workers are the normal generation path.
     while (this.pending.length && uploads < MAX_UPLOADS_PER_FRAME &&
       (uploads === 0 || performance.now() < deadline)) {
-      const pending = this.pending.shift()!
+      const pending = this.pending.pop()!
       this.pendingKeys.delete(tileKey(pending.cx, pending.cz, pending.size))
       const job = this.requestFor(pending)
       if (!job) continue
@@ -659,14 +667,21 @@ export class TerrainSystem {
   private dispatchWorkers(): void {
     // Never queue more than one request per worker. Fast turns reprioritize all
     // unstarted work on the next cell crossing rather than draining an old FIFO.
+    if (this.pending.length > 1 && !this.pendingSorted) this.sortPending()
     while (this.pending.length && this.workers.available && this.ready.length < MAX_UPLOADS_PER_FRAME) {
-      const pending = this.pending.shift()!
+      const pending = this.pending.pop()!
       const key = tileKey(pending.cx, pending.cz, pending.size)
       this.pendingKeys.delete(key)
       const job = this.requestFor(pending)
       if (!job) continue
       this.activeKeys.add(key)
-      if (!this.workers.submit(job)) break
+      if (!this.workers.submit(job)) {
+        this.activeKeys.delete(key)
+        this.pending.push(pending)
+        this.pendingKeys.add(key)
+        this.pendingSorted = false
+        break
+      }
     }
   }
 

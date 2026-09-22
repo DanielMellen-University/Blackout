@@ -77,6 +77,8 @@ describe('terrain streaming integration', () => {
     queue(5, 5)
     queue(9, 9)
     internal.dispatchWorkers()
+    expect(FakeWorker.instances[0]!.posted[0]!.cx).toBe(5)
+    expect(FakeWorker.instances[1]!.posted[0]!.cx).toBe(9)
     FakeWorker.instances[1]!.finish(fixture)
     FakeWorker.instances[0]!.finish(fixture)
     expect(terrain.streamingStats.ready).toBe(2)
