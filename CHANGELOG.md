@@ -14,6 +14,7 @@
 - Add one pooled three-strip water wake for airborne low passes over rendered water, reusing existing telemetry without particle growth.
 - Upload the pooled water-wake instance transforms during setup so the first visible skim frame is reliable.
 - Add a fixed pooled external airflow-streak batch that scales with airspeed and afterburner, with Low, cockpit, and reduced-motion gates that avoid scene growth.
+- Add fixed pooled anti-collision beacons to distant traffic, with deterministic blinking and Low-quality suppression inside the existing six-jet budget.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.

@@ -1,4 +1,5 @@
 import {
+  AdditiveBlending,
   BufferGeometry,
   BoxGeometry,
   DoubleSide,
@@ -11,6 +12,7 @@ import {
   MeshBasicMaterial,
   Object3D,
   Quaternion,
+  SphereGeometry,
   Vector3,
 } from 'three'
 import type { RenderQuality } from '../core/RenderQuality'
@@ -24,6 +26,7 @@ export const AIR_TRAFFIC_MIN_DISTANCE_M = 900
 export const AIR_TRAFFIC_MAX_DISTANCE_M = 8_000
 export const AIR_TRAFFIC_ALERT_RANGE_M = 1_800
 export const AIR_TRAFFIC_ALERT_VERTICAL_M = 520
+export const AIR_TRAFFIC_BEACON_COUNT = AIR_TRAFFIC_COUNT
 
 export interface TrafficAlert {
   readonly id: string
@@ -51,6 +54,7 @@ const _matrix = new Matrix4()
 const _position = new Vector3()
 const _scale = new Vector3()
 const _quaternion = new Quaternion()
+const _identity = new Quaternion()
 const _euler = new Euler()
 const trafficAlertValue = {
   id: '',
@@ -95,6 +99,12 @@ export function trafficAlertVertical(verticalOffset: number, deadband = 80): 'AB
   return safe > 0 ? 'ABOVE' : 'BELOW'
 }
 
+/** Deterministic blink phase for pooled traffic anti-collision beacons. */
+export function trafficBeaconVisible(elapsed: number, index: number): boolean {
+  if (!Number.isFinite(elapsed) || !Number.isFinite(index) || index < 0) return false
+  return Math.sin(elapsed * 4.2 + index * 1.73) > 0.35
+}
+
 /**
  * A pooled, deterministic set of distant silhouettes. Traffic is cosmetic:
  * it never collides with the aircraft and never enters mission scoring.
@@ -107,6 +117,9 @@ export class AirTrafficSystem {
   private readonly contrailGeometry: BoxGeometry
   private readonly contrailMaterial: MeshBasicMaterial
   private readonly contrailMesh: InstancedMesh
+  private readonly beaconGeometry: SphereGeometry
+  private readonly beaconMaterial: MeshBasicMaterial
+  private readonly beaconMesh: InstancedMesh
   private readonly radarPool: RadarLandmark[] = Array.from(
     { length: AIR_TRAFFIC_COUNT },
     (_, index) => ({ x: 0, y: 0, z: 0, kind: 'traffic' as const, id: `traffic-${index}` }),
@@ -139,6 +152,7 @@ export class AirTrafficSystem {
   private accumulator = 0
   private activeCount = AIR_TRAFFIC_COUNT
   private activeContrailCount = AIR_TRAFFIC_COUNT
+  private activeBeaconCount = AIR_TRAFFIC_BEACON_COUNT
   private revision = 0
 
   constructor(parent: Object3D) {
@@ -171,6 +185,20 @@ export class AirTrafficSystem {
     this.contrailMesh.frustumCulled = false
     this.contrailMesh.instanceMatrix.setUsage(DynamicDrawUsage)
     this.root.add(this.contrailMesh)
+    this.beaconGeometry = new SphereGeometry(0.18, 6, 4)
+    this.beaconMaterial = new MeshBasicMaterial({
+      color: 0xff8b64,
+      transparent: true,
+      opacity: 0.82,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      toneMapped: false,
+    })
+    this.beaconMesh = new InstancedMesh(this.beaconGeometry, this.beaconMaterial, AIR_TRAFFIC_BEACON_COUNT)
+    this.beaconMesh.name = 'AirTrafficBeacons'
+    this.beaconMesh.frustumCulled = false
+    this.beaconMesh.instanceMatrix.setUsage(DynamicDrawUsage)
+    this.root.add(this.beaconMesh)
     parent.add(this.root)
     this.reset(0, 0, 0, 0)
   }
@@ -257,8 +285,10 @@ export class AirTrafficSystem {
   setRenderQuality(quality: RenderQuality): void {
     this.activeCount = quality === 'low' ? 3 : quality === 'balanced' ? 5 : AIR_TRAFFIC_COUNT
     this.activeContrailCount = quality === 'low' ? 0 : this.activeCount
+    this.activeBeaconCount = quality === 'low' ? 0 : this.activeCount
     this.mesh.count = this.activeCount
     this.contrailMesh.count = this.activeContrailCount
+    this.beaconMesh.count = this.activeBeaconCount
     this.renderInstances(this.lastPlayerX, this.lastPlayerZ)
   }
 
@@ -292,10 +322,13 @@ export class AirTrafficSystem {
   dispose(): void {
     this.root.remove(this.mesh)
     this.root.remove(this.contrailMesh)
+    this.root.remove(this.beaconMesh)
     this.geometry.dispose()
     this.material.dispose()
     this.contrailGeometry.dispose()
     this.contrailMaterial.dispose()
+    this.beaconGeometry.dispose()
+    this.beaconMaterial.dispose()
   }
 
   private regenerateCell(cellX: number, cellZ: number): void {
@@ -326,6 +359,7 @@ export class AirTrafficSystem {
         _matrix.makeScale(0, 0, 0)
         this.mesh.setMatrixAt(index, _matrix)
         this.contrailMesh.setMatrixAt(index, _matrix)
+        this.beaconMesh.setMatrixAt(index, _matrix)
         continue
       }
 
@@ -345,6 +379,7 @@ export class AirTrafficSystem {
         _matrix.makeScale(0, 0, 0)
         this.mesh.setMatrixAt(index, _matrix)
         this.contrailMesh.setMatrixAt(index, _matrix)
+        this.beaconMesh.setMatrixAt(index, _matrix)
         continue
       }
 
@@ -361,10 +396,10 @@ export class AirTrafficSystem {
       _scale.setScalar(slot.scale)
       _matrix.compose(_position, _quaternion, _scale)
       this.mesh.setMatrixAt(index, _matrix)
+      const forwardX = Math.sin(yaw) * Math.cos(pitch)
+      const forwardY = Math.sin(pitch)
+      const forwardZ = Math.cos(yaw) * Math.cos(pitch)
       if (index < this.activeContrailCount) {
-        const forwardX = Math.sin(yaw) * Math.cos(pitch)
-        const forwardY = Math.sin(pitch)
-        const forwardZ = Math.cos(yaw) * Math.cos(pitch)
         _position.set(x - forwardX * 3.2, y - forwardY * 3.2, z - forwardZ * 3.2)
         _scale.set(0.16 * slot.scale, 0.12 * slot.scale, 2.6 + slot.scale * 1.4)
         _matrix.compose(_position, _quaternion, _scale)
@@ -373,9 +408,22 @@ export class AirTrafficSystem {
         _matrix.makeScale(0, 0, 0)
         this.contrailMesh.setMatrixAt(index, _matrix)
       }
+      if (index < this.activeBeaconCount && trafficBeaconVisible(this.elapsed, index)) {
+        const beaconX = x - forwardX * 2.4
+        const beaconY = y + 0.12
+        const beaconZ = z - forwardZ * 2.4
+        _position.set(beaconX, beaconY, beaconZ)
+        _scale.setScalar(0.9 + Math.sin(this.elapsed * 5 + index) * 0.18)
+        _matrix.compose(_position, _identity, _scale)
+        this.beaconMesh.setMatrixAt(index, _matrix)
+      } else {
+        _matrix.makeScale(0, 0, 0)
+        this.beaconMesh.setMatrixAt(index, _matrix)
+      }
     }
     this.mesh.instanceMatrix.needsUpdate = true
     this.contrailMesh.instanceMatrix.needsUpdate = true
+    this.beaconMesh.instanceMatrix.needsUpdate = true
     this.revision += 1
   }
 }

@@ -1,12 +1,14 @@
 import { Group, InstancedMesh } from 'three'
 import { describe, expect, it } from 'vitest'
 import {
+  AIR_TRAFFIC_BEACON_COUNT,
   AIR_TRAFFIC_COUNT,
   AIR_TRAFFIC_UPDATE_INTERVAL_SEC,
   AirTrafficSystem,
   trafficCellFor,
   trafficAlertSide,
   trafficAlertVertical,
+  trafficBeaconVisible,
   trafficInRange,
 } from '../src/world/AirTrafficSystem'
 
@@ -44,14 +46,19 @@ describe('bounded air traffic', () => {
     expect(traffic.count).toBe(AIR_TRAFFIC_COUNT)
     const contrails = parent.getObjectByName('AirTrafficContrails') as InstancedMesh
     expect(contrails.count).toBe(AIR_TRAFFIC_COUNT)
+    const beacons = parent.getObjectByName('AirTrafficBeacons') as InstancedMesh
+    expect(beacons.count).toBe(AIR_TRAFFIC_BEACON_COUNT)
     traffic.setRenderQuality('low')
     expect(traffic.count).toBe(3)
     expect(contrails.count).toBe(0)
+    expect(beacons.count).toBe(0)
     traffic.setRenderQuality('balanced')
     expect(contrails.count).toBe(5)
+    expect(beacons.count).toBe(5)
     traffic.setRenderQuality('high')
     expect(traffic.count).toBe(AIR_TRAFFIC_COUNT)
     expect(contrails.count).toBe(AIR_TRAFFIC_COUNT)
+    expect(beacons.count).toBe(AIR_TRAFFIC_BEACON_COUNT)
     traffic.dispose()
   })
 
@@ -101,5 +108,11 @@ describe('bounded air traffic', () => {
     expect(traffic.updateRevision).toBeGreaterThan(cellRevision)
     expect(() => traffic.update(Number.NaN, Number.NaN, Number.NaN)).not.toThrow()
     traffic.dispose()
+  })
+
+  it('keeps beacon blinking deterministic and finite', () => {
+    expect(trafficBeaconVisible(1.25, 2)).toBe(trafficBeaconVisible(1.25, 2))
+    expect(trafficBeaconVisible(Number.NaN, 2)).toBe(false)
+    expect(trafficBeaconVisible(1.25, -1)).toBe(false)
   })
 })
