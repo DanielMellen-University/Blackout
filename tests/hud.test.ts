@@ -84,6 +84,8 @@ import {
   contractProgressAriaLabel,
   contractDetailLabel,
   contractDetailAriaLabel,
+  liveScoreHudLabel,
+  liveScoreAriaLabel,
   comboHudLabel,
   quantizeHudNumber,
   safeHudValue,
@@ -426,6 +428,14 @@ describe('HUD value formatting', () => {
     expect(contractDetailLabel(Number.NaN)).toBe('')
     expect(contractDetailAriaLabel('HOLD AFTERBURNER ABOVE 428 KTS FOR 8S'))
       .toBe('Contract instruction: hold afterburner above 428 kts for 8s')
+  })
+
+  it('keeps the earned score preview explicit and finite', () => {
+    expect(liveScoreHudLabel(17_420)).toBe('+17,420')
+    expect(liveScoreHudLabel(Number.NaN)).toBe('')
+    expect(liveScoreHudLabel(Number.MAX_SAFE_INTEGER)).toBe('+117,500')
+    expect(liveScoreAriaLabel(17_420)).toBe('Live earned score +17,420')
+    expect(liveScoreAriaLabel(Number.NaN)).toBe('')
   })
 
   it('keeps the live combo expiry readable and bounded', () => {

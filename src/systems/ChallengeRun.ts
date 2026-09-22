@@ -962,6 +962,7 @@ export class ChallengeRun {
   private peakNegativeG = 0
   private stuntRollCount = 0
   private bestCombo = 0
+  private scorePreviewValue = 0
   private contractStreakValue = 0
   private readonly contract = new SortieContractTracker()
   private contractCuePending = false
@@ -1009,6 +1010,7 @@ export class ChallengeRun {
     this.peakNegativeG = 0
     this.stuntRollCount = 0
     this.bestCombo = 0
+    this.scorePreviewValue = 0
     this.contract.reset(contractSeed, this.totalGates)
     const history = this.readHistory()
     this.contractStreakValue = this.contract.enabled
@@ -1090,6 +1092,7 @@ export class ChallengeRun {
       this.flightDistanceM = Math.min(2_000_000, this.flightDistanceM + safeDistance)
     }
     this.contract.recordPace(this.elapsedSec)
+    this.refreshScorePreview()
   }
 
   recordGate(quality = 1): void {
@@ -1111,6 +1114,7 @@ export class ChallengeRun {
     this.contract.recordPrecisionGate(safeQuality)
     this.contract.recordCleanGate(false, this.gatesPassed, this.totalGates)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
+    this.refreshScorePreview()
     const bestSplit = this.bestGateSplits[gateIndex]
     this.lastPaceDeltaSec = Number.isFinite(bestSplit) ? split - bestSplit! : Number.NaN
     this.gatePaceLabelDelta = Number.NaN
@@ -1145,6 +1149,7 @@ export class ChallengeRun {
     this.stuntRollCount = Math.min(MAX_STUNT_ROLLS, this.stuntRollCount + safeRolls)
     this.contract.recordStunt(this.stuntRollCount)
     this.contractCuePending ||= !wasComplete && this.contract.complete
+    this.refreshScorePreview()
   }
 
   /** Retain the highest reached climb milestone without affecting scoring. */
@@ -1155,6 +1160,7 @@ export class ChallengeRun {
     this.altitudeMilestone = Math.max(0, Math.min(100_000, Math.floor(altitudeM)))
     this.contract.recordAltitude(this.altitudeMilestone)
     this.contractCuePending ||= !wasComplete && this.contract.complete
+    this.refreshScorePreview()
   }
 
   /** Retain the highest event-driven clean-flight combo without trusting input. */
@@ -1164,6 +1170,7 @@ export class ChallengeRun {
     this.bestCombo = Math.max(this.bestCombo, Math.min(MAX_COMBO_COUNT, Math.floor(combo)))
     this.contract.recordCombo(this.bestCombo)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
+    this.refreshScorePreview()
   }
 
   /** Add one bounded reward when a selected streamed settlement is reached. */
@@ -1177,6 +1184,7 @@ export class ChallengeRun {
     this.destinationCount += 1
     this.contract.recordDestination(this.destinationCount, kind, id)
     this.contractCuePending ||= !wasComplete && this.contract.complete
+    this.refreshScorePreview()
   }
 
   /** Record an explicit radar target selection without adding scene state. */
@@ -1203,6 +1211,7 @@ export class ChallengeRun {
     if (this.phase === 'running' || this.phase === 'returning') {
       this.surveyedBiomeCue = biome as Biome
     }
+    this.refreshScorePreview()
   }
 
   /** Record one bounded water-surface interval for the optional water-run contract. */
@@ -1264,6 +1273,11 @@ export class ChallengeRun {
 
   get currentPeakNegativeG(): number {
     return this.peakNegativeG
+  }
+
+  /** Earned score only; landing, time, weather, and contract payouts stay touchdown-gated. */
+  get currentScorePreview(): number {
+    return this.scorePreviewValue
   }
 
   /** Consume one event-driven cue for the latest newly surveyed biome. */
@@ -1634,6 +1648,19 @@ export class ChallengeRun {
 
   get contractBriefing(): string {
     return this.contract.enabled ? `${this.contract.label} / ${this.contract.detail}` : ''
+  }
+
+  private refreshScorePreview(): void {
+    const weights = scoringWeightsForFocus(this.scoringFocus)
+    const gateQuality = this.totalGates > 0 ? this.gateQualityTotal / this.totalGates : 0
+    const gateScore = Math.round(weights.gate * clamp01(gateQuality))
+    const stuntScore = Math.min(3_000, this.stuntRollCount * 750)
+    const comboScore = this.bestCombo > 1 ? Math.min(6_000, (this.bestCombo - 1) * 300) : 0
+    const altitudeScore = altitudeMilestoneScore(this.altitudeMilestone)
+    const biomeScore = Math.min(MAX_BIOME_SCORE, this.surveyedBiomeCount * 120)
+    this.scorePreviewValue = boundedScore(
+      gateScore + stuntScore + comboScore + altitudeScore + this.destinationScore + biomeScore,
+    )
   }
 
   /** Consume one event-driven contract-completion cue for the live HUD. */

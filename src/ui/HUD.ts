@@ -11,7 +11,7 @@ import {
   type RadarContact,
 } from '../systems/RadarSystem'
 import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
-import { landingQualityLabel, MAX_BIOME_COUNT } from '../systems/ChallengeRun'
+import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import {
   blackoutVignetteIntensity,
@@ -631,6 +631,19 @@ export function contractDetailAriaLabel(value: unknown): string {
   return detail ? `Contract instruction: ${detail.toLowerCase()}` : ''
 }
 
+/** Keep the earned in-flight score bounded and visually compact. */
+export function liveScoreHudLabel(value: unknown): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return ''
+  const safe = Math.max(0, Math.min(MAX_BEST_SCORE, Math.round(value)))
+  return `+${safe.toLocaleString()}`
+}
+
+/** Describe the same earned score without implying touchdown bonuses are included. */
+export function liveScoreAriaLabel(value: unknown): string {
+  const label = liveScoreHudLabel(value)
+  return label ? `Live earned score ${label}` : ''
+}
+
 /** Describe afterburner availability without exposing internal lockout state. */
 export function afterburnerHudLabel(
   active: boolean,
@@ -703,6 +716,8 @@ export class HUD {
   private readonly contractDetailEl: HTMLElement | null
   private readonly contractStreakRowEl: HTMLElement | null
   private readonly contractStreakEl: HTMLElement | null
+  private readonly liveScoreRowEl: HTMLElement | null
+  private readonly liveScoreEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -832,6 +847,9 @@ export class HUD {
   private contractStreakValue = -1
   private contractStreakText = '--'
   private contractStreakAriaText = 'no completed contract chain'
+  private liveScoreValue = Number.NaN
+  private liveScoreText = ''
+  private liveScoreAriaText = ''
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
@@ -932,6 +950,8 @@ export class HUD {
     this.contractDetailEl = root.getElementById('hud-contract-detail')
     this.contractStreakRowEl = root.getElementById('hud-contract-streak-row')
     this.contractStreakEl = root.getElementById('hud-contract-streak')
+    this.liveScoreRowEl = root.getElementById('hud-live-score-row')
+    this.liveScoreEl = root.getElementById('hud-live-score')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -1070,6 +1090,8 @@ export class HUD {
     contractFailed?: boolean
     /** Completed bonus-contract chain entering this sortie. */
     contractStreak?: number
+    /** Earned in-flight score preview, excluding touchdown-only payouts. */
+    liveScore?: number | null
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
@@ -1457,6 +1479,18 @@ export class HUD {
       this.setHidden(this.contractStreakRowEl, streak <= 0)
       this.setText(this.contractStreakEl, this.contractStreakText)
       this.setAttribute(this.contractStreakEl, 'aria-label', this.contractStreakAriaText)
+    }
+    if (this.liveScoreRowEl && this.liveScoreEl && opts.liveScore !== undefined) {
+      const score = opts.liveScore === null ? Number.NaN : opts.liveScore
+      if (!Object.is(score, this.liveScoreValue)) {
+        this.liveScoreValue = score
+        this.liveScoreText = liveScoreHudLabel(score)
+        this.liveScoreAriaText = liveScoreAriaLabel(score)
+      }
+      const visible = Number.isFinite(score)
+      this.setHidden(this.liveScoreRowEl, !visible)
+      this.setText(this.liveScoreEl, this.liveScoreText)
+      this.setAttribute(this.liveScoreEl, 'aria-label', this.liveScoreAriaText)
     }
     if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
       const count = Number.isFinite(opts.biomeCount)

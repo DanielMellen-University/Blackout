@@ -191,6 +191,21 @@ describe('ChallengeRun', () => {
     expect(run.phase).toBe('complete')
   })
 
+  it('keeps an earned score preview separate from touchdown-only payouts', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:live-score', 2)
+    expect(run.currentScorePreview).toBe(0)
+    run.update(0.1, 8)
+    run.recordGate(1)
+    run.recordStunt(2)
+    run.recordAltitudeMilestone(1_500)
+    run.recordCombo(2)
+    run.recordDestination('city')
+    run.recordBiome('plains')
+    expect(run.currentScorePreview).toBe(13_020)
+    expect(run.currentScorePreview).toBeLessThan(MAX_BEST_SCORE)
+  })
+
   it('does not score a landing before the circuit is done', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:1', 2)
