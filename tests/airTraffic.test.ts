@@ -42,10 +42,16 @@ describe('bounded air traffic', () => {
     const parent = new Group()
     const traffic = new AirTrafficSystem(parent)
     expect(traffic.count).toBe(AIR_TRAFFIC_COUNT)
+    const contrails = parent.getObjectByName('AirTrafficContrails') as InstancedMesh
+    expect(contrails.count).toBe(AIR_TRAFFIC_COUNT)
     traffic.setRenderQuality('low')
     expect(traffic.count).toBe(3)
+    expect(contrails.count).toBe(0)
+    traffic.setRenderQuality('balanced')
+    expect(contrails.count).toBe(5)
     traffic.setRenderQuality('high')
     expect(traffic.count).toBe(AIR_TRAFFIC_COUNT)
+    expect(contrails.count).toBe(AIR_TRAFFIC_COUNT)
     traffic.dispose()
   })
 

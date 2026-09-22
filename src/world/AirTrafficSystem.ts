@@ -1,5 +1,6 @@
 import {
   BufferGeometry,
+  BoxGeometry,
   DoubleSide,
   DynamicDrawUsage,
   Euler,
@@ -103,6 +104,9 @@ export class AirTrafficSystem {
   private readonly geometry: BufferGeometry
   private readonly material: MeshBasicMaterial
   private readonly mesh: InstancedMesh
+  private readonly contrailGeometry: BoxGeometry
+  private readonly contrailMaterial: MeshBasicMaterial
+  private readonly contrailMesh: InstancedMesh
   private readonly radarPool: RadarLandmark[] = Array.from(
     { length: AIR_TRAFFIC_COUNT },
     (_, index) => ({ x: 0, y: 0, z: 0, kind: 'traffic' as const, id: `traffic-${index}` }),
@@ -134,6 +138,7 @@ export class AirTrafficSystem {
   private elapsed = 0
   private accumulator = 0
   private activeCount = AIR_TRAFFIC_COUNT
+  private activeContrailCount = AIR_TRAFFIC_COUNT
   private revision = 0
 
   constructor(parent: Object3D) {
@@ -153,6 +158,19 @@ export class AirTrafficSystem {
     this.mesh.frustumCulled = false
     this.mesh.instanceMatrix.setUsage(DynamicDrawUsage)
     this.root.add(this.mesh)
+    this.contrailGeometry = new BoxGeometry(1, 1, 1)
+    this.contrailMaterial = new MeshBasicMaterial({
+      color: 0xb9dce8,
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false,
+      toneMapped: false,
+    })
+    this.contrailMesh = new InstancedMesh(this.contrailGeometry, this.contrailMaterial, AIR_TRAFFIC_COUNT)
+    this.contrailMesh.name = 'AirTrafficContrails'
+    this.contrailMesh.frustumCulled = false
+    this.contrailMesh.instanceMatrix.setUsage(DynamicDrawUsage)
+    this.root.add(this.contrailMesh)
     parent.add(this.root)
     this.reset(0, 0, 0, 0)
   }
@@ -238,7 +256,9 @@ export class AirTrafficSystem {
   /** Keep low-end devices at three silhouettes while High gets the full pool. */
   setRenderQuality(quality: RenderQuality): void {
     this.activeCount = quality === 'low' ? 3 : quality === 'balanced' ? 5 : AIR_TRAFFIC_COUNT
+    this.activeContrailCount = quality === 'low' ? 0 : this.activeCount
     this.mesh.count = this.activeCount
+    this.contrailMesh.count = this.activeContrailCount
     this.renderInstances(this.lastPlayerX, this.lastPlayerZ)
   }
 
@@ -271,8 +291,11 @@ export class AirTrafficSystem {
 
   dispose(): void {
     this.root.remove(this.mesh)
+    this.root.remove(this.contrailMesh)
     this.geometry.dispose()
     this.material.dispose()
+    this.contrailGeometry.dispose()
+    this.contrailMaterial.dispose()
   }
 
   private regenerateCell(cellX: number, cellZ: number): void {
@@ -302,6 +325,7 @@ export class AirTrafficSystem {
       if (index >= this.activeCount) {
         _matrix.makeScale(0, 0, 0)
         this.mesh.setMatrixAt(index, _matrix)
+        this.contrailMesh.setMatrixAt(index, _matrix)
         continue
       }
 
@@ -320,6 +344,7 @@ export class AirTrafficSystem {
       if (!trafficInRange(distance)) {
         _matrix.makeScale(0, 0, 0)
         this.mesh.setMatrixAt(index, _matrix)
+        this.contrailMesh.setMatrixAt(index, _matrix)
         continue
       }
 
@@ -336,8 +361,21 @@ export class AirTrafficSystem {
       _scale.setScalar(slot.scale)
       _matrix.compose(_position, _quaternion, _scale)
       this.mesh.setMatrixAt(index, _matrix)
+      if (index < this.activeContrailCount) {
+        const forwardX = Math.sin(yaw) * Math.cos(pitch)
+        const forwardY = Math.sin(pitch)
+        const forwardZ = Math.cos(yaw) * Math.cos(pitch)
+        _position.set(x - forwardX * 3.2, y - forwardY * 3.2, z - forwardZ * 3.2)
+        _scale.set(0.16 * slot.scale, 0.12 * slot.scale, 2.6 + slot.scale * 1.4)
+        _matrix.compose(_position, _quaternion, _scale)
+        this.contrailMesh.setMatrixAt(index, _matrix)
+      } else {
+        _matrix.makeScale(0, 0, 0)
+        this.contrailMesh.setMatrixAt(index, _matrix)
+      }
     }
     this.mesh.instanceMatrix.needsUpdate = true
+    this.contrailMesh.instanceMatrix.needsUpdate = true
     this.revision += 1
   }
 }

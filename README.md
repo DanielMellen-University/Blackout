@@ -70,6 +70,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Traffic contacts now carry signed altitude separation, so proximity alerts and radar markers distinguish `ABOVE`, `BELOW`, and `LEVEL` without adding collision simulation or scene objects.
 - Crossing Mach 1 now also emits a short pooled shockwave ring around the jet, with reduced-motion and Low-quality fallbacks that keep the event readable without adding per-crossing meshes.
 - Seeded sorties can now assign `TRAFFIC WATCH`, rewarding three distinct nearby traffic passes through the existing bounded radar/proximity path without collision simulation.
+- Distant traffic now leaves a subtle pooled contrail, with Low quality disabling the batch and Balanced/High keeping it capped to the six-jet pool.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
