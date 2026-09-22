@@ -176,6 +176,7 @@ describe('run results focus flow', () => {
     )
     expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('COMPLETE')
     expect(elementsFor(fixture.document, 'result-title')?.textContent).not.toContain('GOLD')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('0')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
       'SORTIE · ROUTE COMPLETE · 0:42.00 · 0 GATES · HARD',
@@ -484,7 +485,9 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('2/5')
     expect(elementsFor(fixture.document, 'result-score')?.textContent).toBe('0')
     expect(elementsFor(fixture.document, 'result-landing')?.textContent).toBe('CRASH')
+    expect(elementsFor(fixture.document, 'result-landing-detail')?.textContent).toBe('')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('CRASH')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('20,000')
     results.dispose()
     vi.unstubAllGlobals()

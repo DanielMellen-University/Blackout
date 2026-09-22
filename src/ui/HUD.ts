@@ -872,7 +872,6 @@ export class HUD {
   private rollValue = Number.NaN
   private rollText = ''
   private fuelValue = Number.NaN
-  private fuelText = ''
   private fuelAriaText = ''
   private fuelEnduranceValue = -1
   private fuelEnduranceText = 'END --'
@@ -1659,10 +1658,9 @@ export class HUD {
       const percent = fuelPercent({ fraction: opts.fuel })
       if (percent !== this.fuelValue) {
         this.fuelValue = percent
-        this.fuelText = `${percent}%`
         this.fuelAriaText = `${percent}% fuel`
       }
-      this.setText(this.fuelEl, this.fuelText)
+      this.setText(this.fuelEl, '')
       this.setAttribute(this.fuelEl, 'aria-valuenow', String(percent))
       this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
       if (this.fuelFillEl) this.fuelFillEl.style.width = `${percent}%`

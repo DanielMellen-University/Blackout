@@ -142,7 +142,7 @@ export class RunResults {
       ? (ditched ? 'DITCHED' : 'CRASH')
       : (result.landingLabel ?? 'HARD')
     this.landing.textContent = crashed ? landingName : `${Math.round(result.landingQuality * 100)}%`
-    this.landingDetail.textContent = landingName
+    this.landingDetail.textContent = crashed ? '' : landingName
     this.landingDetail.setAttribute('aria-label', crashed ? landingName : `Landing quality ${landingName}`)
     const gatesLabel = gatesClearedLabel(result)
     this.gates.textContent = gatesLabel

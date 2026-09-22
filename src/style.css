@@ -2036,7 +2036,7 @@ body,
 
 .result-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -2055,7 +2055,12 @@ body,
   margin-bottom: 4px;
 }
 
-.result-grid span:last-child {
+.result-grid span:last-child,
+#result-score,
+#result-time,
+#result-landing,
+#result-gates {
+  display: block;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
   color: var(--ink);
