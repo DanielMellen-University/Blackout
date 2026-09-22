@@ -36,6 +36,13 @@ export class AltitudeMilestoneTracker {
       ? ALTITUDE_THRESHOLDS_M[this.crossedCount - 1]!
       : 0
   }
+
+  /** Next climb tier for a bounded HUD forecast, or zero after the final tier. */
+  get nextThresholdM(): number {
+    return this.crossedCount < ALTITUDE_THRESHOLDS_M.length
+      ? ALTITUDE_THRESHOLDS_M[this.crossedCount]!
+      : 0
+  }
 }
 
 export function altitudeMilestoneThresholds(): readonly number[] {

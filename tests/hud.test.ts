@@ -88,6 +88,9 @@ import {
   liveScoreAriaLabel,
   gateQualityHudLabel,
   gateQualityAriaLabel,
+  altitudeMilestoneHudLabel,
+  altitudeMilestoneProgressPercent,
+  altitudeMilestoneAriaLabel,
   comboHudLabel,
   quantizeHudNumber,
   safeHudValue,
@@ -445,6 +448,16 @@ describe('HUD value formatting', () => {
     expect(gateQualityHudLabel(Number.NaN)).toBe('')
     expect(gateQualityAriaLabel(0.825)).toBe('Average cleared-gate quality 83%')
     expect(gateQualityAriaLabel(Number.NaN)).toBe('')
+  })
+
+  it('keeps climb-tier progress bounded and explicit', () => {
+    expect(altitudeMilestoneProgressPercent(250, 500)).toBe(50)
+    expect(altitudeMilestoneProgressPercent(1_000, 1_500)).toBe(50)
+    expect(altitudeMilestoneProgressPercent(Number.NaN, 500)).toBe(-1)
+    expect(altitudeMilestoneHudLabel(1_000, 1_500)).toBe('NEXT 1,500M · 50%')
+    expect(altitudeMilestoneAriaLabel(1_000, 1_500))
+      .toBe('Next altitude milestone 1,500 metres, 50 percent complete')
+    expect(altitudeMilestoneHudLabel(6_000, 0)).toBe('')
   })
 
   it('keeps the live combo expiry readable and bounded', () => {

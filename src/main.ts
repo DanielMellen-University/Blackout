@@ -772,6 +772,7 @@ async function boot(): Promise<void> {
     contractStreak: 0,
     liveScore: null,
     gateQuality: null,
+    altitudeMilestone: null,
     biomeCount: 0,
     navDist: 0,
     navBearing: null,
@@ -1936,6 +1937,9 @@ async function boot(): Promise<void> {
         ? challenge.currentScorePreview
         : null
       hudFrame.gateQuality = challenge.gatesPassed > 0 ? challenge.currentGateQuality : null
+      hudFrame.altitudeMilestone = challenge.phase === 'running' || challenge.phase === 'returning'
+        ? altitudeMilestones.nextThresholdM || null
+        : null
       hudFrame.biomeCount = challenge.biomeCount
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.ghostPace = visibleGhostPaceDelta((

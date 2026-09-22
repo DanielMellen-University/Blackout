@@ -656,6 +656,33 @@ export function gateQualityAriaLabel(value: unknown): string {
   return label ? `Average cleared-gate quality ${label.slice(4)}` : ''
 }
 
+/** Show the next bounded climb tier without treating the forecast as a reward. */
+export function altitudeMilestoneHudLabel(currentM: unknown, nextM: unknown): string {
+  const progress = altitudeMilestoneProgressPercent(currentM, nextM)
+  if (progress < 0) return ''
+  const target = Math.round(nextM as number)
+  return `NEXT ${target.toLocaleString()}M · ${progress}%`
+}
+
+/** Normalize climb-tier progress for both the visual row and its accessible label. */
+export function altitudeMilestoneProgressPercent(currentM: unknown, nextM: unknown): number {
+  if (typeof currentM !== 'number' || !Number.isFinite(currentM)) return -1
+  if (typeof nextM !== 'number' || !Number.isFinite(nextM)) return -1
+  const target = Math.round(nextM)
+  const previous = target >= 6_000 ? 3_000 : target >= 3_000 ? 1_500 : target >= 1_500 ? 500 : target >= 500 ? 0 : -1
+  if (previous < 0 || target <= previous) return -1
+  const progress = (Math.max(0, currentM) - previous) / (target - previous)
+  return Math.round(Math.max(0, Math.min(1, progress)) * 100)
+}
+
+/** Describe the next climb tier without exposing internal tracker state. */
+export function altitudeMilestoneAriaLabel(currentM: unknown, nextM: unknown): string {
+  const progress = altitudeMilestoneProgressPercent(currentM, nextM)
+  if (progress < 0) return ''
+  const target = Math.round(nextM as number)
+  return `Next altitude milestone ${target.toLocaleString()} metres, ${progress} percent complete`
+}
+
 /** Describe afterburner availability without exposing internal lockout state. */
 export function afterburnerHudLabel(
   active: boolean,
@@ -732,6 +759,8 @@ export class HUD {
   private readonly liveScoreEl: HTMLElement | null
   private readonly precisionRowEl: HTMLElement | null
   private readonly precisionEl: HTMLElement | null
+  private readonly climbRowEl: HTMLElement | null
+  private readonly climbEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -867,6 +896,9 @@ export class HUD {
   private precisionValue = Number.NaN
   private precisionText = ''
   private precisionAriaText = ''
+  private climbValue = ''
+  private climbText = ''
+  private climbAriaText = ''
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
@@ -971,6 +1003,8 @@ export class HUD {
     this.liveScoreEl = root.getElementById('hud-live-score')
     this.precisionRowEl = root.getElementById('hud-precision-row')
     this.precisionEl = root.getElementById('hud-precision')
+    this.climbRowEl = root.getElementById('hud-climb-row')
+    this.climbEl = root.getElementById('hud-climb')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -1113,6 +1147,8 @@ export class HUD {
     liveScore?: number | null
     /** Average quality of completed gates, or null before the first pass. */
     gateQuality?: number | null
+    /** Next altitude milestone in metres, or null when all tiers are crossed. */
+    altitudeMilestone?: number | null
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
@@ -1525,6 +1561,20 @@ export class HUD {
       this.setHidden(this.precisionRowEl, !visible)
       this.setText(this.precisionEl, this.precisionText)
       this.setAttribute(this.precisionEl, 'aria-label', this.precisionAriaText)
+    }
+    if (this.climbRowEl && this.climbEl && opts.altitudeMilestone !== undefined) {
+      const target = opts.altitudeMilestone === null ? Number.NaN : opts.altitudeMilestone
+      const progress = altitudeMilestoneProgressPercent(opts.y, target)
+      const cacheKey = progress >= 0 && Number.isFinite(target) ? `${Math.round(target)}:${progress}` : ''
+      if (cacheKey !== this.climbValue) {
+        this.climbValue = cacheKey
+        this.climbText = altitudeMilestoneHudLabel(opts.y, target)
+        this.climbAriaText = altitudeMilestoneAriaLabel(opts.y, target)
+      }
+      const visible = progress >= 0
+      this.setHidden(this.climbRowEl, !visible)
+      this.setText(this.climbEl, this.climbText)
+      this.setAttribute(this.climbEl, 'aria-label', this.climbAriaText)
     }
     if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
       const count = Number.isFinite(opts.biomeCount)
