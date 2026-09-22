@@ -72,6 +72,7 @@ import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
 import { SonicBoomFx } from './systems/SonicBoomFx'
 import { WaterWakeFx } from './systems/WaterWakeFx'
+import { SpeedStreakFx } from './systems/SpeedStreakFx'
 import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
@@ -537,17 +538,20 @@ async function boot(): Promise<void> {
   const landingFx = new LandingFx(world.scene)
   const sonicBoomFx = new SonicBoomFx(world.scene)
   const waterWakeFx = new WaterWakeFx(world.scene)
+  const speedStreakFx = new SpeedStreakFx(world.scene)
   applyEffectsQuality = (quality): void => {
     crashFx.setRenderQuality(quality)
     landingFx.setRenderQuality(quality)
     sonicBoomFx.setRenderQuality(quality)
     waterWakeFx.setRenderQuality(quality)
+    speedStreakFx.setRenderQuality(quality)
   }
   applyEffectsMotion = (reduced): void => {
     crashFx.setReducedMotion(reduced)
     landingFx.setReducedMotion(reduced)
     sonicBoomFx.setReducedMotion(reduced)
     waterWakeFx.setReducedMotion(reduced)
+    speedStreakFx.setReducedMotion(reduced)
   }
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
@@ -694,6 +698,7 @@ async function boot(): Promise<void> {
     landingFx.dispose()
     sonicBoomFx.dispose()
     waterWakeFx.dispose()
+    speedStreakFx.dispose()
     debug?.dispose()
     aircraft.dispose()
     renderer.dispose()
@@ -901,6 +906,7 @@ async function boot(): Promise<void> {
     landingFx.reset()
     sonicBoomFx.reset()
     waterWakeFx.reset()
+    speedStreakFx.reset()
     stunts.reset()
     combo.reset()
     altitudeMilestones.reset()
@@ -1540,6 +1546,14 @@ async function boot(): Promise<void> {
       terrainClearanceM,
       overWater,
       aircraft.onGround,
+    )
+    speedStreakFx.update(
+      aircraft.displayPosition,
+      aircraft.displayOrientation,
+      aircraft.speed,
+      aircraft.engineState.afterburnerActive,
+      aircraft.onGround,
+      playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
     )
 
     const lightningActive = world.atmosphere.lightningActive
