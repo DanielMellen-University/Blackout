@@ -28,14 +28,8 @@ export class GLoadFeedbackTracker {
   }
 
   update(loadFactor: number): GLoadVisionBand {
-    const safe = sanitizeLoad(loadFactor)
-    if (this.bandValue === 'blackout') {
-      if (safe <= BLACKOUT_EXIT_G) this.bandValue = bandFromLoad(safe)
-    } else if (this.bandValue === 'redout') {
-      if (safe >= REDOUT_EXIT_G) this.bandValue = bandFromLoad(safe)
-    } else {
-      this.bandValue = bandFromLoad(safe)
-    }
+    sanitizeLoad(loadFactor)
+    this.bandValue = 'normal'
     return this.bandValue
   }
 
@@ -46,9 +40,7 @@ export class GLoadFeedbackTracker {
 
 /** Classify a raw load sample without hysteresis (used for reset / tests). */
 export function bandFromLoad(loadFactor: number): GLoadVisionBand {
-  const safe = sanitizeLoad(loadFactor)
-  if (safe >= BLACKOUT_ENTER_G) return 'blackout'
-  if (safe <= REDOUT_ENTER_G) return 'redout'
+  sanitizeLoad(loadFactor)
   return 'normal'
 }
 
@@ -57,29 +49,21 @@ export function gLoadVisionBanner(
   band: GLoadVisionBand,
   previous: GLoadVisionBand | null,
 ): string | null {
-  if (previous === null || band === previous) return null
-  if (band === 'blackout') return 'BLACKOUT / EASE THE PULL'
-  if (band === 'redout') return 'REDOUT / EASE THE PUSH'
+  void band
+  void previous
   return null
 }
 
 /** Dark tunnel intensity 0..1 from positive overload. */
 export function blackoutVignetteIntensity(loadFactor: number): number {
-  const safe = sanitizeLoad(loadFactor)
-  if (safe <= BLACKOUT_FADE_START_G) return 0
-  const span = Math.max(0.001, BLACKOUT_ENTER_G - BLACKOUT_FADE_START_G)
-  const t = Math.min(1, Math.max(0, (safe - BLACKOUT_FADE_START_G) / span))
-  // Softstep keeps the tunnel readable without an abrupt wall of black.
-  return Math.min(0.82, t * t * (3 - 2 * t) * 0.82)
+  sanitizeLoad(loadFactor)
+  return 0
 }
 
 /** Restrained red wash intensity 0..1 from negative overload. */
 export function redoutWashIntensity(loadFactor: number): number {
-  const safe = sanitizeLoad(loadFactor)
-  if (safe >= REDOUT_FADE_START_G) return 0
-  const span = Math.max(0.001, REDOUT_FADE_START_G - REDOUT_ENTER_G)
-  const t = Math.min(1, Math.max(0, (REDOUT_FADE_START_G - safe) / span))
-  return Math.min(0.55, t * t * (3 - 2 * t) * 0.55)
+  sanitizeLoad(loadFactor)
+  return 0
 }
 
 function resolveInitialBand(loadFactor: number): GLoadVisionBand {

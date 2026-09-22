@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.11.0** (`Systems expansion`).
+Current release: **v0.12.0** (`Systems expansion`).
 
 ## Run
 

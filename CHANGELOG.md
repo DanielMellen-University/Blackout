@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.12.0 - 2026-09-22
+
+### Ship
+
+- Raise military cruise and throttle response, and leave the cockpit as a clear view with no canopy frame or instruments.
+- Remove blackout, redout, engine heat, and the afterburner lock, and stop the center-screen callouts.
+- Keep a guaranteed city off the airfield so its footprint does not cover the runway.
+
 ## v0.11.0 - 2026-09-20
 
 ### Ship

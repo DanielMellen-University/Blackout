@@ -48,22 +48,21 @@ describe('resolveEngineState', () => {
     expect(out.effectivePower).toBe(0)
   })
 
-  it('locks afterburner inside the protected reserve while retaining dry power', () => {
+  it('keeps afterburner available in the old reserve band until the tank is empty', () => {
     const out = createEngineState()
     resolveEngineState({ throttle: 1, boost: true }, out, FUEL_AFTERBURNER_RESERVE_FRACTION)
-    expect(out.afterburnerActive).toBe(false)
+    expect(out.afterburnerActive).toBe(true)
+    expect(out.afterburnerHeatLocked).toBe(false)
     expect(out.fuelAvailable).toBe(true)
-    expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeed)
-    expect(out.maxAcceleration).toBeCloseTo(C.milAccel)
+    expect(out.targetSpeed).toBeCloseTo(Math.sqrt(1) * C.cruiseSpeedBoost)
   })
 
-  it('locks afterburner on engine heat while retaining dry power', () => {
+  it('ignores an engine-heat lock and keeps the burner lit', () => {
     const out = createEngineState()
     resolveEngineState({ throttle: 1, boost: true }, out, 1, true)
     expect(out.afterburnerRequested).toBe(true)
-    expect(out.afterburnerHeatLocked).toBe(true)
-    expect(out.afterburnerActive).toBe(false)
-    expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeed)
-    expect(out.maxAcceleration).toBeCloseTo(C.milAccel)
+    expect(out.afterburnerHeatLocked).toBe(false)
+    expect(out.afterburnerActive).toBe(true)
+    expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeedBoost)
   })
 })

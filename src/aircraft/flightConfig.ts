@@ -11,18 +11,18 @@ export const flightConfig = {
 
   /** Stall-ish floor (~80 kts). */
   minSpeed: 41,
-  /** Level military cruise, m/s (~408 kt). Thrust balances drag here. */
-  cruiseSpeed: 210,
-  /** Level afterburner cruise, m/s (~661 kt). */
-  cruiseSpeedBoost: 340,
-  /** Dive cap, m/s (~894 kt). Dry and afterburner share it. */
-  maxSpeed: 460,
-  maxSpeedBoost: 460,
+  /** Level military cruise, m/s (~660 kt). Thrust balances drag here. */
+  cruiseSpeed: 340,
+  /** Level afterburner cruise, m/s (~1010 kt). */
+  cruiseSpeedBoost: 520,
+  /** Dive cap, m/s (~1320 kt). Dry and afterburner share it. */
+  maxSpeed: 680,
+  maxSpeedBoost: 680,
   /** Level-flight sustain (~180 kts). */
   liftSpeed: 92,
 
   /** Full military acceleration at low speed, m/s². */
-  milAccel: 20,
+  milAccel: 48,
   maxAccel: 130,
   maxAccelBoost: 190,
   /** Afterburner cannot light with the throttle effectively closed. */
@@ -80,7 +80,7 @@ export const flightConfig = {
   /** Stall AoA reference used by the tuned flight warning HUD. */
   stallAoA: 0.4,
 
-  throttleRate: 0.396,
+  throttleRate: 1.8,
 
   crashVy: -14,
   softLandingVy: -6,

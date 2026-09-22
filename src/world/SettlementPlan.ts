@@ -16,11 +16,13 @@ const ANCHOR_CITY_MIN_BUILDINGS = 420
 // uses a larger profile below, while this floor prevents terrain validation
 // from deleting the only nearby rural landmark.
 const ANCHOR_VILLAGE_MIN_BUILDINGS = 6
-/** Active airfields get one nearby village landmark so a fresh world has a
- * readable destination instead of relying on several independent rolls. */
+/** Active airfields get one village beyond the circuit, not on the runway. */
 const VILLAGE_ANCHOR_RING = 1
 /** Cities stay rare, but every world gets one deterministic regional target. */
 const CITY_ANCHOR_RING = 1
+/** Nearest building ring must stay this far from the pad, metres. */
+const CITY_PAD_CLEARANCE_M = 12_000
+const VILLAGE_PAD_CLEARANCE_M = 6_000
 /** Keep organic sites inside the readable core of each 24 km stream cell. */
 const ORGANIC_SITE_CENTER_BIAS = .68
 
@@ -134,8 +136,8 @@ export function settlementAnchorForCell(
 
 /**
  * Anchor landmarks by distance from the pad, not by the centre of a 24 km
- * settlement cell. This keeps the guaranteed village and city inside the
- * visible flight envelope even when their owning cells sit beside the pad.
+ * settlement cell. The city sits far enough out that its disk cannot cover
+ * the airfield, even when its owning cell is the one beside the pad.
  */
 function anchorLocation(
   kind: 'city' | 'village', pad: { x: number; z: number; yaw?: number }, attempt: number,
@@ -145,22 +147,11 @@ function anchorLocation(
   const salt = kind === 'city' ? 17311 : 12971
   const randomAngle = hash2(cellX * 157 + cellZ * 193 + attempt * 37 + salt,
     cellZ * 211 - cellX * 227 - attempt * 53 - salt) * Math.PI * 2
-  // Keep both guaranteed landmarks in the first takeoff corridor. Their
-  // distance still varies, and the spread is wide enough to avoid a stacked
-  // skyline, but a runway heading should lead toward a readable destination
-  // instead of sending the player on a blind search behind the airfield.
-  const forwardAngle = pad.yaw === undefined ? randomAngle : Math.PI * .5 - pad.yaw
-  const corridor = kind === 'city' ? .5 : .78
-  const angle = pad.yaw === undefined
-    ? randomAngle
-    : forwardAngle + (hash2(cellX * 223 + attempt * 61 + salt, cellZ * 239 - attempt * 79 - salt) - .5) * corridor
-  // Keep guaranteed landmarks inside the clear flight envelope. The old city
-  // ring started at 14.5 km and often ended at 22 km, while the fog horizon
-  // is about 15 km. That made valid cities exist in the worker but disappear
-  // into fog before the player could ever read their skyline. Villages sit
-  // closer so the first landmark is reachable during the opening climb.
-  const base = kind === 'city' ? 9300 : 3300
-  const span = kind === 'city' ? 2600 : 2400
+  // Scatter around the field. A city planted down the runway reads as the
+  // spawn, because an 8–10 km city disk reaches the airfield from 9 km out.
+  const angle = randomAngle
+  const base = kind === 'city' ? 26_000 : 14_000
+  const span = kind === 'city' ? 6_000 : 4_000
   const distance = base + hash2(cellX * 271 + attempt * 67 + salt,
     cellZ * 313 - attempt * 89 - salt) * span
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
@@ -184,7 +175,7 @@ function anchorGridLocation(
   const phase = hash2(cellX * 197 + cellZ * 233 + salt, cellZ * 271 - cellX * 307 - salt) * Math.PI * 2
   const angle = phase + sector / sectors * Math.PI * 2
   const ringStep = 500
-  const base = kind === 'city' ? 7600 : 2100
+  const base = kind === 'city' ? 26_000 : 14_000
   const distance = base + ring * ringStep
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
 }
@@ -267,7 +258,8 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
       }
       const x = anchored ? anchored.x : organicCoordinate(cx, rand(10 + attempt * 2))
       const z = anchored ? anchored.z : organicCoordinate(cz, rand(11 + attempt * 2))
-      if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + 500) continue
+      const padClearance = kind === 'city' ? CITY_PAD_CLEARANCE_M : VILLAGE_PAD_CLEARANCE_M
+      if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + padClearance) continue
       const c = sampleClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
       let min = c.height, max = c.height, suitable = true, drySamples = 1

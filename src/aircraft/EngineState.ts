@@ -1,7 +1,6 @@
 import { MathUtils } from 'three'
 import type { ControlState } from '../core/types'
 import { flightConfig as C } from './flightConfig'
-import { FUEL_AFTERBURNER_RESERVE_FRACTION } from './FuelSystem'
 
 /**
  * The resolved engine command shared by flight physics and aircraft visuals.
@@ -53,9 +52,8 @@ export function resolveEngineState(
   const safeFuel = Number.isFinite(fuelFraction) ? MathUtils.clamp(fuelFraction, 0, 1) : 0
   const fuelAvailable = safeFuel > 0.0001
   const afterburnerRequested = controls.boost === true
+  // Heat and the fuel-reserve lock are retired. Burner stays available until the tank is empty.
   const afterburnerActive = fuelAvailable &&
-    !afterburnerHeatLocked &&
-    safeFuel > FUEL_AFTERBURNER_RESERVE_FRACTION &&
     afterburnerRequested &&
     lever >= C.afterburnerMinThrottle
   const cruise = afterburnerActive ? C.cruiseSpeedBoost : C.cruiseSpeed
@@ -64,7 +62,8 @@ export function resolveEngineState(
   out.lever = lever
   out.afterburnerRequested = afterburnerRequested
   out.afterburnerActive = afterburnerActive
-  out.afterburnerHeatLocked = afterburnerHeatLocked === true
+  out.afterburnerHeatLocked = false
+  void afterburnerHeatLocked
   // Equilibrium of thrust against quadratic drag. The flight model does not chase it.
   out.targetSpeed = fuelAvailable ? Math.sqrt(lever) * cruise : 0
   out.maxSpeed = C.maxSpeed

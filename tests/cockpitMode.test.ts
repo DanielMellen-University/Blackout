@@ -4,27 +4,22 @@ import { Aircraft } from '../src/aircraft/Aircraft'
 import { CockpitMode } from '../src/camera/CockpitMode'
 
 describe('cockpit camera presentation', () => {
-  it('attaches a restrained frame only while cockpit mode is active', () => {
+  it('locks the seat view without adding cockpit geometry', () => {
     const cockpit = new CockpitMode()
     const camera = new PerspectiveCamera()
     const aircraft = new Aircraft()
 
     cockpit.enter(camera)
     cockpit.update(camera, aircraft)
-    const frame = camera.getObjectByName('CockpitFrame')
-    expect(frame).toBeTruthy()
-    expect(frame?.visible).toBe(true)
-    expect(frame?.children).toHaveLength(4)
-    expect(frame?.matrixAutoUpdate).toBe(false)
-    expect(frame?.children.every(child => !child.matrixAutoUpdate)).toBe(true)
+    expect(camera.children).toHaveLength(0)
+    expect(camera.getObjectByName('CockpitFrame')).toBeUndefined()
+    expect(camera.position.length()).toBeGreaterThan(0)
 
     cockpit.exit(camera)
-    expect(frame?.visible).toBe(false)
     cockpit.dispose()
     cockpit.dispose()
-    expect(camera.getObjectByName('CockpitFrame')).toBeUndefined()
     cockpit.enter(camera)
-    expect(camera.getObjectByName('CockpitFrame')).toBeUndefined()
+    expect(camera.children).toHaveLength(0)
   })
 
   it('holds the last safe lens pose when aircraft telemetry is malformed', () => {

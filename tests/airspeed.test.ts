@@ -9,9 +9,9 @@ afterEach(() => setContactHeightSampler(null))
 
 it('converts metres per second to true knots without a fake scale', () => {
   expect(displayedKnots(100)).toBeCloseTo(194.384)
-  expect(displayedKnots(flightConfig.cruiseSpeed)).toBeGreaterThan(350)
-  expect(displayedKnots(flightConfig.cruiseSpeed)).toBeLessThan(500)
-  expect(displayedKnots(flightConfig.maxSpeed)).toBeLessThan(1000)
+  expect(displayedKnots(flightConfig.cruiseSpeed)).toBeGreaterThan(600)
+  expect(displayedKnots(flightConfig.cruiseSpeed)).toBeLessThan(720)
+  expect(displayedKnots(flightConfig.maxSpeed)).toBeLessThan(1400)
   expect(displayedKnots(flightConfig.maxSpeed)).toBeGreaterThan(displayedKnots(flightConfig.cruiseSpeedBoost))
   expect(displayedKnots(-1)).toBe(0)
 })
@@ -25,15 +25,15 @@ it('settles military cruise well below 1543 m/s and lets afterburner go faster',
   plane.velocity.set(0, 0, 400)
   for (let i = 0; i < 24 * 60; i++) plane.step(1 / 60)
   const half = displayedKnots(plane.speed)
-  expect(half).toBeGreaterThan(250)
-  expect(half).toBeLessThan(330)
+  expect(half).toBeGreaterThan(420)
+  expect(half).toBeLessThan(520)
 
   plane.controls.throttle = 1
   for (let i = 0; i < 12 * 60; i++) plane.step(1 / 60)
   const military = displayedKnots(plane.speed)
-  expect(military).toBeGreaterThan(370)
-  expect(military).toBeLessThan(460)
-  expect(plane.speed).toBeLessThan(500)
+  expect(military).toBeGreaterThan(600)
+  expect(military).toBeLessThan(720)
+  expect(plane.speed).toBeLessThan(400)
 
   const beforeBoost = plane.speed
   plane.controls.boost = true
@@ -59,7 +59,7 @@ it('loses speed in a sustained climb', () => {
   plane.velocity.set(0, 0, flightConfig.cruiseSpeed)
   for (let i = 0; i < 4 * 60; i++) plane.step(1 / 60)
   const level = plane.speed
-  plane.orientation.setFromAxisAngle(new Vector3(1, 0, 0), -0.55)
+  plane.orientation.setFromAxisAngle(new Vector3(1, 0, 0), -1.05)
   plane.angularVelocity.set(0, 0, 0)
   const nose = new Vector3(0, 0, 1).applyQuaternion(plane.orientation)
   expect(nose.y).toBeGreaterThan(0.4)

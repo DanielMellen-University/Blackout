@@ -9,7 +9,6 @@ import {
   WebGLRenderer,
 } from 'three'
 import { Aircraft } from './aircraft/Aircraft'
-import { FUEL_AFTERBURNER_RESERVE_FRACTION } from './aircraft/FuelSystem'
 import {
   cameraModeCue,
   cameraRelativeBearing,
@@ -1168,6 +1167,7 @@ async function boot(): Promise<void> {
     requestAnimationFrame(tick)
 
     syncInputContext()
+    overlay?.classList.toggle('cockpit-clean', cameras.mode === 'cockpit')
     const simLive = playing && !menu.paused && !results.open
     touchControls?.setVisible(touchDevice && simLive)
     if (!simLive) lastHudUpdateMs = Number.NaN
@@ -1633,12 +1633,8 @@ async function boot(): Promise<void> {
       audio.playCue(airbrakeOpen ? 'airbrake-open' : 'airbrake-close')
     }
     prevAirbrake = airbrakeOpen
-    const afterburnerFuelLocked = aircraft.engineState.afterburnerRequested &&
-      aircraft.engineState.lever >= 0.05 &&
-      aircraft.fuel.fraction <= FUEL_AFTERBURNER_RESERVE_FRACTION
-    const afterburnerHeatLocked = aircraft.engineState.afterburnerRequested &&
-      aircraft.engineState.lever >= 0.05 &&
-      aircraft.engineState.afterburnerHeatLocked
+    const afterburnerFuelLocked = false
+    const afterburnerHeatLocked = false
     const afterburnerLocked = afterburnerFuelLocked || afterburnerHeatLocked
     if (
       simLive &&
@@ -1998,9 +1994,7 @@ async function boot(): Promise<void> {
       challenge.recordApproachPreview(approachPreviewScore)
       hudFrame.landingPreview = landingPreview
       hudFrame.boost = aircraft.engineState.afterburnerActive
-      hudFrame.afterburnerLock = aircraft.engineState.afterburnerHeatLocked
-        ? 'heat'
-        : aircraft.fuel.fraction <= FUEL_AFTERBURNER_RESERVE_FRACTION ? 'fuel' : null
+      hudFrame.afterburnerLock = null
       hudFrame.stabilityAssist = aircraft.controls.stabilityAssist
       hudFrame.gearDown = aircraft.controls.gearDown
       hudFrame.onGround = aircraft.onGround

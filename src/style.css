@@ -961,6 +961,11 @@ body,
   display: none !important;
 }
 
+/* Cockpit is the view out the front. Instruments stay on the chase camera. */
+#overlay.cockpit-clean > :not(#run-results) {
+  display: none !important;
+}
+
 /* Optional touch flight deck. The runtime only reveals this on a live,
    touch-capable flight, so desktop layouts pay no interaction cost. */
 .touch-controls {
@@ -1694,6 +1699,12 @@ body,
   #hud-gear.gear-cycle {
     animation: none;
   }
+}
+
+#hud-banner,
+#g-load-veil,
+#heat-veil {
+  display: none !important;
 }
 
 .banner {

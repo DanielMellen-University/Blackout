@@ -72,7 +72,8 @@ describe('procedural settlements', () => {
     expect(plans.some(plan => plan.kind === 'city')).toBe(true)
     const anchors = plans.filter(plan => plan.anchor)
     expect(anchors.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
-    expect(Math.max(...anchors.map(plan => Math.hypot(plan.x, plan.z)))).toBeLessThan(14000)
+    expect(Math.max(...anchors.map(plan => Math.hypot(plan.x, plan.z)))).toBeLessThan(40_000)
+    expect(Math.min(...anchors.map(plan => Math.hypot(plan.x, plan.z) - plan.radius))).toBeGreaterThan(8_000)
   })
 
   it('keeps the guaranteed village and city in separate spawn cells', () => {
@@ -105,14 +106,18 @@ describe('procedural settlements', () => {
     setOpsPad(pad!.x, pad!.z, pad!.y)
     const plans = region(3).filter(plan => plan.anchor)
     expect(plans.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
-    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(13000)
+    expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(40_000)
     expect(Math.hypot(
       plans.find(plan => plan.anchor === 'village')!.x - pad!.x,
       plans.find(plan => plan.anchor === 'village')!.z - pad!.z,
-    )).toBeLessThan(6000)
+    ) - plans.find(plan => plan.anchor === 'village')!.radius).toBeGreaterThan(5_000)
+    expect(Math.hypot(
+      plans.find(plan => plan.anchor === 'city')!.x - pad!.x,
+      plans.find(plan => plan.anchor === 'city')!.z - pad!.z,
+    ) - plans.find(plan => plan.anchor === 'city')!.radius).toBeGreaterThan(10_000)
   })
 
-  it('biases guaranteed landmarks into the runway takeoff corridor', () => {
+  it('keeps the guaranteed city off the airfield instead of down the runway', () => {
     const base = sampleClimate(0, 0)
     const sample = vi.spyOn(terrain, 'sampleClimate')
     sample.mockImplementation((x, z) => ({
@@ -126,12 +131,11 @@ describe('procedural settlements', () => {
       coastal: 0,
     }))
     setWorldSeed(2026)
-    // yaw=0 points the aircraft toward +Z. Both landmarks should be visible
-    // destinations after takeoff, not random searches behind the airfield.
     setOpsPad(0, 0, 180, 0)
     const anchors = region(3).filter(plan => plan.anchor)
     expect(anchors).toHaveLength(2)
-    expect(anchors.every(plan => plan.z > 0)).toBe(true)
+    const city = anchors.find(plan => plan.anchor === 'city')!
+    expect(Math.hypot(city.x, city.z) - city.radius).toBeGreaterThan(10_000)
   })
 
   it('rescues both anchor tiers on rough seeded terrain', () => {
@@ -143,7 +147,9 @@ describe('procedural settlements', () => {
       setOpsPad(pad!.x, pad!.z, pad!.y)
       const anchors = region(3).filter(plan => plan.anchor)
       expect(new Set(anchors.map(plan => plan.anchor))).toEqual(new Set(['village', 'city']))
-      expect(Math.max(...anchors.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(14000)
+      expect(Math.max(...anchors.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(40_000)
+      const city = anchors.find(plan => plan.anchor === 'city')!
+      expect(Math.hypot(city.x - pad!.x, city.z - pad!.z) - city.radius).toBeGreaterThan(10_000)
     }
   })
 

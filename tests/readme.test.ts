@@ -5,7 +5,7 @@ const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
 
 describe('README pitch', () => {
   it('says what the game is, how to run it, how to fly, and how a sortie ends', () => {
-    expect(readme).toContain('Current release: **v0.11.0** (`Systems expansion`)')
+    expect(readme).toContain('Current release: **v0.12.0** (`Systems expansion`)')
     expect(readme).toContain('npm run dev')
     expect(readme).toContain('W / S pitch')
     expect(readme).toContain('land or crash')
