@@ -1,0 +1,64 @@
+import { Group, InstancedMesh } from 'three'
+import { describe, expect, it } from 'vitest'
+import {
+  AIR_TRAFFIC_COUNT,
+  AIR_TRAFFIC_UPDATE_INTERVAL_SEC,
+  AirTrafficSystem,
+  trafficCellFor,
+  trafficInRange,
+} from '../src/world/AirTrafficSystem'
+
+function trafficMatrices(seed: number): number[] {
+  const parent = new Group()
+  const traffic = new AirTrafficSystem(parent)
+  traffic.reset(seed, 5_000, 0, 5_000)
+  traffic.update(5_000, 5_000, AIR_TRAFFIC_UPDATE_INTERVAL_SEC)
+  const mesh = parent.getObjectByName('AirTrafficSilhouettes') as InstancedMesh
+  const matrices = Array.from(mesh.instanceMatrix.array)
+  traffic.dispose()
+  return matrices
+}
+
+describe('bounded air traffic', () => {
+  it('uses finite cell and visibility helpers', () => {
+    expect(trafficCellFor(Number.NaN)).toBe(0)
+    expect(trafficCellFor(-1)).toBe(-1)
+    expect(trafficCellFor(10_000)).toBe(1)
+    expect(trafficInRange(900)).toBe(true)
+    expect(trafficInRange(8_000)).toBe(true)
+    expect(trafficInRange(899)).toBe(false)
+    expect(trafficInRange(Number.POSITIVE_INFINITY)).toBe(false)
+  })
+
+  it('keeps seeded silhouettes deterministic and quality bounded', () => {
+    const first = trafficMatrices(1234)
+    const second = trafficMatrices(1234)
+    const different = trafficMatrices(9876)
+    expect(first).toEqual(second)
+    expect(different).not.toEqual(first)
+
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    expect(traffic.count).toBe(AIR_TRAFFIC_COUNT)
+    traffic.setRenderQuality('low')
+    expect(traffic.count).toBe(3)
+    traffic.setRenderQuality('high')
+    expect(traffic.count).toBe(AIR_TRAFFIC_COUNT)
+    traffic.dispose()
+  })
+
+  it('updates on a fixed cadence and recycles at cell boundaries', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    const initialRevision = traffic.updateRevision
+    traffic.update(0, 0, AIR_TRAFFIC_UPDATE_INTERVAL_SEC / 2)
+    expect(traffic.updateRevision).toBe(initialRevision)
+    traffic.update(0, 0, AIR_TRAFFIC_UPDATE_INTERVAL_SEC / 2)
+    expect(traffic.updateRevision).toBeGreaterThan(initialRevision)
+    const cellRevision = traffic.updateRevision
+    traffic.update(10_001, 0, 0)
+    expect(traffic.updateRevision).toBeGreaterThan(cellRevision)
+    expect(() => traffic.update(Number.NaN, Number.NaN, Number.NaN)).not.toThrow()
+    traffic.dispose()
+  })
+})

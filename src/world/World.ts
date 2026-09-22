@@ -22,6 +22,8 @@ import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
 import { MissionSystem, type MissionRouteProfile } from '../systems/Mission'
 import { SettlementSystem } from './SettlementSystem'
 import { disposeObjectTree } from '../core/dispose'
+import { AirTrafficSystem } from './AirTrafficSystem'
+import type { RenderQuality } from '../core/RenderQuality'
 
 export interface SpawnPose {
   x: number
@@ -62,6 +64,7 @@ export class World {
   readonly scene = new Scene()
   readonly terrain: TerrainSystem
   readonly settlements: SettlementSystem
+  readonly traffic: AirTrafficSystem
   readonly sun: DirectionalLight
   /** Cool moonlight — no shadows (cheap second key light). */
   readonly moon: DirectionalLight
@@ -116,6 +119,7 @@ export class World {
 
     this.terrain = new TerrainSystem(this.scene)
     this.settlements = new SettlementSystem(this.scene)
+    this.traffic = new AirTrafficSystem(this.scene)
     this.atmosphere = new Atmosphere(
       this.scene,
       {
@@ -143,6 +147,16 @@ export class World {
   setSettlementsVisible(visible: boolean): void {
     if (this.disposed) return
     this.settlements.setVisible(visible)
+  }
+
+  setTrafficVisible(visible: boolean): void {
+    if (this.disposed) return
+    this.traffic.setVisible(visible)
+  }
+
+  setTrafficQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    this.traffic.setRenderQuality(quality)
   }
 
   /**
@@ -181,6 +195,7 @@ export class World {
         this.applySpawn(pad)
         this.terrain.clearAll()
         this.settlements.clearAll()
+        this.traffic.reset(this.seed, this.spawn.x, this.spawn.y, this.spawn.z)
         // A fresh terrain and settlement stream starts with neutral weather
         // state, even when the seeded weather profile happens to match the
         // previous world. Force the first application after a reseed.
@@ -254,6 +269,7 @@ export class World {
     if (this.disposed) return
     this.terrain.update(x, z, dt)
     this.settlements.update(x, z)
+    this.traffic.update(x, z, visualDt)
     this.atmosphere.update(simDt, x, y, z, visualDt)
     setRunwayDaylight(this.runway, this.atmosphere.daylight)
     const weather = this.atmosphere.weatherSnapshot
@@ -269,6 +285,7 @@ export class World {
     this.mission.dispose()
     this.terrain.dispose()
     this.settlements.dispose()
+    this.traffic.dispose()
     this.atmosphere.dispose()
     disposeObjectTree(this.runway)
     this.runway.removeFromParent()

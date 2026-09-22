@@ -412,6 +412,7 @@ async function boot(): Promise<void> {
   let applyEffectsMotion: ((reduced: boolean) => void) | null = null
   let applyCameraQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarQuality: ((quality: RenderQuality) => void) | null = null
+  let applyTrafficQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarMotion: ((reduced: boolean) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
@@ -428,6 +429,7 @@ async function boot(): Promise<void> {
     applyEffectsQuality?.(next)
     applyCameraQuality?.(next)
     applyRadarQuality?.(next)
+    applyTrafficQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -447,6 +449,8 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
+  applyTrafficQuality = (quality): void => world.setTrafficQuality(quality)
+  applyTrafficQuality(renderQuality)
   if (replaySeed !== null) {
     const replayCourse = courseDefinitionForId(selectedCourseId)
     world.reseed(replaySeed, replayCourse.profile ?? undefined)
@@ -464,6 +468,7 @@ async function boot(): Promise<void> {
   // Keep the title hero focused on the runway and jet. Nearby procedural
   // cities remain generated and become visible as soon as flight starts.
   world.setSettlementsVisible(false)
+  world.setTrafficVisible(false)
   applyAtmosphereQuality = (precipitationScale, cloudScale, vegetationScale) => {
     world.atmosphere.setPrecipitationScale(precipitationScale)
     world.atmosphere.setCloudDensityScale(cloudScale)
@@ -963,6 +968,7 @@ async function boot(): Promise<void> {
     playing = true
     cameras.setMode(cameraPreference, aircraft)
     world.setSettlementsVisible(true)
+    world.setTrafficVisible(true)
     menu.close()
     results.hide()
     titleScreen?.classList.add('is-hidden')
@@ -983,6 +989,7 @@ async function boot(): Promise<void> {
   const quitToTitle = (): void => {
     playing = false
     world.setSettlementsVisible(false)
+    world.setTrafficVisible(false)
     audioMuted = false
     audio.silence()
     menu.close()

@@ -1,0 +1,285 @@
+import {
+  BufferGeometry,
+  DoubleSide,
+  DynamicDrawUsage,
+  Euler,
+  Float32BufferAttribute,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  MeshBasicMaterial,
+  Object3D,
+  Quaternion,
+  Vector3,
+} from 'three'
+import type { RenderQuality } from '../core/RenderQuality'
+
+/** Fixed traffic pool. Distant silhouettes add life without growing the scene. */
+export const AIR_TRAFFIC_COUNT = 6
+export const AIR_TRAFFIC_CELL_SIZE_M = 10_000
+export const AIR_TRAFFIC_UPDATE_INTERVAL_SEC = 1 / 12
+export const AIR_TRAFFIC_MIN_DISTANCE_M = 900
+export const AIR_TRAFFIC_MAX_DISTANCE_M = 8_000
+
+interface TrafficSlot {
+  offsetX: number
+  offsetZ: number
+  radiusX: number
+  radiusZ: number
+  altitude: number
+  verticalSpan: number
+  angularVelocity: number
+  phase: number
+  pitchPhase: number
+  scale: number
+}
+
+const _matrix = new Matrix4()
+const _position = new Vector3()
+const _scale = new Vector3()
+const _quaternion = new Quaternion()
+const _euler = new Euler()
+
+/** Return the deterministic traffic cell containing a world coordinate. */
+export function trafficCellFor(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.floor(value / AIR_TRAFFIC_CELL_SIZE_M)
+}
+
+/** Keep the traffic simulation on its bounded visual update cadence. */
+export function trafficStepSeconds(dt: number): number {
+  if (!Number.isFinite(dt) || dt <= 0) return 0
+  return Math.min(dt, AIR_TRAFFIC_UPDATE_INTERVAL_SEC * 2)
+}
+
+/** Pure distance gate used to hide silhouettes beyond the useful fog envelope. */
+export function trafficInRange(distance: number): boolean {
+  return Number.isFinite(distance) &&
+    distance >= AIR_TRAFFIC_MIN_DISTANCE_M &&
+    distance <= AIR_TRAFFIC_MAX_DISTANCE_M
+}
+
+/**
+ * A pooled, deterministic set of distant silhouettes. Traffic is cosmetic:
+ * it never collides with the aircraft and never enters mission scoring.
+ */
+export class AirTrafficSystem {
+  readonly root = new Group()
+  private readonly geometry: BufferGeometry
+  private readonly material: MeshBasicMaterial
+  private readonly mesh: InstancedMesh
+  private readonly slots: TrafficSlot[] = Array.from(
+    { length: AIR_TRAFFIC_COUNT },
+    () => ({
+      offsetX: 0,
+      offsetZ: 0,
+      radiusX: 1,
+      radiusZ: 1,
+      altitude: 900,
+      verticalSpan: 40,
+      angularVelocity: 0.02,
+      phase: 0,
+      pitchPhase: 0,
+      scale: 1,
+    }),
+  )
+  private seed = 0
+  private baseY = 0
+  private cellX = 0
+  private cellZ = 0
+  private anchorX = 0
+  private anchorZ = 0
+  private lastPlayerX = 0
+  private lastPlayerZ = 0
+  private elapsed = 0
+  private accumulator = 0
+  private activeCount = AIR_TRAFFIC_COUNT
+  private revision = 0
+
+  constructor(parent: Object3D) {
+    this.root.name = 'AirTraffic'
+    this.root.visible = false
+    this.geometry = createTrafficGeometry()
+    this.material = new MeshBasicMaterial({
+      color: 0x9db7c6,
+      transparent: true,
+      opacity: 0.78,
+      depthWrite: false,
+      side: DoubleSide,
+      toneMapped: false,
+    })
+    this.mesh = new InstancedMesh(this.geometry, this.material, AIR_TRAFFIC_COUNT)
+    this.mesh.name = 'AirTrafficSilhouettes'
+    this.mesh.frustumCulled = false
+    this.mesh.instanceMatrix.setUsage(DynamicDrawUsage)
+    this.root.add(this.mesh)
+    parent.add(this.root)
+    this.reset(0, 0, 0, 0)
+  }
+
+  get count(): number {
+    return this.activeCount
+  }
+
+  get updateRevision(): number {
+    return this.revision
+  }
+
+  /** Rebuild only the fixed slot data when a world or traffic cell changes. */
+  reset(seed: number, x: number, y: number, z: number): void {
+    this.seed = Number.isFinite(seed) ? Math.trunc(seed) : 0
+    this.baseY = Number.isFinite(y) ? y : 0
+    this.elapsed = 0
+    this.accumulator = 0
+    this.cellX = trafficCellFor(x)
+    this.cellZ = trafficCellFor(z)
+    this.lastPlayerX = Number.isFinite(x) ? x : 0
+    this.lastPlayerZ = Number.isFinite(z) ? z : 0
+    this.regenerateCell(this.cellX, this.cellZ)
+    this.renderInstances(this.lastPlayerX, this.lastPlayerZ)
+  }
+
+  setVisible(visible: boolean): void {
+    this.root.visible = visible === true
+  }
+
+  /** Keep low-end devices at three silhouettes while High gets the full pool. */
+  setRenderQuality(quality: RenderQuality): void {
+    this.activeCount = quality === 'low' ? 3 : quality === 'balanced' ? 5 : AIR_TRAFFIC_COUNT
+    this.mesh.count = this.activeCount
+    this.renderInstances(this.lastPlayerX, this.lastPlayerZ)
+  }
+
+  /** Advance traffic at 12 Hz, independent of render refresh rate. */
+  update(x: number, z: number, dt: number): void {
+    const safeX = Number.isFinite(x) ? x : this.anchorX
+    const safeZ = Number.isFinite(z) ? z : this.anchorZ
+    this.lastPlayerX = safeX
+    this.lastPlayerZ = safeZ
+    const nextCellX = trafficCellFor(safeX)
+    const nextCellZ = trafficCellFor(safeZ)
+    if (nextCellX !== this.cellX || nextCellZ !== this.cellZ) {
+      this.cellX = nextCellX
+      this.cellZ = nextCellZ
+      this.regenerateCell(nextCellX, nextCellZ)
+      this.accumulator = 0
+      this.renderInstances(safeX, safeZ)
+      return
+    }
+
+    const safeDt = trafficStepSeconds(dt)
+    if (safeDt <= 0) return
+    this.accumulator += safeDt
+    if (this.accumulator < AIR_TRAFFIC_UPDATE_INTERVAL_SEC) return
+    const step = Math.min(this.accumulator, AIR_TRAFFIC_UPDATE_INTERVAL_SEC * 2)
+    this.accumulator = 0
+    this.elapsed += step
+    this.renderInstances(safeX, safeZ)
+  }
+
+  dispose(): void {
+    this.root.remove(this.mesh)
+    this.geometry.dispose()
+    this.material.dispose()
+  }
+
+  private regenerateCell(cellX: number, cellZ: number): void {
+    this.anchorX = (cellX + 0.5) * AIR_TRAFFIC_CELL_SIZE_M
+    this.anchorZ = (cellZ + 0.5) * AIR_TRAFFIC_CELL_SIZE_M
+    for (let index = 0; index < this.slots.length; index += 1) {
+      const slot = this.slots[index]!
+      const random = (salt: number): number => trafficRandom(this.seed, cellX, cellZ, index, salt)
+      slot.offsetX = (random(1) - 0.5) * 1_600
+      slot.offsetZ = (random(2) - 0.5) * 1_600
+      slot.radiusX = 1_700 + random(3) * 2_200
+      slot.radiusZ = 1_700 + random(4) * 2_200
+      slot.altitude = 750 + random(5) * 1_900
+      slot.verticalSpan = 36 + random(6) * 90
+      const speed = 78 + random(7) * 122
+      slot.angularVelocity = speed / Math.max(slot.radiusX, slot.radiusZ)
+      slot.phase = random(8) * Math.PI * 2
+      slot.pitchPhase = random(9) * Math.PI * 2
+      slot.scale = 0.72 + random(10) * 0.42
+    }
+  }
+
+  private renderInstances(playerX: number, playerZ: number): void {
+    for (let index = 0; index < AIR_TRAFFIC_COUNT; index += 1) {
+      const slot = this.slots[index]!
+      if (index >= this.activeCount) {
+        _matrix.makeScale(0, 0, 0)
+        this.mesh.setMatrixAt(index, _matrix)
+        continue
+      }
+
+      const phase = slot.phase + this.elapsed * slot.angularVelocity
+      const sin = Math.sin(phase)
+      const cos = Math.cos(phase)
+      const x = this.anchorX + slot.offsetX + cos * slot.radiusX
+      const z = this.anchorZ + slot.offsetZ + sin * slot.radiusZ
+      const pitchWave = phase * 1.7 + slot.pitchPhase
+      const y = this.baseY + slot.altitude + Math.sin(pitchWave) * slot.verticalSpan
+      const distance = Math.hypot(x - playerX, z - playerZ)
+      if (!trafficInRange(distance)) {
+        _matrix.makeScale(0, 0, 0)
+        this.mesh.setMatrixAt(index, _matrix)
+        continue
+      }
+
+      const dx = -sin * slot.radiusX * slot.angularVelocity
+      const dz = cos * slot.radiusZ * slot.angularVelocity
+      const dy = Math.cos(pitchWave) * slot.verticalSpan * 1.7 * slot.angularVelocity
+      const horizontalSpeed = Math.hypot(dx, dz)
+      const yaw = Math.atan2(dx, dz)
+      const pitch = Math.atan2(dy, Math.max(horizontalSpeed, 0.001))
+      const roll = Math.sin(phase * 1.35 + slot.pitchPhase) * 0.045
+      _position.set(x, y, z)
+      _euler.set(pitch, yaw, roll, 'YXZ')
+      _quaternion.setFromEuler(_euler)
+      _scale.setScalar(slot.scale)
+      _matrix.compose(_position, _quaternion, _scale)
+      this.mesh.setMatrixAt(index, _matrix)
+    }
+    this.mesh.instanceMatrix.needsUpdate = true
+    this.revision += 1
+  }
+}
+
+function createTrafficGeometry(): BufferGeometry {
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute([
+    0, 0.08, 2.2,
+    -1.25, 0, -0.8,
+    -0.4, 0, -1.8,
+    0.4, 0, -1.8,
+    1.25, 0, -0.8,
+    0, -0.12, 2.2,
+    -1.25, -0.12, -0.8,
+    -0.4, -0.12, -1.8,
+    0.4, -0.12, -1.8,
+    1.25, -0.12, -0.8,
+  ], 3))
+  geometry.setIndex([
+    0, 1, 2, 0, 2, 3, 0, 3, 4,
+    5, 7, 6, 5, 8, 7, 5, 9, 8,
+    0, 5, 6, 0, 6, 1,
+    1, 6, 7, 1, 7, 2,
+    2, 7, 8, 2, 8, 3,
+    3, 8, 9, 3, 9, 4,
+    4, 9, 5, 4, 5, 0,
+  ])
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
+function trafficRandom(seed: number, cellX: number, cellZ: number, index: number, salt: number): number {
+  let value = seed | 0
+  value ^= Math.imul(cellX, 0x45d9f3b)
+  value ^= Math.imul(cellZ, 0x119de1f3)
+  value ^= Math.imul(index + 1, 0x3449c1a7)
+  value ^= Math.imul(salt + 1, 0x27d4eb2d)
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b)
+  value = Math.imul(value ^ (value >>> 16), 0x45d9f3b)
+  value ^= value >>> 16
+  return (value >>> 0) / 0x1_0000_0000
+}
