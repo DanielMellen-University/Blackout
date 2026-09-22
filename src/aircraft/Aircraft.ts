@@ -85,6 +85,8 @@ export class Aircraft {
   weatherWindZ = 0
   /** Blended precipitation grip multiplier used only during ground rollout. */
   weatherSurfaceGrip = 1
+  /** Bounded deterministic updraft supplied before physics steps. */
+  thermalLift = 0
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
   readonly impactState: AircraftImpact = {
     point: new Vector3(),
@@ -273,6 +275,7 @@ export class Aircraft {
     this.weatherWindX = 0
     this.weatherWindZ = 0
     this.weatherSurfaceGrip = 1
+    this.thermalLift = 0
     this.flight.reset()
     this.wheelSpin = 0
     this.visualTimeMs = 0
@@ -365,6 +368,11 @@ export class Aircraft {
     this.weatherSurfaceGrip = next
   }
 
+  /** Feed the fixed-step flight model a finite, normalized thermal envelope. */
+  setThermalLift(intensity: number): void {
+    this.thermalLift = Number.isFinite(intensity) ? MathUtils.clamp(intensity, 0, 1) : 0
+  }
+
   crash(): void {
     if (this.disposed) return
     this.status = 'crashed'
@@ -372,6 +380,7 @@ export class Aircraft {
     this.angularVelocity.set(0, 0, 0)
     this.prevVelocity.copy(this.velocity)
     this.loadFactor = 0
+    this.thermalLift = 0
     this.impactVy = 0
     this.impact = null
     this.groundCacheValid = false

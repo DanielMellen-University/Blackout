@@ -39,6 +39,9 @@ export const flightConfig = {
 
   gravity: 9.81,
 
+  /** Bounded arcade updraft force from deterministic thermal pockets. */
+  thermalLiftAcceleration: 2.4,
+
   /** How hard velocity snaps onto the nose (the whole turn model). */
   alignRate: 5.4,
 

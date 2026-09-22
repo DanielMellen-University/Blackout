@@ -65,6 +65,31 @@ it('accelerates and decelerates promptly without overshooting zero', () => {
   expect(plane.speed).toBeLessThan(10)
 })
 
+it('turns a bounded thermal envelope into a gentle climb impulse', () => {
+  setContactHeightSampler(() => 0)
+  const neutral = new Aircraft()
+  const lifted = new Aircraft()
+  neutral.reset({ x: 0, y: 15_000, z: 0, yaw: 0 })
+  lifted.reset({ x: 0, y: 15_000, z: 0, yaw: 0 })
+  neutral.controls.gearDown = false
+  lifted.controls.gearDown = false
+  neutral.controls.throttle = 0.5
+  lifted.controls.throttle = 0.5
+  neutral.velocity.set(0, 0, 220)
+  lifted.velocity.set(0, 0, 220)
+  lifted.setThermalLift(1)
+
+  for (let i = 0; i < 120; i++) {
+    neutral.step(1 / 60)
+    lifted.step(1 / 60)
+  }
+
+  expect(lifted.position.y).toBeGreaterThan(neutral.position.y + 0.4)
+  expect(Number.isFinite(lifted.position.y)).toBe(true)
+  lifted.setThermalLift(Number.NaN)
+  expect(lifted.thermalLift).toBe(0)
+})
+
 it('does not slam the brakes after a powered dive', () => {
   setContactHeightSampler(() => 0)
   const plane = new Aircraft()

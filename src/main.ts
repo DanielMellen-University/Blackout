@@ -75,6 +75,7 @@ import { WaterWakeFx } from './systems/WaterWakeFx'
 import { SpeedStreakFx } from './systems/SpeedStreakFx'
 import { MachConeFx } from './systems/MachConeFx'
 import { GroundWakeFx } from './systems/GroundWakeFx'
+import { thermalLiftIntensity } from './systems/ThermalLift'
 import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
@@ -731,6 +732,7 @@ async function boot(): Promise<void> {
   let engineOut = false
   let prevGearDown = true
   let prevLightning = false
+  let thermalLiftActive = false
   let prevGLoadBand: GLoadCueBand = 'normal'
   let gLoadCueUntil = 0
   const gLoadFeedback = new GLoadFeedbackTracker()
@@ -939,6 +941,7 @@ async function boot(): Promise<void> {
     engineOut = false
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
+    thermalLiftActive = false
     prevGLoadBand = 'normal'
     gLoadCueUntil = 0
     gLoadFeedback.reset(1)
@@ -1272,6 +1275,21 @@ async function boot(): Promise<void> {
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
+        const thermalLift = thermalLiftIntensity(
+          world.worldSeed,
+          aircraft.position.x,
+          aircraft.position.y - world.spawn.y,
+          aircraft.position.z,
+          world.atmosphere.daylight,
+          weather.rain,
+          weather.snow,
+          aircraft.status === 'ok' && !aircraft.onGround,
+        )
+        aircraft.setThermalLift(thermalLift)
+        if (thermalLift >= 0.34 && !thermalLiftActive && (!banner || bannerUntil <= nowMs)) {
+          showBanner('THERMAL LIFT / RIDE THE COLUMN', 1400, 'info')
+        }
+        thermalLiftActive = thermalLift >= 0.2
         aircraft.step(dt, nowMs)
         if (supersonic.update(aircraft.speed) === 'boom') {
           audio.playCue('sonic-boom')

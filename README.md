@@ -77,6 +77,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Seeded sorties can now assign `TRAFFIC DODGE`, rewarding three distinct traffic passes with at least 120 m of vertical separation through the existing bounded alert path.
 - The pooled ground wake now shifts between clear dust, rain-darkened spray, and snow-pale haze from existing weather values without rebuilding geometry.
 - The pooled water wake now shifts foam tint across clear, rain, and snow fronts through one cached material color update.
+- Sparse deterministic thermal pockets now add a capped airborne updraft impulse that strengthens in daylight, softens in precipitation, and announces entry once per pocket pass.
 - Low passes over rivers, lakes, and seas now leave a subtle three-strip water wake driven by existing surface and clearance sampling, with no particle growth.
 - Water-wake instance transforms are uploaded on construction, so the first skim frame renders immediately instead of waiting for a warm-up update.
 - External high-speed flight now adds a restrained pooled airflow streak effect that scales with airspeed and afterburner, while Low, cockpit view, and reduced-motion settings keep it off.

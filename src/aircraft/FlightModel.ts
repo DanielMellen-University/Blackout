@@ -185,7 +185,17 @@ export class FlightModel {
         C.gravity *
         MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1.15) *
         MathUtils.clamp(_up.y, 0, 1)
-      velocity.y += lift * dt
+      const thermal = MathUtils.clamp(
+        Number.isFinite(aircraft.thermalLift) ? aircraft.thermalLift : 0,
+        0,
+        1,
+      )
+      const thermalSpeed = MathUtils.clamp(
+        (airspeed - C.minSpeed * 0.7) / Math.max(1, C.liftSpeed * 1.2),
+        0,
+        1,
+      )
+      velocity.y += (lift + thermal * C.thermalLiftAcceleration * (0.35 + thermalSpeed * 0.65)) * dt
       const spdAfter = velocity.length()
       if (spdAfter > spdBeforeLift && spdAfter > 1e-4) {
         velocity.multiplyScalar(spdBeforeLift / spdAfter)
