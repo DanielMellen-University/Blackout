@@ -175,6 +175,13 @@ describe('sortie contracts', () => {
         tracker.recordTrafficPass('traffic-2')
         tracker.recordTrafficPass('traffic-3')
       }
+      if (tracker.kind === 'traffic-dodge') {
+        tracker.recordTrafficPass('traffic-low', 80)
+        tracker.recordTrafficPass('traffic-1', 160)
+        tracker.recordTrafficPass('traffic-1', 160)
+        tracker.recordTrafficPass('traffic-2', 180)
+        tracker.recordTrafficPass('traffic-3', 240)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -265,7 +272,7 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge']))
   })
 
   it('counts distinct traffic passes for TRAFFIC WATCH', () => {
@@ -289,6 +296,31 @@ describe('sortie contracts', () => {
     tracker.recordTrafficPass('traffic-2')
     tracker.recordTrafficPass('traffic-3')
     expect(tracker.detail).toContain('CURRENT 3')
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
+  })
+
+  it('counts only vertically separated traffic passes for TRAFFIC DODGE', () => {
+    const tracker = new SortieContractTracker()
+    let dodgeSeed = -1
+    for (let seed = 0; seed < 8_192; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'traffic-dodge') {
+        dodgeSeed = seed
+        break
+      }
+    }
+    expect(dodgeSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(dodgeSeed, 5)
+    expect(tracker.label).toBe('TRAFFIC DODGE')
+    expect(tracker.detail).toBe('PASS THREE CONTACTS WITH 120M SEPARATION / CURRENT 0')
+    tracker.recordTrafficPass('traffic-low', 119.9)
+    expect(tracker.progress).toBe(0)
+    tracker.recordTrafficPass('traffic-1', 120)
+    tracker.recordTrafficPass('traffic-1', 180)
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    tracker.recordTrafficPass('traffic-2', 180)
+    tracker.recordTrafficPass('traffic-3', 200)
     expect(tracker.complete).toBe(true)
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })

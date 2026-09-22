@@ -17,6 +17,7 @@
 - Add fixed pooled anti-collision beacons to distant traffic, with deterministic blinking and Low-quality suppression inside the existing six-jet budget.
 - Add one pooled external Mach-cone silhouette above the supersonic threshold, with Low, cockpit, ground, and reduced-motion gates that avoid scene growth.
 - Add one pooled three-strip ground wake for fast airborne land passes, reusing cached clearance and water classification without particle growth.
+- Add a deterministic `TRAFFIC DODGE` contract for three distinct traffic passes with at least 120 m of vertical separation, reusing fixed alert identity storage without scene growth.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.

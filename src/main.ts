@@ -1932,7 +1932,7 @@ async function boot(): Promise<void> {
       } else {
         const newTrafficContact = trafficAlert.id !== prevTrafficAlertId
         if (newTrafficContact) {
-          challenge.recordTrafficPass(trafficAlert.id)
+          challenge.recordTrafficPass(trafficAlert.id, trafficAlert.verticalSeparation)
         }
         if (
           newTrafficContact &&
