@@ -847,19 +847,35 @@ export class SettlementSystem {
     }
     this.retryProtectedAnchors(x, z)
     this.pruneDistantRoads(x, z)
-    // Worker completion order is nondeterministic. Always consume the nearest
-    // ready plan first so a distant village cannot occupy the fixed instance
-    // budget before a nearby city or village finishes planning.
-    if (this.ready.length > 1) {
-      this.ready.sort((a, b) => {
-        const priority = settlementLoadPriority(b.plan) - settlementLoadPriority(a.plan)
-        if (priority) return priority
-        const ad = Math.hypot(a.plan.x - x, a.plan.z - z)
-        const bd = Math.hypot(b.plan.x - x, b.plan.z - z)
-        return bd - ad
-      })
+    // Worker completion order is nondeterministic. Prune stale replies and
+    // select the nearest protected plan without sorting the whole ready list
+    // on every frame. The list is bounded by the worker stream budget.
+    let readyWrite = 0
+    for (let readyRead = 0; readyRead < this.ready.length; readyRead++) {
+      const candidate = this.ready[readyRead]!
+      if (!this.checked.has(candidate.key)) continue
+      this.ready[readyWrite++] = candidate
     }
-    const ready = this.ready.pop()
+    this.ready.length = readyWrite
+    let readyIndex = -1
+    let readyPriority = Infinity
+    let readyDistance = Infinity
+    for (let index = 0; index < this.ready.length; index++) {
+      const candidate = this.ready[index]!
+      const priority = settlementLoadPriority(candidate.plan)
+      const distance = Math.hypot(candidate.plan.x - x, candidate.plan.z - z)
+      if (priority < readyPriority || (priority === readyPriority && distance < readyDistance)) {
+        readyIndex = index
+        readyPriority = priority
+        readyDistance = distance
+      }
+    }
+    let ready: { key: string; plan: SettlementPlan } | undefined
+    if (readyIndex >= 0) {
+      ready = this.ready[readyIndex]!
+      const last = this.ready.pop()!
+      if (readyIndex < this.ready.length) this.ready[readyIndex] = last
+    }
     if (ready && this.checked.has(ready.key)) {
       if (this.canLoad(ready.plan, x, z)) this.loaded.set(ready.key, this.build(ready.plan))
       else this.ready.push(ready)

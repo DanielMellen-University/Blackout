@@ -58,6 +58,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Regional road jobs now dispatch nearest-first through a pop queue and remove ready connectors with swap-pop, trimming queue churn without changing the bounded road graph.
 - Fixed-step sortie telemetry now dispatches only to the active contract recorder, preserving every task while avoiding redundant per-tick kind checks.
 - Pending terrain work now dispatches nearest-first through a reverse-prioritized pop queue, with failed worker submissions requeued safely instead of shifting the stream array.
+- Settlement worker results now use stale pruning and nearest/protected selection instead of sorting the entire ready list every frame, preserving bounded admission priority with less CPU churn.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
