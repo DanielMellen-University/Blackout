@@ -182,6 +182,11 @@ describe('sortie contracts', () => {
         tracker.recordTrafficPass('traffic-2', 180)
         tracker.recordTrafficPass('traffic-3', 240)
       }
+      if (tracker.kind === 'thermal-surf') {
+        tracker.recordThermalSurf(0.2, 5, false)
+        tracker.recordThermalSurf(0.5, 5)
+        tracker.recordThermalSurf(0.6, 5)
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -272,7 +277,31 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge', 'thermal-surf']))
+  })
+
+  it('turns sustained thermal lift into a bounded THERMAL SURF objective', () => {
+    const tracker = new SortieContractTracker()
+    let thermalSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'thermal-surf') {
+        thermalSeed = seed
+        break
+      }
+    }
+    expect(thermalSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(thermalSeed, 5)
+    expect(tracker.label).toBe('THERMAL SURF')
+    expect(tracker.detail).toBe('RIDE THERMALS FOR 10S')
+    tracker.recordThermalSurf(0.2, 10)
+    expect(tracker.progress).toBe(0)
+    tracker.recordThermalSurf(0.5, 4)
+    expect(tracker.progress).toBeCloseTo(0.4)
+    tracker.recordThermalSurf(0.5, 5)
+    tracker.recordThermalSurf(0.5, 1)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.detail).toContain('CURRENT 10S')
   })
 
   it('counts distinct traffic passes for TRAFFIC WATCH', () => {

@@ -21,6 +21,7 @@
 - Make the pooled ground wake weather-aware, shifting its shared material between clear, rain, and snow tints without rebuilding geometry or adding particles.
 - Make the pooled water wake weather-aware, shifting its shared foam material across clear, rain, and snow fronts without rebuilding geometry or adding particles.
 - Add sparse deterministic thermal pockets with a capped airborne updraft impulse, daylight and precipitation damping, and one-shot entry feedback without scene growth.
+- Add a deterministic `THERMAL SURF` contract that rewards ten seconds inside bounded updraft pockets through the existing fixed-step task path without adding scene or storage state.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.

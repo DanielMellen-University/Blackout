@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch' | 'traffic-dodge' | 'thermal-surf'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -76,6 +76,9 @@ const TRAFFIC_WATCH_DETAIL = 'PASS THREE TRAFFIC CONTACTS'
 const TRAFFIC_DODGE_TARGET = 3
 const TRAFFIC_DODGE_MIN_VERTICAL_M = 120
 const TRAFFIC_DODGE_DETAIL = 'PASS THREE CONTACTS WITH 120M SEPARATION'
+const THERMAL_SURF_MIN_FRACTION = 0.38
+const THERMAL_SURF_TARGET_SECONDS = 10
+const THERMAL_SURF_DETAIL = 'RIDE THERMALS FOR 10S'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -114,6 +117,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'waterway-tour', label: 'WATERWAY TOUR', target: WATERWAY_TOUR_TARGET },
   { kind: 'traffic-watch', label: 'TRAFFIC WATCH', target: TRAFFIC_WATCH_TARGET },
   { kind: 'traffic-dodge', label: 'TRAFFIC DODGE', target: TRAFFIC_DODGE_TARGET },
+  { kind: 'thermal-surf', label: 'THERMAL SURF', target: THERMAL_SURF_TARGET_SECONDS },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -159,6 +163,7 @@ export class SortieContractTracker {
   private readonly trafficPassIds = ['', '', '', '', '', '']
   private trafficDodgePassCount = 0
   private readonly trafficDodgePassIds = ['', '', '', '', '', '']
+  private thermalSurfSeconds = 0
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
@@ -204,6 +209,7 @@ export class SortieContractTracker {
     for (let index = 0; index < this.trafficPassIds.length; index += 1) this.trafficPassIds[index] = ''
     this.trafficDodgePassCount = 0
     for (let index = 0; index < this.trafficDodgePassIds.length; index += 1) this.trafficDodgePassIds[index] = ''
+    this.thermalSurfSeconds = 0
     this.gustDetailBucket = -1
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
@@ -264,6 +270,7 @@ export class SortieContractTracker {
     daylight: number,
     distanceM: number,
     weatherGust: number,
+    thermalLift = 0,
   ): void {
     switch (this.definition?.kind) {
       case 'low-level': this.recordLowLevel(terrainClearanceM, dt, speedMps > 5); break
@@ -284,6 +291,7 @@ export class SortieContractTracker {
       case 'gust': this.recordGust(weatherGust, dt, airborne); break
       case 'range': this.recordDistance(distanceM, airborne); break
       case 'high-dive': this.recordHighDive(altitudeM, airborne); break
+      case 'thermal-surf': this.recordThermalSurf(thermalLift, dt, airborne); break
       default: break
     }
   }
@@ -386,6 +394,18 @@ export class SortieContractTracker {
       this.progressValue = clamp01(this.trafficPassCount / this.definition.target)
       this.detailValue = trafficWatchDetail(this.trafficPassCount)
     }
+    if (this.progressValue >= 1) this.completeValue = true
+  }
+
+  /** Accumulate bounded airborne time inside a deterministic updraft pocket. */
+  recordThermalSurf(lift: number, dt: number, airborne = true): void {
+    if (this.definition?.kind !== 'thermal-surf' || this.completeValue || !airborne) return
+    if (!Number.isFinite(lift) || !Number.isFinite(dt)) return
+    if (Math.max(0, Math.min(1, lift)) < THERMAL_SURF_MIN_FRACTION) return
+    const safeDt = Math.max(0, Math.min(5, dt))
+    this.thermalSurfSeconds = Math.min(this.definition.target, this.thermalSurfSeconds + safeDt)
+    this.progressValue = clamp01(this.thermalSurfSeconds / this.definition.target)
+    this.updateProgressDetail(this.thermalSurfSeconds, 'S', 1)
     if (this.progressValue >= 1) this.completeValue = true
   }
 
@@ -826,7 +846,8 @@ function indexForSeed(seed: number): number {
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
   // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
-  // high-dive, water-skim, ridge-run, waterway-tour, traffic-watch, and traffic-dodge objectives.
+  // high-dive, water-skim, ridge-run, waterway-tour, traffic-watch, traffic-dodge,
+  // and thermal-surf objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -859,6 +880,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 167 === 157) return 33
   if (mixed % 173 === 163) return 34
   if (mixed % 181 === 173) return 35
+  if (mixed % 191 === 181) return 36
   return mixed % legacyContractCount
 }
 
@@ -925,6 +947,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'waterway-tour': return WATERWAY_TOUR_DETAIL
     case 'traffic-watch': return TRAFFIC_WATCH_DETAIL
     case 'traffic-dodge': return TRAFFIC_DODGE_DETAIL
+    case 'thermal-surf': return THERMAL_SURF_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }

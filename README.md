@@ -78,6 +78,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The pooled ground wake now shifts between clear dust, rain-darkened spray, and snow-pale haze from existing weather values without rebuilding geometry.
 - The pooled water wake now shifts foam tint across clear, rain, and snow fronts through one cached material color update.
 - Sparse deterministic thermal pockets now add a capped airborne updraft impulse that strengthens in daylight, softens in precipitation, and announces entry once per pocket pass.
+- Seeded sorties can now assign a `THERMAL SURF` contract, rewarding ten seconds inside a bounded updraft pocket through the existing fixed-step task path.
 - Low passes over rivers, lakes, and seas now leave a subtle three-strip water wake driven by existing surface and clearance sampling, with no particle growth.
 - Water-wake instance transforms are uploaded on construction, so the first skim frame renders immediately instead of waiting for a warm-up update.
 - External high-speed flight now adds a restrained pooled airflow streak effect that scales with airspeed and afterburner, while Low, cockpit view, and reduced-motion settings keep it off.
@@ -198,6 +199,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Seeded sorties can also assign a `BRAKE CHECK` contract: deploy the speed brake above 428 knots while airborne to practice high-speed energy control.
 - Seeded sorties can also assign a `THERMAL CONTROL` contract: hold a controlled engine temperature above 350 knots while airborne instead of living on afterburner.
 - Seeded sorties can also assign a `RIDGE RUN` contract: hold a controlled 35-260M low pass through hills, mountains, snow, tundra, or volcanic terrain for ten seconds.
+- Seeded sorties can also assign a `THERMAL SURF` contract: stay inside a readable deterministic updraft pocket for ten seconds while airborne.
 - Seeded sorties can also assign a `WATERWAY TOUR` contract: visit two distinct rendered waterway families, with river/stream, lake/pond/inland, and sea crossings tracked separately.
 - `FUEL SAVER` now shows cached live reserve progress during flight while remaining touchdown-gated, so the task never reports success before the landing is actually secured.
 - `SPEED RUN` now shows cached elapsed time against its landing budget during flight, while completion remains gated on the actual touchdown.

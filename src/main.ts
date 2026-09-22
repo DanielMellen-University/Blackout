@@ -1531,6 +1531,7 @@ async function boot(): Promise<void> {
           world.atmosphere.daylight,
           Math.max(0, aircraft.speed * dt),
           weather.gust,
+          aircraft.thermalLift,
         )
         ghost.record(challenge.elapsedSec, aircraft.position)
       }

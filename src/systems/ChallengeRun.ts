@@ -1047,6 +1047,7 @@ export class ChallengeRun {
     daylight = 1,
     distanceM = 0,
     weatherGust = 0,
+    thermalLift = 0,
   ): void {
     const safeDt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 5)) : 0
     const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
@@ -1083,6 +1084,7 @@ export class ChallengeRun {
       daylight,
       safeDistance,
       weatherGust,
+      thermalLift,
     )
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
