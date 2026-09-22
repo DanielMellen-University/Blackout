@@ -589,6 +589,24 @@ describe('ChallengeRun', () => {
     expect(run.contractComplete).toBe(false)
   })
 
+  it('wires landing quality forecast into the butter contract without early completion', () => {
+    const run = new ChallengeRun(null)
+    let butterSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:butter-live', 5, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT BUTTER LANDING') {
+        butterSeed = seed
+        break
+      }
+    }
+    expect(butterSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:butter-live', 5, 'balanced', butterSeed)
+    run.recordLandingPreview(0.8)
+    expect(run.contractProgress).toBeCloseTo(0.8)
+    expect(run.contractDetail).toContain('PREVIEW 80%')
+    expect(run.contractComplete).toBe(false)
+  })
+
   it('shows live fuel reserve progress before the FUEL SAVER landing', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:fuel-live', 1, 'balanced', 1)

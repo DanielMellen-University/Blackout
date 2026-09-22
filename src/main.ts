@@ -1864,7 +1864,7 @@ async function boot(): Promise<void> {
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
       hudFrame.refueling = refueling
-      hudFrame.landingPreview = (returning || emergencyReturn) && navDist <= 3_000 && aircraft.controls.gearDown
+      const landingPreview = (returning || emergencyReturn) && navDist <= 3_000 && aircraft.controls.gearDown
         ? landingQualityForMetrics({
           verticalSpeed: aircraft.velocity.y,
           groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
@@ -1872,6 +1872,8 @@ async function boot(): Promise<void> {
           rollRad: pose.roll,
         })
         : null
+      challenge.recordLandingPreview(landingPreview ?? Number.NaN)
+      hudFrame.landingPreview = landingPreview
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.afterburnerLock = aircraft.engineState.afterburnerHeatLocked
         ? 'heat'

@@ -456,6 +456,17 @@ export class SortieContractTracker {
     this.detailValue = `${this.detailBaseValue} / ELAPSED ${bucket}S`
   }
 
+  /** Show a landing forecast without converting a prediction into success. */
+  recordLandingPreview(quality: number): void {
+    if (this.definition?.kind !== 'butter' || this.completeValue || !Number.isFinite(quality)) return
+    const safeQuality = clamp01(quality)
+    this.progressValue = safeQuality
+    const bucket = Math.floor(safeQuality * 20)
+    if (bucket === this.detailProgressBucket) return
+    this.detailProgressBucket = bucket
+    this.detailValue = `${this.detailBaseValue} / PREVIEW ${Math.min(100, bucket * 5)}%`
+  }
+
   /** Accumulate bounded time in a low-altitude airborne band for the terrain-hugger contract. */
   recordLowLevel(altitudeM: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'low-level' || this.completeValue || !airborne) return

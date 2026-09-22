@@ -1229,6 +1229,12 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
   }
 
+  /** Record a cached landing-quality forecast for BUTTER LANDING. */
+  recordLandingPreview(quality: number): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    this.contract.recordLandingPreview(quality)
+  }
+
   /** Record one distinct rendered waterway family for WATERWAY TOUR. */
   recordWaterBody(body: string | undefined, airborne = true): void {
     if (this.phase === 'complete' || this.phase === 'failed') return

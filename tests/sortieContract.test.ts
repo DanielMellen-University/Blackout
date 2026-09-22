@@ -72,6 +72,27 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
   })
 
+  it('shows a BUTTER LANDING forecast without completing early', () => {
+    const tracker = new SortieContractTracker()
+    let butterSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'butter') {
+        butterSeed = seed
+        break
+      }
+    }
+    expect(butterSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(butterSeed, 5)
+    expect(tracker.detail).toBe('LAND WITH A BUTTER TOUCHDOWN')
+    tracker.recordLandingPreview(0.8)
+    expect(tracker.progress).toBeCloseTo(0.8)
+    expect(tracker.detail).toContain('PREVIEW 80%')
+    expect(tracker.complete).toBe(false)
+    expect(tracker.finish(99, 1, 0, 0.93)).toBe(MAX_CONTRACT_SCORE)
+    expect(tracker.complete).toBe(true)
+  })
+
   it('covers every contract kind with bounded event and touchdown completion', () => {
     const kinds = new Set<SortieContractKind>()
     for (let seed = 0; seed < 512; seed += 1) {
