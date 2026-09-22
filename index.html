@@ -260,15 +260,15 @@
           <div id="heading-tape-caret" aria-hidden="true">▼</div>
         </div>
         <div id="hud">
-          <div class="hud-row">
+          <div id="hud-gear-row" class="hud-row">
             <span class="label">GEAR</span>
             <span id="hud-gear">DOWN</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">BRK</span>
             <span id="hud-airbrake">CLOSED</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">G</span>
             <span
               id="hud-g"
@@ -279,65 +279,65 @@
               aria-valuetext="+1.0G"
             >+1.0G</span>
           </div>
-          <div id="hud-flight-log-row" class="hud-row" hidden>
+          <div id="hud-flight-log-row" class="hud-row hud-ledger" hidden>
             <span class="label">LOG</span>
             <span id="hud-flight-log" aria-label=""></span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">MACH</span>
             <span id="hud-mach" aria-label="M0.00, subsonic" aria-valuenow="0">M0.00</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">STATE</span>
             <span id="hud-state">GND</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">CAM</span>
             <span id="hud-cam">chase</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">HDG</span>
             <span id="hud-hdg">000°</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">AUD</span>
             <span id="hud-audio">LIVE</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">LAP</span>
             <span id="hud-clock">0:00.00</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">WX</span>
             <span id="hud-weather">CLEAR</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">WIND</span>
             <span id="hud-wind" aria-label="Calm wind">CALM</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">SKY</span>
             <span id="hud-phase">DAY</span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">RUN</span>
             <span id="hud-mission">GATE 1/5</span>
           </div>
-          <div id="hud-route-risk-row" class="hud-row" hidden>
+          <div id="hud-route-risk-row" class="hud-row hud-ledger" hidden>
             <span class="label">RISK</span>
             <span id="hud-route-risk" aria-label=""></span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">PACE</span>
             <span id="hud-pace">READY</span>
           </div>
-          <div id="hud-ghost-pace-row" class="hud-row" hidden>
+          <div id="hud-ghost-pace-row" class="hud-row hud-ledger" hidden>
             <span class="label">GHOST</span>
             <span id="hud-ghost-pace" aria-label=""></span>
           </div>
           <div
             id="hud-gate-progress"
-            class="gate-progress"
+            class="gate-progress hud-ledger"
             role="progressbar"
             aria-label="Gate progress"
             aria-valuemin="0"
@@ -357,35 +357,36 @@
                 aria-valuenow="0"
                 aria-valuetext=""
               ></span>
-              <span id="hud-contract-detail" aria-label=""></span>
+              <span id="hud-contract-detail" class="hud-ledger" aria-label=""></span>
             </span>
           </div>
-          <div id="hud-contract-streak-row" class="hud-row" hidden>
+          <div id="hud-contract-streak-row" class="hud-row hud-ledger" hidden>
             <span class="label">CHAIN</span>
             <span id="hud-contract-streak" aria-label="no completed contract chain">--</span>
           </div>
-          <div id="hud-live-score-row" class="hud-row" hidden>
+          <div id="hud-live-score-row" class="hud-row hud-ledger" hidden>
             <span class="label">LIVE</span>
             <span id="hud-live-score" aria-label=""></span>
           </div>
-          <div id="hud-precision-row" class="hud-row" hidden>
+          <div id="hud-precision-row" class="hud-row hud-ledger" hidden>
             <span class="label">PREC</span>
             <span id="hud-precision" aria-label=""></span>
           </div>
-          <div id="hud-climb-row" class="hud-row" hidden>
+          <div id="hud-climb-row" class="hud-row hud-ledger" hidden>
             <span class="label">CLIMB</span>
             <span id="hud-climb" aria-label=""></span>
           </div>
-          <div id="hud-biome-row" class="hud-row" hidden>
+          <div id="hud-biome-row" class="hud-row hud-ledger" hidden>
             <span class="label">SURVEY</span>
             <span id="hud-biome" aria-label="0 distinct biomes surveyed">--</span>
           </div>
-          <div id="hud-combo-row" class="hud-row" hidden>
+          <div id="hud-combo-row" class="hud-row hud-ledger" hidden>
             <span class="label">COMBO</span>
             <span id="hud-combo" class="hud-combo" aria-label=""></span>
           </div>
           <div class="hud-row">
             <span class="label">FUEL</span>
+            <span id="hud-fuel-bar" class="fuel-bar" aria-hidden="true"><span id="hud-fuel-fill"></span></span>
             <span
               id="hud-fuel"
               role="meter"
@@ -394,9 +395,9 @@
               aria-valuenow="100"
               aria-valuetext="100% fuel"
             >100%</span>
-            <span id="hud-fuel-endurance" class="hud-fuel-endurance" aria-hidden="true">END --</span>
+            <span id="hud-fuel-endurance" class="hud-fuel-endurance hud-ledger" aria-hidden="true">END --</span>
           </div>
-          <div id="hud-refuel-row" class="hud-row" hidden>
+          <div id="hud-refuel-row" class="hud-row hud-ledger" hidden>
             <span class="label">FUEL</span>
             <span id="hud-refuel" aria-label=""></span>
           </div>
@@ -404,7 +405,7 @@
             <span class="label">LAND</span>
             <span id="hud-landing" aria-label=""></span>
           </div>
-          <div class="hud-row">
+          <div class="hud-row hud-ledger">
             <span class="label">TEMP</span>
             <span
               id="hud-engine-heat"
@@ -415,7 +416,7 @@
               aria-valuetext="0% engine heat"
             >0%</span>
           </div>
-          <div id="hud-radar" class="hud-radar" aria-label="Radar contacts">
+          <div id="hud-radar" class="hud-radar hud-ledger" aria-label="Radar contacts">
             <div id="hud-radar-visual" class="hud-radar-visual" aria-hidden="true">
               <span class="hud-radar-marker" data-radar-marker="0"></span>
               <span class="hud-radar-marker" data-radar-marker="1"></span>
@@ -426,7 +427,7 @@
             </div>
             <span id="hud-radar-label">NO CONTACTS</span>
           </div>
-          <div id="hud-assist" class="hud-assist" aria-live="polite" hidden>TRIM ON</div>
+          <div id="hud-assist" class="hud-assist hud-ledger" aria-live="polite" hidden>TRIM ON</div>
           <div id="hud-hint" class="hud-hint" aria-label="Flight control hints" aria-live="polite" hidden></div>
           <div id="hud-paused" class="hud-paused" role="status" aria-live="polite" aria-atomic="true" hidden></div>
         </div>
@@ -447,7 +448,7 @@
             <span class="alt-unit">m</span>
           </div>
 
-          <div id="vs-meter" aria-label="Vertical speed">
+          <div id="vs-meter" class="hud-ledger" aria-label="Vertical speed">
             <span class="alt-label">VS</span>
             <span
               id="hud-vs"
@@ -477,13 +478,13 @@
             </div>
             <div id="adi-bank-marks" aria-hidden="true"></div>
             <div id="adi-bank-ptr" aria-hidden="true"></div>
-            <div id="adi-readout">
+            <div id="adi-readout" class="hud-ledger">
               <span id="adi-pitch">0°</span>
               <span id="adi-roll">0°</span>
             </div>
           </div>
 
-          <div id="fps"><span id="hud-fps">-</span> fps</div>
+          <div id="fps" class="hud-ledger"><span id="hud-fps">-</span> fps</div>
         </div>
 
         <!-- Bottom-left: speedometer + engine power (min↔max) -->
@@ -567,14 +568,14 @@
           <div id="nav-arrow" aria-hidden="true">▲</div>
           <div id="nav-meta">
             <span id="nav-turn">AHEAD</span>
-            <span id="nav-approach" aria-hidden="true"></span>
-            <span id="nav-line" aria-hidden="true"></span>
-            <span id="nav-speed" aria-hidden="true"></span>
-            <span id="nav-glide" aria-hidden="true"></span>
+            <span id="nav-approach" class="hud-ledger" aria-hidden="true"></span>
+            <span id="nav-line" class="hud-ledger" aria-hidden="true"></span>
+            <span id="nav-speed" class="hud-ledger" aria-hidden="true"></span>
+            <span id="nav-glide" class="hud-ledger" aria-hidden="true"></span>
             <span id="nav-range">—</span>
-            <span id="nav-trend" aria-hidden="true">HOLD</span>
-            <span id="nav-eta" aria-hidden="true">ETA --</span>
-            <span id="nav-alt"></span>
+            <span id="nav-trend" class="hud-ledger" aria-hidden="true">HOLD</span>
+            <span id="nav-eta" class="hud-ledger" aria-hidden="true">ETA --</span>
+            <span id="nav-alt" class="hud-ledger"></span>
           </div>
         </div>
 

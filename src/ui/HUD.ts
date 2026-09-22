@@ -745,6 +745,8 @@ export class HUD {
   private readonly thrEl: HTMLElement | null
   private readonly airbrakeEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
+  private readonly gearRowEl: HTMLElement | null
+  private readonly fuelFillEl: HTMLElement | null
   private readonly engineHeatEl: HTMLElement | null
   private readonly stateEl: HTMLElement | null
   private readonly bannerEl: HTMLElement | null
@@ -996,6 +998,8 @@ export class HUD {
     this.thrEl = root.getElementById('hud-thr')
     this.airbrakeEl = root.getElementById('hud-airbrake')
     this.gearEl = root.getElementById('hud-gear')
+    this.gearRowEl = root.getElementById('hud-gear-row')
+    this.fuelFillEl = root.getElementById('hud-fuel-fill')
     this.engineHeatEl = root.getElementById('hud-engine-heat')
     this.stateEl = root.getElementById('hud-state')
     this.bannerEl = root.getElementById('hud-banner')
@@ -1652,6 +1656,7 @@ export class HUD {
       this.setText(this.fuelEl, this.fuelText)
       this.setAttribute(this.fuelEl, 'aria-valuenow', String(percent))
       this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
+      if (this.fuelFillEl) this.fuelFillEl.style.width = `${percent}%`
       const fuelWarning = fuelWarningLevel({ fraction: opts.fuel })
       this.setClass(this.fuelEl, 'low', fuelWarning !== 'normal')
       this.setClass(this.fuelEl, 'critical', fuelWarning === 'critical')
@@ -1779,7 +1784,9 @@ export class HUD {
       }
       this.previousGearDown = opts.gearDown
       this.setText(this.gearEl, opts.gearDown ? 'DOWN' : 'UP')
-      this.setClass(this.gearEl, 'gear-cycle', gearTransitionActive(now, this.gearFlashUntil))
+      const gearMoving = gearTransitionActive(now, this.gearFlashUntil)
+      this.setClass(this.gearEl, 'gear-cycle', gearMoving)
+      if (this.gearRowEl) this.setHidden(this.gearRowEl, opts.gearDown !== true && !gearMoving)
     }
     if (this.stateEl && (opts.onGround !== undefined || opts.flightState !== undefined)) {
       const state = normalizeFlightState(opts.flightState, opts.onGround === true)

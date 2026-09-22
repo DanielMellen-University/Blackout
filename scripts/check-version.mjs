@@ -14,9 +14,6 @@ const roadmapMatch = versionSource.match(/ROADMAP_CHUNK\s*=\s*'([^']+)'/)
 const roadmapChunk = roadmapMatch?.[1] ?? ''
 const releaseNameMatch = versionSource.match(/RELEASE_NAME\s*=\s*'([^']+)'/)
 const releaseName = releaseNameMatch?.[1] ?? ''
-const agents = readFileSync(new URL('../.agents.md', import.meta.url), 'utf8')
-const currentChunkMatch = agents.match(/\*\*CURRENT_CHUNK:\*\* `([^`]+)`/)
-const currentChunk = currentChunkMatch?.[1] ?? ''
 const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
 const firstReleaseHeading = changelog.match(/^## v([^\n]+) - (\d{4}-\d{2}-\d{2})$/m)
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
@@ -34,13 +31,6 @@ if (!roadmapChunk) errors.push('src/core/Version.ts is missing ROADMAP_CHUNK')
 if (!releaseName) errors.push('src/core/Version.ts is missing RELEASE_NAME')
 if (roadmapChunk && !/^\d+\.\d+$/.test(roadmapChunk)) {
   errors.push(`src/core/Version.ts roadmap chunk (${roadmapChunk}) is not a valid internal chunk ID`)
-}
-if (!currentChunk) errors.push('.agents.md is missing CURRENT_CHUNK')
-if (currentChunk && !/^\d+\.\d+$/.test(currentChunk)) {
-  errors.push(`.agents.md CURRENT_CHUNK (${currentChunk}) is not a valid internal chunk ID`)
-}
-if (roadmapChunk && currentChunk && roadmapChunk !== currentChunk) {
-  errors.push(`src/core/Version.ts (${roadmapChunk}) does not match .agents.md CURRENT_CHUNK (${currentChunk})`)
 }
 if (packageVersion && sourceVersion && packageVersion !== sourceVersion) {
   errors.push(`package.json (${packageVersion}) does not match src/core/Version.ts (${sourceVersion})`)

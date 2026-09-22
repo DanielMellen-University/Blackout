@@ -1221,6 +1221,30 @@ body,
   line-height: 1.65;
 }
 
+.hud-row[hidden] {
+  display: none !important;
+}
+
+.hud-ledger {
+  display: none !important;
+}
+
+.fuel-bar {
+  flex: 1;
+  align-self: center;
+  height: 4px;
+  margin: 0 8px;
+  background: rgba(255, 255, 255, 0.14);
+  min-width: 36px;
+}
+
+#hud-fuel-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: #3dcea8;
+}
+
 .hud-row .label {
   color: var(--ink-mute);
   letter-spacing: 0.14em;

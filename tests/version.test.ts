@@ -11,9 +11,7 @@ describe('release version identity', () => {
     expect(appReleaseLabel()).toBe(`v${APP_VERSION} / ${RELEASE_NAME}`)
   })
 
-  it('keeps the runtime roadmap chunk aligned with the agent playbook', () => {
-    const agents = readFileSync(new URL('../.agents.md', import.meta.url), 'utf8')
-    const currentChunk = agents.match(/\*\*CURRENT_CHUNK:\*\* `([^`]+)`/)?.[1]
-    expect(currentChunk).toBe(ROADMAP_CHUNK)
+  it('does not ship the agent playbook', () => {
+    expect(() => readFileSync(new URL('../.agents.md', import.meta.url), 'utf8')).toThrow()
   })
 })
