@@ -101,10 +101,7 @@ export class RadarSystem {
         landmark.biome,
       )
     }
-    this.contacts.sort((a, b) => {
-      const priority = radarKindPriority(a.kind) - radarKindPriority(b.kind)
-      return priority || a.distance - b.distance
-    })
+    sortRadarContacts(this.contacts)
     let selectedPresent = this.selectedTargetId === ''
     for (const contact of this.contacts) {
       contact.selected = contact.id !== '' && contact.id === this.selectedTargetId
@@ -255,6 +252,23 @@ export function radarTargetArrivalLabel(kind: RadarContactKind): string {
 
 function radarKindPriority(kind: RadarContactKind): number {
   return kind === 'gate' ? 0 : kind === 'city' ? 1 : 2
+}
+
+/** Stable bounded ordering without invoking Array.sort on every radar sweep. */
+function sortRadarContacts(contacts: RadarContact[]): void {
+  for (let index = 1; index < contacts.length; index++) {
+    const candidate = contacts[index]!
+    let insert = index
+    while (insert > 0 && compareRadarContacts(candidate, contacts[insert - 1]!) < 0) {
+      contacts[insert] = contacts[insert - 1]!
+      insert--
+    }
+    if (insert !== index) contacts[insert] = candidate
+  }
+}
+
+function compareRadarContacts(a: RadarContact, b: RadarContact): number {
+  return radarKindPriority(a.kind) - radarKindPriority(b.kind) || a.distance - b.distance
 }
 
 function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact, selectedId: string): boolean {
