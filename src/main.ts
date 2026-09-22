@@ -147,6 +147,7 @@ import {
 } from './systems/RadarSystem'
 import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
 import { sampleTerrainSurface } from './world/terrainSample'
+import { trafficAlertSide } from './world/AirTrafficSystem'
 import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -801,6 +802,8 @@ async function boot(): Promise<void> {
   let radarTargetCycleQueued = false
   let radarNextUpdateMs = Number.NaN
   let radarContacts: ReturnType<RadarSystem['update']> = []
+  let prevTrafficAlertId = ''
+  let trafficAlertUntilMs = 0
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   let terrainClearanceM = 0
   let biomeSurveyCooldown = 0
@@ -918,6 +921,8 @@ async function boot(): Promise<void> {
     radarTargetCycleQueued = false
     radarNextUpdateMs = Number.NaN
     radarContacts = []
+    prevTrafficAlertId = ''
+    trafficAlertUntilMs = 0
     biomeSurveyCooldown = 0
     overWater = false
     refueling = false
@@ -1849,6 +1854,31 @@ async function boot(): Promise<void> {
           showBanner(radarDiscoveryLabel(contact.kind, contact.biome), 2800, 'success')
           break
         }
+      }
+      const trafficAlert = aircraft.status === 'ok' && !aircraft.onGround
+        ? world.traffic.closestAlert(
+          aircraft.position.x,
+          aircraft.position.y,
+          aircraft.position.z,
+          pose.heading,
+        )
+        : null
+      if (!trafficAlert) {
+        prevTrafficAlertId = ''
+      } else {
+        if (
+          trafficAlert.id !== prevTrafficAlertId &&
+          nowMs >= trafficAlertUntilMs &&
+          (!banner || bannerUntil <= nowMs)
+        ) {
+          showBanner(
+            `TRAFFIC ${trafficAlertSide(trafficAlert.bearing)} / ${Math.round(trafficAlert.distance)}M`,
+            1600,
+            'danger',
+          )
+          trafficAlertUntilMs = nowMs + 2200
+        }
+        prevTrafficAlertId = trafficAlert.id
       }
       if (world.terrain.sampleMeshSurfaceInto(aircraft.position.x, aircraft.position.z, groundSurface)) {
         const water = groundSurface.kind === 'water'

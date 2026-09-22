@@ -5,6 +5,7 @@ import {
   AIR_TRAFFIC_UPDATE_INTERVAL_SEC,
   AirTrafficSystem,
   trafficCellFor,
+  trafficAlertSide,
   trafficInRange,
 } from '../src/world/AirTrafficSystem'
 
@@ -57,6 +58,21 @@ describe('bounded air traffic', () => {
     expect(new Set(contacts.map(contact => contact.id)).size).toBe(AIR_TRAFFIC_COUNT)
     traffic.setRenderQuality('low')
     expect(traffic.getRadarLandmarks(5_000, 5_000, 8_000)).toHaveLength(3)
+    traffic.dispose()
+  })
+
+  it('returns a finite nearest-flight alert and safe direction cue', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    traffic.reset(1234, 5_000, 0, 5_000)
+    const contact = traffic.getRadarLandmarks(5_000, 5_000, 8_000)[0]!
+    const alert = traffic.closestAlert(contact.x, contact.y, contact.z, 0)
+    expect(alert?.id).toBe(contact.id)
+    expect(alert?.distance).toBe(0)
+    expect(alert?.verticalSeparation).toBe(0)
+    expect(Number.isFinite(alert?.bearing)).toBe(true)
+    expect(trafficAlertSide(Number.NaN)).toBe('AHEAD')
+    expect(traffic.closestAlert(contact.x, contact.y + 2_000, contact.z, 0)).toBeNull()
     traffic.dispose()
   })
 

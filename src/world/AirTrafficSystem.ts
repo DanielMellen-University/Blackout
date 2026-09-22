@@ -21,6 +21,15 @@ export const AIR_TRAFFIC_CELL_SIZE_M = 10_000
 export const AIR_TRAFFIC_UPDATE_INTERVAL_SEC = 1 / 12
 export const AIR_TRAFFIC_MIN_DISTANCE_M = 900
 export const AIR_TRAFFIC_MAX_DISTANCE_M = 8_000
+export const AIR_TRAFFIC_ALERT_RANGE_M = 1_800
+export const AIR_TRAFFIC_ALERT_VERTICAL_M = 520
+
+export interface TrafficAlert {
+  readonly id: string
+  readonly distance: number
+  readonly verticalSeparation: number
+  readonly bearing: number
+}
 
 interface TrafficSlot {
   offsetX: number
@@ -40,6 +49,12 @@ const _position = new Vector3()
 const _scale = new Vector3()
 const _quaternion = new Quaternion()
 const _euler = new Euler()
+const trafficAlertValue = {
+  id: '',
+  distance: 0,
+  verticalSeparation: 0,
+  bearing: 0,
+}
 
 /** Return the deterministic traffic cell containing a world coordinate. */
 export function trafficCellFor(value: number): number {
@@ -58,6 +73,14 @@ export function trafficInRange(distance: number): boolean {
   return Number.isFinite(distance) &&
     distance >= AIR_TRAFFIC_MIN_DISTANCE_M &&
     distance <= AIR_TRAFFIC_MAX_DISTANCE_M
+}
+
+/** Keep the proximity cue readable without exposing raw radians to the HUD. */
+export function trafficAlertSide(bearing: number): 'LEFT' | 'RIGHT' | 'AHEAD' | 'BEHIND' {
+  const safe = Number.isFinite(bearing) ? Math.atan2(Math.sin(bearing), Math.cos(bearing)) : 0
+  if (Math.abs(safe) < Math.PI / 8) return 'AHEAD'
+  if (Math.abs(safe) >= Math.PI * .875) return 'BEHIND'
+  return safe > 0 ? 'RIGHT' : 'LEFT'
 }
 
 /**
@@ -144,6 +167,40 @@ export class AirTrafficSystem {
       this.radarCache.push(contact)
     }
     return this.radarCache
+  }
+
+  /** Return the nearest bounded traffic conflict for a one-shot pilot cue. */
+  closestAlert(x: number, y: number, z: number, heading: number): TrafficAlert | null {
+    const safeX = Number.isFinite(x) ? x : this.lastPlayerX
+    const safeY = Number.isFinite(y) ? y : this.baseY
+    const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
+    const safeHeading = Number.isFinite(heading) ? heading : 0
+    let bestDistance = Number.POSITIVE_INFINITY
+    let best: RadarLandmark | null = null
+    let bestVertical = 0
+    for (let index = 0; index < this.activeCount; index += 1) {
+      const contact = this.radarPool[index]!
+      const dx = contact.x - safeX
+      const dz = contact.z - safeZ
+      const distance = Math.hypot(dx, dz)
+      const vertical = Math.abs(contact.y - safeY)
+      if (
+        !Number.isFinite(distance) ||
+        !Number.isFinite(vertical) ||
+        distance > AIR_TRAFFIC_ALERT_RANGE_M ||
+        vertical > AIR_TRAFFIC_ALERT_VERTICAL_M ||
+        distance >= bestDistance
+      ) continue
+      bestDistance = distance
+      best = contact
+      bestVertical = vertical
+    }
+    if (!best || !Number.isFinite(bestDistance)) return null
+    trafficAlertValue.id = best.id ?? ''
+    trafficAlertValue.distance = bestDistance
+    trafficAlertValue.verticalSeparation = bestVertical
+    trafficAlertValue.bearing = wrapAngle(Math.atan2(best.x - safeX, best.z - safeZ) - safeHeading)
+    return trafficAlertValue
   }
 
   /** Rebuild only the fixed slot data when a world or traffic cell changes. */
@@ -308,4 +365,9 @@ function trafficRandom(seed: number, cellX: number, cellZ: number, index: number
   value = Math.imul(value ^ (value >>> 16), 0x45d9f3b)
   value ^= value >>> 16
   return (value >>> 0) / 0x1_0000_0000
+}
+
+function wrapAngle(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.atan2(Math.sin(value), Math.cos(value))
 }
