@@ -930,14 +930,27 @@ export function applySlopeShading(
   col: [number, number, number],
   slope01: number,
 ): [number, number, number] {
+  const out: [number, number, number] = [0, 0, 0]
+  applySlopeShadingInto(out, col[0], col[1], col[2], slope01)
+  return out
+}
+
+/** Fill a caller-owned color tuple so terrain workers avoid per-vertex arrays. */
+export function applySlopeShadingInto(
+  out: [number, number, number],
+  r: number,
+  g: number,
+  b: number,
+  slope01: number,
+): void {
   // Derive rock tint from the already blended palette. Discrete biome switches
   // and distance-limited shading used to draw hard borders across mountains.
   const t = smoothstep(.14, .8, clamp01(slope01)) * .65
-  const warmth = clamp01((col[0] - col[2]) * 2)
-  const rock: [number, number, number] = [.32 + warmth * .14, .3 - warmth * .12, .28 - warmth * .16]
-  return [
-    col[0] + (rock[0] - col[0]) * t,
-    col[1] + (rock[1] - col[1]) * t,
-    col[2] + (rock[2] - col[2]) * t,
-  ]
+  const warmth = clamp01((r - b) * 2)
+  const rockR = .32 + warmth * .14
+  const rockG = .3 - warmth * .12
+  const rockB = .28 - warmth * .16
+  out[0] = r + (rockR - r) * t
+  out[1] = g + (rockG - g) * t
+  out[2] = b + (rockB - b) * t
 }

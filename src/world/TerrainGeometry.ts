@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
-import { applySlopeShading, biomeColor, sampleClimate, sampleTerrainHeightFast, type Climate } from './terrainSample'
+import { applySlopeShadingInto, biomeColor, sampleClimate, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
 
@@ -302,16 +302,14 @@ export function generateTerrainGeometry(
     gradientZ[i] = (hu - hd) / (2 * cell)
   }
   {
+    const shaded: [number, number, number] = [0, 0, 0]
     for (let iz = 0; iz < stride; iz++) {
       for (let ix = 0; ix < stride; ix++) {
         const i = iz * stride + ix
         const dx = gradientX[i]!
         const dz = gradientZ[i]!
         const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
-        const shaded = applySlopeShading(
-          [colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!],
-          slope,
-        )
+        applySlopeShadingInto(shaded, colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!, slope)
         colors[i * 3] = shaded[0]
         colors[i * 3 + 1] = shaded[1]
         colors[i * 3 + 2] = shaded[2]

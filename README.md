@@ -507,6 +507,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Rare seeded sorties can now assign WATERWAY TOUR, rewarding two distinct waterway families through the existing survey cadence without extra terrain work.
 - Terrain boundary normal probes now use a height-only geography path, preserving exact relief while avoiding full climate-object construction for worker-side edge samples.
 - Terrain worker grids no longer create a coordinate string and Map entry for every vertex; deterministic sampling preserves water-detail promotion while trimming request-time allocation churn.
+- Terrain worker slope shading now fills a caller-owned color tuple, preserving the same relief colors without allocating a result and rock-tint tuple per vertex.
 - Weather fronts turn wind along the shortest arc while interpolating speed separately, avoiding an artificial calm pocket when a storm changes direction.
 - Salt flats carry broad deterministic crust and damp-playa bands instead of a single pale sheet, using the existing terrain vertex-color path.
 - Tundra carries broad frost and wind-scoured scree bands so cold lowlands do not collapse into one gray-green material.

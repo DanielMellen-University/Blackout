@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { biomeColor, clearOpsPad, INLAND_WATER_LEVEL, sampleClimate } from '../src/world/terrainSample'
+import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, INLAND_WATER_LEVEL, sampleClimate } from '../src/world/terrainSample'
 
 describe('continuous terrain generation', () => {
   afterEach(clearOpsPad)
@@ -40,6 +40,13 @@ describe('continuous terrain generation', () => {
     expect(exposed[0]).toBeLessThan(clean[0])
     expect(exposed[1]).toBeLessThan(clean[1])
     expect(exposed.every(channel => channel >= 0 && channel <= 1)).toBe(true)
+  })
+
+  it('keeps caller-owned slope shading numerically identical', () => {
+    const expected = applySlopeShading([.42, .5, .28], .63)
+    const actual: [number, number, number] = [0, 0, 0]
+    applySlopeShadingInto(actual, .42, .5, .28, .63)
+    expect(actual).toEqual(expected)
   })
 
   it('keeps alpine valleys cool and visibly deeper than flat snow', () => {
