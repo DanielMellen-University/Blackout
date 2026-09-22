@@ -770,7 +770,11 @@ export class TerrainSystem {
       if (this.sampledChunk === old) this.invalidateSampleChunk()
       old.root.removeFromParent()
       this.disposeChunk(old)
-      this.retiring.splice(i, 1)
+      // Retiring chunks are walked backwards, so swap-pop avoids shifting the
+      // remaining fade records while preserving the teardown order already
+      // visited by this pass.
+      const last = this.retiring.pop()
+      if (last && i < this.retiring.length) this.retiring[i] = last
     }
 
     for (const key of toRemove) {
