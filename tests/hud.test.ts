@@ -86,6 +86,8 @@ import {
   contractDetailAriaLabel,
   liveScoreHudLabel,
   liveScoreAriaLabel,
+  gateQualityHudLabel,
+  gateQualityAriaLabel,
   comboHudLabel,
   quantizeHudNumber,
   safeHudValue,
@@ -436,6 +438,13 @@ describe('HUD value formatting', () => {
     expect(liveScoreHudLabel(Number.MAX_SAFE_INTEGER)).toBe('+117,500')
     expect(liveScoreAriaLabel(17_420)).toBe('Live earned score +17,420')
     expect(liveScoreAriaLabel(Number.NaN)).toBe('')
+  })
+
+  it('keeps average gate precision compact and accessible', () => {
+    expect(gateQualityHudLabel(0.825)).toBe('AVG 83%')
+    expect(gateQualityHudLabel(Number.NaN)).toBe('')
+    expect(gateQualityAriaLabel(0.825)).toBe('Average cleared-gate quality 83%')
+    expect(gateQualityAriaLabel(Number.NaN)).toBe('')
   })
 
   it('keeps the live combo expiry readable and bounded', () => {

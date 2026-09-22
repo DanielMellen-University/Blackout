@@ -644,6 +644,18 @@ export function liveScoreAriaLabel(value: unknown): string {
   return label ? `Live earned score ${label}` : ''
 }
 
+/** Keep completed-gate precision visible without implying an unfinished gate score. */
+export function gateQualityHudLabel(value: unknown): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return ''
+  return `AVG ${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`
+}
+
+/** Describe the cached average gate quality for assistive technology. */
+export function gateQualityAriaLabel(value: unknown): string {
+  const label = gateQualityHudLabel(value)
+  return label ? `Average cleared-gate quality ${label.slice(4)}` : ''
+}
+
 /** Describe afterburner availability without exposing internal lockout state. */
 export function afterburnerHudLabel(
   active: boolean,
@@ -718,6 +730,8 @@ export class HUD {
   private readonly contractStreakEl: HTMLElement | null
   private readonly liveScoreRowEl: HTMLElement | null
   private readonly liveScoreEl: HTMLElement | null
+  private readonly precisionRowEl: HTMLElement | null
+  private readonly precisionEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -850,6 +864,9 @@ export class HUD {
   private liveScoreValue = Number.NaN
   private liveScoreText = ''
   private liveScoreAriaText = ''
+  private precisionValue = Number.NaN
+  private precisionText = ''
+  private precisionAriaText = ''
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
@@ -952,6 +969,8 @@ export class HUD {
     this.contractStreakEl = root.getElementById('hud-contract-streak')
     this.liveScoreRowEl = root.getElementById('hud-live-score-row')
     this.liveScoreEl = root.getElementById('hud-live-score')
+    this.precisionRowEl = root.getElementById('hud-precision-row')
+    this.precisionEl = root.getElementById('hud-precision')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -1092,6 +1111,8 @@ export class HUD {
     contractStreak?: number
     /** Earned in-flight score preview, excluding touchdown-only payouts. */
     liveScore?: number | null
+    /** Average quality of completed gates, or null before the first pass. */
+    gateQuality?: number | null
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
@@ -1491,6 +1512,19 @@ export class HUD {
       this.setHidden(this.liveScoreRowEl, !visible)
       this.setText(this.liveScoreEl, this.liveScoreText)
       this.setAttribute(this.liveScoreEl, 'aria-label', this.liveScoreAriaText)
+    }
+    if (this.precisionRowEl && this.precisionEl && opts.gateQuality !== undefined) {
+      const quality = opts.gateQuality === null ? Number.NaN : opts.gateQuality
+      const displayQuality = Number.isFinite(quality) ? Math.round(Math.max(0, Math.min(1, quality)) * 100) : -1
+      if (displayQuality !== this.precisionValue) {
+        this.precisionValue = displayQuality
+        this.precisionText = gateQualityHudLabel(quality)
+        this.precisionAriaText = gateQualityAriaLabel(quality)
+      }
+      const visible = Number.isFinite(quality)
+      this.setHidden(this.precisionRowEl, !visible)
+      this.setText(this.precisionEl, this.precisionText)
+      this.setAttribute(this.precisionEl, 'aria-label', this.precisionAriaText)
     }
     if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
       const count = Number.isFinite(opts.biomeCount)

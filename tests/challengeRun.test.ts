@@ -206,6 +206,17 @@ describe('ChallengeRun', () => {
     expect(run.currentScorePreview).toBeLessThan(MAX_BEST_SCORE)
   })
 
+  it('keeps the completed-gate quality average separate from final score weighting', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:precision-average', 3)
+    expect(run.currentGateQuality).toBeNaN()
+    run.recordGate(1)
+    run.recordGate(0.5)
+    expect(run.currentGateQuality).toBeCloseTo(0.75)
+    run.recordGate(0.25)
+    expect(run.currentGateQuality).toBeCloseTo((1 + 0.5 + 0.25) / 3)
+  })
+
   it('does not score a landing before the circuit is done', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:1', 2)

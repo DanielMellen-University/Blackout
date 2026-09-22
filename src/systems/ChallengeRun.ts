@@ -1280,6 +1280,12 @@ export class ChallengeRun {
     return this.scorePreviewValue
   }
 
+  /** Average quality of completed gates only, kept separate from final score weighting. */
+  get currentGateQuality(): number {
+    if (this.gatesPassed <= 0) return Number.NaN
+    return clamp01(this.gateQualityTotal / this.gatesPassed)
+  }
+
   /** Consume one event-driven cue for the latest newly surveyed biome. */
   consumeBiomeSurveyCue(): Biome | null {
     const cue = this.surveyedBiomeCue
