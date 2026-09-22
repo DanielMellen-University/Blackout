@@ -73,6 +73,7 @@ import { LandingFx } from './systems/LandingFx'
 import { SonicBoomFx } from './systems/SonicBoomFx'
 import { WaterWakeFx } from './systems/WaterWakeFx'
 import { SpeedStreakFx } from './systems/SpeedStreakFx'
+import { MachConeFx } from './systems/MachConeFx'
 import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
@@ -539,12 +540,14 @@ async function boot(): Promise<void> {
   const sonicBoomFx = new SonicBoomFx(world.scene)
   const waterWakeFx = new WaterWakeFx(world.scene)
   const speedStreakFx = new SpeedStreakFx(world.scene)
+  const machConeFx = new MachConeFx(world.scene)
   applyEffectsQuality = (quality): void => {
     crashFx.setRenderQuality(quality)
     landingFx.setRenderQuality(quality)
     sonicBoomFx.setRenderQuality(quality)
     waterWakeFx.setRenderQuality(quality)
     speedStreakFx.setRenderQuality(quality)
+    machConeFx.setRenderQuality(quality)
   }
   applyEffectsMotion = (reduced): void => {
     crashFx.setReducedMotion(reduced)
@@ -552,6 +555,7 @@ async function boot(): Promise<void> {
     sonicBoomFx.setReducedMotion(reduced)
     waterWakeFx.setReducedMotion(reduced)
     speedStreakFx.setReducedMotion(reduced)
+    machConeFx.setReducedMotion(reduced)
   }
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
@@ -699,6 +703,7 @@ async function boot(): Promise<void> {
     sonicBoomFx.dispose()
     waterWakeFx.dispose()
     speedStreakFx.dispose()
+    machConeFx.dispose()
     debug?.dispose()
     aircraft.dispose()
     renderer.dispose()
@@ -907,6 +912,7 @@ async function boot(): Promise<void> {
     sonicBoomFx.reset()
     waterWakeFx.reset()
     speedStreakFx.reset()
+    machConeFx.reset()
     stunts.reset()
     combo.reset()
     altitudeMilestones.reset()
@@ -1552,6 +1558,13 @@ async function boot(): Promise<void> {
       aircraft.displayOrientation,
       aircraft.speed,
       aircraft.engineState.afterburnerActive,
+      aircraft.onGround,
+      playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
+    )
+    machConeFx.update(
+      aircraft.displayPosition,
+      aircraft.displayOrientation,
+      aircraft.speed,
       aircraft.onGround,
       playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
     )
