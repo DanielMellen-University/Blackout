@@ -577,6 +577,19 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('shows live fuel reserve progress before the FUEL SAVER landing', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:fuel-live', 1, 'balanced', 1)
+    expect(run.contractLabel).toBe('CONTRACT FUEL SAVER')
+    run.update(0.1, 8, 180, 0, 0, false, true, 0, 0, 1, 0.5)
+    expect(run.contractProgress).toBeCloseTo(2 / 3)
+    expect(run.contractDetail).toContain('CURRENT 50%')
+    expect(run.contractComplete).toBe(false)
+    run.update(0.1, 8, 180, 0, 0, false, true, 0, 0, 1, 0.8)
+    expect(run.contractDetail).toContain('CURRENT 80%')
+    expect(run.contractComplete).toBe(false)
+  })
+
   it('emits one live cue when an event contract is completed', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:contract-event', 1, 'balanced', 6)

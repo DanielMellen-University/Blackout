@@ -1065,6 +1065,7 @@ export class ChallengeRun {
     const wasContractComplete = this.contract.complete
     this.contract.recordLowLevel(safeTerrainClearance, safeDt, safeSpeed > 5)
     this.contract.recordSpeedBand(safeSpeed, safeDt, safeSpeed > 5)
+    this.contract.recordFuel(fuelFraction)
     this.contract.recordWeather(rain, snow, safeDt, safeSpeed > 5)
     this.contract.recordBrake(safeSpeed, safeDt, airbrake, airborne)
     this.contract.recordHeat(engineHeat, safeSpeed, safeDt, airborne)

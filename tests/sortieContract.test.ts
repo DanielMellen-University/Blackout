@@ -35,6 +35,30 @@ describe('sortie contracts', () => {
     expect(disabled.finish(0, 1)).toBe(0)
   })
 
+  it('shows live FUEL SAVER progress without completing before touchdown', () => {
+    const tracker = new SortieContractTracker()
+    let fuelSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'fuel') {
+        fuelSeed = seed
+        break
+      }
+    }
+    expect(fuelSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(fuelSeed, 5)
+    expect(tracker.detail).toBe('LAND WITH 75% FUEL')
+    tracker.recordFuel(0.5)
+    expect(tracker.progress).toBeCloseTo(2 / 3)
+    expect(tracker.detail).toContain('CURRENT 50%')
+    expect(tracker.complete).toBe(false)
+    tracker.recordFuel(0.8)
+    expect(tracker.detail).toContain('CURRENT 80%')
+    expect(tracker.complete).toBe(false)
+    expect(tracker.finish(99, 0.8)).toBe(MAX_CONTRACT_SCORE)
+    expect(tracker.complete).toBe(true)
+  })
+
   it('covers every contract kind with bounded event and touchdown completion', () => {
     const kinds = new Set<SortieContractKind>()
     for (let seed = 0; seed < 512; seed += 1) {

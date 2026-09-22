@@ -434,6 +434,17 @@ export class SortieContractTracker {
     if (this.progressValue >= 1) this.completeValue = true
   }
 
+  /** Show live reserve progress while keeping FUEL SAVER touchdown-gated. */
+  recordFuel(fuelFraction: number): void {
+    if (this.definition?.kind !== 'fuel' || this.completeValue || !Number.isFinite(fuelFraction)) return
+    const safeFuel = clamp01(fuelFraction)
+    this.progressValue = clamp01(safeFuel / this.definition.target)
+    const bucket = Math.floor(safeFuel * 20)
+    if (bucket === this.detailProgressBucket) return
+    this.detailProgressBucket = bucket
+    this.detailValue = `${this.detailBaseValue} / CURRENT ${Math.min(100, bucket * 5)}%`
+  }
+
   /** Accumulate bounded time in a low-altitude airborne band for the terrain-hugger contract. */
   recordLowLevel(altitudeM: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'low-level' || this.completeValue || !airborne) return
