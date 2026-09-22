@@ -88,6 +88,23 @@ describe('terrain streaming integration', () => {
     expect(terrain.streamingStats.ready).toBe(1)
   })
 
+  it('drains every ready result without changing nearest-first upload order', () => {
+    desire(4, 4)
+    desire(6, 6)
+    desire(8, 8)
+    internal.ready.push(
+      { job: job(8), data: fixture },
+      { job: job(4), data: fixture },
+      { job: job(6), data: fixture },
+    )
+    vi.spyOn(performance, 'now').mockReturnValue(0)
+    internal.drainBuildQueue()
+    expect(internal.chunks.has(key(4))).toBe(true)
+    expect(internal.chunks.has(key(6))).toBe(true)
+    expect(internal.chunks.has(key(8))).toBe(true)
+    expect(terrain.streamingStats.ready).toBe(0)
+  })
+
   it('starts new chunks invisible and fades ground from zero to one over 0.65 seconds', () => {
     desire(5, 5)
     internal.install(job(5), fixture)

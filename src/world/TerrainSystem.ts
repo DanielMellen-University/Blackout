@@ -624,14 +624,18 @@ export class TerrainSystem {
     const deadline = performance.now() + UPLOAD_BUDGET_MS
     let uploads = 0
     // Completion order varies between workers; uploads follow current proximity.
-    this.ready.sort((a, b) => {
-      const aDistance = this.desiredTiles.get(tileKey(a.job.cx, a.job.cz, a.job.size))?.dist ?? Infinity
-      const bDistance = this.desiredTiles.get(tileKey(b.job.cx, b.job.cz, b.job.size))?.dist ?? Infinity
-      return aDistance - bDistance
-    })
+    // Sort farthest-first so pop() removes the nearest result without shifting
+    // every remaining ready item on each upload.
+    if (this.ready.length > 1) {
+      this.ready.sort((a, b) => {
+        const aDistance = this.desiredTiles.get(tileKey(a.job.cx, a.job.cz, a.job.size))?.dist ?? Infinity
+        const bDistance = this.desiredTiles.get(tileKey(b.job.cx, b.job.cz, b.job.size))?.dist ?? Infinity
+        return bDistance - aDistance
+      })
+    }
     while (this.ready.length && uploads < MAX_UPLOADS_PER_FRAME &&
       (uploads === 0 || performance.now() < deadline)) {
-      const result = this.ready.shift()!
+      const result = this.ready.pop()!
       this.install(result.job, result.data)
       uploads++
     }

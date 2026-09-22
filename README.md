@@ -53,6 +53,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - The live HUD now shows earned score from gates and airborne exploration bonuses, while time, landing, weather, and contract payouts remain clearly touchdown-gated.
 - The live HUD keeps average cleared-gate precision visible after each pass, turning clean routing into a readable repeat-run target without changing score math.
 - The live HUD now shows progress toward the next altitude reward tier, while the milestone payout remains gated by the existing completed-run handoff.
+- Terrain worker results now drain through a nearest-first pop path, preserving stream order while avoiding repeated ready-queue array shifts during fast movement.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
