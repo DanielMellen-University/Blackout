@@ -6,6 +6,7 @@
 
 - Establish a single v0.11.0 release identity across package metadata, runtime title UI, and build validation while keeping roadmap chunks internal.
 - Add a deterministic STORM RUN contract that rewards bounded airborne time in meaningful rain or snow without adding scene work.
+- Add a compact six-marker radar scope with bounded contact projection and distinct gate, settlement, and traffic colors while preserving the accessible text readout.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.

@@ -415,7 +415,17 @@
               aria-valuetext="0% engine heat"
             >0%</span>
           </div>
-          <div id="hud-radar" class="hud-radar" aria-label="Radar contacts">NO CONTACTS</div>
+          <div id="hud-radar" class="hud-radar" aria-label="Radar contacts">
+            <div id="hud-radar-visual" class="hud-radar-visual" aria-hidden="true">
+              <span class="hud-radar-marker" data-radar-marker="0"></span>
+              <span class="hud-radar-marker" data-radar-marker="1"></span>
+              <span class="hud-radar-marker" data-radar-marker="2"></span>
+              <span class="hud-radar-marker" data-radar-marker="3"></span>
+              <span class="hud-radar-marker" data-radar-marker="4"></span>
+              <span class="hud-radar-marker" data-radar-marker="5"></span>
+            </div>
+            <span id="hud-radar-label">NO CONTACTS</span>
+          </div>
           <div id="hud-assist" class="hud-assist" aria-live="polite" hidden>TRIM ON</div>
           <div id="hud-hint" class="hud-hint" aria-label="Flight control hints" aria-live="polite" hidden></div>
           <div id="hud-paused" class="hud-paused" role="status" aria-live="polite" aria-atomic="true" hidden></div>

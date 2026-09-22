@@ -105,9 +105,23 @@ import {
   weatherCycleBanner,
   weatherDisplayLabel,
   weatherTransitionLabel,
+  writeRadarMarkerPosition,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
+  it('projects radar contacts into a finite bounded scope', () => {
+    const position = { left: 0, top: 0 }
+    writeRadarMarkerPosition(0, 0, position)
+    expect(position.left).toBe(50)
+    expect(position.top).toBe(42)
+    writeRadarMarkerPosition(Number.POSITIVE_INFINITY, Number.NaN, position)
+    expect(position.left).toBe(50)
+    expect(position.top).toBe(42)
+    writeRadarMarkerPosition(80_000, Math.PI / 2, position, 8_000)
+    expect(position.left).toBe(100)
+    expect(position.top).toBe(50)
+  })
+
   it('removes float noise at a bounded visual precision', () => {
     expect(quantizeHudNumber(0.12349, 100)).toBe(0.12)
     expect(quantizeHudNumber(0.12501, 100)).toBe(0.13)

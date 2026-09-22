@@ -6,6 +6,7 @@ import { displayedKnots } from '../core/airspeed'
 import { fuelEnduranceSeconds, fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
 import {
   MAX_RADAR_CONTACTS,
+  RADAR_RANGE_METERS,
   radarBearingArrow,
   radarDistanceLabel,
   type RadarContact,
@@ -101,6 +102,26 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
     labels.push(`${marker}${label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`)
   }
   return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
+}
+
+export interface RadarMarkerPosition {
+  left: number
+  top: number
+}
+
+/** Project a radar contact into the bounded scope without allocating per frame. */
+export function writeRadarMarkerPosition(
+  distance: number,
+  bearing: number,
+  out: RadarMarkerPosition,
+  maxRange = RADAR_RANGE_METERS,
+): void {
+  const safeRange = Number.isFinite(maxRange) && maxRange > 0 ? maxRange : RADAR_RANGE_METERS
+  const safeDistance = Number.isFinite(distance) ? Math.max(0, Math.min(safeRange, distance)) : 0
+  const safeBearing = Number.isFinite(bearing) ? Math.atan2(Math.sin(bearing), Math.cos(bearing)) : 0
+  const radius = 0.08 + 0.42 * (safeDistance / safeRange)
+  out.left = Math.round((50 + Math.sin(safeBearing) * radius * 100) * 10) / 10
+  out.top = Math.round((50 - Math.cos(safeBearing) * radius * 100) * 10) / 10
 }
 
 /** Give assistive technology the radar lock state without exposing the visual glyphs. */
@@ -772,6 +793,9 @@ export class HUD {
   private readonly landingRowEl: HTMLElement | null
   private readonly landingEl: HTMLElement | null
   private readonly radarEl: HTMLElement | null
+  private readonly radarLabelEl: HTMLElement | null
+  private readonly radarVisualEl: HTMLElement | null
+  private readonly radarMarkers: readonly HTMLElement[]
   private readonly assistEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
   private readonly pausedEl: HTMLElement | null
@@ -802,6 +826,10 @@ export class HUD {
   private readonly classCache = new WeakMap<Element, Map<string, boolean>>()
   private readonly textCache = new WeakMap<Element, string>()
   private readonly radarLabelCache = createRadarContactsLabelCache()
+  private readonly radarMarkerPositions: RadarMarkerPosition[] = Array.from(
+    { length: MAX_RADAR_CONTACTS },
+    () => ({ left: 50, top: 50 }),
+  )
   private altitudeValue = Number.NaN
   private altitudeText = ''
   private altitudeAriaText = ''
@@ -1016,6 +1044,11 @@ export class HUD {
     this.landingRowEl = root.getElementById('hud-landing-row')
     this.landingEl = root.getElementById('hud-landing')
     this.radarEl = root.getElementById('hud-radar')
+    this.radarLabelEl = root.getElementById('hud-radar-label')
+    this.radarVisualEl = root.getElementById('hud-radar-visual')
+    this.radarMarkers = this.radarVisualEl
+      ? Array.from(this.radarVisualEl.querySelectorAll<HTMLElement>('[data-radar-marker]')).slice(0, MAX_RADAR_CONTACTS)
+      : []
     this.assistEl = root.getElementById('hud-assist')
     this.hintEl = root.getElementById('hud-hint')
     this.pausedEl = root.getElementById('hud-paused')
@@ -1684,9 +1717,10 @@ export class HUD {
         this.radarText = radarText
         this.radarAriaText = formatRadarContactsAria(opts.radar)
       }
-      this.setText(this.radarEl, this.radarText)
+      this.setText(this.radarLabelEl ?? this.radarEl, this.radarText)
       this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
       this.setClass(this.radarEl, 'radar-active', radarText !== 'NO CONTACTS')
+      this.updateRadarVisual(opts.radar)
     }
     if (this.assistEl && opts.stabilityAssist !== undefined) {
       const active = opts.stabilityAssist === true
@@ -2225,6 +2259,27 @@ export class HUD {
     if (cache.get(name) === enabled) return
     cache.set(name, enabled)
     el.classList.toggle(name, enabled)
+  }
+
+  private updateRadarVisual(contacts: readonly RadarContact[]): void {
+    if (this.radarMarkers.length === 0) return
+    const limit = Math.min(MAX_RADAR_CONTACTS, contacts.length, this.radarMarkers.length)
+    for (let index = 0; index < this.radarMarkers.length; index += 1) {
+      const marker = this.radarMarkers[index]!
+      const contact = index < limit ? contacts[index] : undefined
+      const visible = contact !== undefined
+      this.setHidden(marker, !visible)
+      if (!contact) continue
+      const position = this.radarMarkerPositions[index]!
+      writeRadarMarkerPosition(contact.distance, contact.bearing, position)
+      this.setStyle(marker, 'left', `${position.left}%`)
+      this.setStyle(marker, 'top', `${position.top}%`)
+      this.setClass(marker, 'selected', contact.selected === true)
+      this.setClass(marker, 'gate', contact.kind === 'gate')
+      this.setClass(marker, 'city', contact.kind === 'city')
+      this.setClass(marker, 'village', contact.kind === 'village')
+      this.setClass(marker, 'traffic', contact.kind === 'traffic')
+    }
   }
 
   private buildAttitudeLadder(root: Document): void {

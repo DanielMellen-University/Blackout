@@ -1482,6 +1482,65 @@ body,
   white-space: normal;
 }
 
+.hud-radar-visual {
+  position: relative;
+  width: min(100%, 150px);
+  height: 58px;
+  margin: 2px 0 4px;
+  overflow: hidden;
+  border: 1px solid rgba(61, 206, 168, 0.24);
+  border-radius: 50% / 44%;
+  background:
+    linear-gradient(90deg, transparent 49.5%, rgba(61, 206, 168, 0.14) 50%, transparent 50.5%),
+    linear-gradient(0deg, transparent 49.5%, rgba(61, 206, 168, 0.14) 50%, transparent 50.5%),
+    rgba(5, 19, 22, 0.5);
+  box-shadow: inset 0 0 16px rgba(61, 206, 168, 0.08);
+}
+
+.hud-radar-visual::after {
+  content: "";
+  position: absolute;
+  inset: 18% 25%;
+  border: 1px solid rgba(61, 206, 168, 0.16);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.hud-radar-marker {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(61, 206, 168, 0.7);
+}
+
+.hud-radar-marker.gate,
+.hud-radar-marker.selected {
+  background: #fff;
+  box-shadow: 0 0 7px rgba(255, 255, 255, 0.9);
+}
+
+.hud-radar-marker.city {
+  background: #f0b429;
+  box-shadow: 0 0 6px rgba(240, 180, 41, 0.7);
+}
+
+.hud-radar-marker.village {
+  background: #b9d27d;
+  box-shadow: 0 0 6px rgba(185, 210, 125, 0.65);
+}
+
+.hud-radar-marker.traffic {
+  background: #9db7c6;
+  box-shadow: 0 0 6px rgba(157, 183, 198, 0.65);
+}
+
+.hud-radar-marker[hidden] {
+  display: none !important;
+}
+
 .hud-radar::after {
   content: "";
   position: absolute;
