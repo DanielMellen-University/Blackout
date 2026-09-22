@@ -907,8 +907,7 @@ export class SettlementSystem {
         }
       }
     } else if (!this.inFlight) {
-      this.prioritizeRoadQueue(x, z)
-      const link = this.linkQueue.pop()
+      const link = this.takeNearestRoadJob(x, z)
       if (link && this.worker) {
         this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
         this.worker.postMessage(this.inFlight)
@@ -1242,18 +1241,28 @@ export class SettlementSystem {
     return nearest
   }
 
-  /** Generate the connector nearest to the aircraft before distant links. */
-  private prioritizeRoadQueue(x: number, z: number): void {
-    if (this.linkQueue.length < 2) return
-    this.linkQueue.sort((a, b) => {
-      const distance = (job: RoadJob): number => Math.min(
+  /** Consume the connector nearest to the aircraft without sorting the queue. */
+  private takeNearestRoadJob(x: number, z: number): RoadJob | undefined {
+    let nearestIndex = -1
+    let nearestDistance = Infinity
+    let nearestKey = ''
+    for (let index = 0; index < this.linkQueue.length; index++) {
+      const job = this.linkQueue[index]!
+      const distance = Math.min(
         Math.hypot(job.from.x - x, job.from.z - z),
         Math.hypot(job.to.x - x, job.to.z - z),
       )
-      // Keep the farthest edge at index zero so pop() dispatches the nearest
-      // route without shifting every queued link.
-      return distance(b) - distance(a) || b.key.localeCompare(a.key)
-    })
+      if (distance < nearestDistance || (distance === nearestDistance && (nearestKey === '' || job.key < nearestKey))) {
+        nearestIndex = index
+        nearestDistance = distance
+        nearestKey = job.key
+      }
+    }
+    if (nearestIndex < 0) return undefined
+    const job = this.linkQueue[nearestIndex]!
+    const last = this.linkQueue.pop()!
+    if (nearestIndex < this.linkQueue.length) this.linkQueue[nearestIndex] = last
+    return job
   }
 
   /** A fixed mesh budget prevents a dense road graph from growing frame cost. */

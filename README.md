@@ -60,6 +60,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Pending terrain work now dispatches nearest-first through a reverse-prioritized pop queue, with failed worker submissions requeued safely instead of shifting the stream array.
 - Settlement worker results now use stale pruning and nearest/protected selection instead of sorting the entire ready list every frame, preserving bounded admission priority with less CPU churn.
 - Terrain uploads now cache nearest-first ready ordering between stream reschedules, preserving coverage priority while skipping redundant per-frame sorts.
+- Regional-road streaming now selects the nearest connector with a bounded scan and swap-pop, preserving route priority without sorting the queue every frame.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower
