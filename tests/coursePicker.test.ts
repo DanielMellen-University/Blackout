@@ -128,11 +128,12 @@ describe('course picker copy', () => {
       bestPrecisionStreak: 4,
     })
 
-    expect(copy.meta).toBe('5 RUNS · ACE')
-    expect(copy.stats).toBe('5 RUNS · 1:38.40 · BEST 88,000 · MEDAL GOLD · STREAK X4 · CONTRACT X4 · ACE · NEXT LEGEND / 10 RUNS / 100K / 6 BADGES / 5 CONTRACTS / LAND BUTTER · 3/6 BADGES · LOG CONTRACT WINS X2 CONTRACT STREAK X4 · TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
+    expect(copy.meta).toBe('5 RUNS')
+    expect(copy.stats).toBe('1:38.40')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
-    expect(copy.stats.includes('TOP')).toBe(false)
-    expect(copy.stats.includes('ROLLS')).toBe(false)
+    expect(copy.stats.includes('TASK')).toBe(false)
+    expect(copy.stats.includes('MEDAL')).toBe(false)
+    expect(copy.stats.includes('ACE')).toBe(false)
   })
 
   it('fails closed on malformed history instead of leaking NaN into the picker', () => {
@@ -148,7 +149,7 @@ describe('course picker copy', () => {
       bestPrecisionStreak: Number.NaN,
     })
     expect(copy.meta).toBe('NEW')
-    expect(copy.stats).toBe('TASK FUEL SAVER / LAND WITH 75% FUEL · WX SNOW SHOWERS')
+    expect(copy.stats).toBe('')
   })
 
   it('lets a rough saved touchdown lower the displayed mastery tier', () => {
@@ -165,7 +166,9 @@ describe('course picker copy', () => {
       badgeCount: 3,
       bestPrecisionStreak: 4,
     })
-    expect(copy.meta).toBe('5 RUNS · VETERAN')
-    expect(copy.stats).toContain('VETERAN')
+    expect(copy.meta).toBe('5 RUNS')
+    expect(copy.stats).toBe('1:38.40 · LAND FIRM')
+    expect(copy.stats).not.toContain('VETERAN')
+    expect(copy.stats).not.toContain('TASK')
   })
 })

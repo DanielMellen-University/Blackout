@@ -169,7 +169,7 @@ describe('run results focus flow', () => {
       'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT',
     )
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'NEW COURSE BEST · SCORE 100,000 · FUEL 100% LEFT · ENTER RETRY · R NEW WORLD',
+      'NEW COURSE BEST · 0:42.00 · HARD',
     )
 
     fixture.document.activeElement = fixture.newWorld
@@ -380,7 +380,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'NEW COURSE BEST · SCORE 100,000 · FUEL 72% LEFT · ENTER RETRY · R NEW WORLD',
+      'NEW COURSE BEST · 0:42.00 · BUTTER',
     )
     results.dispose()
     vi.unstubAllGlobals()

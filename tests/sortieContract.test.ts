@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   MAX_CONTRACT_SCORE,
+  ASSIGNED_CONTRACT_KINDS,
   SortieContractTracker,
   sortieContractDetailForSeed,
   sortieContractLabelForSeed,
@@ -10,17 +11,18 @@ import {
 describe('sortie contracts', () => {
   it('previews deterministic seeded tasks without assigning Free flight a contract', () => {
     expect(sortieContractLabelForSeed(undefined)).toBe('')
-    expect(sortieContractLabelForSeed(42)).toBe('BIOME TOUR')
-    expect(sortieContractDetailForSeed(42)).toBe('SURVEY 4 DISTINCT BIOMES')
+    const label = sortieContractLabelForSeed(42)
+    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'PRECISION APPROACH', 'BUTTER LANDING', 'PRECISION CHAIN', 'DEADSTICK']).toContain(label)
+    expect(sortieContractDetailForSeed(42).length).toBeGreaterThan(0)
     expect(sortieContractDetailForSeed(undefined)).toBe('')
-    expect(sortieContractLabelForSeed(42)).toBe(sortieContractLabelForSeed(42))
+    expect(sortieContractLabelForSeed(42)).toBe(label)
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {
     const first = new SortieContractTracker()
     const second = new SortieContractTracker()
-    first.reset(42, 5)
-    second.reset(42, 5)
+    first.reset(42, 5, true)
+    second.reset(42, 5, true)
     expect(first.enabled).toBe(true)
     expect(first.kind).toBe(second.kind)
     expect(first.label).toBe(second.label)
@@ -29,7 +31,7 @@ describe('sortie contracts', () => {
     expect(first.complete).toBe(false)
 
     const disabled = new SortieContractTracker()
-    disabled.reset(undefined, 5)
+    disabled.reset(undefined, 5, true)
     expect(disabled.enabled).toBe(false)
     expect(disabled.hudLabel).toBe('')
     expect(disabled.finish(0, 1)).toBe(0)
@@ -39,14 +41,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let fuelSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'fuel') {
         fuelSeed = seed
         break
       }
     }
     expect(fuelSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(fuelSeed, 5)
+    tracker.reset(fuelSeed, 5, true)
     expect(tracker.detail).toBe('LAND WITH 75% FUEL')
     tracker.recordFuel(0.5)
     expect(tracker.progress).toBeCloseTo(2 / 3)
@@ -61,7 +63,7 @@ describe('sortie contracts', () => {
 
   it('shows elapsed SPEED RUN budget without completing before touchdown', () => {
     const tracker = new SortieContractTracker()
-    tracker.reset(0, 5)
+    tracker.reset(0, 5, true)
     expect(tracker.kind).toBe('pace')
     expect(tracker.detail).toBe('LAND UNDER 68S')
     tracker.recordPace(12.8)
@@ -76,14 +78,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let butterSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'butter') {
         butterSeed = seed
         break
       }
     }
     expect(butterSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(butterSeed, 5)
+    tracker.reset(butterSeed, 5, true)
     expect(tracker.detail).toBe('LAND WITH A BUTTER TOUCHDOWN')
     tracker.recordLandingPreview(0.8)
     expect(tracker.progress).toBeCloseTo(0.8)
@@ -97,7 +99,7 @@ describe('sortie contracts', () => {
     const kinds = new Set<SortieContractKind>()
     for (let seed = 0; seed < 512; seed += 1) {
       const tracker = new SortieContractTracker()
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (!tracker.kind) continue
       kinds.add(tracker.kind)
       if (tracker.kind === 'altitude') tracker.recordAltitude(99_999)
@@ -284,14 +286,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let thermalSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'thermal-surf') {
         thermalSeed = seed
         break
       }
     }
     expect(thermalSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(thermalSeed, 5)
+    tracker.reset(thermalSeed, 5, true)
     expect(tracker.label).toBe('THERMAL SURF')
     expect(tracker.detail).toBe('RIDE THERMALS FOR 10S')
     tracker.recordThermalSurf(0.2, 10)
@@ -308,14 +310,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let trafficSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'traffic-watch') {
         trafficSeed = seed
         break
       }
     }
     expect(trafficSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(trafficSeed, 5)
+    tracker.reset(trafficSeed, 5, true)
     expect(tracker.label).toBe('TRAFFIC WATCH')
     expect(tracker.detail).toBe('PASS THREE TRAFFIC CONTACTS / CURRENT 0')
     tracker.recordTrafficPass('traffic-1')
@@ -333,14 +335,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let dodgeSeed = -1
     for (let seed = 0; seed < 8_192; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'traffic-dodge') {
         dodgeSeed = seed
         break
       }
     }
     expect(dodgeSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(dodgeSeed, 5)
+    tracker.reset(dodgeSeed, 5, true)
     expect(tracker.label).toBe('TRAFFIC DODGE')
     expect(tracker.detail).toBe('PASS THREE CONTACTS WITH 120M SEPARATION / CURRENT 0')
     tracker.recordTrafficPass('traffic-low', 119.9)
@@ -358,14 +360,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let skimSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'water-skim') {
         skimSeed = seed
         break
       }
     }
     expect(skimSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(skimSeed, 5)
+    tracker.reset(skimSeed, 5, true)
     expect(tracker.label).toBe('WATER SKIM')
     expect(tracker.detail).toBe('SKIM WATER AT 18-180M FOR 8S')
     tracker.recordWaterSkim(true, 80, 5, false)
@@ -386,14 +388,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let highDiveSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'high-dive') {
         highDiveSeed = seed
         break
       }
     }
     expect(highDiveSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(highDiveSeed, 5)
+    tracker.reset(highDiveSeed, 5, true)
     expect(tracker.label).toBe('HIGH DIVE')
     expect(tracker.detail).toBe('REACH 1,800M THEN RECOVER BELOW 420M')
     tracker.recordHighDive(1_800, false)
@@ -415,14 +417,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let ridgeSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'ridge-run') {
         ridgeSeed = seed
         break
       }
     }
     expect(ridgeSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(ridgeSeed, 5)
+    tracker.reset(ridgeSeed, 5, true)
     expect(tracker.label).toBe('RIDGE RUN')
     expect(tracker.detail).toBe('HOLD RIDGE ALT 35-260M FOR 10S')
     tracker.recordRidgeRun('plains', 120, 5)
@@ -442,14 +444,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let waterwaySeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'waterway-tour') {
         waterwaySeed = seed
         break
       }
     }
     expect(waterwaySeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(waterwaySeed, 5)
+    tracker.reset(waterwaySeed, 5, true)
     expect(tracker.label).toBe('WATERWAY TOUR')
     expect(tracker.detail).toBe('VISIT TWO WATERWAYS / RIVER OPEN / LAKE OPEN / SEA OPEN')
     tracker.recordWaterBody(undefined)
@@ -469,14 +471,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let gustSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'gust') {
         gustSeed = seed
         break
       }
     }
     expect(gustSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(gustSeed, 5)
+    tracker.reset(gustSeed, 5, true)
     expect(tracker.label).toBe('GUST RIDER')
     tracker.recordGust(0.8, 5, false)
     expect(tracker.progress).toBe(0)
@@ -496,14 +498,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let rangeSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'range') {
         rangeSeed = seed
         break
       }
     }
     expect(rangeSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(rangeSeed, 5)
+    tracker.reset(rangeSeed, 5, true)
     expect(tracker.label).toBe('RANGE RUN')
     tracker.recordDistance(5_000, false)
     expect(tracker.progress).toBe(0)
@@ -522,14 +524,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let targetSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'target') {
         targetSeed = seed
         break
       }
     }
     expect(targetSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(targetSeed, 5)
+    tracker.reset(targetSeed, 5, true)
     expect(tracker.label).toBe('RADAR RUN')
     expect(tracker.detail).toBe('LOCK ONE RADAR CONTACT THEN ARRIVE')
     tracker.recordDestination(1, 'city', 'city-1')
@@ -553,14 +555,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let nightSeed = -1
     for (let seed = 0; seed < 2_048; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'night') {
         nightSeed = seed
         break
       }
     }
     expect(nightSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(nightSeed, 5)
+    tracker.reset(nightSeed, 5, true)
     tracker.recordNight(0.2, 5, false)
     expect(tracker.progress).toBe(0)
     tracker.recordNight(0.5, 5)
@@ -575,7 +577,7 @@ describe('sortie contracts', () => {
 
   it('accumulates only airborne time inside the terrain-hugger band', () => {
     const tracker = new SortieContractTracker()
-    tracker.reset(11, 5)
+    tracker.reset(11, 5, true)
     expect(tracker.kind).toBe('low-level')
     tracker.recordLowLevel(18, 5)
     expect(tracker.progress).toBe(0)
@@ -595,7 +597,7 @@ describe('sortie contracts', () => {
 
   it('turns distinct biome progress into a bounded biome-tour reward', () => {
     const tracker = new SortieContractTracker()
-    tracker.reset(8, 5)
+    tracker.reset(8, 5, true)
     expect(tracker.kind).toBe('biome')
     tracker.recordBiome(1)
     expect(tracker.progress).toBeCloseTo(0.25)
@@ -612,14 +614,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let speedBandSeed = -1
     for (let seed = 0; seed < 256; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'speed-band') {
         speedBandSeed = seed
         break
       }
     }
     expect(speedBandSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(speedBandSeed, 5)
+    tracker.reset(speedBandSeed, 5, true)
     tracker.recordSpeedBand(220, 5, false)
     expect(tracker.progress).toBe(0)
     tracker.recordSpeedBand(120, 5)
@@ -637,14 +639,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let weatherSeed = -1
     for (let seed = 0; seed < 512; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'weather') {
         weatherSeed = seed
         break
       }
     }
     expect(weatherSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(weatherSeed, 5)
+    tracker.reset(weatherSeed, 5, true)
     tracker.recordWeather(0.8, 0, 5, false)
     expect(tracker.progress).toBe(0)
     tracker.recordWeather(0.1, 0.1, 5)
@@ -662,14 +664,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let waterSeed = -1
     for (let seed = 0; seed < 512; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'water') {
         waterSeed = seed
         break
       }
     }
     expect(waterSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(waterSeed, 5)
+    tracker.reset(waterSeed, 5, true)
     tracker.recordWater(true, 5, false)
     expect(tracker.progress).toBe(0)
     tracker.recordWater(false, 5)
@@ -687,14 +689,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let approachSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'approach') {
         approachSeed = seed
         break
       }
     }
     expect(approachSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(approachSeed, 5)
+    tracker.reset(approachSeed, 5, true)
     expect(tracker.label).toBe('PRECISION APPROACH')
     expect(tracker.detail).toBe('LAND CENTERED AND ALIGNED')
     expect(tracker.finish(99, 1, 359)).toBe(0)
@@ -709,14 +711,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let approachSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'approach') {
         approachSeed = seed
         break
       }
     }
     expect(approachSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(approachSeed, 5)
+    tracker.reset(approachSeed, 5, true)
     tracker.recordApproachPreview(320)
     expect(tracker.progress).toBeCloseTo(320 / 360)
     expect(tracker.detail).toContain('PREVIEW 320')
@@ -729,14 +731,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let brakeSeed = -1
     for (let seed = 0; seed < 512; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'brake') {
         brakeSeed = seed
         break
       }
     }
     expect(brakeSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(brakeSeed, 5)
+    tracker.reset(brakeSeed, 5, true)
     tracker.recordBrake(240, 5, false)
     expect(tracker.progress).toBe(0)
     tracker.recordBrake(120, 5, true)
@@ -755,14 +757,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let heatSeed = -1
     for (let seed = 0; seed < 512; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'heat') {
         heatSeed = seed
         break
       }
     }
     expect(heatSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(heatSeed, 5)
+    tracker.reset(heatSeed, 5, true)
     tracker.recordHeat(0.5, 220, 5, false)
     expect(tracker.progress).toBe(0)
     tracker.recordHeat(0.9, 220, 5)
@@ -782,14 +784,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let crosswindSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'crosswind') {
         crosswindSeed = seed
         break
       }
     }
     expect(crosswindSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(crosswindSeed, 5)
+    tracker.reset(crosswindSeed, 5, true)
     expect(tracker.label).toBe('CROSSWIND')
     tracker.recordCrosswind(12, 5, false)
     expect(tracker.progress).toBe(0)
@@ -808,14 +810,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let gControlSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'g-control') {
         gControlSeed = seed
         break
       }
     }
     expect(gControlSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(gControlSeed, 5)
+    tracker.reset(gControlSeed, 5, true)
     expect(tracker.label).toBe('G CONTROL')
     tracker.recordGControl(2, 180, 5, false)
     expect(tracker.progress).toBe(0)
@@ -837,14 +839,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let deadstickSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'deadstick') {
         deadstickSeed = seed
         break
       }
     }
     expect(deadstickSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(deadstickSeed, 5)
+    tracker.reset(deadstickSeed, 5, true)
     expect(tracker.label).toBe('DEADSTICK')
     tracker.recordDeadstick(0, false)
     expect(tracker.complete).toBe(false)
@@ -860,14 +862,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let frontSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'front') {
         frontSeed = seed
         break
       }
     }
     expect(frontSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(frontSeed, 5)
+    tracker.reset(frontSeed, 5, true)
     expect(tracker.label).toBe('FRONT CHASER')
     tracker.recordFront(true, 5, false)
     expect(tracker.progress).toBe(0)
@@ -886,14 +888,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let boostSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'boost') {
         boostSeed = seed
         break
       }
     }
     expect(boostSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(boostSeed, 5)
+    tracker.reset(boostSeed, 5, true)
     expect(tracker.label).toBe('BURN RUN')
     tracker.recordBoost(true, 260, 5, false)
     expect(tracker.progress).toBe(0)
@@ -913,14 +915,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let machSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'mach') {
         machSeed = seed
         break
       }
     }
     expect(machSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(machSeed, 5)
+    tracker.reset(machSeed, 5, true)
     expect(tracker.label).toBe('MACH RUN')
     tracker.recordMach(360, 5, false)
     expect(tracker.progress).toBe(0)
@@ -939,14 +941,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let cleanSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'clean') {
         cleanSeed = seed
         break
       }
     }
     expect(cleanSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(cleanSeed, 5)
+    tracker.reset(cleanSeed, 5, true)
     expect(tracker.label).toBe('CLEAN CIRCUIT')
     tracker.recordCleanGate(false, 2, 5)
     expect(tracker.progress).toBeCloseTo(0.4)
@@ -962,14 +964,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let levelSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'level') {
         levelSeed = seed
         break
       }
     }
     expect(levelSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(levelSeed, 5)
+    tracker.reset(levelSeed, 5, true)
     expect(tracker.label).toBe('LEVEL FLIGHT')
     expect(tracker.detail).toContain('WITHIN +/-24M')
     tracker.recordLevelFlight(180, 5, false)
@@ -992,14 +994,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let tourSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'tour') {
         tourSeed = seed
         break
       }
     }
     expect(tourSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(tourSeed, 5)
+    tracker.reset(tourSeed, 5, true)
     expect(tracker.label).toBe('SETTLEMENT TOUR')
     expect(tracker.detail).toBe('VISIT ONE CITY AND ONE VILLAGE / CITY OPEN / VILLAGE OPEN')
     tracker.recordDestination(1, 'city')
@@ -1018,14 +1020,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let comboSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'combo') {
         comboSeed = seed
         break
       }
     }
     expect(comboSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(comboSeed, 5)
+    tracker.reset(comboSeed, 5, true)
     expect(tracker.label).toBe('COMBO RUN')
     expect(tracker.detail).toBe('BUILD COMBO X3 / CURRENT X0')
     tracker.recordCombo(2)
@@ -1044,14 +1046,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let precisionSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'precision') {
         precisionSeed = seed
         break
       }
     }
     expect(precisionSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(precisionSeed, 5)
+    tracker.reset(precisionSeed, 5, true)
     expect(tracker.label).toBe('PRECISION CHAIN')
     expect(tracker.detail).toBe('CLEAR 3 PERFECT GATES IN A ROW')
     tracker.recordPrecisionGate(0.9)
@@ -1070,14 +1072,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let butterSeed = -1
     for (let seed = 0; seed < 2_048; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'butter') {
         butterSeed = seed
         break
       }
     }
     expect(butterSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(butterSeed, 5)
+    tracker.reset(butterSeed, 5, true)
     expect(tracker.label).toBe('BUTTER LANDING')
     expect(tracker.detail).toBe('LAND WITH A BUTTER TOUCHDOWN')
     expect(tracker.finish(99, 1, 0, 0.91)).toBe(0)
@@ -1091,14 +1093,14 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let drySeed = -1
     for (let seed = 0; seed < 2_048; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'dry') {
         drySeed = seed
         break
       }
     }
     expect(drySeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(drySeed, 5)
+    tracker.reset(drySeed, 5, true)
     expect(tracker.label).toBe('DRY RUN')
     expect(tracker.detail).toContain('HOLD DRY POWER ABOVE')
     tracker.recordDry(false, 300, 5, false)
@@ -1121,7 +1123,7 @@ describe('sortie contracts', () => {
     let rangeSeed = -1
     let fuelSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'low-level' && lowLevelSeed < 0) lowLevelSeed = seed
       if (tracker.kind === 'range' && rangeSeed < 0) rangeSeed = seed
       if (tracker.kind === 'fuel' && fuelSeed < 0) fuelSeed = seed
@@ -1131,15 +1133,15 @@ describe('sortie contracts', () => {
     expect(rangeSeed).toBeGreaterThanOrEqual(0)
     expect(fuelSeed).toBeGreaterThanOrEqual(0)
 
-    tracker.reset(lowLevelSeed, 5)
+    tracker.reset(lowLevelSeed, 5, true)
     tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
     expect(tracker.progress).toBeCloseTo(0.5)
 
-    tracker.reset(rangeSeed, 5)
+    tracker.reset(rangeSeed, 5, true)
     tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
     expect(tracker.progress).toBeCloseTo(0.5)
 
-    tracker.reset(fuelSeed, 5)
+    tracker.reset(fuelSeed, 5, true)
     tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
     expect(tracker.progress).toBeCloseTo(2 / 3)
     expect(tracker.complete).toBe(false)
@@ -1149,22 +1151,45 @@ describe('sortie contracts', () => {
     const tracker = new SortieContractTracker()
     let cleanSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       if (tracker.kind === 'clean') {
         cleanSeed = seed
         break
       }
     }
     expect(cleanSeed).toBeGreaterThanOrEqual(0)
-    tracker.reset(cleanSeed, 0)
+    tracker.reset(cleanSeed, 0, true)
     expect(tracker.enabled).toBe(false)
     expect(tracker.label).toBe('')
+  })
+
+  it('assigns only line-of-flight tasks to a new sortie', () => {
+    const banned = new Set<SortieContractKind>([
+      'pace', 'altitude', 'stunt', 'scout', 'fuel', 'biome', 'speed-band', 'weather',
+      'water', 'brake', 'heat', 'crosswind', 'g-control', 'front', 'boost', 'mach',
+      'level', 'tour', 'combo', 'night', 'dry', 'target', 'gust', 'range', 'high-dive',
+      'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge',
+      'thermal-surf',
+    ])
+    const seen = new Set<SortieContractKind>()
+    for (let seed = 0; seed < 400; seed += 1) {
+      const tracker = new SortieContractTracker()
+      tracker.reset(seed, 5)
+      expect(banned.has(tracker.kind!)).toBe(false)
+      expect(ASSIGNED_CONTRACT_KINDS).toContain(tracker.kind)
+      if (tracker.kind) seen.add(tracker.kind)
+    }
+    expect(seen.has('thermal-surf')).toBe(false)
+    expect(seen.has('speed-band')).toBe(false)
+    expect(seen.has('gust')).toBe(false)
+    expect(seen.has('traffic-watch')).toBe(false)
+    expect(seen.size).toBeGreaterThan(1)
   })
 
   it('does not award incomplete contracts and keeps malformed telemetry finite', () => {
     for (let seed = 0; seed < 20; seed += 1) {
       const tracker = new SortieContractTracker()
-      tracker.reset(seed, 5)
+      tracker.reset(seed, 5, true)
       expect(tracker.finish(Number.NaN, Number.NaN)).toBe(0)
       expect(tracker.complete).toBe(false)
       expect(Number.isFinite(tracker.progress)).toBe(true)

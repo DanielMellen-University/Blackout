@@ -51,7 +51,6 @@ import {
   landingApproachScore,
   landingWeatherRisk,
   landingQualityForMetrics,
-  MASTERY_BADGE_COUNT,
   repairBestCoursePrecisionStreak,
   repairBestCourseScore,
   repairCourseHistory,
@@ -88,15 +87,10 @@ import {
 import { SupersonicTracker } from './systems/Supersonic'
 import { GhostReplay } from './systems/GhostReplay'
 import {
-  pilotRankAriaLabel,
   pilotRankForProgress,
-  pilotRankLabel,
-  pilotRankNextGoalLabel,
   pilotRankRank,
   pilotCommendationLabel,
   pilotCommendationsForProgress,
-  pilotCommendationsLabel,
-  PILOT_COMMENDATION_COUNT,
   type PilotCommendationId,
   type PilotRank,
   type PilotCareerProgress,
@@ -111,7 +105,7 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
-import { CoursePicker, courseMasteryProgressLabel, coursePickerCopy } from './ui/CoursePicker'
+import { CoursePicker, coursePickerCopy } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
@@ -295,7 +289,6 @@ async function boot(): Promise<void> {
     if (!titleProgress) return
     const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
     let completed = 0
-    let earnedBadges = 0
     let mastered = 0
     const career: PilotCareerProgress = {
       completedCourses: 0,
@@ -318,7 +311,6 @@ async function boot(): Promise<void> {
       if (history?.sortieStyle) styleVariety.add(history.sortieStyle)
       const runCount = history?.completionCount ?? 0
       if (runCount > 0) completed += 1
-      earnedBadges += record.badgeCount
       career.totalRuns += Number.isFinite(runCount) ? Math.max(0, runCount) : 0
       career.totalBestScore += Number.isFinite(record.bestScore) ? Math.max(0, record.bestScore) : 0
       career.totalBadges += record.badgeCount
@@ -347,29 +339,13 @@ async function boot(): Promise<void> {
     career.completedCourses = completed
     career.legendCourses = mastered
     career.styleVarietyCount = styleVariety.size
-    const rank = pilotRankForProgress(career)
-    currentPilotRank = rank
-    const rankLabel = pilotRankLabel(rank)
-    const nextRank = pilotRankNextGoalLabel(rank)
-    const commendations = pilotCommendationsForProgress(career)
-    currentPilotCommendations = commendations
-    const badgeTotal = curated.length * MASTERY_BADGE_COUNT
-    const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
-    const labels = [
-      `RANK ${rankLabel}`,
-      `COURSES ${completed}/${curated.length} COMPLETE`,
-      `BADGES ${earnedBadges}/${badgeTotal}`,
-      masteryLabel,
-      `COMMENDATIONS ${commendations.length}/${PILOT_COMMENDATION_COUNT}`,
-      nextRank,
-    ].filter(Boolean)
-    titleProgress.textContent = labels.join(' · ')
-    titleProgress.setAttribute('aria-label', `${pilotRankAriaLabel(rank, career)}, ${completed} of ${curated.length} curated courses complete, ${earnedBadges} of ${badgeTotal} mastery badges earned, ${mastered} of ${curated.length} at Legend mastery, ${commendations.length} of ${PILOT_COMMENDATION_COUNT} career commendations earned${nextRank ? `, ${nextRank.toLowerCase()}` : ''}`)
+    currentPilotRank = pilotRankForProgress(career)
+    currentPilotCommendations = pilotCommendationsForProgress(career)
+    titleProgress.textContent = `COURSES ${completed}/${curated.length}`
+    titleProgress.setAttribute('aria-label', `${completed} of ${curated.length} curated courses complete`)
     if (titleCommendations) {
-      const label = pilotCommendationsLabel(commendations)
-      titleCommendations.textContent = label
-      titleCommendations.setAttribute('aria-label', `Career commendations: ${label.replace('EARNED · ', '').replaceAll(' · ', ', ')}`)
-      titleCommendations.hidden = commendations.length === 0
+      titleCommendations.textContent = ''
+      titleCommendations.hidden = true
     }
   }
   const refreshCourseUi = (): void => {

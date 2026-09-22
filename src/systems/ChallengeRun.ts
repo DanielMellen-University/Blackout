@@ -986,6 +986,7 @@ export class ChallengeRun {
     totalGates: number,
     scoringFocus: ChallengeScoringFocus = 'balanced',
     contractSeed?: number,
+    catalog = false,
   ): void {
     this.courseId = courseId
     this.totalGates = Math.max(0, Math.floor(totalGates))
@@ -1011,7 +1012,7 @@ export class ChallengeRun {
     this.stuntRollCount = 0
     this.bestCombo = 0
     this.scorePreviewValue = 0
-    this.contract.reset(contractSeed, this.totalGates)
+    this.contract.reset(contractSeed, this.totalGates, catalog)
     const history = this.readHistory()
     this.contractStreakValue = this.contract.enabled
       ? Math.min(MAX_CONTRACT_STREAK, Math.max(0, Math.floor(history.contractStreak ?? 0)))

@@ -167,7 +167,7 @@ export class SortieContractTracker {
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
-  reset(seed: number | undefined, totalGates: number): void {
+  reset(seed: number | undefined, totalGates: number, catalog = false): void {
     this.definition = null
     this.detailValue = ''
     this.detailBaseValue = ''
@@ -214,11 +214,10 @@ export class SortieContractTracker {
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
 
-    const base = CONTRACTS[indexForSeed(seed)]!
     const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
-    // A no-miss circuit has no meaningful completion state in Free flight.
-    // Leave the bonus slot empty instead of assigning an impossible task.
-    if (base.kind === 'clean' && safeGates <= 0) return
+    const base = assignedContract(seed, safeGates, catalog)
+    // A no-miss or precision chain has no completion state with zero gates.
+    if (!base) return
     const target = contractTargetFor(base, safeGates)
     const detail = contractDetailFor(base.kind, target)
     this.definition = { ...base, target, detail }
@@ -837,9 +836,36 @@ export class SortieContractTracker {
   }
 }
 
-function indexForSeed(seed: number): number {
+/** Tasks a new sortie may assign. Timer-band contracts stay in the catalog only. */
+export const ASSIGNED_CONTRACT_KINDS = [
+  'clean',
+  'low-level',
+  'approach',
+  'butter',
+  'precision',
+  'deadstick',
+] as const
+
+const LINE_KINDS = ['clean', 'low-level', 'approach', 'butter', 'precision'] as const
+
+function mixSeed(seed: number): number {
   const safe = Math.trunc(seed)
-  const mixed = (safe ^ (safe >>> 16) ^ Math.imul(safe, 0x45d9f3b)) >>> 0
+  return (safe ^ (safe >>> 16) ^ Math.imul(safe, 0x45d9f3b)) >>> 0
+}
+
+function indexForKind(kind: SortieContractKind): number {
+  const index = CONTRACTS.findIndex((contract) => contract.kind === kind)
+  return index >= 0 ? index : 0
+}
+
+function indexForSeed(seed: number): number {
+  const mixed = mixSeed(seed)
+  if (mixed % 11 === 0) return indexForKind('deadstick')
+  return indexForKind(LINE_KINDS[mixed % LINE_KINDS.length]!)
+}
+
+function legacyIndexForSeed(seed: number): number {
+  const mixed = mixSeed(seed)
   // Preserve the original five-contract mapping for existing seeds while
   // reserving deterministic slices for terrain-hugger, biome-tour,
   // energy-band, storm-run, precision-approach, brake-check, thermal-control,
@@ -884,21 +910,33 @@ function indexForSeed(seed: number): number {
   return mixed % legacyContractCount
 }
 
+function assignedContract(
+  seed: number,
+  safeGates: number,
+  catalog: boolean,
+): Omit<SortieContractDefinition, 'detail'> | null {
+  const contract = CONTRACTS[catalog ? legacyIndexForSeed(seed) : indexForSeed(seed)]
+  if (!contract) return null
+  if ((contract.kind === 'clean' || contract.kind === 'precision') && safeGates <= 0) {
+    return catalog ? null : CONTRACTS[indexForKind('low-level')] ?? null
+  }
+  return contract
+}
+
 /** Preview the deterministic contract on a seeded course without creating tracker state. */
 export function sortieContractLabelForSeed(seed: number | undefined, totalGates = 5): string {
   if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
   const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
-  const contract = CONTRACTS[indexForSeed(seed)]
-  if (!contract || (contract.kind === 'clean' && safeGates <= 0)) return ''
-  return contract.label
+  const contract = assignedContract(seed, safeGates, false)
+  return contract?.label ?? ''
 }
 
 /** Preview the deterministic contract instruction without creating tracker state. */
 export function sortieContractDetailForSeed(seed: number | undefined, totalGates = 5): string {
   if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
   const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
-  const contract = CONTRACTS[indexForSeed(seed)]
-  if (!contract || (contract.kind === 'clean' && safeGates <= 0)) return ''
+  const contract = assignedContract(seed, safeGates, false)
+  if (!contract) return ''
   return contractDetailFor(contract.kind, contractTargetFor(contract, safeGates))
 }
 

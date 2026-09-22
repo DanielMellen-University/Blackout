@@ -163,7 +163,7 @@ export class RunResults {
     const outcome = result.freeFlight
       ? 'SCENIC SORTIE COMPLETE'
       : result.isNewBest ? 'NEW COURSE BEST' : 'ROUTE COMPLETE'
-    this.summary.textContent = `${outcome} · SCORE ${result.totalScore.toLocaleString()} · FUEL ${fuelRemaining}% LEFT · ENTER RETRY · R NEW WORLD`
+    this.summary.textContent = `${outcome} · ${formatTime(result.elapsedSec)} · ${result.landingLabel ?? 'HARD'}`
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,

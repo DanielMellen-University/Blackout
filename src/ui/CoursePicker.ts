@@ -1,16 +1,9 @@
 import {
-  courseMasteryTierForProgress,
-  courseMasteryTierLabel,
-  courseMasteryNextTierLabel,
-  courseMasteryNextTierGoalLabel,
   formatTime,
   landingQualityLabel,
-  medalForScore,
-  MASTERY_BADGE_COUNT,
   type CourseHistory,
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
-import { sortieContractDetailForSeed, sortieContractLabelForSeed } from '../systems/SortieContract'
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
 import { WEATHER_LABELS, weatherIdForSeed } from '../world/WeatherDirector'
 
@@ -45,25 +38,10 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
 } {
   const detail = input.course.detail.trim() || 'Choose a world'
   const runs = finiteCount(input.history?.completionCount)
-  const bestScore = finiteCount(input.bestScore)
-  const badgeCount = finiteCount(input.badgeCount)
-  const streak = finiteCount(input.bestPrecisionStreak)
-  const contractStreak = finiteCount(input.history?.contractStreakRecord)
-  const tier = courseMasteryTierForProgress({
-    completionCount: runs,
-    bestScore,
-    badgeCount,
-    contractWins: input.history?.contractWins,
-    landingQuality: input.history?.landingQuality,
-  })
-  const tierLabel = tier === 'rookie' ? '' : courseMasteryTierLabel(tier)
-  const nextTierLabel = courseMasteryNextTierLabel(tier)
-  const nextTierGoal = courseMasteryNextTierGoalLabel(tier)
 
   let meta = 'NEW'
   if (runs > 0) {
     meta = `${runs} RUN${runs === 1 ? '' : 'S'}`
-    if (tierLabel) meta += ` · ${tierLabel}`
   } else if (input.course.profile === 'free') {
     meta = 'EXPLORE'
   } else if (input.course.seed === null) {
@@ -72,26 +50,14 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
 
   const statsParts: string[] = []
   if (runs > 0) {
-    statsParts.push(`${runs} RUN${runs === 1 ? '' : 'S'}`)
     const bestTime = input.history?.bestTimeSec
     statsParts.push(Number.isFinite(bestTime) ? formatTime(bestTime!) : 'NO TIME')
   }
-  if (bestScore > 0) {
-    statsParts.push(`BEST ${bestScore.toLocaleString()}`)
-    statsParts.push(`MEDAL ${medalForScore(bestScore).toUpperCase()}`)
+  const landingQuality = input.history?.landingQuality
+  if (Number.isFinite(landingQuality) && landingQuality! > 0) {
+    const safeLanding = Math.max(0, Math.min(1, landingQuality!))
+    statsParts.push(`LAND ${landingQualityLabel(safeLanding)}`)
   }
-  if (streak >= 2) statsParts.push(`STREAK X${streak}`)
-  if (contractStreak >= 2) statsParts.push(`CONTRACT X${contractStreak}`)
-  if (tierLabel) statsParts.push(tierLabel)
-  if (nextTierLabel) statsParts.push(`NEXT ${nextTierLabel}${nextTierGoal ? ` / ${nextTierGoal}` : ''}`)
-  if (badgeCount > 0) statsParts.push(`${badgeCount}/${MASTERY_BADGE_COUNT} BADGES`)
-  const flightLogLabel = courseFlightLogLabel(input.history)
-  if (flightLogLabel) statsParts.push(flightLogLabel)
-  const contractLabel = sortieContractLabelForSeed(input.course.seed ?? undefined)
-  const contractDetail = sortieContractDetailForSeed(input.course.seed ?? undefined)
-  if (contractLabel) statsParts.push(`TASK ${contractLabel}${contractDetail ? ` / ${contractDetail}` : ''}`)
-  const weatherLabel = courseWeatherPreviewLabel(input.course.seed ?? undefined)
-  if (weatherLabel) statsParts.push(`WX ${weatherLabel}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
 }

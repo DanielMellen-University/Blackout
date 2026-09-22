@@ -91,7 +91,7 @@ describe('ChallengeRun', () => {
       setItem: (key: string, value: string) => values.set(key, value),
     }
     const run = new ChallengeRun(storage)
-    run.reset('seed:score-cap', 1, 'balanced', 42)
+    run.reset('seed:score-cap', 1, 'balanced', 42, true)
     run.update(0.1, 8)
     run.recordAltitudeMilestone(6_000)
     run.recordStunt(12)
@@ -576,9 +576,22 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('keeps timer-band tasks off a normal sortie', () => {
+    const run = new ChallengeRun(null)
+    for (let seed = 0; seed < 48; seed += 1) {
+      run.reset('seed:live-pool', 5, 'balanced', seed)
+      const label = run.contractLabel
+      expect(label).not.toContain('THERMAL SURF')
+      expect(label).not.toContain('ENERGY BAND')
+      expect(label).not.toContain('GUST RIDER')
+      expect(label).not.toContain('TRAFFIC WATCH')
+      expect(label).not.toContain('FUEL SAVER')
+    }
+  })
+
   it('assigns and scores a deterministic touchdown contract', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:contract', 1, 'balanced', 0)
+    run.reset('seed:contract', 1, 'balanced', 0, true)
     expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
     expect(run.contractProgress).toBe(0)
     expect(run.contractComplete).toBe(false)
@@ -605,7 +618,7 @@ describe('ChallengeRun', () => {
 
   it('shows elapsed speed-run budget during the sortie', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:speed-live', 5, 'balanced', 0)
+    run.reset('seed:speed-live', 5, 'balanced', 0, true)
     expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
     run.update(4, 8)
     run.update(5, 8)
@@ -619,14 +632,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let butterSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:butter-live', 5, 'balanced', seed)
+      run.reset('seed:butter-live', 5, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT BUTTER LANDING') {
         butterSeed = seed
         break
       }
     }
     expect(butterSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:butter-live', 5, 'balanced', butterSeed)
+    run.reset('seed:butter-live', 5, 'balanced', butterSeed, true)
     run.recordLandingPreview(0.8)
     expect(run.contractProgress).toBeCloseTo(0.8)
     expect(run.contractDetail).toContain('PREVIEW 80%')
@@ -635,7 +648,7 @@ describe('ChallengeRun', () => {
 
   it('shows live fuel reserve progress before the FUEL SAVER landing', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:fuel-live', 1, 'balanced', 1)
+    run.reset('seed:fuel-live', 1, 'balanced', 1, true)
     expect(run.contractLabel).toBe('CONTRACT FUEL SAVER')
     run.update(0.1, 8, 180, 0, 0, false, true, 0, 0, 1, 0.5)
     expect(run.contractProgress).toBeCloseTo(2 / 3)
@@ -648,7 +661,7 @@ describe('ChallengeRun', () => {
 
   it('emits one live cue when an event contract is completed', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:contract-event', 1, 'balanced', 6)
+    run.reset('seed:contract-event', 1, 'balanced', 6, true)
     expect(run.contractLabel).toBe('CONTRACT AIRSHOW')
     run.recordStunt(2)
     expect(run.consumeContractCompletionCue()).toBe('AIRSHOW')
@@ -659,14 +672,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let targetSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      run.reset('seed:radar-run', 1, 'balanced', seed)
+      run.reset('seed:radar-run', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT RADAR RUN') {
         targetSeed = seed
         break
       }
     }
     expect(targetSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:radar-run', 1, 'balanced', targetSeed)
+    run.reset('seed:radar-run', 1, 'balanced', targetSeed, true)
     expect(run.contractBriefing).toContain('LOCK ONE RADAR CONTACT')
     run.update(0.1, 8)
     run.recordDestination('city', 'city-1')
@@ -692,14 +705,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let gustSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      run.reset('seed:gust-contract', 1, 'balanced', seed)
+      run.reset('seed:gust-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT GUST RIDER') {
         gustSeed = seed
         break
       }
     }
     expect(gustSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:gust-contract', 1, 'balanced', gustSeed)
+    run.reset('seed:gust-contract', 1, 'balanced', gustSeed, true)
     expect(run.contractBriefing).toContain('FLY THROUGH STRONG GUSTS')
     run.update(4, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 180, 1, 0, 0.8)
     expect(run.contractProgress).toBeCloseTo(0.4)
@@ -713,14 +726,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let rangeSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
-      run.reset('seed:range-contract', 1, 'balanced', seed)
+      run.reset('seed:range-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT RANGE RUN') {
         rangeSeed = seed
         break
       }
     }
     expect(rangeSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:range-contract', 1, 'balanced', rangeSeed)
+    run.reset('seed:range-contract', 1, 'balanced', rangeSeed, true)
     expect(run.contractBriefing).toContain('FLY 12KM BEFORE LANDING')
     run.update(0.1, 8)
     run.update(1, 8, 180, 0, 0, false, false, 0, 0, 1, 1, false, false, 180, 1, 5_000)
@@ -734,7 +747,7 @@ describe('ChallengeRun', () => {
 
   it('turns low-level contract time into a bounded terrain-hugger reward', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:low-level', 1, 'balanced', 11)
+    run.reset('seed:low-level', 1, 'balanced', 11, true)
     expect(run.contractLabel).toBe('CONTRACT TERRAIN HUGGER')
     run.update(4, 8, 180)
     expect(run.contractProgress).toBeCloseTo(0.4)
@@ -756,7 +769,7 @@ describe('ChallengeRun', () => {
 
   it('uses rendered terrain clearance for terrain-hugger progress', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:terrain-clearance-contract', 1, 'balanced', 11)
+    run.reset('seed:terrain-clearance-contract', 1, 'balanced', 11, true)
     expect(run.contractLabel).toBe('CONTRACT TERRAIN HUGGER')
     run.update(4, 8, 180, 0, 0, false, true, 0, 0, 1, 1, false, false, 480)
     expect(run.contractProgress).toBe(0)
@@ -766,7 +779,7 @@ describe('ChallengeRun', () => {
 
   it('wires distinct biome progress into the biome-tour contract', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:biome-contract', 1, 'balanced', 8)
+    run.reset('seed:biome-contract', 1, 'balanced', 8, true)
     expect(run.contractLabel).toBe('CONTRACT BIOME TOUR')
     run.recordBiome('plains')
     run.update(0.1, 8)
@@ -791,7 +804,7 @@ describe('ChallengeRun', () => {
 
   it('wires precipitation time into the storm-run contract', () => {
     const run = new ChallengeRun(null)
-    run.reset('seed:weather-contract', 1, 'balanced', 10)
+    run.reset('seed:weather-contract', 1, 'balanced', 10, true)
     expect(run.contractLabel).toBe('CONTRACT STORM RUN')
     run.update(5, 8, 180, 0.6, 0)
     expect(run.contractProgress).toBeCloseTo(5 / 14)
@@ -815,14 +828,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let waterSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:water-contract', 1, 'balanced', seed)
+      run.reset('seed:water-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT WATER RUN') {
         waterSeed = seed
         break
       }
     }
     expect(waterSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:water-contract', 1, 'balanced', waterSeed)
+    run.reset('seed:water-contract', 1, 'balanced', waterSeed, true)
     run.update(0.1, 8)
     run.recordWater(false, 5)
     expect(run.contractProgress).toBe(0)
@@ -848,14 +861,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let ridgeSeed = -1
     for (let seed = 0; seed < 2_048; seed += 1) {
-      run.reset('seed:ridge-contract', 1, 'balanced', seed)
+      run.reset('seed:ridge-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT RIDGE RUN') {
         ridgeSeed = seed
         break
       }
     }
     expect(ridgeSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:ridge-contract', 1, 'balanced', ridgeSeed)
+    run.reset('seed:ridge-contract', 1, 'balanced', ridgeSeed, true)
     expect(run.contractBriefing).toContain('HOLD RIDGE ALT')
     run.update(0.1, 8)
     run.recordRidgeRun('plains', 120, 5)
@@ -882,14 +895,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let waterwaySeed = -1
     for (let seed = 0; seed < 2_048; seed += 1) {
-      run.reset('seed:waterway-contract', 1, 'balanced', seed)
+      run.reset('seed:waterway-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT WATERWAY TOUR') {
         waterwaySeed = seed
         break
       }
     }
     expect(waterwaySeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:waterway-contract', 1, 'balanced', waterwaySeed)
+    run.reset('seed:waterway-contract', 1, 'balanced', waterwaySeed, true)
     expect(run.contractBriefing).toContain('VISIT TWO WATERWAYS')
     run.update(0.1, 8)
     run.recordWaterBody('river')
@@ -915,14 +928,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let brakeSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:brake-contract', 1, 'balanced', seed)
+      run.reset('seed:brake-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT BRAKE CHECK') {
         brakeSeed = seed
         break
       }
     }
     expect(brakeSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:brake-contract', 1, 'balanced', brakeSeed)
+    run.reset('seed:brake-contract', 1, 'balanced', brakeSeed, true)
     run.update(0.1, 8)
     run.update(2, 240, 180, 0, 0, true, true)
     expect(run.contractProgress).toBeCloseTo(0.4)
@@ -945,14 +958,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let heatSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:heat-contract', 1, 'balanced', seed)
+      run.reset('seed:heat-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT THERMAL CONTROL') {
         heatSeed = seed
         break
       }
     }
     expect(heatSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:heat-contract', 1, 'balanced', heatSeed)
+    run.reset('seed:heat-contract', 1, 'balanced', heatSeed, true)
     run.update(0.1, 8)
     run.update(4, 220, 180, 0, 0, false, true, 0.5)
     expect(run.contractProgress).toBeCloseTo(1 / 3)
@@ -976,14 +989,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let crosswindSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:crosswind-contract', 1, 'balanced', seed)
+      run.reset('seed:crosswind-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT CROSSWIND') {
         crosswindSeed = seed
         break
       }
     }
     expect(crosswindSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:crosswind-contract', 1, 'balanced', crosswindSeed)
+    run.reset('seed:crosswind-contract', 1, 'balanced', crosswindSeed, true)
     run.update(0.1, 8)
     run.update(4, 220, 180, 0, 0, false, true, 0, 12)
     expect(run.contractProgress).toBeCloseTo(0.4)
@@ -1007,14 +1020,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let gControlSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:g-control-contract', 1, 'balanced', seed)
+      run.reset('seed:g-control-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT G CONTROL') {
         gControlSeed = seed
         break
       }
     }
     expect(gControlSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:g-control-contract', 1, 'balanced', gControlSeed)
+    run.reset('seed:g-control-contract', 1, 'balanced', gControlSeed, true)
     run.update(0.1, 8)
     run.update(4, 180, 180, 0, 0, false, true, 0, 0, 2)
     expect(run.contractProgress).toBeCloseTo(1 / 3)
@@ -1038,14 +1051,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let deadstickSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:deadstick-contract', 1, 'balanced', seed)
+      run.reset('seed:deadstick-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT DEADSTICK') {
         deadstickSeed = seed
         break
       }
     }
     expect(deadstickSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:deadstick-contract', 1, 'balanced', deadstickSeed)
+    run.reset('seed:deadstick-contract', 1, 'balanced', deadstickSeed, true)
     run.update(0.1, 8)
     run.update(1, 180, 180, 0, 0, false, false, 0, 0, 1, 0)
     expect(run.contractComplete).toBe(false)
@@ -1068,14 +1081,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let boostSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:boost-contract', 1, 'balanced', seed)
+      run.reset('seed:boost-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT BURN RUN') {
         boostSeed = seed
         break
       }
     }
     expect(boostSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:boost-contract', 1, 'balanced', boostSeed)
+    run.reset('seed:boost-contract', 1, 'balanced', boostSeed, true)
     run.update(0.1, 8)
     run.update(3, 260, 180, 0, 0, false, true, 0, 0, 1, 1, false, true)
     expect(run.contractProgress).toBeCloseTo(3 / 8)
@@ -1098,14 +1111,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let machSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:mach-contract', 1, 'balanced', seed)
+      run.reset('seed:mach-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT MACH RUN') {
         machSeed = seed
         break
       }
     }
     expect(machSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:mach-contract', 1, 'balanced', machSeed)
+    run.reset('seed:mach-contract', 1, 'balanced', machSeed, true)
     run.update(0.1, 8)
     run.update(4, 360, 180)
     expect(run.contractProgress).toBeCloseTo(0.4)
@@ -1129,14 +1142,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let levelSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:level-contract', 1, 'balanced', seed)
+      run.reset('seed:level-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT LEVEL FLIGHT') {
         levelSeed = seed
         break
       }
     }
     expect(levelSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:level-contract', 1, 'balanced', levelSeed)
+    run.reset('seed:level-contract', 1, 'balanced', levelSeed, true)
     run.update(0.1, 8)
     run.update(5, 8, 300)
     expect(run.contractProgress).toBeCloseTo(0.5)
@@ -1159,14 +1172,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let tourSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:tour-contract', 1, 'balanced', seed)
+      run.reset('seed:tour-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT SETTLEMENT TOUR') {
         tourSeed = seed
         break
       }
     }
     expect(tourSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:tour-contract', 1, 'balanced', tourSeed)
+    run.reset('seed:tour-contract', 1, 'balanced', tourSeed, true)
     run.update(0.1, 8)
     run.recordDestination('city')
     expect(run.contractProgress).toBeCloseTo(0.5)
@@ -1191,14 +1204,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let comboSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:combo-contract', 1, 'balanced', seed)
+      run.reset('seed:combo-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT COMBO RUN') {
         comboSeed = seed
         break
       }
     }
     expect(comboSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:combo-contract', 1, 'balanced', comboSeed)
+    run.reset('seed:combo-contract', 1, 'balanced', comboSeed, true)
     run.update(0.1, 8)
     run.recordCombo(2)
     expect(run.contractProgress).toBeCloseTo(2 / 3)
@@ -1221,14 +1234,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let precisionSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:precision-contract', 5, 'balanced', seed)
+      run.reset('seed:precision-contract', 5, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT PRECISION CHAIN') {
         precisionSeed = seed
         break
       }
     }
     expect(precisionSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:precision-contract', 5, 'balanced', precisionSeed)
+    run.reset('seed:precision-contract', 5, 'balanced', precisionSeed, true)
     run.recordGate(0.9)
     run.recordGate(0.4)
     expect(run.contractProgress).toBe(0)
@@ -1253,14 +1266,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let nightSeed = -1
     for (let seed = 0; seed < 2_048; seed += 1) {
-      run.reset('seed:night-contract', 1, 'balanced', seed)
+      run.reset('seed:night-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT NIGHT FLIGHT') {
         nightSeed = seed
         break
       }
     }
     expect(nightSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:night-contract', 1, 'balanced', nightSeed)
+    run.reset('seed:night-contract', 1, 'balanced', nightSeed, true)
     run.update(0.1, 8)
     run.update(4, 220, 300, 0, 0, false, true, 0, 0, 1, 1, false, false, 300, 0.2)
     expect(run.contractProgress).toBeCloseTo(1 / 3)
@@ -1284,14 +1297,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:clean-contract', 2, 'balanced', seed)
+      run.reset('seed:clean-contract', 2, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT CLEAN CIRCUIT') {
         cleanSeed = seed
         break
       }
     }
     expect(cleanSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:clean-contract', 2, 'balanced', cleanSeed)
+    run.reset('seed:clean-contract', 2, 'balanced', cleanSeed, true)
     run.update(0.1, 8)
     run.recordGateMiss()
     expect(run.contractFailed).toBe(true)
@@ -1317,14 +1330,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let cleanSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:clean-contract', 2, 'balanced', seed)
+      run.reset('seed:clean-contract', 2, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT CLEAN CIRCUIT') {
         cleanSeed = seed
         break
       }
     }
     expect(cleanSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:clean-contract', 2, 'balanced', cleanSeed)
+    run.reset('seed:clean-contract', 2, 'balanced', cleanSeed, true)
     run.update(0.1, 8)
     run.recordGate(1)
     expect(run.consumeContractCompletionCue()).toBeNull()
@@ -1337,14 +1350,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let frontSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:front-contract', 1, 'balanced', seed)
+      run.reset('seed:front-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT FRONT CHASER') {
         frontSeed = seed
         break
       }
     }
     expect(frontSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:front-contract', 1, 'balanced', frontSeed)
+    run.reset('seed:front-contract', 1, 'balanced', frontSeed, true)
     run.update(0.1, 8)
     run.update(4, 180, 180, 0, 0, false, true, 0, 0, 1, 1, false)
     expect(run.contractProgress).toBe(0)
@@ -1370,14 +1383,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:approach-contract', 1, 'balanced', seed)
+      run.reset('seed:approach-contract', 1, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT PRECISION APPROACH') {
         approachSeed = seed
         break
       }
     }
     expect(approachSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:approach-contract', 1, 'balanced', approachSeed)
+    run.reset('seed:approach-contract', 1, 'balanced', approachSeed, true)
     run.recordGate(1)
     const result = run.finishLanding({
       verticalSpeed: -1,
@@ -1397,14 +1410,14 @@ describe('ChallengeRun', () => {
     const run = new ChallengeRun(null)
     let approachSeed = -1
     for (let seed = 0; seed < 1_024; seed += 1) {
-      run.reset('seed:approach-live', 5, 'balanced', seed)
+      run.reset('seed:approach-live', 5, 'balanced', seed, true)
       if (run.contractLabel === 'CONTRACT PRECISION APPROACH') {
         approachSeed = seed
         break
       }
     }
     expect(approachSeed).toBeGreaterThanOrEqual(0)
-    run.reset('seed:approach-live', 5, 'balanced', approachSeed)
+    run.reset('seed:approach-live', 5, 'balanced', approachSeed, true)
     run.recordApproachPreview(320)
     expect(run.contractProgress).toBeCloseTo(320 / 360)
     expect(run.contractDetail).toContain('PREVIEW 320')
@@ -1419,7 +1432,7 @@ describe('ChallengeRun', () => {
     }
     const finish = (fuel: number): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
       const run = new ChallengeRun(storage)
-      run.reset('seed:contract-wins', 1, 'balanced', 1)
+      run.reset('seed:contract-wins', 1, 'balanced', 1, true)
       run.update(0.1, 8)
       run.recordGate(1)
       return run.finishLanding({
@@ -1461,7 +1474,7 @@ describe('ChallengeRun', () => {
     }
     const complete = (): NonNullable<ReturnType<ChallengeRun['finishLanding']>> => {
       const run = new ChallengeRun(storage)
-      run.reset('seed:contract-streak', 1, 'balanced', 0)
+      run.reset('seed:contract-streak', 1, 'balanced', 0, true)
       run.update(0.1, 8)
       run.recordGate(1)
       return run.finishLanding({
@@ -1487,7 +1500,7 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:contract-streak')).toContain('"contractStreakRecord":2')
 
     const incomplete = new ChallengeRun(storage)
-    incomplete.reset('seed:contract-streak', 1, 'balanced', 0)
+    incomplete.reset('seed:contract-streak', 1, 'balanced', 0, true)
     incomplete.update(0.1, 8)
     incomplete.recordGate(1)
     for (let i = 0; i < 12; i += 1) incomplete.update(5, 8)
@@ -1515,7 +1528,7 @@ describe('ChallengeRun', () => {
     )
 
     const crashed = new ChallengeRun(storage)
-    crashed.reset('seed:contract-streak', 1, 'balanced', 0)
+    crashed.reset('seed:contract-streak', 1, 'balanced', 0, true)
     crashed.update(0.1, 8)
     crashed.fail()
     expect(readCourseHistory(storage, 'seed:contract-streak')?.contractStreak).toBeUndefined()

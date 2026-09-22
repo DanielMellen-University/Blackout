@@ -85,8 +85,11 @@ export function hudIdIsLedger(html: string, id: string): boolean {
 /** Empty when the live picture matches the flight-instrument budget. */
 export function liveHudViolations(html: string, css: string): string[] {
   const violations: string[] = []
-  if (!/\.hud-ledger\s*\{[^}]*display:\s*none\s*!important/.test(css)) {
+  if (!/\.hud-ledger\b[^{]*\{[^}]*display:\s*none\s*!important/.test(css)) {
     violations.push('css does not hide .hud-ledger')
+  }
+  if (!/\.result-ledger\b[^{]*\{[^}]*display:\s*none\s*!important/.test(css)) {
+    violations.push('css does not hide .result-ledger')
   }
   for (const id of LIVE_HUD_IDS) {
     if (!html.includes(`id="${id}"`)) violations.push(`missing live instrument ${id}`)
