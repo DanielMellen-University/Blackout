@@ -577,6 +577,18 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('shows elapsed speed-run budget during the sortie', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:speed-live', 5, 'balanced', 0)
+    expect(run.contractLabel).toBe('CONTRACT SPEED RUN')
+    run.update(4, 8)
+    run.update(5, 8)
+    run.update(3, 8)
+    expect(run.contractProgress).toBeCloseTo(12 / 68)
+    expect(run.contractDetail).toContain('ELAPSED 12S')
+    expect(run.contractComplete).toBe(false)
+  })
+
   it('shows live fuel reserve progress before the FUEL SAVER landing', () => {
     const run = new ChallengeRun(null)
     run.reset('seed:fuel-live', 1, 'balanced', 1)

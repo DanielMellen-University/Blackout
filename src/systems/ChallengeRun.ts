@@ -1089,6 +1089,7 @@ export class ChallengeRun {
       this.elapsedSec += safeDt
       this.flightDistanceM = Math.min(2_000_000, this.flightDistanceM + safeDistance)
     }
+    this.contract.recordPace(this.elapsedSec)
   }
 
   recordGate(quality = 1): void {

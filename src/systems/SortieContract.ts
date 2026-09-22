@@ -445,6 +445,17 @@ export class SortieContractTracker {
     this.detailValue = `${this.detailBaseValue} / CURRENT ${Math.min(100, bucket * 5)}%`
   }
 
+  /** Show elapsed budget while keeping SPEED RUN completion touchdown-gated. */
+  recordPace(elapsedSec: number): void {
+    if (this.definition?.kind !== 'pace' || this.completeValue || !Number.isFinite(elapsedSec)) return
+    const safeElapsed = Math.max(0, Math.min(this.definition.target * 4, elapsedSec))
+    this.progressValue = clamp01(safeElapsed / this.definition.target)
+    const bucket = Math.floor(safeElapsed)
+    if (bucket === this.detailProgressBucket) return
+    this.detailProgressBucket = bucket
+    this.detailValue = `${this.detailBaseValue} / ELAPSED ${bucket}S`
+  }
+
   /** Accumulate bounded time in a low-altitude airborne band for the terrain-hugger contract. */
   recordLowLevel(altitudeM: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'low-level' || this.completeValue || !airborne) return

@@ -167,6 +167,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Seeded sorties can also assign a `RIDGE RUN` contract: hold a controlled 35-260M low pass through hills, mountains, snow, tundra, or volcanic terrain for ten seconds.
 - Seeded sorties can also assign a `WATERWAY TOUR` contract: visit two distinct rendered waterway families, with river/stream, lake/pond/inland, and sea crossings tracked separately.
 - `FUEL SAVER` now shows cached live reserve progress during flight while remaining touchdown-gated, so the task never reports success before the landing is actually secured.
+- `SPEED RUN` now shows cached elapsed time against its landing budget during flight, while completion remains gated on the actual touchdown.
 - Repeatable course selectors and results retain each course's best combo chain.
 - The live HUD keeps the current combo visible until a rough gate, miss, or reset breaks it.
 - Random sorties reuse one bounded local record bucket, so repeated new worlds do not create one storage key per seed.

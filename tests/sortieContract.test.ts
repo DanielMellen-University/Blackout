@@ -59,6 +59,19 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(true)
   })
 
+  it('shows elapsed SPEED RUN budget without completing before touchdown', () => {
+    const tracker = new SortieContractTracker()
+    tracker.reset(0, 5)
+    expect(tracker.kind).toBe('pace')
+    expect(tracker.detail).toBe('LAND UNDER 68S')
+    tracker.recordPace(12.8)
+    expect(tracker.progress).toBeCloseTo(12.8 / 68)
+    expect(tracker.detail).toContain('ELAPSED 12S')
+    expect(tracker.complete).toBe(false)
+    expect(tracker.finish(40, 1)).toBe(MAX_CONTRACT_SCORE)
+    expect(tracker.complete).toBe(true)
+  })
+
   it('covers every contract kind with bounded event and touchdown completion', () => {
     const kinds = new Set<SortieContractKind>()
     for (let seed = 0; seed < 512; seed += 1) {
