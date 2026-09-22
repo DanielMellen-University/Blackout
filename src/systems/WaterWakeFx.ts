@@ -68,6 +68,7 @@ export class WaterWakeFx {
     this.writeStrip(0, -0.72, 0.65, 0.34, 5.4)
     this.writeStrip(1, 0.72, 0.65, 0.34, 5.4)
     this.writeStrip(2, 0, 1.5, 0.2, 4.2)
+    this.mesh.instanceMatrix.needsUpdate = true
   }
 
   setRenderQuality(quality: RenderQuality): void {
