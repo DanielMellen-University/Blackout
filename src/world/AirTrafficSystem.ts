@@ -27,6 +27,8 @@ export const AIR_TRAFFIC_ALERT_VERTICAL_M = 520
 export interface TrafficAlert {
   readonly id: string
   readonly distance: number
+  /** Signed world-space separation: positive means traffic is above the jet. */
+  readonly verticalOffset: number
   readonly verticalSeparation: number
   readonly bearing: number
 }
@@ -52,6 +54,7 @@ const _euler = new Euler()
 const trafficAlertValue = {
   id: '',
   distance: 0,
+  verticalOffset: 0,
   verticalSeparation: 0,
   bearing: 0,
 }
@@ -81,6 +84,14 @@ export function trafficAlertSide(bearing: number): 'LEFT' | 'RIGHT' | 'AHEAD' | 
   if (Math.abs(safe) < Math.PI / 8) return 'AHEAD'
   if (Math.abs(safe) >= Math.PI * .875) return 'BEHIND'
   return safe > 0 ? 'RIGHT' : 'LEFT'
+}
+
+/** Keep vertical traffic guidance inside a readable deadband. */
+export function trafficAlertVertical(verticalOffset: number, deadband = 80): 'ABOVE' | 'BELOW' | 'LEVEL' {
+  const safe = Number.isFinite(verticalOffset) ? verticalOffset : 0
+  const safeDeadband = Number.isFinite(deadband) && deadband >= 0 ? deadband : 80
+  if (Math.abs(safe) <= safeDeadband) return 'LEVEL'
+  return safe > 0 ? 'ABOVE' : 'BELOW'
 }
 
 /**
@@ -177,6 +188,7 @@ export class AirTrafficSystem {
     const safeHeading = Number.isFinite(heading) ? heading : 0
     let bestDistance = Number.POSITIVE_INFINITY
     let best: RadarLandmark | null = null
+    let bestVerticalOffset = 0
     let bestVertical = 0
     for (let index = 0; index < this.activeCount; index += 1) {
       const contact = this.radarPool[index]!
@@ -193,11 +205,13 @@ export class AirTrafficSystem {
       ) continue
       bestDistance = distance
       best = contact
+      bestVerticalOffset = contact.y - safeY
       bestVertical = vertical
     }
     if (!best || !Number.isFinite(bestDistance)) return null
     trafficAlertValue.id = best.id ?? ''
     trafficAlertValue.distance = bestDistance
+    trafficAlertValue.verticalOffset = Number.isFinite(bestVerticalOffset) ? bestVerticalOffset : 0
     trafficAlertValue.verticalSeparation = bestVertical
     trafficAlertValue.bearing = wrapAngle(Math.atan2(best.x - safeX, best.z - safeZ) - safeHeading)
     return trafficAlertValue

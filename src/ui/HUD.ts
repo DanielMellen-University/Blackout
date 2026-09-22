@@ -2279,6 +2279,10 @@ export class HUD {
       this.setClass(marker, 'city', contact.kind === 'city')
       this.setClass(marker, 'village', contact.kind === 'village')
       this.setClass(marker, 'traffic', contact.kind === 'traffic')
+      const vertical = Number.isFinite(contact.vertical) ? contact.vertical! : 0
+      this.setClass(marker, 'above', contact.kind === 'traffic' && vertical > 80)
+      this.setClass(marker, 'below', contact.kind === 'traffic' && vertical < -80)
+      this.setClass(marker, 'level', contact.kind === 'traffic' && Math.abs(vertical) <= 80)
     }
   }
 

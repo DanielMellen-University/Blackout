@@ -22,6 +22,8 @@ export interface RadarContact {
   x?: number
   y?: number
   z?: number
+  /** Signed world-space separation from the aircraft, when supplied. */
+  vertical?: number
   id?: string
   biome?: string
   selected?: boolean
@@ -52,7 +54,7 @@ export function radarUpdateDue(nowMs: number, nextUpdateMs: number): boolean {
 export class RadarSystem {
   private readonly contactPool: RadarContact[] = Array.from(
     { length: MAX_RADAR_CONTACTS },
-    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, id: '', biome: '', selected: false }),
+    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, vertical: 0, id: '', biome: '', selected: false }),
   )
   private readonly contacts: RadarContact[] = []
   private visibleContactLimit = MAX_RADAR_CONTACTS
@@ -81,12 +83,14 @@ export class RadarSystem {
     gate: RadarGate | null,
     landmarks: readonly RadarLandmark[],
     traffic: readonly RadarLandmark[] = [],
+    py = 0,
   ): readonly RadarContact[] {
     this.contacts.length = 0
     const safeX = finiteOr(px, 0)
     const safeZ = finiteOr(pz, 0)
+    const safeY = finiteOr(py, 0)
     const safeHeading = finiteOr(heading, 0)
-    if (gate) this.addContact('gate', gate.x, gate.y, gate.z, safeX, safeZ, safeHeading)
+    if (gate) this.addContact('gate', gate.x, gate.y, gate.z, safeX, safeY, safeZ, safeHeading)
     const landmarkLimit = Math.min(MAX_RADAR_LANDMARK_SCAN, landmarks.length)
     for (let index = 0; index < landmarkLimit; index += 1) {
       const landmark = landmarks[index]!
@@ -96,6 +100,7 @@ export class RadarSystem {
         landmark.y,
         landmark.z,
         safeX,
+        safeY,
         safeZ,
         safeHeading,
         landmark.id,
@@ -111,6 +116,7 @@ export class RadarSystem {
         landmark.y,
         landmark.z,
         safeX,
+        safeY,
         safeZ,
         safeHeading,
         landmark.id,
@@ -181,6 +187,7 @@ export class RadarSystem {
     y: number,
     z: number,
     px: number,
+    py: number,
     pz: number,
     heading: number,
     id?: string,
@@ -216,6 +223,7 @@ export class RadarSystem {
     contact.x = x
     contact.y = Number.isFinite(y) ? y : 0
     contact.z = z
+    contact.vertical = contact.y - py
     contact.id = typeof id === 'string' ? id : ''
     contact.biome = typeof biome === 'string' ? biome : ''
   }

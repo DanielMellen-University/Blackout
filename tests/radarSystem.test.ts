@@ -43,6 +43,14 @@ describe('arcade radar sweep', () => {
     expect(radar.cycleTarget()?.id).toBe('city-1')
   })
 
+  it('carries signed vertical separation for traffic markers', () => {
+    const radar = new RadarSystem()
+    const contacts = radar.update(0, 0, 0, null, [], [
+      { x: 100, y: 600, z: 0, kind: 'traffic', id: 'traffic-high' },
+    ], 200)
+    expect(contacts[0]?.vertical).toBe(400)
+  })
+
   it('caps contacts and ignores distant or malformed positions', () => {
     const radar = new RadarSystem()
     const landmarks = Array.from({ length: MAX_RADAR_CONTACTS + 3 }, (_, index) => ({

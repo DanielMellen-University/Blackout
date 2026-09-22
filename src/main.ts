@@ -147,7 +147,7 @@ import {
 } from './systems/RadarSystem'
 import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
 import { sampleTerrainSurface } from './world/terrainSample'
-import { trafficAlertSide } from './world/AirTrafficSystem'
+import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
 import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -1797,6 +1797,7 @@ async function boot(): Promise<void> {
             aircraft.position.z,
             RADAR_RANGE_METERS,
           ),
+          aircraft.position.y,
         )
         radarNextUpdateMs = nowMs + RADAR_UPDATE_INTERVAL_MS
         if (radar.consumeLockLost() && (!banner || bannerUntil <= nowMs)) {
@@ -1872,7 +1873,7 @@ async function boot(): Promise<void> {
           (!banner || bannerUntil <= nowMs)
         ) {
           showBanner(
-            `TRAFFIC ${trafficAlertSide(trafficAlert.bearing)} / ${Math.round(trafficAlert.distance)}M`,
+            `TRAFFIC ${trafficAlertSide(trafficAlert.bearing)} / ${trafficAlertVertical(trafficAlert.verticalOffset)} / ${Math.round(trafficAlert.distance)}M`,
             1600,
             'danger',
           )

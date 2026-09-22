@@ -6,6 +6,7 @@ import {
   AirTrafficSystem,
   trafficCellFor,
   trafficAlertSide,
+  trafficAlertVertical,
   trafficInRange,
 } from '../src/world/AirTrafficSystem'
 
@@ -69,9 +70,14 @@ describe('bounded air traffic', () => {
     const alert = traffic.closestAlert(contact.x, contact.y, contact.z, 0)
     expect(alert?.id).toBe(contact.id)
     expect(alert?.distance).toBe(0)
+    expect(alert?.verticalOffset).toBe(0)
     expect(alert?.verticalSeparation).toBe(0)
     expect(Number.isFinite(alert?.bearing)).toBe(true)
     expect(trafficAlertSide(Number.NaN)).toBe('AHEAD')
+    expect(trafficAlertVertical(240)).toBe('ABOVE')
+    expect(trafficAlertVertical(-240)).toBe('BELOW')
+    expect(trafficAlertVertical(80)).toBe('LEVEL')
+    expect(trafficAlertVertical(Number.NaN)).toBe('LEVEL')
     expect(traffic.closestAlert(contact.x, contact.y + 2_000, contact.z, 0)).toBeNull()
     traffic.dispose()
   })
