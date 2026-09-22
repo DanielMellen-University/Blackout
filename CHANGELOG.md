@@ -8,6 +8,7 @@
 - Add a deterministic STORM RUN contract that rewards bounded airborne time in meaningful rain or snow without adding scene work.
 - Add a compact six-marker radar scope with bounded contact projection and distinct gate, settlement, and traffic colors while preserving the accessible text readout.
 - Add signed traffic altitude separation to the pooled radar path, giving proximity alerts and markers bounded `ABOVE`, `BELOW`, and `LEVEL` cues without collision simulation.
+- Add a pooled reduced-motion-safe supersonic shockwave ring to the existing Mach-crossing cue without per-crossing scene allocations.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.
