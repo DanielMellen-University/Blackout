@@ -71,6 +71,7 @@ import { CollisionSystem } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
 import { SonicBoomFx } from './systems/SonicBoomFx'
+import { WaterWakeFx } from './systems/WaterWakeFx'
 import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
@@ -535,15 +536,18 @@ async function boot(): Promise<void> {
   const crashFx = new CrashFx(world.scene)
   const landingFx = new LandingFx(world.scene)
   const sonicBoomFx = new SonicBoomFx(world.scene)
+  const waterWakeFx = new WaterWakeFx(world.scene)
   applyEffectsQuality = (quality): void => {
     crashFx.setRenderQuality(quality)
     landingFx.setRenderQuality(quality)
     sonicBoomFx.setRenderQuality(quality)
+    waterWakeFx.setRenderQuality(quality)
   }
   applyEffectsMotion = (reduced): void => {
     crashFx.setReducedMotion(reduced)
     landingFx.setReducedMotion(reduced)
     sonicBoomFx.setReducedMotion(reduced)
+    waterWakeFx.setReducedMotion(reduced)
   }
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
@@ -689,6 +693,7 @@ async function boot(): Promise<void> {
     crashFx.dispose()
     landingFx.dispose()
     sonicBoomFx.dispose()
+    waterWakeFx.dispose()
     debug?.dispose()
     aircraft.dispose()
     renderer.dispose()
@@ -895,6 +900,7 @@ async function boot(): Promise<void> {
     crashFx.reset()
     landingFx.reset()
     sonicBoomFx.reset()
+    waterWakeFx.reset()
     stunts.reset()
     combo.reset()
     altitudeMilestones.reset()
@@ -1527,6 +1533,14 @@ async function boot(): Promise<void> {
     crashFx.update(simLive ? visualDt : 0)
     landingFx.update(simLive ? visualDt : 0)
     sonicBoomFx.update(simLive ? visualDt : 0)
+    waterWakeFx.update(
+      simLive ? visualDt : 0,
+      aircraft.position,
+      aircraft.velocity,
+      terrainClearanceM,
+      overWater,
+      aircraft.onGround,
+    )
 
     const lightningActive = world.atmosphere.lightningActive
     if (

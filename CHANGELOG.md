@@ -11,6 +11,7 @@
 - Add a pooled reduced-motion-safe supersonic shockwave ring to the existing Mach-crossing cue without per-crossing scene allocations.
 - Add a deterministic `TRAFFIC WATCH` contract for three distinct nearby traffic passes, reusing pooled proximity identities without collision simulation or fixed-step growth.
 - Add one pooled instanced contrail batch behind distant traffic, disabled on Low and capped by the existing quality preset.
+- Add one pooled three-strip water wake for airborne low passes over rendered water, reusing existing telemetry without particle growth.
 - Validate generated mission corridors with adaptive terrain probes so straight legs stay above the route clearance target between gates without adding runtime scene work.
 - Add a deterministic PRECISION APPROACH contract that rewards a centered, aligned touchdown through existing finite-safe landing telemetry.
 - Share one finite-safe heading fallback across the HUD, return guidance, and chase camera so near-vertical aerobatics do not flip navigation by 180 degrees.
