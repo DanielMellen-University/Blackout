@@ -434,7 +434,8 @@ export class SettlementSystem {
           } else {
             // Keep the canonical edge marked while the synchronous fallback
             // consumes it. Otherwise a second endpoint can enqueue a duplicate.
-            if (this.roadSources.has(this.inFlight.key)) this.linkQueue.unshift(this.inFlight)
+            // The road queue is reverse-prioritized and consumed with pop().
+            if (this.roadSources.has(this.inFlight.key)) this.linkQueue.push(this.inFlight)
           }
         }
         this.inFlight = null
@@ -867,7 +868,8 @@ export class SettlementSystem {
     if (readyRoadIndex >= 0) {
       const readyRoad = this.readyRoads[readyRoadIndex]!
       if (this.canLoadRoad(readyRoad, x, z)) {
-        this.readyRoads.splice(readyRoadIndex, 1)
+        const lastRoad = this.readyRoads.pop()!
+        if (readyRoadIndex < this.readyRoads.length) this.readyRoads[readyRoadIndex] = lastRoad
         if (!this.connections.has(readyRoad.key)) {
           this.connections.set(readyRoad.key, this.buildRegionalRoad(readyRoad.road, readyRoad.from, readyRoad.to))
         }
@@ -890,7 +892,7 @@ export class SettlementSystem {
       }
     } else if (!this.inFlight) {
       this.prioritizeRoadQueue(x, z)
-      const link = this.linkQueue.shift()
+      const link = this.linkQueue.pop()
       if (link && this.worker) {
         this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
         this.worker.postMessage(this.inFlight)
@@ -1232,7 +1234,9 @@ export class SettlementSystem {
         Math.hypot(job.from.x - x, job.from.z - z),
         Math.hypot(job.to.x - x, job.to.z - z),
       )
-      return distance(a) - distance(b) || a.key.localeCompare(b.key)
+      // Keep the farthest edge at index zero so pop() dispatches the nearest
+      // route without shifting every queued link.
+      return distance(b) - distance(a) || b.key.localeCompare(a.key)
     })
   }
 
