@@ -34,6 +34,19 @@ export function waterWakeActive(
   return isWater === true && onGround !== true && waterWakeIntensity(speedMps, clearanceM) > 0
 }
 
+/** Choose a cached foam tint for rain and snow without allocating per frame. */
+export function waterWakeTint(rain: number, snow: number): number {
+  const safeRain = Number.isFinite(rain) ? Math.max(0, Math.min(1, rain)) : 0
+  const safeSnow = Number.isFinite(snow) ? Math.max(0, Math.min(1, snow)) : 0
+  const red = Math.round(0xc3 + (0xd1 - 0xc3) * safeRain +
+    (0xec - (0xc3 + (0xd1 - 0xc3) * safeRain)) * safeSnow)
+  const green = Math.round(0xe9 + (0xef - 0xe9) * safeRain +
+    (0xf5 - (0xe9 + (0xef - 0xe9) * safeRain)) * safeSnow)
+  const blue = Math.round(0xf0 + (0xf4 - 0xf0) * safeRain +
+    (0xf8 - (0xf0 + (0xf4 - 0xf0) * safeRain)) * safeSnow)
+  return (red << 16) | (green << 8) | blue
+}
+
 /** One instanced three-strip wake keeps low passes readable without particles. */
 export class WaterWakeFx {
   readonly root = new Group()
@@ -46,6 +59,7 @@ export class WaterWakeFx {
   private enabled = true
   private reducedMotion = false
   private disposed = false
+  private weatherTint = 0xc3e9f0
 
   constructor(scene: Scene) {
     this.root.name = 'WaterWakeFx'
@@ -78,6 +92,15 @@ export class WaterWakeFx {
 
   setReducedMotion(enabled: boolean): void {
     this.reducedMotion = enabled === true
+  }
+
+  /** Update the shared foam material only when the blended weather tint changes. */
+  setWeather(rain: number, snow: number): void {
+    if (this.disposed) return
+    const tint = waterWakeTint(rain, snow)
+    if (tint === this.weatherTint) return
+    this.weatherTint = tint
+    this.material.color.setHex(tint)
   }
 
   update(

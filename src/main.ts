@@ -1575,6 +1575,7 @@ async function boot(): Promise<void> {
       playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
     )
     const wakeWeather = world.atmosphere.weatherSnapshot
+    waterWakeFx.setWeather(wakeWeather.rain, wakeWeather.snow)
     groundWakeFx.setWeather(wakeWeather.rain, wakeWeather.snow)
     groundWakeFx.update(
       aircraft.displayPosition,
