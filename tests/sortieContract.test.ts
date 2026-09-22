@@ -169,6 +169,12 @@ describe('sortie contracts', () => {
         tracker.recordWaterBody('stream')
         tracker.recordWaterBody('lake')
       }
+      if (tracker.kind === 'traffic-watch') {
+        tracker.recordTrafficPass('traffic-1')
+        tracker.recordTrafficPass('traffic-1')
+        tracker.recordTrafficPass('traffic-2')
+        tracker.recordTrafficPass('traffic-3')
+      }
       if (tracker.kind === 'low-level') {
         tracker.recordLowLevel(180, 5)
         tracker.recordLowLevel(180, 5)
@@ -259,7 +265,32 @@ describe('sortie contracts', () => {
       expect(tracker.progress).toBe(1)
       expect(score).toBe(MAX_CONTRACT_SCORE)
     }
-    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour']))
+    expect(kinds).toEqual(new Set(['pace', 'altitude', 'stunt', 'scout', 'fuel', 'low-level', 'biome', 'speed-band', 'weather', 'approach', 'water', 'brake', 'heat', 'crosswind', 'g-control', 'deadstick', 'front', 'boost', 'mach', 'clean', 'level', 'tour', 'combo', 'precision', 'night', 'butter', 'dry', 'target', 'gust', 'range', 'high-dive', 'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch']))
+  })
+
+  it('counts distinct traffic passes for TRAFFIC WATCH', () => {
+    const tracker = new SortieContractTracker()
+    let trafficSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'traffic-watch') {
+        trafficSeed = seed
+        break
+      }
+    }
+    expect(trafficSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(trafficSeed, 5)
+    expect(tracker.label).toBe('TRAFFIC WATCH')
+    expect(tracker.detail).toBe('PASS THREE TRAFFIC CONTACTS / CURRENT 0')
+    tracker.recordTrafficPass('traffic-1')
+    tracker.recordTrafficPass('traffic-1')
+    expect(tracker.progress).toBeCloseTo(1 / 3)
+    expect(tracker.complete).toBe(false)
+    tracker.recordTrafficPass('traffic-2')
+    tracker.recordTrafficPass('traffic-3')
+    expect(tracker.detail).toContain('CURRENT 3')
+    expect(tracker.complete).toBe(true)
+    expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
   it('accumulates only low airborne passes over water for WATER SKIM', () => {

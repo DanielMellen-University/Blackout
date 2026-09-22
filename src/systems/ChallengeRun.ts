@@ -1196,6 +1196,14 @@ export class ChallengeRun {
     this.contractCuePending ||= !wasComplete && this.contract.complete
   }
 
+  /** Record one distinct nearby traffic pass for the optional TRAFFIC WATCH contract. */
+  recordTrafficPass(id: string): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    const wasComplete = this.contract.complete
+    this.contract.recordTrafficPass(id)
+    this.contractCuePending ||= !wasComplete && this.contract.complete
+  }
+
   /** Record one distinct natural biome encountered during the sortie. */
   recordBiome(biome: string): void {
     if (this.phase === 'complete' || this.phase === 'failed') return

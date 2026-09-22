@@ -1875,8 +1875,12 @@ async function boot(): Promise<void> {
       if (!trafficAlert) {
         prevTrafficAlertId = ''
       } else {
+        const newTrafficContact = trafficAlert.id !== prevTrafficAlertId
+        if (newTrafficContact) {
+          challenge.recordTrafficPass(trafficAlert.id)
+        }
         if (
-          trafficAlert.id !== prevTrafficAlertId &&
+          newTrafficContact &&
           nowMs >= trafficAlertUntilMs &&
           (!banner || bannerUntil <= nowMs)
         ) {

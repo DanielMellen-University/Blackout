@@ -1,5 +1,5 @@
 /** Small deterministic bonus objectives that give each sortie a second decision. */
-export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour'
+export type SortieContractKind = 'pace' | 'altitude' | 'stunt' | 'scout' | 'fuel' | 'low-level' | 'biome' | 'speed-band' | 'weather' | 'approach' | 'water' | 'brake' | 'heat' | 'crosswind' | 'g-control' | 'deadstick' | 'front' | 'boost' | 'mach' | 'clean' | 'level' | 'tour' | 'combo' | 'precision' | 'night' | 'butter' | 'dry' | 'target' | 'gust' | 'range' | 'high-dive' | 'water-skim' | 'ridge-run' | 'waterway-tour' | 'traffic-watch'
 
 export interface SortieContractDefinition {
   kind: SortieContractKind
@@ -71,6 +71,8 @@ const RIDGE_RUN_TARGET_SECONDS = 10
 const RIDGE_RUN_DETAIL = 'HOLD RIDGE ALT 35-260M FOR 10S'
 const WATERWAY_TOUR_TARGET = 2
 const WATERWAY_TOUR_DETAIL = 'VISIT TWO WATERWAYS'
+const TRAFFIC_WATCH_TARGET = 3
+const TRAFFIC_WATCH_DETAIL = 'PASS THREE TRAFFIC CONTACTS'
 
 const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'pace', label: 'SPEED RUN', target: 65 },
@@ -107,6 +109,7 @@ const CONTRACTS: readonly Omit<SortieContractDefinition, 'detail'>[] = [
   { kind: 'water-skim', label: 'WATER SKIM', target: WATER_SKIM_TARGET_SECONDS },
   { kind: 'ridge-run', label: 'RIDGE RUN', target: RIDGE_RUN_TARGET_SECONDS },
   { kind: 'waterway-tour', label: 'WATERWAY TOUR', target: WATERWAY_TOUR_TARGET },
+  { kind: 'traffic-watch', label: 'TRAFFIC WATCH', target: TRAFFIC_WATCH_TARGET },
 ]
 
 /** Event-driven contract state. It owns no scene resources and allocates only at reset. */
@@ -148,6 +151,8 @@ export class SortieContractTracker {
   private waterSkimSeconds = 0
   private ridgeRunSeconds = 0
   private waterwayMask = 0
+  private trafficPassCount = 0
+  private readonly trafficPassIds = ['', '', '', '', '', '']
   private gustDetailBucket = -1
   private rangeDetailBucket = -1
 
@@ -189,6 +194,8 @@ export class SortieContractTracker {
     this.waterSkimSeconds = 0
     this.ridgeRunSeconds = 0
     this.waterwayMask = 0
+    this.trafficPassCount = 0
+    for (let index = 0; index < this.trafficPassIds.length; index += 1) this.trafficPassIds[index] = ''
     this.gustDetailBucket = -1
     this.rangeDetailBucket = -1
     if (typeof seed !== 'number' || !Number.isFinite(seed)) return
@@ -218,7 +225,9 @@ export class SortieContractTracker {
                   ? RIDGE_RUN_DETAIL
                   : base.kind === 'waterway-tour'
                     ? waterwayTourDetail(0)
-                  : detail
+                    : base.kind === 'traffic-watch'
+                      ? trafficWatchDetail(0)
+                      : detail
     this.hudLabelValue = `CONTRACT ${base.label}`
   }
 
@@ -340,6 +349,22 @@ export class SortieContractTracker {
     this.radarLockKind = kind
     this.radarLockId = id.slice(0, 128)
     this.progressValue = 0.5
+  }
+
+  /** Count distinct close traffic contacts for the optional traffic-watch contract. */
+  recordTrafficPass(id: string): void {
+    if (this.definition?.kind !== 'traffic-watch' || this.completeValue) return
+    if (typeof id !== 'string' || id.length === 0) return
+    const safeId = id.slice(0, 128)
+    for (let index = 0; index < this.trafficPassCount; index += 1) {
+      if (this.trafficPassIds[index] === safeId) return
+    }
+    if (this.trafficPassCount >= this.trafficPassIds.length) return
+    this.trafficPassIds[this.trafficPassCount] = safeId
+    this.trafficPassCount += 1
+    this.progressValue = clamp01(this.trafficPassCount / this.definition.target)
+    this.detailValue = trafficWatchDetail(this.trafficPassCount)
+    if (this.progressValue >= 1) this.completeValue = true
   }
 
   /** Accumulate bounded airborne time through strong weather gusts. */
@@ -779,7 +804,7 @@ function indexForSeed(seed: number): number {
   // crosswind, G-control, deadstick, weather-front, afterburner, Mach, and
   // no-miss circuit, level-flight, settlement-tour, combo, precision,
   // night-flight, butter-landing, dry-run, radar-run, gust-rider, range-run,
-  // high-dive, water-skim, ridge-run, and waterway-tour objectives.
+  // high-dive, water-skim, ridge-run, waterway-tour, and traffic-watch objectives.
   const legacyContractCount = 5
   if (mixed % 13 === 9) return 5
   if (mixed % 17 === 13) return 6
@@ -810,6 +835,7 @@ function indexForSeed(seed: number): number {
   if (mixed % 157 === 139) return 31
   if (mixed % 163 === 151) return 32
   if (mixed % 167 === 157) return 33
+  if (mixed % 173 === 163) return 34
   return mixed % legacyContractCount
 }
 
@@ -874,6 +900,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'water-skim': return WATER_SKIM_DETAIL
     case 'ridge-run': return RIDGE_RUN_DETAIL
     case 'waterway-tour': return WATERWAY_TOUR_DETAIL
+    case 'traffic-watch': return TRAFFIC_WATCH_DETAIL
     default: return 'LAND CENTERED AND ALIGNED'
   }
 }
@@ -917,4 +944,8 @@ function gustRunDetail(seconds: number, target: number): string {
 function rangeRunDetail(distanceM: number, target: number): string {
   const safeDistance = Number.isFinite(distanceM) ? Math.max(0, Math.min(target, distanceM)) : 0
   return `${RANGE_RUN_DETAIL} / CURRENT ${(safeDistance / 1_000).toFixed(1)}KM`
+}
+
+function trafficWatchDetail(count: number): string {
+  return `${TRAFFIC_WATCH_DETAIL} / CURRENT ${Math.max(0, Math.min(TRAFFIC_WATCH_TARGET, Math.floor(count)))}`
 }
