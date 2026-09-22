@@ -14,11 +14,11 @@ export interface EngineState {
   afterburnerActive: boolean
   /** Heat protection lockout state, while dry thrust remains available. */
   afterburnerHeatLocked: boolean
-  /** Commanded arcade airspeed in m/s. */
+  /** Level-flight equilibrium for this lever, m/s. Not a speed hold. */
   targetSpeed: number
-  /** Current engine-limited top speed in m/s. */
+  /** Dive cap in m/s. */
   maxSpeed: number
-  /** Positive speed-seek acceleration limit in m/s². */
+  /** Thrust acceleration available at this lever, m/s². */
   maxAcceleration: number
   /** Normalized engine output for feedback systems. */
   effectivePower: number
@@ -58,19 +58,17 @@ export function resolveEngineState(
     safeFuel > FUEL_AFTERBURNER_RESERVE_FRACTION &&
     afterburnerRequested &&
     lever >= C.afterburnerMinThrottle
-  const maxSpeed = afterburnerActive ? C.maxSpeedBoost : C.maxSpeed
+  const cruise = afterburnerActive ? C.cruiseSpeedBoost : C.cruiseSpeed
+  const thrustMul = afterburnerActive ? (C.cruiseSpeedBoost / C.cruiseSpeed) ** 2 : 1
 
   out.lever = lever
   out.afterburnerRequested = afterburnerRequested
   out.afterburnerActive = afterburnerActive
   out.afterburnerHeatLocked = afterburnerHeatLocked === true
-  // ENG remains a speed command. Afterburner raises the available envelope,
-  // but it no longer bypasses a low or closed throttle lever.
-  out.targetSpeed = fuelAvailable ? lever * maxSpeed : 0
-  out.maxSpeed = maxSpeed
-  out.maxAcceleration = fuelAvailable && afterburnerActive
-    ? MathUtils.lerp(C.maxAccel, C.maxAccelBoost, lever)
-    : fuelAvailable ? C.maxAccel : 0
+  // Equilibrium of thrust against quadratic drag. The flight model does not chase it.
+  out.targetSpeed = fuelAvailable ? Math.sqrt(lever) * cruise : 0
+  out.maxSpeed = C.maxSpeed
+  out.maxAcceleration = fuelAvailable ? C.milAccel * lever * thrustMul : 0
   out.effectivePower = afterburnerActive
     ? MathUtils.lerp(0.82, 1, lever)
     : fuelAvailable ? lever * 0.78 : 0

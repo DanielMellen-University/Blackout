@@ -11,20 +11,26 @@ export const flightConfig = {
 
   /** Stall-ish floor (~80 kts). */
   minSpeed: 41,
-  /** ~3000 kts dry / ~3120 AB. */
-  maxSpeed: 1543.32,
-  maxSpeedBoost: 1605.06,
+  /** Level military cruise, m/s (~408 kt). Thrust balances drag here. */
+  cruiseSpeed: 210,
+  /** Level afterburner cruise, m/s (~661 kt). */
+  cruiseSpeedBoost: 340,
+  /** Dive cap, m/s (~894 kt). Dry and afterburner share it. */
+  maxSpeed: 460,
+  maxSpeedBoost: 460,
   /** Level-flight sustain (~180 kts). */
   liftSpeed: 92,
 
+  /** Full military acceleration at low speed, m/s². */
+  milAccel: 20,
   maxAccel: 130,
   maxAccelBoost: 190,
   /** Afterburner cannot light with the throttle effectively closed. */
   afterburnerMinThrottle: 0.05,
-  /** Treat the lever as closed below this; speed hold then brakes instead of coasting. */
+  /** Treat the lever as closed below this; idle then bleeds speed instead of holding it. */
   idleLever: 0.18,
-  /** How hard IAS chases the ENG% target (1/s). */
-  speedSeek: 7.25,
+  /** Extra deceleration while the lever is closed, m/s². */
+  idleBleed: 26,
 
   /** Extra bleed only — cruise speed is set by ENG%, not this. */
   parasiteDrag: 0.000038,
@@ -62,7 +68,7 @@ export const flightConfig = {
   turbulenceYaw: 0.08,
   /** Arcade lateral wind response, strongest during approach speeds. */
   weatherWindAcceleration: 0.18,
-  weatherWindSpeedFalloff: 240,
+  weatherWindSpeedFalloff: 480,
 
   gearHeight: 1.4,
   bellyHeight: 0.95,

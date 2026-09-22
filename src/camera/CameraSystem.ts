@@ -55,11 +55,11 @@ const MODE_CONFIG: Record<ChaseMode, ModeConfig> = {
     fov: 60,
     lookLead: 0.055,
     maxLookLead: 10,
-    minDist: 6,
-    maxDist: 32,
+    minDist: 5,
+    maxDist: 24,
     defaultYaw: 0,
-    defaultPitch: 0.24,
-    defaultDistance: 17,
+    defaultPitch: 0.2,
+    defaultDistance: 11,
     followStiffness: 9,
     yawOnly: true,
   },
@@ -91,7 +91,7 @@ const SPEED_DIST_STRETCH = 0.14
 /** How fast FOV/distance juice tracks airspeed. */
 const JUICE_STIFFNESS = 3.2
 /** Keep the external horizon readable while letting turns carry a little drama. */
-const MAX_EXTERNAL_BANK = 0.14
+const MAX_EXTERNAL_BANK = 0.62
 const EXTERNAL_BANK_STIFFNESS = 8
 /** Keep depth precision focused on the streamed world and cloud envelope. */
 export const CAMERA_FAR = STREAM_RADIUS_M * 1.5

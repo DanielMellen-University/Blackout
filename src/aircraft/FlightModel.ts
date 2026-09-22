@@ -174,17 +174,14 @@ export class FlightModel {
     const lever = engine.lever
     const boost = engine.afterburnerActive
     const vmax = engine.maxSpeed
-    const target = engine.targetSpeed
 
-    // --- Gravity + simple lift (cancels g when fast and upright) ---
-    // Lift must not add energy: after applying it, keep |v| from growing.
+    // Slow flight still falls. Fast upright flight is held by the nose,
+    // and a climb spends speed in the thrust step instead of getting it back.
     if (!onGround) {
-      velocity.y -= C.gravity * dt
-      const spdBeforeLift = velocity.length()
-      const lift =
-        C.gravity *
-        MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1.15) *
+      const liftFrac =
+        MathUtils.clamp((airspeed / C.liftSpeed) ** 2, 0, 1) *
         MathUtils.clamp(_up.y, 0, 1)
+      velocity.y -= C.gravity * (1 - liftFrac) * dt
       const thermal = MathUtils.clamp(
         Number.isFinite(aircraft.thermalLift) ? aircraft.thermalLift : 0,
         0,
@@ -195,11 +192,7 @@ export class FlightModel {
         0,
         1,
       )
-      velocity.y += (lift + thermal * C.thermalLiftAcceleration * (0.35 + thermalSpeed * 0.65)) * dt
-      const spdAfter = velocity.length()
-      if (spdAfter > spdBeforeLift && spdAfter > 1e-4) {
-        velocity.multiplyScalar(spdBeforeLift / spdAfter)
-      }
+      velocity.y += thermal * C.thermalLiftAcceleration * (0.35 + thermalSpeed * 0.65) * dt
     } else if (velocity.y < 0) {
       velocity.y = 0
     }
@@ -236,38 +229,34 @@ export class FlightModel {
       }
     }
 
-    // --- ENG% speed hold ---
+    // --- Thrust along the nose. Drag and climb spend that energy. ---
     {
       const s = velocity.length()
-      const err = target - s
-      const capAccel = engine.maxAcceleration
       const idle = lever < C.idleLever && !boost
-      const capDecel =
-        onGround && idle
-          ? C.maxBrakeDecel * MathUtils.clamp(aircraft.weatherSurfaceGrip, 0.72, 1)
-          : idle ? C.maxDecel : C.coastDecel
-      const requestedAlong = MathUtils.clamp(err * C.speedSeek, -capDecel, capAccel)
-      // Wheel brakes hold the jet against throttle creep while stationary or
-      // taxiing. They still permit the speed-hold path to bleed momentum.
-      const along = onGround && controls.airbrake
-        ? Math.min(0, requestedAlong)
-        : requestedAlong
+      const cruise = C.cruiseSpeed
+      const thrustMul = boost ? (C.cruiseSpeedBoost / cruise) ** 2 : 1
+      const thrust = engine.fuelAvailable ? C.milAccel * lever * thrustMul : 0
+      const drag = C.milAccel * (s / cruise) ** 2
+      let along = thrust - drag
+      if (!onGround) along -= C.gravity * MathUtils.clamp(_fwd.y, -1, 1)
+      if (idle) along -= C.idleBleed * MathUtils.clamp(s / 70, 0.15, 1)
+      if (onGround && controls.airbrake) along = Math.min(0, along)
+      if (onGround && idle) {
+        along -= C.rollingDecel * MathUtils.clamp(aircraft.weatherSurfaceGrip, 0.72, 1)
+      }
 
-      if (along > 0.05) {
-        if (onGround) {
-          _flatFwd.set(_fwd.x, 0, _fwd.z)
-          if (_flatFwd.lengthSq() > 1e-6) {
-            _flatFwd.normalize()
-            velocity.addScaledVector(_flatFwd, along * dt)
-          }
-        } else {
-          velocity.addScaledVector(_fwd, along * dt)
-        }
+      const push = onGround ? _flatFwd.set(_fwd.x, 0, _fwd.z) : _fwd
+      if (onGround && push.lengthSq() > 1e-6) push.normalize()
+      if (along > 0.05 && (!onGround || push.lengthSq() > 1e-6)) {
+        velocity.addScaledVector(onGround ? push : _fwd, along * dt)
       } else if (along < -0.05 && s > 1e-4) {
-        _velDir.copy(velocity).multiplyScalar(1 / s)
-        velocity.addScaledVector(_velDir, along * dt)
-        if (velocity.dot(_velDir) < 0) velocity.set(0, 0, 0)
-      } else if (onGround && target < 1 && s < 2) {
+        const forwardSpeed = onGround
+          ? velocity.x * push.x + velocity.z * push.z
+          : velocity.dot(_fwd)
+        const applied = forwardSpeed + along * dt < 0 ? -forwardSpeed : along * dt
+        velocity.addScaledVector(onGround ? push : _fwd, applied)
+        if (onGround && velocity.lengthSq() < 0.25 && lever < 0.08) velocity.set(0, 0, 0)
+      } else if (onGround && idle && s < 2) {
         velocity.set(0, 0, 0)
       }
 

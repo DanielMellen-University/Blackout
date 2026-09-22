@@ -106,7 +106,9 @@ describe('flight cautions', () => {
 
   it('scales low-altitude caution distance with speed', () => {
     expect(lowAltitudeWarningCeiling(35)).toBe(48)
-    expect(lowAltitudeWarningCeiling(flightConfig.maxSpeed)).toBe(96)
+    expect(lowAltitudeWarningCeiling(flightConfig.cruiseSpeed)).toBeGreaterThan(48)
+    expect(lowAltitudeWarningCeiling(flightConfig.cruiseSpeed)).toBeLessThan(96)
+    expect(lowAltitudeWarningCeiling(2000)).toBe(96)
     expect(lowAltitudeWarningActive(70, 500, -8, false)).toBe(true)
     expect(lowAltitudeWarningActive(70, 45, -8, true)).toBe(false)
   })
@@ -154,7 +156,7 @@ describe('flight cautions', () => {
   it('raises low-fuel caution bands only after the flight leaves the ground', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 10000, 0)
-    aircraft.velocity.set(0, 0, 500)
+    aircraft.velocity.set(0, 0, flightConfig.cruiseSpeed)
     aircraft.fuel.fraction = 0.2
     expect(evaluateWarnings(aircraft, 9000).text).toBe('FUEL LOW')
     expect(evaluateWarnings(aircraft, 9000).fuel).toBe(true)

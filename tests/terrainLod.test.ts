@@ -126,7 +126,8 @@ describe('TerrainSystem streaming LOD', () => {
     try {
       pump(terrain, x, 210, 400)
       let peakTiles = terrain.root.children.length
-      for (let frame = 0; frame < 600; frame++) {
+      const frames = Math.ceil(16_000 / (flightConfig.maxSpeedBoost / 60))
+      for (let frame = 0; frame < frames; frame++) {
         x += flightConfig.maxSpeedBoost / 60
         terrain.update(x, 210, 1 / 60)
         peakTiles = Math.max(peakTiles, terrain.root.children.length)
@@ -141,7 +142,7 @@ describe('TerrainSystem streaming LOD', () => {
       terrain.clearAll()
       clock.mockRestore()
     }
-  }, 45_000)
+  }, 120_000)
 
   it('promotes a far tile to near detail after flying onto it', () => {
     const terrain = new TerrainSystem(new Scene())

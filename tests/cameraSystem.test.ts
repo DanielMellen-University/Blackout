@@ -159,13 +159,16 @@ describe('external camera framing', () => {
     expect(framing.lookLeadLimit).toBe(10)
   })
 
-  it('adds only a restrained bank cue to the external horizon', () => {
+  it('rolls the chase horizon with the jet without dumping it on its side', () => {
     const identity = new Quaternion()
     expect(cameraBankAngle(identity)).toBeCloseTo(0)
     const banked = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), Math.PI / 2)
     expect(cameraBankAngle(banked, 0.14)).toBeCloseTo(-0.14)
     expect(cameraBankAngle(banked, 0)).toBeCloseTo(0)
-    expect(cameraBankAngle(banked, Number.NaN)).toBeCloseTo(-0.14)
+    const rolled = cameraBankAngle(banked)
+    expect(rolled).toBeLessThan(-0.45)
+    expect(rolled).toBeGreaterThan(-Math.PI / 3)
+    expect(cameraBankAngle(banked, Number.NaN)).toBeCloseTo(rolled)
   })
 
   it('keeps close chase rigs cheap while preserving full long-sightline coverage', () => {

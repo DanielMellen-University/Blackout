@@ -142,19 +142,19 @@ describe('HUD value formatting', () => {
 
   it('keeps high-speed edge juice restrained and bounded', () => {
     expect(speedJuiceIntensity(0)).toBe(0)
-    expect(speedJuiceIntensity(500)).toBe(0)
-    expect(speedJuiceIntensity(1800)).toBeGreaterThan(0)
-    expect(speedJuiceIntensity(3000)).toBeCloseTo(.42)
-    expect(speedJuiceIntensity(5000)).toBeCloseTo(.42)
+    expect(speedJuiceIntensity(140)).toBe(0)
+    expect(speedJuiceIntensity(500)).toBeGreaterThan(0)
+    expect(speedJuiceIntensity(900)).toBeCloseTo(.42)
+    expect(speedJuiceIntensity(1400)).toBeCloseTo(.42)
     expect(speedJuiceIntensity(Number.NaN)).toBe(0)
-    expect(speedJuiceIntensity(3000, Number.NaN)).toBeCloseTo(.42)
+    expect(speedJuiceIntensity(900, Number.NaN)).toBeCloseTo(.42)
   })
 
   it('marks the airspeed redline without hiding true overspeed', () => {
-    expect(speedWarningLevel(2800)).toBe('normal')
-    expect(speedWarningLevel(2820)).toBe('redline')
-    expect(speedWarningLevel(3000)).toBe('redline')
-    expect(speedWarningLevel(3000.1)).toBe('overspeed')
+    expect(speedWarningLevel(800)).toBe('normal')
+    expect(speedWarningLevel(850)).toBe('redline')
+    expect(speedWarningLevel(900)).toBe('redline')
+    expect(speedWarningLevel(900.1)).toBe('overspeed')
     expect(speedWarningLevel(Number.NaN)).toBe('normal')
   })
 
@@ -258,9 +258,9 @@ describe('HUD value formatting', () => {
 
   it('limits canopy tint to cockpit view and high IAS', () => {
     expect(canopyTintIntensity(2400, false)).toBe(0)
-    expect(canopyTintIntensity(400, true)).toBe(0)
-    expect(canopyTintIntensity(1800, true)).toBeGreaterThan(0)
-    expect(canopyTintIntensity(3000, true)).toBeCloseTo(0.28)
+    expect(canopyTintIntensity(150, true)).toBe(0)
+    expect(canopyTintIntensity(500, true)).toBeGreaterThan(0)
+    expect(canopyTintIntensity(900, true)).toBeCloseTo(0.28)
     expect(canopyTintIntensity(5000, true)).toBeCloseTo(0.28)
   })
 
@@ -276,11 +276,11 @@ describe('HUD value formatting', () => {
   it('keeps afterburner heat veil soft and boost-only', () => {
     expect(afterburnerHeatIntensity(2400, false)).toBe(0)
     expect(afterburnerHeatIntensity(0, true)).toBeCloseTo(0.06)
-    expect(afterburnerHeatIntensity(1500, true)).toBeCloseTo(0.11)
-    expect(afterburnerHeatIntensity(3000, true)).toBeCloseTo(0.16)
+    expect(afterburnerHeatIntensity(450, true)).toBeCloseTo(0.11)
+    expect(afterburnerHeatIntensity(900, true)).toBeCloseTo(0.16)
     expect(afterburnerHeatIntensity(5000, true)).toBeCloseTo(0.16)
     expect(afterburnerHeatIntensity(Number.NaN, true)).toBeCloseTo(0.06)
-    expect(afterburnerHeatIntensity(1500, true, Number.NaN)).toBeCloseTo(0.11)
+    expect(afterburnerHeatIntensity(450, true, Number.NaN)).toBeCloseTo(0.11)
   })
 
   it('keeps engine heat bands restrained and finite-safe', () => {

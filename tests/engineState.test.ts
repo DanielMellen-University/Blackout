@@ -14,12 +14,17 @@ describe('resolveEngineState', () => {
     expect(out.maxSpeed).toBe(C.maxSpeed)
   })
 
-  it('scales the speed command from the lever, even with afterburner', () => {
+  it('sets a level equilibrium from the lever instead of a 1543 m/s seek', () => {
     const out = createEngineState()
     resolveEngineState({ throttle: 0.5, boost: true }, out)
     expect(out.afterburnerActive).toBe(true)
-    expect(out.targetSpeed).toBeCloseTo(0.5 * C.maxSpeedBoost)
-    expect(out.maxSpeed).toBe(C.maxSpeedBoost)
+    expect(out.targetSpeed).toBeCloseTo(Math.sqrt(0.5) * C.cruiseSpeedBoost)
+    expect(out.targetSpeed).toBeLessThan(500)
+    expect(out.maxSpeed).toBe(C.maxSpeed)
+    expect(out.maxSpeed).toBeLessThan(1543)
+    expect(C.cruiseSpeed).toBeLessThan(400)
+    expect(C.cruiseSpeedBoost).toBeGreaterThan(C.cruiseSpeed)
+    expect(C.cruiseSpeedBoost).toBeLessThan(C.maxSpeed)
   })
 
   it('contains malformed engine controls at a safe idle state', () => {
@@ -48,8 +53,8 @@ describe('resolveEngineState', () => {
     resolveEngineState({ throttle: 1, boost: true }, out, FUEL_AFTERBURNER_RESERVE_FRACTION)
     expect(out.afterburnerActive).toBe(false)
     expect(out.fuelAvailable).toBe(true)
-    expect(out.targetSpeed).toBe(C.maxSpeed)
-    expect(out.maxAcceleration).toBe(C.maxAccel)
+    expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeed)
+    expect(out.maxAcceleration).toBeCloseTo(C.milAccel)
   })
 
   it('locks afterburner on engine heat while retaining dry power', () => {
@@ -58,7 +63,7 @@ describe('resolveEngineState', () => {
     expect(out.afterburnerRequested).toBe(true)
     expect(out.afterburnerHeatLocked).toBe(true)
     expect(out.afterburnerActive).toBe(false)
-    expect(out.targetSpeed).toBe(C.maxSpeed)
-    expect(out.maxAcceleration).toBe(C.maxAccel)
+    expect(out.targetSpeed).toBeCloseTo(C.cruiseSpeed)
+    expect(out.maxAcceleration).toBeCloseTo(C.milAccel)
   })
 })
