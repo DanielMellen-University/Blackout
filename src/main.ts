@@ -945,8 +945,7 @@ async function boot(): Promise<void> {
         : replaySeed !== null
           ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
           : 'RETRY SAME COURSE'
-      const contractBriefing = challenge.contractBriefing
-      showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE · ${world.mission.routeBriefing}${contractBriefing ? ` · ${contractBriefing}` : ''}`, 5000)
+      showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE`, 5000)
     }
   }
 
