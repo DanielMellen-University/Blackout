@@ -19,6 +19,7 @@ const SPEED_BAND_MAX_MPS = 320
 const SPEED_BAND_TARGET_SECONDS = 12
 const WEATHER_TARGET_SECONDS = 14
 const APPROACH_TARGET_SCORE = 360
+const APPROACH_DETAIL = 'LAND CENTERED AND ALIGNED'
 const WATER_TARGET_SECONDS = 12
 const BRAKE_MIN_MPS = 220
 const BRAKE_TARGET_SECONDS = 5
@@ -467,6 +468,17 @@ export class SortieContractTracker {
     this.detailValue = `${this.detailBaseValue} / PREVIEW ${Math.min(100, bucket * 5)}%`
   }
 
+  /** Show runway alignment progress without completing before touchdown. */
+  recordApproachPreview(score: number): void {
+    if (this.definition?.kind !== 'approach' || this.completeValue || !Number.isFinite(score)) return
+    const safeScore = Math.max(0, Math.min(this.definition.target * 2, score))
+    this.progressValue = clamp01(safeScore / this.definition.target)
+    const bucket = Math.floor(safeScore / 20)
+    if (bucket === this.detailProgressBucket) return
+    this.detailProgressBucket = bucket
+    this.detailValue = `${APPROACH_DETAIL} / PREVIEW ${Math.round(safeScore)}`
+  }
+
   /** Accumulate bounded time in a low-altitude airborne band for the terrain-hugger contract. */
   recordLowLevel(altitudeM: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'low-level' || this.completeValue || !airborne) return
@@ -790,6 +802,7 @@ function contractDetailFor(kind: SortieContractKind, target: number): string {
     case 'biome': return `SURVEY ${Math.round(target)} DISTINCT BIOMES`
     case 'speed-band': return `HOLD ${Math.round(SPEED_BAND_MIN_MPS * 1.943844492)}-${Math.round(SPEED_BAND_MAX_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'weather': return `FLY IN RAIN OR SNOW FOR ${Math.round(target)}S`
+    case 'approach': return APPROACH_DETAIL
     case 'water': return `FLY OVER WATER FOR ${Math.round(target)}S`
     case 'brake': return `DEPLOY BRAKE ABOVE ${Math.round(BRAKE_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`
     case 'heat': return `KEEP HEAT BELOW ${Math.round(HEAT_MAX_FRACTION * 100)}% ABOVE ${Math.round(HEAT_MIN_MPS * 1.943844492)} KTS FOR ${Math.round(target)}S`

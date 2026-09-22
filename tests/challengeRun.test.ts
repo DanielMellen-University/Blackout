@@ -1367,6 +1367,24 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('wires runway alignment forecast into PRECISION APPROACH', () => {
+    const run = new ChallengeRun(null)
+    let approachSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      run.reset('seed:approach-live', 5, 'balanced', seed)
+      if (run.contractLabel === 'CONTRACT PRECISION APPROACH') {
+        approachSeed = seed
+        break
+      }
+    }
+    expect(approachSeed).toBeGreaterThanOrEqual(0)
+    run.reset('seed:approach-live', 5, 'balanced', approachSeed)
+    run.recordApproachPreview(320)
+    expect(run.contractProgress).toBeCloseTo(320 / 360)
+    expect(run.contractDetail).toContain('PREVIEW 320')
+    expect(run.contractComplete).toBe(false)
+  })
+
   it('persists cumulative contract wins and repairs oversized counts', () => {
     const values = new Map<string, string>()
     const storage = {

@@ -48,6 +48,7 @@ import {
   COURSE_BEST_STORAGE_PREFIX,
   COURSE_HISTORY_STORAGE_PREFIX,
   COURSE_STREAK_STORAGE_PREFIX,
+  landingApproachScore,
   landingWeatherRisk,
   landingQualityForMetrics,
   MASTERY_BADGE_COUNT,
@@ -1728,6 +1729,7 @@ async function boot(): Promise<void> {
       let navLateral: NavigationLateralCue | null = null
       let navSpeed: NavigationSpeedCue | null = null
       let navGlide: NavigationGlideCue | null = null
+      let approachPreviewScore = Number.NaN
       if (returning || emergencyReturn) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navDist = Math.hypot(
@@ -1742,6 +1744,14 @@ async function boot(): Promise<void> {
         navApproach = navigationApproachCue(pose.heading - world.spawn.yaw, 'base')
         const lateralOffset = (aircraft.position.x - world.spawn.x) * Math.cos(world.spawn.yaw) +
           (aircraft.position.z - world.spawn.z) * -Math.sin(world.spawn.yaw)
+        const baseDx = aircraft.position.x - world.spawn.x
+        const baseDz = aircraft.position.z - world.spawn.z
+        const headingError = pose.heading - world.spawn.yaw
+        approachPreviewScore = landingApproachScore({
+          baseDistanceM: Math.hypot(baseDx, baseDz),
+          runwayLateralM: lateralOffset,
+          headingErrorRad: Math.atan2(Math.sin(headingError), Math.cos(headingError)),
+        })
         navLateral = navigationLateralCue(lateralOffset, 'base')
         navSpeed = navigationSpeedCue(aircraft.speed, 'base')
         navGlide = navigationGlideCue(navDist, navAltDelta, 'base')
@@ -1873,6 +1883,7 @@ async function boot(): Promise<void> {
         })
         : null
       challenge.recordLandingPreview(landingPreview ?? Number.NaN)
+      challenge.recordApproachPreview(approachPreviewScore)
       hudFrame.landingPreview = landingPreview
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.afterburnerLock = aircraft.engineState.afterburnerHeatLocked

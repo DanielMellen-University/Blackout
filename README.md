@@ -48,6 +48,7 @@ Current release: **v0.11.0** (`Systems expansion`). Internal roadmap chunks such
 - Settings also persist keyboard roll direction between Q right / E left and Q left / E right; gamepad and touch roll stay on their hardware conventions.
 - Settings also persist keyboard pitch direction between W up / S down and W down / S up; gamepad and touch pitch stay on their hardware conventions.
 - The takeoff briefing also reports route difficulty and minimum sampled terrain clearance, so the challenge is readable before the first input.
+- `PRECISION APPROACH` now shows the existing runway-alignment forecast as cached task progress during return, while touchdown still decides completion.
 - Route profiles carry challenge intent in flight: approach, range, or precision; precision slalom gates use a tighter acceptance window and smaller visual ring.
 - Arcade flight: nose-follows-path, ENG% is a speed target (50% ~ 1500 kts)
 - Inland spawn on naturally flat ground; short pad level for the strip; hangar and tower

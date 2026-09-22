@@ -613,6 +613,26 @@ describe('sortie contracts', () => {
     expect(tracker.progress).toBe(1)
   })
 
+  it('shows runway alignment forecast without completing PRECISION APPROACH early', () => {
+    const tracker = new SortieContractTracker()
+    let approachSeed = -1
+    for (let seed = 0; seed < 1_024; seed += 1) {
+      tracker.reset(seed, 5)
+      if (tracker.kind === 'approach') {
+        approachSeed = seed
+        break
+      }
+    }
+    expect(approachSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(approachSeed, 5)
+    tracker.recordApproachPreview(320)
+    expect(tracker.progress).toBeCloseTo(320 / 360)
+    expect(tracker.detail).toContain('PREVIEW 320')
+    expect(tracker.complete).toBe(false)
+    expect(tracker.finish(99, 1, 500)).toBe(MAX_CONTRACT_SCORE)
+    expect(tracker.complete).toBe(true)
+  })
+
   it('accumulates only high-speed airborne time with the speed brake open', () => {
     const tracker = new SortieContractTracker()
     let brakeSeed = -1

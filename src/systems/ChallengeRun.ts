@@ -1235,6 +1235,12 @@ export class ChallengeRun {
     this.contract.recordLandingPreview(quality)
   }
 
+  /** Record a cached runway-alignment forecast for PRECISION APPROACH. */
+  recordApproachPreview(score: number): void {
+    if (this.phase === 'complete' || this.phase === 'failed') return
+    this.contract.recordApproachPreview(score)
+  }
+
   /** Record one distinct rendered waterway family for WATERWAY TOUR. */
   recordWaterBody(body: string | undefined, airborne = true): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
