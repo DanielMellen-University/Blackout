@@ -1170,7 +1170,7 @@ describe('sortie contracts', () => {
       'water', 'brake', 'heat', 'crosswind', 'g-control', 'front', 'boost', 'mach',
       'level', 'tour', 'combo', 'night', 'dry', 'target', 'gust', 'range', 'high-dive',
       'water-skim', 'ridge-run', 'waterway-tour', 'traffic-watch', 'traffic-dodge',
-      'thermal-surf',
+      'thermal-surf', 'precision',
     ])
     const seen = new Set<SortieContractKind>()
     for (let seed = 0; seed < 400; seed += 1) {
@@ -1184,6 +1184,11 @@ describe('sortie contracts', () => {
     expect(seen.has('speed-band')).toBe(false)
     expect(seen.has('gust')).toBe(false)
     expect(seen.has('traffic-watch')).toBe(false)
+    expect(seen.has('precision')).toBe(false)
+    const seedOne = new SortieContractTracker()
+    seedOne.reset(1, 5)
+    expect(seedOne.label).not.toBe('PRECISION CHAIN')
+    expect(ASSIGNED_CONTRACT_KINDS).toContain(seedOne.kind)
     expect(seen.size).toBeGreaterThan(1)
   })
 
