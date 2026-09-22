@@ -130,6 +130,8 @@ export class SkyDome {
         uCloudDarkness: { value: 0 },
         uCloudWind: { value: new Vector2(0.1, 0.03) },
         uCloudDetail: { value: 1 },
+        uLowDeckVisibility: { value: 1 },
+        uHighDeckVisibility: { value: 1 },
       },
       vertexShader: /* glsl */ `
         varying vec3 vWorldDir;
@@ -162,6 +164,8 @@ export class SkyDome {
         uniform float uCloudCirrus;
         uniform float uCloudStorm;
         uniform float uCloudDarkness;
+        uniform float uLowDeckVisibility;
+        uniform float uHighDeckVisibility;
         uniform vec2 uCloudWind;
         uniform float uCloudDetail;
 
@@ -280,12 +284,12 @@ export class SkyDome {
             float stormCells = smoothstep(0.48, 0.84,
               cloudField(projected * 0.88 + drift * 0.55 + vec2(-16.3, 9.7)));
 
-            float cirrus = smoothstep(0.62, 0.88, wisps) * uCloudCirrus * 0.34;
-            float broken = puffs * uCloudBroken * 0.72;
+            float cirrus = smoothstep(0.62, 0.88, wisps) * uCloudCirrus * 0.34 * uHighDeckVisibility;
+            float broken = puffs * uCloudBroken * 0.72 * uLowDeckVisibility;
             // Even the darkest fronts retain soft internal variation rather
             // than reading as an opaque flat ceiling.
-            float blanket = uCloudBlanket * mix(0.7, 1.0, broad);
-            float storm = uCloudStorm * mix(0.5, 1.0, stormCells);
+            float blanket = uCloudBlanket * mix(0.7, 1.0, broad) * uLowDeckVisibility;
+            float storm = uCloudStorm * mix(0.5, 1.0, stormCells) * uLowDeckVisibility;
             float cloudAlpha = clamp(cirrus + broken * (1.0 - cirrus) +
               blanket * (1.0 - cirrus) * (1.0 - broken * 0.38), 0.0, 0.96);
             cloudAlpha = max(cloudAlpha, storm * 0.22) * deckSky;
@@ -296,6 +300,7 @@ export class SkyDome {
             vec3 stormCloud = mix(vec3(0.31, 0.39, 0.49), vec3(0.15, 0.22, 0.31),
               stormCells * 0.72);
             vec3 cloudColor = mix(fairCloud, stormCloud, uCloudStorm * 0.82);
+            cloudColor *= mix(.09, 1.0, uDayFactor);
             col = mix(col, cloudColor, cloudAlpha);
           }
 
@@ -365,18 +370,22 @@ export class SkyDome {
     this.mat.uniforms.uTopColor!.value.copy(this.top)
     this.mat.uniforms.uHorizonColor!.value.copy(this.horizon)
 
+    const lowDeck = skyLayerVisibility(ay, 2500 + cloudDeck.storm * 3600, 3350 + cloudDeck.storm * 3600)
+    const highDeck = skyLayerVisibility(ay, 5400, 6500)
+    this.mat.uniforms.uLowDeckVisibility!.value = lowDeck
+    this.mat.uniforms.uHighDeckVisibility!.value = highDeck
     const night = 1 - dayFactor
     const cloudCover = MathUtilsClamp(
-      cloudDeck.cirrus * 0.16 + cloudDeck.broken * 0.54 + cloudDeck.blanket * 0.9,
+      cloudDeck.cirrus * 0.16 * highDeck + (cloudDeck.broken * 0.54 + cloudDeck.blanket * 0.9) * lowDeck,
       0,
       1,
     )
-    const clearSky = 1 - MathUtilsClamp(cloudCover * 0.85 + haze * 0.35, 0, 0.92)
+    const clearSky = 1 - MathUtilsClamp(cloudCover * 0.85 + haze * lowDeck * 0.35, 0, 0.92)
 
     this.mat.uniforms.uDayFactor!.value = dayFactor
     this.mat.uniforms.uNightFactor!.value = night
     this.mat.uniforms.uDusk!.value = dusk
-    this.mat.uniforms.uHaze!.value = haze
+    this.mat.uniforms.uHaze!.value = haze * lowDeck
     this.mat.uniforms.uTime!.value = timeSec
     this.mat.uniforms.uCloudBroken!.value = cloudDeck.broken
     this.mat.uniforms.uCloudBlanket!.value = cloudDeck.blanket
@@ -403,4 +412,10 @@ export class SkyDome {
 
 function MathUtilsClamp(x: number, a: number, b: number): number {
   return Math.min(b, Math.max(a, x))
+}
+
+/** Fade the far overhead deck as the observer climbs through its top. */
+export function skyLayerVisibility(altitude: number, bottom: number, top: number): number {
+  const t = MathUtilsClamp((altitude - bottom) / Math.max(1, top - bottom), 0, 1)
+  return 1 - t * t * (3 - 2 * t)
 }

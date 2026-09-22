@@ -4,6 +4,7 @@ import {
   MeshStandardMaterial, ShapeUtils, SphereGeometry, TorusGeometry,
   MeshPhysicalMaterial, Vector2, Vector3, type Material,
 } from 'three'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 
 type Point = [number, number, number]
 
@@ -11,44 +12,52 @@ type Point = [number, number, number]
 export function createF35Model(): Group {
   const root = new Group()
   root.name = 'F35'
-  const skin = new MeshStandardMaterial({ color: 0x68747d, roughness: 0.58, metalness: 0.38 })
-  const upper = new MeshStandardMaterial({ color: 0x879198, roughness: 0.62, metalness: 0.3 })
+  const skin = new MeshStandardMaterial({ color: 0x626d75, roughness: 0.66, metalness: 0.32 })
+  const upper = new MeshStandardMaterial({ color: 0x78838b, roughness: 0.61, metalness: 0.32 })
   const trim = new MeshStandardMaterial({ color: 0x414b54, roughness: 0.7, metalness: 0.25 })
+  const ductLining = trim.clone()
+  ductLining.side = DoubleSide
   const seam = new MeshStandardMaterial({ color: 0x303b43, roughness: 0.8 })
   const black = new MeshStandardMaterial({ color: 0x090e13, roughness: 0.85 })
   const metal = new MeshStandardMaterial({ color: 0xa8b3bc, roughness: 0.27, metalness: 0.85 })
   const wingMark = new MeshStandardMaterial({
     name: 'wingMark',
-    color: 0xe8e0cf,
-    emissive: 0x6a5a3a,
-    emissiveIntensity: 0.45,
+    color: 0xb4bfc5,
+    emissive: 0x35424b,
+    emissiveIntensity: 0.25,
     roughness: 0.42,
     metalness: 0.18,
   })
   const panelBreak = new MeshStandardMaterial({
     name: 'panelBreak',
-    color: 0xc5d0d8,
+    color: 0x929fa8,
     roughness: 0.48,
     metalness: 0.34,
   })
   const rubber = new MeshStandardMaterial({ color: 0x11151a, roughness: 0.95 })
   const glass = new MeshPhysicalMaterial({
     name: 'canopyGlass',
-    color: 0x594933, emissive: 0x233c50, emissiveIntensity: 0.22,
-    metalness: 0.72, roughness: 0.16,
+    color: 0x80714f, emissive: 0x172b3a, emissiveIntensity: 0.08,
+    transparent: true, opacity: .78, depthWrite: false,
+    metalness: 0.38, roughness: 0.12,
     clearcoat: 0.86,
     clearcoatRoughness: 0.1,
     ior: 1.44,
   })
 
+  for (const material of [skin, upper]) configureAirframeFinish(material)
+
   // Cross sections create the pointed radome, chine, broad engine body and
   // round exhaust transition as one continuous skin, with no intersecting tubes.
   const sections: [number, number, number, number][] = [
-    [7.8, 0.035, 0.025, -0.02], [6.8, 0.38, 0.25, -0.2],
-    [5.3, 0.72, 0.48, -0.39], [3.8, 1.01, 0.68, -0.52],
-    [2.0, 1.31, 0.72, -0.61], [0, 1.4, 0.72, -0.64],
-    [-2.2, 1.24, 0.73, -0.59], [-4.1, 1.0, 0.58, -0.51],
-    [-5.7, 0.78, 0.49, -0.45], [-6.65, 0.65, 0.48, -0.48],
+    [7.85, .018, .015, -.025], [7.25, .22, .13, -.12],
+    [6.5, .45, .29, -.24], [5.35, .73, .47, -.39],
+    [4.3, .89, .58, -.46], [3.25, 1.02, .65, -.54],
+    [2.1, 1.28, .70, -.61], [1.05, 1.46, .73, -.66],
+    [-.35, 1.5, .76, -.67], [-1.6, 1.4, .76, -.64],
+    [-2.7, 1.24, .71, -.60], [-3.8, 1.05, .61, -.55],
+    [-4.85, .9, .54, -.5], [-5.7, .77, .49, -.46],
+    [-6.65, .65, .48, -.48],
   ]
   const positions: number[] = []
   const indices: number[] = []
@@ -68,6 +77,11 @@ export function createF35Model(): Group {
       indices.push(a, b, c, b, d, c)
     }
   }
+  for (let i = 1; i < ring.length - 1; i++) {
+    indices.push(0, i + 1, i)
+    const last = (sections.length - 1) * ring.length
+    indices.push(last, last + i, last + i + 1)
+  }
   const body = new Mesh(geometry(positions, indices), skin)
   body.name = 'BlendedFuselage'
   root.add(body)
@@ -83,8 +97,8 @@ export function createF35Model(): Group {
 
     plate(root, [
       [side * 1.05, .03, 2.0], [side * 5.32, -.04, -1.25],
-      [side * 5.28, -.045, -2.13], [side * 2.35, .02, -3.15],
-      [side * 1.0, .12, -2.85],
+      [side * 5.28, -.045, -1.91], [side * 2.35, .02, -2.43],
+      [side * 1.0, .12, -2.6],
     ], .12, upper, 'MainWing')
     plate(root, [
       [side * 2.35, .11, -1.62], [side * 4.15, .03, -1.78],
@@ -104,27 +118,45 @@ export function createF35Model(): Group {
       [side * 1.13, .06, -5.75], [side * .64, .1, -5.0],
     ], .1, upper, 'Stabilator')
     mountSurface(root, stabilator, [side * .73, .12, -3.72], side < 0 ? 'stabilatorLeft' : 'stabilatorRight')
-    // Fins lean outwards as they rise, including the trailing rudder.
-    const cantedTail = plate(root, [
-      [side * .81, .38, -3.25], [side * 1.04, .36, -5.88],
-      [side * 2.04, 2.68, -6.12], [side * 1.94, 2.78, -5.25],
-    ], .1, skin, 'CantedTail', 'x')
-    mountSurface(root, cantedTail, [side * .81, .38, -3.25], side < 0 ? 'tailLeft' : 'tailRight')
-    line(root, [[side * 1.08, .44, -5.35], [side * 1.94, 2.58, -5.74]], .017, trim)
+    // Fixed, outward-canted fins with independently hinged trailing rudders.
+    plate(root, [
+      [side * .86, .39, -3.05], [side * 1.05, .39, -5.23],
+      [side * 1.96, 2.56, -5.52], [side * 1.92, 2.66, -4.78],
+    ], .095, skin, 'CantedTail', 'x')
+    const rudder = plate(root, [
+      [side * 1.05, .4, -5.25], [side * 1.13, .4, -5.94],
+      [side * 2.04, 2.55, -6.08], [side * 1.97, 2.56, -5.55],
+    ], .065, upper, 'Rudder', 'x')
+    mountSurface(root, rudder, [side * 1.05, .4, -5.25], side < 0 ? 'tailLeft' : 'tailRight')
+    plate(root, [
+      [side * 1.63, 1.96, -4.62], [side * 1.77, 2.27, -4.78],
+      [side * 1.79, 2.27, -5.05], [side * 1.66, 1.96, -4.9],
+    ], .016, panelBreak, 'TailCode', 'x')
 
-    // Angular side intake, open black throat facing forward.
+    const mouth: Point[] = [
+      [side * 1.06, .38, 2.8], [side * 1.69, .16, 2.12],
+      [side * 1.59, -.43, 2.08], [side * 1.05, -.46, 2.64],
+    ]
+    const throat = mouth.map(([x, y, z]): Point => [x * .91, y * .8, z - 1.4])
+    for (let i = 0; i < 4; i++) {
+      const j = (i + 1) % 4
+      const vertices = [...mouth[i]!, ...mouth[j]!, ...throat[i]!, ...throat[j]!]
+      const duct = new Mesh(geometry(vertices, side > 0 ? [0, 2, 1, 1, 2, 3] : [0, 1, 2, 1, 3, 2]), ductLining)
+      duct.name = 'IntakeDuct'
+      root.add(duct)
+    }
+    line(root, [...mouth, mouth[0]!], .045, skin)
+    plate(root, throat, .018, black, 'IntakeThroat', 'z')
     plate(root, [
-      [side * 1.02, .41, 2.35], [side * 1.66, .12, 1.64],
-      [side * 1.56, -.43, 1.7], [side * .97, -.46, 2.26],
-    ], .12, trim, 'IntakeLip', 'z')
-    plate(root, [
-      [side * 1.08, .29, 2.365], [side * 1.53, .075, 1.81],
-      [side * 1.47, -.32, 1.84], [side * 1.06, -.35, 2.30],
-    ], .02, black, 'IntakeThroat', 'z')
-    plate(root, [
-      [side * 1.61, .12, 1.61], [side * 1.57, -.4, 1.65],
-      [side * 1.39, -.42, -1.92], [side * 1.37, .25, -.9],
-    ], .06, skin, 'IntakeFairing', 'x')
+      [side * 1.68, .16, 2.1], [side * 1.59, -.43, 2.08],
+      [side * 1.42, -.47, -1.94], [side * 1.48, .32, -.65],
+    ], .075, skin, 'IntakeFairing', 'x')
+    // Diverterless inlet shoulder flows directly into the forward chine.
+    const shoulder = new Mesh(new SphereGeometry(1, 12, 8), skin)
+    shoulder.name = 'InletShoulder'
+    shoulder.position.set(side * 1.02, -.015, 2.85)
+    shoulder.scale.set(.19, .36, .76)
+    root.add(shoulder)
 
     // Flush bay doors underneath and subtle RAM edge strips.
     plate(root, [
@@ -138,24 +170,55 @@ export function createF35Model(): Group {
     [-.16, .8, 2.4], [.16, .8, 2.4], [.1, .76, -3.15], [-.1, .76, -3.15],
   ], .018, panelBreak, 'SpineStripe')
 
-  // Low, flattened F-35 canopy: the old tall half-sphere read as a bubble
-  // floating above the chine in side profile.
-  const canopy = new Mesh(new SphereGeometry(1, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), glass)
-  canopy.name = 'GoldCanopy'
-  canopy.scale.set(.74, .48, 1.68)
-  canopy.position.set(0, .56, 3.08)
-  root.add(canopy)
-  const rim: Point[] = []
-  for (let i = 0; i <= 40; i++) {
-    const a = i / 40 * Math.PI * 2
-    rim.push([Math.cos(a) * .755, .56, 3.08 + Math.sin(a) * 1.7])
+  // Section-built teardrop canopy with a narrow rear deck and swept windscreen.
+  const canopySections = [
+    [1.2, .07, .74, .77], [1.65, .44, .7, .99],
+    [2.4, .66, .61, 1.075], [3.2, .67, .56, 1.065],
+    [3.95, .51, .51, .91], [4.65, .25, .47, .64], [4.95, .025, .45, .465],
+  ] as const
+  const canopyPos: number[] = [], canopyIndex: number[] = []
+  const arches = 20
+  for (const [z, width, base, top] of canopySections) {
+    for (let i = 0; i <= arches; i++) {
+      const angle = i / arches * Math.PI
+      canopyPos.push(Math.cos(angle) * width, base + Math.sin(angle) * (top - base), z)
+    }
   }
-  line(root, rim, .032, trim)
-  plate(root, [[-.55, .72, 1.7], [.55, .72, 1.7], [.38, .8, -.2], [-.38, .8, -.2]], .08, upper, 'DorsalSpine')
+  for (let j = 0; j < canopySections.length - 1; j++) for (let i = 0; i < arches; i++) {
+    const a = j * (arches + 1) + i, b = a + arches + 1
+    canopyIndex.push(a, a + 1, b, a + 1, b + 1, b)
+  }
+  const canopy = new Mesh(geometry(canopyPos, canopyIndex), glass)
+  canopy.name = 'GoldCanopy'
+  root.add(canopy)
+  for (const side of [-1, 1]) {
+    line(root, canopySections.map(([z, width, base]): Point => [side * width, base, z]), .023, trim)
+  }
+  plate(root, [[-.51, .715, 1.55], [.51, .715, 1.55], [.38, .79, -.35], [-.38, .79, -.35]], .06, upper, 'DorsalSpine')
+  // External-only cockpit detail lives inside the aircraft model; first-person
+  // remains the unobstructed view selected by CockpitMode.
+  const tub = new Mesh(new BoxGeometry(.83, .12, 1.8), black)
+  tub.name = 'CockpitWell'; tub.position.set(0, .73, 2.8); root.add(tub)
+  const seat = new Mesh(new BoxGeometry(.37, .2, .2), trim)
+  seat.name = 'EjectionSeat'; seat.position.set(0, .87, 2.15); root.add(seat)
+  const helmet = new Mesh(new SphereGeometry(.13, 12, 8), upper)
+  helmet.name = 'PilotHelmet'; helmet.scale.set(.85, 1, 1.05)
+  helmet.position.set(0, .89, 2.6); root.add(helmet)
+  const visor = new Mesh(new SphereGeometry(.12, 12, 6, 0, Math.PI), black)
+  visor.name = 'PilotVisor'; visor.scale.set(1, .53, 1)
+  visor.position.set(0, .91, 2.65); root.add(visor)
   const sensor = new Mesh(new SphereGeometry(.18, 6, 4), glass)
-  sensor.scale.set(1, .75, 1.7)
-  sensor.position.set(0, -.43, 5.05)
-  root.add(sensor)
+  sensor.name = 'ChinSensor'
+  sensor.scale.set(1, .75, 1.7); sensor.position.set(0, -.43, 5.05); root.add(sensor)
+  for (const side of [-1, 1]) {
+    // Sawtooth access panels and flush upper engine vents.
+    line(root, [[side * .48, .73, .7], [side * .66, .76, .48],
+      [side * .55, .77, .18], [side * .7, .77, -.02], [side * .61, .74, -1.45]], .01, panelBreak)
+    for (let i = 0; i < 5; i++) {
+      line(root, [[side * .52, .715 - i * .008, -2.65 - i * .12],
+        [side * .83, .65 - i * .008, -2.65 - i * .12]], .018, black)
+    }
+  }
 
   buildNozzle(root, metal, black)
   buildGear(root, metal, rubber, skin)
@@ -214,6 +277,7 @@ export function createF35Model(): Group {
       obj.receiveShadow = true
     }
   })
+  batchStaticDetails(root)
   markPresentationNodes(root)
   freezeStaticMatrices(root)
   return root
@@ -474,4 +538,48 @@ function strut(root: Group, a: Point, b: Point, radius: number, material: Materi
 
 function line(root: Group, points: Point[], radius: number, material: Material): void {
   for (let i = 1; i < points.length; i++) strut(root, points[i - 1]!, points[i]!, radius, material)
+}
+
+/** Restrained coating variation and access seams without texture downloads. */
+function configureAirframeFinish(material: MeshStandardMaterial): void {
+  material.onBeforeCompile = shader => {
+    shader.vertexShader = 'varying vec3 airframePoint;\n' + shader.vertexShader
+    shader.vertexShader = shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nairframePoint = position;')
+    shader.fragmentShader = 'varying vec3 airframePoint;\n' + shader.fragmentShader
+    shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+      float coating = sin(airframePoint.z * 2.8 + airframePoint.x * 1.2) * sin(airframePoint.x * 6.0);
+      diffuseColor.rgb *= .97 + coating * .03;
+      float panel = abs(fract((airframePoint.z + abs(airframePoint.x) * .4) * .72) - .5);
+      float lineWidth = max(fwidth(panel), .0015);
+      float seam = 1.0 - smoothstep(.003, .003 + lineWidth, panel);
+      diffuseColor.rgb *= 1.0 - seam * .11;`)
+  }
+  material.customProgramCacheKey = () => 'f35-coating-v2'
+}
+
+/** Batch anonymous static trim only; named controls retain their articulation. */
+function batchStaticDetails(root: Group): void {
+  const batches = new Map<Material, Mesh[]>()
+  for (const child of root.children) {
+    if (!(child instanceof Mesh) || child.name || Array.isArray(child.material)) continue
+    const items = batches.get(child.material) ?? []
+    items.push(child); batches.set(child.material, items)
+  }
+  for (const [material, meshes] of batches) {
+    if (meshes.length < 2) continue
+    const parts = meshes.map(mesh => {
+      mesh.updateMatrix()
+      const copy = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone()
+      copy.deleteAttribute('uv')
+      return copy.applyMatrix4(mesh.matrix)
+    })
+    const merged = mergeGeometries(parts)
+    for (const part of parts) part.dispose()
+    if (!merged) continue
+    const detail = new Mesh(merged, material)
+    detail.name = 'AirframeDetailBatch'
+    detail.castShadow = true; detail.receiveShadow = true
+    root.add(detail)
+    for (const mesh of meshes) { root.remove(mesh); mesh.geometry.dispose() }
+  }
 }

@@ -1,9 +1,6 @@
 import {
   AmbientLight,
-  BufferAttribute,
-  BufferGeometry,
   Color,
-  DataTexture,
   DirectionalLight,
   DynamicDrawUsage,
   Fog,
@@ -11,21 +8,19 @@ import {
   HemisphereLight,
   IcosahedronGeometry,
   InstancedMesh,
-  LinearFilter,
+  InstancedBufferAttribute,
   MathUtils,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
   Object3D,
-  Points,
-  PointsMaterial,
-  RGBAFormat,
   Scene,
   Vector3,
-  UnsignedByteType,
 } from 'three'
 import { deriveSkyCloudDeckInto, SkyDome, type SkyCloudDeck } from './SkyDome'
-import { precipitationParticleCount, SnowField } from './SnowField'
+import { SnowField } from './SnowField'
+import { RainField, precipitationAtAltitude } from './RainField'
+import { createCloudMaterial, cloudInteriorDensity } from './CloudMaterial'
 import { disposeObjectTree } from '../core/dispose'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
@@ -283,16 +278,14 @@ export class Atmosphere {
   private readonly scene: Scene
   private readonly sky: SkyDome
 
-  private readonly precipRoot = new Group()
-  private readonly rain: Points
-  private readonly rainVel: Float32Array
-  private readonly rainSway: Float32Array
-  private readonly rainMat: PointsMaterial
-  private readonly rainTex: DataTexture
+  private readonly rainField = new RainField()
   private readonly snowField: SnowField
-  private readonly rainParticleCount: number
-  private rainActiveCount: number
   private precipitationScale = 1
+  private readonly cloudSun = { value: new Vector3(0, 1, 0) }
+  private readonly cloudStorm = { value: 0 }
+  private cloudImmersion = 0
+  private cloudImmersionTarget = 0
+  private cloudBaseOffset = 0
 
   private readonly cloudRoot = new Group()
   private readonly cloudClusters: CloudClusterLayout[] = []
@@ -357,46 +350,8 @@ export class Atmosphere {
     // Let the dome paint the backdrop (clear color stays dark night base)
     this.scene.background = new Color(0x02040a)
 
-    // --- Precipitation ---
-    const rainCount = 3200
-    this.rainParticleCount = rainCount
-    this.rainActiveCount = rainCount
-    const rainPos = new Float32Array(rainCount * 3)
-    this.rainVel = new Float32Array(rainCount)
-    this.rainSway = new Float32Array(rainCount)
-    for (let i = 0; i < rainCount; i++) {
-      rainPos[i * 3] = (Math.random() - 0.5) * 140
-      rainPos[i * 3 + 1] = Math.random() * 90
-      rainPos[i * 3 + 2] = (Math.random() - 0.5) * 140
-      this.rainVel[i] = 32 + Math.random() * 48
-      this.rainSway[i] = Math.random() * 2 - 1
-    }
-    const rainGeo = new BufferGeometry()
-    rainGeo.setAttribute('position', new BufferAttribute(rainPos, 3))
-    this.rainTex = makeRainStreakTexture()
-    this.rainMat = new PointsMaterial({
-      color: 0xb0cce0,
-      map: this.rainTex,
-      size: 1.15,
-      transparent: true,
-      opacity: 0.5,
-      depthWrite: false,
-      sizeAttenuation: true,
-      alphaTest: 0.03,
-    })
-    this.rainMat.onBeforeCompile = (shader) => {
-      shader.vertexShader = shader.vertexShader.replace(
-        '#include <fog_vertex>',
-        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize, 9.0);',
-      )
-    }
-    this.rain = new Points(rainGeo, this.rainMat)
-    this.rain.frustumCulled = false
-    this.rain.visible = false
-
-    this.precipRoot.name = 'PrecipFX'
-    this.precipRoot.add(this.rain)
-    scene.add(this.precipRoot)
+    // World-space pooled streaks preserve parallax through fast flight.
+    scene.add(this.rainField.mesh)
 
     this.snowField = new SnowField()
     scene.add(this.snowField.points)
@@ -443,9 +398,11 @@ export class Atmosphere {
 
     // Three deck-wide batches replace hundreds of individual cloud draw calls.
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
-      const mat = puffMat.clone()
+      const mat = createCloudMaterial(this.cloudSun, this.cloudStorm)
       mat.name = `Cloud-${layer}`
-      const instances = new InstancedMesh(puffGeo, mat, this.cloudPuffCounts[layer])
+      const geometry = puffGeo.clone()
+      geometry.setAttribute('cloudAlpha', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
+      const instances = new InstancedMesh(geometry, mat, this.cloudPuffCounts[layer])
       instances.name = `CloudBatch-${layer}`
       instances.frustumCulled = false
       instances.instanceMatrix.setUsage(DynamicDrawUsage)
@@ -456,6 +413,8 @@ export class Atmosphere {
       this.cloudInstances[layer] = instances
       this.cloudRoot.add(instances)
     }
+
+    puffGeo.dispose()
 
     const offsets: Record<CloudLayer, number> = { cumulus: 0, stratus: 0, cirrus: 0 }
     for (let i = 0; i < this.cloudClusters.length; i++) {
@@ -480,8 +439,7 @@ export class Atmosphere {
     const safe = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1
     if (safe === this.precipitationScale) return
     this.precipitationScale = safe
-    this.rainActiveCount = precipitationParticleCount(this.rainParticleCount, safe)
-    this.rain.geometry.setDrawRange(0, this.rainActiveCount)
+    this.rainField.setDensityScale(safe)
     this.snowField.setDensityScale(safe)
   }
 
@@ -500,7 +458,7 @@ export class Atmosphere {
         this.cloudLayerCutoffs[layer],
       )
       this.cloudDrawCounts[layer] = budget
-      instances.geometry.setDrawRange(0, budget)
+      instances.count = budget
     }
   }
 
@@ -529,6 +487,7 @@ export class Atmosphere {
     this.weatherDirector.randomize(seed, w)
     this.weather = w
     this.reseedCloudField(seed)
+    this.cloudImmersion = this.cloudImmersionTarget = 0
     this.lightningCharge = LIGHTNING_MIN_CHARGE + this.seededPulse(seed) * LIGHTNING_CHARGE_RANGE
     this.lightningFlash = 0
     this.lightningFlashAge = Infinity
@@ -605,8 +564,7 @@ export class Atmosphere {
   dispose(): void {
     if (this.disposed) return
     this.disposed = true
-    this.precipRoot.removeFromParent()
-    disposeObjectTree(this.precipRoot)
+    this.rainField.dispose()
     this.snowField.points.removeFromParent()
     this.snowField.dispose()
     this.sky.dispose()
@@ -694,8 +652,11 @@ export class Atmosphere {
       _horizon.lerp(_c2, this.lightningFlash * 0.22)
     }
 
-    const fogNear = this.baseFogNear * w.fogNearMul
-    const fogFar = Math.min(this.baseFogFar * w.fogFarMul, STREAM_RADIUS_M * .9)
+    const source = precipitationAtAltitude(ay, w.lightning)
+    const aboveDeck = 1 - source
+    this.cloudImmersion = MathUtils.lerp(this.cloudImmersion, this.cloudImmersionTarget, 1 - Math.exp(-Math.max(0, visualDt) * 3))
+    const fogNear = MathUtils.lerp(this.baseFogNear * MathUtils.lerp(w.fogNearMul, 1.1, aboveDeck), 25, this.cloudImmersion)
+    const fogFar = MathUtils.lerp(Math.min(this.baseFogFar * MathUtils.lerp(w.fogFarMul, 1, aboveDeck), STREAM_RADIUS_M * .9), 420, this.cloudImmersion)
     // Fog matches horizon so the stream edge blends into the sky
     if (this.scene.fog instanceof Fog) {
       this.scene.fog.color.copy(_horizon)
@@ -708,6 +669,9 @@ export class Atmosphere {
     // Orbital sun direction (full arc, including under horizon)
     const azim = (t - 0.25) * Math.PI * 2
     _sunDir.set(Math.cos(azim), elev, Math.sin(azim) * 0.85).normalize()
+
+    this.cloudSun.value.copy(_sunDir)
+    this.cloudStorm.value = w.lightning
 
     // --- Sun + moon key lights (terrain MeshStandardMaterials receive both) ---
     // Cheap: one extra directional, moon never casts shadows.
@@ -790,8 +754,8 @@ export class Atmosphere {
 
     // World-space clouds (fly past them) + local precip FX
     this.updateClouds(ax, ay, az, dt, w, dayFactor)
-    this.updatePrecip(ax, ay, az, visualDt, w)
-    this.snowField.update(visualDt, ax, ay, az, w.snow, w.windX, w.windZ)
+    this.rainField.update(visualDt, ax, ay, az, w.rain * source, w.windX, w.windZ)
+    this.snowField.update(visualDt, ax, ay, az, w.snow * source, w.windX, w.windZ)
   }
 
   /**
@@ -941,6 +905,8 @@ export class Atmosphere {
     // ~0.8s ease for opacity (smooth appear / disappear)
     const fadeK = 1 - Math.exp(-cloudDt * 1.4)
     let anyVisible = false
+    this.cloudImmersionTarget = 0
+    this.cloudBaseOffset = -weather.haze * 400 - weather.rain * 120
     this.gustPhase += cloudDt * (0.35 + weather.gust * 1.4)
     const gust = 1 + Math.sin(this.gustPhase) * weather.gust * 0.32
 
@@ -1017,7 +983,7 @@ export class Atmosphere {
             : weather.highClouds
       // Irrational stride distributes active clusters without obvious ordering.
       const densityRoll = (i * 0.61803398875 + (layer === 'cirrus' ? 0.17 : 0)) % 1
-      const target = densityRoll < layerCover ? distFade : 0
+      const target = MathUtils.smoothstep(layerCover - densityRoll, -.06, .09) * distFade
       this.cloudAlpha[i] = MathUtils.lerp(this.cloudAlpha[i]!, target, fadeK)
       const a = this.cloudAlpha[i]!
 
@@ -1033,6 +999,7 @@ export class Atmosphere {
 
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       this.cloudInstances[layer].instanceMatrix.needsUpdate = true
+      this.cloudInstances[layer].geometry.getAttribute('cloudAlpha').needsUpdate = true
     }
     this.cloudRoot.visible = anyVisible
   }
@@ -1041,58 +1008,36 @@ export class Atmosphere {
     cluster: CloudClusterLayout,
     layer: CloudLayer,
     worldPosition: Vector3,
-    scaleMul: number,
+    opacity: number,
   ): void {
     const instances = this.cloudInstances[layer]
     const offset = cluster.instanceOffset
+    const alpha = instances.geometry.getAttribute('cloudAlpha') as InstancedBufferAttribute
     for (let i = 0; i < cluster.puffs.length; i++) {
-      if (scaleMul <= 0) {
+      alpha.setX(offset + i, opacity)
+      if (opacity <= 0) {
         instances.setMatrixAt(offset + i, _hiddenCloudMatrix)
         continue
       }
       const puff = cluster.puffs[i]!
       _cloudObject.position.set(
         worldPosition.x + puff.x,
-        worldPosition.y + puff.y,
+        worldPosition.y + puff.y + this.cloudBaseOffset,
         worldPosition.z + puff.z,
       )
       _cloudObject.rotation.set(0, puff.rotationY, 0)
-      _cloudObject.scale.set(puff.sx, puff.sy, puff.sz).multiplyScalar(scaleMul)
+      _cloudObject.scale.set(puff.sx, puff.sy, puff.sz)
+      const dx = this.lastAnchor.x - _cloudObject.position.x
+      const dz = this.lastAnchor.z - _cloudObject.position.z
+      const cosine = Math.cos(puff.rotationY), sine = Math.sin(puff.rotationY)
+      this.cloudImmersionTarget = Math.min(1, this.cloudImmersionTarget + cloudInteriorDensity(
+        (dx * cosine - dz * sine) / puff.sx,
+        (this.lastAnchor.y - _cloudObject.position.y) / puff.sy,
+        (dx * sine + dz * cosine) / puff.sz,
+      ) * opacity)
       _cloudObject.updateMatrix()
       instances.setMatrixAt(offset + i, _cloudObject.matrix)
     }
-  }
-
-  /** Rain stays in a box around the jet; snow is a separate world-space field. */
-  private updatePrecip(
-    ax: number,
-    ay: number,
-    az: number,
-    dt: number,
-    weather: WeatherSnapshot,
-  ): void {
-    this.precipRoot.position.set(ax, ay, az)
-
-    const rainAmt = weather.rain
-    this.rain.visible = rainAmt > 0.05
-    if (!this.rain.visible || dt <= 0) return
-
-    this.rainMat.opacity = 0.22 + rainAmt * 0.55
-    const pos = this.rain.geometry.attributes.position as BufferAttribute
-    const arr = pos.array as Float32Array
-    const boost = rainAmt > 0.85 ? 1.4 : 1
-    for (let i = 0; i < this.rainActiveCount; i++) {
-      const iy = i * 3 + 1
-      arr[iy]! -= this.rainVel[i]! * boost * dt
-      arr[i * 3]! += rainLateralVelocity(this.rainSway[i]!, weather.windX, rainAmt) * dt
-      arr[i * 3 + 2]! += weather.windZ * 0.38 * dt
-      if (arr[iy]! < -18) {
-        arr[iy] = 45 + Math.random() * 55
-        arr[i * 3] = (Math.random() - 0.5) * 140
-        arr[i * 3 + 2] = (Math.random() - 0.5) * 140
-      }
-    }
-    pos.needsUpdate = true
   }
 
   private updateLightning(dt: number, weather: WeatherSnapshot): void {
@@ -1160,28 +1105,4 @@ export class Atmosphere {
     const n = Math.sin(this.cloudSeed * .000173 + index * 12.9898 + salt * 78.233) * 43758.5453
     return n - Math.floor(n)
   }
-}
-
-function makeRainStreakTexture(): DataTexture {
-  const width = 32
-  const height = 64
-  const data = new Uint8Array(width * height * 4)
-  for (let y = 0; y < height; y++) {
-    const vy = y / (height - 1)
-    const taper = Math.sin(vy * Math.PI)
-    for (let x = 0; x < width; x++) {
-      const dx = Math.abs(x - (width - 1) * 0.5) / (width * 0.5)
-      const alpha = Math.pow(Math.max(0, 1 - dx * 7), 2) * Math.pow(taper, 0.35)
-      const i = (y * width + x) * 4
-      data[i] = 205
-      data[i + 1] = 226
-      data[i + 2] = 242
-      data[i + 3] = Math.round(alpha * 255)
-    }
-  }
-  const texture = new DataTexture(data, width, height, RGBAFormat, UnsignedByteType)
-  texture.magFilter = LinearFilter
-  texture.minFilter = LinearFilter
-  texture.needsUpdate = true
-  return texture
 }

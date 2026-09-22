@@ -451,7 +451,9 @@ describe('rebuilt aircraft', () => {
     const rightTail = aircraft.mesh.getObjectByName('tailRight')!
     expect(leftFlaperon.rotation.x).toBeLessThan(rightFlaperon.rotation.x)
     expect(leftTail.rotation.y).toBeGreaterThan(0)
-    expect(rightTail.rotation.y).toBeLessThan(0)
+    expect(rightTail.rotation.y).toBeGreaterThan(0)
+    expect(rightTail.rotation.y).toBeCloseTo(leftTail.rotation.y)
+    expect(aircraft.mesh.getObjectByName('CantedTail')!.rotation.y).toBe(0)
 
     aircraft.controls.pitch = 0
     aircraft.controls.roll = 0

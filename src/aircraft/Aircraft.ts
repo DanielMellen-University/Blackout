@@ -675,10 +675,9 @@ export class Aircraft {
     setSurfaceAngle(this.flaperonRight, 'x', -pitch * 0.16 + roll * 0.14 + airbrake * 0.1, 14, dt)
     setSurfaceAngle(this.stabilatorLeft, 'x', -pitch * 0.12 - roll * 0.07 + airbrake * 0.07, 11, dt)
     setSurfaceAngle(this.stabilatorRight, 'x', -pitch * 0.12 + roll * 0.07 + airbrake * 0.07, 11, dt)
-    // Canted tails move in opposite directions to sell yaw authority without
-    // adding a separate rudder mesh or another render pass.
+    // Both rudders deflect together for yaw; the canted fins remain fixed.
     setSurfaceAngle(this.tailLeft, 'y', yaw * 0.11, 10, dt)
-    setSurfaceAngle(this.tailRight, 'y', -yaw * 0.11, 10, dt)
+    setSurfaceAngle(this.tailRight, 'y', yaw * 0.11, 10, dt)
   }
 
   /** Spin the existing wheel meshes during taxi and rollout without new parts. */

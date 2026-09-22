@@ -55,7 +55,7 @@ renderer.setAnimationLoop(now=>{
   aircraft.step(dt)
   aircraft.mesh.position.set(0,0,0); aircraft.mesh.quaternion.identity()
   renderer.render(scene,camera)
-  document.querySelector('#stats').textContent=renderer.info.render.triangles.toLocaleString()+' triangles · drag to orbit · scroll to zoom'
+  document.querySelector('#stats').textContent=renderer.info.render.triangles.toLocaleString()+' triangles · '+renderer.info.render.calls+' draws · drag to orbit · scroll to zoom'
 })
 </script>
 </html>
