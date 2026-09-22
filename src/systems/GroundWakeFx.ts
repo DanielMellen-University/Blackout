@@ -35,6 +35,19 @@ export function groundWakeActive(
     groundWakeIntensity(speedMps, clearanceM) > 0
 }
 
+/** Pick a stable dust/spray tint from the blended weather envelope. */
+export function groundWakeTint(rain: number, snow: number): number {
+  const safeRain = Number.isFinite(rain) ? Math.max(0, Math.min(1, rain)) : 0
+  const safeSnow = Number.isFinite(snow) ? Math.max(0, Math.min(1, snow)) : 0
+  const red = Math.round(0xb6 + (0x78 - 0xb6) * safeRain +
+    (0xd8 - (0xb6 + (0x78 - 0xb6) * safeRain)) * safeSnow)
+  const green = Math.round(0xa1 + (0x75 - 0xa1) * safeRain +
+    (0xe0 - (0xa1 + (0x75 - 0xa1) * safeRain)) * safeSnow)
+  const blue = Math.round(0x7e + (0x70 - 0x7e) * safeRain +
+    (0xe2 - (0x7e + (0x70 - 0x7e) * safeRain)) * safeSnow)
+  return (red << 16) | (green << 8) | blue
+}
+
 /** One fixed three-strip batch gives low land passes a readable ground cue. */
 export class GroundWakeFx {
   readonly root = new Group()
@@ -47,6 +60,7 @@ export class GroundWakeFx {
   private enabled = true
   private reducedMotion = false
   private disposed = false
+  private weatherTint = 0xb6a17e
 
   constructor(scene: Scene) {
     this.root.name = 'GroundWakeFx'
@@ -86,6 +100,15 @@ export class GroundWakeFx {
     if (this.disposed) return
     this.reducedMotion = enabled === true
     if (this.reducedMotion) this.reset()
+  }
+
+  /** Update the shared wake material only when blended weather changes enough. */
+  setWeather(rain: number, snow: number): void {
+    if (this.disposed) return
+    const tint = groundWakeTint(rain, snow)
+    if (tint === this.weatherTint) return
+    this.weatherTint = tint
+    this.material.color.setHex(tint)
   }
 
   update(

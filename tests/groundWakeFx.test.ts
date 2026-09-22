@@ -6,6 +6,7 @@ import {
   GroundWakeFx,
   groundWakeActive,
   groundWakeIntensity,
+  groundWakeTint,
 } from '../src/systems/GroundWakeFx'
 
 describe('ground wake effect', () => {
@@ -23,12 +24,20 @@ describe('ground wake effect', () => {
     expect(groundWakeActive(false, false, 30, 40)).toBe(false)
   })
 
+  it('keeps weather tint finite and visibly distinct', () => {
+    expect(groundWakeTint(0, 0)).toBe(0xb6a17e)
+    expect(groundWakeTint(1, 0)).not.toBe(groundWakeTint(0, 0))
+    expect(groundWakeTint(0, 1)).not.toBe(groundWakeTint(0, 0))
+    expect(groundWakeTint(Number.NaN, Number.NaN)).toBe(0xb6a17e)
+  })
+
   it('keeps one pooled batch across motion and disposal', () => {
     const scene = new Scene()
     const fx = new GroundWakeFx(scene)
     const position = new Vector3(5, 80, -4)
     const velocity = new Vector3(0, 0, 180)
     fx.setRenderQuality('high')
+    fx.setWeather(0.8, 0)
     fx.update(position, velocity, 40, false, false, true)
     expect(fx.isActive).toBe(true)
     expect(fx.root.visible).toBe(true)
