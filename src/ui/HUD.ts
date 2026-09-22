@@ -747,6 +747,8 @@ export class HUD {
   private readonly gearEl: HTMLElement | null
   private readonly gearRowEl: HTMLElement | null
   private readonly fuelFillEl: HTMLElement | null
+  private readonly fuelBarEl: HTMLElement | null
+  private readonly skyMarkEl: HTMLElement | null
   private readonly engineHeatEl: HTMLElement | null
   private readonly stateEl: HTMLElement | null
   private readonly bannerEl: HTMLElement | null
@@ -1000,6 +1002,8 @@ export class HUD {
     this.gearEl = root.getElementById('hud-gear')
     this.gearRowEl = root.getElementById('hud-gear-row')
     this.fuelFillEl = root.getElementById('hud-fuel-fill')
+    this.fuelBarEl = root.getElementById('hud-fuel-bar')
+    this.skyMarkEl = root.getElementById('hud-sky-mark')
     this.engineHeatEl = root.getElementById('hud-engine-heat')
     this.stateEl = root.getElementById('hud-state')
     this.bannerEl = root.getElementById('hud-banner')
@@ -1418,6 +1422,11 @@ export class HUD {
       this.setAttribute(this.weatherEl, 'aria-live', 'polite')
       this.setClass(this.weatherEl, 'weather-active', cue === 'active')
       this.setClass(this.weatherEl, 'weather-severe', cue === 'severe')
+      if (this.skyMarkEl) {
+        this.skyMarkEl.textContent = ''
+        this.setClass(this.skyMarkEl, 'weather-active', cue === 'active')
+        this.setClass(this.skyMarkEl, 'weather-severe', cue === 'severe')
+      }
     }
     if (this.windEl && (opts.windX !== undefined || opts.windZ !== undefined)) {
       const windX = Number.isFinite(opts.windX) ? opts.windX! : Number.NaN
@@ -1657,6 +1666,10 @@ export class HUD {
       this.setAttribute(this.fuelEl, 'aria-valuenow', String(percent))
       this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
       if (this.fuelFillEl) this.fuelFillEl.style.width = `${percent}%`
+      if (this.fuelBarEl) {
+        this.setAttribute(this.fuelBarEl, 'aria-valuenow', String(percent))
+        this.setAttribute(this.fuelBarEl, 'aria-valuetext', this.fuelAriaText)
+      }
       const fuelWarning = fuelWarningLevel({ fraction: opts.fuel })
       this.setClass(this.fuelEl, 'low', fuelWarning !== 'normal')
       this.setClass(this.fuelEl, 'critical', fuelWarning === 'critical')

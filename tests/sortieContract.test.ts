@@ -12,7 +12,8 @@ describe('sortie contracts', () => {
   it('previews deterministic seeded tasks without assigning Free flight a contract', () => {
     expect(sortieContractLabelForSeed(undefined)).toBe('')
     const label = sortieContractLabelForSeed(42)
-    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'PRECISION APPROACH', 'BUTTER LANDING', 'PRECISION CHAIN', 'DEADSTICK']).toContain(label)
+    expect(['CLEAN CIRCUIT', 'TERRAIN HUGGER', 'PRECISION APPROACH', 'BUTTER LANDING', 'DEADSTICK']).toContain(label)
+    expect(label).not.toBe('PRECISION CHAIN')
     expect(sortieContractDetailForSeed(42).length).toBeGreaterThan(0)
     expect(sortieContractDetailForSeed(undefined)).toBe('')
     expect(sortieContractLabelForSeed(42)).toBe(label)

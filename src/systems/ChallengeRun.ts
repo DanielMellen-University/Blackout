@@ -41,6 +41,13 @@ export interface LandingMetrics {
 
 export interface ChallengeResult {
   elapsedSec: number
+  /** Gates actually flown through, not the gate score. */
+  gatesCleared?: number
+  gatesTotal?: number
+  courseId?: string
+  /** Crash or water contact. The debrief uses this instead of a medal. */
+  endedByCrash?: boolean
+  ditched?: boolean
   gateScore: number
   timeScore: number
   landingScore: number
@@ -1504,6 +1511,9 @@ export class ChallengeRun {
     this.phase = 'complete'
     this.result = {
       elapsedSec,
+      gatesCleared: this.gatesPassed,
+      gatesTotal: this.totalGates,
+      courseId: this.courseId,
       gateScore,
       timeScore,
       landingScore,
@@ -1613,6 +1623,30 @@ export class ChallengeRun {
       this.contractStreakValue = 0
       this.writeHistory(history)
     }
+  }
+
+  /** Debrief for a crash or ditch. No medal, no score payout. */
+  crashDebrief(ditched = false): ChallengeResult {
+    this.fail()
+    const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
+    this.result = {
+      elapsedSec,
+      gatesCleared: this.gatesPassed,
+      gatesTotal: this.totalGates,
+      courseId: this.courseId,
+      endedByCrash: true,
+      ditched: ditched === true,
+      gateScore: 0,
+      timeScore: 0,
+      landingScore: 0,
+      landingQuality: 0,
+      totalScore: 0,
+      medal: 'complete',
+      bestScore: 0,
+      isNewBest: false,
+      freeFlight: this.freeFlight,
+    }
+    return this.result
   }
 
   get clockLabel(): string {

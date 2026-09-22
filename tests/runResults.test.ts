@@ -44,6 +44,10 @@ class FakeElement {
     return (this.lists.get(selector) ?? []) as unknown as T[]
   }
 
+  querySelector(selector: string): FakeElement | null {
+    return this.lists.get(selector)?.[0] ?? null
+  }
+
   addEventListener(type: string, listener: (event: unknown) => void): void {
     let set = this.listeners.get(type)
     if (!set) {
@@ -93,6 +97,7 @@ function resultsFixture(): {
   const elements = new Map<string, FakeElement>([
     ['run-results', root],
     ['result-title', new FakeElement()],
+    ['result-course', new FakeElement()],
     ['result-summary', new FakeElement()],
     ['result-score', new FakeElement()],
     ['result-time', new FakeElement()],
@@ -114,6 +119,7 @@ function resultsFixture(): {
     'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
     [retry, newWorld],
   )
+  root.setList('#result-course', [elements.get('result-course')!])
   const document = new FakeDocument(elements)
   document.activeElement = source
   return { root, retry, newWorld, source, document }
@@ -168,8 +174,11 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
       'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT',
     )
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('COMPLETE')
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).not.toContain('GOLD')
+    expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('0')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'NEW COURSE BEST · 0:42.00 · HARD',
+      'SORTIE · ROUTE COMPLETE · 0:42.00 · 0 GATES · HARD',
     )
 
     fixture.document.activeElement = fixture.newWorld
@@ -380,7 +389,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'NEW COURSE BEST · 0:42.00 · BUTTER',
+      'SORTIE · ROUTE COMPLETE · 0:42.00 · 0 GATES · BUTTER',
     )
     results.dispose()
     vi.unstubAllGlobals()
@@ -450,6 +459,33 @@ describe('run results focus flow', () => {
       masteryBadges: ['approach-ace'],
     })
     expect(elementsFor(fixture.document, 'result-badges')?.textContent).toBe('NEW BADGE · APPROACH ACE')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('opens a crash debrief with gates cleared instead of a medal or a point total', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      courseId: 'coastal',
+      gatesCleared: 2,
+      gatesTotal: 5,
+      gateScore: 20_000,
+      endedByCrash: true,
+      totalScore: 0,
+      medal: 'gold',
+    })
+    expect(elementsFor(fixture.document, 'result-course')?.textContent).toBe('coastal')
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('CRASH')
+    expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('2/5')
+    expect(elementsFor(fixture.document, 'result-score')?.textContent).toBe('0')
+    expect(elementsFor(fixture.document, 'result-landing')?.textContent).toBe('CRASH')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('CRASH')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('20,000')
     results.dispose()
     vi.unstubAllGlobals()
   })

@@ -842,11 +842,10 @@ export const ASSIGNED_CONTRACT_KINDS = [
   'low-level',
   'approach',
   'butter',
-  'precision',
   'deadstick',
 ] as const
 
-const LINE_KINDS = ['clean', 'low-level', 'approach', 'butter', 'precision'] as const
+const LINE_KINDS = ['clean', 'low-level', 'approach', 'butter'] as const
 
 function mixSeed(seed: number): number {
   const safe = Math.trunc(seed)

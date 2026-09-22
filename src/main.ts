@@ -1320,12 +1320,14 @@ async function boot(): Promise<void> {
             _crashVelocity.copy(aircraft.velocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
             aircraft.crash()
-            challenge.fail()
+            const crashed = challenge.crashDebrief(ditching)
             combo.break()
             crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
             audio.playCue('crash')
-            showBanner(crashMessage, 4200, 'danger')
+            showBanner(crashMessage, 1600, 'danger')
+            results.show(crashed, currentPilotRank, false, [])
+            syncInputContext()
             break
           }
           const scoredTouch =

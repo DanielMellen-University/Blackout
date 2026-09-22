@@ -3,7 +3,6 @@ import {
   formatTime,
   MASTERY_BADGE_COUNT,
   masteryBadgeLabel,
-  resultMedalClass,
   type ChallengeResult,
 } from '../systems/ChallengeRun'
 import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
@@ -26,6 +25,13 @@ export function flightRecordCueLabel(
 }
 
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
+
+function gatesClearedLabel(result: ChallengeResult): string {
+  if (!Number.isFinite(result.gatesCleared)) return '0'
+  const cleared = Math.max(0, Math.floor(result.gatesCleared!))
+  const total = Number.isFinite(result.gatesTotal) ? Math.max(0, Math.floor(result.gatesTotal!)) : 0
+  return total > 0 ? `${cleared}/${total}` : String(cleared)
+}
 const FUEL_CLASSES = ['fuel-healthy', 'fuel-low', 'fuel-critical'] as const
 
 /** Results screen for the takeoff → circuit → landing challenge loop. */
@@ -119,17 +125,28 @@ export class RunResults {
     const active = document.activeElement
     this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
-    this.root.classList.add(resultMedalClass(result.medal))
-    this.title.textContent = result.freeFlight
-      ? 'FREE FLIGHT COMPLETE'
-      : `${result.medal.toUpperCase()} RUN`
+    const crashed = result.endedByCrash === true
+    const ditched = crashed && result.ditched === true
+    const course = result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : 'SORTIE'
+    const courseEl = this.root.querySelector('#result-course')
+    if (courseEl) courseEl.textContent = course
+    this.title.textContent = crashed
+      ? (ditched ? 'DITCHED' : 'CRASH')
+      : result.freeFlight
+        ? 'FREE FLIGHT COMPLETE'
+        : 'COMPLETE'
     this.score.textContent = result.totalScore.toLocaleString()
     this.score.setAttribute('aria-label', `Total score ${result.totalScore.toLocaleString()}`)
     this.time.textContent = formatTime(result.elapsedSec)
-    this.landing.textContent = `${Math.round(result.landingQuality * 100)}%`
-    this.landingDetail.textContent = result.landingLabel ?? 'HARD'
-    this.landingDetail.setAttribute('aria-label', `Landing quality ${result.landingLabel ?? 'HARD'}`)
-    this.gates.textContent = result.gateScore.toLocaleString()
+    const landingName = crashed
+      ? (ditched ? 'DITCHED' : 'CRASH')
+      : (result.landingLabel ?? 'HARD')
+    this.landing.textContent = crashed ? landingName : `${Math.round(result.landingQuality * 100)}%`
+    this.landingDetail.textContent = landingName
+    this.landingDetail.setAttribute('aria-label', crashed ? landingName : `Landing quality ${landingName}`)
+    const gatesLabel = gatesClearedLabel(result)
+    this.gates.textContent = gatesLabel
+    this.gates.setAttribute('aria-label', `${gatesLabel} gates cleared`)
     const precisionStreak = Number.isFinite(result.bestPrecisionStreak)
       ? Math.max(0, Math.floor(result.bestPrecisionStreak!))
       : 0
@@ -160,10 +177,12 @@ export class RunResults {
     const fuelClass = resultFuelBandClass(fuelRemaining)
     for (const className of FUEL_CLASSES) this.fuel.classList.remove(className)
     this.fuel.classList.add(fuelClass)
-    const outcome = result.freeFlight
-      ? 'SCENIC SORTIE COMPLETE'
-      : result.isNewBest ? 'NEW COURSE BEST' : 'ROUTE COMPLETE'
-    this.summary.textContent = `${outcome} · ${formatTime(result.elapsedSec)} · ${result.landingLabel ?? 'HARD'}`
+    const outcome = crashed
+      ? landingName
+      : result.freeFlight
+        ? 'SCENIC SORTIE COMPLETE'
+        : 'ROUTE COMPLETE'
+    this.summary.textContent = `${course} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES · ${landingName}`
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,

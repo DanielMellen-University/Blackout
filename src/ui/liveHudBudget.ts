@@ -11,8 +11,9 @@ export const LIVE_HUD_IDS = [
   'nav-range',
   'hud-warn',
   'hud-warn-text',
-  'hud-fuel',
+  'hud-fuel-bar',
   'hud-fuel-fill',
+  'hud-sky-mark',
 ] as const
 
 /**
@@ -37,6 +38,7 @@ export const LEDGER_HUD_IDS = [
   'hud-climb',
   'hud-biome',
   'hud-combo',
+  'hud-fuel',
   'hud-fuel-endurance',
   'hud-engine-heat',
   'hud-refuel',
