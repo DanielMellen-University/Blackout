@@ -593,10 +593,15 @@ export function contractProgressLabel(
   failed = false,
 ): string {
   if (typeof label !== 'string' || label.trim().length === 0) return ''
-  const safeProgress = Number.isFinite(progress)
-    ? Math.max(0, Math.min(1, progress))
-    : 0
+  const safeProgress = contractProgressPercent(progress) / 100
   return `${label.trim()} ${failed === true ? 'FAILED' : complete === true ? 'DONE' : `${Math.round(safeProgress * 100)}%`}`
+}
+
+/** Normalize live contract progress to the integer percentage shared by DOM and CSS. */
+export function contractProgressPercent(progress: number): number {
+  return Number.isFinite(progress)
+    ? Math.round(Math.max(0, Math.min(1, progress)) * 100)
+    : 0
 }
 
 /** Describe the contract row to assistive technology using the same bounded state. */
@@ -610,9 +615,7 @@ export function contractProgressAriaLabel(
   const cleanLabel = label.trim().replace(/^CONTRACT\s+/i, '')
   if (failed === true) return `Contract ${cleanLabel.toLowerCase()} failed`
   if (complete === true) return `Contract ${cleanLabel.toLowerCase()} complete`
-  const safeProgress = Number.isFinite(progress)
-    ? Math.round(Math.max(0, Math.min(1, progress)) * 100)
-    : 0
+  const safeProgress = contractProgressPercent(progress)
   return `Contract ${cleanLabel.toLowerCase()}, ${safeProgress} percent complete`
 }
 
@@ -1410,7 +1413,7 @@ export class HUD {
       const progress = Number.isFinite(opts.contractProgress) ? opts.contractProgress! : 0
       const complete = opts.contractComplete === true
       const failed = opts.contractFailed === true
-      const progressPercent = Math.round(Math.max(0, Math.min(1, progress)) * 100)
+      const progressPercent = contractProgressPercent(progress)
       if (
         label !== this.contractLabelValue ||
         progressPercent !== this.contractProgressValue ||
@@ -1428,6 +1431,9 @@ export class HUD {
       this.setHidden(this.contractRowEl, !visible)
       this.setText(this.contractEl, this.contractText)
       this.setAttribute(this.contractEl, 'aria-label', this.contractAriaText)
+      this.setAttribute(this.contractEl, 'aria-valuenow', String(progressPercent))
+      this.setAttribute(this.contractEl, 'aria-valuetext', this.contractAriaText)
+      this.setStyle(this.contractEl, '--contract-progress', `${visible ? progressPercent : 0}%`)
       this.setClass(this.contractEl, 'contract-open', visible && !complete)
       this.setClass(this.contractEl, 'contract-complete', visible && complete)
       this.setClass(this.contractEl, 'contract-failed', visible && failed)

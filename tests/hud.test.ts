@@ -80,6 +80,7 @@ import {
   ghostPaceAriaLabel,
   visibleGhostPaceDelta,
   contractProgressLabel,
+  contractProgressPercent,
   contractProgressAriaLabel,
   contractDetailLabel,
   contractDetailAriaLabel,
@@ -403,6 +404,9 @@ describe('HUD value formatting', () => {
   })
 
   it('keeps contract task wording bounded and accessible', () => {
+    expect(contractProgressPercent(0.42)).toBe(42)
+    expect(contractProgressPercent(4)).toBe(100)
+    expect(contractProgressPercent(Number.NaN)).toBe(0)
     expect(contractProgressLabel('CONTRACT SPEED RUN', 0.42, false)).toBe('CONTRACT SPEED RUN 42%')
     expect(contractProgressLabel('CONTRACT SPEED RUN', 9, false)).toBe('CONTRACT SPEED RUN 100%')
     expect(contractProgressLabel('CONTRACT SPEED RUN', Number.NaN, false)).toBe('CONTRACT SPEED RUN 0%')
