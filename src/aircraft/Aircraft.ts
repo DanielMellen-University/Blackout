@@ -590,11 +590,11 @@ export class Aircraft {
     }
 
     if (responseChanged) {
-      const boostGlow = boost ? 1 : 0.72
+      const boostGlow = boost ? 1 : 0.55
       for (const plume of this.plumeMaterials) {
-        if (plume.name === 'abCore') plume.material.opacity = (0.18 + plumeResponse * 0.5) * boostGlow
-        else if (plume.name === 'abMid') plume.material.opacity = (0.09 + plumeResponse * 0.34) * boostGlow
-        else if (plume.name === 'abOuter') plume.material.opacity = (0.035 + plumeResponse * 0.18) * boostGlow
+        if (plume.name === 'abCore') plume.material.opacity = (boost ? 1 : 0.16 + plumeResponse * 0.28) * (boost ? 1 : boostGlow)
+        else if (plume.name === 'abMid') plume.material.opacity = (boost ? 0.82 : 0.08 + plumeResponse * 0.22) * (boost ? 1 : boostGlow)
+        else if (plume.name === 'abOuter') plume.material.opacity = (boost ? 0.42 : 0.03 + plumeResponse * 0.12)
       }
     }
     if (pulseAnimated || pulseModeChanged || responseChanged) {
@@ -605,7 +605,7 @@ export class Aircraft {
         diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
       }
     }
-    const nozzleIntensity = MathUtils.lerp(0, boost ? 3.8 : 2.4, plumeResponse)
+    const nozzleIntensity = MathUtils.lerp(0, boost ? 8 : 2.1, plumeResponse)
     if (responseChanged || !Number.isFinite(this.nozzleIntensityValue) ||
       Math.abs(nozzleIntensity - this.nozzleIntensityValue) > 0.002) {
       this.nozzleIntensityValue = nozzleIntensity

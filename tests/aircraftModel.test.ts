@@ -41,6 +41,37 @@ describe('rebuilt aircraft', () => {
     expect(((canopy as Mesh).material as MeshPhysicalMaterial).clearcoat).toBeGreaterThan(.8)
   })
 
+  it('marks the wings and lights the afterburner so a chase view can read the jet', () => {
+    setContactHeightSampler(() => 0)
+    const model = createF35Model()
+    const left = model.getObjectByName('WingMarkLeft') as Mesh
+    const right = model.getObjectByName('WingMarkRight') as Mesh
+    const spine = model.getObjectByName('SpineStripe') as Mesh
+    const body = model.getObjectByName('BlendedFuselage') as Mesh
+    expect(left).toBeInstanceOf(Mesh)
+    expect(right).toBeInstanceOf(Mesh)
+    expect(spine).toBeInstanceOf(Mesh)
+    const mark = left.material as MeshStandardMaterial
+    const skin = body.material as MeshStandardMaterial
+    expect(mark.color.getHex()).not.toBe(skin.color.getHex())
+    expect(mark.emissiveIntensity).toBeGreaterThan(0.2)
+    const core = model.getObjectByName('abCore') as Mesh
+    const coreMat = core.material as MeshBasicMaterial
+    expect(coreMat.toneMapped).toBe(false)
+    expect(coreMat.color.getHex()).toBeGreaterThan(0xe0e0e0)
+
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 800, 0)
+    aircraft.controls.throttle = 1
+    aircraft.controls.boost = true
+    aircraft.controls.gearDown = false
+    aircraft.step(1 / 60)
+    const live = aircraft.mesh.getObjectByName('abCore') as Mesh
+    expect(aircraft.mesh.getObjectByName('afterburner')!.visible).toBe(true)
+    expect((live.material as MeshBasicMaterial).opacity).toBeGreaterThan(0.9)
+    aircraft.dispose()
+  })
+
   it('freezes static airframe matrices without freezing animated presentation nodes', () => {
     const model = createF35Model()
     expect(model.getObjectByName('BlendedFuselage')!.matrixAutoUpdate).toBe(false)

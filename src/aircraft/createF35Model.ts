@@ -17,6 +17,20 @@ export function createF35Model(): Group {
   const seam = new MeshStandardMaterial({ color: 0x303b43, roughness: 0.8 })
   const black = new MeshStandardMaterial({ color: 0x090e13, roughness: 0.85 })
   const metal = new MeshStandardMaterial({ color: 0xa8b3bc, roughness: 0.27, metalness: 0.85 })
+  const wingMark = new MeshStandardMaterial({
+    name: 'wingMark',
+    color: 0xe8e0cf,
+    emissive: 0x6a5a3a,
+    emissiveIntensity: 0.45,
+    roughness: 0.42,
+    metalness: 0.18,
+  })
+  const panelBreak = new MeshStandardMaterial({
+    name: 'panelBreak',
+    color: 0xc5d0d8,
+    roughness: 0.48,
+    metalness: 0.34,
+  })
   const rubber = new MeshStandardMaterial({ color: 0x11151a, roughness: 0.95 })
   const glass = new MeshPhysicalMaterial({
     name: 'canopyGlass',
@@ -72,6 +86,10 @@ export function createF35Model(): Group {
       [side * 5.28, -.045, -2.13], [side * 2.35, .02, -3.15],
       [side * 1.0, .12, -2.85],
     ], .12, upper, 'MainWing')
+    plate(root, [
+      [side * 2.35, .11, -1.62], [side * 4.15, .03, -1.78],
+      [side * 4.02, .03, -2.1], [side * 2.28, .1, -1.98],
+    ], .02, wingMark, side < 0 ? 'WingMarkLeft' : 'WingMarkRight')
     const flaperon = plate(root, [
       [side * 1.85, .10, -2.39], [side * 4.93, -.0, -1.92],
       [side * 4.84, .0, -2.21], [side * 2.38, .075, -3.0],
@@ -115,6 +133,10 @@ export function createF35Model(): Group {
     ], .014, trim, 'WeaponsBay')
     line(root, [[side * .38, .7, .8], [side * .46, .735, -1.8], [side * .31, .65, -3.55]], .014, trim)
   }
+
+  plate(root, [
+    [-.16, .8, 2.4], [.16, .8, 2.4], [.1, .76, -3.15], [-.1, .76, -3.15],
+  ], .018, panelBreak, 'SpineStripe')
 
   // Low, flattened F-35 canopy: the old tall half-sphere read as a bubble
   // floating above the chine in side profile.
@@ -335,7 +357,7 @@ function buildAfterburner(): Group {
   ] as const) {
     const material = new MeshBasicMaterial({
       name, color, opacity, transparent: true, blending: AdditiveBlending,
-      depthWrite: false, side: DoubleSide, toneMapped: true,
+      depthWrite: false, side: DoubleSide, toneMapped: name === 'abOuter',
     })
     // Fade the silhouette and both ends of each shell into the surrounding air.
     material.onBeforeCompile = shader => {
@@ -358,7 +380,7 @@ function buildAfterburner(): Group {
     group.add(plume)
   }
   const diamondMat = new MeshBasicMaterial({
-    name: 'abCore', color: 0xc4e6ff, transparent: true, opacity: .65,
+    name: 'abCore', color: 0xf4fbff, transparent: true, opacity: .92,
     blending: AdditiveBlending, depthWrite: false, toneMapped: false,
   })
   for (let i = 0; i < 4; i++) {
