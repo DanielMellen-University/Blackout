@@ -1260,6 +1260,7 @@ export class HUD {
       const tone = verticalSpeedTone(opts.verticalSpeed ?? 0)
       this.setClass(this.verticalSpeedEl, 'climb', tone === 'climb')
       this.setClass(this.verticalSpeedEl, 'sink', tone === 'sink')
+      this.setClass(this.verticalSpeedEl, 'flare', opts.warning === 'FLARE')
     }
 
     if (this.gEl && opts.gForce !== undefined) {
