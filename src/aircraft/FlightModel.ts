@@ -1,1 +1,1 @@
-@file:///workspace/Blackout/src/aircraft/FlightModel.ts
+LOAD_FROM:/home/box/.cursor/projects/workspace/agent-tools/blackout_restore_fm.json
