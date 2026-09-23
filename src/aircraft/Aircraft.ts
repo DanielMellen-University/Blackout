@@ -22,10 +22,6 @@ import {
 } from './EngineState'
 import { flightConfig } from './flightConfig'
 import { FlightModel, runwayGripForWeather } from './FlightModel'
-import {
-  controlSurfaceTargets,
-  wingtipVaporIntensity,
-} from './controlSurfaces'
 import type { RenderQuality } from '../core/RenderQuality'
 import { createFuelState, resetFuel, updateFuel, type FuelState } from './FuelSystem'
 import { createEngineHeatState, resetEngineHeat, updateEngineHeat, type EngineHeatState } from './EngineHeatSystem'
@@ -209,6 +205,9 @@ export class Aircraft {
     if (this.disposed) return false
     const loadToken = ++this.modelLoadToken
     try {
+      // Keep the optional asset pipeline out of the initial game bundle. The
+      // procedural F-35 is already playable, so only fetch the GLB loader when
+      // a model replacement is actually requested.
       const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
       const gltf = await new GLTFLoader().loadAsync(url)
       const model = gltf.scene
@@ -246,6 +245,9 @@ export class Aircraft {
     }
   }
 
+  /**
+   * Reset to runway. Pass world spawn pose so airfield can move with flat-biome search.
+   */
   reset(spawn?: { x: number; y: number; z: number; yaw: number }): void {
     if (this.disposed) return
     const s = flightConfig.spawn
@@ -292,12 +294,17 @@ export class Aircraft {
     this.snapDisplay()
   }
 
+  /** Store the pose from before this physics step for render interpolation. */
   capturePrevious(): void {
     if (this.disposed) return
     this.prevPosition.copy(this.position)
     this.prevOrientation.copy(this.orientation)
   }
 
+  /**
+   * Blend the visible mesh/camera pose between the last two physics states.
+   * `alpha` 0 = previous step, 1 = current step.
+   */
   present(alpha: number): void {
     if (this.disposed) return
     const t = alpha >= 1 ? 1 : alpha <= 0 ? 0 : alpha
@@ -315,6 +322,7 @@ export class Aircraft {
     this.mesh.quaternion.copy(this.displayOrientation)
   }
 
+  /** Copy physics pose to the display pose (reset, pause, crash). */
   snapDisplay(nowMs?: number): void {
     if (this.disposed) return
     this.prevPosition.copy(this.position)
@@ -327,6 +335,8 @@ export class Aircraft {
     if (this.disposed || this.status === 'crashed' || !Number.isFinite(dt) || dt < 0) {
       return
     }
+    // Terrain chunks can be replaced between simulation steps, so never carry
+    // a contact result across a new physics update.
     this.groundCacheValid = false
     this.prevVelocity.copy(this.velocity)
     updateFuel(this.fuel, dt, this.controls.throttle, this.controls.boost)
@@ -335,33 +345,104 @@ export class Aircraft {
     this.flight.step(this, dt)
     this.updateLoadFactor(dt)
     this.autoGear()
-    this.updateGear(dt)
-    this.updateControlSurfaces(dt)
-    this.updateWheels(dt)
     this.updateVisuals(dt, nowMs)
   }
 
-  setWeatherGust(value: number): void {
-    this.weatherGust = Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
+  /** Feed the current front's gust strength into the fixed-step flight model. */
+  setWeatherGust(gust: number): void {
+    const safe = Number.isFinite(gust) ? MathUtils.clamp(gust, 0, 1) : 0
+    if (Math.abs(safe - this.weatherGust) < 0.002) return
+    this.weatherGust = safe
   }
 
-  setWeatherWind(x: number, z: number): void {
-    this.weatherWindX = Number.isFinite(x) ? x : 0
-    this.weatherWindZ = Number.isFinite(z) ? z : 0
+  /** Feed the bounded horizontal wind vector into the fixed-step flight model. */
+  setWeatherWind(windX: number, windZ: number): void {
+    this.weatherWindX = Number.isFinite(windX) ? MathUtils.clamp(windX, -40, 40) : 0
+    this.weatherWindZ = Number.isFinite(windZ) ? MathUtils.clamp(windZ, -40, 40) : 0
   }
 
-  setWeatherSurfaceGrip(value: number): void {
-    this.weatherSurfaceGrip = Number.isFinite(value)
-      ? MathUtils.clamp(value, 0.72, 1)
-      : 1
+  /** Feed blended rain and snow into the forgiving ground-roll grip model. */
+  setWeatherSurface(rain: number, snow: number): void {
+    const next = runwayGripForWeather(rain, snow)
+    if (Math.abs(next - this.weatherSurfaceGrip) < 0.002) return
+    this.weatherSurfaceGrip = next
   }
 
-  setThermalLift(value: number): void {
-    this.thermalLift = Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
+  /** Feed the fixed-step flight model a finite, normalized thermal envelope. */
+  setThermalLift(intensity: number): void {
+    this.thermalLift = Number.isFinite(intensity) ? MathUtils.clamp(intensity, 0, 1) : 0
   }
 
-  setWeatherPrecipitation(rain: number, snow: number): void {
-    this.setWeatherSurfaceGrip(runwayGripForWeather(rain, snow))
+  crash(): void {
+    if (this.disposed) return
+    this.status = 'crashed'
+    this.velocity.set(0, 0, 0)
+    this.angularVelocity.set(0, 0, 0)
+    this.prevVelocity.copy(this.velocity)
+    this.loadFactor = 0
+    this.thermalLift = 0
+    this.impactVy = 0
+    this.impact = null
+    this.groundCacheValid = false
+    this.controls.throttle = 0
+    this.controls.boost = false
+    resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
+    this.mesh.visible = false
+    this.snapDisplay()
+  }
+
+  /** Cancel optional model hydration and release all aircraft resources. */
+  dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.modelLoadToken++
+    disposeAircraftObject(this.mesh)
+  }
+
+  markLanded(): void {
+    if (this.disposed) return
+    if (this.status === 'ok') this.status = 'landed'
+  }
+
+  /** After a landing, going airborne again is a new flight. */
+  clearLanded(): void {
+    if (this.disposed) return
+    if (this.status === 'landed') this.status = 'ok'
+  }
+
+  /** Toggle the landing gear, retaining automatic low-altitude protection. */
+  toggleGear(): boolean {
+    if (this.disposed || this.status === 'crashed') return this.controls.gearDown
+    if (this.onGround) {
+      this.controls.gearDown = true
+      this.manualGearOverride = false
+      return true
+    }
+    this.manualGearOverride = true
+    this.controls.gearDown = !this.controls.gearDown
+    return this.controls.gearDown
+  }
+
+  /** Gear down near the surface, up once you have height. */
+  private autoGear(): void {
+    if (this.status === 'crashed') return
+    if (this.onGround) {
+      this.controls.gearDown = true
+      this.manualGearOverride = false
+      return
+    }
+    const agl = altitudeAgl(
+      this.position.x,
+      this.position.y,
+      this.position.z,
+      this.controls.gearDown,
+    )
+    if (agl < 16) {
+      this.controls.gearDown = true
+      this.manualGearOverride = false
+    } else if (agl > 30 && !this.manualGearOverride) {
+      this.controls.gearDown = false
+    }
   }
 
   syncMesh(): void {
@@ -370,183 +451,260 @@ export class Aircraft {
     this.mesh.quaternion.copy(this.orientation)
   }
 
-  setManualGear(down: boolean): void {
-    this.controls.gearDown = down
-    this.manualGearOverride = true
+  /**
+   * Add a restrained cool fill to dark airframe panels at night. This keeps
+   * the existing silhouette readable without adding lights or draw calls.
+   */
+  setNightReadability(daylight: number): void {
+    if (this.disposed) return
+    const intensity = nightAirframeEmissiveIntensity(daylight)
+    this.presentationDaylight = Number.isFinite(daylight)
+      ? MathUtils.clamp(daylight, 0, 1)
+      : 0
+    if (!Number.isFinite(this.nightReadabilityValue) || Math.abs(intensity - this.nightReadabilityValue) >= 0.005) {
+      this.nightReadabilityValue = intensity
+      for (const material of this.readabilityMaterials) {
+        material.emissiveIntensity = intensity
+      }
+    }
+    if (this.canopyGlassMaterial) {
+      const canopyIntensity = canopyGlassEmissiveIntensity(this.presentationDaylight)
+      if (
+        !Number.isFinite(this.canopyGlassIntensityValue) ||
+        Math.abs(canopyIntensity - this.canopyGlassIntensityValue) >= 0.005
+      ) {
+        this.canopyGlassIntensityValue = canopyIntensity
+        this.canopyGlassMaterial.emissiveIntensity = canopyIntensity
+      }
+    }
   }
 
-  setVisualQuality(quality: RenderQuality): void {
+  /** Apply the shared render preset to aircraft-only visual detail. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
     this.visualQuality = quality
     this.applyVisualQuality()
   }
 
+  /** Disable continuous aircraft-only visual motion for motion-sensitive play. */
   setReducedMotion(enabled: boolean): void {
+    if (this.disposed) return
     this.reducedMotion = enabled
   }
 
-  setPresentationDaylight(daylight: number): void {
-    this.presentationDaylight = Number.isFinite(daylight)
-      ? MathUtils.clamp(daylight, 0, 1)
-      : 1
-  }
-
-  dispose(): void {
-    if (this.disposed) return
-    this.disposed = true
-    this.modelLoadToken += 1
-    this.mesh.removeFromParent()
-    disposeAircraftObject(this.mesh)
-  }
-
-  private updateLoadFactor(dt: number): void {
-    if (dt <= 0) return
-    _loadAcceleration
-      .copy(this.velocity)
-      .sub(this.prevVelocity)
-      .multiplyScalar(1 / dt)
-    _loadUp.set(0, 1, 0).applyQuaternion(this.orientation)
-    const sample = resolveLoadFactor(_loadAcceleration, _loadUp)
-    const k = 1 - Math.exp(-8 * dt)
-    this.loadFactor += (sample - this.loadFactor) * k
-  }
-
-  private autoGear(): void {
-    if (this.manualGearOverride) return
-    const agl = altitudeAgl(this.position.x, this.position.y, this.position.z, this.controls.gearDown)
-    if (agl > 80) this.controls.gearDown = false
-    else if (agl < 35 && this.velocity.y < 2) this.controls.gearDown = true
-  }
-
-  private updateGear(dt: number): void {
+  /**
+   * Articulated gear and power-driven exhaust for the procedural model.
+   * Safe no-ops if nodes missing (GLB path).
+   */
+  private updateVisuals(dt: number, nowMs?: number): void {
+    const now = this.resolveVisualTime(dt, nowMs)
+    const gear = this.landingGear
     const target = this.controls.gearDown ? 1 : 0
-    this.gearExtension = MathUtils.damp(this.gearExtension, target, 6, dt)
-    if (this.landingGear) this.landingGear.visible = this.gearExtension > 0.02
-    if (this.gearNose) this.gearNose.rotation.x = (1 - this.gearExtension) * 1.4
-    if (this.gearLeft) this.gearLeft.rotation.x = (1 - this.gearExtension) * 1.25
-    if (this.gearRight) this.gearRight.rotation.x = (1 - this.gearExtension) * 1.25
-    if (this.gearDoorNose) this.gearDoorNose.rotation.x = this.gearExtension * -0.9
-    if (this.gearDoorLeft) this.gearDoorLeft.rotation.z = this.gearExtension * 1.1
-    if (this.gearDoorRight) this.gearDoorRight.rotation.z = this.gearExtension * -1.1
-  }
+    this.gearExtension = dt === 0
+      ? target
+      : MathUtils.damp(this.gearExtension, target, 4, dt)
+    if (gear) {
+      gear.visible = this.gearExtension > 0.015
+      const folded = 1 - this.gearExtension
+      if (this.gearNose) this.gearNose.rotation.x = -folded * Math.PI * 0.5
+      if (this.gearLeft) this.gearLeft.rotation.z = folded * Math.PI * 0.5
+      if (this.gearRight) this.gearRight.rotation.z = -folded * Math.PI * 0.5
+      if (this.gearDoorNose) this.gearDoorNose.rotation.x = folded * 0.72
+      if (this.gearDoorLeft) this.gearDoorLeft.rotation.z = -folded * 0.52
+      if (this.gearDoorRight) this.gearDoorRight.rotation.z = folded * 0.52
+    }
 
-  private updateControlSurfaces(dt: number): void {
-    const targets = controlSurfaceTargets(
-      this.controls.pitch,
-      this.controls.roll,
-      this.controls.yaw,
-      this.controls.airbrake,
+    this.updateControlSurfaces(dt)
+    this.updateWheelSpin(dt)
+    this.updateNoseGearSteering(dt)
+    this.updateVaporTrails()
+
+    if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
+      const opacity = antiCollisionBeaconOpacity(now, this.reducedMotion)
+      this.antiCollisionBeacon.visible = opacity > 0.01
+      this.antiCollisionBeaconMaterial.opacity = opacity
+    }
+
+    if (this.landingLightNose && this.landingLightMaterial) {
+      const opacity = landingLightOpacity(this.gearExtension)
+      if (Math.abs(opacity - this.landingLightOpacityValue) > .01) {
+        this.landingLightOpacityValue = opacity
+        this.landingLightNose.visible = opacity > .01
+        this.landingLightMaterial.opacity = opacity
+      }
+    }
+
+    const navOpacity = navigationLightOpacity(
+      this.reducedMotion ? Number.NaN : now,
+      this.presentationDaylight,
     )
-    setSurfaceAngle(this.flaperonLeft, 'x', targets.flaperonLeftX, 16, dt)
-    setSurfaceAngle(this.flaperonRight, 'x', targets.flaperonRightX, 16, dt)
-    setSurfaceAngle(this.stabilatorLeft, 'x', targets.stabilatorLeftX, 13, dt)
-    setSurfaceAngle(this.stabilatorRight, 'x', targets.stabilatorRightX, 13, dt)
-    setSurfaceAngle(this.tailLeft, 'y', targets.rudderY, 12, dt)
-    setSurfaceAngle(this.tailRight, 'y', targets.rudderY, 12, dt)
+    if (Math.abs(navOpacity - this.navLightOpacity) > .01) {
+      this.navLightOpacity = navOpacity
+      for (const material of this.navLightMaterials) material.opacity = navOpacity
+    }
+
+    // Drive plume size from the same 0..100% lever shown on the HUD. Boost
+    // changes the available exhaust envelope, but never replaces the lever's
+    // contribution, so 30% power cannot produce a full-size afterburner.
+    const engine = this.engineState
+    const boost = engine.afterburnerActive
+    const throttlePower = this.status === 'crashed' ? 0 : engine.lever
+    this.updateNozzlePetals(throttlePower, boost)
+
+    const ab = this.afterburner
+    if (!ab) return
+
+    const plumeResponse = Math.pow(throttlePower, 0.82)
+    const plumeVisible = throttlePower > 0.015
+    const boostChanged = boost !== this.plumeBoostValue
+    const responseChanged = boostChanged ||
+      !Number.isFinite(this.plumeResponseValue) ||
+      Math.abs(plumeResponse - this.plumeResponseValue) > 0.001
+    if (plumeVisible !== this.plumeVisibleValue) {
+      this.plumeVisibleValue = plumeVisible
+      ab.visible = plumeVisible
+    }
+    if (responseChanged) {
+      this.plumeResponseValue = plumeResponse
+      this.plumeBoostValue = boost
+      ab.userData.powerPercent = throttlePower * 100
+    }
+
+    // Stretch aft from the nozzle lip. Military power retains a compact hot
+    // exhaust; afterburner grows to a long, wide plume at full engine power.
+    const pulseAnimated = boost && dt > 0 && !this.reducedMotion
+    const pulseModeChanged = pulseAnimated !== this.plumePulseAnimatedValue
+    this.plumePulseAnimatedValue = pulseAnimated
+    const pulse =
+      pulseAnimated ? 1 + Math.sin(now * 0.028) * 0.08 : 1
+    const len = (
+      0.12 + plumeResponse * (boost ? 2.8 : 1.25)
+    ) * pulse
+    const fat = 0.68 + plumeResponse * (boost ? 0.62 : 0.32)
+    if (pulseAnimated || pulseModeChanged || responseChanged ||
+      Math.abs(fat - this.plumeFatValue) > 0.001 ||
+      Math.abs(len - this.plumeLengthValue) > 0.001) {
+      this.plumeFatValue = fat
+      this.plumeLengthValue = len
+      ab.scale.set(fat, fat, len)
+    }
+
+    if (responseChanged) {
+      const boostGlow = boost ? 1 : 0.55
+      for (const plume of this.plumeMaterials) {
+        if (plume.name === 'abCore') plume.material.opacity = (boost ? 1 : 0.16 + plumeResponse * 0.28) * (boost ? 1 : boostGlow)
+        else if (plume.name === 'abMid') plume.material.opacity = (boost ? 0.82 : 0.08 + plumeResponse * 0.22) * (boost ? 1 : boostGlow)
+        else if (plume.name === 'abOuter') plume.material.opacity = (boost ? 0.42 : 0.03 + plumeResponse * 0.12)
+      }
+    }
+    if (pulseAnimated || pulseModeChanged || responseChanged) {
+      for (let i = 0; i < this.plumeDiamonds.length; i++) {
+        const diamond = this.plumeDiamonds[i]!
+        if (this.visualQuality === 'low' && i > 0) continue
+        const scale = afterburnerDiamondPulse(i, now, pulseAnimated, plumeResponse)
+        diamond.node.scale.set(diamond.x * scale, diamond.y * scale, diamond.z * scale)
+      }
+    }
+    const nozzleIntensity = MathUtils.lerp(0, boost ? 8 : 2.1, plumeResponse)
+    if (responseChanged || !Number.isFinite(this.nozzleIntensityValue) ||
+      Math.abs(nozzleIntensity - this.nozzleIntensityValue) > 0.002) {
+      this.nozzleIntensityValue = nozzleIntensity
+      for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzleIntensity
+    }
   }
 
-  private updateWheels(dt: number): void {
-    if (!this.onGround || this.wheels.length === 0) return
-    const groundSpeed = Math.hypot(this.velocity.x, this.velocity.z)
-    this.wheelSpin += groundSpeed * dt * 0.55
+  /** Use the render timestamp when supplied, otherwise advance deterministically. */
+  private resolveVisualTime(dt: number, nowMs?: number): number {
+    if (Number.isFinite(nowMs)) {
+      this.visualTimeMs = Math.max(this.visualTimeMs, nowMs!)
+    } else if (Number.isFinite(dt) && dt > 0) {
+      this.visualTimeMs += dt * 1000
+    }
+    return this.visualTimeMs
+  }
+
+  /** Smooth body-up acceleration into an arcade-readable pilot G estimate. */
+  private updateLoadFactor(dt: number): void {
+    if (!Number.isFinite(dt) || dt <= 0) return
+    _loadAcceleration.subVectors(this.velocity, this.prevVelocity).multiplyScalar(1 / dt)
+    _loadUp.set(0, 1, 0).applyQuaternion(this.orientation)
+    const target = resolveLoadFactor(_loadAcceleration, _loadUp, flightConfig.gravity)
+    this.loadFactor = MathUtils.damp(this.loadFactor, target, 8, dt)
+  }
+
+  /** Flex the existing nozzle petals subtly with engine power. */
+  private updateNozzlePetals(power: number, boost: boolean): void {
+    if (this.nozzlePetals.length === 0) return
+    const safePower = MathUtils.clamp(Number.isFinite(power) ? power : 0, 0, 1)
+    const target = safePower * (boost ? 0.12 : 0.035)
+    if (Math.abs(target - this.nozzleFlareValue) < 0.002) return
+    this.nozzleFlareValue = target
+    for (const petal of this.nozzlePetals) {
+      petal.node.rotation.x = Math.cos(petal.angle) * target
+      petal.node.rotation.y = Math.sin(petal.angle) * target
+      petal.node.rotation.z = -petal.angle
+    }
+  }
+
+  /** Reveal the pooled wingtip vapor only when speed or load makes it readable. */
+  private updateVaporTrails(): void {
+    if (this.vaporNodes.length === 0) return
+    const intensity = this.status === 'crashed'
+      ? 0
+      : wingtipVaporIntensity(this.speed, this.loadFactor)
+    if (Number.isFinite(this.vaporOpacity) && Math.abs(intensity - this.vaporOpacity) < 0.006) return
+    this.vaporOpacity = intensity
+    const amount = intensity / 0.22
+    const visible = this.visualQuality !== 'low' && intensity > 0.004
+    for (const node of this.vaporNodes) {
+      node.visible = visible
+      node.scale.set(.72 + amount * .42, .62 + amount * .92, .72 + amount * .42)
+    }
+    if (this.vaporMaterial) this.vaporMaterial.opacity = intensity
+  }
+
+  /** Animate the procedural F-35's hinged panels from the live stick input. */
+  private updateControlSurfaces(dt: number): void {
+    const pitch = MathUtils.clamp(this.controls.pitch, -1, 1)
+    const roll = MathUtils.clamp(this.controls.roll, -1, 1)
+    const yaw = MathUtils.clamp(this.controls.yaw, -1, 1)
+    const airbrake = this.controls.airbrake ? 1 : 0
+
+    // Differential flaperons show roll while both sides contribute to pitch.
+    setSurfaceAngle(this.flaperonLeft, 'x', -pitch * 0.16 - roll * 0.14 + airbrake * 0.1, 14, dt)
+    setSurfaceAngle(this.flaperonRight, 'x', -pitch * 0.16 + roll * 0.14 + airbrake * 0.1, 14, dt)
+    setSurfaceAngle(this.stabilatorLeft, 'x', -pitch * 0.12 - roll * 0.07 + airbrake * 0.07, 11, dt)
+    setSurfaceAngle(this.stabilatorRight, 'x', -pitch * 0.12 + roll * 0.07 + airbrake * 0.07, 11, dt)
+    // Both rudders deflect together for yaw; the canted fins remain fixed.
+    setSurfaceAngle(this.tailLeft, 'y', yaw * 0.11, 10, dt)
+    setSurfaceAngle(this.tailRight, 'y', yaw * 0.11, 10, dt)
+  }
+
+  /** Spin the existing wheel meshes during taxi and rollout without new parts. */
+  private updateWheelSpin(dt: number): void {
+    if (this.wheels.length === 0) return
+    const deployed = this.gearExtension > 0.08
+    if (dt > 0 && deployed) {
+      const groundSpeed = Math.hypot(this.velocity.x, this.velocity.z)
+      if (groundSpeed > 0.2) {
+        this.wheelSpin = (this.wheelSpin + (groundSpeed * dt) / 0.32) % (Math.PI * 2)
+      }
+    }
     for (const wheel of this.wheels) wheel.rotation.x = this.wheelSpin
   }
 
-  private updateVisuals(dt: number, nowMs?: number): void {
-    if (Number.isFinite(nowMs)) this.visualTimeMs = nowMs as number
-    else this.visualTimeMs += dt * 1000
-    this.updateNavLights()
-    this.updateAntiCollision()
-    this.updateLandingLight()
-    this.updatePlume()
-    this.updateVapor()
-    this.updateNightReadability()
+  /** Turn the nose wheel with rudder input while the jet is rolling. */
+  private updateNoseGearSteering(dt: number): void {
+    const nose = this.gearNose
+    if (!nose) return
+    const grounded = this.onGround && this.gearExtension > 0.75
+    const target = grounded ? MathUtils.clamp(this.controls.yaw, -1, 1) * 0.38 : 0
+    nose.rotation.y = dt === 0
+      ? target
+      : MathUtils.damp(nose.rotation.y, target, 11, dt)
   }
 
-  private updateNavLights(): void {
-    const opacity = navigationLightOpacity(this.visualTimeMs, this.presentationDaylight)
-    if (opacity === this.navLightOpacity) return
-    this.navLightOpacity = opacity
-    for (const material of this.navLightMaterials) material.opacity = opacity
-  }
-
-  private updateAntiCollision(): void {
-    if (!this.antiCollisionBeacon || !this.antiCollisionBeaconMaterial) return
-    const opacity = antiCollisionBeaconOpacity(this.visualTimeMs, this.reducedMotion)
-    this.antiCollisionBeacon.visible = opacity > 0.01
-    this.antiCollisionBeaconMaterial.opacity = opacity
-  }
-
-  private updateLandingLight(): void {
-    if (!this.landingLightNose || !this.landingLightMaterial) return
-    const opacity = landingLightOpacity(this.gearExtension)
-    if (opacity === this.landingLightOpacityValue) return
-    this.landingLightOpacityValue = opacity
-    this.landingLightNose.visible = opacity > 0.02
-    this.landingLightMaterial.opacity = opacity
-  }
-
-  private updatePlume(): void {
-    const response = this.engineState.response
-    const boost = this.engineState.afterburnerActive
-    const visible = response > 0.02 || boost
-    if (this.afterburner && visible !== this.plumeVisibleValue) {
-      this.afterburner.visible = visible
-      this.plumeVisibleValue = visible
-    }
-    if (!visible) return
-    const fat = 0.85 + response * 0.35 + (boost ? 0.25 : 0)
-    const length = 0.7 + response * 0.9 + (boost ? 0.55 : 0)
-    if (fat !== this.plumeFatValue || length !== this.plumeLengthValue) {
-      this.plumeFatValue = fat
-      this.plumeLengthValue = length
-      for (const diamond of this.plumeDiamonds) {
-        diamond.node.scale.set(diamond.x * fat, diamond.y * fat, diamond.z * length)
-      }
-    }
-    for (let i = 0; i < this.plumeDiamonds.length; i++) {
-      const pulse = afterburnerDiamondPulse(i, this.visualTimeMs, boost, response)
-      const diamond = this.plumeDiamonds[i]!
-      diamond.node.scale.x = diamond.x * fat * pulse
-      diamond.node.scale.y = diamond.y * fat * pulse
-    }
-    const nozzle = 0.2 + response * 0.8 + (boost ? 0.6 : 0)
-    if (nozzle !== this.nozzleIntensityValue) {
-      this.nozzleIntensityValue = nozzle
-      for (const glow of this.nozzleGlows) glow.emissiveIntensity = nozzle
-      for (const petal of this.nozzlePetals) {
-        petal.node.rotation.z = petal.angle * (0.15 + response * 0.55 + (boost ? 0.25 : 0))
-      }
-    }
-    this.plumeResponseValue = response
-    this.plumeBoostValue = boost
-  }
-
-  private updateVapor(): void {
-    if (!this.vaporMaterial || this.vaporNodes.length === 0) return
-    const intensity = this.visualQuality === 'low'
-      ? 0
-      : wingtipVaporIntensity(this.speed, this.loadFactor)
-    if (intensity === this.vaporOpacity) return
-    this.vaporOpacity = intensity
-    this.vaporMaterial.opacity = intensity
-    for (const node of this.vaporNodes) node.visible = intensity > 0.01
-  }
-
-  private updateNightReadability(): void {
-    const night = nightAirframeEmissiveIntensity(this.presentationDaylight)
-    if (night !== this.nightReadabilityValue) {
-      this.nightReadabilityValue = night
-      for (const material of this.readabilityMaterials) material.emissiveIntensity = night
-    }
-    if (this.canopyGlassMaterial) {
-      const canopy = canopyGlassEmissiveIntensity(this.presentationDaylight)
-      if (canopy !== this.canopyGlassIntensityValue) {
-        this.canopyGlassIntensityValue = canopy
-        this.canopyGlassMaterial.emissiveIntensity = canopy
-      }
-    }
-  }
-
+  /** Cache the small set of nodes touched every physics step. */
   private cacheVisualNodes(): void {
     const find = (name: string): Object3D | null => this.mesh.getObjectByName(name) ?? null
     this.landingGear = find('landingGear')
@@ -636,6 +794,8 @@ export class Aircraft {
         this.nozzleGlows.push(material)
         return
       }
+      // Physical canopy glass already carries its own emissive tint. Only
+      // dark non-emissive panels receive the subtle night readability layer.
       if (material.emissive.getHex() !== 0 || this.readabilityMaterialSet.has(material)) return
       material.emissive.setHex(AIRFRAME_NIGHT_EMISSIVE)
       this.readabilityMaterialSet.add(material)
@@ -648,6 +808,7 @@ export class Aircraft {
     this.applyVisualQuality()
   }
 
+  /** Hide only secondary aircraft effects on Low; core power cues stay visible. */
   private applyVisualQuality(): void {
     const low = this.visualQuality === 'low'
     for (const node of this.lowQualityPlumeNodes) node.visible = !low
@@ -705,10 +866,12 @@ export class Aircraft {
   }
 }
 
+/** Dispose a removed aircraft subtree without double-disposing shared slots. */
 export function disposeAircraftObject(root: Object3D): void {
   disposeObjectTree(root)
 }
 
+/** Rare dorsal anti-collision strobe envelope, hidden between flashes. */
 export function antiCollisionBeaconOpacity(timeMs: number, reducedMotion = false): number {
   if (reducedMotion) return 0.16
   if (!Number.isFinite(timeMs)) return 0
@@ -720,6 +883,7 @@ export function antiCollisionBeaconOpacity(timeMs: number, reducedMotion = false
   return attack * release
 }
 
+/** Slow daylight-aware nav-light breathing keeps the silhouette readable without strobing. */
 export function navigationLightOpacity(timeMs: number, daylight = 0): number {
   const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
   const base = 0.34 + (1 - safeDaylight) * 0.45
@@ -727,21 +891,28 @@ export function navigationLightOpacity(timeMs: number, daylight = 0): number {
   return base + (Math.sin(timeMs * .0038) + 1) * .03
 }
 
+/** Cool panel fill strength, zero in daylight and stronger through dusk. */
 export function nightAirframeEmissiveIntensity(daylight: number): number {
   const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
+  // A dark stealth finish needs a little more separation from storm clouds
+  // than a clear night does. Keep the fill additive-only and fully disabled
+  // in daylight so the authored grey panels still own the daytime read.
   return (1 - safe) * 0.42
 }
 
+/** Keep the physical canopy readable at night without making it glow by day. */
 export function canopyGlassEmissiveIntensity(daylight: number): number {
   const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
   return 0.08 + (1 - safe) * 0.16
 }
 
+/** Gear-linked landing-lamp envelope, kept independent of dynamic lights. */
 export function landingLightOpacity(gearExtension: number): number {
   const t = Number.isFinite(gearExtension) ? MathUtils.clamp(gearExtension, 0, 1) : 0
   return MathUtils.smoothstep(t, 0.55, 0.9) * 0.95
 }
 
+/** Small procedural Mach-diamond pulse used by the external exhaust plume. */
 export function afterburnerDiamondPulse(
   index: number,
   timeMs: number,
@@ -754,6 +925,7 @@ export function afterburnerDiamondPulse(
   return 1 + Math.sin(phase) * 0.1 * power
 }
 
+/** Convert world acceleration into a bounded body-up pilot-load estimate. */
 export function resolveLoadFactor(
   acceleration: Vector3,
   bodyUp: Vector3,
@@ -766,7 +938,14 @@ export function resolveLoadFactor(
   return MathUtils.clamp((axial + safeGravity * up) / safeGravity, -4, 12)
 }
 
-export { controlSurfaceTargets, wingtipVaporIntensity } from './controlSurfaces'
+/** Bounded wingtip vapor envelope driven by high speed and hard maneuvering. */
+export function wingtipVaporIntensity(speed: number, loadFactor: number): number {
+  const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
+  const safeLoad = Number.isFinite(loadFactor) ? Math.abs(loadFactor) : 1
+  const speedT = MathUtils.smoothstep(safeSpeed, 260, 780)
+  const loadT = MathUtils.smoothstep(safeLoad, 0.6, 3.5)
+  return MathUtils.clamp(speedT * (0.045 + loadT * 0.175), 0, 0.22)
+}
 
 function enableShadows(obj: Object3D): void {
   if (obj instanceof Mesh) {
