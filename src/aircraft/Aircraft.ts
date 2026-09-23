@@ -665,19 +665,20 @@ export class Aircraft {
 
   /** Animate the procedural F-35's hinged panels from the live stick input. */
   private updateControlSurfaces(dt: number): void {
-    const pitch = MathUtils.clamp(this.controls.pitch, -1, 1)
-    const roll = MathUtils.clamp(this.controls.roll, -1, 1)
-    const yaw = MathUtils.clamp(this.controls.yaw, -1, 1)
-    const airbrake = this.controls.airbrake ? 1 : 0
-
-    // Differential flaperons show roll while both sides contribute to pitch.
-    setSurfaceAngle(this.flaperonLeft, 'x', -pitch * 0.16 - roll * 0.14 + airbrake * 0.1, 14, dt)
-    setSurfaceAngle(this.flaperonRight, 'x', -pitch * 0.16 + roll * 0.14 + airbrake * 0.1, 14, dt)
-    setSurfaceAngle(this.stabilatorLeft, 'x', -pitch * 0.12 - roll * 0.07 + airbrake * 0.07, 11, dt)
-    setSurfaceAngle(this.stabilatorRight, 'x', -pitch * 0.12 + roll * 0.07 + airbrake * 0.07, 11, dt)
+    const targets = controlSurfaceTargets(
+      this.controls.pitch,
+      this.controls.roll,
+      this.controls.yaw,
+      this.controls.airbrake,
+    )
+    // Snappier chase-readable throws; boards dump hard when B is held.
+    setSurfaceAngle(this.flaperonLeft, 'x', targets.flaperonLeftX, 16, dt)
+    setSurfaceAngle(this.flaperonRight, 'x', targets.flaperonRightX, 16, dt)
+    setSurfaceAngle(this.stabilatorLeft, 'x', targets.stabilatorLeftX, 13, dt)
+    setSurfaceAngle(this.stabilatorRight, 'x', targets.stabilatorRightX, 13, dt)
     // Both rudders deflect together for yaw; the canted fins remain fixed.
-    setSurfaceAngle(this.tailLeft, 'y', yaw * 0.11, 10, dt)
-    setSurfaceAngle(this.tailRight, 'y', yaw * 0.11, 10, dt)
+    setSurfaceAngle(this.tailLeft, 'y', targets.rudderY, 12, dt)
+    setSurfaceAngle(this.tailRight, 'y', targets.rudderY, 12, dt)
   }
 
   /** Spin the existing wheel meshes during taxi and rollout without new parts. */
@@ -938,13 +939,45 @@ export function resolveLoadFactor(
   return MathUtils.clamp((axial + safeGravity * up) / safeGravity, -4, 12)
 }
 
-/** Bounded wingtip vapor envelope driven by high speed and hard maneuvering. */
+/**
+ * Arcade stick and speed-brake panel targets for the procedural F-35.
+ * Throws stay chase-readable; holding B dumps the boards without new meshes.
+ */
+export function controlSurfaceTargets(
+  pitch: number,
+  roll: number,
+  yaw: number,
+  airbrake: boolean,
+): {
+  flaperonLeftX: number
+  flaperonRightX: number
+  stabilatorLeftX: number
+  stabilatorRightX: number
+  rudderY: number
+} {
+  const p = MathUtils.clamp(Number.isFinite(pitch) ? pitch : 0, -1, 1)
+  const r = MathUtils.clamp(Number.isFinite(roll) ? roll : 0, -1, 1)
+  const y = MathUtils.clamp(Number.isFinite(yaw) ? yaw : 0, -1, 1)
+  const b = airbrake ? 1 : 0
+  return {
+    flaperonLeftX: -p * 0.28 - r * 0.24 + b * 0.34,
+    flaperonRightX: -p * 0.28 + r * 0.24 + b * 0.34,
+    stabilatorLeftX: -p * 0.22 - r * 0.12 + b * 0.28,
+    stabilatorRightX: -p * 0.22 + r * 0.12 + b * 0.28,
+    rudderY: y * 0.22,
+  }
+}
+
+/**
+ * Wingtip vapor for mil-cruise turns: quiet in straight flight, readable when
+ * the jet is pulling, without permanent trails at the raised cruise.
+ */
 export function wingtipVaporIntensity(speed: number, loadFactor: number): number {
   const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
   const safeLoad = Number.isFinite(loadFactor) ? Math.abs(loadFactor) : 1
-  const speedT = MathUtils.smoothstep(safeSpeed, 260, 780)
-  const loadT = MathUtils.smoothstep(safeLoad, 0.6, 3.5)
-  return MathUtils.clamp(speedT * (0.045 + loadT * 0.175), 0, 0.22)
+  const speedT = MathUtils.smoothstep(safeSpeed, 220, 520)
+  const loadT = MathUtils.smoothstep(safeLoad, 1.2, 3.2)
+  return MathUtils.clamp(speedT * loadT * 0.22, 0, 0.22)
 }
 
 function enableShadows(obj: Object3D): void {
