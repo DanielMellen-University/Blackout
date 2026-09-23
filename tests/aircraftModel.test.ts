@@ -10,6 +10,7 @@ import {
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
   resolveLoadFactor,
+  controlSurfaceTargets,
   wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
 import { contactSweepNeedsDetailedProbes, runwayGripForWeather } from '../src/aircraft/FlightModel'
@@ -308,13 +309,23 @@ describe('rebuilt aircraft', () => {
     expect(resolveLoadFactor(new Vector3(Number.NaN, 0, 0), new Vector3(0, 1, 0))).toBeCloseTo(1)
   })
 
-  it('keeps wingtip vapor dormant at taxi speed and bounded in a hard turn', () => {
+  it('keeps wingtip vapor quiet in straight mil cruise and readable in a hard turn', () => {
     expect(wingtipVaporIntensity(0, 1)).toBe(0)
-    expect(wingtipVaporIntensity(260, 1)).toBe(0)
-    expect(wingtipVaporIntensity(780, 1)).toBeGreaterThan(0.045)
-    expect(wingtipVaporIntensity(780, 1)).toBeLessThan(0.07)
+    expect(wingtipVaporIntensity(520, 1)).toBe(0)
+    expect(wingtipVaporIntensity(780, 1)).toBe(0)
+    expect(wingtipVaporIntensity(520, 3.2)).toBeCloseTo(0.22)
     expect(wingtipVaporIntensity(1600, 5)).toBeCloseTo(0.22)
     expect(wingtipVaporIntensity(Number.NaN, Number.NaN)).toBe(0)
+  })
+
+  it('opens the stick throws and dumps the boards when the brake is held', () => {
+    const neutral = controlSurfaceTargets(0, 0, 0, false)
+    const boards = controlSurfaceTargets(0, 0, 0, true)
+    const pull = controlSurfaceTargets(1, 0, 0, false)
+    expect(neutral.flaperonLeftX).toBe(0)
+    expect(boards.flaperonLeftX).toBeCloseTo(0.34)
+    expect(boards.stabilatorLeftX).toBeCloseTo(0.28)
+    expect(Math.abs(pull.flaperonLeftX)).toBeGreaterThan(0.2)
   })
 
   it('builds hidden shared-material wingtip vapor nodes', () => {
