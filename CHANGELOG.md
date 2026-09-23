@@ -4,6 +4,10 @@
 
 ### Ship
 
+- Open the stick throws and dump the boards so chase cam reads mil-turn authority and B-held brake.
+- Retune wingtip vapor for mil-cruise turns: quiet in straight flight, readable when the jet is pulling.
+- Bleed mil cruise faster with the speed brake while keeping final approach flyable.
+- Light the VSI during the FLARE cue so the last sink window is obvious on the HUD.
 - Overhaul the procedural F-35 with a refined continuous fuselage, teardrop gold canopy, external cockpit detail, deep intakes, separate rudders, and restrained skin seams; batch static trim while preserving animated gear, nozzle, lights, and control surfaces.
 - Give instanced clouds soft optical edges, shaded undersides, sunlit rims, full-size opacity fades, and gradual visibility loss inside formations. Graphics budgets now reduce puff counts without cutting sphere geometry.
 - Replace aircraft-locked rain sprites with pooled wind-driven world-space streaks. Fade rain, snow, haze, and overhead cloud cover above their source decks, and darken the distant cloud layer at night.
