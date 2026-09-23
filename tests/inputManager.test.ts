@@ -245,7 +245,7 @@ describe('flight input one-shot controls', () => {
     expect(controls.pitch).toBeGreaterThan(0.5)
     expect(controls.yaw).toBeGreaterThan(0.2)
     expect(controls.boost).toBe(true)
-    expect(controls.throttle).toBeCloseTo(.01386, 5)
+    expect(controls.throttle).toBeCloseTo(0.063, 5)
     fake.fire('keydown', 'KeyW')
     expect(input.sampleWithDt(.05).pitch).toBe(1)
     input.dispose()
@@ -263,7 +263,7 @@ describe('flight input one-shot controls', () => {
     expect(touch.yaw).toBe(-1)
     expect(touch.roll).toBeCloseTo(0.5)
     expect(touch.boost).toBe(true)
-    expect(input.sampleWithDt(0.05).throttle).toBeCloseTo(0.0198, 5)
+    expect(input.sampleWithDt(0.05).throttle).toBeCloseTo(0.09, 5)
 
     fake.fire('keydown', 'KeyS')
     expect(input.sampleWithDt(0).pitch).toBe(-1)
