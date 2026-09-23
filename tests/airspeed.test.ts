@@ -150,6 +150,32 @@ it('does not slam the brakes after a powered dive', () => {
   expect(plane.speed).toBeLessThan(flightConfig.maxSpeed + 1)
 })
 
+
+it('bleeds mil cruise faster with the speed brake held', () => {
+  setContactHeightSampler(() => 0)
+  const clean = new Aircraft()
+  clean.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
+  clean.controls.gearDown = false
+  clean.controls.throttle = 1
+  clean.velocity.set(0, 0, flightConfig.cruiseSpeed)
+
+  const braked = new Aircraft()
+  braked.reset({ x: 0, y: 15000, z: 0, yaw: 0 })
+  braked.controls.gearDown = false
+  braked.controls.throttle = 1
+  braked.controls.airbrake = true
+  braked.velocity.set(0, 0, flightConfig.cruiseSpeed)
+
+  for (let i = 0; i < 60; i++) {
+    clean.step(1 / 60)
+    braked.step(1 / 60)
+  }
+
+  expect(braked.speed).toBeLessThan(clean.speed - 30)
+  expect(braked.speed).toBeGreaterThan(100)
+  expect(Number.isFinite(braked.speed)).toBe(true)
+})
+
 it('uses the held speed brake to bleed airborne speed while preserving finite state', () => {
   setContactHeightSampler(() => 0)
   const plane = new Aircraft()
