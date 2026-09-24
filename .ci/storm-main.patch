@@ -1,0 +1,35 @@
+diff --git a/src/main.ts b/src/main.ts
+index ea3e7fa..681d93e 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -74,6 +74,7 @@ import { SpeedStreakFx } from './systems/SpeedStreakFx'
+ import { MachConeFx } from './systems/MachConeFx'
+ import { GroundWakeFx } from './systems/GroundWakeFx'
+ import { thermalLiftIntensity } from './systems/ThermalLift'
++import { stormBuffetDrive } from './systems/StormBuffet'
+ import { StuntTracker } from './systems/StuntTracker'
+ import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
+ import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
+@@ -1180,6 +1181,8 @@ async function boot(): Promise<void> {
+       time.skipFrame(nowMs)
+       aircraft.controls = input.sampleWithDt(0)
+       if (!playing) input.resetFlightControls(0)
++      aircraft.setStormBuffet(0)
++      cameras.setStormBuffet(0)
+       aircraft.snapDisplay(nowMs)
+     } else {
+       const { frameDt, steps, stepDt, alpha } = time.beginFrame(nowMs)
+@@ -1190,6 +1193,13 @@ async function boot(): Promise<void> {
+       aircraft.setWeatherGust(weather.gust)
+       aircraft.setWeatherWind(weather.windX, weather.windZ)
+       aircraft.setWeatherSurface(weather.rain, weather.snow)
++      const stormDrive = stormBuffetDrive(weather.rain, weather.snow, weather.gust, {
++        reducedMotion,
++        paused: menu.paused,
++        playing,
++      })
++      aircraft.setStormBuffet(stormDrive)
++      cameras.setStormBuffet(stormDrive)
+ 
+       if (input.consumeCameraToggle()) {
+         const mode = cameras.toggleMode(aircraft)

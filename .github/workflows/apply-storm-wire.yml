@@ -1,0 +1,37 @@
+name: Apply storm buffet wire
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply patches
+        run: |
+          set -euo pipefail
+          git apply .ci/storm-main.patch
+          git apply .ci/storm-aircraft.patch
+          git apply .ci/storm-changelog.patch
+          git apply .ci/storm-camtest.patch
+          test -n "$(git status --porcelain)"
+          grep -nE 'setStormBuffet|stormBuffetDrive' src/main.ts src/aircraft/Aircraft.ts
+          grep -nE 'storm buffet' CHANGELOG.md
+          grep -nE 'setStormBuffet' tests/cameraSystem.test.ts
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/main.ts src/aircraft/Aircraft.ts CHANGELOG.md tests/cameraSystem.test.ts
+          git commit -m "$(cat <<'EOF'
+feat: wire storm buffet through main and Aircraft
+
+Drive camera and airframe wobble from weather intensity in the play loop.
+Changelog and camera-system tests included.
+EOF
+)"
+          git push origin HEAD:main
