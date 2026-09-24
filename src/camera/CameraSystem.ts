@@ -1,1 +1,1 @@
-RESTORE_MARKER
+@/tmp/cam_raw.ts
