@@ -1,6 +1,9 @@
 name: Apply storm buffet wire
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - ".github/workflows/apply-storm-wire.yml"
 permissions:
   contents: write
 jobs:
@@ -13,6 +16,10 @@ jobs:
       - name: Apply patches
         run: |
           set -euo pipefail
+          if [ ! -f .ci/storm-main.patch ]; then
+            echo "patches already applied or missing"
+            exit 0
+          fi
           git apply .ci/storm-main.patch
           git apply .ci/storm-aircraft.patch
           git apply .ci/storm-changelog.patch
@@ -21,17 +28,18 @@ jobs:
           grep -nE 'setStormBuffet|stormBuffetDrive' src/main.ts src/aircraft/Aircraft.ts
           grep -nE 'storm buffet' CHANGELOG.md
           grep -nE 'setStormBuffet' tests/cameraSystem.test.ts
-      - name: Commit and push
+      - name: Commit, cleanup staging, push
         run: |
           set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "nothing to commit"
+            exit 0
+          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add src/main.ts src/aircraft/Aircraft.ts CHANGELOG.md tests/cameraSystem.test.ts
-          git commit -m "$(cat <<'EOF'
-feat: wire storm buffet through main and Aircraft
-
-Drive camera and airframe wobble from weather intensity in the play loop.
-Changelog and camera-system tests included.
-EOF
-)"
+          git rm -r .ci || true
+          git rm .github/workflows/apply-storm-wire.yml || true
+          git commit -m "feat: wire storm buffet through main and Aircraft"
           git push origin HEAD:main
+# bump 2026-09-24T11:28:00-06:00
