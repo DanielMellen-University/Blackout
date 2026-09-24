@@ -11,6 +11,7 @@ import {
   type Object3D,
   type Scene,
 } from 'three'
+import { stormAirframeWobble, stormBuffetViewScale } from '../systems/StormBuffet'
 import { disposeObjectTree } from '../core/dispose'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createF35Model } from './createF35Model'
@@ -85,6 +86,12 @@ export class Aircraft {
   weatherWindZ = 0
   /** Blended precipitation grip multiplier used only during ground rollout. */
   weatherSurfaceGrip = 1
+  /** Cached rain / snow intensities for airframe storm buffet. */
+  weatherRain = 0
+  weatherSnow = 0
+  /** Gated 0..1 storm buffet drive supplied by the render loop. */
+  private stormBuffet = 0
+  private stormBuffetPhase = 0
   /** Bounded deterministic updraft supplied before physics steps. */
   thermalLift = 0
   /** Reused contact snapshot. `impact` points here when a new hit occurs. */
@@ -275,6 +282,10 @@ export class Aircraft {
     this.weatherWindX = 0
     this.weatherWindZ = 0
     this.weatherSurfaceGrip = 1
+    this.weatherRain = 0
+    this.weatherSnow = 0
+    this.stormBuffet = 0
+    this.stormBuffetPhase = 0
     this.thermalLift = 0
     this.flight.reset()
     this.wheelSpin = 0
@@ -320,6 +331,7 @@ export class Aircraft {
     }
     this.mesh.position.copy(this.displayPosition)
     this.mesh.quaternion.copy(this.displayOrientation)
+    this.applyStormAirframeBuffet()
   }
 
   /** Copy physics pose to the display pose (reset, pause, crash). */
@@ -363,9 +375,31 @@ export class Aircraft {
 
   /** Feed blended rain and snow into the forgiving ground-roll grip model. */
   setWeatherSurface(rain: number, snow: number): void {
-    const next = runwayGripForWeather(rain, snow)
+    const safeRain = Number.isFinite(rain) ? MathUtils.clamp(rain, 0, 1) : 0
+    const safeSnow = Number.isFinite(snow) ? MathUtils.clamp(snow, 0, 1) : 0
+    if (
+      Math.abs(safeRain - this.weatherRain) >= 0.002 ||
+      Math.abs(safeSnow - this.weatherSnow) >= 0.002
+    ) {
+      this.weatherRain = safeRain
+      this.weatherSnow = safeSnow
+    }
+    const next = runwayGripForWeather(safeRain, safeSnow)
     if (Math.abs(next - this.weatherSurfaceGrip) < 0.002) return
     this.weatherSurfaceGrip = next
+  }
+
+  /**
+   * Feed the gated storm-buffet drive for a readable airframe wobble.
+   * Pass 0 on pause / title / results so the jet settles.
+   */
+  setStormBuffet(intensity: number): void {
+    if (this.disposed) return
+    if (this.reducedMotion || !Number.isFinite(intensity)) {
+      this.stormBuffet = 0
+      return
+    }
+    this.stormBuffet = MathUtils.clamp(intensity, 0, 1)
   }
 
   /** Feed the fixed-step flight model a finite, normalized thermal envelope. */
@@ -490,6 +524,20 @@ export class Aircraft {
   setReducedMotion(enabled: boolean): void {
     if (this.disposed) return
     this.reducedMotion = enabled
+    if (enabled) this.stormBuffet = 0
+  }
+
+  /** Tiny pooled airframe wobble while precipitation or strong gusts buffet the jet. */
+  private applyStormAirframeBuffet(): void {
+    if (this.reducedMotion || this.stormBuffet <= 0.001 || this.status === 'crashed') return
+    const scale = stormBuffetViewScale(false, this.visualQuality === 'low')
+    const intensity = this.stormBuffet * scale
+    if (intensity <= 0.001) return
+    this.stormBuffetPhase = (this.stormBuffetPhase + 0.11 + intensity * 0.08) % (Math.PI * 2)
+    const wobble = stormAirframeWobble(this.stormBuffetPhase, intensity)
+    this.mesh.rotateX(wobble.x)
+    this.mesh.rotateY(wobble.y)
+    this.mesh.rotateZ(wobble.z)
   }
 
   /**

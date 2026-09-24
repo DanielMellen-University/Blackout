@@ -421,3 +421,26 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 })
+
+
+describe('storm buffet camera drive', () => {
+  it('suppresses storm buffet when reduced motion is enabled', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15000, 0)
+    aircraft.snapDisplay()
+    cameras.setReducedMotion(true)
+    cameras.setStormBuffet(1)
+    cameras.update(aircraft, 1 / 60)
+    const before = cameras.camera.position.clone()
+    cameras.update(aircraft, 1 / 60)
+    expect(cameras.camera.position).toEqual(before)
+    cameras.dispose()
+  })
+})
