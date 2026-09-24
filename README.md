@@ -19,7 +19,7 @@ Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks 
 
 The procedural F-35 has a shaped gold canopy, recessed intakes, separate rudders, animated landing gear and exhaust, and batched surface detail. The first-person view remains unobstructed.
 
-Weather transitions blend layered cloud cover, wind, precipitation, lighting, and visibility. Clouds fade at full size, shade toward the sun, and reduce visibility when you fly through them. Rain streaks drift through world space; precipitation and overhead cover clear above the cloud tops. Graphics presets retain bounded cloud and precipitation pools.
+Weather transitions blend layered cloud cover, wind, precipitation, lighting, and visibility. Clouds fade at full size, shade toward the sun, and reduce visibility when you fly through them. Rain streaks drift through world space; precipitation and overhead cover clear above the cloud tops. Meaningful rain, snow, or strong gusts add a restrained camera and airframe buffet that stays quiet under reduced-motion preferences. Graphics presets retain bounded cloud and precipitation pools.
 
 Use `/dev/aircraft.html` for orbit views and gear/afterburner checks, or `/dev/terrain.html` for weather presets, flight-scale inspection, and frame-time measurements.
 
