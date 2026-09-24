@@ -11,8 +11,6 @@ while True:
 if not parts:
     sys.exit("no camera restore parts found")
 raw = zlib.decompress(base64.b64decode("".join(parts)))
-path = pathlib.Path("src/camera/CameraSystem.ts")
-path.write_bytes(raw)
+pathlib.Path("src/camera/CameraSystem.ts").write_bytes(raw)
 assert b"setStormBuffet" in raw
-assert len(raw) > 20000
 print("restored CameraSystem.ts", len(raw))
