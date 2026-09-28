@@ -60,30 +60,7 @@ export class TerrainWorkerPool {
     if (next === this.workerLimit) return
     this.workerLimit = next
     if (this.disabled) return
-
-    if (next > this.slots.length) {
-      for (const slot of this.slots) slot.retire = false
-      try {
-        while (this.slots.length < next) this.createSlot()
-      } catch {
-        this.fail()
-      }
-      return
-    }
-
-    let excess = this.slots.length - next
-    for (let i = this.slots.length - 1; i >= 0 && excess > 0; i--) {
-      const slot = this.slots[i]!
-      if (slot.job) {
-        if (!slot.retire) {
-          slot.retire = true
-          excess--
-        }
-        continue
-      }
-      this.removeSlot(slot)
-      excess--
-    }
+    this.reconcileSlots()
   }
   submit(job: TerrainBuildRequest): boolean {
     const slot = this.slots.find(candidate => candidate.job === null && !candidate.retire)
@@ -110,6 +87,7 @@ export class TerrainWorkerPool {
       this.busyCount = Math.max(0, this.busyCount - 1)
       const shouldRetire = slot.retire || this.slots.length > this.workerLimit
       if (shouldRetire) this.removeSlot(slot)
+      this.reconcileSlots()
       this.complete(job, event.data.data)
     }
     worker.onerror = () => this.fail()
@@ -125,6 +103,35 @@ export class TerrainWorkerPool {
     slot.worker.onmessageerror = null
     slot.worker.terminate()
     this.slots.splice(index, 1)
+  }
+
+  /** Reconcile pending retirements after a quality change or worker completion. */
+  private reconcileSlots(): void {
+    if (this.disabled) return
+    // A later quality change can make a previously scheduled retirement
+    // unnecessary. Recompute the retirement set from the current target so a
+    // rapid Low -> High switch cannot strand the pool below its new limit.
+    for (const slot of this.slots) slot.retire = false
+    if (this.slots.length < this.workerLimit) {
+      try {
+        while (this.slots.length < this.workerLimit) this.createSlot()
+      } catch {
+        this.fail()
+      }
+      return
+    }
+
+    let excess = this.slots.length - this.workerLimit
+    for (let i = this.slots.length - 1; i >= 0 && excess > 0; i--) {
+      const slot = this.slots[i]!
+      if (slot.job) {
+        slot.retire = true
+        excess--
+      } else {
+        this.removeSlot(slot)
+        excess--
+      }
+    }
   }
   dispose(): void {
     for (const slot of this.slots) {

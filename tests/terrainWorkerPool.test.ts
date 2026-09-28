@@ -64,6 +64,23 @@ describe('terrain worker pool', () => {
     pool.dispose()
   })
 
+  it('cancels pending retirements when quality recovers before completion', () => {
+    const pool = new TerrainWorkerPool(vi.fn(), vi.fn())
+    pool.setWorkerLimit(2)
+    pool.submit(request(1))
+    pool.submit(request(2))
+
+    pool.setWorkerLimit(1)
+    expect(pool.size).toBe(2)
+    pool.setWorkerLimit(2)
+
+    FakeWorker.instances.find(worker => worker.posted.some(job => job.id === 1))!.reply({ id: 1, generation: 0, data })
+    FakeWorker.instances.find(worker => worker.posted.some(job => job.id === 2))!.reply({ id: 2, generation: 0, data })
+    expect(pool.size).toBe(2)
+    expect(pool.available).toBe(true)
+    pool.dispose()
+  })
+
   it('never lets a quality switch exceed the hardware concurrency budget', () => {
     vi.stubGlobal('navigator', { hardwareConcurrency: 2 })
     const pool = new TerrainWorkerPool(vi.fn(), vi.fn(), 6)
