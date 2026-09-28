@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.513**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.514**.
 
 Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget.
 
@@ -12,7 +12,7 @@ Procedural cities and villages receive deterministic biome-aware names that carr
 
 The live HUD keeps the current biome or water body visible as a compact region label between discovery banners, reusing the existing bounded terrain survey cadence. External camera ground probes, fixed-step flight contact sweeps, and post-step grounded checks reuse caller-owned, frame-scoped height caches, keeping repeated ridge, post-effect floor, collision-normal, and gear-state probes allocation-free without retaining stale values across sampler replacement or terrain streaming.
 
-The title screen now surfaces pilot rank, course mastery, earned honors, and the next career goal before launch, using the same bounded records that power results debriefs.
+The title screen now surfaces pilot rank, course mastery, earned honors, and the next career goal before launch, using the same bounded records that power results debriefs. If a requested procedural or authored seed cannot be rebuilt, the active world is retained and the launch banner says so instead of implying that a new world loaded; replay seed input remains available for another attempt.
 
 Flight warnings keep their existing hysteresis and now use distinct, restrained edge cues for terrain closure, rising-ridge closure, loaded obstacles, stall, unsafe gear, and overspeed instead of collapsing every state into one generic tone. The terrain warning uses two bounded forward surface probes at the HUD cadence, while obstacle warnings reuse three padded collision probes for nearby hangars, towers, cities, and villages without adding work to fixed-step physics. Reduced motion can also be enabled from the pause menu and is saved locally, covering camera motion, weather buffet, sky drift, radar pulses, and impact effects while still honoring the operating system preference.
 The production build keeps the audio runtime in its own cacheable chunk, trimming the initial app entry without changing the in-flight code path. Live exploration now counts distinct river, lake, and sea families in the HUD and sortie debrief without double-counting repeated crossings, and course records retain the best waterway survey.

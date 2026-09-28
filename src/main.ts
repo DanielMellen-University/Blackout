@@ -1178,6 +1178,7 @@ async function boot(): Promise<void> {
   const resetFlight = (newWorld: boolean, briefing = false): void => {
     results.hide()
     const replaying = replaySeed !== null
+    let worldFallback = false
     if (newWorld) {
       const course = courseDefinitionForId(selectedCourseId)
       world.reseed(
@@ -1188,8 +1189,9 @@ async function boot(): Promise<void> {
         course.windSide,
         course.weatherShift,
       )
-      replaySeed = null
-      if (replaying) {
+      worldFallback = world.lastReseedUsedFallback
+      if (!worldFallback) replaySeed = null
+      if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''
         if (titleSeedStatus) titleSeedStatus.textContent = ''
       }
@@ -1264,7 +1266,9 @@ async function boot(): Promise<void> {
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) {
-      const resetLabel = newWorld
+      const resetLabel = worldFallback
+        ? 'WORLD REBUILD FAILED / CURRENT WORLD RETAINED'
+        : newWorld
         ? replaying
           ? `REPLAY SEED ${formatWorldSeed(world.worldSeed)}`
           : 'NEW WORLD'

@@ -180,6 +180,7 @@ describe('world lifecycle boundary', () => {
     })
 
     expect(world.reseed(73)).toBe(previousSeed)
+    expect(world.lastReseedUsedFallback).toBe(true)
     expect(clear).toHaveBeenCalledTimes(2)
     expect(world.worldSeed).toBe(previousSeed)
     expect(Number.isFinite(world.spawn.x)).toBe(true)

@@ -119,6 +119,8 @@ export class World {
     biome: 'plains',
   }
   private committed = false
+  /** True when a requested replacement was rejected and the previous world stayed active. */
+  private reseedFallback = false
   private disposed = false
   private renderQuality: RenderQuality | null = null
   /** Additional GPU detail scale applied by the adaptive pixel-resolution scaler. */
@@ -184,6 +186,11 @@ export class World {
 
   get worldSeed(): number {
     return this.seed
+  }
+
+  /** Whether the most recent reseed kept the previously committed world. */
+  get lastReseedUsedFallback(): boolean {
+    return this.reseedFallback
   }
 
   get weatherCycleLocked(): boolean {
@@ -262,6 +269,7 @@ export class World {
     requestedWeatherShift?: WeatherId,
   ): number {
     if (this.disposed) return this.seed
+    this.reseedFallback = false
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
       throw new Error('World seed must be finite')
     }
@@ -341,6 +349,7 @@ export class World {
         return this.seed
       }
       if (this.committed) {
+        this.reseedFallback = true
         restore()
         return this.seed
       }
@@ -348,6 +357,7 @@ export class World {
     } catch (err) {
       restore()
       if (this.committed && liveWorldCleared) {
+        this.reseedFallback = true
         this.restoreCommittedWorld(
           previousSeed,
           previousProfile,
@@ -362,7 +372,10 @@ export class World {
         )
         return this.seed
       }
-      if (this.committed) return this.seed
+      if (this.committed) {
+        this.reseedFallback = true
+        return this.seed
+      }
       throw err
     }
   }
