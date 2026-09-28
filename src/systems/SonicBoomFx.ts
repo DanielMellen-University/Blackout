@@ -63,12 +63,14 @@ export class SonicBoomFx {
   }
 
   setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
     this.visualQuality = quality
     if (!this.active) return
     this.updatePresentation()
   }
 
   setReducedMotion(reduced: boolean): void {
+    if (this.disposed) return
     this.reducedMotion = reduced === true
     if (!this.active) return
     this.updatePresentation()
@@ -97,6 +99,7 @@ export class SonicBoomFx {
   }
 
   reset(): void {
+    if (this.disposed) return
     this.age = 0
     this.active = false
     this.root.visible = false
@@ -109,6 +112,7 @@ export class SonicBoomFx {
     this.root.remove(this.ring)
     this.geometry.dispose()
     this.material.dispose()
+    this.root.removeFromParent()
   }
 
   private updatePresentation(): void {
