@@ -321,8 +321,8 @@ async function boot(): Promise<void> {
         bestScore: record?.bestScore ?? 0,
         badgeCount: record?.badgeCount ?? 0,
         bestPrecisionStreak: record?.bestPrecisionStreak ?? 0,
-        contractLabel: sortieContractLabelForSeed(course.seed ?? undefined),
-        contractDetail: sortieContractDetailForSeed(course.seed ?? undefined),
+        contractLabel: sortieContractLabelForSeed(course.seed ?? undefined, 5, course.contractCatalog === true),
+        contractDetail: sortieContractDetailForSeed(course.seed ?? undefined, 5, course.contractCatalog === true),
       })
       return {
         id: course.id,
@@ -1119,7 +1119,13 @@ async function boot(): Promise<void> {
     warningTracker.reset()
     input.clearQueued()
     input.resetFlightControls(0)
-    challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
+    challenge.reset(
+      courseId(),
+      world.mission.totalGates,
+      world.mission.scoringFocus,
+      world.worldSeed,
+      courseDefinitionForId(selectedCourseId).contractCatalog === true,
+    )
     ghost.reset(courseId())
     ghost.setVisible(playing && ghostVisible)
     challenge.recordBiome(world.spawn.biome)
@@ -2430,7 +2436,13 @@ async function boot(): Promise<void> {
   document.addEventListener('visibilitychange', onFlightVisibilityPause)
   window.addEventListener('blur', onWindowBlur)
 
-      challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
+      challenge.reset(
+        courseId(),
+        world.mission.totalGates,
+        world.mission.scoringFocus,
+        world.worldSeed,
+        courseDefinitionForId(selectedCourseId).contractCatalog === true,
+      )
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB
   // exists, let it hydrate in the background instead of blocking the title

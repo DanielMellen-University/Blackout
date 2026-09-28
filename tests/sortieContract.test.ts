@@ -19,6 +19,12 @@ describe('sortie contracts', () => {
     expect(sortieContractLabelForSeed(42)).toBe(label)
   })
 
+  it('previews expanded catalog contracts for themed courses', () => {
+    expect(sortieContractLabelForSeed(348, 5, true)).toBe('TRAFFIC WATCH')
+    expect(sortieContractDetailForSeed(348, 5, true)).toContain('PASS THREE TRAFFIC CONTACTS')
+    expect(sortieContractLabelForSeed(348, 5)).not.toBe('TRAFFIC WATCH')
+  })
+
   it('assigns a deterministic contract without allocating runtime state', () => {
     const first = new SortieContractTracker()
     const second = new SortieContractTracker()

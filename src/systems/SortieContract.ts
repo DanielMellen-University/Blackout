@@ -923,18 +923,18 @@ function assignedContract(
 }
 
 /** Preview the deterministic contract on a seeded course without creating tracker state. */
-export function sortieContractLabelForSeed(seed: number | undefined, totalGates = 5): string {
+export function sortieContractLabelForSeed(seed: number | undefined, totalGates = 5, catalog = false): string {
   if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
   const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
-  const contract = assignedContract(seed, safeGates, false)
+  const contract = assignedContract(seed, safeGates, catalog)
   return contract?.label ?? ''
 }
 
 /** Preview the deterministic contract instruction without creating tracker state. */
-export function sortieContractDetailForSeed(seed: number | undefined, totalGates = 5): string {
+export function sortieContractDetailForSeed(seed: number | undefined, totalGates = 5, catalog = false): string {
   if (typeof seed !== 'number' || !Number.isFinite(seed)) return ''
   const safeGates = Number.isFinite(totalGates) ? Math.max(0, Math.floor(totalGates)) : 0
-  const contract = assignedContract(seed, safeGates, false)
+  const contract = assignedContract(seed, safeGates, catalog)
   if (!contract) return ''
   return contractDetailFor(contract.kind, contractTargetFor(contract, safeGates))
 }
