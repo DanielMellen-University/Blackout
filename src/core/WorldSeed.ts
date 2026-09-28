@@ -70,17 +70,33 @@ export function worldSeedReplayUrl(
     if (courseId === 'daily-ops' && isDailyDayKey(dayKey)) {
       url.searchParams.set('day', dayKey)
       url.searchParams.delete('week')
+      url.searchParams.delete('month')
     } else if (courseId === 'weekly-ops' && isWeeklyWeekKey(dayKey)) {
       url.searchParams.set('week', dayKey)
       url.searchParams.delete('day')
+      url.searchParams.delete('month')
+    } else if (courseId === 'monthly-ops' && isMonthlyMonthKey(dayKey)) {
+      url.searchParams.set('month', dayKey)
+      url.searchParams.delete('day')
+      url.searchParams.delete('week')
     } else {
       url.searchParams.delete('day')
       url.searchParams.delete('week')
+      url.searchParams.delete('month')
     }
     return url.toString()
   } catch {
     return null
   }
+}
+
+function isMonthlyMonthKey(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}$/.test(value)) return false
+  const match = /^(\d{4})-(\d{2})$/.exec(value)
+  const year = Number(match?.[1])
+  const month = Number(match?.[2])
+  return Number.isInteger(year) && Number.isInteger(month) && month >= 1 && month <= 12 &&
+    new Date(Date.UTC(year, month - 1, 15, 12)).toISOString().slice(0, 7) === value
 }
 
 function isDailyDayKey(value: unknown): value is string {

@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'daily-ops' | 'weekly-ops' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'aurora-run' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'monsoon-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run' | 'shoreline-run'
+export type CourseId = 'random' | 'free-flight' | 'daily-ops' | 'weekly-ops' | 'monthly-ops' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'aurora-run' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'monsoon-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run' | 'shoreline-run'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -26,14 +26,18 @@ export interface CourseDefinition {
   daily?: boolean
   /** Resolve this entry from the current UTC week instead of keeping one fixed seed. */
   weekly?: boolean
+  /** Resolve this entry from the current UTC month instead of keeping one fixed seed. */
+  monthly?: boolean
 }
 
 export const DAILY_OPS_COURSE_ID: CourseId = 'daily-ops'
 export const WEEKLY_OPS_COURSE_ID: CourseId = 'weekly-ops'
+export const MONTHLY_OPS_COURSE_ID: CourseId = 'monthly-ops'
 const DAILY_OPS_DAY_MS = 86_400_000
 const DAILY_OPS_EPOCH_MS = Date.UTC(2025, 0, 1)
 const WEEKLY_OPS_WEEK_MS = 7 * DAILY_OPS_DAY_MS
 const WEEKLY_OPS_EPOCH_MS = Date.UTC(2025, 0, 6)
+const MONTHLY_OPS_EPOCH_MS = Date.UTC(2025, 0, 1)
 const DAILY_OPS_PROFILES: readonly MissionRouteProfile[] = [
   'sweep',
   'slalom',
@@ -80,6 +84,12 @@ const WEEKLY_OPS_WEATHER: readonly WeatherId[] = [
   'storm',
   'snow',
 ] as const
+const MONTHLY_OPS_PROFILES: readonly MissionRouteProfile[] = [
+  'ridge', 'fjord', 'volcanic', 'alpine', 'canyon', 'mesa', 'badlands', 'archipelago', 'thermal', 'storm',
+] as const
+const MONTHLY_OPS_WEATHER: readonly WeatherId[] = [
+  'clear', 'cloudy', 'fog', 'rain', 'storm', 'snow',
+] as const
 
 /** Small curated set of repeatable seeds, plus the normal infinite random mode. */
 export const COURSE_LIBRARY: readonly CourseDefinition[] = [
@@ -114,6 +124,15 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     profile: null,
     contractCatalog: true,
     weekly: true,
+  },
+  {
+    id: MONTHLY_OPS_COURSE_ID,
+    label: 'Monthly ops',
+    detail: 'One shared route, refreshed on the first of each month',
+    seed: null,
+    profile: null,
+    contractCatalog: true,
+    monthly: true,
   },
   {
     id: 'training-orbit',
@@ -723,6 +742,24 @@ export function weeklyOpsTimestampForWeekKey(weekKey: string | null | undefined)
   return timestamp
 }
 
+/** Stable UTC month key used by Monthly Ops records and replay links. */
+export function monthlyOpsMonthKey(nowMs = Date.now()): string {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : MONTHLY_OPS_EPOCH_MS
+  const date = new Date(safeNow)
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/** Parse a replayed UTC month without allowing malformed dates to alter a launch. */
+export function monthlyOpsTimestampForMonthKey(monthKey: string | null | undefined): number | null {
+  if (typeof monthKey !== 'string' || !/^(\d{4})-(\d{2})$/.test(monthKey)) return null
+  const match = /^(\d{4})-(\d{2})$/.exec(monthKey)
+  const year = Number(match?.[1])
+  const month = Number(match?.[2])
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return null
+  const timestamp = Date.UTC(year, month - 1, 15, 12)
+  return Number.isFinite(timestamp) && monthlyOpsMonthKey(timestamp) === monthKey ? timestamp : null
+}
+
 /** Generate a bounded integer seed shared by everyone on the same UTC day. */
 export function dailyOpsSeed(nowMs = Date.now()): number {
   const safeNow = Number.isFinite(nowMs) ? nowMs : DAILY_OPS_EPOCH_MS
@@ -755,6 +792,24 @@ export function weeklyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
   return WEEKLY_OPS_PROFILES[mixed % WEEKLY_OPS_PROFILES.length]!
 }
 
+/** Generate a bounded integer seed shared by everyone in the same UTC month. */
+export function monthlyOpsSeed(nowMs = Date.now()): number {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : MONTHLY_OPS_EPOCH_MS
+  const date = new Date(safeNow)
+  const monthIndex = (date.getUTCFullYear() - 2025) * 12 + date.getUTCMonth()
+  const mixed = Math.imul((monthIndex ^ 0x243f6a88) | 0, 1_664_525) + 1_013_904_223
+  return 1_000 + ((mixed >>> 0) % 900_000)
+}
+
+/** Keep Monthly Ops on the broader high-relief route pool. */
+export function monthlyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : MONTHLY_OPS_EPOCH_MS
+  const date = new Date(safeNow)
+  const monthIndex = (date.getUTCFullYear() - 2025) * 12 + date.getUTCMonth()
+  const mixed = Math.imul((monthIndex ^ 0x13198a2e) | 0, 2_246_822_519) >>> 0
+  return MONTHLY_OPS_PROFILES[mixed % MONTHLY_OPS_PROFILES.length]!
+}
+
 /** Resolve a catalog entry for this launch, expanding the rotating Ops entries. */
 export function resolveCourseDefinition(
   course: CourseDefinition,
@@ -774,14 +829,28 @@ export function resolveCourseDefinition(
       timeOfDay,
     }
   }
-  if (!course.weekly) return course
-  const seed = weeklyOpsSeed(nowMs)
-  const profile = weeklyOpsProfile(nowMs)
-  const weather = WEEKLY_OPS_WEATHER[seed % WEEKLY_OPS_WEATHER.length]!
+  if (course.weekly) {
+    const seed = weeklyOpsSeed(nowMs)
+    const profile = weeklyOpsProfile(nowMs)
+    const weather = WEEKLY_OPS_WEATHER[seed % WEEKLY_OPS_WEATHER.length]!
+    const timeOfDay = profile === 'night' ? 0.84 : undefined
+    return {
+      ...course,
+      detail: `${course.detail} · ${weeklyOpsWeekKey(nowMs)}`,
+      seed,
+      profile,
+      weather,
+      timeOfDay,
+    }
+  }
+  if (!course.monthly) return course
+  const seed = monthlyOpsSeed(nowMs)
+  const profile = monthlyOpsProfile(nowMs)
+  const weather = MONTHLY_OPS_WEATHER[seed % MONTHLY_OPS_WEATHER.length]!
   const timeOfDay = profile === 'night' ? 0.84 : undefined
   return {
     ...course,
-    detail: `${course.detail} · ${weeklyOpsWeekKey(nowMs)}`,
+    detail: `${course.detail} · ${monthlyOpsMonthKey(nowMs)}`,
     seed,
     profile,
     weather,
@@ -802,7 +871,9 @@ export function courseRunId(course: CourseDefinition, nowMs = Date.now()): strin
     ? `:daily:${dailyOpsDayKey(nowMs)}`
     : course.weekly
       ? `:weekly:${weeklyOpsWeekKey(nowMs)}`
-      : ''
+      : course.monthly
+        ? `:monthly:${monthlyOpsMonthKey(nowMs)}`
+        : ''
   return `${courseSessionBaseId(resolved.seed, resolved.profile)}${courseIdentitySuffix(resolved.id)}${periodSuffix}`
 }
 
@@ -820,7 +891,9 @@ export function courseSessionId(
     ? 'daily'
     : selectedCourseId === WEEKLY_OPS_COURSE_ID
       ? 'weekly'
-      : ''
+      : selectedCourseId === MONTHLY_OPS_COURSE_ID
+        ? 'monthly'
+        : ''
   const periodSuffix = period && periodKey
     ? `:${period}:${periodKey}`
     : ''

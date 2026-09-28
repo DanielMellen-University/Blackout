@@ -10,6 +10,10 @@ import {
   dailyOpsProfile,
   dailyOpsSeed,
   dailyOpsTimestampForDayKey,
+  monthlyOpsMonthKey,
+  monthlyOpsProfile,
+  monthlyOpsSeed,
+  monthlyOpsTimestampForMonthKey,
   weeklyOpsProfile,
   weeklyOpsSeed,
   weeklyOpsTimestampForWeekKey,
@@ -23,7 +27,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(70)
+    expect(COURSE_LIBRARY).toHaveLength(71)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -290,6 +294,21 @@ describe('course library', () => {
     expect(courseRunId(weekly, weeklyNow + 7 * 86_400_000)).not.toBe(courseRunId(weekly, weeklyNow))
     expect(courseSessionId('weekly-ops', weeklyResolved.seed!, weeklyResolved.profile!, weeklyOpsWeekKey(weeklyNow)))
       .toBe(`${courseRunId(weekly, weeklyNow)}`)
+    const monthly = courseDefinitionForId('monthly-ops')
+    const monthlyNow = Date.UTC(2026, 8, 28, 12)
+    const monthlyResolved = resolveCourseDefinition(monthly, monthlyNow)
+    expect(monthly.monthly).toBe(true)
+    expect(monthlyResolved.seed).toBe(monthlyOpsSeed(monthlyNow))
+    expect(monthlyResolved.profile).toBe(monthlyOpsProfile(monthlyNow))
+    expect(monthlyResolved.detail).toContain(monthlyOpsMonthKey(monthlyNow))
+    expect(monthlyOpsMonthKey(monthlyNow)).toBe('2026-09')
+    expect(monthlyOpsTimestampForMonthKey(monthlyOpsMonthKey(monthlyNow))).toBe(Date.UTC(2026, 8, 15, 12))
+    expect(monthlyOpsTimestampForMonthKey('2026-13')).toBeNull()
+    expect(monthlyOpsTimestampForMonthKey('2026-09-01')).toBeNull()
+    expect(courseRunId(monthly, monthlyNow)).toContain(`:monthly:${monthlyOpsMonthKey(monthlyNow)}`)
+    expect(courseRunId(monthly, Date.UTC(2026, 9, 1, 12))).not.toBe(courseRunId(monthly, monthlyNow))
+    expect(courseSessionId('monthly-ops', monthlyResolved.seed!, monthlyResolved.profile!, monthlyOpsMonthKey(monthlyNow)))
+      .toBe(`${courseRunId(monthly, monthlyNow)}`)
   })
 
   it('persists only valid course ids and fails closed on storage denial', () => {

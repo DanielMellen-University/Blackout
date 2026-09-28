@@ -22,9 +22,9 @@ export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'exp
 
 /** Keep the growing catalog understandable without making authored course data carry UI-only labels. */
 export function coursePickerCategoryForCourse(
-  course: Pick<CourseDefinition, 'id' | 'seed' | 'profile' | 'contractCatalog' | 'daily' | 'weekly'>,
+  course: Pick<CourseDefinition, 'id' | 'seed' | 'profile' | 'contractCatalog' | 'daily' | 'weekly' | 'monthly'>,
 ): Exclude<CoursePickerCategory, 'all'> {
-  if (course.daily || course.weekly || course.id === 'daily-ops' || course.id === 'weekly-ops') return 'ops'
+  if (course.daily || course.weekly || course.monthly || course.id === 'daily-ops' || course.id === 'weekly-ops' || course.id === 'monthly-ops') return 'ops'
   if (course.id === 'random' || course.id === 'free-flight' || (course.seed === null && course.profile === 'free')) {
     return 'explore'
   }
@@ -277,7 +277,19 @@ function coursePeriodLabel(value: string | undefined): string {
     return ''
   }
   const week = /^(?:WEEK )?(\d{4}-W\d{2})$/.exec(value)
-  if (!week) return ''
+  if (!week) {
+    const month = /^(?:MONTH )?(\d{4}-\d{2})$/.exec(value)
+    if (!month) return ''
+    const match = /^(\d{4})-(\d{2})$/.exec(month[1]!)
+    if (!match) return ''
+    const year = Number(match[1])
+    const monthNumber = Number(match[2])
+    if (!Number.isInteger(year) || !Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) return ''
+    const timestamp = Date.UTC(year, monthNumber - 1, 15, 12)
+    return new Date(timestamp).toISOString().slice(0, 7) === month[1]
+      ? `MONTH ${month[1]}`
+      : ''
+  }
   const match = /^(\d{4})-W(\d{2})$/.exec(week[1]!)
   if (!match) return ''
   const year = Number(match[1])

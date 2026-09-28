@@ -50,6 +50,7 @@ describe('course picker copy', () => {
   it('classifies the catalog into stable launch filters', () => {
     expect(coursePickerCategoryForCourse({ id: 'daily-ops', seed: null, profile: null, daily: true })).toBe('ops')
     expect(coursePickerCategoryForCourse({ id: 'weekly-ops', seed: null, profile: null, weekly: true })).toBe('ops')
+    expect(coursePickerCategoryForCourse({ id: 'monthly-ops', seed: null, profile: null, monthly: true })).toBe('ops')
     expect(coursePickerCategoryForCourse({ id: 'random', seed: null, profile: null })).toBe('explore')
     expect(coursePickerCategoryForCourse({ id: 'free-flight', seed: null, profile: 'free' })).toBe('explore')
     expect(coursePickerCategoryForCourse({ id: 'training-orbit', seed: 1, profile: 'orbit' })).toBe('routes')
@@ -100,6 +101,10 @@ describe('course picker copy', () => {
     expect(courseConditionSummary({ weather: 'clear' }, 'WEEK 2026-W40'))
       .toBe('WEEK 2026-W40 / WEATHER CLEAR')
     expect(courseConditionSummary({ weather: 'clear' }, 'WEEK 2026-W99'))
+      .toBe('WEATHER CLEAR')
+    expect(courseConditionSummary({ weather: 'clear' }, 'MONTH 2026-09'))
+      .toBe('MONTH 2026-09 / WEATHER CLEAR')
+    expect(courseConditionSummary({ weather: 'clear' }, 'MONTH 2026-13'))
       .toBe('WEATHER CLEAR')
     expect(courseConditionSummary({ weather: 'fog' }, '2026-02-30'))
       .toBe('WEATHER LOW FOG')

@@ -81,6 +81,8 @@ import {
   courseDefinitionForId,
   dailyOpsDayKey,
   dailyOpsTimestampForDayKey,
+  monthlyOpsMonthKey,
+  monthlyOpsTimestampForMonthKey,
   weeklyOpsTimestampForWeekKey,
   weeklyOpsWeekKey,
   courseRunId,
@@ -337,18 +339,23 @@ async function boot(): Promise<void> {
   const replayWeekTimestamp = replayCourseId === 'weekly-ops'
     ? weeklyOpsTimestampForWeekKey(replayParams?.get('week'))
     : null
+  const replayMonthTimestamp = replayCourseId === 'monthly-ops'
+    ? monthlyOpsTimestampForMonthKey(replayParams?.get('month'))
+    : null
   // Keep a single UTC snapshot for this page session so the picker, records,
   // and a retry all refer to the same rotating Ops challenge around a period
   // boundary.
-  const opsTimestamp = replayDayTimestamp ?? replayWeekTimestamp ?? Date.now()
+  const opsTimestamp = replayDayTimestamp ?? replayWeekTimestamp ?? replayMonthTimestamp ?? Date.now()
   const selectedCoursePeriodKey = (): string | undefined => {
     if (selectedCourseId === 'daily-ops') return `DAY ${dailyOpsDayKey(opsTimestamp)}`
     if (selectedCourseId === 'weekly-ops') return `WEEK ${weeklyOpsWeekKey(opsTimestamp)}`
+    if (selectedCourseId === 'monthly-ops') return `MONTH ${monthlyOpsMonthKey(opsTimestamp)}`
     return undefined
   }
   const selectedCourseReplayKey = (): string | undefined => {
     if (selectedCourseId === 'daily-ops') return dailyOpsDayKey(opsTimestamp)
     if (selectedCourseId === 'weekly-ops') return weeklyOpsWeekKey(opsTimestamp)
+    if (selectedCourseId === 'monthly-ops') return monthlyOpsMonthKey(opsTimestamp)
     return undefined
   }
   const selectedCourse = () => resolveCourseDefinition(
