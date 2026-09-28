@@ -26,6 +26,7 @@ import {
   copyWorldSeed,
   copyWorldSeedLink,
   formatWorldSeed,
+  normalizeWorldSeed,
   parseWorldSeed,
   shouldRegenerateWorldOnLaunch,
 } from './core/WorldSeed'
@@ -880,7 +881,7 @@ async function boot(): Promise<void> {
     })
   })
   results.setLoadSeedHandler(() => {
-    const seed = Number.isFinite(world.worldSeed) ? Math.trunc(world.worldSeed) : null
+    const seed = normalizeWorldSeed(world.worldSeed)
     if (seed === null || !Number.isSafeInteger(seed)) return
     replaySeed = seed
     selectedCourseId = 'random'

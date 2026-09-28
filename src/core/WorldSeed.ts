@@ -14,6 +14,11 @@ function canonicalWorldSeed(seed: number): number | null {
   return scaled / WORLD_SEED_SCALE
 }
 
+/** Normalize a runtime seed before handing it back to the launch controls. */
+export function normalizeWorldSeed(seed: number): number | null {
+  return canonicalWorldSeed(seed)
+}
+
 export function formatWorldSeed(seed: number): string {
   const canonical = canonicalWorldSeed(seed)
   if (canonical === null) return '0'

@@ -3,6 +3,7 @@ import {
   copyWorldSeed,
   copyWorldSeedLink,
   formatWorldSeed,
+  normalizeWorldSeed,
   parseWorldSeed,
   shouldRegenerateWorldOnLaunch,
   worldSeedReplayUrl,
@@ -16,6 +17,8 @@ describe('world seed sharing', () => {
     expect(formatWorldSeed(1337.9182009)).toBe('1337.918201')
     expect(formatWorldSeed(Number.NaN)).toBe('0')
     expect(formatWorldSeed(Number.POSITIVE_INFINITY)).toBe('0')
+    expect(normalizeWorldSeed(267427.501572761)).toBe(267427.501573)
+    expect(normalizeWorldSeed(Number.POSITIVE_INFINITY)).toBeNull()
   })
 
   it('copies a seed and fails closed when clipboard access is unavailable', async () => {
