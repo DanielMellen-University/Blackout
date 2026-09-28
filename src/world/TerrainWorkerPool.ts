@@ -70,6 +70,19 @@ export class TerrainWorkerPool {
     try { slot.worker.postMessage(job) } catch { this.fail(); return false }
     return true
   }
+
+  /** Cancel stale terrain work while keeping the configured worker capacity. */
+  cancelJobs(): void {
+    if (this.disabled) return
+    for (const slot of this.slots.slice()) {
+      if (!slot.job) continue
+      slot.job = null
+      this.busyCount = Math.max(0, this.busyCount - 1)
+      this.removeSlot(slot)
+    }
+    this.reconcileSlots()
+  }
+
   private fail(): void {
     this.disabled = true
     const jobs = this.slots.flatMap(slot => slot.job ? [slot.job] : [])

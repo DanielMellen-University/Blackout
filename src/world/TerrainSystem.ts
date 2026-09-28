@@ -463,6 +463,10 @@ export class TerrainSystem {
   }
 
   clearAll(): void {
+    // A reseed invalidates every queued generation. Terminate stale worker
+    // jobs before rebuilding so the new world's near-field tiles do not wait
+    // behind geometry that can no longer be installed.
+    if (!this.disposed) this.workers.cancelJobs()
     this.generation++
     invalidateGroundSamplerCaches()
     this.ready.length = 0

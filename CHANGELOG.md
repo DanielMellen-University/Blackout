@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.518** Cancel stale terrain worker jobs during world clears so reseeds restore near-field streaming immediately instead of waiting behind discarded geometry.
 - **10.517** Make replay and custom-seed launch feedback explicit when a requested world falls back and needs another rebuild attempt.
 - **10.516** Add Shoreline Run, a deterministic fog-lined coastal challenge using the existing bounded route, scoring, replay, and contract systems.
 - **10.515** Reconcile terrain worker retirements across rapid quality changes so recovered graphics settings cannot strand the streaming pool below its target concurrency.
