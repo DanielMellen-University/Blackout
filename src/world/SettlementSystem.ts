@@ -43,7 +43,15 @@ export const MAX_LOADED_REGIONAL_ROADS = 6
 const COLLISION_BUCKET_SIZE = 512
 interface CollisionIndex {
   radius: number
-  buckets: Map<string, SettlementBuilding[]>
+  buckets: Map<number, Map<number, CollisionBuilding[]>>
+}
+
+interface CollisionBuilding {
+  building: SettlementBuilding
+  cosYaw: number
+  sinYaw: number
+  halfWidth: number
+  halfDepth: number
 }
 const collisionIndexes = new WeakMap<SettlementPlan, CollisionIndex>()
 
@@ -58,34 +66,39 @@ export function settlementLoadPriority(plan: Pick<SettlementPlan, 'anchor' | 'ki
 export function hitsSettlement(plan: SettlementPlan, x: number, y: number, z: number): boolean {
   const index = getCollisionIndex(plan)
   if (Math.hypot(x - plan.x, z - plan.z) > index.radius) return false
-  const bucket = index.buckets.get(collisionBucketKey(x, z))
+  const bucketX = Math.floor(x / COLLISION_BUCKET_SIZE)
+  const bucketZ = Math.floor(z / COLLISION_BUCKET_SIZE)
+  const bucket = index.buckets.get(bucketX)?.get(bucketZ)
   if (!bucket) return false
-  return bucket.some(b => {
+  for (const candidate of bucket) {
+    const b = candidate.building
     const dx = x - b.x, dz = z - b.z
-    const c = Math.cos(b.yaw), s = Math.sin(b.yaw)
-    const lx = Math.abs(dx * c - dz * s), lz = Math.abs(dx * s + dz * c)
-    if (y < b.y - 2 || lx > b.width / 2 + 2.6 || lz > b.depth / 2 + 2.6) return false
+    const lx = Math.abs(dx * candidate.cosYaw - dz * candidate.sinYaw)
+    const lz = Math.abs(dx * candidate.sinYaw + dz * candidate.cosYaw)
+    if (y < b.y - 2 || lx > candidate.halfWidth || lz > candidate.halfDepth) continue
     const top = b.y + b.height
     const shape = b.shape ?? 'block'
-    if (shape === 'tower' && (lx / (b.width / 2 + 2.6)) ** 2 + (lz / (b.depth / 2 + 2.6)) ** 2 > 1) return false
+    if (shape === 'tower' && (lx / candidate.halfWidth) ** 2 + (lz / candidate.halfDepth) ** 2 > 1) continue
     if (shape === 'stepped' && y > b.y + b.height * .68 + 2
-      && (lx > b.width * .34 + 2.6 || lz > b.depth * .36 + 2.6)) return false
+      && (lx > b.width * .34 + 2.6 || lz > b.depth * .36 + 2.6)) continue
     if (y <= top + 2) return true
     if (b.roof === 'pitched') {
       const roofHeight = Math.min(b.width, b.depth) * .3 * Math.max(0, 1 - Math.max(0, lx - 2) / (b.width / 2 + .6))
-      return y <= top + roofHeight + 2
+      if (y <= top + roofHeight + 2) return true
+      continue
     }
     if (y <= top + 3.2) return true
-    return plan.kind === 'city' && b.height > 250 && y <= top + b.height * .1 + 2
-      && lx <= b.width * .24 + 2 && lz <= b.depth * .275 + 2
-  })
+    if (plan.kind === 'city' && b.height > 250 && y <= top + b.height * .1 + 2
+      && lx <= b.width * .24 + 2 && lz <= b.depth * .275 + 2) return true
+  }
+  return false
 }
 
 function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
   const cached = collisionIndexes.get(plan)
   if (cached) return cached
 
-  const buckets = new Map<string, SettlementBuilding[]>()
+  const buckets = new Map<number, Map<number, CollisionBuilding[]>>()
   let radius = 0
   for (const building of plan.buildings) {
     const extent = Math.hypot(building.width, building.depth) / 2 + 4
@@ -94,12 +107,23 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
     const maxX = Math.floor((building.x + extent) / COLLISION_BUCKET_SIZE)
     const minZ = Math.floor((building.z - extent) / COLLISION_BUCKET_SIZE)
     const maxZ = Math.floor((building.z + extent) / COLLISION_BUCKET_SIZE)
+    const indexed: CollisionBuilding = {
+      building,
+      cosYaw: Math.cos(building.yaw),
+      sinYaw: Math.sin(building.yaw),
+      halfWidth: building.width / 2 + 2.6,
+      halfDepth: building.depth / 2 + 2.6,
+    }
     for (let bx = minX; bx <= maxX; bx++) {
       for (let bz = minZ; bz <= maxZ; bz++) {
-        const key = `${bx},${bz}`
-        const bucket = buckets.get(key)
-        if (bucket) bucket.push(building)
-        else buckets.set(key, [building])
+        let column = buckets.get(bx)
+        if (!column) {
+          column = new Map<number, CollisionBuilding[]>()
+          buckets.set(bx, column)
+        }
+        const bucket = column.get(bz)
+        if (bucket) bucket.push(indexed)
+        else column.set(bz, [indexed])
       }
     }
   }
@@ -107,10 +131,6 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
   const index = { radius, buckets }
   collisionIndexes.set(plan, index)
   return index
-}
-
-function collisionBucketKey(x: number, z: number): string {
-  return `${Math.floor(x / COLLISION_BUCKET_SIZE)},${Math.floor(z / COLLISION_BUCKET_SIZE)}`
 }
 
 function roofGeometry(): BufferGeometry {

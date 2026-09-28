@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Replace per-probe settlement obstacle bucket strings, callbacks, and yaw trig with cached numeric spatial columns and indexed building extents, keeping high-speed collision sweeps allocation-light without changing collision envelopes.
 - Reuse a caller-owned climate record for settlement waterfront and bridge-pier probes, removing repeated biome-weight allocations during landmark attachment without changing dock or road geometry.
 - Reuse a tiny bounded set of caller-owned climate records across settlement candidate, survey, road, and lot probes, removing repeated biome-weight allocations from landmark planning without changing deterministic placement.
 - Add the deterministic Rainforest Run course, a low winding route with forced rain that gives humid lowland terrain its own repeatable challenge while reusing the bounded route, clearance, scoring, and retry systems.

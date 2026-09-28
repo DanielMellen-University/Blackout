@@ -128,6 +128,19 @@ describe('settlement rendering and lifecycle', () => {
     expect(hitsSettlement(plan, 620, 120, 0)).toBe(false)
   })
 
+  it('keeps numeric collision columns correct across negative bucket boundaries', () => {
+    const plan: SettlementPlan = {
+      id: 'negative-bucket-boundary', kind: 'village', biome: 'plains', x: -512, y: 100, z: -512, radius: 180,
+      buildings: [{ x: -510, y: 100, z: -510, width: 24, depth: 24, height: 18,
+        yaw: Math.PI / 6, shape: 'block', roof: 'flat', wallColor: 0xffffff, roofColor: 0x333333 }],
+      roads: [],
+    }
+
+    expect(hitsSettlement(plan, -510, 110, -510)).toBe(true)
+    expect(hitsSettlement(plan, -540, 110, -510)).toBe(false)
+    expect(hitsSettlement(plan, -700, 110, -510)).toBe(false)
+  })
+
   it('shares blended weather values with road materials', () => {
     const system = new SettlementSystem(new Scene())
     try {
