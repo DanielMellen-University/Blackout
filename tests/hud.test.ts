@@ -421,6 +421,8 @@ describe('HUD value formatting', () => {
     expect(missionProgressPercent(Number.NaN, Number.NaN)).toBe(0)
     expect(missionProgressText(2, 5)).toBe('2 of 5 gates cleared')
     expect(missionProgressText(9, 5)).toBe('5 of 5 gates cleared')
+    expect(missionProgressText(2, 5, 1)).toBe('2 of 5 gates cleared, 1 gate miss')
+    expect(missionProgressText(2, 5, 3)).toBe('2 of 5 gates cleared, 3 gate misses')
   })
 
   it('keeps live pace feedback safe before and after a gate clear', () => {

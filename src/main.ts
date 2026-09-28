@@ -2347,6 +2347,7 @@ async function boot(): Promise<void> {
       hudFrame.missionPhase = challenge.phase
       hudFrame.missionCurrent = challenge.gatesPassed
       hudFrame.missionTotal = challenge.totalGates
+      hudFrame.missionMisses = challenge.gateMisses
       hudFrame.combo = combo.current
       hudFrame.comboRemaining = combo.remainingSeconds
       hudFrame.navDist = navDist

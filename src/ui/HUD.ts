@@ -226,12 +226,13 @@ export function missionProgressPercent(current: number, total: number): number {
   return safeTotal > 0 ? Math.min(100, Math.round((Math.min(safeCurrent, safeTotal) / safeTotal) * 100)) : 0
 }
 
-export function missionProgressText(current: number, total: number): string {
+export function missionProgressText(current: number, total: number, misses = 0): string {
   const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0
   const safeCurrent = Number.isFinite(current)
     ? Math.min(safeTotal, Math.max(0, Math.floor(current)))
     : 0
-  return `${safeCurrent} of ${safeTotal} gates cleared`
+  const safeMisses = Number.isFinite(misses) ? Math.max(0, Math.floor(misses)) : 0
+  return `${safeCurrent} of ${safeTotal} gates cleared${safeMisses > 0 ? `, ${safeMisses} gate miss${safeMisses === 1 ? '' : 'es'}` : ''}`
 }
 
 /** Keep route identity visible in the live mission row without unbounded copy. */
@@ -832,6 +833,8 @@ export class HUD {
   private readonly ghostPaceRowEl: HTMLElement | null
   private readonly ghostPaceEl: HTMLElement | null
   private readonly missionProgressEl: HTMLElement | null
+  private readonly missionMissesRowEl: HTMLElement | null
+  private readonly missionMissesEl: HTMLElement | null
   private readonly contractRowEl: HTMLElement | null
   private readonly contractEl: HTMLElement | null
   private readonly contractDetailEl: HTMLElement | null
@@ -1024,6 +1027,10 @@ export class HUD {
   private navAltMode = -1
   private navAltStep = Number.NaN
   private navAltText = ''
+  private missionProgressMisses = -1
+  private missionMissesValue = -1
+  private missionMissesText = ''
+  private missionMissesAriaText = ''
   private flightPathXValue = Number.NaN
   private flightPathYValue = Number.NaN
   private flightPathXText = ''
@@ -1092,6 +1099,8 @@ export class HUD {
     this.ghostPaceRowEl = root.getElementById('hud-ghost-pace-row')
     this.ghostPaceEl = root.getElementById('hud-ghost-pace')
     this.missionProgressEl = root.getElementById('hud-gate-progress')
+    this.missionMissesRowEl = root.getElementById('hud-gate-misses-row')
+    this.missionMissesEl = root.getElementById('hud-gate-misses')
     this.contractRowEl = root.getElementById('hud-contract-row')
     this.contractEl = root.getElementById('hud-contract')
     this.contractDetailEl = root.getElementById('hud-contract-detail')
@@ -1250,6 +1259,8 @@ export class HUD {
     /** Cleared and total gates for the compact route progress meter. */
     missionCurrent?: number
     missionTotal?: number
+    /** Bounded count of route gate crossings missed this sortie. */
+    missionMisses?: number
     /** Optional bonus-contract label and bounded progress for the task row. */
     contractLabel?: string | null
     /** Full bounded instruction for the active bonus contract. */
@@ -1603,16 +1614,33 @@ export class HUD {
     if (this.missionProgressEl && (opts.missionCurrent !== undefined || opts.missionTotal !== undefined)) {
       const current = Number.isFinite(opts.missionCurrent) ? Math.max(0, Math.floor(opts.missionCurrent!)) : 0
       const total = Number.isFinite(opts.missionTotal) ? Math.max(0, Math.floor(opts.missionTotal!)) : 0
-      if (current !== this.missionProgressCurrent || total !== this.missionProgressTotal) {
+      const misses = Number.isFinite(opts.missionMisses)
+        ? Math.max(0, Math.min(10_000, Math.floor(opts.missionMisses!)))
+        : 0
+      if (current !== this.missionProgressCurrent || total !== this.missionProgressTotal || misses !== this.missionProgressMisses) {
         this.missionProgressCurrent = current
         this.missionProgressTotal = total
+        this.missionProgressMisses = misses
         this.missionProgressPercentText = `${missionProgressPercent(current, total)}%`
-        this.missionProgressAriaText = missionProgressText(current, total)
+        this.missionProgressAriaText = missionProgressText(current, total, misses)
       }
       this.setStyle(this.missionProgressEl, '--mission-progress', this.missionProgressPercentText)
       this.setAttribute(this.missionProgressEl, 'aria-valuemax', String(total))
       this.setAttribute(this.missionProgressEl, 'aria-valuenow', String(Math.min(current, total)))
       this.setAttribute(this.missionProgressEl, 'aria-valuetext', this.missionProgressAriaText)
+    }
+    if (this.missionMissesRowEl && this.missionMissesEl && opts.missionMisses !== undefined) {
+      const misses = Number.isFinite(opts.missionMisses)
+        ? Math.max(0, Math.min(10_000, Math.floor(opts.missionMisses!)))
+        : 0
+      if (misses !== this.missionMissesValue) {
+        this.missionMissesValue = misses
+        this.missionMissesText = String(misses)
+        this.missionMissesAriaText = misses === 1 ? '1 gate missed' : `${misses} gates missed`
+      }
+      this.setHidden(this.missionMissesRowEl, misses <= 0)
+      this.setText(this.missionMissesEl, this.missionMissesText)
+      this.setAttribute(this.missionMissesEl, 'aria-label', this.missionMissesAriaText)
     }
     if (this.contractRowEl && this.contractEl && opts.contractLabel !== undefined) {
       const label = typeof opts.contractLabel === 'string' ? opts.contractLabel : ''
