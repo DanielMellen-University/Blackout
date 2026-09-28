@@ -946,6 +946,22 @@ describe('ChallengeRun', () => {
     expect(result.contractScore).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('surfaces partial progress for the catalog traffic contract', () => {
+    const run = new ChallengeRun(null)
+    run.reset('traffic-run', 1, 'range', 348, true)
+    expect(run.contractLabel).toBe('CONTRACT TRAFFIC WATCH')
+    run.recordTrafficPass('traffic-1')
+    expect(run.contractProgress).toBeCloseTo(1 / 3)
+    expect(run.consumeContractProgressCue()).toBe('TRAFFIC CONTACT CLEARED')
+    run.recordTrafficPass('traffic-1')
+    expect(run.consumeContractProgressCue()).toBeNull()
+    run.recordTrafficPass('traffic-2')
+    run.recordTrafficPass('traffic-3')
+    expect(run.contractComplete).toBe(true)
+    expect(run.consumeContractProgressCue()).toBeNull()
+    expect(run.consumeContractCompletionCue()).toBe('TRAFFIC WATCH')
+  })
+
   it('wires high-speed speed-brake time into the brake-check contract', () => {
     const run = new ChallengeRun(null)
     let brakeSeed = -1

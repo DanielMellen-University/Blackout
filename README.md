@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.406**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.407**.
 
 ## Run
 
@@ -45,6 +45,8 @@ Press Play when the airfield is ready.
 The nose is the flight path. Throttle is thrust: a climb spends speed, and closing the throttle slows you down. Afterburner is the burst that gets it back. Thermal lift now stays visible as a persistent LIFT cue when the aircraft is inside a rising pocket, so altitude routes are readable after the entry banner fades. Sustained positive or negative G now drives a bounded blackout/redout veil with hysteresis, so hard pulls read clearly without flickering at the threshold. Flight warnings also use a short release hold, so stall, terrain, gear, and overspeed cues stay readable through noisy approach samples and clear when the live HUD is paused or covered.
 
 The live route-risk row retains the steepest route slope after the launch briefing fades, so the handling envelope stays visible throughout the sortie. Traffic Run adds a curated high-speed sweep whose catalog contract explicitly rewards passing distinct traffic contacts, turning the existing pooled traffic into a repeatable challenge.
+
+Traffic contract progress now gets the same one-shot in-flight acknowledgement as settlement and waterway tours, while duplicate contacts and final completion remain quiet.
 
 Runway returns now announce only worsening fuel pressure transitions, so tight and low reserve states are actionable without repeating warnings every frame.
 

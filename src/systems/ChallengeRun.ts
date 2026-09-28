@@ -1225,8 +1225,19 @@ export class ChallengeRun {
   recordTrafficPass(id: string, verticalSeparation?: number): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
     const wasComplete = this.contract.complete
+    const previousDetail = this.contract.detail
     this.contract.recordTrafficPass(id, verticalSeparation)
     this.contractCuePending ||= !wasComplete && this.contract.complete
+    if (this.contract.complete) {
+      this.contractProgressCuePending = ''
+    } else if (
+      (this.contract.kind === 'traffic-watch' || this.contract.kind === 'traffic-dodge') &&
+      this.contract.detail !== previousDetail
+    ) {
+      this.contractProgressCuePending = this.contract.kind === 'traffic-dodge'
+        ? 'TRAFFIC PASS CLEARED'
+        : 'TRAFFIC CONTACT CLEARED'
+    }
   }
 
   /** Record one distinct natural biome encountered during the sortie. */
