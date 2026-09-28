@@ -33,6 +33,15 @@ describe('natural drainage', () => {
     expect(replay).toEqual(sampleHydrology(0, 0, 0))
   })
 
+  it('fails closed for malformed catchment and bounds queries', () => {
+    setWorldSeed(1)
+    expect(waterLandmarks(Number.NaN, Number.POSITIVE_INFINITY).every((basin) =>
+      [basin.x, basin.z, basin.radius, basin.level].every(Number.isFinite),
+    )).toBe(true)
+    expect(hydrologyIntersectsBounds(Number.NaN, 0, 100, 100)).toBe(false)
+    expect(hydrologyIntersectsBounds(100, 100, 0, 0)).toBe(false)
+  })
+
   it('keeps rivers connected and descending, with varying widths', () => {
     setWorldSeed(1)
     const reaches = riverReaches(-1, -1)

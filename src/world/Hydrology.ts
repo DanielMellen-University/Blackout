@@ -473,6 +473,8 @@ function emitDrainageChain(
 }
 
 function catchment(cx: number, cz: number): Catchment {
+  cx = Number.isFinite(cx) ? Math.trunc(cx) : 0
+  cz = Number.isFinite(cz) ? Math.trunc(cz) : 0
   if (seed !== getWorldSeed()) { cache.clear(); seed = getWorldSeed() }
   const key = `${cx},${cz}`
   const previous = cache.get(key)
@@ -739,12 +741,15 @@ export function riverReachesInBounds(
   maxZ: number,
   margin = 0,
 ): ReadonlyArray<Readonly<RiverReach>> {
-  const startCx = Math.floor((minX - margin) / CATCHMENT_SIZE)
-  const endCx = Math.floor((maxX + margin) / CATCHMENT_SIZE)
-  const startCz = Math.floor((minZ - margin) / CATCHMENT_SIZE)
-  const endCz = Math.floor((maxZ + margin) / CATCHMENT_SIZE)
-  const expandedMinX = minX - margin, expandedMinZ = minZ - margin
-  const expandedMaxX = maxX + margin, expandedMaxZ = maxZ + margin
+  if (![minX, minZ, maxX, maxZ, margin].every(Number.isFinite)) return []
+  if (maxX < minX || maxZ < minZ) return []
+  const safeMargin = Math.max(0, Math.min(CATCHMENT_SIZE * 2, margin))
+  const startCx = Math.floor((minX - safeMargin) / CATCHMENT_SIZE)
+  const endCx = Math.floor((maxX + safeMargin) / CATCHMENT_SIZE)
+  const startCz = Math.floor((minZ - safeMargin) / CATCHMENT_SIZE)
+  const endCz = Math.floor((maxZ + safeMargin) / CATCHMENT_SIZE)
+  const expandedMinX = minX - safeMargin, expandedMinZ = minZ - safeMargin
+  const expandedMaxX = maxX + safeMargin, expandedMaxZ = maxZ + safeMargin
   const result = new Set<Reach>()
 
   for (let cz = startCz; cz <= endCz; cz++) for (let cx = startCx; cx <= endCx; cx++) {

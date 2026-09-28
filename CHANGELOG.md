@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.479** Fail closed for malformed hydrology catchment and bounds queries, preventing invalid coordinates from creating unbounded region scans.
 - **10.478** Keep malformed hydrology coordinates and ground samples finite, preventing invalid catchment keys from poisoning terrain water and shoreline queries.
 - **10.477** Give Monsoon Run a dedicated wetland route profile and let swamp provinces select between standard channels and wider monsoon floodways without adding scene budget.
 - **10.476** Add Monsoon Run, a deterministic heavy-rain wetland route that reuses the bounded contract catalog for another replayable terrain challenge.
