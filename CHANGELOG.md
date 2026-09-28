@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.410** Add High Dive, a deterministic clear alpine course that exposes the high-altitude climb-and-recovery contract as a replayable commitment challenge.
 - **10.409** Add Thermal Surf, a deterministic clear-sky lift course that exposes the existing sustained-thermal contract as a replayable altitude skill challenge.
 - **10.408** Add Waterway Tour, a deterministic rainy river course that exposes the existing multi-waterway contract and makes river, lake, and sea exploration replayable.
 - **10.407** Add one-shot partial progress cues for Traffic Watch and Traffic Dodge, making the curated traffic objective readable without repeating duplicate-contact or completion banners.
