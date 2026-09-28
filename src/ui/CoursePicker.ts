@@ -1,6 +1,7 @@
 import {
   formatTime,
   landingQualityLabel,
+  medalForScore,
   type CourseHistory,
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
@@ -169,6 +170,12 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     const safeLanding = Math.max(0, Math.min(1, landingQuality!))
     statsParts.push(`LAND ${landingQualityLabel(safeLanding)}`)
   }
+  const medal = medalForScore(input.bestScore)
+  if (medal !== 'complete') statsParts.push(`MEDAL ${medal.toUpperCase()}`)
+  const badges = finiteCount(input.badgeCount)
+  if (badges > 0) statsParts.push(`BADGES X${badges}`)
+  const precisionStreak = finiteCount(input.bestPrecisionStreak)
+  if (precisionStreak > 1) statsParts.push(`GATE STREAK X${precisionStreak}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
 }

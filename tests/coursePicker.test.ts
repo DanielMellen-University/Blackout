@@ -257,7 +257,7 @@ describe('course picker copy', () => {
     }).meta).toBe('NEW')
   })
 
-  it('puts mastery on the selected-world line instead of a long option label', () => {
+  it('puts mastery records on the selected-world line instead of a long option label', () => {
     const copy = coursePickerCopy({
       course: orbit,
       history: {
@@ -272,11 +272,12 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40')
+    expect(copy.stats).toBe('1:38.40 · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TASK')).toBe(false)
-    expect(copy.stats.includes('MEDAL')).toBe(false)
-    expect(copy.stats.includes('ACE')).toBe(false)
+    expect(copy.stats).toContain('MEDAL GOLD')
+    expect(copy.stats).toContain('BADGES X3')
+    expect(copy.stats).toContain('GATE STREAK X4')
   })
 
   it('fails closed on malformed history instead of leaking NaN into the picker', () => {
@@ -310,7 +311,7 @@ describe('course picker copy', () => {
       bestPrecisionStreak: 4,
     })
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · LAND FIRM')
+    expect(copy.stats).toBe('1:38.40 · LAND FIRM · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
     expect(copy.stats).not.toContain('VETERAN')
     expect(copy.stats).not.toContain('TASK')
   })
