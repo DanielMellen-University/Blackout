@@ -1,5 +1,6 @@
 import { MeshStandardMaterial } from 'three'
 import { describe, expect, it } from 'vitest'
+import { applyWaterAppearance } from '../src/world/WaterAppearance'
 import { buildWaterMesh } from '../src/world/WaterSystem'
 
 describe('independent water surfaces', () => {
@@ -79,9 +80,30 @@ describe('independent water surfaces', () => {
       expect(material.polygonOffset).toBe(true)
       expect(material.polygonOffsetFactor).toBe(-2)
       expect(material.polygonOffsetUnits).toBe(-2)
-      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v11')
+      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v12')
     } finally {
       mesh.geometry.dispose()
+      material.dispose()
+    }
+  })
+
+  it('shares a live quality uniform for expensive water detail', () => {
+    const material = new MeshStandardMaterial()
+    const detailScale = { value: 0.35 }
+    const shader = {
+      uniforms: {} as Record<string, unknown>,
+      vertexShader: '#include <project_vertex>',
+      fragmentShader: '#include <roughnessmap_fragment>\n#include <color_fragment>\n#include <normal_fragment_maps>',
+    }
+    try {
+      applyWaterAppearance(material, { value: 0 }, undefined, detailScale)
+      material.onBeforeCompile(shader as never)
+      expect(shader.uniforms.waterDetailScale).toBe(detailScale)
+      expect(shader.fragmentShader).toContain('fineWaterDetail')
+      expect(shader.fragmentShader).toContain('waterNormalDetail')
+      detailScale.value = 1
+      expect(detailScale.value).toBe(1)
+    } finally {
       material.dispose()
     }
   })

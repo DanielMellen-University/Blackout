@@ -12,13 +12,14 @@ export function makeWaterMaterial(
   clock: { value: number },
   weather: WaterWeatherUniforms | undefined,
   polygonOffset = -2,
+  detailScale?: { value: number },
 ): MeshStandardMaterial {
   const material = new MeshStandardMaterial({
     color: 0x345361, roughness: 0.2, metalness: 0.08,
     side: DoubleSide,
     polygonOffset: true, polygonOffsetFactor: polygonOffset, polygonOffsetUnits: polygonOffset,
   })
-  applyWaterAppearance(material, clock, weather)
+  applyWaterAppearance(material, clock, weather, detailScale)
   return material
 }
 

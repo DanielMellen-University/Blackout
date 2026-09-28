@@ -229,6 +229,7 @@ export class TerrainSystem {
   private readonly waterSnow = { value: 0 }
   private readonly waterWindX = { value: 0 }
   private readonly waterWindZ = { value: 0 }
+  private readonly waterDetailScale = { value: 1 }
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -284,7 +285,7 @@ export class TerrainSystem {
       snow: this.waterSnow,
       windX: this.waterWindX,
       windZ: this.waterWindZ,
-    })
+    }, -2, this.waterDetailScale)
     this.configureWeatherMaterial(this.groundMatNear)
     this.configureWeatherMaterial(this.groundMatFar)
     this.applyFog()
@@ -338,6 +339,16 @@ export class TerrainSystem {
   setWorkerLimit(limit: number): void {
     if (this.disposed) return
     this.workers.setWorkerLimit(limit)
+  }
+
+  /** Reduce high-frequency water shading on Low without rebuilding surfaces. */
+  setWaterDetailScale(scale: number): void {
+    if (this.disposed) return
+    this.waterDetailScale.value = MathUtils.clamp(
+      Number.isFinite(scale) ? scale : 1,
+      0,
+      1,
+    )
   }
 
   private configureWeatherMaterial(material: MeshStandardMaterial): void {
@@ -957,7 +968,9 @@ export class TerrainSystem {
     let water: Mesh | null = null
     if (data.water) {
       water = new Mesh(deserializeTerrainGeometry(data.water), makeWaterMaterial(this.waterClock,
-        { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ }))
+        { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ },
+        -2,
+        this.waterDetailScale))
       water.name = 'WaterSurface'
       water.position.copy(mesh.position)
       root.add(water)

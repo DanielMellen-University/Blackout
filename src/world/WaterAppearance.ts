@@ -8,6 +8,8 @@ export interface WaterWeatherUniforms {
   windZ?: { value: number }
 }
 
+const DEFAULT_WATER_DETAIL_SCALE = { value: 1 }
+
 const DEFAULT_WEATHER: Required<WaterWeatherUniforms> = {
   rain: { value: 0 },
   snow: { value: 0 },
@@ -20,6 +22,7 @@ export function applyWaterAppearance(
   material: MeshStandardMaterial,
   clock: { value: number },
   weather: WaterWeatherUniforms = DEFAULT_WEATHER,
+  detailScale: { value: number } = DEFAULT_WATER_DETAIL_SCALE,
 ): void {
   material.onBeforeCompile = shader => {
     shader.uniforms.worldWaterTime = clock
@@ -27,24 +30,26 @@ export function applyWaterAppearance(
     shader.uniforms.waterSnow = weather.snow
     shader.uniforms.waterWindX = weather.windX ?? DEFAULT_WEATHER.windX
     shader.uniforms.waterWindZ = weather.windZ ?? DEFAULT_WEATHER.windZ
+    shader.uniforms.waterDetailScale = detailScale
     shader.uniforms.waterNormals = { value: waterNormals }
     shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nattribute float waterDrop;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
       '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterDrop = waterDrop;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform float waterDetailScale;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <roughnessmap_fragment>',
-      '#include <roughnessmap_fragment>\nfloat waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18));',
+      '#include <roughnessmap_fragment>\nfloat waterDetail = clamp(waterDetailScale, 0.0, 1.0);\nfloat waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18) * waterDetail);',
     ).replace(
       '#include <color_fragment>',
       `#include <color_fragment>
+      float fineWaterDetail = clamp(waterDetailScale, 0.0, 1.0);
       float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
       // High-frequency foam and riffles alias badly at flight distance. Keep
       // broad water-body breakup visible, but fade fine detail before the
       // terrain fog so distant lakes and rivers read as clean surfaces.
-      float waterDistanceFade = 1.0 - smoothstep(520.0, 4200.0, length(vWaterWorld - cameraPosition));
+      float waterDistanceFade = (1.0 - smoothstep(520.0, 4200.0, length(vWaterWorld - cameraPosition))) * fineWaterDetail;
       // Keep one batched water material, but let geometry carry the body kind
       // so rivers, ponds, lakes, and seas do not collapse into one teal sheet.
       // Kind 0 = river, .5 = pond, 1 = lake, 2 = sea.
@@ -111,12 +116,13 @@ export function applyWaterAppearance(
         vWaterWorld.xz / 58.0 - vec2(worldWaterTime * 0.008, worldWaterTime * 0.003)).b);
       float shoreFoam = (1.0 - smoothstep(0.08, 2.8, vWaterDepth)) *
         (0.12 + shoreBreak * 0.2) * (0.7 + waterRain * 0.25);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.76, 0.69), shoreFoam * mix(.35, 1.0, waterDistanceFade));
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.76, 0.69), shoreFoam * fineWaterDetail * mix(.35, 1.0, waterDistanceFade));
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.12, 0.25, 0.36), waterSnow * 0.12);`,
     )
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <normal_fragment_maps>',
       `#include <normal_fragment_maps>
+      float waterNormalDetail = clamp(waterDetailScale, 0.0, 1.0);
       float distanceFade = 1.0 - smoothstep(400.0, 3500.0, length(vWaterWorld - cameraPosition));
       vec2 p = vWaterWorld.xz;
       // Keep the accumulated phase independent of live weather blending. If
@@ -126,8 +132,8 @@ export function applyWaterAppearance(
         vec2(waterWindX, waterWindZ) * worldWaterTime * 0.0011;
       vec2 rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
       vec2 rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
-      vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035) +
-        rippleB * (0.035 + waterSnow * 0.01) * distanceFade;
+      vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035) * waterNormalDetail +
+        rippleB * (0.035 + waterSnow * 0.01) * distanceFade * waterNormalDetail;
       normal = normalize(normal + mat3(viewMatrix) * vec3(ripples.x, 0.0, ripples.y));
       float fresnel = 0.02 + 0.48 * pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);
       float glint = pow(max(0.0, rippleA.x + rippleB.y), 3.0) *
@@ -139,5 +145,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v11'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v12'
 }

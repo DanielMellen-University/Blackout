@@ -177,6 +177,10 @@ describe('TerrainSystem streaming LOD', () => {
       expect(terrain.weatherEffects).toEqual({ rain: 1, snow: 0 })
       terrain.setWeatherEffects(.2, .8)
       expect(terrain.weatherEffects).toEqual({ rain: .2, snow: .8 })
+      terrain.setWaterDetailScale(.35)
+      expect((terrain as unknown as { waterDetailScale: { value: number } }).waterDetailScale.value).toBe(.35)
+      terrain.setWaterDetailScale(4)
+      expect((terrain as unknown as { waterDetailScale: { value: number } }).waterDetailScale.value).toBe(1)
     } finally {
       terrain.clearAll()
     }

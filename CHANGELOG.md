@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.363** Add quality-aware water shading so Low reduces high-frequency foam, flow, and ripple work through a shared live uniform while preserving water levels and broad surface color.
 - **10.362** Add the deterministic Archipelago Run course, a foggy island-hop route that expands water-focused replay content without changing bounded terrain or traffic budgets.
 - **10.361** Make Low render quality trim secondary settlement lights, waterfront props, and road markings while preserving buildings, roads, and landmarks; apply the budget live when quality changes.
 - **10.360** Add a read-only GitHub Actions gate for release metadata, TypeScript, the full test suite, and the production build on pushes and pull requests.
