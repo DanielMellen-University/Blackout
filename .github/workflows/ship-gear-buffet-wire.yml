@@ -1,1 +1,27 @@
-PLACEHOLDER
+name: ship-gear-buffet-wire
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Apply remaining gear-buffet wire
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "DanielMellen-University"
+          git config user.email "113362200+DanielMellen-University@users.noreply.github.com"
+          git apply --whitespace=nowarn .github/ship-frags/gear-buffet-remaining.patch
+          git add CHANGELOG.md README.md src/main.ts src/ui/HUD.ts tests/hud.test.ts
+          git commit -m "feat: cue BUFFET on HUD and wire gear-scaled storm drive"
+          rm -f .github/ship-frags/gear-buffet-remaining.patch
+          rm -f .github/workflows/ship-gear-buffet-wire.yml
+          rmdir .github/ship-frags 2>/dev/null || true
+          git add -A .github
+          git commit -m "ci: remove spent gear-buffet wire staging"
+          git push origin HEAD:main
