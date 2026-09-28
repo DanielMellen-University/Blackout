@@ -90,6 +90,8 @@ import {
   gateQualityHudLabel,
   gateQualityAriaLabel,
   altitudeMilestoneHudLabel,
+  thermalLiftAriaLabel,
+  thermalLiftHudLabel,
   altitudeMilestoneProgressPercent,
   altitudeMilestoneAriaLabel,
   comboHudLabel,
@@ -473,6 +475,15 @@ describe('HUD value formatting', () => {
     expect(altitudeMilestoneAriaLabel(1_000, 1_500))
       .toBe('Next altitude milestone 1,500 metres, 50 percent complete')
     expect(altitudeMilestoneHudLabel(6_000, 0)).toBe('')
+  })
+
+  it('keeps thermal lift feedback bounded and quiet outside the lift envelope', () => {
+    expect(thermalLiftHudLabel(0.11)).toBe('')
+    expect(thermalLiftHudLabel(0.42)).toBe('LIFT 42%')
+    expect(thermalLiftHudLabel(Number.MAX_SAFE_INTEGER)).toBe('LIFT 100%')
+    expect(thermalLiftHudLabel(Number.NaN)).toBe('')
+    expect(thermalLiftAriaLabel(0.42)).toBe('Thermal lift 42%')
+    expect(thermalLiftAriaLabel(0.11)).toBe('')
   })
 
   it('keeps the live combo expiry readable and bounded', () => {

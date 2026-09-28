@@ -982,6 +982,7 @@ async function boot(): Promise<void> {
     liveScore: null,
     gateQuality: null,
     altitudeMilestone: null,
+    thermalLift: 0,
     biomeCount: 0,
     navDist: 0,
     navBearing: null,
@@ -2277,6 +2278,7 @@ async function boot(): Promise<void> {
       challenge.recordLandingPreview(landingPreview ?? Number.NaN)
       challenge.recordApproachPreview(approachPreviewScore)
       hudFrame.landingPreview = landingPreview
+      hudFrame.thermalLift = aircraft.thermalLift
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.afterburnerLock = afterburnerLockReason(
         aircraft.engineState.fuelAvailable,

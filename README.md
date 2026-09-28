@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.386**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.387**.
 
 ## Run
 
@@ -40,7 +40,7 @@ Press Play when the airfield is ready.
 - Boost, speed-brake, and landing-gear keys are remappable in the pause menu and persisted locally
 - Esc pauses
 
-The nose is the flight path. Throttle is thrust: a climb spends speed, and closing the throttle slows you down. Afterburner is the burst that gets it back. Sustained positive or negative G now drives a bounded blackout/redout veil with hysteresis, so hard pulls read clearly without flickering at the threshold. Flight warnings also use a short release hold, so stall, terrain, gear, and overspeed cues stay readable through noisy approach samples and clear when the live HUD is paused or covered.
+The nose is the flight path. Throttle is thrust: a climb spends speed, and closing the throttle slows you down. Afterburner is the burst that gets it back. Thermal lift now stays visible as a persistent LIFT cue when the aircraft is inside a rising pocket, so altitude routes are readable after the entry banner fades. Sustained positive or negative G now drives a bounded blackout/redout veil with hysteresis, so hard pulls read clearly without flickering at the threshold. Flight warnings also use a short release hold, so stall, terrain, gear, and overspeed cues stay readable through noisy approach samples and clear when the live HUD is paused or covered.
 
 ## A sortie
 

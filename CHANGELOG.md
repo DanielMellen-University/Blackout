@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.387** Add a cached accessible LIFT HUD row for active thermal pockets, keeping altitude-route feedback readable after the transient entry banner without adding scene work.
 - **10.386** Lock Thermal Run to clear skies so its altitude route consistently exercises the existing lift system instead of inheriting random storm or night conditions.
 - **10.385** Add a deterministic Thermal Run course with a repeatable spiral climb that gives the existing lift and altitude systems a dedicated replay route.
 - **10.384** Surface the real afterburner lock reason, so fuel-out state is shared by engine warnings, HUD, and the live engine contract instead of being hard-coded as ready.

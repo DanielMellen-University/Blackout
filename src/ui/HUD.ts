@@ -704,6 +704,20 @@ export function altitudeMilestoneAriaLabel(currentM: unknown, nextM: unknown): s
   return `Next altitude milestone ${target.toLocaleString()} metres, ${progress} percent complete`
 }
 
+/** Keep thermal lift feedback visible without exposing the raw flight impulse. */
+export function thermalLiftHudLabel(value: unknown): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return ''
+  const safe = Math.max(0, Math.min(1, value))
+  if (safe < 0.12) return ''
+  return `LIFT ${Math.round(safe * 100)}%`
+}
+
+/** Describe the same bounded thermal lift cue to assistive technology. */
+export function thermalLiftAriaLabel(value: unknown): string {
+  const label = thermalLiftHudLabel(value)
+  return label ? `Thermal lift ${label.slice(5)}` : ''
+}
+
 /** Describe afterburner availability without exposing internal lockout state. */
 export function afterburnerHudLabel(
   active: boolean,
@@ -787,6 +801,8 @@ export class HUD {
   private readonly precisionEl: HTMLElement | null
   private readonly climbRowEl: HTMLElement | null
   private readonly climbEl: HTMLElement | null
+  private readonly liftRowEl: HTMLElement | null
+  private readonly liftEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -931,6 +947,9 @@ export class HUD {
   private climbValue = ''
   private climbText = ''
   private climbAriaText = ''
+  private liftValue = -1
+  private liftText = ''
+  private liftAriaText = ''
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
@@ -1042,6 +1061,8 @@ export class HUD {
     this.precisionEl = root.getElementById('hud-precision')
     this.climbRowEl = root.getElementById('hud-climb-row')
     this.climbEl = root.getElementById('hud-climb')
+    this.liftRowEl = root.getElementById('hud-lift-row')
+    this.liftEl = root.getElementById('hud-lift')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -1202,6 +1223,8 @@ export class HUD {
     gateQuality?: number | null
     /** Next altitude milestone in metres, or null when all tiers are crossed. */
     altitudeMilestone?: number | null
+    /** Current normalized thermal lift envelope. */
+    thermalLift?: number
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
     /** Current event-driven clean-flight combo count. */
@@ -1635,6 +1658,24 @@ export class HUD {
       this.setHidden(this.climbRowEl, !visible)
       this.setText(this.climbEl, this.climbText)
       this.setAttribute(this.climbEl, 'aria-label', this.climbAriaText)
+    }
+    if (this.liftRowEl && this.liftEl && opts.thermalLift !== undefined) {
+      const lift = Number.isFinite(opts.thermalLift)
+        ? Math.max(0, Math.min(1, opts.thermalLift!))
+        : 0
+      const percent = Math.round(lift * 100)
+      if (percent !== this.liftValue) {
+        this.liftValue = percent
+        this.liftText = thermalLiftHudLabel(lift)
+        this.liftAriaText = thermalLiftAriaLabel(lift)
+      }
+      const visible = percent >= 12
+      this.setHidden(this.liftRowEl, !visible)
+      this.setText(this.liftEl, this.liftText)
+      this.setAttribute(this.liftEl, 'aria-label', this.liftAriaText)
+      this.setAttribute(this.liftEl, 'aria-valuenow', String(percent))
+      this.setAttribute(this.liftEl, 'aria-valuetext', this.liftAriaText)
+      this.setClass(this.liftEl, 'lift-strong', percent >= 60)
     }
     if (this.biomeRowEl && this.biomeEl && opts.biomeCount !== undefined) {
       const count = Number.isFinite(opts.biomeCount)
