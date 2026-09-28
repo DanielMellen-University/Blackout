@@ -16,12 +16,12 @@ jobs:
           set -euo pipefail
           git config user.name "DanielMellen-University"
           git config user.email "113362200+DanielMellen-University@users.noreply.github.com"
-          git apply --whitespace=nowarn .github/ship-frags/gear-buffet-remaining.patch
+          cat .github/ship-frags/gear-buffet-remaining.p1.b64 .github/ship-frags/gear-buffet-remaining.p2.b64 | base64 -d > /tmp/gear-buffet-remaining.patch
+          git apply --whitespace=nowarn /tmp/gear-buffet-remaining.patch
           git add CHANGELOG.md README.md src/main.ts src/ui/HUD.ts tests/hud.test.ts
           git commit -m "feat: cue BUFFET on HUD and wire gear-scaled storm drive"
-          rm -f .github/ship-frags/gear-buffet-remaining.patch
+          rm -rf .github/ship-frags
           rm -f .github/workflows/ship-gear-buffet-wire.yml
-          rmdir .github/ship-frags 2>/dev/null || true
           git add -A .github
           git commit -m "ci: remove spent gear-buffet wire staging"
           git push origin HEAD:main
