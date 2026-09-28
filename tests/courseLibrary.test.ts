@@ -6,7 +6,11 @@ import {
   courseRunId,
   courseSessionId,
   courseSeedForId,
+  dailyOpsDayKey,
+  dailyOpsProfile,
+  dailyOpsSeed,
   readSelectedCourseId,
+  resolveCourseDefinition,
   writeSelectedCourseId,
 } from '../src/systems/CourseLibrary'
 import { clearOpsPad, findPlayableSpawn, isUsableAirfield } from '../src/world/terrainSample'
@@ -14,7 +18,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(68)
+    expect(COURSE_LIBRARY).toHaveLength(69)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -248,6 +252,15 @@ describe('course library', () => {
     expect(courseRunId(courseDefinitionForId('shoreline-run'))).toBe('seed:30:coast')
     expect(courseRunId(courseDefinitionForId('rainforest-run'))).toBe('seed:17:rainforest')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
+    const daily = courseDefinitionForId('daily-ops')
+    const dailyNow = Date.UTC(2026, 8, 28, 12)
+    const dailyResolved = resolveCourseDefinition(daily, dailyNow)
+    expect(daily.daily).toBe(true)
+    expect(dailyResolved.seed).toBe(dailyOpsSeed(dailyNow))
+    expect(dailyResolved.profile).toBe(dailyOpsProfile(dailyNow))
+    expect(dailyResolved.detail).toContain(dailyOpsDayKey(dailyNow))
+    expect(courseRunId(daily, dailyNow)).toContain(`:daily:${dailyOpsDayKey(dailyNow)}`)
+    expect(courseRunId(daily, dailyNow + 86_400_000)).not.toBe(courseRunId(daily, dailyNow))
     expect(courseSessionId('random', 42, 'orbit')).toBe('random-world')
     expect(courseSessionId('free-flight', 42, 'free')).toBe('free-flight')
     expect(courseSessionId('training-orbit', 1, 'orbit')).toBe('seed:1:orbit')
@@ -255,6 +268,8 @@ describe('course library', () => {
     expect(courseSessionId('clean-circuit-run', 9, 'desert'))
       .not.toBe(courseSessionId('desert-dash', 9, 'desert'))
     expect(courseSessionId('training-orbit', Number.NaN, 'orbit')).toBe('seed:0:orbit')
+    expect(courseSessionId('daily-ops', dailyResolved.seed!, dailyResolved.profile!, dailyOpsDayKey(dailyNow)))
+      .toBe(`${courseRunId(daily, dailyNow)}`)
   })
 
   it('persists only valid course ids and fails closed on storage denial', () => {
@@ -280,8 +295,9 @@ describe('course library', () => {
 
   it('validates every curated seed to a usable dry airfield', () => {
     for (const course of COURSE_LIBRARY) {
-      if (course.seed === null) continue
-      setWorldSeed(course.seed)
+      const resolved = resolveCourseDefinition(course, Date.UTC(2026, 8, 28, 12))
+      if (resolved.seed === null) continue
+      setWorldSeed(resolved.seed)
       clearOpsPad()
       const pad = findPlayableSpawn()
       expect(pad, `${course.id} should resolve a spawn`).not.toBeNull()

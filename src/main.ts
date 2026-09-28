@@ -67,11 +67,13 @@ import {
 } from './systems/ChallengeRun'
 import {
   courseDefinitionForId,
+  dailyOpsDayKey,
   courseRunId,
   COURSE_LIBRARY,
   COURSE_SELECTION_STORAGE_KEY,
   courseSessionId,
   readSelectedCourseId,
+  resolveCourseDefinition,
   writeSelectedCourseId,
   type CourseId,
 } from './systems/CourseLibrary'
@@ -302,6 +304,13 @@ async function boot(): Promise<void> {
   }
 
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
+  // Keep a single UTC snapshot for this page session so the picker, records,
+  // and a retry all refer to the same Daily Ops challenge around midnight.
+  const dailyOpsTimestamp = Date.now()
+  const selectedCourse = () => resolveCourseDefinition(
+    courseDefinitionForId(selectedCourseId),
+    dailyOpsTimestamp,
+  )
   const replayCourseId = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('course')
     : null
@@ -334,16 +343,17 @@ async function boot(): Promise<void> {
 
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
-      const runId = courseRunId(course)
+      const resolvedCourse = resolveCourseDefinition(course, dailyOpsTimestamp)
+      const runId = courseRunId(course, dailyOpsTimestamp)
       const record = runId ? readCourseRecord(runId) : null
       const copy = coursePickerCopy({
-        course,
+        course: resolvedCourse,
         history: record?.history ?? null,
         bestScore: record?.bestScore ?? 0,
         badgeCount: record?.badgeCount ?? 0,
         bestPrecisionStreak: record?.bestPrecisionStreak ?? 0,
-        contractLabel: sortieContractLabelForSeed(course.seed ?? undefined, 5, course.contractCatalog === true),
-        contractDetail: sortieContractDetailForSeed(course.seed ?? undefined, 5, course.contractCatalog === true),
+        contractLabel: sortieContractLabelForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
+        contractDetail: sortieContractDetailForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
       })
       return {
         id: course.id,
@@ -363,7 +373,10 @@ async function boot(): Promise<void> {
   let currentPilotCommendations: PilotCommendationId[] = []
   const refreshCourseProgress = (): void => {
     if (!titleProgress) return
-    const curated = COURSE_LIBRARY.filter((course) => course.seed !== null && course.profile !== null)
+    const curated = COURSE_LIBRARY.filter((course) => {
+      const resolved = resolveCourseDefinition(course, dailyOpsTimestamp)
+      return resolved.seed !== null && resolved.profile !== null
+    })
     let completed = 0
     let mastered = 0
     const career: PilotCareerProgress = {
@@ -380,7 +393,7 @@ async function boot(): Promise<void> {
     }
     const styleVariety = new Set<string>()
     for (const course of curated) {
-      const runId = courseRunId(course)
+      const runId = courseRunId(course, dailyOpsTimestamp)
       if (!runId) continue
       const record = readCourseRecord(runId)
       const history = record.history
@@ -536,7 +549,7 @@ async function boot(): Promise<void> {
   applyAdaptiveDetailScale()
   if (replaySeed !== null) {
     const requestedReplaySeed = replaySeed
-    const replayCourse = courseDefinitionForId(selectedCourseId)
+    const replayCourse = selectedCourse()
     world.reseed(
       replaySeed,
       replayCourse.profile ?? undefined,
@@ -1115,6 +1128,7 @@ async function boot(): Promise<void> {
     selectedCourseId,
     world.worldSeed,
     world.mission.routeProfile,
+    selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
   )
 
   let lastInputContextLive: boolean | null = null
@@ -1186,7 +1200,7 @@ async function boot(): Promise<void> {
     const replaying = replaySeed !== null
     let worldFallback = false
     if (newWorld) {
-      const course = courseDefinitionForId(selectedCourseId)
+      const course = selectedCourse()
       world.reseed(
         replaying ? replaySeed! : course.seed ?? undefined,
         course.profile ?? undefined,
@@ -1236,7 +1250,7 @@ async function boot(): Promise<void> {
       world.mission.totalGates,
       world.mission.scoringFocus,
       world.worldSeed,
-      courseDefinitionForId(selectedCourseId).contractCatalog === true,
+      selectedCourse().contractCatalog === true,
     )
     ghost.reset(courseId())
     ghost.setVisible(playing && ghostVisible)
@@ -1713,8 +1727,8 @@ async function boot(): Promise<void> {
               currentPilotRank,
               false,
               [],
-              courseDefinitionForId(selectedCourseId).label,
-              courseConditionSummary(courseDefinitionForId(selectedCourseId)),
+              selectedCourse().label,
+              courseConditionSummary(selectedCourse()),
               world.worldSeed,
             )
             syncInputContext()
@@ -1776,8 +1790,8 @@ async function boot(): Promise<void> {
                 currentPilotRank,
                 careerRankPromoted,
                 newCareerCommendations,
-                courseDefinitionForId(selectedCourseId).label,
-                courseConditionSummary(courseDefinitionForId(selectedCourseId)),
+                selectedCourse().label,
+                courseConditionSummary(selectedCourse()),
                 world.worldSeed,
               )
               syncInputContext()
@@ -2593,7 +2607,7 @@ async function boot(): Promise<void> {
         world.mission.totalGates,
         world.mission.scoringFocus,
         world.worldSeed,
-        courseDefinitionForId(selectedCourseId).contractCatalog === true,
+        selectedCourse().contractCatalog === true,
       )
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB

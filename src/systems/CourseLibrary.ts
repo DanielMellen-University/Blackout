@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'aurora-run' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'monsoon-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run' | 'shoreline-run'
+export type CourseId = 'random' | 'free-flight' | 'daily-ops' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'aurora-run' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'monsoon-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run' | 'shoreline-run'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -22,7 +22,37 @@ export interface CourseDefinition {
   windSide?: WindSide
   /** Use the expanded catalog contract pool for a deliberately themed course. */
   contractCatalog?: boolean
+  /** Resolve this entry from the UTC day instead of keeping one fixed seed. */
+  daily?: boolean
 }
+
+export const DAILY_OPS_COURSE_ID: CourseId = 'daily-ops'
+const DAILY_OPS_DAY_MS = 86_400_000
+const DAILY_OPS_EPOCH_MS = Date.UTC(2025, 0, 1)
+const DAILY_OPS_PROFILES: readonly MissionRouteProfile[] = [
+  'sweep',
+  'slalom',
+  'ridge',
+  'canyon',
+  'coast',
+  'river',
+  'alpine',
+  'storm',
+  'night',
+  'timber',
+  'mesa',
+  'swamp',
+  'archipelago',
+  'thermal',
+] as const
+const DAILY_OPS_WEATHER: readonly WeatherId[] = [
+  'clear',
+  'cloudy',
+  'fog',
+  'rain',
+  'storm',
+  'snow',
+] as const
 
 /** Small curated set of repeatable seeds, plus the normal infinite random mode. */
 export const COURSE_LIBRARY: readonly CourseDefinition[] = [
@@ -39,6 +69,15 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'Explore the terrain with no checkpoint clock',
     seed: null,
     profile: 'free',
+  },
+  {
+    id: DAILY_OPS_COURSE_ID,
+    label: 'Daily ops',
+    detail: 'One shared route, refreshed at UTC midnight',
+    seed: null,
+    profile: null,
+    contractCatalog: true,
+    daily: true,
   },
   {
     id: 'training-orbit',
@@ -605,15 +644,61 @@ export function courseDefinitionForId(id: string | null | undefined): CourseDefi
   return COURSE_LIBRARY.find((course) => course.id === id) ?? COURSE_LIBRARY[0]!
 }
 
-export function courseSeedForId(id: string | null | undefined): number | undefined {
-  const seed = courseDefinitionForId(id).seed
+/** Stable UTC key used by Daily Ops records and the launch card. */
+export function dailyOpsDayKey(nowMs = Date.now()): string {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : DAILY_OPS_EPOCH_MS
+  const dayIndex = Math.floor((safeNow - DAILY_OPS_EPOCH_MS) / DAILY_OPS_DAY_MS)
+  const day = new Date(DAILY_OPS_EPOCH_MS + dayIndex * DAILY_OPS_DAY_MS)
+  return day.toISOString().slice(0, 10)
+}
+
+/** Generate a bounded integer seed shared by everyone on the same UTC day. */
+export function dailyOpsSeed(nowMs = Date.now()): number {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : DAILY_OPS_EPOCH_MS
+  const dayIndex = Math.floor((safeNow - DAILY_OPS_EPOCH_MS) / DAILY_OPS_DAY_MS)
+  const mixed = Math.imul((dayIndex ^ 0x9e3779b9) | 0, 1_664_525) + 1_013_904_223
+  return 1_000 + ((mixed >>> 0) % 900_000)
+}
+
+/** Keep the daily route family deterministic while rotating through distinct handling shapes. */
+export function dailyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : DAILY_OPS_EPOCH_MS
+  const dayIndex = Math.floor((safeNow - DAILY_OPS_EPOCH_MS) / DAILY_OPS_DAY_MS)
+  const mixed = Math.imul((dayIndex ^ 0x85ebca6b) | 0, 2_246_822_519) >>> 0
+  return DAILY_OPS_PROFILES[mixed % DAILY_OPS_PROFILES.length]!
+}
+
+/** Resolve a catalog entry for this launch, expanding the single rotating Daily Ops entry. */
+export function resolveCourseDefinition(
+  course: CourseDefinition,
+  nowMs = Date.now(),
+): CourseDefinition {
+  if (!course.daily) return course
+  const seed = dailyOpsSeed(nowMs)
+  const profile = dailyOpsProfile(nowMs)
+  const weather = DAILY_OPS_WEATHER[seed % DAILY_OPS_WEATHER.length]!
+  const timeOfDay = profile === 'night' ? 0.84 : undefined
+  return {
+    ...course,
+    detail: `${course.detail} · ${dailyOpsDayKey(nowMs)}`,
+    seed,
+    profile,
+    weather,
+    timeOfDay,
+  }
+}
+
+export function courseSeedForId(id: string | null | undefined, nowMs = Date.now()): number | undefined {
+  const seed = resolveCourseDefinition(courseDefinitionForId(id), nowMs).seed
   return seed === null ? undefined : seed
 }
 
 /** Storage identity shared by the score, trace, and completion-history records. */
-export function courseRunId(course: CourseDefinition): string | null {
-  if (course.seed === null || course.profile === null) return null
-  return `${courseSessionBaseId(course.seed, course.profile)}${courseIdentitySuffix(course.id)}`
+export function courseRunId(course: CourseDefinition, nowMs = Date.now()): string | null {
+  const resolved = resolveCourseDefinition(course, nowMs)
+  if (resolved.seed === null || resolved.profile === null) return null
+  const dailySuffix = course.daily ? `:daily:${dailyOpsDayKey(nowMs)}` : ''
+  return `${courseSessionBaseId(resolved.seed, resolved.profile)}${courseIdentitySuffix(resolved.id)}${dailySuffix}`
 }
 
 /** Keep random sorties in one bounded record bucket instead of one key per seed. */
@@ -621,11 +706,15 @@ export function courseSessionId(
   selectedCourseId: CourseId,
   worldSeed: number,
   profile: MissionRouteProfile,
+  dailyDayKey?: string,
 ): string {
   if (selectedCourseId === 'random') return RANDOM_COURSE_RUN_ID
   if (profile === 'free') return 'free-flight'
   const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
-  return `${courseSessionBaseId(safeSeed, profile)}${courseIdentitySuffix(selectedCourseId)}`
+  const dailySuffix = selectedCourseId === DAILY_OPS_COURSE_ID && dailyDayKey
+    ? `:daily:${dailyDayKey}`
+    : ''
+  return `${courseSessionBaseId(safeSeed, profile)}${courseIdentitySuffix(selectedCourseId)}${dailySuffix}`
 }
 
 /** Keep authored records stable while separating the one legacy key collision. */
