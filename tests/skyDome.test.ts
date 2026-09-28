@@ -141,6 +141,20 @@ describe('analytic sky cloud deck', () => {
     sky.dispose()
   })
 
+  it('freezes analytic sky motion for reduced-motion pilots', () => {
+    const sky = new SkyDome(new Scene())
+    const deck = deckFor('clear')
+    sky.setReducedMotion(true)
+    sky.update(0, 100, 0, new Vector3(0, 1, 0), 0, 0, new Color(0x6eb4d8), new Color(0xb8d4e8), 0, deck, 42)
+
+    const uniforms = (sky as unknown as { mat: { uniforms: { uTime: { value: number } } } }).mat.uniforms
+    expect(uniforms.uTime.value).toBe(0)
+    sky.setReducedMotion(false)
+    sky.update(0, 100, 0, new Vector3(0, 1, 0), 0, 0, new Color(0x6eb4d8), new Color(0xb8d4e8), 0, deck, 42)
+    expect(uniforms.uTime.value).toBe(42)
+    sky.dispose()
+  })
+
   it('routes the dome through the renderer output color pipeline', () => {
     const sky = new SkyDome(new Scene())
     const fragment = (sky as unknown as { mat: { fragmentShader: string } }).mat.fragmentShader

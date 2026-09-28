@@ -126,6 +126,7 @@ export class SkyDome {
   private readonly mat: ShaderMaterial
   private readonly top = new Color()
   private readonly horizon = new Color()
+  private reducedMotion = false
 
   constructor(scene: Scene) {
     this.mat = new ShaderMaterial({
@@ -387,6 +388,11 @@ export class SkyDome {
     this.mat.uniforms.uCloudDetail!.value = detail
   }
 
+  /** Freeze shader-only twinkle and drift for reduced-motion pilots. */
+  setReducedMotion(enabled: boolean): void {
+    this.reducedMotion = enabled === true
+  }
+
   /**
    * @param ax player position (dome follows)
    * @param sunDir world direction toward the sun (normalized-ish)
@@ -459,7 +465,7 @@ export class SkyDome {
     this.mat.uniforms.uNightFactor!.value = night
     this.mat.uniforms.uDusk!.value = safeDusk
     this.mat.uniforms.uHaze!.value = safeHaze * lowDeck
-    this.mat.uniforms.uTime!.value = safeTime
+    this.mat.uniforms.uTime!.value = this.reducedMotion ? 0 : safeTime
     this.mat.uniforms.uCloudBroken!.value = safeBroken
     this.mat.uniforms.uCloudBlanket!.value = safeBlanket
     this.mat.uniforms.uCloudCirrus!.value = safeCirrus

@@ -600,6 +600,7 @@ export class Atmosphere {
   setReducedMotion(enabled: boolean): void {
     if (this.disposed) return
     this.reducedMotion = enabled
+    this.sky?.setReducedMotion(enabled)
     if (enabled) {
       this.lightningFlash = 0
       this.lightningFlashAge = Infinity

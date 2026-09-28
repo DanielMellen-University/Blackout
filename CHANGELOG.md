@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.482** Freeze analytic sky drift, twinkle, and aurora motion under reduced-motion preferences, keeping accessibility behavior consistent without extra render work.
 - **10.481** Add Aurora Run, a clear midnight course that showcases the low-cost deterministic aurora layer without changing streaming or route budgets.
 - **10.480** Add a restrained deterministic aurora layer to clear night skies, reusing the existing dome draw so exploration gains regional atmosphere without extra geometry or render passes.
 - **10.479** Fail closed for malformed hydrology catchment and bounds queries, preventing invalid coordinates from creating unbounded region scans.
