@@ -60,17 +60,21 @@ describe('world lifecycle boundary', () => {
       const terrain = world.terrain as unknown as {
         waterDetailScale: { value: number }
         terrainDetailScale: { value: number }
+        vegetationScale: number
       }
       expect(terrain.waterDetailScale.value).toBe(.72)
       expect(terrain.terrainDetailScale.value).toBe(.75)
+      expect(terrain.vegetationScale).toBe(.75)
 
       world.setAdaptiveDetailScale(.5)
       expect(terrain.waterDetailScale.value).toBeCloseTo(.36)
       expect(terrain.terrainDetailScale.value).toBeCloseTo(.375)
+      expect(terrain.vegetationScale).toBeCloseTo(.375)
 
       world.setAdaptiveDetailScale(Number.NaN)
       expect(terrain.waterDetailScale.value).toBeCloseTo(.72)
       expect(terrain.terrainDetailScale.value).toBeCloseTo(.75)
+      expect(terrain.vegetationScale).toBe(.75)
     } finally {
       world.dispose()
     }
