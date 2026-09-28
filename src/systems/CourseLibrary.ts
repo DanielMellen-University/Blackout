@@ -585,7 +585,7 @@ export function courseSeedForId(id: string | null | undefined): number | undefin
 /** Storage identity shared by the score, trace, and completion-history records. */
 export function courseRunId(course: CourseDefinition): string | null {
   if (course.seed === null || course.profile === null) return null
-  return `seed:${course.seed}:${course.profile}`
+  return `${courseSessionBaseId(course.seed, course.profile)}${courseIdentitySuffix(course.id)}`
 }
 
 /** Keep random sorties in one bounded record bucket instead of one key per seed. */
@@ -597,7 +597,19 @@ export function courseSessionId(
   if (selectedCourseId === 'random') return RANDOM_COURSE_RUN_ID
   if (profile === 'free') return 'free-flight'
   const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
-  return `seed:${safeSeed}:${profile}`
+  return `${courseSessionBaseId(safeSeed, profile)}${courseIdentitySuffix(selectedCourseId)}`
+}
+
+/** Keep authored records stable while separating the one legacy key collision. */
+function courseSessionBaseId(seed: number, profile: MissionRouteProfile): string {
+  return `seed:${seed}:${profile}`
+}
+
+function courseIdentitySuffix(id: CourseId): string {
+  // Clean Circuit originally reused Desert Dash's seed/profile pair. Its
+  // contract and route are distinct, so scores, history, and ghosts must not
+  // bleed between the two entries. Leave every other historical key intact.
+  return id === 'clean-circuit-run' ? ':clean-circuit' : ''
 }
 
 export function readSelectedCourseId(
