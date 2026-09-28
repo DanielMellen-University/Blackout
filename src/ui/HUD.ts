@@ -1099,6 +1099,12 @@ export class HUD {
     this.setAttribute(this.hudRoot, 'aria-hidden', hidden ? 'true' : 'false')
   }
 
+  /** Keep the flight-critical overlay while hiding secondary telemetry. */
+  setMinimal(enabled: boolean): void {
+    if (!this.hudRoot) return
+    this.setClass(this.hudRoot, 'hud-minimal', enabled === true)
+  }
+
   update(opts: {
     y: number
     /** Vertical velocity in metres per second, positive while climbing. */

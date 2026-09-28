@@ -158,6 +158,10 @@
                 <span>Camera effects</span>
                 <input id="menu-camera-effects" type="checkbox" aria-label="Enable cinematic camera motion effects" checked />
               </label>
+              <label class="menu-setting" for="menu-hud-display">
+                <span>Minimal HUD</span>
+                <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" />
+              </label>
               <label class="menu-setting" for="menu-stability-assist">
                 <span>Flight assist</span>
                 <input id="menu-stability-assist" type="checkbox" aria-label="Gentle pitch and bank trim assist" />
@@ -249,11 +253,11 @@
               aria-valuetext="+1.0G"
             >+1.0G</span>
           </div>
-          <div id="hud-flight-log-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-flight-log-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">LOG</span>
             <span id="hud-flight-log" aria-label=""></span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">MACH</span>
             <span id="hud-mach" aria-label="M0.00, subsonic" aria-valuenow="0">M0.00</span>
           </div>
@@ -261,7 +265,7 @@
             <span class="label">STATE</span>
             <span id="hud-state">GND</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">CAM</span>
             <span id="hud-cam">chase</span>
           </div>
@@ -269,23 +273,23 @@
             <span class="label">HDG</span>
             <span id="hud-hdg">000°</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">AUD</span>
             <span id="hud-audio">LIVE</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">LAP</span>
             <span id="hud-clock">0:00.00</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">WX</span>
             <span id="hud-weather">CLEAR</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">WIND</span>
             <span id="hud-wind" aria-label="Calm wind">CALM</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-ledger hud-secondary">
             <span class="label">SKY</span>
             <span id="hud-phase">DAY</span>
           </div>
@@ -293,7 +297,7 @@
             <span class="label">RUN</span>
             <span id="hud-mission">GATE 1/5</span>
           </div>
-          <div id="hud-route-risk-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-route-risk-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">RISK</span>
             <span id="hud-route-risk" aria-label=""></span>
           </div>
@@ -301,7 +305,7 @@
             <span class="label">PACE</span>
             <span id="hud-pace">READY</span>
           </div>
-          <div id="hud-ghost-pace-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-ghost-pace-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">GHOST</span>
             <span id="hud-ghost-pace" aria-label=""></span>
           </div>
@@ -330,27 +334,27 @@
               <span id="hud-contract-detail" class="hud-ledger" aria-label=""></span>
             </span>
           </div>
-          <div id="hud-contract-streak-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-contract-streak-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">CHAIN</span>
             <span id="hud-contract-streak" aria-label="no completed contract chain">--</span>
           </div>
-          <div id="hud-live-score-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-live-score-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">LIVE</span>
             <span id="hud-live-score" aria-label=""></span>
           </div>
-          <div id="hud-precision-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-precision-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">PREC</span>
             <span id="hud-precision" aria-label=""></span>
           </div>
-          <div id="hud-climb-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-climb-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">CLIMB</span>
             <span id="hud-climb" aria-label=""></span>
           </div>
-          <div id="hud-biome-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-biome-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">SURVEY</span>
             <span id="hud-biome" aria-label="0 distinct biomes surveyed">--</span>
           </div>
-          <div id="hud-combo-row" class="hud-row hud-ledger" hidden>
+          <div id="hud-combo-row" class="hud-row hud-ledger hud-secondary" hidden>
             <span class="label">COMBO</span>
             <span id="hud-combo" class="hud-combo" aria-label=""></span>
           </div>
@@ -366,7 +370,7 @@
               aria-valuetext="100% fuel"
             ><span id="hud-fuel-fill"></span></span>
             <span id="hud-fuel" class="hud-ledger"></span>
-            <span id="hud-fuel-endurance" class="hud-fuel-endurance hud-ledger" aria-hidden="true">END --</span>
+            <span id="hud-fuel-endurance" class="hud-fuel-endurance hud-ledger hud-secondary" aria-hidden="true">END --</span>
           </div>
           <div id="hud-refuel-row" class="hud-row hud-ledger" hidden>
             <span class="label">FUEL</span>
@@ -455,7 +459,7 @@
             </div>
           </div>
 
-          <div id="fps" class="hud-ledger"><span id="hud-fps">-</span> fps</div>
+          <div id="fps" class="hud-ledger hud-secondary"><span id="hud-fps">-</span> fps</div>
         </div>
 
         <!-- Bottom-left: speedometer + engine power (min↔max) -->
@@ -539,14 +543,14 @@
           <div id="nav-arrow" aria-hidden="true">▲</div>
           <div id="nav-meta">
             <span id="nav-turn">AHEAD</span>
-            <span id="nav-approach" class="hud-ledger" aria-hidden="true"></span>
-            <span id="nav-line" class="hud-ledger" aria-hidden="true"></span>
-            <span id="nav-speed" class="hud-ledger" aria-hidden="true"></span>
-            <span id="nav-glide" class="hud-ledger" aria-hidden="true"></span>
+            <span id="nav-approach" class="hud-ledger hud-secondary" aria-hidden="true"></span>
+            <span id="nav-line" class="hud-ledger hud-secondary" aria-hidden="true"></span>
+            <span id="nav-speed" class="hud-ledger hud-secondary" aria-hidden="true"></span>
+            <span id="nav-glide" class="hud-ledger hud-secondary" aria-hidden="true"></span>
             <span id="nav-range">—</span>
-            <span id="nav-trend" class="hud-ledger" aria-hidden="true">HOLD</span>
-            <span id="nav-eta" class="hud-ledger" aria-hidden="true">ETA --</span>
-            <span id="nav-alt" class="hud-ledger"></span>
+            <span id="nav-trend" class="hud-ledger hud-secondary" aria-hidden="true">HOLD</span>
+            <span id="nav-eta" class="hud-ledger hud-secondary" aria-hidden="true">ETA --</span>
+            <span id="nav-alt" class="hud-ledger hud-secondary"></span>
           </div>
         </div>
 

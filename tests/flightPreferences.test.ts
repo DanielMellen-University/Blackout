@@ -16,6 +16,8 @@ import {
   DEFAULT_CAMERA_AUTO_RETURN,
   CAMERA_EFFECTS_STORAGE_KEY,
   DEFAULT_CAMERA_EFFECTS,
+  HUD_DISPLAY_STORAGE_KEY,
+  DEFAULT_HUD_DISPLAY,
   STABILITY_ASSIST_STORAGE_KEY,
   KEYBOARD_PITCH_STORAGE_KEY,
   KEYBOARD_ROLL_STORAGE_KEY,
@@ -57,6 +59,9 @@ import {
   normalizeCameraEffectsPreference,
   readCameraEffectsPreference,
   writeCameraEffectsPreference,
+  normalizeHudDisplay,
+  readHudDisplayPreference,
+  writeHudDisplayPreference,
 } from '../src/core/FlightPreferences'
 
 describe('keyboard flight preferences', () => {
@@ -214,6 +219,20 @@ describe('keyboard flight preferences', () => {
     writeCameraEffectsPreference(storage, false)
     expect(values.get(CAMERA_EFFECTS_STORAGE_KEY)).toBe('false')
     expect(readCameraEffectsPreference(storage)).toBe(false)
+  })
+
+  it('persists minimal HUD display without changing flight preferences', () => {
+    const values = new Map<string, string>([[HUD_DISPLAY_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeHudDisplay('minimal')).toBe('minimal')
+    expect(normalizeHudDisplay('bad')).toBe(DEFAULT_HUD_DISPLAY)
+    expect(readHudDisplayPreference(storage)).toBe(DEFAULT_HUD_DISPLAY)
+    writeHudDisplayPreference(storage, 'minimal')
+    expect(values.get(HUD_DISPLAY_STORAGE_KEY)).toBe('minimal')
+    expect(readHudDisplayPreference(storage)).toBe('minimal')
   })
 
   it('persists speed framing levels independently from camera look', () => {

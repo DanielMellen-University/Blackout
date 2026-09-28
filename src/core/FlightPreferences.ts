@@ -6,6 +6,7 @@ export type KeyboardRollPreference = 'q-right' | 'q-left'
 export type KeyboardPitchPreference = 'w-up' | 'w-down'
 export type CameraSensitivity = 'low' | 'normal' | 'high'
 export type CameraSpeedFraming = 'subtle' | 'standard' | 'wide'
+export type HudDisplay = 'full' | 'minimal'
 
 export const KEYBOARD_YAW_STORAGE_KEY = 'blackout.keyboardYaw'
 export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-right'
@@ -25,6 +26,8 @@ export const CAMERA_AUTO_RETURN_STORAGE_KEY = 'blackout.cameraAutoReturn'
 export const DEFAULT_CAMERA_AUTO_RETURN = true
 export const CAMERA_EFFECTS_STORAGE_KEY = 'blackout.cameraEffects'
 export const DEFAULT_CAMERA_EFFECTS = true
+export const HUD_DISPLAY_STORAGE_KEY = 'blackout.hudDisplay'
+export const DEFAULT_HUD_DISPLAY: HudDisplay = 'full'
 export const STABILITY_ASSIST_STORAGE_KEY = 'blackout.stabilityAssist'
 export const DEFAULT_STABILITY_ASSIST = false
 
@@ -369,6 +372,36 @@ export function writeCameraEffectsPreference(
       CAMERA_EFFECTS_STORAGE_KEY,
       normalizeCameraEffectsPreference(enabled) ? 'true' : 'false',
     )
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function normalizeHudDisplay(
+  value: unknown,
+  fallback: HudDisplay = DEFAULT_HUD_DISPLAY,
+): HudDisplay {
+  if (value === 'full' || value === 'minimal') return value
+  return fallback === 'minimal' ? 'minimal' : DEFAULT_HUD_DISPLAY
+}
+
+export function readHudDisplayPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: HudDisplay = DEFAULT_HUD_DISPLAY,
+): HudDisplay {
+  try {
+    return normalizeHudDisplay(storage?.getItem(HUD_DISPLAY_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeHudDisplay(undefined, fallback)
+  }
+}
+
+export function writeHudDisplayPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  display: HudDisplay,
+): void {
+  try {
+    storage?.setItem(HUD_DISPLAY_STORAGE_KEY, normalizeHudDisplay(display))
   } catch {
     /* Storage is optional. */
   }

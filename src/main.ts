@@ -194,8 +194,12 @@ import {
   writeCameraAutoReturnPreference,
   readCameraEffectsPreference,
   writeCameraEffectsPreference,
+  normalizeHudDisplay,
+  readHudDisplayPreference,
+  writeHudDisplayPreference,
   type CameraSensitivity,
   type CameraSpeedFraming,
+  type HudDisplay,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -231,6 +235,7 @@ async function boot(): Promise<void> {
   const cameraSpeedFramingSelect = document.getElementById('menu-camera-speed-framing') as HTMLSelectElement | null
   const cameraAutoReturnToggle = document.getElementById('menu-camera-auto-return') as HTMLInputElement | null
   const cameraEffectsToggle = document.getElementById('menu-camera-effects') as HTMLInputElement | null
+  const hudDisplayToggle = document.getElementById('menu-hud-display') as HTMLInputElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
@@ -403,6 +408,7 @@ async function boot(): Promise<void> {
   const initialCameraSpeedFraming = readCameraSpeedFramingPreference(qualityStorage)
   const initialCameraAutoReturn = readCameraAutoReturnPreference(qualityStorage)
   const initialCameraEffects = readCameraEffectsPreference(qualityStorage)
+  const initialHudDisplay = readHudDisplayPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialCameraMode = readCameraModePreference(qualityStorage)
   const initialStabilityAssist = readStabilityAssistPreference(qualityStorage)
@@ -579,6 +585,13 @@ async function boot(): Promise<void> {
     : null
   const time = new Time()
   const hud = new HUD()
+  const applyHudDisplay = (next: HudDisplay): void => {
+    const display = normalizeHudDisplay(next)
+    hud.setMinimal(display === 'minimal')
+    if (hudDisplayToggle) hudDisplayToggle.checked = display === 'minimal'
+    writeHudDisplayPreference(qualityStorage, display)
+  }
+  applyHudDisplay(initialHudDisplay)
   const missionLabelCache = createMissionHudLabelCache()
   const collision = new CollisionSystem((jet) =>
     world.hitObstacle(jet.position.x, jet.position.y, jet.position.z),
@@ -693,6 +706,14 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(cameraEffectsToggle, 'change', onCameraEffectsChange)
+  const onHudDisplayChange = (): void => {
+    const display: HudDisplay = hudDisplayToggle?.checked === true ? 'minimal' : 'full'
+    applyHudDisplay(display)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(display === 'minimal' ? 'MINIMAL HUD ON' : 'FULL HUD ON', 1500, 'info')
+    }
+  }
+  uiListeners.add(hudDisplayToggle, 'change', onHudDisplayChange)
   const applyStabilityAssist = (next: boolean): void => {
     const enabled = next === true
     input.setStabilityAssist(enabled)
