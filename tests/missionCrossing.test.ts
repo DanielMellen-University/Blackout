@@ -224,7 +224,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'saltflat', 'savanna', 'tundra'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'saltflat', 'savanna', 'tundra', 'swamp'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -285,6 +285,7 @@ describe('MissionSystem gate crossing', () => {
     const saltflat = buildMissionRoute(0, 20, 0, 0, 'saltflat')
     const savanna = buildMissionRoute(0, 20, 0, 0, 'savanna')
     const tundra = buildMissionRoute(0, 20, 0, 0, 'tundra')
+    const swamp = buildMissionRoute(0, 20, 0, 0, 'swamp')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
@@ -304,6 +305,7 @@ describe('MissionSystem gate crossing', () => {
     expect(saltflat).toHaveLength(5)
     expect(savanna).toHaveLength(5)
     expect(tundra).toHaveLength(5)
+    expect(swamp).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
@@ -331,6 +333,8 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, savanna, 'savanna').lengthMeters).toBeGreaterThan(3_500)
     expect(summarizeMissionRoute(0, 20, 0, tundra, 'tundra').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, tundra, 'tundra').lengthMeters).toBeGreaterThan(3_500)
+    expect(summarizeMissionRoute(0, 20, 0, swamp, 'swamp').challenge).toBe('range')
+    expect(summarizeMissionRoute(0, 20, 0, swamp, 'swamp').lengthMeters).toBeGreaterThan(3_000)
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
@@ -354,6 +358,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('saltflat')).toBe('SALTFLAT RUN')
     expect(routeProfileLabel('savanna')).toBe('SAVANNA RUN')
     expect(routeProfileLabel('tundra')).toBe('TUNDRA RUN')
+    expect(routeProfileLabel('swamp')).toBe('SWAMP RUN')
   })
 
   it('exposes the validated coastal and river profiles to random sorties', () => {
@@ -373,6 +378,7 @@ describe('MissionSystem gate crossing', () => {
     expect(profiles.has('saltflat')).toBe(true)
     expect(profiles.has('savanna')).toBe(true)
     expect(profiles.has('tundra')).toBe(true)
+    expect(profiles.has('swamp')).toBe(true)
   })
 
   it('supports a no-gate free-flight profile', () => {

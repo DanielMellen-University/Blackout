@@ -5,10 +5,12 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
-- One to six workers, selected from available CPU concurrency, generate terrain
-  and water buffers. At most one job runs per worker, with a bounded completed
-  queue and transferable buffers. No terrain generator runs on the render
-  thread when workers are available.
+- One to six workers, selected from available CPU concurrency and the active
+  quality preset (Low two, Balanced four, High six), generate terrain and water
+  buffers. At most one job runs per worker, with a bounded completed queue and
+  transferable buffers. Quality changes retire busy workers only after their
+  current job completes, so no terrain result is dropped. No terrain generator
+  runs on the render thread when workers are available.
 - Render-thread attachment has a 2 ms inter-upload deadline and a 16-tile cap.
   A single attachment can exceed that deadline, especially near-field props.
 - Contact detail takes priority, followed by nearest missing coverage, then
@@ -40,7 +42,8 @@ the page reads its synchronous queue length for the same completion criterion.
 
 ## Measurements
 
-Measured in the Codex in-app browser at 1280 x 720, pixel ratio 1, six workers on
+Measured in the Codex in-app browser at 1280 x 720, pixel ratio 1, four Balanced
+workers on
 the updated implementation. These are local observations, not a minimum-hardware
 guarantee. Vite development loading, JIT compilation, and device load affect
 individual runs.
