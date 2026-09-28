@@ -3,6 +3,7 @@ import {
   DirectionalLight,
   Group,
   HemisphereLight,
+  MathUtils,
   Scene,
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
@@ -111,6 +112,8 @@ export class World {
   private committed = false
   private disposed = false
   private renderQuality: RenderQuality | null = null
+  /** Additional GPU detail scale applied by the adaptive pixel-resolution scaler. */
+  private adaptiveDetailScale = 1
   private missionProfile: MissionRouteProfile | undefined
   /** Authored weather stays fixed against manual N-cycle changes. */
   private weatherLocked = false
@@ -207,8 +210,8 @@ export class World {
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
     this.terrain.setUploadBudget(profile.terrainUploadBudgetMs, profile.terrainMaxUploadsPerFrame)
-    this.terrain.setWaterDetailScale(profile.waterDetailScale)
-    this.terrain.setTerrainDetailScale(profile.terrainDetailScale)
+    this.terrain.setWaterDetailScale(profile.waterDetailScale * this.adaptiveDetailScale)
+    this.terrain.setTerrainDetailScale(profile.terrainDetailScale * this.adaptiveDetailScale)
     this.terrain.setVegetationScale(profile.vegetationScale)
     this.atmosphere.setPrecipitationScale(profile.precipitationScale)
     this.atmosphere.setCloudDensityScale(profile.cloudScale)
@@ -216,6 +219,21 @@ export class World {
       fogNearForViewRadius(profile.terrainViewRadius),
       fogFarForViewRadius(profile.terrainViewRadius),
     )
+  }
+
+  /**
+   * Let the renderer shed expensive moving detail while adaptive resolution
+   * is below its selected ceiling. Geometry, visibility, and flight physics
+   * remain unchanged, so recovery is instant when the GPU catches up.
+   */
+  setAdaptiveDetailScale(scale: number): void {
+    if (this.disposed) return
+    const safe = MathUtils.clamp(Number.isFinite(scale) ? scale : 1, .5, 1)
+    if (Math.abs(safe - this.adaptiveDetailScale) < .01) return
+    this.adaptiveDetailScale = safe
+    const profile = renderQualityProfile(this.renderQuality ?? 'balanced')
+    this.terrain.setWaterDetailScale(profile.waterDetailScale * safe)
+    this.terrain.setTerrainDetailScale(profile.terrainDetailScale * safe)
   }
 
   /**

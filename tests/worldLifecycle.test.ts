@@ -54,6 +54,28 @@ describe('world lifecycle boundary', () => {
     }
   }, 60_000)
 
+  it('scales moving terrain and water detail with adaptive resolution', () => {
+    const world = new World('balanced')
+    try {
+      const terrain = world.terrain as unknown as {
+        waterDetailScale: { value: number }
+        terrainDetailScale: { value: number }
+      }
+      expect(terrain.waterDetailScale.value).toBe(.72)
+      expect(terrain.terrainDetailScale.value).toBe(.75)
+
+      world.setAdaptiveDetailScale(.5)
+      expect(terrain.waterDetailScale.value).toBeCloseTo(.36)
+      expect(terrain.terrainDetailScale.value).toBeCloseTo(.375)
+
+      world.setAdaptiveDetailScale(Number.NaN)
+      expect(terrain.waterDetailScale.value).toBeCloseTo(.72)
+      expect(terrain.terrainDetailScale.value).toBeCloseTo(.75)
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
+
   it('fails closed for public calls after disposal', () => {
     const world = Object.create(World.prototype) as World
     ;(world as unknown as { disposed: boolean }).disposed = true

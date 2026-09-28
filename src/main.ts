@@ -1400,7 +1400,13 @@ async function boot(): Promise<void> {
     if (!simLive) lastHudUpdateMs = Number.NaN
     const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)
     previousFrame = nowMs
-    if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) renderer.setPixelRatio(pixelRatio)
+    if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) {
+      renderer.setPixelRatio(pixelRatio)
+      // Pixel density and shader detail now recover together. Compare against
+      // the active ceiling so a low-DPI device does not shed detail at boot.
+      const ceiling = Math.max(.75, resolution.maximum)
+      world.setAdaptiveDetailScale(MathUtils.clamp(pixelRatio / ceiling, .5, 1))
+    }
     let visualDt = 0
     let simDt = 0
     let stormDrive = 0
