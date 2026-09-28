@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Reuse bounded caller-owned climate buffers while building terrain tiles, removing nested per-vertex geography allocations and reducing garbage-collection pressure during streamed terrain rebuilds without changing deterministic height, biome, or water output.
 - Harden the pooled sonic-boom effect against late quality, reduced-motion, and reset callbacks, and detach its root during disposal.
 - Make snow-field teardown idempotent and detach the pooled particle root, so late weather updates cannot write into disposed precipitation buffers.
 - Make traffic teardown idempotent and detach its pooled scene root, so world resets and late stream callbacks cannot update or reuse disposed traffic resources.

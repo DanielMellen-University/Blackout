@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, INLAND_WATER_LEVEL, sampleClimate } from '../src/world/terrainSample'
+import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto } from '../src/world/terrainSample'
+import { createClimateSample } from '../src/world/Geography'
 
 describe('continuous terrain generation', () => {
   afterEach(clearOpsPad)
@@ -30,6 +31,24 @@ describe('continuous terrain generation', () => {
     sampleClimate(-120032.5, 308467.25)
     setWorldSeed(73)
     expect(sampleClimate(-120032.5, 308467.25)).toEqual(before)
+  })
+
+  it('reuses caller-owned nested climate buffers without leaking prior samples', () => {
+    setWorldSeed(19)
+    const reused = createClimateSample()
+    const features = reused.features
+    const landform = reused.landform
+    const weights = reused.biomeWeights
+    sampleClimateInto(reused, -840, 1260)
+    const first = { height: reused.height, biome: reused.biome, river: reused.features.river }
+    sampleClimateInto(reused, 2680, -1920)
+    expect(reused.features).toBe(features)
+    expect(reused.landform).toBe(landform)
+    expect(reused.biomeWeights).toBe(weights)
+    expect({ height: reused.height, biome: reused.biome, river: reused.features.river })
+      .toEqual({ height: sampleClimate(2680, -1920).height, biome: sampleClimate(2680, -1920).biome,
+        river: sampleClimate(2680, -1920).features.river })
+    expect(first).not.toEqual({ height: reused.height, biome: reused.biome, river: reused.features.river })
   })
 
   it('keeps exposed alpine rock darker than the surrounding snowfield', () => {

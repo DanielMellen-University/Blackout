@@ -1,5 +1,6 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
-import { applySlopeShadingInto, biomeColor, sampleClimate, sampleTerrainHeightFast, type Climate } from './terrainSample'
+import { applySlopeShadingInto, biomeColor, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
+import { createClimateSample } from './Geography'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
 
@@ -14,6 +15,21 @@ const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 56, 1: 40, 2: 16 }
 const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 10, 1: 26, 2: 70 }
 const RIVER_MAX_SEGS: Record<TerrainLod, number> = { 0: 64, 1: 64, 2: 16 }
 const TERRAIN_SKIRT_DEPTH = 60
+const CLIMATE_POOL_LIMIT = 1024
+const climatePool: Climate[] = []
+
+function acquireClimateGrid(count: number): Climate[] {
+  const samples = new Array<Climate>((count + 1) * (count + 1))
+  for (let i = 0; i < samples.length; i++) samples[i] = climatePool.pop() ?? createClimateSample()
+  return samples
+}
+
+function releaseClimateGrid(samples: readonly Climate[]): void {
+  for (const climate of samples) {
+    if (climatePool.length >= CLIMATE_POOL_LIMIT) break
+    climatePool.push(climate)
+  }
+}
 
 export interface TerrainGeometryBuffers {
   attributes: Record<string, { array: Float32Array; itemSize: number }>
@@ -248,15 +264,16 @@ export function generateTerrainGeometry(
   // recomputes the few shared coordinates instead of carrying that churn into
   // every worker request.
   const climatesForGrid = (count: number): Climate[] => {
-    const samples = new Array<Climate>((count + 1) * (count + 1))
+    const samples = acquireClimateGrid(count)
     for (let iz = 0; iz <= count; iz++) for (let ix = 0; ix <= count; ix++) {
       const wx = originX + ix * span / count, wz = originZ + iz * span / count
-      samples[iz * (count + 1) + ix] = sampleClimate(wx, wz)
+      sampleClimateInto(samples[iz * (count + 1) + ix]!, wx, wz)
     }
     return samples
   }
   let climates = climatesForGrid(segs)
   if (!reducedFar && segs < detailSegs && climates.some(climate => (climate.waterLevel ?? 0) > climate.height + .01)) {
+    releaseClimateGrid(climates)
     segs = detailSegs
     climates = climatesForGrid(segs)
   }
@@ -350,5 +367,6 @@ export function generateTerrainGeometry(
     const materials = Array.isArray(waterMesh.material) ? waterMesh.material : [waterMesh.material]
     for (const material of materials) material.dispose()
   }
+  releaseClimateGrid(climates)
   return { ground, water, heights, waterLevels, segs }
 }

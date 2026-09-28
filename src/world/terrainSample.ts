@@ -1,5 +1,5 @@
 import { clamp01, smoothstep, valueNoise } from './noise'
-import { sampleGeography, sampleGeographyHeight } from './Geography'
+import { createClimateSample, sampleGeographyHeight, sampleGeographyInto } from './Geography'
 
 /**
  * Resolved geographic surfaces, local airfield grading, spawn selection and
@@ -170,7 +170,12 @@ export function terrainSurfaceFromClimate(
 
 /** Geography first, then a local airfield cut into the resolved surface. */
 export function sampleClimate(x: number, z: number): Climate {
-  const climate = sampleGeography(x, z)
+  return sampleClimateInto(createClimateSample(), x, z)
+}
+
+/** Write one fully resolved climate sample into caller-owned storage. */
+export function sampleClimateInto(out: Climate, x: number, z: number): Climate {
+  const climate = sampleGeographyInto(out, x, z)
   const padT = padBlend(x, z)
   if (padT > 0) {
     const surface = terrainSurfaceFromClimate(climate)
