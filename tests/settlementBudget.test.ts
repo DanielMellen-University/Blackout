@@ -65,6 +65,8 @@ describe('settlement streaming budgets', () => {
       system.update(Number.NEGATIVE_INFINITY, Number.NaN)
       expect(internal.focusX).toBe(3000)
       expect(internal.focusZ).toBe(3000)
+      expect((system as unknown as { lastCellX: number }).lastCellX).toBe(3)
+      expect((system as unknown as { lastCellZ: number }).lastCellZ).toBe(3)
     } finally {
       system.dispose()
     }

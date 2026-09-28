@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.474** Remove avoidable render-loop garbage from settlement cell tracking and terrain worker pressure sampling, preserving streaming behavior while reducing frame-time noise.
 - **10.473** Isolate Clean Circuit's score, history, and ghost identity from the Desert Dash key it previously shared.
 - **10.472** Ease external camera occlusion recovery after ridges and buildings clear, preventing sampled sightlines from visibly snapping in and out.
 - **10.471** Keep analytic sky cloud inputs and dome transforms finite when weather or camera anchors are malformed.

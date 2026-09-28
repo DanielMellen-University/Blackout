@@ -25,6 +25,7 @@ interface Slot { worker: Worker; job: TerrainBuildRequest | null; retire: boolea
 export class TerrainWorkerPool {
   private slots: Slot[] = []
   private disabled = false
+  private busyCount = 0
   private readonly hardwareWorkerLimit: number
   private workerLimit: number
   private readonly complete: (job: TerrainBuildRequest, data: TerrainGeometryData) => void
@@ -48,7 +49,7 @@ export class TerrainWorkerPool {
     }
   }
   get size(): number { return this.slots.length }
-  get busy(): number { return this.slots.filter(slot => slot.job !== null).length }
+  get busy(): number { return this.busyCount }
   get available(): boolean {
     return !this.disabled && this.slots.some(slot => slot.job === null && !slot.retire)
   }
@@ -88,6 +89,7 @@ export class TerrainWorkerPool {
     const slot = this.slots.find(candidate => candidate.job === null && !candidate.retire)
     if (!slot) return false
     slot.job = job
+    this.busyCount++
     try { slot.worker.postMessage(job) } catch { this.fail(); return false }
     return true
   }
@@ -105,6 +107,7 @@ export class TerrainWorkerPool {
       const job = slot.job
       if (!job || event.data.id !== job.id || event.data.generation !== job.generation) return
       slot.job = null
+      this.busyCount = Math.max(0, this.busyCount - 1)
       const shouldRetire = slot.retire || this.slots.length > this.workerLimit
       if (shouldRetire) this.removeSlot(slot)
       this.complete(job, event.data.data)
@@ -132,6 +135,7 @@ export class TerrainWorkerPool {
       slot.worker.terminate()
     }
     this.slots.length = 0
+    this.busyCount = 0
   }
 }
 

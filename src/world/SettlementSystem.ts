@@ -431,7 +431,9 @@ export class SettlementSystem {
   private readonly roadSources = new Map<string, Set<string>>()
   private queue: { cx: number; cz: number; key: string }[] = []
   private linkQueue: RoadJob[] = []
-  private lastCell = ''
+  /** Numeric stream-cell coordinates avoid a string allocation on every frame. */
+  private lastCellX = Number.NaN
+  private lastCellZ = Number.NaN
   private focusX = 0
   private focusZ = 0
   private protectedRetryPending = false
@@ -732,7 +734,8 @@ export class SettlementSystem {
     // are ignored by the generation check above.
     this.inFlight = null
     this.generation++
-    this.lastCell = ''
+    this.lastCellX = Number.NaN
+    this.lastCellZ = Number.NaN
     this.focusX = 0
     this.focusZ = 0
     this.protectedRetryPending = false
@@ -887,9 +890,11 @@ export class SettlementSystem {
     x = safeX
     z = safeZ
     if (this.protectedRetryCooldown > 0) this.protectedRetryCooldown--
-    const cell = `${Math.floor(x / 1000)},${Math.floor(z / 1000)}`
-    if (cell !== this.lastCell) {
-      this.lastCell = cell
+    const cellX = Math.floor(x / 1000)
+    const cellZ = Math.floor(z / 1000)
+    if (cellX !== this.lastCellX || cellZ !== this.lastCellZ) {
+      this.lastCellX = cellX
+      this.lastCellZ = cellZ
       if (this.protectedAnchors.size) {
         this.protectedRetryPending = true
         this.protectedRetryCooldown = 0
