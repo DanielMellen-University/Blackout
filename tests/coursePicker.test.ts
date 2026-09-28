@@ -299,7 +299,7 @@ describe('course picker copy', () => {
       bestScore: 63_999,
       badgeCount: 0,
       bestPrecisionStreak: 0,
-    }).stats).toBe('2:00.00 · SCORE 63,999')
+    }).stats).toBe('2:00.00 · SCORE 63,999 · NEXT BRONZE 64,000')
     expect(coursePickerCopy({
       course: orbit,
       history: null,

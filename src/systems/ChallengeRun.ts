@@ -1959,6 +1959,20 @@ export function medalForScore(score: number): Medal {
   return 'complete'
 }
 
+export interface MedalTarget {
+  medal: Exclude<Medal, 'complete'>
+  score: number
+}
+
+/** Return the next finite medal threshold without exposing scoring internals to UI code. */
+export function nextMedalTargetForScore(score: number): MedalTarget | null {
+  const safeScore = Number.isFinite(score) ? Math.max(0, score) : 0
+  if (safeScore < 64_000) return { medal: 'bronze', score: 64_000 }
+  if (safeScore < 76_000) return { medal: 'silver', score: 76_000 }
+  if (safeScore < 88_000) return { medal: 'gold', score: 88_000 }
+  return null
+}
+
 function medalFor(score: number): Medal {
   return medalForScore(score)
 }

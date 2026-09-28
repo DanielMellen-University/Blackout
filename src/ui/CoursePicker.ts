@@ -3,6 +3,7 @@ import {
   formatTime,
   landingQualityLabel,
   medalForScore,
+  nextMedalTargetForScore,
   type CourseHistory,
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
@@ -173,7 +174,11 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   const bestScore = Number.isFinite(input.bestScore)
     ? Math.min(MAX_BEST_SCORE, Math.max(0, Math.floor(input.bestScore)))
     : 0
-  if (bestScore > 0) statsParts.push(`SCORE ${bestScore.toLocaleString()}`)
+  if (bestScore > 0) {
+    statsParts.push(`SCORE ${bestScore.toLocaleString()}`)
+    const target = nextMedalTargetForScore(bestScore)
+    if (target) statsParts.push(`NEXT ${target.medal.toUpperCase()} ${target.score.toLocaleString()}`)
+  }
   const landingQuality = input.history?.landingQuality
   if (Number.isFinite(landingQuality) && landingQuality! > 0) {
     const safeLanding = Math.max(0, Math.min(1, landingQuality!))

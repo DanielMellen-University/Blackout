@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.543** Show the next finite medal target on scored course cards so repeat runs have an explicit progression goal.
 - **10.542** Preserve player-defined newest-first ordering in Recent and Favorites course filters.
 - **10.541** Show the bounded best score directly on launch and pause course cards so repeat attempts have a clear target.
 - **10.540** Show route, weather, and contract context inline on course picker cards.

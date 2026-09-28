@@ -17,6 +17,7 @@ import {
   landingQualityLabel,
   landingQualityForMetrics,
   medalForScore,
+  nextMedalTargetForScore,
   medalRank,
   repairCourseHistory,
   readCourseHistory,
@@ -69,6 +70,14 @@ describe('ChallengeRun', () => {
     expect(medalRank('complete')).toBeLessThan(medalRank('bronze'))
     expect(medalRank('bronze')).toBeLessThan(medalRank('silver'))
     expect(medalRank('silver')).toBeLessThan(medalRank('gold'))
+  })
+
+  it('returns the next finite medal threshold without overshooting gold', () => {
+    expect(nextMedalTargetForScore(Number.NaN)).toEqual({ medal: 'bronze', score: 64_000 })
+    expect(nextMedalTargetForScore(63_999)).toEqual({ medal: 'bronze', score: 64_000 })
+    expect(nextMedalTargetForScore(64_000)).toEqual({ medal: 'silver', score: 76_000 })
+    expect(nextMedalTargetForScore(76_000)).toEqual({ medal: 'gold', score: 88_000 })
+    expect(nextMedalTargetForScore(88_000)).toBeNull()
   })
 
   it('turns climb tiers into a bounded score decision', () => {
