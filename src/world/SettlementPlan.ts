@@ -147,11 +147,12 @@ function anchorLocation(
   const salt = kind === 'city' ? 17311 : 12971
   const randomAngle = hash2(cellX * 157 + cellZ * 193 + attempt * 37 + salt,
     cellZ * 211 - cellX * 227 - attempt * 53 - salt) * Math.PI * 2
-  // Scatter around the field. A city planted down the runway reads as the
-  // spawn, because an 8–10 km city disk reaches the airfield from 9 km out.
+  // Scatter around the field. Keep the protected village inside a useful
+  // discovery envelope, while the city remains a distant regional landmark
+  // whose large footprint cannot swallow the airfield.
   const angle = randomAngle
-  const base = kind === 'city' ? 26_000 : 14_000
-  const span = kind === 'city' ? 6_000 : 4_000
+  const base = kind === 'city' ? 21_500 : 10_500
+  const span = kind === 'city' ? 3_500 : 3_500
   const distance = base + hash2(cellX * 271 + attempt * 67 + salt,
     cellZ * 313 - attempt * 89 - salt) * span
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
@@ -175,7 +176,7 @@ function anchorGridLocation(
   const phase = hash2(cellX * 197 + cellZ * 233 + salt, cellZ * 271 - cellX * 307 - salt) * Math.PI * 2
   const angle = phase + sector / sectors * Math.PI * 2
   const ringStep = 500
-  const base = kind === 'city' ? 26_000 : 14_000
+  const base = kind === 'city' ? 21_500 : 10_500
   const distance = base + ring * ringStep
   return { x: pad.x + Math.cos(angle) * distance, z: pad.z + Math.sin(angle) * distance }
 }

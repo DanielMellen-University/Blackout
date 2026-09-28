@@ -106,6 +106,13 @@ describe('procedural settlements', () => {
     setOpsPad(pad!.x, pad!.z, pad!.y)
     const plans = region(3).filter(plan => plan.anchor)
     expect(plans.map(plan => plan.anchor)).toEqual(expect.arrayContaining(['village', 'city']))
+    const village = plans.find(plan => plan.anchor === 'village')!
+    const city = plans.find(plan => plan.anchor === 'city')!
+    // The village should enter the 8 km radar envelope before the player has
+    // to cross an entire settlement cell, while the city stays a farther
+    // regional target instead of appearing on the runway.
+    expect(Math.hypot(village.x - pad!.x, village.z - pad!.z)).toBeLessThan(14_000)
+    expect(Math.hypot(city.x - pad!.x, city.z - pad!.z)).toBeLessThan(28_000)
     expect(Math.max(...plans.map(plan => Math.hypot(plan.x - pad!.x, plan.z - pad!.z)))).toBeLessThan(40_000)
     expect(Math.hypot(
       plans.find(plan => plan.anchor === 'village')!.x - pad!.x,
