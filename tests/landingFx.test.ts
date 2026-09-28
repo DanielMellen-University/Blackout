@@ -76,6 +76,18 @@ describe('landing scrub pooling', () => {
     fx.dispose()
   })
 
+  it('ignores malformed effect timing without poisoning the particle pool', () => {
+    setContactHeightSampler(() => 0)
+    const fx = new LandingFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(0, -2, 50), 1)
+    const activeCount = fx.activeCount
+    fx.update(Number.NaN)
+    fx.update(Number.POSITIVE_INFINITY)
+    fx.scrub(new Vector3(), new Vector3(0, 0, 50), Number.NaN)
+    expect(fx.activeCount).toBe(activeCount)
+    fx.dispose()
+  })
+
   it('scales continuous scrub intensity with ground speed', () => {
     expect(landingScrubIntensity(0)).toBe(0)
     expect(landingScrubIntensity(9)).toBe(0)

@@ -183,9 +183,10 @@ export class CrashFx {
   }
 
   update(dt: number): void {
-    if (this.disposed || !this.alive || dt <= 0) return
-    this.age += dt
-    this.punch = Math.max(0, this.punch - dt * 1.55)
+    const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
+    if (this.disposed || !this.alive || safeDt <= 0) return
+    this.age += safeDt
+    this.punch = Math.max(0, this.punch - safeDt * 1.55)
 
     const flashMat = this.flash.material as MeshBasicMaterial
     const flashT = Math.max(0, 1 - this.age * 4.2)
@@ -212,7 +213,7 @@ export class CrashFx {
 
     for (let i = this.bits.length - 1; i >= 0; i--) {
       const b = this.bits[i]!
-      b.life -= dt
+      b.life -= safeDt
       if (b.life <= 0) {
         b.mesh.visible = false
         const last = this.bits.pop()!
@@ -223,18 +224,18 @@ export class CrashFx {
 
       if (!this.reducedMotion) {
         if (b.kind === 'smoke') {
-          b.vel.y += 5 * dt
-          b.vel.multiplyScalar(Math.exp(-0.5 * dt))
+          b.vel.y += 5 * safeDt
+          b.vel.multiplyScalar(Math.exp(-0.5 * safeDt))
         } else if (b.kind === 'bloom') {
-          b.vel.multiplyScalar(Math.exp(-1.4 * dt))
-          b.vel.y += 2 * dt
+          b.vel.multiplyScalar(Math.exp(-1.4 * safeDt))
+          b.vel.y += 2 * safeDt
         } else {
           // Ballistic fireballs: gravity, almost no drag so the arc reads
-          b.vel.y -= 19.5 * dt
-          b.vel.multiplyScalar(Math.exp(-0.06 * dt))
+          b.vel.y -= 19.5 * safeDt
+          b.vel.multiplyScalar(Math.exp(-0.06 * safeDt))
         }
 
-        b.mesh.position.addScaledVector(b.vel, dt)
+        b.mesh.position.addScaledVector(b.vel, safeDt)
       }
 
       const worldY = this.root.position.y + b.mesh.position.y

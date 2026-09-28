@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.468** Keep malformed landing and crash-effect timing from poisoning pooled particle lifetimes or motion.
 - **10.467** Keep malformed world-frame timing and aircraft coordinates from leaking into terrain, settlements, traffic, atmosphere, or runway presentation.
 - **10.466** Keep malformed atmosphere deltas and anchor coordinates from poisoning time-of-day, cloud motion, or weather rendering state.
 - **10.465** Ignore malformed weather update deltas so `NaN` or infinite frame timing cannot poison seeded front transitions.

@@ -124,10 +124,11 @@ export class LandingFx {
   /** Continuous low-rate scrub while rolling above a soft ground-speed floor. */
   scrub(pos: Vector3, vel: Vector3, dt: number): void {
     if (this.disposed) return
+    const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
     const gs = Math.hypot(vel.x, vel.z)
     const rate = landingScrubRate(gs)
-    if (rate <= 0) return
-    this.scrubCooldown -= dt
+    if (rate <= 0 || safeDt <= 0) return
+    this.scrubCooldown -= safeDt
     if (this.scrubCooldown > 0) return
     this.scrubCooldown = 1 / rate
 
@@ -148,11 +149,12 @@ export class LandingFx {
   }
 
   update(dt: number): void {
-    if (this.disposed || !this.alive || dt <= 0) return
+    const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
+    if (this.disposed || !this.alive || safeDt <= 0) return
     let any = false
     for (let i = this.active.length - 1; i >= 0; i--) {
       const puff = this.active[i]!
-      puff.life -= dt
+      puff.life -= safeDt
       if (puff.life <= 0) {
         puff.mesh.visible = false
         const last = this.active.pop()!
@@ -163,9 +165,9 @@ export class LandingFx {
       const u = 1 - puff.life / puff.maxLife
       if (puff.kind === 'dust') {
         if (!this.reducedMotion) {
-          puff.vel.y += 1.2 * dt
-          puff.vel.multiplyScalar(Math.exp(-1.6 * dt))
-          puff.mesh.position.addScaledVector(puff.vel, dt)
+          puff.vel.y += 1.2 * safeDt
+          puff.vel.multiplyScalar(Math.exp(-1.6 * safeDt))
+          puff.mesh.position.addScaledVector(puff.vel, safeDt)
         }
         const s = puff.size0 * (1 + (this.reducedMotion ? 0 : u * 2.4))
         puff.mesh.scale.set(s, s * 0.55, s)
@@ -173,9 +175,9 @@ export class LandingFx {
         mat.opacity = (1 - u) * 0.4
       } else {
         if (!this.reducedMotion) {
-          puff.vel.y += 3.4 * dt
-          puff.vel.multiplyScalar(Math.exp(-0.7 * dt))
-          puff.mesh.position.addScaledVector(puff.vel, dt)
+          puff.vel.y += 3.4 * safeDt
+          puff.vel.multiplyScalar(Math.exp(-0.7 * safeDt))
+          puff.mesh.position.addScaledVector(puff.vel, safeDt)
         }
         puff.mesh.scale.setScalar(puff.size0 * (1 + (this.reducedMotion ? 0 : u * 3.2)))
         const mat = puff.mesh.material as MeshBasicMaterial

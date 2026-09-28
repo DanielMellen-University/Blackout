@@ -93,6 +93,18 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('ignores malformed effect timing without poisoning the burst', () => {
+    const fx = new CrashFx(new Scene())
+    fx.trigger(new Vector3(), new Vector3(4, -8, 12))
+    const activeCount = fx.activeCount
+    const bloom = fx.bloom
+    fx.update(Number.NaN)
+    fx.update(Number.POSITIVE_INFINITY)
+    expect(fx.activeCount).toBe(activeCount)
+    expect(fx.bloom).toBe(bloom)
+    fx.dispose()
+  })
+
   it('stops the effect when the pooled particle tail is empty', () => {
     let samples = 0
     setContactHeightSampler(() => {
