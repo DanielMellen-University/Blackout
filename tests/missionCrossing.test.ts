@@ -240,6 +240,7 @@ describe('MissionSystem gate crossing', () => {
     expect(summary.challengeLabel).toBe('APPROACH')
     expect(summary.lengthMeters).toBeGreaterThan(0)
     expect(summary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
+    expect(summary.maxSlopeDegrees).toBeGreaterThanOrEqual(0)
     expect(['relaxed', 'standard', 'technical']).toContain(summary.difficulty)
   })
 
@@ -492,6 +493,7 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.routeSummary.label).toBe(mission.routeProfileLabel)
     expect(mission.routeBriefing).toContain('MIN CLR')
     expect(mission.routeBriefing).toContain('TURN ')
+    expect(mission.routeBriefing).toContain('SLOPE ')
     expect(mission.routeBriefing).toContain('TOP ')
     expect(mission.routeBriefing).toContain(mission.routeProfileLabel)
     expect(mission.routeBriefing).toContain(mission.routeModifierLabel)
@@ -518,6 +520,7 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.routeSummary.challenge).toBe('altitude')
     expect(mission.routeSummary.challengeLabel).toBe('CLIMB')
     expect(mission.routeSummary.maxAltitudeMeters).toBeGreaterThan(500)
+    expect(mission.routeSummary.maxSlopeDegrees).toBeGreaterThan(0)
     expect(mission.routeBriefing).toContain('CLIMB')
     mission.dispose()
   })

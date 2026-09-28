@@ -95,6 +95,8 @@ export interface MissionRouteSummary {
   difficulty: MissionRouteDifficulty
   lengthMeters: number
   maxTurnDegrees: number
+  /** Steepest absolute climb/descent angle between route gates. */
+  maxSlopeDegrees: number
   minClearanceMeters: number
   maxAltitudeMeters: number
 }
@@ -646,6 +648,7 @@ export function summarizeMissionRoute(
   let previousDz = 0
   let lengthMeters = 0
   let maxTurnDegrees = 0
+  let maxSlopeDegrees = 0
   let minClearanceMeters = Number.POSITIVE_INFINITY
   let maxAltitudeMeters = safeSpawnY
 
@@ -656,6 +659,10 @@ export function summarizeMissionRoute(
     const horizontalLength = Math.hypot(dx, dz)
     lengthMeters += Math.hypot(dx, dy, dz)
     maxAltitudeMeters = Math.max(maxAltitudeMeters, point.y)
+    const slopeDegrees = horizontalLength > 1e-6
+      ? Math.atan2(Math.abs(dy), horizontalLength) * 180 / Math.PI
+      : Math.abs(dy) > 1e-6 ? 90 : 0
+    maxSlopeDegrees = Math.max(maxSlopeDegrees, slopeDegrees)
     if (horizontalLength > 1e-6 && Math.hypot(previousDx, previousDz) > 1e-6) {
       const dot = (previousDx * dx + previousDz * dz) /
         (Math.hypot(previousDx, previousDz) * horizontalLength)
@@ -682,9 +689,9 @@ export function summarizeMissionRoute(
   if (!Number.isFinite(minClearanceMeters)) minClearanceMeters = ROUTE_CLEARANCE
   const climbMeters = Math.max(0, maxAltitudeMeters - safeSpawnY)
   const difficulty: MissionRouteDifficulty =
-    maxTurnDegrees >= 112 || climbMeters >= 420 || lengthMeters >= 7_200
+    maxTurnDegrees >= 112 || maxSlopeDegrees >= 18 || climbMeters >= 420 || lengthMeters >= 7_200
       ? 'technical'
-      : maxTurnDegrees >= 72 || climbMeters >= 240 || lengthMeters >= 5_400
+      : maxTurnDegrees >= 72 || maxSlopeDegrees >= 10 || climbMeters >= 240 || lengthMeters >= 5_400
         ? 'standard'
         : 'relaxed'
   return {
@@ -699,6 +706,7 @@ export function summarizeMissionRoute(
     difficulty,
     lengthMeters: finiteOr(lengthMeters, 0),
     maxTurnDegrees: finiteOr(maxTurnDegrees, 0),
+    maxSlopeDegrees: finiteOr(maxSlopeDegrees, 0),
     minClearanceMeters: Math.max(0, finiteOr(minClearanceMeters, ROUTE_CLEARANCE)),
     maxAltitudeMeters: finiteOr(maxAltitudeMeters, safeSpawnY),
   }
@@ -742,6 +750,7 @@ export class MissionSystem {
     difficulty: 'standard',
     lengthMeters: 0,
     maxTurnDegrees: 0,
+    maxSlopeDegrees: 0,
     minClearanceMeters: ROUTE_CLEARANCE,
     maxAltitudeMeters: 0,
   }
@@ -914,6 +923,7 @@ export class MissionSystem {
     this.summary.difficulty = summary.difficulty
     this.summary.lengthMeters = summary.lengthMeters
     this.summary.maxTurnDegrees = summary.maxTurnDegrees
+    this.summary.maxSlopeDegrees = summary.maxSlopeDegrees
     this.summary.minClearanceMeters = summary.minClearanceMeters
     this.summary.maxAltitudeMeters = summary.maxAltitudeMeters
     this.routeBriefingText = this.profile === 'free'
@@ -926,6 +936,7 @@ export class MissionSystem {
         summary.difficulty.toUpperCase(),
         `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
         `TURN ${Math.round(summary.maxTurnDegrees)}°`,
+        `SLOPE ${Math.round(summary.maxSlopeDegrees)}°`,
         `TOP ${Math.max(0, Math.round(summary.maxAltitudeMeters - safeSpawnY))}M`,
       ].join(' / ')
     for (let i = 0; i < route.length; i++) {
