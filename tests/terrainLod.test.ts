@@ -265,6 +265,41 @@ describe('visible mesh contact sampling', () => {
     expect(sampleGroundHeight(x, z)).toBe(Math.fround(sampleTerrainHeight(x, z)))
   })
 
+  it('samples coarse horizon tiles across their full covered span', () => {
+    const terrain = new TerrainSystem(new Scene())
+    const chunks = (terrain as unknown as {
+      chunks: Map<string, unknown>
+    }).chunks
+    try {
+      const terrainChunks = chunks as Map<string, {
+        cx: number
+        cz: number
+        size: number
+        segs: number
+        originX: number
+        originZ: number
+        heights: Float32Array
+        waterLevels: Float32Array
+      }>
+      terrainChunks.set('0,0:4', {
+        cx: 0,
+        cz: 0,
+        size: 4,
+        segs: 1,
+        originX: 0,
+        originZ: 0,
+        heights: new Float32Array([10, 20, 30, 40]),
+        waterLevels: new Float32Array([0, 0, 0, 0]),
+      })
+
+      expect(terrain.sampleMeshHeight(CHUNK_SIZE * 3, CHUNK_SIZE)).toBeCloseTo(22.5)
+      expect(terrain.sampleMeshSurface(CHUNK_SIZE * 3, CHUNK_SIZE)?.kind).toBe('land')
+    } finally {
+      chunks.delete('0,0:4')
+      terrain.clearAll()
+    }
+  })
+
   it('uses triangle interpolation instead of the continuous function off-vertex', () => {
     const terrain = new TerrainSystem(new Scene())
     pump(terrain, 210, 210, 40)

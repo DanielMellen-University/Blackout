@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.369** Make rendered/contact sampling span-aware for coarse terrain tiles, so far LOD surfaces resolve the correct cell and height instead of falling back or compressing a multi-cell tile into one cell.
 - **10.368** Give terrain attachment a quality-aware main-thread budget, reducing Low upload bursts while preserving bounded worker streaming and allowing High to catch up faster.
 - **10.367** Route render-quality changes through one world-owned update path, removing duplicate traffic, atmosphere, vegetation, and shader-budget writes during preset switches.
 - **10.366** Align the external camera far plane with the active terrain quality envelope, reducing Low frustum and depth work while preserving the full High-quality horizon.

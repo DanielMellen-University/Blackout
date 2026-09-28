@@ -125,10 +125,12 @@ export function interpolateGridHeight(
   originZ: number,
   x: number,
   z: number,
+  span = CHUNK_SIZE,
 ): number {
   const stride = segs + 1
-  const u = ((x - originX) / CHUNK_SIZE) * segs
-  const v = ((z - originZ) / CHUNK_SIZE) * segs
+  const safeSpan = Number.isFinite(span) && span > 0 ? span : CHUNK_SIZE
+  const u = ((x - originX) / safeSpan) * segs
+  const v = ((z - originZ) / safeSpan) * segs
   const ix = Math.min(segs - 1, Math.max(0, Math.floor(u)))
   const iy = Math.min(segs - 1, Math.max(0, Math.floor(v)))
   const fu = Math.min(1, Math.max(0, u - ix))
@@ -541,6 +543,7 @@ export class TerrainSystem {
       chunk.originZ,
       x,
       z,
+      CHUNK_SIZE * chunk.size,
     )
     const level = interpolateGridHeight(
       chunk.waterLevels,
@@ -549,6 +552,7 @@ export class TerrainSystem {
       chunk.originZ,
       x,
       z,
+      CHUNK_SIZE * chunk.size,
     )
     return Math.max(bed, level)
   }
@@ -565,8 +569,17 @@ export class TerrainSystem {
       chunk.originZ,
       x,
       z,
+      CHUNK_SIZE * chunk.size,
     )
-    const level = interpolateGridHeight(chunk.waterLevels, chunk.segs, chunk.originX, chunk.originZ, x, z)
+    const level = interpolateGridHeight(
+      chunk.waterLevels,
+      chunk.segs,
+      chunk.originX,
+      chunk.originZ,
+      x,
+      z,
+      CHUNK_SIZE * chunk.size,
+    )
     const wet = bed < level
     const climate = sampleClimate(x, z)
     const biome = wet ? (level <= 0 ? 'ocean' : 'water') : climate.biome
@@ -591,6 +604,7 @@ export class TerrainSystem {
       chunk.originZ,
       x,
       z,
+      CHUNK_SIZE * chunk.size,
     )
     const level = interpolateGridHeight(
       chunk.waterLevels,
@@ -599,6 +613,7 @@ export class TerrainSystem {
       chunk.originZ,
       x,
       z,
+      CHUNK_SIZE * chunk.size,
     )
     out.height = Math.max(bed, level)
     out.kind = bed < level ? 'water' : 'land'
@@ -612,6 +627,18 @@ export class TerrainSystem {
     this.sampledChunkCx = cx
     this.sampledChunkCz = cz
     this.sampledChunk = this.chunks.get(`${cx},${cz}`) ?? null
+    if (!this.sampledChunk) {
+      // Horizon tiles cover several cells. Keep the common near-cell lookup
+      // O(1), then fall back to the bounded resident tile set when a coarse
+      // tile owns the queried cell. The cell cache prevents repeated scans.
+      for (const chunk of this.chunks.values()) {
+        if (cx >= chunk.cx && cx < chunk.cx + chunk.size &&
+          cz >= chunk.cz && cz < chunk.cz + chunk.size) {
+          this.sampledChunk = chunk
+          break
+        }
+      }
+    }
     return this.sampledChunk
   }
 
@@ -734,7 +761,7 @@ export class TerrainSystem {
       this.offsetFallback(existing)
     }
     this.chunks.set(key, chunk)
-    if (job.size === 1) this.invalidateSampleChunk()
+    this.invalidateSampleChunk()
   }
 
   private drainBuildQueue(): void {
