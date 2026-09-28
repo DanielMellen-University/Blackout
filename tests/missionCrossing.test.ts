@@ -224,7 +224,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'badlands', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -282,6 +282,7 @@ describe('MissionSystem gate crossing', () => {
     const glacier = buildMissionRoute(0, 20, 0, 0, 'glacier')
     const rainforest = buildMissionRoute(0, 20, 0, 0, 'rainforest')
     const mesa = buildMissionRoute(0, 20, 0, 0, 'mesa')
+    const badlands = buildMissionRoute(0, 20, 0, 0, 'badlands')
     const saltflat = buildMissionRoute(0, 20, 0, 0, 'saltflat')
     const savanna = buildMissionRoute(0, 20, 0, 0, 'savanna')
     const tundra = buildMissionRoute(0, 20, 0, 0, 'tundra')
@@ -303,6 +304,7 @@ describe('MissionSystem gate crossing', () => {
     expect(glacier).toHaveLength(5)
     expect(rainforest).toHaveLength(5)
     expect(mesa).toHaveLength(5)
+    expect(badlands).toHaveLength(5)
     expect(saltflat).toHaveLength(5)
     expect(savanna).toHaveLength(5)
     expect(tundra).toHaveLength(5)
@@ -329,6 +331,8 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, rainforest, 'rainforest').lengthMeters).toBeGreaterThan(2_800)
     expect(summarizeMissionRoute(0, 20, 0, mesa, 'mesa').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, mesa, 'mesa').lengthMeters).toBeGreaterThan(3_500)
+    expect(summarizeMissionRoute(0, 20, 0, badlands, 'badlands').challenge).toBe('precision')
+    expect(summarizeMissionRoute(0, 20, 0, badlands, 'badlands').lengthMeters).toBeGreaterThan(3_000)
     expect(summarizeMissionRoute(0, 20, 0, saltflat, 'saltflat').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, saltflat, 'saltflat').lengthMeters).toBeGreaterThan(4_000)
     expect(summarizeMissionRoute(0, 20, 0, savanna, 'savanna').challenge).toBe('range')
@@ -359,6 +363,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('glacier')).toBe('GLACIER RUN')
     expect(routeProfileLabel('rainforest')).toBe('RAINFOREST RUN')
     expect(routeProfileLabel('mesa')).toBe('MESA RUN')
+    expect(routeProfileLabel('badlands')).toBe('BADLANDS RUN')
     expect(routeProfileLabel('saltflat')).toBe('SALTFLAT RUN')
     expect(routeProfileLabel('savanna')).toBe('SAVANNA RUN')
     expect(routeProfileLabel('tundra')).toBe('TUNDRA RUN')
@@ -368,7 +373,7 @@ describe('MissionSystem gate crossing', () => {
 
   it('exposes the validated coastal and river profiles to random sorties', () => {
     const profiles = new Set<MissionRouteProfile>()
-    for (let x = 0; x <= 8_000; x += 25) {
+    for (let x = 0; x <= 10_000; x += 25) {
       profiles.add(routeProfileForSpawn(x, 0, 0))
     }
     expect(profiles.has('coast')).toBe(true)
@@ -380,6 +385,7 @@ describe('MissionSystem gate crossing', () => {
     expect(profiles.has('glacier')).toBe(true)
     expect(profiles.has('rainforest')).toBe(true)
     expect(profiles.has('mesa')).toBe(true)
+    expect(profiles.has('badlands')).toBe(true)
     expect(profiles.has('saltflat')).toBe(true)
     expect(profiles.has('savanna')).toBe(true)
     expect(profiles.has('tundra')).toBe(true)
