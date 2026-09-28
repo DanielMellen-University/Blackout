@@ -1,6 +1,7 @@
 import { flightConfig } from '../aircraft/flightConfig'
 import { createDefaultControls, type ControlState } from './types'
 import {
+  DEFAULT_KEYBOARD_YAW,
   normalizeKeyboardYawPreference,
   normalizeKeyboardRollPreference,
   normalizeKeyboardPitchPreference,
@@ -37,7 +38,7 @@ export class InputManager {
   private touchYaw = 0
   private touchThrottle = 0
   private touchBoost = false
-  private keyboardYawPreference: KeyboardYawPreference = 'a-right'
+  private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
   private keyboardBindings: KeyboardBindings = {

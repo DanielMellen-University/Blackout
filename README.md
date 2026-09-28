@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.460**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.461**.
 
 ## Run
 
@@ -32,7 +32,7 @@ The closest traffic contact now remains visible in a bounded HUD row after its a
 Press Play when the airfield is ready.
 
 - W / S pitch
-- A / D yaw
+- A / D yaw (A left / D right by default; the direction is remappable)
 - Q / E roll
 - Shift raises the throttle, Ctrl lowers it
 - Space is afterburner

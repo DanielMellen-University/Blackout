@@ -25,7 +25,8 @@ export type CameraSpeedFraming = 'subtle' | 'standard' | 'wide'
 export type HudDisplay = 'full' | 'minimal'
 
 export const KEYBOARD_YAW_STORAGE_KEY = 'blackout.keyboardYaw'
-export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-right'
+/** Conventional flight-deck yaw: A turns left, D turns right. */
+export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-left'
 export const KEYBOARD_ROLL_STORAGE_KEY = 'blackout.keyboardRoll'
 export const DEFAULT_KEYBOARD_ROLL: KeyboardRollPreference = 'q-right'
 export const KEYBOARD_PITCH_STORAGE_KEY = 'blackout.keyboardPitch'
