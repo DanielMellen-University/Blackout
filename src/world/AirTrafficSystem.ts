@@ -16,7 +16,7 @@ import {
   Vector3,
 } from 'three'
 import type { RenderQuality } from '../core/RenderQuality'
-import type { RadarLandmark } from '../systems/RadarSystem'
+import { radarVerticalLabel, type RadarLandmark } from '../systems/RadarSystem'
 
 /** Fixed traffic pool. Distant silhouettes add life without growing the scene. */
 export const AIR_TRAFFIC_COUNT = 6
@@ -103,10 +103,7 @@ export function trafficAlertSide(bearing: number): 'LEFT' | 'RIGHT' | 'AHEAD' | 
 
 /** Keep vertical traffic guidance inside a readable deadband. */
 export function trafficAlertVertical(verticalOffset: number, deadband = 80): 'ABOVE' | 'BELOW' | 'LEVEL' {
-  const safe = Number.isFinite(verticalOffset) ? verticalOffset : 0
-  const safeDeadband = Number.isFinite(deadband) && deadband >= 0 ? deadband : 80
-  if (Math.abs(safe) <= safeDeadband) return 'LEVEL'
-  return safe > 0 ? 'ABOVE' : 'BELOW'
+  return radarVerticalLabel(verticalOffset, deadband)
 }
 
 /** Deterministic blink phase for pooled traffic anti-collision beacons. */

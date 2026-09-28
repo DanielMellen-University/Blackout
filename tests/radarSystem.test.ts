@@ -8,6 +8,7 @@ import {
   type RadarLandmark,
   radarBearingArrow,
   radarDistanceLabel,
+  radarVerticalLabel,
 } from '../src/systems/RadarSystem'
 
 describe('arcade radar sweep', () => {
@@ -120,6 +121,14 @@ describe('arcade radar sweep', () => {
     expect(radarBearingArrow(-Math.PI * .75)).toBe('↙')
     expect(radarDistanceLabel(420)).toBe('420M')
     expect(radarDistanceLabel(4200)).toBe('4.2K')
+  })
+
+  it('keeps vertical traffic cues finite and deadbanded', () => {
+    expect(radarVerticalLabel(240)).toBe('ABOVE')
+    expect(radarVerticalLabel(-240)).toBe('BELOW')
+    expect(radarVerticalLabel(80)).toBe('LEVEL')
+    expect(radarVerticalLabel(Number.NaN)).toBe('LEVEL')
+    expect(radarVerticalLabel(10, Number.NaN)).toBe('LEVEL')
   })
 
   it('cycles only identified settlement contacts and retains world positions', () => {

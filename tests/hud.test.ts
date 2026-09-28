@@ -369,6 +369,9 @@ describe('HUD value formatting', () => {
     expect(formatRadarContacts([
       { kind: 'city', label: 'CITY', distance: 800, bearing: 0, selected: true },
     ])).toBe('> CITY 800M ↑')
+    expect(formatRadarContacts([
+      { kind: 'traffic', label: 'TRAFFIC', distance: 640, bearing: 0, vertical: 160 },
+    ])).toBe('TRAFFIC 640M ↑ ABOVE')
   })
 
   it('describes radar lock state and direction without visual glyphs', () => {
@@ -376,6 +379,9 @@ describe('HUD value formatting', () => {
       { kind: 'gate', label: 'GATE', distance: 1200, bearing: 0 },
       { kind: 'city', label: 'CITY', distance: 800, bearing: Math.PI / 2, selected: true },
     ])).toBe('Radar: gate 1.2k ahead; selected city 800m right')
+    expect(formatRadarContactsAria([
+      { kind: 'traffic', label: 'TRAFFIC', distance: 640, bearing: 0, vertical: -160 },
+    ])).toBe('Radar: traffic 640m ahead, below')
     expect(formatRadarContactsAria([])).toBe('Radar: no contacts')
   })
 

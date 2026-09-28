@@ -9,6 +9,7 @@ import {
   RADAR_RANGE_METERS,
   radarBearingArrow,
   radarDistanceLabel,
+  radarVerticalLabel,
   type RadarContact,
 } from '../systems/RadarSystem'
 import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
@@ -105,7 +106,10 @@ export function formatRadarContacts(contacts: readonly RadarContact[]): string {
       ? contact.label
       : 'CONTACT'
     const marker = contact.selected === true ? '> ' : ''
-    labels.push(`${marker}${label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}`)
+    const vertical = contact.kind === 'traffic'
+      ? ` ${radarVerticalLabel(contact.vertical ?? 0)}`
+      : ''
+    labels.push(`${marker}${label} ${radarDistanceLabel(contact.distance)} ${radarBearingArrow(contact.bearing)}${vertical}`)
   }
   return labels.length > 0 ? labels.join(' · ') : 'NO CONTACTS'
 }
@@ -143,7 +147,10 @@ export function formatRadarContactsAria(contacts: readonly RadarContact[]): stri
     const selected = contact.selected === true ? 'selected ' : ''
     const distance = radarDistanceLabel(contact.distance).toLowerCase()
     const direction = radarBearingDirection(contact.bearing)
-    labels.push(`${selected}${label} ${distance} ${direction}`)
+    const vertical = contact.kind === 'traffic'
+      ? `, ${radarVerticalLabel(contact.vertical ?? 0).toLowerCase()}`
+      : ''
+    labels.push(`${selected}${label} ${distance} ${direction}${vertical}`)
   }
   return labels.length > 0 ? `Radar: ${labels.join('; ')}` : 'Radar: no contacts'
 }

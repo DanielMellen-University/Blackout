@@ -45,6 +45,16 @@ export const RADAR_UPDATE_INTERVAL_MS = 100
 /** Bound source work even if a caller hands radar an unexpectedly large list. */
 export const MAX_RADAR_LANDMARK_SCAN = 128
 
+export type RadarVerticalCue = 'ABOVE' | 'BELOW' | 'LEVEL'
+
+/** Keep vertical traffic guidance consistent between the marker and text HUD. */
+export function radarVerticalLabel(vertical: number, deadband = 80): RadarVerticalCue {
+  const safe = Number.isFinite(vertical) ? vertical : 0
+  const safeDeadband = Number.isFinite(deadband) && deadband >= 0 ? deadband : 80
+  if (Math.abs(safe) <= safeDeadband) return 'LEVEL'
+  return safe > 0 ? 'ABOVE' : 'BELOW'
+}
+
 export function radarUpdateDue(nowMs: number, nextUpdateMs: number): boolean {
   if (!Number.isFinite(nowMs) || !Number.isFinite(nextUpdateMs)) return true
   return nowMs >= nextUpdateMs
