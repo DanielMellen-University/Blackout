@@ -732,6 +732,7 @@ async function boot(): Promise<void> {
     speed: 0,
     rain: 0,
     snow: 0,
+    weatherGust: 0,
     cloudImmersion: 0,
     mute: true,
     dt: 1 / 60,
@@ -1777,6 +1778,7 @@ async function boot(): Promise<void> {
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain
     audioFrame.snow = precipitation.snow
+    audioFrame.weatherGust = precipitation.gust
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.mute =

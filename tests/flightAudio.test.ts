@@ -6,6 +6,7 @@ import {
   audioContextUsable,
   airbrakeWindEnvelope,
   cloudAudioAttenuation,
+  windGustAudioEnvelope,
   enginePlaybackRate,
   engineWhineLevel,
   flightAudioViewMix,
@@ -22,6 +23,13 @@ describe('flight audio automation', () => {
     expect(cloudAudioAttenuation(1, 0.06, 0.9)).toBeCloseTo(0.994)
     expect(cloudAudioAttenuation(Number.NaN, 1, 0)).toBeCloseTo(1)
     expect(cloudAudioAttenuation(2, 2, -1)).toBeCloseTo(0)
+  })
+
+  it('keeps gust ambience restrained and finite', () => {
+    expect(windGustAudioEnvelope(0)).toBe(0)
+    expect(windGustAudioEnvelope(1)).toBeCloseTo(0.18)
+    expect(windGustAudioEnvelope(4)).toBeCloseTo(0.18)
+    expect(windGustAudioEnvelope(Number.NaN)).toBe(0)
   })
 
   it('keeps the shared event-noise pool longer than every cue envelope', () => {

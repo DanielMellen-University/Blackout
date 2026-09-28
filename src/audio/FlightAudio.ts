@@ -57,6 +57,11 @@ export function cloudAudioAttenuation(value: number, amount: number, floor = 0):
   return safeFloor + (1 - safeFloor) * (1 - immersion * safeAmount)
 }
 
+/** Add a restrained gust bed without letting weather overpower the engine. */
+export function windGustAudioEnvelope(gust: number): number {
+  return clamp01(gust) * 0.18
+}
+
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
@@ -127,6 +132,8 @@ export class FlightAudio {
     speed: number
     rain: number
     snow: number
+    /** Bounded weather gust intensity used to lift the wind bed. */
+    weatherGust?: number
     /** Smoothed local cloud density, 0 clear to 1 inside a formation. */
     cloudImmersion?: number
     mute: boolean
@@ -163,7 +170,10 @@ export class FlightAudio {
 
     // Wind starts after a taxi crawl, strong by cruise (~400+ kts).
     const speed = Number.isFinite(opts.speed) ? Math.max(0, opts.speed) : 0
-    const wind = airbrakeWindEnvelope(speed, opts.airbrake === true)
+    const wind = clamp01(
+      airbrakeWindEnvelope(speed, opts.airbrake === true) +
+      windGustAudioEnvelope(opts.weatherGust ?? 0),
+    )
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
     const whine = engineWhineLevel(opts.throttle, boost)
     const cloudImmersion = Number.isFinite(opts.cloudImmersion) ? opts.cloudImmersion! : 0
