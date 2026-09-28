@@ -741,6 +741,22 @@ body,
   color: var(--ink-dim);
 }
 
+.course-option-detail {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ink-mute);
+  font-size: 0.56rem;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.course-option-detail[hidden] {
+  display: none;
+}
+
 .course-option-stats {
   max-width: 100%;
   color: var(--accent);

@@ -500,11 +500,15 @@ export class CoursePicker {
     const meta = document.createElement('span')
     meta.className = 'course-option-meta'
     meta.textContent = metaLabel
+    const detail = document.createElement('span')
+    detail.className = 'course-option-detail'
+    detail.textContent = item.detail
+    detail.hidden = item.detail.trim().length === 0
     const stats = document.createElement('span')
     stats.className = 'course-option-stats'
     stats.textContent = item.stats
     stats.hidden = item.stats.trim().length === 0
-    button.append(name, meta, stats)
+    button.append(name, meta, detail, stats)
     return button
   }
 
