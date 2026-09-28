@@ -21,6 +21,18 @@ describe('natural drainage', () => {
     expect(second).not.toEqual(firstSnapshot)
   })
 
+  it('contains malformed coordinates and ground samples without poisoning the cache', () => {
+    setWorldSeed(1)
+    const storage = { height: 0, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0 }
+    const sample = sampleHydrologyInto(storage, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)
+    expect(sample).toBe(storage)
+    expect(Object.values(sample).every((value) => Number.isFinite(value))).toBe(true)
+
+    const replay = sampleHydrologyInto(storage, 0, 0, 0)
+    expect(Object.values(replay).every((value) => Number.isFinite(value))).toBe(true)
+    expect(replay).toEqual(sampleHydrology(0, 0, 0))
+  })
+
   it('keeps rivers connected and descending, with varying widths', () => {
     setWorldSeed(1)
     const reaches = riverReaches(-1, -1)

@@ -580,11 +580,14 @@ export function sampleHydrology(x: number, z: number, ground: number): Hydrology
 
 /** Write one hydrology sample into caller-owned storage to avoid hot-path churn. */
 export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, ground: number): HydrologySample {
-  const cx = Math.floor(x / CATCHMENT_SIZE), cz = Math.floor(z / CATCHMENT_SIZE)
+  const safeX = Number.isFinite(x) ? x : 0
+  const safeZ = Number.isFinite(z) ? z : 0
+  const safeGround = Number.isFinite(ground) ? ground : 0
+  const cx = Math.floor(safeX / CATCHMENT_SIZE), cz = Math.floor(safeZ / CATCHMENT_SIZE)
   const region = catchment(cx, cz)
-  const localX = x - cx * CATCHMENT_SIZE, localZ = z - cz * CATCHMENT_SIZE
+  const localX = safeX - cx * CATCHMENT_SIZE, localZ = safeZ - cz * CATCHMENT_SIZE
   const edgeFade = smoothstep(0, 1600, Math.min(localX, localZ, CATCHMENT_SIZE - localX, CATCHMENT_SIZE - localZ))
-  let height = ground, waterLevel = 0, river = 0, lake = 0, pond = 0, stream = 0, coastal = 0
+  let height = safeGround, waterLevel = 0, river = 0, lake = 0, pond = 0, stream = 0, coastal = 0
   // Tiny negative coordinates can round their local remainder up to 32000.
   const binX = Math.max(0, Math.min(BINS - 1, Math.floor(localX / BIN)))
   const binZ = Math.max(0, Math.min(BINS - 1, Math.floor(localZ / BIN)))
@@ -593,9 +596,9 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   let nearestReach: Reach | null = null
   for (const r of reaches) {
     const dx = r.bx - r.ax, dz = r.bz - r.az
-    const t = Math.max(0, Math.min(1, ((x - r.ax) * dx + (z - r.az) * dz) / (dx * dx + dz * dz)))
+    const t = Math.max(0, Math.min(1, ((safeX - r.ax) * dx + (safeZ - r.az) * dz) / (dx * dx + dz * dz)))
     const w = r.wa + (r.wb - r.wa) * t
-    const d = Math.hypot(x - r.ax - dx * t, z - r.az - dz * t) - w
+    const d = Math.hypot(safeX - r.ax - dx * t, safeZ - r.az - dz * t) - w
     if (d < nearest) {
       nearest = d
       nearestReach = r
@@ -610,8 +613,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     let sum = 0, total = 0
     for (const r of reaches) {
       const dx = r.bx - r.ax, dz = r.bz - r.az
-      const t = Math.max(0, Math.min(1, ((x - r.ax) * dx + (z - r.az) * dz) / (dx * dx + dz * dz)))
-      const d = Math.hypot(x - r.ax - dx * t, z - r.az - dz * t) - r.wa - (r.wb - r.wa) * t
+      const t = Math.max(0, Math.min(1, ((safeX - r.ax) * dx + (safeZ - r.az) * dz) / (dx * dx + dz * dz)))
+      const d = Math.hypot(safeX - r.ax - dx * t, safeZ - r.az - dz * t) - r.wa - (r.wb - r.wa) * t
       const weight = Math.exp(-Math.max(0, d - nearest) / 160)
       sum += (r.ya + (r.yb - r.ya) * t) * weight
       total += weight
@@ -642,7 +645,7 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
     const length = Math.hypot(dx, dz)
     if (length < 1) continue
-    const px = x - reach.mouthX, pz = z - reach.mouthZ
+    const px = safeX - reach.mouthX, pz = safeZ - reach.mouthZ
     const along = (px * dx + pz * dz) / length
     const lateral = Math.abs(px * dz - pz * dx) / length
     const channelWidth = Math.max(24, reach.mouthWidth ?? reach.wb)
@@ -667,8 +670,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   }
   for (const basin of region.basins) {
     const limit = basin.radius * 1.65 + 2000
-    if (Math.abs(x - basin.x) > limit || Math.abs(z - basin.z) > limit) continue
-    const d = basinDistance(basin, x, z)
+    if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
+    const d = basinDistance(basin, safeX, safeZ)
     // Keep a readable shallow shelf, not a kilometre-wide exposed brown
     // wedge between dry terrain and the independent water surface.
     const margin = basin.sea ? 900 : basin.pond ? 360 : 780
