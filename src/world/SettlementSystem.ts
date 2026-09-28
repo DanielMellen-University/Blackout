@@ -15,6 +15,7 @@ import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
+import type { RenderQuality } from '../core/RenderQuality'
 
 // Terrain horizon growth must not quadruple settlement planning work.
 const LOAD_RADIUS = Math.min(FOG_FAR, 15120)
@@ -31,6 +32,17 @@ const PROTECTED_RETRY_INTERVAL_FRAMES = 12
 // Reuse one climate record so visual settlement details do not allocate a full
 // biome-weight sample for every shoreline or pier point.
 const settlementRuntimeClimateScratch = createClimateSample()
+
+// These secondary meshes improve close-range readability but do not define
+// settlement silhouettes or collision routes. Low quality can drop them as a
+// group, reducing draw calls without hiding buildings, roads, or landmarks.
+const DECORATIVE_SETTLEMENT_DETAIL_NAMES = new Set([
+  'SettlementStreetLightPoles',
+  'SettlementStreetLightGlow',
+  'SettlementWaterfrontDecks',
+  'SettlementWaterfrontPosts',
+  'SettlementRoadMarkings',
+])
 
 // Generation can be generous without letting a dense slice of the world turn
 // into an unbounded set of instance buffers or road meshes around the player.
@@ -428,6 +440,7 @@ export class SettlementSystem {
   private readyRoads: ReadyRoad[] = []
   private generation = 0
   private disposed = false
+  private renderQuality: RenderQuality = 'balanced'
 
   constructor(scene: Scene) {
     this.root.name = 'Settlements'
@@ -622,6 +635,20 @@ export class SettlementSystem {
   /** Toggle the streamed settlement layer without discarding generated data. */
   setVisible(visible: boolean): void {
     this.root.visible = visible
+  }
+
+  /** Keep the settlement silhouette and routes while trimming secondary draws on Low. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    this.renderQuality = quality
+    for (const { detail } of this.loaded.values()) this.applyDetailQuality(detail)
+  }
+
+  private applyDetailQuality(detail: Group): void {
+    const showDecorativeDetail = this.renderQuality !== 'low'
+    for (const child of detail.children) {
+      if (DECORATIVE_SETTLEMENT_DETAIL_NAMES.has(child.name)) child.visible = showDecorativeDetail
+    }
   }
   get buildingCount(): number {
     let count = 0
@@ -1218,6 +1245,7 @@ export class SettlementSystem {
       mesh.name = 'SettlementRoadMarkings'
       detail.add(mesh)
     }
+    this.applyDetailQuality(detail)
     this.root.add(root)
     return { root, detail, plan }
   }

@@ -93,6 +93,26 @@ describe('settlement rendering and lifecycle', () => {
     system.dispose()
   })
 
+  it('trims secondary settlement detail on Low without hiding roads', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    try {
+      system.update(3000, 3000)
+      const markings = scene.getObjectByName('SettlementRoadMarkings') as Mesh
+      const roads = scene.getObjectByName('SettlementRoads') as Mesh
+      expect(markings.visible).toBe(true)
+      expect(roads.visible).toBe(true)
+
+      system.setRenderQuality('low')
+      expect(markings.visible).toBe(false)
+      expect(roads.visible).toBe(true)
+
+      system.setRenderQuality('high')
+      expect(markings.visible).toBe(true)
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('leaves a central green for village road approaches', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     try {

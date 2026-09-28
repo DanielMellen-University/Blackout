@@ -194,6 +194,7 @@ export class World {
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
     const profile = renderQualityProfile(quality)
+    this.settlements.setRenderQuality(quality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
     this.atmosphere.setFogRange(
