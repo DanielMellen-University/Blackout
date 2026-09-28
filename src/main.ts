@@ -160,7 +160,6 @@ import {
 } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
-  FLIGHT_CONTROLS_HINT,
   createMissionHudLabelCache,
   createRouteRiskLabelCache,
   fuelHomeCue,
@@ -174,6 +173,7 @@ import {
   engineHeatRearmBanner,
   engineFuelAvailabilityBanner,
   emergencyReturnActive,
+  flightBriefingHint,
   crosswindDirection,
   crosswindSpeedMps,
   navigationApproachCue,
@@ -1395,7 +1395,7 @@ async function boot(): Promise<void> {
     overWater = false
     refueling = false
     prevFuelHomeCue = null
-    controlHintUntilMs = briefing ? performance.now() + 9000 : 0
+    controlHintUntilMs = briefing ? performance.now() + 16_000 : 0
     time.reset()
     if (briefing) {
       const resetLabel = worldFallback
@@ -2744,7 +2744,14 @@ async function boot(): Promise<void> {
       hudFrame.trafficAlertVertical = trafficVerticalCue
       hudFrame.trafficAlertDistance = trafficAlert?.distance ?? null
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
-        ? FLIGHT_CONTROLS_HINT
+        ? flightBriefingHint({
+          onGround: aircraft.onGround,
+          speed: aircraft.speed,
+          altitudeM: alt,
+          missionPhase: challenge.phase,
+          gatesPassed: challenge.gatesPassed,
+          gearDown: aircraft.controls.gearDown,
+        })
         : null
       hudFrame.timeMs = nowMs
       hudFrame.banner = aircraft.status === 'crashed' ? crashMessage : banner

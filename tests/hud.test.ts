@@ -42,6 +42,7 @@ import {
   formatWind,
   formatWindGust,
   FLIGHT_CONTROLS_HINT,
+  flightBriefingHint,
   engineHeatCue,
   engineHeatBanner,
   engineFuelAvailabilityBanner,
@@ -786,6 +787,41 @@ describe('HUD value formatting', () => {
     expect(FLIGHT_CONTROLS_HINT).toContain('W/S PITCH')
     expect(FLIGHT_CONTROLS_HINT).toContain('C VIEW')
     expect(FLIGHT_CONTROLS_HINT.length).toBeLessThan(64)
+  })
+
+  it('uses bounded contextual hints for takeoff, route, and landing', () => {
+    expect(flightBriefingHint({
+      onGround: true,
+      speed: 12,
+      altitudeM: 0,
+      missionPhase: 'ready',
+      gatesPassed: 0,
+      gearDown: true,
+    })).toBe('SHIFT / 2 POWER · W ROTATE · G GEAR')
+    expect(flightBriefingHint({
+      onGround: false,
+      speed: 180,
+      altitudeM: 60,
+      missionPhase: 'running',
+      gatesPassed: 0,
+      gearDown: true,
+    })).toBe('PITCH TO CLIMB · FOLLOW THE ARROW TO GATE 1')
+    expect(flightBriefingHint({
+      onGround: false,
+      speed: 220,
+      altitudeM: 240,
+      missionPhase: 'running',
+      gatesPassed: 2,
+      gearDown: false,
+    })).toBe('FOLLOW THE ARROW · A/D YAW · Q/E ROLL')
+    expect(flightBriefingHint({
+      onGround: false,
+      speed: 120,
+      altitudeM: 80,
+      missionPhase: 'returning',
+      gatesPassed: 5,
+      gearDown: false,
+    })).toBe('G GEAR DOWN · ALIGN WITH RUNWAY · FLARE & LAND')
   })
 
   it('keeps cockpit cloud mist subtle and disabled outside first person', () => {

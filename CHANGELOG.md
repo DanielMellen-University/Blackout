@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.536** Replace the static launch hint with bounded contextual takeoff, gate, and landing guidance.
 - **10.535** Add a safe Reset settings action that restores flight preferences without touching progression or course records.
 - **10.534** Add bounded Daily, Weekly, and Monthly Ops streaks that advance once per period and surface in the catalog.
 - **10.533** Show finite course counts in every launch-picker category, including Recent and Favorites.

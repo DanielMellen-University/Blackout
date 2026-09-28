@@ -85,6 +85,40 @@ export function navigationSectorLabel(sector: NavigationSector | null): string {
 
 export const FLIGHT_CONTROLS_HINT = 'W/S PITCH · A/D YAW · Q/E ROLL · V TRIM · G GEAR · C VIEW'
 
+/**
+ * Keep the first sortie readable without turning the HUD into a tutorial wall.
+ * The caller supplies already-sampled state, so this helper adds no terrain or
+ * physics work and returns one of a small set of stable strings.
+ */
+export function flightBriefingHint(state: {
+  onGround: boolean
+  speed: number
+  altitudeM: number
+  missionPhase: MissionPhaseCue | string
+  gatesPassed: number
+  gearDown: boolean
+}): string {
+  const speed = Number.isFinite(state.speed) ? Math.max(0, state.speed) : 0
+  const altitude = Number.isFinite(state.altitudeM) ? Math.max(0, state.altitudeM) : 0
+  const gates = Number.isFinite(state.gatesPassed) ? Math.max(0, Math.floor(state.gatesPassed)) : 0
+  if (state.missionPhase === 'returning') {
+    return state.gearDown
+      ? 'ALIGN WITH RUNWAY · FLARE & LAND'
+      : 'G GEAR DOWN · ALIGN WITH RUNWAY · FLARE & LAND'
+  }
+  if (state.onGround) {
+    return speed < 55
+      ? 'SHIFT / 2 POWER · W ROTATE · G GEAR'
+      : 'W ROTATE · G GEAR'
+  }
+  if (gates === 0) {
+    return altitude < 120
+      ? 'PITCH TO CLIMB · FOLLOW THE ARROW TO GATE 1'
+      : 'FOLLOW THE ARROW · FLY THROUGH GATE 1'
+  }
+  return 'FOLLOW THE ARROW · A/D YAW · Q/E ROLL'
+}
+
 export type WeatherCue = 'calm' | 'active' | 'severe'
 
 export type WindGustCue = 'calm' | 'active' | 'severe'
@@ -1518,7 +1552,7 @@ export class HUD {
     trafficAlertDistance?: number | null
     /** Opt-in pitch and bank trim state. */
     stabilityAssist?: boolean
-    /** Temporary control hint shown during the takeoff handoff. */
+    /** Contextual control hint shown during the launch handoff. */
     controlHint?: string | null
     /** Next-gate range in meters; omit or 0 to hide. */
     navDist?: number
