@@ -7,7 +7,7 @@ import {
 } from '../systems/ChallengeRun'
 import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
 import { sortieStyleForResult, sortieStyleLabel } from '../systems/FlightStyle'
-import { formatWorldSeed } from '../core/WorldSeed'
+import { formatWorldSeed, type ClipboardWriter } from '../core/WorldSeed'
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
@@ -28,6 +28,21 @@ export function flightRecordCueLabel(
 /** Keep the replay identity visible without exposing malformed seed values. */
 export function resultSeedLabel(seed: number | undefined): string {
   return Number.isFinite(seed) ? `SEED ${formatWorldSeed(seed!)}` : ''
+}
+
+/** Copy a bounded human-readable sortie recap without leaking runtime state. */
+export async function copySortieSummary(
+  summary: string,
+  clipboard: ClipboardWriter | null | undefined,
+): Promise<boolean> {
+  const text = typeof summary === 'string' ? summary.trim().slice(0, 500) : ''
+  if (!text || !clipboard || typeof clipboard.writeText !== 'function') return false
+  try {
+    await clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
 }
 
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
@@ -67,11 +82,14 @@ export class RunResults {
   private readonly splits: HTMLElement
   private readonly best: HTMLElement
   private readonly shareReplay: HTMLButtonElement | null
+  private readonly copySummary: HTMLButtonElement | null
   private readonly copySeed: HTMLButtonElement | null
   private readonly loadSeed: HTMLButtonElement | null
+  private sortieSummaryText = ''
   private returnFocus: HTMLElement | null = null
   private disposed = false
   private shareReplayHandler: (() => void) | null = null
+  private copySummaryHandler: (() => void) | null = null
   private copySeedHandler: (() => void) | null = null
   private loadSeedHandler: (() => void) | null = null
   private readonly onShareReplay = (): void => {
@@ -81,6 +99,10 @@ export class RunResults {
   private readonly onCopySeed = (): void => {
     if (this.disposed) return
     this.copySeedHandler?.()
+  }
+  private readonly onCopySummary = (): void => {
+    if (this.disposed) return
+    this.copySummaryHandler?.()
   }
   private readonly onLoadSeed = (): void => {
     if (this.disposed) return
@@ -122,6 +144,7 @@ export class RunResults {
     this.splits = must(root, 'result-splits')
     this.best = must(root, 'result-best')
     this.shareReplay = root.getElementById('btn-share-replay') as HTMLButtonElement | null
+    this.copySummary = root.getElementById('btn-copy-summary') as HTMLButtonElement | null
     this.copySeed = root.getElementById('btn-copy-seed') as HTMLButtonElement | null
     this.loadSeed = root.getElementById('btn-load-seed') as HTMLButtonElement | null
     this.root.setAttribute('role', 'dialog')
@@ -130,6 +153,7 @@ export class RunResults {
     this.root.setAttribute('aria-describedby', 'result-summary')
     this.root.addEventListener('keydown', this.onKeyDown)
     this.shareReplay?.addEventListener('click', this.onShareReplay)
+    this.copySummary?.addEventListener('click', this.onCopySummary)
     this.copySeed?.addEventListener('click', this.onCopySeed)
     this.loadSeed?.addEventListener('click', this.onLoadSeed)
   }
@@ -146,6 +170,24 @@ export class RunResults {
   setCopySeedHandler(handler: (() => void) | null): void {
     if (this.disposed) return
     this.copySeedHandler = handler
+  }
+
+  setCopySummaryHandler(handler: (() => void) | null): void {
+    if (this.disposed) return
+    this.copySummaryHandler = handler
+  }
+
+  get summaryText(): string {
+    return this.sortieSummaryText
+  }
+
+  setCopySummaryFeedback(copied: boolean): void {
+    if (this.disposed || !this.copySummary) return
+    this.copySummary.textContent = copied ? 'Summary copied' : 'Copy sortie summary'
+    this.copySummary.setAttribute(
+      'aria-label',
+      copied ? 'Sortie summary copied' : 'Copy sortie summary blocked by browser permissions',
+    )
   }
 
   setLoadSeedHandler(handler: (() => void) | null): void {
@@ -176,6 +218,7 @@ export class RunResults {
       this.shareReplay.textContent = 'Copy replay link'
       this.shareReplay.setAttribute('aria-label', 'Copy replay link for this sortie')
     }
+    this.setCopySummaryFeedback(false)
     this.setCopySeedFeedback(false)
     const active = document.activeElement
     this.returnFocus = active instanceof HTMLElement ? active : null
@@ -183,7 +226,9 @@ export class RunResults {
     const crashed = result.endedByCrash === true
     const ditched = crashed && result.ditched === true
     const label = typeof courseLabel === 'string' ? courseLabel.trim() : ''
-    const course = label || (result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : 'SORTIE')
+    const rawCourse = result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : ''
+    const course = label || rawCourse || 'SORTIE'
+    const summaryCourse = label || (rawCourse && !rawCourse.startsWith('seed:') ? rawCourse : 'SORTIE')
     const conditions = typeof courseConditions === 'string' ? courseConditions.trim() : ''
     const courseEl = this.root.querySelector('#result-course')
     if (courseEl) courseEl.textContent = course
@@ -260,6 +305,25 @@ export class RunResults {
         ? 'SCENIC SORTIE COMPLETE'
         : 'ROUTE COMPLETE'
     this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES${gateMisses ? ` · ${gateMisses}` : ''} · ${landingName}`
+    const summaryScore = Number.isFinite(result.totalScore)
+      ? Math.max(0, Math.floor(result.totalScore))
+      : 0
+    const summaryTime = Number.isFinite(result.elapsedSec) ? Math.max(0, result.elapsedSec) : 0
+    const summaryMedal = !crashed && result.medal && result.medal !== 'complete'
+      ? `MEDAL ${result.medal.toUpperCase()}`
+      : ''
+    this.sortieSummaryText = [
+      'BLACKOUT',
+      summaryCourse,
+      conditions ? conditions.replaceAll(' / ', ' · ') : '',
+      `OUTCOME ${outcome}`,
+      `SCORE ${summaryScore.toLocaleString()}`,
+      `TIME ${formatTime(summaryTime)}`,
+      `${gatesLabel} GATES`,
+      `LAND ${landingName}`,
+      `FUEL ${fuelRemaining}%`,
+      summaryMedal,
+    ].filter(Boolean).join(' · ').slice(0, 500)
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
@@ -546,9 +610,11 @@ export class RunResults {
     this.disposed = true
     this.root.removeEventListener('keydown', this.onKeyDown)
     this.shareReplay?.removeEventListener('click', this.onShareReplay)
+    this.copySummary?.removeEventListener('click', this.onCopySummary)
     this.copySeed?.removeEventListener('click', this.onCopySeed)
     this.loadSeed?.removeEventListener('click', this.onLoadSeed)
     this.shareReplayHandler = null
+    this.copySummaryHandler = null
     this.copySeedHandler = null
     this.loadSeedHandler = null
     this.returnFocus = null

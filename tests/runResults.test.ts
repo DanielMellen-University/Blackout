@@ -4,6 +4,7 @@ import {
   formatDistance,
   resultSeedLabel,
   resultFuelBandClass,
+  copySortieSummary,
   RunResults,
 } from '../src/ui/RunResults'
 
@@ -98,12 +99,14 @@ function resultsFixture(): {
   newWorld: FakeElement
   source: FakeElement
   loadSeed: FakeElement
+  copySummary: FakeElement
   document: FakeDocument
 } {
   const root = new FakeElement()
   const retry = new FakeElement()
   const newWorld = new FakeElement()
   const shareReplay = new FakeElement()
+  const copySummary = new FakeElement()
   const loadSeed = new FakeElement()
   const source = new FakeElement()
   const elements = new Map<string, FakeElement>([
@@ -127,6 +130,7 @@ function resultsFixture(): {
     ['result-best', new FakeElement()],
     ['btn-retry', retry],
     ['btn-share-replay', shareReplay],
+    ['btn-copy-summary', copySummary],
     ['btn-copy-seed', new FakeElement()],
     ['btn-load-seed', loadSeed],
   ])
@@ -137,7 +141,7 @@ function resultsFixture(): {
   root.setList('#result-course', [elements.get('result-course')!])
   const document = new FakeDocument(elements)
   document.activeElement = source
-  return { root, retry, newWorld, source, loadSeed, document }
+  return { root, retry, newWorld, source, loadSeed, copySummary, document }
 }
 
 const result = {
@@ -170,6 +174,16 @@ describe('run results focus flow', () => {
     expect(formatDistance(420)).toBe('420M')
     expect(formatDistance(2_450)).toBe('2.5KM')
     expect(formatDistance(Number.NaN)).toBe('0M')
+  })
+
+  it('copies a bounded sortie summary and fails closed when clipboard access is unavailable', async () => {
+    const writeText = vi.fn(async (_text: string) => {})
+    expect(await copySortieSummary('  BLACKOUT · ROUTE COMPLETE  ', { writeText })).toBe(true)
+    expect(writeText).toHaveBeenCalledWith('BLACKOUT · ROUTE COMPLETE')
+    expect(await copySortieSummary('   ', { writeText })).toBe(false)
+    expect(await copySortieSummary('BLACKOUT', undefined)).toBe(false)
+    const rejected = { writeText: vi.fn(async () => { throw new Error('blocked') }) }
+    expect(await copySortieSummary('BLACKOUT', rejected)).toBe(false)
   })
 
   it('only cues new flight telemetry records', () => {
@@ -290,6 +304,40 @@ describe('run results focus flow', () => {
     results.dispose()
     share.dispatch('click', {})
     expect(handler).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('dispatches sortie summary sharing through a disposable results action', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    const handler = vi.fn()
+    results.setCopySummaryHandler(handler)
+    fixture.copySummary.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    results.dispose()
+    fixture.copySummary.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('builds a shareable recap without exposing opaque seed storage ids', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({ ...result, courseId: 'seed:10:storm', gatesCleared: 3, gatesTotal: 5, fuelRemainingPercent: 72 }, undefined, false, [], 'Storm run', 'WEATHER LOW FOG / TIME NIGHT')
+    expect(results.summaryText).toContain('Storm run')
+    expect(results.summaryText).toContain('SCORE 100,000')
+    expect(results.summaryText).toContain('MEDAL GOLD')
+    expect(results.summaryText).toContain('3/5 GATES')
+    expect(results.summaryText).toContain('LAND HARD')
+    expect(results.summaryText).not.toContain('seed:10:storm')
+    expect(results.summaryText.length).toBeLessThanOrEqual(500)
+
+    results.dispose()
     vi.unstubAllGlobals()
   })
 

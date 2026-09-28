@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.538** Add a bounded Copy sortie summary action to results for shareable performance recaps.
 - **10.537** Surface existing course medals, mastery badges, and precision streak records in the launch picker.
 - **10.536** Replace the static launch hint with bounded contextual takeoff, gate, and landing guidance.
 - **10.535** Add a safe Reset settings action that restores flight preferences without touching progression or course records.

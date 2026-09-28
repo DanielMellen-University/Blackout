@@ -191,7 +191,7 @@ import {
   type NavigationSpeedCue,
   type NavigationGlideCue,
 } from './ui/HUD'
-import { flightRecordCueLabel, RunResults } from './ui/RunResults'
+import { copySortieSummary, flightRecordCueLabel, RunResults } from './ui/RunResults'
 import {
   RADAR_RANGE_METERS,
   RADAR_UPDATE_INTERVAL_MS,
@@ -1035,6 +1035,13 @@ async function boot(): Promise<void> {
         'aria-label',
         copied ? 'Replay link copied' : 'Copy replay link blocked by browser permissions',
       )
+    })
+  })
+  results.setCopySummaryHandler(() => {
+    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
+    void copySortieSummary(results.summaryText, clipboard).then((copied) => {
+      if (disposed) return
+      results.setCopySummaryFeedback(copied)
     })
   })
   results.setCopySeedHandler(() => {
