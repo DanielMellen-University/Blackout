@@ -1,7 +1,8 @@
-import { Vector3 } from 'three'
+import { MathUtils, Vector3 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig as C } from '../aircraft/flightConfig'
 import { fuelWarningLevel } from '../aircraft/FuelSystem'
+import { sampleGroundHeight, undercarriageClearance } from '../world/ground'
 
 export type WarningLevel = 'none' | 'caution' | 'warning'
 
@@ -270,11 +271,48 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
-  const terrainClosure = terrainClosureWarningActive(
+  let terrainClosure = terrainClosureWarningActive(
     altAgl,
     speed,
     aircraft.velocity.y,
   )
+  if (!terrainClosure) {
+    const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
+    if (horizontalSpeed >= 84) {
+      const groundNow = sampleGroundHeight(aircraft.position.x, aircraft.position.z)
+      if (Number.isFinite(groundNow)) {
+        const invHorizontalSpeed = 1 / horizontalSpeed
+        const dirX = aircraft.velocity.x * invHorizontalSpeed
+        const dirZ = aircraft.velocity.z * invHorizontalSpeed
+        const lookaheadDistance = MathUtils.clamp(horizontalSpeed * 1.2, 120, 640)
+        const nearDistance = lookaheadDistance * .5
+        const nearGround = sampleGroundHeight(
+          aircraft.position.x + dirX * nearDistance,
+          aircraft.position.z + dirZ * nearDistance,
+        )
+        const farGround = sampleGroundHeight(
+          aircraft.position.x + dirX * lookaheadDistance,
+          aircraft.position.z + dirZ * lookaheadDistance,
+        )
+        const aheadRise = Math.max(
+          0,
+          Number.isFinite(nearGround) ? nearGround - groundNow : 0,
+          Number.isFinite(farGround) ? farGround - groundNow : 0,
+        )
+        const currentSurfaceClearance = Math.max(
+          0,
+          aircraft.position.y - groundNow - undercarriageClearance(aircraft.controls.gearDown),
+        )
+        terrainClosure = terrainLookaheadWarningActive(
+          Math.min(Number.isFinite(altAgl) ? Math.max(0, altAgl) : 0, currentSurfaceClearance),
+          speed,
+          aircraft.velocity.y,
+          aheadRise,
+          lookaheadDistance,
+        )
+      }
+    }
+  }
   const overspeed = overspeedWarningActive(speed)
   const fuelLevel = fuelWarningLevel(aircraft.fuel)
 
@@ -391,4 +429,36 @@ export function terrainClosureWarningActive(
   if (safeAlt <= 2 || safeSpeed < 84 || verticalSpeed >= -8) return false
   const secondsToTerrain = safeAlt / Math.max(8, -verticalSpeed)
   return secondsToTerrain <= 2.6
+}
+
+/**
+ * Predict a ridge closure along the actual horizontal velocity vector. The
+ * caller supplies a bounded near/far terrain rise so the warning path stays
+ * scalar and cheap at the HUD cadence instead of running during every physics
+ * step. A small positive climb is allowed to clear a shoulder; steep terrain
+ * still wins when the predicted clearance is below the speed-scaled margin.
+ */
+export function terrainLookaheadWarningActive(
+  altAgl: number,
+  speed: number,
+  verticalSpeed: number,
+  aheadTerrainRise: number,
+  aheadDistance: number,
+): boolean {
+  if (
+    !Number.isFinite(altAgl) ||
+    !Number.isFinite(speed) ||
+    !Number.isFinite(verticalSpeed) ||
+    !Number.isFinite(aheadTerrainRise) ||
+    !Number.isFinite(aheadDistance)
+  ) return false
+  const safeAlt = Math.max(0, altAgl)
+  const safeSpeed = Math.max(0, speed)
+  const safeRise = Math.max(0, aheadTerrainRise)
+  const safeDistance = Math.max(1, aheadDistance)
+  if (safeAlt <= 2 || safeSpeed < 84 || safeRise < 20 || verticalSpeed >= 3) return false
+  const secondsAhead = safeDistance / safeSpeed
+  const predictedClearance = safeAlt + verticalSpeed * secondsAhead - safeRise
+  const safetyMargin = MathUtils.clamp(safeSpeed * .12, 18, 96)
+  return predictedClearance <= safetyMargin
 }

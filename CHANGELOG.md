@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.504** Add bounded terrain lookahead to the PULL UP warning, catching rising ridges along the flight path before current AGL becomes critical.
 - **10.503** Reject deeply penetrated aircraft poses as grounded, keeping streamed-terrain contact recovery from hiding intersections.
 - **10.502** Make aircraft grounded-state caches observe streamed terrain and sampler replacement revisions, preventing stale contact decisions after reseeds or LOD surface swaps.
 - **10.501** Route radio-altitude reads through the aircraft's fixed-step contact cache, removing duplicate terrain sampling from clearance HUD and landing-state updates.

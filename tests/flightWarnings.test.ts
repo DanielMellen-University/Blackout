@@ -14,6 +14,7 @@ import {
   overspeedWarningActive,
   stallWarningActive,
   terrainClosureWarningActive,
+  terrainLookaheadWarningActive,
   warningCueForState,
 } from '../src/systems/FlightWarnings'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
@@ -142,6 +143,21 @@ describe('flight cautions', () => {
     const warning = evaluateWarnings(aircraft, 20)
     expect(warning.text).toBe('PULL UP')
     expect(warning.level).toBe('warning')
+    expect(warning.terrainClosure).toBe(true)
+  })
+
+  it('sees a rising ridge along the flight path before current AGL becomes critical', () => {
+    expect(terrainLookaheadWarningActive(120, 160, 0, 150, 192)).toBe(true)
+    expect(terrainLookaheadWarningActive(120, 160, 4, 150, 192)).toBe(false)
+    expect(terrainLookaheadWarningActive(120, 160, 0, 12, 192)).toBe(false)
+
+    setContactHeightSampler((x) => (x > 100 ? 150 : 0))
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 121.4, 0)
+    aircraft.velocity.set(160, 0, 0)
+    aircraft.controls.gearDown = true
+    const warning = evaluateWarnings(aircraft, 120)
+    expect(warning.text).toBe('PULL UP')
     expect(warning.terrainClosure).toBe(true)
   })
 
