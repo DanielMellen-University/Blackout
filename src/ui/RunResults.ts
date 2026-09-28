@@ -3,6 +3,7 @@ import {
   formatTime,
   MASTERY_BADGE_COUNT,
   masteryBadgeLabel,
+  nextMedalTargetForScore,
   type ChallengeResult,
 } from '../systems/ChallengeRun'
 import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
@@ -358,6 +359,10 @@ export class RunResults {
     if (result.newMedalRecord) scoreParts.push('NEW MEDAL')
     const scoreComparison = resultScoreComparisonLabel(result)
     if (scoreComparison) scoreParts.push(scoreComparison)
+    if (!crashed && Number.isFinite(result.totalScore) && result.totalScore > 0) {
+      const nextTarget = nextMedalTargetForScore(result.bestScore)
+      if (nextTarget) scoreParts.push(`NEXT ${nextTarget.medal.toUpperCase()} ${nextTarget.score.toLocaleString()}`)
+    }
     if (result.courseBestMedal && result.courseBestMedal !== result.medal) {
       scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)
     }

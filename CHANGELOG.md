@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.546** Show the next medal threshold in completed-run debriefs for an immediate repeat target.
 - **10.545** Add bounded Catalog, Best score, and A–Z sorting to the course picker.
 - **10.544** Add bounded personal-best gains and score gaps to completed-run debriefs.
 - **10.543** Show the next finite medal target on scored course cards so repeat runs have an explicit progression goal.

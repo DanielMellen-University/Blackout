@@ -550,6 +550,26 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('shows the next medal target on a completed low-scoring run', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      totalScore: 70_000,
+      bestScore: 70_000,
+      previousBestScore: 0,
+      isNewBest: true,
+      medal: 'bronze',
+    })
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
+      .toContain('NEXT SILVER 76,000')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('labels a newly earned approach ace badge', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
