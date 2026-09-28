@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.405** Keep the closest traffic alert visible in a cached HUD row after the transient warning fades, reusing the pooled traffic query with bounded text and no new scene work.
 - **10.404** Add one-shot partial progress cues for settlement and waterway tour contracts, suppressing duplicate discoveries and final-completion noise.
 - **10.403** Add one-shot worsening return-fuel warnings for tight and low runway-return reserves, reusing the bounded HUD estimate without adding simulation or render-loop allocations.
 - **10.402** Add conservative HOME OK/TIGHT/LOW fuel-return guidance for runway returns and engine-out glides, with bounded estimates and no simulation or worker overhead.

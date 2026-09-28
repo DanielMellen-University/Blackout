@@ -142,6 +142,28 @@ export function formatRadarContactsAria(contacts: readonly RadarContact[]): stri
   return labels.length > 0 ? `Radar: ${labels.join('; ')}` : 'Radar: no contacts'
 }
 
+/** Keep the closest traffic warning readable after its transient banner fades. */
+export function trafficAlertHudLabel(side: unknown, vertical: unknown, distance: number): string {
+  const safeSide = side === 'LEFT' || side === 'RIGHT' || side === 'AHEAD' || side === 'BEHIND'
+    ? side
+    : 'AHEAD'
+  const safeVertical = vertical === 'ABOVE' || vertical === 'BELOW' || vertical === 'LEVEL'
+    ? vertical
+    : 'LEVEL'
+  const safeDistance = Number.isFinite(distance)
+    ? Math.round(Math.max(0, Math.min(999_999, distance)))
+    : 0
+  return `${safeSide} / ${safeVertical} / ${safeDistance}M`
+}
+
+/** Describe the persistent traffic warning without visual separators. */
+export function trafficAlertAriaLabel(side: unknown, vertical: unknown, distance: number): string {
+  const label = trafficAlertHudLabel(side, vertical, distance)
+  const [safeSide, safeVertical, safeDistance] = label.split(' / ')
+  const distanceText = safeDistance!.toLowerCase().replace(/m$/, '')
+  return `Traffic ${safeSide!.toLowerCase()} ${safeVertical!.toLowerCase()}, ${distanceText} metres`
+}
+
 /** Reuse radar copy while contacts remain in the same visible display buckets. */
 export function createRadarContactsLabelCache(): (contacts: readonly RadarContact[]) => string {
   const previous = Array.from({ length: MAX_RADAR_CONTACTS }, () => ({
@@ -922,6 +944,8 @@ export class HUD {
   private readonly radarLabelEl: HTMLElement | null
   private readonly radarVisualEl: HTMLElement | null
   private readonly radarMarkers: readonly HTMLElement[]
+  private readonly trafficRowEl: HTMLElement | null
+  private readonly trafficEl: HTMLElement | null
   private readonly assistEl: HTMLElement | null
   private readonly hintEl: HTMLElement | null
   private readonly pausedEl: HTMLElement | null
@@ -1013,6 +1037,11 @@ export class HUD {
   private abStateText = 'AB READY'
   private radarText = ''
   private radarAriaText = ''
+  private trafficSideValue = ''
+  private trafficVerticalValue = ''
+  private trafficDistanceValue = Number.NaN
+  private trafficText = ''
+  private trafficAriaText = ''
   private stabilityAssistValue: boolean | null = null
   private hintText = ''
   private pausedValue: boolean | null = null
@@ -1196,6 +1225,8 @@ export class HUD {
     this.radarMarkers = this.radarVisualEl
       ? Array.from(this.radarVisualEl.querySelectorAll<HTMLElement>('[data-radar-marker]')).slice(0, MAX_RADAR_CONTACTS)
       : []
+    this.trafficRowEl = root.getElementById('hud-traffic-row')
+    this.trafficEl = root.getElementById('hud-traffic')
     this.assistEl = root.getElementById('hud-assist')
     this.hintEl = root.getElementById('hud-hint')
     this.pausedEl = root.getElementById('hud-paused')
@@ -1354,6 +1385,10 @@ export class HUD {
     comboRemaining?: number
     /** Bounded navigation contacts prepared by RadarSystem. */
     radar?: readonly RadarContact[]
+    /** Closest traffic alert, or null when no aircraft is inside the alert band. */
+    trafficAlertSide?: string | null
+    trafficAlertVertical?: string | null
+    trafficAlertDistance?: number | null
     /** Opt-in pitch and bank trim state. */
     stabilityAssist?: boolean
     /** Temporary control hint shown during the takeoff handoff. */
@@ -1961,6 +1996,31 @@ export class HUD {
       this.setAttribute(this.radarEl, 'aria-label', this.radarAriaText)
       this.setClass(this.radarEl, 'radar-active', radarText !== 'NO CONTACTS')
       this.updateRadarVisual(opts.radar)
+    }
+    if (this.trafficRowEl && this.trafficEl && opts.trafficAlertSide !== undefined) {
+      const side = typeof opts.trafficAlertSide === 'string' ? opts.trafficAlertSide : ''
+      const vertical = typeof opts.trafficAlertVertical === 'string' ? opts.trafficAlertVertical : ''
+      const distance = Number.isFinite(opts.trafficAlertDistance)
+        ? Math.max(0, Math.min(999_999, Math.round(opts.trafficAlertDistance!)))
+        : Number.NaN
+      const visible = side.length > 0 && vertical.length > 0 && Number.isFinite(distance)
+      if (
+        side !== this.trafficSideValue ||
+        vertical !== this.trafficVerticalValue ||
+        !Object.is(distance, this.trafficDistanceValue) ||
+        (visible && this.trafficText.length === 0) ||
+        (!visible && this.trafficText.length > 0)
+      ) {
+        this.trafficSideValue = side
+        this.trafficVerticalValue = vertical
+        this.trafficDistanceValue = distance
+        this.trafficText = visible ? trafficAlertHudLabel(side, vertical, distance) : ''
+        this.trafficAriaText = visible ? trafficAlertAriaLabel(side, vertical, distance) : ''
+      }
+      this.setHidden(this.trafficRowEl, !visible)
+      this.setText(this.trafficEl, this.trafficText)
+      this.setAttribute(this.trafficEl, 'aria-label', this.trafficAriaText)
+      this.setClass(this.trafficEl, 'traffic-alert-active', visible)
     }
     if (this.assistEl && opts.stabilityAssist !== undefined) {
       const active = opts.stabilityAssist === true

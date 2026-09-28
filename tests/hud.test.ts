@@ -16,6 +16,8 @@ import {
   formatAudioState,
   formatRadarContacts,
   formatRadarContactsAria,
+  trafficAlertAriaLabel,
+  trafficAlertHudLabel,
   createRadarContactsLabelCache,
   waterSurfaceCue,
   formatGForce,
@@ -362,6 +364,13 @@ describe('HUD value formatting', () => {
       { kind: 'city', label: 'CITY', distance: 800, bearing: Math.PI / 2, selected: true },
     ])).toBe('Radar: gate 1.2k ahead; selected city 800m right')
     expect(formatRadarContactsAria([])).toBe('Radar: no contacts')
+  })
+
+  it('keeps persistent traffic alerts bounded and accessible', () => {
+    expect(trafficAlertHudLabel('RIGHT', 'ABOVE', 1234.4)).toBe('RIGHT / ABOVE / 1234M')
+    expect(trafficAlertHudLabel('unknown', 'unknown', Number.NaN)).toBe('AHEAD / LEVEL / 0M')
+    expect(trafficAlertHudLabel('LEFT', 'BELOW', Number.MAX_SAFE_INTEGER)).toBe('LEFT / BELOW / 999999M')
+    expect(trafficAlertAriaLabel('RIGHT', 'ABOVE', 1234.4)).toBe('Traffic right above, 1234 metres')
   })
 
   it('reuses radar copy while displayed distance and bearing buckets stay stable', () => {

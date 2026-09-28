@@ -995,6 +995,9 @@ async function boot(): Promise<void> {
     combo: 0,
     comboRemaining: 0,
     radar: [],
+    trafficAlertSide: null,
+    trafficAlertVertical: null,
+    trafficAlertDistance: null,
     controlHint: null,
     timeMs: 0,
     banner: null,
@@ -2241,9 +2244,13 @@ async function boot(): Promise<void> {
           pose.heading,
         )
         : null
+      let trafficSideCue: 'LEFT' | 'RIGHT' | 'AHEAD' | 'BEHIND' | null = null
+      let trafficVerticalCue: 'ABOVE' | 'BELOW' | 'LEVEL' | null = null
       if (!trafficAlert) {
         prevTrafficAlertId = ''
       } else {
+        trafficSideCue = trafficAlertSide(trafficAlert.bearing)
+        trafficVerticalCue = trafficAlertVertical(trafficAlert.verticalOffset)
         const newTrafficContact = trafficAlert.id !== prevTrafficAlertId
         if (newTrafficContact) {
           challenge.recordTrafficPass(trafficAlert.id, trafficAlert.verticalSeparation)
@@ -2254,7 +2261,7 @@ async function boot(): Promise<void> {
           (!banner || bannerUntil <= nowMs)
         ) {
           showBanner(
-            `TRAFFIC ${trafficAlertSide(trafficAlert.bearing)} / ${trafficAlertVertical(trafficAlert.verticalOffset)} / ${Math.round(trafficAlert.distance)}M`,
+            `TRAFFIC ${trafficSideCue} / ${trafficVerticalCue} / ${Math.round(trafficAlert.distance)}M`,
             1600,
             'danger',
           )
@@ -2392,6 +2399,9 @@ async function boot(): Promise<void> {
       hudFrame.navSpeed = navSpeed
       hudFrame.navGlide = navGlide
       hudFrame.radar = radarContacts
+      hudFrame.trafficAlertSide = trafficSideCue
+      hudFrame.trafficAlertVertical = trafficVerticalCue
+      hudFrame.trafficAlertDistance = trafficAlert?.distance ?? null
       hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
         ? FLIGHT_CONTROLS_HINT
         : null
