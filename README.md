@@ -4,13 +4,15 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.484**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.485**.
 
 Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget.
 
 Procedural cities and villages receive deterministic biome-aware names that carry into radar locks and discovery banners.
 
 The live HUD keeps the current biome or water body visible as a compact region label between discovery banners, reusing the existing bounded terrain survey cadence.
+
+The title screen now surfaces pilot rank, course mastery, earned honors, and the next career goal before launch, using the same bounded records that power results debriefs.
 
 ## Run
 

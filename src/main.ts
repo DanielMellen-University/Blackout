@@ -97,7 +97,10 @@ import { GhostReplay } from './systems/GhostReplay'
 import {
   pilotRankForProgress,
   pilotRankRank,
+  pilotRankLabel,
+  pilotRankNextGoalLabel,
   pilotCommendationLabel,
+  pilotCommendationsLabel,
   pilotCommendationsForProgress,
   type PilotCommendationId,
   type PilotRank,
@@ -118,7 +121,7 @@ import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
-import { CoursePicker, courseConditionSummary, coursePickerCopy } from './ui/CoursePicker'
+import { CoursePicker, courseConditionSummary, courseMasteryProgressLabel, coursePickerCopy } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
@@ -408,11 +411,20 @@ async function boot(): Promise<void> {
     career.styleVarietyCount = styleVariety.size
     currentPilotRank = pilotRankForProgress(career)
     currentPilotCommendations = pilotCommendationsForProgress(career)
-    titleProgress.textContent = `COURSES ${completed}/${curated.length}`
-    titleProgress.setAttribute('aria-label', `${completed} of ${curated.length} curated courses complete`)
+    const rankLabel = pilotRankLabel(currentPilotRank)
+    const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
+    titleProgress.textContent = `${rankLabel} · COURSES ${completed}/${curated.length} · ${masteryLabel}`
+    titleProgress.setAttribute(
+      'aria-label',
+      `Pilot rank ${rankLabel}, ${completed} of ${curated.length} curated courses complete, ${mastered} legend courses`,
+    )
     if (titleCommendations) {
-      titleCommendations.textContent = ''
-      titleCommendations.hidden = true
+      const nextGoal = pilotRankNextGoalLabel(currentPilotRank)
+      titleCommendations.textContent = [
+        pilotCommendationsLabel(currentPilotCommendations),
+        nextGoal,
+      ].filter(Boolean).join(' · ')
+      titleCommendations.hidden = false
     }
   }
   const refreshCourseUi = (): void => {
