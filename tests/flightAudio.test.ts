@@ -111,6 +111,13 @@ describe('flight audio automation', () => {
     expect(cue).toBe('traffic')
   })
 
+  it('keeps radar lock feedback in the existing event-cue path', () => {
+    const lockCue: Parameters<FlightAudio['playCue']>[0] = 'radar-lock'
+    const lostCue: Parameters<FlightAudio['playCue']>[0] = 'radar-lost'
+    expect(lockCue).toBe('radar-lock')
+    expect(lostCue).toBe('radar-lost')
+  })
+
   it('adds a bounded speed-brake hiss without changing the base wind envelope', () => {
     expect(airbrakeWindEnvelope(0, false)).toBe(0)
     expect(airbrakeWindEnvelope(140, false)).toBeGreaterThan(0)
@@ -157,6 +164,8 @@ describe('flight audio automation', () => {
     audio.playCue('landing-hard')
     audio.playCue('stunt')
     audio.playCue('milestone')
+    audio.playCue('radar-lock')
+    audio.playCue('radar-lost')
     audio.playCue('sonic-boom')
     audio.silence()
     expect(audio.isDisposed).toBe(true)

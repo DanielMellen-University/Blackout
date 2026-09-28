@@ -272,6 +272,8 @@ export class FlightAudio {
       | 'airbrake-open'
       | 'airbrake-close'
       | 'traffic'
+      | 'radar-lock'
+      | 'radar-lost'
       | 'sonic-boom',
   ): void {
     if (this.disposed) return
@@ -336,6 +338,16 @@ export class FlightAudio {
       // the sustained terrain or stall warnings.
       this.tone(540, now, 0.08, 'triangle', 0.06, 430)
       this.tone(540, now + 0.13, 0.09, 'triangle', 0.05, 430)
+    } else if (kind === 'radar-lock') {
+      // Confirm a deliberate target cycle with a short, rising two-note chirp.
+      // Keep this in the event pool so selecting targets never grows the graph.
+      this.tone(620, now, 0.07, 'triangle', 0.055, 760)
+      this.tone(860, now + 0.075, 0.1, 'sine', 0.05, 980)
+    } else if (kind === 'radar-lost') {
+      // A low, descending pair makes a lost target obvious without becoming an
+      // alarm when a streamed contact briefly leaves the radar range.
+      this.tone(360, now, 0.08, 'triangle', 0.045, 260)
+      this.tone(220, now + 0.09, 0.11, 'sine', 0.04, 160)
     } else if (kind === 'sonic-boom') {
       // A low, short pressure wave marks Mach crossing without a harsh click.
       this.noiseBurst(now, 0.34, 'brown', 0.2, 150, 48)

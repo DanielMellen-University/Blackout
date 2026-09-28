@@ -1897,6 +1897,7 @@ async function boot(): Promise<void> {
         )
         radarNextUpdateMs = nowMs + RADAR_UPDATE_INTERVAL_MS
         if (radar.consumeLockLost() && (!banner || bannerUntil <= nowMs)) {
+          audio.playCue('radar-lost')
           showBanner('RADAR LOCK LOST', 1400, 'danger')
         }
       }
@@ -1907,6 +1908,7 @@ async function boot(): Promise<void> {
           ? selected.kind
           : undefined
         challenge.recordRadarLock(selected !== null, selectedKind, selected?.id)
+        audio.playCue(selected ? 'radar-lock' : 'radar-lost')
         showBanner(
           selected ? `RADAR LOCK / ${selected.label}` : 'NO SETTLEMENTS IN RANGE',
           1400,

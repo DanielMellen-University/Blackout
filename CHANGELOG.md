@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add restrained one-shot radar lock and lock-loss chirps beside the existing target banners, reusing the pooled event path without adding audio nodes or per-frame work.
 - Fade high-frequency water foam, riffle, and flow detail before the fog edge, and bias the independent surface forward to suppress distant shimmer and shoreline speckle without changing water levels or adding geometry.
 - Pull the protected village and city anchor bands closer to the airfield so settlements are discoverable through the existing radar before crossing a full stream cell, without changing organic rarity or the city clearance budget.
 - Add a restrained two-pulse traffic proximity cue to the existing rate-limited HUD alert, improving cockpit awareness without changing the pooled audio graph.
