@@ -31,4 +31,13 @@ describe('world lifecycle boundary', () => {
     expect(world.terrain.streamingStats.pending + world.terrain.streamingStats.loaded).toBeGreaterThan(0)
     world.dispose()
   }, 60_000)
+
+  it('can start a curated run with a deterministic weather override', () => {
+    const world = new World()
+    world.reseed(10, 'storm', 'storm')
+    expect(world.worldSeed).toBe(10)
+    expect(world.mission.routeProfile).toBe('storm')
+    expect(world.atmosphere.weather).toBe('storm')
+    world.dispose()
+  }, 60_000)
 })

@@ -1,6 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
+import type { WeatherId } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run' | 'desert-dash'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'storm-run'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -11,6 +12,8 @@ export interface CourseDefinition {
   detail: string
   seed: number | null
   profile: MissionRouteProfile | null
+  /** Optional deterministic weather override for authored challenge worlds. */
+  weather?: WeatherId
 }
 
 /** Small curated set of repeatable seeds, plus the normal infinite random mode. */
@@ -91,6 +94,14 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'Fast low-level line across wide dry basins',
     seed: 9,
     profile: 'desert',
+  },
+  {
+    id: 'storm-run',
+    label: 'Storm run',
+    detail: 'Low-visibility thunderstorm route through hard crosswinds',
+    seed: 10,
+    profile: 'storm',
+    weather: 'storm',
   },
 ]
 

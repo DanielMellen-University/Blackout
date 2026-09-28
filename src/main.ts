@@ -484,7 +484,7 @@ async function boot(): Promise<void> {
   applyTrafficQuality(renderQuality)
   if (replaySeed !== null) {
     const replayCourse = courseDefinitionForId(selectedCourseId)
-    world.reseed(replaySeed, replayCourse.profile ?? undefined)
+    world.reseed(replaySeed, replayCourse.profile ?? undefined, replayCourse.weather)
   }
   applyShadowQuality = (mapSize: number): void => {
     const safeSize = Number.isFinite(mapSize) ? Math.max(256, Math.floor(mapSize)) : 1024
@@ -1031,7 +1031,11 @@ async function boot(): Promise<void> {
     const replaying = replaySeed !== null
     if (newWorld) {
       const course = courseDefinitionForId(selectedCourseId)
-      world.reseed(replaying ? replaySeed! : course.seed ?? undefined, course.profile ?? undefined)
+      world.reseed(
+        replaying ? replaySeed! : course.seed ?? undefined,
+        course.profile ?? undefined,
+        course.weather,
+      )
       replaySeed = null
       debug?.syncPad()
     } else {

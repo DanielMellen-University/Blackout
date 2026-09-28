@@ -60,7 +60,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'storm' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -103,6 +103,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   river: 'RIVER RUN',
   volcanic: 'VOLCANIC RUN',
   desert: 'DESERT DASH',
+  storm: 'STORM RUN',
   free: 'FREE FLIGHT',
 }
 
@@ -153,6 +154,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'river') return 'range'
   if (profile === 'volcanic') return 'altitude'
   if (profile === 'desert') return 'range'
+  if (profile === 'storm') return 'precision'
   return 'approach'
 }
 
@@ -169,7 +171,7 @@ export function routeModifierForSpawn(
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
-  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : 0
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'storm' ? 9 : 0
   const hash = Math.abs(Math.floor(
     safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
   ))
@@ -366,6 +368,16 @@ function routeOffsets(
       { forward: 2_260, right: sweep * 0.86, height: 104 },
       { forward: 3_060, right: sweep * 0.18, height: 118 },
       { forward: 3_820, right: -sweep * 1.12, height: 132 },
+    ].map(shape)
+  }
+  if (profile === 'storm') {
+    const crosswind = 430 + seedPhase * 110
+    return [
+      { forward: 560, right: 0, height: 112 },
+      { forward: 1_120, right: -crosswind, height: 142 },
+      { forward: 1_760, right: crosswind * 1.12, height: 168 },
+      { forward: 2_440, right: -crosswind * 0.68, height: 196 },
+      { forward: 3_180, right: crosswind * 0.94, height: 184 },
     ].map(shape)
   }
 

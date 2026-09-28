@@ -175,7 +175,11 @@ export class World {
    * Search and validation run before the live world is replaced. If anything
    * throws after a world already exists, the previous seed/pad stay in place.
    */
-  reseed(requestedSeed?: number, requestedProfile?: MissionRouteProfile): number {
+  reseed(
+    requestedSeed?: number,
+    requestedProfile?: MissionRouteProfile,
+    requestedWeather?: WeatherId,
+  ): number {
     if (this.disposed) return this.seed
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
       throw new Error('World seed must be finite')
@@ -223,6 +227,7 @@ export class World {
         // the first movement-triggered settlement update.
         this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
+        if (requestedWeather) this.atmosphere.setWeather(requestedWeather, true)
         const initialWeather = this.atmosphere.weatherSnapshot
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
