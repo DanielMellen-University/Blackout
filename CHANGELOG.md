@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.382** Add one bounded route-trace draw connecting authored gates, improving external-camera guidance without expanding the scene footprint per route.
 - **10.381** Expand the preflight route briefing with minimum clearance, maximum turn, and planned climb envelope callouts.
 - **10.380** Make un-authored sorties choose deterministic route families from the generated airfield biome while preserving explicit curated-course profiles.
 - **10.379** Add a deterministic Badlands Run course with shelf-to-shelf red-rock navigation and a new replayable route profile.

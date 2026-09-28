@@ -133,6 +133,19 @@ describe('MissionSystem gate crossing', () => {
     mission.dispose()
   })
 
+  it('keeps the intended route corridor in one bounded trace', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    const trace = mission.root.getObjectByName('RouteTrace') as { visible: boolean; geometry: { drawRange: { count: number } } }
+    expect(trace.visible).toBe(true)
+    expect(trace.geometry.drawRange.count).toBe(5)
+
+    mission.start(0, 20, 0, 0, 'free')
+    expect(trace.visible).toBe(false)
+    expect(trace.geometry.drawRange.count).toBe(0)
+    mission.dispose()
+  })
+
   it('keeps the gate pass flash bounded and monotonic', () => {
     expect(missionPassFlashScale(0)).toBe(1)
     expect(missionPassFlashScale(0.5)).toBeGreaterThan(1)

@@ -1,9 +1,13 @@
 import {
   AdditiveBlending,
+  BufferGeometry,
   ConeGeometry,
   CylinderGeometry,
   DoubleSide,
+  Float32BufferAttribute,
   Group,
+  Line,
+  LineBasicMaterial,
   MathUtils,
   Mesh,
   MeshBasicMaterial,
@@ -714,6 +718,11 @@ export class MissionSystem {
   private readonly beaconMat: MeshBasicMaterial
   private readonly passFlashMat: MeshBasicMaterial
   private readonly passFlash: Mesh
+  /** One bounded route trace makes the intended gate corridor readable. */
+  private readonly routeTraceGeometry: BufferGeometry
+  private readonly routeTraceMaterial: LineBasicMaterial
+  private readonly routeTrace: Line
+  private readonly routeTracePositions = new Float32Array(GATE_COUNT * 3)
   private passFlashStartedAt = 0
   /** Presentation clock in milliseconds, supplied by RAF when available. */
   private presentationTimeMs = 0
@@ -760,6 +769,24 @@ export class MissionSystem {
       blending: AdditiveBlending,
       depthWrite: false,
     })
+    this.routeTraceGeometry = new BufferGeometry()
+    this.routeTraceGeometry.setAttribute(
+      'position',
+      new Float32BufferAttribute(this.routeTracePositions, 3),
+    )
+    this.routeTraceGeometry.setDrawRange(0, 0)
+    this.routeTraceMaterial = new LineBasicMaterial({
+      color: 0x67e8f9,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+      toneMapped: false,
+    })
+    this.routeTrace = new Line(this.routeTraceGeometry, this.routeTraceMaterial)
+    this.routeTrace.name = 'RouteTrace'
+    this.routeTrace.frustumCulled = false
+    this.routeTrace.visible = false
+    this.root.add(this.routeTrace)
     this.gateGeo = new TorusGeometry(GATE_RADIUS, 1.15, 10, 36)
     for (let i = 0; i < GATE_COUNT; i++) {
       const ring = new Mesh(this.gateGeo, this.waitMat)
@@ -862,8 +889,15 @@ export class MissionSystem {
       gate.pos.set(point.x, point.y, point.z)
       gate.passed = false
       gate.lastAlong = 0
+      this.routeTracePositions[i * 3] = point.x
+      this.routeTracePositions[i * 3 + 1] = point.y
+      this.routeTracePositions[i * 3 + 2] = point.z
       this.gates.push(gate)
     }
+    const routeTraceAttribute = this.routeTraceGeometry.getAttribute('position')
+    routeTraceAttribute.needsUpdate = true
+    this.routeTraceGeometry.setDrawRange(0, this.gates.length)
+    this.routeTrace.visible = this.gates.length > 1
     this.status = route.length > 0 ? 'live' : 'idle'
     this.liveLabel = route.length > 0 ? `GATE 1/${this.gates.length}` : 'FREE FLIGHT'
     this.paint()
@@ -1084,6 +1118,8 @@ export class MissionSystem {
     tip.position.y = 188
     this.beacon.add(shaft, tip)
     this.beacon.visible = false
+    this.routeTrace.visible = false
+    this.routeTraceGeometry.setDrawRange(0, 0)
   }
 
   private placeBeacon(): void {
@@ -1131,6 +1167,8 @@ export class MissionSystem {
     if (this.disposed) return
     this.disposed = true
     disposeObjectTree(this.root)
+    this.routeTraceGeometry.dispose()
+    this.routeTraceMaterial.dispose()
     this.root.removeFromParent()
     this.gates.length = 0
   }
