@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.362** Add the deterministic Archipelago Run course, a foggy island-hop route that expands water-focused replay content without changing bounded terrain or traffic budgets.
 - **10.361** Make Low render quality trim secondary settlement lights, waterfront props, and road markings while preserving buildings, roads, and landmarks; apply the budget live when quality changes.
 - **10.360** Add a read-only GitHub Actions gate for release metadata, TypeScript, the full test suite, and the production build on pushes and pull requests.
 - **10.359** Harden version validation so the internal roadmap chunk stays synchronized across runtime metadata, the README, and the changelog.
