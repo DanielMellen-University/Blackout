@@ -75,6 +75,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(69, 5, true)).toContain('RAIN OR SNOW')
     expect(sortieContractLabelForSeed(216, 5, true)).toBe('CROSSWIND')
     expect(sortieContractDetailForSeed(216, 5, true)).toContain('HOLD CROSSWIND')
+    expect(sortieContractLabelForSeed(57, 5, true)).toBe('MACH RUN')
+    expect(sortieContractDetailForSeed(57, 5, true)).toContain('BREAK MACH 1')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {

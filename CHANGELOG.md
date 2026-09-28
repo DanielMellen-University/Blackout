@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.434** Add Mach Run, a deterministic clear sweep that exposes the sustained supersonic contract without adding scene or render-loop work.
 - **10.433** Add Crosswind Run, a deterministic storm-locked approach that exposes the runway-relative crosswind contract without adding scene or render-loop work.
 - **10.432** Add Storm Contract, a deterministic storm route that exposes the bounded precipitation contract without adding scene or render-loop work.
 - **10.431** Add Energy Run, a deterministic clear sweep that exposes the bounded efficient-cruise contract without adding scene or render-loop work.
