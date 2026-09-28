@@ -185,8 +185,10 @@ export function courseWindPreviewLabel(windSide: WindSide | undefined): string {
 /** Keep authored conditions readable after the launch card is gone. */
 export function courseConditionSummary(
   course: Pick<CourseDefinition, 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>,
+  dailyDayKey?: string,
 ): string {
   const conditions = [
+    isDailyDayKey(dailyDayKey) ? `DAY ${dailyDayKey}` : '',
     course.weather
       ? `WEATHER ${WEATHER_LABELS[course.weather] ?? ''}`
       : '',
@@ -199,6 +201,12 @@ export function courseConditionSummary(
     courseWindPreviewLabel(course.windSide),
   ].filter(Boolean)
   return conditions.join(' / ')
+}
+
+function isDailyDayKey(value: string | undefined): value is string {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const timestamp = Date.parse(`${value}T00:00:00.000Z`)
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value
 }
 
 /**

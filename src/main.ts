@@ -1745,7 +1745,10 @@ async function boot(): Promise<void> {
               false,
               [],
               selectedCourse().label,
-              courseConditionSummary(selectedCourse()),
+              courseConditionSummary(
+                selectedCourse(),
+                selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+              ),
               world.worldSeed,
             )
             syncInputContext()
@@ -1808,7 +1811,10 @@ async function boot(): Promise<void> {
                 careerRankPromoted,
                 newCareerCommendations,
                 selectedCourse().label,
-                courseConditionSummary(selectedCourse()),
+                courseConditionSummary(
+                  selectedCourse(),
+                  selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+                ),
                 world.worldSeed,
               )
               syncInputContext()
