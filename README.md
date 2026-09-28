@@ -4,11 +4,11 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.493**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.494**.
 
 Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget.
 
-Procedural cities and villages receive deterministic biome-aware names that carry into radar locks and discovery banners.
+Procedural cities and villages receive deterministic biome-aware names that carry into radar locks and discovery banners. Near-field vegetation reuses one climate record per streamed terrain system instead of allocating once per placement sample, keeping LOD promotions inside the existing bounded streaming budget.
 
 The live HUD keeps the current biome or water body visible as a compact region label between discovery banners, reusing the existing bounded terrain survey cadence. External camera ground probes reuse a caller-owned, frame-scoped height cache, keeping repeated ridge and post-effect floor checks allocation-free without retaining stale values across sampler replacement or terrain streaming.
 

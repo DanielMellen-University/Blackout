@@ -14,6 +14,7 @@ import {
 import { getWorldSeed, hash2 } from './noise'
 import {
   sampleClimate,
+  sampleClimateInto,
   terrainSurfaceFromClimate,
   waterBodyFromClimate,
   opsPadBlend,
@@ -243,6 +244,8 @@ export class TerrainSystem {
   private readonly terrainDetailScale = { value: 1 }
   /** Reused rich climate record for the occasional rendered-surface query. */
   private readonly surfaceClimate = createClimateSample()
+  /** Reused climate record for the bounded near-field vegetation sample loop. */
+  private readonly propsClimate = createClimateSample()
   /** Structured-clone staging record for worker requests. */
   private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
 
@@ -1196,7 +1199,7 @@ export class TerrainSystem {
       // The runway can be anywhere in any seed.
       if (opsPadBlend(wx, wz) > .01) continue
 
-      const climate = sampleClimate(wx, wz)
+      const climate = sampleClimateInto(this.propsClimate, wx, wz)
       const surface = terrainSurfaceFromClimate(climate)
       const h = interpolateGridHeight(heights, segs, originX, originZ, wx, wz)
       const f = climate.features

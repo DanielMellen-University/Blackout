@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.494** Reuse a caller-owned climate record while building near-field vegetation, removing per-sample climate garbage from streamed LOD promotions without changing deterministic placement or quality budgets.
 - **10.493** Route corridor and summary probes now use the scalar resolved surface sampler, retaining water-level correctness while avoiding climate-object work during launch and retry setup.
 - **10.492** Reuse exact external-camera ground probes within a frame through a bounded caller-owned cache, reducing duplicate terrain work without allowing streamed sampler changes to leak stale heights.
 - **10.491** Validate a bounded wing-width corridor between route gates so generated courses clear terrain across the flight path, not only at the centreline.
