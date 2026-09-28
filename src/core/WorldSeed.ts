@@ -64,13 +64,18 @@ export function worldSeedReplayUrl(
     } else {
       url.searchParams.delete('course')
     }
-    // Daily Ops is the only course whose route/weather changes with time. The
-    // optional day key keeps a copied link exact without adding state to other
+    // Rotating Ops courses are the only entries whose route/weather changes
+    // with time. Keep their period key exact without adding state to other
     // authored or procedural worlds.
     if (courseId === 'daily-ops' && isDailyDayKey(dayKey)) {
       url.searchParams.set('day', dayKey)
+      url.searchParams.delete('week')
+    } else if (courseId === 'weekly-ops' && isWeeklyWeekKey(dayKey)) {
+      url.searchParams.set('week', dayKey)
+      url.searchParams.delete('day')
     } else {
       url.searchParams.delete('day')
+      url.searchParams.delete('week')
     }
     return url.toString()
   } catch {
@@ -82,6 +87,30 @@ function isDailyDayKey(value: unknown): value is string {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const timestamp = Date.parse(`${value}T12:00:00.000Z`)
   return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value
+}
+
+function isWeeklyWeekKey(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-W\d{2}$/.test(value)) return false
+  const match = /^(\d{4})-W(\d{2})$/.exec(value)
+  if (!match) return false
+  const year = Number(match[1])
+  const week = Number(match[2])
+  if (!Number.isInteger(year) || !Number.isInteger(week) || week < 1 || week > 53) return false
+  const janFourth = Date.UTC(year, 0, 4)
+  const janFourthDay = new Date(janFourth).getUTCDay() || 7
+  const monday = janFourth - (janFourthDay - 1) * 86_400_000 + (week - 1) * 604_800_000
+  const timestamp = monday + 12 * 60 * 60 * 1000
+  return Number.isFinite(timestamp) && isoWeekKey(timestamp) === value
+}
+
+function isoWeekKey(timestamp: number): string {
+  const date = new Date(timestamp)
+  const day = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - day)
+  const year = date.getUTCFullYear()
+  const yearStart = Date.UTC(year, 0, 1)
+  const week = Math.ceil((((date.getTime() - yearStart) / 86_400_000) + 1) / 7)
+  return `${year}-W${String(week).padStart(2, '0')}`
 }
 
 /** Copy a finite procedural seed without allowing clipboard failures to escape. */

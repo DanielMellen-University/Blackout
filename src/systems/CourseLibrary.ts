@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'daily-ops' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'aurora-run' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'monsoon-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run' | 'shoreline-run'
+export type CourseId = 'random' | 'free-flight' | 'daily-ops' | 'weekly-ops' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'aurora-run' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'monsoon-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run' | 'shoreline-run'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -24,11 +24,16 @@ export interface CourseDefinition {
   contractCatalog?: boolean
   /** Resolve this entry from the UTC day instead of keeping one fixed seed. */
   daily?: boolean
+  /** Resolve this entry from the current UTC week instead of keeping one fixed seed. */
+  weekly?: boolean
 }
 
 export const DAILY_OPS_COURSE_ID: CourseId = 'daily-ops'
+export const WEEKLY_OPS_COURSE_ID: CourseId = 'weekly-ops'
 const DAILY_OPS_DAY_MS = 86_400_000
 const DAILY_OPS_EPOCH_MS = Date.UTC(2025, 0, 1)
+const WEEKLY_OPS_WEEK_MS = 7 * DAILY_OPS_DAY_MS
+const WEEKLY_OPS_EPOCH_MS = Date.UTC(2025, 0, 6)
 const DAILY_OPS_PROFILES: readonly MissionRouteProfile[] = [
   'sweep',
   'slalom',
@@ -46,6 +51,28 @@ const DAILY_OPS_PROFILES: readonly MissionRouteProfile[] = [
   'thermal',
 ] as const
 const DAILY_OPS_WEATHER: readonly WeatherId[] = [
+  'clear',
+  'cloudy',
+  'fog',
+  'rain',
+  'storm',
+  'snow',
+] as const
+const WEEKLY_OPS_PROFILES: readonly MissionRouteProfile[] = [
+  'sweep',
+  'ridge',
+  'coast',
+  'fjord',
+  'volcanic',
+  'alpine',
+  'canyon',
+  'mesa',
+  'badlands',
+  'tundra',
+  'archipelago',
+  'thermal',
+] as const
+const WEEKLY_OPS_WEATHER: readonly WeatherId[] = [
   'clear',
   'cloudy',
   'fog',
@@ -78,6 +105,15 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     profile: null,
     contractCatalog: true,
     daily: true,
+  },
+  {
+    id: WEEKLY_OPS_COURSE_ID,
+    label: 'Weekly ops',
+    detail: 'One shared route, refreshed every Monday',
+    seed: null,
+    profile: null,
+    contractCatalog: true,
+    weekly: true,
   },
   {
     id: 'training-orbit',
@@ -652,11 +688,38 @@ export function dailyOpsDayKey(nowMs = Date.now()): string {
   return day.toISOString().slice(0, 10)
 }
 
+/** Stable ISO week key used by Weekly Ops records and replay links. */
+export function weeklyOpsWeekKey(nowMs = Date.now()): string {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : WEEKLY_OPS_EPOCH_MS
+  const date = new Date(safeNow)
+  const day = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - day)
+  const year = date.getUTCFullYear()
+  const yearStart = Date.UTC(year, 0, 1)
+  const week = Math.ceil((((date.getTime() - yearStart) / DAILY_OPS_DAY_MS) + 1) / 7)
+  return `${year}-W${String(week).padStart(2, '0')}`
+}
+
 /** Parse a replayed UTC day without allowing malformed dates to alter a launch. */
 export function dailyOpsTimestampForDayKey(dayKey: string | null | undefined): number | null {
   if (typeof dayKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return null
   const timestamp = Date.parse(`${dayKey}T12:00:00.000Z`)
   if (!Number.isFinite(timestamp) || dailyOpsDayKey(timestamp) !== dayKey) return null
+  return timestamp
+}
+
+/** Parse a replayed ISO week without allowing malformed dates to alter a launch. */
+export function weeklyOpsTimestampForWeekKey(weekKey: string | null | undefined): number | null {
+  const match = typeof weekKey === 'string' ? /^(\d{4})-W(\d{2})$/.exec(weekKey) : null
+  if (!match) return null
+  const year = Number(match[1])
+  const week = Number(match[2])
+  if (!Number.isInteger(year) || !Number.isInteger(week) || week < 1 || week > 53) return null
+  const janFourth = Date.UTC(year, 0, 4)
+  const janFourthDay = new Date(janFourth).getUTCDay() || 7
+  const monday = janFourth - (janFourthDay - 1) * DAILY_OPS_DAY_MS + (week - 1) * WEEKLY_OPS_WEEK_MS
+  const timestamp = monday + 12 * 60 * 60 * 1000
+  if (!Number.isFinite(timestamp) || weeklyOpsWeekKey(timestamp) !== weekKey) return null
   return timestamp
 }
 
@@ -676,19 +739,49 @@ export function dailyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
   return DAILY_OPS_PROFILES[mixed % DAILY_OPS_PROFILES.length]!
 }
 
-/** Resolve a catalog entry for this launch, expanding the single rotating Daily Ops entry. */
+/** Generate a bounded integer seed shared by everyone in the same UTC week. */
+export function weeklyOpsSeed(nowMs = Date.now()): number {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : WEEKLY_OPS_EPOCH_MS
+  const weekIndex = Math.floor((safeNow - WEEKLY_OPS_EPOCH_MS) / WEEKLY_OPS_WEEK_MS)
+  const mixed = Math.imul((weekIndex ^ 0x7f4a7c15) | 0, 1_103_515_245) + 12_345_679
+  return 1_000 + ((mixed >>> 0) % 900_000)
+}
+
+/** Keep the weekly route family distinct from Daily Ops while rotating through the larger terrain envelope. */
+export function weeklyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
+  const safeNow = Number.isFinite(nowMs) ? nowMs : WEEKLY_OPS_EPOCH_MS
+  const weekIndex = Math.floor((safeNow - WEEKLY_OPS_EPOCH_MS) / WEEKLY_OPS_WEEK_MS)
+  const mixed = Math.imul((weekIndex ^ 0x9e3779b9) | 0, 2_654_435_761) >>> 0
+  return WEEKLY_OPS_PROFILES[mixed % WEEKLY_OPS_PROFILES.length]!
+}
+
+/** Resolve a catalog entry for this launch, expanding the rotating Ops entries. */
 export function resolveCourseDefinition(
   course: CourseDefinition,
   nowMs = Date.now(),
 ): CourseDefinition {
-  if (!course.daily) return course
-  const seed = dailyOpsSeed(nowMs)
-  const profile = dailyOpsProfile(nowMs)
-  const weather = DAILY_OPS_WEATHER[seed % DAILY_OPS_WEATHER.length]!
+  if (course.daily) {
+    const seed = dailyOpsSeed(nowMs)
+    const profile = dailyOpsProfile(nowMs)
+    const weather = DAILY_OPS_WEATHER[seed % DAILY_OPS_WEATHER.length]!
+    const timeOfDay = profile === 'night' ? 0.84 : undefined
+    return {
+      ...course,
+      detail: `${course.detail} · ${dailyOpsDayKey(nowMs)}`,
+      seed,
+      profile,
+      weather,
+      timeOfDay,
+    }
+  }
+  if (!course.weekly) return course
+  const seed = weeklyOpsSeed(nowMs)
+  const profile = weeklyOpsProfile(nowMs)
+  const weather = WEEKLY_OPS_WEATHER[seed % WEEKLY_OPS_WEATHER.length]!
   const timeOfDay = profile === 'night' ? 0.84 : undefined
   return {
     ...course,
-    detail: `${course.detail} · ${dailyOpsDayKey(nowMs)}`,
+    detail: `${course.detail} · ${weeklyOpsWeekKey(nowMs)}`,
     seed,
     profile,
     weather,
@@ -705,8 +798,12 @@ export function courseSeedForId(id: string | null | undefined, nowMs = Date.now(
 export function courseRunId(course: CourseDefinition, nowMs = Date.now()): string | null {
   const resolved = resolveCourseDefinition(course, nowMs)
   if (resolved.seed === null || resolved.profile === null) return null
-  const dailySuffix = course.daily ? `:daily:${dailyOpsDayKey(nowMs)}` : ''
-  return `${courseSessionBaseId(resolved.seed, resolved.profile)}${courseIdentitySuffix(resolved.id)}${dailySuffix}`
+  const periodSuffix = course.daily
+    ? `:daily:${dailyOpsDayKey(nowMs)}`
+    : course.weekly
+      ? `:weekly:${weeklyOpsWeekKey(nowMs)}`
+      : ''
+  return `${courseSessionBaseId(resolved.seed, resolved.profile)}${courseIdentitySuffix(resolved.id)}${periodSuffix}`
 }
 
 /** Keep random sorties in one bounded record bucket instead of one key per seed. */
@@ -714,15 +811,20 @@ export function courseSessionId(
   selectedCourseId: CourseId,
   worldSeed: number,
   profile: MissionRouteProfile,
-  dailyDayKey?: string,
+  periodKey?: string,
 ): string {
   if (selectedCourseId === 'random') return RANDOM_COURSE_RUN_ID
   if (profile === 'free') return 'free-flight'
   const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
-  const dailySuffix = selectedCourseId === DAILY_OPS_COURSE_ID && dailyDayKey
-    ? `:daily:${dailyDayKey}`
+  const period = selectedCourseId === DAILY_OPS_COURSE_ID
+    ? 'daily'
+    : selectedCourseId === WEEKLY_OPS_COURSE_ID
+      ? 'weekly'
+      : ''
+  const periodSuffix = period && periodKey
+    ? `:${period}:${periodKey}`
     : ''
-  return `${courseSessionBaseId(safeSeed, profile)}${courseIdentitySuffix(selectedCourseId)}${dailySuffix}`
+  return `${courseSessionBaseId(safeSeed, profile)}${courseIdentitySuffix(selectedCourseId)}${periodSuffix}`
 }
 
 /** Keep authored records stable while separating the one legacy key collision. */

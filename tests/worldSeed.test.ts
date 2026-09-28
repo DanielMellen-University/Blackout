@@ -77,8 +77,12 @@ describe('world seed sharing', () => {
     const dailyLink = worldSeedReplayUrl(href, 1234.9, 'daily-ops', '2026-09-28')
     expect(dailyLink).toContain('course=daily-ops')
     expect(dailyLink).toContain('day=2026-09-28')
+    const weeklyLink = worldSeedReplayUrl(href, 1234.9, 'weekly-ops', '2026-W40')
+    expect(weeklyLink).toContain('course=weekly-ops')
+    expect(weeklyLink).toContain('week=2026-W40')
     expect(worldSeedReplayUrl(href, 1234.9, 'coastal-run', '2026-09-28')).not.toContain('day=')
     expect(worldSeedReplayUrl(href, 1234.9, 'daily-ops', '2026-02-30')).not.toContain('day=')
+    expect(worldSeedReplayUrl(href, 1234.9, 'weekly-ops', '2026-W00')).not.toContain('week=')
     expect(worldSeedReplayUrl(href, 1234, 'not a course')).not.toContain('course=')
     expect(worldSeedReplayUrl(href, Number.MAX_SAFE_INTEGER)).toBeNull()
 
@@ -87,6 +91,8 @@ describe('world seed sharing', () => {
     expect(writeText).toHaveBeenCalledWith(worldSeedReplayUrl(href, 1234.9, 'river-run'))
     await expect(copyWorldSeedLink(1234.9, { writeText }, href, 'daily-ops', '2026-09-28')).resolves.toBe(true)
     expect(writeText).toHaveBeenCalledWith(worldSeedReplayUrl(href, 1234.9, 'daily-ops', '2026-09-28'))
+    await expect(copyWorldSeedLink(1234.9, { writeText }, href, 'weekly-ops', '2026-W40')).resolves.toBe(true)
+    expect(writeText).toHaveBeenCalledWith(worldSeedReplayUrl(href, 1234.9, 'weekly-ops', '2026-W40'))
     await expect(copyWorldSeedLink(1234, { writeText }, 'not a URL')).resolves.toBe(false)
   })
 

@@ -69,6 +69,8 @@ import {
   courseDefinitionForId,
   dailyOpsDayKey,
   dailyOpsTimestampForDayKey,
+  weeklyOpsTimestampForWeekKey,
+  weeklyOpsWeekKey,
   courseRunId,
   COURSE_LIBRARY,
   COURSE_SELECTION_STORAGE_KEY,
@@ -312,12 +314,26 @@ async function boot(): Promise<void> {
   const replayDayTimestamp = replayCourseId === 'daily-ops'
     ? dailyOpsTimestampForDayKey(replayParams?.get('day'))
     : null
+  const replayWeekTimestamp = replayCourseId === 'weekly-ops'
+    ? weeklyOpsTimestampForWeekKey(replayParams?.get('week'))
+    : null
   // Keep a single UTC snapshot for this page session so the picker, records,
-  // and a retry all refer to the same Daily Ops challenge around midnight.
-  const dailyOpsTimestamp = replayDayTimestamp ?? Date.now()
+  // and a retry all refer to the same rotating Ops challenge around a period
+  // boundary.
+  const opsTimestamp = replayDayTimestamp ?? replayWeekTimestamp ?? Date.now()
+  const selectedCoursePeriodKey = (): string | undefined => {
+    if (selectedCourseId === 'daily-ops') return `DAY ${dailyOpsDayKey(opsTimestamp)}`
+    if (selectedCourseId === 'weekly-ops') return `WEEK ${weeklyOpsWeekKey(opsTimestamp)}`
+    return undefined
+  }
+  const selectedCourseReplayKey = (): string | undefined => {
+    if (selectedCourseId === 'daily-ops') return dailyOpsDayKey(opsTimestamp)
+    if (selectedCourseId === 'weekly-ops') return weeklyOpsWeekKey(opsTimestamp)
+    return undefined
+  }
   const selectedCourse = () => resolveCourseDefinition(
     courseDefinitionForId(selectedCourseId),
-    dailyOpsTimestamp,
+    opsTimestamp,
   )
   let replaySeed = parseWorldSeed(
     replayParams?.get('seed'),
@@ -348,8 +364,8 @@ async function boot(): Promise<void> {
 
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
-      const resolvedCourse = resolveCourseDefinition(course, dailyOpsTimestamp)
-      const runId = courseRunId(course, dailyOpsTimestamp)
+      const resolvedCourse = resolveCourseDefinition(course, opsTimestamp)
+      const runId = courseRunId(course, opsTimestamp)
       const record = runId ? readCourseRecord(runId) : null
       const copy = coursePickerCopy({
         course: resolvedCourse,
@@ -379,7 +395,7 @@ async function boot(): Promise<void> {
   const refreshCourseProgress = (): void => {
     if (!titleProgress) return
     const curated = COURSE_LIBRARY.filter((course) => {
-      const resolved = resolveCourseDefinition(course, dailyOpsTimestamp)
+      const resolved = resolveCourseDefinition(course, opsTimestamp)
       return resolved.seed !== null && resolved.profile !== null
     })
     let completed = 0
@@ -398,7 +414,7 @@ async function boot(): Promise<void> {
     }
     const styleVariety = new Set<string>()
     for (const course of curated) {
-      const runId = courseRunId(course, dailyOpsTimestamp)
+      const runId = courseRunId(course, opsTimestamp)
       if (!runId) continue
       const record = readCourseRecord(runId)
       const history = record.history
@@ -929,7 +945,7 @@ async function boot(): Promise<void> {
       clipboard,
       href,
       selectedCourseId,
-      selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+      selectedCourseReplayKey(),
     ).then((copied) => {
       if (disposed || !shareReplayButton) return
       shareReplayButton.textContent = copied ? 'Replay link copied' : 'Copy blocked'
@@ -1139,7 +1155,7 @@ async function boot(): Promise<void> {
     selectedCourseId,
     world.worldSeed,
     world.mission.routeProfile,
-    selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+    selectedCourseReplayKey(),
   )
 
   let lastInputContextLive: boolean | null = null
@@ -1633,7 +1649,7 @@ async function boot(): Promise<void> {
           clipboard,
           href,
           selectedCourseId,
-          selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+          selectedCourseReplayKey(),
         ).then((copied) => {
           if (disposed) return
           showBanner(
@@ -1747,7 +1763,7 @@ async function boot(): Promise<void> {
               selectedCourse().label,
               courseConditionSummary(
                 selectedCourse(),
-                selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+                selectedCoursePeriodKey(),
               ),
               world.worldSeed,
             )
@@ -1813,7 +1829,7 @@ async function boot(): Promise<void> {
                 selectedCourse().label,
                 courseConditionSummary(
                   selectedCourse(),
-                  selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+                  selectedCoursePeriodKey(),
                 ),
                 world.worldSeed,
               )

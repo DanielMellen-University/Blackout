@@ -209,10 +209,10 @@ export function courseWindPreviewLabel(windSide: WindSide | undefined): string {
 /** Keep authored conditions readable after the launch card is gone. */
 export function courseConditionSummary(
   course: Pick<CourseDefinition, 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>,
-  dailyDayKey?: string,
+  periodLabel?: string,
 ): string {
   const conditions = [
-    isDailyDayKey(dailyDayKey) ? `DAY ${dailyDayKey}` : '',
+    coursePeriodLabel(periodLabel),
     course.weather
       ? `WEATHER ${WEATHER_LABELS[course.weather] ?? ''}`
       : '',
@@ -227,10 +227,35 @@ export function courseConditionSummary(
   return conditions.join(' / ')
 }
 
-function isDailyDayKey(value: string | undefined): value is string {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const timestamp = Date.parse(`${value}T00:00:00.000Z`)
-  return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value
+function coursePeriodLabel(value: string | undefined): string {
+  if (!value) return ''
+  const day = /^(?:DAY )?(\d{4}-\d{2}-\d{2})$/.exec(value)
+  if (day) {
+    const timestamp = Date.parse(`${day[1]}T12:00:00.000Z`)
+    if (Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === day[1]) {
+      return `DAY ${day[1]}`
+    }
+    return ''
+  }
+  const week = /^(?:WEEK )?(\d{4}-W\d{2})$/.exec(value)
+  if (!week) return ''
+  const match = /^(\d{4})-W(\d{2})$/.exec(week[1]!)
+  if (!match) return ''
+  const year = Number(match[1])
+  const weekNumber = Number(match[2])
+  if (!Number.isInteger(year) || !Number.isInteger(weekNumber) || weekNumber < 1 || weekNumber > 53) return ''
+  const janFourth = Date.UTC(year, 0, 4)
+  const janFourthDay = new Date(janFourth).getUTCDay() || 7
+  const monday = janFourth - (janFourthDay - 1) * 86_400_000 + (weekNumber - 1) * 604_800_000
+  const timestamp = monday + 12 * 60 * 60 * 1000
+  const date = new Date(timestamp)
+  const isoDay = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - isoDay)
+  const isoYear = date.getUTCFullYear()
+  const isoWeek = Math.ceil((((date.getTime() - Date.UTC(isoYear, 0, 1)) / 86_400_000) + 1) / 7)
+  return `${isoYear}-W${String(isoWeek).padStart(2, '0')}` === week[1]
+    ? `WEEK ${week[1]}`
+    : ''
 }
 
 /**

@@ -10,6 +10,10 @@ import {
   dailyOpsProfile,
   dailyOpsSeed,
   dailyOpsTimestampForDayKey,
+  weeklyOpsProfile,
+  weeklyOpsSeed,
+  weeklyOpsTimestampForWeekKey,
+  weeklyOpsWeekKey,
   readSelectedCourseId,
   resolveCourseDefinition,
   writeSelectedCourseId,
@@ -19,7 +23,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(69)
+    expect(COURSE_LIBRARY).toHaveLength(70)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -273,6 +277,19 @@ describe('course library', () => {
     expect(courseSessionId('training-orbit', Number.NaN, 'orbit')).toBe('seed:0:orbit')
     expect(courseSessionId('daily-ops', dailyResolved.seed!, dailyResolved.profile!, dailyOpsDayKey(dailyNow)))
       .toBe(`${courseRunId(daily, dailyNow)}`)
+    const weekly = courseDefinitionForId('weekly-ops')
+    const weeklyNow = Date.UTC(2026, 8, 28, 12)
+    const weeklyResolved = resolveCourseDefinition(weekly, weeklyNow)
+    expect(weekly.weekly).toBe(true)
+    expect(weeklyResolved.seed).toBe(weeklyOpsSeed(weeklyNow))
+    expect(weeklyResolved.profile).toBe(weeklyOpsProfile(weeklyNow))
+    expect(weeklyResolved.detail).toContain(weeklyOpsWeekKey(weeklyNow))
+    expect(weeklyOpsTimestampForWeekKey(weeklyOpsWeekKey(weeklyNow))).toBe(Date.UTC(2026, 8, 28, 12))
+    expect(weeklyOpsTimestampForWeekKey('2026-W00')).toBeNull()
+    expect(courseRunId(weekly, weeklyNow)).toContain(`:weekly:${weeklyOpsWeekKey(weeklyNow)}`)
+    expect(courseRunId(weekly, weeklyNow + 7 * 86_400_000)).not.toBe(courseRunId(weekly, weeklyNow))
+    expect(courseSessionId('weekly-ops', weeklyResolved.seed!, weeklyResolved.profile!, weeklyOpsWeekKey(weeklyNow)))
+      .toBe(`${courseRunId(weekly, weeklyNow)}`)
   })
 
   it('persists only valid course ids and fails closed on storage denial', () => {
