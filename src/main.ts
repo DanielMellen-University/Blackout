@@ -397,6 +397,7 @@ async function boot(): Promise<void> {
   let applyCameraQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarQuality: ((quality: RenderQuality) => void) | null = null
   let applyTrafficQuality: ((quality: RenderQuality) => void) | null = null
+  let applyWorldQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarMotion: ((reduced: boolean) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
@@ -414,6 +415,7 @@ async function boot(): Promise<void> {
     applyCameraQuality?.(next)
     applyRadarQuality?.(next)
     applyTrafficQuality?.(next)
+    applyWorldQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -433,6 +435,8 @@ async function boot(): Promise<void> {
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
   const world = new World()
+  applyWorldQuality = (quality): void => world.setRenderQuality(quality)
+  applyWorldQuality(renderQuality)
   applyTrafficQuality = (quality): void => world.setTrafficQuality(quality)
   applyTrafficQuality(renderQuality)
   if (replaySeed !== null) {

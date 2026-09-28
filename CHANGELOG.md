@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Make the Low graphics preset stream a smaller terrain envelope and move its fog edge with the stream, reducing worker and geometry pressure while Balanced and High retain the full horizon.
 - Add opt-in debug performance telemetry for render CPU time, draw calls, triangles, and terrain stream pressure so future optimization work is evidence-led without adding release-frame overhead.
 - Replace legacy self-mutating ship workflows with read-only GitHub Actions CI that runs the regression suite and production build on pushes and pull requests.
 - Normalize optional aircraft GLBs to the documented +Z/+Y metre contract and preserve the 1.4 m gear-contact anchor instead of lifting imported meshes to local Y=0.

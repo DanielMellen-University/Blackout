@@ -18,12 +18,12 @@ import {
   setOpsPad,
   type FlatSpawn,
 } from './terrainSample'
-import { FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
+import { fogFarForViewRadius, fogNearForViewRadius, FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
 import { MissionSystem, type MissionRouteProfile } from '../systems/Mission'
 import { SettlementSystem } from './SettlementSystem'
 import { disposeObjectTree } from '../core/dispose'
 import { AirTrafficSystem } from './AirTrafficSystem'
-import type { RenderQuality } from '../core/RenderQuality'
+import { renderQualityProfile, type RenderQuality } from '../core/RenderQuality'
 
 export interface SpawnPose {
   x: number
@@ -157,6 +157,17 @@ export class World {
   setTrafficQuality(quality: RenderQuality): void {
     if (this.disposed) return
     this.traffic.setRenderQuality(quality)
+  }
+
+  /** Apply the shared quality envelope to terrain streaming and atmosphere fog. */
+  setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
+    const profile = renderQualityProfile(quality)
+    this.terrain.setViewRadius(profile.terrainViewRadius)
+    this.atmosphere.setFogRange(
+      fogNearForViewRadius(profile.terrainViewRadius),
+      fogFarForViewRadius(profile.terrainViewRadius),
+    )
   }
 
   /**

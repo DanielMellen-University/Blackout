@@ -473,6 +473,21 @@ export class Atmosphere {
     }
   }
 
+  /** Keep atmosphere fog aligned with the active terrain quality envelope. */
+  setFogRange(near: number, far: number): void {
+    if (this.disposed) return
+    const safeFar = Number.isFinite(far) ? Math.max(1000, far) : this.baseFogFar
+    const safeNear = Number.isFinite(near)
+      ? MathUtils.clamp(near, 25, Math.max(25, safeFar - 100))
+      : this.baseFogNear
+    this.baseFogNear = safeNear
+    this.baseFogFar = safeFar
+    if (this.scene.fog instanceof Fog) {
+      this.scene.fog.near = safeNear
+      this.scene.fog.far = safeFar
+    }
+  }
+
   /** Cycle weather type (N key). */
   cycleWeather(): WeatherId {
     if (this.disposed) return this.weather

@@ -21,13 +21,15 @@ export interface RenderQualityProfile {
   readonly cloudScale: number
   /** Fraction of near-field vegetation instances submitted per terrain chunk. */
   readonly vegetationScale: number
+  /** Terrain stream radius in cells; Low trims far geometry before it can queue. */
+  readonly terrainViewRadius: number
 }
 
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQualityProfile>> =
   Object.freeze({
-    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, antialias: false, shadows: false, shadowMapSize: 512, uiBackdropBlur: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45 }),
-    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, antialias: true, shadows: true, shadowMapSize: 1024, uiBackdropBlur: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75 }),
-    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, antialias: true, shadows: true, shadowMapSize: 1536, uiBackdropBlur: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1 }),
+    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, antialias: false, shadows: false, shadowMapSize: 512, uiBackdropBlur: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45, terrainViewRadius: 52 }),
+    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, antialias: true, shadows: true, shadowMapSize: 1024, uiBackdropBlur: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75, terrainViewRadius: 80 }),
+    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, antialias: true, shadows: true, shadowMapSize: 1536, uiBackdropBlur: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1, terrainViewRadius: 80 }),
   })
 
 const STORAGE_KEY = 'blackout.renderQuality'

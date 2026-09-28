@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { planTerrainTiles, terrainBuildPriority, tileKey } from '../src/world/TerrainLayout'
-import { CHUNK_SIZE, FOG_FAR, STREAM_RADIUS_M, VIEW_RADIUS } from '../src/world/TerrainSystem'
+import { CHUNK_SIZE, fogFarForViewRadius, fogNearForViewRadius, FOG_FAR, STREAM_RADIUS_M, VIEW_RADIUS } from '../src/world/TerrainSystem'
 
 describe('long-range adaptive terrain coverage', () => {
   it('prioritizes contact detail and missing coverage over distant LOD rebuilds', () => {
@@ -17,6 +17,12 @@ describe('long-range adaptive terrain coverage', () => {
     expect(FOG_FAR).toBe(15120 * 2)
     expect(CHUNK_SIZE).toBe(420)
     expect(VIEW_RADIUS).toBe(80)
+  })
+
+  it('keeps the Low terrain horizon inside its reduced stream envelope', () => {
+    expect(fogFarForViewRadius(52)).toBe(44 * CHUNK_SIZE)
+    expect(fogNearForViewRadius(52)).toBe(Math.round(44 * CHUNK_SIZE * 0.34))
+    expect(fogFarForViewRadius(Number.NaN)).toBe(FOG_FAR)
   })
 
   it('covers the doubled horizon without overlapping leaves or unbounded mesh growth', () => {

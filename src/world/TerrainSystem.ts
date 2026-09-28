@@ -74,6 +74,16 @@ export const FOG_FAR = (VIEW_RADIUS - FOG_MARGIN_CHUNKS) * CHUNK_SIZE
 /** Clear air near the jet; linear fog ramps out to FOG_FAR. */
 export const FOG_NEAR = Math.round(FOG_FAR * 0.34)
 
+/** Resolve the fog edge for a quality-specific terrain stream radius. */
+export function fogFarForViewRadius(radius: number): number {
+  const safeRadius = Math.max(FOG_MARGIN_CHUNKS + 2, Number.isFinite(radius) ? radius : VIEW_RADIUS)
+  return Math.max(CHUNK_SIZE * 2, (safeRadius - FOG_MARGIN_CHUNKS) * CHUNK_SIZE)
+}
+
+export function fogNearForViewRadius(radius: number): number {
+  return Math.round(fogFarForViewRadius(radius) * 0.34)
+}
+
 export function lodFromDist(dist: number): TerrainLod {
   if (dist <= 3) return 0
   if (dist <= 11) return 1
@@ -208,6 +218,7 @@ export class TerrainSystem {
   private sampledChunkCz = Number.NaN
   private focusX = 0
   private focusZ = 0
+  private viewRadius = VIEW_RADIUS
   private readonly waterClock = { value: 0 }
   private readonly waterRain = { value: 0 }
   private readonly waterSnow = { value: 0 }
@@ -292,6 +303,22 @@ export class TerrainSystem {
     if (safe === this.vegetationScale) return
     this.vegetationScale = safe
     for (const chunk of this.chunks.values()) this.applyVegetationScale(chunk.props)
+  }
+
+  /** Trim or restore the streamed terrain envelope when a quality preset changes. */
+  setViewRadius(radius: number): void {
+    if (this.disposed) return
+    const safe = MathUtils.clamp(
+      Number.isFinite(radius) ? radius : VIEW_RADIUS,
+      FOG_MARGIN_CHUNKS + 2,
+      VIEW_RADIUS,
+    )
+    if (Math.abs(safe - this.viewRadius) < 0.001) return
+    this.viewRadius = safe
+    this.applyFog(fogNearForViewRadius(safe), fogFarForViewRadius(safe))
+    if (Number.isFinite(this.lastCx) && Number.isFinite(this.lastCz)) {
+      this.scheduleAround(this.lastCx, this.lastCz)
+    }
   }
 
   private configureWeatherMaterial(material: MeshStandardMaterial): void {
@@ -532,7 +559,7 @@ export class TerrainSystem {
     this.readySorted = false
     const needed = new Set<string>()
     this.desiredTiles.clear()
-    for (const tile of planTerrainTiles(cx + .5, cz + .5, VIEW_RADIUS)) {
+    for (const tile of planTerrainTiles(cx + .5, cz + .5, this.viewRadius)) {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
         this.desiredTiles.set(key, tile)
