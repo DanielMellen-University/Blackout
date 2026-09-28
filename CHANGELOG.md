@@ -5,6 +5,7 @@
 ### Ship
 
 - Dampen storm buffet while landing gear is down, and cue BUFFET on the live weather HUD when the gated drive is meaningful.
+- **10.436** Add G-control Run, a deterministic clear slalom that exposes the bounded high-G handling contract without adding scene or render-loop work.
 - **10.435** Add Burn Run, a deterministic clear sweep that exposes the sustained afterburner contract without adding scene or render-loop work.
 - **10.434** Add Mach Run, a deterministic clear sweep that exposes the sustained supersonic contract without adding scene or render-loop work.
 - **10.433** Add Crosswind Run, a deterministic storm-locked approach that exposes the runway-relative crosswind contract without adding scene or render-loop work.

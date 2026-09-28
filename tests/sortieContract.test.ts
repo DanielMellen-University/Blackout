@@ -79,6 +79,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(57, 5, true)).toContain('BREAK MACH 1')
     expect(sortieContractLabelForSeed(30, 5, true)).toBe('BURN RUN')
     expect(sortieContractDetailForSeed(30, 5, true)).toContain('AFTERBURNER ABOVE')
+    expect(sortieContractLabelForSeed(247, 5, true)).toBe('G CONTROL')
+    expect(sortieContractDetailForSeed(247, 5, true)).toContain('BETWEEN -0.5G AND 4.5G')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {
