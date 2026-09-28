@@ -252,6 +252,46 @@ export function waterSurfaceCue(biome: unknown): string {
   return 'INLAND WATER CROSSING'
 }
 
+const TERRAIN_REGION_LABELS: Readonly<Record<string, string>> = Object.freeze({
+  plains: 'PLAINS',
+  hills: 'HILLS',
+  forest: 'FOREST',
+  rainforest: 'RAINFOREST',
+  swamp: 'SWAMP',
+  desert: 'DESERT',
+  mesa: 'MESA',
+  savanna: 'SAVANNA',
+  tundra: 'TUNDRA',
+  mountain: 'MOUNTAIN',
+  snow: 'SNOWFIELD',
+  volcanic: 'VOLCANIC',
+  saltflat: 'SALT FLAT',
+  ocean: 'SEA',
+  water: 'INLAND WATER',
+})
+
+/** Convert sampled biome/water metadata into a short live exploration label. */
+export function terrainRegionLabel(biome: unknown, waterBody?: unknown): string {
+  if (typeof waterBody === 'string') {
+    const body = waterBody.trim().toLowerCase()
+    if (body === 'sea') return 'SEA'
+    if (body === 'lake') return 'LAKE'
+    if (body === 'river') return 'RIVER'
+    if (body === 'stream') return 'STREAM'
+    if (body === 'pond') return 'POND'
+    if (body === 'inland') return 'INLAND WATER'
+  }
+  if (typeof biome !== 'string') return ''
+  return TERRAIN_REGION_LABELS[biome.trim().toLowerCase()] ?? ''
+}
+
+/** Sanitize a region label before it reaches the HUD and accessibility tree. */
+export function terrainRegionHudLabel(value: unknown): string {
+  if (typeof value !== 'string') return '--'
+  const safe = value.trim().replace(/[^a-z0-9 ]/gi, '').replace(/\s+/g, ' ').toUpperCase()
+  return safe.slice(0, 22) || '--'
+}
+
 /** Clamp route progress before it reaches the visual and semantic meters. */
 export function missionProgressPercent(current: number, total: number): number {
   const safeTotal = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0
@@ -956,6 +996,8 @@ export class HUD {
   private readonly liftEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
+  private readonly terrainRegionRowEl: HTMLElement | null
+  private readonly terrainRegionEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
   private readonly comboEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
@@ -1121,6 +1163,10 @@ export class HUD {
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
+  private terrainRegionValue = ''
+  private terrainRegionInput = ''
+  private terrainRegionText = '--'
+  private terrainRegionAriaText = 'Terrain region unavailable'
   private comboValue = -1
   private comboRemainingValue = -1
   private comboText = ''
@@ -1240,6 +1286,8 @@ export class HUD {
     this.liftEl = root.getElementById('hud-lift')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
+    this.terrainRegionRowEl = root.getElementById('hud-terrain-region-row')
+    this.terrainRegionEl = root.getElementById('hud-terrain-region')
     this.comboRowEl = root.getElementById('hud-combo-row')
     this.comboEl = root.getElementById('hud-combo')
     this.fuelEl = root.getElementById('hud-fuel')
@@ -1414,6 +1462,8 @@ export class HUD {
     thermalLift?: number
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
+    /** Short current biome or water-body identity for exploration feedback. */
+    terrainRegion?: string | null
     /** Current event-driven clean-flight combo count. */
     combo?: number
     /** Whole seconds remaining before the clean-flight combo expires. */
@@ -1914,6 +1964,21 @@ export class HUD {
       this.setHidden(this.biomeRowEl, count <= 0)
       this.setText(this.biomeEl, this.biomeText)
       this.setAttribute(this.biomeEl, 'aria-label', this.biomeAriaText)
+    }
+    if (this.terrainRegionRowEl && this.terrainRegionEl && opts.terrainRegion !== undefined) {
+      const input = typeof opts.terrainRegion === 'string' ? opts.terrainRegion : ''
+      if (input !== this.terrainRegionInput) {
+        this.terrainRegionInput = input
+        const region = terrainRegionHudLabel(input)
+        this.terrainRegionValue = region
+        this.terrainRegionText = region
+        this.terrainRegionAriaText = region === '--'
+          ? 'Terrain region unavailable'
+          : `Current terrain region ${region.toLowerCase()}`
+      }
+      this.setHidden(this.terrainRegionRowEl, this.terrainRegionValue === '--')
+      this.setText(this.terrainRegionEl, this.terrainRegionText)
+      this.setAttribute(this.terrainRegionEl, 'aria-label', this.terrainRegionAriaText)
     }
     if (this.comboRowEl && this.comboEl && opts.combo !== undefined) {
       const combo = Number.isFinite(opts.combo)

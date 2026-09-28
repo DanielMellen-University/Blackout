@@ -19,6 +19,8 @@ import {
   trafficAlertAriaLabel,
   trafficAlertHudLabel,
   createRadarContactsLabelCache,
+  terrainRegionHudLabel,
+  terrainRegionLabel,
   waterSurfaceCue,
   formatGForce,
   formatHeading,
@@ -410,6 +412,16 @@ describe('HUD value formatting', () => {
     expect(biomeSurveyHudLabel(Number.NaN)).toBe('--')
     expect(biomeSurveyAriaLabel(3)).toBe('3 distinct biomes surveyed')
     expect(biomeSurveyAriaLabel(-4)).toBe('0 distinct biomes surveyed')
+  })
+
+  it('turns sampled biome and water metadata into a bounded region label', () => {
+    expect(terrainRegionLabel('rainforest')).toBe('RAINFOREST')
+    expect(terrainRegionLabel('water', 'river')).toBe('RIVER')
+    expect(terrainRegionLabel('ocean')).toBe('SEA')
+    expect(terrainRegionLabel('unknown')).toBe('')
+    expect(terrainRegionHudLabel(' salt-flat / west ')).toBe('SALTFLAT WEST')
+    expect(terrainRegionHudLabel('<script>')).toBe('SCRIPT')
+    expect(terrainRegionHudLabel(null)).toBe('--')
   })
 
   it('announces only the powered-to-glide fuel transition', () => {

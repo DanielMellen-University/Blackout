@@ -143,6 +143,7 @@ import {
   navigationGlideCue,
   weatherCycleBanner,
   waterSurfaceCue,
+  terrainRegionLabel,
   visibleGhostPaceDelta,
   type CrosswindSide,
   type FuelHomeCue,
@@ -1028,6 +1029,7 @@ async function boot(): Promise<void> {
     altitudeMilestone: null,
     thermalLift: 0,
     biomeCount: 0,
+    terrainRegion: '',
     navDist: 0,
     navBearing: null,
     navAltDelta: 0,
@@ -1058,6 +1060,7 @@ async function boot(): Promise<void> {
   const groundSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   let terrainClearanceM = 0
   let biomeSurveyCooldown = 0
+  let terrainRegion = ''
   let overWater = false
   let refueling = false
   let prevFuelHomeCue: FuelHomeCue = null
@@ -1173,6 +1176,7 @@ async function boot(): Promise<void> {
     ghost.reset(courseId())
     ghost.setVisible(playing && ghostVisible)
     challenge.recordBiome(world.spawn.biome)
+    terrainRegion = terrainRegionLabel(world.spawn.biome)
     banner = null
     crashMessage = 'CRASH - press R'
     bannerTone = 'info'
@@ -1806,6 +1810,7 @@ async function boot(): Promise<void> {
         if (biomeSurveyCooldown <= 0 && aircraft.status === 'ok' && !aircraft.onGround) {
           const sampled = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z) ??
             sampleTerrainSurface(aircraft.position.x, aircraft.position.z)
+          terrainRegion = terrainRegionLabel(sampled.biome, sampled.waterBody)
           challenge.recordBiome(sampled.biome)
           challenge.recordWater(sampled.kind === 'water', 0.65, true)
           challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
@@ -2457,6 +2462,7 @@ async function boot(): Promise<void> {
         ? altitudeMilestones.nextThresholdM || null
         : null
       hudFrame.biomeCount = challenge.biomeCount
+      hudFrame.terrainRegion = terrainRegion
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.ghostPace = visibleGhostPaceDelta((
         (challenge.phase === 'running' || challenge.phase === 'returning') &&
