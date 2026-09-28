@@ -741,6 +741,20 @@ body,
   color: var(--ink-dim);
 }
 
+.course-option-stats {
+  max-width: 100%;
+  color: var(--accent);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.course-option-stats[hidden] {
+  display: none;
+}
+
 .course-option.is-selected .course-option-meta,
 .course-option[aria-checked='true'] .course-option-meta {
   color: var(--accent);
