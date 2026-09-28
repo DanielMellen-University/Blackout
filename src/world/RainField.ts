@@ -48,11 +48,14 @@ export class RainField {
     if (this.disposed) return
     const rain = MathUtils.clamp(Number.isFinite(intensity) ? intensity : 0, 0, 1)
     this.mesh.visible = rain > .015 && this.count > 0
-    const dx = this.anchored ? x - this.x : 0
-    const dy = this.anchored ? y - this.y : 0
-    const dz = this.anchored ? z - this.z : 0
-    this.x = x; this.y = y; this.z = z; this.anchored = true
-    this.mesh.position.set(x, y, z)
+    const safeX = Number.isFinite(x) ? x : this.x
+    const safeY = Number.isFinite(y) ? y : this.y
+    const safeZ = Number.isFinite(z) ? z : this.z
+    const dx = this.anchored ? safeX - this.x : 0
+    const dy = this.anchored ? safeY - this.y : 0
+    const dz = this.anchored ? safeZ - this.z : 0
+    this.x = safeX; this.y = safeY; this.z = safeZ; this.anchored = true
+    this.mesh.position.set(safeX, safeY, safeZ)
     if (!this.mesh.visible) return
     const step = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, .1) : 0
     const wx = Number.isFinite(windX) ? windX : 0

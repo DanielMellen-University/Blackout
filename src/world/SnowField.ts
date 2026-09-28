@@ -123,43 +123,50 @@ export class SnowField {
     windZ = 0,
   ): void {
     if (this.disposed) return
-    const on = intensity > 0.02 && dt > 0
+    const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
+    const safeCx = Number.isFinite(cx) ? cx : 0
+    const safeCy = Number.isFinite(cy) ? cy : 0
+    const safeCz = Number.isFinite(cz) ? cz : 0
+    const safeIntensity = Number.isFinite(intensity) ? Math.max(0, Math.min(1, intensity)) : 0
+    const safeWindX = Number.isFinite(windX) ? windX : 0
+    const safeWindZ = Number.isFinite(windZ) ? windZ : 0
+    const on = safeIntensity > 0.02 && safeDt > 0
     if (!on) {
-      this.mat.opacity = intensity > 0.02 ? this.mat.opacity : 0
+      this.mat.opacity = safeIntensity > 0.02 ? this.mat.opacity : 0
       this.points.visible = this.mat.opacity > 0.02
-      if (intensity <= 0.02) this.scattered = false
+      if (safeIntensity <= 0.02) this.scattered = false
       return
     }
 
     if (!this.scattered) {
-      this.scatter(cx, cy + 10, cz)
+      this.scatter(safeCx, safeCy + 10, safeCz)
       this.scattered = true
     }
 
-    this.clock += dt
+    this.clock += safeDt
     this.points.visible = true
-    this.mat.opacity = Math.min(0.92, 0.32 + intensity * 0.6)
+    this.mat.opacity = Math.min(0.92, 0.32 + safeIntensity * 0.6)
 
-    const fallMul = 0.5 + intensity * 1.15
-    const wind = 1.8 + intensity * 8.5
+    const fallMul = 0.5 + safeIntensity * 1.15
+    const wind = 1.8 + safeIntensity * 8.5
     // Match the weather front's actual wind direction instead of making snow
     // drift in an unrelated local orbit. The sway remains as a small natural
     // wobble, while the low multiplier keeps flakes inside the pooled field.
-    const driftX = windX * (.22 + intensity * .16)
-    const driftZ = windZ * (.22 + intensity * .16)
+    const driftX = safeWindX * (.22 + safeIntensity * .16)
+    const driftZ = safeWindZ * (.22 + safeIntensity * .16)
     const t = this.clock
-    const yCenter = cy + 10
+    const yCenter = safeCy + 10
 
     for (let i = 0; i < this.activeCountValue; i++) {
       const ix = i * 3
       const ph = this.phase[i]!
-      let x = this.pos[ix]! + (driftX + snowWave(t * 0.31 + ph) * wind) * dt
-      let y = this.pos[ix + 1]! - this.fall[i]! * fallMul * dt
+      let x = this.pos[ix]! + (driftX + snowWave(t * 0.31 + ph) * wind) * safeDt
+      let y = this.pos[ix + 1]! - this.fall[i]! * fallMul * safeDt
       let z = this.pos[ix + 2]! +
-        (driftZ + snowWave(t * 0.27 + ph * 1.37 + Math.PI / 2) * wind * 0.62) * dt
-      this.pos[ix] = wrap(x, cx)
+        (driftZ + snowWave(t * 0.27 + ph * 1.37 + Math.PI / 2) * wind * 0.62) * safeDt
+      this.pos[ix] = wrap(x, safeCx)
       this.pos[ix + 1] = wrap(y, yCenter)
-      this.pos[ix + 2] = wrap(z, cz)
+      this.pos[ix + 2] = wrap(z, safeCz)
     }
     ;(this.points.geometry.attributes.position as BufferAttribute).needsUpdate = true
   }
@@ -185,6 +192,8 @@ export class SnowField {
 
 /** Wrap into [center - HALF, center + HALF). */
 export function wrap(value: number, center: number): number {
+  if (!Number.isFinite(center)) return 0
+  if (!Number.isFinite(value)) return center
   let d = value - center + HALF
   d -= Math.floor(d / SPAN) * SPAN
   return center + d - HALF

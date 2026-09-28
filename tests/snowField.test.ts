@@ -45,4 +45,18 @@ describe('snow wrap', () => {
     expect(field.points.visible).toBe(false)
     expect(geometryDispose).toHaveBeenCalledOnce()
   })
+
+  it('keeps pooled flakes finite when weather timing or anchors are malformed', () => {
+    const field = new SnowField()
+    field.update(Number.POSITIVE_INFINITY, Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, 1, Number.NaN, Number.NEGATIVE_INFINITY)
+    expect(field.points.visible).toBe(false)
+    field.update(1 / 60, Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, 1, Number.NaN, Number.NEGATIVE_INFINITY)
+    const position = field.points.geometry.getAttribute('position')
+    for (let i = 0; i < position.count; i += 137) {
+      expect(Number.isFinite(position.getX(i))).toBe(true)
+      expect(Number.isFinite(position.getY(i))).toBe(true)
+      expect(Number.isFinite(position.getZ(i))).toBe(true)
+    }
+    field.dispose()
+  })
 })

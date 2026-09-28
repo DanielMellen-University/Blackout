@@ -95,6 +95,15 @@ describe('weather rendering', () => {
     expect(dispose).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps pooled rain transforms finite when the follow anchor is malformed', () => {
+    const rain = new RainField()
+    rain.update(.016, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 1, 0, 0)
+    expect(Number.isFinite(rain.mesh.position.x)).toBe(true)
+    expect(Number.isFinite(rain.mesh.position.y)).toBe(true)
+    expect(Number.isFinite(rain.mesh.position.z)).toBe(true)
+    rain.dispose()
+  })
+
   it('clears precipitation and the overhead deck above cloud tops', () => {
     expect(precipitationAtAltitude(1000, 0)).toBe(1)
     expect(precipitationAtAltitude(3000, 0)).toBeGreaterThan(0)
