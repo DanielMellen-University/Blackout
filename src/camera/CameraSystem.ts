@@ -99,6 +99,8 @@ const JUICE_STIFFNESS = 3.2
 /** Keep the external horizon readable while letting turns carry a little drama. */
 const MAX_EXTERNAL_BANK = 0.62
 const EXTERNAL_BANK_STIFFNESS = 8
+/** Recover an occluded chase rig gently after a ridge/building clears. */
+const OCCLUSION_RECOVERY_STIFFNESS = 6
 /** Keep depth precision focused on the streamed world and cloud envelope. */
 const CAMERA_FAR_MARGIN = CHUNK_SIZE * (FOG_MARGIN_CHUNKS + 2)
 /** Keep the default camera aligned with the full High-quality fog envelope. */
@@ -179,6 +181,9 @@ export class CameraSystem {
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
   private obstacleSampler: CameraObstacleSampler | null = null
+  /** Effective sightline distance; recovery is eased to prevent terrain jitter. */
+  private occlusionDistance = 0
+  private occlusionReady = false
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
@@ -529,7 +534,7 @@ export class CameraSystem {
     // Orbit: leave offset in world spherical space around the pivot
 
     _desired.copy(_pivot).add(_offsetWorld)
-    this.resolveGroundOcclusion(_pivot, _desired, _desired)
+    this.resolveGroundOcclusion(_pivot, _desired, _desired, dt, snap)
 
     if (snap || dt <= 0) {
       this.camera.position.copy(_desired)
@@ -600,6 +605,8 @@ export class CameraSystem {
     pivot: Vector3,
     desired: Vector3,
     out: Vector3,
+    dt: number,
+    snap: boolean,
   ): void {
     out.copy(desired)
     _toCam.subVectors(desired, pivot)
@@ -634,6 +641,28 @@ export class CameraSystem {
       const floor = cameraMinY(out.x, out.z, this.groundClearance)
       if (out.y < floor) out.y = floor
     }
+    _toCam.subVectors(out, pivot)
+
+    // The blocked direction must be respected immediately so the lens never
+    // spends a frame inside a ridge or building. When the path clears, ease
+    // only the radial recovery; heading and pitch still track the pilot's
+    // framing directly. This removes the rapid in/out oscillation that a
+    // sampled sightline can otherwise create along a terrain shoulder.
+    const targetDistance = _toCam.length()
+    if (!Number.isFinite(targetDistance) || targetDistance <= 1e-6) return
+    if (snap || dt <= 0 || !this.occlusionReady) {
+      this.occlusionDistance = targetDistance
+      this.occlusionReady = true
+    } else if (targetDistance < this.occlusionDistance) {
+      this.occlusionDistance = targetDistance
+    } else {
+      const alpha = 1 - Math.exp(-OCCLUSION_RECOVERY_STIFFNESS * dt)
+      this.occlusionDistance = MathUtils.lerp(this.occlusionDistance, targetDistance, alpha)
+    }
+    if (this.occlusionDistance >= targetDistance) return
+    out.copy(pivot).addScaledVector(_toCam, this.occlusionDistance / targetDistance)
+    const floor = cameraMinY(out.x, out.z, this.groundClearance)
+    if (out.y < floor) out.y = floor
   }
 
   private clampAboveGround(pos: Vector3): void {

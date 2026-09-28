@@ -531,6 +531,38 @@ describe('external camera framing', () => {
     expect(cameras.camera.position.z).toBeGreaterThan(-8)
     cameras.dispose()
   })
+
+  it('eases occlusion recovery instead of snapping through a cleared obstacle', () => {
+    setGroundHeightSampler(() => 0)
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 20, 0)
+    aircraft.snapDisplay()
+    let blocked = true
+    cameras.setObstacleSampler(() => blocked)
+    cameras.setMode('chase', aircraft)
+    cameras.update(aircraft, 1 / 60)
+
+    const blockedDistance = cameras.camera.position.distanceTo(aircraft.displayPosition)
+    blocked = false
+    cameras.update(aircraft, 1 / 60)
+    const firstClearDistance = cameras.camera.position.distanceTo(aircraft.displayPosition)
+    for (let i = 0; i < 12; i++) cameras.update(aircraft, 1 / 60)
+    const settlingDistance = cameras.camera.position.distanceTo(aircraft.displayPosition)
+    for (let i = 0; i < 108; i++) cameras.update(aircraft, 1 / 60)
+    const recoveredDistance = cameras.camera.position.distanceTo(aircraft.displayPosition)
+
+    expect(firstClearDistance).toBeGreaterThan(blockedDistance)
+    expect(firstClearDistance).toBeLessThan(settlingDistance)
+    expect(recoveredDistance).toBeGreaterThan(blockedDistance + 1)
+    cameras.dispose()
+  })
 })
 
 
