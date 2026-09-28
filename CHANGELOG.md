@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.448** Couple adaptive resolution to cloud and precipitation budgets, reducing atmospheric draw and particle pressure alongside terrain, water, and vegetation detail under sustained GPU load.
 - **10.447** Couple adaptive resolution to near-field vegetation instance density, shedding draw pressure under sustained GPU load while restoring authored detail without terrain rebuilds.
 - **10.446** Add an accessible course-catalog filter to the title and pause pickers, keeping the growing route library searchable and the visible card list bounded.
 - **10.445** Couple adaptive pixel resolution to terrain-weather and water shader detail, shedding GPU work under sustained load while preserving geometry, visibility, and flight behavior.
