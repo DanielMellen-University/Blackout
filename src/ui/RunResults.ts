@@ -7,6 +7,7 @@ import {
 } from '../systems/ChallengeRun'
 import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
 import { sortieStyleForResult, sortieStyleLabel } from '../systems/FlightStyle'
+import { formatWorldSeed } from '../core/WorldSeed'
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
@@ -22,6 +23,11 @@ export function flightRecordCueLabel(
     result.newRunStreakRecord ? 'RUN STREAK' : '',
     result.newContractStreakRecord ? 'CONTRACT STREAK' : '',
   ].filter(Boolean).join(' / ')
+}
+
+/** Keep the replay identity visible without exposing malformed seed values. */
+export function resultSeedLabel(seed: number | undefined): string {
+  return Number.isFinite(seed) ? `SEED ${formatWorldSeed(seed!)}` : ''
 }
 
 const MEDAL_CLASSES = ['medal-gold', 'medal-silver', 'medal-bronze', 'medal-complete'] as const
@@ -46,6 +52,7 @@ export class RunResults {
   private readonly title: HTMLElement
   private readonly summary: HTMLElement
   private readonly conditions: HTMLElement | null
+  private readonly seedEl: HTMLElement | null
   private readonly score: HTMLElement
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
@@ -88,6 +95,7 @@ export class RunResults {
     this.title = must(root, 'result-title')
     this.summary = must(root, 'result-summary')
     this.conditions = root.getElementById('result-conditions')
+    this.seedEl = root.getElementById('result-seed')
     this.score = must(root, 'result-score')
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
@@ -126,6 +134,7 @@ export class RunResults {
     newCareerCommendations: readonly string[] = [],
     courseLabel?: string,
     courseConditions?: string,
+    worldSeed?: number,
   ): void {
     if (this.disposed) return
     if (this.shareReplay) {
@@ -147,6 +156,13 @@ export class RunResults {
       this.conditions.hidden = conditions.length === 0
       if (conditions) this.conditions.setAttribute('aria-label', `Sortie conditions ${conditions.replaceAll(' / ', ', ')}`)
       else this.conditions.removeAttribute('aria-label')
+    }
+    if (this.seedEl) {
+      const seedLabel = resultSeedLabel(worldSeed)
+      this.seedEl.textContent = seedLabel
+      this.seedEl.hidden = seedLabel.length === 0
+      if (seedLabel) this.seedEl.setAttribute('aria-label', `World seed ${seedLabel.slice(5)}`)
+      else this.seedEl.removeAttribute('aria-label')
     }
     this.title.textContent = crashed
       ? (ditched ? 'DITCHED' : 'CRASH')

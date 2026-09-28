@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   flightRecordCueLabel,
   formatDistance,
+  resultSeedLabel,
   resultFuelBandClass,
   RunResults,
 } from '../src/ui/RunResults'
@@ -148,6 +149,12 @@ const result = {
 }
 
 describe('run results focus flow', () => {
+  it('formats finite replay seeds and fails closed for malformed values', () => {
+    expect(resultSeedLabel(9876.8)).toBe('SEED 9876')
+    expect(resultSeedLabel(undefined)).toBe('')
+    expect(resultSeedLabel(Number.NaN)).toBe('')
+  })
+
   it('classifies result fuel bands without leaking malformed values', () => {
     expect(resultFuelBandClass(72)).toBe('fuel-healthy')
     expect(resultFuelBandClass(25)).toBe('fuel-low')

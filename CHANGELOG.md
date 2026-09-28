@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.454** Keep the active procedural seed visible in the results debrief, so completed and crashed random worlds remain identifiable after the live HUD closes.
 - **10.453** Keep fractional procedural seeds visible in the HUD by matching the existing finite truncation used by replay links.
 - **10.452** Surface the active procedural world seed in the secondary HUD, keeping custom and replay worlds identifiable during flight without adding per-frame allocation.
 - **10.451** Clear consumed custom seeds from the launch controls, keeping the visible pending-seed state aligned with the world that the next Play action will actually create.

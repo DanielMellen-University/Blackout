@@ -1619,6 +1619,7 @@ async function boot(): Promise<void> {
               [],
               courseDefinitionForId(selectedCourseId).label,
               courseConditionSummary(courseDefinitionForId(selectedCourseId)),
+              world.worldSeed,
             )
             syncInputContext()
             break
@@ -1681,6 +1682,7 @@ async function boot(): Promise<void> {
                 newCareerCommendations,
                 courseDefinitionForId(selectedCourseId).label,
                 courseConditionSummary(courseDefinitionForId(selectedCourseId)),
+                world.worldSeed,
               )
               syncInputContext()
               break
