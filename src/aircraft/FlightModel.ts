@@ -1,7 +1,10 @@
 import { MathUtils, Quaternion, Vector3 } from 'three'
 import {
+  clearGroundHeightCache,
   contactMinY,
-  sampleGroundNormal,
+  contactMinYCached,
+  createGroundHeightCache,
+  sampleGroundNormalCached,
   sampleGroundSurfaceInto,
   undercarriageClearance,
   type GroundSurfaceSample,
@@ -76,6 +79,8 @@ export class FlightModel {
     height: 0,
     kind: 'land',
   }
+  /** Reused fixed-step terrain probes for contact floors and normals. */
+  private readonly groundHeightCache = createGroundHeightCache(8)
 
   reset(): void {
     this.turbulencePhase = 0
@@ -85,7 +90,8 @@ export class FlightModel {
     if (!Number.isFinite(dt) || dt <= 0) return
 
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
-    const minY = contactMinY(position.x, position.z, controls.gearDown)
+    clearGroundHeightCache(this.groundHeightCache)
+    const minY = contactMinYCached(position.x, position.z, controls.gearDown, this.groundHeightCache)
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
     this.axes(orientation)
     let onGround = this.grounded(position.y, minY, velocity.y, _up.y)
@@ -323,11 +329,12 @@ export class FlightModel {
     // old, new, and midpoint clearances first; only paths that enter a
     // conservative vertical envelope pay for all swept body probes.
     if (prev.y - previousMinY > CONTACT_BROADPHASE_MARGIN) {
-      const currentMinY = contactMinY(position.x, position.z, controls.gearDown)
-      const midMinY = contactMinY(
+      const currentMinY = contactMinYCached(position.x, position.z, controls.gearDown, this.groundHeightCache)
+      const midMinY = contactMinYCached(
         prev.x + dx * 0.5,
         prev.z + dz * 0.5,
         controls.gearDown,
+        this.groundHeightCache,
       )
       const midpointClearance = (prev.y + dy * 0.5) - midMinY
       if (!contactSweepNeedsDetailedProbes(
@@ -430,7 +437,7 @@ export class FlightModel {
         wz = pz
         surfaceY = surface.height
         kind = surface.kind
-        sampleGroundNormal(px, pz, 2, _normal)
+        sampleGroundNormalCached(px, pz, 2, this.groundHeightCache, _normal)
       }
     }
 

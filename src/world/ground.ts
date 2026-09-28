@@ -147,6 +147,16 @@ export function cameraMinYCached(
   return sampleGroundHeightCached(x, z, cache) + clearance
 }
 
+/** Minimum aircraft origin height using a frame-scoped contact cache. */
+export function contactMinYCached(
+  x: number,
+  z: number,
+  gearDown: boolean,
+  cache: GroundHeightCache,
+): number {
+  return sampleGroundHeightCached(x, z, cache) + undercarriageClearance(gearDown)
+}
+
 /** Prefer the visible mesh, falling back to procedural terrain outside loaded tiles. */
 export function sampleGroundSurface(x: number, z: number): TerrainSurface {
   const sampled = meshHeightSampler?.(x, z)
@@ -200,6 +210,20 @@ export function sampleGroundNormal(
   const d = Math.max(0.05, sampleDistance)
   const dx = sampleGroundHeight(x + d, z) - sampleGroundHeight(x - d, z)
   const dz = sampleGroundHeight(x, z + d) - sampleGroundHeight(x, z - d)
+  return target.set(-dx, d * 2, -dz).normalize()
+}
+
+/** Contact normal backed by the same caller-owned cache as the height probes. */
+export function sampleGroundNormalCached(
+  x: number,
+  z: number,
+  sampleDistance: number,
+  cache: GroundHeightCache,
+  target = new Vector3(),
+): Vector3 {
+  const d = Math.max(0.05, sampleDistance)
+  const dx = sampleGroundHeightCached(x + d, z, cache) - sampleGroundHeightCached(x - d, z, cache)
+  const dz = sampleGroundHeightCached(x, z + d, cache) - sampleGroundHeightCached(x, z - d, cache)
   return target.set(-dx, d * 2, -dz).normalize()
 }
 
