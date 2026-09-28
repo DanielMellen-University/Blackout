@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.471** Keep analytic sky cloud inputs and dome transforms finite when weather or camera anchors are malformed.
 - **10.470** Keep pooled rain and snow particles finite when weather timing, wind, or follow anchors are malformed.
 - **10.469** Keep malformed landing and crash impact vectors from writing non-finite scene transforms or pooled particle motion.
 - **10.468** Keep malformed landing and crash-effect timing from poisoning pooled particle lifetimes or motion.

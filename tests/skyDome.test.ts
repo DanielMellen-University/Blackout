@@ -1,6 +1,6 @@
-import { Scene } from 'three'
+import { Color, Scene, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
-import { deriveSkyCloudDeck, deriveSkyCloudDeckInto, SkyDome, skyCloudDetailScale } from '../src/world/SkyDome'
+import { deriveSkyCloudDeck, deriveSkyCloudDeckInto, SkyDome, skyCloudDetailScale, skyLayerVisibility } from '../src/world/SkyDome'
 import { WEATHER_PROFILES } from '../src/world/WeatherDirector'
 
 function deckFor(id: keyof typeof WEATHER_PROFILES) {
@@ -84,6 +84,39 @@ describe('analytic sky cloud deck', () => {
     expect(skyCloudDetailScale(0.78)).toBe(1)
     expect(skyCloudDetailScale(1)).toBe(1)
     expect(skyCloudDetailScale(Number.NaN)).toBe(1)
+  })
+
+  it('fails closed for malformed cloud inputs and dome anchors', () => {
+    const deck = deriveSkyCloudDeck({
+      lowClouds: Number.NaN,
+      midClouds: Number.POSITIVE_INFINITY,
+      highClouds: Number.NEGATIVE_INFINITY,
+      rain: Number.NaN,
+      lightning: Number.POSITIVE_INFINITY,
+      windX: Number.NaN,
+      windZ: Number.POSITIVE_INFINITY,
+    })
+    for (const value of Object.values(deck)) expect(Number.isFinite(value)).toBe(true)
+    expect(skyLayerVisibility(Number.NaN, 2500, 3350)).toBe(1)
+
+    const sky = new SkyDome(new Scene())
+    sky.update(
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      Number.NEGATIVE_INFINITY,
+      new Vector3(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN),
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      new Color(0xffffff),
+      new Color(0xffffff),
+      Number.NaN,
+      deck,
+      Number.NaN,
+    )
+    expect(Number.isFinite(sky.mesh.position.x)).toBe(true)
+    expect(Number.isFinite(sky.mesh.position.y)).toBe(true)
+    expect(Number.isFinite(sky.mesh.position.z)).toBe(true)
+    sky.dispose()
   })
 
   it('routes the dome through the renderer output color pipeline', () => {

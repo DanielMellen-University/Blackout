@@ -41,7 +41,7 @@ export interface SkyCloudDeck {
 }
 
 function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value))
+  return Number.isFinite(value) ? Math.min(1, Math.max(0, value)) : 0
 }
 
 function smooth01(value: number): number {
@@ -85,8 +85,10 @@ export function deriveSkyCloudDeckInto(
   out.darkness = clamp01(blanket * 0.14 + rain * 0.26 + storm * 0.34)
   // The shader only needs a normalized drift vector. Capping it keeps a
   // blizzard from making the sky pattern race across a frame.
-  out.windX = Math.max(-1, Math.min(1, input.windX / 34))
-  out.windZ = Math.max(-1, Math.min(1, input.windZ / 34))
+  const windX = Number.isFinite(input.windX) ? input.windX : 0
+  const windZ = Number.isFinite(input.windZ) ? input.windZ : 0
+  out.windX = Math.max(-1, Math.min(1, windX / 34))
+  out.windZ = Math.max(-1, Math.min(1, windZ / 34))
   return out
 }
 
@@ -365,9 +367,28 @@ export class SkyDome {
     cloudDeck: SkyCloudDeck,
     timeSec: number,
   ): void {
-    this.mesh.position.set(ax, ay, az)
+    const safeAx = Number.isFinite(ax) ? ax : this.mesh.position.x
+    const safeAy = Number.isFinite(ay) ? ay : this.mesh.position.y
+    const safeAz = Number.isFinite(az) ? az : this.mesh.position.z
+    const safeDayFactor = clamp01(dayFactor)
+    const safeDusk = clamp01(dusk)
+    const safeHaze = clamp01(haze)
+    const safeTime = Number.isFinite(timeSec) ? timeSec : 0
+    const safeBroken = clamp01(cloudDeck.broken)
+    const safeBlanket = clamp01(cloudDeck.blanket)
+    const safeCirrus = clamp01(cloudDeck.cirrus)
+    const safeStorm = clamp01(cloudDeck.storm)
+    const safeDarkness = clamp01(cloudDeck.darkness)
+    const safeWindX = Number.isFinite(cloudDeck.windX) ? Math.max(-1, Math.min(1, cloudDeck.windX)) : 0
+    const safeWindZ = Number.isFinite(cloudDeck.windZ) ? Math.max(-1, Math.min(1, cloudDeck.windZ)) : 0
+    this.mesh.position.set(safeAx, safeAy, safeAz)
 
-    _dir.copy(sunDir).normalize()
+    _dir.copy(sunDir)
+    if (!Number.isFinite(_dir.x) || !Number.isFinite(_dir.y) || !Number.isFinite(_dir.z) || _dir.lengthSq() < 1e-8) {
+      _dir.set(0, 1, 0)
+    } else {
+      _dir.normalize()
+    }
     this.mat.uniforms.uSunDir!.value.copy(_dir)
     // Moon opposite the sun on the same orbital plane
     this.mat.uniforms.uMoonDir!.value.copy(_dir).multiplyScalar(-1)
@@ -377,34 +398,34 @@ export class SkyDome {
     this.mat.uniforms.uTopColor!.value.copy(this.top)
     this.mat.uniforms.uHorizonColor!.value.copy(this.horizon)
 
-    const lowDeck = skyLayerVisibility(ay, 2500 + cloudDeck.storm * 3600, 3350 + cloudDeck.storm * 3600)
-    const highDeck = skyLayerVisibility(ay, 5400, 6500)
+    const lowDeck = skyLayerVisibility(safeAy, 2500 + safeStorm * 3600, 3350 + safeStorm * 3600)
+    const highDeck = skyLayerVisibility(safeAy, 5400, 6500)
     this.mat.uniforms.uLowDeckVisibility!.value = lowDeck
     this.mat.uniforms.uHighDeckVisibility!.value = highDeck
-    const night = 1 - dayFactor
+    const night = 1 - safeDayFactor
     const cloudCover = MathUtilsClamp(
-      cloudDeck.cirrus * 0.16 * highDeck + (cloudDeck.broken * 0.54 + cloudDeck.blanket * 0.9) * lowDeck,
+      safeCirrus * 0.16 * highDeck + (safeBroken * 0.54 + safeBlanket * 0.9) * lowDeck,
       0,
       1,
     )
-    const clearSky = 1 - MathUtilsClamp(cloudCover * 0.85 + haze * lowDeck * 0.35, 0, 0.92)
+    const clearSky = 1 - MathUtilsClamp(cloudCover * 0.85 + safeHaze * lowDeck * 0.35, 0, 0.92)
 
-    this.mat.uniforms.uDayFactor!.value = dayFactor
+    this.mat.uniforms.uDayFactor!.value = safeDayFactor
     this.mat.uniforms.uNightFactor!.value = night
-    this.mat.uniforms.uDusk!.value = dusk
-    this.mat.uniforms.uHaze!.value = haze * lowDeck
-    this.mat.uniforms.uTime!.value = timeSec
-    this.mat.uniforms.uCloudBroken!.value = cloudDeck.broken
-    this.mat.uniforms.uCloudBlanket!.value = cloudDeck.blanket
-    this.mat.uniforms.uCloudCirrus!.value = cloudDeck.cirrus
-    this.mat.uniforms.uCloudStorm!.value = cloudDeck.storm
-    this.mat.uniforms.uCloudDarkness!.value = cloudDeck.darkness
-    ;(this.mat.uniforms.uCloudWind!.value as Vector2).set(cloudDeck.windX, cloudDeck.windZ)
+    this.mat.uniforms.uDusk!.value = safeDusk
+    this.mat.uniforms.uHaze!.value = safeHaze * lowDeck
+    this.mat.uniforms.uTime!.value = safeTime
+    this.mat.uniforms.uCloudBroken!.value = safeBroken
+    this.mat.uniforms.uCloudBlanket!.value = safeBlanket
+    this.mat.uniforms.uCloudCirrus!.value = safeCirrus
+    this.mat.uniforms.uCloudStorm!.value = safeStorm
+    this.mat.uniforms.uCloudDarkness!.value = safeDarkness
+    ;(this.mat.uniforms.uCloudWind!.value as Vector2).set(safeWindX, safeWindZ)
 
     // Sun bright in day; soft at dusk; gone fully under horizon
     const sunUp = MathUtilsClamp((_dir.y + 0.08) / 0.5, 0, 1)
     this.mat.uniforms.uSunIntensity!.value =
-      (0.15 + dayFactor * 0.95) * sunUp * clearSky
+      (0.15 + safeDayFactor * 0.95) * sunUp * clearSky
 
     // Moon opposite: visible when sun is low / night
     const moonUp = MathUtilsClamp((-_dir.y + 0.05) / 0.45, 0, 1)
@@ -413,7 +434,7 @@ export class SkyDome {
 
     // Stars only at night, clear weather
     this.mat.uniforms.uStarIntensity!.value =
-      Math.pow(night, 1.35) * clearSky * (0.55 + (1 - haze) * 0.45)
+      Math.pow(night, 1.35) * clearSky * (0.55 + (1 - safeHaze) * 0.45)
   }
 }
 
@@ -423,6 +444,9 @@ function MathUtilsClamp(x: number, a: number, b: number): number {
 
 /** Fade the far overhead deck as the observer climbs through its top. */
 export function skyLayerVisibility(altitude: number, bottom: number, top: number): number {
-  const t = MathUtilsClamp((altitude - bottom) / Math.max(1, top - bottom), 0, 1)
+  const safeAltitude = Number.isFinite(altitude) ? altitude : 0
+  const safeBottom = Number.isFinite(bottom) ? bottom : 0
+  const safeTop = Number.isFinite(top) ? Math.max(safeBottom + 1, top) : safeBottom + 1
+  const t = MathUtilsClamp((safeAltitude - safeBottom) / Math.max(1, safeTop - safeBottom), 0, 1)
   return 1 - t * t * (3 - 2 * t)
 }
