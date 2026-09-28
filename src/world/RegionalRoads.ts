@@ -1,5 +1,6 @@
 import { hash2 } from './noise'
-import { sampleClimate } from './terrainSample'
+import { sampleClimateInto } from './terrainSample'
+import { createClimateSample } from './Geography'
 import { settlementForCell, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
 
 export interface SettlementAnchor {
@@ -22,6 +23,9 @@ export interface RegionalRoadLink {
 export const REGIONAL_GRAPH_CELL_RING = 2
 export const MAX_CITY_REGIONAL_LINKS = 2
 export const MAX_VILLAGE_REGIONAL_LINKS = 1
+
+/** Candidate road probes are sequential; one climate record serves all bends. */
+const roadClimateScratch = createClimateSample()
 
 function idNumbers(id: string): [number, number] {
   const [x = 0, z = 0] = id.split(',').map(Number)
@@ -128,7 +132,7 @@ function candidateRoute(
     const curve = Math.sin(Math.PI * t) * bend + Math.sin(Math.PI * t * 2) * bend * .16
     const x = a.x + dx * t + nx * curve
     const z = a.z + dz * t + nz * curve
-    const climate = sampleClimate(x, z)
+    const climate = sampleClimateInto(roadClimateScratch, x, z)
     const isWet = climate.height < (climate.waterLevel ?? 0) + 1
     const surface = isWet ? (climate.waterLevel ?? 0) + 6 : climate.height + .55
     if (isWet) wet++
