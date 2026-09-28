@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.488** Track distinct river, lake, and sea discoveries in the live HUD and sortie debrief with one-time discovery cues.
 - **10.487** Keep the audio runtime in its own cacheable build chunk, trimming the initial app entry without changing gameplay behavior.
 - **10.486** Give stall and unsafe-gear warnings distinct restrained edge cues while preserving the existing warning hysteresis and bounded audio path.
 - **10.485** Surface pilot rank, legend mastery, commendations, and the next career goal on the title screen, reusing existing progression records without adding runtime or render-loop work.

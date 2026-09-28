@@ -3,6 +3,8 @@ import {
   afterburnerHeatIntensity,
   biomeSurveyAriaLabel,
   biomeSurveyHudLabel,
+  waterSurveyAriaLabel,
+  waterSurveyHudLabel,
   contractStreakAriaLabel,
   contractStreakHudLabel,
   canopyTintIntensity,
@@ -412,6 +414,14 @@ describe('HUD value formatting', () => {
     expect(biomeSurveyHudLabel(Number.NaN)).toBe('--')
     expect(biomeSurveyAriaLabel(3)).toBe('3 distinct biomes surveyed')
     expect(biomeSurveyAriaLabel(-4)).toBe('0 distinct biomes surveyed')
+  })
+
+  it('keeps the live waterway discovery counter bounded and accessible', () => {
+    expect(waterSurveyHudLabel(2)).toBe('X2')
+    expect(waterSurveyHudLabel(Number.MAX_SAFE_INTEGER)).toBe('X3')
+    expect(waterSurveyHudLabel(Number.NaN)).toBe('--')
+    expect(waterSurveyAriaLabel(2)).toBe('2 waterway families discovered')
+    expect(waterSurveyAriaLabel(-4)).toBe('0 waterway families discovered')
   })
 
   it('turns sampled biome and water metadata into a bounded region label', () => {

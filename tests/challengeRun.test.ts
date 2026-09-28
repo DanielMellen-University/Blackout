@@ -36,6 +36,7 @@ import {
   MAX_DESTINATION_SCORE,
   MAX_BIOME_COUNT,
   MAX_BIOME_SCORE,
+  MAX_WATER_BODY_COUNT,
   MAX_CONTRACT_WINS,
   MAX_CONTRACT_STREAK,
   MAX_CONTRACT_STREAK_BONUS,
@@ -540,6 +541,33 @@ describe('ChallengeRun', () => {
     expect(values.get('blackout.history.seed:biome-survey')).toBe(
       `{"completionCount":2,"bestTimeSec":4,"biomes":${MAX_BIOME_COUNT}}`,
     )
+  })
+
+  it('tracks distinct waterway families without double-counting crossings', () => {
+    const run = new ChallengeRun()
+    run.reset('seed:water-survey', 0)
+    expect(run.waterBodyCount).toBe(0)
+    run.recordWaterBody('stream')
+    expect(run.waterBodyCount).toBe(1)
+    run.update(0.1, 8)
+    expect(run.consumeWaterBodySurveyCue()).toBeNull()
+    run.recordWaterBody('lake')
+    expect(run.waterBodyCount).toBe(2)
+    expect(run.consumeWaterBodySurveyCue()).toBe('lake')
+    expect(run.consumeWaterBodySurveyCue()).toBeNull()
+    run.recordWaterBody('river')
+    run.recordWaterBody('sea')
+    run.recordWaterBody('pond')
+    expect(run.waterBodyCount).toBe(MAX_WATER_BODY_COUNT)
+    expect(run.consumeWaterBodySurveyCue()).toBe('sea')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.waterBodyCount).toBe(MAX_WATER_BODY_COUNT)
   })
 
   it('tracks consecutive completed sorties, resets on failure, and repairs oversized records', () => {

@@ -6,7 +6,7 @@ import {
   sortieStyleForResult,
   type SortieStyleId,
 } from './FlightStyle'
-import type { Biome } from '../world/terrainSample'
+import type { Biome, TerrainWaterBody } from '../world/terrainSample'
 
 export type ChallengePhase =
   | 'ready'
@@ -162,6 +162,8 @@ export interface ChallengeResult {
   newDestinationRecord?: boolean
   /** Number of distinct natural biomes surveyed during this sortie. */
   biomeCount?: number
+  /** Number of distinct waterway families crossed during this sortie. */
+  waterBodyCount?: number
   /** Capped score bonus awarded for surveying distinct biomes. */
   biomeScore?: number
   /** Highest distinct-biome count ever recorded for this course. */
@@ -262,6 +264,7 @@ export const MAX_DESTINATION_SCORE = 1_200
 export const MAX_DESTINATION_COUNT = 6
 export const MAX_BIOME_SCORE = 1_800
 export const MAX_BIOME_COUNT = 15
+export const MAX_WATER_BODY_COUNT = 3
 export const MAX_RUN_STREAK = 1_000
 export const MAX_RUN_STREAK_SCORE = 2_000
 export const MAX_CONTRACT_WINS = 1_000
@@ -277,6 +280,8 @@ const SURVEYABLE_BIOMES: readonly Biome[] = [
   'plains', 'forest', 'rainforest', 'desert', 'mesa', 'swamp', 'hills',
   'mountain', 'snow', 'water', 'ocean', 'tundra', 'savanna', 'volcanic', 'saltflat',
 ]
+
+const SURVEYABLE_WATER_BODIES: readonly TerrainWaterBody[] = ['river', 'lake', 'sea']
 
 export type CourseMasteryTier = 'rookie' | 'pilot' | 'veteran' | 'ace' | 'legend'
 
@@ -967,6 +972,9 @@ export class ChallengeRun {
   private surveyedBiomeMask = 0
   private surveyedBiomeCount = 0
   private surveyedBiomeCue: Biome | null = null
+  private surveyedWaterMask = 0
+  private surveyedWaterCount = 0
+  private surveyedWaterCue: TerrainWaterBody | null = null
   private peakSpeedMps = 0
   private peakAltitudeM = 0
   private flightDistanceM = 0
@@ -1018,6 +1026,9 @@ export class ChallengeRun {
     this.surveyedBiomeMask = 0
     this.surveyedBiomeCount = 0
     this.surveyedBiomeCue = null
+    this.surveyedWaterMask = 0
+    this.surveyedWaterCount = 0
+    this.surveyedWaterCue = null
     this.peakSpeedMps = 0
     this.peakAltitudeM = 0
     this.flightDistanceM = 0
@@ -1298,6 +1309,18 @@ export class ChallengeRun {
   /** Record one distinct rendered waterway family for WATERWAY TOUR. */
   recordWaterBody(body: string | undefined, airborne = true): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
+    const normalized = body === 'stream' ? 'river' : body
+    const waterIndex = SURVEYABLE_WATER_BODIES.indexOf(normalized as TerrainWaterBody)
+    if (waterIndex >= 0) {
+      const bit = 1 << waterIndex
+      if ((this.surveyedWaterMask & bit) === 0) {
+        this.surveyedWaterMask |= bit
+        this.surveyedWaterCount = Math.min(MAX_WATER_BODY_COUNT, this.surveyedWaterCount + 1)
+        if (this.phase === 'running' || this.phase === 'returning') {
+          this.surveyedWaterCue = normalized as TerrainWaterBody
+        }
+      }
+    }
     const wasContractComplete = this.contract.complete
     const previousDetail = this.contract.detail
     this.contract.recordWaterBody(body, airborne)
@@ -1315,6 +1338,11 @@ export class ChallengeRun {
   /** Number of unique natural biomes seen so far in this sortie. */
   get biomeCount(): number {
     return this.surveyedBiomeCount
+  }
+
+  /** Number of distinct river, lake, and sea families seen so far in this sortie. */
+  get waterBodyCount(): number {
+    return this.surveyedWaterCount
   }
 
   get currentFlightDistanceM(): number {
@@ -1344,6 +1372,13 @@ export class ChallengeRun {
   consumeBiomeSurveyCue(): Biome | null {
     const cue = this.surveyedBiomeCue
     this.surveyedBiomeCue = null
+    return cue
+  }
+
+  /** Consume one event-driven cue for the latest newly surveyed waterway family. */
+  consumeWaterBodySurveyCue(): TerrainWaterBody | null {
+    const cue = this.surveyedWaterCue
+    this.surveyedWaterCue = null
     return cue
   }
 
@@ -1608,6 +1643,7 @@ export class ChallengeRun {
       courseBestDestinationCount: courseBestDestinationCount > 0 ? courseBestDestinationCount : undefined,
       newDestinationRecord,
       biomeCount: this.surveyedBiomeCount > 0 ? this.surveyedBiomeCount : undefined,
+      waterBodyCount: this.surveyedWaterCount > 0 ? this.surveyedWaterCount : undefined,
       biomeScore: biomeScore > 0 ? biomeScore : undefined,
       courseBestBiomeCount: courseBestBiomeCount > 0 ? courseBestBiomeCount : undefined,
       newBiomeRecord,

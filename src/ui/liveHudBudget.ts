@@ -37,6 +37,7 @@ export const LEDGER_HUD_IDS = [
   'hud-precision',
   'hud-climb',
   'hud-biome',
+  'hud-water',
   'hud-combo',
   'hud-fuel',
   'hud-fuel-endurance',

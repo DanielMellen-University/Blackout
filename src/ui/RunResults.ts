@@ -372,6 +372,10 @@ export class RunResults {
       : 0
     if (biomeCount > 0) scoreParts.push(`BIOMES X${biomeCount}`)
     if (biomeScore > 0) scoreParts.push(`BIOME +${biomeScore.toLocaleString()}`)
+    const waterBodyCount = Number.isFinite(result.waterBodyCount)
+      ? Math.max(0, Math.floor(result.waterBodyCount!))
+      : 0
+    if (waterBodyCount > 0) scoreParts.push(`WATERWAYS X${waterBodyCount}`)
     const courseBestDestinationCount = Number.isFinite(result.courseBestDestinationCount)
       ? Math.max(0, Math.floor(result.courseBestDestinationCount!))
       : 0

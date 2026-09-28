@@ -12,7 +12,7 @@ import {
   type RadarContact,
 } from '../systems/RadarSystem'
 import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
-import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT } from '../systems/ChallengeRun'
+import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT, MAX_WATER_BODY_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import {
   blackoutVignetteIntensity,
@@ -451,6 +451,22 @@ export function biomeSurveyAriaLabel(value: number): string {
     ? Math.max(0, Math.min(MAX_BIOME_COUNT, Math.floor(value)))
     : 0
   return `${safe} distinct biomes surveyed`
+}
+
+/** Keep the live waterway-family counter finite and compact for cockpit output. */
+export function waterSurveyHudLabel(value: number): string {
+  const safe = Number.isFinite(value)
+    ? Math.max(0, Math.min(MAX_WATER_BODY_COUNT, Math.floor(value)))
+    : 0
+  return safe > 0 ? `X${safe}` : '--'
+}
+
+/** Describe the bounded waterway-family counter to assistive technology. */
+export function waterSurveyAriaLabel(value: number): string {
+  const safe = Number.isFinite(value)
+    ? Math.max(0, Math.min(MAX_WATER_BODY_COUNT, Math.floor(value)))
+    : 0
+  return `${safe} waterway families discovered`
 }
 
 /** Keep the persisted contract chain compact and finite for the live HUD. */
@@ -996,6 +1012,8 @@ export class HUD {
   private readonly liftEl: HTMLElement | null
   private readonly biomeRowEl: HTMLElement | null
   private readonly biomeEl: HTMLElement | null
+  private readonly waterRowEl: HTMLElement | null
+  private readonly waterEl: HTMLElement | null
   private readonly terrainRegionRowEl: HTMLElement | null
   private readonly terrainRegionEl: HTMLElement | null
   private readonly comboRowEl: HTMLElement | null
@@ -1163,6 +1181,9 @@ export class HUD {
   private biomeCountValue = -1
   private biomeText = '--'
   private biomeAriaText = '0 distinct biomes surveyed'
+  private waterBodyCountValue = -1
+  private waterText = '--'
+  private waterAriaText = '0 waterway families discovered'
   private terrainRegionValue = ''
   private terrainRegionInput = ''
   private terrainRegionText = '--'
@@ -1286,6 +1307,8 @@ export class HUD {
     this.liftEl = root.getElementById('hud-lift')
     this.biomeRowEl = root.getElementById('hud-biome-row')
     this.biomeEl = root.getElementById('hud-biome')
+    this.waterRowEl = root.getElementById('hud-water-row')
+    this.waterEl = root.getElementById('hud-water')
     this.terrainRegionRowEl = root.getElementById('hud-terrain-region-row')
     this.terrainRegionEl = root.getElementById('hud-terrain-region')
     this.comboRowEl = root.getElementById('hud-combo-row')
@@ -1462,6 +1485,8 @@ export class HUD {
     thermalLift?: number
     /** Distinct natural biomes surveyed during the current sortie. */
     biomeCount?: number
+    /** Distinct river, lake, and sea families discovered during the current sortie. */
+    waterBodyCount?: number
     /** Short current biome or water-body identity for exploration feedback. */
     terrainRegion?: string | null
     /** Current event-driven clean-flight combo count. */
@@ -1964,6 +1989,19 @@ export class HUD {
       this.setHidden(this.biomeRowEl, count <= 0)
       this.setText(this.biomeEl, this.biomeText)
       this.setAttribute(this.biomeEl, 'aria-label', this.biomeAriaText)
+    }
+    if (this.waterRowEl && this.waterEl && opts.waterBodyCount !== undefined) {
+      const count = Number.isFinite(opts.waterBodyCount)
+        ? Math.max(0, Math.min(MAX_WATER_BODY_COUNT, Math.floor(opts.waterBodyCount!)))
+        : 0
+      if (count !== this.waterBodyCountValue) {
+        this.waterBodyCountValue = count
+        this.waterText = waterSurveyHudLabel(count)
+        this.waterAriaText = waterSurveyAriaLabel(count)
+      }
+      this.setHidden(this.waterRowEl, count <= 0)
+      this.setText(this.waterEl, this.waterText)
+      this.setAttribute(this.waterEl, 'aria-label', this.waterAriaText)
     }
     if (this.terrainRegionRowEl && this.terrainRegionEl && opts.terrainRegion !== undefined) {
       const input = typeof opts.terrainRegion === 'string' ? opts.terrainRegion : ''

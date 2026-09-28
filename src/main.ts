@@ -1041,6 +1041,7 @@ async function boot(): Promise<void> {
     altitudeMilestone: null,
     thermalLift: 0,
     biomeCount: 0,
+    waterBodyCount: 0,
     terrainRegion: '',
     navDist: 0,
     navBearing: null,
@@ -1829,7 +1830,15 @@ async function boot(): Promise<void> {
           challenge.recordRidgeRun(sampled.biome, terrainClearanceM, 0.65, true)
           challenge.recordWaterBody(sampled.waterBody, true)
           const biomeCue = challenge.consumeBiomeSurveyCue()
-          if (biomeCue && (!banner || bannerUntil <= nowMs)) {
+          const waterCue = challenge.consumeWaterBodySurveyCue()
+          if (waterCue && (!banner || bannerUntil <= nowMs)) {
+            const waterLabel = waterCue === 'sea' ? 'SEA' : waterCue.toUpperCase()
+            showBanner(
+              `WATERWAY DISCOVERED / ${waterLabel} / X${challenge.waterBodyCount}`,
+              1500,
+              'info',
+            )
+          } else if (biomeCue && (!banner || bannerUntil <= nowMs)) {
             showBanner(
               `BIOME SURVEY / ${biomeCue.replace('-', ' ').toUpperCase()} / X${challenge.biomeCount}`,
               1300,
@@ -2473,6 +2482,7 @@ async function boot(): Promise<void> {
         ? altitudeMilestones.nextThresholdM || null
         : null
       hudFrame.biomeCount = challenge.biomeCount
+      hudFrame.waterBodyCount = challenge.waterBodyCount
       hudFrame.terrainRegion = terrainRegion
       hudFrame.pace = challenge.gatesPassed > 0 ? challenge.gatePaceLabel : null
       hudFrame.ghostPace = visibleGhostPaceDelta((
