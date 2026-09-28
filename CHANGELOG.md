@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.390** Add Crosswind Approach, a storm-locked pattern course that turns the existing landing guidance and crosswind handling into a repeatable final-approach challenge.
 - **10.389** Add Pattern Approach, a clear-weather base-to-final course that turns the existing landing scorer into a short repeatable challenge with a final gate aligned back toward the runway.
 - **10.388** Align Thermal Run gates with the same deterministic lift pockets sampled by the flight model, extending the bounded thermal envelope above tall relief so the authored altitude route remains playable without scene or worker growth.
 - **10.387** Add a cached accessible LIFT HUD row for active thermal pockets, keeping altitude-route feedback readable after the transient entry banner without adding scene work.
