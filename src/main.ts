@@ -24,6 +24,13 @@ import {
 import { InputManager } from './core/InputManager'
 import { pruneRotatingCourseRecords } from './core/CourseRecordRetention'
 import {
+  bestOpsStreak,
+  opsStreakLabel,
+  readOpsStreak,
+  recordOpsCompletion,
+  type OpsStreakSnapshot,
+} from './core/OpsStreak'
+import {
   COURSE_FAVORITES_STORAGE_KEY,
   readCourseFavoriteIds,
   toggleCourseFavorite,
@@ -327,6 +334,7 @@ async function boot(): Promise<void> {
     /* Private browsing can deny storage. The game remains fully playable. */
   }
   pruneRotatingCourseRecords(qualityStorage)
+  let opsStreaks: OpsStreakSnapshot = readOpsStreak(qualityStorage)
 
   let recentCourseIds = readRecentCourseIds(qualityStorage)
   let favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
@@ -409,7 +417,13 @@ async function boot(): Promise<void> {
         id: course.id,
         label: course.label,
         detail: copy.detail,
-        meta: copy.meta,
+        meta: [copy.meta, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
+          ? dailyOpsDayKey(opsTimestamp)
+          : course.id === 'weekly-ops'
+            ? weeklyOpsWeekKey(opsTimestamp)
+            : course.id === 'monthly-ops'
+              ? monthlyOpsMonthKey(opsTimestamp)
+              : undefined)].filter(Boolean).join(' · '),
         stats: copy.stats,
         category: coursePickerCategoryForCourse(course),
         recent: recentCourseIds.includes(course.id),
@@ -499,10 +513,13 @@ async function boot(): Promise<void> {
     currentPilotCommendations = pilotCommendationsForProgress(career)
     const rankLabel = pilotRankLabel(currentPilotRank)
     const masteryLabel = courseMasteryProgressLabel(mastered, curated.length)
-    titleProgress.textContent = `${rankLabel} · COURSES ${completed}/${curated.length} · ${masteryLabel}`
+    const opsBest = bestOpsStreak(opsStreaks)
+    const opsLabel = opsBest > 0 ? `OPS BEST X${opsBest}` : ''
+    titleProgress.textContent = [rankLabel, `COURSES ${completed}/${curated.length}`, masteryLabel, opsLabel]
+      .filter(Boolean).join(' · ')
     titleProgress.setAttribute(
       'aria-label',
-      `Pilot rank ${rankLabel}, ${completed} of ${curated.length} curated courses complete, ${mastered} legend courses`,
+      `Pilot rank ${rankLabel}, ${completed} of ${curated.length} curated courses complete, ${mastered} legend courses${opsBest > 0 ? `, best Ops streak ${opsBest}` : ''}`,
     )
     if (titleCommendations) {
       const nextGoal = pilotRankNextGoalLabel(currentPilotRank)
@@ -1876,6 +1893,13 @@ async function boot(): Promise<void> {
                   ? 'landing-soft'
                   : finished.landingLabel === 'HARD' ? 'landing-hard' : 'landed',
               )
+              const opsUpdate = recordOpsCompletion(
+                qualityStorage,
+                opsStreaks,
+                selectedCourseId,
+                selectedCourseReplayKey(),
+              )
+              if (opsUpdate) opsStreaks = opsUpdate.snapshot
               refreshCourseUi()
               const careerRankPromoted = pilotRankRank(currentPilotRank) > pilotRankRank(previousPilotRank)
               const newCareerCommendations = currentPilotCommendations

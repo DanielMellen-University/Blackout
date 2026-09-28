@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.534** Add bounded Daily, Weekly, and Monthly Ops streaks that advance once per period and surface in the catalog.
 - **10.533** Show finite course counts in every launch-picker category, including Recent and Favorites.
 - **10.532** Bound local storage for rotating Ops records while preserving authored-course history and ghosts.
 - **10.531** Lazy-load the opt-in debug overlay so normal players do not pay its inspector code in the initial entry bundle.
