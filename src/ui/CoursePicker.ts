@@ -19,6 +19,15 @@ export interface CoursePickerItem {
 }
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
+const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, string>> = {
+  all: 'All courses',
+  ops: 'Ops',
+  routes: 'Routes',
+  contracts: 'Contracts',
+  explore: 'Explore',
+  recent: 'Recent',
+  favorites: 'Favorites',
+}
 
 /** Keep the growing catalog understandable without making authored course data carry UI-only labels. */
 export function coursePickerCategoryForCourse(
@@ -30,6 +39,12 @@ export function coursePickerCategoryForCourse(
   }
   if (course.contractCatalog) return 'contracts'
   return 'routes'
+}
+
+/** Keep filter counts compact and finite as the authored catalog grows. */
+export function coursePickerCategoryLabel(category: CoursePickerCategory, count: number): string {
+  const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0
+  return `${COURSE_PICKER_CATEGORY_LABELS[category]} (${safeCount})`
 }
 
 /** Filter the bounded course catalog without changing its authored order. */
@@ -321,6 +336,7 @@ export class CoursePicker {
   private readonly favoriteButton: HTMLButtonElement
   private readonly empty: HTMLElement
   private readonly filterStatus: HTMLElement
+  private readonly categoryOptions = new Map<CoursePickerCategory, HTMLOptionElement>()
   private items: CoursePickerItem[] = []
   private selectedId = ''
   private category: CoursePickerCategory = 'all'
@@ -354,6 +370,7 @@ export class CoursePicker {
       const option = document.createElement('option')
       option.value = value
       option.textContent = label
+      this.categoryOptions.set(value, option)
       this.categorySelect.append(option)
     }
     this.favoriteButton = document.createElement('button')
@@ -432,6 +449,7 @@ export class CoursePicker {
   }
 
   private renderList(): void {
+    this.syncCategoryOptions()
     const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
     this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
     this.empty.hidden = visible.length > 0
@@ -443,6 +461,21 @@ export class CoursePicker {
       : ''
     this.filterStatus.hidden = !query && this.category === 'all'
     this.syncSelection()
+  }
+
+  private syncCategoryOptions(): void {
+    const counts: Record<CoursePickerCategory, number> = {
+      all: this.items.length,
+      ops: this.items.filter(item => item.category === 'ops').length,
+      routes: this.items.filter(item => item.category === 'routes').length,
+      contracts: this.items.filter(item => item.category === 'contracts').length,
+      explore: this.items.filter(item => item.category === 'explore').length,
+      recent: this.items.filter(item => item.recent === true).length,
+      favorites: this.items.filter(item => item.favorite === true).length,
+    }
+    for (const [category, option] of this.categoryOptions) {
+      option.textContent = coursePickerCategoryLabel(category, counts[category])
+    }
   }
 
   private createOption(item: CoursePickerItem): HTMLButtonElement {

@@ -6,6 +6,7 @@ import {
   coursePickerNavigationIndex,
   coursePickerCopy,
   coursePickerCategoryForCourse,
+  coursePickerCategoryLabel,
   coursePickerEmptyMessage,
   coursePickerMetaLabel,
   courseTimePreviewLabel,
@@ -55,6 +56,12 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryForCourse({ id: 'free-flight', seed: null, profile: 'free' })).toBe('explore')
     expect(coursePickerCategoryForCourse({ id: 'training-orbit', seed: 1, profile: 'orbit' })).toBe('routes')
     expect(coursePickerCategoryForCourse({ id: 'storm-contract', seed: 34, profile: 'storm', contractCatalog: true })).toBe('contracts')
+  })
+
+  it('labels catalog filters with finite counts', () => {
+    expect(coursePickerCategoryLabel('all', 71)).toBe('All courses (71)')
+    expect(coursePickerCategoryLabel('favorites', 2.9)).toBe('Favorites (2)')
+    expect(coursePickerCategoryLabel('recent', Number.NaN)).toBe('Recent (0)')
   })
 
   it('formats a bounded title-screen mastery summary', () => {
