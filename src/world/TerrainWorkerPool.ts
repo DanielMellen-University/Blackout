@@ -19,47 +19,73 @@ export interface TerrainBuildReply {
   generation: number
   data: TerrainGeometryData
 }
-interface Slot { worker: Worker; job: TerrainBuildRequest | null }
+interface Slot { worker: Worker; job: TerrainBuildRequest | null; retire: boolean }
 
 /** One outstanding job per worker bounds memory and prevents stale FIFO backlogs. */
 export class TerrainWorkerPool {
   private slots: Slot[] = []
   private disabled = false
+  private workerLimit: number
   private readonly complete: (job: TerrainBuildRequest, data: TerrainGeometryData) => void
   private readonly retry: (job: TerrainBuildRequest) => void
   constructor(
     complete: (job: TerrainBuildRequest, data: TerrainGeometryData) => void,
     retry: (job: TerrainBuildRequest) => void,
+    maxWorkers = 6,
   ) {
     this.complete = complete
     this.retry = retry
+    this.workerLimit = normalizeWorkerLimit(maxWorkers)
     if (typeof Worker === 'undefined') return
-    const cores = typeof navigator === 'undefined' ? 4 : navigator.hardwareConcurrency || 4
-    // Leave CPU capacity for rendering, physics, and settlement generation.
-    const count = Math.min(6, Math.max(1, cores - 2))
+    this.workerLimit = Math.min(
+      this.workerLimit,
+      typeof navigator === 'undefined' ? 2 : Math.max(1, (navigator.hardwareConcurrency || 4) - 2),
+    )
     try {
-      for (let i = 0; i < count; i++) {
-        const worker = new Worker(new URL('./terrain.worker.ts', import.meta.url), { type: 'module' })
-        const slot: Slot = { worker, job: null }
-        worker.onmessage = (event: MessageEvent<TerrainBuildReply>) => {
-          const job = slot.job
-          if (!job || event.data.id !== job.id || event.data.generation !== job.generation) return
-          slot.job = null
-          this.complete(job, event.data.data)
-        }
-        worker.onerror = () => this.fail()
-        worker.onmessageerror = () => this.fail()
-        this.slots.push(slot)
-      }
+      while (this.slots.length < this.workerLimit) this.createSlot()
     } catch {
       this.fail()
     }
   }
   get size(): number { return this.slots.length }
   get busy(): number { return this.slots.filter(slot => slot.job !== null).length }
-  get available(): boolean { return !this.disabled && this.slots.some(slot => slot.job === null) }
+  get available(): boolean {
+    return !this.disabled && this.slots.some(slot => slot.job === null && !slot.retire)
+  }
+
+  /** Adjust concurrency without interrupting a terrain job already in flight. */
+  setWorkerLimit(maxWorkers: number): void {
+    const next = normalizeWorkerLimit(maxWorkers)
+    if (next === this.workerLimit) return
+    this.workerLimit = next
+    if (this.disabled) return
+
+    if (next > this.slots.length) {
+      for (const slot of this.slots) slot.retire = false
+      try {
+        while (this.slots.length < next) this.createSlot()
+      } catch {
+        this.fail()
+      }
+      return
+    }
+
+    let excess = this.slots.length - next
+    for (let i = this.slots.length - 1; i >= 0 && excess > 0; i--) {
+      const slot = this.slots[i]!
+      if (slot.job) {
+        if (!slot.retire) {
+          slot.retire = true
+          excess--
+        }
+        continue
+      }
+      this.removeSlot(slot)
+      excess--
+    }
+  }
   submit(job: TerrainBuildRequest): boolean {
-    const slot = this.slots.find(candidate => candidate.job === null)
+    const slot = this.slots.find(candidate => candidate.job === null && !candidate.retire)
     if (!slot) return false
     slot.job = job
     try { slot.worker.postMessage(job) } catch { this.fail(); return false }
@@ -71,6 +97,32 @@ export class TerrainWorkerPool {
     this.dispose()
     for (const job of jobs) this.retry(job)
   }
+
+  private createSlot(): void {
+    const worker = new Worker(new URL('./terrain.worker.ts', import.meta.url), { type: 'module' })
+    const slot: Slot = { worker, job: null, retire: false }
+    worker.onmessage = (event: MessageEvent<TerrainBuildReply>) => {
+      const job = slot.job
+      if (!job || event.data.id !== job.id || event.data.generation !== job.generation) return
+      slot.job = null
+      const shouldRetire = slot.retire || this.slots.length > this.workerLimit
+      if (shouldRetire) this.removeSlot(slot)
+      this.complete(job, event.data.data)
+    }
+    worker.onerror = () => this.fail()
+    worker.onmessageerror = () => this.fail()
+    this.slots.push(slot)
+  }
+
+  private removeSlot(slot: Slot): void {
+    const index = this.slots.indexOf(slot)
+    if (index < 0) return
+    slot.worker.onmessage = null
+    slot.worker.onerror = null
+    slot.worker.onmessageerror = null
+    slot.worker.terminate()
+    this.slots.splice(index, 1)
+  }
   dispose(): void {
     for (const slot of this.slots) {
       slot.job = null
@@ -81,4 +133,8 @@ export class TerrainWorkerPool {
     }
     this.slots.length = 0
   }
+}
+
+function normalizeWorkerLimit(value: number): number {
+  return Math.min(6, Math.max(1, Number.isFinite(value) ? Math.floor(value) : 6))
 }

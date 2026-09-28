@@ -243,7 +243,7 @@ export class TerrainSystem {
   private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
   private vegetationScale = 1
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, workerLimit = 6) {
     this.scene = scene
     this.workers = new TerrainWorkerPool((job, data) => {
       if (this.disposed || job.generation !== this.generation) return
@@ -261,7 +261,7 @@ export class TerrainSystem {
         this.pendingSorted = false
         this.sortPending()
       }
-    })
+    }, workerLimit)
     this.root.name = 'TerrainSystem'
     scene.add(this.root)
 
@@ -332,6 +332,12 @@ export class TerrainSystem {
     if (Number.isFinite(this.lastCx) && Number.isFinite(this.lastCz)) {
       this.scheduleAround(this.lastCx, this.lastCz)
     }
+  }
+
+  /** Keep terrain generation concurrency aligned with the active quality preset. */
+  setWorkerLimit(limit: number): void {
+    if (this.disposed) return
+    this.workers.setWorkerLimit(limit)
   }
 
   private configureWeatherMaterial(material: MeshStandardMaterial): void {

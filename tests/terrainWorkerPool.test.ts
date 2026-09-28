@@ -40,6 +40,30 @@ describe('terrain worker pool', () => {
     pool.dispose()
   })
 
+  it('resizes idle workers immediately and retires busy workers after completion', () => {
+    const complete = vi.fn()
+    const pool = new TerrainWorkerPool(complete, vi.fn())
+    expect(pool.size).toBe(6)
+
+    pool.setWorkerLimit(2)
+    expect(pool.size).toBe(2)
+    expect(pool.available).toBe(true)
+
+    pool.submit(request(1))
+    pool.submit(request(2))
+    pool.setWorkerLimit(1)
+    expect(pool.size).toBe(2)
+    expect(pool.available).toBe(false)
+
+    FakeWorker.instances.find(worker => worker.posted.some(job => job.id === 1))!.reply({ id: 1, generation: 0, data })
+    expect(pool.size).toBe(1)
+    expect(complete).toHaveBeenCalledTimes(1)
+
+    pool.setWorkerLimit(4)
+    expect(pool.size).toBe(4)
+    pool.dispose()
+  })
+
   it('ignores unrelated and stale replies without freeing a busy slot', () => {
     const complete = vi.fn()
     const pool = new TerrainWorkerPool(complete, vi.fn())

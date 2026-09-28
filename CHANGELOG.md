@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Make terrain worker concurrency follow the active Low/Balanced/High preset, retiring busy workers only after their current job completes so quality changes reduce CPU pressure without dropping streamed terrain results.
 - Add the curated Tundra Run course, a deterministic low-level snow route over frozen lakes and rolling ground while reusing terrain-aware clearance, scoring, and retry systems.
 - Add the curated Savanna Run course, a deterministic low-level sweep across open grassland and acacia terrain while reusing terrain-aware clearance, scoring, and retry systems.
 - Expand swept airfield collision queries by a bounded aircraft envelope so wings, nose, and tail cannot clip hangars, towers, or shacks, while camera occlusion continues to use the authored building edges.

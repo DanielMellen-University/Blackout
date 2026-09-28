@@ -54,6 +54,8 @@ describe('render quality preferences', () => {
     expect(balanced.vegetationScale).toBeLessThan(high.vegetationScale)
     expect(low.terrainViewRadius).toBeLessThan(balanced.terrainViewRadius)
     expect(balanced.terrainViewRadius).toBe(high.terrainViewRadius)
+    expect(low.terrainWorkers).toBeLessThan(balanced.terrainWorkers)
+    expect(balanced.terrainWorkers).toBeLessThan(high.terrainWorkers)
   })
 
   it('refreshes the directional shadow map on a bounded cadence', () => {

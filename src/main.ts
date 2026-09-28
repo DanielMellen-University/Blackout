@@ -493,7 +493,7 @@ async function boot(): Promise<void> {
   }
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
-  const world = new World()
+  const world = new World(renderQuality)
   applyWorldQuality = (quality): void => world.setRenderQuality(quality)
   applyWorldQuality(renderQuality)
   applyTrafficQuality = (quality): void => world.setTrafficQuality(quality)

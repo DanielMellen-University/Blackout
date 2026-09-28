@@ -123,7 +123,8 @@ export class World {
     daylight: 0,
   }
 
-  constructor() {
+  constructor(quality: RenderQuality = 'balanced') {
+    const qualityProfile = renderQualityProfile(quality)
     this.sun = this.createSun()
     this.scene.add(this.sun)
     this.scene.add(this.sun.target)
@@ -143,7 +144,7 @@ export class World {
     this.scene.add(this.fill)
     this.scene.add(this.fill.target)
 
-    this.terrain = new TerrainSystem(this.scene)
+    this.terrain = new TerrainSystem(this.scene, qualityProfile.terrainWorkers)
     this.settlements = new SettlementSystem(this.scene)
     this.traffic = new AirTrafficSystem(this.scene)
     this.atmosphere = new Atmosphere(
@@ -194,6 +195,7 @@ export class World {
     if (this.disposed) return
     const profile = renderQualityProfile(quality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
+    this.terrain.setWorkerLimit(profile.terrainWorkers)
     this.atmosphere.setFogRange(
       fogNearForViewRadius(profile.terrainViewRadius),
       fogFarForViewRadius(profile.terrainViewRadius),
