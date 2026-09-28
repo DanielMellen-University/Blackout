@@ -1,5 +1,5 @@
 import { clamp01, smoothstep, valueNoise } from './noise'
-import { createClimateSample, sampleGeographyHeight, sampleGeographyInto, sampleGeographySurfaceHeight } from './Geography'
+import { createClimateSample, sampleGeographyHeight, sampleGeographyInto, sampleGeographySurfaceInto, type GeographySurfaceSample } from './Geography'
 
 /**
  * Resolved geographic surfaces, local airfield grading, spawn selection and
@@ -539,9 +539,34 @@ export function sampleTerrainHeightFast(x: number, z: number): number {
 
 /** Resolved scalar surface probe for fallback contact and AGL queries. */
 export function sampleTerrainSurfaceHeightFast(x: number, z: number): number {
-  const naturalHeight = sampleGeographySurfaceHeight(x, z)
+  const naturalHeight = sampleGeographySurfaceInto(surfaceScratch, x, z).height
   const padT = padBlend(x, z)
   return padT > 0 ? naturalHeight * (1 - padT) + opsY * padT : naturalHeight
+}
+
+export interface TerrainSurfaceScalarSample {
+  height: number
+  kind: TerrainSurfaceKind
+}
+
+const surfaceScratch: GeographySurfaceSample = { height: 0, bedHeight: 0, waterLevel: 0 }
+
+/** Fill a resolved land/water contact sample without constructing a Climate. */
+export function sampleTerrainSurfaceInto(
+  out: TerrainSurfaceScalarSample,
+  x: number,
+  z: number,
+): TerrainSurfaceScalarSample {
+  const natural = sampleGeographySurfaceInto(surfaceScratch, x, z)
+  const padT = padBlend(x, z)
+  const height = padT > 0
+    ? natural.height * (1 - padT) + opsY * padT
+    : natural.height
+  out.height = height
+  out.kind = natural.bedHeight < natural.waterLevel && height <= natural.waterLevel
+    ? 'water'
+    : 'land'
+  return out
 }
 
 function biomeColorSolid(

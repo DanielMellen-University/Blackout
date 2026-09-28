@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { waterLandmarks } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad, sampleClimate, sampleTerrainHeightFast, sampleTerrainSurface, sampleTerrainSurfaceHeightFast, setOpsPad } from '../src/world/terrainSample'
+import { clearOpsPad, sampleClimate, sampleTerrainHeightFast, sampleTerrainSurface, sampleTerrainSurfaceHeightFast, sampleTerrainSurfaceInto, setOpsPad } from '../src/world/terrainSample'
 import {
   CHUNK_SIZE,
   deserializeTerrainGeometry,
@@ -46,13 +46,18 @@ describe('worker terrain geometry', () => {
 
   it('keeps scalar contact probes identical to resolved land and water surfaces', () => {
     const points = [[0, 0], [137, -281], [-1_920, 2_440], [8_400, -6_120]]
+    const scalar = { height: 0, kind: 'land' as const }
     for (const [x, z] of points) {
       expect(sampleTerrainSurfaceHeightFast(x, z)).toBe(sampleTerrainSurface(x, z).height)
+      const surface = sampleTerrainSurface(x, z)
+      expect(sampleTerrainSurfaceInto(scalar, x, z)).toEqual({ height: surface.height, kind: surface.kind })
     }
 
     setOpsPad(0, 0, 42, 0.4)
     for (const [x, z] of [[0, 0], [60, 0], [98, 22]]) {
       expect(sampleTerrainSurfaceHeightFast(x, z)).toBeCloseTo(sampleTerrainSurface(x, z).height)
+      const surface = sampleTerrainSurface(x, z)
+      expect(sampleTerrainSurfaceInto(scalar, x, z)).toEqual({ height: surface.height, kind: surface.kind })
     }
   })
 

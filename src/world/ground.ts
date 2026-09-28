@@ -2,6 +2,7 @@ import { Vector3 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import {
   sampleTerrainSurface,
+  sampleTerrainSurfaceInto,
   sampleTerrainSurfaceHeightFast,
   type TerrainSurfaceKind,
   type TerrainSurface,
@@ -95,8 +96,18 @@ export function sampleGroundSurfaceInto(
     out.kind = out.kind === 'water' ? 'water' : 'land'
     return out
   }
+  const sampled = meshHeightSampler?.(x, z)
+  if (sampled == null || (typeof sampled === 'number' && !Number.isFinite(sampled))) {
+    sampleTerrainSurfaceInto(out, x, z)
+    return out
+  }
+  if (typeof sampled !== 'number') {
+    out.height = sampled.height
+    out.kind = sampled.kind === 'water' ? 'water' : 'land'
+    return out
+  }
   const surface = sampleGroundSurface(x, z)
-  out.height = surface.height
+  out.height = sampled
   out.kind = surface.kind
   return out
 }

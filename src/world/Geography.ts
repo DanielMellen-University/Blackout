@@ -22,6 +22,12 @@ const BIOME_ORDER: readonly Biome[] = [
 
 type BufferedClimate = Climate & { _biomeWeightsStorage: [Biome, number][] }
 
+export interface GeographySurfaceSample {
+  height: number
+  bedHeight: number
+  waterLevel: number
+}
+
 /** Create a reusable climate record for high-frequency terrain sampling. */
 export function createClimateSample(): Climate {
   const biomeWeights = BIOME_ORDER.map((biome): [Biome, number] => [biome, 0])
@@ -124,7 +130,21 @@ export function sampleGeographyHeight(x: number, z: number): number {
  * height probe.
  */
 export function sampleGeographySurfaceHeight(x: number, z: number): number {
+  return sampleGeographySurfaceInto(surfaceScratch, x, z).height
+}
+
+const surfaceScratch: GeographySurfaceSample = { height: 0, bedHeight: 0, waterLevel: 0 }
+
+/** Fill the resolved scalar surface without allocating a Climate record. */
+export function sampleGeographySurfaceInto(
+  out: GeographySurfaceSample,
+  x: number,
+  z: number,
+): GeographySurfaceSample {
   const landform = sampleLandformsInto(landformScratch, x, z)
   const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height)
-  return Math.max(hydrology.height, hydrology.waterLevel)
+  out.bedHeight = hydrology.height
+  out.waterLevel = hydrology.waterLevel
+  out.height = Math.max(hydrology.height, hydrology.waterLevel)
+  return out
 }
