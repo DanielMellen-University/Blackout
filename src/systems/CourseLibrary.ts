@@ -210,6 +210,7 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'Spiraling altitude route through sunlit lift pockets',
     seed: 27,
     profile: 'thermal',
+    weather: 'clear',
   },
 ]
 

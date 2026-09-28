@@ -72,6 +72,7 @@ describe('course library', () => {
     expect(courseDefinitionForId('archipelago-run').weather).toBe('fog')
     expect(courseRunId(courseDefinitionForId('archipelago-run'))).toBe('seed:25:archipelago')
     expect(courseDefinitionForId('thermal-run').profile).toBe('thermal')
+    expect(courseDefinitionForId('thermal-run').weather).toBe('clear')
     expect(courseRunId(courseDefinitionForId('thermal-run'))).toBe('seed:27:thermal')
     expect(courseRunId(courseDefinitionForId('rainforest-run'))).toBe('seed:17:rainforest')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
