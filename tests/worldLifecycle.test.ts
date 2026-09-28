@@ -14,6 +14,19 @@ describe('world lifecycle boundary', () => {
     expect(() => world.setSettlementsVisible(true)).not.toThrow()
   })
 
+  it('sweeps fast obstacle paths instead of checking only the endpoint', () => {
+    const world = Object.create(World.prototype) as World
+    ;(world as unknown as { disposed: boolean }).disposed = false
+    const hit = vi.fn((x: number) => x >= 4.5 && x <= 5.5)
+    ;(world as unknown as { hitObstacle: typeof hit }).hitObstacle = hit
+
+    expect(world.hitObstacleSegment(
+      { x: 0, y: 10, z: 0 },
+      { x: 10, y: 10, z: 0 },
+    )).toBe(true)
+    expect(hit).toHaveBeenCalledWith(5, 10, 0)
+  })
+
   it('rebuilds a usable previous world when replacement fails after clearing terrain', () => {
     const world = new World()
     const previousSeed = world.worldSeed

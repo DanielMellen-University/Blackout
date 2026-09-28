@@ -602,7 +602,7 @@ async function boot(): Promise<void> {
   applyHudDisplay(initialHudDisplay)
   const missionLabelCache = createMissionHudLabelCache()
   const collision = new CollisionSystem((jet) =>
-    world.hitObstacle(jet.position.x, jet.position.y, jet.position.z),
+    world.hitObstacleSegment(jet.previousPosition, jet.position),
   )
   const crashFx = new CrashFx(world.scene)
   const landingFx = new LandingFx(world.scene)

@@ -25,6 +25,15 @@ import { disposeObjectTree } from '../core/dispose'
 import { AirTrafficSystem } from './AirTrafficSystem'
 import { renderQualityProfile, type RenderQuality } from '../core/RenderQuality'
 
+const OBSTACLE_SWEEP_SPACING = 8
+const OBSTACLE_SWEEP_MAX_STEPS = 32
+
+export interface ObstacleSweepPoint {
+  readonly x: number
+  readonly y: number
+  readonly z: number
+}
+
 export interface SpawnPose {
   x: number
   y: number
@@ -358,6 +367,30 @@ export class World {
       }
     }
     return false
+  }
+
+  /**
+   * Check the path between two physics poses so fast passes cannot tunnel
+   * through a loaded settlement or airfield building. The endpoint is always
+   * checked; only the bounded interior probes are added to the normal frame.
+   */
+  hitObstacleSegment(previous: ObstacleSweepPoint, current: ObstacleSweepPoint): boolean {
+    if (this.disposed) return false
+    const dx = current.x - previous.x
+    const dy = current.y - previous.y
+    const dz = current.z - previous.z
+    const distance = Math.hypot(dx, dy, dz)
+    if (!Number.isFinite(distance)) return this.hitObstacle(current.x, current.y, current.z)
+    const steps = Math.max(1, Math.min(OBSTACLE_SWEEP_MAX_STEPS, Math.ceil(distance / OBSTACLE_SWEEP_SPACING)))
+    for (let step = 1; step < steps; step++) {
+      const t = step / steps
+      if (this.hitObstacle(
+        previous.x + dx * t,
+        previous.y + dy * t,
+        previous.z + dz * t,
+      )) return true
+    }
+    return this.hitObstacle(current.x, current.y, current.z)
   }
 
   cycleWeather(): WeatherId {

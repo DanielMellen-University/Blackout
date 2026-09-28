@@ -317,6 +317,11 @@ export class Aircraft {
     this.prevOrientation.copy(this.orientation)
   }
 
+  /** Read-only physics position from the start of the current step. */
+  get previousPosition(): Readonly<Vector3> {
+    return this.prevPosition
+  }
+
   /**
    * Blend the visible mesh/camera pose between the last two physics states.
    * `alpha` 0 = previous step, 1 = current step.
