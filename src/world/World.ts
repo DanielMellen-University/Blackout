@@ -199,6 +199,7 @@ export class World {
     this.traffic.setRenderQuality(quality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
+    this.terrain.setUploadBudget(profile.terrainUploadBudgetMs, profile.terrainMaxUploadsPerFrame)
     this.terrain.setWaterDetailScale(profile.waterDetailScale)
     this.terrain.setTerrainDetailScale(profile.terrainDetailScale)
     this.terrain.setVegetationScale(profile.vegetationScale)

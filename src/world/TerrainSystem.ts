@@ -63,8 +63,8 @@ const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Short smoothstep appearance transition, independent of frame rate. */
 const FADE_SECONDS = .65
 /** Main-thread mesh attachment stays bounded, even when workers complete together. */
-const UPLOAD_BUDGET_MS = 2
-const MAX_UPLOADS_PER_FRAME = 16
+const DEFAULT_UPLOAD_BUDGET_MS = 2
+const DEFAULT_MAX_UPLOADS_PER_FRAME = 16
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /**
  * Fog fully opaque at this range, eight chunks inside the stream edge
@@ -212,6 +212,8 @@ export class TerrainSystem {
   private nextRequest = 0
   private disposed = false
   private readonly workers: TerrainWorkerPool
+  private uploadBudgetMs = DEFAULT_UPLOAD_BUDGET_MS
+  private maxUploadsPerFrame = DEFAULT_MAX_UPLOADS_PER_FRAME
   private desiredTiles = new Map<string, { cx: number; cz: number; size: number; dist: number }>()
   private readonly replacementKeys = new Map<string, string[]>()
   private readonly scene: Scene
@@ -340,6 +342,21 @@ export class TerrainSystem {
   setWorkerLimit(limit: number): void {
     if (this.disposed) return
     this.workers.setWorkerLimit(limit)
+  }
+
+  /** Keep main-thread terrain attachment inside the active quality budget. */
+  setUploadBudget(budgetMs: number, maxUploads: number): void {
+    if (this.disposed) return
+    this.uploadBudgetMs = MathUtils.clamp(
+      Number.isFinite(budgetMs) ? budgetMs : DEFAULT_UPLOAD_BUDGET_MS,
+      0.25,
+      4,
+    )
+    this.maxUploadsPerFrame = MathUtils.clamp(
+      Number.isFinite(maxUploads) ? Math.floor(maxUploads) : DEFAULT_MAX_UPLOADS_PER_FRAME,
+      1,
+      32,
+    )
   }
 
   /** Reduce high-frequency water shading on Low without rebuilding surfaces. */
@@ -721,7 +738,7 @@ export class TerrainSystem {
   }
 
   private drainBuildQueue(): void {
-    const deadline = performance.now() + UPLOAD_BUDGET_MS
+    const deadline = performance.now() + this.uploadBudgetMs
     let uploads = 0
     // Completion order varies between workers; uploads follow current proximity.
     // Sort farthest-first so pop() removes the nearest result without shifting
@@ -734,7 +751,7 @@ export class TerrainSystem {
       })
       this.readySorted = true
     }
-    while (this.ready.length && uploads < MAX_UPLOADS_PER_FRAME &&
+    while (this.ready.length && uploads < this.maxUploadsPerFrame &&
       (uploads === 0 || performance.now() < deadline)) {
       const result = this.ready.pop()!
       this.install(result.job, result.data)
@@ -744,7 +761,7 @@ export class TerrainSystem {
     if (this.workers.size > 0) return
     // Unsupported/failed workers retain deterministic streaming with a strict
     // inter-build deadline. Browser workers are the normal generation path.
-    while (this.pending.length && uploads < MAX_UPLOADS_PER_FRAME &&
+    while (this.pending.length && uploads < this.maxUploadsPerFrame &&
       (uploads === 0 || performance.now() < deadline)) {
       const pending = this.pending.pop()!
       this.pendingKeys.delete(tileKey(pending.cx, pending.cz, pending.size))
@@ -761,7 +778,7 @@ export class TerrainSystem {
     // Never queue more than one request per worker. Fast turns reprioritize all
     // unstarted work on the next cell crossing rather than draining an old FIFO.
     if (this.pending.length > 1 && !this.pendingSorted) this.sortPending()
-    while (this.pending.length && this.workers.available && this.ready.length < MAX_UPLOADS_PER_FRAME) {
+    while (this.pending.length && this.workers.available && this.ready.length < this.maxUploadsPerFrame) {
       const pending = this.pending.pop()!
       const key = tileKey(pending.cx, pending.cz, pending.size)
       this.pendingKeys.delete(key)

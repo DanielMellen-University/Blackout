@@ -10,6 +10,8 @@ describe('world lifecycle boundary', () => {
         waterDetailScale: { value: number }
         terrainDetailScale: { value: number }
         vegetationScale: number
+        uploadBudgetMs: number
+        maxUploadsPerFrame: number
       }
       const atmosphere = world.atmosphere as unknown as {
         precipitationScale: number
@@ -18,6 +20,8 @@ describe('world lifecycle boundary', () => {
       expect(terrain.waterDetailScale.value).toBe(.35)
       expect(terrain.terrainDetailScale.value).toBe(.42)
       expect(terrain.vegetationScale).toBe(.45)
+      expect(terrain.uploadBudgetMs).toBe(1.25)
+      expect(terrain.maxUploadsPerFrame).toBe(8)
       expect(atmosphere.precipitationScale).toBe(.42)
       expect(atmosphere.cloudDensityScale).toBe(.5)
       expect(world.traffic.count).toBe(3)
