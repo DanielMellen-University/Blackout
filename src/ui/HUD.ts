@@ -70,7 +70,7 @@ export function hudBackgroundHidden(menuOpen: boolean, resultsOpen: boolean): bo
 
 /** Keep the active procedural identity compact and safe for the live HUD. */
 export function worldSeedHudLabel(seed: number): string {
-  return Number.isSafeInteger(seed) ? formatWorldSeed(seed) : '--'
+  return Number.isFinite(seed) ? formatWorldSeed(seed) : '--'
 }
 
 export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
