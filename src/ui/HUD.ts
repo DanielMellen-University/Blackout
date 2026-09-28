@@ -1494,14 +1494,16 @@ export class HUD {
         this.windGustCueValue = gustCue
         const baseWindText = formatWind(windX, windZ)
         const crosswindText = crosswindVisible ? formatCrosswind(crosswind, crosswindSide) : ''
+        const crabText = crosswindVisible ? formatCrosswindCrab(crosswind, crosswindSide) : ''
         const gustText = formatWindGust(opts.weatherGust ?? 0)
-        this.windText = [baseWindText, crosswindText, gustText].filter(Boolean).join(' · ')
+        this.windText = [baseWindText, crosswindText, crabText, gustText].filter(Boolean).join(' · ')
         const gustAria = gustCue === 'severe' ? 'strong gusts' : gustCue === 'active' ? 'active gusts' : ''
         this.windAriaText = baseWindText === 'CALM'
-          ? ['Calm wind', crosswindText.toLowerCase(), gustAria].filter(Boolean).join(', ')
+          ? ['Calm wind', crosswindText.toLowerCase(), crabText.toLowerCase(), gustAria].filter(Boolean).join(', ')
           : [
             `${speedStep} metres per second toward ${String(direction).padStart(3, '0')} degrees`,
             crosswindText.toLowerCase(),
+            crabText.toLowerCase(),
             gustAria,
           ].filter(Boolean).join(', ')
       }
@@ -2526,6 +2528,21 @@ export function formatCrosswind(crosswind: number, side: CrosswindSide = 'calm')
   if (safe < 1) return 'XW CALM'
   const sideLabel = side === 'left' ? 'L' : side === 'right' ? 'R' : ''
   return sideLabel ? `XW ${sideLabel} ${Math.round(safe)} M/S` : `XW ${Math.round(safe)} M/S`
+}
+
+/** Counter the runway-relative drift with a small, explicit crab cue. */
+export function crosswindCrabDirection(side: CrosswindSide): CrosswindSide {
+  if (side === 'left') return 'right'
+  if (side === 'right') return 'left'
+  return 'calm'
+}
+
+export function formatCrosswindCrab(crosswind: number, side: CrosswindSide = 'calm'): string {
+  const safe = Number.isFinite(crosswind) ? Math.max(0, crosswind) : 0
+  if (safe < 8) return ''
+  const crab = crosswindCrabDirection(side)
+  if (crab === 'calm') return ''
+  return `CRAB ${crab === 'left' ? 'L' : 'R'}`
 }
 
 /** Direction the weather vector travels toward, in degrees from world north. */

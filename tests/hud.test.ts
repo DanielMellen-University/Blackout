@@ -10,6 +10,8 @@ import {
   canopyWeatherIntensity,
   crosswindDirection,
   crosswindSpeedMps,
+  crosswindCrabDirection,
+  formatCrosswindCrab,
   altitudeCue,
   formatAudioState,
   formatRadarContacts,
@@ -564,6 +566,12 @@ describe('HUD value formatting', () => {
     expect(formatCrosswind(8.2)).toBe('XW 8 M/S')
     expect(formatCrosswind(8.2, 'left')).toBe('XW L 8 M/S')
     expect(formatCrosswind(8.2, 'right')).toBe('XW R 8 M/S')
+    expect(crosswindCrabDirection('left')).toBe('right')
+    expect(crosswindCrabDirection('right')).toBe('left')
+    expect(crosswindCrabDirection('calm')).toBe('calm')
+    expect(formatCrosswindCrab(7.9, 'right')).toBe('')
+    expect(formatCrosswindCrab(8.2, 'right')).toBe('CRAB L')
+    expect(formatCrosswindCrab(8.2, 'left')).toBe('CRAB R')
   })
 
   it('normalizes stable ground, airborne, and crash state cues', () => {
