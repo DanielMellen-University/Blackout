@@ -196,6 +196,7 @@ export class World {
     if (this.disposed) return
     const profile = renderQualityProfile(quality)
     this.settlements.setRenderQuality(quality)
+    this.settlements.setDetailRadius(profile.settlementDetailRadius)
     this.traffic.setRenderQuality(quality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)

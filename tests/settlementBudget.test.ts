@@ -53,6 +53,20 @@ function planFor(cx: number, cz: number): SettlementPlan {
 }
 
 describe('settlement streaming budgets', () => {
+  it('applies a bounded detail radius without touching loaded landmarks', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      system.setDetailRadius(2800)
+      expect((system as unknown as { detailRadius: number }).detailRadius).toBe(2800)
+      system.setDetailRadius(Number.NaN)
+      expect((system as unknown as { detailRadius: number }).detailRadius).toBe(4200)
+      system.setDetailRadius(10_000)
+      expect((system as unknown as { detailRadius: number }).detailRadius).toBe(6000)
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('caps nearby generated settlements before they allocate visible instance buffers', () => {
     const system = new SettlementSystem(new Scene())
     try {
