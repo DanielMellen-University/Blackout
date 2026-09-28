@@ -23,9 +23,12 @@ export interface CoursePickerItem {
   favorite?: boolean
   /** Zero-based newest-first position in the bounded Favorites list. */
   favoriteRank?: number
+  /** Persisted best score used only by the optional catalog sort. */
+  score?: number
 }
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
+export type CoursePickerSort = 'catalog' | 'score' | 'name'
 const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, string>> = {
   all: 'All courses',
   ops: 'Ops',
@@ -34,6 +37,11 @@ const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, strin
   explore: 'Explore',
   recent: 'Recent',
   favorites: 'Favorites',
+}
+const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
+  catalog: 'Catalog order',
+  score: 'Best score',
+  name: 'A–Z',
 }
 
 /** Keep the growing catalog understandable without making authored course data carry UI-only labels. */
@@ -52,6 +60,31 @@ export function coursePickerCategoryForCourse(
 export function coursePickerCategoryLabel(category: CoursePickerCategory, count: number): string {
   const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0
   return `${COURSE_PICKER_CATEGORY_LABELS[category]} (${safeCount})`
+}
+
+/** Keep the bounded sort control readable and stable if a caller supplies bad input. */
+export function coursePickerSortLabel(sort: CoursePickerSort): string {
+  return COURSE_PICKER_SORT_LABELS[sort] ?? COURSE_PICKER_SORT_LABELS.catalog
+}
+
+/** Sort only the already-filtered catalog so search and category semantics stay unchanged. */
+export function sortCoursePickerItems(
+  items: readonly CoursePickerItem[],
+  sort: CoursePickerSort = 'catalog',
+): CoursePickerItem[] {
+  const safeSort = sort === 'score' || sort === 'name' ? sort : 'catalog'
+  if (safeSort === 'catalog') return items.slice()
+  return items.slice().sort((a, b) => {
+    if (safeSort === 'score') {
+      const aScore = finiteScore(a.score)
+      const bScore = finiteScore(b.score)
+      if (aScore !== bScore) return bScore - aScore
+    } else {
+      const labelOrder = a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      if (labelOrder !== 0) return labelOrder
+    }
+    return 0
+  })
 }
 
 /** Filter the bounded course catalog without changing its authored order. */
@@ -354,6 +387,7 @@ export class CoursePicker {
   private readonly stats: HTMLElement
   private readonly filter: HTMLInputElement
   private readonly categorySelect: HTMLSelectElement
+  private readonly sortSelect: HTMLSelectElement
   private readonly favoriteButton: HTMLButtonElement
   private readonly empty: HTMLElement
   private readonly filterStatus: HTMLElement
@@ -361,6 +395,7 @@ export class CoursePicker {
   private items: CoursePickerItem[] = []
   private selectedId = ''
   private category: CoursePickerCategory = 'all'
+  private sort: CoursePickerSort = 'catalog'
   private changeHandler: ((id: string) => void) | null = null
   private favoriteHandler: ((id: string, favorite: boolean) => void) | null = null
   private disposed = false
@@ -394,6 +429,15 @@ export class CoursePicker {
       this.categoryOptions.set(value, option)
       this.categorySelect.append(option)
     }
+    this.sortSelect = document.createElement('select')
+    this.sortSelect.className = 'course-picker-sort'
+    this.sortSelect.setAttribute('aria-label', 'Sort courses')
+    for (const value of ['catalog', 'score', 'name'] as const) {
+      const option = document.createElement('option')
+      option.value = value
+      option.textContent = coursePickerSortLabel(value)
+      this.sortSelect.append(option)
+    }
     this.favoriteButton = document.createElement('button')
     this.favoriteButton.type = 'button'
     this.favoriteButton.className = 'course-picker-favorite'
@@ -409,6 +453,7 @@ export class CoursePicker {
     this.filterStatus.hidden = true
     this.filterStatus.setAttribute('aria-live', 'polite')
     root.insertBefore(this.categorySelect, this.list)
+    root.insertBefore(this.sortSelect, this.list)
     root.insertBefore(this.filter, this.list)
     root.insertBefore(this.filterStatus, this.list)
     root.insertBefore(this.favoriteButton, this.list)
@@ -419,6 +464,7 @@ export class CoursePicker {
     this.filter.addEventListener('input', this.onFilterInput)
     this.filter.addEventListener('keydown', this.onFilterKeyDown)
     this.categorySelect.addEventListener('change', this.onCategoryChange)
+    this.sortSelect.addEventListener('change', this.onSortChange)
     this.favoriteButton.addEventListener('click', this.onFavoriteClick)
   }
 
@@ -460,8 +506,10 @@ export class CoursePicker {
     this.filter.removeEventListener('input', this.onFilterInput)
     this.filter.removeEventListener('keydown', this.onFilterKeyDown)
     this.categorySelect.removeEventListener('change', this.onCategoryChange)
+    this.sortSelect.removeEventListener('change', this.onSortChange)
     this.favoriteButton.removeEventListener('click', this.onFavoriteClick)
     this.categorySelect.remove()
+    this.sortSelect.remove()
     this.filter.remove()
     this.filterStatus.remove()
     this.favoriteButton.remove()
@@ -471,7 +519,10 @@ export class CoursePicker {
 
   private renderList(): void {
     this.syncCategoryOptions()
-    const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
+    const visible = sortCoursePickerItems(
+      filterCoursePickerItems(this.items, this.filter.value, this.category),
+      this.sort,
+    )
     this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
     this.empty.hidden = visible.length > 0
     if (visible.length === 0) this.empty.textContent = coursePickerEmptyMessage(this.category, this.filter.value)
@@ -572,7 +623,10 @@ export class CoursePicker {
       this.toggleFavorite()
       return
     }
-    const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
+    const visible = sortCoursePickerItems(
+      filterCoursePickerItems(this.items, this.filter.value, this.category),
+      this.sort,
+    )
     if (visible.length === 0) return
     const index = Math.max(0, visible.findIndex((item) => item.id === this.selectedId))
     const next = coursePickerNavigationIndex(event.key, index, visible.length)
@@ -593,6 +647,13 @@ export class CoursePicker {
     this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' || value === 'recent' || value === 'favorites'
       ? value
       : 'all'
+    this.renderList()
+  }
+
+  private onSortChange = (): void => {
+    if (this.disposed) return
+    const value = this.sortSelect.value as CoursePickerSort
+    this.sort = value === 'score' || value === 'name' ? value : 'catalog'
     this.renderList()
   }
 
@@ -619,6 +680,10 @@ export class CoursePicker {
 }
 
 function finiteCount(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(value!)) : 0
+}
+
+function finiteScore(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value!)) : 0
 }
 

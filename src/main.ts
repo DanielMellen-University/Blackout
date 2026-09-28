@@ -447,6 +447,7 @@ async function boot(): Promise<void> {
         recentRank: recentRank >= 0 ? recentRank : undefined,
         favorite: favoriteRank >= 0,
         favoriteRank: favoriteRank >= 0 ? favoriteRank : undefined,
+        score: record?.bestScore ?? 0,
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)

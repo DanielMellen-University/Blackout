@@ -9,10 +9,12 @@ import {
   coursePickerCategoryLabel,
   coursePickerEmptyMessage,
   coursePickerMetaLabel,
+  coursePickerSortLabel,
   courseTimePreviewLabel,
   courseWindPreviewLabel,
   courseWeatherPreviewLabel,
   filterCoursePickerItems,
+  sortCoursePickerItems,
 } from '../src/ui/CoursePicker'
 
 const orbit = {
@@ -74,6 +76,21 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryLabel('all', 71)).toBe('All courses (71)')
     expect(coursePickerCategoryLabel('favorites', 2.9)).toBe('Favorites (2)')
     expect(coursePickerCategoryLabel('recent', Number.NaN)).toBe('Recent (0)')
+    expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
+    expect(coursePickerSortLabel('score')).toBe('Best score')
+    expect(coursePickerSortLabel('name')).toBe('A–Z')
+  })
+
+  it('sorts filtered cards by score or name without mutating catalog order', () => {
+    const items = [
+      { id: 'zulu', label: 'Zulu', detail: '', meta: '', stats: '', score: 80_000 },
+      { id: 'alpha', label: 'alpha', detail: '', meta: '', stats: '', score: 100_000 },
+      { id: 'none', label: 'No Score', detail: '', meta: '', stats: '', score: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(items, 'catalog').map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
+    expect(sortCoursePickerItems(items, 'score').map(item => item.id)).toEqual(['alpha', 'zulu', 'none'])
+    expect(sortCoursePickerItems(items, 'name').map(item => item.id)).toEqual(['alpha', 'none', 'zulu'])
+    expect(items.map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
   })
 
   it('formats a bounded title-screen mastery summary', () => {
