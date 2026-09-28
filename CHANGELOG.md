@@ -5,6 +5,7 @@
 ### Ship
 
 - Dampen storm buffet while landing gear is down, and cue BUFFET on the live weather HUD when the gated drive is meaningful.
+- **10.438** Add Clean Circuit Run, a deterministic clear desert sweep that exposes the no-miss gate contract without adding scene or render-loop work.
 - **10.437** Add Deadstick Run, a deterministic clear desert sweep that exposes the fuel-out glide contract without adding scene or render-loop work.
 - **10.436** Add G-control Run, a deterministic clear slalom that exposes the bounded high-G handling contract without adding scene or render-loop work.
 - **10.435** Add Burn Run, a deterministic clear sweep that exposes the sustained afterburner contract without adding scene or render-loop work.
