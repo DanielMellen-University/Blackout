@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.360** Add a read-only GitHub Actions gate for release metadata, TypeScript, the full test suite, and the production build on pushes and pull requests.
 - **10.359** Harden version validation so the internal roadmap chunk stays synchronized across runtime metadata, the README, and the changelog.
 - Keep terrain quality changes under the device's hardware worker cap, so switching to High on a small-core machine cannot create an unsafe six-worker burst.
 - Add the curated Swamp Run course, a deterministic rainy low-level weave through wetlands and winding channels while reusing terrain-aware clearance, scoring, and retry systems.
