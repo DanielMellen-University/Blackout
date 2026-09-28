@@ -23,6 +23,12 @@ import {
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
 import {
+  COURSE_RECENTS_STORAGE_KEY,
+  readRecentCourseIds,
+  rememberCourseId,
+  writeRecentCourseIds,
+} from './core/CourseRecents'
+import {
   copyWorldSeed,
   copyWorldSeedLink,
   formatWorldSeed,
@@ -312,6 +318,7 @@ async function boot(): Promise<void> {
     /* Private browsing can deny storage. The game remains fully playable. */
   }
 
+  let recentCourseIds = readRecentCourseIds(qualityStorage)
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
   const replayParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
@@ -389,9 +396,17 @@ async function boot(): Promise<void> {
         meta: copy.meta,
         stats: copy.stats,
         category: coursePickerCategoryForCourse(course),
+        recent: recentCourseIds.includes(course.id),
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
+  }
+  const rememberRecentCourse = (id: CourseId): void => {
+    const next = rememberCourseId(recentCourseIds, id)
+    if (next.length === recentCourseIds.length && next.every((value, index) => value === recentCourseIds[index])) return
+    recentCourseIds = next
+    writeRecentCourseIds(qualityStorage, recentCourseIds)
+    refreshCourseSelectorLabels()
   }
   const releaseBrowserUi = suppressBrowserUi(canvas)
   const titleStatus = document.getElementById('title-status')
@@ -1343,6 +1358,7 @@ async function boot(): Promise<void> {
     if (titleSeedInput) titleSeedInput.value = ''
     if (titleSeedStatus) titleSeedStatus.textContent = ''
     writeSelectedCourseId(qualityStorage, selectedCourseId)
+    rememberRecentCourse(selectedCourseId)
     for (const picker of coursePickers) picker.setValue(selectedCourseId)
   }
   for (const picker of coursePickers) picker.onChange(onCourseChange)
@@ -1384,11 +1400,16 @@ async function boot(): Promise<void> {
     ) {
       refreshCourseUi()
     }
+    if (key === COURSE_RECENTS_STORAGE_KEY || key === null) {
+      recentCourseIds = readRecentCourseIds(qualityStorage)
+      refreshCourseSelectorLabels()
+    }
   }
   uiListeners.add(window, 'storage', onProgressStorageChange)
 
   const startGame = (): void => {
     if (playing) return
+    rememberRecentCourse(selectedCourseId)
     playing = true
     cameras.setMode(cameraPreference, aircraft)
     world.setSettlementsVisible(true)

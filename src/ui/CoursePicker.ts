@@ -14,9 +14,10 @@ export interface CoursePickerItem {
   meta: string
   stats: string
   category?: Exclude<CoursePickerCategory, 'all'>
+  recent?: boolean
 }
 
-export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore'
+export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent'
 
 /** Keep the growing catalog understandable without making authored course data carry UI-only labels. */
 export function coursePickerCategoryForCourse(
@@ -37,7 +38,11 @@ export function filterCoursePickerItems(
   category: CoursePickerCategory = 'all',
 ): CoursePickerItem[] {
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean)
-  const categorized = category === 'all' ? items : items.filter(item => item.category === category)
+  const categorized = category === 'all'
+    ? items
+    : category === 'recent'
+      ? items.filter(item => item.recent === true)
+      : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
     const haystack = `${item.label} ${item.detail} ${item.meta} ${item.stats}`.toLocaleLowerCase()
@@ -311,6 +316,7 @@ export class CoursePicker {
       ['routes', 'Routes'],
       ['contracts', 'Contracts'],
       ['explore', 'Explore'],
+      ['recent', 'Recent'],
     ] as const) {
       const option = document.createElement('option')
       option.value = value
@@ -455,7 +461,7 @@ export class CoursePicker {
   private onCategoryChange = (): void => {
     if (this.disposed) return
     const value = this.categorySelect.value as CoursePickerCategory
-    this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore'
+    this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' || value === 'recent'
       ? value
       : 'all'
     this.renderList()
