@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.414**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.415**.
 
 ## Run
 
@@ -46,7 +46,7 @@ The nose is the flight path. Throttle is thrust: a climb spends speed, and closi
 
 The live route-risk row retains the steepest route slope after the launch briefing fades, so the handling envelope stays visible throughout the sortie. Traffic Run adds a curated high-speed sweep whose catalog contract explicitly rewards passing distinct traffic contacts, turning the existing pooled traffic into a repeatable challenge.
 
-Traffic contract progress now gets the same one-shot in-flight acknowledgement as settlement and waterway tours, while duplicate contacts and final completion remain quiet. Traffic Dodge adds a clear open sweep that deliberately exposes the existing vertical-separation traffic contract. Precision Landing adds a clear base-to-final pattern that deliberately exposes the centered-touchdown contract. Waterway Tour adds a curated rainy river route that deliberately exposes the existing multi-waterway contract. Thermal Surf adds a clear-sky lift route that deliberately exposes the existing sustained-thermal contract. High Dive adds a clear alpine climb and recovery route that deliberately exposes the existing altitude-dive contract. Water Skim adds a clear coastal low pass that deliberately exposes the bounded water-skimming contract. Ridge Trial adds a clear high-relief low pass that deliberately exposes the existing ridge-altitude contract.
+Traffic contract progress now gets the same one-shot in-flight acknowledgement as settlement and waterway tours, while duplicate contacts and final completion remain quiet. Traffic Dodge adds a clear open sweep that deliberately exposes the existing vertical-separation traffic contract. Precision Landing adds a clear base-to-final pattern that deliberately exposes the centered-touchdown contract. Combo Run adds a clear slalom route that deliberately exposes the gate-and-stunt combo contract. Waterway Tour adds a curated rainy river route that deliberately exposes the existing multi-waterway contract. Thermal Surf adds a clear-sky lift route that deliberately exposes the existing sustained-thermal contract. High Dive adds a clear alpine climb and recovery route that deliberately exposes the existing altitude-dive contract. Water Skim adds a clear coastal low pass that deliberately exposes the bounded water-skimming contract. Ridge Trial adds a clear high-relief low pass that deliberately exposes the existing ridge-altitude contract.
 
 Runway returns now announce only worsening fuel pressure transitions, so tight and low reserve states are actionable without repeating warnings every frame.
 
