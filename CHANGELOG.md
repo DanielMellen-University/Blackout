@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.511** Freeze mission beacon and gate-flash presentation while paused or in results, preventing wall-clock feedback from skipping ahead off-screen.
 - **10.510** Rank traffic proximity alerts by bounded 3D separation, preventing high-above contacts from masking closer level traffic while keeping horizontal HUD distances readable.
 - **10.509** Surface the existing above/below/level traffic cue in compact radar text and accessibility labels while keeping settlement and gate copy unchanged.
 - **10.508** Keep close traffic contacts on radar during the visual silhouette fade, so proximity warnings always have a corresponding navigational cue.

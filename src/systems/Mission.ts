@@ -1010,9 +1010,17 @@ export class MissionSystem {
   }
 
   /** Pulse the live ring and hold the far-visible beacon on it. */
-  tick(nowMs?: number, playerX?: number, playerY?: number, playerZ?: number): void {
+  tick(
+    nowMs?: number,
+    playerX?: number,
+    playerY?: number,
+    playerZ?: number,
+    advancePresentation = true,
+  ): void {
     if (this.disposed) return
-    const now = this.resolvePresentationTime(nowMs, nowMs === undefined)
+    const now = advancePresentation
+      ? this.resolvePresentationTime(nowMs, nowMs === undefined)
+      : this.presentationTimeMs
     if (this.passFlash?.visible) {
       const progress = (now - this.passFlashStartedAt) / 560
       if (progress >= 1) {

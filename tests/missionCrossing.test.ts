@@ -122,6 +122,21 @@ describe('MissionSystem gate crossing', () => {
     mission.dispose()
   })
 
+  it('freezes gate presentation while the sortie is paused', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0)
+    const ring = mission.root.getObjectByName('gate_0')!
+
+    mission.tick(1000, 0, 20, 0, true)
+    const firstScale = ring.scale.x
+    mission.tick(5000, 0, 20, 0, false)
+
+    expect(ring.scale.x).toBe(firstScale)
+    mission.tick(5000, 0, 20, 0, true)
+    expect(ring.scale.x).not.toBe(firstScale)
+    mission.dispose()
+  })
+
   it('reuses the fixed gate scene footprint across retries', () => {
     const mission = new MissionSystem(new Scene())
     mission.start(0, 20, 0, 0)

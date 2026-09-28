@@ -1899,6 +1899,7 @@ async function boot(): Promise<void> {
         aircraft.displayPosition.x,
         aircraft.displayPosition.y,
         aircraft.displayPosition.z,
+        simLive,
       )
       if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
         banner = null
