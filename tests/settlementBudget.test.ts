@@ -53,6 +53,23 @@ function planFor(cx: number, cz: number): SettlementPlan {
 }
 
 describe('settlement streaming budgets', () => {
+  it('reuses the last valid focus when stream coordinates are malformed', () => {
+    const system = new SettlementSystem(new Scene())
+    const internal = system as unknown as { focusX: number; focusZ: number }
+    try {
+      expect(() => system.update(Number.NaN, Number.POSITIVE_INFINITY)).not.toThrow()
+      expect(internal.focusX).toBe(0)
+      expect(internal.focusZ).toBe(0)
+
+      system.update(3000, 3000)
+      system.update(Number.NEGATIVE_INFINITY, Number.NaN)
+      expect(internal.focusX).toBe(3000)
+      expect(internal.focusZ).toBe(3000)
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('applies a bounded detail radius without touching loaded landmarks', () => {
     const system = new SettlementSystem(new Scene())
     try {

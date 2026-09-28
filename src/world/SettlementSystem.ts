@@ -432,6 +432,8 @@ export class SettlementSystem {
   private queue: { cx: number; cz: number; key: string }[] = []
   private linkQueue: RoadJob[] = []
   private lastCell = ''
+  private focusX = 0
+  private focusZ = 0
   private protectedRetryPending = false
   private protectedRetryCooldown = 0
   private worker: Worker | null = null
@@ -718,6 +720,8 @@ export class SettlementSystem {
     this.inFlight = null
     this.generation++
     this.lastCell = ''
+    this.focusX = 0
+    this.focusZ = 0
     this.protectedRetryPending = false
     this.protectedRetryCooldown = 0
   }
@@ -863,6 +867,12 @@ export class SettlementSystem {
 
   update(x: number, z: number): void {
     if (this.disposed) return
+    const safeX = Number.isFinite(x) ? x : this.focusX
+    const safeZ = Number.isFinite(z) ? z : this.focusZ
+    this.focusX = safeX
+    this.focusZ = safeZ
+    x = safeX
+    z = safeZ
     if (this.protectedRetryCooldown > 0) this.protectedRetryCooldown--
     const cell = `${Math.floor(x / 1000)},${Math.floor(z / 1000)}`
     if (cell !== this.lastCell) {

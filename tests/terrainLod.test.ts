@@ -183,6 +183,23 @@ describe('TerrainSystem streaming LOD', () => {
     }
   })
 
+  it('reuses the last valid focus when stream coordinates are malformed', () => {
+    const terrain = new TerrainSystem(new Scene())
+    const internal = terrain as unknown as { focusX: number; focusZ: number }
+    try {
+      expect(() => terrain.update(Number.NaN, Number.POSITIVE_INFINITY, 1 / 60)).not.toThrow()
+      expect(internal.focusX).toBe(0)
+      expect(internal.focusZ).toBe(0)
+
+      terrain.update(240, 180, 1 / 60)
+      terrain.update(Number.NEGATIVE_INFINITY, Number.NaN, 1 / 60)
+      expect(internal.focusX).toBe(240)
+      expect(internal.focusZ).toBe(180)
+    } finally {
+      terrain.dispose()
+    }
+  })
+
   it('demotes the same tile after flying away', () => {
     const terrain = new TerrainSystem(new Scene())
     for (let i = 0; i < 1000 && !terrain.chunkStats(0, 12); i++) pump(terrain, 210, 210, 1)

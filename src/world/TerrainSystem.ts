@@ -502,21 +502,23 @@ export class TerrainSystem {
   update(worldX: number, worldZ: number, dt = 1 / 60): void {
     if (this.disposed) return
     dt = Number.isFinite(dt) ? Math.max(0, Math.min(dt, .1)) : 0
+    const safeX = Number.isFinite(worldX) ? worldX : this.focusX
+    const safeZ = Number.isFinite(worldZ) ? worldZ : this.focusZ
     this.waterClock.value += dt
-    this.focusX = worldX
-    this.focusZ = worldZ
-    const cx = Math.floor(worldX / CHUNK_SIZE)
-    const cz = Math.floor(worldZ / CHUNK_SIZE)
+    this.focusX = safeX
+    this.focusZ = safeZ
+    const cx = Math.floor(safeX / CHUNK_SIZE)
+    const cz = Math.floor(safeZ / CHUNK_SIZE)
 
     const crossedStreamCell = cx !== this.lastCx || cz !== this.lastCz
     const movedForLod = Number.isFinite(this.lastLodFocusX) && Number.isFinite(this.lastLodFocusZ)
-      ? Math.hypot(worldX - this.lastLodFocusX, worldZ - this.lastLodFocusZ)
+      ? Math.hypot(safeX - this.lastLodFocusX, safeZ - this.lastLodFocusZ)
       : Infinity
     if (crossedStreamCell || movedForLod >= LOD_RECHECK_DISTANCE_M) {
       this.lastCx = cx
       this.lastCz = cz
-      this.lastLodFocusX = worldX
-      this.lastLodFocusZ = worldZ
+      this.lastLodFocusX = safeX
+      this.lastLodFocusZ = safeZ
       this.scheduleAround(cx, cz)
     }
 
