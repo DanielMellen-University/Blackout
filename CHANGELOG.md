@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.506** Keep rising-ridge warnings active during shallow climbs, suppressing them only when the projected flight path actually clears the terrain margin.
 - **10.505** Add bounded obstacle lookahead to the flight warning path, giving hangars, towers, cities, and villages a distinct early HUD/audio cue before the padded aircraft envelope reaches them.
 - **10.504** Add bounded terrain lookahead to the PULL UP warning, catching rising ridges along the flight path before current AGL becomes critical.
 - **10.503** Reject deeply penetrated aircraft poses as grounded, keeping streamed-terrain contact recovery from hiding intersections.

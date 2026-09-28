@@ -149,7 +149,8 @@ describe('flight cautions', () => {
 
   it('sees a rising ridge along the flight path before current AGL becomes critical', () => {
     expect(terrainLookaheadWarningActive(120, 160, 0, 150, 192)).toBe(true)
-    expect(terrainLookaheadWarningActive(120, 160, 4, 150, 192)).toBe(false)
+    expect(terrainLookaheadWarningActive(120, 160, 4, 150, 192)).toBe(true)
+    expect(terrainLookaheadWarningActive(120, 160, 80, 150, 192)).toBe(false)
     expect(terrainLookaheadWarningActive(120, 160, 0, 12, 192)).toBe(false)
 
     setContactHeightSampler((x) => (x > 100 ? 150 : 0))

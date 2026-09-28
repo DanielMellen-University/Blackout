@@ -506,10 +506,13 @@ export function terrainLookaheadWarningActive(
   const safeSpeed = Math.max(0, speed)
   const safeRise = Math.max(0, aheadTerrainRise)
   const safeDistance = Math.max(1, aheadDistance)
-  if (safeAlt <= 2 || safeSpeed < 84 || safeRise < 20 || verticalSpeed >= 3) return false
+  if (safeAlt <= 2 || safeSpeed < 84 || safeRise < 20) return false
   const secondsAhead = safeDistance / safeSpeed
   const predictedClearance = safeAlt + verticalSpeed * secondsAhead - safeRise
   const safetyMargin = MathUtils.clamp(safeSpeed * .12, 18, 96)
+  // Positive climb is not a free pass: only suppress the cue when the
+  // projected flight path actually clears the ridge by the speed-scaled
+  // margin. A shallow climb toward a tall shoulder still needs PULL UP.
   return predictedClearance <= safetyMargin
 }
 
