@@ -224,6 +224,35 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('clears stale controls at the live-flight boundary', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    // Title/menu input is intentionally observed by the shared window target,
+    // but it must not become a held control when Play takes ownership.
+    fake.fire('keydown', 'KeyW')
+    fake.fire('keydown', 'ShiftLeft')
+    input.setTouchState({ pitch: 1, throttle: 1, boost: true })
+    input.setFlightLive(true)
+    expect(input.sampleWithDt(0).pitch).toBe(0)
+    expect(input.sampleWithDt(0.05).throttle).toBe(0)
+    expect(input.sampleWithDt(0).boost).toBe(false)
+
+    fake.fire('keydown', 'KeyW')
+    fake.fire('keydown', 'KeyC')
+    expect(input.sampleWithDt(0).pitch).toBe(1)
+    input.setFlightLive(false)
+    expect(input.sampleWithDt(0).pitch).toBe(0)
+    expect(input.consumeCameraToggle()).toBe(false)
+
+    // A repeated false sync also scrubs keys collected by the title context.
+    fake.fire('keydown', 'KeyD')
+    input.setFlightLive(false)
+    input.setFlightLive(true)
+    expect(input.sampleWithDt(0).yaw).toBe(0)
+    input.dispose()
+  })
+
   it('reads a standard gamepad with dead zones and trigger throttle', () => {
     vi.stubGlobal('navigator', {
       getGamepads: () => [{

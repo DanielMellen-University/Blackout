@@ -992,7 +992,7 @@ async function boot(): Promise<void> {
     hud.setBackgroundHidden(hudBackgroundHidden(menu.open, results.open))
     if (live === lastInputContextLive) return
     lastInputContextLive = live
-    input.flightLive = live
+    input.setFlightLive(live)
     setFlightKeyCapture(live)
   }
 

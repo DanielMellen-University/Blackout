@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Clear keyboard, gamepad, and touch state whenever the runtime leaves live flight, preventing held controls from leaking through pause, results, focus loss, or title transitions into the next sortie.
 - Harden touch flight controls with per-button pointer capture and lost-capture cleanup, keeping multi-touch steering, throttle, and boost responsive without adding render-loop work.
 - Add the curated Fjord Run course, a deterministic foggy coastal route that reuses the validated coast profile and existing weather/contract preview path without adding unbounded scene work.
 - Sweep bounded aircraft motion segments against loaded obstacles, preventing high-speed passes from tunneling through airfield buildings or streamed settlements while keeping endpoint checks and the existing obstacle budget intact.

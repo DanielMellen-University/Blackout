@@ -95,6 +95,29 @@ export class InputManager {
     return this.keyboardPitchPreference
   }
 
+  /**
+   * Enter or leave the live-flight input context.
+   *
+   * Menu, pause, results, and focus-loss transitions must not carry held
+   * controls into the next flight. The runtime uses this guarded transition
+   * so keyboard, gamepad, and touch state are cleared at the boundary.
+   */
+  setFlightLive(enabled: boolean): void {
+    const next = enabled === true
+    if (this.flightLive === next) {
+      if (!next) {
+        this.keys.clear()
+        this.clearFlightState()
+        this.clearQueued()
+      }
+      return
+    }
+    this.flightLive = next
+    this.keys.clear()
+    this.clearFlightState()
+    this.clearQueued()
+  }
+
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown)
     this.target.removeEventListener('keyup', this.onKeyUp)
@@ -183,6 +206,11 @@ export class InputManager {
   /** Full key wipe — window blur only. */
   clearKeys(): void {
     this.keys.clear()
+    this.clearFlightState()
+    this.clearQueued()
+  }
+
+  private clearFlightState(): void {
     this.clearGamepadState()
     this.clearTouchState()
     this.controls.boost = false
@@ -190,7 +218,6 @@ export class InputManager {
     this.controls.pitch = 0
     this.controls.roll = 0
     this.controls.yaw = 0
-    this.clearQueued()
   }
 
   consumeCameraToggle(): boolean {
