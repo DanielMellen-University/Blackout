@@ -54,6 +54,8 @@ describe('render quality preferences', () => {
     expect(balanced.vegetationScale).toBeLessThan(high.vegetationScale)
     expect(low.settlementDetailRadius).toBeLessThan(balanced.settlementDetailRadius)
     expect(balanced.settlementDetailRadius).toBeLessThan(high.settlementDetailRadius)
+    expect(low.settlementRoadRadius).toBeLessThan(balanced.settlementRoadRadius)
+    expect(balanced.settlementRoadRadius).toBe(high.settlementRoadRadius)
     expect(low.terrainViewRadius).toBeLessThan(balanced.terrainViewRadius)
     expect(balanced.terrainViewRadius).toBe(high.terrainViewRadius)
     expect(low.terrainWorkers).toBeLessThan(balanced.terrainWorkers)

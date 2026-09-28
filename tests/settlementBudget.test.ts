@@ -79,6 +79,12 @@ describe('settlement streaming budgets', () => {
       expect((system as unknown as { detailRadius: number }).detailRadius).toBe(4200)
       system.setDetailRadius(10_000)
       expect((system as unknown as { detailRadius: number }).detailRadius).toBe(6000)
+      system.setRoadDetailRadius(12_000)
+      expect((system as unknown as { roadDetailRadius: number }).roadDetailRadius).toBe(12_000)
+      system.setRoadDetailRadius(Number.NaN)
+      expect((system as unknown as { roadDetailRadius: number }).roadDetailRadius).toBe(18_120)
+      system.setRoadDetailRadius(100_000)
+      expect((system as unknown as { roadDetailRadius: number }).roadDetailRadius).toBe(23_120)
     } finally {
       system.dispose()
     }

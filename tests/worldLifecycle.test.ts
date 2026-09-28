@@ -17,13 +17,14 @@ describe('world lifecycle boundary', () => {
         precipitationScale: number
         cloudDensityScale: number
       }
-      const settlements = world.settlements as unknown as { detailRadius: number }
+      const settlements = world.settlements as unknown as { detailRadius: number; roadDetailRadius: number }
       expect(terrain.waterDetailScale.value).toBe(.35)
       expect(terrain.terrainDetailScale.value).toBe(.42)
       expect(terrain.vegetationScale).toBe(.45)
       expect(terrain.uploadBudgetMs).toBe(1.25)
       expect(terrain.maxUploadsPerFrame).toBe(8)
       expect(settlements.detailRadius).toBe(2800)
+      expect(settlements.roadDetailRadius).toBe(12000)
       expect(atmosphere.precipitationScale).toBe(.42)
       expect(atmosphere.cloudDensityScale).toBe(.5)
       expect(world.traffic.count).toBe(3)

@@ -444,6 +444,7 @@ export class SettlementSystem {
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
   private detailRadius = DETAIL_RADIUS
+  private roadDetailRadius = ROAD_LOAD_RADIUS
 
   constructor(scene: Scene) {
     this.root.name = 'Settlements'
@@ -654,6 +655,16 @@ export class SettlementSystem {
       Number.isFinite(radius) ? radius : DETAIL_RADIUS,
       1200,
       6000,
+    )
+  }
+
+  /** Keep regional road meshes inside the active render-quality budget. */
+  setRoadDetailRadius(radius: number): void {
+    if (this.disposed) return
+    this.roadDetailRadius = MathUtils.clamp(
+      Number.isFinite(radius) ? radius : ROAD_LOAD_RADIUS,
+      8000,
+      ROAD_KEEP_RADIUS,
     )
   }
 
@@ -1020,7 +1031,7 @@ export class SettlementSystem {
       detail.visible = distance < this.detailRadius + plan.radius
     }
     for (const connection of this.connections.values()) {
-      connection.root.visible = roadDistance(x, z, connection.road) < ROAD_LOAD_RADIUS
+      connection.root.visible = roadDistance(x, z, connection.road) < this.roadDetailRadius
     }
   }
 

@@ -200,6 +200,7 @@ export class World {
     const profile = renderQualityProfile(quality)
     this.settlements.setRenderQuality(quality)
     this.settlements.setDetailRadius(profile.settlementDetailRadius)
+    this.settlements.setRoadDetailRadius(profile.settlementRoadRadius)
     this.traffic.setRenderQuality(quality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
