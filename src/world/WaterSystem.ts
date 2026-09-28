@@ -11,7 +11,7 @@ const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
 export function makeWaterMaterial(
   clock: { value: number },
   weather: WaterWeatherUniforms | undefined,
-  polygonOffset = -1,
+  polygonOffset = -2,
 ): MeshStandardMaterial {
   const material = new MeshStandardMaterial({
     color: 0x345361, roughness: 0.2, metalness: 0.08,

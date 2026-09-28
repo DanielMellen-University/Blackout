@@ -41,6 +41,10 @@ export function applyWaterAppearance(
       '#include <color_fragment>',
       `#include <color_fragment>
       float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
+      // High-frequency foam and riffles alias badly at flight distance. Keep
+      // broad water-body breakup visible, but fade fine detail before the
+      // terrain fog so distant lakes and rivers read as clean surfaces.
+      float waterDistanceFade = 1.0 - smoothstep(520.0, 4200.0, length(vWaterWorld - cameraPosition));
       // Keep one batched water material, but let geometry carry the body kind
       // so rivers, ponds, lakes, and seas do not collapse into one teal sheet.
       // Kind 0 = river, .5 = pond, 1 = lake, 2 = sea.
@@ -74,15 +78,15 @@ export function applyWaterAppearance(
       // coves and river mouths do not read as a perfectly uniform ring.
       float foamNoise = texture2D(waterNormals, vWaterWorld.xz / 96.0 + vec2(worldWaterTime * 0.006, -worldWaterTime * 0.004)).r;
       float foamBand = smoothstep(0.54, 0.82, foamNoise) * (1.0 - smoothstep(0.12, 1.8, vWaterDepth));
-      float weatherFoam = foamBand * (0.18 + waterRain * 0.18);
+      float weatherFoam = foamBand * (0.18 + waterRain * 0.18) * waterDistanceFade;
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.54, 0.74, 0.66), weatherFoam);
       float riverRiffle = smoothstep(0.5, 0.82, texture2D(waterNormals,
         vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
           vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.5, 0.56), riverRiffle * riverMix * 0.48);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.5, 0.56), riverRiffle * riverMix * 0.48 * waterDistanceFade);
       float cascadeFoam = smoothstep(.18, .72, vWaterDrop) * riverMix;
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.48, .76, .78),
-        cascadeFoam * (.22 + waterRain * .1));
+        cascadeFoam * (.22 + waterRain * .1) * waterDistanceFade);
       // Long broken streaks make rivers read as moving water at flight scale.
       // Two oblique axes keep the pattern from looking like a tiled stripe
       // texture when a reach turns through the terrain.
@@ -97,17 +101,17 @@ export function applyWaterAppearance(
       float flowSpark = smoothstep(0.68, 0.92, texture2D(waterNormals,
         flowUvA * 0.72 + vec2(0.17, -0.31)).r);
       float flowPulse = 0.72 + 0.28 * sin(worldWaterTime * 0.55 + dot(vWaterWorld.xz, flowAxisA) * 0.012);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.61, 0.67), flowStreak * riverMix * 0.72 * flowPulse);
-      diffuseColor.rgb += vec3(0.05, 0.15, 0.16) * flowSpark * riverMix;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.61, 0.67), flowStreak * riverMix * 0.72 * flowPulse * mix(.22, 1.0, waterDistanceFade));
+      diffuseColor.rgb += vec3(0.05, 0.15, 0.16) * flowSpark * riverMix * waterDistanceFade;
       float riverBankFoam = smoothstep(0.48, 0.84, texture2D(waterNormals,
         vWaterWorld.xz / 41.0 + vec2(worldWaterTime * 0.009, -worldWaterTime * 0.006)).b);
       riverBankFoam *= riverMix * (1.0 - smoothstep(0.04, 0.9, vWaterDepth));
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.86, 0.79), riverBankFoam * 0.34);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.86, 0.79), riverBankFoam * 0.34 * waterDistanceFade);
       float shoreBreak = smoothstep(0.46, 0.8, texture2D(waterNormals,
         vWaterWorld.xz / 58.0 - vec2(worldWaterTime * 0.008, worldWaterTime * 0.003)).b);
       float shoreFoam = (1.0 - smoothstep(0.08, 2.8, vWaterDepth)) *
         (0.12 + shoreBreak * 0.2) * (0.7 + waterRain * 0.25);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.76, 0.69), shoreFoam);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.76, 0.69), shoreFoam * mix(.35, 1.0, waterDistanceFade));
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.12, 0.25, 0.36), waterSnow * 0.12);`,
     )
     shader.fragmentShader = shader.fragmentShader.replace(
@@ -135,5 +139,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v10'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v11'
 }
