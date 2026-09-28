@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Make optional GLB hydration dispose a still-owned loaded subtree when normalization or replacement fails, preventing rejected external aircraft assets from leaking GPU resources.
 - Add the deterministic Glacier Run course, a snowbound alpine pass with an altitude challenge and forced snow conditions that reuse the bounded route, clearance, scoring, and retry systems.
 - Add a scalar hydrology-aware terrain surface probe for fallback contact and AGL queries, preserving water levels and airfield grading while avoiding per-query climate-object allocations.
 - Add the deterministic Timberline Run course, a fast rolling forest-and-hills route that reuses the validated terrain-clearance and scored retry path without expanding runtime budgets.

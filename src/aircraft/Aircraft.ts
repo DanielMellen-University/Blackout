@@ -225,6 +225,7 @@ export class Aircraft {
   async tryLoadModel(url = '/models/f35.glb'): Promise<boolean> {
     if (this.disposed) return false
     const loadToken = ++this.modelLoadToken
+    let loadedModel: Object3D | null = null
     try {
       // Keep the optional asset pipeline out of the initial game bundle. The
       // procedural F-35 is already playable, so only fetch the GLB loader when
@@ -232,10 +233,12 @@ export class Aircraft {
       const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
       const gltf = await new GLTFLoader().loadAsync(url)
       const model = gltf.scene
+      loadedModel = model
       model.name = 'model'
 
       if (this.disposed || loadToken !== this.modelLoadToken) {
         disposeAircraftObject(model)
+        loadedModel = null
         return false
       }
 
@@ -249,10 +252,15 @@ export class Aircraft {
         disposeAircraftObject(old)
       }
       this.mesh.add(model)
+      loadedModel = null
       this.cacheVisualNodes()
       this.usingPlaceholder = false
       return true
     } catch {
+      // Loading can succeed before normalization, shadow setup, or scene
+      // replacement fails. Release the still-owned subtree so a rejected
+      // optional asset cannot leak geometry, materials, or textures.
+      if (loadedModel) disposeAircraftObject(loadedModel)
       return false
     }
   }
