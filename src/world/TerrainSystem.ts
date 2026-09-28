@@ -17,9 +17,11 @@ import {
   terrainSurfaceFromClimate,
   waterBodyFromClimate,
   opsPadBlend,
-  getOpsPad,
+  getOpsPadInto,
+  type OpsPadSnapshot,
   type TerrainSurface,
 } from './terrainSample'
+import { createClimateSample } from './Geography'
 import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
 import {
   setContactHeightSampler,
@@ -239,6 +241,10 @@ export class TerrainSystem {
   private readonly waterWindZ = { value: 0 }
   private readonly waterDetailScale = { value: 1 }
   private readonly terrainDetailScale = { value: 1 }
+  /** Reused rich climate record for the occasional rendered-surface query. */
+  private readonly surfaceClimate = createClimateSample()
+  /** Structured-clone staging record for worker requests. */
+  private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -595,7 +601,7 @@ export class TerrainSystem {
       CHUNK_SIZE * chunk.size,
     )
     const wet = bed < level
-    const climate = sampleClimate(x, z)
+    const climate = sampleClimate(x, z, this.surfaceClimate)
     const biome = wet ? (level <= 0 ? 'ocean' : 'water') : climate.biome
     return {
       height: Math.max(bed, level),
@@ -747,7 +753,9 @@ export class TerrainSystem {
     const lod = existing ? lodWithHysteresis(tile.dist, existing.lod) : lodFromDist(tile.dist)
     const withProps = ENABLE_VEGETATION && tile.dist <= PROP_RADIUS + (existing?.hasProps ? 1 : 0)
     if (existing && lod === existing.lod && withProps === existing.hasProps) return null
-    return { id: ++this.nextRequest, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad(),
+    // Worker postMessage clones this record synchronously. Reusing the staging
+    // object removes one short-lived pad allocation per terrain dispatch.
+    return { id: ++this.nextRequest, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot),
       cx: job.cx, cz: job.cz, size: job.size, lod, withProps,
       skirtEdges: this.skirtEdgesForTile(job.cx, job.cz, job.size, lod) }
   }

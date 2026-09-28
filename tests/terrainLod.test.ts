@@ -329,7 +329,7 @@ describe('visible mesh contact sampling', () => {
         originX: 0,
         originZ: 0,
         heights: new Float32Array([10, 20, 30, 40]),
-        waterLevels: new Float32Array([0, 0, 0, 0]),
+        waterLevels: new Float32Array([20, 20, 20, 20]),
       })
       terrainChunks.set('2,0:2', {
         cx: 2,
@@ -343,6 +343,10 @@ describe('visible mesh contact sampling', () => {
       })
 
       expect(terrain.sampleMeshHeight(CHUNK_SIZE * 3, CHUNK_SIZE)).toBeCloseTo(115)
+      expect(terrain.sampleMeshSurface(CHUNK_SIZE * 3, CHUNK_SIZE)?.kind).toBe('land')
+      expect(terrain.sampleMeshSurface(100, 100)?.kind).toBe('water')
+      // The rich climate scratch record must be refreshed when the next
+      // rendered query resolves a different surface kind.
       expect(terrain.sampleMeshSurface(CHUNK_SIZE * 3, CHUNK_SIZE)?.kind).toBe('land')
     } finally {
       chunks.delete('0,0:4')

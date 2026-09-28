@@ -4,7 +4,7 @@ import {
   MeshBasicMaterial,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
-import { getOpsPad, sampleClimate } from './terrainSample'
+import { getOpsPad, getOpsPadInto, sampleClimate, type OpsPadSnapshot } from './terrainSample'
 import { createClimateSample } from './Geography'
 import { getWorldSeed, hash2 } from './noise'
 import {
@@ -445,6 +445,8 @@ export class SettlementSystem {
   private renderQuality: RenderQuality = 'balanced'
   private detailRadius = DETAIL_RADIUS
   private roadDetailRadius = ROAD_LOAD_RADIUS
+  /** Structured-clone staging record for settlement worker requests. */
+  private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
 
   constructor(scene: Scene) {
     this.root.name = 'Settlements'
@@ -1006,7 +1008,9 @@ export class SettlementSystem {
     if (job) {
       this.checked.add(job.key)
       if (this.worker) {
-        this.inFlight = { type: 'settlement', ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
+        // postMessage clones the pad synchronously, so the staging record can
+        // be reused without allocating for every streamed settlement job.
+        this.inFlight = { type: 'settlement', ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
         this.worker.postMessage(this.inFlight)
       } else {
         const plan = settlementForCell(job.cx, job.cz)
@@ -1018,7 +1022,7 @@ export class SettlementSystem {
     } else if (!this.inFlight) {
       const link = this.takeNearestRoadJob(x, z)
       if (link && this.worker) {
-        this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPad() }
+        this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
         this.worker.postMessage(this.inFlight)
       } else if (link) {
         const road = roadBetweenSettlements(link.from, link.to)
