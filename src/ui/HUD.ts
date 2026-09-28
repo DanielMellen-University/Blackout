@@ -242,20 +242,33 @@ export function missionHudLabel(routeLabel: unknown, objective: unknown, contrac
   return [route, task, contract].filter(Boolean).join(' · ').slice(0, 120)
 }
 
-/** Keep route difficulty and rhythm visible after the launch briefing fades. */
-export function routeRiskHudLabel(difficulty: unknown, modifier: unknown): string {
+/** Keep route difficulty, rhythm, and steepness visible after the launch briefing fades. */
+export function routeRiskHudLabel(
+  difficulty: unknown,
+  modifier: unknown,
+  maxSlopeDegrees?: number,
+): string {
   const safeDifficulty = difficulty === 'relaxed' ? 'RELAXED'
     : difficulty === 'technical' ? 'TECHNICAL'
       : difficulty === 'standard' ? 'STANDARD' : ''
   const safeModifier = modifier === 'steady' ? 'STEADY'
     : modifier === 'tempo' ? 'TEMPO'
       : modifier === 'altitude' ? 'ALTITUDE' : ''
-  return [safeDifficulty, safeModifier].filter(Boolean).join(' · ')
+  const safeSlope = Number.isFinite(maxSlopeDegrees)
+    ? Math.max(0, Math.min(90, Math.round(maxSlopeDegrees!)))
+    : 0
+  return [safeDifficulty, safeModifier, safeSlope > 0 ? `SLOPE ${safeSlope}°` : '']
+    .filter(Boolean)
+    .join(' · ')
 }
 
-export function routeRiskAriaLabel(difficulty: unknown, modifier: unknown): string {
-  const label = routeRiskHudLabel(difficulty, modifier)
-  return label ? `Route risk ${label.toLowerCase().replace(' · ', ', ')}` : ''
+export function routeRiskAriaLabel(
+  difficulty: unknown,
+  modifier: unknown,
+  maxSlopeDegrees?: number,
+): string {
+  const label = routeRiskHudLabel(difficulty, modifier, maxSlopeDegrees)
+  return label ? `Route risk ${label.toLowerCase().replaceAll(' · ', ', ')}` : ''
 }
 
 /** Keep the live flight log compact while coalescing unchanged telemetry buckets. */

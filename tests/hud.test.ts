@@ -530,6 +530,9 @@ describe('HUD value formatting', () => {
   it('keeps route risk copy compact and fails closed for unknown values', () => {
     expect(routeRiskHudLabel('technical', 'tempo')).toBe('TECHNICAL · TEMPO')
     expect(routeRiskAriaLabel('technical', 'tempo')).toBe('Route risk technical, tempo')
+    expect(routeRiskHudLabel('technical', 'tempo', 24.4)).toBe('TECHNICAL · TEMPO · SLOPE 24°')
+    expect(routeRiskHudLabel('technical', 'tempo', 120)).toBe('TECHNICAL · TEMPO · SLOPE 90°')
+    expect(routeRiskAriaLabel('technical', 'tempo', 24.4)).toBe('Route risk technical, tempo, slope 24°')
     expect(routeRiskHudLabel('free', 'unknown')).toBe('')
     expect(routeRiskAriaLabel('free', 'unknown')).toBe('')
   })

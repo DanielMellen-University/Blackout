@@ -2321,10 +2321,10 @@ async function boot(): Promise<void> {
       const routeSummary = world.mission.routeSummary
       hudFrame.routeRisk = routeSummary.profile === 'free'
         ? ''
-        : routeRiskHudLabel(routeSummary.difficulty, routeSummary.modifier)
+        : routeRiskHudLabel(routeSummary.difficulty, routeSummary.modifier, routeSummary.maxSlopeDegrees)
       hudFrame.routeRiskAria = routeSummary.profile === 'free'
         ? ''
-        : routeRiskAriaLabel(routeSummary.difficulty, routeSummary.modifier)
+        : routeRiskAriaLabel(routeSummary.difficulty, routeSummary.modifier, routeSummary.maxSlopeDegrees)
       hudFrame.contractLabel = contractLabel
       hudFrame.contractDetail = challenge.contractDetail ?? ''
       hudFrame.contractProgress = challenge.contractProgress
