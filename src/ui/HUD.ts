@@ -621,6 +621,16 @@ export function navigationGlideCue(
   return 'on-slope'
 }
 
+/** Convert the shared target-relative altitude delta into a glide-slope cue. */
+export function navigationGlideCueFromTargetDelta(
+  distance: number,
+  targetAltDelta: number,
+  target: unknown = 'base',
+): NavigationGlideCue | null {
+  if (!Number.isFinite(targetAltDelta)) return null
+  return navigationGlideCue(distance, -targetAltDelta, target)
+}
+
 export function navigationGlideLabel(cue: NavigationGlideCue | null): string {
   if (cue === 'high') return 'GS HIGH'
   if (cue === 'low') return 'GS LOW'

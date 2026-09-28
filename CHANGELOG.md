@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.513** Correct the return-leg glide-slope sign so aircraft above the runway receive a high-glide cue and aircraft below it receive a low-glide cue.
 - **10.512** Freeze HUD banner deadlines through pause and results, preserving the intended remaining feedback time without adding render-loop work.
 - **10.511** Freeze mission beacon and gate-flash presentation while paused or in results, preventing wall-clock feedback from skipping ahead off-screen.
 - **10.510** Rank traffic proximity alerts by bounded 3D separation, preventing high-above contacts from masking closer level traffic while keeping horizontal HUD distances readable.

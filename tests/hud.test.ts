@@ -66,6 +66,7 @@ import {
   navigationSpeedCue,
   navigationSpeedLabel,
   navigationGlideCue,
+  navigationGlideCueFromTargetDelta,
   navigationGlideLabel,
   navigationBearingDegrees,
   navigationEtaSeconds,
@@ -764,6 +765,13 @@ describe('HUD value formatting', () => {
     expect(navigationGlideLabel('on-slope')).toBe('GS OK')
     expect(navigationGlideLabel('low')).toBe('GS LOW')
     expect(navigationGlideLabel(null)).toBe('')
+  })
+
+  it('converts target-relative return altitude into the correct glide cue', () => {
+    expect(navigationGlideCueFromTargetDelta(1000, -140)).toBe('high')
+    expect(navigationGlideCueFromTargetDelta(1000, 10)).toBe('low')
+    expect(navigationGlideCueFromTargetDelta(1000, -100)).toBe('on-slope')
+    expect(navigationGlideCueFromTargetDelta(1000, Number.NaN)).toBeNull()
   })
 
   it('keeps route ETA bounded and only reports it while closing', () => {
