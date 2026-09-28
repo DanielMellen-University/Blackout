@@ -110,6 +110,7 @@ export class World {
   }
   private committed = false
   private disposed = false
+  private renderQuality: RenderQuality | null = null
   private missionProfile: MissionRouteProfile | undefined
   /** Authored weather stays fixed against manual N-cycle changes. */
   private weatherLocked = false
@@ -194,6 +195,8 @@ export class World {
   /** Apply the shared quality envelope to terrain streaming and atmosphere fog. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
+    if (this.renderQuality === quality) return
+    this.renderQuality = quality
     const profile = renderQualityProfile(quality)
     this.settlements.setRenderQuality(quality)
     this.settlements.setDetailRadius(profile.settlementDetailRadius)

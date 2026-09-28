@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.373** Make world render-quality application idempotent, avoiding redundant terrain, atmosphere, traffic, and settlement budget writes when a preset is unchanged.
 - **10.372** Recheck terrain LOD after a half-cell of movement, promoting and demoting existing tiles before a full stream-cell crossing while preserving bounded streaming work.
 - **10.371** Tie settlement secondary-detail visibility to render quality, trimming Low draw distance while preserving landmark silhouettes, buildings, and radar destinations.
 - **10.370** Prefer the finest overlapping terrain tile during LOD transitions, keeping contact queries on the new surface while old coarse coverage fades out.

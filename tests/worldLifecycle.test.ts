@@ -32,6 +32,27 @@ describe('world lifecycle boundary', () => {
     }
   }, 60_000)
 
+  it('does not reapply an unchanged quality preset', () => {
+    const world = new World('low')
+    const viewRadius = vi.spyOn(world.terrain, 'setViewRadius')
+    const detailRadius = vi.spyOn(world.settlements, 'setDetailRadius')
+    try {
+      world.setRenderQuality('low')
+      expect(viewRadius).not.toHaveBeenCalled()
+      expect(detailRadius).not.toHaveBeenCalled()
+
+      world.setRenderQuality('balanced')
+      expect(viewRadius).toHaveBeenCalledTimes(1)
+      expect(detailRadius).toHaveBeenCalledTimes(1)
+
+      world.setRenderQuality('balanced')
+      expect(viewRadius).toHaveBeenCalledTimes(1)
+      expect(detailRadius).toHaveBeenCalledTimes(1)
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
+
   it('fails closed for public calls after disposal', () => {
     const world = Object.create(World.prototype) as World
     ;(world as unknown as { disposed: boolean }).disposed = true
