@@ -1,4 +1,4 @@
-import { Box3, Euler, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
+import { Box3, BoxGeometry, Euler, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
@@ -6,7 +6,9 @@ import {
   antiCollisionBeaconOpacity,
   canopyGlassEmissiveIntensity,
   disposeAircraftObject,
+  EXTERNAL_AIRCRAFT_MODEL_CONTRACT,
   landingLightOpacity,
+  normalizeExternalAircraftModel,
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
   resolveLoadFactor,
@@ -19,6 +21,23 @@ import { setContactHeightSampler } from '../src/world/ground'
 
 describe('rebuilt aircraft', () => {
   afterEach(() => setContactHeightSampler(null))
+
+  it('normalizes an external model to the aircraft origin contract', () => {
+    const model = new Mesh(new BoxGeometry(2, 4, 8), new MeshStandardMaterial())
+    normalizeExternalAircraftModel(model)
+    model.updateMatrixWorld(true)
+    const bounds = new Box3().setFromObject(model)
+    const size = new Vector3()
+    bounds.getSize(size)
+
+    expect(size.z).toBeCloseTo(EXTERNAL_AIRCRAFT_MODEL_CONTRACT.lengthMeters, 6)
+    expect((bounds.min.x + bounds.max.x) * 0.5).toBeCloseTo(0, 6)
+    expect((bounds.min.z + bounds.max.z) * 0.5).toBeCloseTo(0, 6)
+    expect(bounds.min.y).toBeCloseTo(EXTERNAL_AIRCRAFT_MODEL_CONTRACT.gearBottomY, 6)
+
+    model.geometry.dispose()
+    ;(model.material as MeshStandardMaterial).dispose()
+  })
 
   it('has outward facing wings on both sides and wheels at the contact height', () => {
     const model = createF35Model()

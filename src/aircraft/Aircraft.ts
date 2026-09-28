@@ -35,6 +35,20 @@ const _Y_UP = new Vector3(0, 1, 0)
 const _loadAcceleration = new Vector3()
 const _loadUp = new Vector3()
 const AIRFRAME_NIGHT_EMISSIVE = 0x153244
+const EXTERNAL_MODEL_LENGTH = 15.7
+
+/**
+ * Contract for optional GLB replacements: nose points +Z, up is +Y, units are
+ * metres, and the undercarriage is anchored 1.4 m below the aircraft origin.
+ * The loader normalizes scale and the origin anchor, while preserving the
+ * authored hierarchy for animated gear/control nodes.
+ */
+export const EXTERNAL_AIRCRAFT_MODEL_CONTRACT = {
+  forwardAxis: '+Z',
+  upAxis: '+Y',
+  lengthMeters: EXTERNAL_MODEL_LENGTH,
+  gearBottomY: -flightConfig.gearHeight,
+} as const
 
 export type AircraftStatus = 'ok' | 'crashed' | 'landed'
 
@@ -225,16 +239,7 @@ export class Aircraft {
         return false
       }
 
-      _box.setFromObject(model)
-      _box.getSize(_size)
-      const maxDim = Math.max(_size.x, _size.y, _size.z)
-      if (maxDim > 0.001) {
-        model.scale.multiplyScalar(15.7 / maxDim)
-      }
-      _box.setFromObject(model)
-      model.position.sub(_box.getCenter(_center))
-      _box.setFromObject(model)
-      model.position.y -= _box.min.y
+      normalizeExternalAircraftModel(model)
 
       model.traverse(enableShadows)
 
@@ -918,6 +923,28 @@ export class Aircraft {
 /** Dispose a removed aircraft subtree without double-disposing shared slots. */
 export function disposeAircraftObject(root: Object3D): void {
   disposeObjectTree(root)
+}
+
+/** Normalize an optional GLB to the same origin and scale as the procedural F-35. */
+export function normalizeExternalAircraftModel(model: Object3D): void {
+  model.updateMatrixWorld(true)
+  _box.setFromObject(model)
+  _box.getSize(_size)
+  const maxDim = Math.max(_size.x, _size.y, _size.z)
+  if (maxDim > 0.001) {
+    model.scale.multiplyScalar(EXTERNAL_AIRCRAFT_MODEL_CONTRACT.lengthMeters / maxDim)
+    model.updateMatrixWorld(true)
+  }
+
+  _box.setFromObject(model)
+  _box.getCenter(_center)
+  // Keep the aircraft origin over the model's centerline. The vertical anchor
+  // intentionally is not centered: flight/contact code measures gear height
+  // from the origin and expects the wheels to touch at local Y=-1.4 m.
+  model.position.x -= _center.x
+  model.position.z -= _center.z
+  model.position.y += EXTERNAL_AIRCRAFT_MODEL_CONTRACT.gearBottomY - _box.min.y
+  model.updateMatrixWorld(true)
 }
 
 /** Rare dorsal anti-collision strobe envelope, hidden between flashes. */

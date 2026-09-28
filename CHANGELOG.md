@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Normalize optional aircraft GLBs to the documented +Z/+Y metre contract and preserve the 1.4 m gear-contact anchor instead of lifting imported meshes to local Y=0.
 - Route the analytic sky through Three's tone-mapping and output-color chunks so the dome matches world exposure and color management.
 - Add a bounded night-weather exposure assist for rain, snow, and cloud cover so storm terrain remains readable without washing out clear nights or daytime.
 - Add restrained one-shot radar lock and lock-loss chirps beside the existing target banners, reusing the pooled event path without adding audio nodes or per-frame work.
