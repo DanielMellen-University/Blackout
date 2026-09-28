@@ -572,11 +572,25 @@ export function weatherTransitionLabel(transitioning: boolean): string {
   return transitioning === true ? 'SHIFT' : ''
 }
 
+/** Compact buffet cue when gated storm drive clears the HUD enter floor. */
+export function weatherBuffetLabel(drive: number): string {
+  if (!Number.isFinite(drive) || drive <= 0.2) return ''
+  return 'BUFFET'
+}
+
 /** Keep the visible weather label synchronized with the active front target. */
-export function weatherDisplayLabel(value: unknown, transitioning: boolean): string {
+export function weatherDisplayLabel(
+  value: unknown,
+  transitioning: boolean,
+  buffetDrive = 0,
+): string {
   const label = typeof value === 'string' ? value.trim() : ''
   if (!label) return ''
-  return transitioning === true ? `${label} · ${weatherTransitionLabel(true)}` : label
+  const parts = [label]
+  if (transitioning === true) parts.push(weatherTransitionLabel(true))
+  const buffet = weatherBuffetLabel(buffetDrive)
+  if (buffet) parts.push(buffet)
+  return parts.join(' · ')
 }
 
 /** Keep engine-stress feedback bounded and calm for arcade flight. */
@@ -1061,6 +1075,7 @@ export class HUD {
   private windAriaText = ''
   private weatherCueValue: WeatherCue | null = null
   private weatherTransitionValue: boolean | null = null
+  private weatherBuffetActive = false
   private weatherLabelValue = ''
   private weatherText = ''
   private weatherAriaText = ''
@@ -1341,6 +1356,8 @@ export class HUD {
     weatherKind?: string
     /** Whether the live weather front is blending between profiles. */
     weatherTransitioning?: boolean
+    /** Gated storm-buffet drive (after motion gates and gear scale). */
+    stormBuffetDrive?: number
     dayPhase?: string
     mission?: string
     /** Compact route difficulty and rhythm cue, or empty for Free flight. */
@@ -1599,21 +1616,26 @@ export class HUD {
     }
     if (this.weatherEl && opts.weather) {
       const transitioning = opts.weatherTransitioning === true
+      const buffetDrive = Number.isFinite(opts.stormBuffetDrive) ? opts.stormBuffetDrive! : 0
+      const buffetActive = buffetDrive > 0.2
       const cue = weatherCue(opts.weatherKind ?? opts.weather)
       if (
         cue !== this.weatherCueValue ||
         transitioning !== this.weatherTransitionValue ||
+        buffetActive !== this.weatherBuffetActive ||
         opts.weather !== this.weatherLabelValue ||
         this.weatherText.length === 0
       ) {
         this.weatherCueValue = cue
         this.weatherTransitionValue = transitioning
+        this.weatherBuffetActive = buffetActive
         this.weatherLabelValue = opts.weather
-        this.weatherText = weatherDisplayLabel(opts.weather, transitioning)
+        this.weatherText = weatherDisplayLabel(opts.weather, transitioning, buffetDrive)
         this.weatherAriaText = cue === 'severe'
           ? `Severe weather: ${opts.weather}`
           : cue === 'active' ? `Active weather: ${opts.weather}` : `Weather: ${opts.weather}`
         if (transitioning) this.weatherAriaText += ', front shifting'
+        if (buffetActive) this.weatherAriaText += ', storm buffet'
       }
       this.setText(this.weatherEl, this.weatherText)
       this.setAttribute(this.weatherEl, 'aria-label', this.weatherAriaText)

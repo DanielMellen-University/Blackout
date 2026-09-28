@@ -114,6 +114,7 @@ import {
   windDirectionDegrees,
   windSpeedMps,
   windGustCue,
+  weatherBuffetLabel,
   weatherCue,
   weatherCycleBanner,
   weatherDisplayLabel,
@@ -540,6 +541,12 @@ describe('HUD value formatting', () => {
     expect(weatherDisplayLabel('RAIN FRONT', true)).toBe('RAIN FRONT · SHIFT')
     expect(weatherDisplayLabel('  SNOW SHOWERS  ', false)).toBe('SNOW SHOWERS')
     expect(weatherDisplayLabel('', true)).toBe('')
+    expect(weatherBuffetLabel(0.19)).toBe('')
+    expect(weatherBuffetLabel(0.21)).toBe('BUFFET')
+    expect(weatherBuffetLabel(Number.NaN)).toBe('')
+    expect(weatherDisplayLabel('STORM', false, 0.55)).toBe('STORM · BUFFET')
+    expect(weatherDisplayLabel('RAIN FRONT', true, 0.8)).toBe('RAIN FRONT · SHIFT · BUFFET')
+    expect(weatherDisplayLabel('CLEAR', false, 0.1)).toBe('CLEAR')
   })
 
   it('keeps route identity in the live mission row within a bounded label', () => {

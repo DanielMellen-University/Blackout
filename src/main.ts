@@ -75,7 +75,7 @@ import { SpeedStreakFx } from './systems/SpeedStreakFx'
 import { MachConeFx } from './systems/MachConeFx'
 import { GroundWakeFx } from './systems/GroundWakeFx'
 import { thermalLiftIntensity } from './systems/ThermalLift'
-import { stormBuffetDrive } from './systems/StormBuffet'
+import { stormBuffetDrive, stormBuffetGearScale } from './systems/StormBuffet'
 import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
@@ -1401,6 +1401,7 @@ async function boot(): Promise<void> {
     if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) renderer.setPixelRatio(pixelRatio)
     let visualDt = 0
     let simDt = 0
+    let stormDrive = 0
     if (!simLive) {
       time.skipFrame(nowMs)
       aircraft.controls = input.sampleWithDt(0)
@@ -1417,11 +1418,11 @@ async function boot(): Promise<void> {
       aircraft.setWeatherGust(weather.gust)
       aircraft.setWeatherWind(weather.windX, weather.windZ)
       aircraft.setWeatherSurface(weather.rain, weather.snow)
-      const stormDrive = stormBuffetDrive(weather.rain, weather.snow, weather.gust, {
+      stormDrive = stormBuffetDrive(weather.rain, weather.snow, weather.gust, {
         reducedMotion,
         paused: menu.paused,
         playing,
-      })
+      }) * stormBuffetGearScale(aircraft.controls.gearDown)
       aircraft.setStormBuffet(stormDrive)
       cameras.setStormBuffet(stormDrive)
 
@@ -2355,6 +2356,7 @@ async function boot(): Promise<void> {
       hudFrame.windX = precipitation.windX
       hudFrame.windZ = precipitation.windZ
       hudFrame.weatherGust = precipitation.gust
+      hudFrame.stormBuffetDrive = stormDrive
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       const contractLabel = challenge.contractLabel
       hudFrame.mission = missionLabelCache(
