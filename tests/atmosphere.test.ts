@@ -8,7 +8,7 @@ import {
   lightningCooldown,
   lightningFlashEnvelope,
 } from '../src/world/Atmosphere'
-import { sceneExposure } from '../src/core/SceneExposure'
+import { nightWeatherReadability, sceneExposure } from '../src/core/SceneExposure'
 
 describe('lightning comfort', () => {
   it('turns cloud density into calm, bounded immersion bands', () => {
@@ -74,5 +74,14 @@ describe('lightning comfort', () => {
     expect(sceneExposure(1)).toBeCloseTo(1.15)
     expect(sceneExposure(Number.NaN, Number.NaN)).toBeCloseTo(0.95)
     expect(sceneExposure(2, 2)).toBeCloseTo(2.5)
+  })
+
+  it('adds a bounded readability lift only for night weather', () => {
+    expect(nightWeatherReadability(1, 1, 1)).toBe(0)
+    expect(nightWeatherReadability(0, 0, 0)).toBe(0)
+    expect(nightWeatherReadability(0, 1, 1)).toBeCloseTo(0.9)
+    expect(nightWeatherReadability(Number.NaN, Number.NaN, Number.NaN)).toBe(0)
+    expect(sceneExposure(0, 0, 0.9)).toBeCloseTo(1.112)
+    expect(sceneExposure(1, 0, 1)).toBeCloseTo(1.15)
   })
 })

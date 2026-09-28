@@ -152,7 +152,7 @@ import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { cloudImmersionBand, type CloudImmersionBand } from './world/Atmosphere'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
-import { sceneExposure } from './core/SceneExposure'
+import { nightWeatherReadability, sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
 import { startupFailureMessage } from './core/startupFailure'
 import { appReleaseLabel } from './core/Version'
@@ -1575,7 +1575,13 @@ async function boot(): Promise<void> {
       showBanner(cue, 1600, 'info')
     }
     previousCloudBand = cloudBand
-    const exposure = sceneExposure(world.atmosphere.daylight, crashFx.bloom)
+    const weatherForExposure = world.atmosphere.weatherSnapshot
+    const nightReadability = nightWeatherReadability(
+      world.atmosphere.daylight,
+      Math.max(weatherForExposure.rain, weatherForExposure.snow),
+      Math.max(weatherForExposure.lowClouds, weatherForExposure.midClouds * 0.9),
+    )
+    const exposure = sceneExposure(world.atmosphere.daylight, crashFx.bloom, nightReadability)
     if (Math.abs(renderer.toneMappingExposure - exposure) > 0.001) {
       renderer.toneMappingExposure = exposure
     }
