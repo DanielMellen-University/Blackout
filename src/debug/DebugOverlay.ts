@@ -16,7 +16,25 @@ import {
   opsPadBlend,
   sampleClimate,
 } from '../world/terrainSample'
+import type { TerrainStreamingStats } from '../world/TerrainSystem'
 import type { SpawnPose } from '../world/World'
+
+export interface DebugRenderStats {
+  renderMs: number
+  drawCalls: number
+  triangles: number
+  streaming: TerrainStreamingStats
+}
+
+/** Keep optional performance telemetry finite before it reaches the debug DOM. */
+export function debugPerformanceLine(stats: DebugRenderStats): string {
+  const renderMs = Number.isFinite(stats.renderMs) ? Math.max(0, stats.renderMs) : 0
+  const calls = Number.isFinite(stats.drawCalls) ? Math.max(0, Math.floor(stats.drawCalls)) : 0
+  const triangles = Number.isFinite(stats.triangles) ? Math.max(0, Math.floor(stats.triangles)) : 0
+  const stream = stats.streaming
+  return `perf  ${renderMs.toFixed(2)} ms cpu  calls ${calls}  tris ${triangles}` +
+    `  stream ${stream.loaded}/${stream.pending}/${stream.inFlight}/${stream.ready} w${stream.workers}`
+}
 
 /**
  * Hidden map-gen inspector. Only constructed when isDebugEnabled().
@@ -85,7 +103,13 @@ export class DebugOverlay {
     this.marks.position.set(pad.x, pad.y + 0.4, pad.z)
   }
 
-  update(aircraft: Aircraft, spawn: SpawnPose, cam: string, fps: number): void {
+  update(
+    aircraft: Aircraft,
+    spawn: SpawnPose,
+    cam: string,
+    fps: number,
+    performance: DebugRenderStats,
+  ): void {
     if (this.disposed) return
     this.syncPad()
     const { x, y, z } = aircraft.position
@@ -108,6 +132,7 @@ export class DebugOverlay {
       `spawn ${spawn.biome}  yaw=${((spawn.yaw * 180) / Math.PI).toFixed(0)}  y=${spawn.y.toFixed(1)}`,
       `ias   ${kts.toFixed(0)} kts  tgt ${targetKts.toFixed(0)}  eng ${(aircraft.controls.throttle * 100).toFixed(1)}%${aircraft.controls.boost ? ' BOOST' : ''}`,
       `gnd   ${aircraft.onGround ? 'yes' : 'no'}  impactVy ${aircraft.impactVy.toFixed(1)}  cam ${cam}  ${fps.toFixed(0)} fps`,
+      debugPerformanceLine(performance),
     ].join('\n')
   }
 

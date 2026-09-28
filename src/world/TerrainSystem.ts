@@ -167,6 +167,15 @@ interface PendingChunk {
   rebuild: boolean
 }
 
+/** Read-only stream pressure snapshot used by the opt-in debug inspector. */
+export interface TerrainStreamingStats {
+  loaded: number
+  pending: number
+  inFlight: number
+  ready: number
+  workers: number
+}
+
 /**
  * Infinite streaming terrain with amortized chunk generation.
  */
@@ -408,7 +417,7 @@ export class TerrainSystem {
     this.updateFades(cx, cz, dt)
   }
 
-  get streamingStats(): { loaded: number; pending: number; inFlight: number; ready: number; workers: number } {
+  get streamingStats(): TerrainStreamingStats {
     return { loaded: this.chunks.size, pending: this.pending.length,
       inFlight: this.workers.busy, ready: this.ready.length, workers: this.workers.size }
   }

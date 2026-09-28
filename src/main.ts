@@ -1803,8 +1803,16 @@ async function boot(): Promise<void> {
         }
       }
       cameras.update(aircraft, visualDt)
+      const renderStart = debug ? performance.now() : 0
       renderer.render(world.scene, cameras.camera)
-      debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps)
+      if (debug) {
+        debug.update(aircraft, world.spawn, cameras.modeLabel, time.fps, {
+          renderMs: performance.now() - renderStart,
+          drawCalls: renderer.info.render.calls,
+          triangles: renderer.info.render.triangles,
+          streaming: world.terrain.streamingStats,
+        })
+      }
     }
 
     if (shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {

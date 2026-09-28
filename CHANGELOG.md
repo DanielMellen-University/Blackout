@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add opt-in debug performance telemetry for render CPU time, draw calls, triangles, and terrain stream pressure so future optimization work is evidence-led without adding release-frame overhead.
 - Replace legacy self-mutating ship workflows with read-only GitHub Actions CI that runs the regression suite and production build on pushes and pull requests.
 - Normalize optional aircraft GLBs to the documented +Z/+Y metre contract and preserve the 1.4 m gear-contact anchor instead of lifting imported meshes to local Y=0.
 - Route the analytic sky through Three's tone-mapping and output-color chunks so the dome matches world exposure and color management.
