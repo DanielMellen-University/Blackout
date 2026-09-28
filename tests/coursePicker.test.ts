@@ -3,6 +3,7 @@ import {
   courseFlightLogLabel,
   courseConditionSummary,
   courseMasteryProgressLabel,
+  coursePickerNavigationIndex,
   coursePickerCopy,
   courseTimePreviewLabel,
   courseWindPreviewLabel,
@@ -17,6 +18,16 @@ const orbit = {
 }
 
 describe('course picker copy', () => {
+  it('keeps keyboard navigation inside filtered results', () => {
+    expect(coursePickerNavigationIndex('End', 0, 3)).toBe(2)
+    expect(coursePickerNavigationIndex('Home', 2, 3)).toBe(0)
+    expect(coursePickerNavigationIndex('ArrowDown', 0, 5)).toBe(2)
+    expect(coursePickerNavigationIndex('ArrowDown', 2, 3)).toBe(2)
+    expect(coursePickerNavigationIndex('ArrowUp', 0, 3)).toBe(0)
+    expect(coursePickerNavigationIndex('PageDown', 0, 3)).toBeNull()
+    expect(coursePickerNavigationIndex('End', 0, Number.NaN)).toBeNull()
+  })
+
   it('filters the catalog by every search term while preserving authored order', () => {
     const items = [
       { id: 'storm', label: 'Storm Run', detail: 'Low visibility mountain pass', meta: 'NEW', stats: '' },

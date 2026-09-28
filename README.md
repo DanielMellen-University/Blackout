@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.521**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.522**.
 
 Daily Ops adds one shared UTC-day challenge to the curated catalog, rotating a bounded seed, route family, and weather while keeping score records isolated per day. Daily Ops replay links carry the UTC day key so copied links reproduce the same route and weather instead of silently changing after midnight. Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget. Shoreline Run adds a fog-lined coastal route with the same bounded scoring, replay, and contract systems as the rest of the catalog.
 

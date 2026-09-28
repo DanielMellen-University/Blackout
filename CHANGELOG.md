@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.522** Keep filtered course-picker keyboard navigation bounded to the visible catalog, so Home/End and grid movement remain usable as the challenge library grows.
 - **10.521** Preserve the exact Daily Ops UTC day in the sortie debrief, so results, crash reports, and accessibility labels identify the replayable challenge that was actually flown.
 - **10.520** Preserve the Daily Ops UTC day in replay links so copied challenges retain their route family and weather after midnight.
 - **10.519** Add a deterministic Daily Ops challenge that rotates route family, seed, and weather at UTC midnight while keeping replay and score records isolated per day.

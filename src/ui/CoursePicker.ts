@@ -28,6 +28,30 @@ export function filterCoursePickerItems(
   })
 }
 
+/** Resolve a two-column course-grid key without escaping the filtered list. */
+export function coursePickerNavigationIndex(
+  key: string,
+  index: number,
+  visibleCount: number,
+  columns = 2,
+): number | null {
+  const count = Number.isFinite(visibleCount) ? Math.max(0, Math.floor(visibleCount)) : 0
+  if (count === 0) return null
+  const current = Number.isFinite(index)
+    ? Math.min(count - 1, Math.max(0, Math.floor(index)))
+    : 0
+  const step = Number.isFinite(columns) ? Math.max(1, Math.floor(columns)) : 2
+  switch (key) {
+    case 'ArrowRight': return Math.min(count - 1, current + 1)
+    case 'ArrowLeft': return Math.max(0, current - 1)
+    case 'ArrowDown': return Math.min(count - 1, current + step)
+    case 'ArrowUp': return Math.max(0, current - step)
+    case 'Home': return 0
+    case 'End': return count - 1
+    default: return null
+  }
+}
+
 export interface CoursePickerCopyInput {
   course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>
   history: CourseHistory | null
@@ -350,29 +374,8 @@ export class CoursePicker {
     const visible = filterCoursePickerItems(this.items, this.filter.value)
     if (visible.length === 0) return
     const index = Math.max(0, visible.findIndex((item) => item.id === this.selectedId))
-    let next = index
-    switch (event.key) {
-      case 'ArrowRight':
-        next = Math.min(visible.length - 1, index + 1)
-        break
-      case 'ArrowLeft':
-        next = Math.max(0, index - 1)
-        break
-      case 'ArrowDown':
-        next = Math.min(visible.length - 1, index + 2)
-        break
-      case 'ArrowUp':
-        next = Math.max(0, index - 2)
-        break
-      case 'Home':
-        next = 0
-        break
-      case 'End':
-        next = this.items.length - 1
-        break
-      default:
-        return
-    }
+    const next = coursePickerNavigationIndex(event.key, index, visible.length)
+    if (next === null) return
     event.preventDefault()
     const item = visible[next]
     if (item) this.select(item.id, true)
