@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Split the large course/career modules into a cacheable application chunk, reducing the initial entry bundle without changing runtime behavior or adding per-frame work.
 - Keep shared settlement geometry alive during streamed unloads, preventing an anchor beacon or instanced prop family from invalidating landmarks that remain visible after settlement churn.
 - Preserve shared vegetation materials during streamed chunk teardown, preventing one retiring tile from disposing foliage shaders still used by visible neighboring tiles.
 - Reuse shared opaque terrain and water materials after streamed tiles finish fading, rehydrating private fade materials only for transitions and retirement to reduce resident GPU state without changing terrain geometry or stream budgets.
