@@ -1,6 +1,13 @@
 import { Color, Scene, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
-import { deriveSkyCloudDeck, deriveSkyCloudDeckInto, SkyDome, skyCloudDetailScale, skyLayerVisibility } from '../src/world/SkyDome'
+import {
+  auroraIntensity,
+  deriveSkyCloudDeck,
+  deriveSkyCloudDeckInto,
+  SkyDome,
+  skyCloudDetailScale,
+  skyLayerVisibility,
+} from '../src/world/SkyDome'
 import { WEATHER_PROFILES } from '../src/world/WeatherDirector'
 
 function deckFor(id: keyof typeof WEATHER_PROFILES) {
@@ -13,6 +20,18 @@ function deckFor(id: keyof typeof WEATHER_PROFILES) {
 }
 
 describe('analytic sky cloud deck', () => {
+  it('keeps aurora envelopes deterministic, bounded, and night-only', () => {
+    const clearNight = auroraIntensity(4200, -7100, 0, 0, 0)
+    const repeated = auroraIntensity(4200, -7100, 0, 0, 0)
+
+    expect(clearNight).toBe(repeated)
+    expect(clearNight).toBeGreaterThanOrEqual(0)
+    expect(clearNight).toBeLessThanOrEqual(1)
+    expect(auroraIntensity(4200, -7100, 1, 0, 0)).toBe(0)
+    expect(auroraIntensity(4200, -7100, 0, 1, 1)).toBeLessThanOrEqual(clearNight)
+    expect(auroraIntensity(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NaN, Number.NaN)).toBe(0)
+  })
+
   it('turns profile layers into distinct but bounded sky states', () => {
     const clear = deckFor('clear')
     const cloudy = deckFor('cloudy')

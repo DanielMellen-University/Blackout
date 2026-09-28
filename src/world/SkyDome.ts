@@ -57,6 +57,27 @@ export function skyCloudDetailScale(scale: number): number {
 }
 
 /**
+ * Deterministic aurora envelope for clear night skies. The broad world-space
+ * bands keep the effect discoverable during exploration without adding a
+ * second draw or coupling the sky to terrain generation state.
+ */
+export function auroraIntensity(
+  ax: number,
+  az: number,
+  dayFactor: number,
+  haze: number,
+  cloudCover: number,
+): number {
+  const safeAx = Number.isFinite(ax) ? ax : 0
+  const safeAz = Number.isFinite(az) ? az : 0
+  const night = Math.pow(1 - clamp01(dayFactor), 1.35)
+  const clear = 1 - clamp01(clamp01(cloudCover) * 0.9 + clamp01(haze) * 0.45)
+  const worldBand = Math.abs(Math.sin(safeAx * 0.00013 + safeAz * 0.000087))
+  const latitudeBand = smooth01((worldBand - 0.54) / 0.3)
+  return clamp01(latitudeBand * night * clear * 0.9)
+}
+
+/**
  * Keep the near instanced formations and the far sky deck in agreement.
  * Light weather exposes broken puffs and cirrus, while rain closes those gaps
  * into an undercast. Thunderstorms add darkness rather than a flash spike.
@@ -121,6 +142,7 @@ export class SkyDome {
         uSunIntensity: { value: 1 },
         uMoonIntensity: { value: 0.2 },
         uStarIntensity: { value: 0 },
+        uAurora: { value: 0 },
         uHaze: { value: 0 },
         uTime: { value: 0 },
         // The far cloud deck is analytic inside this one existing draw. The
@@ -159,6 +181,7 @@ export class SkyDome {
         uniform float uSunIntensity;
         uniform float uMoonIntensity;
         uniform float uStarIntensity;
+        uniform float uAurora;
         uniform float uHaze;
         uniform float uTime;
         uniform float uCloudBroken;
@@ -233,6 +256,23 @@ export class SkyDome {
             float nearSun = pow(max(0.0, dot(dir, uSunDir)), 16.0);
             starVis *= 1.0 - nearSun * uDayFactor;
             col += vec3(0.85, 0.9, 1.0) * starVis;
+          }
+
+          // --- Aurora curtains (one cheap, non-flashing sky layer) ---
+          // Keep the ribbon low on the upper horizon so terrain and cloud
+          // decks naturally occlude it. Slow drift gives life without a
+          // strobe or an additional render pass.
+          if (uAurora > 0.001 && elev > -0.04 && elev < 0.56) {
+            float auroraBand = smoothstep(-0.04, 0.1, elev) *
+              (1.0 - smoothstep(0.34, 0.58, elev));
+            vec2 auroraUv = dir.xz / max(0.24, elev + 0.34);
+            float foldA = sin(auroraUv.x * 2.7 + auroraUv.y * 1.35 + uTime * 0.0025);
+            float foldB = sin(auroraUv.x * 6.1 - auroraUv.y * 2.4 - uTime * 0.0013);
+            float folds = 0.5 + 0.5 * (foldA * 0.72 + foldB * 0.28);
+            float curtain = smoothstep(0.42, 0.78, folds);
+            vec3 auroraColor = mix(vec3(0.08, 0.86, 0.5), vec3(0.38, 0.22, 0.92),
+              smoothstep(0.34, 0.82, foldB * 0.5 + 0.5));
+            col += auroraColor * curtain * auroraBand * uAurora * 0.18;
           }
 
           // --- Sun disc + atmospheric scatter (cheap rayleigh-ish) ---
@@ -409,6 +449,7 @@ export class SkyDome {
       1,
     )
     const clearSky = 1 - MathUtilsClamp(cloudCover * 0.85 + safeHaze * lowDeck * 0.35, 0, 0.92)
+    const aurora = auroraIntensity(safeAx, safeAz, safeDayFactor, safeHaze, cloudCover)
 
     this.mat.uniforms.uDayFactor!.value = safeDayFactor
     this.mat.uniforms.uNightFactor!.value = night
@@ -435,6 +476,7 @@ export class SkyDome {
     // Stars only at night, clear weather
     this.mat.uniforms.uStarIntensity!.value =
       Math.pow(night, 1.35) * clearSky * (0.55 + (1 - safeHaze) * 0.45)
+    this.mat.uniforms.uAurora!.value = aurora
   }
 }
 
