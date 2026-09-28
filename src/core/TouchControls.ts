@@ -38,8 +38,8 @@ export function touchInputSupported(maxTouchPoints: number, coarsePointer: boole
 
 /**
  * Maps held pointer buttons into flight axes without adding work to the RAF
- * loop. Pointer releases are listened for on window so a finger leaving the
- * button cannot leave an axis latched.
+ * loop. Pointer releases and focus-loss cleanup prevent a finger leaving the
+ * button or tab from leaving an axis latched.
  */
 export class TouchControls {
   private readonly root: HTMLElement
@@ -56,6 +56,8 @@ export class TouchControls {
     root.addEventListener('pointerdown', this.onPointerDown)
     window.addEventListener('pointerup', this.onPointerUp)
     window.addEventListener('pointercancel', this.onPointerUp)
+    window.addEventListener('blur', this.onFocusLost)
+    document.addEventListener('visibilitychange', this.onVisibilityChange)
   }
 
   setVisible(visible: boolean): void {
@@ -64,9 +66,7 @@ export class TouchControls {
     this.root.hidden = !visible
     this.root.setAttribute('aria-hidden', visible ? 'false' : 'true')
     if (!visible) {
-      this.activePointers.clear()
-      this.clearButtonStates()
-      this.emit()
+      this.clearActivePointers()
     }
   }
 
@@ -76,8 +76,9 @@ export class TouchControls {
     this.root.removeEventListener('pointerdown', this.onPointerDown)
     window.removeEventListener('pointerup', this.onPointerUp)
     window.removeEventListener('pointercancel', this.onPointerUp)
-    this.activePointers.clear()
-    this.clearButtonStates()
+    window.removeEventListener('blur', this.onFocusLost)
+    document.removeEventListener('visibilitychange', this.onVisibilityChange)
+    this.clearActivePointers()
     this.root.hidden = true
     this.root.setAttribute('aria-hidden', 'true')
   }
@@ -98,6 +99,21 @@ export class TouchControls {
     if (!action) return
     this.activePointers.delete(event.pointerId)
     if (!this.activePointersHasAction(action)) this.setButtonState(action, false)
+    this.emit()
+  }
+
+  private onFocusLost = (): void => {
+    this.clearActivePointers()
+  }
+
+  private onVisibilityChange = (): void => {
+    if (document.hidden) this.clearActivePointers()
+  }
+
+  private clearActivePointers(): void {
+    if (this.activePointers.size === 0) return
+    this.activePointers.clear()
+    this.clearButtonStates()
     this.emit()
   }
 
