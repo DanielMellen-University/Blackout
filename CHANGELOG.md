@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.492** Reuse exact external-camera ground probes within a frame through a bounded caller-owned cache, reducing duplicate terrain work without allowing streamed sampler changes to leak stale heights.
 - **10.491** Validate a bounded wing-width corridor between route gates so generated courses clear terrain across the flight path, not only at the centreline.
 - **10.490** Add a persisted reduced-motion setting that quiets camera, weather, radar, sky, and impact animation without changing flight behavior.
 - **10.489** Persist the best river, lake, and sea survey per course so exploration progress carries into the picker and debrief.

@@ -7,7 +7,11 @@ import {
   type CameraMode,
 } from '../core/types'
 import { headingFromOrientation } from '../core/attitude'
-import { cameraMinY } from '../world/ground'
+import {
+  cameraMinYCached,
+  clearGroundHeightCache,
+  createGroundHeightCache,
+} from '../world/ground'
 import { CHUNK_SIZE, FOG_MARGIN_CHUNKS, fogFarForViewRadius } from '../world/TerrainSystem'
 import { CockpitMode } from './CockpitMode'
 import type { RenderQuality } from '../core/RenderQuality'
@@ -181,6 +185,8 @@ export class CameraSystem {
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
   private obstacleSampler: CameraObstacleSampler | null = null
+  /** Reused ground probes for the external rig's per-frame occlusion solve. */
+  private readonly groundHeightCache = createGroundHeightCache(8)
   /** Effective sightline distance; recovery is eased to prevent terrain jitter. */
   private occlusionDistance = 0
   private occlusionReady = false
@@ -483,6 +489,7 @@ export class CameraSystem {
   private applyRig(aircraft: Aircraft, dt: number, snap: boolean): void {
     if (this.mode === 'cockpit') return
     if (!finiteVector3(aircraft.displayPosition) || !finiteQuaternion(aircraft.displayOrientation)) return
+    clearGroundHeightCache(this.groundHeightCache)
     const cfg = MODE_CONFIG[this.mode]
 
     // Move the established rig by the aircraft's world translation before
@@ -619,7 +626,12 @@ export class CameraSystem {
     for (let i = 1; i <= samples; i++) {
       const t = i / samples
       _groundSample.copy(pivot).addScaledVector(_toCam, t)
-      const floor = cameraMinY(_groundSample.x, _groundSample.z, this.groundClearance)
+      const floor = cameraMinYCached(
+        _groundSample.x,
+        _groundSample.z,
+        this.groundClearance,
+        this.groundHeightCache,
+      )
       const blocked = this.obstacleSampler?.(_groundSample.x, _groundSample.y, _groundSample.z) === true
       if (_groundSample.y >= floor && !blocked) continue
 
@@ -627,7 +639,7 @@ export class CameraSystem {
       out.copy(pivot).addScaledVector(_toCam, safeT)
       out.y = Math.max(
         out.y,
-        cameraMinY(out.x, out.z, this.groundClearance),
+        cameraMinYCached(out.x, out.z, this.groundClearance, this.groundHeightCache),
       )
       break
     }
@@ -638,7 +650,7 @@ export class CameraSystem {
     if (sep < minSep && sep > 1e-6) {
       _toCam.multiplyScalar(minSep / sep)
       out.copy(pivot).add(_toCam)
-      const floor = cameraMinY(out.x, out.z, this.groundClearance)
+      const floor = cameraMinYCached(out.x, out.z, this.groundClearance, this.groundHeightCache)
       if (out.y < floor) out.y = floor
     }
     _toCam.subVectors(out, pivot)
@@ -661,12 +673,12 @@ export class CameraSystem {
     }
     if (this.occlusionDistance >= targetDistance) return
     out.copy(pivot).addScaledVector(_toCam, this.occlusionDistance / targetDistance)
-    const floor = cameraMinY(out.x, out.z, this.groundClearance)
+    const floor = cameraMinYCached(out.x, out.z, this.groundClearance, this.groundHeightCache)
     if (out.y < floor) out.y = floor
   }
 
   private clampAboveGround(pos: Vector3): void {
-    const minY = cameraMinY(pos.x, pos.z, this.groundClearance)
+    const minY = cameraMinYCached(pos.x, pos.z, this.groundClearance, this.groundHeightCache)
     if (pos.y < minY) pos.y = minY
   }
 

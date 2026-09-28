@@ -19,7 +19,13 @@ import {
   TOUCHDOWN_IMPULSE,
 } from '../src/camera/CameraSystem'
 import { CAMERA_MODES } from '../src/core/types'
-import { cameraMinY, setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
+import {
+  cameraMinY,
+  createGroundHeightCache,
+  sampleGroundHeightCached,
+  setContactHeightSampler,
+  setGroundHeightSampler,
+} from '../src/world/ground'
 
 describe('external camera framing', () => {
   afterEach(() => {
@@ -562,6 +568,33 @@ describe('external camera framing', () => {
     expect(firstClearDistance).toBeLessThan(settlingDistance)
     expect(recoveredDistance).toBeGreaterThan(blockedDistance + 1)
     cameras.dispose()
+  })
+})
+
+describe('ground query cache', () => {
+  afterEach(() => {
+    setContactHeightSampler(null)
+    setGroundHeightSampler(null)
+  })
+
+  it('reuses exact probes without surviving a sampler replacement', () => {
+    let samples = 0
+    setGroundHeightSampler(() => {
+      samples++
+      return 42
+    })
+    const cache = createGroundHeightCache(2)
+
+    expect(sampleGroundHeightCached(12, -8, cache)).toBe(42)
+    expect(sampleGroundHeightCached(12, -8, cache)).toBe(42)
+    expect(samples).toBe(1)
+
+    setGroundHeightSampler(() => {
+      samples++
+      return 84
+    })
+    expect(sampleGroundHeightCached(12, -8, cache)).toBe(84)
+    expect(samples).toBe(2)
   })
 })
 

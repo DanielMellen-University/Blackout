@@ -29,9 +29,47 @@ export type GroundSurfaceSampler = (
 let meshHeightSampler: MeshHeightSampler | null = null
 let groundHeightSampler: GroundHeightSampler | null = null
 let groundSurfaceSampler: GroundSurfaceSampler | null = null
+let samplerRevision = 0
+
+interface GroundHeightCacheEntry {
+  x: number
+  z: number
+  height: number
+}
+
+/**
+ * Small caller-owned cache for repeated height probes during one update.
+ *
+ * The cache deliberately has no world-lifetime state: terrain tiles can be
+ * replaced underneath a moving camera, so callers should clear it at the
+ * start of each simulation/render solve. The sampler revision is a second
+ * guard for tests, reseeds, and world disposal.
+ */
+export interface GroundHeightCache {
+  readonly entries: GroundHeightCacheEntry[]
+  cursor: number
+  revision: number
+}
+
+export function createGroundHeightCache(capacity = 8): GroundHeightCache {
+  const safeCapacity = Math.max(1, Math.min(32, Math.floor(Number.isFinite(capacity) ? capacity : 8)))
+  const entries: GroundHeightCacheEntry[] = []
+  for (let i = 0; i < safeCapacity; i++) entries.push({ x: 0, z: 0, height: 0 })
+  return { entries, cursor: 0, revision: samplerRevision }
+}
+
+export function clearGroundHeightCache(cache: GroundHeightCache): void {
+  cache.cursor = 0
+  cache.revision = samplerRevision
+  for (const entry of cache.entries) {
+    entry.x = Number.NaN
+    entry.z = Number.NaN
+  }
+}
 
 export function setContactHeightSampler(sampler: MeshHeightSampler | null): void {
   meshHeightSampler = sampler
+  samplerRevision++
   // The dedicated height callback belongs to the same streamed terrain
   // lifetime. Clearing the contact sampler must not leave a disposed world
   // feeding stale heights to AGL, camera, or effect queries.
@@ -42,11 +80,13 @@ export function setContactHeightSampler(sampler: MeshHeightSampler | null): void
 /** Register the allocation-free height path used by hot queries. */
 export function setGroundHeightSampler(sampler: GroundHeightSampler | null): void {
   groundHeightSampler = sampler
+  samplerRevision++
 }
 
 /** Register the caller-owned surface path used by collision hot loops. */
 export function setGroundSurfaceSampler(sampler: GroundSurfaceSampler | null): void {
   groundSurfaceSampler = sampler
+  samplerRevision++
 }
 
 /**
@@ -70,6 +110,41 @@ export function sampleGroundHeight(x: number, z: number): number {
   // to the analytic surface instead of invoking it a second time when a
   // streamed tile is not ready.
   return sampleTerrainSurfaceHeightFast(x, z)
+}
+
+/**
+ * Height probe backed by a tiny caller-owned cache. This is intended for
+ * camera/physics solves that may ask for the exact same coordinate more than
+ * once in a frame. Non-finite coordinates bypass the cache entirely.
+ */
+export function sampleGroundHeightCached(
+  x: number,
+  z: number,
+  cache: GroundHeightCache,
+): number {
+  if (cache.revision !== samplerRevision) clearGroundHeightCache(cache)
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return sampleGroundHeight(x, z)
+  for (const entry of cache.entries) {
+    if (entry.x === x && entry.z === z) return entry.height
+  }
+  const height = sampleGroundHeight(x, z)
+  if (!Number.isFinite(height)) return height
+  const entry = cache.entries[cache.cursor]!
+  entry.x = x
+  entry.z = z
+  entry.height = height
+  cache.cursor = (cache.cursor + 1) % cache.entries.length
+  return height
+}
+
+/** Camera floor probe using the same frame-scoped height cache. */
+export function cameraMinYCached(
+  x: number,
+  z: number,
+  clearance: number,
+  cache: GroundHeightCache,
+): number {
+  return sampleGroundHeightCached(x, z, cache) + clearance
 }
 
 /** Prefer the visible mesh, falling back to procedural terrain outside loaded tiles. */
