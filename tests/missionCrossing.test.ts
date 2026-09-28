@@ -442,6 +442,8 @@ describe('MissionSystem gate crossing', () => {
     mission.start(0, 20, 0, 0)
     expect(mission.routeSummary.label).toBe(mission.routeProfileLabel)
     expect(mission.routeBriefing).toContain('MIN CLR')
+    expect(mission.routeBriefing).toContain('TURN ')
+    expect(mission.routeBriefing).toContain('TOP ')
     expect(mission.routeBriefing).toContain(mission.routeProfileLabel)
     expect(mission.routeBriefing).toContain(mission.routeModifierLabel)
     expect(mission.routeBriefing).toContain(mission.routeSummary.scoringFocusLabel)

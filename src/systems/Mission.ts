@@ -690,7 +690,7 @@ export class MissionSystem {
     minClearanceMeters: ROUTE_CLEARANCE,
     maxAltitudeMeters: 0,
   }
-  private routeBriefingText = 'ROUTE ORBIT / APPROACH / STEADY / BALANCED / STANDARD / MIN CLR 120M'
+  private routeBriefingText = 'ROUTE ORBIT / APPROACH / STEADY / BALANCED / STANDARD / MIN CLR 120M / TURN 0° / TOP 0M'
   private readonly hudState: MissionHud = {
     status: 'idle',
     current: 0,
@@ -846,6 +846,8 @@ export class MissionSystem {
         summary.scoringFocusLabel,
         summary.difficulty.toUpperCase(),
         `MIN CLR ${Math.round(summary.minClearanceMeters)}M`,
+        `TURN ${Math.round(summary.maxTurnDegrees)}°`,
+        `TOP ${Math.max(0, Math.round(summary.maxAltitudeMeters - safeSpawnY))}M`,
       ].join(' / ')
     for (let i = 0; i < route.length; i++) {
       const point = route[i]!
