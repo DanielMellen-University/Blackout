@@ -4,7 +4,61 @@ import { MathUtils } from 'three'
 export const THERMAL_CELL_SIZE_M = 1_800
 export const THERMAL_MIN_ALTITUDE_M = 90
 export const THERMAL_PEAK_ALTITUDE_M = 420
-export const THERMAL_FADE_ALTITUDE_M = 1_800
+/** Keep lift useful above tall relief without creating an unbounded force band. */
+export const THERMAL_FADE_ALTITUDE_M = 3_600
+
+export interface ThermalPocket {
+  readonly cellX: number
+  readonly cellZ: number
+  readonly x: number
+  readonly z: number
+  readonly radius: number
+  readonly strength: number
+}
+
+/** Return the stable pocket geometry used by both the flight field and authored routes. */
+export function thermalPocketForCell(
+  seed: number,
+  cellX: number,
+  cellZ: number,
+): ThermalPocket | null {
+  if (!Number.isFinite(seed) || !Number.isFinite(cellX) || !Number.isFinite(cellZ)) return null
+  const safeCellX = Math.trunc(cellX)
+  const safeCellZ = Math.trunc(cellZ)
+  return {
+    cellX: safeCellX,
+    cellZ: safeCellZ,
+    x: (safeCellX + 0.5 + (thermalHash(seed, safeCellX, safeCellZ, 11) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M,
+    z: (safeCellZ + 0.5 + (thermalHash(seed, safeCellX, safeCellZ, 17) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M,
+    radius: 360 + thermalHash(seed, safeCellX, safeCellZ, 23) * 220,
+    strength: 0.58 + thermalHash(seed, safeCellX, safeCellZ, 29) * 0.42,
+  }
+}
+
+/** Find the nearest candidate in the same cross-shaped neighbourhood sampled in flight. */
+export function nearestThermalPocket(
+  seed: number,
+  x: number,
+  z: number,
+): ThermalPocket | null {
+  if (!Number.isFinite(seed) || !Number.isFinite(x) || !Number.isFinite(z)) return null
+  const cellX = Math.floor(x / THERMAL_CELL_SIZE_M)
+  const cellZ = Math.floor(z / THERMAL_CELL_SIZE_M)
+  let nearest: ThermalPocket | null = null
+  let nearestDistance = Number.POSITIVE_INFINITY
+  for (let offset = 0; offset < 5; offset += 1) {
+    const sampleCellX = cellX + (offset === 1 ? -1 : offset === 2 ? 1 : 0)
+    const sampleCellZ = cellZ + (offset === 3 ? -1 : offset === 4 ? 1 : 0)
+    const pocket = thermalPocketForCell(seed, sampleCellX, sampleCellZ)
+    if (!pocket) continue
+    const distance = Math.hypot(x - pocket.x, z - pocket.z)
+    if (distance < nearestDistance) {
+      nearest = pocket
+      nearestDistance = distance
+    }
+  }
+  return nearest
+}
 
 /**
  * Return a stable, bounded updraft envelope for the supplied world sample.
@@ -36,6 +90,8 @@ export function thermalLiftIntensity(
   for (let offset = 0; offset < 5; offset += 1) {
     const sampleCellX = cellX + (offset === 1 ? -1 : offset === 2 ? 1 : 0)
     const sampleCellZ = cellZ + (offset === 3 ? -1 : offset === 4 ? 1 : 0)
+    // Keep this fixed-step path allocation-free. Route planning uses the
+    // object helper above once per mission, while flight samples stay scalar.
     const centerX = (sampleCellX + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 11) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
     const centerZ = (sampleCellZ + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 17) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
     const radius = 360 + thermalHash(seed, sampleCellX, sampleCellZ, 23) * 220

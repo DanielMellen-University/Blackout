@@ -18,7 +18,9 @@ import {
   gateQualityLabel,
   type MissionRouteProfile,
 } from '../src/systems/Mission'
-import { clearOpsPad, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
+import { clearOpsPad, findPlayableSpawn, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
+import { setWorldSeed } from '../src/world/noise'
+import { thermalLiftIntensity } from '../src/systems/ThermalLift'
 
 describe('MissionSystem gate crossing', () => {
   it('maps finite gate quality into readable event labels', () => {
@@ -392,6 +394,24 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('swamp')).toBe('SWAMP RUN')
     expect(routeProfileLabel('archipelago')).toBe('ARCHIPELAGO RUN')
     expect(routeProfileLabel('thermal')).toBe('THERMAL RUN')
+  })
+
+  it('anchors Thermal Run gates inside the seeded lift corridor', () => {
+    setWorldSeed(27)
+    clearOpsPad()
+    const pad = findPlayableSpawn()
+    expect(pad).not.toBeNull()
+    if (!pad) return
+    const thermal = buildMissionRoute(pad.x, pad.y, pad.z, pad.yaw, 'thermal', 'steady')
+    const liftSamples = thermal.slice(1, 4).map((point) =>
+      thermalLiftIntensity(27, point.x, point.y - pad.y, point.z, 1, 0, 0),
+    )
+    expect(Math.max(...liftSamples)).toBeGreaterThan(0.45)
+    const forwardDistance = (thermal[2]!.x - pad.x) * Math.sin(pad.yaw) +
+      (thermal[2]!.z - pad.z) * Math.cos(pad.yaw)
+    expect(forwardDistance).toBeGreaterThan(700)
+    setWorldSeed(1337.9182)
+    clearOpsPad()
   })
 
   it('exposes the validated coastal and river profiles to random sorties', () => {

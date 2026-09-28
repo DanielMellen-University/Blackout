@@ -2,10 +2,23 @@ import { describe, expect, it } from 'vitest'
 import {
   THERMAL_FADE_ALTITUDE_M,
   THERMAL_MIN_ALTITUDE_M,
+  nearestThermalPocket,
+  thermalPocketForCell,
   thermalLiftIntensity,
 } from '../src/systems/ThermalLift'
 
 describe('deterministic thermal lift', () => {
+  it('shares stable pocket geometry with route planning', () => {
+    const pocket = thermalPocketForCell(27, 0, 0)
+    expect(pocket).not.toBeNull()
+    expect(pocket!.radius).toBeGreaterThanOrEqual(360)
+    expect(pocket!.radius).toBeLessThanOrEqual(580)
+    expect(pocket!.strength).toBeGreaterThanOrEqual(0.58)
+    expect(pocket!.strength).toBeLessThanOrEqual(1)
+    expect(nearestThermalPocket(27, pocket!.x, pocket!.z)).toEqual(pocket)
+    expect(nearestThermalPocket(Number.NaN, 0, 0)).toBeNull()
+  })
+
   it('is repeatable and finite for the same seeded world sample', () => {
     const first = thermalLiftIntensity(42, 270, 420, -330, 0.9, 0.1, 0.02)
     const second = thermalLiftIntensity(42, 270, 420, -330, 0.9, 0.1, 0.02)

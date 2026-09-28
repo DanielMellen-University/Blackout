@@ -17,6 +17,8 @@ import {
 } from 'three'
 import { sampleTerrainHeight } from '../world/terrainSample'
 import { disposeObjectTree } from '../core/dispose'
+import { getWorldSeed } from '../world/noise'
+import { nearestThermalPocket } from './ThermalLift'
 
 export type MissionStatus = 'idle' | 'live' | 'complete'
 
@@ -279,11 +281,36 @@ export function buildMissionRoute(
   const rightZ = -Math.sin(safeSpawnYaw)
   if (profile === 'free') return []
   const offsets = routeOffsets(profile, seedPhase, modifier)
-  const points = offsets.map((offset, i) => ({
+  let points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
       y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' || profile === 'night' || profile === 'badlands' ? 12 : profile === 'ridge' || profile === 'alpine' || profile === 'thermal' ? 30 : profile === 'volcanic' ? 44 : profile === 'desert' || profile === 'coast' || profile === 'river' || profile === 'savanna' || profile === 'tundra' || profile === 'swamp' ? 16 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
+
+  if (profile === 'thermal') {
+    const anchor = points[2]!
+    const pocket = nearestThermalPocket(getWorldSeed(), anchor.x, anchor.z)
+    if (pocket) {
+      const pocketForward = (pocket.x - safeSpawnX) * forwardX + (pocket.z - safeSpawnZ) * forwardZ
+      if (pocketForward >= 1_000 && pocketForward <= 4_000) {
+        const thermalOffsets = [
+          { forward: -620, right: -120 },
+          { forward: -300, right: 250 },
+          { forward: 0, right: 0 },
+          { forward: 420, right: -250 },
+          { forward: 760, right: -40 },
+        ]
+        points = points.map((point, index) => {
+          const offset = thermalOffsets[index]!
+          return {
+            ...point,
+            x: pocket.x + forwardX * offset.forward + rightX * offset.right,
+            z: pocket.z + forwardZ * offset.forward + rightZ * offset.right,
+          }
+        })
+      }
+    }
+  }
 
   let previousX = safeSpawnX
   let previousY = safeSpawnY
