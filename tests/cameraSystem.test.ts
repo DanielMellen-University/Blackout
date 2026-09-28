@@ -372,6 +372,23 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('clamps external look sensitivity without affecting cockpit mode', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    expect(cameras.setLookSensitivity(0.009)).toBeCloseTo(0.009)
+    expect(cameras.lookSensitivity).toBeCloseTo(0.009)
+    expect(cameras.setLookSensitivity(-1)).toBeCloseTo(0.0015)
+    expect(cameras.setLookSensitivity(Number.NaN)).toBeCloseTo(0.005)
+    cameras.setMode('cockpit')
+    expect(cameras.lookSensitivity).toBeCloseTo(0.005)
+    cameras.dispose()
+  })
+
   it('keeps impact and boost camera effects above the terrain floor', () => {
     setGroundHeightSampler(() => 10)
     const target = {

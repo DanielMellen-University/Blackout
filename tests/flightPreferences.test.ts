@@ -8,6 +8,8 @@ import {
   CAMERA_MODE_STORAGE_KEY,
   DEFAULT_CAMERA_MODE,
   DEFAULT_STABILITY_ASSIST,
+  CAMERA_SENSITIVITY_STORAGE_KEY,
+  DEFAULT_CAMERA_SENSITIVITY,
   STABILITY_ASSIST_STORAGE_KEY,
   KEYBOARD_PITCH_STORAGE_KEY,
   KEYBOARD_ROLL_STORAGE_KEY,
@@ -21,18 +23,23 @@ import {
   normalizeGhostVisibilityPreference,
   normalizeCameraMode,
   normalizeStabilityAssistPreference,
+  normalizeCameraSensitivity,
+  cameraSensitivityMultiplier,
+  cameraSensitivityLabel,
   readKeyboardRollPreference,
   readKeyboardYawPreference,
   readKeyboardPitchPreference,
   readGhostVisibilityPreference,
   readCameraModePreference,
   readStabilityAssistPreference,
+  readCameraSensitivityPreference,
   writeKeyboardRollPreference,
   writeKeyboardYawPreference,
   writeKeyboardPitchPreference,
   writeGhostVisibilityPreference,
   writeCameraModePreference,
   writeStabilityAssistPreference,
+  writeCameraSensitivityPreference,
 } from '../src/core/FlightPreferences'
 
 describe('keyboard flight preferences', () => {
@@ -145,5 +152,22 @@ describe('keyboard flight preferences', () => {
     writeStabilityAssistPreference(storage, true)
     expect(values.get(STABILITY_ASSIST_STORAGE_KEY)).toBe('true')
     expect(readStabilityAssistPreference(storage)).toBe(true)
+  })
+
+  it('persists camera look sensitivity with bounded readable levels', () => {
+    const values = new Map<string, string>([[CAMERA_SENSITIVITY_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeCameraSensitivity('low')).toBe('low')
+    expect(normalizeCameraSensitivity('bad')).toBe(DEFAULT_CAMERA_SENSITIVITY)
+    expect(readCameraSensitivityPreference(storage)).toBe(DEFAULT_CAMERA_SENSITIVITY)
+    writeCameraSensitivityPreference(storage, 'high')
+    expect(values.get(CAMERA_SENSITIVITY_STORAGE_KEY)).toBe('high')
+    expect(readCameraSensitivityPreference(storage)).toBe('high')
+    expect(cameraSensitivityMultiplier('low')).toBeLessThan(1)
+    expect(cameraSensitivityMultiplier('high')).toBeGreaterThan(1)
+    expect(cameraSensitivityLabel('normal')).toBe('NORMAL')
   })
 })

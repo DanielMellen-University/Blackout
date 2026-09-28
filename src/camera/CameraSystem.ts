@@ -147,7 +147,7 @@ export class CameraSystem {
   /** Title showcase framing stays composed until the player launches. */
   private autoReturnEnabled = true
 
-  private readonly lookSensitivity = 0.005
+  private lookSensitivityValue = 0.005
   private readonly canvas: HTMLCanvasElement
   private shake = 0
   private shakePhase = 0
@@ -195,6 +195,19 @@ export class CameraSystem {
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
     this.renderQuality = quality
+  }
+
+  /** Adjust middle-mouse look response without changing cockpit controls. */
+  setLookSensitivity(value: number): number {
+    if (this.disposed) return this.lookSensitivityValue
+    this.lookSensitivityValue = Number.isFinite(value)
+      ? MathUtils.clamp(value, 0.0015, 0.012)
+      : 0.005
+    return this.lookSensitivityValue
+  }
+
+  get lookSensitivity(): number {
+    return this.lookSensitivityValue
   }
 
   /** Supply lightweight world colliders so external framing avoids buildings. */
@@ -705,9 +718,9 @@ export class CameraSystem {
 
     if (this.mode === 'cockpit') return
 
-    this.yaw += dx * this.lookSensitivity
+    this.yaw += dx * this.lookSensitivityValue
     this.yaw = MathUtils.euclideanModulo(this.yaw + Math.PI, Math.PI * 2) - Math.PI
-    this.pitch = MathUtils.clamp(this.pitch + dy * this.lookSensitivity, -PITCH_LIMIT, PITCH_LIMIT)
+    this.pitch = MathUtils.clamp(this.pitch + dy * this.lookSensitivityValue, -PITCH_LIMIT, PITCH_LIMIT)
     this.bumpInput()
   }
 

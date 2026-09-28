@@ -176,6 +176,12 @@ import {
   writeCameraModePreference,
   readStabilityAssistPreference,
   writeStabilityAssistPreference,
+  cameraSensitivityLabel,
+  cameraSensitivityMultiplier,
+  normalizeCameraSensitivity,
+  readCameraSensitivityPreference,
+  writeCameraSensitivityPreference,
+  type CameraSensitivity,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -207,6 +213,7 @@ async function boot(): Promise<void> {
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
+  const cameraSensitivitySelect = document.getElementById('menu-camera-sensitivity') as HTMLSelectElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
@@ -366,6 +373,7 @@ async function boot(): Promise<void> {
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
+  const initialCameraSensitivity = readCameraSensitivityPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialCameraMode = readCameraModePreference(qualityStorage)
   const initialStabilityAssist = readStabilityAssistPreference(qualityStorage)
@@ -480,6 +488,13 @@ async function boot(): Promise<void> {
   // the hero camera stays at the origin until Play is pressed.
   cameras.setMode('chase', aircraft)
   cameras.setTitleFraming(aircraft)
+  const applyCameraSensitivity = (next: CameraSensitivity): void => {
+    const preference = normalizeCameraSensitivity(next)
+    cameras.setLookSensitivity(cameraSensitivityMultiplier(preference) * 0.005)
+    if (cameraSensitivitySelect) cameraSensitivitySelect.value = preference
+    writeCameraSensitivityPreference(qualityStorage, preference)
+  }
+  applyCameraSensitivity(initialCameraSensitivity)
   applyCameraQuality = (quality): void => cameras.setRenderQuality(quality)
   applyCameraQuality(renderQuality)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
@@ -594,6 +609,15 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(pitchSelect, 'change', onKeyboardPitchChange)
+  const onCameraSensitivityChange = (): void => {
+    if (!cameraSensitivitySelect) return
+    const preference = normalizeCameraSensitivity(cameraSensitivitySelect.value)
+    applyCameraSensitivity(preference)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`CAMERA LOOK ${cameraSensitivityLabel(preference)}`, 1500, 'info')
+    }
+  }
+  uiListeners.add(cameraSensitivitySelect, 'change', onCameraSensitivityChange)
   const applyStabilityAssist = (next: boolean): void => {
     const enabled = next === true
     input.setStabilityAssist(enabled)

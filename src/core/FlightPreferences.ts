@@ -4,6 +4,7 @@ import { CAMERA_MODES, type CameraMode } from './types'
 export type KeyboardYawPreference = 'a-right' | 'a-left'
 export type KeyboardRollPreference = 'q-right' | 'q-left'
 export type KeyboardPitchPreference = 'w-up' | 'w-down'
+export type CameraSensitivity = 'low' | 'normal' | 'high'
 
 export const KEYBOARD_YAW_STORAGE_KEY = 'blackout.keyboardYaw'
 export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-right'
@@ -15,6 +16,8 @@ export const GHOST_VISIBILITY_STORAGE_KEY = 'blackout.ghostVisible'
 export const DEFAULT_GHOST_VISIBLE = true
 export const CAMERA_MODE_STORAGE_KEY = 'blackout.cameraMode'
 export const DEFAULT_CAMERA_MODE: CameraMode = 'chase'
+export const CAMERA_SENSITIVITY_STORAGE_KEY = 'blackout.cameraSensitivity'
+export const DEFAULT_CAMERA_SENSITIVITY: CameraSensitivity = 'normal'
 export const STABILITY_ASSIST_STORAGE_KEY = 'blackout.stabilityAssist'
 export const DEFAULT_STABILITY_ASSIST = false
 
@@ -197,6 +200,56 @@ export function writeCameraModePreference(
     storage?.setItem(CAMERA_MODE_STORAGE_KEY, normalizeCameraMode(mode))
   } catch {
     /* Storage is optional. */
+  }
+}
+
+export function normalizeCameraSensitivity(
+  value: unknown,
+  fallback: CameraSensitivity = DEFAULT_CAMERA_SENSITIVITY,
+): CameraSensitivity {
+  if (value === 'low' || value === 'normal' || value === 'high') return value
+  return fallback === 'low' || fallback === 'high' ? fallback : DEFAULT_CAMERA_SENSITIVITY
+}
+
+export function readCameraSensitivityPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: CameraSensitivity = DEFAULT_CAMERA_SENSITIVITY,
+): CameraSensitivity {
+  try {
+    return normalizeCameraSensitivity(storage?.getItem(CAMERA_SENSITIVITY_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeCameraSensitivity(undefined, fallback)
+  }
+}
+
+export function writeCameraSensitivityPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  sensitivity: CameraSensitivity,
+): void {
+  try {
+    storage?.setItem(
+      CAMERA_SENSITIVITY_STORAGE_KEY,
+      normalizeCameraSensitivity(sensitivity),
+    )
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+/** Convert the readable preference into the small external-camera input scale. */
+export function cameraSensitivityMultiplier(sensitivity: CameraSensitivity): number {
+  switch (normalizeCameraSensitivity(sensitivity)) {
+    case 'low': return 0.65
+    case 'high': return 1.45
+    default: return 1
+  }
+}
+
+export function cameraSensitivityLabel(sensitivity: CameraSensitivity): string {
+  switch (normalizeCameraSensitivity(sensitivity)) {
+    case 'low': return 'LOW'
+    case 'high': return 'HIGH'
+    default: return 'NORMAL'
   }
 }
 
