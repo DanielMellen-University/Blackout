@@ -181,11 +181,17 @@ import {
   normalizeCameraSensitivity,
   readCameraSensitivityPreference,
   writeCameraSensitivityPreference,
+  cameraSpeedFramingLabel,
+  cameraSpeedFramingMultiplier,
+  normalizeCameraSpeedFraming,
+  readCameraSpeedFramingPreference,
+  writeCameraSpeedFramingPreference,
   readCameraAutoReturnPreference,
   writeCameraAutoReturnPreference,
   readCameraEffectsPreference,
   writeCameraEffectsPreference,
   type CameraSensitivity,
+  type CameraSpeedFraming,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -218,6 +224,7 @@ async function boot(): Promise<void> {
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
   const cameraSensitivitySelect = document.getElementById('menu-camera-sensitivity') as HTMLSelectElement | null
+  const cameraSpeedFramingSelect = document.getElementById('menu-camera-speed-framing') as HTMLSelectElement | null
   const cameraAutoReturnToggle = document.getElementById('menu-camera-auto-return') as HTMLInputElement | null
   const cameraEffectsToggle = document.getElementById('menu-camera-effects') as HTMLInputElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
@@ -380,6 +387,7 @@ async function boot(): Promise<void> {
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
   const initialCameraSensitivity = readCameraSensitivityPreference(qualityStorage)
+  const initialCameraSpeedFraming = readCameraSpeedFramingPreference(qualityStorage)
   const initialCameraAutoReturn = readCameraAutoReturnPreference(qualityStorage)
   const initialCameraEffects = readCameraEffectsPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
@@ -503,6 +511,13 @@ async function boot(): Promise<void> {
     writeCameraSensitivityPreference(qualityStorage, preference)
   }
   applyCameraSensitivity(initialCameraSensitivity)
+  const applyCameraSpeedFraming = (next: CameraSpeedFraming): void => {
+    const framing = normalizeCameraSpeedFraming(next)
+    cameras.setSpeedFramingScale(cameraSpeedFramingMultiplier(framing))
+    if (cameraSpeedFramingSelect) cameraSpeedFramingSelect.value = framing
+    writeCameraSpeedFramingPreference(qualityStorage, framing)
+  }
+  applyCameraSpeedFraming(initialCameraSpeedFraming)
   const applyCameraAutoReturn = (next: boolean): void => {
     const enabled = next === true
     cameras.setAutoReturnEnabled(enabled)
@@ -640,6 +655,15 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(cameraSensitivitySelect, 'change', onCameraSensitivityChange)
+  const onCameraSpeedFramingChange = (): void => {
+    if (!cameraSpeedFramingSelect) return
+    const framing = normalizeCameraSpeedFraming(cameraSpeedFramingSelect.value)
+    applyCameraSpeedFraming(framing)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`SPEED FRAMING ${cameraSpeedFramingLabel(framing)}`, 1500, 'info')
+    }
+  }
+  uiListeners.add(cameraSpeedFramingSelect, 'change', onCameraSpeedFramingChange)
   const onCameraAutoReturnChange = (): void => {
     const enabled = cameraAutoReturnToggle?.checked === true
     applyCameraAutoReturn(enabled)

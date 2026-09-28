@@ -159,6 +159,21 @@ describe('external camera framing', () => {
     expect(framing.lookLeadLimit).toBe(10)
   })
 
+  it('scales high-speed external framing without changing the base envelope', () => {
+    const standard = resolveExternalSpeedFraming(17, 60, 10, 1, 24, 1)
+    const subtle = resolveExternalSpeedFraming(17, 60, 10, 1, 24, 0.55)
+    const wide = resolveExternalSpeedFraming(17, 60, 10, 1, 24, 1.35)
+    expect(subtle.fov).toBeLessThan(standard.fov)
+    expect(wide.fov).toBeGreaterThan(standard.fov)
+    expect(subtle.distance).toBeLessThan(standard.distance)
+    expect(wide.distance).toBeGreaterThan(standard.distance)
+    expect(resolveExternalSpeedFraming(17, 60, 10, 0, 24, 1.35)).toEqual({
+      distance: 17,
+      fov: 60,
+      lookLeadLimit: 4.5,
+    })
+  })
+
   it('rolls the chase horizon with the jet without dumping it on its side', () => {
     const identity = new Quaternion()
     expect(cameraBankAngle(identity)).toBeCloseTo(0)
@@ -429,6 +444,21 @@ describe('external camera framing', () => {
     expect(cameras.setLookSensitivity(Number.NaN)).toBeCloseTo(0.005)
     cameras.setMode('cockpit')
     expect(cameras.lookSensitivity).toBeCloseTo(0.005)
+    cameras.dispose()
+  })
+
+  it('clamps the live speed-framing scale to a finite envelope', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    expect(cameras.setSpeedFramingScale(1.35)).toBeCloseTo(1.35)
+    expect(cameras.speedFramingScaleValue).toBeCloseTo(1.35)
+    expect(cameras.setSpeedFramingScale(-1)).toBe(0)
+    expect(cameras.setSpeedFramingScale(Number.NaN)).toBe(1)
     cameras.dispose()
   })
 

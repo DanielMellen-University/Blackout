@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add persisted Subtle/Standard/Wide speed-framing levels for external chase and orbit cameras, scaling only high-speed pullback, FOV, and look lead.
 - Add a persisted Camera Effects toggle that disables shake, boost sway, storm buffet, and external banking while retaining normal zoom, FOV, and camera controls.
 - Add a persisted external-camera auto-return toggle so pilots can keep a hand-positioned chase or orbit view instead of easing back after idle.
 - Add a persisted Low/Normal/High external camera look setting for middle-mouse panning, with finite-safe bounds and no cockpit or render-loop overhead.

@@ -150,6 +150,8 @@ export class CameraSystem {
   private autoReturnPreference = true
   /** Cinematic lens motion can be disabled without changing speed framing. */
   private cameraEffectsEnabled = true
+  /** Scale of external speed pullback, FOV, and velocity lead. */
+  private speedFramingScale = 1
 
   private lookSensitivityValue = 0.005
   private readonly canvas: HTMLCanvasElement
@@ -240,6 +242,18 @@ export class CameraSystem {
 
   get cameraEffectsAreEnabled(): boolean {
     return this.cameraEffectsEnabled
+  }
+
+  /** Tune high-speed external framing without changing the flight model. */
+  setSpeedFramingScale(value: number): number {
+    this.speedFramingScale = Number.isFinite(value)
+      ? MathUtils.clamp(value, 0, 1.5)
+      : 1
+    return this.speedFramingScale
+  }
+
+  get speedFramingScaleValue(): number {
+    return this.speedFramingScale
   }
 
   /** Supply lightweight world colliders so external framing avoids buildings. */
@@ -482,6 +496,7 @@ export class CameraSystem {
       cfg.maxLookLead,
       juice,
       cfg.maxDist,
+      this.speedFramingScale,
     )
 
     _pivot.copy(aircraft.displayPosition)
@@ -890,6 +905,7 @@ export function resolveExternalSpeedFraming(
   maxLookLead: number,
   speedJuice: number,
   maxDistance = Infinity,
+  intensity = 1,
 ): ExternalSpeedFraming {
   return resolveExternalSpeedFramingInto(
     { distance: 0, fov: 0, lookLeadLimit: 0 },
@@ -898,6 +914,7 @@ export function resolveExternalSpeedFraming(
     maxLookLead,
     speedJuice,
     maxDistance,
+    intensity,
   )
 }
 
@@ -909,15 +926,18 @@ export function resolveExternalSpeedFramingInto(
   maxLookLead: number,
   speedJuice: number,
   maxDistance = Infinity,
+  intensity = 1,
 ): ExternalSpeedFraming {
   const safeDistance = Number.isFinite(baseDistance) ? Math.max(0, baseDistance) : 17
   const safeFov = Number.isFinite(baseFov) ? baseFov : 60
   const safeLead = Number.isFinite(maxLookLead) ? Math.max(0, maxLookLead) : 10
   const safeMaxDistance = Number.isFinite(maxDistance) && maxDistance > 0 ? maxDistance : Infinity
   const t = Number.isFinite(speedJuice) ? MathUtils.clamp(speedJuice, 0, 1) : 0
-  out.distance = Math.min(safeMaxDistance, safeDistance * (1 + t * SPEED_DIST_STRETCH))
-  out.fov = safeFov + t * SPEED_FOV_BOOST
-  out.lookLeadLimit = MathUtils.lerp(safeLead * 0.45, safeLead, t)
+  const effect = Number.isFinite(intensity) ? MathUtils.clamp(intensity, 0, 1.5) : 1
+  const scaledT = t * effect
+  out.distance = Math.min(safeMaxDistance, safeDistance * (1 + scaledT * SPEED_DIST_STRETCH))
+  out.fov = safeFov + scaledT * SPEED_FOV_BOOST
+  out.lookLeadLimit = MathUtils.lerp(safeLead * 0.45, safeLead, MathUtils.clamp(scaledT, 0, 1))
   return out
 }
 

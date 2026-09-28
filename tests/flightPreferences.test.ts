@@ -10,6 +10,8 @@ import {
   DEFAULT_STABILITY_ASSIST,
   CAMERA_SENSITIVITY_STORAGE_KEY,
   DEFAULT_CAMERA_SENSITIVITY,
+  CAMERA_SPEED_FRAMING_STORAGE_KEY,
+  DEFAULT_CAMERA_SPEED_FRAMING,
   CAMERA_AUTO_RETURN_STORAGE_KEY,
   DEFAULT_CAMERA_AUTO_RETURN,
   CAMERA_EFFECTS_STORAGE_KEY,
@@ -44,6 +46,11 @@ import {
   writeCameraModePreference,
   writeStabilityAssistPreference,
   writeCameraSensitivityPreference,
+  normalizeCameraSpeedFraming,
+  readCameraSpeedFramingPreference,
+  writeCameraSpeedFramingPreference,
+  cameraSpeedFramingMultiplier,
+  cameraSpeedFramingLabel,
   normalizeCameraAutoReturnPreference,
   readCameraAutoReturnPreference,
   writeCameraAutoReturnPreference,
@@ -207,5 +214,22 @@ describe('keyboard flight preferences', () => {
     writeCameraEffectsPreference(storage, false)
     expect(values.get(CAMERA_EFFECTS_STORAGE_KEY)).toBe('false')
     expect(readCameraEffectsPreference(storage)).toBe(false)
+  })
+
+  it('persists speed framing levels independently from camera look', () => {
+    const values = new Map<string, string>([[CAMERA_SPEED_FRAMING_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeCameraSpeedFraming('subtle')).toBe('subtle')
+    expect(normalizeCameraSpeedFraming('bad')).toBe(DEFAULT_CAMERA_SPEED_FRAMING)
+    expect(readCameraSpeedFramingPreference(storage)).toBe(DEFAULT_CAMERA_SPEED_FRAMING)
+    writeCameraSpeedFramingPreference(storage, 'wide')
+    expect(values.get(CAMERA_SPEED_FRAMING_STORAGE_KEY)).toBe('wide')
+    expect(readCameraSpeedFramingPreference(storage)).toBe('wide')
+    expect(cameraSpeedFramingMultiplier('subtle')).toBeLessThan(1)
+    expect(cameraSpeedFramingMultiplier('wide')).toBeGreaterThan(1)
+    expect(cameraSpeedFramingLabel('standard')).toBe('STANDARD')
   })
 })

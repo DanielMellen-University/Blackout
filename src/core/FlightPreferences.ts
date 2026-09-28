@@ -5,6 +5,7 @@ export type KeyboardYawPreference = 'a-right' | 'a-left'
 export type KeyboardRollPreference = 'q-right' | 'q-left'
 export type KeyboardPitchPreference = 'w-up' | 'w-down'
 export type CameraSensitivity = 'low' | 'normal' | 'high'
+export type CameraSpeedFraming = 'subtle' | 'standard' | 'wide'
 
 export const KEYBOARD_YAW_STORAGE_KEY = 'blackout.keyboardYaw'
 export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-right'
@@ -18,6 +19,8 @@ export const CAMERA_MODE_STORAGE_KEY = 'blackout.cameraMode'
 export const DEFAULT_CAMERA_MODE: CameraMode = 'chase'
 export const CAMERA_SENSITIVITY_STORAGE_KEY = 'blackout.cameraSensitivity'
 export const DEFAULT_CAMERA_SENSITIVITY: CameraSensitivity = 'normal'
+export const CAMERA_SPEED_FRAMING_STORAGE_KEY = 'blackout.cameraSpeedFraming'
+export const DEFAULT_CAMERA_SPEED_FRAMING: CameraSpeedFraming = 'standard'
 export const CAMERA_AUTO_RETURN_STORAGE_KEY = 'blackout.cameraAutoReturn'
 export const DEFAULT_CAMERA_AUTO_RETURN = true
 export const CAMERA_EFFECTS_STORAGE_KEY = 'blackout.cameraEffects'
@@ -254,6 +257,52 @@ export function cameraSensitivityLabel(sensitivity: CameraSensitivity): string {
     case 'low': return 'LOW'
     case 'high': return 'HIGH'
     default: return 'NORMAL'
+  }
+}
+
+export function normalizeCameraSpeedFraming(
+  value: unknown,
+  fallback: CameraSpeedFraming = DEFAULT_CAMERA_SPEED_FRAMING,
+): CameraSpeedFraming {
+  if (value === 'subtle' || value === 'standard' || value === 'wide') return value
+  return fallback === 'subtle' || fallback === 'wide' ? fallback : DEFAULT_CAMERA_SPEED_FRAMING
+}
+
+export function readCameraSpeedFramingPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: CameraSpeedFraming = DEFAULT_CAMERA_SPEED_FRAMING,
+): CameraSpeedFraming {
+  try {
+    return normalizeCameraSpeedFraming(storage?.getItem(CAMERA_SPEED_FRAMING_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeCameraSpeedFraming(undefined, fallback)
+  }
+}
+
+export function writeCameraSpeedFramingPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  framing: CameraSpeedFraming,
+): void {
+  try {
+    storage?.setItem(CAMERA_SPEED_FRAMING_STORAGE_KEY, normalizeCameraSpeedFraming(framing))
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function cameraSpeedFramingMultiplier(framing: CameraSpeedFraming): number {
+  switch (normalizeCameraSpeedFraming(framing)) {
+    case 'subtle': return 0.55
+    case 'wide': return 1.35
+    default: return 1
+  }
+}
+
+export function cameraSpeedFramingLabel(framing: CameraSpeedFraming): string {
+  switch (normalizeCameraSpeedFraming(framing)) {
+    case 'subtle': return 'SUBTLE'
+    case 'wide': return 'WIDE'
+    default: return 'STANDARD'
   }
 }
 
