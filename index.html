@@ -46,6 +46,14 @@
             <p class="course-picker-detail"></p>
             <p class="course-picker-stats" hidden></p>
           </div>
+          <div class="seed-launch">
+            <label class="seed-launch-label" for="title-seed-input">Custom seed</label>
+            <div class="seed-launch-controls">
+              <input id="title-seed-input" type="text" inputmode="numeric" pattern="[+-]?\d*" autocomplete="off" placeholder="Random" aria-label="Custom world seed" />
+              <button type="button" id="title-seed-load" class="btn-ghost">Load seed</button>
+            </div>
+            <p id="title-seed-status" class="seed-launch-status" role="status" aria-live="polite"></p>
+          </div>
           <div class="title-takeoff" aria-label="Takeoff briefing">
             <strong>Takeoff brief</strong>
             <span><kbd>Shift</kbd> spool power · <kbd>W</kbd> rotate · <kbd>G</kbd> gear</span>
@@ -255,7 +263,7 @@
               <li>Fly the glowing rings in order. The cue at the top points at the next gate.</li>
               <li>A sortie may ask for a clean circuit, a low pass, a centered landing, a soft landing, or, rarely, a deadstick glide.</li>
               <li>Land to score the run. A crash or ditch opens the same card: time, gates cleared, and the score.</li>
-              <li><kbd>R</kbd> rolls a new world. Pause or the results card can retry the same course.</li>
+              <li><kbd>R</kbd> rolls a new world. Enter a safe integer seed on the launch screen to revisit an exact procedural world.</li>
             </ul>
             <p class="menu-about">Blackout is a browser arcade F-35 toy. Take off, fly the gates, and land or crash.</p>
             <button type="button" class="btn-ghost menu-back">Back</button>

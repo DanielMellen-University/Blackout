@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.449**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.450**.
 
 ## Run
 
@@ -43,6 +43,8 @@ Press Play when the airfield is ready.
 - Esc pauses
 
 The title and pause course pickers include a fast case-insensitive filter, so the full contract catalog stays navigable without turning the launch screen into an unbounded wall of cards. When adaptive resolution sheds pixel density under sustained GPU load, moving terrain-weather, water, near-field vegetation, cloud, and precipitation detail scale down together, then restore without rebuilding geometry or changing flight behavior. Switching graphics presets immediately reuses the current adaptive budget instead of briefly re-enabling full-cost effects at a reduced pixel ratio.
+
+The launch screen also accepts a safe integer custom seed, making exact procedural worlds easy to revisit without editing a replay URL. Loading a seed selects Infinite World and applies it when Play starts; choosing any authored course clears the pending seed.
 
 The nose is the flight path. Throttle is thrust: a climb spends speed, and closing the throttle slows you down. Afterburner is the burst that gets it back. Thermal lift now stays visible as a persistent LIFT cue when the aircraft is inside a rising pocket, so altitude routes are readable after the entry banner fades. Sustained positive or negative G now drives a bounded blackout/redout veil with hysteresis, so hard pulls read clearly without flickering at the threshold. Flight warnings also use a short release hold, so stall, terrain, gear, and overspeed cues stay readable through noisy approach samples and clear when the live HUD is paused or covered.
 

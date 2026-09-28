@@ -238,6 +238,9 @@ async function boot(): Promise<void> {
   const menuEl = document.getElementById('menu')
   const titleCoursePickerRoot = document.getElementById('title-course-picker')
   const menuCoursePickerRoot = document.getElementById('menu-course-picker')
+  const titleSeedInput = document.getElementById('title-seed-input') as HTMLInputElement | null
+  const titleSeedLoad = document.getElementById('title-seed-load') as HTMLButtonElement | null
+  const titleSeedStatus = document.getElementById('title-seed-status')
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
@@ -290,6 +293,7 @@ async function boot(): Promise<void> {
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('seed') : null,
   )
   if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
+  if (titleSeedInput && replaySeed !== null) titleSeedInput.value = formatWorldSeed(replaySeed)
 
   type CourseRecordSnapshot = {
     history: ReturnType<typeof repairCourseHistory>
@@ -1185,16 +1189,37 @@ async function boot(): Promise<void> {
   const onCourseChange = (id: string): void => {
     selectedCourseId = courseDefinitionForId(id).id
     replaySeed = null
+    if (titleSeedInput) titleSeedInput.value = ''
+    if (titleSeedStatus) titleSeedStatus.textContent = ''
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     for (const picker of coursePickers) picker.setValue(selectedCourseId)
   }
   for (const picker of coursePickers) picker.onChange(onCourseChange)
+  const applyCustomSeed = (): void => {
+    const seed = parseWorldSeed(titleSeedInput?.value)
+    if (seed === null) {
+      if (titleSeedStatus) titleSeedStatus.textContent = 'INVALID SEED · USE A SAFE INTEGER'
+      return
+    }
+    replaySeed = seed
+    selectedCourseId = 'random'
+    if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
+    if (titleSeedStatus) titleSeedStatus.textContent = `SEED ${formatWorldSeed(seed)} READY · PRESS PLAY`
+    writeSelectedCourseId(qualityStorage, selectedCourseId)
+    for (const picker of coursePickers) picker.setValue(selectedCourseId)
+  }
+  uiListeners.add(titleSeedLoad, 'click', applyCustomSeed)
+  uiListeners.add(titleSeedInput, 'keydown', (event: Event) => {
+    if ((event as KeyboardEvent).key === 'Enter') applyCustomSeed()
+  })
   const onProgressStorageChange = (event: Event): void => {
     const storageEvent = event as StorageEvent
     const key = storageEvent.key
     if (key === COURSE_SELECTION_STORAGE_KEY || key === null) {
       selectedCourseId = readSelectedCourseId(qualityStorage)
       replaySeed = null
+      if (titleSeedInput) titleSeedInput.value = ''
+      if (titleSeedStatus) titleSeedStatus.textContent = ''
       for (const picker of coursePickers) picker.setValue(selectedCourseId)
     }
     if (

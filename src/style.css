@@ -711,6 +711,58 @@ body,
   padding: 8px 10px;
 }
 
+.seed-launch {
+  width: min(520px, 100%);
+  margin: 12px auto 0;
+  text-align: left;
+}
+
+.seed-launch-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink-dim);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.seed-launch-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.seed-launch-controls input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid rgba(139, 196, 214, 0.28);
+  border-radius: 8px;
+  background: rgba(7, 15, 22, 0.72);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  padding: 8px 10px;
+}
+
+.seed-launch-controls input::placeholder {
+  color: var(--ink-mute);
+  opacity: 1;
+}
+
+.seed-launch-controls input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.seed-launch-status {
+  min-height: 1em;
+  margin: 5px 0 0;
+  color: var(--accent);
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 560px) {
   .course-picker-list {
     grid-template-columns: 1fr;
