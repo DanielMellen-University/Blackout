@@ -631,13 +631,17 @@ export class TerrainSystem {
       // Horizon tiles cover several cells. Keep the common near-cell lookup
       // O(1), then fall back to the bounded resident tile set when a coarse
       // tile owns the queried cell. The cell cache prevents repeated scans.
+      let best: Chunk | null = null
       for (const chunk of this.chunks.values()) {
         if (cx >= chunk.cx && cx < chunk.cx + chunk.size &&
           cz >= chunk.cz && cz < chunk.cz + chunk.size) {
-          this.sampledChunk = chunk
-          break
+          // LOD replacement keeps old coverage alive while the finer tile
+          // fades in. Prefer the smallest containing tile so contact follows
+          // the new surface during that overlap instead of stale far data.
+          if (!best || chunk.size < best.size) best = chunk
         }
       }
+      this.sampledChunk = best
     }
     return this.sampledChunk
   }

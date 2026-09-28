@@ -291,11 +291,22 @@ describe('visible mesh contact sampling', () => {
         heights: new Float32Array([10, 20, 30, 40]),
         waterLevels: new Float32Array([0, 0, 0, 0]),
       })
+      terrainChunks.set('2,0:2', {
+        cx: 2,
+        cz: 0,
+        size: 2,
+        segs: 1,
+        originX: CHUNK_SIZE * 2,
+        originZ: 0,
+        heights: new Float32Array([100, 110, 120, 130]),
+        waterLevels: new Float32Array([0, 0, 0, 0]),
+      })
 
-      expect(terrain.sampleMeshHeight(CHUNK_SIZE * 3, CHUNK_SIZE)).toBeCloseTo(22.5)
+      expect(terrain.sampleMeshHeight(CHUNK_SIZE * 3, CHUNK_SIZE)).toBeCloseTo(115)
       expect(terrain.sampleMeshSurface(CHUNK_SIZE * 3, CHUNK_SIZE)?.kind).toBe('land')
     } finally {
       chunks.delete('0,0:4')
+      chunks.delete('2,0:2')
       terrain.clearAll()
     }
   })

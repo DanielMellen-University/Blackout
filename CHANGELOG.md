@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.370** Prefer the finest overlapping terrain tile during LOD transitions, keeping contact queries on the new surface while old coarse coverage fades out.
 - **10.369** Make rendered/contact sampling span-aware for coarse terrain tiles, so far LOD surfaces resolve the correct cell and height instead of falling back or compressing a multi-cell tile into one cell.
 - **10.368** Give terrain attachment a quality-aware main-thread budget, reducing Low upload bursts while preserving bounded worker streaming and allowing High to catch up faster.
 - **10.367** Route render-quality changes through one world-owned update path, removing duplicate traffic, atmosphere, vegetation, and shader-budget writes during preset switches.
