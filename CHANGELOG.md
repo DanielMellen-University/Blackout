@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the curated Savanna Run course, a deterministic low-level sweep across open grassland and acacia terrain while reusing terrain-aware clearance, scoring, and retry systems.
 - Expand swept airfield collision queries by a bounded aircraft envelope so wings, nose, and tail cannot clip hangars, towers, or shacks, while camera occlusion continues to use the authored building edges.
 - Add the curated Saltflat Run course, a deterministic long high-speed route that gives the salt-flat biome a distinct replayable challenge without expanding runtime budgets.
 - Add the curated Mesa Run course, a deterministic wide tableland route that showcases red-rock shelves while reusing terrain-aware clearance, scoring, and retry systems.
