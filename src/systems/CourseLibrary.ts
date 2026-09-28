@@ -207,7 +207,7 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     label: 'Monsoon run',
     detail: 'Heavy rain through dense green lowlands and flooded channels',
     seed: 54,
-    profile: 'swamp',
+    profile: 'monsoon',
     weather: 'rain',
     contractCatalog: true,
   },

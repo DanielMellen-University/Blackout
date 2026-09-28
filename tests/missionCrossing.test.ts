@@ -9,6 +9,7 @@ import {
   routeProfileForBiome,
   routeProfileForSpawn,
   routeProfileLabel,
+  missionChallengeForProfile,
   routeModifierForSpawn,
   routeModifierLabel,
   scoringFocusForModifier,
@@ -405,6 +406,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('savanna')).toBe('SAVANNA RUN')
     expect(routeProfileLabel('tundra')).toBe('TUNDRA RUN')
     expect(routeProfileLabel('swamp')).toBe('SWAMP RUN')
+    expect(routeProfileLabel('monsoon')).toBe('MONSOON RUN')
     expect(routeProfileLabel('archipelago')).toBe('ARCHIPELAGO RUN')
     expect(routeProfileLabel('thermal')).toBe('THERMAL RUN')
     expect(routeProfileLabel('approach')).toBe('PATTERN APPROACH')
@@ -456,12 +458,23 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileForBiome('snow', 0, 0, 0)).toBe('glacier')
     expect(routeProfileForBiome('tundra', 0, 0, 0)).toBe('tundra')
     expect(routeProfileForBiome('swamp', 0, 0, 0)).toBe('swamp')
+    expect(routeProfileForBiome('swamp', 1_000, 0, 0)).toBe('monsoon')
     expect(routeProfileForBiome('rainforest', 0, 0, 0)).toBe('rainforest')
     expect(routeProfileForBiome('volcanic', 0, 0, 0)).toBe('volcanic')
     expect(routeProfileForBiome('desert', 0, 0, 0)).toBe('desert')
     expect(routeProfileForBiome('mesa', 0, 0, 0)).toBe('mesa')
     expect(routeProfileForBiome('unknown', 0, 0, 0)).toBe(routeProfileForSpawn(0, 0, 0))
     expect(routeProfileForBiome(Number.NaN, 0, 0, 0)).toBe(routeProfileForSpawn(0, 0, 0))
+  })
+
+  it('keeps Monsoon Run distinct from the standard wetland route', () => {
+    const swamp = buildMissionRoute(0, 20, 0, 0, 'swamp', 'steady')
+    const monsoon = buildMissionRoute(0, 20, 0, 0, 'monsoon', 'steady')
+    expect(monsoon).toHaveLength(swamp.length)
+    expect(monsoon.map((point) => [point.x, point.y, point.z])).not.toEqual(
+      swamp.map((point) => [point.x, point.y, point.z]),
+    )
+    expect(missionChallengeForProfile('monsoon')).toBe('range')
   })
 
   it('supports a no-gate free-flight profile', () => {

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.477** Give Monsoon Run a dedicated wetland route profile and let swamp provinces select between standard channels and wider monsoon floodways without adding scene budget.
 - **10.476** Add Monsoon Run, a deterministic heavy-rain wetland route that reuses the bounded contract catalog for another replayable terrain challenge.
 - **10.475** Add a catalog-wide course identity regression so future authored routes cannot share score, history, or ghost records by accident.
 - **10.474** Remove avoidable render-loop garbage from settlement cell tracking and terrain worker pressure sampling, preserving streaming behavior while reducing frame-time noise.
