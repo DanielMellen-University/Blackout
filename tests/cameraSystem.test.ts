@@ -393,6 +393,28 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('suppresses cinematic camera motion while retaining the external rig', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15_000, 0)
+    aircraft.snapDisplay()
+    cameras.setCameraEffectsEnabled(false)
+    cameras.impulse(1)
+    cameras.setStormBuffet(1)
+    cameras.update(aircraft, 1 / 60)
+    const first = cameras.camera.position.clone()
+    cameras.update(aircraft, 1 / 60)
+    expect(cameras.camera.position).toEqual(first)
+    expect(cameras.cameraEffectsAreEnabled).toBe(false)
+    cameras.dispose()
+  })
+
   it('clamps external look sensitivity without affecting cockpit mode', () => {
     const target = {
       addEventListener: vi.fn(),

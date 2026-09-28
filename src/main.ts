@@ -183,6 +183,8 @@ import {
   writeCameraSensitivityPreference,
   readCameraAutoReturnPreference,
   writeCameraAutoReturnPreference,
+  readCameraEffectsPreference,
+  writeCameraEffectsPreference,
   type CameraSensitivity,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
@@ -217,6 +219,7 @@ async function boot(): Promise<void> {
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
   const cameraSensitivitySelect = document.getElementById('menu-camera-sensitivity') as HTMLSelectElement | null
   const cameraAutoReturnToggle = document.getElementById('menu-camera-auto-return') as HTMLInputElement | null
+  const cameraEffectsToggle = document.getElementById('menu-camera-effects') as HTMLInputElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
@@ -378,6 +381,7 @@ async function boot(): Promise<void> {
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
   const initialCameraSensitivity = readCameraSensitivityPreference(qualityStorage)
   const initialCameraAutoReturn = readCameraAutoReturnPreference(qualityStorage)
+  const initialCameraEffects = readCameraEffectsPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialCameraMode = readCameraModePreference(qualityStorage)
   const initialStabilityAssist = readStabilityAssistPreference(qualityStorage)
@@ -506,6 +510,13 @@ async function boot(): Promise<void> {
     writeCameraAutoReturnPreference(qualityStorage, enabled)
   }
   applyCameraAutoReturn(initialCameraAutoReturn)
+  const applyCameraEffects = (next: boolean): void => {
+    const enabled = next === true
+    cameras.setCameraEffectsEnabled(enabled)
+    if (cameraEffectsToggle) cameraEffectsToggle.checked = enabled
+    writeCameraEffectsPreference(qualityStorage, enabled)
+  }
+  applyCameraEffects(initialCameraEffects)
   applyCameraQuality = (quality): void => cameras.setRenderQuality(quality)
   applyCameraQuality(renderQuality)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
@@ -637,6 +648,14 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(cameraAutoReturnToggle, 'change', onCameraAutoReturnChange)
+  const onCameraEffectsChange = (): void => {
+    const enabled = cameraEffectsToggle?.checked === true
+    applyCameraEffects(enabled)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(enabled ? 'CAMERA EFFECTS ON' : 'CAMERA EFFECTS OFF', 1500, 'info')
+    }
+  }
+  uiListeners.add(cameraEffectsToggle, 'change', onCameraEffectsChange)
   const applyStabilityAssist = (next: boolean): void => {
     const enabled = next === true
     input.setStabilityAssist(enabled)

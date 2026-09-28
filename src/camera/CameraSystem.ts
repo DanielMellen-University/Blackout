@@ -148,6 +148,8 @@ export class CameraSystem {
   private autoReturnEnabled = true
   /** Player preference restored whenever gameplay changes external modes. */
   private autoReturnPreference = true
+  /** Cinematic lens motion can be disabled without changing speed framing. */
+  private cameraEffectsEnabled = true
 
   private lookSensitivityValue = 0.005
   private readonly canvas: HTMLCanvasElement
@@ -223,6 +225,23 @@ export class CameraSystem {
     return this.autoReturnPreference
   }
 
+  /** Toggle shake, afterburner sway, storm buffet, and external bank effects. */
+  setCameraEffectsEnabled(enabled: boolean): boolean {
+    this.cameraEffectsEnabled = enabled === true
+    if (!this.cameraEffectsEnabled) {
+      this.shake = 0
+      this.boostSway = 0
+      this.stormSway = 0
+      this.stormTarget = 0
+      this.externalBank = 0
+    }
+    return this.cameraEffectsEnabled
+  }
+
+  get cameraEffectsAreEnabled(): boolean {
+    return this.cameraEffectsEnabled
+  }
+
   /** Supply lightweight world colliders so external framing avoids buildings. */
   setObstacleSampler(sampler: CameraObstacleSampler | null): void {
     if (this.disposed) return
@@ -285,7 +304,7 @@ export class CameraSystem {
 
   /** Brief view punch (crash boom). */
   impulse(amount = 1): void {
-    if (this.disposed || this.reducedMotion) return
+    if (this.disposed || this.reducedMotion || !this.cameraEffectsEnabled) return
     this.shake = Math.max(this.shake, amount)
     if (amount > 0) this.shakePhase = (this.shakePhase + amount * 1.7) % (Math.PI * 2)
   }
@@ -296,7 +315,7 @@ export class CameraSystem {
    */
   setStormBuffet(intensity: number): void {
     if (this.disposed) return
-    if (this.reducedMotion || !Number.isFinite(intensity)) {
+    if (this.reducedMotion || !this.cameraEffectsEnabled || !Number.isFinite(intensity)) {
       this.stormTarget = 0
       return
     }
@@ -494,7 +513,7 @@ export class CameraSystem {
     // Shake and afterburner sway are applied after the rig solve. Keep their
     // final lens position above the terrain so a low pass cannot clip through
     // a ridge during a touchdown pulse or boost.
-    const effectsMayMoveCamera = !this.reducedMotion && (
+    const effectsMayMoveCamera = this.cameraEffectsEnabled && !this.reducedMotion && (
       this.shake > 0.002 ||
       this.boostSway > 0.001 ||
       this.stormSway > 0.001 ||
@@ -533,7 +552,7 @@ export class CameraSystem {
 
     this.camera.lookAt(this.lookSmoothed)
 
-    const targetBank = this.reducedMotion || this.mode === 'orbit'
+    const targetBank = this.reducedMotion || !this.cameraEffectsEnabled || this.mode === 'orbit'
       ? 0
       : cameraBankAngle(aircraft.displayOrientation, MAX_EXTERNAL_BANK)
     this.externalBank = snap || dt <= 0
@@ -595,7 +614,7 @@ export class CameraSystem {
   }
 
   private applyShake(dt: number): void {
-    if (this.reducedMotion) {
+    if (this.reducedMotion || !this.cameraEffectsEnabled) {
       this.shake = 0
       return
     }
@@ -612,7 +631,7 @@ export class CameraSystem {
   }
 
   private applyBoostSway(active: boolean, dt: number): void {
-    if (this.reducedMotion) {
+    if (this.reducedMotion || !this.cameraEffectsEnabled) {
       this.boostSway = 0
       return
     }
@@ -630,7 +649,7 @@ export class CameraSystem {
 
   /** Restrained precipitation / gust buffet for chase and cockpit. */
   private applyStormBuffet(dt: number, cockpit: boolean): void {
-    if (this.reducedMotion) {
+    if (this.reducedMotion || !this.cameraEffectsEnabled) {
       this.stormSway = 0
       this.stormTarget = 0
       return

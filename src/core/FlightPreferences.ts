@@ -20,6 +20,8 @@ export const CAMERA_SENSITIVITY_STORAGE_KEY = 'blackout.cameraSensitivity'
 export const DEFAULT_CAMERA_SENSITIVITY: CameraSensitivity = 'normal'
 export const CAMERA_AUTO_RETURN_STORAGE_KEY = 'blackout.cameraAutoReturn'
 export const DEFAULT_CAMERA_AUTO_RETURN = true
+export const CAMERA_EFFECTS_STORAGE_KEY = 'blackout.cameraEffects'
+export const DEFAULT_CAMERA_EFFECTS = true
 export const STABILITY_ASSIST_STORAGE_KEY = 'blackout.stabilityAssist'
 export const DEFAULT_STABILITY_ASSIST = false
 
@@ -283,6 +285,40 @@ export function writeCameraAutoReturnPreference(
     storage?.setItem(
       CAMERA_AUTO_RETURN_STORAGE_KEY,
       normalizeCameraAutoReturnPreference(enabled) ? 'true' : 'false',
+    )
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function normalizeCameraEffectsPreference(
+  value: unknown,
+  fallback = DEFAULT_CAMERA_EFFECTS,
+): boolean {
+  if (value === true || value === 'true' || value === '1') return true
+  if (value === false || value === 'false' || value === '0') return false
+  return fallback === true
+}
+
+export function readCameraEffectsPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback = DEFAULT_CAMERA_EFFECTS,
+): boolean {
+  try {
+    return normalizeCameraEffectsPreference(storage?.getItem(CAMERA_EFFECTS_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeCameraEffectsPreference(undefined, fallback)
+  }
+}
+
+export function writeCameraEffectsPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  enabled: boolean,
+): void {
+  try {
+    storage?.setItem(
+      CAMERA_EFFECTS_STORAGE_KEY,
+      normalizeCameraEffectsPreference(enabled) ? 'true' : 'false',
     )
   } catch {
     /* Storage is optional. */
