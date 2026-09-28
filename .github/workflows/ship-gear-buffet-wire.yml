@@ -10,14 +10,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Apply remaining gear-buffet wire
+      - name: Apply gear-buffet HUD wire
         shell: bash
         run: |
           set -euo pipefail
+          python3 .github/ship-frags/apply_gear_buffet_wire.py
           git config user.name "DanielMellen-University"
           git config user.email "113362200+DanielMellen-University@users.noreply.github.com"
-          cat .github/ship-frags/gear-buffet-remaining.p1.b64 .github/ship-frags/gear-buffet-remaining.p2.b64 | base64 -d > /tmp/gear-buffet-remaining.patch
-          git apply --whitespace=nowarn /tmp/gear-buffet-remaining.patch
           git add CHANGELOG.md README.md src/main.ts src/ui/HUD.ts tests/hud.test.ts
           git commit -m "feat: cue BUFFET on HUD and wire gear-scaled storm drive"
           rm -rf .github/ship-frags
