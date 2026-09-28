@@ -144,24 +144,29 @@ export function formatRadarContactsAria(contacts: readonly RadarContact[]): stri
 
 /** Keep the closest traffic warning readable after its transient banner fades. */
 export function trafficAlertHudLabel(side: unknown, vertical: unknown, distance: number): string {
-  const safeSide = side === 'LEFT' || side === 'RIGHT' || side === 'AHEAD' || side === 'BEHIND'
-    ? side
-    : 'AHEAD'
-  const safeVertical = vertical === 'ABOVE' || vertical === 'BELOW' || vertical === 'LEVEL'
-    ? vertical
-    : 'LEVEL'
-  const safeDistance = Number.isFinite(distance)
-    ? Math.round(Math.max(0, Math.min(999_999, distance)))
-    : 0
+  const safeSide = trafficAlertSideLabel(side)
+  const safeVertical = trafficAlertVerticalLabel(vertical)
+  const safeDistance = trafficAlertDistanceValue(distance)
   return `${safeSide} / ${safeVertical} / ${safeDistance}M`
 }
 
 /** Describe the persistent traffic warning without visual separators. */
 export function trafficAlertAriaLabel(side: unknown, vertical: unknown, distance: number): string {
-  const label = trafficAlertHudLabel(side, vertical, distance)
-  const [safeSide, safeVertical, safeDistance] = label.split(' / ')
-  const distanceText = safeDistance!.toLowerCase().replace(/m$/, '')
-  return `Traffic ${safeSide!.toLowerCase()} ${safeVertical!.toLowerCase()}, ${distanceText} metres`
+  return `Traffic ${trafficAlertSideLabel(side).toLowerCase()} ${trafficAlertVerticalLabel(vertical).toLowerCase()}, ${trafficAlertDistanceValue(distance)} metres`
+}
+
+function trafficAlertSideLabel(value: unknown): 'LEFT' | 'RIGHT' | 'AHEAD' | 'BEHIND' {
+  return value === 'LEFT' || value === 'RIGHT' || value === 'AHEAD' || value === 'BEHIND'
+    ? value
+    : 'AHEAD'
+}
+
+function trafficAlertVerticalLabel(value: unknown): 'ABOVE' | 'BELOW' | 'LEVEL' {
+  return value === 'ABOVE' || value === 'BELOW' || value === 'LEVEL' ? value : 'LEVEL'
+}
+
+function trafficAlertDistanceValue(value: number): number {
+  return Number.isFinite(value) ? Math.round(Math.max(0, Math.min(999_999, value))) : 0
 }
 
 /** Reuse radar copy while contacts remain in the same visible display buckets. */
