@@ -896,6 +896,13 @@ export class Aircraft {
     return this.velocity.length()
   }
 
+  /** Radio altitude backed by the current fixed-step contact cache. */
+  get altitudeAgl(): number {
+    if (this.disposed) return 0
+    const floor = this.flight.contactMinYAt(this.position.x, this.position.z, this.controls.gearDown)
+    return Math.max(0, this.position.y - floor)
+  }
+
   get onGround(): boolean {
     if (this.disposed) return false
     const p = this.position

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.501** Route radio-altitude reads through the aircraft's fixed-step contact cache, removing duplicate terrain sampling from clearance HUD and landing-state updates.
 - **10.500** Reuse the fixed-step contact cache for airborne automatic-gear decisions, removing a duplicate terrain height query without changing the safety envelope.
 - **10.499** Expand settlement collision sweeps with the same padded aircraft body envelope used by airfield probes, including rotated buildings, roofs, and vertical clearance.
 - **10.498** Reuse the fixed-step ground cache for post-step grounded-state checks, removing a duplicate terrain height query and hardening empty-slot sentinels so the world origin can never read as an uninitialized zero.

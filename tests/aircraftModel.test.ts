@@ -184,13 +184,29 @@ describe('rebuilt aircraft', () => {
       return 0
     })
     const aircraft = new Aircraft()
-    aircraft.reset({ x: 0, y: 1000, z: 0, yaw: 0 })
+    aircraft.reset({ x: 1, y: 1000, z: 0, yaw: 0 })
     samples = 0
 
     aircraft.step(0)
 
     expect(samples).toBe(1)
     expect(aircraft.controls.gearDown).toBe(false)
+  })
+
+  it('reuses the fixed-step contact floor for repeated radio-altitude reads', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 1, y: 1000, z: 0, yaw: 0 })
+    aircraft.position.x = 2
+    samples = 0
+
+    expect(aircraft.altitudeAgl).toBe(1000 - 1.4)
+    expect(aircraft.altitudeAgl).toBe(1000 - 1.4)
+    expect(samples).toBe(1)
   })
 
   it('reuses the grounded query until the flight pose changes', () => {

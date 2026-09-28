@@ -165,7 +165,7 @@ import {
   radarTargetArrivalRadius,
   RadarSystem,
 } from './systems/RadarSystem'
-import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
+import { type GroundSurfaceSample } from './world/ground'
 import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
 import { fuelEnduranceSeconds, refuelFuel } from './aircraft/FuelSystem'
@@ -1648,12 +1648,7 @@ async function boot(): Promise<void> {
 
         const touch = collision.check(aircraft)
         if (aircraft.status !== 'crashed') {
-          const alt = altitudeAgl(
-            aircraft.position.x,
-            aircraft.position.y,
-            aircraft.position.z,
-            aircraft.controls.gearDown,
-          )
+          const alt = aircraft.altitudeAgl
           terrainClearanceM = alt
           if (!aircraft.onGround && alt > 8) {
             wasAirborne = true
@@ -2189,14 +2184,7 @@ async function boot(): Promise<void> {
     if (shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {
       const previousHudUpdateMs = lastHudUpdateMs
       lastHudUpdateMs = nowMs
-      const alt = aircraft.onGround
-        ? 0
-        : altitudeAgl(
-            aircraft.position.x,
-            aircraft.position.y,
-            aircraft.position.z,
-            aircraft.controls.gearDown,
-          )
+      const alt = aircraft.onGround ? 0 : aircraft.altitudeAgl
       const pose = attitudeFromOrientation(aircraft.orientation)
       const hudStepSec = Number.isFinite(previousHudUpdateMs) && previousHudUpdateMs >= 0
         ? Math.min(.5, Math.max(0, (nowMs - previousHudUpdateMs) / 1000))
