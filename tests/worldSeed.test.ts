@@ -6,6 +6,7 @@ import {
   normalizeWorldSeed,
   parseWorldSeed,
   shouldRegenerateWorldOnLaunch,
+  worldSeedLaunchStatus,
   worldSeedReplayUrl,
 } from '../src/core/WorldSeed'
 import { getWorldSeed, hash2, setWorldSeed } from '../src/world/noise'
@@ -58,6 +59,11 @@ describe('world seed sharing', () => {
     expect(shouldRegenerateWorldOnLaunch('random', null)).toBe(false)
     expect(shouldRegenerateWorldOnLaunch('training-orbit', null)).toBe(true)
     expect(shouldRegenerateWorldOnLaunch(undefined, null)).toBe(true)
+  })
+
+  it('distinguishes a ready seed from a rebuild fallback in launch feedback', () => {
+    expect(worldSeedLaunchStatus(42)).toBe('SEED 42 READY · PRESS PLAY')
+    expect(worldSeedLaunchStatus(42, true)).toBe('SEED 42 NOT READY · PRESS PLAY TO RETRY')
   })
 
   it('builds replay links while preserving existing query state', async () => {

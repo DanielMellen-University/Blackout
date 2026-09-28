@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.516**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.517**.
 
 Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget. Shoreline Run adds a fog-lined coastal route with the same bounded scoring, replay, and contract systems as the rest of the catalog.
 
@@ -53,7 +53,7 @@ Press Play when the airfield is ready.
 - Boost, speed-brake, and landing-gear keys are remappable in the pause menu and persisted locally
 - Esc pauses
 
-The title and pause course pickers include a fast case-insensitive filter, so the full contract catalog stays navigable without turning the launch screen into an unbounded wall of cards. When adaptive resolution sheds pixel density under sustained GPU load, moving terrain-weather, water, near-field vegetation, cloud, and precipitation detail scale down together, then restore without rebuilding geometry or changing flight behavior. Switching graphics presets immediately reuses the current adaptive budget instead of briefly re-enabling full-cost effects at a reduced pixel ratio. Consumed custom seeds clear their pending launch state so the next title-screen launch cannot silently fall back to a different world than the input suggests. The active procedural seed stays visible in the secondary HUD during flight and in the results debrief, and the results card can copy the raw seed directly for a future custom-seed launch.
+The title and pause course pickers include a fast case-insensitive filter, so the full contract catalog stays navigable without turning the launch screen into an unbounded wall of cards. When adaptive resolution sheds pixel density under sustained GPU load, moving terrain-weather, water, near-field vegetation, cloud, and precipitation detail scale down together, then restore without rebuilding geometry or changing flight behavior. Switching graphics presets immediately reuses the current adaptive budget instead of briefly re-enabling full-cost effects at a reduced pixel ratio. Consumed custom seeds clear their pending launch state, and a replay or custom rebuild fallback is labeled NOT READY / PRESS PLAY TO RETRY instead of silently presenting the wrong world. The active procedural seed stays visible in the secondary HUD during flight and in the results debrief, and the results card can copy the raw seed directly for a future custom-seed launch.
 
 The launch screen also accepts a bounded decimal custom seed, making exact procedural worlds easy to revisit without editing a replay URL. Loading a seed selects Infinite World, rebuilds the world from that seed when Play starts, and clears the consumed launch value; choosing any authored course clears the pending seed. Results can send the active seed back to the title screen in one action for quick exploration of a completed world.
 

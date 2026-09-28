@@ -29,6 +29,7 @@ import {
   normalizeWorldSeed,
   parseWorldSeed,
   shouldRegenerateWorldOnLaunch,
+  worldSeedLaunchStatus,
 } from './core/WorldSeed'
 import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
@@ -307,6 +308,7 @@ async function boot(): Promise<void> {
   let replaySeed = parseWorldSeed(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('seed') : null,
   )
+  let replaySeedFallback = false
   if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
   if (titleSeedInput && replaySeed !== null) titleSeedInput.value = formatWorldSeed(replaySeed)
 
@@ -533,6 +535,7 @@ async function boot(): Promise<void> {
   }
   applyAdaptiveDetailScale()
   if (replaySeed !== null) {
+    const requestedReplaySeed = replaySeed
     const replayCourse = courseDefinitionForId(selectedCourseId)
     world.reseed(
       replaySeed,
@@ -542,6 +545,8 @@ async function boot(): Promise<void> {
       replayCourse.windSide,
       replayCourse.weatherShift,
     )
+    replaySeedFallback = world.lastReseedUsedFallback
+    if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(requestedReplaySeed, replaySeedFallback)
   }
   applyShadowQuality = (mapSize: number): void => {
     const safeSize = Number.isFinite(mapSize) ? Math.max(256, Math.floor(mapSize)) : 1024
@@ -924,7 +929,8 @@ async function boot(): Promise<void> {
     replaySeed = seed
     selectedCourseId = 'random'
     if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
-    if (titleSeedStatus) titleSeedStatus.textContent = `SEED ${formatWorldSeed(seed)} READY · PRESS PLAY`
+    replaySeedFallback = false
+    if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(seed)
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     for (const picker of coursePickers) picker.setValue(selectedCourseId)
     quitToTitle()
@@ -1190,10 +1196,13 @@ async function boot(): Promise<void> {
         course.weatherShift,
       )
       worldFallback = world.lastReseedUsedFallback
+      replaySeedFallback = worldFallback
       if (!worldFallback) replaySeed = null
       if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''
         if (titleSeedStatus) titleSeedStatus.textContent = ''
+      } else if (replaying && titleSeedStatus) {
+        titleSeedStatus.textContent = worldSeedLaunchStatus(replaySeed!, true)
       }
       debug?.syncPad()
     } else {
@@ -1282,6 +1291,7 @@ async function boot(): Promise<void> {
   const onCourseChange = (id: string): void => {
     selectedCourseId = courseDefinitionForId(id).id
     replaySeed = null
+    replaySeedFallback = false
     if (titleSeedInput) titleSeedInput.value = ''
     if (titleSeedStatus) titleSeedStatus.textContent = ''
     writeSelectedCourseId(qualityStorage, selectedCourseId)
@@ -1297,7 +1307,8 @@ async function boot(): Promise<void> {
     replaySeed = seed
     selectedCourseId = 'random'
     if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
-    if (titleSeedStatus) titleSeedStatus.textContent = `SEED ${formatWorldSeed(seed)} READY · PRESS PLAY`
+    replaySeedFallback = false
+    if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(seed)
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     for (const picker of coursePickers) picker.setValue(selectedCourseId)
   }
@@ -1311,6 +1322,7 @@ async function boot(): Promise<void> {
     if (key === COURSE_SELECTION_STORAGE_KEY || key === null) {
       selectedCourseId = readSelectedCourseId(qualityStorage)
       replaySeed = null
+      replaySeedFallback = false
       if (titleSeedInput) titleSeedInput.value = ''
       if (titleSeedStatus) titleSeedStatus.textContent = ''
       for (const picker of coursePickers) picker.setValue(selectedCourseId)

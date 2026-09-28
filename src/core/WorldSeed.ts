@@ -25,6 +25,14 @@ export function formatWorldSeed(seed: number): string {
   return canonical.toFixed(WORLD_SEED_DECIMAL_PLACES).replace(/\.?0+$/, '')
 }
 
+/** Keep launch controls honest when a requested world needs another rebuild attempt. */
+export function worldSeedLaunchStatus(seed: number, rebuildFallback = false): string {
+  const label = formatWorldSeed(seed)
+  return rebuildFallback
+    ? `SEED ${label} NOT READY · PRESS PLAY TO RETRY`
+    : `SEED ${label} READY · PRESS PLAY`
+}
+
 /** Parse a bounded decimal seed without accepting exponent or lossy input. */
 export function parseWorldSeed(value: unknown): number | null {
   if (typeof value !== 'string') return null
