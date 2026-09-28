@@ -10,6 +10,7 @@ import {
   trafficAlertVertical,
   trafficBeaconVisible,
   trafficInRange,
+  trafficRadarInRange,
 } from '../src/world/AirTrafficSystem'
 
 function trafficMatrices(seed: number): number[] {
@@ -72,6 +73,19 @@ describe('bounded air traffic', () => {
     expect(new Set(contacts.map(contact => contact.id)).size).toBe(AIR_TRAFFIC_COUNT)
     traffic.setRenderQuality('low')
     expect(traffic.getRadarLandmarks(5_000, 5_000, 8_000)).toHaveLength(3)
+    traffic.dispose()
+  })
+
+  it('keeps close traffic on radar while the visual silhouette fades out', () => {
+    expect(trafficRadarInRange(0, 8_000)).toBe(true)
+    expect(trafficRadarInRange(899, 8_000)).toBe(true)
+    expect(trafficRadarInRange(8_001, 8_000)).toBe(false)
+
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    traffic.reset(1234, 5_000, 0, 5_000)
+    const contact = traffic.getRadarLandmarks(5_000, 5_000, 8_000)[0]!
+    expect(traffic.getRadarLandmarks(contact.x, contact.z, 32)).toContain(contact)
     traffic.dispose()
   })
 

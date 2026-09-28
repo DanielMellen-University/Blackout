@@ -83,6 +83,16 @@ export function trafficInRange(distance: number): boolean {
     distance <= AIR_TRAFFIC_MAX_DISTANCE_M
 }
 
+/**
+ * Radar remains useful inside the visual silhouette fade radius. Keeping this
+ * gate separate prevents a close traffic warning from becoming an unexplained
+ * HUD-only event while still letting the renderer hide the oversized model.
+ */
+export function trafficRadarInRange(distance: number, maxRange: number): boolean {
+  if (!Number.isFinite(distance) || !Number.isFinite(maxRange)) return false
+  return distance >= 0 && distance <= Math.max(0, maxRange)
+}
+
 /** Keep the proximity cue readable without exposing raw radians to the HUD. */
 export function trafficAlertSide(bearing: number): 'LEFT' | 'RIGHT' | 'AHEAD' | 'BEHIND' {
   const safe = Number.isFinite(bearing) ? Math.atan2(Math.sin(bearing), Math.cos(bearing)) : 0
@@ -225,7 +235,7 @@ export class AirTrafficSystem {
     for (let index = 0; index < this.activeCount; index += 1) {
       const contact = this.radarPool[index]!
       const distance = Math.hypot(contact.x - safeX, contact.z - safeZ)
-      if (!trafficInRange(distance) || distance > range) continue
+      if (!trafficRadarInRange(distance, range)) continue
       this.radarCache.push(contact)
     }
     return this.radarCache

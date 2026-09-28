@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.508** Keep close traffic contacts on radar during the visual silhouette fade, so proximity warnings always have a corresponding navigational cue.
 - **10.507** Add a pooled ditching splash and distinct water-impact audio, reusing the existing wake batch so water failures read differently without adding a particle system.
 - **10.506** Keep rising-ridge warnings active during shallow climbs, suppressing them only when the projected flight path actually clears the terrain margin.
 - **10.505** Add bounded obstacle lookahead to the flight warning path, giving hangars, towers, cities, and villages a distinct early HUD/audio cue before the padded aircraft envelope reaches them.
