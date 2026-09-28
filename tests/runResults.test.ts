@@ -33,6 +33,7 @@ class FakeElement {
   isConnected = true
   readonly classList = new FakeClassList()
   readonly focus = vi.fn()
+  private readonly attributes = new Map<string, string>()
   private readonly lists = new Map<string, FakeElement[]>()
   private readonly listeners = new Map<string, Set<(event: unknown) => void>>()
 
@@ -69,7 +70,13 @@ class FakeElement {
     return selector === '[hidden]' && this.hidden ? this : null
   }
 
-  setAttribute(): void {}
+  setAttribute(name: string, value: string): void {
+    this.attributes.set(name, value)
+  }
+
+  getAttribute(name: string): string | null {
+    return this.attributes.get(name) ?? null
+  }
 
   removeAttribute(): void {}
 }
@@ -493,6 +500,28 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('SINK RATE')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('20,000')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps a missed-gate count visible in the debrief', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({
+      ...result,
+      gatesCleared: 2,
+      gatesTotal: 5,
+      gateMisses: 2,
+    })
+    expect(elementsFor(fixture.document, 'result-gates')?.getAttribute('aria-label'))
+      .toBe('2/5 gates cleared, 2 misses')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent)
+      .toContain('2 MISSES')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
+      .toContain('2 MISSES')
     results.dispose()
     vi.unstubAllGlobals()
   })

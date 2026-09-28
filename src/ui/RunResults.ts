@@ -32,6 +32,12 @@ function gatesClearedLabel(result: ChallengeResult): string {
   const total = Number.isFinite(result.gatesTotal) ? Math.max(0, Math.floor(result.gatesTotal!)) : 0
   return total > 0 ? `${cleared}/${total}` : String(cleared)
 }
+
+function gateMissesLabel(result: ChallengeResult): string {
+  if (!Number.isFinite(result.gateMisses)) return ''
+  const misses = Math.max(0, Math.floor(result.gateMisses!))
+  return misses > 0 ? `${misses} MISS${misses === 1 ? '' : 'ES'}` : ''
+}
 const FUEL_CLASSES = ['fuel-healthy', 'fuel-low', 'fuel-critical'] as const
 
 /** Results screen for the takeoff → circuit → landing challenge loop. */
@@ -162,8 +168,9 @@ export class RunResults {
     this.landingDetail.textContent = crashed ? 'FLIGHT FAILURE' : landingName
     this.landingDetail.setAttribute('aria-label', crashed ? `${landingName} flight failure` : `Landing quality ${landingName}`)
     const gatesLabel = gatesClearedLabel(result)
+    const gateMisses = gateMissesLabel(result)
     this.gates.textContent = gatesLabel
-    this.gates.setAttribute('aria-label', `${gatesLabel} gates cleared`)
+    this.gates.setAttribute('aria-label', `${gatesLabel} gates cleared${gateMisses ? `, ${gateMisses.toLowerCase()}` : ''}`)
     const precisionStreak = Number.isFinite(result.bestPrecisionStreak)
       ? Math.max(0, Math.floor(result.bestPrecisionStreak!))
       : 0
@@ -199,7 +206,7 @@ export class RunResults {
       : result.freeFlight
         ? 'SCENIC SORTIE COMPLETE'
         : 'ROUTE COMPLETE'
-    this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES · ${landingName}`
+    this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES${gateMisses ? ` · ${gateMisses}` : ''} · ${landingName}`
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
@@ -220,6 +227,7 @@ export class RunResults {
       scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)
     }
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
+    if (gateMisses) scoreParts.push(gateMisses)
     if (result.scoringFocus) scoreParts.push(`${result.scoringFocus.toUpperCase()} FOCUS`)
     if (Number.isFinite(result.peakSpeedKts)) {
       scoreParts.push(`TOP ${Math.max(0, Math.round(result.peakSpeedKts!))}KT`)

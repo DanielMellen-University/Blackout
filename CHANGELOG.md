@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.396** Preserve bounded gate-miss counts through the run result so route debriefs explain missed crossings without changing clean-flight presentation.
 - **10.395** Carry collision failure reasons into the crash results card so actionable diagnoses survive after the live impact banner fades.
 - **10.394** Surface finite collision failure labels such as SINK RATE, SLOPE, GEAR UP, and OBSTACLE in crash feedback while reusing the existing contact query and impact snapshot.
 - **10.393** Preview authored crosswind side and CRAB correction in the course picker and post-run condition summary, keeping the landing challenge readable before and after flight.

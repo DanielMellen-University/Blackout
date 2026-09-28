@@ -44,6 +44,8 @@ export interface ChallengeResult {
   /** Gates actually flown through, not the gate score. */
   gatesCleared?: number
   gatesTotal?: number
+  /** Gate-plane crossings that missed the ring during this sortie. */
+  gateMisses?: number
   courseId?: string
   /** Crash or water contact. The debrief uses this instead of a medal. */
   endedByCrash?: boolean
@@ -949,6 +951,7 @@ export class ChallengeRun {
   phase: ChallengePhase = 'ready'
   elapsedSec = 0
   gatesPassed = 0
+  gateMisses = 0
   totalGates = 0
   result: ChallengeResult | null = null
 
@@ -1005,6 +1008,7 @@ export class ChallengeRun {
     this.phase = 'ready'
     this.elapsedSec = 0
     this.gatesPassed = 0
+    this.gateMisses = 0
     this.gateQualityTotal = 0
     this.gateQualityStreak = 0
     this.bestGateQualityStreak = 0
@@ -1139,6 +1143,7 @@ export class ChallengeRun {
   /** Record a missed gate for the optional no-miss circuit contract. */
   recordGateMiss(): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
+    if (this.totalGates > 0) this.gateMisses = Math.min(10_000, this.gateMisses + 1)
     const wasContractFailed = this.contract.failed
     this.contract.recordCleanGate(true, this.gatesPassed, this.totalGates)
     this.contractFailureCuePending ||= !wasContractFailed && this.contract.failed
@@ -1515,6 +1520,7 @@ export class ChallengeRun {
       elapsedSec,
       gatesCleared: this.gatesPassed,
       gatesTotal: this.totalGates,
+      gateMisses: this.gateMisses > 0 ? this.gateMisses : undefined,
       courseId: this.courseId,
       gateScore,
       timeScore,
@@ -1635,6 +1641,7 @@ export class ChallengeRun {
       elapsedSec,
       gatesCleared: this.gatesPassed,
       gatesTotal: this.totalGates,
+      gateMisses: this.gateMisses > 0 ? this.gateMisses : undefined,
       courseId: this.courseId,
       endedByCrash: true,
       ditched: ditched === true,

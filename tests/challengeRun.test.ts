@@ -1326,6 +1326,7 @@ describe('ChallengeRun', () => {
     run.reset('seed:clean-contract', 2, 'balanced', cleanSeed, true)
     run.update(0.1, 8)
     run.recordGateMiss()
+    expect(run.gateMisses).toBe(1)
     expect(run.contractFailed).toBe(true)
     expect(run.consumeContractFailureCue()).toBe('CLEAN CIRCUIT')
     expect(run.consumeContractFailureCue()).toBeNull()
@@ -1343,6 +1344,7 @@ describe('ChallengeRun', () => {
     expect(result.contractFailed).toBe(true)
     expect(result.contractComplete).toBe(false)
     expect(result.contractScore).toBeUndefined()
+    expect(result.gateMisses).toBe(1)
   })
 
   it('emits the completion cue when every clean-circuit gate is passed', () => {
