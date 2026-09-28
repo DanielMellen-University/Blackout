@@ -4,6 +4,22 @@ import { CAMERA_MODES, type CameraMode } from './types'
 export type KeyboardYawPreference = 'a-right' | 'a-left'
 export type KeyboardRollPreference = 'q-right' | 'q-left'
 export type KeyboardPitchPreference = 'w-up' | 'w-down'
+export type KeyboardBindingCode =
+  | 'Space'
+  | 'KeyB'
+  | 'KeyG'
+  | 'KeyF'
+  | 'KeyH'
+  | 'KeyJ'
+  | 'KeyK'
+  | 'KeyL'
+  | 'KeyU'
+  | 'KeyI'
+export interface KeyboardBindings {
+  boost: KeyboardBindingCode
+  airbrake: KeyboardBindingCode
+  gear: KeyboardBindingCode
+}
 export type CameraSensitivity = 'low' | 'normal' | 'high'
 export type CameraSpeedFraming = 'subtle' | 'standard' | 'wide'
 export type HudDisplay = 'full' | 'minimal'
@@ -14,6 +30,15 @@ export const KEYBOARD_ROLL_STORAGE_KEY = 'blackout.keyboardRoll'
 export const DEFAULT_KEYBOARD_ROLL: KeyboardRollPreference = 'q-right'
 export const KEYBOARD_PITCH_STORAGE_KEY = 'blackout.keyboardPitch'
 export const DEFAULT_KEYBOARD_PITCH: KeyboardPitchPreference = 'w-up'
+export const KEYBOARD_BINDINGS_STORAGE_KEY = 'blackout.keyboardBindings'
+export const DEFAULT_KEYBOARD_BINDINGS: KeyboardBindings = {
+  boost: 'Space',
+  airbrake: 'KeyB',
+  gear: 'KeyG',
+}
+export const KEYBOARD_BINDING_CODES: readonly KeyboardBindingCode[] = [
+  'Space', 'KeyB', 'KeyG', 'KeyF', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyI',
+]
 export const GHOST_VISIBILITY_STORAGE_KEY = 'blackout.ghostVisible'
 export const DEFAULT_GHOST_VISIBLE = true
 export const CAMERA_MODE_STORAGE_KEY = 'blackout.cameraMode'
@@ -147,6 +172,87 @@ export function keyboardPitchPreferenceLabel(preference: KeyboardPitchPreference
   return normalizeKeyboardPitchPreference(preference) === 'w-down'
     ? 'W DOWN / S UP'
     : 'W UP / S DOWN'
+}
+
+function validKeyboardBinding(value: unknown): value is KeyboardBindingCode {
+  return KEYBOARD_BINDING_CODES.includes(value as KeyboardBindingCode)
+}
+
+/** Repair utility-key bindings without allowing duplicate or browser-dangerous keys. */
+export function normalizeKeyboardBindings(
+  value: unknown,
+  fallback: KeyboardBindings = DEFAULT_KEYBOARD_BINDINGS,
+): KeyboardBindings {
+  const source = value && typeof value === 'object' ? value as Partial<KeyboardBindings> : {}
+  const safeFallback = {
+    boost: validKeyboardBinding(fallback.boost) ? fallback.boost : DEFAULT_KEYBOARD_BINDINGS.boost,
+    airbrake: validKeyboardBinding(fallback.airbrake) ? fallback.airbrake : DEFAULT_KEYBOARD_BINDINGS.airbrake,
+    gear: validKeyboardBinding(fallback.gear) ? fallback.gear : DEFAULT_KEYBOARD_BINDINGS.gear,
+  }
+  const used = new Set<KeyboardBindingCode>()
+  const choose = (candidate: unknown, preferred: KeyboardBindingCode): KeyboardBindingCode => {
+    if (validKeyboardBinding(candidate) && !used.has(candidate)) {
+      used.add(candidate)
+      return candidate
+    }
+    if (!used.has(preferred)) {
+      used.add(preferred)
+      return preferred
+    }
+    for (const code of KEYBOARD_BINDING_CODES) {
+      if (!used.has(code)) {
+        used.add(code)
+        return code
+      }
+    }
+    return preferred
+  }
+  return {
+    boost: choose(source.boost, safeFallback.boost),
+    airbrake: choose(source.airbrake, safeFallback.airbrake),
+    gear: choose(source.gear, safeFallback.gear),
+  }
+}
+
+export function keyboardBindingLabel(code: KeyboardBindingCode): string {
+  switch (code) {
+    case 'Space': return 'SPACE'
+    case 'KeyB': return 'B'
+    case 'KeyG': return 'G'
+    case 'KeyF': return 'F'
+    case 'KeyH': return 'H'
+    case 'KeyJ': return 'J'
+    case 'KeyK': return 'K'
+    case 'KeyL': return 'L'
+    case 'KeyU': return 'U'
+    case 'KeyI': return 'I'
+  }
+}
+
+export function readKeyboardBindings(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: KeyboardBindings = DEFAULT_KEYBOARD_BINDINGS,
+): KeyboardBindings {
+  try {
+    const raw = storage?.getItem(KEYBOARD_BINDINGS_STORAGE_KEY)
+    return normalizeKeyboardBindings(raw ? JSON.parse(raw) : undefined, fallback)
+  } catch {
+    return normalizeKeyboardBindings(undefined, fallback)
+  }
+}
+
+export function writeKeyboardBindings(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  bindings: KeyboardBindings,
+): void {
+  try {
+    storage?.setItem(
+      KEYBOARD_BINDINGS_STORAGE_KEY,
+      JSON.stringify(normalizeKeyboardBindings(bindings)),
+    )
+  } catch {
+    /* Storage is optional. */
+  }
 }
 
 /** Keep the replay path preference finite-safe across storage versions. */

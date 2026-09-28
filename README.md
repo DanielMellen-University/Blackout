@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.348**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.349**.
 
 ## Run
 
@@ -37,6 +37,7 @@ Press Play when the airfield is ready.
 - B is the speed brake, and the wheel brake on the ground
 - C cycles chase, orbit, and cockpit
 - MMB looks around; camera sensitivity, speed framing, auto-return, Minimal HUD, and separate audio mixes are adjustable in the pause menu
+- Boost, speed-brake, and landing-gear keys are remappable in the pause menu and persisted locally
 - Esc pauses
 
 The nose is the flight path. Throttle is thrust: a climb spends speed, and closing the throttle slows you down. Afterburner is the burst that gets it back.

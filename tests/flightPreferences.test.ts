@@ -3,6 +3,8 @@ import {
   DEFAULT_KEYBOARD_YAW,
   DEFAULT_KEYBOARD_ROLL,
   DEFAULT_KEYBOARD_PITCH,
+  DEFAULT_KEYBOARD_BINDINGS,
+  KEYBOARD_BINDINGS_STORAGE_KEY,
   DEFAULT_GHOST_VISIBLE,
   GHOST_VISIBILITY_STORAGE_KEY,
   CAMERA_MODE_STORAGE_KEY,
@@ -25,6 +27,10 @@ import {
   keyboardRollPreferenceLabel,
   keyboardYawPreferenceLabel,
   keyboardPitchPreferenceLabel,
+  keyboardBindingLabel,
+  normalizeKeyboardBindings,
+  readKeyboardBindings,
+  writeKeyboardBindings,
   normalizeKeyboardRollPreference,
   normalizeKeyboardYawPreference,
   normalizeKeyboardPitchPreference,
@@ -120,6 +126,27 @@ describe('keyboard flight preferences', () => {
     expect(values.get(KEYBOARD_PITCH_STORAGE_KEY)).toBe('w-down')
     expect(readKeyboardPitchPreference(storage)).toBe('w-down')
     expect(keyboardPitchPreferenceLabel('w-down')).toBe('W DOWN / S UP')
+  })
+
+  it('repairs duplicate utility bindings and persists a safe custom map', () => {
+    const values = new Map<string, string>([
+      [KEYBOARD_BINDINGS_STORAGE_KEY, JSON.stringify({ boost: 'KeyB', airbrake: 'KeyB', gear: 'bad' })],
+    ])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const repaired = readKeyboardBindings(storage)
+    expect(repaired.boost).toBe('KeyB')
+    expect(repaired.airbrake).not.toBe(repaired.boost)
+    expect(repaired.gear).not.toBe(repaired.boost)
+    expect(normalizeKeyboardBindings({ boost: 'KeyF', airbrake: 'KeyH', gear: 'KeyJ' }))
+      .toEqual({ boost: 'KeyF', airbrake: 'KeyH', gear: 'KeyJ' })
+    writeKeyboardBindings(storage, { boost: 'KeyF', airbrake: 'KeyH', gear: 'KeyJ' })
+    expect(JSON.parse(values.get(KEYBOARD_BINDINGS_STORAGE_KEY)!)).toEqual({
+      boost: 'KeyF', airbrake: 'KeyH', gear: 'KeyJ',
+    })
+    expect(keyboardBindingLabel(DEFAULT_KEYBOARD_BINDINGS.boost)).toBe('SPACE')
   })
 
   it('persists ghost visibility without coupling it to keyboard preferences', () => {

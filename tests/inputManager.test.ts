@@ -81,6 +81,26 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('uses persisted utility-key bindings for boost, brake, and gear', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.setKeyboardBindings({ boost: 'KeyF', airbrake: 'KeyH', gear: 'KeyJ' })
+    input.setFlightLive(true)
+
+    fake.fire('keydown', 'KeyF')
+    fake.fire('keydown', 'KeyH')
+    fake.fire('keydown', 'KeyJ')
+    expect(input.sampleWithDt(0).boost).toBe(true)
+    expect(input.sampleWithDt(0).airbrake).toBe(true)
+    expect(input.consumeGearToggle()).toBe(true)
+
+    fake.fire('keyup', 'KeyF')
+    fake.fire('keyup', 'KeyH')
+    expect(input.sampleWithDt(0).boost).toBe(false)
+    expect(input.sampleWithDt(0).airbrake).toBe(false)
+    input.dispose()
+  })
+
   it('queues the audio toggle only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

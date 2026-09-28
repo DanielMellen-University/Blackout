@@ -134,6 +134,51 @@
                   <option value="w-down">W down / S up</option>
                 </select>
               </label>
+              <label class="menu-setting" for="menu-boost-key">
+                <span>Boost key</span>
+                <select id="menu-boost-key" aria-label="Afterburner key">
+                  <option value="Space">Space</option>
+                  <option value="KeyB">B</option>
+                  <option value="KeyG">G</option>
+                  <option value="KeyF">F</option>
+                  <option value="KeyH">H</option>
+                  <option value="KeyJ">J</option>
+                  <option value="KeyK">K</option>
+                  <option value="KeyL">L</option>
+                  <option value="KeyU">U</option>
+                  <option value="KeyI">I</option>
+                </select>
+              </label>
+              <label class="menu-setting" for="menu-airbrake-key">
+                <span>Speed-brake key</span>
+                <select id="menu-airbrake-key" aria-label="Speed-brake key">
+                  <option value="Space">Space</option>
+                  <option value="KeyB">B</option>
+                  <option value="KeyG">G</option>
+                  <option value="KeyF">F</option>
+                  <option value="KeyH">H</option>
+                  <option value="KeyJ">J</option>
+                  <option value="KeyK">K</option>
+                  <option value="KeyL">L</option>
+                  <option value="KeyU">U</option>
+                  <option value="KeyI">I</option>
+                </select>
+              </label>
+              <label class="menu-setting" for="menu-gear-key">
+                <span>Landing-gear key</span>
+                <select id="menu-gear-key" aria-label="Landing-gear key">
+                  <option value="Space">Space</option>
+                  <option value="KeyB">B</option>
+                  <option value="KeyG">G</option>
+                  <option value="KeyF">F</option>
+                  <option value="KeyH">H</option>
+                  <option value="KeyJ">J</option>
+                  <option value="KeyK">K</option>
+                  <option value="KeyL">L</option>
+                  <option value="KeyU">U</option>
+                  <option value="KeyI">I</option>
+                </select>
+              </label>
               <label class="menu-setting" for="menu-camera-sensitivity">
                 <span>Camera look</span>
                 <select id="menu-camera-sensitivity" aria-label="External camera look sensitivity">
@@ -182,9 +227,9 @@
               <div><kbd>Q</kbd><kbd>E</kbd></div><div id="controls-roll-label">Roll (Q right / E left by default)</div>
               <div><kbd>Shift</kbd> / <kbd>2</kbd></div><div>Engine +</div>
               <div><kbd>Ctrl</kbd> / <kbd>1</kbd></div><div>Engine − / brake</div>
-              <div><kbd>Space</kbd></div><div>Afterburner</div>
-              <div><kbd>B</kbd></div><div>Speed brake / wheel brakes (hold, blocks throttle creep)</div>
-              <div><kbd>G</kbd></div><div>Toggle landing gear (auto safety near ground)</div>
+              <div><kbd id="controls-boost-label">Space</kbd></div><div>Afterburner</div>
+              <div><kbd id="controls-airbrake-label">B</kbd></div><div>Speed brake / wheel brakes (hold, blocks throttle creep)</div>
+              <div><kbd id="controls-gear-label">G</kbd></div><div>Toggle landing gear (auto safety near ground)</div>
               <div><kbd>V</kbd></div><div>Toggle gentle pitch and bank trim assist</div>
               <div><kbd>X</kbd></div><div>Toggle best-run ghost path (external view)</div>
               <div><kbd>C</kbd></div><div>Camera mode (chase / orbit / cockpit)</div>

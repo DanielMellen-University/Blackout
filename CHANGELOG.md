@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add persisted boost, speed-brake, and landing-gear keyboard bindings with duplicate-safe repair, browser-key suppression, and live controls labels while leaving axis preferences and gamepad/touch input unchanged.
 - Replace per-probe settlement obstacle bucket strings, callbacks, and yaw trig with cached numeric spatial columns and indexed building extents, keeping high-speed collision sweeps allocation-light without changing collision envelopes.
 - Reuse a caller-owned climate record for settlement waterfront and bridge-pier probes, removing repeated biome-weight allocations during landmark attachment without changing dock or road geometry.
 - Reuse a tiny bounded set of caller-owned climate records across settlement candidate, survey, road, and lot probes, removing repeated biome-weight allocations from landmark planning without changing deterministic placement.

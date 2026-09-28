@@ -4,6 +4,8 @@ import {
   normalizeKeyboardYawPreference,
   normalizeKeyboardRollPreference,
   normalizeKeyboardPitchPreference,
+  normalizeKeyboardBindings,
+  type KeyboardBindings,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -38,6 +40,11 @@ export class InputManager {
   private keyboardYawPreference: KeyboardYawPreference = 'a-right'
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
+  private keyboardBindings: KeyboardBindings = {
+    boost: 'Space',
+    airbrake: 'KeyB',
+    gear: 'KeyG',
+  }
 
   cameraToggleQueued = false
   resetQueued = false
@@ -95,6 +102,14 @@ export class InputManager {
     return this.keyboardPitchPreference
   }
 
+  setKeyboardBindings(bindings: KeyboardBindings): void {
+    this.keyboardBindings = normalizeKeyboardBindings(bindings)
+  }
+
+  get bindings(): KeyboardBindings {
+    return this.keyboardBindings
+  }
+
   /**
    * Enter or leave the live-flight input context.
    *
@@ -144,8 +159,8 @@ export class InputManager {
       ? this.axis('KeyE', 'KeyQ')
       : this.axis('KeyQ', 'KeyE')
     this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll, this.touchRoll)
-    this.controls.boost = this.keys.has('Space') || this.gamepadBoost || this.touchBoost
-    this.controls.airbrake = this.keys.has('KeyB')
+    this.controls.boost = this.keys.has(this.keyboardBindings.boost) || this.gamepadBoost || this.touchBoost
+    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake)
     this.controls.stabilityAssist = this.stabilityAssist
 
     // Engine power: Shift up, Ctrl down
@@ -331,7 +346,7 @@ export class InputManager {
     if (e.code === 'KeyN') this.weatherCycleQueued = true
     if (e.code === 'KeyM') this.audioToggleQueued = true
     if (e.code === 'KeyT') this.radarTargetCycleQueued = true
-    if (e.code === 'KeyG') this.gearToggleQueued = true
+    if (e.code === this.keyboardBindings.gear) this.gearToggleQueued = true
     if (e.code === 'KeyV') this.stabilityAssistToggleQueued = true
     if (e.code === 'KeyX') this.ghostToggleQueued = true
     if (e.code === 'KeyY') this.worldSeedCopyQueued = true
@@ -368,6 +383,9 @@ export class InputManager {
       e.code === 'KeyV' ||
       e.code === 'KeyX' ||
       e.code === 'KeyY' ||
+      e.code === this.keyboardBindings.boost ||
+      e.code === this.keyboardBindings.airbrake ||
+      e.code === this.keyboardBindings.gear ||
       e.code === 'F5'
     )
   }

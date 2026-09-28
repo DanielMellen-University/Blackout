@@ -175,6 +175,10 @@ import {
   normalizeKeyboardPitchPreference,
   readKeyboardPitchPreference,
   writeKeyboardPitchPreference,
+  keyboardBindingLabel,
+  normalizeKeyboardBindings,
+  readKeyboardBindings,
+  writeKeyboardBindings,
   readGhostVisibilityPreference,
   writeGhostVisibilityPreference,
   readCameraModePreference,
@@ -204,6 +208,8 @@ import {
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
+  type KeyboardBindingCode,
+  type KeyboardBindings,
 } from './core/FlightPreferences'
 import {
   defaultRenderQuality,
@@ -232,6 +238,9 @@ async function boot(): Promise<void> {
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
+  const boostKeySelect = document.getElementById('menu-boost-key') as HTMLSelectElement | null
+  const airbrakeKeySelect = document.getElementById('menu-airbrake-key') as HTMLSelectElement | null
+  const gearKeySelect = document.getElementById('menu-gear-key') as HTMLSelectElement | null
   const cameraSensitivitySelect = document.getElementById('menu-camera-sensitivity') as HTMLSelectElement | null
   const cameraSpeedFramingSelect = document.getElementById('menu-camera-speed-framing') as HTMLSelectElement | null
   const cameraAutoReturnToggle = document.getElementById('menu-camera-auto-return') as HTMLInputElement | null
@@ -241,6 +250,9 @@ async function boot(): Promise<void> {
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
   const pitchLabel = document.getElementById('controls-pitch-label')
+  const boostKeyLabel = document.getElementById('controls-boost-label')
+  const airbrakeKeyLabel = document.getElementById('controls-airbrake-label')
+  const gearKeyLabel = document.getElementById('controls-gear-label')
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
   const engineVolumeRange = document.getElementById('menu-engine-volume') as HTMLInputElement | null
@@ -407,6 +419,7 @@ async function boot(): Promise<void> {
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
+  const initialKeyboardBindings = readKeyboardBindings(qualityStorage)
   const initialCameraSensitivity = readCameraSensitivityPreference(qualityStorage)
   const initialCameraSpeedFraming = readCameraSpeedFramingPreference(qualityStorage)
   const initialCameraAutoReturn = readCameraAutoReturnPreference(qualityStorage)
@@ -579,10 +592,14 @@ async function boot(): Promise<void> {
   input.setKeyboardYawPreference(initialKeyboardYaw)
   input.setKeyboardRollPreference(initialKeyboardRoll)
   input.setKeyboardPitchPreference(initialKeyboardPitch)
+  input.setKeyboardBindings(initialKeyboardBindings)
   input.setStabilityAssist(initialStabilityAssist)
   if (yawSelect) yawSelect.value = initialKeyboardYaw
   if (rollSelect) rollSelect.value = initialKeyboardRoll
   if (pitchSelect) pitchSelect.value = initialKeyboardPitch
+  if (boostKeySelect) boostKeySelect.value = initialKeyboardBindings.boost
+  if (airbrakeKeySelect) airbrakeKeySelect.value = initialKeyboardBindings.airbrake
+  if (gearKeySelect) gearKeySelect.value = initialKeyboardBindings.gear
   if (stabilityAssistToggle) stabilityAssistToggle.checked = initialStabilityAssist
   const touchDevice = touchInputSupported(
     typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
@@ -680,6 +697,34 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(pitchSelect, 'change', onKeyboardPitchChange)
+  const applyKeyboardBindings = (next: KeyboardBindings): void => {
+    const bindings = normalizeKeyboardBindings(next)
+    input.setKeyboardBindings(bindings)
+    if (boostKeySelect) boostKeySelect.value = bindings.boost
+    if (airbrakeKeySelect) airbrakeKeySelect.value = bindings.airbrake
+    if (gearKeySelect) gearKeySelect.value = bindings.gear
+    if (boostKeyLabel) boostKeyLabel.textContent = keyboardBindingLabel(bindings.boost)
+    if (airbrakeKeyLabel) airbrakeKeyLabel.textContent = keyboardBindingLabel(bindings.airbrake)
+    if (gearKeyLabel) gearKeyLabel.textContent = keyboardBindingLabel(bindings.gear)
+    writeKeyboardBindings(qualityStorage, bindings)
+  }
+  applyKeyboardBindings(initialKeyboardBindings)
+  const onKeyboardBindingChange = (action: keyof KeyboardBindings, value: string): void => {
+    const bindings = normalizeKeyboardBindings({ ...input.bindings, [action]: value as KeyboardBindingCode })
+    applyKeyboardBindings(bindings)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`${action.toUpperCase()} KEY ${keyboardBindingLabel(bindings[action])}`, 1500, 'info')
+    }
+  }
+  uiListeners.add(boostKeySelect, 'change', () => {
+    if (boostKeySelect) onKeyboardBindingChange('boost', boostKeySelect.value)
+  })
+  uiListeners.add(airbrakeKeySelect, 'change', () => {
+    if (airbrakeKeySelect) onKeyboardBindingChange('airbrake', airbrakeKeySelect.value)
+  })
+  uiListeners.add(gearKeySelect, 'change', () => {
+    if (gearKeySelect) onKeyboardBindingChange('gear', gearKeySelect.value)
+  })
   const onCameraSensitivityChange = (): void => {
     if (!cameraSensitivitySelect) return
     const preference = normalizeCameraSensitivity(cameraSensitivitySelect.value)
