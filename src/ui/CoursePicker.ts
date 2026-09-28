@@ -5,7 +5,7 @@ import {
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
-import { WEATHER_LABELS, weatherIdForSeed, type WeatherId } from '../world/WeatherDirector'
+import { WEATHER_LABELS, weatherIdForSeed, type WeatherId, type WindSide } from '../world/WeatherDirector'
 
 export interface CoursePickerItem {
   id: string
@@ -16,7 +16,7 @@ export interface CoursePickerItem {
 }
 
 export interface CoursePickerCopyInput {
-  course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'timeOfDay'>
+  course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'timeOfDay' | 'windSide'>
   history: CourseHistory | null
   bestScore: number
   badgeCount: number
@@ -47,6 +47,7 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     courseTimePreviewLabel(input.course.timeOfDay)
       ? `TIME ${courseTimePreviewLabel(input.course.timeOfDay)}`
       : '',
+    courseWindPreviewLabel(input.course.windSide),
     input.contractLabel?.trim()
       ? `TASK ${input.contractLabel.trim()}`
       : '',
@@ -155,9 +156,16 @@ export function courseTimePreviewLabel(timeOfDay: number | undefined): string {
   return normalized < 0.22 || normalized > 0.78 ? 'NIGHT' : ''
 }
 
+/** Keep authored runway wind pressure explicit before the sortie starts. */
+export function courseWindPreviewLabel(windSide: WindSide | undefined): string {
+  if (windSide !== 'left' && windSide !== 'right') return ''
+  const crab = windSide === 'left' ? 'R' : 'L'
+  return `CROSSWIND ${windSide === 'left' ? 'L' : 'R'} / CRAB ${crab}`
+}
+
 /** Keep authored conditions readable after the launch card is gone. */
 export function courseConditionSummary(
-  course: Pick<CourseDefinition, 'weather' | 'timeOfDay'>,
+  course: Pick<CourseDefinition, 'weather' | 'timeOfDay' | 'windSide'>,
 ): string {
   const conditions = [
     course.weather
@@ -166,6 +174,7 @@ export function courseConditionSummary(
     courseTimePreviewLabel(course.timeOfDay)
       ? `TIME ${courseTimePreviewLabel(course.timeOfDay)}`
       : '',
+    courseWindPreviewLabel(course.windSide),
   ].filter(Boolean)
   return conditions.join(' / ')
 }

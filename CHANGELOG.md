@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.393** Preview authored crosswind side and CRAB correction in the course picker and post-run condition summary, keeping the landing challenge readable before and after flight.
 - **10.392** Make bounded world-generation startup failures recoverable from the title screen with a Retry action, while keeping renderer/GPU failures correctly disabled.
 - **10.391** Add a cached CRAB L/R return cue derived from runway-relative crosswind, making the landing correction explicit without adding scene or render-loop work.
 - **10.390** Add Crosswind Approach, a storm-locked pattern course with a deterministic runway-relative wind side so the landing pressure is repeatable instead of seed luck.

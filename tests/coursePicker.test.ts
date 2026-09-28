@@ -5,6 +5,7 @@ import {
   courseMasteryProgressLabel,
   coursePickerCopy,
   courseTimePreviewLabel,
+  courseWindPreviewLabel,
   courseWeatherPreviewLabel,
 } from '../src/ui/CoursePicker'
 
@@ -25,6 +26,9 @@ describe('course picker copy', () => {
     expect(courseTimePreviewLabel(0.84)).toBe('NIGHT')
     expect(courseTimePreviewLabel(0.5)).toBe('')
     expect(courseTimePreviewLabel(-0.16)).toBe('NIGHT')
+    expect(courseWindPreviewLabel('right')).toBe('CROSSWIND R / CRAB L')
+    expect(courseWindPreviewLabel('left')).toBe('CROSSWIND L / CRAB R')
+    expect(courseWindPreviewLabel(undefined)).toBe('')
 
     const copy = coursePickerCopy({
       course: {
@@ -44,6 +48,8 @@ describe('course picker copy', () => {
       .toBe('WEATHER LOW FOG / TIME NIGHT')
     expect(courseConditionSummary({ weather: 'storm', timeOfDay: 0.5 }))
       .toBe('WEATHER THUNDERSTORM')
+    expect(courseConditionSummary({ weather: 'storm', timeOfDay: 0.5, windSide: 'right' }))
+      .toBe('WEATHER THUNDERSTORM / CROSSWIND R / CRAB L')
   })
 
   it('previews the deterministic seeded task without changing free flight copy', () => {
