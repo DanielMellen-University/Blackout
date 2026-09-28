@@ -173,6 +173,9 @@ export class World {
     const previousProfile = this.missionProfile
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
+    const previousWeather = this.atmosphere.weather
+    const previousTimeOfDay = this.atmosphere.timeOfDay
+    let liveWorldCleared = false
     const restore = (): void => {
       setWorldSeed(previousSeed)
       this.seed = previousSeed
@@ -193,6 +196,7 @@ export class World {
         this.seed = nextSeed
         this.missionProfile = requestedProfile
         this.applySpawn(pad)
+        liveWorldCleared = true
         this.terrain.clearAll()
         this.settlements.clearAll()
         this.traffic.reset(this.seed, this.spawn.x, this.spawn.y, this.spawn.z)
@@ -223,9 +227,63 @@ export class World {
       throw new Error('reseed: no dry inland pad')
     } catch (err) {
       restore()
+      if (this.committed && liveWorldCleared) {
+        this.restoreCommittedWorld(
+          previousSeed,
+          previousProfile,
+          previousPad,
+          previousSpawn,
+          previousWeather,
+          previousTimeOfDay,
+        )
+        return this.seed
+      }
       if (this.committed) return this.seed
       throw err
     }
+  }
+
+  /** Best-effort rollback after a replacement world fails mid-rebuild. */
+  private restoreCommittedWorld(
+    seed: number,
+    profile: MissionRouteProfile | undefined,
+    pad: { x: number; z: number; y: number; yaw?: number } | null,
+    spawn: SpawnPose,
+    weather: WeatherId,
+    timeOfDay: number,
+  ): void {
+    try { setWorldSeed(seed) } catch { /* keep the previous process alive */ }
+    try { this.seed = seed; this.missionProfile = profile; this.spawn = { ...spawn } } catch { /* state is already best effort */ }
+    try {
+      if (pad) {
+        setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
+        this.runway.position.set(pad.x, pad.y + 0.05, pad.z)
+        this.runway.rotation.y = pad.yaw ?? spawn.yaw
+      } else {
+        clearOpsPad()
+      }
+    } catch { /* runway restoration is cosmetic */ }
+    try { this.terrain.clearAll() } catch { /* continue rebuilding other world layers */ }
+    try { this.settlements.clearAll() } catch { /* continue rebuilding other world layers */ }
+    try { this.traffic.reset(seed, spawn.x, spawn.y, spawn.z) } catch { /* traffic can rebuild on the next tick */ }
+    try {
+      this.appliedWeather = null
+      this.terrain.update(spawn.x, spawn.z, 1 / 60)
+    } catch { /* workerless terrain can retry from World.update */ }
+    try {
+      this.settlements.primeAnchors(spawn.x, spawn.z)
+      this.settlements.update(spawn.x, spawn.z)
+    } catch { /* settlement workers can retry from World.update */ }
+    try {
+      this.atmosphere.randomizeWeather(seed)
+      this.atmosphere.timeOfDay = Number.isFinite(timeOfDay) ? timeOfDay : this.atmosphere.timeOfDay
+      this.atmosphere.setWeather(weather, true)
+      const restoredWeather = this.atmosphere.weatherSnapshot
+      this.applyWeatherEffects(restoredWeather, this.atmosphere.daylight)
+      setAirfieldWind(this.runway, restoredWeather.windX, restoredWeather.windZ)
+      setAirfieldPapi(this.runway, spawn.x, spawn.y, spawn.z, this.atmosphere.daylight)
+    } catch { /* atmosphere will reapply on its next update */ }
+    try { this.mission.start(spawn.x, spawn.y, spawn.z, spawn.yaw, profile) } catch { /* mission can be started by the next reset */ }
   }
 
   /** True if a world-space point overlaps hangar, tower, or shack. */

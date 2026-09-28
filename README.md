@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks and builds.
+Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks and builds. World replacement is transactional: a failed rebuild rolls back to a usable streamed world instead of leaving the runway over an empty scene.
 
 ## Aircraft and weather
 

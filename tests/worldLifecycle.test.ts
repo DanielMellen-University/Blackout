@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { World } from '../src/world/World'
 
 describe('world lifecycle boundary', () => {
@@ -13,4 +13,22 @@ describe('world lifecycle boundary', () => {
     expect(world.cycleWeather()).toBe('clear')
     expect(() => world.setSettlementsVisible(true)).not.toThrow()
   })
+
+  it('rebuilds a usable previous world when replacement fails after clearing terrain', () => {
+    const world = new World()
+    const previousSeed = world.worldSeed
+    const originalClear = world.terrain.clearAll.bind(world.terrain)
+    const clear = vi.spyOn(world.terrain, 'clearAll').mockImplementationOnce(() => {
+      originalClear()
+      throw new Error('synthetic terrain rebuild failure')
+    })
+
+    expect(world.reseed(73)).toBe(previousSeed)
+    expect(clear).toHaveBeenCalledTimes(2)
+    expect(world.worldSeed).toBe(previousSeed)
+    expect(Number.isFinite(world.spawn.x)).toBe(true)
+    expect(Number.isFinite(world.spawn.z)).toBe(true)
+    expect(world.terrain.streamingStats.pending + world.terrain.streamingStats.loaded).toBeGreaterThan(0)
+    world.dispose()
+  }, 60_000)
 })
