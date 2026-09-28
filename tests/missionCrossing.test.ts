@@ -244,7 +244,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'badlands', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago', 'thermal'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'badlands', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago', 'thermal', 'approach'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -309,6 +309,7 @@ describe('MissionSystem gate crossing', () => {
     const swamp = buildMissionRoute(0, 20, 0, 0, 'swamp')
     const archipelago = buildMissionRoute(0, 20, 0, 0, 'archipelago')
     const thermal = buildMissionRoute(0, 20, 0, 0, 'thermal')
+    const approach = buildMissionRoute(0, 20, 0, 0, 'approach')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
@@ -332,6 +333,7 @@ describe('MissionSystem gate crossing', () => {
     expect(swamp).toHaveLength(5)
     expect(archipelago).toHaveLength(5)
     expect(thermal).toHaveLength(5)
+    expect(approach).toHaveLength(5)
     expect(thermal[1]!.z).not.toBeCloseTo(archipelago[1]!.z)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
@@ -367,6 +369,9 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, archipelago, 'archipelago').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, archipelago, 'archipelago').lengthMeters).toBeGreaterThan(3_500)
     expect(summarizeMissionRoute(0, 20, 0, thermal, 'thermal').challenge).toBe('altitude')
+    expect(summarizeMissionRoute(0, 20, 0, approach, 'approach').challenge).toBe('approach')
+    expect(summarizeMissionRoute(0, 20, 0, approach, 'approach').lengthMeters).toBeGreaterThan(1_800)
+    expect(approach[4]!.z).toBeGreaterThan(100)
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
@@ -394,6 +399,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('swamp')).toBe('SWAMP RUN')
     expect(routeProfileLabel('archipelago')).toBe('ARCHIPELAGO RUN')
     expect(routeProfileLabel('thermal')).toBe('THERMAL RUN')
+    expect(routeProfileLabel('approach')).toBe('PATTERN APPROACH')
   })
 
   it('anchors Thermal Run gates inside the seeded lift corridor', () => {

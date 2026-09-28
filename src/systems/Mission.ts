@@ -66,7 +66,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'archipelago' | 'thermal' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'archipelago' | 'thermal' | 'approach' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -123,6 +123,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   swamp: 'SWAMP RUN',
   archipelago: 'ARCHIPELAGO RUN',
   thermal: 'THERMAL RUN',
+  approach: 'PATTERN APPROACH',
   free: 'FREE FLIGHT',
 }
 
@@ -221,6 +222,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'swamp') return 'range'
   if (profile === 'archipelago') return 'range'
   if (profile === 'thermal') return 'altitude'
+  if (profile === 'approach') return 'approach'
   return 'approach'
 }
 
@@ -237,7 +239,7 @@ export function routeModifierForSpawn(
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
-  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'alpine' ? 9 : profile === 'storm' ? 10 : profile === 'night' ? 11 : profile === 'timber' ? 12 : profile === 'glacier' ? 13 : profile === 'rainforest' ? 14 : profile === 'mesa' ? 15 : profile === 'badlands' ? 16 : profile === 'saltflat' ? 17 : profile === 'savanna' ? 18 : profile === 'tundra' ? 19 : profile === 'swamp' ? 20 : profile === 'archipelago' ? 21 : profile === 'thermal' ? 22 : 0
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'alpine' ? 9 : profile === 'storm' ? 10 : profile === 'night' ? 11 : profile === 'timber' ? 12 : profile === 'glacier' ? 13 : profile === 'rainforest' ? 14 : profile === 'mesa' ? 15 : profile === 'badlands' ? 16 : profile === 'saltflat' ? 17 : profile === 'savanna' ? 18 : profile === 'tundra' ? 19 : profile === 'swamp' ? 20 : profile === 'archipelago' ? 21 : profile === 'thermal' ? 22 : profile === 'approach' ? 23 : 0
   const hash = Math.abs(Math.floor(
     safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
   ))
@@ -283,7 +285,7 @@ export function buildMissionRoute(
   const offsets = routeOffsets(profile, seedPhase, modifier)
   let points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
-      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' || profile === 'night' || profile === 'badlands' ? 12 : profile === 'ridge' || profile === 'alpine' || profile === 'thermal' ? 30 : profile === 'volcanic' ? 44 : profile === 'desert' || profile === 'coast' || profile === 'river' || profile === 'savanna' || profile === 'tundra' || profile === 'swamp' ? 16 : 22),
+      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' || profile === 'night' || profile === 'badlands' ? 12 : profile === 'ridge' || profile === 'alpine' || profile === 'thermal' ? 30 : profile === 'volcanic' ? 44 : profile === 'desert' || profile === 'coast' || profile === 'river' || profile === 'savanna' || profile === 'tundra' || profile === 'swamp' ? 16 : profile === 'approach' ? 10 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
@@ -589,6 +591,16 @@ function routeOffsets(
       { forward: 2_080, right: islandHop * 1.18, height: 122 },
       { forward: 2_900, right: -islandHop * .72, height: 142 },
       { forward: 3_720, right: islandHop * .96, height: 134 },
+    ].map(shape)
+  }
+  if (profile === 'approach') {
+    const downwind = 360 + seedPhase * 55
+    return [
+      { forward: 560, right: 0, height: 92 },
+      { forward: 1_020, right: downwind, height: 126 },
+      { forward: 520, right: downwind * 1.08, height: 92 },
+      { forward: 160, right: downwind * .62, height: 58 },
+      { forward: 220, right: downwind * .12, height: 28 },
     ].map(shape)
   }
   if (profile === 'thermal') {

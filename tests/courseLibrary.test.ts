@@ -14,7 +14,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(26)
+    expect(COURSE_LIBRARY).toHaveLength(27)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -74,6 +74,9 @@ describe('course library', () => {
     expect(courseDefinitionForId('thermal-run').profile).toBe('thermal')
     expect(courseDefinitionForId('thermal-run').weather).toBe('clear')
     expect(courseRunId(courseDefinitionForId('thermal-run'))).toBe('seed:27:thermal')
+    expect(courseDefinitionForId('pattern-approach').profile).toBe('approach')
+    expect(courseDefinitionForId('pattern-approach').weather).toBe('clear')
+    expect(courseRunId(courseDefinitionForId('pattern-approach'))).toBe('seed:28:approach')
     expect(courseRunId(courseDefinitionForId('rainforest-run'))).toBe('seed:17:rainforest')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
     expect(courseSessionId('random', 42, 'orbit')).toBe('random-world')
