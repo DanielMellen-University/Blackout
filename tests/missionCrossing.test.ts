@@ -6,6 +6,7 @@ import {
   missionPassFlashOpacity,
   missionPassFlashScale,
   buildMissionRoute,
+  routeProfileForBiome,
   routeProfileForSpawn,
   routeProfileLabel,
   routeModifierForSpawn,
@@ -391,6 +392,18 @@ describe('MissionSystem gate crossing', () => {
     expect(profiles.has('tundra')).toBe(true)
     expect(profiles.has('swamp')).toBe(true)
     expect(profiles.has('archipelago')).toBe(true)
+  })
+
+  it('keeps random routes coherent with recognized biome families', () => {
+    expect(routeProfileForBiome('snow', 0, 0, 0)).toBe('glacier')
+    expect(routeProfileForBiome('tundra', 0, 0, 0)).toBe('tundra')
+    expect(routeProfileForBiome('swamp', 0, 0, 0)).toBe('swamp')
+    expect(routeProfileForBiome('rainforest', 0, 0, 0)).toBe('rainforest')
+    expect(routeProfileForBiome('volcanic', 0, 0, 0)).toBe('volcanic')
+    expect(routeProfileForBiome('desert', 0, 0, 0)).toBe('desert')
+    expect(routeProfileForBiome('mesa', 0, 0, 0)).toBe('mesa')
+    expect(routeProfileForBiome('unknown', 0, 0, 0)).toBe(routeProfileForSpawn(0, 0, 0))
+    expect(routeProfileForBiome(Number.NaN, 0, 0, 0)).toBe(routeProfileForSpawn(0, 0, 0))
   })
 
   it('supports a no-gate free-flight profile', () => {

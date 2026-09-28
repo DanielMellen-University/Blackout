@@ -153,6 +153,40 @@ export function routeProfileForSpawn(
   return (['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'timber', 'glacier', 'rainforest', 'mesa', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago', 'badlands'] as const)[hash % 20]!
 }
 
+/**
+ * Keep an un-authored sortie visually and mechanically tied to its airfield
+ * province. The coordinate fallback still supplies variety for plains and
+ * unfamiliar biome labels, while each recognized biome gets a small stable
+ * family of routes instead of a random mismatch.
+ */
+export function routeProfileForBiome(
+  biome: unknown,
+  spawnX: number,
+  spawnZ: number,
+  spawnYaw = 0,
+): MissionRouteProfile {
+  const normalized = typeof biome === 'string' ? biome.trim().toLowerCase() : ''
+  const safeX = finiteOr(spawnX, 0)
+  const safeZ = finiteOr(spawnZ, 0)
+  const safeYaw = finiteOr(spawnYaw, 0)
+  const hash = Math.abs(Math.floor(safeX * 0.0017 + safeZ * 0.0021 + safeYaw * 3.1))
+  const family = (profiles: readonly MissionRouteProfile[]): MissionRouteProfile => profiles[hash % profiles.length]!
+  if (normalized === 'snow') return 'glacier'
+  if (normalized === 'tundra') return 'tundra'
+  if (normalized === 'swamp') return 'swamp'
+  if (normalized === 'rainforest') return 'rainforest'
+  if (normalized === 'volcanic') return 'volcanic'
+  if (normalized === 'mountain') return family(['alpine', 'ridge'])
+  if (normalized === 'forest') return family(['timber', 'river'])
+  if (normalized === 'desert') return family(['desert', 'badlands', 'saltflat'])
+  if (normalized === 'mesa') return family(['mesa', 'badlands'])
+  if (normalized === 'saltflat') return 'saltflat'
+  if (normalized === 'savanna') return 'savanna'
+  if (normalized === 'hills') return family(['ridge', 'canyon', 'coast'])
+  if (normalized === 'water' || normalized === 'ocean') return family(['coast', 'archipelago', 'river'])
+  return routeProfileForSpawn(safeX, safeZ, safeYaw)
+}
+
 export function routeProfileLabel(profile: MissionRouteProfile): string {
   return ROUTE_PROFILE_LABELS[profile] ?? ROUTE_PROFILE_LABELS.orbit
 }
@@ -759,13 +793,14 @@ export class MissionSystem {
     spawnYaw: number,
     requestedProfile?: MissionRouteProfile,
     requestedModifier?: MissionRouteModifier,
+    spawnBiome?: unknown,
   ): void {
     if (this.disposed) return
     this.clear()
     const safeSpawnX = finiteOr(spawnX, 0)
     const safeSpawnY = finiteOr(spawnY, 0)
     const safeSpawnZ = finiteOr(spawnZ, 0)
-    this.profile = requestedProfile ?? routeProfileForSpawn(safeSpawnX, safeSpawnZ, spawnYaw)
+    this.profile = requestedProfile ?? routeProfileForBiome(spawnBiome, safeSpawnX, safeSpawnZ, spawnYaw)
     this.status = 'idle'
     this.next = 0
     this.havePrev = false

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.380** Make un-authored sorties choose deterministic route families from the generated airfield biome while preserving explicit curated-course profiles.
 - **10.379** Add a deterministic Badlands Run course with shelf-to-shelf red-rock navigation and a new replayable route profile.
 - **10.378** Stabilize flight-warning transitions with immediate escalation and bounded release hysteresis, and clear the G-load veil whenever pause or results hides live telemetry.
 - **10.377** Enable the existing high-G feedback path with hysteretic blackout/redout bands, smooth bounded veil ramps, and one-shot transition callouts while keeping malformed load values safe.

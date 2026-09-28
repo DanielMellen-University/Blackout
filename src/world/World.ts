@@ -291,7 +291,7 @@ export class World {
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
         setAirfieldPapi(this.runway, this.spawn.x, this.spawn.y, this.spawn.z, this.atmosphere.daylight)
-        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw, this.missionProfile)
+        this.mission.start(this.spawn.x, this.spawn.y, this.spawn.z, this.spawn.yaw, this.missionProfile, undefined, this.spawn.biome)
         this.committed = true
         return this.seed
       }
@@ -369,7 +369,7 @@ export class World {
       setAirfieldWind(this.runway, restoredWeather.windX, restoredWeather.windZ)
       setAirfieldPapi(this.runway, spawn.x, spawn.y, spawn.z, this.atmosphere.daylight)
     } catch { /* atmosphere will reapply on its next update */ }
-    try { this.mission.start(spawn.x, spawn.y, spawn.z, spawn.yaw, profile) } catch { /* mission can be started by the next reset */ }
+    try { this.mission.start(spawn.x, spawn.y, spawn.z, spawn.yaw, profile, undefined, spawn.biome) } catch { /* mission can be started by the next reset */ }
   }
 
   /** True if a world-space point overlaps hangar, tower, or shack. */
