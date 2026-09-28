@@ -67,6 +67,8 @@ export interface ChallengeResult {
   /** Whether this sortie moved the course to a higher score medal tier. */
   newMedalRecord?: boolean
   bestScore: number
+  /** Best score that existed before this sortie was committed. */
+  previousBestScore?: number
   isNewBest: boolean
   /** Gate split trace for this run, captured only when a gate is cleared. */
   gateSplits?: number[]
@@ -1615,6 +1617,7 @@ export class ChallengeRun {
       courseBestMedal,
       newMedalRecord,
       bestScore,
+      previousBestScore: previousBest,
       isNewBest,
       gateSplits: this.gateSplits.slice(),
       bestGateSplits: comparisonBestSplits,

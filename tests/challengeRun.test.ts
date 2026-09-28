@@ -187,6 +187,7 @@ describe('ChallengeRun', () => {
     expect(result!.gatesTotal).toBe(2)
     expect(result!.gatesCleared).not.toBe(result!.gateScore)
     expect(result!.totalScore).toBeGreaterThan(0)
+    expect(result!.previousBestScore).toBe(0)
     expect(result!.isNewBest).toBe(true)
     expect(result!.courseBestMedal).toBe(result!.medal)
     expect(result!.newMedalRecord).toBe(true)

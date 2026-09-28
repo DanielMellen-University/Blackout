@@ -4,6 +4,7 @@ import {
   formatDistance,
   resultSeedLabel,
   resultFuelBandClass,
+  resultScoreComparisonLabel,
   copySortieSummary,
   RunResults,
 } from '../src/ui/RunResults'
@@ -153,6 +154,7 @@ const result = {
   totalScore: 100_000,
   medal: 'gold' as const,
   bestScore: 100_000,
+  previousBestScore: 0,
   isNewBest: true,
 }
 
@@ -161,6 +163,17 @@ describe('run results focus flow', () => {
     expect(resultSeedLabel(9876.8)).toBe('SEED 9876.8')
     expect(resultSeedLabel(undefined)).toBe('')
     expect(resultSeedLabel(Number.NaN)).toBe('')
+  })
+
+  it('explains personal-best gains and slower-run gaps without leaking malformed scores', () => {
+    expect(resultScoreComparisonLabel({ totalScore: 88_000, bestScore: 88_000, previousBestScore: 76_000, isNewBest: true }))
+      .toBe('PB +12,000')
+    expect(resultScoreComparisonLabel({ totalScore: 80_000, bestScore: 100_000, previousBestScore: 100_000, isNewBest: false }))
+      .toBe('BEST +20,000')
+    expect(resultScoreComparisonLabel({ totalScore: 100_000, bestScore: 100_000, previousBestScore: 100_000, isNewBest: false }))
+      .toBe('')
+    expect(resultScoreComparisonLabel({ totalScore: Number.NaN, bestScore: Number.POSITIVE_INFINITY, previousBestScore: Number.NaN, isNewBest: true }))
+      .toBe('')
   })
 
   it('classifies result fuel bands without leaking malformed values', () => {
@@ -207,7 +220,7 @@ describe('run results focus flow', () => {
     results.show(result)
     expect(fixture.retry.focus).toHaveBeenCalledWith({ preventScroll: true })
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
-      'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT',
+      'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · PB +100,000',
     )
     expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('COMPLETE')
     expect(elementsFor(fixture.document, 'result-title')?.textContent).not.toContain('GOLD')
@@ -251,7 +264,7 @@ describe('run results focus flow', () => {
 
     results.show(result, 'ace', true)
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
-      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · CAREER ACE UP')
+      .toBe('GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · CAREER ACE UP · PB +100,000')
 
     results.dispose()
     vi.unstubAllGlobals()

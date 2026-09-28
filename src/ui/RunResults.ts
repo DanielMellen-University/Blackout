@@ -30,6 +30,22 @@ export function resultSeedLabel(seed: number | undefined): string {
   return Number.isFinite(seed) ? `SEED ${formatWorldSeed(seed!)}` : ''
 }
 
+/** Explain the score delta against the persisted course best without leaking malformed values. */
+export function resultScoreComparisonLabel(
+  result: Pick<ChallengeResult, 'totalScore' | 'bestScore' | 'previousBestScore' | 'isNewBest'>,
+): string {
+  if (!Number.isFinite(result.previousBestScore)) return ''
+  const score = Number.isFinite(result.totalScore) ? Math.max(0, Math.floor(result.totalScore)) : 0
+  const best = Number.isFinite(result.bestScore) ? Math.max(0, Math.floor(result.bestScore)) : score
+  const previous = Math.max(0, Math.floor(result.previousBestScore!))
+  if (result.isNewBest) {
+    const improvement = Math.max(0, score - previous)
+    return improvement > 0 ? `PB +${improvement.toLocaleString()}` : 'PB'
+  }
+  const gap = Math.max(0, best - score)
+  return gap > 0 ? `BEST +${gap.toLocaleString()}` : ''
+}
+
 /** Copy a bounded human-readable sortie recap without leaking runtime state. */
 export async function copySortieSummary(
   summary: string,
@@ -340,6 +356,8 @@ export class RunResults {
     if (result.scoreCapped) scoreParts.push('SCORE CAP')
     if (pilotRank) scoreParts.push(`CAREER ${pilotRankLabel(pilotRank)}${pilotRankPromoted ? ' UP' : ''}`)
     if (result.newMedalRecord) scoreParts.push('NEW MEDAL')
+    const scoreComparison = resultScoreComparisonLabel(result)
+    if (scoreComparison) scoreParts.push(scoreComparison)
     if (result.courseBestMedal && result.courseBestMedal !== result.medal) {
       scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)
     }
