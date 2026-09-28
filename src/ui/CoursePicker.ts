@@ -21,6 +21,9 @@ export interface CoursePickerCopyInput {
   bestScore: number
   badgeCount: number
   bestPrecisionStreak: number
+  /** Optional deterministic bonus-task preview for seeded courses. */
+  contractLabel?: string
+  contractDetail?: string
 }
 
 /** Format the bounded title-screen count of fully mastered curated courses. */
@@ -44,10 +47,12 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     courseTimePreviewLabel(input.course.timeOfDay)
       ? `TIME ${courseTimePreviewLabel(input.course.timeOfDay)}`
       : '',
+    input.contractLabel?.trim()
+      ? `TASK ${input.contractLabel.trim()}`
+      : '',
+    input.contractDetail?.trim() ?? '',
   ].filter(Boolean)
-  const detail = conditions.length > 0
-    ? `${baseDetail} / ${conditions.join(' / ')}`
-    : baseDetail
+  const detail = [baseDetail, ...conditions].join(' / ')
   const runs = finiteCount(input.history?.completionCount)
 
   let meta = 'NEW'

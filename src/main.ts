@@ -107,6 +107,7 @@ import {
 } from './audio/AudioPreferences'
 import { evaluateWarnings } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
+import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { CoursePicker, courseConditionSummary, coursePickerCopy } from './ui/CoursePicker'
@@ -304,6 +305,8 @@ async function boot(): Promise<void> {
         bestScore: record?.bestScore ?? 0,
         badgeCount: record?.badgeCount ?? 0,
         bestPrecisionStreak: record?.bestPrecisionStreak ?? 0,
+        contractLabel: sortieContractLabelForSeed(course.seed ?? undefined),
+        contractDetail: sortieContractDetailForSeed(course.seed ?? undefined),
       })
       return {
         id: course.id,

@@ -45,6 +45,26 @@ describe('course picker copy', () => {
     expect(courseConditionSummary({ weather: 'storm', timeOfDay: 0.5 }))
       .toBe('WEATHER THUNDERSTORM')
   })
+
+  it('previews the deterministic seeded task without changing free flight copy', () => {
+    const copy = coursePickerCopy({
+      course: orbit,
+      history: null,
+      bestScore: 0,
+      badgeCount: 0,
+      bestPrecisionStreak: 0,
+      contractLabel: 'CONTRACT RANGE RUN',
+      contractDetail: 'FLY 12KM BEFORE LANDING',
+    })
+    expect(copy.detail).toBe('Gentle circuit and approach practice / TASK CONTRACT RANGE RUN / FLY 12KM BEFORE LANDING')
+    expect(coursePickerCopy({
+      course: { seed: null, profile: 'free', detail: 'Explore the terrain with no checkpoint clock' },
+      history: null,
+      bestScore: 0,
+      badgeCount: 0,
+      bestPrecisionStreak: 0,
+    }).detail).toBe('Explore the terrain with no checkpoint clock')
+  })
   it('previews persistent flight-log records when a course has them', () => {
     expect(courseFlightLogLabel({
       completionCount: 4,
