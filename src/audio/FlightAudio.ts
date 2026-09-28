@@ -49,6 +49,14 @@ export function flightAudioViewMix(cockpit: boolean): FlightAudioViewMix {
   return cockpit ? COCKPIT_VIEW_MIX : EXTERNAL_VIEW_MIX
 }
 
+/** Return a bounded attenuation factor for world effects inside cloud cover. */
+export function cloudAudioAttenuation(value: number, amount: number, floor = 0): number {
+  const immersion = clamp01(value)
+  const safeAmount = clamp01(amount)
+  const safeFloor = clamp01(floor)
+  return safeFloor + (1 - safeFloor) * (1 - immersion * safeAmount)
+}
+
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
@@ -119,6 +127,8 @@ export class FlightAudio {
     speed: number
     rain: number
     snow: number
+    /** Smoothed local cloud density, 0 clear to 1 inside a formation. */
+    cloudImmersion?: number
     mute: boolean
     dt: number
     /** True when the player is inside the camera-attached cockpit. */
@@ -156,13 +166,18 @@ export class FlightAudio {
     const wind = airbrakeWindEnvelope(speed, opts.airbrake === true)
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
     const whine = engineWhineLevel(opts.throttle, boost)
+    const cloudImmersion = Number.isFinite(opts.cloudImmersion) ? opts.cloudImmersion! : 0
+    const cloudEngine = cloudAudioAttenuation(cloudImmersion, 0.06, 0.9)
+    const cloudWind = cloudAudioAttenuation(cloudImmersion, 0.28, 0.7)
+    const cloudPrecip = cloudAudioAttenuation(cloudImmersion, 0.18, 0.76)
+    const cloudWhine = cloudAudioAttenuation(cloudImmersion, 0.08, 0.9)
 
     this.muted = opts.mute
     const masterTarget = opts.mute ? 0 : this.volume
-    const engTarget = opts.mute ? 0 : eng * 0.42 * view.engine
-    const windTarget = opts.mute ? 0 : wind * 0.28 * view.wind
-    const precipTarget = opts.mute ? 0 : precip * 0.18 * view.precipitation
-    const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine
+    const engTarget = opts.mute ? 0 : eng * 0.42 * view.engine * cloudEngine
+    const windTarget = opts.mute ? 0 : wind * 0.28 * view.wind * cloudWind
+    const precipTarget = opts.mute ? 0 : precip * 0.18 * view.precipitation * cloudPrecip
+    const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine * cloudWhine
 
     const now = ctx.currentTime
     const dt = Number.isFinite(opts.dt) && opts.dt > 0 ? Math.min(opts.dt, 0.25) : 1 / 60
@@ -189,15 +204,15 @@ export class FlightAudio {
 
     if (this.engineFilter) {
       // Idle growl stays low; spool opens the filter a bit.
-      const cut = (90 + eng * 160 + (boost ? 70 : 0)) * view.engineFilter
+      const cut = (90 + eng * 160 + (boost ? 70 : 0)) * view.engineFilter * cloudEngine
       this.scheduleTarget(this.engineFilter.frequency, cut, now, tau, 0.5)
     }
     if (this.windFilter) {
-      const cut = (900 + wind * 2200) * view.windFilter
+      const cut = (900 + wind * 2200) * view.windFilter * cloudWind
       this.scheduleTarget(this.windFilter.frequency, cut, now, tau, 2)
     }
     if (this.precipFilter) {
-      const cut = (1200 + precip * 3000) * view.precipitationFilter
+      const cut = (1200 + precip * 3000) * view.precipitationFilter * cloudPrecip
       this.scheduleTarget(this.precipFilter.frequency, cut, now, tau, 2)
     }
   }

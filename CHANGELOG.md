@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Gently muffle the existing wind, precipitation, and high-frequency engine bed inside clouds using bounded AudioParam targets, with no new audio nodes or render work.
 - Add smoothed cloud-edge, entry, and break cues so visibility changes are readable without per-frame HUD churn or extra scene work.
 - Buffet the camera and airframe through meaningful rain, snow, or strong gusts using existing weather telemetry, with no new meshes, particles, or draws.
 - Quiet that storm buffet under reduced-motion preferences and on pause, title, and results; keep Low graphics cheaper, and let cockpit read it a touch harder than chase.

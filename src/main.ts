@@ -732,6 +732,7 @@ async function boot(): Promise<void> {
     speed: 0,
     rain: 0,
     snow: 0,
+    cloudImmersion: 0,
     mute: true,
     dt: 1 / 60,
     cockpit: false,
@@ -1776,6 +1777,7 @@ async function boot(): Promise<void> {
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain
     audioFrame.snow = precipitation.snow
+    audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.mute =
       audioMuted || document.hidden || !playing || menu.paused || results.open || aircraft.status === 'crashed'

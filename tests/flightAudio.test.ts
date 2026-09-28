@@ -5,6 +5,7 @@ import {
   FlightAudio,
   audioContextUsable,
   airbrakeWindEnvelope,
+  cloudAudioAttenuation,
   enginePlaybackRate,
   engineWhineLevel,
   flightAudioViewMix,
@@ -15,6 +16,14 @@ import {
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('keeps cloud muffling bounded while preserving engine presence', () => {
+    expect(cloudAudioAttenuation(0, 0.28, 0.7)).toBeCloseTo(1)
+    expect(cloudAudioAttenuation(1, 0.28, 0.7)).toBeCloseTo(0.916)
+    expect(cloudAudioAttenuation(1, 0.06, 0.9)).toBeCloseTo(0.994)
+    expect(cloudAudioAttenuation(Number.NaN, 1, 0)).toBeCloseTo(1)
+    expect(cloudAudioAttenuation(2, 2, -1)).toBeCloseTo(0)
+  })
+
   it('keeps the shared event-noise pool longer than every cue envelope', () => {
     expect(EVENT_NOISE_BUFFER_SECONDS).toBeGreaterThan(0.58)
     expect(EVENT_NOISE_BUFFER_SECONDS).toBeLessThan(1)
