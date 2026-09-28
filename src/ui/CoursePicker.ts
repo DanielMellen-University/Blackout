@@ -77,6 +77,14 @@ export function coursePickerNavigationIndex(
   }
 }
 
+/** Keep empty filtered states explicit so a quiet list is never mistaken for a loading failure. */
+export function coursePickerEmptyMessage(category: CoursePickerCategory, query: string): string {
+  if (query.trim()) return 'NO MATCHING COURSES'
+  if (category === 'favorites') return 'NO FAVORITES YET · SELECT A COURSE AND PRESS F'
+  if (category === 'recent') return 'NO RECENT COURSES YET'
+  return 'NO COURSES AVAILABLE'
+}
+
 export interface CoursePickerCopyInput {
   course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>
   history: CourseHistory | null
@@ -293,6 +301,7 @@ export class CoursePicker {
   private readonly filter: HTMLInputElement
   private readonly categorySelect: HTMLSelectElement
   private readonly favoriteButton: HTMLButtonElement
+  private readonly empty: HTMLElement
   private readonly filterStatus: HTMLElement
   private items: CoursePickerItem[] = []
   private selectedId = ''
@@ -333,7 +342,12 @@ export class CoursePicker {
     this.favoriteButton.type = 'button'
     this.favoriteButton.className = 'course-picker-favorite'
     this.favoriteButton.setAttribute('aria-label', 'Favorite selected course')
+    this.favoriteButton.setAttribute('aria-keyshortcuts', 'F')
     this.favoriteButton.disabled = true
+    this.empty = document.createElement('p')
+    this.empty.className = 'course-picker-empty'
+    this.empty.hidden = true
+    this.empty.setAttribute('aria-live', 'polite')
     this.filterStatus = document.createElement('span')
     this.filterStatus.className = 'course-picker-filter-status'
     this.filterStatus.hidden = true
@@ -342,6 +356,7 @@ export class CoursePicker {
     root.insertBefore(this.filter, this.list)
     root.insertBefore(this.filterStatus, this.list)
     root.insertBefore(this.favoriteButton, this.list)
+    root.insertBefore(this.empty, this.list)
     this.list.setAttribute('role', 'radiogroup')
     this.list.addEventListener('click', this.onClick)
     this.list.addEventListener('keydown', this.onKeyDown)
@@ -394,12 +409,15 @@ export class CoursePicker {
     this.filter.remove()
     this.filterStatus.remove()
     this.favoriteButton.remove()
+    this.empty.remove()
     this.items = []
   }
 
   private renderList(): void {
     const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
     this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
+    this.empty.hidden = visible.length > 0
+    if (visible.length === 0) this.empty.textContent = coursePickerEmptyMessage(this.category, this.filter.value)
     const query = this.filter.value.trim()
     const categoryLabel = this.category === 'all' ? '' : this.category.toUpperCase()
     this.filterStatus.textContent = query || categoryLabel
@@ -468,6 +486,11 @@ export class CoursePicker {
 
   private onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || this.items.length === 0) return
+    if (event.key.toLowerCase() === 'f') {
+      event.preventDefault()
+      this.toggleFavorite()
+      return
+    }
     const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
     if (visible.length === 0) return
     const index = Math.max(0, visible.findIndex((item) => item.id === this.selectedId))
@@ -493,6 +516,10 @@ export class CoursePicker {
   }
 
   private onFavoriteClick = (): void => {
+    this.toggleFavorite()
+  }
+
+  private toggleFavorite = (): void => {
     if (this.disposed) return
     const selected = this.items.find(item => item.id === this.selectedId)
     if (!selected) return

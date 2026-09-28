@@ -6,6 +6,7 @@ import {
   coursePickerNavigationIndex,
   coursePickerCopy,
   coursePickerCategoryForCourse,
+  coursePickerEmptyMessage,
   courseTimePreviewLabel,
   courseWindPreviewLabel,
   courseWeatherPreviewLabel,
@@ -58,6 +59,12 @@ describe('course picker copy', () => {
     expect(courseMasteryProgressLabel(3, 7)).toBe('LEGEND 3/7')
     expect(courseMasteryProgressLabel(99, 4)).toBe('LEGEND 4/4')
     expect(courseMasteryProgressLabel(Number.NaN, Number.POSITIVE_INFINITY)).toBe('LEGEND 0/0')
+  })
+
+  it('explains empty catalog filters and keyboard pinning', () => {
+    expect(coursePickerEmptyMessage('favorites', '')).toContain('PRESS F')
+    expect(coursePickerEmptyMessage('recent', '')).toBe('NO RECENT COURSES YET')
+    expect(coursePickerEmptyMessage('all', '  unknown  ')).toBe('NO MATCHING COURSES')
   })
   it('exposes authored weather and night conditions before launch', () => {
     expect(courseWeatherPreviewLabel(Number.NaN, 'storm')).toBe('THUNDERSTORM')
