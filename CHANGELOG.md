@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the curated Mesa Run course, a deterministic wide tableland route that showcases red-rock shelves while reusing terrain-aware clearance, scoring, and retry systems.
 - Reuse a caller-owned airfield pad snapshot during collision probes, removing a per-check allocation from endpoint and swept obstacle tests without changing the collision envelope.
 - Add persisted boost, speed-brake, and landing-gear keyboard bindings with duplicate-safe repair, browser-key suppression, and live controls labels while leaving axis preferences and gamepad/touch input unchanged.
 - Replace per-probe settlement obstacle bucket strings, callbacks, and yaw trig with cached numeric spatial columns and indexed building extents, keeping high-speed collision sweeps allocation-light without changing collision envelopes.

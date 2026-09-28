@@ -60,7 +60,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -109,6 +109,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   timber: 'TIMBERLINE RUN',
   glacier: 'GLACIER RUN',
   rainforest: 'RAINFOREST RUN',
+  mesa: 'MESA RUN',
   free: 'FREE FLIGHT',
 }
 
@@ -143,7 +144,7 @@ export function routeProfileForSpawn(
   const hash = Math.abs(Math.floor(
     safeX * 0.0023 + safeZ * 0.0017 + safeYaw * 2.7,
   ))
-  return (['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'timber', 'glacier', 'rainforest'] as const)[hash % 13]!
+  return (['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'timber', 'glacier', 'rainforest', 'mesa'] as const)[hash % 14]!
 }
 
 export function routeProfileLabel(profile: MissionRouteProfile): string {
@@ -165,6 +166,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'timber') return 'range'
   if (profile === 'glacier') return 'altitude'
   if (profile === 'rainforest') return 'range'
+  if (profile === 'mesa') return 'range'
   return 'approach'
 }
 
@@ -181,7 +183,7 @@ export function routeModifierForSpawn(
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
-  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'alpine' ? 9 : profile === 'storm' ? 10 : profile === 'night' ? 11 : profile === 'timber' ? 12 : profile === 'glacier' ? 13 : profile === 'rainforest' ? 14 : 0
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'alpine' ? 9 : profile === 'storm' ? 10 : profile === 'night' ? 11 : profile === 'timber' ? 12 : profile === 'glacier' ? 13 : profile === 'rainforest' ? 14 : profile === 'mesa' ? 15 : 0
   const hash = Math.abs(Math.floor(
     safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
   ))
@@ -438,6 +440,16 @@ function routeOffsets(
       { forward: 1_720, right: bend * 1.18, height: 106 },
       { forward: 2_360, right: -bend * .72, height: 118 },
       { forward: 3_080, right: bend * .94, height: 112 },
+    ].map(shape)
+  }
+  if (profile === 'mesa') {
+    const shelf = 420 + seedPhase * 100
+    return [
+      { forward: 700, right: 0, height: 122 },
+      { forward: 1_420, right: -shelf, height: 164 },
+      { forward: 2_160, right: shelf * .84, height: 188 },
+      { forward: 2_980, right: shelf * .18, height: 214 },
+      { forward: 3_760, right: -shelf * 1.08, height: 198 },
     ].map(shape)
   }
 
