@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
 import { clearOpsPad, findPlayableSpawn, sampleClimate, setOpsPad } from '../src/world/terrainSample'
-import { settlementForCell } from '../src/world/SettlementPlan'
+import { settlementForCell, settlementNameForCell } from '../src/world/SettlementPlan'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import * as terrain from '../src/world/terrainSample'
 vi.setConfig({ testTimeout: 60000 })
@@ -29,6 +29,18 @@ describe('procedural settlements', () => {
     expect(settlementForCell(cx!, cz!)).not.toEqual(first)
     setWorldSeed(1)
     expect(settlementForCell(cx!, cz!)).toEqual(first)
+  })
+
+  it('gives generated landmarks bounded, biome-aware deterministic names', () => {
+    setWorldSeed(1)
+    const plans = region()
+    expect(plans.length).toBeGreaterThan(0)
+    for (const plan of plans.slice(0, 24)) {
+      const [cx, cz] = plan.id.split(',').map(Number)
+      expect(plan.name).toBe(settlementNameForCell(cx!, cz!, plan.kind, plan.biome))
+      expect(plan.name).toMatch(/^[A-Za-z]+ [A-Za-z]+$/)
+      expect(plan.name!.length).toBeLessThanOrEqual(24)
+    }
   })
 
   it('keeps cities rare and villages more common across varied biomes', () => {

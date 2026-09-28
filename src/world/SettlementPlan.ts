@@ -38,9 +38,49 @@ export interface SettlementRoad { points: { x: number; y: number; z: number; bri
 export interface SettlementPlan {
   id: string; x: number; y: number; z: number; radius: number
   kind: 'city' | 'village'; biome: Biome
+  /** Stable player-facing landmark name; optional for lightweight test plans. */
+  name?: string
   /** Spawn-priority landmark selected around the active airfield, when any. */
   anchor?: 'city' | 'village'
   buildings: SettlementBuilding[]; roads: SettlementRoad[]
+}
+
+const SETTLEMENT_NAME_ROOTS = [
+  'Aster', 'Boreal', 'Cinder', 'Dawn', 'Ember', 'Fallow', 'Halcyon', 'Juniper',
+  'Lumen', 'Northwind', 'Orchid', 'Pioneer', 'Silver', 'Solace', 'Verdant', 'Wayfarer',
+] as const
+const CITY_NAME_ENDINGS = ['Heights', 'Basin', 'Junction', 'Crown', 'Exchange', 'Harbor'] as const
+const VILLAGE_NAME_ENDINGS = ['Hollow', 'Crossing', 'Glen', 'Reach', 'Meadow', 'Camp'] as const
+
+function nameEndingForBiome(biome: Biome, kind: 'city' | 'village'): readonly string[] {
+  if (biome === 'desert' || biome === 'mesa' || biome === 'saltflat') {
+    return kind === 'city' ? ['Mesa', 'Basin', 'Outpost', 'Heights'] : ['Dune', 'Dust', 'Oasis', 'Wash']
+  }
+  if (biome === 'rainforest' || biome === 'swamp') {
+    return kind === 'city' ? ['Canopy', 'Delta', 'Landing', 'Harbor'] : ['Mire', 'Grove', 'Crossing', 'Reach']
+  }
+  if (biome === 'snow' || biome === 'tundra' || biome === 'mountain' || biome === 'volcanic') {
+    return kind === 'city' ? ['Crown', 'Pass', 'Basin', 'Heights'] : ['Frost', 'Glen', 'Ridge', 'Camp']
+  }
+  return kind === 'city' ? CITY_NAME_ENDINGS : VILLAGE_NAME_ENDINGS
+}
+
+/** Generate one bounded, seed-stable name for a procedural landmark. */
+export function settlementNameForCell(
+  cx: number,
+  cz: number,
+  kind: 'city' | 'village',
+  biome: Biome,
+): string {
+  const safeCx = Number.isFinite(cx) ? Math.trunc(cx) : 0
+  const safeCz = Number.isFinite(cz) ? Math.trunc(cz) : 0
+  const salt = kind === 'city' ? 9173 : 4819
+  const rootRoll = hash2(safeCx * 173 + salt, safeCz * 257 - salt)
+  const endingRoll = hash2(safeCx * 311 - salt, safeCz * 199 + salt)
+  const root = SETTLEMENT_NAME_ROOTS[Math.floor(rootRoll * SETTLEMENT_NAME_ROOTS.length)]!
+  const endings = nameEndingForBiome(biome, kind)
+  const ending = endings[Math.floor(endingRoll * endings.length)]!
+  return `${root} ${ending}`
 }
 
 const cache = new Map<string, SettlementPlan | null>()
@@ -298,6 +338,7 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
       if (drySamples < (kind === 'city' ? (cityAnchor ? 3 : 4) : 3)) suitable = false
       if (!suitable) continue
       const plan: SettlementPlan = { id, x, z, y: c.height, radius, kind, biome: c.biome,
+        name: settlementNameForCell(cx, cz, kind, c.biome),
         anchor: cityAnchor ? 'city' : villageAnchor ? 'village' : undefined, buildings: [], roads: [] }
       populate(plan, rand)
       const minimumBuildings = kind === 'city'

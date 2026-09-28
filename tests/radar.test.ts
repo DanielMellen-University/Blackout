@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  radarContactLabel,
   radarDiscoveryLabel,
   radarDistanceLabel,
   radarTargetArrivalLabel,
@@ -12,6 +13,7 @@ describe('radar exploration cues', () => {
     expect(radarDiscoveryLabel('city', 'rainforest')).toBe('CITY CONTACT · RAINFOREST TERRAIN')
     expect(radarDiscoveryLabel('village', 'saltflat')).toBe('VILLAGE CONTACT · SALTFLAT TERRAIN')
     expect(radarDiscoveryLabel('city', '<script>')).toBe('CITY CONTACT · UNKNOWN TERRAIN')
+    expect(radarDiscoveryLabel('city', 'desert', 'Dune Reach')).toBe('CITY CONTACT · DUNE REACH · DESERT TERRAIN')
     expect(radarDiscoveryLabel('gate', 'plains')).toBe('')
   })
 
@@ -22,6 +24,9 @@ describe('radar exploration cues', () => {
     ])
     expect(first[0]?.id).toBe('city-1')
     expect(first[0]?.biome).toBe('desert')
+    expect(first[0]?.name).toBe('')
+    expect(radarContactLabel('city', 'Dune Reach')).toBe('DUNE REACH')
+    expect(radarContactLabel('city', '<script>')).toBe('SCRIPT')
     expect(first[0]?.distance).toBeCloseTo(500)
 
     const second = radar.update(0, 0, 0, null, [

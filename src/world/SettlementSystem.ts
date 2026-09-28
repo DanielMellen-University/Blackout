@@ -699,12 +699,13 @@ export class SettlementSystem {
       if (count >= MAX_LOADED_SETTLEMENTS) break
       if (Math.hypot(plan.x - safeX, plan.z - safeZ) > range) continue
       const landmark = this.radarLandmarkCache[count] ?? {
-        x: 0, y: 0, z: 0, kind: 'village' as const, id: '', biome: '',
+        x: 0, y: 0, z: 0, kind: 'village' as const, name: '', id: '', biome: '',
       }
       landmark.x = plan.x
       landmark.y = plan.y
       landmark.z = plan.z
       landmark.kind = plan.kind
+      landmark.name = plan.name ?? ''
       landmark.id = plan.id
       landmark.biome = plan.biome
       this.radarLandmarkCache[count] = landmark

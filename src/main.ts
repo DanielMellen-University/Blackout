@@ -2311,7 +2311,7 @@ async function boot(): Promise<void> {
           if (contact.kind === 'gate' || contact.kind === 'traffic' || !contact.id || radarDiscovered.has(contact.id)) continue
           radarDiscovered.add(contact.id)
           radarDiscoveryCooldownUntil = nowMs + 2400
-          showBanner(radarDiscoveryLabel(contact.kind, contact.biome), 2800, 'success')
+          showBanner(radarDiscoveryLabel(contact.kind, contact.biome, contact.name), 2800, 'success')
           break
         }
       }
