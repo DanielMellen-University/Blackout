@@ -1,4 +1,5 @@
 import {
+  MAX_BEST_SCORE,
   formatTime,
   landingQualityLabel,
   medalForScore,
@@ -165,6 +166,10 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     const bestTime = input.history?.bestTimeSec
     statsParts.push(Number.isFinite(bestTime) ? formatTime(bestTime!) : 'NO TIME')
   }
+  const bestScore = Number.isFinite(input.bestScore)
+    ? Math.min(MAX_BEST_SCORE, Math.max(0, Math.floor(input.bestScore)))
+    : 0
+  if (bestScore > 0) statsParts.push(`SCORE ${bestScore.toLocaleString()}`)
   const landingQuality = input.history?.landingQuality
   if (Number.isFinite(landingQuality) && landingQuality! > 0) {
     const safeLanding = Math.max(0, Math.min(1, landingQuality!))

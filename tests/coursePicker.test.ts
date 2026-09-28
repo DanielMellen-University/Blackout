@@ -272,12 +272,29 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
+    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TASK')).toBe(false)
     expect(copy.stats).toContain('MEDAL GOLD')
     expect(copy.stats).toContain('BADGES X3')
     expect(copy.stats).toContain('GATE STREAK X4')
+  })
+
+  it('shows a finite bounded best score even when the medal tier is incomplete', () => {
+    expect(coursePickerCopy({
+      course: orbit,
+      history: { completionCount: 1, bestTimeSec: 120 },
+      bestScore: 63_999,
+      badgeCount: 0,
+      bestPrecisionStreak: 0,
+    }).stats).toBe('2:00.00 · SCORE 63,999')
+    expect(coursePickerCopy({
+      course: orbit,
+      history: null,
+      bestScore: 999_999,
+      badgeCount: 0,
+      bestPrecisionStreak: 0,
+    }).stats).toBe('SCORE 117,500 · MEDAL GOLD')
   })
 
   it('fails closed on malformed history instead of leaking NaN into the picker', () => {
@@ -311,7 +328,7 @@ describe('course picker copy', () => {
       bestPrecisionStreak: 4,
     })
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · LAND FIRM · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
+    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · LAND FIRM · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
     expect(copy.stats).not.toContain('VETERAN')
     expect(copy.stats).not.toContain('TASK')
   })

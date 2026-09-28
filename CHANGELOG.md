@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.541** Show the bounded best score directly on launch and pause course cards so repeat attempts have a clear target.
 - **10.540** Show route, weather, and contract context inline on course picker cards.
 - **10.539** Surface best-run course stats directly on launch and pause picker cards.
 - **10.538** Add a bounded Copy sortie summary action to results for shareable performance recaps.
