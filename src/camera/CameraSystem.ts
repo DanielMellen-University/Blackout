@@ -8,9 +8,10 @@ import {
 } from '../core/types'
 import { headingFromOrientation } from '../core/attitude'
 import { cameraMinY } from '../world/ground'
-import { STREAM_RADIUS_M } from '../world/TerrainSystem'
+import { CHUNK_SIZE, FOG_MARGIN_CHUNKS, fogFarForViewRadius } from '../world/TerrainSystem'
 import { CockpitMode } from './CockpitMode'
 import type { RenderQuality } from '../core/RenderQuality'
+import { renderQualityProfile } from '../core/RenderQuality'
 import {
   stormBuffetOffsetInto,
   stormBuffetViewScale,
@@ -99,7 +100,14 @@ const JUICE_STIFFNESS = 3.2
 const MAX_EXTERNAL_BANK = 0.62
 const EXTERNAL_BANK_STIFFNESS = 8
 /** Keep depth precision focused on the streamed world and cloud envelope. */
-export const CAMERA_FAR = STREAM_RADIUS_M * 1.5
+const CAMERA_FAR_MARGIN = CHUNK_SIZE * (FOG_MARGIN_CHUNKS + 2)
+/** Keep the default camera aligned with the full High-quality fog envelope. */
+export const CAMERA_FAR = fogFarForViewRadius(renderQualityProfile('high').terrainViewRadius) + CAMERA_FAR_MARGIN
+
+/** Keep depth precision and frustum work aligned with the active terrain budget. */
+export function cameraFarForQuality(quality: RenderQuality): number {
+  return fogFarForViewRadius(renderQualityProfile(quality).terrainViewRadius) + CAMERA_FAR_MARGIN
+}
 
 /** Short feedback copy used when the pilot toggles between flight views. */
 export function cameraModeCue(mode: CameraMode): string {
@@ -201,6 +209,11 @@ export class CameraSystem {
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
     this.renderQuality = quality
+    const far = cameraFarForQuality(quality)
+    if (Math.abs(this.camera.far - far) > 0.5) {
+      this.camera.far = far
+      this.camera.updateProjectionMatrix()
+    }
   }
 
   /** Adjust middle-mouse look response without changing cockpit controls. */

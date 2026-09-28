@@ -5,6 +5,7 @@ import {
   cameraBoostOffset,
   cameraBoostOffsetInto,
   cameraBankAngle,
+  cameraFarForQuality,
   cameraShakeOffset,
   cameraShakeOffsetInto,
   cameraOcclusionSampleCount,
@@ -32,6 +33,26 @@ describe('external camera framing', () => {
     expect(cameraModeCue('chase')).toBe('EXTERNAL VIEW')
     expect(cameraModeCue('orbit')).toBe('ORBIT VIEW')
     expect(cameraModeCue('cockpit')).toBe('COCKPIT VIEW')
+  })
+
+  it('shrinks the external frustum with the Low terrain envelope', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    try {
+      expect(cameras.camera.far).toBe(CAMERA_FAR)
+      expect(cameraFarForQuality('low')).toBeLessThan(CAMERA_FAR)
+      cameras.setRenderQuality('low')
+      expect(cameras.camera.far).toBe(cameraFarForQuality('low'))
+      cameras.setRenderQuality('high')
+      expect(cameras.camera.far).toBe(CAMERA_FAR)
+    } finally {
+      cameras.dispose()
+    }
   })
 
   it('keeps the orbit view wide and horizon-stable', () => {
