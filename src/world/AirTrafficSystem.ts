@@ -169,6 +169,8 @@ export class AirTrafficSystem {
   private activeBeaconCount = AIR_TRAFFIC_BEACON_COUNT
   private revision = 0
   private disposed = false
+  /** Hidden title/results screens do not need a moving traffic simulation. */
+  private simulationSuspended = false
 
   constructor(parent: Object3D) {
     this.root.name = 'AirTraffic'
@@ -303,7 +305,15 @@ export class AirTrafficSystem {
 
   setVisible(visible: boolean): void {
     if (this.disposed) return
-    this.root.visible = visible === true
+    const nextVisible = visible === true
+    this.root.visible = nextVisible
+    this.simulationSuspended = !nextVisible
+    if (nextVisible) {
+      // Re-anchor presentation immediately after an off-screen pause instead
+      // of waiting for the next 12 Hz cadence boundary.
+      this.accumulator = 0
+      this.renderInstances(this.lastPlayerX, this.lastPlayerZ)
+    }
   }
 
   /** Keep low-end devices at three silhouettes while High gets the full pool. */
@@ -320,7 +330,7 @@ export class AirTrafficSystem {
 
   /** Advance traffic at 12 Hz, independent of render refresh rate. */
   update(x: number, z: number, dt: number): void {
-    if (this.disposed) return
+    if (this.disposed || this.simulationSuspended) return
     const safeX = Number.isFinite(x) ? x : this.anchorX
     const safeZ = Number.isFinite(z) ? z : this.anchorZ
     this.lastPlayerX = safeX

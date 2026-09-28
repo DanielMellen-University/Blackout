@@ -131,6 +131,19 @@ describe('bounded air traffic', () => {
     traffic.dispose()
   })
 
+  it('suspends hidden traffic work and refreshes when shown again', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    traffic.setVisible(false)
+    const pausedRevision = traffic.updateRevision
+    traffic.update(8_000, 8_000, AIR_TRAFFIC_UPDATE_INTERVAL_SEC * 4)
+    expect(traffic.updateRevision).toBe(pausedRevision)
+
+    traffic.setVisible(true)
+    expect(traffic.updateRevision).toBeGreaterThan(pausedRevision)
+    traffic.dispose()
+  })
+
   it('keeps beacon blinking deterministic and finite', () => {
     expect(trafficBeaconVisible(1.25, 2)).toBe(trafficBeaconVisible(1.25, 2))
     expect(trafficBeaconVisible(Number.NaN, 2)).toBe(false)
