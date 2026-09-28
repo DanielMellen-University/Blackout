@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Include the volcanic route in random profile selection so ordinary sorties can discover its high-altitude spiral without selecting the curated course.
 - Add the curated Volcanic Run course: a deterministic terrain-aware spiral climb with a distinct altitude challenge and a reusable seed for repeatable practice.
 - Make the Low graphics preset stream a smaller terrain envelope and move its fog edge with the stream, reducing worker and geometry pressure while Balanced and High retain the full horizon.
 - Add opt-in debug performance telemetry for render CPU time, draw calls, triangles, and terrain stream pressure so future optimization work is evidence-led without adding release-frame overhead.

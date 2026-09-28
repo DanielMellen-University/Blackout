@@ -310,6 +310,7 @@ describe('MissionSystem gate crossing', () => {
     }
     expect(profiles.has('coast')).toBe(true)
     expect(profiles.has('river')).toBe(true)
+    expect(profiles.has('volcanic')).toBe(true)
   })
 
   it('supports a no-gate free-flight profile', () => {
