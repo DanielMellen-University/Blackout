@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { World } from '../src/world/World'
+import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
 describe('world lifecycle boundary', () => {
   it('fails closed for public calls after disposal', () => {
@@ -24,7 +25,34 @@ describe('world lifecycle boundary', () => {
       { x: 0, y: 10, z: 0 },
       { x: 10, y: 10, z: 0 },
     )).toBe(true)
-    expect(hit).toHaveBeenCalledWith(5, 10, 0)
+    expect(hit).toHaveBeenCalledWith(5, 10, 0, expect.anything())
+  })
+
+  it('uses a padded aircraft envelope for airfield buildings without inflating camera probes', () => {
+    const world = Object.create(World.prototype) as World
+    ;(world as unknown as { disposed: boolean }).disposed = false
+    ;(world as unknown as { settlements: { hitObstacle: () => boolean } }).settlements = {
+      hitObstacle: () => false,
+    }
+    ;(world as unknown as { obstaclePad: { x: number; y: number; z: number; yaw: number } }).obstaclePad = {
+      x: 0,
+      y: 0,
+      z: 0,
+      yaw: 0,
+    }
+    ;(world as unknown as { spawn: { yaw: number } }).spawn = { yaw: 0 }
+    setOpsPad(0, 0, 0, 0)
+
+    try {
+      const hangarEdge = 39.2 - 18
+      expect(world.hitObstacle(hangarEdge - 0.25, 5.8, 2)).toBe(false)
+      expect(world.hitObstacleSegment(
+        { x: hangarEdge - 0.25, y: 5.8, z: 2 },
+        { x: hangarEdge - 0.25, y: 5.8, z: 2 },
+      )).toBe(true)
+    } finally {
+      clearOpsPad()
+    }
   })
 
   it('rebuilds a usable previous world when replacement fails after clearing terrain', () => {

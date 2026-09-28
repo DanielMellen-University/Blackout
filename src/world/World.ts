@@ -8,7 +8,12 @@ import {
 import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
 import type { WeatherSnapshot } from './WeatherDirector'
-import { AIRFIELD_COLLIDERS, setAirfieldPapi, setAirfieldWind } from './Airfield'
+import {
+  AIRFIELD_COLLIDERS,
+  AIRFIELD_COLLISION_PADDING,
+  setAirfieldPapi,
+  setAirfieldWind,
+} from './Airfield'
 import { randomizeWorldSeed, setWorldSeed } from './noise'
 import { createRunway, setRunwayDaylight } from './Runway'
 import {
@@ -29,6 +34,12 @@ import { renderQualityProfile, type RenderQuality } from '../core/RenderQuality'
 
 const OBSTACLE_SWEEP_SPACING = 8
 const OBSTACLE_SWEEP_MAX_STEPS = 32
+
+interface ObstaclePadding {
+  readonly x: number
+  readonly y: number
+  readonly z: number
+}
 
 export interface ObstacleSweepPoint {
   readonly x: number
@@ -346,9 +357,20 @@ export class World {
   }
 
   /** True if a world-space point overlaps hangar, tower, or shack. */
-  hitObstacle(x: number, y: number, z: number): boolean {
+  hitObstacle(x: number, y: number, z: number, padding?: ObstaclePadding): boolean {
     if (this.disposed) return false
     if (this.settlements.hitObstacle(x, y, z)) return true
+    return this.hitAirfieldObstacle(x, y, z, padding)
+  }
+
+  /** Check only airfield boxes, optionally expanded for the aircraft body. */
+  private hitAirfieldObstacle(
+    x: number,
+    y: number,
+    z: number,
+    padding?: ObstaclePadding,
+  ): boolean {
+    if (this.disposed || !this.obstaclePad || !this.spawn) return false
     const pad = getOpsPadInto(this.obstaclePad)
     if (!pad) return false
     const yaw = this.spawn.yaw
@@ -361,11 +383,14 @@ export class World {
     const lx = dx * rx + dz * rz
     const lz = dx * fx + dz * fz
     const ly = y - pad.y
+    const paddingX = padding?.x ?? 0
+    const paddingY = padding?.y ?? 0
+    const paddingZ = padding?.z ?? 0
     for (const b of AIRFIELD_COLLIDERS) {
       if (
-        Math.abs(lx - b.cx) <= b.hx &&
-        Math.abs(ly - b.cy) <= b.hy &&
-        Math.abs(lz - b.cz) <= b.hz
+        Math.abs(lx - b.cx) <= b.hx + paddingX &&
+        Math.abs(ly - b.cy) <= b.hy + paddingY &&
+        Math.abs(lz - b.cz) <= b.hz + paddingZ
       ) {
         return true
       }
@@ -384,17 +409,18 @@ export class World {
     const dy = current.y - previous.y
     const dz = current.z - previous.z
     const distance = Math.hypot(dx, dy, dz)
-    if (!Number.isFinite(distance)) return this.hitObstacle(current.x, current.y, current.z)
+    if (!Number.isFinite(distance)) {
+      return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
+    }
     const steps = Math.max(1, Math.min(OBSTACLE_SWEEP_MAX_STEPS, Math.ceil(distance / OBSTACLE_SWEEP_SPACING)))
     for (let step = 1; step < steps; step++) {
       const t = step / steps
-      if (this.hitObstacle(
-        previous.x + dx * t,
-        previous.y + dy * t,
-        previous.z + dz * t,
-      )) return true
+      const x = previous.x + dx * t
+      const y = previous.y + dy * t
+      const z = previous.z + dz * t
+      if (this.hitObstacle(x, y, z, AIRFIELD_COLLISION_PADDING)) return true
     }
-    return this.hitObstacle(current.x, current.y, current.z)
+    return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
   }
 
   cycleWeather(): WeatherId {

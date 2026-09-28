@@ -58,14 +58,25 @@ export interface LocalBox {
 }
 
 /**
- * Solid airfield obstacles. Half-extents include a little fuselage padding
- * so an origin-only aircraft query still hits hangar / tower / shack.
+ * Solid airfield obstacles in runway-local metres. These stay close to the
+ * authored structures so camera occlusion can use the real building edges.
  */
 export const AIRFIELD_COLLIDERS: readonly LocalBox[] = [
   { cx: 39.2, cy: 5.8, cz: 2, hx: 18, hy: 6.2, hz: 12.2 },
   { cx: 20.5, cy: 10, cz: -46, hx: 5.2, hy: 10.4, hz: 5.2 },
   { cx: 16.5, cy: 1.7, cz: -32, hx: 4.2, hy: 1.8, hz: 3.4 },
 ]
+
+/**
+ * Conservative aircraft envelope used by the swept flight collision query.
+ * The renderer and camera still use the authored boxes above; only the jet's
+ * center-path query expands them to account for wings, nose and tail.
+ */
+export const AIRFIELD_COLLISION_PADDING = {
+  x: 5.5,
+  y: 2.5,
+  z: 5.5,
+} as const
 
 /**
  * Ops-pad dress: hangar, tower, apron, PAPI, windsock.
