@@ -23,13 +23,14 @@ class FakeWorker {
   }
 }
 interface Tile { cx: number; cz: number; size: number; dist: number }
-interface Chunk { root: Group; fadeAge: number; alpha: number; targetAlpha: number; fadingOut: boolean }
+interface Chunk { root: Group; fadeAge: number; alpha: number; targetAlpha: number; fadingOut: boolean; settled: boolean }
 interface Internals {
   desiredTiles: Map<string, Tile>
   chunks: Map<string, Chunk>
   pending: (Tile & { rebuild: boolean })[]
   pendingKeys: Set<string>
   replacementKeys: Map<string, string[]>
+  groundMatFar: MeshStandardMaterial
   dispatchWorkers(): void
   drainBuildQueue(): void
   install(job: TerrainBuildRequest, data: TerrainGeometryData): void
@@ -119,6 +120,8 @@ describe('terrain streaming integration', () => {
     expect(material(chunk).opacity).toBeCloseTo(.5)
     internal.updateFades(0, 0, .325)
     expect(material(chunk).opacity).toBe(1)
+    expect(chunk.settled).toBe(true)
+    expect(material(chunk)).toBe(internal.groundMatFar)
   })
 
   it('keeps old LOD coverage until the replacement finishes its fade', () => {
@@ -126,11 +129,13 @@ describe('terrain streaming integration', () => {
     internal.install(job(5, 2), fixture)
     internal.updateFades(0, 0, .65)
     const old = internal.chunks.get(key(5))!
+    expect(old.settled).toBe(true)
     const geometry = (old.root.children[0] as Mesh).geometry
     const disposed = vi.spyOn(geometry, 'dispose')
     desire(5, 4)
     internal.install(job(5, 1), fixture)
     expect(terrain.root.children).toHaveLength(2)
+    expect(material(old)).not.toBe(internal.groundMatFar)
     internal.updateFades(0, 0, .3)
     expect(old.root.parent).toBe(terrain.root)
     expect(disposed).not.toHaveBeenCalled()

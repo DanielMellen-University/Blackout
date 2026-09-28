@@ -166,6 +166,11 @@ interface Chunk {
   /** Cached near-field props root and meshes; avoids scene-tree searches every frame. */
   props: Group | null
   propMeshes: Mesh[]
+  /** Terrain and water meshes are cached so settled materials can be swapped without tree searches. */
+  terrainMesh: Mesh
+  waterMesh: Mesh | null
+  /** Settled chunks use shared opaque materials until they need to fade again. */
+  settled: boolean
   materials: MeshStandardMaterial[]
 }
 
@@ -229,6 +234,8 @@ export class TerrainSystem {
   private readonly groundMatNear: MeshStandardMaterial
   /** Mid/far tiles: single-sided (half the fill rate). */
   private readonly groundMatFar: MeshStandardMaterial
+  /** One shared opaque water material for settled streamed tiles. */
+  private readonly waterMat: MeshStandardMaterial
   private readonly weatherRain = { value: 0 }
   private readonly weatherSnow = { value: 0 }
   private readonly weatherClouds = { value: 0 }
@@ -271,6 +278,12 @@ export class TerrainSystem {
     this.groundMatFar = new MeshStandardMaterial({
       ...matBase,
       side: FrontSide,
+    })
+    this.waterMat = makeWaterMaterial(this.waterClock, {
+      rain: this.waterRain,
+      snow: this.waterSnow,
+      windX: this.waterWindX,
+      windZ: this.waterWindZ,
     })
     this.configureWeatherMaterial(this.groundMatNear)
     this.configureWeatherMaterial(this.groundMatFar)
@@ -416,6 +429,7 @@ export class TerrainSystem {
     this.vegFactory = null
     this.groundMatNear.dispose()
     this.groundMatFar.dispose()
+    this.waterMat.dispose()
     disposeObjectTree(this.root)
     this.root.removeFromParent()
     setContactHeightSampler(null)
@@ -598,6 +612,7 @@ export class TerrainSystem {
     this.replacementKeys.clear()
     for (const [key, chunk] of this.chunks) {
       if (!needed.has(key)) {
+        if (!chunk.fadingOut) this.prepareChunkForFade(chunk)
         chunk.fadingOut = true
         chunk.targetAlpha = 0
         // The layout only changes on cell crossings. Cache dependencies here
@@ -662,6 +677,7 @@ export class TerrainSystem {
     if (existing) {
       // Keep the previous surface until its replacement has faded fully in.
       if (existing.props) existing.props.visible = false
+      this.prepareChunkForFade(existing)
       this.retiring.push(existing)
       this.offsetFallback(existing)
     }
@@ -782,8 +798,11 @@ export class TerrainSystem {
         chunk.targetAlpha >= 0.995 &&
         chunk.appliedAlpha >= 0.995
       ) {
+        this.settleChunk(chunk)
         continue
       }
+
+      if (chunk.settled && chunk.targetAlpha < 0.995) this.prepareChunkForFade(chunk)
 
       chunk.alpha = MathUtils.smoothstep(chunk.fadeAge, 0, FADE_SECONDS) * chunk.targetAlpha
       if (Math.abs(chunk.alpha - chunk.targetAlpha) < 0.008) {
@@ -792,6 +811,15 @@ export class TerrainSystem {
 
       if (Math.abs(chunk.alpha - chunk.appliedAlpha) > 0.004) {
         this.applyChunkAlpha(chunk)
+      }
+
+      if (
+        !chunk.fadingOut &&
+        chunk.alpha >= 0.995 &&
+        chunk.targetAlpha >= 0.995 &&
+        chunk.appliedAlpha >= 0.995
+      ) {
+        this.settleChunk(chunk)
       }
 
       if (chunk.fadingOut && chunk.alpha <= 0.01) {
@@ -920,8 +948,9 @@ export class TerrainSystem {
     mesh.position.set(originX + CHUNK_SIZE * size / 2, 0, originZ + CHUNK_SIZE * size / 2)
     mesh.receiveShadow = lod === 0
     root.add(mesh)
+    let water: Mesh | null = null
     if (data.water) {
-      const water = new Mesh(deserializeTerrainGeometry(data.water), makeWaterMaterial(this.waterClock,
+      water = new Mesh(deserializeTerrainGeometry(data.water), makeWaterMaterial(this.waterClock,
         { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ }))
       water.name = 'WaterSurface'
       water.position.copy(mesh.position)
@@ -954,7 +983,7 @@ export class TerrainSystem {
       key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
       cx, cz, root, lod, segs: data.segs, hasProps: withProps, originX, originZ,
       heights: data.heights, alpha: 0, fadeAge: 0, targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
-      props, propMeshes: props ? this.collectPropMeshes(props) : [],
+      props, propMeshes: props ? this.collectPropMeshes(props) : [], terrainMesh: mesh, waterMesh: water, settled: false,
       materials: root.children.flatMap(child => child instanceof Mesh
         ? (Array.isArray(child.material) ? child.material : [child.material])
           .filter((material): material is MeshStandardMaterial => material instanceof MeshStandardMaterial)
@@ -962,6 +991,45 @@ export class TerrainSystem {
     }
     this.applyChunkAlpha(chunk)
     return chunk
+  }
+
+  /** Replace private fade materials with shared opaque variants once a tile is stable. */
+  private settleChunk(chunk: Chunk): void {
+    if (chunk.settled || chunk.fadingOut) return
+    const previous = chunk.materials
+    chunk.terrainMesh.material = chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
+    if (chunk.waterMesh) chunk.waterMesh.material = this.waterMat
+    for (const material of previous) {
+      if (material !== this.groundMatNear && material !== this.groundMatFar && material !== this.waterMat) {
+        material.dispose()
+      }
+    }
+    chunk.materials = [chunk.terrainMesh.material as MeshStandardMaterial]
+    if (chunk.waterMesh) chunk.materials.push(this.waterMat)
+    chunk.settled = true
+  }
+
+  /** Rehydrate unique fade materials before a settled tile changes opacity or is retired. */
+  private prepareChunkForFade(chunk: Chunk): void {
+    if (!chunk.settled) return
+    const clone = (source: MeshStandardMaterial): MeshStandardMaterial => {
+      const material = source.clone()
+      material.transparent = false
+      material.alphaHash = true
+      material.opacity = MathUtils.clamp(chunk.alpha, 0, 1)
+      material.depthWrite = true
+      return material
+    }
+    const terrainMaterial = clone(chunk.lod === 0 ? this.groundMatNear : this.groundMatFar)
+    chunk.terrainMesh.material = terrainMaterial
+    const materials: MeshStandardMaterial[] = [terrainMaterial]
+    if (chunk.waterMesh) {
+      const waterMaterial = clone(this.waterMat)
+      chunk.waterMesh.material = waterMaterial
+      materials.push(waterMaterial)
+    }
+    chunk.materials = materials
+    chunk.settled = false
   }
 
   private stampChunkMeshes(root: Group | Mesh, opacity: number): void {
@@ -1074,7 +1142,10 @@ export class TerrainSystem {
       }
       // Materials were cloned per chunk for fade — free them
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
-      for (const m of mats) m.dispose()
+      for (const m of mats) {
+        if (m === this.groundMatNear || m === this.groundMatFar || m === this.waterMat) continue
+        m.dispose()
+      }
     })
     chunk.root.clear()
   }
