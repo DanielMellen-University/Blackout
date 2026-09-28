@@ -279,6 +279,7 @@ describe('MissionSystem gate crossing', () => {
     const storm = buildMissionRoute(0, 20, 0, 0, 'storm')
     const night = buildMissionRoute(0, 20, 0, 0, 'night')
     const timber = buildMissionRoute(0, 20, 0, 0, 'timber')
+    const glacier = buildMissionRoute(0, 20, 0, 0, 'glacier')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
@@ -292,6 +293,7 @@ describe('MissionSystem gate crossing', () => {
     expect(storm).toHaveLength(5)
     expect(night).toHaveLength(5)
     expect(timber).toHaveLength(5)
+    expect(glacier).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
@@ -307,6 +309,8 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, night, 'night').challenge).toBe('precision')
     expect(summarizeMissionRoute(0, 20, 0, timber, 'timber').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, timber, 'timber').lengthMeters).toBeGreaterThan(3_000)
+    expect(summarizeMissionRoute(0, 20, 0, glacier, 'glacier').challenge).toBe('altitude')
+    expect(summarizeMissionRoute(0, 20, 0, glacier, 'glacier').maxAltitudeMeters).toBeGreaterThan(550)
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
@@ -324,11 +328,12 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('storm')).toBe('STORM RUN')
     expect(routeProfileLabel('night')).toBe('NIGHT OPS')
     expect(routeProfileLabel('timber')).toBe('TIMBERLINE RUN')
+    expect(routeProfileLabel('glacier')).toBe('GLACIER RUN')
   })
 
   it('exposes the validated coastal and river profiles to random sorties', () => {
     const profiles = new Set<MissionRouteProfile>()
-    for (let x = 0; x <= 6_000; x += 25) {
+    for (let x = 0; x <= 7_000; x += 25) {
       profiles.add(routeProfileForSpawn(x, 0, 0))
     }
     expect(profiles.has('coast')).toBe(true)
@@ -337,6 +342,7 @@ describe('MissionSystem gate crossing', () => {
     expect(profiles.has('desert')).toBe(true)
     expect(profiles.has('alpine')).toBe(true)
     expect(profiles.has('timber')).toBe(true)
+    expect(profiles.has('glacier')).toBe(true)
   })
 
   it('supports a no-gate free-flight profile', () => {

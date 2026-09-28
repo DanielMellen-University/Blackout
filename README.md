@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.341**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.342**.
 
 ## Run
 
@@ -41,4 +41,4 @@ The nose is the flight path. Throttle is thrust: a climb spends speed, and closi
 
 ## A sortie
 
-The cue at the top of the screen points at the next gate. Fly through the rings, then bring the jet back to the runway. A landing scores the run. A crash ends it. Results and crash debriefs show the human course name and any authored weather or night conditions, while saved-score records retain their stable seed/profile identity. From the results card, retry the same course or start a new world. Curated routes include orbit, sweep, slalom, ridge, canyon, coastal, fjord, river, volcanic, desert, alpine, storm, night, and timberline runs. The course picker previews each seeded course's deterministic bonus task alongside authored conditions before launch: Storm Run pins a readable low-visibility thunderstorm, Fjord Run uses fog over steep coastal shoulders, Night Ops pins a foggy midnight sky, and Timberline Run uses a fast rolling forest-and-hills line. Their weather and authored clock stay locked so each challenge remains repeatable instead of luck-based.
+The cue at the top of the screen points at the next gate. Fly through the rings, then bring the jet back to the runway. A landing scores the run. A crash ends it. Results and crash debriefs show the human course name and any authored weather or night conditions, while saved-score records retain their stable seed/profile identity. From the results card, retry the same course or start a new world. Curated routes include orbit, sweep, slalom, ridge, canyon, coastal, fjord, river, volcanic, desert, alpine, storm, night, timberline, and glacier runs. The course picker previews each seeded course's deterministic bonus task alongside authored conditions before launch: Storm Run pins a readable low-visibility thunderstorm, Fjord Run uses fog over steep coastal shoulders, Night Ops pins a foggy midnight sky, Timberline Run uses a fast rolling forest-and-hills line, and Glacier Run pins snow over a high alpine pass. Their weather and authored clock stay locked so each challenge remains repeatable instead of luck-based.

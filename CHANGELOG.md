@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the deterministic Glacier Run course, a snowbound alpine pass with an altitude challenge and forced snow conditions that reuse the bounded route, clearance, scoring, and retry systems.
 - Add a scalar hydrology-aware terrain surface probe for fallback contact and AGL queries, preserving water levels and airfield grading while avoiding per-query climate-object allocations.
 - Add the deterministic Timberline Run course, a fast rolling forest-and-hills route that reuses the validated terrain-clearance and scored retry path without expanding runtime budgets.
 - Reuse bounded caller-owned climate buffers while building terrain tiles, removing nested per-vertex geography allocations and reducing garbage-collection pressure during streamed terrain rebuilds without changing deterministic height, biome, or water output.
