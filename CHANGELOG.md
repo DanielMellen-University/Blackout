@@ -4,7 +4,7 @@
 
 ### Ship
 
-- Add a persisted Minimal HUD toggle that hides secondary telemetry while keeping flight-critical speed, attitude, fuel, warning, and navigation cues visible.
+- Add a persisted Minimal HUD toggle that keeps the compact cockpit default while allowing pilots to reveal or hide optional telemetry without changing flight-critical cues.
 - Add the curated Desert Dash course: a deterministic, long low-level route across dry basins, included in random profile rotation with terrain-aware clearance checks.
 - Add persisted Engine, Environment, and Effects audio mix sliders beside the master volume, reusing the existing Web Audio branches without adding nodes or per-frame graph work.
 - Add persisted Subtle/Standard/Wide speed-framing levels for external chase and orbit cameras, scaling only high-speed pullback, FOV, and look lead.

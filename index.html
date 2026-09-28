@@ -160,7 +160,7 @@
               </label>
               <label class="menu-setting" for="menu-hud-display">
                 <span>Minimal HUD</span>
-                <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" />
+                <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" checked />
               </label>
               <label class="menu-setting" for="menu-stability-assist">
                 <span>Flight assist</span>
@@ -218,7 +218,7 @@
         </div>
       </div>
 
-      <div id="overlay" class="overlay-hidden" hidden>
+      <div id="overlay" class="overlay-hidden hud-minimal" hidden>
         <div id="speed-juice" aria-hidden="true"></div>
         <div id="hud-sky-mark" class="sky-mark" aria-hidden="true"></div>
         <div id="canopy-tint" aria-hidden="true"></div>
@@ -233,7 +233,7 @@
           <div id="heading-tape-track" aria-hidden="true"></div>
           <div id="heading-tape-caret" aria-hidden="true">▼</div>
         </div>
-        <div id="hud">
+        <div id="hud" class="hud-minimal">
           <div id="hud-gear-row" class="hud-row">
             <span class="label">GEAR</span>
             <span id="hud-gear">DOWN</span>

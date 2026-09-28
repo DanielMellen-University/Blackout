@@ -729,6 +729,7 @@ export function engineFuelAvailabilityBanner(
 
 export class HUD {
   private readonly hudRoot: HTMLElement | null
+  private readonly overlayRoot: HTMLElement | null
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly gEl: HTMLElement | null
@@ -983,6 +984,7 @@ export class HUD {
 
   constructor(root: Document = document) {
     this.hudRoot = root.getElementById('hud')
+    this.overlayRoot = root.getElementById('overlay')
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.gEl = root.getElementById('hud-g')
@@ -1101,8 +1103,9 @@ export class HUD {
 
   /** Keep the flight-critical overlay while hiding secondary telemetry. */
   setMinimal(enabled: boolean): void {
-    if (!this.hudRoot) return
-    this.setClass(this.hudRoot, 'hud-minimal', enabled === true)
+    const minimal = enabled === true
+    if (this.hudRoot) this.setClass(this.hudRoot, 'hud-minimal', minimal)
+    if (this.overlayRoot) this.setClass(this.overlayRoot, 'hud-minimal', minimal)
   }
 
   update(opts: {

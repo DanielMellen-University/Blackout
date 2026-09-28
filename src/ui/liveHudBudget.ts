@@ -55,7 +55,7 @@ export const LEDGER_HUD_IDS = [
 const TAG_RE = /<\/?([a-zA-Z0-9-]+)([^<>]*)>/g
 const VOID_TAG = /^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)$/i
 
-/** True when `hud-ledger` hides this id in the shipped markup. */
+/** True when `hud-ledger` marks this id as optional telemetry. */
 export function hudIdIsLedger(html: string, id: string): boolean {
   const at = html.indexOf(`id="${id}"`)
   if (at < 0) return false
@@ -87,8 +87,8 @@ export function hudIdIsLedger(html: string, id: string): boolean {
 /** Empty when the live picture matches the flight-instrument budget. */
 export function liveHudViolations(html: string, css: string): string[] {
   const violations: string[] = []
-  if (!/\.hud-ledger\b[^{]*\{[^}]*display:\s*none\s*!important/.test(css)) {
-    violations.push('css does not hide .hud-ledger')
+  if (!/\.hud-minimal\b[^{}]*\.hud-ledger\b[^{}]*\{[^}]*display:\s*none\s*!important/.test(css)) {
+    violations.push('css does not hide .hud-minimal .hud-ledger')
   }
   if (!/\.result-ledger\b[^{]*\{[^}]*display:\s*none\s*!important/.test(css)) {
     violations.push('css does not hide .result-ledger')

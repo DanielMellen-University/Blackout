@@ -27,7 +27,8 @@ export const DEFAULT_CAMERA_AUTO_RETURN = true
 export const CAMERA_EFFECTS_STORAGE_KEY = 'blackout.cameraEffects'
 export const DEFAULT_CAMERA_EFFECTS = true
 export const HUD_DISPLAY_STORAGE_KEY = 'blackout.hudDisplay'
-export const DEFAULT_HUD_DISPLAY: HudDisplay = 'full'
+// Keep the shipped cockpit uncluttered; pilots can opt into the expanded ledger.
+export const DEFAULT_HUD_DISPLAY: HudDisplay = 'minimal'
 export const STABILITY_ASSIST_STORAGE_KEY = 'blackout.stabilityAssist'
 export const DEFAULT_STABILITY_ASSIST = false
 
