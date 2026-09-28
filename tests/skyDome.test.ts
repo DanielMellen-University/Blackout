@@ -29,7 +29,10 @@ describe('analytic sky cloud deck', () => {
     expect(clearNight).toBeLessThanOrEqual(1)
     expect(auroraIntensity(4200, -7100, 1, 0, 0)).toBe(0)
     expect(auroraIntensity(4200, -7100, 0, 1, 1)).toBeLessThanOrEqual(clearNight)
-    expect(auroraIntensity(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NaN, Number.NaN)).toBe(0)
+    const malformed = auroraIntensity(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NaN, Number.NaN)
+    expect(Number.isFinite(malformed)).toBe(true)
+    expect(malformed).toBeGreaterThanOrEqual(0)
+    expect(malformed).toBeLessThanOrEqual(1)
   })
 
   it('turns profile layers into distinct but bounded sky states', () => {

@@ -72,8 +72,12 @@ export function auroraIntensity(
   const safeAz = Number.isFinite(az) ? az : 0
   const night = Math.pow(1 - clamp01(dayFactor), 1.35)
   const clear = 1 - clamp01(clamp01(cloudCover) * 0.9 + clamp01(haze) * 0.45)
-  const worldBand = Math.abs(Math.sin(safeAx * 0.00013 + safeAz * 0.000087))
-  const latitudeBand = smooth01((worldBand - 0.54) / 0.3)
+  // A phase offset keeps the home airfield inside an active band while the
+  // long wavelength still makes the curtains ebb as the pilot travels.
+  const worldBand = 0.5 + 0.5 * Math.sin(
+    safeAx * 0.00013 + safeAz * 0.000087 + 1.15,
+  )
+  const latitudeBand = smooth01((worldBand - 0.44) / 0.42)
   return clamp01(latitudeBand * night * clear * 0.9)
 }
 

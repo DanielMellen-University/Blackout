@@ -14,7 +14,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(66)
+    expect(COURSE_LIBRARY).toHaveLength(67)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -47,6 +47,11 @@ describe('course library', () => {
     expect(courseDefinitionForId('night-ops').weather).toBe('fog')
     expect(courseDefinitionForId('night-ops').timeOfDay).toBeCloseTo(0.84)
     expect(courseRunId(courseDefinitionForId('night-ops'))).toBe('seed:11:night')
+    expect(courseDefinitionForId('aurora-run').profile).toBe('night')
+    expect(courseDefinitionForId('aurora-run').weather).toBe('clear')
+    expect(courseDefinitionForId('aurora-run').timeOfDay).toBeCloseTo(0.84)
+    expect(courseDefinitionForId('aurora-run').contractCatalog).toBe(true)
+    expect(courseRunId(courseDefinitionForId('aurora-run'))).toBe('seed:512:night')
     expect(courseDefinitionForId('timberline-run').profile).toBe('timber')
     expect(courseRunId(courseDefinitionForId('timberline-run'))).toBe('seed:15:timber')
     expect(courseDefinitionForId('glacier-run').profile).toBe('glacier')
