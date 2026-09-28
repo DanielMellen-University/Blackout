@@ -1713,7 +1713,7 @@ export class HUD {
       this.setText(this.phaseEl, opts.dayPhase)
     }
     if (this.worldSeedEl && opts.worldSeed !== undefined) {
-      const seed = Number.isSafeInteger(opts.worldSeed) ? opts.worldSeed : null
+      const seed = Number.isFinite(opts.worldSeed) ? opts.worldSeed : null
       if (seed !== this.worldSeedValue) {
         this.worldSeedValue = seed
         this.worldSeedText = worldSeedHudLabel(opts.worldSeed)

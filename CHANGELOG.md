@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.458** Preserve the six decimal places used by the terrain hash in HUD, replay links, clipboard actions, and custom seed input so random worlds can actually be revisited exactly.
 - **10.457** Add a one-click results action that sends the active world seed back to the title screen for immediate exact-world exploration.
 - **10.456** Fix custom and replay seed launches so the first Play action rebuilds the random world from the pending seed instead of reusing the previous terrain.
 - **10.455** Add a dedicated results action for copying the raw world seed, making procedural discoveries easy to load again without parsing a replay URL.

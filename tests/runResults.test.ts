@@ -154,7 +154,7 @@ const result = {
 
 describe('run results focus flow', () => {
   it('formats finite replay seeds and fails closed for malformed values', () => {
-    expect(resultSeedLabel(9876.8)).toBe('SEED 9876')
+    expect(resultSeedLabel(9876.8)).toBe('SEED 9876.8')
     expect(resultSeedLabel(undefined)).toBe('')
     expect(resultSeedLabel(Number.NaN)).toBe('')
   })

@@ -6,6 +6,25 @@
 let worldSeed = 1337.9182
 /** Integer mix of seed for bit hashing. */
 let seedI = 1337 | 0
+const SEED_SCALE = 1_000_000
+
+function applyWorldSeed(seed: number): void {
+  const safe = Number.isFinite(seed) ? seed : 0.001
+  const scaled = Math.round(safe * SEED_SCALE)
+  if (!Number.isSafeInteger(scaled)) {
+    worldSeed = 0.001
+    seedI = 1000
+    return
+  }
+  if (scaled === 0) {
+    // Preserve the historical zero guard while keeping tiny values replayable.
+    worldSeed = safe < 0 ? -0.001 : 0.001
+    seedI = safe < 0 ? -1000 : 1000
+    return
+  }
+  worldSeed = scaled / SEED_SCALE
+  seedI = scaled | 0
+}
 
 /** Current world seed (for debug / HUD later). */
 export function getWorldSeed(): number {
@@ -14,14 +33,12 @@ export function getWorldSeed(): number {
 
 /** Set an explicit seed and invalidate any cached noise assumptions. */
 export function setWorldSeed(seed: number): void {
-  worldSeed = seed === 0 ? 0.001 : seed
-  seedI = (worldSeed * 1e6) | 0
+  applyWorldSeed(seed)
 }
 
 /** Fresh random seed for a new world (call before rebuilding chunks). */
 export function randomizeWorldSeed(): number {
-  worldSeed = Math.random() * 1_000_000 + Math.random() * 999.731
-  seedI = (worldSeed * 1e6) | 0
+  applyWorldSeed(Math.random() * 1_000_000 + Math.random() * 999.731)
   return worldSeed
 }
 

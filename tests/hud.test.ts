@@ -125,7 +125,7 @@ import {
 
 describe('HUD value formatting', () => {
   it('keeps procedural seed identity finite and compact', () => {
-    expect(worldSeedHudLabel(9876.8)).toBe('9876')
+    expect(worldSeedHudLabel(9876.8)).toBe('9876.8')
     expect(worldSeedHudLabel(9876)).toBe('9876')
     expect(worldSeedHudLabel(Number.NaN)).toBe('--')
     expect(worldSeedHudLabel(Number.POSITIVE_INFINITY)).toBe('--')

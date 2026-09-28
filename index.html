@@ -49,7 +49,7 @@
           <div class="seed-launch">
             <label class="seed-launch-label" for="title-seed-input">Custom seed</label>
             <div class="seed-launch-controls">
-              <input id="title-seed-input" type="text" inputmode="numeric" pattern="[+-]?\d*" autocomplete="off" placeholder="Random" aria-label="Custom world seed" />
+              <input id="title-seed-input" type="text" inputmode="decimal" pattern="[+-]?(?:\d+(?:\.\d{1,6})?|\.\d{1,6})" autocomplete="off" placeholder="Random" aria-label="Custom world seed" />
               <button type="button" id="title-seed-load" class="btn-ghost">Load seed</button>
             </div>
             <p id="title-seed-status" class="seed-launch-status" role="status" aria-live="polite"></p>
