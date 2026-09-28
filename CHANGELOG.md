@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.466** Keep malformed atmosphere deltas and anchor coordinates from poisoning time-of-day, cloud motion, or weather rendering state.
 - **10.465** Ignore malformed weather update deltas so `NaN` or infinite frame timing cannot poison seeded front transitions.
 - **10.464** Gate distant and Low-quality water detail texture samples behind the existing adaptive detail budget, reducing GPU work without changing water geometry or levels.
 - **10.463** Make regional seas more compact, preserving real water levels while reducing ocean-sized interruptions between land provinces.

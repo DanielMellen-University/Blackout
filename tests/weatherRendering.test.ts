@@ -42,6 +42,19 @@ describe('weather rendering', () => {
     weather.dispose()
   })
 
+  it('keeps atmosphere state finite when a frame reports malformed timing or position', () => {
+    const { weather } = atmosphere()
+    weather.update(.1, 0, 1000, 0)
+    const timeBefore = weather.timeOfDay
+    weather.update(Number.NaN, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN)
+    expect(weather.timeOfDay).toBe(timeBefore)
+    expect(Number.isFinite(weather.cloudImmersionLevel)).toBe(true)
+    weather.update(.1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)
+    expect(Number.isFinite(weather.timeOfDay)).toBe(true)
+    expect(Number.isFinite(weather.cloudImmersionLevel)).toBe(true)
+    weather.dispose()
+  })
+
   it('keeps stationary rain in world space when the observer moves', () => {
     const rain = new RainField()
     rain.update(0, 10, 1000, 20, 1, 0, 0)

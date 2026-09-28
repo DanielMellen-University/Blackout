@@ -225,6 +225,14 @@ export interface AtmosphereAnchor {
   z: number
 }
 
+function safeNonNegativeDelta(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : 0
+}
+
+function safeAnchorComponent(value: number, fallback: number): number {
+  return Number.isFinite(value) ? value : fallback
+}
+
 /** Static paused frames only need an atmosphere pass when the anchor moved. */
 export function atmosphereNeedsUpdate(
   dt: number,
@@ -234,8 +242,13 @@ export function atmosphereNeedsUpdate(
   z: number,
   previous: AtmosphereAnchor | null,
 ): boolean {
-  if (dt > 0 || visualDt > 0 || !previous) return true
-  return previous.x !== x || previous.y !== y || previous.z !== z
+  const safeDt = safeNonNegativeDelta(dt)
+  const safeVisualDt = safeNonNegativeDelta(visualDt)
+  if (safeDt > 0 || safeVisualDt > 0 || !previous) return true
+  const safeX = safeAnchorComponent(x, previous.x)
+  const safeY = safeAnchorComponent(y, previous.y)
+  const safeZ = safeAnchorComponent(z, previous.z)
+  return previous.x !== safeX || previous.y !== safeY || previous.z !== safeZ
 }
 
 /** Cheap per-streak lateral rain drift used by the pooled particle update. */
@@ -638,21 +651,26 @@ export class Atmosphere {
 
   update(dt: number, ax: number, ay: number, az: number, visualDt = dt): void {
     if (this.disposed) return
+    const safeDt = safeNonNegativeDelta(dt)
+    const safeVisualDt = safeNonNegativeDelta(visualDt)
     const previousAnchor = this.hasLastAnchor ? this.lastAnchor : null
-    if (!this.dirty && !atmosphereNeedsUpdate(dt, visualDt, ax, ay, az, previousAnchor)) return
-    this.lastAnchor.x = ax
-    this.lastAnchor.y = ay
-    this.lastAnchor.z = az
+    const safeX = safeAnchorComponent(ax, previousAnchor?.x ?? this.lastAnchor.x)
+    const safeY = safeAnchorComponent(ay, previousAnchor?.y ?? this.lastAnchor.y)
+    const safeZ = safeAnchorComponent(az, previousAnchor?.z ?? this.lastAnchor.z)
+    if (!this.dirty && !atmosphereNeedsUpdate(safeDt, safeVisualDt, safeX, safeY, safeZ, previousAnchor)) return
+    this.lastAnchor.x = safeX
+    this.lastAnchor.y = safeY
+    this.lastAnchor.z = safeZ
     this.hasLastAnchor = true
     if (!this.timeOfDayLocked) {
-      this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
+      this.timeOfDay = (this.timeOfDay + safeDt / this.dayLengthSec) % 1
     }
-    this.elapsed += dt
-    this.weatherDirector.update(dt)
+    this.elapsed += safeDt
+    this.weatherDirector.update(safeDt)
     this.weather = this.weatherDirector.targetId
     this.weatherDirector.snapshotInto(this.weatherState)
 
-    this.apply(ax, ay, az, dt, visualDt, this.weatherState)
+    this.apply(safeX, safeY, safeZ, safeDt, safeVisualDt, this.weatherState)
     this.dirty = false
   }
 

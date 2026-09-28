@@ -59,6 +59,12 @@ describe('lightning comfort', () => {
     expect(atmosphereNeedsUpdate(0, 1 / 120, 10, 20, 30, anchor)).toBe(true)
   })
 
+  it('treats malformed frame timing and anchors as a frozen, unchanged frame', () => {
+    const anchor = { x: 10, y: 20, z: 30 }
+    expect(atmosphereNeedsUpdate(Number.NaN, Number.NaN, Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, anchor)).toBe(false)
+    expect(atmosphereNeedsUpdate(Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, 10, 20, 30, anchor)).toBe(false)
+  })
+
   it('keeps cloud draw budgets bounded and nonzero', () => {
     expect(cloudPuffCount(100, 0.5)).toBe(50)
     expect(cloudPuffCount(100, 1.4)).toBe(100)
