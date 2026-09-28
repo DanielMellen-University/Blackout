@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.425** Add Biome Tour, a deterministic clear sweep that exposes the bounded four-biome exploration contract without adding scene or render-loop work.
 - **10.424** Add Airshow Run, a deterministic clear slalom that exposes the bounded barrel-roll stunt contract without adding scene or render-loop work.
 - **10.423** Add Settlement Tour, a deterministic clear route that exposes the bounded city-and-village tour contract without adding scene or render-loop work.
 - **10.422** Add Range Run, a deterministic clear long sweep that exposes the bounded sustained-distance contract without adding scene or render-loop work.

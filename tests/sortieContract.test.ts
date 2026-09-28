@@ -57,6 +57,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(76, 5, true)).toContain('VISIT ONE CITY AND ONE VILLAGE')
     expect(sortieContractLabelForSeed(19, 5, true)).toBe('AIRSHOW')
     expect(sortieContractDetailForSeed(19, 5, true)).toContain('2 BARREL ROLLS')
+    expect(sortieContractLabelForSeed(42, 5, true)).toBe('BIOME TOUR')
+    expect(sortieContractDetailForSeed(42, 5, true)).toContain('4 DISTINCT BIOMES')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {
