@@ -5,6 +5,7 @@ import {
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad, sampleClimate } from './terrainSample'
+import { createClimateSample } from './Geography'
 import { getWorldSeed, hash2 } from './noise'
 import {
   settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE,
@@ -25,6 +26,11 @@ const ROAD_KEEP_RADIUS = ROAD_LOAD_RADIUS + 5000
 // aircraft moving into range without scanning and filtering the queue every
 // render frame while the anchor is off-screen or the budget is full.
 const PROTECTED_RETRY_INTERVAL_FRAMES = 12
+
+// Waterfront and bridge presentation probes run serially during attachment.
+// Reuse one climate record so visual settlement details do not allocate a full
+// biome-weight sample for every shoreline or pier point.
+const settlementRuntimeClimateScratch = createClimateSample()
 
 // Generation can be generous without letting a dense slice of the world turn
 // into an unbounded set of instance buffers or road meshes around the player.
@@ -302,7 +308,7 @@ export function settlementWaterfrontPoints(
       const distance = plan.radius * .76 + step * 180
       const x = plan.x + Math.cos(angle) * distance
       const z = plan.z + Math.sin(angle) * distance
-      const climate = sampleClimate(x, z)
+      const climate = sampleClimate(x, z, settlementRuntimeClimateScratch)
       if (!isWater(climate.biome, climate.coastal, climate.features.lake, climate.features.pond)) {
         if (climate.biome !== 'ocean' && climate.biome !== 'water') previous = { x, z, height: climate.height }
         continue
@@ -1349,7 +1355,7 @@ export class SettlementSystem {
       const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
       const transform = new Object3D()
       pierPoints.forEach((point, i) => {
-        const bed = Math.min(point.y - 6, sampleClimate(point.x, point.z).height)
+        const bed = Math.min(point.y - 6, sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height)
         const height = Math.max(12, point.y - bed + 4)
         transform.position.set(point.x - x, bed + height * .5, point.z - z)
         transform.scale.set(Math.max(3.2, road.width * .1), height, Math.max(3.2, road.width * .1))
