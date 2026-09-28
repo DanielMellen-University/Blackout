@@ -26,6 +26,8 @@ const _normal = new Vector3()
 const CONTACT_BROADPHASE_MARGIN = 24
 const CONTACT_BROADPHASE_TRAVEL_FACTOR = 0.75
 const CONTACT_BROADPHASE_TRAVEL_CAP = 32
+/** Small numerical tolerance; deep terrain penetration is never "grounded". */
+const GROUNDED_PENETRATION_TOLERANCE = 1.5
 
 /** Convert blended precipitation into a forgiving runway-grip multiplier. */
 export function runwayGripForWeather(rain: number, snow: number): number {
@@ -471,7 +473,8 @@ export class FlightModel {
   }
 
   private grounded(y: number, minY: number, vy: number, upY: number): boolean {
-    return y <= minY + 0.18 && vy < 1.8 && upY > 0.35
+    return y >= minY - GROUNDED_PENETRATION_TOLERANCE &&
+      y <= minY + 0.18 && vy < 1.8 && upY > 0.35
   }
 
   private axes(orientation: Quaternion): void {

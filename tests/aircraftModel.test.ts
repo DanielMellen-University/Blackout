@@ -239,6 +239,14 @@ describe('rebuilt aircraft', () => {
     expect(aircraft.onGround).toBe(false)
   })
 
+  it('does not classify deep terrain penetration as grounded', () => {
+    setContactHeightSampler(() => 100)
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 3, y: 0, z: 0, yaw: 0 })
+
+    expect(aircraft.onGround).toBe(false)
+  })
+
   it('skips detailed contact probes while the jet is safely above terrain', () => {
     let samples = 0
     setContactHeightSampler(() => {
