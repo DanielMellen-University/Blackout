@@ -88,6 +88,17 @@ describe('landing scrub pooling', () => {
     fx.dispose()
   })
 
+  it('falls back to finite impact data', () => {
+    const fx = new LandingFx(new Scene())
+    fx.trigger(new Vector3(Number.NaN, 0, Number.POSITIVE_INFINITY), new Vector3(Number.NaN, 0, Number.NEGATIVE_INFINITY))
+    expect(fx.root.position.x).toBe(0)
+    expect(fx.root.position.z).toBe(0)
+    expect(fx.activeCount).toBeGreaterThan(0)
+    fx.trigger(new Vector3(), new Vector3(), Number.NaN)
+    expect(fx.activeCount).toBeGreaterThan(0)
+    fx.dispose()
+  })
+
   it('scales continuous scrub intensity with ground speed', () => {
     expect(landingScrubIntensity(0)).toBe(0)
     expect(landingScrubIntensity(9)).toBe(0)

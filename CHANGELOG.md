@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.469** Keep malformed landing and crash impact vectors from writing non-finite scene transforms or pooled particle motion.
 - **10.468** Keep malformed landing and crash-effect timing from poisoning pooled particle lifetimes or motion.
 - **10.467** Keep malformed world-frame timing and aircraft coordinates from leaking into terrain, settlements, traffic, atmosphere, or runway presentation.
 - **10.466** Keep malformed atmosphere deltas and anchor coordinates from poisoning time-of-day, cloud motion, or weather rendering state.

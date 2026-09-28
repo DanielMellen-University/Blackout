@@ -105,6 +105,17 @@ describe('crash effect pooling', () => {
     fx.dispose()
   })
 
+  it('falls back to finite impact vectors', () => {
+    const fx = new CrashFx(new Scene())
+    fx.trigger(
+      new Vector3(Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY),
+      new Vector3(Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY),
+    )
+    expect(fx.root.position.toArray()).toEqual([0, 0, 0])
+    expect(fx.activeCount).toBeGreaterThan(0)
+    fx.dispose()
+  })
+
   it('stops the effect when the pooled particle tail is empty', () => {
     let samples = 0
     setContactHeightSampler(() => {

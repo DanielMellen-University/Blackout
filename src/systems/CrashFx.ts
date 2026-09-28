@@ -142,19 +142,25 @@ export class CrashFx {
 
   trigger(pos: Vector3, vel: Vector3): void {
     if (this.disposed) return
+    const px = Number.isFinite(pos.x) ? pos.x : 0
+    const py = Number.isFinite(pos.y) ? pos.y : 0
+    const pz = Number.isFinite(pos.z) ? pos.z : 0
+    const vx = Number.isFinite(vel.x) ? vel.x : 0
+    const vy = Number.isFinite(vel.y) ? vel.y : 0
+    const vz = Number.isFinite(vel.z) ? vel.z : 0
     this.clearBits()
     this.randomState = seedFromImpact(pos, vel)
     this.alive = true
     this.age = 0
     this.punch = this.reducedMotion ? 0 : 1
-    this.root.position.copy(pos)
+    this.root.position.set(px, py, pz)
     this.root.visible = true
     this.ring.scale.setScalar(2)
     this.ringMat.opacity = 0.9
     this.flash.scale.setScalar(8)
     ;(this.flash.material as MeshBasicMaterial).opacity = 1
 
-    _inherit.copy(vel).multiplyScalar(0.22)
+    _inherit.set(vx, vy, vz).multiplyScalar(0.22)
 
     const low = this.renderQuality === 'low'
     const bloomCount = low ? 4 : 8

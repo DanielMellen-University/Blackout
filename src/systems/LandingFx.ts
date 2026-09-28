@@ -94,13 +94,17 @@ export class LandingFx {
     if (this.disposed) return
     const strength = clamp01(intensity)
     if (strength < 0.05) return
+    const px = Number.isFinite(pos.x) ? pos.x : 0
+    const pz = Number.isFinite(pos.z) ? pos.z : 0
+    const vx = Number.isFinite(vel.x) ? vel.x : 0
+    const vz = Number.isFinite(vel.z) ? vel.z : 0
     this.randomState = seedFromLanding(pos, vel, strength)
     this.alive = true
     this.root.visible = true
-    this.root.position.set(pos.x, sampleGroundHeight(pos.x, pos.z) + 0.15, pos.z)
+    this.root.position.set(px, sampleGroundHeight(px, pz) + 0.15, pz)
 
-    const gs = Math.hypot(vel.x, vel.z)
-    _fwd.set(vel.x, 0, vel.z)
+    const gs = Math.hypot(vx, vz)
+    _fwd.set(vx, 0, vz)
     if (gs > 0.4) _fwd.multiplyScalar(1 / gs)
     else _fwd.set(0, 0, 1)
     _side.set(_fwd.z, 0, -_fwd.x)
@@ -134,8 +138,12 @@ export class LandingFx {
 
     this.alive = true
     this.root.visible = true
-    this.root.position.set(pos.x, sampleGroundHeight(pos.x, pos.z) + 0.12, pos.z)
-    _fwd.set(vel.x, 0, vel.z)
+    const px = Number.isFinite(pos.x) ? pos.x : 0
+    const pz = Number.isFinite(pos.z) ? pos.z : 0
+    const vx = Number.isFinite(vel.x) ? vel.x : 0
+    const vz = Number.isFinite(vel.z) ? vel.z : 0
+    this.root.position.set(px, sampleGroundHeight(px, pz) + 0.12, pz)
+    _fwd.set(vx, 0, vz)
     if (gs > 0.4) _fwd.multiplyScalar(1 / gs)
     else _fwd.set(0, 0, 1)
     _side.set(_fwd.z, 0, -_fwd.x)
@@ -314,6 +322,7 @@ export function landingScrubRate(groundSpeed: number): number {
 }
 
 function clamp01(value: number): number {
+  if (!Number.isFinite(value)) return 0
   return value < 0 ? 0 : value > 1 ? 1 : value
 }
 
