@@ -119,10 +119,17 @@ import {
   weatherCycleBanner,
   weatherDisplayLabel,
   weatherTransitionLabel,
+  worldSeedHudLabel,
   writeRadarMarkerPosition,
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
+  it('keeps procedural seed identity finite and compact', () => {
+    expect(worldSeedHudLabel(9876.8)).toBe('--')
+    expect(worldSeedHudLabel(9876)).toBe('9876')
+    expect(worldSeedHudLabel(Number.NaN)).toBe('--')
+  })
+
   it('projects radar contacts into a finite bounded scope', () => {
     const position = { left: 0, top: 0 }
     writeRadarMarkerPosition(0, 0, position)

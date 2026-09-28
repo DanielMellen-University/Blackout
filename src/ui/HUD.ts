@@ -18,6 +18,7 @@ import {
   blackoutVignetteIntensity,
   redoutWashIntensity,
 } from '../systems/GLoadFeedback'
+import { formatWorldSeed } from '../core/WorldSeed'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
@@ -65,6 +66,11 @@ export function pauseStateLabel(paused: boolean): string {
 
 export function hudBackgroundHidden(menuOpen: boolean, resultsOpen: boolean): boolean {
   return menuOpen || resultsOpen
+}
+
+/** Keep the active procedural identity compact and safe for the live HUD. */
+export function worldSeedHudLabel(seed: number): string {
+  return Number.isSafeInteger(seed) ? formatWorldSeed(seed) : '--'
 }
 
 export type NavigationSector = 'ahead' | 'left' | 'right' | 'behind'
@@ -925,6 +931,7 @@ export class HUD {
   private readonly weatherEl: HTMLElement | null
   private readonly windEl: HTMLElement | null
   private readonly phaseEl: HTMLElement | null
+  private readonly worldSeedEl: HTMLElement | null
   private readonly missionEl: HTMLElement | null
   private readonly routeRiskRowEl: HTMLElement | null
   private readonly routeRiskEl: HTMLElement | null
@@ -1079,6 +1086,9 @@ export class HUD {
   private weatherLabelValue = ''
   private weatherText = ''
   private weatherAriaText = ''
+  private worldSeedValue: number | null = null
+  private worldSeedText = '--'
+  private worldSeedAriaText = 'World seed unavailable'
   private missionPhaseValue: MissionPhaseCue | null = null
   private routeRiskText = ''
   private routeRiskAriaText = ''
@@ -1205,6 +1215,7 @@ export class HUD {
     this.weatherEl = root.getElementById('hud-weather')
     this.windEl = root.getElementById('hud-wind')
     this.phaseEl = root.getElementById('hud-phase')
+    this.worldSeedEl = root.getElementById('hud-world-seed')
     this.missionEl = root.getElementById('hud-mission')
     this.routeRiskRowEl = root.getElementById('hud-route-risk-row')
     this.routeRiskEl = root.getElementById('hud-route-risk')
@@ -1352,6 +1363,8 @@ export class HUD {
     warningLevel?: 'none' | 'caution' | 'warning'
     clock?: string
     weather?: string
+    /** Active procedural world seed, kept visible for replayable exploration. */
+    worldSeed?: number
     /** Weather profile ID used for compact severity styling. */
     weatherKind?: string
     /** Whether the live weather front is blending between profiles. */
@@ -1698,6 +1711,16 @@ export class HUD {
     }
     if (this.phaseEl && opts.dayPhase) {
       this.setText(this.phaseEl, opts.dayPhase)
+    }
+    if (this.worldSeedEl && opts.worldSeed !== undefined) {
+      const seed = Number.isSafeInteger(opts.worldSeed) ? opts.worldSeed : null
+      if (seed !== this.worldSeedValue) {
+        this.worldSeedValue = seed
+        this.worldSeedText = worldSeedHudLabel(opts.worldSeed)
+        this.worldSeedAriaText = seed === null ? 'World seed unavailable' : `World seed ${this.worldSeedText}`
+      }
+      this.setText(this.worldSeedEl, this.worldSeedText)
+      this.setAttribute(this.worldSeedEl, 'aria-label', this.worldSeedAriaText)
     }
     if (this.missionEl && opts.mission !== undefined) {
       this.setText(this.missionEl, opts.mission)

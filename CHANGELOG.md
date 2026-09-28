@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.452** Surface the active procedural world seed in the secondary HUD, keeping custom and replay worlds identifiable during flight without adding per-frame allocation.
 - **10.451** Clear consumed custom seeds from the launch controls, keeping the visible pending-seed state aligned with the world that the next Play action will actually create.
 - **10.450** Add safe custom-seed launch input, letting pilots revisit exact procedural worlds from the title screen while preserving authored course selection and replay-link behavior.
 - **10.449** Keep graphics preset changes synchronized with the live adaptive detail budget, preventing a temporary full-cost shader burst when switching quality under load.

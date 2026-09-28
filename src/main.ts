@@ -980,6 +980,7 @@ async function boot(): Promise<void> {
     warningLevel: 'none',
     clock: '',
     weather: '',
+    worldSeed: 0,
     weatherKind: 'clear',
     weatherTransitioning: false,
     windX: 0,
@@ -2394,6 +2395,7 @@ async function boot(): Promise<void> {
       hudFrame.warningLevel = warn.level
       hudFrame.clock = challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
+      hudFrame.worldSeed = world.worldSeed
       hudFrame.weatherKind = world.atmosphere.weather
       hudFrame.weatherTransitioning = world.atmosphere.weatherTransitioning
       hudFrame.windX = precipitation.windX
