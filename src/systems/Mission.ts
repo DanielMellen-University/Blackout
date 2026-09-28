@@ -15,7 +15,7 @@ import {
   TorusGeometry,
   Vector3,
 } from 'three'
-import { sampleTerrainHeight } from '../world/terrainSample'
+import { sampleTerrainSurfaceHeightFast } from '../world/terrainSample'
 import { disposeObjectTree } from '../core/dispose'
 import { getWorldSeed } from '../world/noise'
 import { nearestThermalPocket } from './ThermalLift'
@@ -341,7 +341,9 @@ export function buildMissionRoute(
       for (const lateral of ROUTE_CORRIDOR_OFFSETS) {
         const corridorX = x + rightX * lateral
         const corridorZ = z + rightZ * lateral
-        const ground = sampleTerrainHeight(corridorX, corridorZ)
+        // Route clearance only needs the resolved contact height. Keep the
+        // full climate object out of this bounded launch-time hot path.
+        const ground = sampleTerrainSurfaceHeightFast(corridorX, corridorZ)
         if (Number.isFinite(ground)) {
           const needed = ground + ROUTE_CLEARANCE
           const endpointY = (needed - previousY * (1 - t)) / t
@@ -708,7 +710,7 @@ export function summarizeMissionRoute(
       const x = previousX + dx * t
       const y = previousY + dy * t
       const z = previousZ + dz * t
-      const ground = sampleTerrainHeight(x, z)
+      const ground = sampleTerrainSurfaceHeightFast(x, z)
       if (Number.isFinite(ground)) minClearanceMeters = Math.min(minClearanceMeters, y - ground)
     }
 
