@@ -271,6 +271,7 @@ export class FlightAudio {
       | 'gear-down'
       | 'airbrake-open'
       | 'airbrake-close'
+      | 'traffic'
       | 'sonic-boom',
   ): void {
     if (this.disposed) return
@@ -330,6 +331,11 @@ export class FlightAudio {
       const opening = kind === 'airbrake-open'
       this.noiseBurst(now, 0.1, opening ? 'white' : 'brown', opening ? 0.075 : 0.055, opening ? 800 : 620, opening ? 2100 : 260)
       this.tone(opening ? 260 : 340, now, 0.11, 'triangle', opening ? 0.045 : 0.035, opening ? 520 : 160)
+    } else if (kind === 'traffic') {
+      // A restrained double pulse keeps proximity readable without sounding like
+      // the sustained terrain or stall warnings.
+      this.tone(540, now, 0.08, 'triangle', 0.06, 430)
+      this.tone(540, now + 0.13, 0.09, 'triangle', 0.05, 430)
     } else if (kind === 'sonic-boom') {
       // A low, short pressure wave marks Mach crossing without a harsh click.
       this.noiseBurst(now, 0.34, 'brown', 0.2, 150, 48)

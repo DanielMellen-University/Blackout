@@ -1977,6 +1977,7 @@ async function boot(): Promise<void> {
             1600,
             'danger',
           )
+          audio.playCue('traffic')
           trafficAlertUntilMs = nowMs + 2200
         }
         prevTrafficAlertId = trafficAlert.id

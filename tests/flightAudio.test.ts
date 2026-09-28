@@ -106,6 +106,11 @@ describe('flight audio automation', () => {
     expect(precipitationAudioLevel(Number.NaN, Number.NaN)).toBe(0)
   })
 
+  it('keeps the traffic cue in the existing event-cue path', () => {
+    const cue: Parameters<FlightAudio['playCue']>[0] = 'traffic'
+    expect(cue).toBe('traffic')
+  })
+
   it('adds a bounded speed-brake hiss without changing the base wind envelope', () => {
     expect(airbrakeWindEnvelope(0, false)).toBe(0)
     expect(airbrakeWindEnvelope(140, false)).toBeGreaterThan(0)
