@@ -224,7 +224,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'storm'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'storm', 'night'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -276,6 +276,7 @@ describe('MissionSystem gate crossing', () => {
     const volcanic = buildMissionRoute(0, 20, 0, 0, 'volcanic')
     const desert = buildMissionRoute(0, 20, 0, 0, 'desert')
     const storm = buildMissionRoute(0, 20, 0, 0, 'storm')
+    const night = buildMissionRoute(0, 20, 0, 0, 'night')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
@@ -286,6 +287,7 @@ describe('MissionSystem gate crossing', () => {
     expect(volcanic).toHaveLength(5)
     expect(desert).toHaveLength(5)
     expect(storm).toHaveLength(5)
+    expect(night).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
@@ -296,6 +298,7 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, desert, 'desert').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, desert, 'desert').lengthMeters).toBeGreaterThan(3_500)
     expect(summarizeMissionRoute(0, 20, 0, storm, 'storm').challenge).toBe('precision')
+    expect(summarizeMissionRoute(0, 20, 0, night, 'night').challenge).toBe('precision')
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
@@ -310,6 +313,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('volcanic')).toBe('VOLCANIC RUN')
     expect(routeProfileLabel('desert')).toBe('DESERT DASH')
     expect(routeProfileLabel('storm')).toBe('STORM RUN')
+    expect(routeProfileLabel('night')).toBe('NIGHT OPS')
   })
 
   it('exposes the validated coastal and river profiles to random sorties', () => {

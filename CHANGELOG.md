@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the curated Night Ops course: a deterministic low-level fog route with an authored midnight sky, replay-safe weather/time overrides, and precision gates.
 - Add the curated Storm Run course: a deterministic low-visibility thunderstorm route with forced weather, crosswind zigzags, and replay-safe seed/profile identity.
 - Release held touch flight actions immediately when the window blurs or the tab becomes hidden, preventing latched throttle, boost, or steering after focus changes.
 - Add a persisted Minimal HUD toggle that keeps the compact cockpit default while allowing pilots to reveal or hide optional telemetry without changing flight-critical cues.

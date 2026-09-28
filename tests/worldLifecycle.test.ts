@@ -40,4 +40,14 @@ describe('world lifecycle boundary', () => {
     expect(world.atmosphere.weather).toBe('storm')
     world.dispose()
   }, 60_000)
+
+  it('can start a curated run with deterministic night conditions', () => {
+    const world = new World()
+    world.reseed(11, 'night', 'fog', 0.84)
+    expect(world.worldSeed).toBe(11)
+    expect(world.mission.routeProfile).toBe('night')
+    expect(world.atmosphere.weather).toBe('fog')
+    expect(world.atmosphere.timeOfDay).toBeCloseTo(0.84)
+    world.dispose()
+  }, 60_000)
 })

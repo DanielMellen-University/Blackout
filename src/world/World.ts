@@ -179,6 +179,7 @@ export class World {
     requestedSeed?: number,
     requestedProfile?: MissionRouteProfile,
     requestedWeather?: WeatherId,
+    requestedTimeOfDay?: number,
   ): number {
     if (this.disposed) return this.seed
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
@@ -228,6 +229,10 @@ export class World {
         this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
         if (requestedWeather) this.atmosphere.setWeather(requestedWeather, true)
+        if (Number.isFinite(requestedTimeOfDay)) {
+          const normalizedTime = requestedTimeOfDay! - Math.floor(requestedTimeOfDay!)
+          this.atmosphere.timeOfDay = normalizedTime < 0 ? normalizedTime + 1 : normalizedTime
+        }
         const initialWeather = this.atmosphere.weatherSnapshot
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)

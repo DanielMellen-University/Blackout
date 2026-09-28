@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'storm-run'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'storm-run' | 'night-ops'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -14,6 +14,8 @@ export interface CourseDefinition {
   profile: MissionRouteProfile | null
   /** Optional deterministic weather override for authored challenge worlds. */
   weather?: WeatherId
+  /** Optional normalized time-of-day override, where 0 and 1 are midnight. */
+  timeOfDay?: number
 }
 
 /** Small curated set of repeatable seeds, plus the normal infinite random mode. */
@@ -102,6 +104,15 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     seed: 10,
     profile: 'storm',
     weather: 'storm',
+  },
+  {
+    id: 'night-ops',
+    label: 'Night ops',
+    detail: 'Low-level fog run under a repeatable midnight sky',
+    seed: 11,
+    profile: 'night',
+    weather: 'fog',
+    timeOfDay: 0.84,
   },
 ]
 

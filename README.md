@@ -41,4 +41,4 @@ The nose is the flight path. Throttle is thrust: a climb spends speed, and closi
 
 ## A sortie
 
-The cue at the top of the screen points at the next gate. Fly through the rings, then bring the jet back to the runway. A landing scores the run. A crash ends it. From the results card, retry the same course or start a new world. Curated routes include orbit, sweep, slalom, ridge, canyon, coastal, river, volcanic, desert, and storm runs. Storm Run pins the world to a readable low-visibility thunderstorm so the challenge is repeatable instead of luck-based.
+The cue at the top of the screen points at the next gate. Fly through the rings, then bring the jet back to the runway. A landing scores the run. A crash ends it. From the results card, retry the same course or start a new world. Curated routes include orbit, sweep, slalom, ridge, canyon, coastal, river, volcanic, desert, storm, and night runs. Storm Run pins the world to a readable low-visibility thunderstorm, while Night Ops pins a foggy midnight sky, so both challenges are repeatable instead of luck-based.
