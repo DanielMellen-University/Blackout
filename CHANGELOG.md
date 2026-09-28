@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.408** Add Waterway Tour, a deterministic rainy river course that exposes the existing multi-waterway contract and makes river, lake, and sea exploration replayable.
 - **10.407** Add one-shot partial progress cues for Traffic Watch and Traffic Dodge, making the curated traffic objective readable without repeating duplicate-contact or completion banners.
 - **10.406** Add Traffic Run, a deterministic high-speed sweep that opts into the expanded contract catalog and turns pooled traffic contacts into a repeatable objective.
 - **10.405** Keep the closest traffic alert visible in a cached HUD row after the transient warning fades, reusing the pooled traffic query with bounded text and no new scene work.
