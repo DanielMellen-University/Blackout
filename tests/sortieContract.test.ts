@@ -35,6 +35,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(115, 5, true)).toContain('HOLD RIDGE ALT')
     expect(sortieContractLabelForSeed(31, 5, true)).toBe('TRAFFIC DODGE')
     expect(sortieContractDetailForSeed(31, 5, true)).toContain('120M SEPARATION')
+    expect(sortieContractLabelForSeed(127, 5, true)).toBe('PRECISION APPROACH')
+    expect(sortieContractDetailForSeed(127, 5, true)).toContain('LAND CENTERED')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.414** Add Precision Landing, a deterministic clear base-to-final pattern that exposes the centered-touchdown contract without adding scene or render-loop work.
 - **10.413** Add Traffic Dodge, a deterministic clear open sweep that exposes the bounded vertical-separation traffic contract without expanding the fixed traffic pool.
 - **10.412** Add Ridge Trial, a deterministic clear high-relief low pass that exposes the bounded ridge-altitude contract without adding scene or render-loop work.
 - **10.411** Add Water Skim, a deterministic clear coastal low-pass course that exposes the bounded water-skimming contract and existing wake feedback.
