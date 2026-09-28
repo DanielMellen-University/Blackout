@@ -31,6 +31,11 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'boost',
 ])
 
+interface ActiveTouchPointer {
+  action: TouchAction
+  button: HTMLElement
+}
+
 /** Touch screens and coarse pointers should get the optional control deck. */
 export function touchInputSupported(maxTouchPoints: number, coarsePointer: boolean): boolean {
   return (Number.isFinite(maxTouchPoints) && maxTouchPoints > 0) || coarsePointer
@@ -44,7 +49,7 @@ export function touchInputSupported(maxTouchPoints: number, coarsePointer: boole
 export class TouchControls {
   private readonly root: HTMLElement
   private readonly onChange: (state: TouchInputState) => void
-  private readonly activePointers = new Map<number, TouchAction>()
+  private readonly activePointers = new Map<number, ActiveTouchPointer>()
   private visible = false
   private disposed = false
 
@@ -54,6 +59,7 @@ export class TouchControls {
     root.hidden = true
     root.setAttribute('aria-hidden', 'true')
     root.addEventListener('pointerdown', this.onPointerDown)
+    root.addEventListener('lostpointercapture', this.onLostPointerCapture)
     window.addEventListener('pointerup', this.onPointerUp)
     window.addEventListener('pointercancel', this.onPointerUp)
     window.addEventListener('blur', this.onFocusLost)
@@ -74,6 +80,7 @@ export class TouchControls {
     if (this.disposed) return
     this.disposed = true
     this.root.removeEventListener('pointerdown', this.onPointerDown)
+    this.root.removeEventListener('lostpointercapture', this.onLostPointerCapture)
     window.removeEventListener('pointerup', this.onPointerUp)
     window.removeEventListener('pointercancel', this.onPointerUp)
     window.removeEventListener('blur', this.onFocusLost)
@@ -85,21 +92,33 @@ export class TouchControls {
 
   private onPointerDown = (event: PointerEvent): void => {
     if (this.disposed || !this.visible) return
-    const action = this.actionForTarget(event.target)
-    if (!action) return
+    const control = this.controlForTarget(event.target)
+    if (!control) return
     event.preventDefault()
-    this.activePointers.set(event.pointerId, action)
-    this.setButtonState(action, true)
+    const previous = this.activePointers.get(event.pointerId)
+    if (previous) {
+      this.activePointers.delete(event.pointerId)
+      this.releasePointer(previous.button, event.pointerId)
+      if (!this.activePointersHasAction(previous.action)) this.setButtonState(previous.button, false)
+    }
+    this.activePointers.set(event.pointerId, control)
+    this.capturePointer(control.button, event.pointerId)
+    this.setButtonState(control.button, true)
     this.emit()
   }
 
   private onPointerUp = (event: PointerEvent): void => {
     if (this.disposed) return
-    const action = this.activePointers.get(event.pointerId)
-    if (!action) return
+    const active = this.activePointers.get(event.pointerId)
+    if (!active) return
     this.activePointers.delete(event.pointerId)
-    if (!this.activePointersHasAction(action)) this.setButtonState(action, false)
+    if (!this.activePointersHasAction(active.action)) this.setButtonState(active.button, false)
+    this.releasePointer(active.button, event.pointerId)
     this.emit()
+  }
+
+  private onLostPointerCapture = (event: PointerEvent): void => {
+    this.onPointerUp(event)
   }
 
   private onFocusLost = (): void => {
@@ -112,31 +131,49 @@ export class TouchControls {
 
   private clearActivePointers(): void {
     if (this.activePointers.size === 0) return
+    const activePointers = [...this.activePointers.entries()]
     this.activePointers.clear()
     this.clearButtonStates()
+    for (const [pointerId, active] of activePointers) {
+      this.releasePointer(active.button, pointerId)
+    }
     this.emit()
   }
 
-  private actionForTarget(target: EventTarget | null): TouchAction | null {
+  private controlForTarget(target: EventTarget | null): ActiveTouchPointer | null {
     if (typeof Element === 'undefined' || !(target instanceof Element)) return null
     const button = target.closest<HTMLElement>('[data-touch-action]')
     if (!button || !this.root.contains(button)) return null
     const action = button.dataset.touchAction
-    return action && TOUCH_ACTIONS.has(action) ? action as TouchAction : null
+    return action && TOUCH_ACTIONS.has(action) ? { action: action as TouchAction, button } : null
   }
 
   private activePointersHasAction(action: TouchAction): boolean {
     for (const active of this.activePointers.values()) {
-      if (active === action) return true
+      if (active.action === action) return true
     }
     return false
   }
 
-  private setButtonState(action: TouchAction, held: boolean): void {
-    const button = this.root.querySelector<HTMLElement>(`[data-touch-action="${action}"]`)
-    if (!button) return
+  private setButtonState(button: HTMLElement, held: boolean): void {
     button.classList.toggle('is-held', held)
     button.setAttribute('aria-pressed', held ? 'true' : 'false')
+  }
+
+  private capturePointer(button: HTMLElement, pointerId: number): void {
+    try {
+      button.setPointerCapture(pointerId)
+    } catch {
+      // Some browsers reject capture after a pointer has already ended.
+    }
+  }
+
+  private releasePointer(button: HTMLElement, pointerId: number): void {
+    try {
+      if (button.hasPointerCapture(pointerId)) button.releasePointerCapture(pointerId)
+    } catch {
+      // Pointer cancellation and focus changes can invalidate the capture.
+    }
   }
 
   private clearButtonStates(): void {
@@ -152,7 +189,7 @@ export class TouchControls {
     let roll = 0
     let throttle = 0
     let boost = false
-    for (const action of this.activePointers.values()) {
+    for (const { action } of this.activePointers.values()) {
       if (action === 'pitch-up') pitch += 1
       if (action === 'pitch-down') pitch -= 1
       if (action === 'yaw-right') yaw += 1
