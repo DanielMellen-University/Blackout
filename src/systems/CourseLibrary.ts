@@ -1,6 +1,6 @@
 import type { MissionRouteProfile } from './Mission'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -77,6 +77,13 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'Meandering low line through inland water country',
     seed: 7,
     profile: 'river',
+  },
+  {
+    id: 'volcanic-run',
+    label: 'Volcanic run',
+    detail: 'Spiral climb around dramatic volcanic relief',
+    seed: 8,
+    profile: 'volcanic',
   },
 ]
 
