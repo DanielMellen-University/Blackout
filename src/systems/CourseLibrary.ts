@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing' | 'dry-run' | 'gust-rider' | 'range-run' | 'settlement-tour' | 'airshow-run' | 'biome-tour' | 'scout-run' | 'skyline-run' | 'speed-run' | 'terrain-hugger' | 'fuel-saver' | 'energy-run' | 'storm-contract' | 'crosswind-run' | 'mach-run' | 'burn-run' | 'g-control-run' | 'deadstick-run' | 'clean-circuit-run' | 'level-flight-run' | 'water-run' | 'brake-check-run' | 'thermal-control-run' | 'front-chaser-run'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -14,6 +14,8 @@ export interface CourseDefinition {
   profile: MissionRouteProfile | null
   /** Optional deterministic weather override for authored challenge worlds. */
   weather?: WeatherId
+  /** Optional deterministic weather target that begins a visible front transition. */
+  weatherShift?: WeatherId
   /** Optional normalized time-of-day override, where 0 and 1 are midnight. */
   timeOfDay?: number
   /** Optional runway-relative wind side for authored approach pressure. */
@@ -557,6 +559,16 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     seed: 2,
     profile: 'alpine',
     weather: 'clear',
+    contractCatalog: true,
+  },
+  {
+    id: 'front-chaser-run',
+    label: 'Front chaser run',
+    detail: 'Rain-to-storm sweep with a weather-front contract',
+    seed: 259,
+    profile: 'storm',
+    weather: 'rain',
+    weatherShift: 'storm',
     contractCatalog: true,
   },
 ]

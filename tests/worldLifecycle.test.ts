@@ -160,4 +160,19 @@ describe('world lifecycle boundary', () => {
       world.dispose()
     }
   }, 60_000)
+
+  it('starts authored front courses inside a deterministic weather transition', () => {
+    const world = new World('low')
+    try {
+      world.reseed(259, 'storm', 'rain', undefined, undefined, 'storm')
+      expect(world.atmosphere.weather).toBe('storm')
+      expect(world.atmosphere.weatherTransitioning).toBe(true)
+      expect(world.weatherCycleLocked).toBe(false)
+      expect(world.atmosphere.weatherSnapshot.rain).toBeGreaterThan(0.2)
+      world.update(world.spawn.x, world.spawn.y, world.spawn.z, 0.5, 0.5)
+      expect(world.atmosphere.weatherTransitioning).toBe(true)
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
 })

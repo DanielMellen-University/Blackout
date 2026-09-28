@@ -16,7 +16,7 @@ export interface CoursePickerItem {
 }
 
 export interface CoursePickerCopyInput {
-  course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'timeOfDay' | 'windSide'>
+  course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>
   history: CourseHistory | null
   bestScore: number
   badgeCount: number
@@ -43,6 +43,9 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   const conditions = [
     input.course.weather
       ? `WEATHER ${courseWeatherPreviewLabel(input.course.seed ?? undefined, input.course.weather)}`
+      : '',
+    input.course.weatherShift
+      ? `SHIFT ${WEATHER_LABELS[input.course.weatherShift] ?? ''}`
       : '',
     courseTimePreviewLabel(input.course.timeOfDay)
       ? `TIME ${courseTimePreviewLabel(input.course.timeOfDay)}`
@@ -165,11 +168,14 @@ export function courseWindPreviewLabel(windSide: WindSide | undefined): string {
 
 /** Keep authored conditions readable after the launch card is gone. */
 export function courseConditionSummary(
-  course: Pick<CourseDefinition, 'weather' | 'timeOfDay' | 'windSide'>,
+  course: Pick<CourseDefinition, 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>,
 ): string {
   const conditions = [
     course.weather
       ? `WEATHER ${WEATHER_LABELS[course.weather] ?? ''}`
+      : '',
+    course.weatherShift
+      ? `SHIFT ${WEATHER_LABELS[course.weatherShift] ?? ''}`
       : '',
     courseTimePreviewLabel(course.timeOfDay)
       ? `TIME ${courseTimePreviewLabel(course.timeOfDay)}`

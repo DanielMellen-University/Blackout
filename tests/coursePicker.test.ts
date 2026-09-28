@@ -50,6 +50,21 @@ describe('course picker copy', () => {
       .toBe('WEATHER THUNDERSTORM')
     expect(courseConditionSummary({ weather: 'storm', timeOfDay: 0.5, windSide: 'right' }))
       .toBe('WEATHER THUNDERSTORM / CROSSWIND R / CRAB L')
+    expect(coursePickerCopy({
+      course: {
+        seed: 259,
+        profile: 'storm',
+        detail: 'Rain-to-storm sweep',
+        weather: 'rain',
+        weatherShift: 'storm',
+      },
+      history: null,
+      bestScore: 0,
+      badgeCount: 0,
+      bestPrecisionStreak: 0,
+    }).detail).toBe('Rain-to-storm sweep / WEATHER RAIN FRONT / SHIFT THUNDERSTORM')
+    expect(courseConditionSummary({ weather: 'rain', weatherShift: 'storm' }))
+      .toBe('WEATHER RAIN FRONT / SHIFT THUNDERSTORM')
   })
 
   it('previews the deterministic seeded task without changing free flight copy', () => {

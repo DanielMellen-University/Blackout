@@ -227,6 +227,7 @@ export class World {
     requestedWeather?: WeatherId,
     requestedTimeOfDay?: number,
     requestedWindSide?: WindSide,
+    requestedWeatherShift?: WeatherId,
   ): number {
     if (this.disposed) return this.seed
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
@@ -264,7 +265,7 @@ export class World {
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed
         this.missionProfile = requestedProfile
-        this.weatherLocked = requestedWeather !== undefined
+        this.weatherLocked = requestedWeather !== undefined && requestedWeatherShift === undefined
         this.applySpawn(pad)
         liveWorldCleared = true
         this.terrain.clearAll()
@@ -283,6 +284,9 @@ export class World {
         this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
         if (requestedWeather) this.atmosphere.setWeather(requestedWeather, true)
+        if (requestedWeatherShift && requestedWeatherShift !== requestedWeather) {
+          this.atmosphere.setWeather(requestedWeatherShift)
+        }
         if (requestedWindSide) {
           const side = requestedWindSide === 'right' ? 1 : -1
           this.atmosphere.setWindHeading(this.spawn.yaw + side * Math.PI / 2)
