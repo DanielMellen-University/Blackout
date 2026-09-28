@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Reuse a tiny bounded set of caller-owned climate records across settlement candidate, survey, road, and lot probes, removing repeated biome-weight allocations from landmark planning without changing deterministic placement.
 - Add the deterministic Rainforest Run course, a low winding route with forced rain that gives humid lowland terrain its own repeatable challenge while reusing the bounded route, clearance, scoring, and retry systems.
 - Route fallback collision sampling through caller-owned scalar land/water records, avoiding climate-object allocation while preserving resolved water levels and airfield grading.
 - Make optional GLB hydration dispose a still-owned loaded subtree when normalization or replacement fails, preventing rejected external aircraft assets from leaking GPU resources.

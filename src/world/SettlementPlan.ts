@@ -1,5 +1,6 @@
 import { getWorldSeed, hash2 } from './noise'
 import { getOpsPad, sampleClimate } from './terrainSample'
+import { createClimateSample } from './Geography'
 import type { Biome, Climate } from './terrainSample'
 
 export const SETTLEMENT_CELL_SIZE = 24000
@@ -44,6 +45,18 @@ export interface SettlementPlan {
 
 const cache = new Map<string, SettlementPlan | null>()
 let cacheContext = ''
+// Settlement planning runs serially per worker message. Reuse a tiny bounded
+// set of climate records across candidate, survey, road, and lot probes
+// instead of allocating a full biome-weight record for every sample.
+const settlementClimateScratch = [
+  createClimateSample(),
+  createClimateSample(),
+  createClimateSample(),
+]
+
+function sampleSettlementClimate(x: number, z: number, slot = 0): Climate {
+  return sampleClimate(x, z, settlementClimateScratch[slot % settlementClimateScratch.length]!)
+}
 const cityBiomes = new Set<Biome>([
   'plains', 'forest', 'rainforest', 'desert', 'mesa', 'savanna', 'saltflat',
   'hills', 'tundra', 'snow', 'volcanic',
@@ -100,7 +113,7 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
   let best: [number, number] | null = null, bestScore = -Infinity
   for (const [cx, cz] of candidates) {
     if (villageAnchor && cx === villageAnchor[0] && cz === villageAnchor[1]) continue
-    const climate = sampleClimate((cx + .5) * SETTLEMENT_CELL_SIZE,
+    const climate = sampleSettlementClimate((cx + .5) * SETTLEMENT_CELL_SIZE,
       (cz + .5) * SETTLEMENT_CELL_SIZE)
     if (!dry(climate)) continue
     const score = (cityBiomes.has(climate.biome) ? 6000 : 0)
@@ -261,14 +274,14 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
       const z = anchored ? anchored.z : organicCoordinate(cz, rand(11 + attempt * 2))
       const padClearance = kind === 'city' ? CITY_PAD_CLEARANCE_M : VILLAGE_PAD_CLEARANCE_M
       if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + padClearance) continue
-      const c = sampleClimate(x, z)
+      const c = sampleSettlementClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
       let min = c.height, max = c.height, suitable = true, drySamples = 1
       const surveySamples = kind === 'city' ? 8 : 6
       const surveyRadius = radius * (kind === 'city' ? (cityAnchor ? .58 : .8) : (villageAnchor ? .48 : .56))
       for (let i = 0; i < surveySamples; i++) {
         const angle = i * Math.PI * 2 / surveySamples
-        const s = sampleClimate(x + Math.cos(angle) * surveyRadius, z + Math.sin(angle) * surveyRadius)
+        const s = sampleSettlementClimate(x + Math.cos(angle) * surveyRadius, z + Math.sin(angle) * surveyRadius, 1)
         if (!dry(s)) {
           // A village can border a creek, marsh, or lake. Rejecting one wet
           // perimeter probe used to erase otherwise excellent landmarks;
@@ -353,7 +366,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     let min = Infinity, max = -Infinity
     // Corners, edge midpoints and center reject water or steep individual lots.
     for (const dx of [-width / 2, 0, width / 2]) for (const dz of [-depth / 2, 0, depth / 2]) {
-      const c = sampleClimate(x + bc * dx + bs * dz, z - bs * dx + bc * dz)
+      const c = sampleSettlementClimate(x + bc * dx + bs * dz, z - bs * dx + bc * dz)
       if (!dry(c)) return
       min = Math.min(min, c.height); max = Math.max(max, c.height)
     }
@@ -418,12 +431,12 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const steps = Math.ceil(length / (plan.kind === 'city' ? 72 : 40))
       for (let j = segment === 1 ? 0 : 1; j <= steps; j++) {
         const p = world(a.x + (b.x - a.x) * j / steps, a.z + (b.z - a.z) * j / steps)
-        const c = sampleClimate(p.x, p.z)
+        const c = sampleSettlementClimate(p.x, p.z, 0)
         // Shoulder samples keep the entire ribbon on dry land, not just its center.
         const sx = -(b.z - a.z) / length * width / 2, sz = (b.x - a.x) / length * width / 2
         const left = world(a.x + (b.x - a.x) * j / steps + sx, a.z + (b.z - a.z) * j / steps + sz)
         const right = world(a.x + (b.x - a.x) * j / steps - sx, a.z + (b.z - a.z) * j / steps - sz)
-        const leftClimate = sampleClimate(left.x, left.z), rightClimate = sampleClimate(right.x, right.z)
+        const leftClimate = sampleSettlementClimate(left.x, left.z, 1), rightClimate = sampleSettlementClimate(right.x, right.z, 2)
         const previous = points.at(-1)
         const gradeLimit = plan.anchor ? .3 : .22
         if (!dry(c) || !dry(leftClimate) || !dry(rightClimate) ||

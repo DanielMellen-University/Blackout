@@ -169,8 +169,8 @@ export function terrainSurfaceFromClimate(
 }
 
 /** Geography first, then a local airfield cut into the resolved surface. */
-export function sampleClimate(x: number, z: number): Climate {
-  return sampleClimateInto(createClimateSample(), x, z)
+export function sampleClimate(x: number, z: number, out: Climate = createClimateSample()): Climate {
+  return sampleClimateInto(out, x, z)
 }
 
 /** Write one fully resolved climate sample into caller-owned storage. */
