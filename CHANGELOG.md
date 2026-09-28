@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.367** Route render-quality changes through one world-owned update path, removing duplicate traffic, atmosphere, vegetation, and shader-budget writes during preset switches.
 - **10.366** Align the external camera far plane with the active terrain quality envelope, reducing Low frustum and depth work while preserving the full High-quality horizon.
 - **10.365** Make `World` apply the complete Low/Balanced/High quality envelope during construction as well as live switches, keeping terrain, atmosphere, vegetation, traffic, and shader budgets consistent for direct runtime use.
 - **10.364** Add quality-aware terrain weather shading so Low skips moving cloud-shadow and wind-exposure detail while preserving biome color, elevation shading, and streamed geometry.

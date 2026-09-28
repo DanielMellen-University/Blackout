@@ -449,13 +449,11 @@ async function boot(): Promise<void> {
   // Use the supported constant directly so startup stays warning-free.
   renderer.shadowMap.type = PCFShadowMap
 
-  let applyAtmosphereQuality: ((precipitationScale: number, cloudScale: number, vegetationScale: number) => void) | null = null
   let applyAircraftQuality: ((quality: RenderQuality) => void) | null = null
   let applyEffectsQuality: ((quality: RenderQuality) => void) | null = null
   let applyEffectsMotion: ((reduced: boolean) => void) | null = null
   let applyCameraQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarQuality: ((quality: RenderQuality) => void) | null = null
-  let applyTrafficQuality: ((quality: RenderQuality) => void) | null = null
   let applyWorldQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarMotion: ((reduced: boolean) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
@@ -473,7 +471,6 @@ async function boot(): Promise<void> {
     applyEffectsQuality?.(next)
     applyCameraQuality?.(next)
     applyRadarQuality?.(next)
-    applyTrafficQuality?.(next)
     applyWorldQuality?.(next)
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
@@ -482,7 +479,6 @@ async function boot(): Promise<void> {
       renderer.shadowMap.needsUpdate = true
       shadowUpdateElapsed = SHADOW_UPDATE_STEP
     }
-    applyAtmosphereQuality?.(profile.precipitationScale, profile.cloudScale, profile.vegetationScale)
     if (qualitySelect) qualitySelect.value = next
     writeRenderQuality(qualityStorage, next)
   }
@@ -496,8 +492,6 @@ async function boot(): Promise<void> {
   const world = new World(renderQuality)
   applyWorldQuality = (quality): void => world.setRenderQuality(quality)
   applyWorldQuality(renderQuality)
-  applyTrafficQuality = (quality): void => world.setTrafficQuality(quality)
-  applyTrafficQuality(renderQuality)
   if (replaySeed !== null) {
     const replayCourse = courseDefinitionForId(selectedCourseId)
     world.reseed(
@@ -521,12 +515,6 @@ async function boot(): Promise<void> {
   // cities remain generated and become visible as soon as flight starts.
   world.setSettlementsVisible(false)
   world.setTrafficVisible(false)
-  applyAtmosphereQuality = (precipitationScale, cloudScale, vegetationScale) => {
-    world.atmosphere.setPrecipitationScale(precipitationScale)
-    world.atmosphere.setCloudDensityScale(cloudScale)
-    world.terrain.setVegetationScale(vegetationScale)
-  }
-  applyAtmosphereQuality(initialQualityProfile.precipitationScale, initialQualityProfile.cloudScale, initialQualityProfile.vegetationScale)
   if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
   if (playBtn) playBtn.disabled = false
   const aircraft = new Aircraft()
