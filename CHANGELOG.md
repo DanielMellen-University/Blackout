@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the deterministic Timberline Run course, a fast rolling forest-and-hills route that reuses the validated terrain-clearance and scored retry path without expanding runtime budgets.
 - Reuse bounded caller-owned climate buffers while building terrain tiles, removing nested per-vertex geography allocations and reducing garbage-collection pressure during streamed terrain rebuilds without changing deterministic height, biome, or water output.
 - Harden the pooled sonic-boom effect against late quality, reduced-motion, and reset callbacks, and detach its root during disposal.
 - Make snow-field teardown idempotent and detach the pooled particle root, so late weather updates cannot write into disposed precipitation buffers.
