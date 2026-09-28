@@ -48,6 +48,7 @@ import {
   shouldUpdateLiveHud,
   Time,
 } from './core/Time'
+import { bannerRemainingMs, bannerUntilFromRemaining, MAX_BANNER_DURATION_MS } from './core/BannerClock'
 import {
   ChallengeRun,
   courseMasteryTierForProgress,
@@ -975,6 +976,7 @@ async function boot(): Promise<void> {
   let crashMessage = 'CRASH - press R'
   let bannerTone: HudBannerTone = 'info'
   let bannerUntil = 0
+  let bannerPausedRemainingMs: number | null = null
   let wasAirborne = false
   let prevAfterburner = false
   let prevAirbrake = false
@@ -1114,6 +1116,14 @@ async function boot(): Promise<void> {
     const live = playing && !menu.paused && !results.open
     hud.setPaused(menu.paused)
     hud.setBackgroundHidden(hudBackgroundHidden(menu.open, results.open))
+    const contextNow = performance.now()
+    if (lastInputContextLive === true && !live && banner) {
+      bannerPausedRemainingMs = bannerRemainingMs(contextNow, bannerUntil)
+      bannerUntil = Number.POSITIVE_INFINITY
+    } else if (lastInputContextLive === false && live && banner && bannerPausedRemainingMs !== null) {
+      bannerUntil = bannerUntilFromRemaining(contextNow, bannerPausedRemainingMs)
+      bannerPausedRemainingMs = null
+    }
     if (live === lastInputContextLive) return
     lastInputContextLive = live
     input.setFlightLive(live)
@@ -1123,7 +1133,14 @@ async function boot(): Promise<void> {
   const showBanner = (text: string, ms = 2800, tone: HudBannerTone = 'info'): void => {
     banner = text
     bannerTone = tone
-    bannerUntil = performance.now() + ms
+    const safeMs = Number.isFinite(ms) ? Math.max(0, Math.min(MAX_BANNER_DURATION_MS, ms)) : 2800
+    if (lastInputContextLive === false) {
+      bannerPausedRemainingMs = safeMs
+      bannerUntil = Number.POSITIVE_INFINITY
+    } else {
+      bannerPausedRemainingMs = null
+      bannerUntil = performance.now() + safeMs
+    }
   }
 
   const recordComboAction = (action: 'gate' | 'stunt'): FlightComboEvent | null => {
