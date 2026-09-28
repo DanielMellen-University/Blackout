@@ -4,6 +4,7 @@ import {
   copyWorldSeedLink,
   formatWorldSeed,
   parseWorldSeed,
+  shouldRegenerateWorldOnLaunch,
   worldSeedReplayUrl,
 } from '../src/core/WorldSeed'
 
@@ -30,6 +31,13 @@ describe('world seed sharing', () => {
     expect(parseWorldSeed('12e2')).toBeNull()
     expect(parseWorldSeed(String(Number.MAX_SAFE_INTEGER) + '0')).toBeNull()
     expect(parseWorldSeed(null)).toBeNull()
+  })
+
+  it('rebuilds the random course when a custom or replay seed is pending', () => {
+    expect(shouldRegenerateWorldOnLaunch('random', 42)).toBe(true)
+    expect(shouldRegenerateWorldOnLaunch('random', null)).toBe(false)
+    expect(shouldRegenerateWorldOnLaunch('training-orbit', null)).toBe(true)
+    expect(shouldRegenerateWorldOnLaunch(undefined, null)).toBe(true)
   })
 
   it('builds replay links while preserving existing query state', async () => {

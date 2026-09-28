@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.456** Fix custom and replay seed launches so the first Play action rebuilds the random world from the pending seed instead of reusing the previous terrain.
 - **10.455** Add a dedicated results action for copying the raw world seed, making procedural discoveries easy to load again without parsing a replay URL.
 - **10.454** Keep the active procedural seed visible in the results debrief, so completed and crashed random worlds remain identifiable after the live HUD closes.
 - **10.453** Keep fractional procedural seeds visible in the HUD by matching the existing finite truncation used by replay links.

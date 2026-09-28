@@ -22,7 +22,13 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
-import { copyWorldSeed, copyWorldSeedLink, formatWorldSeed, parseWorldSeed } from './core/WorldSeed'
+import {
+  copyWorldSeed,
+  copyWorldSeedLink,
+  formatWorldSeed,
+  parseWorldSeed,
+  shouldRegenerateWorldOnLaunch,
+} from './core/WorldSeed'
 import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
   lockGameKeyboard,
@@ -1260,7 +1266,7 @@ async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    resetFlight(courseDefinitionForId(selectedCourseId).id !== 'random', true)
+    resetFlight(shouldRegenerateWorldOnLaunch(selectedCourseId, replaySeed), true)
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')

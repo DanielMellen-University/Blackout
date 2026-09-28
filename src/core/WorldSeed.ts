@@ -15,6 +15,11 @@ export function parseWorldSeed(value: unknown): number | null {
   return Number.isSafeInteger(parsed) ? parsed : null
 }
 
+/** A pending replay/custom seed must rebuild the world even when the course is random. */
+export function shouldRegenerateWorldOnLaunch(courseId: unknown, replaySeed: number | null): boolean {
+  return replaySeed !== null || courseId !== 'random'
+}
+
 /** Build a replay URL while preserving the current app route and diagnostics. */
 export function worldSeedReplayUrl(href: string, seed: number, courseId?: string): string | null {
   if (typeof href !== 'string' || href.trim() === '' || !Number.isFinite(seed)) return null
