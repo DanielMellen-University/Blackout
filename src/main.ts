@@ -879,6 +879,17 @@ async function boot(): Promise<void> {
       results.setCopySeedFeedback(copied)
     })
   })
+  results.setLoadSeedHandler(() => {
+    const seed = Number.isFinite(world.worldSeed) ? Math.trunc(world.worldSeed) : null
+    if (seed === null || !Number.isSafeInteger(seed)) return
+    replaySeed = seed
+    selectedCourseId = 'random'
+    if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
+    if (titleSeedStatus) titleSeedStatus.textContent = `SEED ${formatWorldSeed(seed)} READY · PRESS PLAY`
+    writeSelectedCourseId(qualityStorage, selectedCourseId)
+    for (const picker of coursePickers) picker.setValue(selectedCourseId)
+    quitToTitle()
+  })
   const disposeRuntime = (): void => {
     if (disposed) return
     disposed = true

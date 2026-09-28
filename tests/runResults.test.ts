@@ -97,12 +97,14 @@ function resultsFixture(): {
   retry: FakeElement
   newWorld: FakeElement
   source: FakeElement
+  loadSeed: FakeElement
   document: FakeDocument
 } {
   const root = new FakeElement()
   const retry = new FakeElement()
   const newWorld = new FakeElement()
   const shareReplay = new FakeElement()
+  const loadSeed = new FakeElement()
   const source = new FakeElement()
   const elements = new Map<string, FakeElement>([
     ['run-results', root],
@@ -126,6 +128,7 @@ function resultsFixture(): {
     ['btn-retry', retry],
     ['btn-share-replay', shareReplay],
     ['btn-copy-seed', new FakeElement()],
+    ['btn-load-seed', loadSeed],
   ])
   root.setList(
     'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
@@ -134,7 +137,7 @@ function resultsFixture(): {
   root.setList('#result-course', [elements.get('result-course')!])
   const document = new FakeDocument(elements)
   document.activeElement = source
-  return { root, retry, newWorld, source, document }
+  return { root, retry, newWorld, source, loadSeed, document }
 }
 
 const result = {
@@ -286,6 +289,21 @@ describe('run results focus flow', () => {
     expect(handler).toHaveBeenCalledTimes(1)
     results.dispose()
     share.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('dispatches title seed loading through a disposable results action', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    const handler = vi.fn()
+    results.setLoadSeedHandler(handler)
+    fixture.loadSeed.dispatch('click', {})
+    expect(handler).toHaveBeenCalledTimes(1)
+    results.dispose()
+    fixture.loadSeed.dispatch('click', {})
     expect(handler).toHaveBeenCalledTimes(1)
     vi.unstubAllGlobals()
   })

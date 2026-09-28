@@ -68,10 +68,12 @@ export class RunResults {
   private readonly best: HTMLElement
   private readonly shareReplay: HTMLButtonElement | null
   private readonly copySeed: HTMLButtonElement | null
+  private readonly loadSeed: HTMLButtonElement | null
   private returnFocus: HTMLElement | null = null
   private disposed = false
   private shareReplayHandler: (() => void) | null = null
   private copySeedHandler: (() => void) | null = null
+  private loadSeedHandler: (() => void) | null = null
   private readonly onShareReplay = (): void => {
     if (this.disposed) return
     this.shareReplayHandler?.()
@@ -79,6 +81,10 @@ export class RunResults {
   private readonly onCopySeed = (): void => {
     if (this.disposed) return
     this.copySeedHandler?.()
+  }
+  private readonly onLoadSeed = (): void => {
+    if (this.disposed) return
+    this.loadSeedHandler?.()
   }
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || !this.open || event.key !== 'Tab') return
@@ -117,6 +123,7 @@ export class RunResults {
     this.best = must(root, 'result-best')
     this.shareReplay = root.getElementById('btn-share-replay') as HTMLButtonElement | null
     this.copySeed = root.getElementById('btn-copy-seed') as HTMLButtonElement | null
+    this.loadSeed = root.getElementById('btn-load-seed') as HTMLButtonElement | null
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
     this.root.setAttribute('aria-labelledby', 'result-title')
@@ -124,6 +131,7 @@ export class RunResults {
     this.root.addEventListener('keydown', this.onKeyDown)
     this.shareReplay?.addEventListener('click', this.onShareReplay)
     this.copySeed?.addEventListener('click', this.onCopySeed)
+    this.loadSeed?.addEventListener('click', this.onLoadSeed)
   }
 
   get open(): boolean {
@@ -138,6 +146,11 @@ export class RunResults {
   setCopySeedHandler(handler: (() => void) | null): void {
     if (this.disposed) return
     this.copySeedHandler = handler
+  }
+
+  setLoadSeedHandler(handler: (() => void) | null): void {
+    if (this.disposed) return
+    this.loadSeedHandler = handler
   }
 
   setCopySeedFeedback(copied: boolean): void {
@@ -186,6 +199,7 @@ export class RunResults {
       this.seedEl.hidden = seedLabel.length === 0
       if (seedLabel) this.seedEl.setAttribute('aria-label', `World seed ${seedLabel.slice(5)}`)
       else this.seedEl.removeAttribute('aria-label')
+      if (this.loadSeed) this.loadSeed.hidden = seedLabel.length === 0
     }
     this.title.textContent = crashed
       ? (ditched ? 'DITCHED' : 'CRASH')
@@ -522,8 +536,10 @@ export class RunResults {
     this.root.removeEventListener('keydown', this.onKeyDown)
     this.shareReplay?.removeEventListener('click', this.onShareReplay)
     this.copySeed?.removeEventListener('click', this.onCopySeed)
+    this.loadSeed?.removeEventListener('click', this.onLoadSeed)
     this.shareReplayHandler = null
     this.copySeedHandler = null
+    this.loadSeedHandler = null
     this.returnFocus = null
   }
 
