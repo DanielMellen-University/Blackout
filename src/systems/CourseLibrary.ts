@@ -38,6 +38,7 @@ const DAILY_OPS_EPOCH_MS = Date.UTC(2025, 0, 1)
 const WEEKLY_OPS_WEEK_MS = 7 * DAILY_OPS_DAY_MS
 const WEEKLY_OPS_EPOCH_MS = Date.UTC(2025, 0, 6)
 const MONTHLY_OPS_EPOCH_MS = Date.UTC(2025, 0, 1)
+const MONTHLY_OPS_MAX_DATE_MS = 8.64e15
 const DAILY_OPS_PROFILES: readonly MissionRouteProfile[] = [
   'sweep',
   'slalom',
@@ -744,7 +745,7 @@ export function weeklyOpsTimestampForWeekKey(weekKey: string | null | undefined)
 
 /** Stable UTC month key used by Monthly Ops records and replay links. */
 export function monthlyOpsMonthKey(nowMs = Date.now()): string {
-  const safeNow = Number.isFinite(nowMs) ? nowMs : MONTHLY_OPS_EPOCH_MS
+  const safeNow = monthlyOpsSafeTimestamp(nowMs)
   const date = new Date(safeNow)
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
 }
@@ -794,7 +795,7 @@ export function weeklyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
 
 /** Generate a bounded integer seed shared by everyone in the same UTC month. */
 export function monthlyOpsSeed(nowMs = Date.now()): number {
-  const safeNow = Number.isFinite(nowMs) ? nowMs : MONTHLY_OPS_EPOCH_MS
+  const safeNow = monthlyOpsSafeTimestamp(nowMs)
   const date = new Date(safeNow)
   const monthIndex = (date.getUTCFullYear() - 2025) * 12 + date.getUTCMonth()
   const mixed = Math.imul((monthIndex ^ 0x243f6a88) | 0, 1_664_525) + 1_013_904_223
@@ -803,11 +804,17 @@ export function monthlyOpsSeed(nowMs = Date.now()): number {
 
 /** Keep Monthly Ops on the broader high-relief route pool. */
 export function monthlyOpsProfile(nowMs = Date.now()): MissionRouteProfile {
-  const safeNow = Number.isFinite(nowMs) ? nowMs : MONTHLY_OPS_EPOCH_MS
+  const safeNow = monthlyOpsSafeTimestamp(nowMs)
   const date = new Date(safeNow)
   const monthIndex = (date.getUTCFullYear() - 2025) * 12 + date.getUTCMonth()
   const mixed = Math.imul((monthIndex ^ 0x13198a2e) | 0, 2_246_822_519) >>> 0
   return MONTHLY_OPS_PROFILES[mixed % MONTHLY_OPS_PROFILES.length]!
+}
+
+function monthlyOpsSafeTimestamp(nowMs: number): number {
+  return Number.isFinite(nowMs) && Math.abs(nowMs) <= MONTHLY_OPS_MAX_DATE_MS
+    ? nowMs
+    : MONTHLY_OPS_EPOCH_MS
 }
 
 /** Resolve a catalog entry for this launch, expanding the rotating Ops entries. */
