@@ -98,8 +98,12 @@ import {
 import {
   audioVolumePercent,
   normalizeAudioVolume,
+  normalizeAudioChannelVolume,
   readAudioVolume,
   writeAudioVolume,
+  readAudioChannelVolume,
+  writeAudioChannelVolume,
+  type AudioChannel,
 } from './audio/AudioPreferences'
 import { evaluateWarnings } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
@@ -233,6 +237,12 @@ async function boot(): Promise<void> {
   const pitchLabel = document.getElementById('controls-pitch-label')
   const volumeRange = document.getElementById('menu-volume') as HTMLInputElement | null
   const volumeValue = document.getElementById('menu-volume-value')
+  const engineVolumeRange = document.getElementById('menu-engine-volume') as HTMLInputElement | null
+  const engineVolumeValue = document.getElementById('menu-engine-volume-value')
+  const environmentVolumeRange = document.getElementById('menu-environment-volume') as HTMLInputElement | null
+  const environmentVolumeValue = document.getElementById('menu-environment-volume-value')
+  const effectsVolumeRange = document.getElementById('menu-effects-volume') as HTMLInputElement | null
+  const effectsVolumeValue = document.getElementById('menu-effects-volume-value')
   const touchRoot = document.getElementById('touch-controls')
   if (!menuEl) throw new Error('#menu not found')
   if (!titleCoursePickerRoot || !menuCoursePickerRoot) throw new Error('course picker not found')
@@ -383,6 +393,9 @@ async function boot(): Promise<void> {
   })
   let renderQuality: RenderQuality = readRenderQuality(qualityStorage, renderQualityFallback)
   const initialAudioVolume = readAudioVolume(qualityStorage)
+  const initialEngineVolume = readAudioChannelVolume(qualityStorage, 'engine')
+  const initialEnvironmentVolume = readAudioChannelVolume(qualityStorage, 'environment')
+  const initialEffectsVolume = readAudioChannelVolume(qualityStorage, 'effects')
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
@@ -711,6 +724,34 @@ async function boot(): Promise<void> {
     applyAudioVolume(Number(volumeRange.value) / 100)
   }
   uiListeners.add(volumeRange, 'input', onVolumeInput)
+  const applyAudioChannel = (channel: AudioChannel, next: number): void => {
+    const volume = normalizeAudioChannelVolume(next)
+    audio.setChannelVolume(channel, volume)
+    const range = channel === 'engine'
+      ? engineVolumeRange
+      : channel === 'environment' ? environmentVolumeRange : effectsVolumeRange
+    const output = channel === 'engine'
+      ? engineVolumeValue
+      : channel === 'environment' ? environmentVolumeValue : effectsVolumeValue
+    if (range) range.value = String(Math.round(volume * 100))
+    if (output) output.textContent = audioVolumePercent(volume)
+    writeAudioChannelVolume(qualityStorage, channel, volume)
+  }
+  applyAudioChannel('engine', initialEngineVolume)
+  applyAudioChannel('environment', initialEnvironmentVolume)
+  applyAudioChannel('effects', initialEffectsVolume)
+  const onEngineVolumeInput = (): void => {
+    if (engineVolumeRange) applyAudioChannel('engine', Number(engineVolumeRange.value) / 100)
+  }
+  const onEnvironmentVolumeInput = (): void => {
+    if (environmentVolumeRange) applyAudioChannel('environment', Number(environmentVolumeRange.value) / 100)
+  }
+  const onEffectsVolumeInput = (): void => {
+    if (effectsVolumeRange) applyAudioChannel('effects', Number(effectsVolumeRange.value) / 100)
+  }
+  uiListeners.add(engineVolumeRange, 'input', onEngineVolumeInput)
+  uiListeners.add(environmentVolumeRange, 'input', onEnvironmentVolumeInput)
+  uiListeners.add(effectsVolumeRange, 'input', onEffectsVolumeInput)
   const results = new RunResults()
   const challenge = new ChallengeRun()
   const ghost = new GhostReplay(world.scene, qualityStorage)

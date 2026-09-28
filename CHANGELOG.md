@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add persisted Engine, Environment, and Effects audio mix sliders beside the master volume, reusing the existing Web Audio branches without adding nodes or per-frame graph work.
 - Add persisted Subtle/Standard/Wide speed-framing levels for external chase and orbit cameras, scaling only high-speed pullback, FOV, and look lead.
 - Add a persisted Camera Effects toggle that disables shake, boost sway, storm buffet, and external banking while retaining normal zoom, FOV, and camera controls.
 - Add a persisted external-camera auto-return toggle so pilots can keep a hand-positioned chase or orbit view instead of easing back after idle.

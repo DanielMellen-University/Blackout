@@ -1,3 +1,5 @@
+import type { AudioChannel } from './AudioPreferences'
+
 /**
  * Engine rumble, wind hiss, and precipitation ambience via Web Audio.
  * Procedural noise only (no sample files). Levels follow flight power, airspeed, and weather.
@@ -83,6 +85,9 @@ export class FlightAudio {
   private built = false
   private muted = true
   private volume = 1
+  private engineVolume = 1
+  private environmentVolume = 1
+  private effectsVolume = 1
   private disposed = false
   private readonly scheduledTargets = new WeakMap<AudioParam, number>()
 
@@ -184,10 +189,10 @@ export class FlightAudio {
 
     this.muted = opts.mute
     const masterTarget = opts.mute ? 0 : this.volume
-    const engTarget = opts.mute ? 0 : eng * 0.42 * view.engine * cloudEngine
-    const windTarget = opts.mute ? 0 : wind * 0.28 * view.wind * cloudWind
-    const precipTarget = opts.mute ? 0 : precip * 0.18 * view.precipitation * cloudPrecip
-    const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine * cloudWhine
+    const engTarget = opts.mute ? 0 : eng * 0.42 * view.engine * cloudEngine * this.engineVolume
+    const windTarget = opts.mute ? 0 : wind * 0.28 * view.wind * cloudWind * this.environmentVolume
+    const precipTarget = opts.mute ? 0 : precip * 0.18 * view.precipitation * cloudPrecip * this.environmentVolume
+    const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine * cloudWhine * this.engineVolume
 
     const now = ctx.currentTime
     const dt = Number.isFinite(opts.dt) && opts.dt > 0 ? Math.min(opts.dt, 0.25) : 1 / 60
@@ -245,6 +250,27 @@ export class FlightAudio {
 
   get volumeLevel(): number {
     return this.volume
+  }
+
+  /** Set one fixed audio branch without rebuilding the Web Audio graph. */
+  setChannelVolume(channel: AudioChannel, volume: number): number {
+    const safe = clamp01(volume)
+    if (channel === 'engine') this.engineVolume = safe
+    else if (channel === 'environment') this.environmentVolume = safe
+    else if (channel === 'effects') this.effectsVolume = safe
+    else return 0
+
+    if (channel === 'effects' && this.ctx && audioContextUsable(this.ctx.state) && this.effectsGain) {
+      this.scheduleTarget(this.effectsGain.gain, 0.8 * this.effectsVolume, this.ctx.currentTime, 0.06)
+    }
+    return safe
+  }
+
+  channelVolumeLevel(channel: AudioChannel): number {
+    if (channel === 'engine') return this.engineVolume
+    if (channel === 'environment') return this.environmentVolume
+    if (channel === 'effects') return this.effectsVolume
+    return 0
   }
 
   /** Short event cues keep checkpoints and landings readable without assets. */
@@ -501,7 +527,7 @@ export class FlightAudio {
     engineWhine.start()
 
     const effectsGain = ctx.createGain()
-    effectsGain.gain.value = 0.8
+    effectsGain.gain.value = 0.8 * this.effectsVolume
     // Route one master level through ambience and event cues alike so the
     // pause-menu volume control actually balances the complete flight mix.
     effectsGain.connect(master)

@@ -151,6 +151,17 @@ describe('flight audio automation', () => {
     expect(audio.setVolume(2)).toBe(1)
   })
 
+  it('keeps fixed audio channel mixes bounded and independent', () => {
+    const audio = new FlightAudio()
+    expect(audio.setChannelVolume('engine', -1)).toBe(0)
+    expect(audio.setChannelVolume('environment', 0.65)).toBeCloseTo(0.65)
+    expect(audio.setChannelVolume('effects', 2)).toBe(1)
+    expect(audio.channelVolumeLevel('engine')).toBe(0)
+    expect(audio.channelVolumeLevel('environment')).toBeCloseTo(0.65)
+    expect(audio.channelVolumeLevel('effects')).toBe(1)
+    audio.dispose()
+  })
+
   it('makes teardown idempotent and blocks post-dispose graph work', async () => {
     const audio = new FlightAudio()
     expect(audio.isDisposed).toBe(false)

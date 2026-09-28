@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AUDIO_CHANNEL_STORAGE_KEYS,
   audioVolumePercent,
+  normalizeAudioChannelVolume,
   normalizeAudioVolume,
+  readAudioChannelVolume,
   readAudioVolume,
+  writeAudioChannelVolume,
   writeAudioVolume,
 } from '../src/audio/AudioPreferences'
 
@@ -27,5 +31,21 @@ describe('audio volume preferences', () => {
     expect(audioVolumePercent(0)).toBe('0%')
     expect(audioVolumePercent(0.655)).toBe('66%')
     expect(audioVolumePercent(2)).toBe('100%')
+  })
+
+  it('keeps engine, environment, and effects channels independent', () => {
+    const values = new Map<string, string>([[AUDIO_CHANNEL_STORAGE_KEYS.engine, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeAudioChannelVolume(-1)).toBe(0)
+    expect(readAudioChannelVolume(storage, 'engine')).toBe(1)
+    writeAudioChannelVolume(storage, 'engine', 0.35)
+    writeAudioChannelVolume(storage, 'environment', 0.65)
+    writeAudioChannelVolume(storage, 'effects', 0.85)
+    expect(readAudioChannelVolume(storage, 'engine')).toBeCloseTo(0.35)
+    expect(readAudioChannelVolume(storage, 'environment')).toBeCloseTo(0.65)
+    expect(readAudioChannelVolume(storage, 'effects')).toBeCloseTo(0.85)
   })
 })
