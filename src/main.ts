@@ -22,7 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
-import { copyWorldSeedLink, formatWorldSeed, parseWorldSeed } from './core/WorldSeed'
+import { copyWorldSeed, copyWorldSeedLink, formatWorldSeed, parseWorldSeed } from './core/WorldSeed'
 import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
   lockGameKeyboard,
@@ -863,6 +863,14 @@ async function boot(): Promise<void> {
         'aria-label',
         copied ? 'Replay link copied' : 'Copy replay link blocked by browser permissions',
       )
+    })
+  })
+  results.setCopySeedHandler(() => {
+    const seed = world.worldSeed
+    const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
+    void copyWorldSeed(seed, clipboard).then((copied) => {
+      if (disposed) return
+      results.setCopySeedFeedback(copied)
     })
   })
   const disposeRuntime = (): void => {

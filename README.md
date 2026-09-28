@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.454**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.455**.
 
 ## Run
 
@@ -42,7 +42,7 @@ Press Play when the airfield is ready.
 - Boost, speed-brake, and landing-gear keys are remappable in the pause menu and persisted locally
 - Esc pauses
 
-The title and pause course pickers include a fast case-insensitive filter, so the full contract catalog stays navigable without turning the launch screen into an unbounded wall of cards. When adaptive resolution sheds pixel density under sustained GPU load, moving terrain-weather, water, near-field vegetation, cloud, and precipitation detail scale down together, then restore without rebuilding geometry or changing flight behavior. Switching graphics presets immediately reuses the current adaptive budget instead of briefly re-enabling full-cost effects at a reduced pixel ratio. Consumed custom seeds clear their pending launch state so the next title-screen launch cannot silently fall back to a different world than the input suggests. The active procedural seed stays visible in the secondary HUD during flight and in the results debrief, making a discovered world easy to record and revisit without changing the cockpit readout.
+The title and pause course pickers include a fast case-insensitive filter, so the full contract catalog stays navigable without turning the launch screen into an unbounded wall of cards. When adaptive resolution sheds pixel density under sustained GPU load, moving terrain-weather, water, near-field vegetation, cloud, and precipitation detail scale down together, then restore without rebuilding geometry or changing flight behavior. Switching graphics presets immediately reuses the current adaptive budget instead of briefly re-enabling full-cost effects at a reduced pixel ratio. Consumed custom seeds clear their pending launch state so the next title-screen launch cannot silently fall back to a different world than the input suggests. The active procedural seed stays visible in the secondary HUD during flight and in the results debrief, and the results card can copy the raw seed directly for a future custom-seed launch.
 
 The launch screen also accepts a safe integer custom seed, making exact procedural worlds easy to revisit without editing a replay URL. Loading a seed selects Infinite World and applies it when Play starts; choosing any authored course clears the pending seed.
 

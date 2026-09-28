@@ -67,12 +67,18 @@ export class RunResults {
   private readonly splits: HTMLElement
   private readonly best: HTMLElement
   private readonly shareReplay: HTMLButtonElement | null
+  private readonly copySeed: HTMLButtonElement | null
   private returnFocus: HTMLElement | null = null
   private disposed = false
   private shareReplayHandler: (() => void) | null = null
+  private copySeedHandler: (() => void) | null = null
   private readonly onShareReplay = (): void => {
     if (this.disposed) return
     this.shareReplayHandler?.()
+  }
+  private readonly onCopySeed = (): void => {
+    if (this.disposed) return
+    this.copySeedHandler?.()
   }
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || !this.open || event.key !== 'Tab') return
@@ -110,12 +116,14 @@ export class RunResults {
     this.splits = must(root, 'result-splits')
     this.best = must(root, 'result-best')
     this.shareReplay = root.getElementById('btn-share-replay') as HTMLButtonElement | null
+    this.copySeed = root.getElementById('btn-copy-seed') as HTMLButtonElement | null
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
     this.root.setAttribute('aria-labelledby', 'result-title')
     this.root.setAttribute('aria-describedby', 'result-summary')
     this.root.addEventListener('keydown', this.onKeyDown)
     this.shareReplay?.addEventListener('click', this.onShareReplay)
+    this.copySeed?.addEventListener('click', this.onCopySeed)
   }
 
   get open(): boolean {
@@ -125,6 +133,20 @@ export class RunResults {
   setShareReplayHandler(handler: (() => void) | null): void {
     if (this.disposed) return
     this.shareReplayHandler = handler
+  }
+
+  setCopySeedHandler(handler: (() => void) | null): void {
+    if (this.disposed) return
+    this.copySeedHandler = handler
+  }
+
+  setCopySeedFeedback(copied: boolean): void {
+    if (this.disposed || !this.copySeed) return
+    this.copySeed.textContent = copied ? 'World seed copied' : 'Copy world seed'
+    this.copySeed.setAttribute(
+      'aria-label',
+      copied ? 'World seed copied' : 'Copy world seed blocked by browser permissions',
+    )
   }
 
   show(
@@ -141,6 +163,7 @@ export class RunResults {
       this.shareReplay.textContent = 'Copy replay link'
       this.shareReplay.setAttribute('aria-label', 'Copy replay link for this sortie')
     }
+    this.setCopySeedFeedback(false)
     const active = document.activeElement
     this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
@@ -498,7 +521,9 @@ export class RunResults {
     this.disposed = true
     this.root.removeEventListener('keydown', this.onKeyDown)
     this.shareReplay?.removeEventListener('click', this.onShareReplay)
+    this.copySeed?.removeEventListener('click', this.onCopySeed)
     this.shareReplayHandler = null
+    this.copySeedHandler = null
     this.returnFocus = null
   }
 

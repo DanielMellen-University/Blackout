@@ -125,6 +125,7 @@ function resultsFixture(): {
     ['result-best', new FakeElement()],
     ['btn-retry', retry],
     ['btn-share-replay', shareReplay],
+    ['btn-copy-seed', new FakeElement()],
   ])
   root.setList(
     'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
