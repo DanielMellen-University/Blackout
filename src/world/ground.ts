@@ -2,6 +2,7 @@ import { Vector3 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import {
   sampleTerrainSurface,
+  sampleTerrainSurfaceHeightFast,
   type TerrainSurfaceKind,
   type TerrainSurface,
 } from './terrainSample'
@@ -67,7 +68,7 @@ export function sampleGroundHeight(x: number, z: number): number {
   // The richer callback has already been sampled above. Fall back directly
   // to the analytic surface instead of invoking it a second time when a
   // streamed tile is not ready.
-  return sampleTerrainSurface(x, z).height
+  return sampleTerrainSurfaceHeightFast(x, z)
 }
 
 /** Prefer the visible mesh, falling back to procedural terrain outside loaded tiles. */

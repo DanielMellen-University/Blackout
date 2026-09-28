@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { waterLandmarks } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad, sampleClimate, sampleTerrainHeightFast } from '../src/world/terrainSample'
+import { clearOpsPad, sampleClimate, sampleTerrainHeightFast, sampleTerrainSurface, sampleTerrainSurfaceHeightFast, setOpsPad } from '../src/world/terrainSample'
 import {
   CHUNK_SIZE,
   deserializeTerrainGeometry,
@@ -41,6 +41,18 @@ describe('worker terrain geometry', () => {
   it('keeps height-only normal probes numerically identical to climate heights', () => {
     for (const [x, z] of [[0, 0], [137, -281], [-1_920, 2_440], [8_400, -6_120]]) {
       expect(sampleTerrainHeightFast(x, z)).toBe(sampleClimate(x, z).height)
+    }
+  })
+
+  it('keeps scalar contact probes identical to resolved land and water surfaces', () => {
+    const points = [[0, 0], [137, -281], [-1_920, 2_440], [8_400, -6_120]]
+    for (const [x, z] of points) {
+      expect(sampleTerrainSurfaceHeightFast(x, z)).toBe(sampleTerrainSurface(x, z).height)
+    }
+
+    setOpsPad(0, 0, 42, 0.4)
+    for (const [x, z] of [[0, 0], [60, 0], [98, 22]]) {
+      expect(sampleTerrainSurfaceHeightFast(x, z)).toBeCloseTo(sampleTerrainSurface(x, z).height)
     }
   })
 

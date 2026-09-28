@@ -116,3 +116,15 @@ export function sampleGeographyHeight(x: number, z: number): number {
   const landform = sampleLandformsInto(landformScratch, x, z)
   return sampleHydrologyInto(hydrologyScratch, x, z, landform.height).height
 }
+
+/**
+ * Scalar resolved surface probe for contact and AGL hot paths. This keeps the
+ * hydrology water level without constructing biome weights or a Climate
+ * object, so fallback ground queries stay allocation-free like the worker
+ * height probe.
+ */
+export function sampleGeographySurfaceHeight(x: number, z: number): number {
+  const landform = sampleLandformsInto(landformScratch, x, z)
+  const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height)
+  return Math.max(hydrology.height, hydrology.waterLevel)
+}
