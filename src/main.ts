@@ -1715,6 +1715,10 @@ async function boot(): Promise<void> {
           audio.playCue('warning')
           showBanner(`CONTRACT FAILED / ${contractFailureCue}`, 1800, 'danger')
         }
+        const contractProgressCue = challenge.consumeContractProgressCue()
+        if (contractProgressCue && (!banner || bannerUntil <= nowMs)) {
+          showBanner(`CONTRACT UPDATE / ${contractProgressCue}`, 1500, 'info')
+        }
 
         biomeSurveyCooldown = Math.max(0, biomeSurveyCooldown - dt)
         if (biomeSurveyCooldown <= 0 && aircraft.status === 'ok' && !aircraft.onGround) {

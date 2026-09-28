@@ -978,6 +978,7 @@ export class ChallengeRun {
   private contractStreakValue = 0
   private readonly contract = new SortieContractTracker()
   private contractCuePending = false
+  private contractProgressCuePending = ''
   private contractFailureCuePending = false
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
@@ -1031,6 +1032,7 @@ export class ChallengeRun {
       ? Math.min(MAX_CONTRACT_STREAK, Math.max(0, Math.floor(history.contractStreak ?? 0)))
       : 0
     this.contractCuePending = false
+    this.contractProgressCuePending = ''
     this.contractFailureCuePending = false
     this.gateSplits.length = 0
     this.bestGateSplits = this.readBestTrace()
@@ -1198,10 +1200,16 @@ export class ChallengeRun {
     if (this.destinationCount >= MAX_DESTINATION_COUNT) return
     const reward = kind === 'city' ? 600 : 300
     const wasComplete = this.contract.complete
+    const previousDetail = this.contract.detail
     this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
     this.destinationCount += 1
     this.contract.recordDestination(this.destinationCount, kind, id)
     this.contractCuePending ||= !wasComplete && this.contract.complete
+    if (this.contract.complete) {
+      this.contractProgressCuePending = ''
+    } else if (this.contract.kind === 'tour' && this.contract.detail !== previousDetail) {
+      this.contractProgressCuePending = `${kind.toUpperCase()} VISITED`
+    }
     this.refreshScorePreview()
   }
 
@@ -1280,8 +1288,17 @@ export class ChallengeRun {
   recordWaterBody(body: string | undefined, airborne = true): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
     const wasContractComplete = this.contract.complete
+    const previousDetail = this.contract.detail
     this.contract.recordWaterBody(body, airborne)
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
+    if (this.contract.complete) {
+      this.contractProgressCuePending = ''
+    } else if (this.contract.kind === 'waterway-tour' && this.contract.detail !== previousDetail) {
+      const normalized = body === 'stream' ? 'river' : body
+      if (normalized === 'river' || normalized === 'lake' || normalized === 'sea') {
+        this.contractProgressCuePending = `${normalized.toUpperCase()} DISCOVERED`
+      }
+    }
   }
 
   /** Number of unique natural biomes seen so far in this sortie. */
@@ -1732,6 +1749,14 @@ export class ChallengeRun {
     if (!this.contractCuePending) return null
     this.contractCuePending = false
     return this.contract.label || null
+  }
+
+  /** Consume one event-driven partial contract progress cue. */
+  consumeContractProgressCue(): string | null {
+    if (!this.contractProgressCuePending) return null
+    const cue = this.contractProgressCuePending
+    this.contractProgressCuePending = ''
+    return cue
   }
 
   /** Compare the most recently cleared gate with the best saved trace. */
