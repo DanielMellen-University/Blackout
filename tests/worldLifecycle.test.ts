@@ -3,6 +3,29 @@ import { World } from '../src/world/World'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
 describe('world lifecycle boundary', () => {
+  it('applies the complete quality envelope during construction', () => {
+    const world = new World('low')
+    try {
+      const terrain = world.terrain as unknown as {
+        waterDetailScale: { value: number }
+        terrainDetailScale: { value: number }
+        vegetationScale: number
+      }
+      const atmosphere = world.atmosphere as unknown as {
+        precipitationScale: number
+        cloudDensityScale: number
+      }
+      expect(terrain.waterDetailScale.value).toBe(.35)
+      expect(terrain.terrainDetailScale.value).toBe(.42)
+      expect(terrain.vegetationScale).toBe(.45)
+      expect(atmosphere.precipitationScale).toBe(.42)
+      expect(atmosphere.cloudDensityScale).toBe(.5)
+      expect(world.traffic.count).toBe(3)
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
+
   it('fails closed for public calls after disposal', () => {
     const world = Object.create(World.prototype) as World
     ;(world as unknown as { disposed: boolean }).disposed = true

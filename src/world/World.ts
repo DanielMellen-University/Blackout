@@ -163,6 +163,7 @@ export class World {
     this.runway = createRunway()
     this.scene.add(this.runway)
     this.mission = new MissionSystem(this.scene)
+    this.setRenderQuality(quality)
     this.reseed()
   }
 
@@ -195,10 +196,14 @@ export class World {
     if (this.disposed) return
     const profile = renderQualityProfile(quality)
     this.settlements.setRenderQuality(quality)
+    this.traffic.setRenderQuality(quality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
     this.terrain.setWaterDetailScale(profile.waterDetailScale)
     this.terrain.setTerrainDetailScale(profile.terrainDetailScale)
+    this.terrain.setVegetationScale(profile.vegetationScale)
+    this.atmosphere.setPrecipitationScale(profile.precipitationScale)
+    this.atmosphere.setCloudDensityScale(profile.cloudScale)
     this.atmosphere.setFogRange(
       fogNearForViewRadius(profile.terrainViewRadius),
       fogFarForViewRadius(profile.terrainViewRadius),
