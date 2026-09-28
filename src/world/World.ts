@@ -198,6 +198,7 @@ export class World {
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
     this.terrain.setWaterDetailScale(profile.waterDetailScale)
+    this.terrain.setTerrainDetailScale(profile.terrainDetailScale)
     this.atmosphere.setFogRange(
       fogNearForViewRadius(profile.terrainViewRadius),
       fogFarForViewRadius(profile.terrainViewRadius),

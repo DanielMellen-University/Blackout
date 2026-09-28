@@ -27,13 +27,15 @@ export interface RenderQualityProfile {
   readonly terrainWorkers: number
   /** Fraction of high-frequency water foam, flow, and ripple shading. */
   readonly waterDetailScale: number
+  /** Fraction of high-frequency terrain weather shading. */
+  readonly terrainDetailScale: number
 }
 
 export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQualityProfile>> =
   Object.freeze({
-    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, antialias: false, shadows: false, shadowMapSize: 512, uiBackdropBlur: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45, terrainViewRadius: 52, terrainWorkers: 2, waterDetailScale: 0.35 }),
-    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, antialias: true, shadows: true, shadowMapSize: 1024, uiBackdropBlur: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75, terrainViewRadius: 80, terrainWorkers: 4, waterDetailScale: 0.72 }),
-    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, antialias: true, shadows: true, shadowMapSize: 1536, uiBackdropBlur: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1, terrainViewRadius: 80, terrainWorkers: 6, waterDetailScale: 1 }),
+    low: Object.freeze({ label: 'Low', maxPixelRatio: 0.85, antialias: false, shadows: false, shadowMapSize: 512, uiBackdropBlur: false, precipitationScale: 0.42, cloudScale: 0.5, vegetationScale: 0.45, terrainViewRadius: 52, terrainWorkers: 2, waterDetailScale: 0.35, terrainDetailScale: 0.42 }),
+    balanced: Object.freeze({ label: 'Balanced', maxPixelRatio: 1.15, antialias: true, shadows: true, shadowMapSize: 1024, uiBackdropBlur: true, precipitationScale: 0.72, cloudScale: 0.78, vegetationScale: 0.75, terrainViewRadius: 80, terrainWorkers: 4, waterDetailScale: 0.72, terrainDetailScale: 0.75 }),
+    high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, antialias: true, shadows: true, shadowMapSize: 1536, uiBackdropBlur: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1, terrainViewRadius: 80, terrainWorkers: 6, waterDetailScale: 1, terrainDetailScale: 1 }),
   })
 
 const STORAGE_KEY = 'blackout.renderQuality'

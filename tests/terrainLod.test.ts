@@ -181,6 +181,10 @@ describe('TerrainSystem streaming LOD', () => {
       expect((terrain as unknown as { waterDetailScale: { value: number } }).waterDetailScale.value).toBe(.35)
       terrain.setWaterDetailScale(4)
       expect((terrain as unknown as { waterDetailScale: { value: number } }).waterDetailScale.value).toBe(1)
+      terrain.setTerrainDetailScale(.42)
+      expect((terrain as unknown as { terrainDetailScale: { value: number } }).terrainDetailScale.value).toBe(.42)
+      terrain.setTerrainDetailScale(-2)
+      expect((terrain as unknown as { terrainDetailScale: { value: number } }).terrainDetailScale.value).toBe(0)
     } finally {
       terrain.clearAll()
     }
@@ -200,6 +204,8 @@ describe('TerrainSystem streaming LOD', () => {
       expect(shader.fragmentShader.indexOf('float slopeExposure')).toBeGreaterThan(normalChunk)
       expect(shader.fragmentShader).toContain('uniform float terrainRain')
       expect(shader.fragmentShader).toContain('uniform float terrainClouds')
+      expect(shader.fragmentShader).toContain('uniform float terrainDetailScale')
+      expect(shader.fragmentShader).toContain('if (terrainDetail > .5)')
       expect(shader.fragmentShader).toContain('float cloudShadow')
       expect(shader.fragmentShader).toContain('float wetLowland')
     } finally {

@@ -58,6 +58,8 @@ describe('render quality preferences', () => {
     expect(balanced.terrainWorkers).toBeLessThan(high.terrainWorkers)
     expect(low.waterDetailScale).toBeLessThan(balanced.waterDetailScale)
     expect(balanced.waterDetailScale).toBeLessThan(high.waterDetailScale)
+    expect(low.terrainDetailScale).toBeLessThan(balanced.terrainDetailScale)
+    expect(balanced.terrainDetailScale).toBeLessThan(high.terrainDetailScale)
   })
 
   it('refreshes the directional shadow map on a bounded cadence', () => {

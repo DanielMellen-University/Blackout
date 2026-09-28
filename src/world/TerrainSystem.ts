@@ -230,6 +230,7 @@ export class TerrainSystem {
   private readonly waterWindX = { value: 0 }
   private readonly waterWindZ = { value: 0 }
   private readonly waterDetailScale = { value: 1 }
+  private readonly terrainDetailScale = { value: 1 }
 
   /** Near tiles: double-sided so steep cliffs don't punch holes. */
   private readonly groundMatNear: MeshStandardMaterial
@@ -351,6 +352,16 @@ export class TerrainSystem {
     )
   }
 
+  /** Reduce high-frequency terrain weather shading on Low without rebuilding surfaces. */
+  setTerrainDetailScale(scale: number): void {
+    if (this.disposed) return
+    this.terrainDetailScale.value = MathUtils.clamp(
+      Number.isFinite(scale) ? scale : 1,
+      0,
+      1,
+    )
+  }
+
   private configureWeatherMaterial(material: MeshStandardMaterial): void {
     material.onBeforeCompile = shader => {
       shader.uniforms.terrainRain = this.weatherRain
@@ -358,6 +369,7 @@ export class TerrainSystem {
       shader.uniforms.terrainClouds = this.weatherClouds
       shader.uniforms.terrainTime = this.waterClock
       shader.uniforms.terrainWind = { value: this.weatherWind }
+      shader.uniforms.terrainDetailScale = this.terrainDetailScale
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
         '#include <common>\nvarying float terrainHeight;\nvarying vec3 terrainWorld;\n',
@@ -367,13 +379,14 @@ export class TerrainSystem {
       )
       shader.fragmentShader = shader.fragmentShader.replace(
         '#include <common>',
-        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nuniform float terrainClouds;\nuniform float terrainTime;\nuniform vec2 terrainWind;\nvarying float terrainHeight;\nvarying vec3 terrainWorld;\n',
+        '#include <common>\nuniform float terrainRain;\nuniform float terrainSnow;\nuniform float terrainClouds;\nuniform float terrainTime;\nuniform vec2 terrainWind;\nuniform float terrainDetailScale;\nvarying float terrainHeight;\nvarying vec3 terrainWorld;\n',
       ).replace(
         '#include <normal_fragment_maps>',
         `#include <normal_fragment_maps>
         // Normal is initialized by normal_fragment_begin immediately before
         // this hook. Applying weather after that chunk avoids reading an
         // undefined normal during color_fragment on Three.js 0.185+.
+        float terrainDetail = clamp(terrainDetailScale, 0.0, 1.0);
         float wetGround = terrainRain * 0.18;
         diffuseColor.rgb *= 1.0 - wetGround;
         // Rain darkens the whole world slightly, but low, level ground should
@@ -386,24 +399,29 @@ export class TerrainSystem {
         float altitudeSnow = smoothstep(1400.0, 3200.0, terrainHeight);
         float slopeExposure = smoothstep(0.42, 0.94, normal.y);
         float snowCover = terrainSnow * slopeExposure * (0.44 + altitudeSnow * 0.52);
-        float windLength = max(length(terrainWind), .001);
-        vec2 windDir = terrainWind / windLength;
-        float windExposure = .5 + .5 * dot(normal.xz, windDir);
-        snowCover *= .84 + windExposure * .16;
+        if (terrainDetail > .5) {
+          float windLength = max(length(terrainWind), .001);
+          vec2 windDir = terrainWind / windLength;
+          float windExposure = .5 + .5 * dot(normal.xz, windDir);
+          snowCover *= .84 + windExposure * .16;
+        }
         // Low-frequency moving bands fake soft cloud shadows without adding
         // a light, shadow map, or terrain draw. The field is world-space, so
         // adjacent streamed tiles share one continuous shadow pattern.
         vec2 cloudDrift = terrainWind * terrainTime * .018;
-        float cloudBandA = .5 + .5 * sin((terrainWorld.x + cloudDrift.x * 900.0) / 1700.0 +
-          sin((terrainWorld.z + cloudDrift.y * 900.0) / 2300.0) * 1.2);
-        float cloudBandB = .5 + .5 * sin((terrainWorld.z + cloudDrift.y * 900.0) / 3200.0 -
-          sin((terrainWorld.x + cloudDrift.x * 900.0) / 2100.0) * .8);
-        float cloudShadow = smoothstep(.34, .78, cloudBandA * .62 + cloudBandB * .38);
+        float cloudShadow = .5;
+        if (terrainDetail > .5) {
+          float cloudBandA = .5 + .5 * sin((terrainWorld.x + cloudDrift.x * 900.0) / 1700.0 +
+            sin((terrainWorld.z + cloudDrift.y * 900.0) / 2300.0) * 1.2);
+          float cloudBandB = .5 + .5 * sin((terrainWorld.z + cloudDrift.y * 900.0) / 3200.0 -
+            sin((terrainWorld.x + cloudDrift.x * 900.0) / 2100.0) * .8);
+          cloudShadow = smoothstep(.34, .78, cloudBandA * .62 + cloudBandB * .38);
+        }
         diffuseColor.rgb *= 1.0 - terrainClouds * cloudShadow * .12;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.76, 0.83, 0.91), snowCover);`,
       )
     }
-    material.customProgramCacheKey = () => 'terrain-weather-v5'
+    material.customProgramCacheKey = () => 'terrain-weather-v6'
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {

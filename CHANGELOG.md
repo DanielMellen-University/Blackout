@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.364** Add quality-aware terrain weather shading so Low skips moving cloud-shadow and wind-exposure detail while preserving biome color, elevation shading, and streamed geometry.
 - **10.363** Add quality-aware water shading so Low reduces high-frequency foam, flow, and ripple work through a shared live uniform while preserving water levels and broad surface color.
 - **10.362** Add the deterministic Archipelago Run course, a foggy island-hop route that expands water-focused replay content without changing bounded terrain or traffic budgets.
 - **10.361** Make Low render quality trim secondary settlement lights, waterfront props, and road markings while preserving buildings, roads, and landmarks; apply the budget live when quality changes.
