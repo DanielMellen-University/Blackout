@@ -34,6 +34,17 @@ import {
 
 export { WEATHER_LABELS, WEATHER_ORDER, type WeatherId } from './WeatherDirector'
 
+export type CloudImmersionBand = 'clear' | 'edge' | 'inside'
+
+/** Convert the smoothed cloud-density signal into stable player-facing bands. */
+export function cloudImmersionBand(value: number): CloudImmersionBand {
+  if (!Number.isFinite(value)) return 'clear'
+  const safe = MathUtils.clamp(value, 0, 1)
+  if (safe >= 0.58) return 'inside'
+  if (safe >= 0.16) return 'edge'
+  return 'clear'
+}
+
 /**
  * Cloud streaming envelope — match terrain load radius.
  * Spawn near the fog rim; despawn at the same distance chunks unload.
@@ -544,6 +555,13 @@ export class Atmosphere {
 
   get prefersReducedMotion(): boolean {
     return this.reducedMotion
+  }
+
+  /** Smoothed 0–1 cloud density around the aircraft for HUD/audio cues. */
+  get cloudImmersionLevel(): number {
+    return Number.isFinite(this.cloudImmersion)
+      ? MathUtils.clamp(this.cloudImmersion, 0, 1)
+      : 0
   }
 
   /** Daylight factor shared by world materials (0 = night, 1 = full day). */

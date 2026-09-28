@@ -150,6 +150,7 @@ import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
 import { refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
+import { cloudImmersionBand, type CloudImmersionBand } from './world/Atmosphere'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
@@ -708,6 +709,8 @@ async function boot(): Promise<void> {
   let engineOut = false
   let prevGearDown = true
   let prevLightning = false
+  let previousCloudBand: CloudImmersionBand = 'clear'
+  let cloudBandPrimed = false
   let thermalLiftActive = false
   let prevGLoadBand: GLoadCueBand = 'normal'
   let gLoadCueUntil = 0
@@ -1549,6 +1552,27 @@ async function boot(): Promise<void> {
         visualDt,
       )
     }
+    const cloudBand = cloudImmersionBand(world.atmosphere.cloudImmersionLevel)
+    if (!cloudBandPrimed) {
+      previousCloudBand = cloudBand
+      cloudBandPrimed = true
+    } else if (
+      cloudBand !== previousCloudBand &&
+      simLive &&
+      playing &&
+      !menu.paused &&
+      !results.open &&
+      aircraft.status !== 'crashed' &&
+      (!banner || bannerUntil <= nowMs)
+    ) {
+      const cue = cloudBand === 'inside'
+        ? 'CLOUD ENTRY / VISIBILITY REDUCED'
+        : cloudBand === 'edge'
+          ? 'CLOUD EDGE / VISIBILITY SHIFTING'
+          : 'CLOUD BREAK / VISIBILITY RESTORING'
+      showBanner(cue, 1600, 'info')
+    }
+    previousCloudBand = cloudBand
     const exposure = sceneExposure(world.atmosphere.daylight, crashFx.bloom)
     if (Math.abs(renderer.toneMappingExposure - exposure) > 0.001) {
       renderer.toneMappingExposure = exposure

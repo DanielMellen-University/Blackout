@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   atmosphereNeedsUpdate,
+  cloudImmersionBand,
   cloudPuffBudget,
   cloudPuffCount,
   createCloudLayoutRandom,
@@ -10,6 +11,14 @@ import {
 import { sceneExposure } from '../src/core/SceneExposure'
 
 describe('lightning comfort', () => {
+  it('turns cloud density into calm, bounded immersion bands', () => {
+    expect(cloudImmersionBand(Number.NaN)).toBe('clear')
+    expect(cloudImmersionBand(0)).toBe('clear')
+    expect(cloudImmersionBand(0.3)).toBe('edge')
+    expect(cloudImmersionBand(1)).toBe('inside')
+    expect(cloudImmersionBand(-4)).toBe('clear')
+  })
+
   it('keeps cloud layout streams stable for replayable skies', () => {
     const first = createCloudLayoutRandom(0x434c4f55)
     const second = createCloudLayoutRandom(0x434c4f55)
