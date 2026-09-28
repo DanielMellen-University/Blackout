@@ -177,6 +177,22 @@ describe('rebuilt aircraft', () => {
     expect(aircraft.controls.gearDown).toBe(true)
   })
 
+  it('reuses the cached airborne contact floor for automatic gear decisions', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 0, y: 1000, z: 0, yaw: 0 })
+    samples = 0
+
+    aircraft.step(0)
+
+    expect(samples).toBe(1)
+    expect(aircraft.controls.gearDown).toBe(false)
+  })
+
   it('reuses the grounded query until the flight pose changes', () => {
     let samples = 0
     setContactHeightSampler(() => {

@@ -15,7 +15,6 @@ import { stormAirframeWobble, stormBuffetViewScale } from '../systems/StormBuffe
 import { disposeObjectTree } from '../core/dispose'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createF35Model } from './createF35Model'
-import { altitudeAgl } from '../world/ground'
 import {
   createEngineState,
   resolveEngineState,
@@ -483,12 +482,11 @@ export class Aircraft {
       this.manualGearOverride = false
       return
     }
-    const agl = altitudeAgl(
+    const agl = Math.max(0, this.position.y - this.flight.contactMinYAt(
       this.position.x,
-      this.position.y,
       this.position.z,
       this.controls.gearDown,
-    )
+    ))
     if (agl < 16) {
       this.controls.gearDown = true
       this.manualGearOverride = false

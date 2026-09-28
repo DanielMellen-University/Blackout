@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.500** Reuse the fixed-step contact cache for airborne automatic-gear decisions, removing a duplicate terrain height query without changing the safety envelope.
 - **10.499** Expand settlement collision sweeps with the same padded aircraft body envelope used by airfield probes, including rotated buildings, roofs, and vertical clearance.
 - **10.498** Reuse the fixed-step ground cache for post-step grounded-state checks, removing a duplicate terrain height query and hardening empty-slot sentinels so the world origin can never read as an uninitialized zero.
 - **10.497** Reuse frame-scoped ground probes in the fixed-step flight contact sweep, reducing duplicate terrain height and normal sampling without retaining values across streamed terrain changes.

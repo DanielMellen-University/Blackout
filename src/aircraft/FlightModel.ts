@@ -465,6 +465,11 @@ export class FlightModel {
     return this.grounded(aircraft.position.y, minY, aircraft.velocity.y, _up.y)
   }
 
+  /** Reuse the current fixed-step contact floor for automatic gear decisions. */
+  contactMinYAt(x: number, z: number, gearDown: boolean): number {
+    return contactMinYCached(x, z, gearDown, this.groundHeightCache)
+  }
+
   private grounded(y: number, minY: number, vy: number, upY: number): boolean {
     return y <= minY + 0.18 && vy < 1.8 && upY > 0.35
   }
