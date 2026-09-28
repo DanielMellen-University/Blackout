@@ -16,8 +16,10 @@ const releaseNameMatch = versionSource.match(/RELEASE_NAME\s*=\s*'([^']+)'/)
 const releaseName = releaseNameMatch?.[1] ?? ''
 const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
 const firstReleaseHeading = changelog.match(/^## v([^\n]+) - (\d{4}-\d{2}-\d{2})$/m)
+const changelogChunkMatch = changelog.match(/^- \*\*([^*]+)\*\* /m)
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
+const readmeRoadmapMatch = readme.match(/Roadmap chunk:\s+\*\*([^*]+)\*\*/)
 
 const errors = []
 if (!packageVersion) errors.push('package.json is missing a string version')
@@ -31,6 +33,16 @@ if (!roadmapChunk) errors.push('src/core/Version.ts is missing ROADMAP_CHUNK')
 if (!releaseName) errors.push('src/core/Version.ts is missing RELEASE_NAME')
 if (roadmapChunk && !/^\d+\.\d+$/.test(roadmapChunk)) {
   errors.push(`src/core/Version.ts roadmap chunk (${roadmapChunk}) is not a valid internal chunk ID`)
+}
+if (!readmeRoadmapMatch) {
+  errors.push('README.md is missing the current roadmap chunk')
+} else if (roadmapChunk && readmeRoadmapMatch[1] !== roadmapChunk) {
+  errors.push(`README.md roadmap chunk (${readmeRoadmapMatch[1]}) does not match src/core/Version.ts (${roadmapChunk})`)
+}
+if (!changelogChunkMatch) {
+  errors.push('CHANGELOG.md is missing a numbered top ship entry for the current roadmap chunk')
+} else if (roadmapChunk && changelogChunkMatch[1] !== roadmapChunk) {
+  errors.push(`CHANGELOG.md top ship chunk (${changelogChunkMatch[1]}) does not match src/core/Version.ts (${roadmapChunk})`)
 }
 if (packageVersion && sourceVersion && packageVersion !== sourceVersion) {
   errors.push(`package.json (${packageVersion}) does not match src/core/Version.ts (${sourceVersion})`)

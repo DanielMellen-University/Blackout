@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.359** Harden version validation so the internal roadmap chunk stays synchronized across runtime metadata, the README, and the changelog.
 - Keep terrain quality changes under the device's hardware worker cap, so switching to High on a small-core machine cannot create an unsafe six-worker burst.
 - Add the curated Swamp Run course, a deterministic rainy low-level weave through wetlands and winding channels while reusing terrain-aware clearance, scoring, and retry systems.
 - Make terrain worker concurrency follow the active Low/Balanced/High preset, retiring busy workers only after their current job completes so quality changes reduce CPU pressure without dropping streamed terrain results.
