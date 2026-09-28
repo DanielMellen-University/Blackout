@@ -5,6 +5,9 @@ import { fuelWarningLevel } from '../aircraft/FuelSystem'
 
 export type WarningLevel = 'none' | 'caution' | 'warning'
 
+/** Event cue selected when a warning state first becomes visible. */
+export type WarningCue = 'warning' | 'pull-up' | 'overspeed' | 'stall' | 'gear-warning' | null
+
 /** Keep threshold warnings readable without delaying an urgent escalation. */
 export const WARNING_CLEAR_HOLD_SEC = 0.22
 export const WARNING_SWITCH_HOLD_SEC = 0.12
@@ -22,6 +25,20 @@ export interface WarningState {
   overspeed: boolean
   fuel: boolean
   terrainClosure: boolean
+}
+
+/**
+ * Keep warning audio specific without making the render loop understand every
+ * predicate. The tracker still controls cadence, so this is called only when
+ * the visible warning label changes.
+ */
+export function warningCueForState(state: WarningState): WarningCue {
+  if (!state.text) return null
+  if (state.terrainClosure) return 'pull-up'
+  if (state.stall) return 'stall'
+  if (state.gear) return 'gear-warning'
+  if (state.overspeed) return 'overspeed'
+  return 'warning'
 }
 
 const _fwd = new Vector3()

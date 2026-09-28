@@ -14,6 +14,7 @@ import {
   overspeedWarningActive,
   stallWarningActive,
   terrainClosureWarningActive,
+  warningCueForState,
 } from '../src/systems/FlightWarnings'
 import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
 
@@ -154,6 +155,27 @@ describe('flight cautions', () => {
     expect(warning.level).toBe('caution')
     expect(warning.overspeed).toBe(true)
     expect(warning.stall).toBe(false)
+  })
+
+  it('maps warning states to distinct one-shot audio cues', () => {
+    const base = {
+      text: 'LOW ALT',
+      level: 'caution' as const,
+      stall: false,
+      lowAlt: true,
+      gear: false,
+      flare: false,
+      goAround: false,
+      overspeed: false,
+      fuel: false,
+      terrainClosure: false,
+    }
+    expect(warningCueForState({ ...base, text: null, level: 'none', lowAlt: false })).toBeNull()
+    expect(warningCueForState({ ...base, text: 'PULL UP', level: 'warning', terrainClosure: true })).toBe('pull-up')
+    expect(warningCueForState({ ...base, text: 'STALL', level: 'warning', stall: true, lowAlt: false })).toBe('stall')
+    expect(warningCueForState({ ...base, text: 'GEAR', gear: true, lowAlt: false })).toBe('gear-warning')
+    expect(warningCueForState({ ...base, text: 'OVERSPEED', overspeed: true, lowAlt: false })).toBe('overspeed')
+    expect(warningCueForState(base)).toBe('warning')
   })
 
   it('raises low-fuel caution bands only after the flight leaves the ground', () => {

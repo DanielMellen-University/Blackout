@@ -116,7 +116,7 @@ import {
   writeAudioChannelVolume,
   type AudioChannel,
 } from './audio/AudioPreferences'
-import { evaluateWarnings, FlightWarningTracker } from './systems/FlightWarnings'
+import { evaluateWarnings, FlightWarningTracker, warningCueForState } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
@@ -2172,9 +2172,8 @@ async function boot(): Promise<void> {
         : 0
       const warn = warningTracker.update(evaluateWarnings(aircraft, alt), hudStepSec)
       if (warn.text !== prevWarning) {
-        if (warn.text) {
-          audio.playCue(warn.terrainClosure ? 'pull-up' : warn.overspeed ? 'overspeed' : 'warning')
-        }
+        const warningCue = warningCueForState(warn)
+        if (warningCue) audio.playCue(warningCue)
         prevWarning = warn.text
       }
       const nav = world.mission.hud(

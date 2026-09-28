@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.486** Give stall and unsafe-gear warnings distinct restrained edge cues while preserving the existing warning hysteresis and bounded audio path.
 - **10.485** Surface pilot rank, legend mastery, commendations, and the next career goal on the title screen, reusing existing progression records without adding runtime or render-loop work.
 - **10.484** Keep the current biome or water body visible as a bounded live HUD region label, reusing the existing terrain survey cadence without extra terrain sampling or scene work.
 - **10.483** Give streamed cities and villages deterministic biome-aware names, carrying them through radar locks and discovery banners without adding scene or render-loop work.

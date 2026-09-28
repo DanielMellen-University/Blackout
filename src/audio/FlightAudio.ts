@@ -291,6 +291,8 @@ export class FlightAudio {
       | 'warning'
       | 'pull-up'
       | 'overspeed'
+      | 'stall'
+      | 'gear-warning'
       | 'g-high'
       | 'g-negative'
       | 'gear-up'
@@ -395,6 +397,15 @@ export class FlightAudio {
       // terrain cautions without turning the cue into a harsh alarm.
       this.tone(680, now, 0.08, 'sine', 0.06, 520)
       this.tone(470, now + 0.1, 0.1, 'sine', 0.05, 360)
+    } else if (kind === 'stall') {
+      // A clear descending pair separates loss-of-lift from speed-envelope
+      // pressure while remaining a one-shot edge cue.
+      this.tone(920, now, 0.08, 'triangle', 0.065, 700)
+      this.tone(620, now + 0.1, 0.12, 'triangle', 0.055, 440)
+    } else if (kind === 'gear-warning') {
+      // Keep unsafe-approach gear distinct from the mechanical gear toggle.
+      this.tone(230, now, 0.08, 'triangle', 0.06, 170)
+      this.tone(230, now + 0.15, 0.1, 'triangle', 0.05, 170)
     } else if (kind === 'pull-up') {
       // A short double pulse marks the predictive terrain warning without
       // repeating while the HUD holds the sustained state.
