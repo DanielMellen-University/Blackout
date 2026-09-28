@@ -5,6 +5,10 @@ import { fuelWarningLevel } from '../aircraft/FuelSystem'
 
 export type WarningLevel = 'none' | 'caution' | 'warning'
 
+/** Keep threshold warnings readable without delaying an urgent escalation. */
+export const WARNING_CLEAR_HOLD_SEC = 0.22
+export const WARNING_SWITCH_HOLD_SEC = 0.12
+
 export interface WarningState {
   /** Highest-priority active warning label, or null. */
   text: string | null
@@ -145,6 +149,63 @@ const GO_AROUND_WARNING = Object.freeze({
   fuel: false,
   terrainClosure: false,
 }) as WarningState
+
+/**
+ * Hold a warning briefly while its raw predicate jitters near a boundary.
+ * Entering a more severe state is immediate; only clearing or replacing a
+ * warning with an equal/lower-priority state needs a short stable sample.
+ */
+export class FlightWarningTracker {
+  private currentValue: WarningState = NONE_WARNING
+  private pendingText: string | null = null
+  private pendingSeconds = 0
+
+  reset(initial: WarningState = NONE_WARNING): void {
+    this.currentValue = initial
+    this.pendingText = null
+    this.pendingSeconds = 0
+  }
+
+  update(candidate: WarningState, dt: number): WarningState {
+    if (candidate.text === this.currentValue.text && candidate.level === this.currentValue.level) {
+      this.clearPending()
+      return this.currentValue
+    }
+
+    if (warningPriority(candidate) > warningPriority(this.currentValue)) {
+      this.currentValue = candidate
+      this.clearPending()
+      return this.currentValue
+    }
+
+    if (candidate.text !== this.pendingText) {
+      this.pendingText = candidate.text
+      this.pendingSeconds = 0
+    }
+    this.pendingSeconds += Number.isFinite(dt) ? Math.max(0, Math.min(.5, dt)) : 0
+    const hold = candidate.text === null ? WARNING_CLEAR_HOLD_SEC : WARNING_SWITCH_HOLD_SEC
+    if (this.pendingSeconds < hold) return this.currentValue
+
+    this.currentValue = candidate
+    this.clearPending()
+    return this.currentValue
+  }
+
+  get state(): WarningState {
+    return this.currentValue
+  }
+
+  private clearPending(): void {
+    this.pendingText = null
+    this.pendingSeconds = 0
+  }
+}
+
+function warningPriority(state: WarningState): number {
+  if (state.level === 'warning') return 2
+  if (state.level === 'caution') return 1
+  return 0
+}
 
 /**
  * Arcade flight cautions: stall, speed-scaled low altitude, approach gear, flare, and go-around.

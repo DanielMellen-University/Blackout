@@ -1086,6 +1086,7 @@ export class HUD {
 
   /** Keep the frozen-flight state explicit even while live telemetry is paused. */
   setPaused(paused: boolean): void {
+    if (paused) this.updateGLoadVeil(1)
     if (!this.pausedEl || paused === this.pausedValue) return
     this.pausedValue = paused
     const label = pauseStateLabel(paused)
@@ -1096,6 +1097,7 @@ export class HUD {
 
   /** Keep stale telemetry out of the accessibility tree while a modal is open. */
   setBackgroundHidden(hidden: boolean): void {
+    if (hidden) this.updateGLoadVeil(1)
     if (!this.hudRoot || hidden === this.hudBackgroundHiddenValue) return
     this.hudBackgroundHiddenValue = hidden
     this.setAttribute(this.hudRoot, 'aria-hidden', hidden ? 'true' : 'false')

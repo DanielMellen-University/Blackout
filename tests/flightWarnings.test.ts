@@ -3,6 +3,9 @@ import { Aircraft } from '../src/aircraft/Aircraft'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import {
   evaluateWarnings,
+  FlightWarningTracker,
+  WARNING_CLEAR_HOLD_SEC,
+  WARNING_SWITCH_HOLD_SEC,
   flareWarningActive,
   goAroundWarningActive,
   gearWarningActive,
@@ -167,5 +170,28 @@ describe('flight cautions', () => {
 
     aircraft.position.y = sampleGroundHeight(0, 0) + flightConfig.gearHeight
     expect(evaluateWarnings(aircraft, 0).text).toBeNull()
+  })
+
+  it('holds a clear or equal-priority transition through threshold jitter', () => {
+    const tracker = new FlightWarningTracker()
+    // Use stable source states instead of relying on aircraft geometry here.
+    const caution = { text: 'LOW ALT', level: 'caution' as const, stall: false, lowAlt: true, gear: false, flare: false, goAround: false, overspeed: false, fuel: false, terrainClosure: false }
+    const clear = { ...caution, text: null, level: 'none' as const, lowAlt: false }
+    tracker.reset(caution)
+    expect(tracker.update(clear, WARNING_CLEAR_HOLD_SEC * .5)).toBe(caution)
+    expect(tracker.update(clear, WARNING_CLEAR_HOLD_SEC * .5)).toBe(clear)
+    tracker.reset(caution)
+    const replacement = { ...caution, text: 'GEAR', gear: true, lowAlt: false }
+    expect(tracker.update(replacement, WARNING_SWITCH_HOLD_SEC * .5)).toBe(caution)
+    expect(tracker.update(replacement, WARNING_SWITCH_HOLD_SEC * .5)).toBe(replacement)
+  })
+
+  it('escalates a warning immediately and contains malformed elapsed time', () => {
+    const tracker = new FlightWarningTracker()
+    const caution = { text: 'LOW ALT', level: 'caution' as const, stall: false, lowAlt: true, gear: false, flare: false, goAround: false, overspeed: false, fuel: false, terrainClosure: false }
+    const urgent = { ...caution, text: 'PULL UP', level: 'warning' as const, lowAlt: false, terrainClosure: true }
+    tracker.reset(caution)
+    expect(tracker.update(urgent, Number.NaN)).toBe(urgent)
+    expect(tracker.state).toBe(urgent)
   })
 })

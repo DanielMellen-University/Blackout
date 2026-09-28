@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.378** Stabilize flight-warning transitions with immediate escalation and bounded release hysteresis, and clear the G-load veil whenever pause or results hides live telemetry.
 - **10.377** Enable the existing high-G feedback path with hysteretic blackout/redout bands, smooth bounded veil ramps, and one-shot transition callouts while keeping malformed load values safe.
 - **10.376** Reuse caller-owned climate and pad snapshots for rendered-surface probes and terrain/settlement worker dispatches, reducing streamed-flight garbage without changing contact or generation results.
 - **10.375** Give Low quality a shorter regional-road draw radius, reducing distant connector, bridge, and marking work while preserving settlement silhouettes and destinations.

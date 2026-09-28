@@ -105,7 +105,7 @@ import {
   writeAudioChannelVolume,
   type AudioChannel,
 } from './audio/AudioPreferences'
-import { evaluateWarnings } from './systems/FlightWarnings'
+import { evaluateWarnings, FlightWarningTracker } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
@@ -820,6 +820,7 @@ async function boot(): Promise<void> {
   const stunts = new StuntTracker()
   const combo = new FlightComboTracker()
   const altitudeMilestones = new AltitudeMilestoneTracker()
+  const warningTracker = new FlightWarningTracker()
   const supersonic = new SupersonicTracker()
   const radar = new RadarSystem()
   applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
@@ -1103,6 +1104,7 @@ async function boot(): Promise<void> {
     stunts.reset()
     combo.reset()
     altitudeMilestones.reset()
+    warningTracker.reset()
     input.clearQueued()
     input.resetFlightControls(0)
     challenge.reset(courseId(), world.mission.totalGates, world.mission.scoringFocus, world.worldSeed)
@@ -2032,6 +2034,7 @@ async function boot(): Promise<void> {
     }
 
     if (shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {
+      const previousHudUpdateMs = lastHudUpdateMs
       lastHudUpdateMs = nowMs
       const alt = aircraft.onGround
         ? 0
@@ -2042,7 +2045,10 @@ async function boot(): Promise<void> {
             aircraft.controls.gearDown,
           )
       const pose = attitudeFromOrientation(aircraft.orientation)
-      const warn = evaluateWarnings(aircraft, alt)
+      const hudStepSec = Number.isFinite(previousHudUpdateMs) && previousHudUpdateMs >= 0
+        ? Math.min(.5, Math.max(0, (nowMs - previousHudUpdateMs) / 1000))
+        : 0
+      const warn = warningTracker.update(evaluateWarnings(aircraft, alt), hudStepSec)
       if (warn.text !== prevWarning) {
         if (warn.text) {
           audio.playCue(warn.terrainClosure ? 'pull-up' : warn.overspeed ? 'overspeed' : 'warning')
