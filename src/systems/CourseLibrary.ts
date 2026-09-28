@@ -87,7 +87,7 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     label: 'Fjord run',
     detail: 'Fog-lined coastal route between steep shoulders',
     seed: 13,
-    profile: 'coast',
+    profile: 'fjord',
     weather: 'fog',
   },
   {

@@ -245,7 +245,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'badlands', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago', 'thermal', 'approach'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'fjord', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'badlands', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago', 'thermal', 'approach'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -293,6 +293,7 @@ describe('MissionSystem gate crossing', () => {
     const ridge = buildMissionRoute(0, 20, 0, 0, 'ridge')
     const canyon = buildMissionRoute(0, 20, 0, 0, 'canyon')
     const coast = buildMissionRoute(0, 20, 0, 0, 'coast')
+    const fjord = buildMissionRoute(0, 20, 0, 0, 'fjord')
     const river = buildMissionRoute(0, 20, 0, 0, 'river')
     const volcanic = buildMissionRoute(0, 20, 0, 0, 'volcanic')
     const desert = buildMissionRoute(0, 20, 0, 0, 'desert')
@@ -317,6 +318,7 @@ describe('MissionSystem gate crossing', () => {
     expect(ridge).toHaveLength(5)
     expect(canyon).toHaveLength(5)
     expect(coast).toHaveLength(5)
+    expect(fjord).toHaveLength(5)
     expect(river).toHaveLength(5)
     expect(volcanic).toHaveLength(5)
     expect(desert).toHaveLength(5)
@@ -338,8 +340,12 @@ describe('MissionSystem gate crossing', () => {
     expect(thermal[1]!.z).not.toBeCloseTo(archipelago[1]!.z)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
+    expect(fjord.map((point) => `${point.x.toFixed(2)}:${point.z.toFixed(2)}`))
+      .not.toEqual(coast.map((point) => `${point.x.toFixed(2)}:${point.z.toFixed(2)}`))
     expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
     expect(summarizeMissionRoute(0, 20, 0, coast, 'coast').challenge).toBe('range')
+    expect(summarizeMissionRoute(0, 20, 0, fjord, 'fjord').challenge).toBe('range')
+    expect(summarizeMissionRoute(0, 20, 0, fjord, 'fjord').maxAltitudeMeters).toBeGreaterThan(200)
     expect(summarizeMissionRoute(0, 20, 0, river, 'river').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, volcanic, 'volcanic').challenge).toBe('altitude')
     expect(summarizeMissionRoute(0, 20, 0, volcanic, 'volcanic').maxAltitudeMeters).toBeGreaterThan(700)
@@ -383,6 +389,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('ridge')).toBe('RIDGE RUN')
     expect(routeProfileLabel('canyon')).toBe('CANYON RUN')
     expect(routeProfileLabel('coast')).toBe('COASTAL RUN')
+    expect(routeProfileLabel('fjord')).toBe('FJORD RUN')
     expect(routeProfileLabel('river')).toBe('RIVER RUN')
     expect(routeProfileLabel('volcanic')).toBe('VOLCANIC RUN')
     expect(routeProfileLabel('desert')).toBe('DESERT DASH')
@@ -427,6 +434,7 @@ describe('MissionSystem gate crossing', () => {
       profiles.add(routeProfileForSpawn(x, 0, 0))
     }
     expect(profiles.has('coast')).toBe(true)
+    expect(profiles.has('fjord')).toBe(true)
     expect(profiles.has('river')).toBe(true)
     expect(profiles.has('volcanic')).toBe(true)
     expect(profiles.has('desert')).toBe(true)
