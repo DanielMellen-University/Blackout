@@ -152,11 +152,19 @@ import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './syste
 import { isDebugEnabled } from './debug/debugFlags'
 import type { DebugOverlay } from './debug/DebugOverlay'
 import {
+  COURSE_PICKER_CATEGORY_STORAGE_KEY,
+  COURSE_PICKER_SORT_STORAGE_KEY,
   CoursePicker,
   courseConditionSummary,
   courseMasteryProgressLabel,
   coursePickerCategoryForCourse,
   coursePickerCopy,
+  readCoursePickerCategory,
+  readCoursePickerSort,
+  writeCoursePickerCategory,
+  writeCoursePickerSort,
+  type CoursePickerCategory,
+  type CoursePickerSort,
 } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
@@ -347,6 +355,23 @@ async function boot(): Promise<void> {
     qualityStorage = window.localStorage
   } catch {
     /* Private browsing can deny storage. The game remains fully playable. */
+  }
+  const initialCoursePickerCategory = readCoursePickerCategory(qualityStorage)
+  const initialCoursePickerSort = readCoursePickerSort(qualityStorage)
+  const syncCoursePickerBrowseState = (
+    source: CoursePicker,
+    category: CoursePickerCategory,
+    sort: CoursePickerSort,
+  ): void => {
+    writeCoursePickerCategory(qualityStorage, category)
+    writeCoursePickerSort(qualityStorage, sort)
+    for (const picker of coursePickers) {
+      if (picker !== source) picker.setBrowseState(category, sort)
+    }
+  }
+  for (const picker of coursePickers) {
+    picker.setBrowseState(initialCoursePickerCategory, initialCoursePickerSort)
+    picker.onBrowseState((category, sort) => syncCoursePickerBrowseState(picker, category, sort))
   }
   pruneRotatingCourseRecords(qualityStorage)
   let opsStreaks: OpsStreakSnapshot = readOpsStreak(qualityStorage)
@@ -1482,6 +1507,11 @@ async function boot(): Promise<void> {
     if (key === COURSE_FAVORITES_STORAGE_KEY || key === null) {
       favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
       refreshCourseSelectorLabels()
+    }
+    if (key === COURSE_PICKER_CATEGORY_STORAGE_KEY || key === COURSE_PICKER_SORT_STORAGE_KEY || key === null) {
+      const category = readCoursePickerCategory(qualityStorage)
+      const sort = readCoursePickerSort(qualityStorage)
+      for (const picker of coursePickers) picker.setBrowseState(category, sort)
     }
   }
   uiListeners.add(window, 'storage', onProgressStorageChange)

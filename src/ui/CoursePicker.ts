@@ -29,6 +29,8 @@ export interface CoursePickerItem {
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
 export type CoursePickerSort = 'catalog' | 'score' | 'name'
+export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
+export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, string>> = {
   all: 'All courses',
   ops: 'Ops',
@@ -65,6 +67,60 @@ export function coursePickerCategoryLabel(category: CoursePickerCategory, count:
 /** Keep the bounded sort control readable and stable if a caller supplies bad input. */
 export function coursePickerSortLabel(sort: CoursePickerSort): string {
   return COURSE_PICKER_SORT_LABELS[sort] ?? COURSE_PICKER_SORT_LABELS.catalog
+}
+
+/** Repair persisted catalog browsing state without allowing unknown values into the UI. */
+export function normalizeCoursePickerCategory(value: unknown): CoursePickerCategory {
+  return value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' ||
+    value === 'recent' || value === 'favorites'
+    ? value
+    : 'all'
+}
+
+export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
+  return value === 'score' || value === 'name' ? value : 'catalog'
+}
+
+export function readCoursePickerCategory(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+): CoursePickerCategory {
+  try {
+    return normalizeCoursePickerCategory(storage?.getItem(COURSE_PICKER_CATEGORY_STORAGE_KEY))
+  } catch {
+    return 'all'
+  }
+}
+
+export function writeCoursePickerCategory(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  category: CoursePickerCategory,
+): void {
+  try {
+    storage?.setItem(COURSE_PICKER_CATEGORY_STORAGE_KEY, normalizeCoursePickerCategory(category))
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function readCoursePickerSort(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+): CoursePickerSort {
+  try {
+    return normalizeCoursePickerSort(storage?.getItem(COURSE_PICKER_SORT_STORAGE_KEY))
+  } catch {
+    return 'catalog'
+  }
+}
+
+export function writeCoursePickerSort(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  sort: CoursePickerSort,
+): void {
+  try {
+    storage?.setItem(COURSE_PICKER_SORT_STORAGE_KEY, normalizeCoursePickerSort(sort))
+  } catch {
+    /* Storage is optional. */
+  }
 }
 
 /** Sort only the already-filtered catalog so search and category semantics stay unchanged. */
@@ -398,6 +454,7 @@ export class CoursePicker {
   private sort: CoursePickerSort = 'catalog'
   private changeHandler: ((id: string) => void) | null = null
   private favoriteHandler: ((id: string, favorite: boolean) => void) | null = null
+  private browseStateHandler: ((category: CoursePickerCategory, sort: CoursePickerSort) => void) | null = null
   private disposed = false
 
   constructor(root: HTMLElement) {
@@ -480,6 +537,20 @@ export class CoursePicker {
     this.favoriteHandler = handler
   }
 
+  onBrowseState(handler: ((category: CoursePickerCategory, sort: CoursePickerSort) => void) | null): void {
+    this.browseStateHandler = handler
+  }
+
+  /** Apply a shared catalog view without emitting a persistence callback. */
+  setBrowseState(category: CoursePickerCategory, sort: CoursePickerSort): void {
+    if (this.disposed) return
+    this.category = normalizeCoursePickerCategory(category)
+    this.sort = normalizeCoursePickerSort(sort)
+    this.categorySelect.value = this.category
+    this.sortSelect.value = this.sort
+    this.renderList()
+  }
+
   setItems(items: readonly CoursePickerItem[], selectedId: string): void {
     if (this.disposed) return
     this.items = items.slice()
@@ -501,6 +572,7 @@ export class CoursePicker {
     this.disposed = true
     this.changeHandler = null
     this.favoriteHandler = null
+    this.browseStateHandler = null
     this.list.removeEventListener('click', this.onClick)
     this.list.removeEventListener('keydown', this.onKeyDown)
     this.filter.removeEventListener('input', this.onFilterInput)
@@ -643,18 +715,16 @@ export class CoursePicker {
 
   private onCategoryChange = (): void => {
     if (this.disposed) return
-    const value = this.categorySelect.value as CoursePickerCategory
-    this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' || value === 'recent' || value === 'favorites'
-      ? value
-      : 'all'
+    this.category = normalizeCoursePickerCategory(this.categorySelect.value)
     this.renderList()
+    this.browseStateHandler?.(this.category, this.sort)
   }
 
   private onSortChange = (): void => {
     if (this.disposed) return
-    const value = this.sortSelect.value as CoursePickerSort
-    this.sort = value === 'score' || value === 'name' ? value : 'catalog'
+    this.sort = normalizeCoursePickerSort(this.sortSelect.value)
     this.renderList()
+    this.browseStateHandler?.(this.category, this.sort)
   }
 
   private onFavoriteClick = (): void => {

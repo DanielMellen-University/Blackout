@@ -14,7 +14,13 @@ import {
   courseWindPreviewLabel,
   courseWeatherPreviewLabel,
   filterCoursePickerItems,
+  normalizeCoursePickerCategory,
+  normalizeCoursePickerSort,
+  readCoursePickerCategory,
+  readCoursePickerSort,
   sortCoursePickerItems,
+  writeCoursePickerCategory,
+  writeCoursePickerSort,
 } from '../src/ui/CoursePicker'
 
 const orbit = {
@@ -79,6 +85,27 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
+  })
+
+  it('repairs and persists the bounded catalog browsing view', () => {
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => { values.set(key, value) },
+    }
+    expect(normalizeCoursePickerCategory('favorites')).toBe('favorites')
+    expect(normalizeCoursePickerCategory('bogus')).toBe('all')
+    expect(normalizeCoursePickerSort('score')).toBe('score')
+    expect(normalizeCoursePickerSort({})).toBe('catalog')
+
+    writeCoursePickerCategory(storage, 'recent')
+    writeCoursePickerSort(storage, 'name')
+    expect(readCoursePickerCategory(storage)).toBe('recent')
+    expect(readCoursePickerSort(storage)).toBe('name')
+    values.set('blackout.coursePickerCategory', 'invalid')
+    values.set('blackout.coursePickerSort', 'invalid')
+    expect(readCoursePickerCategory(storage)).toBe('all')
+    expect(readCoursePickerSort(storage)).toBe('catalog')
   })
 
   it('sorts filtered cards by score or name without mutating catalog order', () => {
