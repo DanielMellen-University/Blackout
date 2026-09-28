@@ -25,6 +25,8 @@ describe('sortie contracts', () => {
     expect(sortieContractLabelForSeed(348, 5)).not.toBe('TRAFFIC WATCH')
     expect(sortieContractLabelForSeed(54, 5, true)).toBe('WATERWAY TOUR')
     expect(sortieContractDetailForSeed(54, 5, true)).toContain('VISIT TWO WATERWAYS')
+    expect(sortieContractLabelForSeed(80, 5, true)).toBe('THERMAL SURF')
+    expect(sortieContractDetailForSeed(80, 5, true)).toContain('RIDE THERMALS')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {
