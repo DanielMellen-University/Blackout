@@ -258,6 +258,13 @@ describe('course library', () => {
     expect(() => writeSelectedCourseId(null, 'training-orbit')).not.toThrow()
   })
 
+  it('keeps every authored course record identity unique', () => {
+    const identities = COURSE_LIBRARY
+      .map(courseRunId)
+      .filter((identity): identity is string => identity !== null)
+    expect(new Set(identities).size).toBe(identities.length)
+  })
+
   it('validates every curated seed to a usable dry airfield', () => {
     for (const course of COURSE_LIBRARY) {
       if (course.seed === null) continue
