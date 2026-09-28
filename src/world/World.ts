@@ -7,7 +7,7 @@ import {
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
 import { Atmosphere, type WeatherId } from './Atmosphere'
-import type { WeatherSnapshot } from './WeatherDirector'
+import type { WeatherSnapshot, WindSide } from './WeatherDirector'
 import {
   AIRFIELD_COLLIDERS,
   AIRFIELD_COLLISION_PADDING,
@@ -226,6 +226,7 @@ export class World {
     requestedProfile?: MissionRouteProfile,
     requestedWeather?: WeatherId,
     requestedTimeOfDay?: number,
+    requestedWindSide?: WindSide,
   ): number {
     if (this.disposed) return this.seed
     if (requestedSeed !== undefined && !Number.isFinite(requestedSeed)) {
@@ -236,6 +237,7 @@ export class World {
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
     const previousWeather = this.atmosphere.weather
+    const previousWindHeading = this.atmosphere.authoredWindHeading
     const previousTimeOfDay = this.atmosphere.timeOfDay
     const previousWeatherLocked = this.weatherLocked
     const previousTimeOfDayLocked = this.atmosphere.timeOfDayLocked
@@ -281,6 +283,10 @@ export class World {
         this.settlements.update(this.spawn.x, this.spawn.z)
         this.atmosphere.randomizeWeather(this.seed)
         if (requestedWeather) this.atmosphere.setWeather(requestedWeather, true)
+        if (requestedWindSide) {
+          const side = requestedWindSide === 'right' ? 1 : -1
+          this.atmosphere.setWindHeading(this.spawn.yaw + side * Math.PI / 2)
+        }
         if (Number.isFinite(requestedTimeOfDay)) {
           const normalizedTime = requestedTimeOfDay! - Math.floor(requestedTimeOfDay!)
           this.atmosphere.timeOfDay = normalizedTime < 0 ? normalizedTime + 1 : normalizedTime
@@ -309,6 +315,7 @@ export class World {
           previousPad,
           previousSpawn,
           previousWeather,
+          previousWindHeading,
           previousTimeOfDay,
           previousWeatherLocked,
           previousTimeOfDayLocked,
@@ -327,6 +334,7 @@ export class World {
     pad: { x: number; z: number; y: number; yaw?: number } | null,
     spawn: SpawnPose,
     weather: WeatherId,
+    windHeading: number | null,
     timeOfDay: number,
     weatherLocked: boolean,
     timeOfDayLocked: boolean,
@@ -362,6 +370,7 @@ export class World {
       this.atmosphere.randomizeWeather(seed)
       this.atmosphere.timeOfDay = Number.isFinite(timeOfDay) ? timeOfDay : this.atmosphere.timeOfDay
       this.atmosphere.setWeather(weather, true)
+      this.atmosphere.setWindHeading(windHeading)
       this.atmosphere.setWeatherLocked(weatherLocked)
       this.atmosphere.setTimeOfDayLocked(timeOfDayLocked)
       const restoredWeather = this.atmosphere.weatherSnapshot

@@ -79,6 +79,7 @@ describe('course library', () => {
     expect(courseRunId(courseDefinitionForId('pattern-approach'))).toBe('seed:28:approach')
     expect(courseDefinitionForId('crosswind-approach').profile).toBe('approach')
     expect(courseDefinitionForId('crosswind-approach').weather).toBe('storm')
+    expect(courseDefinitionForId('crosswind-approach').windSide).toBe('right')
     expect(courseRunId(courseDefinitionForId('crosswind-approach'))).toBe('seed:29:approach')
     expect(courseRunId(courseDefinitionForId('rainforest-run'))).toBe('seed:17:rainforest')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()

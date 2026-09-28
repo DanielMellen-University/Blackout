@@ -500,6 +500,7 @@ async function boot(): Promise<void> {
       replayCourse.profile ?? undefined,
       replayCourse.weather,
       replayCourse.timeOfDay,
+      replayCourse.windSide,
     )
   }
   applyShadowQuality = (mapSize: number): void => {
@@ -1080,6 +1081,7 @@ async function boot(): Promise<void> {
         course.profile ?? undefined,
         course.weather,
         course.timeOfDay,
+        course.windSide,
       )
       replaySeed = null
       debug?.syncPad()

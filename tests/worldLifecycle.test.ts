@@ -147,4 +147,17 @@ describe('world lifecycle boundary', () => {
     expect(world.atmosphere.timeOfDayLocked).toBe(true)
     world.dispose()
   }, 60_000)
+
+  it('pins authored crosswind courses to the runway-relative wind side', () => {
+    const world = new World('low')
+    try {
+      world.reseed(29, 'approach', 'storm', undefined, 'right')
+      const weather = world.atmosphere.weatherSnapshot
+      const crosswind = weather.windX * Math.cos(world.spawn.yaw) - weather.windZ * Math.sin(world.spawn.yaw)
+      expect(crosswind).toBeGreaterThan(20)
+      expect(world.atmosphere.authoredWindHeading).not.toBeNull()
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
 })

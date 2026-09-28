@@ -1,5 +1,5 @@
 import type { MissionRouteProfile } from './Mission'
-import type { WeatherId } from '../world/WeatherDirector'
+import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
 export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach'
 
@@ -16,6 +16,8 @@ export interface CourseDefinition {
   weather?: WeatherId
   /** Optional normalized time-of-day override, where 0 and 1 are midnight. */
   timeOfDay?: number
+  /** Optional runway-relative wind side for authored approach pressure. */
+  windSide?: WindSide
 }
 
 /** Small curated set of repeatable seeds, plus the normal infinite random mode. */
@@ -227,6 +229,7 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     seed: 29,
     profile: 'approach',
     weather: 'storm',
+    windSide: 'right',
   },
 ]
 

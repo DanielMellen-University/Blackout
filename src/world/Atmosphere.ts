@@ -517,6 +517,17 @@ export class Atmosphere {
     this.dirty = true
   }
 
+  /** Keep an authored course wind on a stable runway-relative side. */
+  setWindHeading(heading: number | null): void {
+    if (this.disposed) return
+    this.weatherDirector.setWindHeading(heading)
+    this.dirty = true
+  }
+
+  get authoredWindHeading(): number | null {
+    return this.weatherDirector.authoredWindHeading
+  }
+
   /** Fully random time of day + weighted weather (on world reseed). */
   randomizeWeather(seed: number): void {
     if (this.disposed) return

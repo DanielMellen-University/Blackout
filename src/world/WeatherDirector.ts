@@ -10,6 +10,8 @@ export type WeatherId =
   | 'snow'
   | 'blizzard'
 
+export type WindSide = 'left' | 'right'
+
 export const WEATHER_ORDER: readonly WeatherId[] = [
   'clear',
   'cloudy',
@@ -208,6 +210,7 @@ export class WeatherDirector {
   private windTo = { x: 3.7, z: 1.5 }
   private rngState = 0x12345678
   private locked = false
+  private windHeading: number | null = null
 
   get transitioning(): boolean {
     return this.transitionT < 1
@@ -223,6 +226,7 @@ export class WeatherDirector {
 
   randomize(seed: number, forcedId?: WeatherId): void {
     this.locked = false
+    this.windHeading = null
     this.rngState = (Math.floor(seed) ^ 0x9e3779b9) >>> 0
     const roll = this.random()
     let id: WeatherId
@@ -255,7 +259,7 @@ export class WeatherDirector {
       this.from = copyProfile(WEATHER_PROFILES[id])
       this.to = copyProfile(WEATHER_PROFILES[id])
       this.transitionT = 1
-      const wind = this.makeWind(this.to.windMps)
+      const wind = this.makeWindForProfile(this.to)
       this.windFrom = wind
       this.windTo = { ...wind }
       this.holdSec = this.nextHold()
@@ -265,11 +269,29 @@ export class WeatherDirector {
     this.from = this.profileFromSnapshot(current)
     this.windFrom = { x: current.windX, z: current.windZ }
     this.to = copyProfile(WEATHER_PROFILES[id])
-    this.windTo = this.makeWind(this.to.windMps)
+    this.windTo = this.makeWindForProfile(this.to)
     this.currentId = this.targetId
     this.targetId = id
     this.transitionT = 0
     this.transitionSec = 18 + this.random() * 18
+  }
+
+  /** Keep an authored wind direction while preserving each profile's speed. */
+  setWindHeading(heading: number | null): void {
+    if (heading === null || !Number.isFinite(heading)) {
+      this.windHeading = null
+      return
+    }
+    const safeHeading = Math.atan2(Math.sin(heading), Math.cos(heading))
+    this.windHeading = safeHeading
+    const fromSpeed = Math.hypot(this.windFrom.x, this.windFrom.z)
+    const toSpeed = Math.hypot(this.windTo.x, this.windTo.z)
+    this.windFrom = this.windVector(safeHeading, fromSpeed)
+    this.windTo = this.windVector(safeHeading, toSpeed)
+  }
+
+  get authoredWindHeading(): number | null {
+    return this.windHeading
   }
 
   cycle(): WeatherId {
@@ -332,6 +354,18 @@ export class WeatherDirector {
     const angle = this.random() * Math.PI * 2
     const variedSpeed = speed * (0.82 + this.random() * 0.36)
     return { x: Math.cos(angle) * variedSpeed, z: Math.sin(angle) * variedSpeed }
+  }
+
+  private makeWindForProfile(profile: WeatherProfile): { x: number; z: number } {
+    if (this.windHeading !== null) {
+      const speed = profile.windMps * (0.82 + this.random() * 0.36)
+      return this.windVector(this.windHeading, speed)
+    }
+    return this.makeWind(profile.windMps)
+  }
+
+  private windVector(heading: number, speed: number): { x: number; z: number } {
+    return { x: Math.sin(heading) * speed, z: Math.cos(heading) * speed }
   }
 
   private nextHold(): number {

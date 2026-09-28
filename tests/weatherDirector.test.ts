@@ -97,4 +97,16 @@ describe('weather director', () => {
     expect(Math.abs(middle.x)).toBeLessThan(.001)
     expect(Math.abs(middle.z)).toBeCloseTo(12, 8)
   })
+
+  it('keeps an authored wind heading while preserving seeded speed', () => {
+    const director = new WeatherDirector()
+    director.randomize(29, 'storm')
+    const beforeSpeed = Math.hypot(director.snapshot().windX, director.snapshot().windZ)
+    director.setWindHeading(Math.PI / 2)
+    const after = director.snapshot()
+    expect(Math.hypot(after.windX, after.windZ)).toBeCloseTo(beforeSpeed, 8)
+    expect(after.windX).toBeGreaterThan(0)
+    expect(Math.abs(after.windZ)).toBeLessThan(0.000001)
+    expect(director.authoredWindHeading).toBeCloseTo(Math.PI / 2)
+  })
 })
