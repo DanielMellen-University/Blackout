@@ -39,6 +39,12 @@ export function createEngineState(): EngineState {
   }
 }
 
+/** Keep fuel burn and resolved thrust on the same afterburner throttle gate. */
+export function afterburnerThrottleReady(throttle: number): boolean {
+  const lever = Number.isFinite(throttle) ? MathUtils.clamp(throttle, 0, 1) : 0
+  return lever >= C.afterburnerMinThrottle
+}
+
 /** Resolve controls once so thrust, visuals, audio, and HUD can agree. */
 export function resolveEngineState(
   controls: Pick<ControlState, 'throttle' | 'boost'>,
@@ -55,7 +61,7 @@ export function resolveEngineState(
   // Heat and the fuel-reserve lock are retired. Burner stays available until the tank is empty.
   const afterburnerActive = fuelAvailable &&
     afterburnerRequested &&
-    lever >= C.afterburnerMinThrottle
+    afterburnerThrottleReady(lever)
   const cruise = afterburnerActive ? C.cruiseSpeedBoost : C.cruiseSpeed
   const thrustMul = afterburnerActive ? (C.cruiseSpeedBoost / C.cruiseSpeed) ** 2 : 1
 

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Centralize the afterburner throttle gate so fuel burn and resolved engine output cannot disagree at malformed or boundary throttle values.
 - Gently muffle the existing wind, precipitation, and high-frequency engine bed inside clouds using bounded AudioParam targets, with no new audio nodes or render work.
 - Add smoothed cloud-edge, entry, and break cues so visibility changes are readable without per-frame HUD churn or extra scene work.
 - Buffet the camera and airframe through meaningful rain, snow, or strong gusts using existing weather telemetry, with no new meshes, particles, or draws.

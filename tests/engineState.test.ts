@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createEngineState, resolveEngineState } from '../src/aircraft/EngineState'
+import { afterburnerThrottleReady, createEngineState, resolveEngineState } from '../src/aircraft/EngineState'
 import { flightConfig as C } from '../src/aircraft/flightConfig'
 import { FUEL_AFTERBURNER_RESERVE_FRACTION } from '../src/aircraft/FuelSystem'
 
 describe('resolveEngineState', () => {
+  it('shares one finite-safe throttle gate with fuel burn', () => {
+    expect(afterburnerThrottleReady(C.afterburnerMinThrottle)).toBe(true)
+    expect(afterburnerThrottleReady(C.afterburnerMinThrottle - 0.001)).toBe(false)
+    expect(afterburnerThrottleReady(Number.NaN)).toBe(false)
+    expect(afterburnerThrottleReady(Number.POSITIVE_INFINITY)).toBe(false)
+  })
+
   it('does not light afterburner with a closed throttle', () => {
     const out = createEngineState()
     resolveEngineState({ throttle: 0, boost: true }, out)

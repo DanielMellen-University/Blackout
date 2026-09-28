@@ -1,4 +1,6 @@
 import { MathUtils } from 'three'
+import { afterburnerThrottleReady } from './EngineState'
+import { flightConfig as C } from './flightConfig'
 
 /** Lightweight arcade fuel state. Values are normalized to a 0..100 tank. */
 export interface FuelState {
@@ -19,7 +21,7 @@ export const AIRFIELD_REFUEL_RATE = 8
 const IDLE_BURN_RATE = 0.008
 const THROTTLE_BURN_RATE = 0.07
 const AFTERBURNER_BURN_RATE = 0.38
-export const AFTERBURNER_MIN_THROTTLE = 0.05
+export const AFTERBURNER_MIN_THROTTLE = C.afterburnerMinThrottle
 
 export function createFuelState(): FuelState {
   return {
@@ -50,7 +52,7 @@ export function updateFuel(
   const safeRemaining = Number.isFinite(state.remaining)
     ? MathUtils.clamp(state.remaining, 0, safeCapacity)
     : safeCapacity
-  const afterburner = boostRequested === true && lever >= AFTERBURNER_MIN_THROTTLE
+  const afterburner = boostRequested === true && afterburnerThrottleReady(lever)
   const burnRate = IDLE_BURN_RATE + lever * THROTTLE_BURN_RATE +
     (afterburner ? AFTERBURNER_BURN_RATE : 0)
   state.capacity = safeCapacity
@@ -101,7 +103,7 @@ export function fuelEnduranceSeconds(
 ): number | null {
   const safeFraction = Number.isFinite(fraction) ? MathUtils.clamp(fraction, 0, 1) : 0
   const lever = Number.isFinite(throttle) ? MathUtils.clamp(throttle, 0, 1) : 0
-  const afterburner = boostRequested === true && lever >= AFTERBURNER_MIN_THROTTLE
+  const afterburner = boostRequested === true && afterburnerThrottleReady(lever)
   const burnRate = IDLE_BURN_RATE + lever * THROTTLE_BURN_RATE +
     (afterburner ? AFTERBURNER_BURN_RATE : 0)
   if (burnRate <= 0) return null
