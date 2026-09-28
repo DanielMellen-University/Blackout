@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Keep authored Storm Run and Night Ops weather deterministic by blocking manual weather cycling for those courses while leaving random worlds dynamic.
 - Surface authored course conditions in the launch picker, including forced weather and night timing, and include that context in accessible course names.
 - Add the curated Night Ops course: a deterministic low-level fog route with an authored midnight sky, replay-safe weather/time overrides, and precision gates.
 - Add the curated Storm Run course: a deterministic low-visibility thunderstorm route with forced weather, crosswind zigzags, and replay-safe seed/profile identity.

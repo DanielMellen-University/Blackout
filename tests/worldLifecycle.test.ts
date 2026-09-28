@@ -38,6 +38,8 @@ describe('world lifecycle boundary', () => {
     expect(world.worldSeed).toBe(10)
     expect(world.mission.routeProfile).toBe('storm')
     expect(world.atmosphere.weather).toBe('storm')
+    expect(world.weatherCycleLocked).toBe(true)
+    expect(world.cycleWeather()).toBe('storm')
     world.dispose()
   }, 60_000)
 
@@ -48,6 +50,7 @@ describe('world lifecycle boundary', () => {
     expect(world.mission.routeProfile).toBe('night')
     expect(world.atmosphere.weather).toBe('fog')
     expect(world.atmosphere.timeOfDay).toBeCloseTo(0.84)
+    expect(world.weatherCycleLocked).toBe(true)
     world.dispose()
   }, 60_000)
 })

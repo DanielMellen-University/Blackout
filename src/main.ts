@@ -1390,8 +1390,12 @@ async function boot(): Promise<void> {
         )
       }
       if (input.consumeWeatherCycle()) {
-        world.cycleWeather()
-        showBanner(weatherCycleBanner(world.atmosphere.weatherLabel), 1800, 'info')
+        if (world.weatherCycleLocked) {
+          showBanner('COURSE WEATHER LOCKED', 1800, 'info')
+        } else {
+          world.cycleWeather()
+          showBanner(weatherCycleBanner(world.atmosphere.weatherLabel), 1800, 'info')
+        }
       }
       if (input.consumeWorldSeedCopy()) {
         const seed = world.worldSeed

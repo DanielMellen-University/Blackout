@@ -87,6 +87,8 @@ export class World {
   private committed = false
   private disposed = false
   private missionProfile: MissionRouteProfile | undefined
+  /** Authored weather stays fixed against manual N-cycle changes. */
+  private weatherLocked = false
   private appliedWeather: WeatherEffectState | null = null
   private readonly weatherCandidate: WeatherEffectState = {
     rain: 0,
@@ -143,6 +145,10 @@ export class World {
     return this.seed
   }
 
+  get weatherCycleLocked(): boolean {
+    return this.weatherLocked
+  }
+
   /** Stage the title screen without throwing away the nearby settlement cache. */
   setSettlementsVisible(visible: boolean): void {
     if (this.disposed) return
@@ -191,12 +197,14 @@ export class World {
     const previousSpawn = { ...this.spawn }
     const previousWeather = this.atmosphere.weather
     const previousTimeOfDay = this.atmosphere.timeOfDay
+    const previousWeatherLocked = this.weatherLocked
     let liveWorldCleared = false
     const restore = (): void => {
       setWorldSeed(previousSeed)
       this.seed = previousSeed
       this.missionProfile = previousProfile
       this.spawn = previousSpawn
+      this.weatherLocked = previousWeatherLocked
       if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
       else clearOpsPad()
     }
@@ -211,6 +219,7 @@ export class World {
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed
         this.missionProfile = requestedProfile
+        this.weatherLocked = requestedWeather !== undefined
         this.applySpawn(pad)
         liveWorldCleared = true
         this.terrain.clearAll()
@@ -256,6 +265,7 @@ export class World {
           previousSpawn,
           previousWeather,
           previousTimeOfDay,
+          previousWeatherLocked,
         )
         return this.seed
       }
@@ -272,9 +282,15 @@ export class World {
     spawn: SpawnPose,
     weather: WeatherId,
     timeOfDay: number,
+    weatherLocked: boolean,
   ): void {
     try { setWorldSeed(seed) } catch { /* keep the previous process alive */ }
-    try { this.seed = seed; this.missionProfile = profile; this.spawn = { ...spawn } } catch { /* state is already best effort */ }
+    try {
+      this.seed = seed
+      this.missionProfile = profile
+      this.spawn = { ...spawn }
+      this.weatherLocked = weatherLocked
+    } catch { /* state is already best effort */ }
     try {
       if (pad) {
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
@@ -337,6 +353,7 @@ export class World {
 
   cycleWeather(): WeatherId {
     if (this.disposed) return this.atmosphere.weather
+    if (this.weatherLocked) return this.atmosphere.weather
     return this.atmosphere.cycleWeather()
   }
 
