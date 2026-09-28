@@ -85,6 +85,12 @@ export function coursePickerEmptyMessage(category: CoursePickerCategory, query: 
   return 'NO COURSES AVAILABLE'
 }
 
+/** Keep pinned cards recognizable even when the Favorites filter is not active. */
+export function coursePickerMetaLabel(meta: string, favorite: boolean): string {
+  const safeMeta = meta.trim()
+  return favorite ? `★ ${safeMeta || 'FAVORITE'}` : safeMeta
+}
+
 export interface CoursePickerCopyInput {
   course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>
   history: CourseHistory | null
@@ -433,14 +439,15 @@ export class CoursePicker {
     button.className = 'course-option'
     button.dataset.courseId = item.id
     button.setAttribute('role', 'radio')
-    const accessibleLabel = [item.label, item.detail, item.meta, item.stats].filter(Boolean).join(', ')
+    const metaLabel = coursePickerMetaLabel(item.meta, item.favorite === true)
+    const accessibleLabel = [item.label, metaLabel, item.detail, item.stats].filter(Boolean).join(', ')
     button.setAttribute('aria-label', accessibleLabel)
     const name = document.createElement('span')
     name.className = 'course-option-name'
     name.textContent = item.label
     const meta = document.createElement('span')
     meta.className = 'course-option-meta'
-    meta.textContent = item.meta
+    meta.textContent = metaLabel
     button.append(name, meta)
     return button
   }

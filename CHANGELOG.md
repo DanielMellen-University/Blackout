@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.528** Mark pinned courses directly in the catalog cards so Favorites remain visible in every filter.
 - **10.527** Make Favorites keyboard-discoverable with an `F` shortcut and explicit empty-filter states.
 - **10.526** Add bounded Favorites storage and a selected-course pin action to both launch pickers.
 - **10.525** Persist a bounded Recent course filter across launch sessions so repeat sorties stay one click away.

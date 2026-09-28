@@ -7,6 +7,7 @@ import {
   coursePickerCopy,
   coursePickerCategoryForCourse,
   coursePickerEmptyMessage,
+  coursePickerMetaLabel,
   courseTimePreviewLabel,
   courseWindPreviewLabel,
   courseWeatherPreviewLabel,
@@ -65,6 +66,9 @@ describe('course picker copy', () => {
     expect(coursePickerEmptyMessage('favorites', '')).toContain('PRESS F')
     expect(coursePickerEmptyMessage('recent', '')).toBe('NO RECENT COURSES YET')
     expect(coursePickerEmptyMessage('all', '  unknown  ')).toBe('NO MATCHING COURSES')
+    expect(coursePickerMetaLabel('NEW', true)).toBe('★ NEW')
+    expect(coursePickerMetaLabel('', true)).toBe('★ FAVORITE')
+    expect(coursePickerMetaLabel('NEW', false)).toBe('NEW')
   })
   it('exposes authored weather and night conditions before launch', () => {
     expect(courseWeatherPreviewLabel(Number.NaN, 'storm')).toBe('THUNDERSTORM')
