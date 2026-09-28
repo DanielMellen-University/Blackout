@@ -28,8 +28,25 @@ export class GLoadFeedbackTracker {
   }
 
   update(loadFactor: number): GLoadVisionBand {
-    sanitizeLoad(loadFactor)
-    this.bandValue = 'normal'
+    const load = sanitizeLoad(loadFactor)
+
+    // Hold an active band through small load oscillations. A hard reversal
+    // can still move directly into the opposite band so the veil never lies
+    // about the current direction of force.
+    if (this.bandValue === 'blackout' && load > BLACKOUT_EXIT_G) {
+      return this.bandValue
+    }
+    if (this.bandValue === 'redout' && load < REDOUT_EXIT_G) {
+      return this.bandValue
+    }
+
+    if (load >= BLACKOUT_ENTER_G) {
+      this.bandValue = 'blackout'
+    } else if (load <= REDOUT_ENTER_G) {
+      this.bandValue = 'redout'
+    } else {
+      this.bandValue = 'normal'
+    }
     return this.bandValue
   }
 
@@ -40,7 +57,9 @@ export class GLoadFeedbackTracker {
 
 /** Classify a raw load sample without hysteresis (used for reset / tests). */
 export function bandFromLoad(loadFactor: number): GLoadVisionBand {
-  sanitizeLoad(loadFactor)
+  const load = sanitizeLoad(loadFactor)
+  if (load >= BLACKOUT_ENTER_G) return 'blackout'
+  if (load <= REDOUT_ENTER_G) return 'redout'
   return 'normal'
 }
 
@@ -49,21 +68,22 @@ export function gLoadVisionBanner(
   band: GLoadVisionBand,
   previous: GLoadVisionBand | null,
 ): string | null {
-  void band
-  void previous
+  if (band === previous || band === 'normal') return null
+  if (band === 'blackout') return 'BLACKOUT / EASE THE G'
+  if (band === 'redout') return 'REDOUT / PUSH GENTLY'
   return null
 }
 
 /** Dark tunnel intensity 0..1 from positive overload. */
 export function blackoutVignetteIntensity(loadFactor: number): number {
-  sanitizeLoad(loadFactor)
-  return 0
+  const load = sanitizeLoad(loadFactor)
+  return smoothStep(load, BLACKOUT_FADE_START_G, BLACKOUT_ENTER_G)
 }
 
 /** Restrained red wash intensity 0..1 from negative overload. */
 export function redoutWashIntensity(loadFactor: number): number {
-  sanitizeLoad(loadFactor)
-  return 0
+  const load = sanitizeLoad(loadFactor)
+  return smoothStep(-load, -REDOUT_FADE_START_G, -REDOUT_ENTER_G)
 }
 
 function resolveInitialBand(loadFactor: number): GLoadVisionBand {
@@ -73,4 +93,11 @@ function resolveInitialBand(loadFactor: number): GLoadVisionBand {
 function sanitizeLoad(loadFactor: number): number {
   if (!Number.isFinite(loadFactor)) return 1
   return Math.max(-4, Math.min(12, loadFactor))
+}
+
+function smoothStep(value: number, start: number, end: number): number {
+  if (value <= start) return 0
+  if (value >= end) return 1
+  const t = (value - start) / (end - start)
+  return t * t * (3 - 2 * t)
 }
