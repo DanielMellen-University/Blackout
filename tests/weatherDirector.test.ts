@@ -77,6 +77,17 @@ describe('weather director', () => {
     expect(director.snapshot()).toEqual(before)
   })
 
+  it('ignores malformed update deltas without poisoning a live front', () => {
+    const director = new WeatherDirector()
+    director.randomize(91, 'clear')
+    director.setWeather('storm')
+    const before = director.snapshot()
+    director.update(Number.NaN)
+    director.update(Number.POSITIVE_INFINITY)
+    expect(director.snapshot()).toEqual(before)
+    expect(director.transitioning).toBe(true)
+  })
+
   it('can redirect a moving front without a visual discontinuity', () => {
     const director = new WeatherDirector()
     director.randomize(91, 'clear')

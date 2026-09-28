@@ -303,7 +303,7 @@ export class WeatherDirector {
   }
 
   update(dt: number): void {
-    if (dt <= 0 || this.locked) return
+    if (!Number.isFinite(dt) || dt <= 0 || this.locked) return
     if (this.transitionT < 1) {
       this.transitionT = Math.min(1, this.transitionT + dt / this.transitionSec)
       if (this.transitionT >= 1) {
