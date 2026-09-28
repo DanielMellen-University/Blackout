@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.402** Add conservative HOME OK/TIGHT/LOW fuel-return guidance for runway returns and engine-out glides, with bounded estimates and no simulation or worker overhead.
 - **10.401** Keep a bounded missed-gate counter visible in the live HUD and route-progress accessibility text until reset, so a transient miss banner does not erase route feedback.
 - **10.400** Cache persistent route-risk copy across frames and remove array churn from its formatter, keeping slope guidance free of avoidable render-loop allocations.
 - **10.399** Keep each route's steepest slope visible in the persistent live risk row after the launch briefing fades, with finite clamping and no render-loop allocations.

@@ -21,6 +21,9 @@ import {
   formatGForce,
   formatHeading,
   formatFuelEndurance,
+  fuelHomeAriaLabel,
+  fuelHomeHudLabel,
+  fuelHomeTimeSeconds,
   refuelAriaLabel,
   refuelHudLabel,
   landingPreviewAriaLabel,
@@ -749,6 +752,19 @@ describe('HUD value formatting', () => {
     expect(refuelHudLabel(true, Number.NaN)).toBe('REFUEL 0%')
     expect(refuelAriaLabel(true, .42)).toBe('Refueling at 42%')
     expect(refuelAriaLabel(false, .42)).toBe('')
+  })
+
+  it('keeps return-fuel guidance conservative and finite', () => {
+    expect(fuelHomeTimeSeconds(1_000, 100)).toBe(13)
+    expect(fuelHomeTimeSeconds(1_000, 0)).toBe(28)
+    expect(fuelHomeTimeSeconds(Number.NaN, 100)).toBeNull()
+    expect(fuelHomeHudLabel(120, 60)).toBe('HOME OK 1:00')
+    expect(fuelHomeHudLabel(70, 60)).toBe('HOME TIGHT')
+    expect(fuelHomeHudLabel(50, 60)).toBe('HOME LOW')
+    expect(fuelHomeHudLabel(null, 60)).toBe('HOME --')
+    expect(fuelHomeHudLabel(100, null)).toBe('')
+    expect(fuelHomeAriaLabel(70, 60)).toBe('Return fuel tight')
+    expect(fuelHomeAriaLabel(120, 60)).toBe('Return fuel okay, 1:00')
   })
 
   it('keeps touchdown forecasts aligned with the result quality bands', () => {

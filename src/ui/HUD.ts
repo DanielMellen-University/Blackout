@@ -589,6 +589,38 @@ export function formatFuelEndurance(seconds: number | null): string {
     : `END ${minutes}:${String(secs).padStart(2, '0')}`
 }
 
+/** Estimate return time with a conservative low-speed floor and approach margin. */
+export function fuelHomeTimeSeconds(distanceM: number, speedMps: number): number | null {
+  if (!Number.isFinite(distanceM) || !Number.isFinite(speedMps)) return null
+  const distance = Math.max(0, Math.min(2_000_000, distanceM))
+  if (distance <= 0) return 0
+  const speed = Math.max(45, Math.min(2_000, speedMps))
+  return Math.ceil((distance / speed) * 1.25)
+}
+
+/** Keep runway-return fuel pressure compact and actionable. */
+export function fuelHomeHudLabel(enduranceSeconds: number | null, homeSeconds: number | null): string {
+  if (homeSeconds === null || !Number.isFinite(homeSeconds)) return ''
+  const home = Math.max(0, Math.min(359_999, Math.round(homeSeconds)))
+  if (home <= 0) return 'HOME READY'
+  if (enduranceSeconds === null || !Number.isFinite(enduranceSeconds)) return 'HOME --'
+  const endurance = Math.max(0, enduranceSeconds)
+  if (endurance < home) return 'HOME LOW'
+  if (endurance < home * 1.2) return 'HOME TIGHT'
+  return `HOME OK ${formatFuelEndurance(home).slice(4)}`
+}
+
+/** Describe the same return-fuel status for assistive technology. */
+export function fuelHomeAriaLabel(enduranceSeconds: number | null, homeSeconds: number | null): string {
+  const label = fuelHomeHudLabel(enduranceSeconds, homeSeconds)
+  if (!label) return ''
+  if (label === 'HOME LOW') return 'Return fuel low'
+  if (label === 'HOME TIGHT') return 'Return fuel tight'
+  if (label === 'HOME --') return 'Return fuel unavailable'
+  if (label.startsWith('HOME OK ')) return `Return fuel okay, ${label.slice(8).toLowerCase()}`
+  return `Return fuel ${label.slice(5).toLowerCase()}`
+}
+
 /** Keep the grounded airfield refuel state visible after its launch banner fades. */
 export function refuelHudLabel(refueling: unknown, fraction: number): string {
   if (refueling !== true) return ''
@@ -854,6 +886,8 @@ export class HUD {
   private readonly comboEl: HTMLElement | null
   private readonly fuelEl: HTMLElement | null
   private readonly fuelEnduranceEl: HTMLElement | null
+  private readonly fuelHomeRowEl: HTMLElement | null
+  private readonly fuelHomeEl: HTMLElement | null
   private readonly refuelRowEl: HTMLElement | null
   private readonly refuelEl: HTMLElement | null
   private readonly landingRowEl: HTMLElement | null
@@ -937,6 +971,10 @@ export class HUD {
   private fuelAriaText = ''
   private fuelEnduranceValue = -1
   private fuelEnduranceText = 'END --'
+  private fuelHomeValue = Number.NaN
+  private fuelHomeEnduranceValue = Number.NaN
+  private fuelHomeText = ''
+  private fuelHomeAriaText = ''
   private refuelValue: boolean | null = null
   private refuelPercentValue = -1
   private refuelText = ''
@@ -1120,6 +1158,8 @@ export class HUD {
     this.comboEl = root.getElementById('hud-combo')
     this.fuelEl = root.getElementById('hud-fuel')
     this.fuelEnduranceEl = root.getElementById('hud-fuel-endurance')
+    this.fuelHomeRowEl = root.getElementById('hud-fuel-home-row')
+    this.fuelHomeEl = root.getElementById('hud-fuel-home')
     this.refuelRowEl = root.getElementById('hud-refuel-row')
     this.refuelEl = root.getElementById('hud-refuel')
     this.landingRowEl = root.getElementById('hud-landing-row')
@@ -1250,6 +1290,8 @@ export class HUD {
     ghostPace?: number | null
     /** Remaining fuel as a normalized fraction. */
     fuel?: number
+    /** Estimated seconds to the runway during a return or engine-out glide. */
+    fuelHomeSeconds?: number | null
     /** Whether the aircraft is currently refilling while parked on the home strip. */
     refueling?: boolean
     /** Predicted final touchdown quality shown only on the close return approach. */
@@ -1813,6 +1855,34 @@ export class HUD {
         this.fuelAriaText = `${percent}% fuel, ${this.fuelEnduranceText.toLowerCase()}`
         this.setAttribute(this.fuelEl, 'aria-valuetext', this.fuelAriaText)
       }
+    }
+    if (this.fuelHomeRowEl && this.fuelHomeEl && opts.fuelHomeSeconds !== undefined) {
+      const homeSeconds = opts.fuelHomeSeconds === null || !Number.isFinite(opts.fuelHomeSeconds)
+        ? Number.NaN
+        : Math.max(0, Math.min(359_999, Math.round(opts.fuelHomeSeconds)))
+      const enduranceSeconds = this.fuelEnduranceValue >= 0 ? this.fuelEnduranceValue : Number.NaN
+      if (
+        !Object.is(homeSeconds, this.fuelHomeValue) ||
+        !Object.is(enduranceSeconds, this.fuelHomeEnduranceValue) ||
+        this.fuelHomeText === ''
+      ) {
+        this.fuelHomeValue = homeSeconds
+        this.fuelHomeEnduranceValue = enduranceSeconds
+        this.fuelHomeText = fuelHomeHudLabel(
+          Number.isFinite(enduranceSeconds) ? enduranceSeconds : null,
+          Number.isFinite(homeSeconds) ? homeSeconds : null,
+        )
+        this.fuelHomeAriaText = fuelHomeAriaLabel(
+          Number.isFinite(enduranceSeconds) ? enduranceSeconds : null,
+          Number.isFinite(homeSeconds) ? homeSeconds : null,
+        )
+      }
+      const visible = Number.isFinite(homeSeconds)
+      this.setHidden(this.fuelHomeRowEl, !visible)
+      this.setText(this.fuelHomeEl, this.fuelHomeText)
+      this.setAttribute(this.fuelHomeEl, 'aria-label', this.fuelHomeAriaText)
+      this.setClass(this.fuelHomeEl, 'fuel-home-low', this.fuelHomeText === 'HOME LOW')
+      this.setClass(this.fuelHomeEl, 'fuel-home-tight', this.fuelHomeText === 'HOME TIGHT')
     }
     if (this.refuelRowEl && this.refuelEl && opts.refueling !== undefined) {
       const active = opts.refueling === true

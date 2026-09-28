@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.401**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.402**.
 
 ## Run
 
@@ -45,6 +45,8 @@ The nose is the flight path. Throttle is thrust: a climb spends speed, and closi
 The live route-risk row retains the steepest route slope after the launch briefing fades, so the handling envelope stays visible throughout the sortie.
 
 Missed gate crossings also remain visible in the live HUD and its accessible route-progress label until the sortie resets.
+
+During a return or engine-out glide, the HUD compares endurance to a conservative runway estimate and reports HOME OK, HOME TIGHT, or HOME LOW.
 
 ## A sortie
 

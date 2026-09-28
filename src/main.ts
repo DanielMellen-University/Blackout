@@ -117,6 +117,7 @@ import {
   FLIGHT_CONTROLS_HINT,
   createMissionHudLabelCache,
   createRouteRiskLabelCache,
+  fuelHomeTimeSeconds,
   hudBackgroundHidden,
   HUD,
   machNumber,
@@ -2271,6 +2272,9 @@ async function boot(): Promise<void> {
       hudFrame.airbrake = aircraft.controls.airbrake
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
+      hudFrame.fuelHomeSeconds = returning || emergencyReturn
+        ? fuelHomeTimeSeconds(navDist, aircraft.speed)
+        : null
       hudFrame.refueling = refueling
       const landingPreview = (returning || emergencyReturn) && navDist <= 3_000 && aircraft.controls.gearDown
         ? landingQualityForMetrics({
