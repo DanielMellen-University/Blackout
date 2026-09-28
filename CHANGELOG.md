@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.446** Add an accessible course-catalog filter to the title and pause pickers, keeping the growing route library searchable and the visible card list bounded.
 - **10.445** Couple adaptive pixel resolution to terrain-weather and water shader detail, shedding GPU work under sustained load while preserving geometry, visibility, and flight behavior.
 - Dampen storm buffet while landing gear is down, and cue BUFFET on the live weather HUD when the gated drive is meaningful.
 - **10.444** Keep Front Chaser weather transitions automatic while locking manual cycling, preserving deterministic contract replay without extra render-loop state.

@@ -580,10 +580,47 @@ body,
   color: var(--accent);
 }
 
+.course-picker-filter {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  border: 1px solid rgba(139, 196, 214, 0.28);
+  border-radius: 8px;
+  background: rgba(7, 15, 22, 0.72);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.course-picker-filter::placeholder {
+  color: var(--ink-mute);
+  opacity: 1;
+}
+
+.course-picker-filter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.course-picker-filter-status {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--ink-mute);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .course-picker-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  max-height: min(44vh, 420px);
+  overflow-y: auto;
+  padding: 2px;
+  scrollbar-width: thin;
 }
 
 .course-option {

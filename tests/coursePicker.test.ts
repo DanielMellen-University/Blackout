@@ -7,6 +7,7 @@ import {
   courseTimePreviewLabel,
   courseWindPreviewLabel,
   courseWeatherPreviewLabel,
+  filterCoursePickerItems,
 } from '../src/ui/CoursePicker'
 
 const orbit = {
@@ -16,6 +17,18 @@ const orbit = {
 }
 
 describe('course picker copy', () => {
+  it('filters the catalog by every search term while preserving authored order', () => {
+    const items = [
+      { id: 'storm', label: 'Storm Run', detail: 'Low visibility mountain pass', meta: 'NEW', stats: '' },
+      { id: 'river', label: 'River Run', detail: 'Rainy low-level water route', meta: '2 RUNS', stats: '' },
+      { id: 'night', label: 'Night Ops', detail: 'Foggy midnight pass', meta: 'NEW', stats: '' },
+    ]
+    expect(filterCoursePickerItems(items, '  RAIN  WATER ')).toEqual([items[1]])
+    expect(filterCoursePickerItems(items, 'pass')).toEqual([items[0], items[2]])
+    expect(filterCoursePickerItems(items, '')).toEqual(items)
+    expect(filterCoursePickerItems(items, 'unknown')).toEqual([])
+  })
+
   it('formats a bounded title-screen mastery summary', () => {
     expect(courseMasteryProgressLabel(3, 7)).toBe('LEGEND 3/7')
     expect(courseMasteryProgressLabel(99, 4)).toBe('LEGEND 4/4')

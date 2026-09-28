@@ -15,6 +15,19 @@ export interface CoursePickerItem {
   stats: string
 }
 
+/** Filter the bounded course catalog without changing its authored order. */
+export function filterCoursePickerItems(
+  items: readonly CoursePickerItem[],
+  query: string,
+): CoursePickerItem[] {
+  const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return items.slice()
+  return items.filter(item => {
+    const haystack = `${item.label} ${item.detail} ${item.meta} ${item.stats}`.toLocaleLowerCase()
+    return terms.every(term => haystack.includes(term))
+  })
+}
+
 export interface CoursePickerCopyInput {
   course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'weatherShift' | 'timeOfDay' | 'windSide'>
   history: CourseHistory | null
@@ -192,6 +205,8 @@ export class CoursePicker {
   private readonly list: HTMLElement
   private readonly detail: HTMLElement
   private readonly stats: HTMLElement
+  private readonly filter: HTMLInputElement
+  private readonly filterStatus: HTMLElement
   private items: CoursePickerItem[] = []
   private selectedId = ''
   private changeHandler: ((id: string) => void) | null = null
@@ -201,9 +216,24 @@ export class CoursePicker {
     this.list = must(root, '.course-picker-list')
     this.detail = must(root, '.course-picker-detail')
     this.stats = must(root, '.course-picker-stats')
+    this.filter = document.createElement('input')
+    this.filter.type = 'search'
+    this.filter.className = 'course-picker-filter'
+    this.filter.placeholder = 'Filter courses'
+    this.filter.setAttribute('aria-label', 'Filter courses')
+    this.filter.autocomplete = 'off'
+    this.filter.spellcheck = false
+    this.filterStatus = document.createElement('span')
+    this.filterStatus.className = 'course-picker-filter-status'
+    this.filterStatus.hidden = true
+    this.filterStatus.setAttribute('aria-live', 'polite')
+    root.insertBefore(this.filter, this.list)
+    root.insertBefore(this.filterStatus, this.list)
     this.list.setAttribute('role', 'radiogroup')
     this.list.addEventListener('click', this.onClick)
     this.list.addEventListener('keydown', this.onKeyDown)
+    this.filter.addEventListener('input', this.onFilterInput)
+    this.filter.addEventListener('keydown', this.onFilterKeyDown)
   }
 
   get value(): string {
@@ -217,8 +247,8 @@ export class CoursePicker {
   setItems(items: readonly CoursePickerItem[], selectedId: string): void {
     if (this.disposed) return
     this.items = items.slice()
-    this.list.replaceChildren(...this.items.map((item) => this.createOption(item)))
     this.setValue(selectedId)
+    this.renderList()
   }
 
   setValue(id: string): void {
@@ -236,7 +266,20 @@ export class CoursePicker {
     this.changeHandler = null
     this.list.removeEventListener('click', this.onClick)
     this.list.removeEventListener('keydown', this.onKeyDown)
+    this.filter.removeEventListener('input', this.onFilterInput)
+    this.filter.removeEventListener('keydown', this.onFilterKeyDown)
+    this.filter.remove()
+    this.filterStatus.remove()
     this.items = []
+  }
+
+  private renderList(): void {
+    const visible = filterCoursePickerItems(this.items, this.filter.value)
+    this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
+    const query = this.filter.value.trim()
+    this.filterStatus.textContent = query ? `${visible.length} MATCH${visible.length === 1 ? '' : 'ES'}` : ''
+    this.filterStatus.hidden = !query
+    this.syncSelection()
   }
 
   private createOption(item: CoursePickerItem): HTMLButtonElement {
@@ -293,17 +336,19 @@ export class CoursePicker {
 
   private onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || this.items.length === 0) return
-    const index = Math.max(0, this.items.findIndex((item) => item.id === this.selectedId))
+    const visible = filterCoursePickerItems(this.items, this.filter.value)
+    if (visible.length === 0) return
+    const index = Math.max(0, visible.findIndex((item) => item.id === this.selectedId))
     let next = index
     switch (event.key) {
       case 'ArrowRight':
-        next = Math.min(this.items.length - 1, index + 1)
+        next = Math.min(visible.length - 1, index + 1)
         break
       case 'ArrowLeft':
         next = Math.max(0, index - 1)
         break
       case 'ArrowDown':
-        next = Math.min(this.items.length - 1, index + 2)
+        next = Math.min(visible.length - 1, index + 2)
         break
       case 'ArrowUp':
         next = Math.max(0, index - 2)
@@ -318,8 +363,20 @@ export class CoursePicker {
         return
     }
     event.preventDefault()
-    const item = this.items[next]
+    const item = visible[next]
     if (item) this.select(item.id, true)
+  }
+
+  private onFilterInput = (): void => {
+    if (this.disposed) return
+    this.renderList()
+  }
+
+  private onFilterKeyDown = (event: KeyboardEvent): void => {
+    if (event.key !== 'Escape' || !this.filter.value) return
+    event.preventDefault()
+    this.filter.value = ''
+    this.renderList()
   }
 }
 
