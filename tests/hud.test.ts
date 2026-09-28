@@ -6,6 +6,7 @@ import {
   contractStreakAriaLabel,
   contractStreakHudLabel,
   canopyTintIntensity,
+  canopyCloudIntensity,
   canopyWeatherIntensity,
   crosswindDirection,
   crosswindSpeedMps,
@@ -674,6 +675,15 @@ describe('HUD value formatting', () => {
     expect(FLIGHT_CONTROLS_HINT).toContain('W/S PITCH')
     expect(FLIGHT_CONTROLS_HINT).toContain('C VIEW')
     expect(FLIGHT_CONTROLS_HINT.length).toBeLessThan(64)
+  })
+
+  it('keeps cockpit cloud mist subtle and disabled outside first person', () => {
+    expect(canopyCloudIntensity(0, true)).toBe(0)
+    expect(canopyCloudIntensity(1, true)).toBeCloseTo(0.08)
+    expect(canopyCloudIntensity(4, true)).toBeCloseTo(0.08)
+    expect(canopyCloudIntensity(1, false)).toBe(0)
+    expect(canopyTintIntensity(0, true, 3000, 0, 0, 1)).toBeCloseTo(0.08)
+    expect(canopyTintIntensity(0, false, 3000, 0, 0, 1)).toBe(0)
   })
 
   it('classifies severe weather without trusting malformed labels', () => {

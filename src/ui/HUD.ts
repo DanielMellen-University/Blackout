@@ -1136,6 +1136,8 @@ export class HUD {
     rain?: number
     /** Live snow intensity used by the cockpit canopy veil. */
     snow?: number
+    /** Smoothed local cloud density used by the cockpit canopy veil. */
+    cloudImmersion?: number
     /** Live world wind vector in metres per second. */
     windX?: number
     windZ?: number
@@ -1354,6 +1356,7 @@ export class HUD {
       opts.cameraMode === 'cockpit',
       opts.rain ?? 0,
       opts.snow ?? 0,
+      opts.cloudImmersion ?? 0,
     )
     this.updateHeatVeil(kts, !!opts.boost)
     this.updateGLoadVeil(opts.gForce)
@@ -2157,13 +2160,20 @@ export class HUD {
     this.setStyle(this.speedJuiceEl, 'opacity', formatHudNumber(intensity + (boost ? .06 : 0), 1000))
   }
 
-  private updateCanopyTint(kts: number, cockpit: boolean, rain: number, snow: number): void {
+  private updateCanopyTint(
+    kts: number,
+    cockpit: boolean,
+    rain: number,
+    snow: number,
+    cloudImmersion: number,
+  ): void {
     if (!this.canopyTintEl) return
-    const intensity = canopyTintIntensity(kts, cockpit, this.maxKts, rain, snow)
+    const intensity = canopyTintIntensity(kts, cockpit, this.maxKts, rain, snow, cloudImmersion)
     const active = intensity > 0.01
     this.setClass(this.canopyTintEl, 'is-active', active)
     this.setStyle(this.canopyTintEl, 'opacity', formatHudNumber(intensity, 1000))
     this.setStyle(this.canopyTintEl, '--canopy-wet', formatHudNumber(canopyWeatherIntensity(rain, snow, cockpit), 1000))
+    this.setStyle(this.canopyTintEl, '--canopy-cloud', formatHudNumber(canopyCloudIntensity(cloudImmersion, cockpit), 1000))
   }
 
   private updateHeatVeil(kts: number, boost: boolean): void {
@@ -2664,14 +2674,22 @@ export function canopyTintIntensity(
   maxKts = 900,
   rain = 0,
   snow = 0,
+  cloudImmersion = 0,
 ): number {
   if (!cockpit) return 0
   const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
   const safeMaxKts = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 900
   const t = Math.min(1, Math.max(0, safeKnots / safeMaxKts))
-  const weather = canopyWeatherIntensity(rain, snow, cockpit)
+  const weather = canopyWeatherIntensity(rain, snow, cockpit) + canopyCloudIntensity(cloudImmersion, cockpit)
   if (t <= 0.22) return weather
   return Math.min(0.32, (t - 0.22) * 0.36 + weather)
+}
+
+/** Bounded cloud mist contribution for the cockpit-only canopy veil. */
+export function canopyCloudIntensity(immersion: number, cockpit: boolean): number {
+  if (!cockpit) return 0
+  const safe = Math.min(1, Math.max(0, safeHudValue(immersion)))
+  return safe * 0.08
 }
 
 /** Bounded weather response for the cockpit canopy streak texture. */

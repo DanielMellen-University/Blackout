@@ -2041,6 +2041,7 @@ async function boot(): Promise<void> {
       hudFrame.roll = pose.roll
       hudFrame.rain = precipitation.rain
       hudFrame.snow = precipitation.snow
+      hudFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
       hudFrame.heading = pose.heading
       hudFrame.audioMuted = audioMuted
       hudFrame.warning = warn.text

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add a subtle first-person cloud mist to the existing canopy veil, reusing one DOM layer with bounded opacity and no new scene or render work.
 - Make world reseeding recover the previous streamed terrain, settlements, weather, and mission when replacement fails after the live scene has been cleared.
 - Centralize the afterburner throttle gate so fuel burn and resolved engine output cannot disagree at malformed or boundary throttle values.
 - Gently muffle the existing wind, precipitation, and high-frequency engine bed inside clouds using bounded AudioParam targets, with no new audio nodes or render work.
