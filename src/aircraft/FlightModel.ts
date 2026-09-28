@@ -1,7 +1,6 @@
 import { MathUtils, Quaternion, Vector3 } from 'three'
 import {
   clearGroundHeightCache,
-  contactMinY,
   contactMinYCached,
   createGroundHeightCache,
   sampleGroundNormalCached,
@@ -87,10 +86,13 @@ export class FlightModel {
   }
 
   step(aircraft: Aircraft, dt: number): void {
+    // Even a no-op step marks a new caller-owned solve boundary. Do not let a
+    // cache populated during reset/presentation survive into auto-gear or a
+    // later terrain sampler revision.
+    clearGroundHeightCache(this.groundHeightCache)
     if (!Number.isFinite(dt) || dt <= 0) return
 
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
-    clearGroundHeightCache(this.groundHeightCache)
     const minY = contactMinYCached(position.x, position.z, controls.gearDown, this.groundHeightCache)
     const groundSpeed = Math.hypot(velocity.x, velocity.z)
     this.axes(orientation)
@@ -453,10 +455,11 @@ export class FlightModel {
   }
 
   isOnGround(aircraft: Aircraft): boolean {
-    const minY = contactMinY(
+    const minY = contactMinYCached(
       aircraft.position.x,
       aircraft.position.z,
       aircraft.controls.gearDown,
+      this.groundHeightCache,
     )
     this.axes(aircraft.orientation)
     return this.grounded(aircraft.position.y, minY, aircraft.velocity.y, _up.y)

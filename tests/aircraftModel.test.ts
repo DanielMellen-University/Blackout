@@ -184,8 +184,10 @@ describe('rebuilt aircraft', () => {
       return 0
     })
     const aircraft = new Aircraft()
+    samples = 0
     aircraft.position.set(0, 100, 0)
     expect(aircraft.onGround).toBe(false)
+    expect(samples).toBeGreaterThan(0)
     const firstSamples = samples
     expect(aircraft.onGround).toBe(false)
     expect(samples).toBe(firstSamples)

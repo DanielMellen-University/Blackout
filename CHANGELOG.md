@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.498** Reuse the fixed-step ground cache for post-step grounded-state checks, removing a duplicate terrain height query and hardening empty-slot sentinels so the world origin can never read as an uninitialized zero.
 - **10.497** Reuse frame-scoped ground probes in the fixed-step flight contact sweep, reducing duplicate terrain height and normal sampling without retaining values across streamed terrain changes.
 - **10.496** Reuse one climate record across each regional settlement-road candidate pass, reducing worker-side planning garbage while preserving deterministic terrain-following road selection.
 - **10.495** Avoid temporary surface records in vegetation water rejection, keeping near-field prop streaming deterministic while trimming another bounded allocation burst per chunk.

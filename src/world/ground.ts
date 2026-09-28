@@ -54,7 +54,9 @@ export interface GroundHeightCache {
 export function createGroundHeightCache(capacity = 8): GroundHeightCache {
   const safeCapacity = Math.max(1, Math.min(32, Math.floor(Number.isFinite(capacity) ? capacity : 8)))
   const entries: GroundHeightCacheEntry[] = []
-  for (let i = 0; i < safeCapacity; i++) entries.push({ x: 0, z: 0, height: 0 })
+  // Empty slots must never match the valid world coordinate (0, 0) before a
+  // caller clears or fills the cache for its first solve.
+  for (let i = 0; i < safeCapacity; i++) entries.push({ x: Number.NaN, z: Number.NaN, height: 0 })
   return { entries, cursor: 0, revision: samplerRevision }
 }
 

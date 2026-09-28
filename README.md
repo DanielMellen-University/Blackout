@@ -4,13 +4,13 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.497**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.498**.
 
 Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget.
 
 Procedural cities and villages receive deterministic biome-aware names that carry into radar locks and discovery banners. Near-field vegetation and regional settlement-road planning reuse bounded climate records, keeping LOD promotions and worker-side road selection inside the existing streaming budget.
 
-The live HUD keeps the current biome or water body visible as a compact region label between discovery banners, reusing the existing bounded terrain survey cadence. External camera ground probes and fixed-step flight contact sweeps reuse caller-owned, frame-scoped height caches, keeping repeated ridge, post-effect floor, and collision-normal checks allocation-free without retaining stale values across sampler replacement or terrain streaming.
+The live HUD keeps the current biome or water body visible as a compact region label between discovery banners, reusing the existing bounded terrain survey cadence. External camera ground probes, fixed-step flight contact sweeps, and post-step grounded checks reuse caller-owned, frame-scoped height caches, keeping repeated ridge, post-effect floor, collision-normal, and gear-state probes allocation-free without retaining stale values across sampler replacement or terrain streaming.
 
 The title screen now surfaces pilot rank, course mastery, earned honors, and the next career goal before launch, using the same bounded records that power results debriefs.
 
@@ -24,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks and builds. World replacement is transactional: a failed rebuild rolls back to a usable streamed world instead of leaving the runway over an empty scene. The deterministic startup seed corpus is regression-tested so dry playable pads remain available across the fallback search. If the initial world search still exhausts its bounded attempts, the title screen exposes a Retry action instead of leaving Play dead.
+Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks and builds. GitHub Actions runs both checks from the lockfile on every push and pull request. World replacement is transactional: a failed rebuild rolls back to a usable streamed world instead of leaving the runway over an empty scene. The deterministic startup seed corpus is regression-tested so dry playable pads remain available across the fallback search. If the initial world search still exhausts its bounded attempts, the title screen exposes a Retry action instead of leaving Play dead.
 
 ## Aircraft and weather
 
