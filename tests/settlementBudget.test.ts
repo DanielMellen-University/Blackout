@@ -4,10 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 
 const mockAnchorState = { rejectPrimary: false }
+const settlementCallCount = { value: 0 }
 
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
   settlementForCell: (cx: number, cz: number, forcedAnchor?: 'city' | 'village') => {
+    settlementCallCount.value++
     if (Math.abs(cx) > 1 || Math.abs(cz) > 1) return null
     if (mockAnchorState.rejectPrimary && ((cx === 1 && cz === 0) || (cx === 0 && cz === 1))) return null
     const plan = planFor(cx, cz)
@@ -135,6 +137,34 @@ describe('settlement streaming budgets', () => {
       for (let frame = 0; frame < 30; frame++) system.update(0, 0)
       expect(internals.loaded.has('1,0')).toBe(true)
       expect(internals.loaded.has('0,1')).toBe(true)
+    } finally {
+      system.dispose()
+      clearOpsPad()
+    }
+  })
+
+  it('throttles protected retries while the instance budget stays full', () => {
+    const system = new SettlementSystem(new Scene())
+    const internals = system as unknown as {
+      canLoad: (plan: SettlementPlan, x: number, z: number) => boolean
+      primeAnchors: (x: number, z: number) => void
+      retryProtectedAnchors: (x: number, z: number) => void
+      protectedRetryCooldown: number
+    }
+    internals.canLoad = () => false
+    try {
+      setOpsPad(0, 0, 100)
+      internals.primeAnchors(0, 0)
+      settlementCallCount.value = 0
+      internals.retryProtectedAnchors(0, 0)
+      const callsAfterRetry = settlementCallCount.value
+      expect(callsAfterRetry).toBeGreaterThan(0)
+      expect(internals.protectedRetryCooldown).toBeGreaterThan(0)
+
+      // A second retry in the same window should be a no-op instead of
+      // rebuilding both deterministic plans and filtering the queue again.
+      internals.retryProtectedAnchors(0, 0)
+      expect(settlementCallCount.value).toBe(callsAfterRetry)
     } finally {
       system.dispose()
       clearOpsPad()

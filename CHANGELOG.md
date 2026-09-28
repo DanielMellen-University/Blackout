@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Throttle protected settlement-anchor retries behind stream, budget, and movement changes, avoiding repeated plan rebuilds and queue filtering every render frame while keeping guaranteed city and village recovery responsive.
 - Preview each seeded sortie contract and its bounded instruction in the course picker, making the repeat objective clear before launch without adding render-loop work.
 - Add the curated Alpine Pass course, a deterministic high-altitude mountain route that also joins random profile rotation without adding scene systems or unbounded route work.
 - Carry authored weather and night conditions into the results and crash debrief, keeping Storm Run and Night Ops context readable after the route ends without adding runtime or storage work.

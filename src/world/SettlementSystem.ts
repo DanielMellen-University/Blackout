@@ -20,6 +20,11 @@ const LOAD_RADIUS = Math.min(FOG_FAR, 15120)
 const DETAIL_RADIUS = 4200
 const ROAD_LOAD_RADIUS = LOAD_RADIUS + 3000
 const ROAD_KEEP_RADIUS = ROAD_LOAD_RADIUS + 5000
+// Protected landmarks only need another admission attempt when the stream
+// changes or a budget slot opens. A short retry window still catches an
+// aircraft moving into range without scanning and filtering the queue every
+// render frame while the anchor is off-screen or the budget is full.
+const PROTECTED_RETRY_INTERVAL_FRAMES = 12
 
 // Generation can be generous without letting a dense slice of the world turn
 // into an unbounded set of instance buffers or road meshes around the player.
@@ -389,6 +394,8 @@ export class SettlementSystem {
   private queue: { cx: number; cz: number; key: string }[] = []
   private linkQueue: RoadJob[] = []
   private lastCell = ''
+  private protectedRetryPending = false
+  private protectedRetryCooldown = 0
   private worker: Worker | null = null
   private inFlight: SettlementWorkerRequest | null = null
   private ready: { key: string; plan: SettlementPlan }[] = []
@@ -647,6 +654,8 @@ export class SettlementSystem {
     this.inFlight = null
     this.generation++
     this.lastCell = ''
+    this.protectedRetryPending = false
+    this.protectedRetryCooldown = 0
   }
 
   /**
@@ -692,6 +701,8 @@ export class SettlementSystem {
       if (anchor) {
         this.protectedAnchors.set(anchor, key)
         this.protectedAnchorKinds.set(anchor, anchor)
+        this.protectedRetryPending = true
+        this.protectedRetryCooldown = 0
       }
       this.scheduleLinks(plan, key)
       if (this.canLoad(plan, x, z)) {
@@ -725,6 +736,8 @@ export class SettlementSystem {
         anchorKinds.set(key, kind)
         this.protectedAnchors.set(kind, key)
         this.protectedAnchorKinds.set(kind, kind)
+        this.protectedRetryPending = true
+        this.protectedRetryCooldown = 0
         this.scheduleLinks(plan, key)
         if (this.canLoad(plan, x, z)) {
           this.checked.add(key)
@@ -743,7 +756,8 @@ export class SettlementSystem {
    * fill the queue, but it can never permanently consume the two spawn slots.
    */
   private retryProtectedAnchors(x: number, z: number): void {
-    if (!this.protectedAnchors.size) return
+    if (!this.protectedAnchors.size || !this.protectedRetryPending || this.protectedRetryCooldown > 0) return
+    let retryPending = false
     for (const [kind, key] of this.protectedAnchors) {
       if (this.loaded.has(key) || this.ready.some(result => result.key === key)) continue
       if (this.inFlight?.key === key) continue
@@ -758,10 +772,15 @@ export class SettlementSystem {
       const plan = settlementForCell(cx!, cz!, this.protectedAnchorKinds.get(kind) ?? kind)
       if (!plan) continue
       this.scheduleLinks(plan, key)
-      if (!this.canLoad(plan, x, z)) continue
+      if (!this.canLoad(plan, x, z)) {
+        retryPending = true
+        continue
+      }
       this.checked.add(key)
       this.loaded.set(key, this.build(plan))
     }
+    this.protectedRetryPending = retryPending
+    if (retryPending) this.protectedRetryCooldown = PROTECTED_RETRY_INTERVAL_FRAMES
   }
 
   dispose(): void {
@@ -780,9 +799,14 @@ export class SettlementSystem {
 
   update(x: number, z: number): void {
     if (this.disposed) return
+    if (this.protectedRetryCooldown > 0) this.protectedRetryCooldown--
     const cell = `${Math.floor(x / 1000)},${Math.floor(z / 1000)}`
     if (cell !== this.lastCell) {
       this.lastCell = cell
+      if (this.protectedAnchors.size) {
+        this.protectedRetryPending = true
+        this.protectedRetryCooldown = 0
+      }
       const wanted = new Set<string>()
       const pending: { cx: number; cz: number; key: string; distance: number }[] = []
       const r = LOAD_RADIUS + SETTLEMENT_CELL_SIZE
@@ -1347,6 +1371,10 @@ export class SettlementSystem {
   }
 
   private remove(settlement: LoadedSettlement): void {
+    if (this.protectedAnchors.size) {
+      this.protectedRetryPending = true
+      this.protectedRetryCooldown = 0
+    }
     settlement.root.removeFromParent()
     settlement.root.traverse(object => {
       if (object instanceof InstancedMesh) object.dispose()
