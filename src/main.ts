@@ -22,6 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
+import { pruneRotatingCourseRecords } from './core/CourseRecordRetention'
 import {
   COURSE_FAVORITES_STORAGE_KEY,
   readCourseFavoriteIds,
@@ -325,6 +326,7 @@ async function boot(): Promise<void> {
   } catch {
     /* Private browsing can deny storage. The game remains fully playable. */
   }
+  pruneRotatingCourseRecords(qualityStorage)
 
   let recentCourseIds = readRecentCourseIds(qualityStorage)
   let favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
