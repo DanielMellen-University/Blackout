@@ -67,6 +67,17 @@ interface CollisionBuilding {
 }
 const collisionIndexes = new WeakMap<SettlementPlan, CollisionIndex>()
 
+export interface SettlementCollisionPadding {
+  readonly x: number
+  readonly y: number
+  readonly z: number
+}
+
+// The broadphase margin covers the jet envelope used by World.hitObstacleSegment
+// as well as the fixed settlement jet margin. Keeping this generous avoids
+// rebuilding indexes when a probe crosses a coarse bucket boundary.
+const COLLISION_INDEX_MARGIN = 10
+
 /** Lower values are protected spawn landmarks and should stream first. */
 export function settlementLoadPriority(plan: Pick<SettlementPlan, 'anchor' | 'kind'>): number {
   if (plan.anchor === 'city') return 0
@@ -75,33 +86,61 @@ export function settlementLoadPriority(plan: Pick<SettlementPlan, 'anchor' | 'ki
 }
 
 /** Oriented walls and roof volumes with a small jet margin. */
-export function hitsSettlement(plan: SettlementPlan, x: number, y: number, z: number): boolean {
+export function hitsSettlement(
+  plan: SettlementPlan,
+  x: number,
+  y: number,
+  z: number,
+  padding?: SettlementCollisionPadding,
+): boolean {
   const index = getCollisionIndex(plan)
-  if (Math.hypot(x - plan.x, z - plan.z) > index.radius) return false
-  const bucketX = Math.floor(x / COLLISION_BUCKET_SIZE)
-  const bucketZ = Math.floor(z / COLLISION_BUCKET_SIZE)
-  const bucket = index.buckets.get(bucketX)?.get(bucketZ)
-  if (!bucket) return false
-  for (const candidate of bucket) {
-    const b = candidate.building
-    const dx = x - b.x, dz = z - b.z
-    const lx = Math.abs(dx * candidate.cosYaw - dz * candidate.sinYaw)
-    const lz = Math.abs(dx * candidate.sinYaw + dz * candidate.cosYaw)
-    if (y < b.y - 2 || lx > candidate.halfWidth || lz > candidate.halfDepth) continue
-    const top = b.y + b.height
-    const shape = b.shape ?? 'block'
-    if (shape === 'tower' && (lx / candidate.halfWidth) ** 2 + (lz / candidate.halfDepth) ** 2 > 1) continue
-    if (shape === 'stepped' && y > b.y + b.height * .68 + 2
-      && (lx > b.width * .34 + 2.6 || lz > b.depth * .36 + 2.6)) continue
-    if (y <= top + 2) return true
-    if (b.roof === 'pitched') {
-      const roofHeight = Math.min(b.width, b.depth) * .3 * Math.max(0, 1 - Math.max(0, lx - 2) / (b.width / 2 + .6))
-      if (y <= top + roofHeight + 2) return true
-      continue
+  const paddingX = Number.isFinite(padding?.x) ? Math.max(0, padding!.x) : 0
+  const paddingY = Number.isFinite(padding?.y) ? Math.max(0, padding!.y) : 0
+  const paddingZ = Number.isFinite(padding?.z) ? Math.max(0, padding!.z) : 0
+  const queryRadius = Math.hypot(paddingX, paddingZ)
+  if (Math.hypot(x - plan.x, z - plan.z) > index.radius + queryRadius) return false
+  const minBucketX = Math.floor((x - paddingX) / COLLISION_BUCKET_SIZE)
+  const maxBucketX = Math.floor((x + paddingX) / COLLISION_BUCKET_SIZE)
+  const minBucketZ = Math.floor((z - paddingZ) / COLLISION_BUCKET_SIZE)
+  const maxBucketZ = Math.floor((z + paddingZ) / COLLISION_BUCKET_SIZE)
+  const seen = minBucketX === maxBucketX && minBucketZ === maxBucketZ
+    ? undefined
+    : new Set<CollisionBuilding>()
+  for (let bucketX = minBucketX; bucketX <= maxBucketX; bucketX++) {
+    const column = index.buckets.get(bucketX)
+    if (!column) continue
+    for (let bucketZ = minBucketZ; bucketZ <= maxBucketZ; bucketZ++) {
+      const bucket = column.get(bucketZ)
+      if (!bucket) continue
+      for (const candidate of bucket) {
+        if (seen?.has(candidate)) continue
+        seen?.add(candidate)
+        const b = candidate.building
+        const dx = x - b.x, dz = z - b.z
+        const lx = Math.abs(dx * candidate.cosYaw - dz * candidate.sinYaw)
+        const lz = Math.abs(dx * candidate.sinYaw + dz * candidate.cosYaw)
+        const localPaddingWidth = Math.abs(candidate.cosYaw) * paddingX + Math.abs(candidate.sinYaw) * paddingZ
+        const localPaddingDepth = Math.abs(candidate.sinYaw) * paddingX + Math.abs(candidate.cosYaw) * paddingZ
+        const halfWidth = candidate.halfWidth + localPaddingWidth
+        const halfDepth = candidate.halfDepth + localPaddingDepth
+        if (y < b.y - 2 - paddingY || lx > halfWidth || lz > halfDepth) continue
+        const top = b.y + b.height
+        const shape = b.shape ?? 'block'
+        if (shape === 'tower' && (lx / halfWidth) ** 2 + (lz / halfDepth) ** 2 > 1) continue
+        if (shape === 'stepped' && y > b.y + b.height * .68 + 2 + paddingY
+          && (lx > b.width * .34 + 2.6 + localPaddingWidth || lz > b.depth * .36 + 2.6 + localPaddingDepth)) continue
+        if (y <= top + 2 + paddingY) return true
+        if (b.roof === 'pitched') {
+          const roofHeight = Math.min(b.width, b.depth) * .3
+            * Math.max(0, 1 - Math.max(0, lx - 2 - localPaddingWidth) / (b.width / 2 + .6 + localPaddingWidth))
+          if (y <= top + roofHeight + 2 + paddingY) return true
+          continue
+        }
+        if (y <= top + 3.2 + paddingY) return true
+        if (plan.kind === 'city' && b.height > 250 && y <= top + b.height * .1 + 2 + paddingY
+          && lx <= b.width * .24 + 2 + localPaddingWidth && lz <= b.depth * .275 + 2 + localPaddingDepth) return true
+      }
     }
-    if (y <= top + 3.2) return true
-    if (plan.kind === 'city' && b.height > 250 && y <= top + b.height * .1 + 2
-      && lx <= b.width * .24 + 2 && lz <= b.depth * .275 + 2) return true
   }
   return false
 }
@@ -113,7 +152,7 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
   const buckets = new Map<number, Map<number, CollisionBuilding[]>>()
   let radius = 0
   for (const building of plan.buildings) {
-    const extent = Math.hypot(building.width, building.depth) / 2 + 4
+    const extent = Math.hypot(building.width, building.depth) / 2 + COLLISION_INDEX_MARGIN
     radius = Math.max(radius, Math.hypot(building.x - plan.x, building.z - plan.z) + extent)
     const minX = Math.floor((building.x - extent) / COLLISION_BUCKET_SIZE)
     const maxX = Math.floor((building.x + extent) / COLLISION_BUCKET_SIZE)
@@ -1045,8 +1084,8 @@ export class SettlementSystem {
     }
   }
 
-  hitObstacle(x: number, y: number, z: number): boolean {
-    for (const { plan } of this.loaded.values()) if (hitsSettlement(plan, x, y, z)) return true
+  hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {
+    for (const { plan } of this.loaded.values()) if (hitsSettlement(plan, x, y, z, padding)) return true
     return false
   }
 

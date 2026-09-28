@@ -426,7 +426,7 @@ export class World {
   /** True if a world-space point overlaps hangar, tower, or shack. */
   hitObstacle(x: number, y: number, z: number, padding?: ObstaclePadding): boolean {
     if (this.disposed) return false
-    if (this.settlements.hitObstacle(x, y, z)) return true
+    if (this.settlements.hitObstacle(x, y, z, padding)) return true
     return this.hitAirfieldObstacle(x, y, z, padding)
   }
 

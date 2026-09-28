@@ -139,8 +139,9 @@ describe('world lifecycle boundary', () => {
   it('uses a padded aircraft envelope for airfield buildings without inflating camera probes', () => {
     const world = Object.create(World.prototype) as World
     ;(world as unknown as { disposed: boolean }).disposed = false
-    ;(world as unknown as { settlements: { hitObstacle: () => boolean } }).settlements = {
-      hitObstacle: () => false,
+    const settlementHit = vi.fn(() => false)
+    ;(world as unknown as { settlements: { hitObstacle: typeof settlementHit } }).settlements = {
+      hitObstacle: settlementHit,
     }
     ;(world as unknown as { obstaclePad: { x: number; y: number; z: number; yaw: number } }).obstaclePad = {
       x: 0,
@@ -158,6 +159,12 @@ describe('world lifecycle boundary', () => {
         { x: hangarEdge - 0.25, y: 5.8, z: 2 },
         { x: hangarEdge - 0.25, y: 5.8, z: 2 },
       )).toBe(true)
+      expect(settlementHit).toHaveBeenLastCalledWith(
+        hangarEdge - 0.25,
+        5.8,
+        2,
+        expect.objectContaining({ x: 5.5, y: 2.5, z: 5.5 }),
+      )
     } finally {
       clearOpsPad()
     }

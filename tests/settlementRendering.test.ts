@@ -148,6 +148,13 @@ describe('settlement rendering and lifecycle', () => {
     expect(hitsSettlement(plan, 620, 120, 0)).toBe(false)
   })
 
+  it('expands settlement collision sweeps for the aircraft body envelope', () => {
+    const plan = example()
+    const edge = 3018
+    expect(hitsSettlement(plan, edge, 110, 3000)).toBe(false)
+    expect(hitsSettlement(plan, edge, 110, 3000, { x: 5.5, y: 2.5, z: 5.5 })).toBe(true)
+  })
+
   it('keeps numeric collision columns correct across negative bucket boundaries', () => {
     const plan: SettlementPlan = {
       id: 'negative-bucket-boundary', kind: 'village', biome: 'plains', x: -512, y: 100, z: -512, radius: 180,
