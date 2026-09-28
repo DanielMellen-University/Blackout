@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.422** Add Range Run, a deterministic clear long sweep that exposes the bounded sustained-distance contract without adding scene or render-loop work.
 - **10.421** Add Gust Rider, a deterministic storm route that exposes the bounded strong-wind contract without adding scene or render-loop work.
 - **10.420** Add Dry Run, a deterministic clear high-speed sweep that exposes the bounded no-afterburner energy contract without adding scene or render-loop work.
 - **10.419** Add Butter Landing, a deterministic clear pattern course that exposes the bounded smooth-touchdown contract without adding scene or render-loop work.

@@ -51,6 +51,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(63, 5, true)).toContain('DRY POWER')
     expect(sortieContractLabelForSeed(361, 5, true)).toBe('GUST RIDER')
     expect(sortieContractDetailForSeed(361, 5, true)).toContain('STRONG GUSTS')
+    expect(sortieContractLabelForSeed(417, 5, true)).toBe('RANGE RUN')
+    expect(sortieContractDetailForSeed(417, 5, true)).toContain('FLY 12KM')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {
