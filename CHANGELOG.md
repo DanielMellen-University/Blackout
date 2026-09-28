@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.427** Add Skyline Run, a deterministic clear alpine climb that exposes the bounded high-altitude contract without adding scene or render-loop work.
 - **10.426** Add Scout Run, a deterministic clear sweep that exposes the bounded multi-settlement discovery contract without adding scene or render-loop work.
 - **10.425** Add Biome Tour, a deterministic clear sweep that exposes the bounded four-biome exploration contract without adding scene or render-loop work.
 - **10.424** Add Airshow Run, a deterministic clear slalom that exposes the bounded barrel-roll stunt contract without adding scene or render-loop work.
