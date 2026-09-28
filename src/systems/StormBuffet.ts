@@ -14,6 +14,10 @@ export const STORM_LOW_QUALITY_SCALE = 0.62
 export const STORM_CAMERA_TRAVEL_M = 0.055
 /** Peak airframe Euler wobble (radians) at full storm intensity. */
 export const STORM_AIRFRAME_RAD = 0.012
+/** Landing-gear-down multiplies gated drive so approach/taxi stays restrained. */
+export const STORM_GEAR_DOWN_SCALE = 0.62
+/** Live HUD weather cue engages above this gated drive. */
+export const STORM_BUFFET_HUD_ENTER = 0.2
 
 export interface StormBuffetOffset {
   x: number
@@ -66,6 +70,11 @@ export function stormBuffetDrive(
 ): number {
   if (!stormBuffetAllowed(gate)) return 0
   return stormBuffetIntensity(rain, snow, gust)
+}
+
+/** Restrain buffet while landing gear is down (approach / taxi). */
+export function stormBuffetGearScale(gearDown: boolean): number {
+  return gearDown === true ? STORM_GEAR_DOWN_SCALE : 1
 }
 
 /** View and quality multiplier applied on top of the weather drive. */

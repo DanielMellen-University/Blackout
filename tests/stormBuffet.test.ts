@@ -4,12 +4,14 @@ import {
   STORM_CAMERA_TRAVEL_M,
   STORM_COCKPIT_SCALE,
   STORM_EXTERNAL_SCALE,
+  STORM_GEAR_DOWN_SCALE,
   STORM_GUST_ENTER,
   STORM_LOW_QUALITY_SCALE,
   STORM_PRECIP_ENTER,
   stormAirframeWobble,
   stormBuffetAllowed,
   stormBuffetDrive,
+  stormBuffetGearScale,
   stormBuffetIntensity,
   stormBuffetOffset,
   stormBuffetOffsetInto,
@@ -55,6 +57,17 @@ describe('storm buffet gating', () => {
     expect(stormBuffetViewScale(true, true)).toBeCloseTo(
       STORM_COCKPIT_SCALE * STORM_LOW_QUALITY_SCALE,
     )
+  })
+
+  it('damps gated drive while landing gear is down', () => {
+    expect(stormBuffetGearScale(false)).toBe(1)
+    expect(stormBuffetGearScale(true)).toBe(STORM_GEAR_DOWN_SCALE)
+    expect(STORM_GEAR_DOWN_SCALE).toBeGreaterThanOrEqual(0.55)
+    expect(STORM_GEAR_DOWN_SCALE).toBeLessThanOrEqual(0.7)
+    const live = stormBuffetDrive(1, 0, 1, { playing: true })
+    expect(live * stormBuffetGearScale(true)).toBeCloseTo(live * STORM_GEAR_DOWN_SCALE)
+    expect(live * stormBuffetGearScale(true)).toBeLessThan(live)
+    expect(live * stormBuffetGearScale(false)).toBe(live)
   })
 
   it('fills smooth bounded offsets into caller-owned records', () => {
