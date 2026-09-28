@@ -632,6 +632,39 @@ body,
   text-transform: uppercase;
 }
 
+.course-picker-favorite {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border: 1px solid rgba(245, 201, 89, 0.28);
+  border-radius: 7px;
+  background: rgba(7, 15, 22, 0.56);
+  color: var(--ink-dim);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.course-picker-favorite:hover:not(:disabled),
+.course-picker-favorite[aria-pressed='true'] {
+  border-color: rgba(245, 201, 89, 0.72);
+  background: rgba(245, 201, 89, 0.12);
+  color: #f5d989;
+}
+
+.course-picker-favorite:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.course-picker-favorite:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
 .course-picker-list {
   display: grid;
   grid-template-columns: 1fr 1fr;

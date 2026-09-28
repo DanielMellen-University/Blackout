@@ -31,7 +31,7 @@ describe('course picker copy', () => {
 
   it('filters the catalog by every search term while preserving authored order', () => {
     const items = [
-      { id: 'storm', label: 'Storm Run', detail: 'Low visibility mountain pass', meta: 'NEW', stats: '', category: 'routes' as const },
+      { id: 'storm', label: 'Storm Run', detail: 'Low visibility mountain pass', meta: 'NEW', stats: '', category: 'routes' as const, favorite: true },
       { id: 'river', label: 'River Run', detail: 'Rainy low-level water route', meta: '2 RUNS', stats: '', category: 'contracts' as const },
       { id: 'night', label: 'Night Ops', detail: 'Foggy midnight pass', meta: 'NEW', stats: '', category: 'ops' as const, recent: true },
     ]
@@ -42,6 +42,7 @@ describe('course picker copy', () => {
     expect(filterCoursePickerItems(items, '', 'contracts')).toEqual([items[1]])
     expect(filterCoursePickerItems(items, 'rain', 'routes')).toEqual([])
     expect(filterCoursePickerItems(items, '', 'recent')).toEqual([items[2]])
+    expect(filterCoursePickerItems(items, '', 'favorites')).toEqual([items[0]])
   })
 
   it('classifies the catalog into stable launch filters', () => {

@@ -23,6 +23,12 @@ import {
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
 import {
+  COURSE_FAVORITES_STORAGE_KEY,
+  readCourseFavoriteIds,
+  toggleCourseFavorite,
+  writeCourseFavoriteIds,
+} from './core/CourseFavorites'
+import {
   COURSE_RECENTS_STORAGE_KEY,
   readRecentCourseIds,
   rememberCourseId,
@@ -319,6 +325,7 @@ async function boot(): Promise<void> {
   }
 
   let recentCourseIds = readRecentCourseIds(qualityStorage)
+  let favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
   const replayParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
@@ -397,6 +404,7 @@ async function boot(): Promise<void> {
         stats: copy.stats,
         category: coursePickerCategoryForCourse(course),
         recent: recentCourseIds.includes(course.id),
+        favorite: favoriteCourseIds.includes(course.id),
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
@@ -406,6 +414,13 @@ async function boot(): Promise<void> {
     if (next.length === recentCourseIds.length && next.every((value, index) => value === recentCourseIds[index])) return
     recentCourseIds = next
     writeRecentCourseIds(qualityStorage, recentCourseIds)
+    refreshCourseSelectorLabels()
+  }
+  const setCourseFavorite = (id: string, favorite: boolean): void => {
+    const next = toggleCourseFavorite(favoriteCourseIds, id, favorite)
+    if (next.length === favoriteCourseIds.length && next.every((value, index) => value === favoriteCourseIds[index])) return
+    favoriteCourseIds = next
+    writeCourseFavoriteIds(qualityStorage, favoriteCourseIds)
     refreshCourseSelectorLabels()
   }
   const releaseBrowserUi = suppressBrowserUi(canvas)
@@ -1361,7 +1376,10 @@ async function boot(): Promise<void> {
     rememberRecentCourse(selectedCourseId)
     for (const picker of coursePickers) picker.setValue(selectedCourseId)
   }
-  for (const picker of coursePickers) picker.onChange(onCourseChange)
+  for (const picker of coursePickers) {
+    picker.onChange(onCourseChange)
+    picker.onFavorite(setCourseFavorite)
+  }
   const applyCustomSeed = (): void => {
     const seed = parseWorldSeed(titleSeedInput?.value)
     if (seed === null) {
@@ -1402,6 +1420,10 @@ async function boot(): Promise<void> {
     }
     if (key === COURSE_RECENTS_STORAGE_KEY || key === null) {
       recentCourseIds = readRecentCourseIds(qualityStorage)
+      refreshCourseSelectorLabels()
+    }
+    if (key === COURSE_FAVORITES_STORAGE_KEY || key === null) {
+      favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
       refreshCourseSelectorLabels()
     }
   }

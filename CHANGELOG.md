@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.526** Add bounded Favorites storage and a selected-course pin action to both launch pickers.
 - **10.525** Persist a bounded Recent course filter across launch sessions so repeat sorties stay one click away.
 - **10.524** Add stable Ops, Routes, Contracts, and Explore filters to the course picker as the catalog grows.
 - **10.523** Add deterministic Weekly Ops with ISO-week replay links and isolated score, history, contract, and ghost identities.

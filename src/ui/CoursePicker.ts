@@ -15,9 +15,10 @@ export interface CoursePickerItem {
   stats: string
   category?: Exclude<CoursePickerCategory, 'all'>
   recent?: boolean
+  favorite?: boolean
 }
 
-export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent'
+export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
 
 /** Keep the growing catalog understandable without making authored course data carry UI-only labels. */
 export function coursePickerCategoryForCourse(
@@ -42,6 +43,8 @@ export function filterCoursePickerItems(
     ? items
     : category === 'recent'
       ? items.filter(item => item.recent === true)
+      : category === 'favorites'
+        ? items.filter(item => item.favorite === true)
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -289,11 +292,13 @@ export class CoursePicker {
   private readonly stats: HTMLElement
   private readonly filter: HTMLInputElement
   private readonly categorySelect: HTMLSelectElement
+  private readonly favoriteButton: HTMLButtonElement
   private readonly filterStatus: HTMLElement
   private items: CoursePickerItem[] = []
   private selectedId = ''
   private category: CoursePickerCategory = 'all'
   private changeHandler: ((id: string) => void) | null = null
+  private favoriteHandler: ((id: string, favorite: boolean) => void) | null = null
   private disposed = false
 
   constructor(root: HTMLElement) {
@@ -317,12 +322,18 @@ export class CoursePicker {
       ['contracts', 'Contracts'],
       ['explore', 'Explore'],
       ['recent', 'Recent'],
+      ['favorites', 'Favorites'],
     ] as const) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = label
       this.categorySelect.append(option)
     }
+    this.favoriteButton = document.createElement('button')
+    this.favoriteButton.type = 'button'
+    this.favoriteButton.className = 'course-picker-favorite'
+    this.favoriteButton.setAttribute('aria-label', 'Favorite selected course')
+    this.favoriteButton.disabled = true
     this.filterStatus = document.createElement('span')
     this.filterStatus.className = 'course-picker-filter-status'
     this.filterStatus.hidden = true
@@ -330,12 +341,14 @@ export class CoursePicker {
     root.insertBefore(this.categorySelect, this.list)
     root.insertBefore(this.filter, this.list)
     root.insertBefore(this.filterStatus, this.list)
+    root.insertBefore(this.favoriteButton, this.list)
     this.list.setAttribute('role', 'radiogroup')
     this.list.addEventListener('click', this.onClick)
     this.list.addEventListener('keydown', this.onKeyDown)
     this.filter.addEventListener('input', this.onFilterInput)
     this.filter.addEventListener('keydown', this.onFilterKeyDown)
     this.categorySelect.addEventListener('change', this.onCategoryChange)
+    this.favoriteButton.addEventListener('click', this.onFavoriteClick)
   }
 
   get value(): string {
@@ -344,6 +357,10 @@ export class CoursePicker {
 
   onChange(handler: ((id: string) => void) | null): void {
     this.changeHandler = handler
+  }
+
+  onFavorite(handler: ((id: string, favorite: boolean) => void) | null): void {
+    this.favoriteHandler = handler
   }
 
   setItems(items: readonly CoursePickerItem[], selectedId: string): void {
@@ -366,14 +383,17 @@ export class CoursePicker {
     if (this.disposed) return
     this.disposed = true
     this.changeHandler = null
+    this.favoriteHandler = null
     this.list.removeEventListener('click', this.onClick)
     this.list.removeEventListener('keydown', this.onKeyDown)
     this.filter.removeEventListener('input', this.onFilterInput)
     this.filter.removeEventListener('keydown', this.onFilterKeyDown)
     this.categorySelect.removeEventListener('change', this.onCategoryChange)
+    this.favoriteButton.removeEventListener('click', this.onFavoriteClick)
     this.categorySelect.remove()
     this.filter.remove()
     this.filterStatus.remove()
+    this.favoriteButton.remove()
     this.items = []
   }
 
@@ -418,6 +438,11 @@ export class CoursePicker {
     this.detail.textContent = selected?.detail ?? ''
     this.stats.textContent = selected?.stats ?? ''
     this.stats.hidden = !selected?.stats
+    const favorite = selected?.favorite === true
+    this.favoriteButton.disabled = !selected
+    this.favoriteButton.textContent = favorite ? '★ Favorite' : '☆ Favorite'
+    this.favoriteButton.setAttribute('aria-pressed', favorite ? 'true' : 'false')
+    this.favoriteButton.setAttribute('aria-label', favorite ? 'Remove selected course from favorites' : 'Favorite selected course')
   }
 
   private select(id: string, persist: boolean): void {
@@ -461,10 +486,20 @@ export class CoursePicker {
   private onCategoryChange = (): void => {
     if (this.disposed) return
     const value = this.categorySelect.value as CoursePickerCategory
-    this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' || value === 'recent'
+    this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' || value === 'recent' || value === 'favorites'
       ? value
       : 'all'
     this.renderList()
+  }
+
+  private onFavoriteClick = (): void => {
+    if (this.disposed) return
+    const selected = this.items.find(item => item.id === this.selectedId)
+    if (!selected) return
+    selected.favorite = selected.favorite !== true
+    this.favoriteHandler?.(selected.id, selected.favorite)
+    this.renderList()
+    this.favoriteButton.focus({ preventScroll: true })
   }
 
   private onFilterKeyDown = (event: KeyboardEvent): void => {
