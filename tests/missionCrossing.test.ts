@@ -274,6 +274,7 @@ describe('MissionSystem gate crossing', () => {
     const coast = buildMissionRoute(0, 20, 0, 0, 'coast')
     const river = buildMissionRoute(0, 20, 0, 0, 'river')
     const volcanic = buildMissionRoute(0, 20, 0, 0, 'volcanic')
+    const desert = buildMissionRoute(0, 20, 0, 0, 'desert')
     expect(orbit).toHaveLength(5)
     expect(sweep).toHaveLength(5)
     expect(slalom).toHaveLength(5)
@@ -282,6 +283,7 @@ describe('MissionSystem gate crossing', () => {
     expect(coast).toHaveLength(5)
     expect(river).toHaveLength(5)
     expect(volcanic).toHaveLength(5)
+    expect(desert).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(slalom[1]!.x).not.toBeCloseTo(orbit[1]!.x)
     expect(summarizeMissionRoute(0, 20, 0, ridge, 'ridge').maxAltitudeMeters).toBeGreaterThan(400)
@@ -289,6 +291,8 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, river, 'river').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, volcanic, 'volcanic').challenge).toBe('altitude')
     expect(summarizeMissionRoute(0, 20, 0, volcanic, 'volcanic').maxAltitudeMeters).toBeGreaterThan(700)
+    expect(summarizeMissionRoute(0, 20, 0, desert, 'desert').challenge).toBe('range')
+    expect(summarizeMissionRoute(0, 20, 0, desert, 'desert').lengthMeters).toBeGreaterThan(3_500)
     expect(canyon[1]!.z).toBeGreaterThan(0)
     expect(sweep[0]!.z).toBeGreaterThan(0)
     expect(slalom[0]!.z).toBeGreaterThan(0)
@@ -301,6 +305,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('coast')).toBe('COASTAL RUN')
     expect(routeProfileLabel('river')).toBe('RIVER RUN')
     expect(routeProfileLabel('volcanic')).toBe('VOLCANIC RUN')
+    expect(routeProfileLabel('desert')).toBe('DESERT DASH')
   })
 
   it('exposes the validated coastal and river profiles to random sorties', () => {
@@ -311,6 +316,7 @@ describe('MissionSystem gate crossing', () => {
     expect(profiles.has('coast')).toBe(true)
     expect(profiles.has('river')).toBe(true)
     expect(profiles.has('volcanic')).toBe(true)
+    expect(profiles.has('desert')).toBe(true)
   })
 
   it('supports a no-gate free-flight profile', () => {
