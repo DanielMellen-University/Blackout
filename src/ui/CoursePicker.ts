@@ -17,7 +17,11 @@ export interface CoursePickerItem {
   stats: string
   category?: Exclude<CoursePickerCategory, 'all'>
   recent?: boolean
+  /** Zero-based newest-first position in the bounded Recent list. */
+  recentRank?: number
   favorite?: boolean
+  /** Zero-based newest-first position in the bounded Favorites list. */
+  favoriteRank?: number
 }
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
@@ -59,9 +63,9 @@ export function filterCoursePickerItems(
   const categorized = category === 'all'
     ? items
     : category === 'recent'
-      ? items.filter(item => item.recent === true)
+      ? items.filter(item => item.recent === true).sort(coursePickerRankCompare('recentRank'))
       : category === 'favorites'
-        ? items.filter(item => item.favorite === true)
+        ? items.filter(item => item.favorite === true).sort(coursePickerRankCompare('favoriteRank'))
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -611,6 +615,16 @@ export class CoursePicker {
 
 function finiteCount(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value!)) : 0
+}
+
+function coursePickerRankCompare(
+  rank: 'recentRank' | 'favoriteRank',
+): (a: CoursePickerItem, b: CoursePickerItem) => number {
+  return (a, b) => {
+    const aRank = Number.isFinite(a[rank]) ? Math.max(0, Math.floor(a[rank]!)) : Number.POSITIVE_INFINITY
+    const bRank = Number.isFinite(b[rank]) ? Math.max(0, Math.floor(b[rank]!)) : Number.POSITIVE_INFINITY
+    return aRank - bRank
+  }
 }
 
 function formatCourseDistance(distanceM: number): string {

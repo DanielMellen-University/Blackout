@@ -419,6 +419,8 @@ async function boot(): Promise<void> {
       const resolvedCourse = resolveCourseDefinition(course, opsTimestamp)
       const runId = courseRunId(course, opsTimestamp)
       const record = runId ? readCourseRecord(runId) : null
+      const recentRank = recentCourseIds.indexOf(course.id)
+      const favoriteRank = favoriteCourseIds.indexOf(course.id)
       const copy = coursePickerCopy({
         course: resolvedCourse,
         history: record?.history ?? null,
@@ -441,8 +443,10 @@ async function boot(): Promise<void> {
               : undefined)].filter(Boolean).join(' · '),
         stats: copy.stats,
         category: coursePickerCategoryForCourse(course),
-        recent: recentCourseIds.includes(course.id),
-        favorite: favoriteCourseIds.includes(course.id),
+        recent: recentRank >= 0,
+        recentRank: recentRank >= 0 ? recentRank : undefined,
+        favorite: favoriteRank >= 0,
+        favoriteRank: favoriteRank >= 0 ? favoriteRank : undefined,
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)

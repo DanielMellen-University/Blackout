@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.542** Preserve player-defined newest-first ordering in Recent and Favorites course filters.
 - **10.541** Show the bounded best score directly on launch and pause course cards so repeat attempts have a clear target.
 - **10.540** Show route, weather, and contract context inline on course picker cards.
 - **10.539** Surface best-run course stats directly on launch and pause picker cards.

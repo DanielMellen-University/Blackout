@@ -48,6 +48,18 @@ describe('course picker copy', () => {
     expect(filterCoursePickerItems(items, '', 'favorites')).toEqual([items[0]])
   })
 
+  it('keeps Recent and Favorites filters in player-defined newest-first order', () => {
+    const items = [
+      { id: 'authored-first', label: 'Authored First', detail: '', meta: '', stats: '', recent: true, recentRank: 2, favorite: true, favoriteRank: 1 },
+      { id: 'latest', label: 'Latest', detail: '', meta: '', stats: '', recent: true, recentRank: 0, favorite: true, favoriteRank: 2 },
+      { id: 'pinned', label: 'Pinned', detail: '', meta: '', stats: '', recent: true, recentRank: 1, favorite: true, favoriteRank: 0 },
+    ]
+    expect(filterCoursePickerItems(items, '', 'recent').map(item => item.id))
+      .toEqual(['latest', 'pinned', 'authored-first'])
+    expect(filterCoursePickerItems(items, '', 'favorites').map(item => item.id))
+      .toEqual(['pinned', 'authored-first', 'latest'])
+  })
+
   it('classifies the catalog into stable launch filters', () => {
     expect(coursePickerCategoryForCourse({ id: 'daily-ops', seed: null, profile: null, daily: true })).toBe('ops')
     expect(coursePickerCategoryForCourse({ id: 'weekly-ops', seed: null, profile: null, weekly: true })).toBe('ops')
