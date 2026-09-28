@@ -493,6 +493,20 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
+  it('uses the human course label when the storage id is opaque', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({ ...result, courseId: 'seed:10:storm' }, undefined, false, [], 'Storm run')
+    expect(elementsFor(fixture.document, 'result-course')?.textContent).toBe('Storm run')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('Storm run · ROUTE COMPLETE')
+
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('labels a free-flight result as a scenic sortie', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()

@@ -116,6 +116,7 @@ export class RunResults {
     pilotRank?: PilotRank,
     pilotRankPromoted = false,
     newCareerCommendations: readonly string[] = [],
+    courseLabel?: string,
   ): void {
     if (this.disposed) return
     if (this.shareReplay) {
@@ -127,7 +128,8 @@ export class RunResults {
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
     const crashed = result.endedByCrash === true
     const ditched = crashed && result.ditched === true
-    const course = result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : 'SORTIE'
+    const label = typeof courseLabel === 'string' ? courseLabel.trim() : ''
+    const course = label || (result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : 'SORTIE')
     const courseEl = this.root.querySelector('#result-course')
     if (courseEl) courseEl.textContent = course
     this.title.textContent = crashed

@@ -1507,7 +1507,13 @@ async function boot(): Promise<void> {
             cameras.impulse(1)
             audio.playCue('crash')
             showBanner(crashMessage, 1600, 'danger')
-            results.show(crashed, currentPilotRank, false, [])
+            results.show(
+              crashed,
+              currentPilotRank,
+              false,
+              [],
+              courseDefinitionForId(selectedCourseId).label,
+            )
             syncInputContext()
             break
           }
@@ -1562,7 +1568,13 @@ async function boot(): Promise<void> {
               if (flightRecordCueLabel(finished) || finished.masteryTierPromoted || careerRankPromoted || newCareerCommendations.length > 0) {
                 audio.playCue('milestone')
               }
-              results.show(finished, currentPilotRank, careerRankPromoted, newCareerCommendations)
+              results.show(
+                finished,
+                currentPilotRank,
+                careerRankPromoted,
+                newCareerCommendations,
+                courseDefinitionForId(selectedCourseId).label,
+              )
               syncInputContext()
               break
             }
