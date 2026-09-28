@@ -4,9 +4,9 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.515**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.516**.
 
-Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget.
+Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, with its own wider channel weave and biome-aware route selection using no additional scene budget. Shoreline Run adds a fog-lined coastal route with the same bounded scoring, replay, and contract systems as the rest of the catalog.
 
 Procedural cities and villages receive deterministic biome-aware names that carry into radar locks and discovery banners. Near-field vegetation and regional settlement-road planning reuse bounded climate records, keeping LOD promotions and worker-side road selection inside the existing streaming budget.
 

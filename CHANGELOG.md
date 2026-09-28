@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.516** Add Shoreline Run, a deterministic fog-lined coastal challenge using the existing bounded route, scoring, replay, and contract systems.
 - **10.515** Reconcile terrain worker retirements across rapid quality changes so recovered graphics settings cannot strand the streaming pool below its target concurrency.
 - **10.514** Surface transactional world-reseed fallbacks in the launch banner and keep replay seed input available for another rebuild attempt.
 - **10.513** Correct the return-leg glide-slope sign so aircraft above the runway receive a high-glide cue and aircraft below it receive a low-glide cue.
