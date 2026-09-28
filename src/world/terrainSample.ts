@@ -19,6 +19,13 @@ let opsY = 0
 let opsYaw = 0
 let opsOn = false
 
+export interface OpsPadSnapshot {
+  x: number
+  z: number
+  y: number
+  yaw: number
+}
+
 /** Disable pad leveling while searching for a natural flat. */
 export function clearOpsPad(): void {
   opsOn = false
@@ -41,9 +48,19 @@ function padBlend(x: number, z: number): number {
   return 1 - smoothstep(OPS_PAD_INNER, OPS_PAD_OUTER, d)
 }
 
-export function getOpsPad(): { x: number; z: number; y: number; yaw?: number } | null {
+export function getOpsPad(): OpsPadSnapshot | null {
   if (!opsOn) return null
   return { x: opsX, z: opsZ, y: opsY, yaw: opsYaw }
+}
+
+/** Copy the active pad into caller-owned storage without allocating. */
+export function getOpsPadInto(out: OpsPadSnapshot): OpsPadSnapshot | null {
+  if (!opsOn) return null
+  out.x = opsX
+  out.z = opsZ
+  out.y = opsY
+  out.yaw = opsYaw
+  return out
 }
 
 export function opsPadBlend(x: number, z: number): number {

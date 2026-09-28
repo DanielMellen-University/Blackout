@@ -15,8 +15,10 @@ import {
   clearOpsPad,
   findPlayableSpawn,
   getOpsPad,
+  getOpsPadInto,
   setOpsPad,
   type FlatSpawn,
+  type OpsPadSnapshot,
 } from './terrainSample'
 import { fogFarForViewRadius, fogNearForViewRadius, FOG_FAR, FOG_NEAR, TerrainSystem } from './TerrainSystem'
 import { MissionSystem, type MissionRouteProfile } from '../systems/Mission'
@@ -84,6 +86,8 @@ export class World {
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
   private readonly fill: DirectionalLight
+  /** Reused collision snapshot; obstacle probes run every physics frame. */
+  private readonly obstaclePad: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
 
   /** Current airfield spawn (flat biome pad). */
   spawn: SpawnPose = {
@@ -345,7 +349,7 @@ export class World {
   hitObstacle(x: number, y: number, z: number): boolean {
     if (this.disposed) return false
     if (this.settlements.hitObstacle(x, y, z)) return true
-    const pad = getOpsPad()
+    const pad = getOpsPadInto(this.obstaclePad)
     if (!pad) return false
     const yaw = this.spawn.yaw
     const dx = x - pad.x

@@ -1,10 +1,20 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto } from '../src/world/terrainSample'
+import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto, setOpsPad } from '../src/world/terrainSample'
 import { createClimateSample } from '../src/world/Geography'
 
 describe('continuous terrain generation', () => {
   afterEach(clearOpsPad)
+
+  it('copies the active airfield pad into caller-owned storage', () => {
+    clearOpsPad()
+    const snapshot = { x: 0, z: 0, y: 0, yaw: 0 }
+    expect(getOpsPadInto(snapshot)).toBeNull()
+    setOpsPad(12, -34, 56, 0.75)
+    expect(getOpsPadInto(snapshot)).toBe(snapshot)
+    expect(snapshot).toEqual({ x: 12, z: -34, y: 56, yaw: 0.75 })
+    expect(getOpsPad()).not.toBe(snapshot)
+  })
 
   it('only labels submerged basins as inland water across seeds and distant coordinates', () => {
     clearOpsPad()
