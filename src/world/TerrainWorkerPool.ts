@@ -25,6 +25,7 @@ interface Slot { worker: Worker; job: TerrainBuildRequest | null; retire: boolea
 export class TerrainWorkerPool {
   private slots: Slot[] = []
   private disabled = false
+  private readonly hardwareWorkerLimit: number
   private workerLimit: number
   private readonly complete: (job: TerrainBuildRequest, data: TerrainGeometryData) => void
   private readonly retry: (job: TerrainBuildRequest) => void
@@ -35,12 +36,11 @@ export class TerrainWorkerPool {
   ) {
     this.complete = complete
     this.retry = retry
-    this.workerLimit = normalizeWorkerLimit(maxWorkers)
+    this.hardwareWorkerLimit = typeof navigator === 'undefined'
+      ? 2
+      : Math.max(1, (navigator.hardwareConcurrency || 4) - 2)
+    this.workerLimit = Math.min(normalizeWorkerLimit(maxWorkers), this.hardwareWorkerLimit)
     if (typeof Worker === 'undefined') return
-    this.workerLimit = Math.min(
-      this.workerLimit,
-      typeof navigator === 'undefined' ? 2 : Math.max(1, (navigator.hardwareConcurrency || 4) - 2),
-    )
     try {
       while (this.slots.length < this.workerLimit) this.createSlot()
     } catch {
@@ -55,7 +55,7 @@ export class TerrainWorkerPool {
 
   /** Adjust concurrency without interrupting a terrain job already in flight. */
   setWorkerLimit(maxWorkers: number): void {
-    const next = normalizeWorkerLimit(maxWorkers)
+    const next = Math.min(normalizeWorkerLimit(maxWorkers), this.hardwareWorkerLimit)
     if (next === this.workerLimit) return
     this.workerLimit = next
     if (this.disabled) return

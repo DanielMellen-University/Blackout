@@ -64,6 +64,15 @@ describe('terrain worker pool', () => {
     pool.dispose()
   })
 
+  it('never lets a quality switch exceed the hardware concurrency budget', () => {
+    vi.stubGlobal('navigator', { hardwareConcurrency: 2 })
+    const pool = new TerrainWorkerPool(vi.fn(), vi.fn(), 6)
+    expect(pool.size).toBe(1)
+    pool.setWorkerLimit(6)
+    expect(pool.size).toBe(1)
+    pool.dispose()
+  })
+
   it('ignores unrelated and stale replies without freeing a busy slot', () => {
     const complete = vi.fn()
     const pool = new TerrainWorkerPool(complete, vi.fn())
