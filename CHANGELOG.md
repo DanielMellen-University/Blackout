@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.416** Add Night Flight, a deterministic foggy midnight route that exposes the bounded after-dark contract without adding scene or render-loop work.
 - **10.415** Add Combo Run, a deterministic clear slalom course that exposes the bounded gate-and-stunt combo contract without adding scene or render-loop work.
 - **10.414** Add Precision Landing, a deterministic clear base-to-final pattern that exposes the centered-touchdown contract without adding scene or render-loop work.
 - **10.413** Add Traffic Dodge, a deterministic clear open sweep that exposes the bounded vertical-separation traffic contract without expanding the fixed traffic pool.
