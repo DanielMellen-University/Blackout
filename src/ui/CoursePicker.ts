@@ -13,16 +13,33 @@ export interface CoursePickerItem {
   detail: string
   meta: string
   stats: string
+  category?: Exclude<CoursePickerCategory, 'all'>
+}
+
+export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore'
+
+/** Keep the growing catalog understandable without making authored course data carry UI-only labels. */
+export function coursePickerCategoryForCourse(
+  course: Pick<CourseDefinition, 'id' | 'seed' | 'profile' | 'contractCatalog' | 'daily' | 'weekly'>,
+): Exclude<CoursePickerCategory, 'all'> {
+  if (course.daily || course.weekly || course.id === 'daily-ops' || course.id === 'weekly-ops') return 'ops'
+  if (course.id === 'random' || course.id === 'free-flight' || (course.seed === null && course.profile === 'free')) {
+    return 'explore'
+  }
+  if (course.contractCatalog) return 'contracts'
+  return 'routes'
 }
 
 /** Filter the bounded course catalog without changing its authored order. */
 export function filterCoursePickerItems(
   items: readonly CoursePickerItem[],
   query: string,
+  category: CoursePickerCategory = 'all',
 ): CoursePickerItem[] {
   const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean)
-  if (terms.length === 0) return items.slice()
-  return items.filter(item => {
+  const categorized = category === 'all' ? items : items.filter(item => item.category === category)
+  if (terms.length === 0) return categorized.slice()
+  return categorized.filter(item => {
     const haystack = `${item.label} ${item.detail} ${item.meta} ${item.stats}`.toLocaleLowerCase()
     return terms.every(term => haystack.includes(term))
   })
@@ -266,9 +283,11 @@ export class CoursePicker {
   private readonly detail: HTMLElement
   private readonly stats: HTMLElement
   private readonly filter: HTMLInputElement
+  private readonly categorySelect: HTMLSelectElement
   private readonly filterStatus: HTMLElement
   private items: CoursePickerItem[] = []
   private selectedId = ''
+  private category: CoursePickerCategory = 'all'
   private changeHandler: ((id: string) => void) | null = null
   private disposed = false
 
@@ -283,10 +302,26 @@ export class CoursePicker {
     this.filter.setAttribute('aria-label', 'Filter courses')
     this.filter.autocomplete = 'off'
     this.filter.spellcheck = false
+    this.categorySelect = document.createElement('select')
+    this.categorySelect.className = 'course-picker-category'
+    this.categorySelect.setAttribute('aria-label', 'Filter course category')
+    for (const [value, label] of [
+      ['all', 'All courses'],
+      ['ops', 'Ops'],
+      ['routes', 'Routes'],
+      ['contracts', 'Contracts'],
+      ['explore', 'Explore'],
+    ] as const) {
+      const option = document.createElement('option')
+      option.value = value
+      option.textContent = label
+      this.categorySelect.append(option)
+    }
     this.filterStatus = document.createElement('span')
     this.filterStatus.className = 'course-picker-filter-status'
     this.filterStatus.hidden = true
     this.filterStatus.setAttribute('aria-live', 'polite')
+    root.insertBefore(this.categorySelect, this.list)
     root.insertBefore(this.filter, this.list)
     root.insertBefore(this.filterStatus, this.list)
     this.list.setAttribute('role', 'radiogroup')
@@ -294,6 +329,7 @@ export class CoursePicker {
     this.list.addEventListener('keydown', this.onKeyDown)
     this.filter.addEventListener('input', this.onFilterInput)
     this.filter.addEventListener('keydown', this.onFilterKeyDown)
+    this.categorySelect.addEventListener('change', this.onCategoryChange)
   }
 
   get value(): string {
@@ -328,17 +364,22 @@ export class CoursePicker {
     this.list.removeEventListener('keydown', this.onKeyDown)
     this.filter.removeEventListener('input', this.onFilterInput)
     this.filter.removeEventListener('keydown', this.onFilterKeyDown)
+    this.categorySelect.removeEventListener('change', this.onCategoryChange)
+    this.categorySelect.remove()
     this.filter.remove()
     this.filterStatus.remove()
     this.items = []
   }
 
   private renderList(): void {
-    const visible = filterCoursePickerItems(this.items, this.filter.value)
+    const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
     this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
     const query = this.filter.value.trim()
-    this.filterStatus.textContent = query ? `${visible.length} MATCH${visible.length === 1 ? '' : 'ES'}` : ''
-    this.filterStatus.hidden = !query
+    const categoryLabel = this.category === 'all' ? '' : this.category.toUpperCase()
+    this.filterStatus.textContent = query || categoryLabel
+      ? [categoryLabel, `${visible.length} MATCH${visible.length === 1 ? '' : 'ES'}`].filter(Boolean).join(' · ')
+      : ''
+    this.filterStatus.hidden = !query && this.category === 'all'
     this.syncSelection()
   }
 
@@ -396,7 +437,7 @@ export class CoursePicker {
 
   private onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || this.items.length === 0) return
-    const visible = filterCoursePickerItems(this.items, this.filter.value)
+    const visible = filterCoursePickerItems(this.items, this.filter.value, this.category)
     if (visible.length === 0) return
     const index = Math.max(0, visible.findIndex((item) => item.id === this.selectedId))
     const next = coursePickerNavigationIndex(event.key, index, visible.length)
@@ -408,6 +449,15 @@ export class CoursePicker {
 
   private onFilterInput = (): void => {
     if (this.disposed) return
+    this.renderList()
+  }
+
+  private onCategoryChange = (): void => {
+    if (this.disposed) return
+    const value = this.categorySelect.value as CoursePickerCategory
+    this.category = value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore'
+      ? value
+      : 'all'
     this.renderList()
   }
 

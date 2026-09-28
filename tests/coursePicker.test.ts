@@ -5,6 +5,7 @@ import {
   courseMasteryProgressLabel,
   coursePickerNavigationIndex,
   coursePickerCopy,
+  coursePickerCategoryForCourse,
   courseTimePreviewLabel,
   courseWindPreviewLabel,
   courseWeatherPreviewLabel,
@@ -30,14 +31,25 @@ describe('course picker copy', () => {
 
   it('filters the catalog by every search term while preserving authored order', () => {
     const items = [
-      { id: 'storm', label: 'Storm Run', detail: 'Low visibility mountain pass', meta: 'NEW', stats: '' },
-      { id: 'river', label: 'River Run', detail: 'Rainy low-level water route', meta: '2 RUNS', stats: '' },
-      { id: 'night', label: 'Night Ops', detail: 'Foggy midnight pass', meta: 'NEW', stats: '' },
+      { id: 'storm', label: 'Storm Run', detail: 'Low visibility mountain pass', meta: 'NEW', stats: '', category: 'routes' as const },
+      { id: 'river', label: 'River Run', detail: 'Rainy low-level water route', meta: '2 RUNS', stats: '', category: 'contracts' as const },
+      { id: 'night', label: 'Night Ops', detail: 'Foggy midnight pass', meta: 'NEW', stats: '', category: 'ops' as const },
     ]
     expect(filterCoursePickerItems(items, '  RAIN  WATER ')).toEqual([items[1]])
     expect(filterCoursePickerItems(items, 'pass')).toEqual([items[0], items[2]])
     expect(filterCoursePickerItems(items, '')).toEqual(items)
     expect(filterCoursePickerItems(items, 'unknown')).toEqual([])
+    expect(filterCoursePickerItems(items, '', 'contracts')).toEqual([items[1]])
+    expect(filterCoursePickerItems(items, 'rain', 'routes')).toEqual([])
+  })
+
+  it('classifies the catalog into stable launch filters', () => {
+    expect(coursePickerCategoryForCourse({ id: 'daily-ops', seed: null, profile: null, daily: true })).toBe('ops')
+    expect(coursePickerCategoryForCourse({ id: 'weekly-ops', seed: null, profile: null, weekly: true })).toBe('ops')
+    expect(coursePickerCategoryForCourse({ id: 'random', seed: null, profile: null })).toBe('explore')
+    expect(coursePickerCategoryForCourse({ id: 'free-flight', seed: null, profile: 'free' })).toBe('explore')
+    expect(coursePickerCategoryForCourse({ id: 'training-orbit', seed: 1, profile: 'orbit' })).toBe('routes')
+    expect(coursePickerCategoryForCourse({ id: 'storm-contract', seed: 34, profile: 'storm', contractCatalog: true })).toBe('contracts')
   })
 
   it('formats a bounded title-screen mastery summary', () => {

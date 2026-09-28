@@ -128,7 +128,13 @@ import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
-import { CoursePicker, courseConditionSummary, courseMasteryProgressLabel, coursePickerCopy } from './ui/CoursePicker'
+import {
+  CoursePicker,
+  courseConditionSummary,
+  courseMasteryProgressLabel,
+  coursePickerCategoryForCourse,
+  coursePickerCopy,
+} from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
@@ -382,6 +388,7 @@ async function boot(): Promise<void> {
         detail: copy.detail,
         meta: copy.meta,
         stats: copy.stats,
+        category: coursePickerCategoryForCourse(course),
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
