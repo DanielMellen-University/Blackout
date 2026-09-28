@@ -69,9 +69,12 @@ export function applyWaterAppearance(
       // every tile, so catchment borders keep a continuous water pattern.
       vec2 weatherDrift = vec2(waterWindX, waterWindZ) * worldWaterTime * 0.00055;
       vec2 colorDrift = weatherDrift + vec2(worldWaterTime * 0.0015, -worldWaterTime * 0.0011);
-      float patchA = texture2D(waterNormals, vWaterWorld.xz / 230.0 + colorDrift).r;
-      float patchB = texture2D(waterNormals, vec2(vWaterWorld.z, -vWaterWorld.x) / 510.0 - colorDrift * 0.6).g;
-      float waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
+      float waterPattern = 0.5;
+      if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01) {
+        float patchA = texture2D(waterNormals, vWaterWorld.xz / 230.0 + colorDrift).r;
+        float patchB = texture2D(waterNormals, vec2(vWaterWorld.z, -vWaterWorld.x) / 510.0 - colorDrift * 0.6).g;
+        waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
+      }
       diffuseColor.rgb *= 0.8 + waterPattern * 0.36;
       diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.82, 1.04, 1.1),
         (1.0 - riverMix) * (0.12 + waterPattern * 0.1));
@@ -81,13 +84,19 @@ export function applyWaterAppearance(
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.42, 0.68, 0.61), wetEdge * 0.26);
       // Drift a low-contrast foam breakup through the first metre of water so
       // coves and river mouths do not read as a perfectly uniform ring.
-      float foamNoise = texture2D(waterNormals, vWaterWorld.xz / 96.0 + vec2(worldWaterTime * 0.006, -worldWaterTime * 0.004)).r;
+      float foamNoise = 0.5;
+      if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01) {
+        foamNoise = texture2D(waterNormals, vWaterWorld.xz / 96.0 + vec2(worldWaterTime * 0.006, -worldWaterTime * 0.004)).r;
+      }
       float foamBand = smoothstep(0.54, 0.82, foamNoise) * (1.0 - smoothstep(0.12, 1.8, vWaterDepth));
       float weatherFoam = foamBand * (0.18 + waterRain * 0.18) * waterDistanceFade;
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.54, 0.74, 0.66), weatherFoam);
-      float riverRiffle = smoothstep(0.5, 0.82, texture2D(waterNormals,
-        vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
-          vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
+      float riverRiffle = 0.5;
+      if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01 && riverMix > 0.01) {
+        riverRiffle = smoothstep(0.5, 0.82, texture2D(waterNormals,
+          vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
+            vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
+      }
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.5, 0.56), riverRiffle * riverMix * 0.48 * waterDistanceFade);
       float cascadeFoam = smoothstep(.18, .72, vWaterDrop) * riverMix;
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.48, .76, .78),
@@ -97,23 +106,33 @@ export function applyWaterAppearance(
       // texture when a reach turns through the terrain.
       vec2 flowAxisA = normalize(vWaterFlowDir + vec2(0.0001));
       vec2 flowAxisB = vec2(-flowAxisA.y, flowAxisA.x);
-      vec2 flowUvA = vec2(dot(vWaterWorld.xz, flowAxisA) / 72.0 + worldWaterTime * 0.018,
-        dot(vWaterWorld.xz, flowAxisB) / 13.0 - worldWaterTime * 0.002);
-      vec2 flowUvB = vec2(dot(vWaterWorld.xz, flowAxisB) / 94.0 - worldWaterTime * 0.014,
-        dot(vWaterWorld.xz, flowAxisA) / 17.0 + worldWaterTime * 0.0025);
-      float flowStreak = smoothstep(0.42, 0.76,
-        texture2D(waterNormals, flowUvA).g * 0.68 + texture2D(waterNormals, flowUvB).r * 0.32);
-      float flowSpark = smoothstep(0.68, 0.92, texture2D(waterNormals,
-        flowUvA * 0.72 + vec2(0.17, -0.31)).r);
+      float flowStreak = 0.5;
+      float flowSpark = 0.0;
+      if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01 && riverMix > 0.01) {
+        vec2 flowUvA = vec2(dot(vWaterWorld.xz, flowAxisA) / 72.0 + worldWaterTime * 0.018,
+          dot(vWaterWorld.xz, flowAxisB) / 13.0 - worldWaterTime * 0.002);
+        vec2 flowUvB = vec2(dot(vWaterWorld.xz, flowAxisB) / 94.0 - worldWaterTime * 0.014,
+          dot(vWaterWorld.xz, flowAxisA) / 17.0 + worldWaterTime * 0.0025);
+        flowStreak = smoothstep(0.42, 0.76,
+          texture2D(waterNormals, flowUvA).g * 0.68 + texture2D(waterNormals, flowUvB).r * 0.32);
+        flowSpark = smoothstep(0.68, 0.92, texture2D(waterNormals,
+          flowUvA * 0.72 + vec2(0.17, -0.31)).r);
+      }
       float flowPulse = 0.72 + 0.28 * sin(worldWaterTime * 0.55 + dot(vWaterWorld.xz, flowAxisA) * 0.012);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.61, 0.67), flowStreak * riverMix * 0.72 * flowPulse * mix(.22, 1.0, waterDistanceFade));
       diffuseColor.rgb += vec3(0.05, 0.15, 0.16) * flowSpark * riverMix * waterDistanceFade;
-      float riverBankFoam = smoothstep(0.48, 0.84, texture2D(waterNormals,
-        vWaterWorld.xz / 41.0 + vec2(worldWaterTime * 0.009, -worldWaterTime * 0.006)).b);
+      float riverBankFoam = 0.5;
+      if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01 && riverMix > 0.01) {
+        riverBankFoam = smoothstep(0.48, 0.84, texture2D(waterNormals,
+          vWaterWorld.xz / 41.0 + vec2(worldWaterTime * 0.009, -worldWaterTime * 0.006)).b);
+      }
       riverBankFoam *= riverMix * (1.0 - smoothstep(0.04, 0.9, vWaterDepth));
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.86, 0.79), riverBankFoam * 0.34 * waterDistanceFade);
-      float shoreBreak = smoothstep(0.46, 0.8, texture2D(waterNormals,
-        vWaterWorld.xz / 58.0 - vec2(worldWaterTime * 0.008, worldWaterTime * 0.003)).b);
+      float shoreBreak = 0.5;
+      if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01) {
+        shoreBreak = smoothstep(0.46, 0.8, texture2D(waterNormals,
+          vWaterWorld.xz / 58.0 - vec2(worldWaterTime * 0.008, worldWaterTime * 0.003)).b);
+      }
       float shoreFoam = (1.0 - smoothstep(0.08, 2.8, vWaterDepth)) *
         (0.12 + shoreBreak * 0.2) * (0.7 + waterRain * 0.25);
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.76, 0.69), shoreFoam * fineWaterDetail * mix(.35, 1.0, waterDistanceFade));
@@ -130,8 +149,12 @@ export function applyWaterAppearance(
       // entire water pattern after the world had been running for a while.
       vec2 drift = vec2(worldWaterTime * 0.004, worldWaterTime * 0.002) +
         vec2(waterWindX, waterWindZ) * worldWaterTime * 0.0011;
-      vec2 rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
-      vec2 rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
+      vec2 rippleA = vec2(0.0);
+      vec2 rippleB = vec2(0.0);
+      if (waterNormalDetail > 0.05 && distanceFade > 0.01) {
+        rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
+        rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
+      }
       vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035) * waterNormalDetail +
         rippleB * (0.035 + waterSnow * 0.01) * distanceFade * waterNormalDetail;
       normal = normalize(normal + mat3(viewMatrix) * vec3(ripples.x, 0.0, ripples.y));
@@ -145,5 +168,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v12'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v13'
 }

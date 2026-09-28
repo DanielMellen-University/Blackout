@@ -80,7 +80,7 @@ describe('independent water surfaces', () => {
       expect(material.polygonOffset).toBe(true)
       expect(material.polygonOffsetFactor).toBe(-2)
       expect(material.polygonOffsetUnits).toBe(-2)
-      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v12')
+      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v13')
     } finally {
       mesh.geometry.dispose()
       material.dispose()
@@ -101,6 +101,8 @@ describe('independent water surfaces', () => {
       expect(shader.uniforms.waterDetailScale).toBe(detailScale)
       expect(shader.fragmentShader).toContain('fineWaterDetail')
       expect(shader.fragmentShader).toContain('waterNormalDetail')
+      expect(shader.fragmentShader).toContain('if (fineWaterDetail > 0.05')
+      expect(shader.fragmentShader).toContain('if (waterNormalDetail > 0.05')
       detailScale.value = 1
       expect(detailScale.value).toBe(1)
     } finally {
