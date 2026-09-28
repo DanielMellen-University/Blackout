@@ -5,6 +5,7 @@
 ### Ship
 
 - Dampen storm buffet while landing gear is down, and cue BUFFET on the live weather HUD when the gated drive is meaningful.
+- **10.444** Keep Front Chaser weather transitions automatic while locking manual cycling, preserving deterministic contract replay without extra render-loop state.
 - **10.443** Add Front Chaser Run with a deterministic rain-to-storm weather transition, exposing the weather-front contract without adding render-loop or scene state.
 - **10.442** Add Thermal Control Run, a deterministic clear alpine route that exposes the cool-engine cruise contract without adding scene or render-loop work.
 - **10.441** Add Brake Check Run, a deterministic clear sweep that exposes the speed-brake contract without adding scene or render-loop work.

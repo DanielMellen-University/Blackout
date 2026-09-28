@@ -114,6 +114,8 @@ export class World {
   private missionProfile: MissionRouteProfile | undefined
   /** Authored weather stays fixed against manual N-cycle changes. */
   private weatherLocked = false
+  /** Front routes keep manual cycling locked while their automatic blend runs. */
+  private weatherCycleLockedValue = false
   private appliedWeather: WeatherEffectState | null = null
   private readonly weatherCandidate: WeatherEffectState = {
     rain: 0,
@@ -173,7 +175,7 @@ export class World {
   }
 
   get weatherCycleLocked(): boolean {
-    return this.weatherLocked
+    return this.weatherCycleLockedValue
   }
 
   /** Stage the title screen without throwing away the nearby settlement cache. */
@@ -241,6 +243,7 @@ export class World {
     const previousWindHeading = this.atmosphere.authoredWindHeading
     const previousTimeOfDay = this.atmosphere.timeOfDay
     const previousWeatherLocked = this.weatherLocked
+    const previousWeatherCycleLocked = this.weatherCycleLockedValue
     const previousTimeOfDayLocked = this.atmosphere.timeOfDayLocked
     let liveWorldCleared = false
     const restore = (): void => {
@@ -249,6 +252,7 @@ export class World {
       this.missionProfile = previousProfile
       this.spawn = previousSpawn
       this.weatherLocked = previousWeatherLocked
+      this.weatherCycleLockedValue = previousWeatherCycleLocked
       this.atmosphere.setWeatherLocked(previousWeatherLocked)
       this.atmosphere.setTimeOfDayLocked(previousTimeOfDayLocked)
       if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
@@ -266,6 +270,7 @@ export class World {
         this.seed = nextSeed
         this.missionProfile = requestedProfile
         this.weatherLocked = requestedWeather !== undefined && requestedWeatherShift === undefined
+        this.weatherCycleLockedValue = requestedWeather !== undefined || requestedWeatherShift !== undefined
         this.applySpawn(pad)
         liveWorldCleared = true
         this.terrain.clearAll()
@@ -322,6 +327,7 @@ export class World {
           previousWindHeading,
           previousTimeOfDay,
           previousWeatherLocked,
+          previousWeatherCycleLocked,
           previousTimeOfDayLocked,
         )
         return this.seed
@@ -341,6 +347,7 @@ export class World {
     windHeading: number | null,
     timeOfDay: number,
     weatherLocked: boolean,
+    weatherCycleLocked: boolean,
     timeOfDayLocked: boolean,
   ): void {
     try { setWorldSeed(seed) } catch { /* keep the previous process alive */ }
@@ -349,6 +356,7 @@ export class World {
       this.missionProfile = profile
       this.spawn = { ...spawn }
       this.weatherLocked = weatherLocked
+      this.weatherCycleLockedValue = weatherCycleLocked
     } catch { /* state is already best effort */ }
     try {
       if (pad) {
@@ -454,7 +462,7 @@ export class World {
 
   cycleWeather(): WeatherId {
     if (this.disposed) return this.atmosphere.weather
-    if (this.weatherLocked) return this.atmosphere.weather
+    if (this.weatherCycleLockedValue) return this.atmosphere.weather
     return this.atmosphere.cycleWeather()
   }
 

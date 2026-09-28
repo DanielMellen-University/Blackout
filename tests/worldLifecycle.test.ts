@@ -167,8 +167,9 @@ describe('world lifecycle boundary', () => {
       world.reseed(259, 'storm', 'rain', undefined, undefined, 'storm')
       expect(world.atmosphere.weather).toBe('storm')
       expect(world.atmosphere.weatherTransitioning).toBe(true)
-      expect(world.weatherCycleLocked).toBe(false)
+      expect(world.weatherCycleLocked).toBe(true)
       expect(world.atmosphere.weatherSnapshot.rain).toBeGreaterThan(0.2)
+      expect(world.cycleWeather()).toBe('storm')
       world.update(world.spawn.x, world.spawn.y, world.spawn.z, 0.5, 0.5)
       expect(world.atmosphere.weatherTransitioning).toBe(true)
     } finally {
