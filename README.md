@@ -34,7 +34,7 @@ Press Play when the airfield is ready.
 - Space is afterburner
 - B is the speed brake, and the wheel brake on the ground
 - C cycles chase, orbit, and cockpit
-- MMB looks around; camera look sensitivity is adjustable in the pause menu
+- MMB looks around; camera sensitivity and auto-return are adjustable in the pause menu
 - Esc pauses
 
 The nose is the flight path. Throttle is thrust: a climb spends speed, and closing the throttle slows you down. Afterburner is the burst that gets it back.

@@ -372,6 +372,27 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('keeps the external camera where the pilot left it when auto-return is disabled', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 15_000, 0)
+    aircraft.snapDisplay()
+    cameras.setAutoReturnEnabled(false)
+    cameras.update(aircraft, 1 / 60)
+    ;(cameras as unknown as { yaw: number }).yaw = 0.9
+    cameras.update(aircraft, 1 / 60)
+    for (let i = 0; i < 720; i++) cameras.update(aircraft, 1 / 60)
+    expect((cameras as unknown as { yaw: number }).yaw).toBeCloseTo(0.9)
+    expect(cameras.autoReturnPreferenceEnabled).toBe(false)
+    cameras.dispose()
+  })
+
   it('clamps external look sensitivity without affecting cockpit mode', () => {
     const target = {
       addEventListener: vi.fn(),

@@ -18,6 +18,8 @@ export const CAMERA_MODE_STORAGE_KEY = 'blackout.cameraMode'
 export const DEFAULT_CAMERA_MODE: CameraMode = 'chase'
 export const CAMERA_SENSITIVITY_STORAGE_KEY = 'blackout.cameraSensitivity'
 export const DEFAULT_CAMERA_SENSITIVITY: CameraSensitivity = 'normal'
+export const CAMERA_AUTO_RETURN_STORAGE_KEY = 'blackout.cameraAutoReturn'
+export const DEFAULT_CAMERA_AUTO_RETURN = true
 export const STABILITY_ASSIST_STORAGE_KEY = 'blackout.stabilityAssist'
 export const DEFAULT_STABILITY_ASSIST = false
 
@@ -250,6 +252,40 @@ export function cameraSensitivityLabel(sensitivity: CameraSensitivity): string {
     case 'low': return 'LOW'
     case 'high': return 'HIGH'
     default: return 'NORMAL'
+  }
+}
+
+export function normalizeCameraAutoReturnPreference(
+  value: unknown,
+  fallback = DEFAULT_CAMERA_AUTO_RETURN,
+): boolean {
+  if (value === true || value === 'true' || value === '1') return true
+  if (value === false || value === 'false' || value === '0') return false
+  return fallback === true
+}
+
+export function readCameraAutoReturnPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback = DEFAULT_CAMERA_AUTO_RETURN,
+): boolean {
+  try {
+    return normalizeCameraAutoReturnPreference(storage?.getItem(CAMERA_AUTO_RETURN_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeCameraAutoReturnPreference(undefined, fallback)
+  }
+}
+
+export function writeCameraAutoReturnPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  enabled: boolean,
+): void {
+  try {
+    storage?.setItem(
+      CAMERA_AUTO_RETURN_STORAGE_KEY,
+      normalizeCameraAutoReturnPreference(enabled) ? 'true' : 'false',
+    )
+  } catch {
+    /* Storage is optional. */
   }
 }
 

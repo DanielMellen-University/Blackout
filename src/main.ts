@@ -181,6 +181,8 @@ import {
   normalizeCameraSensitivity,
   readCameraSensitivityPreference,
   writeCameraSensitivityPreference,
+  readCameraAutoReturnPreference,
+  writeCameraAutoReturnPreference,
   type CameraSensitivity,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
@@ -214,6 +216,7 @@ async function boot(): Promise<void> {
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
   const cameraSensitivitySelect = document.getElementById('menu-camera-sensitivity') as HTMLSelectElement | null
+  const cameraAutoReturnToggle = document.getElementById('menu-camera-auto-return') as HTMLInputElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
@@ -374,6 +377,7 @@ async function boot(): Promise<void> {
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
   const initialCameraSensitivity = readCameraSensitivityPreference(qualityStorage)
+  const initialCameraAutoReturn = readCameraAutoReturnPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialCameraMode = readCameraModePreference(qualityStorage)
   const initialStabilityAssist = readStabilityAssistPreference(qualityStorage)
@@ -495,6 +499,13 @@ async function boot(): Promise<void> {
     writeCameraSensitivityPreference(qualityStorage, preference)
   }
   applyCameraSensitivity(initialCameraSensitivity)
+  const applyCameraAutoReturn = (next: boolean): void => {
+    const enabled = next === true
+    cameras.setAutoReturnEnabled(enabled)
+    if (cameraAutoReturnToggle) cameraAutoReturnToggle.checked = enabled
+    writeCameraAutoReturnPreference(qualityStorage, enabled)
+  }
+  applyCameraAutoReturn(initialCameraAutoReturn)
   applyCameraQuality = (quality): void => cameras.setRenderQuality(quality)
   applyCameraQuality(renderQuality)
   const reducedMotionQuery = typeof window.matchMedia === 'function'
@@ -618,6 +629,14 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(cameraSensitivitySelect, 'change', onCameraSensitivityChange)
+  const onCameraAutoReturnChange = (): void => {
+    const enabled = cameraAutoReturnToggle?.checked === true
+    applyCameraAutoReturn(enabled)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(enabled ? 'CAMERA AUTO-RETURN ON' : 'CAMERA AUTO-RETURN OFF', 1500, 'info')
+    }
+  }
+  uiListeners.add(cameraAutoReturnToggle, 'change', onCameraAutoReturnChange)
   const applyStabilityAssist = (next: boolean): void => {
     const enabled = next === true
     input.setStabilityAssist(enabled)

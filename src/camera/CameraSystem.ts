@@ -146,6 +146,8 @@ export class CameraSystem {
   private cameraIdleSeconds = 0
   /** Title showcase framing stays composed until the player launches. */
   private autoReturnEnabled = true
+  /** Player preference restored whenever gameplay changes external modes. */
+  private autoReturnPreference = true
 
   private lookSensitivityValue = 0.005
   private readonly canvas: HTMLCanvasElement
@@ -210,6 +212,17 @@ export class CameraSystem {
     return this.lookSensitivityValue
   }
 
+  /** Persisted preference for easing an idle external view toward its defaults. */
+  setAutoReturnEnabled(enabled: boolean): boolean {
+    this.autoReturnPreference = enabled === true
+    if (!this.disposed) this.autoReturnEnabled = this.autoReturnPreference
+    return this.autoReturnPreference
+  }
+
+  get autoReturnPreferenceEnabled(): boolean {
+    return this.autoReturnPreference
+  }
+
   /** Supply lightweight world colliders so external framing avoids buildings. */
   setObstacleSampler(sampler: CameraObstacleSampler | null): void {
     if (this.disposed) return
@@ -226,7 +239,7 @@ export class CameraSystem {
     const externalYaw = this.yaw
     const externalPitch = this.pitch
     const externalDistance = this.distance
-    this.autoReturnEnabled = true
+    this.autoReturnEnabled = this.autoReturnPreference
     this.mode = mode
     this.lookReady = false
     this.bumpInput()

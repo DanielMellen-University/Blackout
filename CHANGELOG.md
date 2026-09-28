@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add a persisted external-camera auto-return toggle so pilots can keep a hand-positioned chase or orbit view instead of easing back after idle.
 - Add a persisted Low/Normal/High external camera look setting for middle-mouse panning, with finite-safe bounds and no cockpit or render-loop overhead.
 - Include the volcanic route in random profile selection so ordinary sorties can discover its high-altitude spiral without selecting the curated course.
 - Add the curated Volcanic Run course: a deterministic terrain-aware spiral climb with a distinct altitude challenge and a reusable seed for repeatable practice.
