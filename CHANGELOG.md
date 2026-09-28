@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.460** Add a deterministic 30-seed startup regression corpus, protecting the playable-pad fallback search from future terrain changes.
 - **10.459** Keep the results-to-title seed loader on the canonical fractional seed instead of truncating random worlds back to a different terrain hash.
 - **10.458** Preserve the six decimal places used by the terrain hash in HUD, replay links, clipboard actions, and custom seed input so random worlds can actually be revisited exactly.
 - **10.457** Add a one-click results action that sends the active world seed back to the title screen for immediate exact-world exploration.

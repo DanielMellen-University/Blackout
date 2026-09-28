@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.459**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.460**.
 
 ## Run
 
@@ -13,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks and builds. World replacement is transactional: a failed rebuild rolls back to a usable streamed world instead of leaving the runway over an empty scene. If the initial world search still exhausts its bounded attempts, the title screen exposes a Retry action instead of leaving Play dead.
+Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks and builds. World replacement is transactional: a failed rebuild rolls back to a usable streamed world instead of leaving the runway over an empty scene. The deterministic startup seed corpus is regression-tested so dry playable pads remain available across the fallback search. If the initial world search still exhausts its bounded attempts, the title screen exposes a Retry action instead of leaving Play dead.
 
 ## Aircraft and weather
 

@@ -37,4 +37,18 @@ describe('airfield spawn', () => {
     expect(jet.biome).not.toBe('ocean')
     expect(jet.biome).not.toBe('water')
   }, 25_000)
+
+  it('keeps the deterministic startup seed corpus playable', () => {
+    for (let seed = 1; seed <= 30; seed += 1) {
+      setWorldSeed(seed)
+      clearOpsPad()
+      const pad = findPlayableSpawn()
+      expect(pad, `seed ${seed} should produce a playable pad`).not.toBeNull()
+      if (!pad) continue
+      expect(isUsableAirfield(pad), `seed ${seed} pad should remain dry`).toBe(true)
+      expect(pad.biome).not.toBe('ocean')
+      expect(pad.biome).not.toBe('water')
+    }
+    clearOpsPad()
+  }, 120_000)
 })
