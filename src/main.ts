@@ -1105,6 +1105,10 @@ async function boot(): Promise<void> {
         course.weatherShift,
       )
       replaySeed = null
+      if (replaying) {
+        if (titleSeedInput) titleSeedInput.value = ''
+        if (titleSeedStatus) titleSeedStatus.textContent = ''
+      }
       debug?.syncPad()
     } else {
       world.mission.start(

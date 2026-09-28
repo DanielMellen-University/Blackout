@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.451** Clear consumed custom seeds from the launch controls, keeping the visible pending-seed state aligned with the world that the next Play action will actually create.
 - **10.450** Add safe custom-seed launch input, letting pilots revisit exact procedural worlds from the title screen while preserving authored course selection and replay-link behavior.
 - **10.449** Keep graphics preset changes synchronized with the live adaptive detail budget, preventing a temporary full-cost shader burst when switching quality under load.
 - **10.448** Couple adaptive resolution to cloud and precipitation budgets, reducing atmospheric draw and particle pressure alongside terrain, water, and vegetation detail under sustained GPU load.
