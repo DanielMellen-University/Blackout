@@ -66,7 +66,7 @@ import {
   writeSelectedCourseId,
   type CourseId,
 } from './systems/CourseLibrary'
-import { CollisionSystem } from './systems/Collision'
+import { CollisionSystem, contactFailureLabel } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
 import { SonicBoomFx } from './systems/SonicBoomFx'
@@ -1538,7 +1538,7 @@ async function boot(): Promise<void> {
             const ditching = touch === 'ditch'
             crashMessage = ditching
               ? 'DITCHING / WATER CONTACT - press R'
-              : 'CRASH - press R'
+              : `CRASH / ${contactFailureLabel(collision.failureReason)} - press R`
             _crashPoint.copy(aircraft.position)
             _crashVelocity.copy(aircraft.velocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)

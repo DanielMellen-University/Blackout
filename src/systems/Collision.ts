@@ -9,6 +9,23 @@ import {
 
 export type TouchResult = 'air' | 'roll' | 'landed' | 'crash' | 'ditch'
 
+export type ContactFailureReason =
+  | 'obstacle'
+  | 'water'
+  | 'attitude'
+  | 'pitch'
+  | 'bank'
+  | 'slope'
+  | 'vertical-speed'
+  | 'normal-speed'
+  | 'gear'
+  | 'overspeed'
+
+export interface ContactOutcome {
+  result: TouchResult
+  reason: ContactFailureReason | null
+}
+
 export interface ContactClassification {
   airborne: boolean
   impact: AircraftImpact | null
@@ -58,6 +75,7 @@ export class CollisionSystem {
     height: 0,
     kind: 'land',
   }
+  private failureReasonValue: ContactFailureReason | null = null
 
   constructor(hitObstacle: (aircraft: Aircraft) => boolean = () => false) {
     this.hitObstacle = hitObstacle
@@ -68,7 +86,10 @@ export class CollisionSystem {
    * Main freezes / shows banner on crash or landed.
    */
   check(aircraft: Aircraft): TouchResult {
-    if (aircraft.status === 'crashed') return 'crash'
+    if (aircraft.status === 'crashed') {
+      this.failureReasonValue = null
+      return 'crash'
+    }
 
     const impact = aircraft.impact
     // FlightModel already resolved the rich surface on an impact. For normal
@@ -109,17 +130,27 @@ export class CollisionSystem {
     contact.upY = pose.upY
     contact.obstacle = this.hitObstacle(aircraft)
     contact.surface = surface
-    return classifyContact(contact)
+    const outcome = classifyContactOutcome(contact)
+    this.failureReasonValue = outcome.reason
+    return outcome.result
+  }
+
+  get failureReason(): ContactFailureReason | null {
+    return this.failureReasonValue
   }
 }
 
 /** Pure classifier so landing rules can be unit-tested without a renderer. */
 export function classifyContact(input: ContactClassification): TouchResult {
-  if (input.obstacle) return 'crash'
+  return classifyContactOutcome(input).result
+}
+
+export function classifyContactOutcome(input: ContactClassification): ContactOutcome {
+  if (input.obstacle) return { result: 'crash', reason: 'obstacle' }
 
   const impact = input.impact
   const contacting = !!impact || input.onPad
-  if (!contacting) return 'air'
+  if (!contacting) return { result: 'air', reason: null }
 
   const airborne = impact?.startedAirborne ?? input.airborne
   const gearDown = impact?.gearDown ?? input.gearDown
@@ -131,17 +162,17 @@ export function classifyContact(input: ContactClassification): TouchResult {
     ? Math.acos(MathUtils.clamp(impact.surfaceNormal.y, -1, 1))
     : 0
 
-  if (surface === 'water' && airborne) return 'ditch'
-  if (input.upY < 0.35) return 'crash'
-  if (Math.abs(input.pitch) > C.maxLandingPitch) return 'crash'
-  if (Math.abs(input.roll) > C.maxLandingBank) return 'crash'
-  if (airborne && slope > C.maxLandingSlope) return 'crash'
+  if (surface === 'water' && airborne) return { result: 'ditch', reason: 'water' }
+  if (input.upY < 0.35) return { result: 'crash', reason: 'attitude' }
+  if (Math.abs(input.pitch) > C.maxLandingPitch) return { result: 'crash', reason: 'pitch' }
+  if (Math.abs(input.roll) > C.maxLandingBank) return { result: 'crash', reason: 'bank' }
+  if (airborne && slope > C.maxLandingSlope) return { result: 'crash', reason: 'slope' }
 
   const crashLimit = gearDown ? C.crashVy : C.crashVy * 0.55
-  if (vy < crashLimit) return 'crash'
-  if (nVel < crashLimit) return 'crash'
-  if (airborne && !gearDown && gs > 28) return 'crash'
-  if (airborne && gs > C.maxLandingSpeed) return 'crash'
+  if (vy < crashLimit) return { result: 'crash', reason: 'vertical-speed' }
+  if (nVel < crashLimit) return { result: 'crash', reason: 'normal-speed' }
+  if (airborne && !gearDown && gs > 28) return { result: 'crash', reason: 'gear' }
+  if (airborne && gs > C.maxLandingSpeed) return { result: 'crash', reason: 'overspeed' }
 
   if (
     airborne &&
@@ -150,10 +181,27 @@ export function classifyContact(input: ContactClassification): TouchResult {
     vy > C.softLandingVy &&
     gs < 55
   ) {
-    return 'landed'
+    return { result: 'landed', reason: null }
   }
 
-  return 'roll'
+  return { result: 'roll', reason: null }
+}
+
+/** Keep impact copy short enough for the banner and accessible debrief. */
+export function contactFailureLabel(reason: ContactFailureReason | null): string {
+  switch (reason) {
+    case 'obstacle': return 'OBSTACLE'
+    case 'water': return 'WATER CONTACT'
+    case 'attitude': return 'ATTITUDE'
+    case 'pitch': return 'PITCH LIMIT'
+    case 'bank': return 'BANK LIMIT'
+    case 'slope': return 'SLOPE'
+    case 'vertical-speed': return 'SINK RATE'
+    case 'normal-speed': return 'IMPACT LOAD'
+    case 'gear': return 'GEAR UP'
+    case 'overspeed': return 'OVERSPEED'
+    default: return 'IMPACT'
+  }
 }
 
 export function attitudeInto(out: AttitudeState, orientation: Quaternion): AttitudeState {

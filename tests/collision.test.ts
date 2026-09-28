@@ -1,7 +1,12 @@
 import { Quaternion, Vector3 } from 'three'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Aircraft, type AircraftImpact } from '../src/aircraft/Aircraft'
-import { attitudeInto, classifyContact } from '../src/systems/Collision'
+import {
+  attitudeInto,
+  classifyContact,
+  classifyContactOutcome,
+  contactFailureLabel,
+} from '../src/systems/Collision'
 import { CollisionSystem } from '../src/systems/Collision'
 import {
   setContactHeightSampler,
@@ -124,6 +129,46 @@ describe('classifyContact', () => {
       surface: 'land',
     })
     expect(result).toBe('crash')
+    expect(classifyContactOutcome({
+      airborne: true,
+      impact: null,
+      onPad: false,
+      gearDown: true,
+      vy: 0,
+      groundSpeed: 30,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: true,
+      surface: 'land',
+    })).toEqual({ result: 'crash', reason: 'obstacle' })
+  })
+
+  it('reports finite impact reasons instead of collapsing every failure to crash', () => {
+    const base = {
+      airborne: true,
+      impact: impact({}),
+      onPad: true,
+      gearDown: true,
+      vy: -2,
+      groundSpeed: 40,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'land' as const,
+    }
+    expect(classifyContactOutcome({ ...base, pitch: Math.PI / 3 }).reason).toBe('pitch')
+    expect(classifyContactOutcome({ ...base, roll: Math.PI / 3 }).reason).toBe('bank')
+    expect(classifyContactOutcome({
+      ...base,
+      impact: impact({ surfaceNormal: new Vector3(0, 0.8, 0.6) }),
+    }).reason).toBe('slope')
+    expect(classifyContactOutcome({ ...base, vy: -30, impact: impact({ verticalVelocity: -30 }) }).reason)
+      .toBe('vertical-speed')
+    expect(contactFailureLabel('gear')).toBe('GEAR UP')
+    expect(contactFailureLabel('overspeed')).toBe('OVERSPEED')
+    expect(contactFailureLabel(null)).toBe('IMPACT')
   })
 })
 
@@ -171,7 +216,9 @@ describe('collision query budget', () => {
     aircraft.position.set(0, 1.4, 0)
     aircraft.impact = impact({ surface: 'water' })
 
-    expect(new CollisionSystem().check(aircraft)).toBe('ditch')
+    const collision = new CollisionSystem()
+    expect(collision.check(aircraft)).toBe('ditch')
+    expect(collision.failureReason).toBe('water')
     expect(surfaceSamples).toBe(0)
   })
 
