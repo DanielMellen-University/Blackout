@@ -23,6 +23,7 @@ import {
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
 import { pruneRotatingCourseRecords } from './core/CourseRecordRetention'
+import { resetFlightPreferences } from './core/PreferenceReset'
 import {
   bestOpsStreak,
   opsStreakLabel,
@@ -213,6 +214,19 @@ import { startupFailureCanRetry, startupFailureMessage } from './core/startupFai
 import { appReleaseLabel } from './core/Version'
 import { headingFromOrientation } from './core/attitude'
 import {
+  DEFAULT_CAMERA_AUTO_RETURN,
+  DEFAULT_CAMERA_EFFECTS,
+  DEFAULT_CAMERA_MODE,
+  DEFAULT_CAMERA_SENSITIVITY,
+  DEFAULT_CAMERA_SPEED_FRAMING,
+  DEFAULT_GHOST_VISIBLE,
+  DEFAULT_HUD_DISPLAY,
+  DEFAULT_KEYBOARD_BINDINGS,
+  DEFAULT_KEYBOARD_PITCH,
+  DEFAULT_KEYBOARD_ROLL,
+  DEFAULT_KEYBOARD_YAW,
+  DEFAULT_REDUCED_MOTION,
+  DEFAULT_STABILITY_ASSIST,
   keyboardYawPreferenceLabel,
   normalizeKeyboardYawPreference,
   readKeyboardYawPreference,
@@ -303,6 +317,7 @@ async function boot(): Promise<void> {
   const reducedMotionToggle = document.getElementById('menu-reduced-motion') as HTMLInputElement | null
   const hudDisplayToggle = document.getElementById('menu-hud-display') as HTMLInputElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
+  const resetSettingsButton = document.getElementById('menu-reset-settings') as HTMLButtonElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
   const pitchLabel = document.getElementById('controls-pitch-label')
@@ -1503,7 +1518,35 @@ async function boot(): Promise<void> {
     syncInputContext()
   }
 
+  const resetSettings = (): void => {
+    resetFlightPreferences(qualityStorage)
+    applyRenderQuality(renderQualityFallback)
+    applyAudioVolume(1)
+    applyAudioChannel('engine', 1)
+    applyAudioChannel('environment', 1)
+    applyAudioChannel('effects', 1)
+    applyKeyboardYaw(DEFAULT_KEYBOARD_YAW)
+    applyKeyboardRoll(DEFAULT_KEYBOARD_ROLL)
+    applyKeyboardPitch(DEFAULT_KEYBOARD_PITCH)
+    applyKeyboardBindings(DEFAULT_KEYBOARD_BINDINGS)
+    applyCameraSensitivity(DEFAULT_CAMERA_SENSITIVITY)
+    applyCameraSpeedFraming(DEFAULT_CAMERA_SPEED_FRAMING)
+    applyCameraAutoReturn(DEFAULT_CAMERA_AUTO_RETURN)
+    applyCameraEffects(DEFAULT_CAMERA_EFFECTS)
+    applyReducedMotion(DEFAULT_REDUCED_MOTION)
+    applyHudDisplay(DEFAULT_HUD_DISPLAY)
+    applyStabilityAssist(DEFAULT_STABILITY_ASSIST)
+    cameraPreference = DEFAULT_CAMERA_MODE
+    writeCameraModePreference(qualityStorage, cameraPreference)
+    cameras.setMode(cameraPreference, aircraft)
+    ghostVisible = DEFAULT_GHOST_VISIBLE
+    writeGhostVisibilityPreference(qualityStorage, ghostVisible)
+    ghost.setVisible(ghostVisible && playing)
+    if (playing) showBanner('SETTINGS RESET TO DEFAULTS', 1800, 'info')
+  }
+
   uiListeners.add(playBtn, 'click', () => startGame())
+  uiListeners.add(resetSettingsButton, 'click', resetSettings)
   uiListeners.add(document.getElementById('btn-controls'), 'click', () => {
     menu.showTitlePage('controls')
   })

@@ -46,7 +46,7 @@ export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQuali
     high: Object.freeze({ label: 'High', maxPixelRatio: 1.5, antialias: true, shadows: true, shadowMapSize: 1536, uiBackdropBlur: true, precipitationScale: 1, cloudScale: 1, vegetationScale: 1, settlementDetailRadius: 5200, settlementRoadRadius: 18120, terrainViewRadius: 80, terrainWorkers: 6, terrainUploadBudgetMs: 2.5, terrainMaxUploadsPerFrame: 20, waterDetailScale: 1, terrainDetailScale: 1 }),
   })
 
-const STORAGE_KEY = 'blackout.renderQuality'
+export const RENDER_QUALITY_STORAGE_KEY = 'blackout.renderQuality'
 
 /** Normalize saved or externally supplied values without leaking invalid state. */
 export function normalizeRenderQuality(value: unknown, fallback: RenderQuality = 'balanced'): RenderQuality {
@@ -71,7 +71,7 @@ export function readRenderQuality(
   fallback: RenderQuality = 'balanced',
 ): RenderQuality {
   try {
-    return normalizeRenderQuality(storage?.getItem(STORAGE_KEY), fallback)
+    return normalizeRenderQuality(storage?.getItem(RENDER_QUALITY_STORAGE_KEY), fallback)
   } catch {
     return fallback
   }
@@ -83,7 +83,7 @@ export function writeRenderQuality(
   quality: RenderQuality,
 ): void {
   try {
-    storage?.setItem(STORAGE_KEY, normalizeRenderQuality(quality))
+    storage?.setItem(RENDER_QUALITY_STORAGE_KEY, normalizeRenderQuality(quality))
   } catch {
     /* Storage is optional. */
   }
