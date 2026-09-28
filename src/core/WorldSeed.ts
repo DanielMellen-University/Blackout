@@ -48,7 +48,12 @@ export function shouldRegenerateWorldOnLaunch(courseId: unknown, replaySeed: num
 }
 
 /** Build a replay URL while preserving the current app route and diagnostics. */
-export function worldSeedReplayUrl(href: string, seed: number, courseId?: string): string | null {
+export function worldSeedReplayUrl(
+  href: string,
+  seed: number,
+  courseId?: string,
+  dayKey?: string,
+): string | null {
   const canonical = canonicalWorldSeed(seed)
   if (typeof href !== 'string' || href.trim() === '' || canonical === null) return null
   try {
@@ -59,10 +64,24 @@ export function worldSeedReplayUrl(href: string, seed: number, courseId?: string
     } else {
       url.searchParams.delete('course')
     }
+    // Daily Ops is the only course whose route/weather changes with time. The
+    // optional day key keeps a copied link exact without adding state to other
+    // authored or procedural worlds.
+    if (courseId === 'daily-ops' && isDailyDayKey(dayKey)) {
+      url.searchParams.set('day', dayKey)
+    } else {
+      url.searchParams.delete('day')
+    }
     return url.toString()
   } catch {
     return null
   }
+}
+
+function isDailyDayKey(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const timestamp = Date.parse(`${value}T12:00:00.000Z`)
+  return Number.isFinite(timestamp) && new Date(timestamp).toISOString().slice(0, 10) === value
 }
 
 /** Copy a finite procedural seed without allowing clipboard failures to escape. */
@@ -86,8 +105,9 @@ export async function copyWorldSeedLink(
   clipboard: ClipboardWriter | null | undefined,
   href: string,
   courseId?: string,
+  dayKey?: string,
 ): Promise<boolean> {
-  const link = worldSeedReplayUrl(href, seed, courseId)
+  const link = worldSeedReplayUrl(href, seed, courseId, dayKey)
   if (!link || !clipboard || typeof clipboard.writeText !== 'function') return false
   try {
     await clipboard.writeText(link)

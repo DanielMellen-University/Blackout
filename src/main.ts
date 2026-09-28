@@ -68,6 +68,7 @@ import {
 import {
   courseDefinitionForId,
   dailyOpsDayKey,
+  dailyOpsTimestampForDayKey,
   courseRunId,
   COURSE_LIBRARY,
   COURSE_SELECTION_STORAGE_KEY,
@@ -304,18 +305,22 @@ async function boot(): Promise<void> {
   }
 
   let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
+  const replayParams = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search)
+    : null
+  const replayCourseId = replayParams?.get('course') ?? null
+  const replayDayTimestamp = replayCourseId === 'daily-ops'
+    ? dailyOpsTimestampForDayKey(replayParams?.get('day'))
+    : null
   // Keep a single UTC snapshot for this page session so the picker, records,
   // and a retry all refer to the same Daily Ops challenge around midnight.
-  const dailyOpsTimestamp = Date.now()
+  const dailyOpsTimestamp = replayDayTimestamp ?? Date.now()
   const selectedCourse = () => resolveCourseDefinition(
     courseDefinitionForId(selectedCourseId),
     dailyOpsTimestamp,
   )
-  const replayCourseId = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('course')
-    : null
   let replaySeed = parseWorldSeed(
-    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('seed') : null,
+    replayParams?.get('seed'),
   )
   let replaySeedFallback = false
   if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
@@ -919,7 +924,13 @@ async function boot(): Promise<void> {
     const seed = world.worldSeed
     const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
     const href = typeof window !== 'undefined' ? window.location.href : ''
-    void copyWorldSeedLink(seed, clipboard, href, selectedCourseId).then((copied) => {
+    void copyWorldSeedLink(
+      seed,
+      clipboard,
+      href,
+      selectedCourseId,
+      selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+    ).then((copied) => {
       if (disposed || !shareReplayButton) return
       shareReplayButton.textContent = copied ? 'Replay link copied' : 'Copy blocked'
       shareReplayButton.setAttribute(
@@ -1617,7 +1628,13 @@ async function boot(): Promise<void> {
         const seed = world.worldSeed
         const clipboard = typeof navigator !== 'undefined' ? navigator.clipboard : undefined
         const href = typeof window !== 'undefined' ? window.location.href : ''
-        void copyWorldSeedLink(seed, clipboard, href, selectedCourseId).then((copied) => {
+        void copyWorldSeedLink(
+          seed,
+          clipboard,
+          href,
+          selectedCourseId,
+          selectedCourseId === 'daily-ops' ? dailyOpsDayKey(dailyOpsTimestamp) : undefined,
+        ).then((copied) => {
           if (disposed) return
           showBanner(
             copied

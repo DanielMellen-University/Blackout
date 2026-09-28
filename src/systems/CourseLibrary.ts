@@ -652,6 +652,14 @@ export function dailyOpsDayKey(nowMs = Date.now()): string {
   return day.toISOString().slice(0, 10)
 }
 
+/** Parse a replayed UTC day without allowing malformed dates to alter a launch. */
+export function dailyOpsTimestampForDayKey(dayKey: string | null | undefined): number | null {
+  if (typeof dayKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return null
+  const timestamp = Date.parse(`${dayKey}T12:00:00.000Z`)
+  if (!Number.isFinite(timestamp) || dailyOpsDayKey(timestamp) !== dayKey) return null
+  return timestamp
+}
+
 /** Generate a bounded integer seed shared by everyone on the same UTC day. */
 export function dailyOpsSeed(nowMs = Date.now()): number {
   const safeNow = Number.isFinite(nowMs) ? nowMs : DAILY_OPS_EPOCH_MS

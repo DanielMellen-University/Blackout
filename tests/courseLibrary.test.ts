@@ -9,6 +9,7 @@ import {
   dailyOpsDayKey,
   dailyOpsProfile,
   dailyOpsSeed,
+  dailyOpsTimestampForDayKey,
   readSelectedCourseId,
   resolveCourseDefinition,
   writeSelectedCourseId,
@@ -259,6 +260,8 @@ describe('course library', () => {
     expect(dailyResolved.seed).toBe(dailyOpsSeed(dailyNow))
     expect(dailyResolved.profile).toBe(dailyOpsProfile(dailyNow))
     expect(dailyResolved.detail).toContain(dailyOpsDayKey(dailyNow))
+    expect(dailyOpsTimestampForDayKey(dailyOpsDayKey(dailyNow))).toBe(Date.UTC(2026, 8, 28, 12))
+    expect(dailyOpsTimestampForDayKey('2026-02-30')).toBeNull()
     expect(courseRunId(daily, dailyNow)).toContain(`:daily:${dailyOpsDayKey(dailyNow)}`)
     expect(courseRunId(daily, dailyNow + 86_400_000)).not.toBe(courseRunId(daily, dailyNow))
     expect(courseSessionId('random', 42, 'orbit')).toBe('random-world')
