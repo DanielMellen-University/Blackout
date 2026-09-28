@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Preserve shared vegetation materials during streamed chunk teardown, preventing one retiring tile from disposing foliage shaders still used by visible neighboring tiles.
 - Reuse shared opaque terrain and water materials after streamed tiles finish fading, rehydrating private fade materials only for transitions and retirement to reduce resident GPU state without changing terrain geometry or stream budgets.
 - Clear keyboard, gamepad, and touch state whenever the runtime leaves live flight, preventing held controls from leaking through pause, results, focus loss, or title transitions into the next sortie.
 - Harden touch flight controls with per-button pointer capture and lost-capture cleanup, keeping multi-touch steering, throttle, and boost responsive without adding render-loop work.

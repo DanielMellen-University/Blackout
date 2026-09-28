@@ -21,6 +21,10 @@ describe('weathered vegetation materials', () => {
     const mesh = buckets.group.children.find(child => child instanceof Mesh) as Mesh
     expect(mesh.userData.fullCount).toBe((mesh as { count?: number }).count)
     const material = mesh.material as MeshStandardMaterial
+    expect(factory.isSharedMaterial(material)).toBe(true)
+    const privateMaterial = new MeshStandardMaterial()
+    expect(factory.isSharedMaterial(privateMaterial)).toBe(false)
+    privateMaterial.dispose()
     const shader = {
       uniforms: {} as Record<string, unknown>,
       vertexShader: '#include <common>\\n#include <begin_vertex>',

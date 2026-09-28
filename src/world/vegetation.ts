@@ -162,6 +162,7 @@ function setAt(
 export function createVegetationFactory(clock: { value: number } = { value: 0 }): {
   createBuckets: () => VegBuckets
   setWeather: (rain: number, snow: number, windX?: number, windZ?: number) => void
+  isSharedMaterial: (material: unknown) => material is MeshStandardMaterial
   disposeShared: () => void
 } {
   const weather: VegetationWeatherUniforms = {
@@ -788,6 +789,8 @@ export function createVegetationFactory(clock: { value: number } = { value: 0 })
       weather.windX.value = Number.isFinite(windX) ? windX : 0
       weather.windZ.value = Number.isFinite(windZ) ? windZ : 0
     },
+    isSharedMaterial: (material: unknown): material is MeshStandardMaterial =>
+      material instanceof MeshStandardMaterial && sharedMats.includes(material),
     disposeShared: () => {
       for (const g of sharedGeos) g.dispose()
       for (const m of sharedMats) m.dispose()

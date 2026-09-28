@@ -1144,6 +1144,7 @@ export class TerrainSystem {
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
       for (const m of mats) {
         if (m === this.groundMatNear || m === this.groundMatFar || m === this.waterMat) continue
+        if (this.vegFactory?.isSharedMaterial(m)) continue
         m.dispose()
       }
     })
