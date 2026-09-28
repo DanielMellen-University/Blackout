@@ -224,7 +224,7 @@ describe('MissionSystem gate crossing', () => {
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
-    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'storm', 'night'] as const
+    const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night'] as const
     const starts = [
       { x: 0, y: 20, z: 0, yaw: 0 },
       { x: 1_400, y: 20, z: -900, yaw: 0.8 },
@@ -275,6 +275,7 @@ describe('MissionSystem gate crossing', () => {
     const river = buildMissionRoute(0, 20, 0, 0, 'river')
     const volcanic = buildMissionRoute(0, 20, 0, 0, 'volcanic')
     const desert = buildMissionRoute(0, 20, 0, 0, 'desert')
+    const alpine = buildMissionRoute(0, 20, 0, 0, 'alpine')
     const storm = buildMissionRoute(0, 20, 0, 0, 'storm')
     const night = buildMissionRoute(0, 20, 0, 0, 'night')
     expect(orbit).toHaveLength(5)
@@ -286,6 +287,7 @@ describe('MissionSystem gate crossing', () => {
     expect(river).toHaveLength(5)
     expect(volcanic).toHaveLength(5)
     expect(desert).toHaveLength(5)
+    expect(alpine).toHaveLength(5)
     expect(storm).toHaveLength(5)
     expect(night).toHaveLength(5)
     expect(sweep[1]!.x).not.toBeCloseTo(orbit[1]!.x)
@@ -297,6 +299,8 @@ describe('MissionSystem gate crossing', () => {
     expect(summarizeMissionRoute(0, 20, 0, volcanic, 'volcanic').maxAltitudeMeters).toBeGreaterThan(700)
     expect(summarizeMissionRoute(0, 20, 0, desert, 'desert').challenge).toBe('range')
     expect(summarizeMissionRoute(0, 20, 0, desert, 'desert').lengthMeters).toBeGreaterThan(3_500)
+    expect(summarizeMissionRoute(0, 20, 0, alpine, 'alpine').challenge).toBe('altitude')
+    expect(summarizeMissionRoute(0, 20, 0, alpine, 'alpine').maxAltitudeMeters).toBeGreaterThan(650)
     expect(summarizeMissionRoute(0, 20, 0, storm, 'storm').challenge).toBe('precision')
     expect(summarizeMissionRoute(0, 20, 0, night, 'night').challenge).toBe('precision')
     expect(canyon[1]!.z).toBeGreaterThan(0)
@@ -312,6 +316,7 @@ describe('MissionSystem gate crossing', () => {
     expect(routeProfileLabel('river')).toBe('RIVER RUN')
     expect(routeProfileLabel('volcanic')).toBe('VOLCANIC RUN')
     expect(routeProfileLabel('desert')).toBe('DESERT DASH')
+    expect(routeProfileLabel('alpine')).toBe('ALPINE PASS')
     expect(routeProfileLabel('storm')).toBe('STORM RUN')
     expect(routeProfileLabel('night')).toBe('NIGHT OPS')
   })
@@ -325,6 +330,7 @@ describe('MissionSystem gate crossing', () => {
     expect(profiles.has('river')).toBe(true)
     expect(profiles.has('volcanic')).toBe(true)
     expect(profiles.has('desert')).toBe(true)
+    expect(profiles.has('alpine')).toBe(true)
   })
 
   it('supports a no-gate free-flight profile', () => {

@@ -60,7 +60,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'storm' | 'night' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -103,6 +103,7 @@ const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   river: 'RIVER RUN',
   volcanic: 'VOLCANIC RUN',
   desert: 'DESERT DASH',
+  alpine: 'ALPINE PASS',
   storm: 'STORM RUN',
   night: 'NIGHT OPS',
   free: 'FREE FLIGHT',
@@ -139,7 +140,7 @@ export function routeProfileForSpawn(
   const hash = Math.abs(Math.floor(
     safeX * 0.0023 + safeZ * 0.0017 + safeYaw * 2.7,
   ))
-  return (['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert'] as const)[hash % 9]!
+  return (['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'river', 'volcanic', 'desert', 'alpine'] as const)[hash % 10]!
 }
 
 export function routeProfileLabel(profile: MissionRouteProfile): string {
@@ -155,6 +156,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'river') return 'range'
   if (profile === 'volcanic') return 'altitude'
   if (profile === 'desert') return 'range'
+  if (profile === 'alpine') return 'altitude'
   if (profile === 'storm') return 'precision'
   if (profile === 'night') return 'precision'
   return 'approach'
@@ -173,7 +175,7 @@ export function routeModifierForSpawn(
   const safeX = finiteOr(spawnX, 0)
   const safeZ = finiteOr(spawnZ, 0)
   const safeYaw = finiteOr(spawnYaw, 0)
-  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'storm' ? 9 : profile === 'night' ? 10 : 0
+  const profileBias = profile === 'sweep' ? 1 : profile === 'slalom' ? 2 : profile === 'ridge' ? 3 : profile === 'canyon' ? 4 : profile === 'coast' ? 5 : profile === 'river' ? 6 : profile === 'volcanic' ? 7 : profile === 'desert' ? 8 : profile === 'alpine' ? 9 : profile === 'storm' ? 10 : profile === 'night' ? 11 : 0
   const hash = Math.abs(Math.floor(
     safeX * 0.0019 + safeZ * 0.0013 + safeYaw * 2.1 + profileBias,
   ))
@@ -219,7 +221,7 @@ export function buildMissionRoute(
   const offsets = routeOffsets(profile, seedPhase, modifier)
   const points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
-      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' || profile === 'night' ? 12 : profile === 'ridge' ? 30 : profile === 'volcanic' ? 44 : profile === 'desert' || profile === 'coast' || profile === 'river' ? 16 : 22),
+      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' || profile === 'night' ? 12 : profile === 'ridge' || profile === 'alpine' ? 30 : profile === 'volcanic' ? 44 : profile === 'desert' || profile === 'coast' || profile === 'river' ? 16 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
@@ -370,6 +372,16 @@ function routeOffsets(
       { forward: 2_260, right: sweep * 0.86, height: 104 },
       { forward: 3_060, right: sweep * 0.18, height: 118 },
       { forward: 3_820, right: -sweep * 1.12, height: 132 },
+    ].map(shape)
+  }
+  if (profile === 'alpine') {
+    const pass = 380 + seedPhase * 70
+    return [
+      { forward: 720, right: 0, height: 232 },
+      { forward: 1_360, right: pass, height: 388 },
+      { forward: 2_020, right: -pass * .58, height: 566 },
+      { forward: 2_760, right: pass * 1.04, height: 492 },
+      { forward: 3_440, right: pass * .16, height: 704 },
     ].map(shape)
   }
   if (profile === 'storm') {

@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'storm-run' | 'night-ops'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -96,6 +96,13 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'Fast low-level line across wide dry basins',
     seed: 9,
     profile: 'desert',
+  },
+  {
+    id: 'alpine-pass',
+    label: 'Alpine pass',
+    detail: 'High-altitude climb through changing mountain shoulders',
+    seed: 12,
+    profile: 'alpine',
   },
   {
     id: 'storm-run',

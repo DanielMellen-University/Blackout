@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the curated Alpine Pass course, a deterministic high-altitude mountain route that also joins random profile rotation without adding scene systems or unbounded route work.
 - Carry authored weather and night conditions into the results and crash debrief, keeping Storm Run and Night Ops context readable after the route ends without adding runtime or storage work.
 - Show the human course name on results and crash debriefs instead of the internal seed/profile storage key, keeping authored retries readable without changing saved-score identity.
 - Freeze authored Storm Run fronts and Night Ops midnight timing for the whole attempt, preventing long flights from drifting into a different challenge while random worlds retain their normal day/night and weather progression.
