@@ -14,7 +14,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(38)
+    expect(COURSE_LIBRARY).toHaveLength(39)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -121,6 +121,10 @@ describe('course library', () => {
     expect(courseDefinitionForId('night-flight').timeOfDay).toBeCloseTo(0.84)
     expect(courseDefinitionForId('night-flight').contractCatalog).toBe(true)
     expect(courseRunId(courseDefinitionForId('night-flight'))).toBe('seed:463:night')
+    expect(courseDefinitionForId('radar-run').profile).toBe('sweep')
+    expect(courseDefinitionForId('radar-run').weather).toBe('clear')
+    expect(courseDefinitionForId('radar-run').contractCatalog).toBe(true)
+    expect(courseRunId(courseDefinitionForId('radar-run'))).toBe('seed:113:sweep')
     expect(courseRunId(courseDefinitionForId('rainforest-run'))).toBe('seed:17:rainforest')
     expect(courseRunId(courseDefinitionForId('random'))).toBeNull()
     expect(courseSessionId('random', 42, 'orbit')).toBe('random-world')
