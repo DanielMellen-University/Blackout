@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.490** Add a persisted reduced-motion setting that quiets camera, weather, radar, sky, and impact animation without changing flight behavior.
 - **10.489** Persist the best river, lake, and sea survey per course so exploration progress carries into the picker and debrief.
 - **10.488** Track distinct river, lake, and sea discoveries in the live HUD and sortie debrief with one-time discovery cues.
 - **10.487** Keep the audio runtime in its own cacheable build chunk, trimming the initial app entry without changing gameplay behavior.

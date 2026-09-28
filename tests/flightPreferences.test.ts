@@ -21,6 +21,8 @@ import {
   HUD_DISPLAY_STORAGE_KEY,
   DEFAULT_HUD_DISPLAY,
   STABILITY_ASSIST_STORAGE_KEY,
+  REDUCED_MOTION_STORAGE_KEY,
+  DEFAULT_REDUCED_MOTION,
   KEYBOARD_PITCH_STORAGE_KEY,
   KEYBOARD_ROLL_STORAGE_KEY,
   KEYBOARD_YAW_STORAGE_KEY,
@@ -65,6 +67,9 @@ import {
   normalizeCameraEffectsPreference,
   readCameraEffectsPreference,
   writeCameraEffectsPreference,
+  normalizeReducedMotionPreference,
+  readReducedMotionPreference,
+  writeReducedMotionPreference,
   normalizeHudDisplay,
   readHudDisplayPreference,
   writeHudDisplayPreference,
@@ -260,6 +265,22 @@ describe('keyboard flight preferences', () => {
     writeHudDisplayPreference(storage, 'minimal')
     expect(values.get(HUD_DISPLAY_STORAGE_KEY)).toBe('minimal')
     expect(readHudDisplayPreference(storage)).toBe('minimal')
+  })
+
+  it('persists reduced-motion preference independently from camera effects', () => {
+    const values = new Map<string, string>([[REDUCED_MOTION_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeReducedMotionPreference('1')).toBe(true)
+    expect(normalizeReducedMotionPreference('bad')).toBe(DEFAULT_REDUCED_MOTION)
+    expect(readReducedMotionPreference(storage)).toBe(DEFAULT_REDUCED_MOTION)
+    writeReducedMotionPreference(storage, true)
+    expect(values.get(REDUCED_MOTION_STORAGE_KEY)).toBe('true')
+    expect(readReducedMotionPreference(storage)).toBe(true)
+    writeReducedMotionPreference(storage, false)
+    expect(values.get(REDUCED_MOTION_STORAGE_KEY)).toBe('false')
   })
 
   it('persists speed framing levels independently from camera look', () => {

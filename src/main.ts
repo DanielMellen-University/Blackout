@@ -214,6 +214,8 @@ import {
   writeCameraAutoReturnPreference,
   readCameraEffectsPreference,
   writeCameraEffectsPreference,
+  readReducedMotionPreference,
+  writeReducedMotionPreference,
   normalizeHudDisplay,
   readHudDisplayPreference,
   writeHudDisplayPreference,
@@ -263,6 +265,7 @@ async function boot(): Promise<void> {
   const cameraSpeedFramingSelect = document.getElementById('menu-camera-speed-framing') as HTMLSelectElement | null
   const cameraAutoReturnToggle = document.getElementById('menu-camera-auto-return') as HTMLInputElement | null
   const cameraEffectsToggle = document.getElementById('menu-camera-effects') as HTMLInputElement | null
+  const reducedMotionToggle = document.getElementById('menu-reduced-motion') as HTMLInputElement | null
   const hudDisplayToggle = document.getElementById('menu-hud-display') as HTMLInputElement | null
   const stabilityAssistToggle = document.getElementById('menu-stability-assist') as HTMLInputElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
@@ -452,6 +455,7 @@ async function boot(): Promise<void> {
   const initialCameraSpeedFraming = readCameraSpeedFramingPreference(qualityStorage)
   const initialCameraAutoReturn = readCameraAutoReturnPreference(qualityStorage)
   const initialCameraEffects = readCameraEffectsPreference(qualityStorage)
+  const initialReducedMotion = readReducedMotionPreference(qualityStorage)
   const initialHudDisplay = readHudDisplayPreference(qualityStorage)
   const initialGhostVisible = readGhostVisibilityPreference(qualityStorage)
   const initialCameraMode = readCameraModePreference(qualityStorage)
@@ -602,15 +606,26 @@ async function boot(): Promise<void> {
   const reducedMotionQuery = typeof window.matchMedia === 'function'
     ? window.matchMedia('(prefers-reduced-motion: reduce)')
     : null
+  let userReducedMotion = initialReducedMotion
   let reducedMotion = false
   const syncReducedMotion = (): void => {
-    reducedMotion = !!reducedMotionQuery?.matches
+    // The in-game preference can opt into reduced motion even when the OS
+    // setting is unchanged. An OS-level request remains authoritative.
+    reducedMotion = userReducedMotion || !!reducedMotionQuery?.matches
+    if (reducedMotionToggle) reducedMotionToggle.checked = userReducedMotion
     aircraft.setReducedMotion(reducedMotion)
     cameras.setReducedMotion(reducedMotion)
     world.atmosphere.setReducedMotion(reducedMotion)
     applyEffectsMotion?.(reducedMotion)
     applyRadarMotion?.(reducedMotion)
   }
+  const applyReducedMotion = (next: boolean): void => {
+    userReducedMotion = next === true
+    if (reducedMotionToggle) reducedMotionToggle.checked = userReducedMotion
+    writeReducedMotionPreference(qualityStorage, userReducedMotion)
+    syncReducedMotion()
+  }
+  applyReducedMotion(initialReducedMotion)
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
   const input = new InputManager()
@@ -785,6 +800,13 @@ async function boot(): Promise<void> {
     }
   }
   uiListeners.add(cameraEffectsToggle, 'change', onCameraEffectsChange)
+  const onReducedMotionChangeByUser = (): void => {
+    applyReducedMotion(reducedMotionToggle?.checked === true)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(reducedMotion ? 'REDUCED MOTION ON' : 'REDUCED MOTION OFF', 1500, 'info')
+    }
+  }
+  uiListeners.add(reducedMotionToggle, 'change', onReducedMotionChangeByUser)
   const onHudDisplayChange = (): void => {
     const display: HudDisplay = hudDisplayToggle?.checked === true ? 'minimal' : 'full'
     applyHudDisplay(display)

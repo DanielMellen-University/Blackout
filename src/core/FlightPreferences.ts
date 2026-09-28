@@ -52,6 +52,8 @@ export const CAMERA_AUTO_RETURN_STORAGE_KEY = 'blackout.cameraAutoReturn'
 export const DEFAULT_CAMERA_AUTO_RETURN = true
 export const CAMERA_EFFECTS_STORAGE_KEY = 'blackout.cameraEffects'
 export const DEFAULT_CAMERA_EFFECTS = true
+export const REDUCED_MOTION_STORAGE_KEY = 'blackout.reducedMotion'
+export const DEFAULT_REDUCED_MOTION = false
 export const HUD_DISPLAY_STORAGE_KEY = 'blackout.hudDisplay'
 // Keep the shipped cockpit uncluttered; pilots can opt into the expanded ledger.
 export const DEFAULT_HUD_DISPLAY: HudDisplay = 'minimal'
@@ -479,6 +481,40 @@ export function writeCameraEffectsPreference(
     storage?.setItem(
       CAMERA_EFFECTS_STORAGE_KEY,
       normalizeCameraEffectsPreference(enabled) ? 'true' : 'false',
+    )
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function normalizeReducedMotionPreference(
+  value: unknown,
+  fallback = DEFAULT_REDUCED_MOTION,
+): boolean {
+  if (value === true || value === 'true' || value === '1') return true
+  if (value === false || value === 'false' || value === '0') return false
+  return fallback === true
+}
+
+export function readReducedMotionPreference(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback = DEFAULT_REDUCED_MOTION,
+): boolean {
+  try {
+    return normalizeReducedMotionPreference(storage?.getItem(REDUCED_MOTION_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeReducedMotionPreference(undefined, fallback)
+  }
+}
+
+export function writeReducedMotionPreference(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  enabled: boolean,
+): void {
+  try {
+    storage?.setItem(
+      REDUCED_MOTION_STORAGE_KEY,
+      normalizeReducedMotionPreference(enabled) ? 'true' : 'false',
     )
   } catch {
     /* Storage is optional. */
