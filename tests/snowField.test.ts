@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { precipitationParticleCount, SnowField, snowWave, wrap } from '../src/world/SnowField'
 
 describe('snow wrap', () => {
@@ -33,5 +33,16 @@ describe('snow wrap', () => {
     expect(field.activeCount).toBe(4200)
     expect(field.points.geometry.drawRange.count).toBe(4200)
     field.dispose()
+  })
+
+  it('makes particle teardown idempotent and ignores late weather updates', () => {
+    const field = new SnowField()
+    const geometryDispose = vi.spyOn(field.points.geometry, 'dispose')
+    field.dispose()
+    expect(() => field.dispose()).not.toThrow()
+    expect(() => field.setDensityScale(.5)).not.toThrow()
+    expect(() => field.update(.016, 0, 100, 0, 1, 4, -2)).not.toThrow()
+    expect(field.points.visible).toBe(false)
+    expect(geometryDispose).toHaveBeenCalledOnce()
   })
 })

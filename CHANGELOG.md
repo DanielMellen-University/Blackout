@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Make snow-field teardown idempotent and detach the pooled particle root, so late weather updates cannot write into disposed precipitation buffers.
 - Make traffic teardown idempotent and detach its pooled scene root, so world resets and late stream callbacks cannot update or reuse disposed traffic resources.
 - Split the large course/career modules into a cacheable application chunk, reducing the initial entry bundle without changing runtime behavior or adding per-frame work.
 - Keep shared settlement geometry alive during streamed unloads, preventing an anchor beacon or instanced prop family from invalidating landmarks that remain visible after settlement churn.

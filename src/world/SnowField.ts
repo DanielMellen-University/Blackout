@@ -51,6 +51,7 @@ export class SnowField {
   private clock = 0
   private scattered = false
   private activeCountValue = FLAKE_COUNT
+  private disposed = false
 
   constructor() {
     this.pos = new Float32Array(FLAKE_COUNT * 3)
@@ -102,6 +103,7 @@ export class SnowField {
 
   /** Apply the selected graphics preset to the pooled snow budget. */
   setDensityScale(scale: number): void {
+    if (this.disposed) return
     const next = precipitationParticleCount(FLAKE_COUNT, scale)
     if (next === this.activeCountValue) return
     this.activeCountValue = next
@@ -120,6 +122,7 @@ export class SnowField {
     windX = 0,
     windZ = 0,
   ): void {
+    if (this.disposed) return
     const on = intensity > 0.02 && dt > 0
     if (!on) {
       this.mat.opacity = intensity > 0.02 ? this.mat.opacity : 0
@@ -162,6 +165,9 @@ export class SnowField {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
+    this.points.removeFromParent()
     this.points.geometry.dispose()
     this.mat.dispose()
     this.tex.dispose()
