@@ -1,7 +1,7 @@
 import type { MissionRouteProfile } from './Mission'
 import type { WeatherId, WindSide } from '../world/WeatherDirector'
 
-export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain'
+export type CourseId = 'random' | 'free-flight' | 'training-orbit' | 'range-sweep' | 'precision-slalom' | 'ridge-run' | 'canyon-run' | 'coastal-run' | 'fjord-run' | 'river-run' | 'volcanic-run' | 'desert-dash' | 'alpine-pass' | 'storm-run' | 'night-ops' | 'timberline-run' | 'glacier-run' | 'rainforest-run' | 'mesa-run' | 'badlands-run' | 'saltflat-run' | 'savanna-run' | 'tundra-run' | 'swamp-run' | 'archipelago-run' | 'thermal-run' | 'pattern-approach' | 'crosswind-approach' | 'traffic-run' | 'waterway-tour' | 'thermal-surf' | 'high-dive' | 'water-skim' | 'ridge-trial' | 'traffic-dodge' | 'precision-landing' | 'combo-run' | 'night-flight' | 'radar-run' | 'precision-chain' | 'butter-landing'
 
 export const COURSE_SELECTION_STORAGE_KEY = 'blackout.course-selection'
 export const RANDOM_COURSE_RUN_ID = 'random-world'
@@ -339,6 +339,15 @@ export const COURSE_LIBRARY: readonly CourseDefinition[] = [
     detail: 'Tight clear slalom with three consecutive perfect gates',
     seed: 45,
     profile: 'slalom',
+    weather: 'clear',
+    contractCatalog: true,
+  },
+  {
+    id: 'butter-landing',
+    label: 'Butter landing',
+    detail: 'Short clear pattern with a smooth-touchdown contract',
+    seed: 222,
+    profile: 'approach',
     weather: 'clear',
     contractCatalog: true,
   },

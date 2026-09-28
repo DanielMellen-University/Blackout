@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.419** Add Butter Landing, a deterministic clear pattern course that exposes the bounded smooth-touchdown contract without adding scene or render-loop work.
 - **10.418** Add Precision Chain, a deterministic clear slalom course that exposes the bounded three-gate quality contract without adding scene or render-loop work.
 - **10.417** Add Radar Run, a deterministic clear open route that exposes the bounded locked-settlement radar contract without adding scene or render-loop work.
 - **10.416** Add Night Flight, a deterministic foggy midnight route that exposes the bounded after-dark contract without adding scene or render-loop work.
