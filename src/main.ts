@@ -141,7 +141,7 @@ import { evaluateWarnings, FlightWarningTracker, warningCueForState } from './sy
 import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
-import { DebugOverlay } from './debug/DebugOverlay'
+import type { DebugOverlay } from './debug/DebugOverlay'
 import {
   CoursePicker,
   courseConditionSummary,
@@ -973,8 +973,12 @@ async function boot(): Promise<void> {
   applyRadarQuality(renderQuality)
   applyRadarMotion = (reduced): void => radar.setReducedMotion(reduced)
   applyRadarMotion(reducedMotion)
-  const debug = isDebugEnabled() ? new DebugOverlay(world.scene) : null
-  debug?.syncPad()
+  let debug: DebugOverlay | null = null
+  if (isDebugEnabled()) {
+    const { DebugOverlay: DebugOverlayClass } = await import('./debug/DebugOverlay')
+    debug = new DebugOverlayClass(world.scene)
+    debug.syncPad()
+  }
 
   let disposed = false
   let contextLost = false

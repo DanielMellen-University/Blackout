@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.531** Lazy-load the opt-in debug overlay so normal players do not pay its inspector code in the initial entry bundle.
 - **10.530** Harden Monthly Ops against malformed finite timestamps so replay keys and period identities stay valid.
 - **10.529** Add deterministic Monthly Ops with UTC-month replay links and isolated period records.
 - **10.528** Mark pinned courses directly in the catalog cards so Favorites remain visible in every filter.
