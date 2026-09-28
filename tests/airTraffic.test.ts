@@ -1,5 +1,5 @@
 import { Group, InstancedMesh } from 'three'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   AIR_TRAFFIC_BEACON_COUNT,
   AIR_TRAFFIC_COUNT,
@@ -114,5 +114,21 @@ describe('bounded air traffic', () => {
     expect(trafficBeaconVisible(1.25, 2)).toBe(trafficBeaconVisible(1.25, 2))
     expect(trafficBeaconVisible(Number.NaN, 2)).toBe(false)
     expect(trafficBeaconVisible(1.25, -1)).toBe(false)
+  })
+
+  it('makes traffic teardown idempotent and ignores late stream updates', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    const mesh = parent.getObjectByName('AirTrafficSilhouettes') as InstancedMesh
+    const geometryDispose = vi.spyOn(mesh.geometry, 'dispose')
+    traffic.dispose()
+    expect(parent.getObjectByName('AirTraffic')).toBeUndefined()
+    expect(() => traffic.dispose()).not.toThrow()
+    expect(() => traffic.reset(42, 0, 0, 0)).not.toThrow()
+    expect(() => traffic.update(0, 0, 1)).not.toThrow()
+    expect(traffic.getRadarLandmarks(0, 0, 10_000)).toHaveLength(0)
+    expect(traffic.closestAlert(0, 0, 0, 0)).toBeNull()
+    expect(traffic.count).toBe(0)
+    expect(geometryDispose).toHaveBeenCalledOnce()
   })
 })

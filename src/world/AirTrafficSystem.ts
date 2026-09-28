@@ -154,6 +154,7 @@ export class AirTrafficSystem {
   private activeContrailCount = AIR_TRAFFIC_COUNT
   private activeBeaconCount = AIR_TRAFFIC_BEACON_COUNT
   private revision = 0
+  private disposed = false
 
   constructor(parent: Object3D) {
     this.root.name = 'AirTraffic'
@@ -204,7 +205,7 @@ export class AirTrafficSystem {
   }
 
   get count(): number {
-    return this.activeCount
+    return this.disposed ? 0 : this.activeCount
   }
 
   get updateRevision(): number {
@@ -213,6 +214,10 @@ export class AirTrafficSystem {
 
   /** Return a pooled nearby snapshot for the radar sweep. */
   getRadarLandmarks(x: number, z: number, maxRange: number): readonly RadarLandmark[] {
+    if (this.disposed) {
+      this.radarCache.length = 0
+      return this.radarCache
+    }
     const safeX = Number.isFinite(x) ? x : this.lastPlayerX
     const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
     const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
@@ -228,6 +233,7 @@ export class AirTrafficSystem {
 
   /** Return the nearest bounded traffic conflict for a one-shot pilot cue. */
   closestAlert(x: number, y: number, z: number, heading: number): TrafficAlert | null {
+    if (this.disposed) return null
     const safeX = Number.isFinite(x) ? x : this.lastPlayerX
     const safeY = Number.isFinite(y) ? y : this.baseY
     const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
@@ -265,6 +271,7 @@ export class AirTrafficSystem {
 
   /** Rebuild only the fixed slot data when a world or traffic cell changes. */
   reset(seed: number, x: number, y: number, z: number): void {
+    if (this.disposed) return
     this.seed = Number.isFinite(seed) ? Math.trunc(seed) : 0
     this.baseY = Number.isFinite(y) ? y : 0
     this.elapsed = 0
@@ -278,11 +285,13 @@ export class AirTrafficSystem {
   }
 
   setVisible(visible: boolean): void {
+    if (this.disposed) return
     this.root.visible = visible === true
   }
 
   /** Keep low-end devices at three silhouettes while High gets the full pool. */
   setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
     this.activeCount = quality === 'low' ? 3 : quality === 'balanced' ? 5 : AIR_TRAFFIC_COUNT
     this.activeContrailCount = quality === 'low' ? 0 : this.activeCount
     this.activeBeaconCount = quality === 'low' ? 0 : this.activeCount
@@ -294,6 +303,7 @@ export class AirTrafficSystem {
 
   /** Advance traffic at 12 Hz, independent of render refresh rate. */
   update(x: number, z: number, dt: number): void {
+    if (this.disposed) return
     const safeX = Number.isFinite(x) ? x : this.anchorX
     const safeZ = Number.isFinite(z) ? z : this.anchorZ
     this.lastPlayerX = safeX
@@ -320,6 +330,8 @@ export class AirTrafficSystem {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.root.remove(this.mesh)
     this.root.remove(this.contrailMesh)
     this.root.remove(this.beaconMesh)
@@ -329,6 +341,7 @@ export class AirTrafficSystem {
     this.contrailMaterial.dispose()
     this.beaconGeometry.dispose()
     this.beaconMaterial.dispose()
+    this.root.removeFromParent()
   }
 
   private regenerateCell(cellX: number, cellZ: number): void {
