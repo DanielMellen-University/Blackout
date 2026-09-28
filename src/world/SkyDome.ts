@@ -308,6 +308,13 @@ export class SkyDome {
           col = mix(col, uHorizonColor * 0.85, uHaze * 0.45);
 
           gl_FragColor = vec4(col, 1.0);
+          // Keep the analytic dome on the same output path as the rest of
+          // the scene. ShaderMaterial supplies the matching pars chunks, so
+          // this applies the renderer's ACES exposure and sRGB conversion
+          // instead of writing unprocessed linear values straight to the
+          // framebuffer.
+          #include <tonemapping_fragment>
+          #include <colorspace_fragment>
         }
       `,
     })

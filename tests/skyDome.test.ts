@@ -1,5 +1,6 @@
+import { Scene } from 'three'
 import { describe, expect, it } from 'vitest'
-import { deriveSkyCloudDeck, deriveSkyCloudDeckInto, skyCloudDetailScale } from '../src/world/SkyDome'
+import { deriveSkyCloudDeck, deriveSkyCloudDeckInto, SkyDome, skyCloudDetailScale } from '../src/world/SkyDome'
 import { WEATHER_PROFILES } from '../src/world/WeatherDirector'
 
 function deckFor(id: keyof typeof WEATHER_PROFILES) {
@@ -83,5 +84,15 @@ describe('analytic sky cloud deck', () => {
     expect(skyCloudDetailScale(0.78)).toBe(1)
     expect(skyCloudDetailScale(1)).toBe(1)
     expect(skyCloudDetailScale(Number.NaN)).toBe(1)
+  })
+
+  it('routes the dome through the renderer output color pipeline', () => {
+    const sky = new SkyDome(new Scene())
+    const fragment = (sky as unknown as { mat: { fragmentShader: string } }).mat.fragmentShader
+
+    expect(fragment).toContain('#include <tonemapping_fragment>')
+    expect(fragment).toContain('#include <colorspace_fragment>')
+
+    sky.dispose()
   })
 })

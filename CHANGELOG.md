@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Route the analytic sky through Three's tone-mapping and output-color chunks so the dome matches world exposure and color management.
 - Add a bounded night-weather exposure assist for rain, snow, and cloud cover so storm terrain remains readable without washing out clear nights or daytime.
 - Add restrained one-shot radar lock and lock-loss chirps beside the existing target banners, reusing the pooled event path without adding audio nodes or per-frame work.
 - Fade high-frequency water foam, riffle, and flow detail before the fog edge, and bias the independent surface forward to suppress distant shimmer and shoreline speckle without changing water levels or adding geometry.
