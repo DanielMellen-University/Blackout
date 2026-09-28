@@ -273,10 +273,15 @@ describe('MissionSystem gate crossing', () => {
               const x = previous.x + dx * t
               const y = previous.y + (point.y - previous.y) * t
               const z = previous.z + dz * t
-              expect(
-                y - sampleTerrainHeight(x, z),
-                `${profile} from ${start.x},${start.z} leg ${point.x.toFixed(0)},${point.z.toFixed(0)} sample ${sample}/${samples}`,
-              ).toBeGreaterThanOrEqual(119.5)
+              const rightX = Math.cos(start.yaw)
+              const rightZ = -Math.sin(start.yaw)
+              for (const lateral of [-34, 0, 34]) {
+                const clearance = y - sampleTerrainHeight(x + rightX * lateral, z + rightZ * lateral)
+                expect(
+                  clearance,
+                  `${profile} corridor ${lateral}m from ${start.x},${start.z} leg ${point.x.toFixed(0)},${point.z.toFixed(0)} sample ${sample}/${samples}`,
+                ).toBeGreaterThanOrEqual(119.5)
+              }
             }
             previous = point
           }

@@ -50,6 +50,9 @@ const ROUTE_RADIUS = 980
 const ROUTE_RADIUS_VARIATION = 150
 const ROUTE_ANGLE_VARIATION = 0.12
 const ROUTE_CLEARANCE = 120
+/** Keep the intended flight corridor clear, not just the gate centreline. */
+const ROUTE_CORRIDOR_HALF_WIDTH = 34
+const ROUTE_CORRIDOR_OFFSETS = [-ROUTE_CORRIDOR_HALF_WIDTH, 0, ROUTE_CORRIDOR_HALF_WIDTH] as const
 const ROUTE_SAMPLE_SPACING = 80
 const ROUTE_MIN_SEGMENT_SAMPLES = 12
 const ROUTE_MAX_SEGMENT_SAMPLES = 48
@@ -333,11 +336,17 @@ export function buildMissionRoute(
       const t = sample / samples
       const x = previousX + (point.x - previousX) * t
       const z = previousZ + (point.z - previousZ) * t
-      const ground = sampleTerrainHeight(x, z)
-      if (Number.isFinite(ground)) {
-        const needed = ground + ROUTE_CLEARANCE
-        const endpointY = (needed - previousY * (1 - t)) / t
-        requiredY = Math.max(requiredY, endpointY)
+      // Probe the centre and both wing sides. This catches a ridge that the
+      // straight gate line misses while keeping the route build bounded.
+      for (const lateral of ROUTE_CORRIDOR_OFFSETS) {
+        const corridorX = x + rightX * lateral
+        const corridorZ = z + rightZ * lateral
+        const ground = sampleTerrainHeight(corridorX, corridorZ)
+        if (Number.isFinite(ground)) {
+          const needed = ground + ROUTE_CLEARANCE
+          const endpointY = (needed - previousY * (1 - t)) / t
+          requiredY = Math.max(requiredY, endpointY)
+        }
       }
     }
     point.y = Math.max(point.y, requiredY)
