@@ -1746,6 +1746,9 @@ async function boot(): Promise<void> {
         ghost.record(challenge.elapsedSec, aircraft.position)
       }
 
+      world.mission.setRouteTraceVisible(
+        playing && !menu.paused && !results.open && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
+      )
       world.mission.tick(
         nowMs,
         aircraft.displayPosition.x,

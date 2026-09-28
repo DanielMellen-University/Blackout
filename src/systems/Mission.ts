@@ -723,6 +723,7 @@ export class MissionSystem {
   private readonly routeTraceMaterial: LineBasicMaterial
   private readonly routeTrace: Line
   private readonly routeTracePositions = new Float32Array(GATE_COUNT * 3)
+  private routeTraceRequested = true
   private passFlashStartedAt = 0
   /** Presentation clock in milliseconds, supplied by RAF when available. */
   private presentationTimeMs = 0
@@ -897,11 +898,18 @@ export class MissionSystem {
     const routeTraceAttribute = this.routeTraceGeometry.getAttribute('position')
     routeTraceAttribute.needsUpdate = true
     this.routeTraceGeometry.setDrawRange(0, this.gates.length)
-    this.routeTrace.visible = this.gates.length > 1
+    this.routeTrace.visible = this.routeTraceRequested && this.gates.length > 1
     this.status = route.length > 0 ? 'live' : 'idle'
     this.liveLabel = route.length > 0 ? `GATE 1/${this.gates.length}` : 'FREE FLIGHT'
     this.paint()
     this.placeBeacon()
+  }
+
+  /** Keep the route trace out of cockpit and non-live presentation states. */
+  setRouteTraceVisible(visible: boolean): void {
+    if (this.disposed) return
+    this.routeTraceRequested = visible === true
+    this.routeTrace.visible = this.routeTraceRequested && this.gates.length > 1 && this.status === 'live'
   }
 
   /** Pulse the live ring and hold the far-visible beacon on it. */

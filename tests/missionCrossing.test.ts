@@ -139,6 +139,10 @@ describe('MissionSystem gate crossing', () => {
     const trace = mission.root.getObjectByName('RouteTrace') as { visible: boolean; geometry: { drawRange: { count: number } } }
     expect(trace.visible).toBe(true)
     expect(trace.geometry.drawRange.count).toBe(5)
+    mission.setRouteTraceVisible(false)
+    expect(trace.visible).toBe(false)
+    mission.setRouteTraceVisible(true)
+    expect(trace.visible).toBe(true)
 
     mission.start(0, 20, 0, 0, 'free')
     expect(trace.visible).toBe(false)
