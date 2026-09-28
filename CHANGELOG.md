@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.430** Add Fuel Saver, a deterministic clear sweep that exposes the bounded reserve-fuel landing contract without adding scene or render-loop work.
 - **10.429** Add Terrain Hugger, a deterministic clear canyon route that exposes the bounded radio-altitude contract without adding scene or render-loop work.
 - **10.428** Add Speed Run, a deterministic clear high-speed sweep that exposes the bounded fast-landing contract without adding scene or render-loop work.
 - **10.427** Add Skyline Run, a deterministic clear alpine climb that exposes the bounded high-altitude contract without adding scene or render-loop work.
