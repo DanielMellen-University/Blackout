@@ -75,6 +75,7 @@ import {
   missionPaceLabel,
   missionHudLabel,
   createMissionHudLabelCache,
+  createRouteRiskLabelCache,
   routeRiskAriaLabel,
   routeRiskHudLabel,
   flightLogAriaLabel,
@@ -535,6 +536,14 @@ describe('HUD value formatting', () => {
     expect(routeRiskAriaLabel('technical', 'tempo', 24.4)).toBe('Route risk technical, tempo, slope 24°')
     expect(routeRiskHudLabel('free', 'unknown')).toBe('')
     expect(routeRiskAriaLabel('free', 'unknown')).toBe('')
+  })
+
+  it('reuses route-risk copy while the route envelope is unchanged', () => {
+    const cache = createRouteRiskLabelCache()
+    const first = cache('technical', 'tempo', 24.4)
+    expect(cache('technical', 'tempo', 24.4)).toBe(first)
+    expect(cache('technical', 'tempo', 25)).not.toBe(first)
+    expect(cache('technical', 'tempo', 25).text).toBe('TECHNICAL · TEMPO · SLOPE 25°')
   })
 
   it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {

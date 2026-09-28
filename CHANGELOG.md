@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.400** Cache persistent route-risk copy across frames and remove array churn from its formatter, keeping slope guidance free of avoidable render-loop allocations.
 - **10.399** Keep each route's steepest slope visible in the persistent live risk row after the launch briefing fades, with finite clamping and no render-loop allocations.
 - **10.398** Surface the generated route briefing on launch and retry, with bounded wrapping so clearance, turn, slope, and climb guidance is actually readable before takeoff.
 - **10.397** Add a cached steepest route-slope callout and include it in difficulty classification so preflight guidance exposes climb/descent pressure without per-frame work.

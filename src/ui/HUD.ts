@@ -257,9 +257,10 @@ export function routeRiskHudLabel(
   const safeSlope = Number.isFinite(maxSlopeDegrees)
     ? Math.max(0, Math.min(90, Math.round(maxSlopeDegrees!)))
     : 0
-  return [safeDifficulty, safeModifier, safeSlope > 0 ? `SLOPE ${safeSlope}°` : '']
-    .filter(Boolean)
-    .join(' · ')
+  let label = safeDifficulty
+  if (safeModifier) label = label ? `${label} · ${safeModifier}` : safeModifier
+  if (safeSlope > 0) label = label ? `${label} · SLOPE ${safeSlope}°` : `SLOPE ${safeSlope}°`
+  return label
 }
 
 export function routeRiskAriaLabel(
@@ -269,6 +270,34 @@ export function routeRiskAriaLabel(
 ): string {
   const label = routeRiskHudLabel(difficulty, modifier, maxSlopeDegrees)
   return label ? `Route risk ${label.toLowerCase().replaceAll(' · ', ', ')}` : ''
+}
+
+/** Cache route-risk copy until a world/course changes its envelope. */
+export function createRouteRiskLabelCache(): (
+  difficulty: unknown,
+  modifier: unknown,
+  maxSlopeDegrees?: number,
+) => { text: string; aria: string } {
+  let previousDifficulty: unknown
+  let previousModifier: unknown
+  let previousSlope = Number.NaN
+  let cached = { text: '', aria: '' }
+  return (difficulty, modifier, maxSlopeDegrees) => {
+    const slope = Number.isFinite(maxSlopeDegrees)
+      ? Math.max(0, Math.min(90, Math.round(maxSlopeDegrees!)))
+      : 0
+    if (difficulty === previousDifficulty && modifier === previousModifier && slope === previousSlope) {
+      return cached
+    }
+    previousDifficulty = difficulty
+    previousModifier = modifier
+    previousSlope = slope
+    cached = {
+      text: routeRiskHudLabel(difficulty, modifier, slope),
+      aria: routeRiskAriaLabel(difficulty, modifier, slope),
+    }
+    return cached
+  }
 }
 
 /** Keep the live flight log compact while coalescing unchanged telemetry buckets. */

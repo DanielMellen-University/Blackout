@@ -116,11 +116,10 @@ import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
   createMissionHudLabelCache,
+  createRouteRiskLabelCache,
   hudBackgroundHidden,
   HUD,
   machNumber,
-  routeRiskAriaLabel,
-  routeRiskHudLabel,
   engineHeatBanner,
   engineHeatCue,
   engineHeatRearmBanner,
@@ -608,6 +607,7 @@ async function boot(): Promise<void> {
   }
   applyHudDisplay(initialHudDisplay)
   const missionLabelCache = createMissionHudLabelCache()
+  const routeRiskLabelCache = createRouteRiskLabelCache()
   const collision = new CollisionSystem((jet) =>
     world.hitObstacleSegment(jet.previousPosition, jet.position),
   )
@@ -2319,12 +2319,11 @@ async function boot(): Promise<void> {
         contractLabel,
       )
       const routeSummary = world.mission.routeSummary
-      hudFrame.routeRisk = routeSummary.profile === 'free'
-        ? ''
-        : routeRiskHudLabel(routeSummary.difficulty, routeSummary.modifier, routeSummary.maxSlopeDegrees)
-      hudFrame.routeRiskAria = routeSummary.profile === 'free'
-        ? ''
-        : routeRiskAriaLabel(routeSummary.difficulty, routeSummary.modifier, routeSummary.maxSlopeDegrees)
+      const routeRisk = routeSummary.profile === 'free'
+        ? null
+        : routeRiskLabelCache(routeSummary.difficulty, routeSummary.modifier, routeSummary.maxSlopeDegrees)
+      hudFrame.routeRisk = routeRisk?.text ?? ''
+      hudFrame.routeRiskAria = routeRisk?.aria ?? ''
       hudFrame.contractLabel = contractLabel
       hudFrame.contractDetail = challenge.contractDetail ?? ''
       hudFrame.contractProgress = challenge.contractProgress
