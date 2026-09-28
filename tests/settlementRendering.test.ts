@@ -1,4 +1,4 @@
-import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
+import { Group, InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import { hitsSettlement, SettlementSystem, settlementStreetLightPoints, settlementWaterfrontPoints } from '../src/world/SettlementSystem'
@@ -238,6 +238,24 @@ describe('settlement rendering and lifecycle', () => {
     expect(() => system.dispose()).not.toThrow()
     expect(() => system.update(3000, 3000)).not.toThrow()
     expect(geometryDispose).toHaveBeenCalledOnce()
+  })
+
+  it('keeps shared anchor geometry alive when one landmark unloads', () => {
+    const system = new SettlementSystem(new Scene())
+    try {
+      const internals = system as unknown as {
+        build: (plan: SettlementPlan) => { root: Group; detail: Group; plan: SettlementPlan }
+        remove: (settlement: { root: Group; detail: Group; plan: SettlementPlan }) => void
+        anchorBeacon: Mesh['geometry']
+      }
+      const plan = { ...example(), id: 'anchor-village', anchor: 'village' as const }
+      const anchorGeometryDispose = vi.spyOn(internals.anchorBeacon, 'dispose')
+      const loaded = internals.build(plan)
+      internals.remove(loaded)
+      expect(anchorGeometryDispose).not.toHaveBeenCalled()
+    } finally {
+      system.dispose()
+    }
   })
 
   it('collides with rotated buildings and roofs without blocking the open street', () => {

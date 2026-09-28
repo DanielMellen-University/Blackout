@@ -1196,6 +1196,20 @@ export class SettlementSystem {
     return { root, detail, plan }
   }
 
+  /** Shared settlement geometry stays owned by this system until dispose(). */
+  private isSharedGeometry(geometry: Mesh['geometry']): boolean {
+    return geometry === this.box
+      || geometry === this.tower
+      || geometry === this.spire
+      || geometry === this.anchorBeacon
+      || geometry === this.dome
+      || geometry === this.streetLampPole
+      || geometry === this.streetLampGlowGeometry
+      || geometry === this.dockDeck
+      || geometry === this.dockPost
+      || geometry === this.roof
+  }
+
   /**
    * A route belongs to nearby source cells, not to the building roots that
    * happened to survive the four-settlement instance budget. Both endpoints
@@ -1366,7 +1380,7 @@ export class SettlementSystem {
   private removeRoad(road: LoadedRoad): void {
     road.root.removeFromParent()
     road.root.traverse(object => {
-      if (object instanceof Mesh && object.geometry !== this.tower) object.geometry.dispose()
+      if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) object.geometry.dispose()
     })
   }
 
@@ -1378,7 +1392,7 @@ export class SettlementSystem {
     settlement.root.removeFromParent()
     settlement.root.traverse(object => {
       if (object instanceof InstancedMesh) object.dispose()
-      else if (object instanceof Mesh) object.geometry.dispose()
+      else if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) object.geometry.dispose()
     })
   }
 }
