@@ -117,7 +117,9 @@ import {
   FLIGHT_CONTROLS_HINT,
   createMissionHudLabelCache,
   createRouteRiskLabelCache,
+  fuelHomeCue,
   fuelHomeTimeSeconds,
+  fuelHomeWarning,
   hudBackgroundHidden,
   HUD,
   machNumber,
@@ -136,6 +138,7 @@ import {
   waterSurfaceCue,
   visibleGhostPaceDelta,
   type CrosswindSide,
+  type FuelHomeCue,
   type HudBannerTone,
   type NavigationLateralCue,
   type NavigationSpeedCue,
@@ -154,7 +157,7 @@ import {
 import { altitudeAgl, type GroundSurfaceSample } from './world/ground'
 import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
-import { refuelFuel } from './aircraft/FuelSystem'
+import { fuelEnduranceSeconds, refuelFuel } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { cloudImmersionBand, type CloudImmersionBand } from './world/Atmosphere'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -1015,6 +1018,7 @@ async function boot(): Promise<void> {
   let biomeSurveyCooldown = 0
   let overWater = false
   let refueling = false
+  let prevFuelHomeCue: FuelHomeCue = null
   const returnTarget = new Vector3()
 
   const courseId = (): string => courseSessionId(
@@ -1145,6 +1149,7 @@ async function boot(): Promise<void> {
     biomeSurveyCooldown = 0
     overWater = false
     refueling = false
+    prevFuelHomeCue = null
     controlHintUntilMs = briefing ? performance.now() + 9000 : 0
     time.reset()
     if (briefing) {
@@ -2127,6 +2132,26 @@ async function boot(): Promise<void> {
           world.spawn.yaw,
         )
       }
+      const homeSeconds = returning || emergencyReturn
+        ? fuelHomeTimeSeconds(navDist, aircraft.speed)
+        : null
+      const enduranceSeconds = returning || emergencyReturn
+        ? fuelEnduranceSeconds(
+          aircraft.fuel.fraction,
+          aircraft.engineState.lever,
+          aircraft.engineState.afterburnerActive,
+        )
+        : null
+      const homeCue = fuelHomeCue(enduranceSeconds, homeSeconds)
+      const fuelWarning = fuelHomeWarning(homeCue, prevFuelHomeCue)
+      if (
+        fuelWarning &&
+        aircraft.status === 'ok' &&
+        (!banner || bannerUntil <= nowMs)
+      ) {
+        showBanner(fuelWarning, 2600, homeCue === 'low' ? 'danger' : 'info')
+      }
+      prevFuelHomeCue = returning || emergencyReturn ? homeCue : null
       if (radarUpdateDue(nowMs, radarNextUpdateMs) || radarContacts.length === 0) {
         radarContacts = radar.update(
           aircraft.position.x,
@@ -2272,9 +2297,7 @@ async function boot(): Promise<void> {
       hudFrame.airbrake = aircraft.controls.airbrake
       hudFrame.engineHeat = aircraft.engineHeat.fraction
       hudFrame.fuel = aircraft.fuel.fraction
-      hudFrame.fuelHomeSeconds = returning || emergencyReturn
-        ? fuelHomeTimeSeconds(navDist, aircraft.speed)
-        : null
+      hudFrame.fuelHomeSeconds = homeSeconds
       hudFrame.refueling = refueling
       const landingPreview = (returning || emergencyReturn) && navDist <= 3_000 && aircraft.controls.gearDown
         ? landingQualityForMetrics({

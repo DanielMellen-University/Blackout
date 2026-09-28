@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.403** Add one-shot worsening return-fuel warnings for tight and low runway-return reserves, reusing the bounded HUD estimate without adding simulation or render-loop allocations.
 - **10.402** Add conservative HOME OK/TIGHT/LOW fuel-return guidance for runway returns and engine-out glides, with bounded estimates and no simulation or worker overhead.
 - **10.401** Keep a bounded missed-gate counter visible in the live HUD and route-progress accessibility text until reset, so a transient miss banner does not erase route feedback.
 - **10.400** Cache persistent route-risk copy across frames and remove array churn from its formatter, keeping slope guidance free of avoidable render-loop allocations.

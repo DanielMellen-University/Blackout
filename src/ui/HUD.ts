@@ -610,6 +610,32 @@ export function fuelHomeHudLabel(enduranceSeconds: number | null, homeSeconds: n
   return `HOME OK ${formatFuelEndurance(home).slice(4)}`
 }
 
+export type FuelHomeCue = 'ready' | 'ok' | 'tight' | 'low' | 'unknown' | null
+
+/** Classify return-fuel pressure without parsing presentation copy. */
+export function fuelHomeCue(enduranceSeconds: number | null, homeSeconds: number | null): FuelHomeCue {
+  if (homeSeconds === null || !Number.isFinite(homeSeconds)) return null
+  const home = Math.max(0, Math.min(359_999, Math.round(homeSeconds)))
+  if (home <= 0) return 'ready'
+  if (enduranceSeconds === null || !Number.isFinite(enduranceSeconds)) return 'unknown'
+  const endurance = Math.max(0, enduranceSeconds)
+  if (endurance < home) return 'low'
+  if (endurance < home * 1.2) return 'tight'
+  return 'ok'
+}
+
+function fuelHomeCueSeverity(value: FuelHomeCue): number {
+  return value === 'low' ? 2 : value === 'tight' ? 1 : 0
+}
+
+/** Announce only a worsening return-fuel threshold crossing. */
+export function fuelHomeWarning(cue: FuelHomeCue, previous: FuelHomeCue): string | null {
+  if (fuelHomeCueSeverity(cue) <= fuelHomeCueSeverity(previous)) return null
+  if (cue === 'low') return 'RETURN FUEL LOW / CUT POWER'
+  if (cue === 'tight') return 'RETURN FUEL TIGHT / HOLD ECONOMY'
+  return null
+}
+
 /** Describe the same return-fuel status for assistive technology. */
 export function fuelHomeAriaLabel(enduranceSeconds: number | null, homeSeconds: number | null): string {
   const label = fuelHomeHudLabel(enduranceSeconds, homeSeconds)

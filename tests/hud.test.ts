@@ -22,8 +22,10 @@ import {
   formatHeading,
   formatFuelEndurance,
   fuelHomeAriaLabel,
+  fuelHomeCue,
   fuelHomeHudLabel,
   fuelHomeTimeSeconds,
+  fuelHomeWarning,
   refuelAriaLabel,
   refuelHudLabel,
   landingPreviewAriaLabel,
@@ -397,6 +399,19 @@ describe('HUD value formatting', () => {
     expect(engineFuelAvailabilityBanner(false, false)).toBeNull()
     expect(engineFuelAvailabilityBanner(false, true)).toBeNull()
     expect(engineFuelAvailabilityBanner(true, true)).toBeNull()
+  })
+
+  it('announces only worsening return-fuel pressure', () => {
+    expect(fuelHomeCue(120, 60)).toBe('ok')
+    expect(fuelHomeCue(70, 60)).toBe('tight')
+    expect(fuelHomeCue(50, 60)).toBe('low')
+    expect(fuelHomeCue(null, 60)).toBe('unknown')
+    expect(fuelHomeCue(50, null)).toBeNull()
+    expect(fuelHomeWarning('tight', 'ok')).toBe('RETURN FUEL TIGHT / HOLD ECONOMY')
+    expect(fuelHomeWarning('low', 'tight')).toBe('RETURN FUEL LOW / CUT POWER')
+    expect(fuelHomeWarning('low', 'low')).toBeNull()
+    expect(fuelHomeWarning('tight', 'low')).toBeNull()
+    expect(fuelHomeWarning('ok', 'tight')).toBeNull()
   })
 
   it('routes only recoverable engine-out phases toward base', () => {
