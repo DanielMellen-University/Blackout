@@ -12,6 +12,7 @@ import type { RenderQuality } from '../core/RenderQuality'
 
 export const WATER_WAKE_MAX_ALTITUDE_M = 180
 export const WATER_WAKE_MIN_SPEED_MPS = 30
+export const DITCH_SPLASH_DURATION_SEC = 1.25
 
 /** Keep water-skim wake intensity finite and bounded for the pooled batch. */
 export function waterWakeIntensity(speedMps: number, clearanceM: number): number {
@@ -60,6 +61,7 @@ export class WaterWakeFx {
   private reducedMotion = false
   private disposed = false
   private weatherTint = 0xc3e9f0
+  private ditchRemaining = 0
 
   constructor(scene: Scene) {
     this.root.name = 'WaterWakeFx'
@@ -112,6 +114,17 @@ export class WaterWakeFx {
     onGround: boolean,
   ): void {
     if (this.disposed || !this.enabled || !Number.isFinite(dt) || dt <= 0) return
+    if (this.ditchRemaining > 0) {
+      this.ditchRemaining = Math.max(0, this.ditchRemaining - dt)
+      const life = this.ditchRemaining / DITCH_SPLASH_DURATION_SEC
+      const pulse = this.reducedMotion ? 1 : 1 + Math.sin((1 - life) * Math.PI) * .18
+      this.active = true
+      this.root.visible = true
+      this.root.scale.set(pulse * 1.65, 1, pulse * 1.65)
+      this.material.opacity = Math.max(0, Math.min(.7, life * .7))
+      if (this.ditchRemaining <= 0) this.reset()
+      return
+    }
     const speed = Math.hypot(velocity.x, velocity.z)
     const intensity = waterWakeActive(isWater, onGround, speed, clearanceM)
       ? waterWakeIntensity(speed, clearanceM)
@@ -123,6 +136,7 @@ export class WaterWakeFx {
 
     this.active = true
     this.root.visible = true
+    this.root.scale.set(1, 1, 1)
     const safeClearance = Number.isFinite(clearanceM) ? Math.max(0, clearanceM) : 0
     this.root.position.set(position.x, position.y - safeClearance + 0.08, position.z)
     const heading = Math.atan2(velocity.x, velocity.z)
@@ -133,8 +147,27 @@ export class WaterWakeFx {
 
   reset(): void {
     this.active = false
+    this.ditchRemaining = 0
     this.root.visible = false
+    this.root.scale.set(1, 1, 1)
     this.material.opacity = 0
+  }
+
+  /** Trigger one pooled splash when an airborne aircraft contacts water. */
+  triggerDitch(position: Vector3, velocity: Vector3): void {
+    if (this.disposed || !this.enabled) return
+    const safeX = Number.isFinite(position.x) ? position.x : 0
+    const safeY = Number.isFinite(position.y) ? position.y : 0
+    const safeZ = Number.isFinite(position.z) ? position.z : 0
+    const speed = Math.hypot(velocity.x, velocity.z)
+    const heading = Number.isFinite(speed) && speed > 0.01
+      ? Math.atan2(velocity.x, velocity.z)
+      : 0
+    this.root.position.set(safeX, safeY + 0.08, safeZ)
+    this.root.rotation.y = Number.isFinite(heading) ? heading : 0
+    this.ditchRemaining = DITCH_SPLASH_DURATION_SEC
+    this.active = true
+    this.root.visible = true
   }
 
   dispose(): void {

@@ -1663,6 +1663,7 @@ async function boot(): Promise<void> {
               : `CRASH / ${contactFailureLabel(collision.failureReason)} - press R`
             _crashPoint.copy(aircraft.position)
             _crashVelocity.copy(aircraft.velocity)
+            if (ditching) waterWakeFx.triggerDitch(_crashPoint, _crashVelocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
             aircraft.crash()
             const crashed = challenge.crashDebrief(
@@ -1672,7 +1673,7 @@ async function boot(): Promise<void> {
             combo.break()
             crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
-            audio.playCue('crash')
+            audio.playCue(ditching ? 'ditch' : 'crash')
             showBanner(crashMessage, 1600, 'danger')
             results.show(
               crashed,

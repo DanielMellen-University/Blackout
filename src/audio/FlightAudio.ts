@@ -285,6 +285,7 @@ export class FlightAudio {
       | 'stunt'
       | 'milestone'
       | 'crash'
+      | 'ditch'
       | 'ab'
       | 'ab-off'
       | 'thunder'
@@ -430,6 +431,12 @@ export class FlightAudio {
       // audio only announces a new caution so it cannot become a siren.
       this.tone(760, now, 0.09, 'sine', 0.07, 690)
       this.tone(540, now + 0.1, 0.12, 'sine', 0.055, 500)
+    } else if (kind === 'ditch') {
+      // Water impact gets a broad low splash instead of the harsher ground
+      // crash growl, while the HUD still explains the failed contact.
+      this.noiseBurst(now, 0.3, 'white', 0.24, 520, 90)
+      this.noiseBurst(now + 0.04, 0.46, 'brown', 0.2, 150, 48)
+      this.tone(180, now, 0.32, 'triangle', 0.12, 92)
     } else {
       // Impact: noise slap + descending growl.
       this.noiseBurst(now, 0.18, 'white', 0.32, 900, 120)

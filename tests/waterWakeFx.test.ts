@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Scene, Vector3 } from 'three'
 import {
+  DITCH_SPLASH_DURATION_SEC,
   WATER_WAKE_MAX_ALTITUDE_M,
   WaterWakeFx,
   waterWakeActive,
@@ -47,6 +48,25 @@ describe('water skim wake presentation', () => {
     expect(waterWakeTint(Number.NaN, Number.NaN)).toBe(0xc3e9f0)
     const fx = new WaterWakeFx(new Scene())
     expect(() => fx.setWeather(0.7, 0.1)).not.toThrow()
+    fx.dispose()
+  })
+
+  it('plays a pooled ditch splash and expires it without allocations', () => {
+    const scene = new Scene()
+    const fx = new WaterWakeFx(scene)
+    const position = new Vector3(4, 80, 6)
+    const velocity = new Vector3(0, -30, 280)
+    fx.triggerDitch(position, velocity)
+    expect(fx.isActive).toBe(true)
+    expect(fx.root.visible).toBe(true)
+    expect(fx.root.position.x).toBe(4)
+    fx.update(1 / 60, position, velocity, 40, false, false)
+    expect(fx.isActive).toBe(true)
+    for (let i = 0; i < Math.ceil(DITCH_SPLASH_DURATION_SEC * 60) + 2; i++) {
+      fx.update(1 / 60, position, velocity, 40, false, false)
+    }
+    expect(fx.isActive).toBe(false)
+    expect(fx.root.visible).toBe(false)
     fx.dispose()
   })
 })

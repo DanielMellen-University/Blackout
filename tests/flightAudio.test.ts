@@ -118,6 +118,11 @@ describe('flight audio automation', () => {
     expect(lostCue).toBe('radar-lost')
   })
 
+  it('keeps ditching feedback in the existing event-cue path', () => {
+    const cue: Parameters<FlightAudio['playCue']>[0] = 'ditch'
+    expect(cue).toBe('ditch')
+  })
+
   it('adds a bounded speed-brake hiss without changing the base wind envelope', () => {
     expect(airbrakeWindEnvelope(0, false)).toBe(0)
     expect(airbrakeWindEnvelope(140, false)).toBeGreaterThan(0)
@@ -173,6 +178,7 @@ describe('flight audio automation', () => {
     audio.playCue('gate')
     audio.playCue('landing-soft')
     audio.playCue('landing-hard')
+    audio.playCue('ditch')
     audio.playCue('stunt')
     audio.playCue('milestone')
     audio.playCue('radar-lock')
