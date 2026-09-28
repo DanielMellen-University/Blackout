@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.412** Add Ridge Trial, a deterministic clear high-relief low pass that exposes the bounded ridge-altitude contract without adding scene or render-loop work.
 - **10.411** Add Water Skim, a deterministic clear coastal low-pass course that exposes the bounded water-skimming contract and existing wake feedback.
 - **10.410** Add High Dive, a deterministic clear alpine course that exposes the high-altitude climb-and-recovery contract as a replayable commitment challenge.
 - **10.409** Add Thermal Surf, a deterministic clear-sky lift course that exposes the existing sustained-thermal contract as a replayable altitude skill challenge.
