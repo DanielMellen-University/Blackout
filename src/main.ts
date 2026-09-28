@@ -568,6 +568,8 @@ async function boot(): Promise<void> {
   const cameras = new CameraSystem(canvas)
   cameras.attachToScene(world.scene)
   cameras.setObstacleSampler((x, y, z) => world.hitObstacle(x, y, z))
+  const warningObstacleSampler = (x: number, y: number, z: number): boolean =>
+    world.hitObstacle(x, y, z, { x: 5.5, y: 2.5, z: 5.5 })
   // Seed the chase rig before the first title frame. Without an explicit pose
   // here, the paused title loop has no render delta to drive CameraSystem and
   // the hero camera stays at the origin until Play is pressed.
@@ -2189,7 +2191,10 @@ async function boot(): Promise<void> {
       const hudStepSec = Number.isFinite(previousHudUpdateMs) && previousHudUpdateMs >= 0
         ? Math.min(.5, Math.max(0, (nowMs - previousHudUpdateMs) / 1000))
         : 0
-      const warn = warningTracker.update(evaluateWarnings(aircraft, alt), hudStepSec)
+      const warn = warningTracker.update(
+        evaluateWarnings(aircraft, alt, warningObstacleSampler),
+        hudStepSec,
+      )
       if (warn.text !== prevWarning) {
         const warningCue = warningCueForState(warn)
         if (warningCue) audio.playCue(warningCue)

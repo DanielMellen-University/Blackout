@@ -11,6 +11,7 @@ import {
   gearWarningActive,
   lowAltitudeWarningActive,
   lowAltitudeWarningCeiling,
+  obstacleLookaheadWarningActive,
   overspeedWarningActive,
   stallWarningActive,
   terrainClosureWarningActive,
@@ -161,6 +162,27 @@ describe('flight cautions', () => {
     expect(warning.terrainClosure).toBe(true)
   })
 
+  it('warns about a loaded obstacle before the padded flight path reaches it', () => {
+    expect(obstacleLookaheadWarningActive(120, 90)).toBe(true)
+    expect(obstacleLookaheadWarningActive(361, 90)).toBe(false)
+    expect(obstacleLookaheadWarningActive(120, 59)).toBe(false)
+    expect(obstacleLookaheadWarningActive(Number.NaN, 90)).toBe(false)
+
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 120, 0)
+    aircraft.velocity.set(0, 0, 120)
+    const probes: Array<[number, number, number]> = []
+    const warning = evaluateWarnings(aircraft, 120, (x, y, z) => {
+      probes.push([x, y, z])
+      return z >= 80
+    })
+    expect(warning.text).toBe('OBSTACLE')
+    expect(warning.obstacle).toBe(true)
+    expect(warning.terrainClosure).toBe(false)
+    expect(probes.length).toBe(2)
+    expect(probes[0]![2]).toBeGreaterThan(0)
+  })
+
   it('labels an overspeed transition without changing caution priority', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 10000, 0)
@@ -185,9 +207,11 @@ describe('flight cautions', () => {
       overspeed: false,
       fuel: false,
       terrainClosure: false,
+      obstacle: false,
     }
     expect(warningCueForState({ ...base, text: null, level: 'none', lowAlt: false })).toBeNull()
     expect(warningCueForState({ ...base, text: 'PULL UP', level: 'warning', terrainClosure: true })).toBe('pull-up')
+    expect(warningCueForState({ ...base, text: 'OBSTACLE', level: 'warning', obstacle: true })).toBe('obstacle')
     expect(warningCueForState({ ...base, text: 'STALL', level: 'warning', stall: true, lowAlt: false })).toBe('stall')
     expect(warningCueForState({ ...base, text: 'GEAR', gear: true, lowAlt: false })).toBe('gear-warning')
     expect(warningCueForState({ ...base, text: 'OVERSPEED', overspeed: true, lowAlt: false })).toBe('overspeed')
@@ -213,7 +237,7 @@ describe('flight cautions', () => {
   it('holds a clear or equal-priority transition through threshold jitter', () => {
     const tracker = new FlightWarningTracker()
     // Use stable source states instead of relying on aircraft geometry here.
-    const caution = { text: 'LOW ALT', level: 'caution' as const, stall: false, lowAlt: true, gear: false, flare: false, goAround: false, overspeed: false, fuel: false, terrainClosure: false }
+    const caution = { text: 'LOW ALT', level: 'caution' as const, stall: false, lowAlt: true, gear: false, flare: false, goAround: false, overspeed: false, fuel: false, terrainClosure: false, obstacle: false }
     const clear = { ...caution, text: null, level: 'none' as const, lowAlt: false }
     tracker.reset(caution)
     expect(tracker.update(clear, WARNING_CLEAR_HOLD_SEC * .5)).toBe(caution)
@@ -226,7 +250,7 @@ describe('flight cautions', () => {
 
   it('escalates a warning immediately and contains malformed elapsed time', () => {
     const tracker = new FlightWarningTracker()
-    const caution = { text: 'LOW ALT', level: 'caution' as const, stall: false, lowAlt: true, gear: false, flare: false, goAround: false, overspeed: false, fuel: false, terrainClosure: false }
+    const caution = { text: 'LOW ALT', level: 'caution' as const, stall: false, lowAlt: true, gear: false, flare: false, goAround: false, overspeed: false, fuel: false, terrainClosure: false, obstacle: false }
     const urgent = { ...caution, text: 'PULL UP', level: 'warning' as const, lowAlt: false, terrainClosure: true }
     tracker.reset(caution)
     expect(tracker.update(urgent, Number.NaN)).toBe(urgent)

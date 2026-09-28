@@ -7,7 +7,7 @@ import { sampleGroundHeight, undercarriageClearance } from '../world/ground'
 export type WarningLevel = 'none' | 'caution' | 'warning'
 
 /** Event cue selected when a warning state first becomes visible. */
-export type WarningCue = 'warning' | 'pull-up' | 'overspeed' | 'stall' | 'gear-warning' | null
+export type WarningCue = 'warning' | 'pull-up' | 'obstacle' | 'overspeed' | 'stall' | 'gear-warning' | null
 
 /** Keep threshold warnings readable without delaying an urgent escalation. */
 export const WARNING_CLEAR_HOLD_SEC = 0.22
@@ -26,6 +26,7 @@ export interface WarningState {
   overspeed: boolean
   fuel: boolean
   terrainClosure: boolean
+  obstacle: boolean
 }
 
 /**
@@ -36,6 +37,7 @@ export interface WarningState {
 export function warningCueForState(state: WarningState): WarningCue {
   if (!state.text) return null
   if (state.terrainClosure) return 'pull-up'
+  if (state.obstacle) return 'obstacle'
   if (state.stall) return 'stall'
   if (state.gear) return 'gear-warning'
   if (state.overspeed) return 'overspeed'
@@ -57,6 +59,7 @@ const NONE_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const STALL_WARNING = Object.freeze({
   text: 'STALL',
@@ -69,6 +72,7 @@ const STALL_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const LOW_ALT_WARNING = Object.freeze({
   text: 'LOW ALT',
@@ -81,6 +85,7 @@ const LOW_ALT_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const GEAR_WARNING = Object.freeze({
   text: 'GEAR',
@@ -93,6 +98,7 @@ const GEAR_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const OVERSPEED_WARNING = Object.freeze({
   text: 'OVERSPEED',
@@ -105,6 +111,7 @@ const OVERSPEED_WARNING = Object.freeze({
   overspeed: true,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const FUEL_LOW_WARNING = Object.freeze({
   text: 'FUEL LOW',
@@ -117,6 +124,7 @@ const FUEL_LOW_WARNING = Object.freeze({
   overspeed: false,
   fuel: true,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const FUEL_EMPTY_WARNING = Object.freeze({
   text: 'FUEL EMPTY',
@@ -129,6 +137,7 @@ const FUEL_EMPTY_WARNING = Object.freeze({
   overspeed: false,
   fuel: true,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 
 const TERRAIN_CLOSURE_WARNING = Object.freeze({
@@ -142,6 +151,20 @@ const TERRAIN_CLOSURE_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: true,
+  obstacle: false,
+}) as WarningState
+const OBSTACLE_WARNING = Object.freeze({
+  text: 'OBSTACLE',
+  level: 'warning',
+  stall: false,
+  lowAlt: false,
+  gear: false,
+  flare: false,
+  goAround: false,
+  overspeed: false,
+  fuel: false,
+  terrainClosure: false,
+  obstacle: true,
 }) as WarningState
 const FLARE_WARNING = Object.freeze({
   text: 'FLARE',
@@ -154,6 +177,7 @@ const FLARE_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 const GO_AROUND_WARNING = Object.freeze({
   text: 'GO AROUND',
@@ -166,6 +190,7 @@ const GO_AROUND_WARNING = Object.freeze({
   overspeed: false,
   fuel: false,
   terrainClosure: false,
+  obstacle: false,
 }) as WarningState
 
 /**
@@ -231,6 +256,7 @@ function warningPriority(state: WarningState): number {
 export function evaluateWarnings(
   aircraft: Aircraft,
   altAgl: number,
+  obstacleSampler: ((x: number, y: number, z: number) => boolean) | null = null,
 ): WarningState {
   if (aircraft.status === 'crashed') return NONE_WARNING
   if (aircraft.onGround) return NONE_WARNING
@@ -313,11 +339,35 @@ export function evaluateWarnings(
       }
     }
   }
+  let obstacle = false
+  if (obstacleSampler && obstacleLookaheadWarningActive(altAgl, speed)) {
+    const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
+    if (horizontalSpeed >= 60) {
+      const invHorizontalSpeed = 1 / horizontalSpeed
+      const dirX = aircraft.velocity.x * invHorizontalSpeed
+      const dirZ = aircraft.velocity.z * invHorizontalSpeed
+      const lookaheadDistance = MathUtils.clamp(horizontalSpeed * 1.1, 90, 420)
+      const nearDistance = lookaheadDistance * .35
+      const midDistance = lookaheadDistance * .68
+      const farDistance = lookaheadDistance
+      const probe = (distance: number): boolean => {
+        const secondsAhead = distance / horizontalSpeed
+        const y = aircraft.position.y + aircraft.velocity.y * secondsAhead
+        return obstacleSampler(
+          aircraft.position.x + dirX * distance,
+          y,
+          aircraft.position.z + dirZ * distance,
+        )
+      }
+      obstacle = probe(nearDistance) || probe(midDistance) || probe(farDistance)
+    }
+  }
   const overspeed = overspeedWarningActive(speed)
   const fuelLevel = fuelWarningLevel(aircraft.fuel)
 
   if (stall) return STALL_WARNING
   if (terrainClosure) return TERRAIN_CLOSURE_WARNING
+  if (obstacle) return OBSTACLE_WARNING
   if (gear) return GEAR_WARNING
   if (goAround) return GO_AROUND_WARNING
   if (flare) return FLARE_WARNING
@@ -461,4 +511,15 @@ export function terrainLookaheadWarningActive(
   const predictedClearance = safeAlt + verticalSpeed * secondsAhead - safeRise
   const safetyMargin = MathUtils.clamp(safeSpeed * .12, 18, 96)
   return predictedClearance <= safetyMargin
+}
+
+/**
+ * Gate the optional world-object lookahead to airborne, fast enough flight.
+ * The sampler already checks the padded collision envelope, so keeping the
+ * altitude guard here prevents city-scale probes from becoming a low-speed
+ * taxi alarm while preserving a generous warning band for tall structures.
+ */
+export function obstacleLookaheadWarningActive(altAgl: number, speed: number): boolean {
+  if (!Number.isFinite(altAgl) || !Number.isFinite(speed)) return false
+  return Math.max(0, altAgl) <= 360 && Math.max(0, speed) >= 60
 }

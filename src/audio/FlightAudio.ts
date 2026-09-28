@@ -290,6 +290,7 @@ export class FlightAudio {
       | 'thunder'
       | 'warning'
       | 'pull-up'
+      | 'obstacle'
       | 'overspeed'
       | 'stall'
       | 'gear-warning'
@@ -411,6 +412,11 @@ export class FlightAudio {
       // repeating while the HUD holds the sustained state.
       this.tone(860, now, 0.08, 'triangle', 0.075, 780)
       this.tone(650, now + 0.12, 0.1, 'triangle', 0.06, 560)
+    } else if (kind === 'obstacle') {
+      // A lower double pulse keeps building closure distinct from terrain
+      // closure while staying event-only and below the crash impact cue.
+      this.tone(420, now, 0.09, 'triangle', 0.07, 310)
+      this.tone(300, now + 0.12, 0.12, 'triangle', 0.055, 220)
     } else if (kind === 'g-high') {
       // A restrained rising cue marks a real high-load transition once.
       this.tone(430, now, 0.08, 'triangle', 0.045, 690)
