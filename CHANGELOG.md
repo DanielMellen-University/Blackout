@@ -4,6 +4,7 @@
 
 ### Ship
 
+- Add the curated Fjord Run course, a deterministic foggy coastal route that reuses the validated coast profile and existing weather/contract preview path without adding unbounded scene work.
 - Sweep bounded aircraft motion segments against loaded obstacles, preventing high-speed passes from tunneling through airfield buildings or streamed settlements while keeping endpoint checks and the existing obstacle budget intact.
 - Throttle protected settlement-anchor retries behind stream, budget, and movement changes, avoiding repeated plan rebuilds and queue filtering every render frame while keeping guaranteed city and village recovery responsive.
 - Preview each seeded sortie contract and its bounded instruction in the course picker, making the repeat objective clear before launch without adding render-loop work.

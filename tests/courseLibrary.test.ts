@@ -14,7 +14,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(14)
+    expect(COURSE_LIBRARY).toHaveLength(15)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -29,6 +29,9 @@ describe('course library', () => {
     expect(courseRunId(courseDefinitionForId('canyon-run'))).toBe('seed:5:canyon')
     expect(courseDefinitionForId('coastal-run').profile).toBe('coast')
     expect(courseRunId(courseDefinitionForId('coastal-run'))).toBe('seed:6:coast')
+    expect(courseDefinitionForId('fjord-run').profile).toBe('coast')
+    expect(courseDefinitionForId('fjord-run').weather).toBe('fog')
+    expect(courseRunId(courseDefinitionForId('fjord-run'))).toBe('seed:13:coast')
     expect(courseDefinitionForId('river-run').profile).toBe('river')
     expect(courseRunId(courseDefinitionForId('river-run'))).toBe('seed:7:river')
     expect(courseDefinitionForId('volcanic-run').profile).toBe('volcanic')
