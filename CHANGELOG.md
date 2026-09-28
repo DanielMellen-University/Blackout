@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.398** Surface the generated route briefing on launch and retry, with bounded wrapping so clearance, turn, slope, and climb guidance is actually readable before takeoff.
 - **10.397** Add a cached steepest route-slope callout and include it in difficulty classification so preflight guidance exposes climb/descent pressure without per-frame work.
 - **10.396** Preserve bounded gate-miss counts through the run result so route debriefs explain missed crossings without changing clean-flight presentation.
 - **10.395** Carry collision failure reasons into the crash results card so actionable diagnoses survive after the live impact banner fades.

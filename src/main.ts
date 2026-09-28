@@ -1151,10 +1151,10 @@ async function boot(): Promise<void> {
         ? replaying
           ? `REPLAY SEED ${formatWorldSeed(world.worldSeed)}`
           : 'NEW WORLD'
-        : replaySeed !== null
-          ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
-          : 'RETRY SAME COURSE'
-      showBanner(`${resetLabel} / SPOOL ENGINE / W TO ROTATE`, 5000)
+          : replaySeed !== null
+            ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
+            : 'RETRY SAME COURSE'
+      showBanner(`${resetLabel} / ${world.mission.routeBriefing}`, 7000)
     }
   }
 
