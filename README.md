@@ -4,7 +4,9 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.475**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.476**.
+
+Monsoon Run adds a deterministic heavy-rain wetland route to the curated challenge catalog, using the existing bounded contract system and no additional scene budget.
 
 ## Run
 
