@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.432** Add Storm Contract, a deterministic storm route that exposes the bounded precipitation contract without adding scene or render-loop work.
 - **10.431** Add Energy Run, a deterministic clear sweep that exposes the bounded efficient-cruise contract without adding scene or render-loop work.
 - **10.430** Add Fuel Saver, a deterministic clear sweep that exposes the bounded reserve-fuel landing contract without adding scene or render-loop work.
 - **10.429** Add Terrain Hugger, a deterministic clear canyon route that exposes the bounded radio-altitude contract without adding scene or render-loop work.
