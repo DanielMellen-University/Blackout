@@ -160,7 +160,7 @@ import { cloudImmersionBand, type CloudImmersionBand } from './world/Atmosphere'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { nightWeatherReadability, sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
-import { startupFailureMessage } from './core/startupFailure'
+import { startupFailureCanRetry, startupFailureMessage } from './core/startupFailure'
 import { appReleaseLabel } from './core/Version'
 import { headingFromOrientation } from './core/attitude'
 import {
@@ -2445,5 +2445,14 @@ boot().catch((err) => {
   const status = document.getElementById('title-status')
   if (status) status.textContent = startupFailureMessage(err)
   const playBtn = document.getElementById('btn-play')
-  if (playBtn instanceof HTMLButtonElement) playBtn.disabled = true
+  if (playBtn instanceof HTMLButtonElement) {
+    if (startupFailureCanRetry(err)) {
+      playBtn.disabled = false
+      playBtn.textContent = 'RETRY'
+      playBtn.setAttribute('aria-label', 'Retry world generation')
+      playBtn.addEventListener('click', () => window.location.reload(), { once: true })
+    } else {
+      playBtn.disabled = true
+    }
+  }
 })

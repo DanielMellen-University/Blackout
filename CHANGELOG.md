@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.392** Make bounded world-generation startup failures recoverable from the title screen with a Retry action, while keeping renderer/GPU failures correctly disabled.
 - **10.391** Add a cached CRAB L/R return cue derived from runway-relative crosswind, making the landing correction explicit without adding scene or render-loop work.
 - **10.390** Add Crosswind Approach, a storm-locked pattern course with a deterministic runway-relative wind side so the landing pressure is repeatable instead of seed luck.
 - **10.389** Add Pattern Approach, a clear-weather base-to-final course that turns the existing landing scorer into a short repeatable challenge with a final gate aligned back toward the runway.

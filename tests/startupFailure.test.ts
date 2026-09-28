@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { startupFailureMessage } from '../src/core/startupFailure'
+import { startupFailureCanRetry, startupFailureMessage } from '../src/core/startupFailure'
 
 describe('startup failure guidance', () => {
   it('distinguishes graphics capability failures', () => {
@@ -9,8 +9,11 @@ describe('startup failure guidance', () => {
 
   it('keeps world-generation failures actionable', () => {
     expect(startupFailureMessage(new Error('reseed: no dry inland pad'))).toBe(
-      'Could not create a world. Reload the page to try again.',
+      'Could not create a world. Press Retry to try again.',
     )
+    expect(startupFailureCanRetry(new Error('reseed: no dry inland pad'))).toBe(true)
+    expect(startupFailureCanRetry(new Error('WebGL context unavailable'))).toBe(false)
+    expect(startupFailureCanRetry(new Error('unexpected failure'))).toBe(false)
   })
 
   it('falls back to generic guidance for unknown failures', () => {
