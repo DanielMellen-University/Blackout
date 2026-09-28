@@ -150,6 +150,21 @@ export function courseTimePreviewLabel(timeOfDay: number | undefined): string {
   return normalized < 0.22 || normalized > 0.78 ? 'NIGHT' : ''
 }
 
+/** Keep authored conditions readable after the launch card is gone. */
+export function courseConditionSummary(
+  course: Pick<CourseDefinition, 'weather' | 'timeOfDay'>,
+): string {
+  const conditions = [
+    course.weather
+      ? `WEATHER ${WEATHER_LABELS[course.weather] ?? ''}`
+      : '',
+    courseTimePreviewLabel(course.timeOfDay)
+      ? `TIME ${courseTimePreviewLabel(course.timeOfDay)}`
+      : '',
+  ].filter(Boolean)
+  return conditions.join(' / ')
+}
+
 /**
  * Title and pause world picker: radio cards, short labels, selected-world copy.
  */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   courseFlightLogLabel,
+  courseConditionSummary,
   courseMasteryProgressLabel,
   coursePickerCopy,
   courseTimePreviewLabel,
@@ -39,6 +40,10 @@ describe('course picker copy', () => {
       bestPrecisionStreak: 0,
     })
     expect(copy.detail).toBe('Low-level fog run / WEATHER LOW FOG / TIME NIGHT')
+    expect(courseConditionSummary({ weather: 'fog', timeOfDay: 0.84 }))
+      .toBe('WEATHER LOW FOG / TIME NIGHT')
+    expect(courseConditionSummary({ weather: 'storm', timeOfDay: 0.5 }))
+      .toBe('WEATHER THUNDERSTORM')
   })
   it('previews persistent flight-log records when a course has them', () => {
     expect(courseFlightLogLabel({

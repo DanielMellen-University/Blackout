@@ -109,7 +109,7 @@ import { evaluateWarnings } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { isDebugEnabled } from './debug/debugFlags'
 import { DebugOverlay } from './debug/DebugOverlay'
-import { CoursePicker, coursePickerCopy } from './ui/CoursePicker'
+import { CoursePicker, courseConditionSummary, coursePickerCopy } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   FLIGHT_CONTROLS_HINT,
@@ -1513,6 +1513,7 @@ async function boot(): Promise<void> {
               false,
               [],
               courseDefinitionForId(selectedCourseId).label,
+              courseConditionSummary(courseDefinitionForId(selectedCourseId)),
             )
             syncInputContext()
             break
@@ -1574,6 +1575,7 @@ async function boot(): Promise<void> {
                 careerRankPromoted,
                 newCareerCommendations,
                 courseDefinitionForId(selectedCourseId).label,
+                courseConditionSummary(courseDefinitionForId(selectedCourseId)),
               )
               syncInputContext()
               break

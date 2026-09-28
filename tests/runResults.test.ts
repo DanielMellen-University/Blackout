@@ -70,6 +70,8 @@ class FakeElement {
   }
 
   setAttribute(): void {}
+
+  removeAttribute(): void {}
 }
 
 class FakeDocument {
@@ -98,6 +100,7 @@ function resultsFixture(): {
     ['run-results', root],
     ['result-title', new FakeElement()],
     ['result-course', new FakeElement()],
+    ['result-conditions', new FakeElement()],
     ['result-summary', new FakeElement()],
     ['result-score', new FakeElement()],
     ['result-time', new FakeElement()],
@@ -502,6 +505,25 @@ describe('run results focus flow', () => {
     results.show({ ...result, courseId: 'seed:10:storm' }, undefined, false, [], 'Storm run')
     expect(elementsFor(fixture.document, 'result-course')?.textContent).toBe('Storm run')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('Storm run · ROUTE COMPLETE')
+
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps authored conditions visible in the debrief', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+
+    results.show({ ...result, courseId: 'seed:11:night' }, undefined, false, [], 'Night ops', 'WEATHER LOW FOG / TIME NIGHT')
+    expect(elementsFor(fixture.document, 'result-conditions')?.textContent).toBe('WEATHER LOW FOG / TIME NIGHT')
+    expect(elementsFor(fixture.document, 'result-conditions')?.hidden).toBe(false)
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent)
+      .toContain('Night ops · WEATHER LOW FOG · TIME NIGHT · ROUTE COMPLETE')
+
+    results.show({ ...result, courseId: 'seed:11:night' }, undefined, false, [], 'Night ops')
+    expect(elementsFor(fixture.document, 'result-conditions')?.hidden).toBe(true)
 
     results.dispose()
     vi.unstubAllGlobals()

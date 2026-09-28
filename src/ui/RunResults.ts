@@ -39,6 +39,7 @@ export class RunResults {
   private readonly root: HTMLElement
   private readonly title: HTMLElement
   private readonly summary: HTMLElement
+  private readonly conditions: HTMLElement | null
   private readonly score: HTMLElement
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
@@ -80,6 +81,7 @@ export class RunResults {
     this.root = must(root, 'run-results')
     this.title = must(root, 'result-title')
     this.summary = must(root, 'result-summary')
+    this.conditions = root.getElementById('result-conditions')
     this.score = must(root, 'result-score')
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
@@ -117,6 +119,7 @@ export class RunResults {
     pilotRankPromoted = false,
     newCareerCommendations: readonly string[] = [],
     courseLabel?: string,
+    courseConditions?: string,
   ): void {
     if (this.disposed) return
     if (this.shareReplay) {
@@ -130,8 +133,15 @@ export class RunResults {
     const ditched = crashed && result.ditched === true
     const label = typeof courseLabel === 'string' ? courseLabel.trim() : ''
     const course = label || (result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : 'SORTIE')
+    const conditions = typeof courseConditions === 'string' ? courseConditions.trim() : ''
     const courseEl = this.root.querySelector('#result-course')
     if (courseEl) courseEl.textContent = course
+    if (this.conditions) {
+      this.conditions.textContent = conditions
+      this.conditions.hidden = conditions.length === 0
+      if (conditions) this.conditions.setAttribute('aria-label', `Sortie conditions ${conditions.replaceAll(' / ', ', ')}`)
+      else this.conditions.removeAttribute('aria-label')
+    }
     this.title.textContent = crashed
       ? (ditched ? 'DITCHED' : 'CRASH')
       : result.freeFlight
@@ -184,7 +194,7 @@ export class RunResults {
       : result.freeFlight
         ? 'SCENIC SORTIE COMPLETE'
         : 'ROUTE COMPLETE'
-    this.summary.textContent = `${course} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES · ${landingName}`
+    this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES · ${landingName}`
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,
       `TIME +${result.timeScore.toLocaleString()}`,
