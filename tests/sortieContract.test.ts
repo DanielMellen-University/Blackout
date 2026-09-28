@@ -85,6 +85,8 @@ describe('sortie contracts', () => {
     expect(sortieContractDetailForSeed(99, 5, true)).toContain('FUEL OUT')
     expect(sortieContractLabelForSeed(9, 5, true)).toBe('CLEAN CIRCUIT')
     expect(sortieContractDetailForSeed(9, 5, true)).toContain('EVERY GATE')
+    expect(sortieContractLabelForSeed(320, 5, true)).toBe('LEVEL FLIGHT')
+    expect(sortieContractDetailForSeed(320, 5, true)).toContain('HOLD 180-600M')
   })
 
   it('assigns a deterministic contract without allocating runtime state', () => {
