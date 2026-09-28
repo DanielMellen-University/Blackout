@@ -93,6 +93,13 @@ export function trafficRadarInRange(distance: number, maxRange: number): boolean
   return distance >= 0 && distance <= Math.max(0, maxRange)
 }
 
+/** Rank traffic by true 3D separation while keeping horizontal HUD range intact. */
+export function trafficConflictDistance(horizontalDistance: number, verticalSeparation: number): number {
+  const horizontal = Number.isFinite(horizontalDistance) ? Math.max(0, horizontalDistance) : 0
+  const vertical = Number.isFinite(verticalSeparation) ? Math.max(0, verticalSeparation) : 0
+  return Math.hypot(horizontal, vertical)
+}
+
 /** Keep the proximity cue readable without exposing raw radians to the HUD. */
 export function trafficAlertSide(bearing: number): 'LEFT' | 'RIGHT' | 'AHEAD' | 'BEHIND' {
   const safe = Number.isFinite(bearing) ? Math.atan2(Math.sin(bearing), Math.cos(bearing)) : 0
@@ -246,6 +253,7 @@ export class AirTrafficSystem {
     const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
     const safeHeading = Number.isFinite(heading) ? heading : 0
     let bestDistance = Number.POSITIVE_INFINITY
+    let bestConflictDistance = Number.POSITIVE_INFINITY
     let best: RadarLandmark | null = null
     let bestVerticalOffset = 0
     let bestVertical = 0
@@ -255,14 +263,16 @@ export class AirTrafficSystem {
       const dz = contact.z - safeZ
       const distance = Math.hypot(dx, dz)
       const vertical = Math.abs(contact.y - safeY)
+      const conflictDistance = trafficConflictDistance(distance, vertical)
       if (
         !Number.isFinite(distance) ||
         !Number.isFinite(vertical) ||
         distance > AIR_TRAFFIC_ALERT_RANGE_M ||
         vertical > AIR_TRAFFIC_ALERT_VERTICAL_M ||
-        distance >= bestDistance
+        conflictDistance >= bestConflictDistance
       ) continue
       bestDistance = distance
+      bestConflictDistance = conflictDistance
       best = contact
       bestVerticalOffset = contact.y - safeY
       bestVertical = vertical

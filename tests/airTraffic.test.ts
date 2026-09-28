@@ -9,6 +9,7 @@ import {
   trafficAlertSide,
   trafficAlertVertical,
   trafficBeaconVisible,
+  trafficConflictDistance,
   trafficInRange,
   trafficRadarInRange,
 } from '../src/world/AirTrafficSystem'
@@ -87,6 +88,12 @@ describe('bounded air traffic', () => {
     const contact = traffic.getRadarLandmarks(5_000, 5_000, 8_000)[0]!
     expect(traffic.getRadarLandmarks(contact.x, contact.z, 32)).toContain(contact)
     traffic.dispose()
+  })
+
+  it('ranks traffic conflicts by bounded three-dimensional separation', () => {
+    expect(trafficConflictDistance(200, 50)).toBeCloseTo(Math.hypot(200, 50))
+    expect(trafficConflictDistance(100, 500)).toBeGreaterThan(trafficConflictDistance(200, 50))
+    expect(trafficConflictDistance(Number.NaN, Number.NaN)).toBe(0)
   })
 
   it('returns a finite nearest-flight alert and safe direction cue', () => {
