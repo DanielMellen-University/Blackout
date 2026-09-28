@@ -48,6 +48,8 @@ export interface ChallengeResult {
   /** Crash or water contact. The debrief uses this instead of a medal. */
   endedByCrash?: boolean
   ditched?: boolean
+  /** Compact finite collision reason retained for the crash debrief. */
+  failureReason?: string
   gateScore: number
   timeScore: number
   landingScore: number
@@ -1626,7 +1628,7 @@ export class ChallengeRun {
   }
 
   /** Debrief for a crash or ditch. No medal, no score payout. */
-  crashDebrief(ditched = false): ChallengeResult {
+  crashDebrief(ditched = false, failureReason?: string): ChallengeResult {
     this.fail()
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
     this.result = {
@@ -1636,6 +1638,9 @@ export class ChallengeRun {
       courseId: this.courseId,
       endedByCrash: true,
       ditched: ditched === true,
+      failureReason: typeof failureReason === 'string' && failureReason.trim().length > 0
+        ? failureReason.trim().slice(0, 32)
+        : undefined,
       gateScore: 0,
       timeScore: 0,
       landingScore: 0,

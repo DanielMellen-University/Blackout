@@ -150,12 +150,17 @@ export class RunResults {
     this.score.textContent = result.totalScore.toLocaleString()
     this.score.setAttribute('aria-label', `Total score ${result.totalScore.toLocaleString()}`)
     this.time.textContent = formatTime(result.elapsedSec)
+    const failureLabel = crashed
+      ? (typeof result.failureReason === 'string' && result.failureReason.trim().length > 0
+        ? result.failureReason.trim().toUpperCase()
+        : ditched ? 'DITCHED' : 'CRASH')
+      : ''
     const landingName = crashed
-      ? (ditched ? 'DITCHED' : 'CRASH')
+      ? failureLabel
       : (result.landingLabel ?? 'HARD')
     this.landing.textContent = crashed ? landingName : `${Math.round(result.landingQuality * 100)}%`
-    this.landingDetail.textContent = crashed ? '' : landingName
-    this.landingDetail.setAttribute('aria-label', crashed ? landingName : `Landing quality ${landingName}`)
+    this.landingDetail.textContent = crashed ? 'FLIGHT FAILURE' : landingName
+    this.landingDetail.setAttribute('aria-label', crashed ? `${landingName} flight failure` : `Landing quality ${landingName}`)
     const gatesLabel = gatesClearedLabel(result)
     this.gates.textContent = gatesLabel
     this.gates.setAttribute('aria-label', `${gatesLabel} gates cleared`)

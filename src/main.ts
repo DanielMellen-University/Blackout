@@ -1543,7 +1543,10 @@ async function boot(): Promise<void> {
             _crashVelocity.copy(aircraft.velocity)
             if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
             aircraft.crash()
-            const crashed = challenge.crashDebrief(ditching)
+            const crashed = challenge.crashDebrief(
+              ditching,
+              ditching ? 'WATER CONTACT' : contactFailureLabel(collision.failureReason),
+            )
             combo.break()
             crashFx.trigger(_crashPoint, _crashVelocity)
             cameras.impulse(1)
