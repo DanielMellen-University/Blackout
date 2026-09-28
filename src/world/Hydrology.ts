@@ -11,6 +11,8 @@ const FLOW_GRID = 18
 const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
 const MAX_CHANNEL_EDGES = 72
 const MAX_RENDER_REACHES = 300
+const SEA_RADIUS_MIN = 3200
+const SEA_RADIUS_SPAN = 1000
 
 export interface WaterBasin {
   x: number; z: number; radius: number; aspect: number; angle: number; phase: number
@@ -268,7 +270,7 @@ function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, p
     // A sea is deliberately smaller than the old 3.3-5.2 km footprint. It
     // should read as a broad enclosed coast, not an ocean swallowing a whole
     // review tile or dominating every flight route.
-    radius: 3300 + hash2(cx - 23, cz + 61) * 1200,
+    radius: SEA_RADIUS_MIN + hash2(cx - 23, cz + 61) * SEA_RADIUS_SPAN,
     aspect: .72 + hash2(cx + 31, cz - 41) * .24,
     angle: phase,
     phase,

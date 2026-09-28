@@ -24,7 +24,9 @@ describe('exploration geography', () => {
       }
     }
     expect(Object.keys(counts).length).toBeGreaterThanOrEqual(12)
-    expect(counts.ocean).toBeGreaterThan(500)
+    // The compact sea footprint keeps regional shorelines present without
+    // requiring the larger old ocean coverage budget.
+    expect(counts.ocean).toBeGreaterThan(400)
     expect(counts.ocean).toBeLessThan(30603 * .12)
     expect(peak).toBeGreaterThan(4500)
     expect(elevatedLake).toBe(true)

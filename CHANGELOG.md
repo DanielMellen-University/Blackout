@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.463** Make regional seas more compact, preserving real water levels while reducing ocean-sized interruptions between land provinces.
 - **10.462** Give Fjord Run its own deterministic steep-shoulder route profile instead of aliasing the generic coastal line.
 - **10.461** Correct the default keyboard yaw mapping to conventional A-left / D-right while preserving the explicit remappable reverse option.
 - **10.460** Add a deterministic 30-seed startup regression corpus, protecting the playable-pad fallback search from future terrain changes.

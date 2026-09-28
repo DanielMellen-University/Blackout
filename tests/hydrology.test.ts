@@ -192,7 +192,8 @@ describe('natural drainage', () => {
     expect(seaCount).toBeGreaterThan(0)
     expect(seaCount).toBeLessThan(catchments * .55)
     // Seas are compact regional landmarks, not ocean-sized review blockers.
-    expect(Math.max(...seaRadii)).toBeLessThan(4501)
+    expect(Math.min(...seaRadii)).toBeGreaterThanOrEqual(3200)
+    expect(Math.max(...seaRadii)).toBeLessThan(4201)
   })
 
   it('emits small ponds and classifies narrow channels as streams', () => {
