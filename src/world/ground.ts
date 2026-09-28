@@ -85,6 +85,16 @@ export function setGroundHeightSampler(sampler: GroundHeightSampler | null): voi
   samplerRevision++
 }
 
+/** Invalidate caller-owned ground caches after a streamed mesh replacement. */
+export function invalidateGroundSamplerCaches(): void {
+  samplerRevision++
+}
+
+/** Current sampler generation for entities that keep a pose-local cache. */
+export function groundSamplerRevision(): number {
+  return samplerRevision
+}
+
 /** Register the caller-owned surface path used by collision hot loops. */
 export function setGroundSurfaceSampler(sampler: GroundSurfaceSampler | null): void {
   groundSurfaceSampler = sampler

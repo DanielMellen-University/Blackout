@@ -229,6 +229,16 @@ describe('rebuilt aircraft', () => {
     expect(samples).toBeGreaterThan(firstSamples)
   })
 
+  it('invalidates grounded state when the terrain sampler is replaced', () => {
+    setContactHeightSampler(() => 100)
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 2, y: 101.4, z: 0, yaw: 0 })
+    expect(aircraft.onGround).toBe(true)
+
+    setContactHeightSampler(() => 0)
+    expect(aircraft.onGround).toBe(false)
+  })
+
   it('skips detailed contact probes while the jet is safely above terrain', () => {
     let samples = 0
     setContactHeightSampler(() => {

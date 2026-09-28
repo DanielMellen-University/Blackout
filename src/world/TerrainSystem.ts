@@ -24,6 +24,7 @@ import {
 import { createClimateSample } from './Geography'
 import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
 import {
+  invalidateGroundSamplerCaches,
   setContactHeightSampler,
   setGroundHeightSampler,
   setGroundSurfaceSampler,
@@ -463,6 +464,7 @@ export class TerrainSystem {
 
   clearAll(): void {
     this.generation++
+    invalidateGroundSamplerCaches()
     this.ready.length = 0
     this.readySorted = false
     this.activeKeys.clear()
@@ -790,6 +792,7 @@ export class TerrainSystem {
     }
     this.chunks.set(key, chunk)
     this.invalidateSampleChunk()
+    invalidateGroundSamplerCaches()
   }
 
   private drainBuildQueue(): void {

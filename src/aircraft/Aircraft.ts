@@ -15,6 +15,7 @@ import { stormAirframeWobble, stormBuffetViewScale } from '../systems/StormBuffe
 import { disposeObjectTree } from '../core/dispose'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createF35Model } from './createF35Model'
+import { groundSamplerRevision } from '../world/ground'
 import {
   createEngineState,
   resolveEngineState,
@@ -168,6 +169,7 @@ export class Aircraft {
   private groundCacheOz = Number.NaN
   private groundCacheOw = Number.NaN
   private groundCacheGearDown = false
+  private groundCacheRevision = 0
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private landingLightNose: Object3D | null = null
@@ -918,7 +920,8 @@ export class Aircraft {
       this.groundCacheOy === o.y &&
       this.groundCacheOz === o.z &&
       this.groundCacheOw === o.w &&
-      this.groundCacheGearDown === gearDown
+      this.groundCacheGearDown === gearDown &&
+      this.groundCacheRevision === groundSamplerRevision()
     ) {
       return this.groundCacheValue
     }
@@ -933,6 +936,7 @@ export class Aircraft {
     this.groundCacheOz = o.z
     this.groundCacheOw = o.w
     this.groundCacheGearDown = gearDown
+    this.groundCacheRevision = groundSamplerRevision()
     this.groundCacheValid = true
     return this.groundCacheValue
   }
