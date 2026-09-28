@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { courseFlightLogLabel, courseMasteryProgressLabel, coursePickerCopy } from '../src/ui/CoursePicker'
+import {
+  courseFlightLogLabel,
+  courseMasteryProgressLabel,
+  coursePickerCopy,
+  courseTimePreviewLabel,
+  courseWeatherPreviewLabel,
+} from '../src/ui/CoursePicker'
 
 const orbit = {
   seed: 1 as number | null,
@@ -12,6 +18,27 @@ describe('course picker copy', () => {
     expect(courseMasteryProgressLabel(3, 7)).toBe('LEGEND 3/7')
     expect(courseMasteryProgressLabel(99, 4)).toBe('LEGEND 4/4')
     expect(courseMasteryProgressLabel(Number.NaN, Number.POSITIVE_INFINITY)).toBe('LEGEND 0/0')
+  })
+  it('exposes authored weather and night conditions before launch', () => {
+    expect(courseWeatherPreviewLabel(Number.NaN, 'storm')).toBe('THUNDERSTORM')
+    expect(courseTimePreviewLabel(0.84)).toBe('NIGHT')
+    expect(courseTimePreviewLabel(0.5)).toBe('')
+    expect(courseTimePreviewLabel(-0.16)).toBe('NIGHT')
+
+    const copy = coursePickerCopy({
+      course: {
+        seed: 11,
+        profile: 'night',
+        detail: 'Low-level fog run',
+        weather: 'fog',
+        timeOfDay: 0.84,
+      },
+      history: null,
+      bestScore: 0,
+      badgeCount: 0,
+      bestPrecisionStreak: 0,
+    })
+    expect(copy.detail).toBe('Low-level fog run / WEATHER LOW FOG / TIME NIGHT')
   })
   it('previews persistent flight-log records when a course has them', () => {
     expect(courseFlightLogLabel({

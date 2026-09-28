@@ -5,7 +5,7 @@ import {
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
-import { WEATHER_LABELS, weatherIdForSeed } from '../world/WeatherDirector'
+import { WEATHER_LABELS, weatherIdForSeed, type WeatherId } from '../world/WeatherDirector'
 
 export interface CoursePickerItem {
   id: string
@@ -16,7 +16,7 @@ export interface CoursePickerItem {
 }
 
 export interface CoursePickerCopyInput {
-  course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail'>
+  course: Pick<CourseDefinition, 'seed' | 'profile' | 'detail' | 'weather' | 'timeOfDay'>
   history: CourseHistory | null
   bestScore: number
   badgeCount: number
@@ -36,7 +36,18 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   meta: string
   stats: string
 } {
-  const detail = input.course.detail.trim() || 'Choose a world'
+  const baseDetail = input.course.detail.trim() || 'Choose a world'
+  const conditions = [
+    input.course.weather
+      ? `WEATHER ${courseWeatherPreviewLabel(input.course.seed ?? undefined, input.course.weather)}`
+      : '',
+    courseTimePreviewLabel(input.course.timeOfDay)
+      ? `TIME ${courseTimePreviewLabel(input.course.timeOfDay)}`
+      : '',
+  ].filter(Boolean)
+  const detail = conditions.length > 0
+    ? `${baseDetail} / ${conditions.join(' / ')}`
+    : baseDetail
   const runs = finiteCount(input.history?.completionCount)
 
   let meta = 'NEW'
@@ -124,9 +135,19 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
 }
 
 /** Keep the launch card honest about the deterministic weather waiting in the world. */
-export function courseWeatherPreviewLabel(seed: number | undefined): string {
-  if (!Number.isFinite(seed)) return ''
-  return WEATHER_LABELS[weatherIdForSeed(seed!)] ?? ''
+export function courseWeatherPreviewLabel(
+  seed: number | undefined,
+  forcedWeather?: WeatherId,
+): string {
+  const weather = forcedWeather ?? (Number.isFinite(seed) ? weatherIdForSeed(seed!) : null)
+  return weather ? WEATHER_LABELS[weather] ?? '' : ''
+}
+
+/** Keep authored night conditions explicit without exposing raw clock fractions. */
+export function courseTimePreviewLabel(timeOfDay: number | undefined): string {
+  if (!Number.isFinite(timeOfDay)) return ''
+  const normalized = ((timeOfDay! % 1) + 1) % 1
+  return normalized < 0.22 || normalized > 0.78 ? 'NIGHT' : ''
 }
 
 /**
@@ -189,7 +210,7 @@ export class CoursePicker {
     button.className = 'course-option'
     button.dataset.courseId = item.id
     button.setAttribute('role', 'radio')
-    const accessibleLabel = [item.label, item.meta, item.stats].filter(Boolean).join(', ')
+    const accessibleLabel = [item.label, item.detail, item.meta, item.stats].filter(Boolean).join(', ')
     button.setAttribute('aria-label', accessibleLabel)
     const name = document.createElement('span')
     name.className = 'course-option-name'
