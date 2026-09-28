@@ -207,6 +207,7 @@ export class WeatherDirector {
   private windFrom = { x: 3.7, z: 1.5 }
   private windTo = { x: 3.7, z: 1.5 }
   private rngState = 0x12345678
+  private locked = false
 
   get transitioning(): boolean {
     return this.transitionT < 1
@@ -216,7 +217,12 @@ export class WeatherDirector {
     return this.transitionT
   }
 
+  setLocked(locked: boolean): void {
+    this.locked = locked === true
+  }
+
   randomize(seed: number, forcedId?: WeatherId): void {
+    this.locked = false
     this.rngState = (Math.floor(seed) ^ 0x9e3779b9) >>> 0
     const roll = this.random()
     let id: WeatherId
@@ -267,6 +273,7 @@ export class WeatherDirector {
   }
 
   cycle(): WeatherId {
+    if (this.locked) return this.targetId
     const index = WEATHER_ORDER.indexOf(this.targetId)
     const next = WEATHER_ORDER[(index + 1) % WEATHER_ORDER.length]!
     this.setWeather(next)
@@ -274,7 +281,7 @@ export class WeatherDirector {
   }
 
   update(dt: number): void {
-    if (dt <= 0) return
+    if (dt <= 0 || this.locked) return
     if (this.transitionT < 1) {
       this.transitionT = Math.min(1, this.transitionT + dt / this.transitionSec)
       if (this.transitionT >= 1) {

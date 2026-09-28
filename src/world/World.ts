@@ -198,6 +198,7 @@ export class World {
     const previousWeather = this.atmosphere.weather
     const previousTimeOfDay = this.atmosphere.timeOfDay
     const previousWeatherLocked = this.weatherLocked
+    const previousTimeOfDayLocked = this.atmosphere.timeOfDayLocked
     let liveWorldCleared = false
     const restore = (): void => {
       setWorldSeed(previousSeed)
@@ -205,6 +206,8 @@ export class World {
       this.missionProfile = previousProfile
       this.spawn = previousSpawn
       this.weatherLocked = previousWeatherLocked
+      this.atmosphere.setWeatherLocked(previousWeatherLocked)
+      this.atmosphere.setTimeOfDayLocked(previousTimeOfDayLocked)
       if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
       else clearOpsPad()
     }
@@ -242,6 +245,8 @@ export class World {
           const normalizedTime = requestedTimeOfDay! - Math.floor(requestedTimeOfDay!)
           this.atmosphere.timeOfDay = normalizedTime < 0 ? normalizedTime + 1 : normalizedTime
         }
+        this.atmosphere.setWeatherLocked(this.weatherLocked)
+        this.atmosphere.setTimeOfDayLocked(Number.isFinite(requestedTimeOfDay))
         const initialWeather = this.atmosphere.weatherSnapshot
         this.applyWeatherEffects(initialWeather, this.atmosphere.daylight)
         setAirfieldWind(this.runway, initialWeather.windX, initialWeather.windZ)
@@ -266,6 +271,7 @@ export class World {
           previousWeather,
           previousTimeOfDay,
           previousWeatherLocked,
+          previousTimeOfDayLocked,
         )
         return this.seed
       }
@@ -283,6 +289,7 @@ export class World {
     weather: WeatherId,
     timeOfDay: number,
     weatherLocked: boolean,
+    timeOfDayLocked: boolean,
   ): void {
     try { setWorldSeed(seed) } catch { /* keep the previous process alive */ }
     try {
@@ -315,6 +322,8 @@ export class World {
       this.atmosphere.randomizeWeather(seed)
       this.atmosphere.timeOfDay = Number.isFinite(timeOfDay) ? timeOfDay : this.atmosphere.timeOfDay
       this.atmosphere.setWeather(weather, true)
+      this.atmosphere.setWeatherLocked(weatherLocked)
+      this.atmosphere.setTimeOfDayLocked(timeOfDayLocked)
       const restoredWeather = this.atmosphere.weatherSnapshot
       this.applyWeatherEffects(restoredWeather, this.atmosphere.daylight)
       setAirfieldWind(this.runway, restoredWeather.windX, restoredWeather.windZ)

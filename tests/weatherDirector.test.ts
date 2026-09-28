@@ -66,6 +66,17 @@ describe('weather director', () => {
     expect(director.targetId).not.toBe('blizzard')
   })
 
+  it('can hold an authored front against cycles and automatic transitions', () => {
+    const director = new WeatherDirector()
+    director.randomize(17, 'storm')
+    director.setLocked(true)
+    const before = director.snapshot()
+    expect(director.cycle()).toBe('storm')
+    director.update(10_000)
+    expect(director.targetId).toBe('storm')
+    expect(director.snapshot()).toEqual(before)
+  })
+
   it('can redirect a moving front without a visual discontinuity', () => {
     const director = new WeatherDirector()
     director.randomize(91, 'clear')

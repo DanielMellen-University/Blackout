@@ -259,6 +259,8 @@ export class Atmosphere {
   timeOfDay = Math.random()
   /** Real seconds for a full 24h cycle. */
   dayLengthSec = 480
+  /** Authored night courses can hold their clock while ordinary worlds cycle. */
+  timeOfDayLocked = false
 
   weather: WeatherId = 'clear'
   private readonly weatherDirector = new WeatherDirector()
@@ -497,6 +499,17 @@ export class Atmosphere {
     return next
   }
 
+  setWeatherLocked(locked: boolean): void {
+    if (this.disposed) return
+    this.weatherDirector.setLocked(locked)
+    this.dirty = true
+  }
+
+  setTimeOfDayLocked(locked: boolean): void {
+    if (this.disposed) return
+    this.timeOfDayLocked = locked === true
+  }
+
   setWeather(id: WeatherId, instant = false): void {
     if (this.disposed) return
     this.weatherDirector.setWeather(id, instant)
@@ -507,6 +520,7 @@ export class Atmosphere {
   /** Fully random time of day + weighted weather (on world reseed). */
   randomizeWeather(seed: number): void {
     if (this.disposed) return
+    this.timeOfDayLocked = false
     this.timeOfDay = timeOfDayForSeed(seed)
     const w = weatherIdForSeed(seed, this.timeOfDay)
 
@@ -619,7 +633,9 @@ export class Atmosphere {
     this.lastAnchor.y = ay
     this.lastAnchor.z = az
     this.hasLastAnchor = true
-    this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
+    if (!this.timeOfDayLocked) {
+      this.timeOfDay = (this.timeOfDay + dt / this.dayLengthSec) % 1
+    }
     this.elapsed += dt
     this.weatherDirector.update(dt)
     this.weather = this.weatherDirector.targetId
