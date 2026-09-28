@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.384** Surface the real afterburner lock reason, so fuel-out state is shared by engine warnings, HUD, and the live engine contract instead of being hard-coded as ready.
 - **10.383** Gate route-trace visibility by live external flight, keeping cockpit, pause, results, and crash presentation uncluttered.
 - **10.382** Add one bounded route-trace draw connecting authored gates, improving external-camera guidance without expanding the scene footprint per route.
 - **10.381** Expand the preflight route briefing with minimum clearance, maximum turn, and planned climb envelope callouts.

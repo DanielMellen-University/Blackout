@@ -4,7 +4,7 @@ Browser arcade flight game. Pilot an F-35, take off, fly a short gate run low en
 
 Built with TypeScript, Three.js, and Vite.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.383**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.384**.
 
 ## Run
 
@@ -17,7 +17,7 @@ Open the URL Vite prints. `npm test` runs the suite. `npm run build` typechecks 
 
 ## Aircraft and weather
 
-The procedural F-35 has a shaped gold canopy, recessed intakes, separate rudders, animated landing gear and exhaust, and batched surface detail. Engine thrust, fuel burn, audio, plume, and HUD all share the same finite-safe afterburner gate. The first-person view remains unobstructed.
+The procedural F-35 has a shaped gold canopy, recessed intakes, separate rudders, animated landing gear and exhaust, and batched surface detail. Engine thrust, fuel burn, audio, plume, and HUD all share the same finite-safe afterburner gate. Fuel-out now reports an explicit burner lock instead of leaving the HUD on a misleading ready state. The first-person view remains unobstructed.
 
 Weather transitions blend layered cloud cover, wind, precipitation, lighting, and visibility. Clouds fade at full size, shade toward the sun, and reduce visibility when you fly through them. The HUD calls out cloud edges, entry, and breaks, the cockpit veil adds a subtle cloud mist, and the existing audio bed responds to gusts while gently muffling wind and precipitation inside formations without adding nodes. Rain streaks drift through world space; precipitation and overhead cover clear above the cloud tops. Meaningful rain, snow, or strong gusts add a restrained camera and airframe buffet that stays quiet under reduced-motion preferences. Stormy nights receive a small bounded exposure lift so terrain silhouettes stay readable without brightening clear nights or daytime. Nearby traffic now gets a short audio double-pulse alongside its directional alert. Graphics presets retain bounded cloud and precipitation pools.
 

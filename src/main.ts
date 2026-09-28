@@ -9,6 +9,7 @@ import {
   WebGLRenderer,
 } from 'three'
 import { Aircraft } from './aircraft/Aircraft'
+import { afterburnerLockReason } from './aircraft/EngineState'
 import {
   cameraModeCue,
   cameraRelativeBearing,
@@ -1896,9 +1897,12 @@ async function boot(): Promise<void> {
       audio.playCue(airbrakeOpen ? 'airbrake-open' : 'airbrake-close')
     }
     prevAirbrake = airbrakeOpen
-    const afterburnerFuelLocked = false
-    const afterburnerHeatLocked = false
-    const afterburnerLocked = afterburnerFuelLocked || afterburnerHeatLocked
+    const afterburnerFuelLocked = !aircraft.engineState.fuelAvailable
+    const afterburnerHeatLocked = aircraft.engineHeat.afterburnerLocked
+    const afterburnerLocked = afterburnerLockReason(
+      aircraft.engineState.fuelAvailable,
+      afterburnerHeatLocked,
+    ) !== null
     if (
       simLive &&
       playing &&
@@ -2274,7 +2278,10 @@ async function boot(): Promise<void> {
       challenge.recordApproachPreview(approachPreviewScore)
       hudFrame.landingPreview = landingPreview
       hudFrame.boost = aircraft.engineState.afterburnerActive
-      hudFrame.afterburnerLock = null
+      hudFrame.afterburnerLock = afterburnerLockReason(
+        aircraft.engineState.fuelAvailable,
+        aircraft.engineHeat.afterburnerLocked,
+      )
       hudFrame.stabilityAssist = aircraft.controls.stabilityAssist
       hudFrame.gearDown = aircraft.controls.gearDown
       hudFrame.onGround = aircraft.onGround

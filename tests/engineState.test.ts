@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { afterburnerThrottleReady, createEngineState, resolveEngineState } from '../src/aircraft/EngineState'
+import {
+  afterburnerLockReason,
+  afterburnerThrottleReady,
+  createEngineState,
+  resolveEngineState,
+} from '../src/aircraft/EngineState'
 import { flightConfig as C } from '../src/aircraft/flightConfig'
 import { FUEL_AFTERBURNER_RESERVE_FRACTION } from '../src/aircraft/FuelSystem'
 
 describe('resolveEngineState', () => {
+  it('reports the first actionable afterburner lock reason', () => {
+    expect(afterburnerLockReason(true, false)).toBeNull()
+    expect(afterburnerLockReason(false, false)).toBe('fuel')
+    expect(afterburnerLockReason(true, true)).toBe('heat')
+    expect(afterburnerLockReason(false, true)).toBe('heat')
+  })
+
   it('shares one finite-safe throttle gate with fuel burn', () => {
     expect(afterburnerThrottleReady(C.afterburnerMinThrottle)).toBe(true)
     expect(afterburnerThrottleReady(C.afterburnerMinThrottle - 0.001)).toBe(false)

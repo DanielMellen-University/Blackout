@@ -25,6 +25,18 @@ export interface EngineState {
   fuelAvailable: boolean
 }
 
+export type AfterburnerLockReason = 'fuel' | 'heat' | null
+
+/** Resolve the one user-facing reason the burner is unavailable. */
+export function afterburnerLockReason(
+  fuelAvailable: boolean,
+  heatLocked: boolean,
+): AfterburnerLockReason {
+  if (heatLocked === true) return 'heat'
+  if (fuelAvailable !== true) return 'fuel'
+  return null
+}
+
 export function createEngineState(): EngineState {
   return {
     lever: 0,
