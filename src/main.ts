@@ -461,6 +461,7 @@ async function boot(): Promise<void> {
   let applyWorldQuality: ((quality: RenderQuality) => void) | null = null
   let applyRadarMotion: ((reduced: boolean) => void) | null = null
   let applyShadowQuality: ((mapSize: number) => void) | null = null
+  let applyAdaptiveDetailScale: (() => void) | null = null
   const SHADOW_UPDATE_STEP = 1 / 20
   let shadowUpdateElapsed = SHADOW_UPDATE_STEP
 
@@ -476,6 +477,7 @@ async function boot(): Promise<void> {
     applyCameraQuality?.(next)
     applyRadarQuality?.(next)
     applyWorldQuality?.(next)
+    applyAdaptiveDetailScale?.()
     renderer.shadowMap.enabled = profile.shadows
     if (profile.shadows) {
       // A quality switch can re-enable shadows after Low, so refresh on the
@@ -496,6 +498,11 @@ async function boot(): Promise<void> {
   const world = new World(renderQuality)
   applyWorldQuality = (quality): void => world.setRenderQuality(quality)
   applyWorldQuality(renderQuality)
+  applyAdaptiveDetailScale = (): void => {
+    const ceiling = Math.max(.75, resolution.maximum)
+    world.setAdaptiveDetailScale(MathUtils.clamp(resolution.ratio / ceiling, .5, 1))
+  }
+  applyAdaptiveDetailScale()
   if (replaySeed !== null) {
     const replayCourse = courseDefinitionForId(selectedCourseId)
     world.reseed(
@@ -1402,10 +1409,9 @@ async function boot(): Promise<void> {
     previousFrame = nowMs
     if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) {
       renderer.setPixelRatio(pixelRatio)
-      // Pixel density and shader detail now recover together. Compare against
-      // the active ceiling so a low-DPI device does not shed detail at boot.
-      const ceiling = Math.max(.75, resolution.maximum)
-      world.setAdaptiveDetailScale(MathUtils.clamp(pixelRatio / ceiling, .5, 1))
+      // Pixel density and shader detail recover together. Compare against the
+      // active ceiling so a low-DPI device does not shed detail at boot.
+      applyAdaptiveDetailScale?.()
     }
     let visualDt = 0
     let simDt = 0

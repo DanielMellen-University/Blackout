@@ -85,6 +85,14 @@ describe('world lifecycle boundary', () => {
       expect(terrain.vegetationScale).toBe(.75)
       expect(atmosphere.precipitationScale).toBe(.72)
       expect(atmosphere.cloudDensityScale).toBe(.78)
+
+      world.setAdaptiveDetailScale(.6)
+      world.setRenderQuality('low')
+      expect(terrain.waterDetailScale.value).toBeCloseTo(.21)
+      expect(terrain.terrainDetailScale.value).toBeCloseTo(.252)
+      expect(terrain.vegetationScale).toBeCloseTo(.27)
+      expect(atmosphere.precipitationScale).toBeCloseTo(.252)
+      expect(atmosphere.cloudDensityScale).toBeCloseTo(.3)
     } finally {
       world.dispose()
     }
