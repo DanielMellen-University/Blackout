@@ -15,7 +15,6 @@ import { getWorldSeed, hash2 } from './noise'
 import {
   sampleClimate,
   sampleClimateInto,
-  terrainSurfaceFromClimate,
   waterBodyFromClimate,
   opsPadBlend,
   getOpsPadInto,
@@ -1200,11 +1199,10 @@ export class TerrainSystem {
       if (opsPadBlend(wx, wz) > .01) continue
 
       const climate = sampleClimateInto(this.propsClimate, wx, wz)
-      const surface = terrainSurfaceFromClimate(climate)
       const h = interpolateGridHeight(heights, segs, originX, originZ, wx, wz)
       const f = climate.features
       if (climate.biome === 'ocean' || climate.biome === 'runway') continue
-      if (surface.kind === 'water') continue
+      if (climate.biome === 'water') continue
       const hx = interpolateGridHeight(heights, segs, originX, originZ, wx + 3, wz)
       const hz = interpolateGridHeight(heights, segs, originX, originZ, wx, wz + 3)
       if (Math.hypot(hx - h, hz - h) / 3 > .65) continue
