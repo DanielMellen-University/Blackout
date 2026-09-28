@@ -66,6 +66,8 @@ const FADE_SECONDS = .65
 const DEFAULT_UPLOAD_BUDGET_MS = 2
 const DEFAULT_MAX_UPLOADS_PER_FRAME = 16
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
+/** Re-evaluate existing tile LOD before a full stream-cell crossing. */
+const LOD_RECHECK_DISTANCE_M = CHUNK_SIZE * 0.5
 /**
  * Fog fully opaque at this range, eight chunks inside the stream edge
  * (VIEW_RADIUS - FOG_MARGIN) * CHUNK_SIZE.
@@ -221,6 +223,8 @@ export class TerrainSystem {
   private readonly scene: Scene
   private lastCx = Number.NaN
   private lastCz = Number.NaN
+  private lastLodFocusX = Number.NaN
+  private lastLodFocusZ = Number.NaN
   /** Reuse the common near-cell lookup used by collision and contact probes. */
   private sampledChunk: Chunk | null = null
   private sampledChunkCx = Number.NaN
@@ -471,6 +475,8 @@ export class TerrainSystem {
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
+    this.lastLodFocusX = Number.NaN
+    this.lastLodFocusZ = Number.NaN
     this.invalidateSampleChunk()
   }
 
@@ -502,9 +508,15 @@ export class TerrainSystem {
     const cx = Math.floor(worldX / CHUNK_SIZE)
     const cz = Math.floor(worldZ / CHUNK_SIZE)
 
-    if (cx !== this.lastCx || cz !== this.lastCz) {
+    const crossedStreamCell = cx !== this.lastCx || cz !== this.lastCz
+    const movedForLod = Number.isFinite(this.lastLodFocusX) && Number.isFinite(this.lastLodFocusZ)
+      ? Math.hypot(worldX - this.lastLodFocusX, worldZ - this.lastLodFocusZ)
+      : Infinity
+    if (crossedStreamCell || movedForLod >= LOD_RECHECK_DISTANCE_M) {
       this.lastCx = cx
       this.lastCz = cz
+      this.lastLodFocusX = worldX
+      this.lastLodFocusZ = worldZ
       this.scheduleAround(cx, cz)
     }
 

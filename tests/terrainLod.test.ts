@@ -160,6 +160,29 @@ describe('TerrainSystem streaming LOD', () => {
     expect(near!.vertices).toBeGreaterThan(far!.vertices)
   }, 20_000)
 
+  it('refreshes LOD before a whole stream-cell crossing', () => {
+    const terrain = new TerrainSystem(new Scene())
+    const internal = terrain as unknown as {
+      scheduleAround: (cx: number, cz: number) => void
+    }
+    const schedule = vi.spyOn(internal, 'scheduleAround')
+    try {
+      terrain.update(20, 20, 1 / 60)
+      expect(schedule).toHaveBeenCalledTimes(1)
+
+      // Still inside cell 0,0 and under the half-cell refresh threshold.
+      terrain.update(20 + CHUNK_SIZE * .49, 20, 1 / 60)
+      expect(schedule).toHaveBeenCalledTimes(1)
+
+      // A small additional movement is enough to refresh existing LOD while
+      // the aircraft remains in the same stream cell.
+      terrain.update(20 + CHUNK_SIZE * .51, 20, 1 / 60)
+      expect(schedule).toHaveBeenCalledTimes(2)
+    } finally {
+      terrain.dispose()
+    }
+  })
+
   it('demotes the same tile after flying away', () => {
     const terrain = new TerrainSystem(new Scene())
     for (let i = 0; i < 1000 && !terrain.chunkStats(0, 12); i++) pump(terrain, 210, 210, 1)
