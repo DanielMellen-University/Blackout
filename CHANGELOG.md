@@ -5,6 +5,7 @@
 ### Ship
 
 - Dampen storm buffet while landing gear is down, and cue BUFFET on the live weather HUD when the gated drive is meaningful.
+- **10.441** Add Brake Check Run, a deterministic clear sweep that exposes the speed-brake contract without adding scene or render-loop work.
 - **10.440** Add Water Run, a deterministic rainy river route that exposes the sustained water-flight contract without adding scene or render-loop work.
 - **10.439** Add Level Flight Run, a deterministic clear sweep that exposes the stable-altitude contract without adding scene or render-loop work.
 - **10.438** Add Clean Circuit Run, a deterministic clear desert sweep that exposes the no-miss gate contract without adding scene or render-loop work.
