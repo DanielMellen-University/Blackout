@@ -54,6 +54,19 @@ describe('world lifecycle boundary', () => {
     }
   }, 60_000)
 
+  it('fails closed when a world frame reports malformed timing or position', () => {
+    const world = new World('low')
+    try {
+      world.update(Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NaN, Number.NaN, Number.POSITIVE_INFINITY)
+      expect(Number.isFinite(world.atmosphere.timeOfDay)).toBe(true)
+      expect(Number.isFinite(world.atmosphere.daylight)).toBe(true)
+      expect(world.scene.fog?.near).toBeGreaterThan(0)
+      expect(world.scene.fog?.far).toBeGreaterThan(world.scene.fog?.near ?? 0)
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
+
   it('scales moving terrain and water detail with adaptive resolution', () => {
     const world = new World('balanced')
     try {

@@ -65,6 +65,15 @@ export interface WeatherEffectState {
   daylight: number
 }
 
+function safeWorldDelta(value: number): number {
+  return Number.isFinite(value) ? Math.max(0, value) : 0
+}
+
+function safeWorldCoordinate(value: number, fallback: number): number {
+  if (Number.isFinite(value)) return value
+  return Number.isFinite(fallback) ? fallback : 0
+}
+
 /** Ignore sub-pixel weather drift while retaining responsive transitions. */
 export function weatherEffectsChanged(
   previous: WeatherEffectState | null,
@@ -493,15 +502,24 @@ export class World {
    */
   update(x: number, y: number, z: number, dt: number, simDt = dt, visualDt = simDt): void {
     if (this.disposed) return
-    this.terrain.update(x, z, dt)
-    this.settlements.update(x, z)
-    this.traffic.update(x, z, visualDt)
-    this.atmosphere.update(simDt, x, y, z, visualDt)
+    // Keep one malformed frame from leaking NaN/Infinity into every streamed
+    // subsystem. The spawn pose is a stable fallback until the next valid
+    // aircraft sample arrives.
+    const safeX = safeWorldCoordinate(x, this.spawn.x)
+    const safeY = safeWorldCoordinate(y, this.spawn.y)
+    const safeZ = safeWorldCoordinate(z, this.spawn.z)
+    const safeDt = safeWorldDelta(dt)
+    const safeSimDt = safeWorldDelta(simDt)
+    const safeVisualDt = safeWorldDelta(visualDt)
+    this.terrain.update(safeX, safeZ, safeDt)
+    this.settlements.update(safeX, safeZ)
+    this.traffic.update(safeX, safeZ, safeVisualDt)
+    this.atmosphere.update(safeSimDt, safeX, safeY, safeZ, safeVisualDt)
     setRunwayDaylight(this.runway, this.atmosphere.daylight)
     const weather = this.atmosphere.weatherSnapshot
     this.applyWeatherEffects(weather, this.atmosphere.daylight)
     setAirfieldWind(this.runway, weather.windX, weather.windZ)
-    setAirfieldPapi(this.runway, x, y, z, this.atmosphere.daylight)
+    setAirfieldPapi(this.runway, safeX, safeY, safeZ, this.atmosphere.daylight)
   }
 
   /** Release all streamed and persistent world resources before renderer teardown. */
