@@ -130,6 +130,9 @@ export function courseFlightLogLabel(history: CourseHistory | null): string {
   if (Number.isFinite(history.biomes) && history.biomes! > 0) {
     parts.push(`BIOMES X${Math.min(15, Math.floor(history.biomes!))}`)
   }
+  if (Number.isFinite(history.waterBodies) && history.waterBodies! > 0) {
+    parts.push(`WATERWAYS X${Math.min(3, Math.floor(history.waterBodies!))}`)
+  }
   if (Number.isFinite(history.stuntRolls) && history.stuntRolls! > 0) {
     parts.push(`ROLLS X${Math.min(12, Math.floor(history.stuntRolls!))}`)
   }

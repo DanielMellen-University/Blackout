@@ -123,7 +123,8 @@ describe('course picker copy', () => {
       bestTimeSec: 90,
       destinations: 3,
       biomes: 4,
-    })).toBe('LOG DEST X3 BIOMES X4')
+      waterBodies: 3,
+    })).toBe('LOG DEST X3 BIOMES X4 WATERWAYS X3')
     expect(courseFlightLogLabel({
       completionCount: 1,
       bestTimeSec: 90,

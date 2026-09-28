@@ -376,6 +376,13 @@ export class RunResults {
       ? Math.max(0, Math.floor(result.waterBodyCount!))
       : 0
     if (waterBodyCount > 0) scoreParts.push(`WATERWAYS X${waterBodyCount}`)
+    const courseBestWaterBodyCount = Number.isFinite(result.courseBestWaterBodyCount)
+      ? Math.max(0, Math.floor(result.courseBestWaterBodyCount!))
+      : 0
+    if (result.newWaterBodyRecord) scoreParts.push('NEW WATERWAY RECORD')
+    if (courseBestWaterBodyCount > waterBodyCount) {
+      scoreParts.push(`COURSE WATERWAYS X${courseBestWaterBodyCount}`)
+    }
     const courseBestDestinationCount = Number.isFinite(result.courseBestDestinationCount)
       ? Math.max(0, Math.floor(result.courseBestDestinationCount!))
       : 0

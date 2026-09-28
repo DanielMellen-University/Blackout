@@ -350,6 +350,9 @@ describe('run results focus flow', () => {
       destinationScore: 1_200,
       destinationCount: 3,
       courseBestDestinationCount: 4,
+      waterBodyCount: 3,
+      courseBestWaterBodyCount: 3,
+      newWaterBodyRecord: true,
       runStreak: 3,
       courseBestRunStreak: 4,
       contractKind: 'fuel',
@@ -388,6 +391,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-streak-detail')?.textContent).toBe('COURSE BEST X4')
     expect(elementsFor(fixture.document, 'result-landing-detail')?.textContent).toBe('BUTTER')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('TOP 962KT')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('WATERWAYS X3')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('NEW WATERWAY RECORD')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('ALT 1,240M')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('DIST 2.5KM')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('G +5.3/-1.4')

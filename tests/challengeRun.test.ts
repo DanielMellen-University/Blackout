@@ -544,7 +544,12 @@ describe('ChallengeRun', () => {
   })
 
   it('tracks distinct waterway families without double-counting crossings', () => {
-    const run = new ChallengeRun()
+    const values = new Map<string, string>()
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const run = new ChallengeRun(storage)
     run.reset('seed:water-survey', 0)
     expect(run.waterBodyCount).toBe(0)
     run.recordWaterBody('stream')
@@ -568,6 +573,17 @@ describe('ChallengeRun', () => {
       rollRad: 0,
     })!
     expect(result.waterBodyCount).toBe(MAX_WATER_BODY_COUNT)
+    expect(result.courseBestWaterBodyCount).toBe(MAX_WATER_BODY_COUNT)
+    expect(result.newWaterBodyRecord).toBe(true)
+    expect(values.get('blackout.history.seed:water-survey')).toContain(`"waterBodies":${MAX_WATER_BODY_COUNT}`)
+    values.set(
+      'blackout.history.seed:water-survey',
+      '{"completionCount":2,"bestTimeSec":4,"waterBodies":999,"extra":true}',
+    )
+    expect(repairCourseHistory(storage, 'seed:water-survey')?.waterBodies).toBe(MAX_WATER_BODY_COUNT)
+    expect(values.get('blackout.history.seed:water-survey')).toBe(
+      `{"completionCount":2,"bestTimeSec":4,"waterBodies":${MAX_WATER_BODY_COUNT}}`,
+    )
   })
 
   it('tracks consecutive completed sorties, resets on failure, and repairs oversized records', () => {

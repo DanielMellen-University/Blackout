@@ -164,6 +164,10 @@ export interface ChallengeResult {
   biomeCount?: number
   /** Number of distinct waterway families crossed during this sortie. */
   waterBodyCount?: number
+  /** Highest distinct waterway-family count recorded for this course. */
+  courseBestWaterBodyCount?: number
+  /** Whether this sortie set a new course waterway record. */
+  newWaterBodyRecord?: boolean
   /** Capped score bonus awarded for surveying distinct biomes. */
   biomeScore?: number
   /** Highest distinct-biome count ever recorded for this course. */
@@ -352,6 +356,7 @@ export interface CourseHistory {
   fuelRemainingPercent?: number
   destinations?: number
   biomes?: number
+  waterBodies?: number
   runStreak?: number
   runStreakRecord?: number
   contractWins?: number
@@ -726,6 +731,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const rawFuelRemainingPercent = record.fuelRemainingPercent
   const rawDestinations = record.destinations
   const rawBiomes = record.biomes
+  const rawWaterBodies = record.waterBodies
   const rawRunStreak = record.runStreak
   const rawRunStreakRecord = record.runStreakRecord
   const rawContractWins = record.contractWins
@@ -745,6 +751,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const hasFuelRemainingPercent = Object.prototype.hasOwnProperty.call(record, 'fuelRemainingPercent')
   const hasDestinations = Object.prototype.hasOwnProperty.call(record, 'destinations')
   const hasBiomes = Object.prototype.hasOwnProperty.call(record, 'biomes')
+  const hasWaterBodies = Object.prototype.hasOwnProperty.call(record, 'waterBodies')
   const hasRunStreak = Object.prototype.hasOwnProperty.call(record, 'runStreak')
   const hasRunStreakRecord = Object.prototype.hasOwnProperty.call(record, 'runStreakRecord')
   const hasContractWins = Object.prototype.hasOwnProperty.call(record, 'contractWins')
@@ -787,6 +794,9 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   const biomes = typeof rawBiomes === 'number' && Number.isFinite(rawBiomes) && rawBiomes > 0
     ? Math.min(MAX_BIOME_COUNT, Math.floor(rawBiomes))
     : 0
+  const waterBodies = typeof rawWaterBodies === 'number' && Number.isFinite(rawWaterBodies) && rawWaterBodies > 0
+    ? Math.min(MAX_WATER_BODY_COUNT, Math.floor(rawWaterBodies))
+    : 0
   const runStreak = typeof rawRunStreak === 'number' && Number.isFinite(rawRunStreak) && rawRunStreak > 0
     ? Math.min(MAX_RUN_STREAK, Math.floor(rawRunStreak))
     : 0
@@ -828,6 +838,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
   if (fuelRemainingPercent > 0) history.fuelRemainingPercent = fuelRemainingPercent
   if (destinations > 0) history.destinations = destinations
   if (biomes > 0) history.biomes = biomes
+  if (waterBodies > 0) history.waterBodies = waterBodies
   if (runStreak > 0) history.runStreak = runStreak
   if (runStreakRecord > 0) history.runStreakRecord = runStreakRecord
   if (contractWins > 0) history.contractWins = contractWins
@@ -853,6 +864,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasFuelRemainingPercent && (typeof rawFuelRemainingPercent !== 'number' || !Number.isFinite(rawFuelRemainingPercent) || rawFuelRemainingPercent <= 0 || rawFuelRemainingPercent !== fuelRemainingPercent)) ||
     (hasDestinations && (typeof rawDestinations !== 'number' || !Number.isFinite(rawDestinations) || rawDestinations <= 0 || rawDestinations !== destinations)) ||
     (hasBiomes && (typeof rawBiomes !== 'number' || !Number.isFinite(rawBiomes) || rawBiomes <= 0 || rawBiomes !== biomes)) ||
+    (hasWaterBodies && (typeof rawWaterBodies !== 'number' || !Number.isFinite(rawWaterBodies) || rawWaterBodies <= 0 || rawWaterBodies !== waterBodies)) ||
     (hasRunStreak && (typeof rawRunStreak !== 'number' || !Number.isFinite(rawRunStreak) || rawRunStreak <= 0 || rawRunStreak !== runStreak)) ||
     (hasRunStreakRecord && (typeof rawRunStreakRecord !== 'number' || !Number.isFinite(rawRunStreakRecord) || rawRunStreakRecord <= 0 || rawRunStreakRecord !== runStreakRecord)) ||
     (!hasRunStreakRecord && runStreak > 0) ||
@@ -865,7 +877,7 @@ function parseCourseHistory(raw: string): ParsedCourseHistory | null {
     (hasPeakNegativeG && (typeof rawPeakNegativeG !== 'number' || !Number.isFinite(rawPeakNegativeG) || rawPeakNegativeG >= 0 || rawPeakNegativeG !== peakNegativeG)) ||
     (hasSortieStyle && !sortieStyle) ||
     Object.keys(record).some((key) =>
-      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'fuelRemainingPercent' && key !== 'destinations' && key !== 'biomes' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG' && key !== 'sortieStyle',
+      key !== 'completionCount' && key !== 'bestTimeSec' && key !== 'peakSpeedKts' && key !== 'peakAltitudeM' && key !== 'stuntRolls' && key !== 'combo' && key !== 'approachScore' && key !== 'landingQuality' && key !== 'fuelRemainingPercent' && key !== 'destinations' && key !== 'biomes' && key !== 'waterBodies' && key !== 'runStreak' && key !== 'runStreakRecord' && key !== 'contractWins' && key !== 'contractStreak' && key !== 'contractStreakRecord' && key !== 'flightDistanceM' && key !== 'peakPositiveG' && key !== 'peakNegativeG' && key !== 'sortieStyle',
     )
   return {
     history,
@@ -915,6 +927,9 @@ function serializeCourseHistory(history: CourseHistory): string {
   }
   if (Number.isFinite(history.biomes) && history.biomes! > 0) {
     record.biomes = Math.min(MAX_BIOME_COUNT, Math.floor(history.biomes!))
+  }
+  if (Number.isFinite(history.waterBodies) && history.waterBodies! > 0) {
+    record.waterBodies = Math.min(MAX_WATER_BODY_COUNT, Math.floor(history.waterBodies!))
   }
   const runStreak = Number.isFinite(history.runStreak) && history.runStreak! > 0
     ? Math.min(MAX_RUN_STREAK, Math.floor(history.runStreak!))
@@ -1465,6 +1480,7 @@ export class ChallengeRun {
     const previousFuelRemainingPercent = history.fuelRemainingPercent ?? 0
     const previousDestinationCount = history.destinations ?? 0
     const previousBiomeCount = history.biomes ?? 0
+    const previousWaterBodyCount = history.waterBodies ?? 0
     const previousRunStreakRecord = history.runStreakRecord ?? 0
     const previousContractWins = history.contractWins ?? 0
     const previousContractStreak = history.contractStreak ?? 0
@@ -1490,6 +1506,8 @@ export class ChallengeRun {
     const courseBestDestinationCount = Math.max(previousDestinationCount, this.destinationCount)
     const newBiomeRecord = this.surveyedBiomeCount > previousBiomeCount
     const courseBestBiomeCount = Math.max(previousBiomeCount, this.surveyedBiomeCount)
+    const newWaterBodyRecord = this.surveyedWaterCount > previousWaterBodyCount
+    const courseBestWaterBodyCount = Math.max(previousWaterBodyCount, this.surveyedWaterCount)
     const courseBestRunStreak = Math.max(previousRunStreakRecord, runStreak)
     const newRunStreakRecord = runStreak >= 2 && runStreak > previousRunStreakRecord
     const contractWins = Math.min(MAX_CONTRACT_WINS, previousContractWins + (contractComplete ? 1 : 0))
@@ -1537,6 +1555,7 @@ export class ChallengeRun {
     if (courseBestFuelRemainingPercent > 0) history.fuelRemainingPercent = courseBestFuelRemainingPercent
     if (courseBestDestinationCount > 0) history.destinations = courseBestDestinationCount
     if (courseBestBiomeCount > 0) history.biomes = courseBestBiomeCount
+    if (courseBestWaterBodyCount > 0) history.waterBodies = courseBestWaterBodyCount
     history.runStreak = runStreak
     history.runStreakRecord = courseBestRunStreak
     if (contractWins > 0) history.contractWins = contractWins
@@ -1644,6 +1663,8 @@ export class ChallengeRun {
       newDestinationRecord,
       biomeCount: this.surveyedBiomeCount > 0 ? this.surveyedBiomeCount : undefined,
       waterBodyCount: this.surveyedWaterCount > 0 ? this.surveyedWaterCount : undefined,
+      courseBestWaterBodyCount: courseBestWaterBodyCount > 0 ? courseBestWaterBodyCount : undefined,
+      newWaterBodyRecord,
       biomeScore: biomeScore > 0 ? biomeScore : undefined,
       courseBestBiomeCount: courseBestBiomeCount > 0 ? courseBestBiomeCount : undefined,
       newBiomeRecord,
