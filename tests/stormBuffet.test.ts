@@ -42,10 +42,12 @@ describe('storm buffet gating', () => {
     expect(stormBuffetAllowed({ reducedMotion: true })).toBe(false)
     expect(stormBuffetAllowed({ paused: true })).toBe(false)
     expect(stormBuffetAllowed({ playing: false })).toBe(false)
+    expect(stormBuffetAllowed({ crashed: true })).toBe(false)
     expect(stormBuffetAllowed({ reducedMotion: false, paused: false, playing: true })).toBe(true)
     expect(stormBuffetDrive(1, 0, 1, { reducedMotion: true })).toBe(0)
     expect(stormBuffetDrive(1, 0, 1, { paused: true })).toBe(0)
     expect(stormBuffetDrive(1, 0, 1, { playing: false })).toBe(0)
+    expect(stormBuffetDrive(1, 0, 1, { crashed: true })).toBe(0)
     expect(stormBuffetDrive(1, 0, 1, { playing: true })).toBeGreaterThan(0.5)
   })
 

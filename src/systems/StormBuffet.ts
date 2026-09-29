@@ -29,6 +29,8 @@ export interface StormBuffetGate {
   reducedMotion?: boolean
   paused?: boolean
   playing?: boolean
+  /** Crash / wreck state keeps camera buffet quiet like the airframe path. */
+  crashed?: boolean
 }
 
 /**
@@ -58,6 +60,7 @@ export function stormBuffetAllowed(gate: StormBuffetGate = {}): boolean {
   if (gate.reducedMotion === true) return false
   if (gate.paused === true) return false
   if (gate.playing === false) return false
+  if (gate.crashed === true) return false
   return true
 }
 
