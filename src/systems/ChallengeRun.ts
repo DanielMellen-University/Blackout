@@ -1745,6 +1745,12 @@ export class ChallengeRun {
       bestScore: 0,
       isNewBest: false,
       freeFlight: this.freeFlight,
+      contractKind: this.contract.kind ?? undefined,
+      contractLabel: this.contract.enabled ? this.contract.label : undefined,
+      contractDetail: this.contract.enabled ? this.contract.detail : undefined,
+      contractComplete: this.contract.enabled ? this.contract.complete : undefined,
+      contractFailed: this.contract.enabled ? this.contract.failed : undefined,
+      contractProgress: this.contract.enabled ? this.contract.progress : undefined,
     }
     return this.result
   }
