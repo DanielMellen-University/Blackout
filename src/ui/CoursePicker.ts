@@ -52,6 +52,8 @@ export interface CoursePickerItem {
   discoveries?: number
   /** Persisted contract-win count used only by the optional contract sort. */
   contractWins?: number
+  /** Persisted best clean-run streak used only by the optional streak sort. */
+  streak?: number
   /** Stable authored route difficulty used only by the optional difficulty sort. */
   difficulty?: CoursePickerDifficulty
   /** Persisted per-course mastery tier used only by the optional mastery sort. */
@@ -60,7 +62,7 @@ export interface CoursePickerItem {
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
-export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'contracts' | 'difficulty' | 'mastery' | 'name'
+export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'contracts' | 'streak' | 'difficulty' | 'mastery' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_FILTER_MAX_LENGTH = 80
@@ -90,6 +92,7 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   stunts: 'Most stunts',
   discoveries: 'Most discoveries',
   contracts: 'Most contract wins',
+  streak: 'Best run streak',
   difficulty: 'Difficulty',
   mastery: 'Mastery',
   name: 'A–Z',
@@ -174,7 +177,7 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
-  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'discoveries' || value === 'contracts' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
+  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'discoveries' || value === 'contracts' || value === 'streak' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
 }
 
 /** Keep the live title/pause search bounded without persisting a stale query. */
@@ -229,7 +232,7 @@ export function sortCoursePickerItems(
   items: readonly CoursePickerItem[],
   sort: CoursePickerSort = 'catalog',
 ): CoursePickerItem[] {
-  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'discoveries' || sort === 'contracts' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
+  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'discoveries' || sort === 'contracts' || sort === 'streak' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
   if (safeSort === 'catalog') return items.slice()
   return items.slice().sort((a, b) => {
     if (safeSort === 'score') {
@@ -284,6 +287,10 @@ export function sortCoursePickerItems(
       const aContracts = finiteContractWins(a.contractWins)
       const bContracts = finiteContractWins(b.contractWins)
       if (aContracts !== bContracts) return bContracts - aContracts
+    } else if (safeSort === 'streak') {
+      const aStreak = finiteStreak(a.streak)
+      const bStreak = finiteStreak(b.streak)
+      if (aStreak !== bStreak) return bStreak - aStreak
     } else if (safeSort === 'difficulty') {
       const aDifficulty = difficultyRank(a.difficulty)
       const bDifficulty = difficultyRank(b.difficulty)
@@ -663,7 +670,7 @@ export class CoursePicker {
     this.sortSelect = document.createElement('select')
     this.sortSelect.className = 'course-picker-sort'
     this.sortSelect.setAttribute('aria-label', 'Sort courses')
-    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'difficulty', 'mastery', 'name'] as const) {
+    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'difficulty', 'mastery', 'name'] as const) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = coursePickerSortLabel(value)
@@ -991,6 +998,10 @@ function finiteDiscoveries(value: number | undefined): number {
 }
 
 function finiteContractWins(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(1_000, Math.floor(value!))) : 0
+}
+
+function finiteStreak(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(1_000, Math.floor(value!))) : 0
 }
 
