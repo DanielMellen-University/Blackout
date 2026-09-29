@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.604** Isolate explicitly seeded Infinite World score and ghost records by seed while preserving the bounded shared bucket for ordinary random flights.
 - **10.603** Include bounded bonus-contract status, instruction, and progress in copied sortie recaps so shared results retain the optional objective.
 - **10.602** Mark unfinished bonus contracts as failed in crash debriefs, keeping interrupted objectives from appearing open after a crash.
 - **10.601** Preserve the active bonus contract in crash debriefs, including its bounded progress and instruction, so failed sorties still explain the optional objective.

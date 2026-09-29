@@ -933,14 +933,19 @@ export function courseRunId(course: CourseDefinition, nowMs = Date.now()): strin
   return `${courseSessionBaseId(resolved.seed, resolved.profile)}${courseIdentitySuffix(resolved.id)}${periodSuffix}`
 }
 
-/** Keep random sorties in one bounded record bucket instead of one key per seed. */
+/** Keep random sorties bounded while giving explicitly replayed worlds stable identity. */
 export function courseSessionId(
   selectedCourseId: CourseId,
   worldSeed: number,
   profile: MissionRouteProfile,
   periodKey?: string,
+  seededRandom = false,
 ): string {
-  if (selectedCourseId === 'random') return RANDOM_COURSE_RUN_ID
+  if (selectedCourseId === 'random') {
+    if (!seededRandom) return RANDOM_COURSE_RUN_ID
+    const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
+    return `${courseSessionBaseId(safeSeed, profile)}:custom`
+  }
   if (profile === 'free') return 'free-flight'
   const safeSeed = Number.isFinite(worldSeed) ? Math.trunc(worldSeed) : 0
   const period = selectedCourseId === DAILY_OPS_COURSE_ID

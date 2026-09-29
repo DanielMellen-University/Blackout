@@ -440,6 +440,8 @@ export async function boot(): Promise<void> {
   let replaySeedFallback = false
   if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
   if (titleSeedInput && replaySeed !== null) titleSeedInput.value = formatWorldSeed(replaySeed)
+  /** True only after an explicit custom/replay seed successfully built a random world. */
+  let seededRandomWorld = false
 
   type CourseRecordSnapshot = {
     history: ReturnType<typeof repairCourseHistory>
@@ -1336,6 +1338,7 @@ export async function boot(): Promise<void> {
     world.worldSeed,
     world.mission.routeProfile,
     selectedCourseReplayKey(),
+    seededRandomWorld,
   )
 
   let lastInputContextLive: boolean | null = null
@@ -1418,7 +1421,10 @@ export async function boot(): Promise<void> {
       )
       worldFallback = world.lastReseedUsedFallback
       replaySeedFallback = worldFallback
-      if (!worldFallback) replaySeed = null
+      if (!worldFallback) {
+        seededRandomWorld = replaying && selectedCourseId === 'random'
+        replaySeed = null
+      }
       if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''
         if (titleSeedStatus) titleSeedStatus.textContent = ''
@@ -1511,6 +1517,7 @@ export async function boot(): Promise<void> {
 
   const onCourseChange = (id: string): void => {
     selectedCourseId = courseDefinitionForId(id).id
+    seededRandomWorld = false
     replaySeed = null
     replaySeedFallback = false
     if (titleSeedInput) titleSeedInput.value = ''
@@ -1531,6 +1538,7 @@ export async function boot(): Promise<void> {
     }
     replaySeed = seed
     selectedCourseId = 'random'
+    seededRandomWorld = false
     if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
     replaySeedFallback = false
     if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(seed)
