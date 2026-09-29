@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.585** Add bounded Hardest negative G sorting to the course picker, using persisted negative-load records without changing authored order for ties.
 - **10.584** Add bounded Highest G sorting to the course picker, using persisted peak-load records without changing authored order for ties.
 - **10.583** Add bounded Most destinations sorting to the course picker, using persisted landmark-discovery records without changing authored order for ties.
 - **10.582** Add bounded Most waterways sorting to the course picker, using persisted river, lake, and sea records without changing authored order for ties.

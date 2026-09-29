@@ -530,6 +530,7 @@ async function boot(): Promise<void> {
         waterways: record?.history?.waterBodies,
         destinations: record?.history?.destinations,
         positiveG: record?.history?.peakPositiveG,
+        negativeG: record?.history?.peakNegativeG,
         difficulty,
         mastery,
       }
