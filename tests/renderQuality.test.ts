@@ -19,6 +19,7 @@ describe('render quality preferences', () => {
     expect(normalizeRenderQuality('high')).toBe('high')
     expect(normalizeRenderQuality('ultra')).toBe('balanced')
     expect(normalizeRenderQuality(null, 'low')).toBe('low')
+    expect(normalizeRenderQuality(null, 'ultra' as never)).toBe('balanced')
   })
 
   it('round-trips a preference through storage', () => {

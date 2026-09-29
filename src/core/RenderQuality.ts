@@ -47,11 +47,16 @@ export const RENDER_QUALITY_PROFILES: Readonly<Record<RenderQuality, RenderQuali
   })
 
 export const RENDER_QUALITY_STORAGE_KEY = 'blackout.renderQuality'
+const RENDER_QUALITY_VALUES: readonly RenderQuality[] = ['low', 'balanced', 'high']
+
+function isRenderQuality(value: unknown): value is RenderQuality {
+  return RENDER_QUALITY_VALUES.includes(value as RenderQuality)
+}
 
 /** Normalize saved or externally supplied values without leaking invalid state. */
 export function normalizeRenderQuality(value: unknown, fallback: RenderQuality = 'balanced'): RenderQuality {
-  if (value === 'low' || value === 'balanced' || value === 'high') return value
-  return fallback
+  if (isRenderQuality(value)) return value
+  return isRenderQuality(fallback) ? fallback : 'balanced'
 }
 
 /** Pick a conservative first-run preset from the device's reported budget. */
