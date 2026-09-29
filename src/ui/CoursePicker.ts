@@ -38,7 +38,7 @@ export interface CoursePickerItem {
   mastery?: CourseMasteryTier
 }
 
-export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed'
+export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
 export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'difficulty' | 'mastery' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
@@ -53,6 +53,7 @@ const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, strin
   recent: 'Recent',
   favorites: 'Favorites',
   unplayed: 'Unplayed',
+  mastered: 'Mastered',
 }
 const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   catalog: 'Catalog order',
@@ -118,7 +119,7 @@ export function coursePickerSortLabel(sort: CoursePickerSort): string {
 /** Repair persisted catalog browsing state without allowing unknown values into the UI. */
 export function normalizeCoursePickerCategory(value: unknown): CoursePickerCategory {
   return value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' ||
-    value === 'recent' || value === 'favorites' || value === 'unplayed'
+    value === 'recent' || value === 'favorites' || value === 'unplayed' || value === 'mastered'
     ? value
     : 'all'
 }
@@ -225,6 +226,8 @@ export function filterCoursePickerItems(
         ? items.filter(item => item.favorite === true).sort(coursePickerRankCompare('favoriteRank'))
       : category === 'unplayed'
         ? items.filter(item => finiteCount(item.runs) === 0)
+      : category === 'mastered'
+        ? items.filter(item => item.mastery === 'legend')
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -263,6 +266,7 @@ export function coursePickerEmptyMessage(category: CoursePickerCategory, query: 
   if (category === 'favorites') return 'NO FAVORITES YET · SELECT A COURSE AND PRESS F'
   if (category === 'recent') return 'NO RECENT COURSES YET'
   if (category === 'unplayed') return 'NO UNPLAYED COURSES · YOU HAVE FLOWN THE CATALOG'
+  if (category === 'mastered') return 'NO MASTERED COURSES · REACH LEGEND TIER'
   return 'NO COURSES AVAILABLE'
 }
 
@@ -557,6 +561,7 @@ export class CoursePicker {
       ['recent', 'Recent'],
       ['favorites', 'Favorites'],
       ['unplayed', 'Unplayed'],
+      ['mastered', 'Mastered'],
     ] as const) {
       const option = document.createElement('option')
       option.value = value
@@ -709,6 +714,7 @@ export class CoursePicker {
       recent: this.items.filter(item => item.recent === true).length,
       favorites: this.items.filter(item => item.favorite === true).length,
       unplayed: this.items.filter(item => finiteCount(item.runs) === 0).length,
+      mastered: this.items.filter(item => item.mastery === 'legend').length,
     }
     for (const [category, option] of this.categoryOptions) {
       option.textContent = coursePickerCategoryLabel(category, counts[category])

@@ -59,6 +59,8 @@ describe('course picker copy', () => {
     expect(filterCoursePickerItems(items, '', 'recent')).toEqual([items[2]])
     expect(filterCoursePickerItems(items, '', 'favorites')).toEqual([items[0]])
     expect(filterCoursePickerItems(items, '', 'unplayed')).toEqual([items[0], items[2]])
+    const mastered = items.map((item, index) => ({ ...item, mastery: index === 0 ? 'legend' as const : 'rookie' as const }))
+    expect(filterCoursePickerItems(mastered, '', 'mastered')).toEqual([mastered[0]])
   })
 
   it('keeps Recent and Favorites filters in player-defined newest-first order', () => {
@@ -95,6 +97,7 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryLabel('all', 71)).toBe('All courses (71)')
     expect(coursePickerCategoryLabel('favorites', 2.9)).toBe('Favorites (2)')
     expect(coursePickerCategoryLabel('recent', Number.NaN)).toBe('Recent (0)')
+    expect(coursePickerCategoryLabel('mastered', 4)).toBe('Mastered (4)')
     expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('time')).toBe('Best time')
@@ -112,6 +115,7 @@ describe('course picker copy', () => {
     }
     expect(normalizeCoursePickerCategory('favorites')).toBe('favorites')
     expect(normalizeCoursePickerCategory('unplayed')).toBe('unplayed')
+    expect(normalizeCoursePickerCategory('mastered')).toBe('mastered')
     expect(normalizeCoursePickerCategory('bogus')).toBe('all')
     expect(normalizeCoursePickerFilter('  storm  ')).toBe('storm')
     expect(normalizeCoursePickerFilter(null)).toBe('')
@@ -180,6 +184,7 @@ describe('course picker copy', () => {
     expect(coursePickerEmptyMessage('favorites', '')).toContain('PRESS F')
     expect(coursePickerEmptyMessage('recent', '')).toBe('NO RECENT COURSES YET')
     expect(coursePickerEmptyMessage('unplayed', '')).toContain('NO UNPLAYED COURSES')
+    expect(coursePickerEmptyMessage('mastered', '')).toContain('NO MASTERED COURSES')
     expect(coursePickerEmptyMessage('all', '  unknown  ')).toBe('NO MATCHING COURSES')
     expect(coursePickerMetaLabel('NEW', true)).toBe('★ NEW')
     expect(coursePickerMetaLabel('', true)).toBe('★ FAVORITE')

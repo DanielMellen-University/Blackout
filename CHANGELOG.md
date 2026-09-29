@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.564** Add a bounded Mastered course-picker filter for Legend-tier routes so completed progression stays easy to revisit.
 - **10.563** Surface bounded contract-win and contract-streak records on course cards so repeat task progression is visible before launch.
 - **10.562** Surface each course's persisted mastery tier on picker cards and add a bounded mastery sort so long-term progression is visible before launch.
 - **10.561** Show compact Relaxed, Standard, or Technical difficulty tags on course cards so picker sorting has visible context.
