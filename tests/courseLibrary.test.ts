@@ -27,7 +27,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(71)
+    expect(COURSE_LIBRARY).toHaveLength(72)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -49,6 +49,10 @@ describe('course library', () => {
     expect(courseRunId(courseDefinitionForId('river-run'))).toBe('seed:7:river')
     expect(courseDefinitionForId('volcanic-run').profile).toBe('volcanic')
     expect(courseRunId(courseDefinitionForId('volcanic-run'))).toBe('seed:8:volcanic')
+    expect(courseDefinitionForId('volcanic-ops').profile).toBe('volcanic')
+    expect(courseDefinitionForId('volcanic-ops').weather).toBe('storm')
+    expect(courseDefinitionForId('volcanic-ops').contractCatalog).toBe(true)
+    expect(courseRunId(courseDefinitionForId('volcanic-ops'))).toBe('seed:83:volcanic')
     expect(courseDefinitionForId('desert-dash').profile).toBe('desert')
     expect(courseRunId(courseDefinitionForId('desert-dash'))).toBe('seed:9:desert')
     expect(courseDefinitionForId('alpine-pass').profile).toBe('alpine')
