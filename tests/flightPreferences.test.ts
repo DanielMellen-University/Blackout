@@ -163,6 +163,7 @@ describe('keyboard flight preferences', () => {
     expect(normalizeGhostVisibilityPreference('false')).toBe(false)
     expect(normalizeGhostVisibilityPreference('1')).toBe(true)
     expect(normalizeGhostVisibilityPreference('bad')).toBe(DEFAULT_GHOST_VISIBLE)
+    expect(normalizeGhostVisibilityPreference('bad', 'true' as never)).toBe(false)
     expect(readGhostVisibilityPreference(storage)).toBe(DEFAULT_GHOST_VISIBLE)
     writeGhostVisibilityPreference(storage, false)
     expect(values.get(GHOST_VISIBILITY_STORAGE_KEY)).toBe('false')
@@ -202,6 +203,7 @@ describe('keyboard flight preferences', () => {
     }
     expect(normalizeStabilityAssistPreference('1')).toBe(true)
     expect(normalizeStabilityAssistPreference('bad')).toBe(DEFAULT_STABILITY_ASSIST)
+    expect(normalizeStabilityAssistPreference('bad', 'true' as never)).toBe(false)
     expect(readStabilityAssistPreference(storage)).toBe(DEFAULT_STABILITY_ASSIST)
     writeStabilityAssistPreference(storage, true)
     expect(values.get(STABILITY_ASSIST_STORAGE_KEY)).toBe('true')

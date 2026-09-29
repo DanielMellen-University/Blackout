@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.598** Harden ghost visibility and stability-assist fallbacks so malformed runtime values cannot bypass boolean preference contracts.
+- **10.597** Harden render-quality fallback resolution so malformed graphics presets cannot leak into renderer setup.
 - **10.596** Normalize course IDs before persisting selection state so forged runtime values cannot poison the launch catalog.
 - **10.595** Feed the authoritative aircraft engine output into flight audio so rumble, playback rate, and turbine whine cannot drift from afterburner physics or plume power.
 - **10.594** Derive the public course ID type from the authored runtime catalog and regression-test catalog uniqueness so new roadmap entries cannot drift out of storage and picker validation.

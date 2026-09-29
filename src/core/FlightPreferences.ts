@@ -265,7 +265,7 @@ export function normalizeGhostVisibilityPreference(
 ): boolean {
   if (value === true || value === 'true' || value === '1') return true
   if (value === false || value === 'false' || value === '0') return false
-  return fallback
+  return fallback === true
 }
 
 export function readGhostVisibilityPreference(
@@ -557,7 +557,7 @@ export function normalizeStabilityAssistPreference(
 ): boolean {
   if (value === true || value === 'true' || value === '1') return true
   if (value === false || value === 'false' || value === '0') return false
-  return fallback
+  return fallback === true
 }
 
 export function readStabilityAssistPreference(
