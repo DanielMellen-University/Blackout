@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.559** Raise the bounded fixed-step catch-up budget so normal 10 FPS frames preserve flight timing without allowing long hitches to spiral.
 - **10.558** Add an Unplayed course filter so the expanding catalog can surface untouched routes without changing history or storage limits.
 - **10.557** Add bounded Most runs sorting to the course picker, keeping repeat practice routes easy to find while leaving unflown courses at the end.
 - **10.556** Add bounded best-time sorting to the course picker, keeping fastest completed runs easy to find without changing authored order or storage limits.

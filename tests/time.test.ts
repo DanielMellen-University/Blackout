@@ -39,9 +39,19 @@ describe('Time', () => {
     const time = new Time()
     expect(time.beginFrame(0).steps).toBe(0)
     const frame = time.beginFrame(100)
-    // 100 ms at 10 fps → 6 steps of 1/60 would be needed; catch-up is capped at 5.
+    // 100 ms at 10 fps → 6 steps of 1/60 are needed and now fit the bounded catch-up budget.
     expect(frame.stepDt).toBe(SIM_STEP)
-    expect(frame.steps).toBe(5)
+    expect(frame.steps).toBe(6)
+  })
+
+  it('drops only the excess backlog when an overloaded frame exceeds the catch-up budget', () => {
+    const time = new Time()
+    time.beginFrame(0)
+    const frame = time.beginFrame(133)
+    expect(frame.steps).toBe(7)
+    const overloaded = time.beginFrame(333)
+    expect(overloaded.steps).toBe(8)
+    expect(overloaded.alpha).toBe(1)
   })
 
   it('does not dump a long tab-hide gap into the simulator', () => {

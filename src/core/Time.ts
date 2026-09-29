@@ -1,6 +1,7 @@
 /** Fixed simulation step. Render may run faster or slower; gameplay does not. */
 export const SIM_STEP = 1 / 60
-const MAX_STEPS = 5
+/** Catch up ordinary 10 FPS frames without letting a sustained hitch spiral. */
+const MAX_STEPS = 8
 const SUSPEND_AFTER = 0.25
 export const STATIC_RENDER_INTERVAL_MS = 1000 / 30
 
