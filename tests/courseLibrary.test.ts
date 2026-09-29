@@ -14,6 +14,7 @@ import {
   monthlyOpsProfile,
   monthlyOpsSeed,
   monthlyOpsTimestampForMonthKey,
+  normalizeCourseId,
   weeklyOpsProfile,
   weeklyOpsSeed,
   weeklyOpsTimestampForWeekKey,
@@ -30,6 +31,10 @@ describe('course library', () => {
     const ids = COURSE_LIBRARY.map(course => course.id)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids).toContain('shoreline-run')
+    expect(normalizeCourseId('range-sweep')).toBe('range-sweep')
+    expect(normalizeCourseId('not-a-course')).toBe('random')
+    expect(normalizeCourseId('not-a-course', 'shoreline-run')).toBe('shoreline-run')
+    expect(normalizeCourseId('not-a-course', 'not-a-course' as never)).toBe('random')
   })
 
   it('keeps the random entry and fixed course contracts stable', () => {
@@ -345,6 +350,8 @@ describe('course library', () => {
     expect(readSelectedCourseId(storage)).toBe('random')
     writeSelectedCourseId(storage, 'range-sweep')
     expect(readSelectedCourseId(storage)).toBe('range-sweep')
+    writeSelectedCourseId(storage, 'not-a-course' as never)
+    expect(values.get(COURSE_SELECTION_STORAGE_KEY)).toBe('random')
     values.set(COURSE_SELECTION_STORAGE_KEY, 'not-a-course')
     expect(readSelectedCourseId(storage)).toBe('random')
     expect(() => writeSelectedCourseId(null, 'training-orbit')).not.toThrow()

@@ -733,6 +733,17 @@ export const COURSE_LIBRARY = [
 /** Keep the public ID type tied to the authored runtime catalog. */
 export type CourseId = typeof COURSE_LIBRARY[number]['id']
 export type CourseDefinition = CourseDefinitionShape & { id: CourseId }
+const COURSE_ID_SET = new Set<string>(COURSE_LIBRARY.map(course => course.id))
+
+/** Normalize persisted or external course IDs before they enter launch state. */
+export function normalizeCourseId(value: unknown, fallback: CourseId = 'random'): CourseId {
+  const candidate = typeof value === 'string' && COURSE_ID_SET.has(value)
+    ? value
+    : fallback
+  return typeof candidate === 'string' && COURSE_ID_SET.has(candidate)
+    ? candidate as CourseId
+    : 'random'
+}
 
 export function courseDefinitionForId(id: string | null | undefined): CourseDefinition {
   return COURSE_LIBRARY.find((course) => course.id === id) ?? COURSE_LIBRARY[0]!
@@ -972,7 +983,7 @@ export function writeSelectedCourseId(
   id: CourseId,
 ): void {
   try {
-    storage?.setItem(COURSE_SELECTION_STORAGE_KEY, id)
+    storage?.setItem(COURSE_SELECTION_STORAGE_KEY, normalizeCourseId(id))
   } catch {
     // Private browsing/storage denial should never block course selection.
   }
