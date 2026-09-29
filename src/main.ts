@@ -153,40 +153,15 @@ import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './syste
 import { isDebugEnabled } from './debug/debugFlags'
 import type { DebugOverlay } from './debug/DebugOverlay'
 import type { CoursePicker as CoursePickerInstance, CoursePickerCategory, CoursePickerSort } from './ui/CoursePicker'
-import { GameMenu } from './ui/GameMenu'
-import {
-  createMissionHudLabelCache,
-  createRouteRiskLabelCache,
-  fuelHomeCue,
-  fuelHomeTimeSeconds,
-  fuelHomeWarning,
-  hudBackgroundHidden,
-  HUD,
-  machNumber,
-  engineHeatBanner,
-  engineHeatCue,
-  engineHeatRearmBanner,
-  engineFuelAvailabilityBanner,
-  emergencyReturnActive,
-  flightBriefingHint,
-  crosswindDirection,
-  crosswindSpeedMps,
-  navigationApproachCue,
-  navigationLateralCue,
-  navigationSpeedCue,
-  navigationGlideCueFromTargetDelta,
-  weatherCycleBanner,
-  waterSurfaceCue,
-  terrainRegionLabel,
-  visibleGhostPaceDelta,
-  type CrosswindSide,
-  type FuelHomeCue,
-  type HudBannerTone,
-  type NavigationLateralCue,
-  type NavigationSpeedCue,
-  type NavigationGlideCue,
+import type {
+  HUD as HudInstance,
+  CrosswindSide,
+  FuelHomeCue,
+  HudBannerTone,
+  NavigationLateralCue,
+  NavigationSpeedCue,
+  NavigationGlideCue,
 } from './ui/HUD'
-import { copySortieSummary, flightRecordCueLabel, RunResults } from './ui/RunResults'
 import {
   RADAR_RANGE_METERS,
   RADAR_UPDATE_INTERVAL_MS,
@@ -330,6 +305,12 @@ async function boot(): Promise<void> {
   const touchRoot = document.getElementById('touch-controls')
   if (!menuEl) throw new Error('#menu not found')
   if (!titleCoursePickerRoot || !menuCoursePickerRoot) throw new Error('course picker not found')
+  const [coursePickerModule, gameMenuModule, hudModule, runResultsModule] = await Promise.all([
+    import('./ui/CoursePicker'),
+    import('./ui/GameMenu'),
+    import('./ui/HUD'),
+    import('./ui/RunResults'),
+  ])
   const {
     COURSE_PICKER_CATEGORY_STORAGE_KEY,
     COURSE_PICKER_SORT_STORAGE_KEY,
@@ -346,7 +327,35 @@ async function boot(): Promise<void> {
     normalizeCoursePickerFilter,
     writeCoursePickerCategory,
     writeCoursePickerSort,
-  } = await import('./ui/CoursePicker')
+  } = coursePickerModule
+  const { GameMenu } = gameMenuModule
+  const {
+    createMissionHudLabelCache,
+    createRouteRiskLabelCache,
+    fuelHomeCue,
+    fuelHomeTimeSeconds,
+    fuelHomeWarning,
+    hudBackgroundHidden,
+    HUD,
+    machNumber,
+    engineHeatBanner,
+    engineHeatCue,
+    engineHeatRearmBanner,
+    engineFuelAvailabilityBanner,
+    emergencyReturnActive,
+    flightBriefingHint,
+    crosswindDirection,
+    crosswindSpeedMps,
+    navigationApproachCue,
+    navigationLateralCue,
+    navigationSpeedCue,
+    navigationGlideCueFromTargetDelta,
+    weatherCycleBanner,
+    waterSurfaceCue,
+    terrainRegionLabel,
+    visibleGhostPaceDelta,
+  } = hudModule
+  const { copySortieSummary, flightRecordCueLabel, RunResults } = runResultsModule
   const menu = new GameMenu(menuEl, canvas)
   const uiListeners = new ListenerBag()
   const coursePickers = [
@@ -1205,7 +1214,7 @@ async function boot(): Promise<void> {
     dt: 1 / 60,
     cockpit: false,
   }
-  const hudFrame: Parameters<HUD['update']>[0] = {
+  const hudFrame: Parameters<HudInstance['update']>[0] = {
     y: 0,
     verticalSpeed: 0,
     gForce: 1,
