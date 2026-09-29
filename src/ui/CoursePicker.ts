@@ -77,6 +77,13 @@ export interface CoursePickerItem {
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
 export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'contracts' | 'streak' | 'contractStreak' | 'biomes' | 'waterways' | 'destinations' | 'positiveG' | 'negativeG' | 'precision' | 'difficulty' | 'mastery' | 'name'
+const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
+const COURSE_PICKER_SORT_SET = new Set<string>(COURSE_PICKER_SORT_VALUES)
+
+function isCoursePickerSort(value: unknown): value is CoursePickerSort {
+  return typeof value === 'string' && COURSE_PICKER_SORT_SET.has(value)
+}
+
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_FILTER_MAX_LENGTH = 80
@@ -198,7 +205,7 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
-  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'discoveries' || value === 'contracts' || value === 'streak' || value === 'contractStreak' || value === 'biomes' || value === 'waterways' || value === 'destinations' || value === 'positiveG' || value === 'negativeG' || value === 'precision' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
+  return isCoursePickerSort(value) ? value : 'catalog'
 }
 
 /** Keep the live title/pause search bounded without persisting a stale query. */
@@ -253,7 +260,7 @@ export function sortCoursePickerItems(
   items: readonly CoursePickerItem[],
   sort: CoursePickerSort = 'catalog',
 ): CoursePickerItem[] {
-  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'discoveries' || sort === 'contracts' || sort === 'streak' || sort === 'contractStreak' || sort === 'biomes' || sort === 'waterways' || sort === 'destinations' || sort === 'positiveG' || sort === 'negativeG' || sort === 'precision' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
+  const safeSort = isCoursePickerSort(sort) ? sort : 'catalog'
   if (safeSort === 'catalog') return items.slice()
   return items.slice().sort((a, b) => {
     if (safeSort === 'score') {
@@ -719,7 +726,7 @@ export class CoursePicker {
     this.sortSelect = document.createElement('select')
     this.sortSelect.className = 'course-picker-sort'
     this.sortSelect.setAttribute('aria-label', 'Sort courses')
-    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const) {
+    for (const value of COURSE_PICKER_SORT_VALUES) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = coursePickerSortLabel(value)
