@@ -5,6 +5,7 @@ import {
   WeatherDirector,
   blendWind,
   blendWeatherProfile,
+  normalizeWeatherId,
   timeOfDayForSeed,
   weatherIdForSeed,
 } from '../src/world/WeatherDirector'
@@ -46,6 +47,19 @@ describe('weather director', () => {
     expect(weatherIdForSeed(1)).toBe('snow')
     expect(weatherIdForSeed(1337)).toBe('cloudy')
     expect(weatherIdForSeed(1)).toBe(weatherIdForSeed(1))
+  })
+
+  it('repairs malformed weather IDs before profile lookup', () => {
+    expect(normalizeWeatherId('storm')).toBe('storm')
+    expect(normalizeWeatherId('unknown')).toBe('clear')
+    expect(normalizeWeatherId({}, 'rain')).toBe('rain')
+
+    const director = new WeatherDirector()
+    director.randomize(7, 'invalid' as never)
+    expect(director.targetId).toBe('clear')
+    director.setWeather('invalid' as never, true)
+    expect(director.targetId).toBe('clear')
+    expect(director.snapshot().rain).toBe(0)
   })
 
   it('fills a caller-owned runtime snapshot without changing public snapshots', () => {

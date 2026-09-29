@@ -13,6 +13,13 @@ export const WEATHER_ORDER = [
 
 export type WeatherId = typeof WEATHER_ORDER[number]
 export type WindSide = 'left' | 'right'
+const WEATHER_ID_SET = new Set<string>(WEATHER_ORDER)
+
+/** Keep replay/course weather input inside the authored profile catalog. */
+export function normalizeWeatherId(value: unknown, fallback: WeatherId = 'clear'): WeatherId {
+  if (typeof value === 'string' && WEATHER_ID_SET.has(value)) return value as WeatherId
+  return WEATHER_ID_SET.has(fallback) ? fallback : 'clear'
+}
 
 export const WEATHER_LABELS: Record<WeatherId, string> = {
   clear: 'CLEAR',
@@ -221,7 +228,7 @@ export class WeatherDirector {
     this.rngState = (Math.floor(seed) ^ 0x9e3779b9) >>> 0
     const roll = this.random()
     let id: WeatherId
-    if (forcedId) id = forcedId
+    if (forcedId) id = normalizeWeatherId(forcedId)
     else if (roll < 0.3) id = 'clear'
     else if (roll < 0.52) id = 'cloudy'
     else if (roll < 0.68) id = 'overcast'
@@ -243,6 +250,7 @@ export class WeatherDirector {
   }
 
   setWeather(id: WeatherId, instant = false): void {
+    id = normalizeWeatherId(id)
     if (id === this.targetId && !this.transitioning) return
     if (instant) {
       this.currentId = id
