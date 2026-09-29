@@ -125,6 +125,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('streak')).toBe('Best run streak')
     expect(coursePickerSortLabel('contractStreak')).toBe('Best contract streak')
     expect(coursePickerSortLabel('biomes')).toBe('Most biomes')
+    expect(coursePickerSortLabel('waterways')).toBe('Most waterways')
     expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('mastery')).toBe('Mastery')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
@@ -159,6 +160,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('streak')).toBe('streak')
     expect(normalizeCoursePickerSort('contractStreak')).toBe('contractStreak')
     expect(normalizeCoursePickerSort('biomes')).toBe('biomes')
+    expect(normalizeCoursePickerSort('waterways')).toBe('waterways')
     expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort('mastery')).toBe('mastery')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
@@ -260,6 +262,12 @@ describe('course picker copy', () => {
       { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', biomes: Number.NaN },
     ]
     expect(sortCoursePickerItems(biomes, 'biomes').map(item => item.id)).toEqual(['varied', 'narrow', 'unknown'])
+    const waterways = [
+      { id: 'one', label: 'One', detail: '', meta: '', stats: '', waterways: 1 },
+      { id: 'all', label: 'All', detail: '', meta: '', stats: '', waterways: 3 },
+      { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', waterways: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(waterways, 'waterways').map(item => item.id)).toEqual(['all', 'one', 'unknown'])
     const mastery = [
       { id: 'rookie', label: 'Rookie', detail: '', meta: '', stats: '', mastery: 'rookie' as const },
       { id: 'legend', label: 'Legend', detail: '', meta: '', stats: '', mastery: 'legend' as const },
