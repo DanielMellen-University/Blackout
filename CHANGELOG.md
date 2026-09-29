@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.588** Derive the course-picker sort type from its runtime whitelist so new sort options cannot drift between compile-time and persisted-value validation.
 - **10.587** Consolidate course-picker sort validation into one typed whitelist so normalization, rendering, and sorting cannot drift.
 - **10.586** Add bounded Best precision streak sorting to the course picker, using cached precision records without changing authored order for ties.
 - **10.585** Add bounded Hardest negative G sorting to the course picker, using persisted negative-load records without changing authored order for ties.

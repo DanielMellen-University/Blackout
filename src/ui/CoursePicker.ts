@@ -76,8 +76,8 @@ export interface CoursePickerItem {
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
-export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'contracts' | 'streak' | 'contractStreak' | 'biomes' | 'waterways' | 'destinations' | 'positiveG' | 'negativeG' | 'precision' | 'difficulty' | 'mastery' | 'name'
 const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
+export type CoursePickerSort = typeof COURSE_PICKER_SORT_VALUES[number]
 const COURSE_PICKER_SORT_SET = new Set<string>(COURSE_PICKER_SORT_VALUES)
 
 function isCoursePickerSort(value: unknown): value is CoursePickerSort {
