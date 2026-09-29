@@ -154,6 +154,35 @@ const SCORING_FOCUS_LABELS: Record<MissionScoringFocus, string> = {
   landing: 'LANDING',
 }
 
+const MISSION_ROUTE_PROFILE_SET = new Set<string>(Object.keys(ROUTE_PROFILE_LABELS))
+const MISSION_ROUTE_MODIFIER_SET = new Set<string>(Object.keys(ROUTE_MODIFIER_LABELS))
+
+/** Resolve persisted or external route values before they reach route math. */
+export function normalizeMissionRouteProfile(
+  value: unknown,
+  fallback: MissionRouteProfile = 'orbit',
+): MissionRouteProfile {
+  const candidate = typeof value === 'string' && MISSION_ROUTE_PROFILE_SET.has(value)
+    ? value
+    : fallback
+  return typeof candidate === 'string' && MISSION_ROUTE_PROFILE_SET.has(candidate)
+    ? candidate as MissionRouteProfile
+    : 'orbit'
+}
+
+/** Resolve persisted or external modifier values before they reach route math. */
+export function normalizeMissionRouteModifier(
+  value: unknown,
+  fallback: MissionRouteModifier = 'steady',
+): MissionRouteModifier {
+  const candidate = typeof value === 'string' && MISSION_ROUTE_MODIFIER_SET.has(value)
+    ? value
+    : fallback
+  return typeof candidate === 'string' && MISSION_ROUTE_MODIFIER_SET.has(candidate)
+    ? candidate as MissionRouteModifier
+    : 'steady'
+}
+
 export function routeProfileForSpawn(
   spawnX: number,
   spawnZ: number,
@@ -203,7 +232,7 @@ export function routeProfileForBiome(
 }
 
 export function routeProfileLabel(profile: MissionRouteProfile): string {
-  return ROUTE_PROFILE_LABELS[profile] ?? ROUTE_PROFILE_LABELS.orbit
+  return ROUTE_PROFILE_LABELS[normalizeMissionRouteProfile(profile)] ?? ROUTE_PROFILE_LABELS.orbit
 }
 
 export function missionChallengeForProfile(profile: MissionRouteProfile): MissionChallenge {
@@ -256,7 +285,7 @@ export function routeModifierForSpawn(
 }
 
 export function routeModifierLabel(modifier: MissionRouteModifier): string {
-  return ROUTE_MODIFIER_LABELS[modifier] ?? ROUTE_MODIFIER_LABELS.steady
+  return ROUTE_MODIFIER_LABELS[normalizeMissionRouteModifier(modifier)] ?? ROUTE_MODIFIER_LABELS.steady
 }
 
 export function scoringFocusForModifier(modifier: MissionRouteModifier): MissionScoringFocus {
@@ -285,20 +314,22 @@ export function buildMissionRoute(
   const safeSpawnY = finiteOr(spawnY, 0)
   const safeSpawnZ = finiteOr(spawnZ, 0)
   const safeSpawnYaw = finiteOr(spawnYaw, 0)
+  const safeProfile = normalizeMissionRouteProfile(profile)
+  const safeModifier = normalizeMissionRouteModifier(modifier)
   const seedPhase = Math.sin(safeSpawnX * 0.00031 + safeSpawnZ * 0.00017)
   const forwardX = Math.sin(safeSpawnYaw)
   const forwardZ = Math.cos(safeSpawnYaw)
   const rightX = Math.cos(safeSpawnYaw)
   const rightZ = -Math.sin(safeSpawnYaw)
-  if (profile === 'free') return []
-  const offsets = routeOffsets(profile, seedPhase, modifier)
+  if (safeProfile === 'free') return []
+  const offsets = routeOffsets(safeProfile, seedPhase, safeModifier)
   let points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
-      y: safeSpawnY + offset.height + i * (profile === 'slalom' || profile === 'canyon' || profile === 'night' || profile === 'badlands' ? 12 : profile === 'ridge' || profile === 'alpine' || profile === 'thermal' ? 30 : profile === 'volcanic' ? 44 : profile === 'desert' || profile === 'coast' || profile === 'fjord' || profile === 'river' || profile === 'savanna' || profile === 'tundra' || profile === 'swamp' || profile === 'monsoon' ? 16 : profile === 'approach' ? 10 : 22),
+      y: safeSpawnY + offset.height + i * (safeProfile === 'slalom' || safeProfile === 'canyon' || safeProfile === 'night' || safeProfile === 'badlands' ? 12 : safeProfile === 'ridge' || safeProfile === 'alpine' || safeProfile === 'thermal' ? 30 : safeProfile === 'volcanic' ? 44 : safeProfile === 'desert' || safeProfile === 'coast' || safeProfile === 'fjord' || safeProfile === 'river' || safeProfile === 'savanna' || safeProfile === 'tundra' || safeProfile === 'swamp' || safeProfile === 'monsoon' ? 16 : safeProfile === 'approach' ? 10 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
-  if (profile === 'thermal') {
+  if (safeProfile === 'thermal') {
     const anchor = points[2]!
     const pocket = nearestThermalPocket(getWorldSeed(), anchor.x, anchor.z)
     if (pocket) {
@@ -676,6 +707,8 @@ export function summarizeMissionRoute(
   const safeSpawnX = finiteOr(spawnX, 0)
   const safeSpawnY = finiteOr(spawnY, 0)
   const safeSpawnZ = finiteOr(spawnZ, 0)
+  const safeProfile = normalizeMissionRouteProfile(profile)
+  const safeModifier = normalizeMissionRouteModifier(modifier)
   let previousX = safeSpawnX
   let previousY = safeSpawnY
   let previousZ = safeSpawnZ
@@ -730,14 +763,14 @@ export function summarizeMissionRoute(
         ? 'standard'
         : 'relaxed'
   return {
-    profile,
-    label: routeProfileLabel(profile),
-    challenge: missionChallengeForProfile(profile),
-    challengeLabel: missionChallengeLabel(missionChallengeForProfile(profile)),
-    modifier,
-    modifierLabel: routeModifierLabel(modifier),
-    scoringFocus: scoringFocusForModifier(modifier),
-    scoringFocusLabel: scoringFocusLabel(scoringFocusForModifier(modifier)),
+    profile: safeProfile,
+    label: routeProfileLabel(safeProfile),
+    challenge: missionChallengeForProfile(safeProfile),
+    challengeLabel: missionChallengeLabel(missionChallengeForProfile(safeProfile)),
+    modifier: safeModifier,
+    modifierLabel: routeModifierLabel(safeModifier),
+    scoringFocus: scoringFocusForModifier(safeModifier),
+    scoringFocusLabel: scoringFocusLabel(scoringFocusForModifier(safeModifier)),
     difficulty,
     lengthMeters: finiteOr(lengthMeters, 0),
     maxTurnDegrees: finiteOr(maxTurnDegrees, 0),
@@ -923,12 +956,16 @@ export class MissionSystem {
     const safeSpawnX = finiteOr(spawnX, 0)
     const safeSpawnY = finiteOr(spawnY, 0)
     const safeSpawnZ = finiteOr(spawnZ, 0)
-    this.profile = requestedProfile ?? routeProfileForBiome(spawnBiome, safeSpawnX, safeSpawnZ, spawnYaw)
+    this.profile = requestedProfile === undefined
+      ? routeProfileForBiome(spawnBiome, safeSpawnX, safeSpawnZ, spawnYaw)
+      : normalizeMissionRouteProfile(requestedProfile)
     this.status = 'idle'
     this.next = 0
     this.havePrev = false
     this.lastPassQuality = 1
-    this.modifier = requestedModifier ?? routeModifierForSpawn(safeSpawnX, safeSpawnZ, spawnYaw, this.profile)
+    this.modifier = requestedModifier === undefined
+      ? routeModifierForSpawn(safeSpawnX, safeSpawnZ, spawnYaw, this.profile)
+      : normalizeMissionRouteModifier(requestedModifier)
     this.scoringFocusValue = scoringFocusForModifier(this.modifier)
 
     const route = buildMissionRoute(

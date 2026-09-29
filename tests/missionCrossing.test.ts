@@ -9,6 +9,8 @@ import {
   routeProfileForBiome,
   routeProfileForSpawn,
   routeProfileLabel,
+  normalizeMissionRouteProfile,
+  normalizeMissionRouteModifier,
   missionChallengeForProfile,
   routeModifierForSpawn,
   routeModifierLabel,
@@ -24,6 +26,29 @@ import { setWorldSeed } from '../src/world/noise'
 import { thermalLiftIntensity } from '../src/systems/ThermalLift'
 
 describe('MissionSystem gate crossing', () => {
+  it('fails closed on malformed route profile and modifier values', () => {
+    expect(normalizeMissionRouteProfile('ridge')).toBe('ridge')
+    expect(normalizeMissionRouteProfile('not-a-route')).toBe('orbit')
+    expect(normalizeMissionRouteProfile('not-a-route', 'free')).toBe('free')
+    expect(normalizeMissionRouteProfile('not-a-route', 'not-a-route' as never)).toBe('orbit')
+    expect(normalizeMissionRouteModifier('tempo')).toBe('tempo')
+    expect(normalizeMissionRouteModifier('not-a-modifier')).toBe('steady')
+    expect(normalizeMissionRouteModifier('not-a-modifier', 'altitude')).toBe('altitude')
+  })
+
+  it('keeps malformed mission requests inside the authored route catalog', () => {
+    const mission = new MissionSystem(new Scene())
+    mission.start(0, 20, 0, 0, 'not-a-route' as never, 'not-a-modifier' as never)
+
+    expect(mission.routeProfile).toBe('orbit')
+    expect(mission.routeModifier).toBe('steady')
+    expect(mission.routeSummary.profile).toBe('orbit')
+    expect(mission.routeSummary.modifier).toBe('steady')
+    expect(mission.totalGates).toBe(5)
+    expect(mission.activeGatePos()).not.toBeNull()
+    mission.dispose()
+  })
+
   it('maps finite gate quality into readable event labels', () => {
     expect(gateQualityLabel(1)).toBe('PERFECT')
     expect(gateQualityLabel(0.6)).toBe('CLEAN')
