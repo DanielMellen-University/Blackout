@@ -74,8 +74,15 @@ export interface CoursePickerItem {
   mastery?: CourseMasteryTier
 }
 
-export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
+const COURSE_PICKER_CATEGORY_VALUES = ['all', 'ops', 'routes', 'contracts', 'explore', 'recent', 'favorites', 'unplayed', 'mastered'] as const
+export type CoursePickerCategory = typeof COURSE_PICKER_CATEGORY_VALUES[number]
+const COURSE_PICKER_CATEGORY_SET = new Set<string>(COURSE_PICKER_CATEGORY_VALUES)
+
+function isCoursePickerCategory(value: unknown): value is CoursePickerCategory {
+  return typeof value === 'string' && COURSE_PICKER_CATEGORY_SET.has(value)
+}
+
 const COURSE_PICKER_SORT_VALUES = ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'positiveG', 'negativeG', 'precision', 'difficulty', 'mastery', 'name'] as const
 export type CoursePickerSort = typeof COURSE_PICKER_SORT_VALUES[number]
 const COURSE_PICKER_SORT_SET = new Set<string>(COURSE_PICKER_SORT_VALUES)
@@ -198,10 +205,7 @@ export function coursePickerSortLabel(sort: CoursePickerSort): string {
 
 /** Repair persisted catalog browsing state without allowing unknown values into the UI. */
 export function normalizeCoursePickerCategory(value: unknown): CoursePickerCategory {
-  return value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' ||
-    value === 'recent' || value === 'favorites' || value === 'unplayed' || value === 'mastered'
-    ? value
-    : 'all'
+  return isCoursePickerCategory(value) ? value : 'all'
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
@@ -706,20 +710,10 @@ export class CoursePicker {
     this.categorySelect = document.createElement('select')
     this.categorySelect.className = 'course-picker-category'
     this.categorySelect.setAttribute('aria-label', 'Filter course category')
-    for (const [value, label] of [
-      ['all', 'All courses'],
-      ['ops', 'Ops'],
-      ['routes', 'Routes'],
-      ['contracts', 'Contracts'],
-      ['explore', 'Explore'],
-      ['recent', 'Recent'],
-      ['favorites', 'Favorites'],
-      ['unplayed', 'Unplayed'],
-      ['mastered', 'Mastered'],
-    ] as const) {
+    for (const value of COURSE_PICKER_CATEGORY_VALUES) {
       const option = document.createElement('option')
       option.value = value
-      option.textContent = label
+      option.textContent = COURSE_PICKER_CATEGORY_LABELS[value]
       this.categoryOptions.set(value, option)
       this.categorySelect.append(option)
     }
