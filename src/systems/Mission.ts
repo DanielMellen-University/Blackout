@@ -104,6 +104,22 @@ export interface MissionRouteSummary {
   maxAltitudeMeters: number
 }
 
+export type MissionRouteValidationIssue =
+  | 'ok'
+  | 'empty'
+  | 'too-many-points'
+  | 'non-finite-point'
+  | 'invalid-forward'
+  | 'duplicate-point'
+  | 'insufficient-clearance'
+
+export interface MissionRouteValidation {
+  valid: boolean
+  issue: MissionRouteValidationIssue
+  pointCount: number
+  minClearanceMeters: number
+}
+
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   orbit: 'ORBIT',
   sweep: 'SWEEP',
@@ -181,6 +197,46 @@ export function normalizeMissionRouteModifier(
   return typeof candidate === 'string' && MISSION_ROUTE_MODIFIER_SET.has(candidate)
     ? candidate as MissionRouteModifier
     : 'steady'
+}
+
+/**
+ * Validate the bounded route contract before gate-pool placement. Terrain
+ * clearance is supplied by summarizeMissionRoute, which already samples the
+ * generated corridor; this helper keeps malformed future route data from
+ * indexing past the pooled gates or producing degenerate crossing planes.
+ */
+export function validateMissionRoute(
+  route: readonly MissionRoutePoint[],
+  minClearanceMeters = ROUTE_CLEARANCE,
+): MissionRouteValidation {
+  const pointCount = Array.isArray(route) ? route.length : 0
+  const safeClearance = Number.isFinite(minClearanceMeters) ? minClearanceMeters : 0
+  if (pointCount === 0) {
+    return { valid: true, issue: 'empty', pointCount, minClearanceMeters: safeClearance }
+  }
+  if (pointCount > GATE_COUNT) {
+    return { valid: false, issue: 'too-many-points', pointCount, minClearanceMeters: safeClearance }
+  }
+  let previousX = Number.NaN
+  let previousZ = Number.NaN
+  for (const point of route) {
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) || !Number.isFinite(point.z) ||
+      !Number.isFinite(point.fwdX) || !Number.isFinite(point.fwdZ)) {
+      return { valid: false, issue: 'non-finite-point', pointCount, minClearanceMeters: safeClearance }
+    }
+    if (Math.hypot(point.fwdX, point.fwdZ) < 1e-3) {
+      return { valid: false, issue: 'invalid-forward', pointCount, minClearanceMeters: safeClearance }
+    }
+    if (Number.isFinite(previousX) && Math.hypot(point.x - previousX, point.z - previousZ) < 1) {
+      return { valid: false, issue: 'duplicate-point', pointCount, minClearanceMeters: safeClearance }
+    }
+    previousX = point.x
+    previousZ = point.z
+  }
+  if (safeClearance < ROUTE_CLEARANCE - 0.5) {
+    return { valid: false, issue: 'insufficient-clearance', pointCount, minClearanceMeters: safeClearance }
+  }
+  return { valid: true, issue: 'ok', pointCount, minClearanceMeters: safeClearance }
 }
 
 export function routeProfileForSpawn(
@@ -984,6 +1040,15 @@ export class MissionSystem {
       this.profile,
       this.modifier,
     )
+    const validation = validateMissionRoute(route, summary.minClearanceMeters)
+    if (!validation.valid) {
+      this.status = 'idle'
+      this.liveLabel = 'ROUTE UNAVAILABLE'
+      this.routeBriefingText = `ROUTE UNAVAILABLE / ${validation.issue.replaceAll('-', ' ').toUpperCase()}`
+      this.paint()
+      this.placeBeacon()
+      return
+    }
     this.summary.profile = summary.profile
     this.summary.label = summary.label
     this.summary.challenge = summary.challenge
@@ -1301,6 +1366,8 @@ export class MissionSystem {
     this.passFlash.visible = false
     this.passFlashStartedAt = 0
     this.presentationTimeMs = 0
+    this.routeTrace.visible = false
+    this.routeTraceGeometry.setDrawRange(0, 0)
   }
 
   /** Keep mission presentation monotonic and independent from wall-clock reads. */

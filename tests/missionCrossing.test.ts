@@ -17,9 +17,11 @@ import {
   scoringFocusForModifier,
   scoringFocusLabel,
   summarizeMissionRoute,
+  validateMissionRoute,
   MissionSystem,
   gateQualityLabel,
   type MissionRouteProfile,
+  type MissionRoutePoint,
 } from '../src/systems/Mission'
 import { clearOpsPad, findPlayableSpawn, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
 import { setWorldSeed } from '../src/world/noise'
@@ -283,6 +285,30 @@ describe('MissionSystem gate crossing', () => {
     expect(summary.minClearanceMeters).toBeGreaterThanOrEqual(119.9)
     expect(summary.maxSlopeDegrees).toBeGreaterThanOrEqual(0)
     expect(['relaxed', 'standard', 'technical']).toContain(summary.difficulty)
+  })
+
+  it('validates the bounded route contract before pooled gate placement', () => {
+    const route = buildMissionRoute(0, 20, 0, 0, 'orbit')
+    const summary = summarizeMissionRoute(0, 20, 0, route, 'orbit')
+    expect(validateMissionRoute(route, summary.minClearanceMeters)).toMatchObject({
+      valid: true,
+      issue: 'ok',
+      pointCount: 5,
+    })
+    expect(validateMissionRoute([], 0)).toMatchObject({ valid: true, issue: 'empty' })
+    expect(validateMissionRoute([
+      { x: Number.NaN, y: 20, z: 1, fwdX: 0, fwdZ: 1 },
+    ] as unknown as readonly MissionRoutePoint[])).toMatchObject({
+      valid: false,
+      issue: 'non-finite-point',
+    })
+    expect(validateMissionRoute([
+      { x: 0, y: 20, z: 1, fwdX: 0, fwdZ: 0 },
+    ])).toMatchObject({ valid: false, issue: 'invalid-forward' })
+    expect(validateMissionRoute(route, 100)).toMatchObject({
+      valid: false,
+      issue: 'insufficient-clearance',
+    })
   })
 
   it('keeps every generated route leg above terrain between gates', () => {
