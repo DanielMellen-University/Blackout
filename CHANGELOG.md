@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.599** Defer the renderer and flight runtime behind a tiny boot entry so the title screen can paint before Three.js and terrain code download.
 - **10.598** Harden ghost visibility and stability-assist fallbacks so malformed runtime values cannot bypass boolean preference contracts.
 - **10.597** Harden render-quality fallback resolution so malformed graphics presets cannot leak into renderer setup.
 - **10.596** Normalize course IDs before persisting selection state so forged runtime values cannot poison the launch catalog.
