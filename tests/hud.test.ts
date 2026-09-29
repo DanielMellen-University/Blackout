@@ -581,9 +581,12 @@ describe('HUD value formatting', () => {
     expect(weatherDisplayLabel('', true)).toBe('')
     expect(weatherBuffetLabel(0.19)).toBe('')
     expect(weatherBuffetLabel(0.21)).toBe('BUFFET')
+    expect(weatherBuffetLabel(0.15, true)).toBe('BUFFET')
+    expect(weatherBuffetLabel(0.12, true)).toBe('')
     expect(weatherBuffetLabel(Number.NaN)).toBe('')
     expect(weatherDisplayLabel('STORM', false, 0.55)).toBe('STORM · BUFFET')
-    expect(weatherDisplayLabel('RAIN FRONT', true, 0.8)).toBe('RAIN FRONT · SHIFT · BUFFET')
+    expect(weatherDisplayLabel('RAIN FRONT', true, 0.8)).toBe('RAIN FRONT · BUFFET')
+    expect(weatherDisplayLabel('RAIN FRONT', true, 0.1)).toBe('RAIN FRONT · SHIFT')
     expect(weatherDisplayLabel('CLEAR', false, 0.1)).toBe('CLEAR')
   })
 

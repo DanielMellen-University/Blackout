@@ -15,6 +15,7 @@ import {
 import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
 import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT, MAX_WATER_BODY_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
+import { stormBuffetHudActive } from '../systems/StormBuffet'
 import {
   blackoutVignetteIntensity,
   redoutWashIntensity,
@@ -686,9 +687,8 @@ export function weatherTransitionLabel(transitioning: boolean): string {
 }
 
 /** Compact buffet cue when gated storm drive clears the HUD enter floor. */
-export function weatherBuffetLabel(drive: number): string {
-  if (!Number.isFinite(drive) || drive <= 0.2) return ''
-  return 'BUFFET'
+export function weatherBuffetLabel(drive: number, wasActive = false): string {
+  return stormBuffetHudActive(drive, wasActive) ? 'BUFFET' : ''
 }
 
 /** Keep the visible weather label synchronized with the active front target. */
@@ -696,12 +696,14 @@ export function weatherDisplayLabel(
   value: unknown,
   transitioning: boolean,
   buffetDrive = 0,
+  buffetWasActive = false,
 ): string {
   const label = typeof value === 'string' ? value.trim() : ''
   if (!label) return ''
   const parts = [label]
-  if (transitioning === true) parts.push(weatherTransitionLabel(true))
-  const buffet = weatherBuffetLabel(buffetDrive)
+  const buffet = weatherBuffetLabel(buffetDrive, buffetWasActive)
+  // Prefer BUFFET over SHIFT when both would crowd the compact weather row.
+  if (transitioning === true && !buffet) parts.push(weatherTransitionLabel(true))
   if (buffet) parts.push(buffet)
   return parts.join(' · ')
 }
@@ -1756,7 +1758,7 @@ export class HUD {
     if (this.weatherEl && opts.weather) {
       const transitioning = opts.weatherTransitioning === true
       const buffetDrive = Number.isFinite(opts.stormBuffetDrive) ? opts.stormBuffetDrive! : 0
-      const buffetActive = buffetDrive > 0.2
+      const buffetActive = stormBuffetHudActive(buffetDrive, this.weatherBuffetActive)
       const cue = weatherCue(opts.weatherKind ?? opts.weather)
       if (
         cue !== this.weatherCueValue ||
@@ -1767,13 +1769,18 @@ export class HUD {
       ) {
         this.weatherCueValue = cue
         this.weatherTransitionValue = transitioning
-        this.weatherBuffetActive = buffetActive
         this.weatherLabelValue = opts.weather
-        this.weatherText = weatherDisplayLabel(opts.weather, transitioning, buffetDrive)
+        this.weatherText = weatherDisplayLabel(
+          opts.weather,
+          transitioning,
+          buffetDrive,
+          this.weatherBuffetActive,
+        )
+        this.weatherBuffetActive = buffetActive
         this.weatherAriaText = cue === 'severe'
           ? `Severe weather: ${opts.weather}`
           : cue === 'active' ? `Active weather: ${opts.weather}` : `Weather: ${opts.weather}`
-        if (transitioning) this.weatherAriaText += ', front shifting'
+        if (transitioning && !buffetActive) this.weatherAriaText += ', front shifting'
         if (buffetActive) this.weatherAriaText += ', storm buffet'
       }
       this.setText(this.weatherEl, this.weatherText)
