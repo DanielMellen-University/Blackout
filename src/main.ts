@@ -511,6 +511,7 @@ async function boot(): Promise<void> {
         fuel: record?.history?.fuelRemainingPercent,
         landing: record?.history?.landingQuality,
         altitude: record?.history?.peakAltitudeM,
+        combo: record?.history?.combo,
         difficulty,
         mastery,
       }
