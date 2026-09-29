@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.586** Add bounded Best precision streak sorting to the course picker, using cached precision records without changing authored order for ties.
 - **10.585** Add bounded Hardest negative G sorting to the course picker, using persisted negative-load records without changing authored order for ties.
 - **10.584** Add bounded Highest G sorting to the course picker, using persisted peak-load records without changing authored order for ties.
 - **10.583** Add bounded Most destinations sorting to the course picker, using persisted landmark-discovery records without changing authored order for ties.

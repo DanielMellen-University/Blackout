@@ -531,6 +531,7 @@ async function boot(): Promise<void> {
         destinations: record?.history?.destinations,
         positiveG: record?.history?.peakPositiveG,
         negativeG: record?.history?.peakNegativeG,
+        precision: record?.bestPrecisionStreak,
         difficulty,
         mastery,
       }
