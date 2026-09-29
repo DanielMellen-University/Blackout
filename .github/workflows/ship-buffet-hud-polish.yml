@@ -1,19 +1,29 @@
 name: ship-buffet-hud-polish
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/ship-frags/buffet_hud_polish_ops.json'
 permissions:
   contents: write
 jobs:
   ship:
     runs-on: ubuntu-latest
+    # Skip the commits that this job itself pushes (ops already consumed).
+    if: github.actor != 'github-actions[bot]'
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
       - name: Apply buffet HUD polish
         shell: bash
         run: |
           set -euo pipefail
+          if [ ! -f .github/ship-frags/buffet_hud_polish_ops.json ]; then
+            echo 'ops already consumed; nothing to do'
+            exit 0
+          fi
           git config user.name "DanielMellen-University"
           git config user.email "113362200+DanielMellen-University@users.noreply.github.com"
           python3 .github/ship-frags/apply_buffet_hud_polish.py ops_608
