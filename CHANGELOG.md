@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.556** Add bounded best-time sorting to the course picker, keeping fastest completed runs easy to find without changing authored order or storage limits.
 - **10.555** Add Tundra Ops, a frozen-lake snow route with a dedicated cold-weather contract and replay identity.
 - **10.554** Add Frostline Ops, a snowbound glacier climb that combines weather, contract, replay, and scoring systems.
 - **10.553** Add Rift Ops, a fog-bound canyon strike that combines authored route clearance with the bounded contract, replay, and scoring systems.

@@ -85,6 +85,7 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryLabel('recent', Number.NaN)).toBe('Recent (0)')
     expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
     expect(coursePickerSortLabel('score')).toBe('Best score')
+    expect(coursePickerSortLabel('time')).toBe('Best time')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
   })
 
@@ -100,6 +101,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerFilter(null)).toBe('')
     expect(normalizeCoursePickerFilter('x'.repeat(100))).toHaveLength(80)
     expect(normalizeCoursePickerSort('score')).toBe('score')
+    expect(normalizeCoursePickerSort('time')).toBe('time')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
 
     writeCoursePickerCategory(storage, 'recent')
@@ -121,6 +123,12 @@ describe('course picker copy', () => {
     expect(sortCoursePickerItems(items, 'catalog').map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
     expect(sortCoursePickerItems(items, 'score').map(item => item.id)).toEqual(['alpha', 'zulu', 'none'])
     expect(sortCoursePickerItems(items, 'name').map(item => item.id)).toEqual(['alpha', 'none', 'zulu'])
+    const timed = [
+      { id: 'slow', label: 'Slow', detail: '', meta: '', stats: '', time: 92 },
+      { id: 'fast', label: 'Fast', detail: '', meta: '', stats: '', time: 61 },
+      { id: 'unflown', label: 'Unflown', detail: '', meta: '', stats: '', time: 0 },
+    ]
+    expect(sortCoursePickerItems(timed, 'time').map(item => item.id)).toEqual(['fast', 'slow', 'unflown'])
     expect(items.map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
   })
 
