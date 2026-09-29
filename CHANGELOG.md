@@ -4,6 +4,10 @@
 
 ### Ship
 
+- **10.609** Keep the live HUD BUFFET cue on the ungated weather drive so gear damp restrains camera and airframe motion without stealing the weather read on approach.
+- **10.608** Prefer BUFFET over SHIFT in the compact weather row when both would show, keeping the live handling cue readable.
+- **10.607** Hold the HUD BUFFET cue through a hysteretic exit floor so gear damp and weather noise cannot flash the compact weather label.
+- **10.606** Quiet storm buffet camera drive when the aircraft is crashed, matching the airframe path that already settles on impact.
 - **10.605** Bound explicit seeded Infinite World score and ghost families to the newest twelve worlds, pruning linked local records without touching authored or ordinary-random history.
 - **10.604** Isolate explicitly seeded Infinite World score and ghost records by seed while preserving the bounded shared bucket for ordinary random flights.
 - **10.603** Include bounded bonus-contract status, instruction, and progress in copied sortie recaps so shared results retain the optional objective.

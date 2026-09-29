@@ -1825,6 +1825,7 @@ export async function boot(): Promise<void> {
     let visualDt = 0
     let simDt = 0
     let stormDrive = 0
+    let stormHudDrive = 0
     if (!simLive) {
       time.skipFrame(nowMs)
       aircraft.controls = input.sampleWithDt(0)
@@ -1841,11 +1842,14 @@ export async function boot(): Promise<void> {
       aircraft.setWeatherGust(weather.gust)
       aircraft.setWeatherWind(weather.windX, weather.windZ)
       aircraft.setWeatherSurface(weather.rain, weather.snow)
-      stormDrive = stormBuffetDrive(weather.rain, weather.snow, weather.gust, {
+      // Weather drive feeds the HUD cue; gear scale only damps camera / airframe.
+      stormHudDrive = stormBuffetDrive(weather.rain, weather.snow, weather.gust, {
         reducedMotion,
         paused: menu.paused,
         playing,
-      }) * stormBuffetGearScale(aircraft.controls.gearDown)
+        crashed: aircraft.status === 'crashed',
+      })
+      stormDrive = stormHudDrive * stormBuffetGearScale(aircraft.controls.gearDown)
       aircraft.setStormBuffet(stormDrive)
       cameras.setStormBuffet(stormDrive)
 
@@ -2810,7 +2814,7 @@ export async function boot(): Promise<void> {
       hudFrame.windX = precipitation.windX
       hudFrame.windZ = precipitation.windZ
       hudFrame.weatherGust = precipitation.gust
-      hudFrame.stormBuffetDrive = stormDrive
+      hudFrame.stormBuffetDrive = stormHudDrive
       hudFrame.dayPhase = world.atmosphere.phaseLabel
       const contractLabel = challenge.contractLabel
       hudFrame.mission = missionLabelCache(
