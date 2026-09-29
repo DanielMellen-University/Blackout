@@ -2,7 +2,7 @@ import { Group, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateTerrainGeometry, type TerrainGeometryData } from '../src/world/TerrainGeometry'
 import { tileKey } from '../src/world/TerrainLayout'
-import { TerrainSystem } from '../src/world/TerrainSystem'
+import { CHUNK_SIZE, TerrainSystem } from '../src/world/TerrainSystem'
 import type { TerrainBuildRequest, TerrainBuildReply } from '../src/world/TerrainWorkerPool'
 import { setWorldSeed } from '../src/world/noise'
 import { clearOpsPad } from '../src/world/terrainSample'
@@ -30,6 +30,7 @@ interface Internals {
   pending: (Tile & { rebuild: boolean })[]
   pendingKeys: Set<string>
   replacementKeys: Map<string, string[]>
+  sampledChunkLookup: Map<string, unknown>
   groundMatFar: MeshStandardMaterial
   dispatchWorkers(): void
   drainBuildQueue(): void
@@ -175,6 +176,20 @@ describe('terrain streaming integration', () => {
     expect(terrain.streamingStats.loaded).toBe(0)
     expect(terrain.streamingStats.ready).toBe(0)
     expect(terrain.root.children).toHaveLength(0)
+  })
+
+  it('caches coarse tile ownership across contact probes and clears it on replacement', () => {
+    const coarse = generateTerrainGeometry(0, 0, 2, 2)
+    desire(0, 12, 2)
+    internal.install(job(0, 2, 2), coarse)
+    expect(terrain.sampleMeshHeight(CHUNK_SIZE * 1.2, CHUNK_SIZE * 1.2)).not.toBeNull()
+    expect(internal.sampledChunkLookup.size).toBe(1)
+    expect(terrain.sampleMeshHeight(CHUNK_SIZE * 1.25, CHUNK_SIZE * 1.25)).not.toBeNull()
+    expect(internal.sampledChunkLookup.size).toBe(1)
+    internal.desiredTiles.delete(key(0, 2))
+    desire(0, 4, 2)
+    internal.install(job(0, 1, 2), coarse)
+    expect(internal.sampledChunkLookup.size).toBe(0)
   })
 
   it('retries failed worker jobs through synchronous fallback', () => {

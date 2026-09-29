@@ -68,6 +68,8 @@ const FADE_SECONDS = .65
 /** Main-thread mesh attachment stays bounded, even when workers complete together. */
 const DEFAULT_UPLOAD_BUDGET_MS = 2
 const DEFAULT_MAX_UPLOADS_PER_FRAME = 16
+/** Keep coarse-tile ownership lookups cheap without retaining an unbounded map. */
+const SAMPLE_LOOKUP_LIMIT = 512
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
 /** Re-evaluate existing tile LOD before a full stream-cell crossing. */
 const LOD_RECHECK_DISTANCE_M = CHUNK_SIZE * 0.5
@@ -232,6 +234,8 @@ export class TerrainSystem {
   private sampledChunk: Chunk | null = null
   private sampledChunkCx = Number.NaN
   private sampledChunkCz = Number.NaN
+  /** Cell -> smallest resident tile covering that cell, or null while unloaded. */
+  private readonly sampledChunkLookup = new Map<string, Chunk | null>()
   private focusX = 0
   private focusZ = 0
   private viewRadius = VIEW_RADIUS
@@ -652,9 +656,16 @@ export class TerrainSystem {
     const cx = Math.floor(x / CHUNK_SIZE)
     const cz = Math.floor(z / CHUNK_SIZE)
     if (cx === this.sampledChunkCx && cz === this.sampledChunkCz) return this.sampledChunk
+    const key = `${cx},${cz}`
+    if (this.sampledChunkLookup.has(key)) {
+      this.sampledChunkCx = cx
+      this.sampledChunkCz = cz
+      this.sampledChunk = this.sampledChunkLookup.get(key) ?? null
+      return this.sampledChunk
+    }
     this.sampledChunkCx = cx
     this.sampledChunkCz = cz
-    this.sampledChunk = this.chunks.get(`${cx},${cz}`) ?? null
+    this.sampledChunk = this.chunks.get(key) ?? null
     if (!this.sampledChunk) {
       // Horizon tiles cover several cells. Keep the common near-cell lookup
       // O(1), then fall back to the bounded resident tile set when a coarse
@@ -671,6 +682,11 @@ export class TerrainSystem {
       }
       this.sampledChunk = best
     }
+    if (this.sampledChunkLookup.size >= SAMPLE_LOOKUP_LIMIT) {
+      const oldest = this.sampledChunkLookup.keys().next().value
+      if (typeof oldest === 'string') this.sampledChunkLookup.delete(oldest)
+    }
+    this.sampledChunkLookup.set(key, this.sampledChunk)
     return this.sampledChunk
   }
 
@@ -678,6 +694,7 @@ export class TerrainSystem {
     this.sampledChunk = null
     this.sampledChunkCx = Number.NaN
     this.sampledChunkCz = Number.NaN
+    this.sampledChunkLookup.clear()
   }
 
   private scheduleAround(cx: number, cz: number): void {
