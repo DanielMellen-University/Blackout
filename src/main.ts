@@ -68,6 +68,7 @@ import {
   shouldPauseForFocusLost,
   shouldRenderFrame,
   shouldUpdateLiveHud,
+  staticRenderDue,
   Time,
 } from './core/Time'
 import { bannerRemainingMs, bannerUntilFromRemaining, MAX_BANNER_DURATION_MS } from './core/BannerClock'
@@ -1742,6 +1743,8 @@ async function boot(): Promise<void> {
 
   let previousFrame = 0
   let lastHudUpdateMs = Number.NaN
+  let lastRenderMs = Number.NaN
+  let lastRenderedSimulationLive = false
   const tick = (nowMs: number): void => {
     if (disposed) return
     requestAnimationFrame(tick)
@@ -2432,7 +2435,12 @@ async function boot(): Promise<void> {
 
     // A hidden tab cannot present a frame. Keep simulation and streaming alive,
     // but avoid submitting camera/debug/render work until the tab is visible.
-    if (shouldRenderFrame(document.hidden, contextLost)) {
+    if (shouldRenderFrame(document.hidden, contextLost) && staticRenderDue(
+      nowMs,
+      lastRenderMs,
+      simLive,
+      lastRenderedSimulationLive,
+    )) {
       if (renderer.shadowMap.enabled) {
         shadowUpdateElapsed += Math.max(0, visualDt)
         if (shadowUpdateDue(shadowUpdateElapsed, 0, SHADOW_UPDATE_STEP)) {
@@ -2451,6 +2459,8 @@ async function boot(): Promise<void> {
           streaming: world.terrain.streamingStats,
         })
       }
+      lastRenderMs = nowMs
+      lastRenderedSimulationLive = simLive
     }
 
     if (shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {

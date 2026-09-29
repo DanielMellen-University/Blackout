@@ -6,6 +6,8 @@ import {
   shouldRenderFrame,
   shouldUpdateLiveHud,
   SIM_STEP,
+  STATIC_RENDER_INTERVAL_MS,
+  staticRenderDue,
   Time,
 } from '../src/core/Time'
 import {
@@ -15,6 +17,15 @@ import {
 } from '../src/core/BannerClock'
 
 describe('Time', () => {
+  it('throttles static scene rendering but renders immediately on transitions', () => {
+    expect(staticRenderDue(100, Number.NaN, false, false)).toBe(true)
+    expect(staticRenderDue(100 + STATIC_RENDER_INTERVAL_MS - 1, 100, false, false)).toBe(false)
+    expect(staticRenderDue(100 + STATIC_RENDER_INTERVAL_MS, 100, false, false)).toBe(true)
+    expect(staticRenderDue(101, 100, true, false)).toBe(true)
+    expect(staticRenderDue(101, 100, false, true)).toBe(true)
+    expect(staticRenderDue(101, 100, true, true)).toBe(true)
+  })
+
   it('freezes and resumes banner deadlines with bounded remaining time', () => {
     expect(bannerRemainingMs(1_000, 2_500)).toBe(1_500)
     expect(bannerRemainingMs(3_000, 2_500)).toBe(0)

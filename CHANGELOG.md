@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.551** Throttle static title, pause, and results rendering to 30 Hz while keeping live flight and state transitions immediate.
 - **10.550** Cache streamed terrain cell ownership for repeated contact probes with bounded invalidation on LOD replacement.
 - **10.549** Keep the title and pause course-picker search synchronized during a session with a bounded, non-persistent query.
 - **10.548** Persist and synchronize the course-picker category and sort without expanding flight or storage budgets.

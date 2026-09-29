@@ -2,6 +2,7 @@
 export const SIM_STEP = 1 / 60
 const MAX_STEPS = 5
 const SUSPEND_AFTER = 0.25
+export const STATIC_RENDER_INTERVAL_MS = 1000 / 30
 
 export interface FrameTiming {
   /** Wall time since the previous rendered frame, seconds. */
@@ -38,6 +39,19 @@ export function shouldUpdateLiveHud(playing: boolean, simulationLive: boolean): 
 /** Do not submit WebGL work while the document is hidden or the context is lost. */
 export function shouldRenderFrame(documentHidden: boolean, contextLost: boolean): boolean {
   return !documentHidden && !contextLost
+}
+
+/** Keep static title/pause/results scenes responsive without rendering at 60 Hz. */
+export function staticRenderDue(
+  nowMs: number,
+  lastRenderMs: number,
+  simulationLive: boolean,
+  lastSimulationLive: boolean,
+): boolean {
+  if (simulationLive !== lastSimulationLive) return true
+  if (simulationLive) return true
+  if (!Number.isFinite(nowMs) || !Number.isFinite(lastRenderMs)) return true
+  return nowMs - lastRenderMs >= STATIC_RENDER_INTERVAL_MS
 }
 
 /** Pause active flight when the window loses focus without auto-resuming. */
