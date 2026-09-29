@@ -27,7 +27,7 @@ import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(73)
+    expect(COURSE_LIBRARY).toHaveLength(74)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
@@ -78,6 +78,10 @@ describe('course library', () => {
     expect(courseDefinitionForId('glacier-run').profile).toBe('glacier')
     expect(courseDefinitionForId('glacier-run').weather).toBe('snow')
     expect(courseRunId(courseDefinitionForId('glacier-run'))).toBe('seed:16:glacier')
+    expect(courseDefinitionForId('frostline-ops').profile).toBe('glacier')
+    expect(courseDefinitionForId('frostline-ops').weather).toBe('snow')
+    expect(courseDefinitionForId('frostline-ops').contractCatalog).toBe(true)
+    expect(courseRunId(courseDefinitionForId('frostline-ops'))).toBe('seed:902:glacier')
     expect(courseDefinitionForId('rainforest-run').profile).toBe('rainforest')
     expect(courseDefinitionForId('rainforest-run').weather).toBe('rain')
     expect(courseDefinitionForId('mesa-run').profile).toBe('mesa')

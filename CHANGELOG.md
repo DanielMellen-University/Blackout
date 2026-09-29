@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.554** Add Frostline Ops, a snowbound glacier climb that combines weather, contract, replay, and scoring systems.
 - **10.553** Add Rift Ops, a fog-bound canyon strike that combines authored route clearance with the bounded contract, replay, and scoring systems.
 - **10.552** Add Volcanic Ops, a storm-locked volcanic climb with the existing bounded contract system.
 - **10.551** Throttle static title, pause, and results rendering to 30 Hz while keeping live flight and state transitions immediate.
