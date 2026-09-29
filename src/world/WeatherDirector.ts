@@ -1,18 +1,6 @@
 import { MathUtils } from 'three'
 
-export type WeatherId =
-  | 'clear'
-  | 'cloudy'
-  | 'overcast'
-  | 'fog'
-  | 'rain'
-  | 'storm'
-  | 'snow'
-  | 'blizzard'
-
-export type WindSide = 'left' | 'right'
-
-export const WEATHER_ORDER: readonly WeatherId[] = [
+export const WEATHER_ORDER = [
   'clear',
   'cloudy',
   'overcast',
@@ -22,6 +10,9 @@ export const WEATHER_ORDER: readonly WeatherId[] = [
   'snow',
   'blizzard',
 ] as const
+
+export type WeatherId = typeof WEATHER_ORDER[number]
+export type WindSide = 'left' | 'right'
 
 export const WEATHER_LABELS: Record<WeatherId, string> = {
   clear: 'CLEAR',

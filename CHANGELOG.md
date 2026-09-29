@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.590** Derive the weather identifier type from the cycle catalog so front order and keyed weather tables cannot drift as new conditions are added.
 - **10.589** Derive the course-picker category type from its runtime catalog so filter normalization, labels, and rendering cannot drift.
 - **10.588** Derive the course-picker sort type from its runtime whitelist so new sort options cannot drift between compile-time and persisted-value validation.
 - **10.587** Consolidate course-picker sort validation into one typed whitelist so normalization, rendering, and sorting cannot drift.
