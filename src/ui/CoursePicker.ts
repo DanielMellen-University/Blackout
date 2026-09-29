@@ -31,7 +31,7 @@ export interface CoursePickerItem {
   runs?: number
 }
 
-export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
+export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed'
 export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
@@ -44,6 +44,7 @@ const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, strin
   explore: 'Explore',
   recent: 'Recent',
   favorites: 'Favorites',
+  unplayed: 'Unplayed',
 }
 const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   catalog: 'Catalog order',
@@ -79,7 +80,7 @@ export function coursePickerSortLabel(sort: CoursePickerSort): string {
 /** Repair persisted catalog browsing state without allowing unknown values into the UI. */
 export function normalizeCoursePickerCategory(value: unknown): CoursePickerCategory {
   return value === 'ops' || value === 'routes' || value === 'contracts' || value === 'explore' ||
-    value === 'recent' || value === 'favorites'
+    value === 'recent' || value === 'favorites' || value === 'unplayed'
     ? value
     : 'all'
 }
@@ -176,6 +177,8 @@ export function filterCoursePickerItems(
       ? items.filter(item => item.recent === true).sort(coursePickerRankCompare('recentRank'))
       : category === 'favorites'
         ? items.filter(item => item.favorite === true).sort(coursePickerRankCompare('favoriteRank'))
+      : category === 'unplayed'
+        ? items.filter(item => finiteCount(item.runs) === 0)
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -213,6 +216,7 @@ export function coursePickerEmptyMessage(category: CoursePickerCategory, query: 
   if (query.trim()) return 'NO MATCHING COURSES'
   if (category === 'favorites') return 'NO FAVORITES YET · SELECT A COURSE AND PRESS F'
   if (category === 'recent') return 'NO RECENT COURSES YET'
+  if (category === 'unplayed') return 'NO UNPLAYED COURSES · YOU HAVE FLOWN THE CATALOG'
   return 'NO COURSES AVAILABLE'
 }
 
@@ -500,6 +504,7 @@ export class CoursePicker {
       ['explore', 'Explore'],
       ['recent', 'Recent'],
       ['favorites', 'Favorites'],
+      ['unplayed', 'Unplayed'],
     ] as const) {
       const option = document.createElement('option')
       option.value = value
@@ -651,6 +656,7 @@ export class CoursePicker {
       explore: this.items.filter(item => item.category === 'explore').length,
       recent: this.items.filter(item => item.recent === true).length,
       favorites: this.items.filter(item => item.favorite === true).length,
+      unplayed: this.items.filter(item => finiteCount(item.runs) === 0).length,
     }
     for (const [category, option] of this.categoryOptions) {
       option.textContent = coursePickerCategoryLabel(category, counts[category])
