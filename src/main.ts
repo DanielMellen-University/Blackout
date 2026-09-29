@@ -507,6 +507,7 @@ async function boot(): Promise<void> {
         time: record?.history?.bestTimeSec,
         runs: record?.history?.completionCount,
         distance: record?.history?.flightDistanceM,
+        speed: record?.history?.peakSpeedKts,
         difficulty,
         mastery,
       }

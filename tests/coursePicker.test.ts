@@ -113,6 +113,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('time')).toBe('Best time')
     expect(coursePickerSortLabel('runs')).toBe('Most runs')
     expect(coursePickerSortLabel('distance')).toBe('Longest flight')
+    expect(coursePickerSortLabel('speed')).toBe('Top speed')
     expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('mastery')).toBe('Mastery')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
@@ -135,6 +136,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('time')).toBe('time')
     expect(normalizeCoursePickerSort('runs')).toBe('runs')
     expect(normalizeCoursePickerSort('distance')).toBe('distance')
+    expect(normalizeCoursePickerSort('speed')).toBe('speed')
     expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort('mastery')).toBe('mastery')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
@@ -189,6 +191,12 @@ describe('course picker copy', () => {
       { id: 'new', label: 'New', detail: '', meta: '', stats: '', distance: 0 },
     ]
     expect(sortCoursePickerItems(distance, 'distance').map(item => item.id)).toEqual(['long', 'short', 'new'])
+    const speed = [
+      { id: 'slow', label: 'Slow', detail: '', meta: '', stats: '', speed: 420 },
+      { id: 'fast', label: 'Fast', detail: '', meta: '', stats: '', speed: 1_200 },
+      { id: 'new', label: 'New', detail: '', meta: '', stats: '', speed: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(speed, 'speed').map(item => item.id)).toEqual(['fast', 'slow', 'new'])
     expect(items.map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
   })
 
