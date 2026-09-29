@@ -18,6 +18,8 @@ export const STORM_AIRFRAME_RAD = 0.012
 export const STORM_GEAR_DOWN_SCALE = 0.62
 /** Live HUD weather cue engages above this gated drive. */
 export const STORM_BUFFET_HUD_ENTER = 0.2
+/** Hold the HUD buffet cue until drive eases below this hysteretic floor. */
+export const STORM_BUFFET_HUD_EXIT = 0.12
 
 export interface StormBuffetOffset {
   x: number
@@ -78,6 +80,17 @@ export function stormBuffetDrive(
 /** Restrain buffet while landing gear is down (approach / taxi). */
 export function stormBuffetGearScale(gearDown: boolean): number {
   return gearDown === true ? STORM_GEAR_DOWN_SCALE : 1
+}
+
+/**
+ * Hold the live HUD BUFFET cue through jitter near the enter floor.
+ * Enter is strict; exit uses a lower hysteretic floor so gear damp and
+ * weather noise cannot flash the compact weather row.
+ */
+export function stormBuffetHudActive(drive: number, wasActive: boolean): boolean {
+  if (!Number.isFinite(drive)) return false
+  if (wasActive === true) return drive > STORM_BUFFET_HUD_EXIT
+  return drive > STORM_BUFFET_HUD_ENTER
 }
 
 /** View and quality multiplier applied on top of the weather drive. */

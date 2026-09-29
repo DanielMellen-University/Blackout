@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   STORM_AIRFRAME_RAD,
+  STORM_BUFFET_HUD_ENTER,
+  STORM_BUFFET_HUD_EXIT,
   STORM_CAMERA_TRAVEL_M,
   STORM_COCKPIT_SCALE,
   STORM_EXTERNAL_SCALE,
@@ -12,6 +14,7 @@ import {
   stormBuffetAllowed,
   stormBuffetDrive,
   stormBuffetGearScale,
+  stormBuffetHudActive,
   stormBuffetIntensity,
   stormBuffetOffset,
   stormBuffetOffsetInto,
@@ -89,5 +92,17 @@ describe('storm buffet gating', () => {
     expect(Math.abs(air.x)).toBeLessThanOrEqual(STORM_AIRFRAME_RAD + 1e-9)
     expect(Math.abs(air.y)).toBeLessThanOrEqual(STORM_AIRFRAME_RAD * 0.62 + 1e-9)
     expect(Math.abs(air.z)).toBeLessThanOrEqual(STORM_AIRFRAME_RAD * 0.9 + 1e-9)
+  })
+})
+
+describe('storm buffet HUD hysteresis', () => {
+  it('enters strictly and holds through the exit floor', () => {
+    expect(STORM_BUFFET_HUD_EXIT).toBeLessThan(STORM_BUFFET_HUD_ENTER)
+    expect(stormBuffetHudActive(STORM_BUFFET_HUD_ENTER, false)).toBe(false)
+    expect(stormBuffetHudActive(STORM_BUFFET_HUD_ENTER + 0.01, false)).toBe(true)
+    expect(stormBuffetHudActive(STORM_BUFFET_HUD_EXIT + 0.01, true)).toBe(true)
+    expect(stormBuffetHudActive(STORM_BUFFET_HUD_EXIT, true)).toBe(false)
+    expect(stormBuffetHudActive(STORM_BUFFET_HUD_EXIT + 0.01, false)).toBe(false)
+    expect(stormBuffetHudActive(Number.NaN, true)).toBe(false)
   })
 })
