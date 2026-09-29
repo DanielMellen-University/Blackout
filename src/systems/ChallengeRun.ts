@@ -1725,6 +1725,7 @@ export class ChallengeRun {
   crashDebrief(ditched = false, failureReason?: string): ChallengeResult {
     this.fail()
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
+    const contractComplete = this.contract.enabled ? this.contract.complete : undefined
     this.result = {
       elapsedSec,
       gatesCleared: this.gatesPassed,
@@ -1748,8 +1749,8 @@ export class ChallengeRun {
       contractKind: this.contract.kind ?? undefined,
       contractLabel: this.contract.enabled ? this.contract.label : undefined,
       contractDetail: this.contract.enabled ? this.contract.detail : undefined,
-      contractComplete: this.contract.enabled ? this.contract.complete : undefined,
-      contractFailed: this.contract.enabled ? this.contract.failed : undefined,
+      contractComplete,
+      contractFailed: this.contract.enabled ? !contractComplete : undefined,
       contractProgress: this.contract.enabled ? this.contract.progress : undefined,
     }
     return this.result

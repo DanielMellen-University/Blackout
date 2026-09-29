@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.602** Mark unfinished bonus contracts as failed in crash debriefs, keeping interrupted objectives from appearing open after a crash.
 - **10.601** Preserve the active bonus contract in crash debriefs, including its bounded progress and instruction, so failed sorties still explain the optional objective.
 - **10.600** Validate generated mission routes before pooled gate placement, failing cleanly on malformed points, degenerate legs, over-capacity routes, or lost terrain clearance.
 - **10.599** Defer the renderer and flight runtime behind a tiny boot entry so the title screen can paint before Three.js and terrain code download.

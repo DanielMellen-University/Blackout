@@ -212,6 +212,7 @@ describe('ChallengeRun', () => {
     expect(contractCrash.contractLabel).toBe('SPEED RUN')
     expect(contractCrash.contractDetail).toContain('LAND UNDER')
     expect(contractCrash.contractComplete).toBe(false)
+    expect(contractCrash.contractFailed).toBe(true)
     expect(contractCrash.contractProgress).toBeGreaterThan(0)
     expect(contractCrash.contractProgress).toBeLessThan(1)
     expect(contractCrash.contractScore).toBeUndefined()

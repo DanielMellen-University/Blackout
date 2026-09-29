@@ -602,6 +602,11 @@ describe('run results focus flow', () => {
       failureReason: 'SINK RATE',
       totalScore: 0,
       medal: 'gold',
+      contractLabel: 'SPEED RUN',
+      contractDetail: 'LAND UNDER 68S',
+      contractComplete: false,
+      contractFailed: true,
+      contractProgress: 0.4,
     })
     expect(elementsFor(fixture.document, 'result-course')?.textContent).toBe('coastal')
     expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('CRASH')
@@ -610,6 +615,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-landing')?.textContent).toBe('SINK RATE')
     expect(elementsFor(fixture.document, 'result-landing-detail')?.textContent).toBe('FLIGHT FAILURE')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('SINK RATE')
+    expect(elementsFor(fixture.document, 'result-score-detail')?.textContent)
+      .toContain('CONTRACT FAILED · SPEED RUN')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('20,000')
     results.dispose()
