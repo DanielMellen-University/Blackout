@@ -85,6 +85,15 @@ export function coursePickerDifficultyForCourse(
   return 'standard'
 }
 
+/** Keep the authored difficulty readable in compact card metadata. */
+export function coursePickerDifficultyLabel(value: CoursePickerDifficulty): string {
+  switch (value) {
+    case 'relaxed': return 'RELAXED'
+    case 'technical': return 'TECHNICAL'
+    default: return 'STANDARD'
+  }
+}
+
 /** Keep filter counts compact and finite as the authored catalog grows. */
 export function coursePickerCategoryLabel(category: CoursePickerCategory, count: number): string {
   const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0

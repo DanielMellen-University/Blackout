@@ -7,6 +7,7 @@ import {
   coursePickerCopy,
   coursePickerCategoryForCourse,
   coursePickerDifficultyForCourse,
+  coursePickerDifficultyLabel,
   coursePickerCategoryLabel,
   coursePickerEmptyMessage,
   coursePickerMetaLabel,
@@ -82,6 +83,9 @@ describe('course picker copy', () => {
     expect(coursePickerDifficultyForCourse({ profile: 'orbit' })).toBe('relaxed')
     expect(coursePickerDifficultyForCourse({ profile: 'sweep' })).toBe('standard')
     expect(coursePickerDifficultyForCourse({ profile: 'canyon' })).toBe('technical')
+    expect(coursePickerDifficultyLabel('relaxed')).toBe('RELAXED')
+    expect(coursePickerDifficultyLabel('standard')).toBe('STANDARD')
+    expect(coursePickerDifficultyLabel('technical')).toBe('TECHNICAL')
   })
 
   it('labels catalog filters with finite counts', () => {
