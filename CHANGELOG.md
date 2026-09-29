@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.571** Add bounded Fuel reserve sorting to the course picker, using persisted fuel records without changing authored order for ties.
 - **10.570** Add bounded Top speed sorting to the course picker, using persisted peak-speed records without changing authored order for ties.
 - **10.569** Add bounded Longest flight sorting to the course picker, using persisted distance records without changing authored order for ties.
 - **10.568** Add a bounded distance, top-speed, altitude, and fuel flight-log line to course cards for quick repeat-run comparison.

@@ -114,6 +114,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('runs')).toBe('Most runs')
     expect(coursePickerSortLabel('distance')).toBe('Longest flight')
     expect(coursePickerSortLabel('speed')).toBe('Top speed')
+    expect(coursePickerSortLabel('fuel')).toBe('Fuel reserve')
     expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('mastery')).toBe('Mastery')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
@@ -137,6 +138,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('runs')).toBe('runs')
     expect(normalizeCoursePickerSort('distance')).toBe('distance')
     expect(normalizeCoursePickerSort('speed')).toBe('speed')
+    expect(normalizeCoursePickerSort('fuel')).toBe('fuel')
     expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort('mastery')).toBe('mastery')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
@@ -172,6 +174,12 @@ describe('course picker copy', () => {
       { id: 'standard', label: 'Standard', detail: '', meta: '', stats: '', difficulty: 'standard' as const },
     ]
     expect(sortCoursePickerItems(difficulty, 'difficulty').map(item => item.id)).toEqual(['relaxed', 'standard', 'technical'])
+    const fuel = [
+      { id: 'low', label: 'Low', detail: '', meta: '', stats: '', fuel: 18 },
+      { id: 'high', label: 'High', detail: '', meta: '', stats: '', fuel: 84 },
+      { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', fuel: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(fuel, 'fuel').map(item => item.id)).toEqual(['high', 'low', 'unknown'])
     const mastery = [
       { id: 'rookie', label: 'Rookie', detail: '', meta: '', stats: '', mastery: 'rookie' as const },
       { id: 'legend', label: 'Legend', detail: '', meta: '', stats: '', mastery: 'legend' as const },
