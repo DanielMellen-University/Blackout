@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.583** Add bounded Most destinations sorting to the course picker, using persisted landmark-discovery records without changing authored order for ties.
 - **10.582** Add bounded Most waterways sorting to the course picker, using persisted river, lake, and sea records without changing authored order for ties.
 - **10.581** Add bounded Most biomes sorting to the course picker, using persisted biome-discovery records without changing authored order for ties.
 - **10.580** Add bounded Best contract streak sorting to the course picker, using persisted contract-streak records without changing authored order for ties.

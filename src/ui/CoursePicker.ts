@@ -60,6 +60,8 @@ export interface CoursePickerItem {
   biomes?: number
   /** Persisted distinct waterway count used only by the optional waterway sort. */
   waterways?: number
+  /** Persisted distinct radar-destination count used only by the optional destination sort. */
+  destinations?: number
   /** Stable authored route difficulty used only by the optional difficulty sort. */
   difficulty?: CoursePickerDifficulty
   /** Persisted per-course mastery tier used only by the optional mastery sort. */
@@ -68,7 +70,7 @@ export interface CoursePickerItem {
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
-export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'contracts' | 'streak' | 'contractStreak' | 'biomes' | 'waterways' | 'difficulty' | 'mastery' | 'name'
+export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'contracts' | 'streak' | 'contractStreak' | 'biomes' | 'waterways' | 'destinations' | 'difficulty' | 'mastery' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_FILTER_MAX_LENGTH = 80
@@ -102,6 +104,7 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   contractStreak: 'Best contract streak',
   biomes: 'Most biomes',
   waterways: 'Most waterways',
+  destinations: 'Most destinations',
   difficulty: 'Difficulty',
   mastery: 'Mastery',
   name: 'A–Z',
@@ -186,7 +189,7 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
-  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'discoveries' || value === 'contracts' || value === 'streak' || value === 'contractStreak' || value === 'biomes' || value === 'waterways' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
+  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'discoveries' || value === 'contracts' || value === 'streak' || value === 'contractStreak' || value === 'biomes' || value === 'waterways' || value === 'destinations' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
 }
 
 /** Keep the live title/pause search bounded without persisting a stale query. */
@@ -241,7 +244,7 @@ export function sortCoursePickerItems(
   items: readonly CoursePickerItem[],
   sort: CoursePickerSort = 'catalog',
 ): CoursePickerItem[] {
-  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'discoveries' || sort === 'contracts' || sort === 'streak' || sort === 'contractStreak' || sort === 'biomes' || sort === 'waterways' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
+  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'discoveries' || sort === 'contracts' || sort === 'streak' || sort === 'contractStreak' || sort === 'biomes' || sort === 'waterways' || sort === 'destinations' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
   if (safeSort === 'catalog') return items.slice()
   return items.slice().sort((a, b) => {
     if (safeSort === 'score') {
@@ -312,6 +315,10 @@ export function sortCoursePickerItems(
       const aWaterways = finiteWaterways(a.waterways)
       const bWaterways = finiteWaterways(b.waterways)
       if (aWaterways !== bWaterways) return bWaterways - aWaterways
+    } else if (safeSort === 'destinations') {
+      const aDestinations = finiteDestinations(a.destinations)
+      const bDestinations = finiteDestinations(b.destinations)
+      if (aDestinations !== bDestinations) return bDestinations - aDestinations
     } else if (safeSort === 'difficulty') {
       const aDifficulty = difficultyRank(a.difficulty)
       const bDifficulty = difficultyRank(b.difficulty)
@@ -691,7 +698,7 @@ export class CoursePicker {
     this.sortSelect = document.createElement('select')
     this.sortSelect.className = 'course-picker-sort'
     this.sortSelect.setAttribute('aria-label', 'Sort courses')
-    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'difficulty', 'mastery', 'name'] as const) {
+    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'contracts', 'streak', 'contractStreak', 'biomes', 'waterways', 'destinations', 'difficulty', 'mastery', 'name'] as const) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = coursePickerSortLabel(value)
@@ -1032,6 +1039,10 @@ function finiteBiomes(value: number | undefined): number {
 
 function finiteWaterways(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(3, Math.floor(value!))) : 0
+}
+
+function finiteDestinations(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(6, Math.floor(value!))) : 0
 }
 
 function difficultyRank(value: CoursePickerDifficulty | undefined): number {
