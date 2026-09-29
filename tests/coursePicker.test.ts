@@ -377,6 +377,7 @@ describe('course picker copy', () => {
         bestTimeSec: 98.4,
         contractWins: 2,
         contractStreakRecord: 4,
+        sortieStyle: 'precision',
       },
       bestScore: 88_000,
       badgeCount: 3,
@@ -384,12 +385,13 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · MEDAL GOLD · BADGES X3 · GATE STREAK X4 · CONTRACT WINS X2 · CONTRACT STREAK X4')
+    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · MEDAL GOLD · BADGES X3 · GATE STREAK X4 · CONTRACT WINS X2 · CONTRACT STREAK X4 · STYLE PRECISION')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TASK')).toBe(false)
     expect(copy.stats).toContain('MEDAL GOLD')
     expect(copy.stats).toContain('BADGES X3')
     expect(copy.stats).toContain('GATE STREAK X4')
+    expect(copy.stats).toContain('STYLE PRECISION')
   })
 
   it('shows a finite bounded best score even when the medal tier is incomplete', () => {

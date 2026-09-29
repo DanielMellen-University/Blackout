@@ -359,6 +359,8 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
     ? Math.max(0, Math.floor(input.history?.contractStreakRecord ?? 0))
     : finiteCount(input.history?.contractStreak)
   if (contractStreakRecord > 1) statsParts.push(`CONTRACT STREAK X${Math.min(1_000, contractStreakRecord)}`)
+  const sortieStyle = normalizeSortieStyle(input.history?.sortieStyle)
+  if (sortieStyle) statsParts.push(`STYLE ${sortieStyleLabel(sortieStyle)}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
 }
