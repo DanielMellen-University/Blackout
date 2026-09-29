@@ -329,6 +329,21 @@ export class RunResults {
     const summaryMedal = !crashed && result.medal && result.medal !== 'complete'
       ? `MEDAL ${result.medal.toUpperCase()}`
       : ''
+    const contractLabel = typeof result.contractLabel === 'string'
+      ? result.contractLabel.trim().replace(/^CONTRACT\s+/i, '').slice(0, 72)
+      : ''
+    const contractState = result.contractFailed
+      ? 'FAILED'
+      : result.contractComplete
+        ? 'COMPLETE'
+        : 'OPEN'
+    const contractSummary = contractLabel ? `CONTRACT ${contractState} ${contractLabel}` : ''
+    const contractDetail = typeof result.contractDetail === 'string'
+      ? result.contractDetail.trim().slice(0, 96)
+      : ''
+    const contractProgress = !result.contractComplete && Number.isFinite(result.contractProgress)
+      ? `CONTRACT PROGRESS ${Math.round(Math.max(0, Math.min(1, result.contractProgress!)) * 100)}%`
+      : ''
     this.sortieSummaryText = [
       'BLACKOUT',
       summaryCourse,
@@ -340,6 +355,9 @@ export class RunResults {
       `LAND ${landingName}`,
       `FUEL ${fuelRemaining}%`,
       summaryMedal,
+      contractSummary,
+      contractDetail,
+      contractProgress,
     ].filter(Boolean).join(' · ').slice(0, 500)
     const scoreParts = [
       `GATE +${result.gateScore.toLocaleString()}`,

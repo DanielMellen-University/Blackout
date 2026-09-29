@@ -341,12 +341,24 @@ describe('run results focus flow', () => {
     vi.stubGlobal('document', fixture.document)
     const results = new RunResults(fixture.document as unknown as Document)
 
-    results.show({ ...result, courseId: 'seed:10:storm', gatesCleared: 3, gatesTotal: 5, fuelRemainingPercent: 72 }, undefined, false, [], 'Storm run', 'WEATHER LOW FOG / TIME NIGHT')
+    results.show({
+      ...result,
+      courseId: 'seed:10:storm',
+      gatesCleared: 3,
+      gatesTotal: 5,
+      fuelRemainingPercent: 72,
+      contractLabel: 'CONTRACT SPEED RUN',
+      contractDetail: 'LAND UNDER 68S',
+      contractComplete: false,
+      contractProgress: 0.4,
+    }, undefined, false, [], 'Storm run', 'WEATHER LOW FOG / TIME NIGHT')
     expect(results.summaryText).toContain('Storm run')
     expect(results.summaryText).toContain('SCORE 100,000')
     expect(results.summaryText).toContain('MEDAL GOLD')
     expect(results.summaryText).toContain('3/5 GATES')
     expect(results.summaryText).toContain('LAND HARD')
+    expect(results.summaryText).toContain('CONTRACT OPEN SPEED RUN')
+    expect(results.summaryText).toContain('CONTRACT PROGRESS 40%')
     expect(results.summaryText).not.toContain('seed:10:storm')
     expect(results.summaryText.length).toBeLessThanOrEqual(500)
 
