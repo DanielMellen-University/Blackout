@@ -161,6 +161,7 @@ import {
   coursePickerCopy,
   readCoursePickerCategory,
   readCoursePickerSort,
+  normalizeCoursePickerFilter,
   writeCoursePickerCategory,
   writeCoursePickerSort,
   type CoursePickerCategory,
@@ -358,6 +359,7 @@ async function boot(): Promise<void> {
   }
   const initialCoursePickerCategory = readCoursePickerCategory(qualityStorage)
   const initialCoursePickerSort = readCoursePickerSort(qualityStorage)
+  let coursePickerFilter = ''
   const syncCoursePickerBrowseState = (
     source: CoursePicker,
     category: CoursePickerCategory,
@@ -369,9 +371,17 @@ async function boot(): Promise<void> {
       if (picker !== source) picker.setBrowseState(category, sort)
     }
   }
+  const syncCoursePickerFilter = (source: CoursePicker, query: string): void => {
+    coursePickerFilter = normalizeCoursePickerFilter(query)
+    for (const picker of coursePickers) {
+      if (picker !== source) picker.setFilter(coursePickerFilter)
+    }
+  }
   for (const picker of coursePickers) {
     picker.setBrowseState(initialCoursePickerCategory, initialCoursePickerSort)
+    picker.setFilter(coursePickerFilter)
     picker.onBrowseState((category, sort) => syncCoursePickerBrowseState(picker, category, sort))
+    picker.onFilter((query) => syncCoursePickerFilter(picker, query))
   }
   pruneRotatingCourseRecords(qualityStorage)
   let opsStreaks: OpsStreakSnapshot = readOpsStreak(qualityStorage)

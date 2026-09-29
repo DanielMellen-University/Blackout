@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.549** Keep the title and pause course-picker search synchronized during a session with a bounded, non-persistent query.
 - **10.548** Persist and synchronize the course-picker category and sort without expanding flight or storage budgets.
 - **10.547** Suspend hidden air-traffic simulation between sorties and refresh its pooled presentation immediately when flight resumes.
 - **10.546** Show the next medal threshold in completed-run debriefs for an immediate repeat target.

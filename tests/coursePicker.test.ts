@@ -15,6 +15,7 @@ import {
   courseWeatherPreviewLabel,
   filterCoursePickerItems,
   normalizeCoursePickerCategory,
+  normalizeCoursePickerFilter,
   normalizeCoursePickerSort,
   readCoursePickerCategory,
   readCoursePickerSort,
@@ -95,6 +96,9 @@ describe('course picker copy', () => {
     }
     expect(normalizeCoursePickerCategory('favorites')).toBe('favorites')
     expect(normalizeCoursePickerCategory('bogus')).toBe('all')
+    expect(normalizeCoursePickerFilter('  storm  ')).toBe('storm')
+    expect(normalizeCoursePickerFilter(null)).toBe('')
+    expect(normalizeCoursePickerFilter('x'.repeat(100))).toHaveLength(80)
     expect(normalizeCoursePickerSort('score')).toBe('score')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
 

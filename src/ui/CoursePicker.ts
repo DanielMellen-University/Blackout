@@ -31,6 +31,7 @@ export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'exp
 export type CoursePickerSort = 'catalog' | 'score' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
+const COURSE_PICKER_FILTER_MAX_LENGTH = 80
 const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, string>> = {
   all: 'All courses',
   ops: 'Ops',
@@ -79,6 +80,11 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
   return value === 'score' || value === 'name' ? value : 'catalog'
+}
+
+/** Keep the live title/pause search bounded without persisting a stale query. */
+export function normalizeCoursePickerFilter(value: unknown): string {
+  return typeof value === 'string' ? value.trim().slice(0, COURSE_PICKER_FILTER_MAX_LENGTH) : ''
 }
 
 export function readCoursePickerCategory(
@@ -455,6 +461,7 @@ export class CoursePicker {
   private changeHandler: ((id: string) => void) | null = null
   private favoriteHandler: ((id: string, favorite: boolean) => void) | null = null
   private browseStateHandler: ((category: CoursePickerCategory, sort: CoursePickerSort) => void) | null = null
+  private filterStateHandler: ((query: string) => void) | null = null
   private disposed = false
 
   constructor(root: HTMLElement) {
@@ -541,6 +548,10 @@ export class CoursePicker {
     this.browseStateHandler = handler
   }
 
+  onFilter(handler: ((query: string) => void) | null): void {
+    this.filterStateHandler = handler
+  }
+
   /** Apply a shared catalog view without emitting a persistence callback. */
   setBrowseState(category: CoursePickerCategory, sort: CoursePickerSort): void {
     if (this.disposed) return
@@ -548,6 +559,15 @@ export class CoursePicker {
     this.sort = normalizeCoursePickerSort(sort)
     this.categorySelect.value = this.category
     this.sortSelect.value = this.sort
+    this.renderList()
+  }
+
+  /** Apply the shared in-session search without echoing the change callback. */
+  setFilter(query: string): void {
+    if (this.disposed) return
+    const next = normalizeCoursePickerFilter(query)
+    if (this.filter.value === next) return
+    this.filter.value = next
     this.renderList()
   }
 
@@ -573,6 +593,7 @@ export class CoursePicker {
     this.changeHandler = null
     this.favoriteHandler = null
     this.browseStateHandler = null
+    this.filterStateHandler = null
     this.list.removeEventListener('click', this.onClick)
     this.list.removeEventListener('keydown', this.onKeyDown)
     this.filter.removeEventListener('input', this.onFilterInput)
@@ -710,7 +731,10 @@ export class CoursePicker {
 
   private onFilterInput = (): void => {
     if (this.disposed) return
+    const normalized = normalizeCoursePickerFilter(this.filter.value)
+    if (this.filter.value !== normalized) this.filter.value = normalized
     this.renderList()
+    this.filterStateHandler?.(normalized)
   }
 
   private onCategoryChange = (): void => {
