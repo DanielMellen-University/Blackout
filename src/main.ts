@@ -522,6 +522,10 @@ async function boot(): Promise<void> {
           Number.isFinite(record?.history?.runStreakRecord) ? Math.max(0, Math.floor(record?.history?.runStreakRecord ?? 0)) : 0,
           Number.isFinite(record?.history?.runStreak) ? Math.max(0, Math.floor(record?.history?.runStreak ?? 0)) : 0,
         ),
+        contractStreak: Math.max(
+          Number.isFinite(record?.history?.contractStreakRecord) ? Math.max(0, Math.floor(record?.history?.contractStreakRecord ?? 0)) : 0,
+          Number.isFinite(record?.history?.contractStreak) ? Math.max(0, Math.floor(record?.history?.contractStreak ?? 0)) : 0,
+        ),
         difficulty,
         mastery,
       }
