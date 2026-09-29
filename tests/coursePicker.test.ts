@@ -379,7 +379,7 @@ describe('course picker copy', () => {
     })
 
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
+    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · MEDAL GOLD · BADGES X3 · GATE STREAK X4 · CONTRACT WINS X2 · CONTRACT STREAK X4')
     expect(copy.detail).toBe('Gentle circuit and approach practice')
     expect(copy.stats.includes('TASK')).toBe(false)
     expect(copy.stats).toContain('MEDAL GOLD')
@@ -435,7 +435,7 @@ describe('course picker copy', () => {
       bestPrecisionStreak: 4,
     })
     expect(copy.meta).toBe('5 RUNS')
-    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · LAND FIRM · MEDAL GOLD · BADGES X3 · GATE STREAK X4')
+    expect(copy.stats).toBe('1:38.40 · SCORE 88,000 · LAND FIRM · MEDAL GOLD · BADGES X3 · GATE STREAK X4 · CONTRACT WINS X2 · CONTRACT STREAK X4')
     expect(copy.stats).not.toContain('VETERAN')
     expect(copy.stats).not.toContain('TASK')
   })

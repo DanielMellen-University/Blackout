@@ -349,6 +349,12 @@ export function coursePickerCopy(input: CoursePickerCopyInput): {
   if (badges > 0) statsParts.push(`BADGES X${badges}`)
   const precisionStreak = finiteCount(input.bestPrecisionStreak)
   if (precisionStreak > 1) statsParts.push(`GATE STREAK X${precisionStreak}`)
+  const contractWins = finiteCount(input.history?.contractWins)
+  if (contractWins > 0) statsParts.push(`CONTRACT WINS X${Math.min(1_000, contractWins)}`)
+  const contractStreakRecord = Number.isFinite(input.history?.contractStreakRecord)
+    ? Math.max(0, Math.floor(input.history?.contractStreakRecord ?? 0))
+    : finiteCount(input.history?.contractStreak)
+  if (contractStreakRecord > 1) statsParts.push(`CONTRACT STREAK X${Math.min(1_000, contractStreakRecord)}`)
 
   return { detail, meta, stats: statsParts.join(' · ') }
 }
