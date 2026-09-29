@@ -8,6 +8,7 @@ import {
   coursePickerCategoryForCourse,
   coursePickerDifficultyForCourse,
   coursePickerDifficultyLabel,
+  coursePickerFlightLogLabel,
   coursePickerMasteryLabel,
   coursePickerCategoryLabel,
   coursePickerEmptyMessage,
@@ -91,6 +92,15 @@ describe('course picker copy', () => {
     expect(coursePickerDifficultyLabel('technical')).toBe('TECHNICAL')
     expect(coursePickerMasteryLabel('rookie')).toBe('ROOKIE')
     expect(coursePickerMasteryLabel('legend')).toBe('LEGEND')
+    expect(coursePickerFlightLogLabel({
+      completionCount: 1,
+      bestTimeSec: 80,
+      flightDistanceM: 12_400,
+      peakSpeedKts: 912,
+      peakAltitudeM: 3_200,
+      fuelRemainingPercent: 64,
+    })).toBe('LOG DIST 12KM · TOP 912KT · ALT 3,200M · FUEL 64%')
+    expect(coursePickerFlightLogLabel(null)).toBe('')
   })
 
   it('labels catalog filters with finite counts', () => {

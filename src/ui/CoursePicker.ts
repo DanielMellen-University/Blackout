@@ -105,6 +105,25 @@ export function coursePickerMasteryLabel(value: CourseMasteryTier): string {
   return courseMasteryTierLabel(value)
 }
 
+/** Keep the most useful persisted flight telemetry compact on picker cards. */
+export function coursePickerFlightLogLabel(history: CourseHistory | null): string {
+  if (!history) return ''
+  const parts: string[] = []
+  if (Number.isFinite(history.flightDistanceM) && history.flightDistanceM! > 0) {
+    parts.push(`DIST ${formatCourseDistance(history.flightDistanceM!)}`)
+  }
+  if (Number.isFinite(history.peakSpeedKts) && history.peakSpeedKts! > 0) {
+    parts.push(`TOP ${Math.min(20_000, Math.floor(history.peakSpeedKts!)).toLocaleString()}KT`)
+  }
+  if (Number.isFinite(history.peakAltitudeM) && history.peakAltitudeM! > 0) {
+    parts.push(`ALT ${Math.min(100_000, Math.floor(history.peakAltitudeM!)).toLocaleString()}M`)
+  }
+  if (Number.isFinite(history.fuelRemainingPercent) && history.fuelRemainingPercent! > 0) {
+    parts.push(`FUEL ${Math.min(100, Math.floor(history.fuelRemainingPercent!))}%`)
+  }
+  return parts.length > 0 ? `LOG ${parts.join(' · ')}` : ''
+}
+
 /** Keep filter counts compact and finite as the authored catalog grows. */
 export function coursePickerCategoryLabel(category: CoursePickerCategory, count: number): string {
   const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0

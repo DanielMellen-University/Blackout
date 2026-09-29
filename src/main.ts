@@ -321,6 +321,7 @@ async function boot(): Promise<void> {
     coursePickerDifficultyForCourse,
     coursePickerDifficultyLabel,
     coursePickerMasteryLabel,
+    coursePickerFlightLogLabel,
     coursePickerCopy,
     readCoursePickerCategory,
     readCoursePickerSort,
@@ -496,7 +497,7 @@ async function boot(): Promise<void> {
             : course.id === 'monthly-ops'
               ? monthlyOpsMonthKey(opsTimestamp)
               : undefined)].filter(Boolean).join(' · '),
-        stats: copy.stats,
+        stats: [copy.stats, coursePickerFlightLogLabel(record?.history ?? null)].filter(Boolean).join(' · '),
         category: coursePickerCategoryForCourse(course),
         recent: recentRank >= 0,
         recentRank: recentRank >= 0 ? recentRank : undefined,

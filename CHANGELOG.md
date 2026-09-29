@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.568** Add a bounded distance, top-speed, altitude, and fuel flight-log line to course cards for quick repeat-run comparison.
 - **10.567** Show each course's persisted best sortie style on picker cards so repeat runs have a visible flying identity.
 - **10.566** Lazy-load HUD, results, menu, and course-picker surfaces in parallel during boot, cutting the initial entry while preserving startup failure handling.
 - **10.565** Move the title and pause course-picker UI into its own cacheable chunk, trimming the initial entry without changing boot behavior.
