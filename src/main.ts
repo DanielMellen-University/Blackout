@@ -529,6 +529,7 @@ async function boot(): Promise<void> {
         biomes: record?.history?.biomes,
         waterways: record?.history?.waterBodies,
         destinations: record?.history?.destinations,
+        positiveG: record?.history?.peakPositiveG,
         difficulty,
         mastery,
       }
