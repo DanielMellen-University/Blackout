@@ -112,6 +112,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('time')).toBe('Best time')
     expect(coursePickerSortLabel('runs')).toBe('Most runs')
+    expect(coursePickerSortLabel('distance')).toBe('Longest flight')
     expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('mastery')).toBe('Mastery')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
@@ -133,6 +134,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('score')).toBe('score')
     expect(normalizeCoursePickerSort('time')).toBe('time')
     expect(normalizeCoursePickerSort('runs')).toBe('runs')
+    expect(normalizeCoursePickerSort('distance')).toBe('distance')
     expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort('mastery')).toBe('mastery')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
@@ -181,6 +183,12 @@ describe('course picker copy', () => {
       { id: 'malformed', label: 'Malformed', detail: '', meta: '', stats: '', runs: Number.NaN },
     ]
     expect(sortCoursePickerItems(replayed, 'runs').map(item => item.id)).toEqual(['often', 'once', 'new', 'malformed'])
+    const distance = [
+      { id: 'short', label: 'Short', detail: '', meta: '', stats: '', distance: 1_200 },
+      { id: 'long', label: 'Long', detail: '', meta: '', stats: '', distance: 22_000 },
+      { id: 'new', label: 'New', detail: '', meta: '', stats: '', distance: 0 },
+    ]
+    expect(sortCoursePickerItems(distance, 'distance').map(item => item.id)).toEqual(['long', 'short', 'new'])
     expect(items.map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
   })
 
