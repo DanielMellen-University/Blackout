@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.562** Surface each course's persisted mastery tier on picker cards and add a bounded mastery sort so long-term progression is visible before launch.
 - **10.561** Show compact Relaxed, Standard, or Technical difficulty tags on course cards so picker sorting has visible context.
 - **10.560** Add stable difficulty sorting to the course picker, using authored route profiles without rebuilding terrain or changing catalog order for ties.
 - **10.559** Raise the bounded fixed-step catch-up budget so normal 10 FPS frames preserve flight timing without allowing long hitches to spiral.

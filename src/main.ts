@@ -161,6 +161,7 @@ import {
   coursePickerCategoryForCourse,
   coursePickerDifficultyForCourse,
   coursePickerDifficultyLabel,
+  coursePickerMasteryLabel,
   coursePickerCopy,
   readCoursePickerCategory,
   readCoursePickerSort,
@@ -469,11 +470,18 @@ async function boot(): Promise<void> {
         contractDetail: sortieContractDetailForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
       })
       const difficulty = coursePickerDifficultyForCourse(course)
+      const mastery = courseMasteryTierForProgress({
+        completionCount: record?.history?.completionCount,
+        bestScore: record?.bestScore,
+        badgeCount: record?.badgeCount,
+        contractWins: record?.history?.contractWins,
+        landingQuality: record?.history?.landingQuality,
+      })
       return {
         id: course.id,
         label: course.label,
         detail: copy.detail,
-        meta: [copy.meta, `DIFF ${coursePickerDifficultyLabel(difficulty)}`, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
+        meta: [copy.meta, `DIFF ${coursePickerDifficultyLabel(difficulty)}`, `TIER ${coursePickerMasteryLabel(mastery)}`, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
           ? dailyOpsDayKey(opsTimestamp)
           : course.id === 'weekly-ops'
             ? weeklyOpsWeekKey(opsTimestamp)
@@ -490,6 +498,7 @@ async function boot(): Promise<void> {
         time: record?.history?.bestTimeSec,
         runs: record?.history?.completionCount,
         difficulty,
+        mastery,
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
