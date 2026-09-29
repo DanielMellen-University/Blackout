@@ -48,6 +48,8 @@ export interface CoursePickerItem {
   approach?: number
   /** Persisted best stunt-roll count used only by the optional stunts sort. */
   stunts?: number
+  /** Persisted distinct discovery total used only by the optional discoveries sort. */
+  discoveries?: number
   /** Stable authored route difficulty used only by the optional difficulty sort. */
   difficulty?: CoursePickerDifficulty
   /** Persisted per-course mastery tier used only by the optional mastery sort. */
@@ -56,7 +58,7 @@ export interface CoursePickerItem {
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed' | 'mastered'
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
-export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'difficulty' | 'mastery' | 'name'
+export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'distance' | 'speed' | 'fuel' | 'landing' | 'altitude' | 'combo' | 'approach' | 'stunts' | 'discoveries' | 'difficulty' | 'mastery' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_FILTER_MAX_LENGTH = 80
@@ -84,6 +86,7 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   combo: 'Best combo',
   approach: 'Best approach',
   stunts: 'Most stunts',
+  discoveries: 'Most discoveries',
   difficulty: 'Difficulty',
   mastery: 'Mastery',
   name: 'A–Z',
@@ -168,7 +171,7 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
-  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
+  return value === 'score' || value === 'time' || value === 'runs' || value === 'distance' || value === 'speed' || value === 'fuel' || value === 'landing' || value === 'altitude' || value === 'combo' || value === 'approach' || value === 'stunts' || value === 'discoveries' || value === 'difficulty' || value === 'mastery' || value === 'name' ? value : 'catalog'
 }
 
 /** Keep the live title/pause search bounded without persisting a stale query. */
@@ -223,7 +226,7 @@ export function sortCoursePickerItems(
   items: readonly CoursePickerItem[],
   sort: CoursePickerSort = 'catalog',
 ): CoursePickerItem[] {
-  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
+  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'distance' || sort === 'speed' || sort === 'fuel' || sort === 'landing' || sort === 'altitude' || sort === 'combo' || sort === 'approach' || sort === 'stunts' || sort === 'discoveries' || sort === 'difficulty' || sort === 'mastery' || sort === 'name' ? sort : 'catalog'
   if (safeSort === 'catalog') return items.slice()
   return items.slice().sort((a, b) => {
     if (safeSort === 'score') {
@@ -270,6 +273,10 @@ export function sortCoursePickerItems(
       const aStunts = finiteStunts(a.stunts)
       const bStunts = finiteStunts(b.stunts)
       if (aStunts !== bStunts) return bStunts - aStunts
+    } else if (safeSort === 'discoveries') {
+      const aDiscoveries = finiteDiscoveries(a.discoveries)
+      const bDiscoveries = finiteDiscoveries(b.discoveries)
+      if (aDiscoveries !== bDiscoveries) return bDiscoveries - aDiscoveries
     } else if (safeSort === 'difficulty') {
       const aDifficulty = difficultyRank(a.difficulty)
       const bDifficulty = difficultyRank(b.difficulty)
@@ -649,7 +656,7 @@ export class CoursePicker {
     this.sortSelect = document.createElement('select')
     this.sortSelect.className = 'course-picker-sort'
     this.sortSelect.setAttribute('aria-label', 'Sort courses')
-    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'difficulty', 'mastery', 'name'] as const) {
+    for (const value of ['catalog', 'score', 'time', 'runs', 'distance', 'speed', 'fuel', 'landing', 'altitude', 'combo', 'approach', 'stunts', 'discoveries', 'difficulty', 'mastery', 'name'] as const) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = coursePickerSortLabel(value)
@@ -970,6 +977,10 @@ function finiteApproach(value: number | undefined): number {
 
 function finiteStunts(value: number | undefined): number {
   return Number.isFinite(value) ? Math.max(0, Math.min(12, Math.floor(value!))) : 0
+}
+
+function finiteDiscoveries(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, Math.min(24, Math.floor(value!))) : 0
 }
 
 function difficultyRank(value: CoursePickerDifficulty | undefined): number {

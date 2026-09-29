@@ -514,6 +514,9 @@ async function boot(): Promise<void> {
         combo: record?.history?.combo,
         approach: record?.history?.approachScore,
         stunts: record?.history?.stuntRolls,
+        discoveries: (Number.isFinite(record?.history?.destinations) ? Math.max(0, Math.floor(record?.history?.destinations ?? 0)) : 0) +
+          (Number.isFinite(record?.history?.biomes) ? Math.max(0, Math.floor(record?.history?.biomes ?? 0)) : 0) +
+          (Number.isFinite(record?.history?.waterBodies) ? Math.max(0, Math.floor(record?.history?.waterBodies ?? 0)) : 0),
         difficulty,
         mastery,
       }
