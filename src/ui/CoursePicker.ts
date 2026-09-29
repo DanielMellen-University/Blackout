@@ -27,10 +27,12 @@ export interface CoursePickerItem {
   score?: number
   /** Persisted best completion time used only by the optional time sort. */
   time?: number
+  /** Persisted completion count used only by the optional runs sort. */
+  runs?: number
 }
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites'
-export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'name'
+export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_FILTER_MAX_LENGTH = 80
@@ -47,6 +49,7 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   catalog: 'Catalog order',
   score: 'Best score',
   time: 'Best time',
+  runs: 'Most runs',
   name: 'A–Z',
 }
 
@@ -82,7 +85,7 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
-  return value === 'score' || value === 'time' || value === 'name' ? value : 'catalog'
+  return value === 'score' || value === 'time' || value === 'runs' || value === 'name' ? value : 'catalog'
 }
 
 /** Keep the live title/pause search bounded without persisting a stale query. */
@@ -137,7 +140,7 @@ export function sortCoursePickerItems(
   items: readonly CoursePickerItem[],
   sort: CoursePickerSort = 'catalog',
 ): CoursePickerItem[] {
-  const safeSort = sort === 'score' || sort === 'time' || sort === 'name' ? sort : 'catalog'
+  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'name' ? sort : 'catalog'
   if (safeSort === 'catalog') return items.slice()
   return items.slice().sort((a, b) => {
     if (safeSort === 'score') {
@@ -148,6 +151,10 @@ export function sortCoursePickerItems(
       const aTime = finiteTime(a.time)
       const bTime = finiteTime(b.time)
       if (aTime !== bTime) return aTime - bTime
+    } else if (safeSort === 'runs') {
+      const aRuns = finiteCount(a.runs)
+      const bRuns = finiteCount(b.runs)
+      if (aRuns !== bRuns) return bRuns - aRuns
     } else {
       const labelOrder = a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
       if (labelOrder !== 0) return labelOrder
@@ -503,7 +510,7 @@ export class CoursePicker {
     this.sortSelect = document.createElement('select')
     this.sortSelect.className = 'course-picker-sort'
     this.sortSelect.setAttribute('aria-label', 'Sort courses')
-    for (const value of ['catalog', 'score', 'time', 'name'] as const) {
+    for (const value of ['catalog', 'score', 'time', 'runs', 'name'] as const) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = coursePickerSortLabel(value)

@@ -86,6 +86,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('time')).toBe('Best time')
+    expect(coursePickerSortLabel('runs')).toBe('Most runs')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
   })
 
@@ -102,6 +103,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerFilter('x'.repeat(100))).toHaveLength(80)
     expect(normalizeCoursePickerSort('score')).toBe('score')
     expect(normalizeCoursePickerSort('time')).toBe('time')
+    expect(normalizeCoursePickerSort('runs')).toBe('runs')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
 
     writeCoursePickerCategory(storage, 'recent')
@@ -129,6 +131,13 @@ describe('course picker copy', () => {
       { id: 'unflown', label: 'Unflown', detail: '', meta: '', stats: '', time: 0 },
     ]
     expect(sortCoursePickerItems(timed, 'time').map(item => item.id)).toEqual(['fast', 'slow', 'unflown'])
+    const replayed = [
+      { id: 'once', label: 'Once', detail: '', meta: '', stats: '', runs: 1 },
+      { id: 'often', label: 'Often', detail: '', meta: '', stats: '', runs: 9 },
+      { id: 'new', label: 'New', detail: '', meta: '', stats: '', runs: 0 },
+      { id: 'malformed', label: 'Malformed', detail: '', meta: '', stats: '', runs: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(replayed, 'runs').map(item => item.id)).toEqual(['often', 'once', 'new', 'malformed'])
     expect(items.map(item => item.id)).toEqual(['zulu', 'alpha', 'none'])
   })
 
