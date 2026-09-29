@@ -152,25 +152,7 @@ import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
 import type { DebugOverlay } from './debug/DebugOverlay'
-import {
-  COURSE_PICKER_CATEGORY_STORAGE_KEY,
-  COURSE_PICKER_SORT_STORAGE_KEY,
-  CoursePicker,
-  courseConditionSummary,
-  courseMasteryProgressLabel,
-  coursePickerCategoryForCourse,
-  coursePickerDifficultyForCourse,
-  coursePickerDifficultyLabel,
-  coursePickerMasteryLabel,
-  coursePickerCopy,
-  readCoursePickerCategory,
-  readCoursePickerSort,
-  normalizeCoursePickerFilter,
-  writeCoursePickerCategory,
-  writeCoursePickerSort,
-  type CoursePickerCategory,
-  type CoursePickerSort,
-} from './ui/CoursePicker'
+import type { CoursePicker as CoursePickerInstance, CoursePickerCategory, CoursePickerSort } from './ui/CoursePicker'
 import { GameMenu } from './ui/GameMenu'
 import {
   createMissionHudLabelCache,
@@ -348,6 +330,23 @@ async function boot(): Promise<void> {
   const touchRoot = document.getElementById('touch-controls')
   if (!menuEl) throw new Error('#menu not found')
   if (!titleCoursePickerRoot || !menuCoursePickerRoot) throw new Error('course picker not found')
+  const {
+    COURSE_PICKER_CATEGORY_STORAGE_KEY,
+    COURSE_PICKER_SORT_STORAGE_KEY,
+    CoursePicker,
+    courseConditionSummary,
+    courseMasteryProgressLabel,
+    coursePickerCategoryForCourse,
+    coursePickerDifficultyForCourse,
+    coursePickerDifficultyLabel,
+    coursePickerMasteryLabel,
+    coursePickerCopy,
+    readCoursePickerCategory,
+    readCoursePickerSort,
+    normalizeCoursePickerFilter,
+    writeCoursePickerCategory,
+    writeCoursePickerSort,
+  } = await import('./ui/CoursePicker')
   const menu = new GameMenu(menuEl, canvas)
   const uiListeners = new ListenerBag()
   const coursePickers = [
@@ -365,7 +364,7 @@ async function boot(): Promise<void> {
   const initialCoursePickerSort = readCoursePickerSort(qualityStorage)
   let coursePickerFilter = ''
   const syncCoursePickerBrowseState = (
-    source: CoursePicker,
+    source: CoursePickerInstance,
     category: CoursePickerCategory,
     sort: CoursePickerSort,
   ): void => {
@@ -375,7 +374,7 @@ async function boot(): Promise<void> {
       if (picker !== source) picker.setBrowseState(category, sort)
     }
   }
-  const syncCoursePickerFilter = (source: CoursePicker, query: string): void => {
+  const syncCoursePickerFilter = (source: CoursePickerInstance, query: string): void => {
     coursePickerFilter = normalizeCoursePickerFilter(query)
     for (const picker of coursePickers) {
       if (picker !== source) picker.setFilter(coursePickerFilter)
