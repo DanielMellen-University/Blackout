@@ -26,6 +26,12 @@ import { clearOpsPad, findPlayableSpawn, isUsableAirfield } from '../src/world/t
 import { setWorldSeed } from '../src/world/noise'
 
 describe('course library', () => {
+  it('derives a unique public ID catalog from the authored entries', () => {
+    const ids = COURSE_LIBRARY.map(course => course.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).toContain('shoreline-run')
+  })
+
   it('keeps the random entry and fixed course contracts stable', () => {
     expect(COURSE_LIBRARY).toHaveLength(75)
     expect(courseDefinitionForId('missing').id).toBe('random')

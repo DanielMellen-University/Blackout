@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.594** Derive the public course ID type from the authored runtime catalog and regression-test catalog uniqueness so new roadmap entries cannot drift out of storage and picker validation.
 - **10.593** Fail closed on malformed mission route profiles and modifiers before route generation, keeping replayed mission state inside the authored catalog.
 - **10.592** Keep Atmosphere's public weather state synchronized with the normalized director profile when malformed runtime IDs arrive.
 - **10.591** Fail closed on malformed replay or course weather IDs so the director always resolves a valid authored profile instead of indexing undefined data.
