@@ -6,6 +6,7 @@ import {
   coursePickerNavigationIndex,
   coursePickerCopy,
   coursePickerCategoryForCourse,
+  coursePickerDifficultyForCourse,
   coursePickerCategoryLabel,
   coursePickerEmptyMessage,
   coursePickerMetaLabel,
@@ -78,6 +79,9 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryForCourse({ id: 'free-flight', seed: null, profile: 'free' })).toBe('explore')
     expect(coursePickerCategoryForCourse({ id: 'training-orbit', seed: 1, profile: 'orbit' })).toBe('routes')
     expect(coursePickerCategoryForCourse({ id: 'storm-contract', seed: 34, profile: 'storm', contractCatalog: true })).toBe('contracts')
+    expect(coursePickerDifficultyForCourse({ profile: 'orbit' })).toBe('relaxed')
+    expect(coursePickerDifficultyForCourse({ profile: 'sweep' })).toBe('standard')
+    expect(coursePickerDifficultyForCourse({ profile: 'canyon' })).toBe('technical')
   })
 
   it('labels catalog filters with finite counts', () => {
@@ -88,6 +92,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('time')).toBe('Best time')
     expect(coursePickerSortLabel('runs')).toBe('Most runs')
+    expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
   })
 
@@ -106,6 +111,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('score')).toBe('score')
     expect(normalizeCoursePickerSort('time')).toBe('time')
     expect(normalizeCoursePickerSort('runs')).toBe('runs')
+    expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
 
     writeCoursePickerCategory(storage, 'recent')
@@ -133,6 +139,12 @@ describe('course picker copy', () => {
       { id: 'unflown', label: 'Unflown', detail: '', meta: '', stats: '', time: 0 },
     ]
     expect(sortCoursePickerItems(timed, 'time').map(item => item.id)).toEqual(['fast', 'slow', 'unflown'])
+    const difficulty = [
+      { id: 'technical', label: 'Technical', detail: '', meta: '', stats: '', difficulty: 'technical' as const },
+      { id: 'relaxed', label: 'Relaxed', detail: '', meta: '', stats: '', difficulty: 'relaxed' as const },
+      { id: 'standard', label: 'Standard', detail: '', meta: '', stats: '', difficulty: 'standard' as const },
+    ]
+    expect(sortCoursePickerItems(difficulty, 'difficulty').map(item => item.id)).toEqual(['relaxed', 'standard', 'technical'])
     const replayed = [
       { id: 'once', label: 'Once', detail: '', meta: '', stats: '', runs: 1 },
       { id: 'often', label: 'Often', detail: '', meta: '', stats: '', runs: 9 },

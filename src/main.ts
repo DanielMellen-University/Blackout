@@ -159,6 +159,7 @@ import {
   courseConditionSummary,
   courseMasteryProgressLabel,
   coursePickerCategoryForCourse,
+  coursePickerDifficultyForCourse,
   coursePickerCopy,
   readCoursePickerCategory,
   readCoursePickerSort,
@@ -486,6 +487,7 @@ async function boot(): Promise<void> {
         score: record?.bestScore ?? 0,
         time: record?.history?.bestTimeSec,
         runs: record?.history?.completionCount,
+        difficulty: coursePickerDifficultyForCourse(course),
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)

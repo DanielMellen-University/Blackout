@@ -7,6 +7,7 @@ import {
   type CourseHistory,
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
+import type { MissionRouteProfile } from '../systems/Mission'
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
 import { WEATHER_LABELS, weatherIdForSeed, type WeatherId, type WindSide } from '../world/WeatherDirector'
 
@@ -29,10 +30,13 @@ export interface CoursePickerItem {
   time?: number
   /** Persisted completion count used only by the optional runs sort. */
   runs?: number
+  /** Stable authored route difficulty used only by the optional difficulty sort. */
+  difficulty?: CoursePickerDifficulty
 }
 
 export type CoursePickerCategory = 'all' | 'ops' | 'routes' | 'contracts' | 'explore' | 'recent' | 'favorites' | 'unplayed'
-export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'name'
+export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
+export type CoursePickerSort = 'catalog' | 'score' | 'time' | 'runs' | 'difficulty' | 'name'
 export const COURSE_PICKER_CATEGORY_STORAGE_KEY = 'blackout.coursePickerCategory'
 export const COURSE_PICKER_SORT_STORAGE_KEY = 'blackout.coursePickerSort'
 const COURSE_PICKER_FILTER_MAX_LENGTH = 80
@@ -51,6 +55,7 @@ const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   score: 'Best score',
   time: 'Best time',
   runs: 'Most runs',
+  difficulty: 'Difficulty',
   name: 'A–Z',
 }
 
@@ -64,6 +69,20 @@ export function coursePickerCategoryForCourse(
   }
   if (course.contractCatalog) return 'contracts'
   return 'routes'
+}
+
+/** Keep difficulty sorting deterministic without rebuilding a route just to browse the catalog. */
+export function coursePickerDifficultyForCourse(
+  course: Pick<CourseDefinition, 'profile'>,
+): CoursePickerDifficulty {
+  const profile = course.profile as MissionRouteProfile | null
+  if (profile === 'free' || profile === 'orbit' || profile === 'approach') return 'relaxed'
+  if (
+    profile === 'slalom' || profile === 'ridge' || profile === 'canyon' || profile === 'fjord' ||
+    profile === 'volcanic' || profile === 'alpine' || profile === 'storm' || profile === 'night' ||
+    profile === 'glacier' || profile === 'badlands' || profile === 'thermal'
+  ) return 'technical'
+  return 'standard'
 }
 
 /** Keep filter counts compact and finite as the authored catalog grows. */
@@ -86,7 +105,7 @@ export function normalizeCoursePickerCategory(value: unknown): CoursePickerCateg
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
-  return value === 'score' || value === 'time' || value === 'runs' || value === 'name' ? value : 'catalog'
+  return value === 'score' || value === 'time' || value === 'runs' || value === 'difficulty' || value === 'name' ? value : 'catalog'
 }
 
 /** Keep the live title/pause search bounded without persisting a stale query. */
@@ -141,7 +160,7 @@ export function sortCoursePickerItems(
   items: readonly CoursePickerItem[],
   sort: CoursePickerSort = 'catalog',
 ): CoursePickerItem[] {
-  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'name' ? sort : 'catalog'
+  const safeSort = sort === 'score' || sort === 'time' || sort === 'runs' || sort === 'difficulty' || sort === 'name' ? sort : 'catalog'
   if (safeSort === 'catalog') return items.slice()
   return items.slice().sort((a, b) => {
     if (safeSort === 'score') {
@@ -156,6 +175,10 @@ export function sortCoursePickerItems(
       const aRuns = finiteCount(a.runs)
       const bRuns = finiteCount(b.runs)
       if (aRuns !== bRuns) return bRuns - aRuns
+    } else if (safeSort === 'difficulty') {
+      const aDifficulty = difficultyRank(a.difficulty)
+      const bDifficulty = difficultyRank(b.difficulty)
+      if (aDifficulty !== bDifficulty) return aDifficulty - bDifficulty
     } else {
       const labelOrder = a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
       if (labelOrder !== 0) return labelOrder
@@ -515,7 +538,7 @@ export class CoursePicker {
     this.sortSelect = document.createElement('select')
     this.sortSelect.className = 'course-picker-sort'
     this.sortSelect.setAttribute('aria-label', 'Sort courses')
-    for (const value of ['catalog', 'score', 'time', 'runs', 'name'] as const) {
+    for (const value of ['catalog', 'score', 'time', 'runs', 'difficulty', 'name'] as const) {
       const option = document.createElement('option')
       option.value = value
       option.textContent = coursePickerSortLabel(value)
@@ -803,6 +826,12 @@ function finiteScore(value: number | undefined): number {
 
 function finiteTime(value: number | undefined): number {
   return Number.isFinite(value) && value! > 0 ? value! : Number.POSITIVE_INFINITY
+}
+
+function difficultyRank(value: CoursePickerDifficulty | undefined): number {
+  if (value === 'relaxed') return 0
+  if (value === 'technical') return 2
+  return 1
 }
 
 function coursePickerRankCompare(
