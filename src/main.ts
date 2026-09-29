@@ -526,6 +526,7 @@ async function boot(): Promise<void> {
           Number.isFinite(record?.history?.contractStreakRecord) ? Math.max(0, Math.floor(record?.history?.contractStreakRecord ?? 0)) : 0,
           Number.isFinite(record?.history?.contractStreak) ? Math.max(0, Math.floor(record?.history?.contractStreak ?? 0)) : 0,
         ),
+        biomes: record?.history?.biomes,
         difficulty,
         mastery,
       }

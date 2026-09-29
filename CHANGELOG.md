@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.581** Add bounded Most biomes sorting to the course picker, using persisted biome-discovery records without changing authored order for ties.
 - **10.580** Add bounded Best contract streak sorting to the course picker, using persisted contract-streak records without changing authored order for ties.
 - **10.579** Add bounded Best run streak sorting to the course picker, using persisted streak records without changing authored order for ties.
 - **10.578** Add bounded Most contract wins sorting to the course picker, using persisted contract records without changing authored order for ties.
