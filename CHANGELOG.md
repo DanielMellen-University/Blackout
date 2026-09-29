@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.605** Bound explicit seeded Infinite World score and ghost families to the newest twelve worlds, pruning linked local records without touching authored or ordinary-random history.
 - **10.604** Isolate explicitly seeded Infinite World score and ghost records by seed while preserving the bounded shared bucket for ordinary random flights.
 - **10.603** Include bounded bonus-contract status, instruction, and progress in copied sortie recaps so shared results retain the optional objective.
 - **10.602** Mark unfinished bonus contracts as failed in crash debriefs, keeping interrupted objectives from appearing open after a crash.

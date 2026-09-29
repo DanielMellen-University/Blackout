@@ -22,7 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
-import { pruneRotatingCourseRecords } from './core/CourseRecordRetention'
+import { pruneRotatingCourseRecords, touchSeededRandomCourseRecord } from './core/CourseRecordRetention'
 import { resetFlightPreferences } from './core/PreferenceReset'
 import {
   bestOpsStreak,
@@ -1458,14 +1458,16 @@ export async function boot(): Promise<void> {
     warningTracker.reset()
     input.clearQueued()
     input.resetFlightControls(0)
+    const activeCourseId = courseId()
+    if (seededRandomWorld) touchSeededRandomCourseRecord(qualityStorage, activeCourseId)
     challenge.reset(
-      courseId(),
+      activeCourseId,
       world.mission.totalGates,
       world.mission.scoringFocus,
       world.worldSeed,
       selectedCourse().contractCatalog === true,
     )
-    ghost.reset(courseId())
+    ghost.reset(activeCourseId)
     ghost.setVisible(playing && ghostVisible)
     challenge.recordBiome(world.spawn.biome)
     terrainRegion = terrainRegionLabel(world.spawn.biome)

@@ -14,6 +14,12 @@ const ROTATING_RECORD_PREFIXES = [
   'blackout.ghost.',
 ] as const
 
+const SEEDED_RANDOM_RECORD_PREFIXES = ROTATING_RECORD_PREFIXES
+const SEEDED_RANDOM_RECORD_ID = /^seed:-?\d+:[a-z-]+:custom$/
+export const SEEDED_RANDOM_RECORDS_STORAGE_KEY = 'blackout.seededRandomRecords'
+/** Keep explicit exploration history useful without allowing one key per seed forever. */
+export const SEEDED_RANDOM_RECORD_RETENTION = 12
+
 /** Keep enough history for recent comparisons without letting localStorage grow forever. */
 export const ROTATING_RECORD_RETENTION = {
   daily: 14,
@@ -27,6 +33,13 @@ export interface IndexedRecordStorage {
   readonly length?: number
   key?(index: number): string | null
   removeItem?(key: string): void
+  getItem?(key: string): string | null
+  setItem?(key: string, value: string): void
+}
+
+interface SeededRandomRecordEntry {
+  id: string
+  touched: number
 }
 
 /**
@@ -91,6 +104,70 @@ export function pruneRotatingCourseRecords(
     }
   }
   return removed
+}
+
+/**
+ * Touch and bound one explicitly seeded random-world record family. The
+ * manifest is tiny and lets us prune all score/history/ghost siblings without
+ * scanning unrelated authored records or relying on localStorage timestamps.
+ */
+export function touchSeededRandomCourseRecord(
+  storage: IndexedRecordStorage | null | undefined,
+  courseId: string,
+  nowMs = Date.now(),
+): number {
+  if (!storage || typeof storage.getItem !== 'function' || typeof storage.setItem !== 'function' ||
+    typeof storage.removeItem !== 'function' || !SEEDED_RANDOM_RECORD_ID.test(courseId)) return 0
+  const safeNow = Number.isFinite(nowMs) ? Math.max(0, Math.floor(nowMs)) : 0
+  const entries = readSeededRandomRecordEntries(storage)
+  const existing = entries.find(entry => entry.id === courseId)
+  if (existing) existing.touched = safeNow
+  else entries.push({ id: courseId, touched: safeNow })
+  entries.sort((a, b) => b.touched - a.touched || a.id.localeCompare(b.id))
+  const keep = entries.slice(0, SEEDED_RANDOM_RECORD_RETENTION)
+  const drop = entries.slice(SEEDED_RANDOM_RECORD_RETENTION)
+  let removed = 0
+  try {
+    storage.setItem(SEEDED_RANDOM_RECORDS_STORAGE_KEY, JSON.stringify(keep))
+  } catch {
+    return 0
+  }
+  for (const entry of drop) {
+    for (const prefix of SEEDED_RANDOM_RECORD_PREFIXES) {
+      try {
+        storage.removeItem(`${prefix}${entry.id}`)
+        removed += 1
+      } catch {
+        // Storage can revoke access between the manifest write and cleanup.
+      }
+    }
+  }
+  return removed
+}
+
+function readSeededRandomRecordEntries(storage: IndexedRecordStorage): SeededRandomRecordEntry[] {
+  let raw: string | null = null
+  try {
+    raw = storage.getItem?.(SEEDED_RANDOM_RECORDS_STORAGE_KEY) ?? null
+  } catch {
+    return []
+  }
+  if (!raw) return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    const entries: SeededRandomRecordEntry[] = []
+    for (const value of parsed) {
+      if (!value || typeof value !== 'object') continue
+      const candidate = value as Partial<SeededRandomRecordEntry>
+      if (typeof candidate.id !== 'string' || !SEEDED_RANDOM_RECORD_ID.test(candidate.id) ||
+        !Number.isFinite(candidate.touched)) continue
+      entries.push({ id: candidate.id, touched: Math.max(0, Math.floor(candidate.touched!)) })
+    }
+    return entries.slice(0, SEEDED_RANDOM_RECORD_RETENTION * 4)
+  } catch {
+    return []
+  }
 }
 
 function rotatingPeriodFromKey(key: string): { kind: RotatingRecordPeriod; key: string } | null {

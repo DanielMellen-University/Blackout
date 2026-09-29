@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   pruneRotatingCourseRecords,
   ROTATING_RECORD_RETENTION,
+  SEEDED_RANDOM_RECORD_RETENTION,
+  SEEDED_RANDOM_RECORDS_STORAGE_KEY,
+  touchSeededRandomCourseRecord,
   type IndexedRecordStorage,
 } from '../src/core/CourseRecordRetention'
 
@@ -46,5 +49,28 @@ describe('rotating course record retention', () => {
     expect(pruneRotatingCourseRecords(null)).toBe(0)
     expect(pruneRotatingCourseRecords({ length: 1 })).toBe(0)
     expect(pruneRotatingCourseRecords({ length: 1, key: () => 'blackout.history.seed:1:sweep:daily:2026-01-01' })).toBe(0)
+  })
+
+  it('bounds explicit seeded-world families while preserving the newest records', () => {
+    const data = new Map<string, string>()
+    const storage: IndexedRecordStorage = {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => data.set(key, value),
+      removeItem: (key) => data.delete(key),
+    }
+    for (let index = 0; index < SEEDED_RANDOM_RECORD_RETENTION + 2; index += 1) {
+      const id = `seed:${index}:orbit:custom`
+      data.set(`blackout.history.${id}`, 'history')
+      data.set(`blackout.ghost.${id}`, 'ghost')
+      touchSeededRandomCourseRecord(storage, id, index + 1)
+    }
+    const newest = `seed:${SEEDED_RANDOM_RECORD_RETENTION + 1}:orbit:custom`
+    const oldest = 'seed:0:orbit:custom'
+    expect(data.has(`blackout.history.${newest}`)).toBe(true)
+    expect(data.has(`blackout.ghost.${newest}`)).toBe(true)
+    expect(data.has(`blackout.history.${oldest}`)).toBe(false)
+    expect(data.has(`blackout.ghost.${oldest}`)).toBe(false)
+    const manifest = JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY) ?? '[]') as unknown[]
+    expect(manifest).toHaveLength(SEEDED_RANDOM_RECORD_RETENTION)
   })
 })
