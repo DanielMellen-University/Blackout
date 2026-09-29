@@ -513,6 +513,7 @@ async function boot(): Promise<void> {
         altitude: record?.history?.peakAltitudeM,
         combo: record?.history?.combo,
         approach: record?.history?.approachScore,
+        stunts: record?.history?.stuntRolls,
         difficulty,
         mastery,
       }
