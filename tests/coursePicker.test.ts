@@ -121,6 +121,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('approach')).toBe('Best approach')
     expect(coursePickerSortLabel('stunts')).toBe('Most stunts')
     expect(coursePickerSortLabel('discoveries')).toBe('Most discoveries')
+    expect(coursePickerSortLabel('contracts')).toBe('Most contract wins')
     expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('mastery')).toBe('Mastery')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
@@ -151,6 +152,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('approach')).toBe('approach')
     expect(normalizeCoursePickerSort('stunts')).toBe('stunts')
     expect(normalizeCoursePickerSort('discoveries')).toBe('discoveries')
+    expect(normalizeCoursePickerSort('contracts')).toBe('contracts')
     expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort('mastery')).toBe('mastery')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
@@ -228,6 +230,12 @@ describe('course picker copy', () => {
       { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', discoveries: Number.NaN },
     ]
     expect(sortCoursePickerItems(discoveries, 'discoveries').map(item => item.id)).toEqual(['rich', 'few', 'unknown'])
+    const contracts = [
+      { id: 'new', label: 'New', detail: '', meta: '', stats: '', contractWins: 1 },
+      { id: 'veteran', label: 'Veteran', detail: '', meta: '', stats: '', contractWins: 14 },
+      { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', contractWins: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(contracts, 'contracts').map(item => item.id)).toEqual(['veteran', 'new', 'unknown'])
     const mastery = [
       { id: 'rookie', label: 'Rookie', detail: '', meta: '', stats: '', mastery: 'rookie' as const },
       { id: 'legend', label: 'Legend', detail: '', meta: '', stats: '', mastery: 'legend' as const },

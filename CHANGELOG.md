@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.578** Add bounded Most contract wins sorting to the course picker, using persisted contract records without changing authored order for ties.
 - **10.577** Add bounded Most discoveries sorting to the course picker, combining persisted destination, biome, and waterway records without changing authored order for ties.
 - **10.576** Add bounded Most stunts sorting to the course picker, using persisted stunt-roll records without changing authored order for ties.
 - **10.575** Add bounded Best approach sorting to the course picker, using persisted runway-approach records without changing authored order for ties.

@@ -517,6 +517,7 @@ async function boot(): Promise<void> {
         discoveries: (Number.isFinite(record?.history?.destinations) ? Math.max(0, Math.floor(record?.history?.destinations ?? 0)) : 0) +
           (Number.isFinite(record?.history?.biomes) ? Math.max(0, Math.floor(record?.history?.biomes ?? 0)) : 0) +
           (Number.isFinite(record?.history?.waterBodies) ? Math.max(0, Math.floor(record?.history?.waterBodies ?? 0)) : 0),
+        contractWins: record?.history?.contractWins,
         difficulty,
         mastery,
       }
