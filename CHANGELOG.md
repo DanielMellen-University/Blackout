@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.575** Add bounded Best approach sorting to the course picker, using persisted runway-approach records without changing authored order for ties.
 - **10.574** Add bounded Best combo sorting to the course picker, using persisted clean-flight combo records without changing authored order for ties.
 - **10.573** Add bounded Highest altitude sorting to the course picker, using persisted peak-altitude records without changing authored order for ties.
 - **10.572** Add bounded Best landing sorting to the course picker, using persisted landing-quality records without changing authored order for ties.

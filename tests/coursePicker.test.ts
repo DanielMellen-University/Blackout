@@ -118,6 +118,7 @@ describe('course picker copy', () => {
     expect(coursePickerSortLabel('landing')).toBe('Best landing')
     expect(coursePickerSortLabel('altitude')).toBe('Highest altitude')
     expect(coursePickerSortLabel('combo')).toBe('Best combo')
+    expect(coursePickerSortLabel('approach')).toBe('Best approach')
     expect(coursePickerSortLabel('difficulty')).toBe('Difficulty')
     expect(coursePickerSortLabel('mastery')).toBe('Mastery')
     expect(coursePickerSortLabel('name')).toBe('A–Z')
@@ -145,6 +146,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerSort('landing')).toBe('landing')
     expect(normalizeCoursePickerSort('altitude')).toBe('altitude')
     expect(normalizeCoursePickerSort('combo')).toBe('combo')
+    expect(normalizeCoursePickerSort('approach')).toBe('approach')
     expect(normalizeCoursePickerSort('difficulty')).toBe('difficulty')
     expect(normalizeCoursePickerSort('mastery')).toBe('mastery')
     expect(normalizeCoursePickerSort({})).toBe('catalog')
@@ -204,6 +206,12 @@ describe('course picker copy', () => {
       { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', combo: Number.NaN },
     ]
     expect(sortCoursePickerItems(combo, 'combo').map(item => item.id)).toEqual(['chain', 'short', 'unknown'])
+    const approach = [
+      { id: 'rough', label: 'Rough', detail: '', meta: '', stats: '', approach: 210 },
+      { id: 'centered', label: 'Centered', detail: '', meta: '', stats: '', approach: 480 },
+      { id: 'unknown', label: 'Unknown', detail: '', meta: '', stats: '', approach: Number.NaN },
+    ]
+    expect(sortCoursePickerItems(approach, 'approach').map(item => item.id)).toEqual(['centered', 'rough', 'unknown'])
     const mastery = [
       { id: 'rookie', label: 'Rookie', detail: '', meta: '', stats: '', mastery: 'rookie' as const },
       { id: 'legend', label: 'Legend', detail: '', meta: '', stats: '', mastery: 'legend' as const },
