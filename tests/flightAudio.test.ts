@@ -8,6 +8,7 @@ import {
   cloudAudioAttenuation,
   windGustAudioEnvelope,
   enginePlaybackRate,
+  enginePowerLevel,
   engineWhineLevel,
   flightAudioViewMix,
   gLoadCueBand,
@@ -84,6 +85,15 @@ describe('flight audio automation', () => {
     expect(boost).toBeGreaterThan(military)
     expect(boost).toBeLessThanOrEqual(1.3)
     expect(enginePlaybackRate(Number.NaN, false)).toBeCloseTo(.72)
+  })
+
+  it('accepts the authoritative engine output when supplied', () => {
+    expect(enginePowerLevel(.5, false)).toBeCloseTo(.39)
+    expect(enginePowerLevel(.5, false, .92)).toBeCloseTo(.92)
+    expect(enginePlaybackRate(.5, true, .92))
+      .toBeGreaterThan(enginePlaybackRate(.5, true, .55))
+    expect(engineWhineLevel(.5, true, .92))
+      .toBeGreaterThan(engineWhineLevel(.5, true, .55))
   })
 
   it('adds a smooth, bounded turbine whine above idle', () => {

@@ -134,6 +134,8 @@ export class FlightAudio {
   update(opts: {
     throttle: number
     boost: boolean
+    /** Authoritative normalized output from Aircraft.engineState. */
+    effectivePower?: number
     speed: number
     rain: number
     snow: number
@@ -168,10 +170,9 @@ export class FlightAudio {
 
     const thr = clamp01(opts.throttle)
     const boost = opts.boost
+    const effectivePower = enginePowerLevel(thr, boost, opts.effectivePower)
     const view = flightAudioViewMix(opts.cockpit === true)
-    // Dry lever fills most of the rumble; AB adds a clear bump on top.
-    const engLevel = thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45)
-    const eng = Math.min(1, engLevel)
+    const eng = effectivePower
 
     // Wind starts after a taxi crawl, strong by cruise (~400+ kts).
     const speed = Number.isFinite(opts.speed) ? Math.max(0, opts.speed) : 0
@@ -180,7 +181,7 @@ export class FlightAudio {
       windGustAudioEnvelope(opts.weatherGust ?? 0),
     )
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
-    const whine = engineWhineLevel(opts.throttle, boost)
+    const whine = engineWhineLevel(opts.throttle, boost, opts.effectivePower)
     const cloudImmersion = Number.isFinite(opts.cloudImmersion) ? opts.cloudImmersion! : 0
     const cloudEngine = cloudAudioAttenuation(cloudImmersion, 0.06, 0.9)
     const cloudWind = cloudAudioAttenuation(cloudImmersion, 0.28, 0.7)
@@ -206,7 +207,7 @@ export class FlightAudio {
     if (this.engineSrc) {
       this.scheduleTarget(
         this.engineSrc.playbackRate,
-        enginePlaybackRate(opts.throttle, boost),
+        enginePlaybackRate(opts.throttle, boost, opts.effectivePower),
         now,
         tau,
         0.001,
@@ -691,19 +692,29 @@ export function audioContextUsable(state: AudioContextState | string): boolean {
 }
 
 /** Bounded procedural engine spool rate shared by the audio update and tests. */
-export function enginePlaybackRate(throttle: number, boost: boolean): number {
+export function enginePlaybackRate(throttle: number, boost: boolean, effectivePower?: number): number {
   const thr = clamp01(throttle)
-  const engineLevel = Math.min(1, thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45))
+  const engineLevel = enginePowerLevel(thr, boost, effectivePower)
   return 0.72 + engineLevel * 0.46 + (boost ? 0.08 : 0)
 }
 
 /** Smooth turbine-whine envelope layered above the low engine rumble. */
-export function engineWhineLevel(throttle: number, boost: boolean): number {
+export function engineWhineLevel(throttle: number, boost: boolean, effectivePower?: number): number {
   const thr = clamp01(throttle)
   if (thr <= 0.16) return 0
   const t = (thr - 0.16) / 0.84
   const smooth = t * t * (3 - 2 * t)
-  return Math.min(1, smooth * (boost ? 1 : 0.82))
+  if (!Number.isFinite(effectivePower)) return Math.min(1, smooth * (boost ? 1 : 0.82))
+  const power = enginePowerLevel(thr, boost, effectivePower)
+  const powerScale = boost ? power : Math.min(0.82, power)
+  return Math.min(1, smooth * powerScale)
+}
+
+/** Resolve the shared engine output, retaining the legacy fallback for tools and callers without EngineState. */
+export function enginePowerLevel(throttle: number, boost: boolean, effectivePower?: number): number {
+  if (Number.isFinite(effectivePower)) return clamp01(effectivePower!)
+  const thr = clamp01(throttle)
+  return Math.min(1, thr * 0.78 + (boost ? 0.35 : 0) * (0.55 + thr * 0.45))
 }
 
 /** Bounded precipitation bed level shared by the audio update and tests. */

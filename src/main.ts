@@ -1232,6 +1232,7 @@ async function boot(): Promise<void> {
   const audioFrame: Parameters<FlightAudio['update']>[0] = {
     throttle: 0,
     boost: false,
+    effectivePower: 0,
     speed: 0,
     rain: 0,
     snow: 0,
@@ -2470,6 +2471,7 @@ async function boot(): Promise<void> {
 
     audioFrame.throttle = aircraft.engineState.lever
     audioFrame.boost = afterburnerOn
+    audioFrame.effectivePower = aircraft.engineState.effectivePower
     audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
     const precipitation = world.atmosphere.weatherSnapshot
