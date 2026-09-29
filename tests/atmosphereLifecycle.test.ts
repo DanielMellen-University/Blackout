@@ -32,4 +32,23 @@ describe('atmosphere lifecycle boundary', () => {
     expect(atmosphere.lightningActive).toBe(false)
     expect((atmosphere as unknown as { lightningFlash: number }).lightningFlash).toBe(0)
   })
+
+  it('keeps the public weather state valid when an external ID is malformed', () => {
+    const atmosphere = Object.create(Atmosphere.prototype) as Atmosphere
+    const calls: string[] = []
+    ;(atmosphere as unknown as { disposed: boolean }).disposed = false
+    ;(atmosphere as unknown as { weather: string }).weather = 'clear'
+    ;(atmosphere as unknown as { dirty: boolean }).dirty = false
+    ;(atmosphere as unknown as { weatherDirector: { setWeather(id: string, instant: boolean): void } }).weatherDirector = {
+      setWeather(id, instant) {
+        calls.push(`${id}:${instant}`)
+      },
+    }
+
+    atmosphere.setWeather('invalid' as never, true)
+
+    expect(atmosphere.weather).toBe('clear')
+    expect(calls).toEqual(['clear:true'])
+    expect((atmosphere as unknown as { dirty: boolean }).dirty).toBe(true)
+  })
 })

@@ -4,6 +4,7 @@
 
 ### Ship
 
+- **10.592** Keep Atmosphere's public weather state synchronized with the normalized director profile when malformed runtime IDs arrive.
 - **10.591** Fail closed on malformed replay or course weather IDs so the director always resolves a valid authored profile instead of indexing undefined data.
 - **10.590** Derive the weather identifier type from the cycle catalog so front order and keyed weather tables cannot drift as new conditions are added.
 - **10.589** Derive the course-picker category type from its runtime catalog so filter normalization, labels, and rendering cannot drift.

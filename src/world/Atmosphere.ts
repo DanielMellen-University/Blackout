@@ -26,6 +26,7 @@ import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
   WEATHER_LABELS,
   WeatherDirector,
+  normalizeWeatherId,
   timeOfDayForSeed,
   weatherIdForSeed,
   type WeatherId,
@@ -525,8 +526,9 @@ export class Atmosphere {
 
   setWeather(id: WeatherId, instant = false): void {
     if (this.disposed) return
-    this.weatherDirector.setWeather(id, instant)
-    this.weather = id
+    const safeId = normalizeWeatherId(id)
+    this.weatherDirector.setWeather(safeId, instant)
+    this.weather = safeId
     this.dirty = true
   }
 
