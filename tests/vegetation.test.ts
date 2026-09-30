@@ -1,4 +1,4 @@
-import { Mesh, MeshStandardMaterial } from 'three'
+import { DodecahedronGeometry, Mesh, MeshStandardMaterial } from 'three'
 import { describe, expect, it } from 'vitest'
 import { createVegetationFactory, vegetationInstanceCount } from '../src/world/vegetation'
 
@@ -40,5 +40,19 @@ describe('weathered vegetation materials', () => {
     } finally {
       factory.disposeShared()
     }
+  })
+
+  it('uses a rounded lowland ground-cover silhouette instead of cone spikes', () => {
+    const factory = createVegetationFactory()
+    const buckets = factory.createBuckets()
+    for (let seed = 1; seed <= 24; seed++) {
+      buckets.place('plains', seed * 3, 0, seed * -5, seed, false)
+    }
+    buckets.finalize()
+
+    expect(
+      buckets.group.children.some(child => child instanceof Mesh && child.geometry instanceof DodecahedronGeometry),
+    ).toBe(true)
+    factory.disposeShared()
   })
 })

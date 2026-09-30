@@ -182,7 +182,10 @@ export function createVegetationFactory(clock: { value: number } = { value: 0 })
   const cactusBodyGeo = new CylinderGeometry(0.28, 0.34, 1, 7)
   const cactusArmGeo = new CylinderGeometry(0.14, 0.16, 0.55, 6)
   const reedGeo = new CylinderGeometry(0.04, 0.07, 1, 4)
-  const grassGeo = new ConeGeometry(0.42, 1.25, 5)
+  // Ground cover should read as a soft tuft, not a field of warning spikes.
+  // A rounded dodecahedron keeps the same single instanced batch and low-poly
+  // style while staying readable when snow shading lifts the top surfaces.
+  const grassGeo = new DodecahedronGeometry(1, 0)
   const deadGeo = new CylinderGeometry(0.12, 0.2, 1, 5)
 
   // --- materials ---

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.634** Replace sharp lowland grass cones with rounded instanced ground-cover clumps so snow and weather shading cannot turn smooth green terrain into white spike fields.
 - **10.633** Cache resolved land/water contact surfaces alongside frame-scoped heights so repeated aircraft probes reuse rendered surface kind without stale values across terrain revisions.
 
 ## v0.12.0 - 2026-09-22
