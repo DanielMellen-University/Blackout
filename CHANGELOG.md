@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.656** Add debounced controller link cues so pilots see when a gamepad connects or disappears, while failed polls still clear flight input immediately.
 - **10.655** Fail closed on malformed or partially disconnected gamepad payloads, clearing stale axes and utility edges instead of throwing through the animation loop.
 - **10.654** Map the standard gamepad Start edge to the existing pause queue so controller pilots can freeze flight without keyboard input, preserving the 30 Hz poll budget and edge-safe disconnect cleanup.
 - **10.653** Add an edge-triggered PAUSE action to the touch flight deck, routing through the existing pause menu and clearing held controls before freezing simulation.

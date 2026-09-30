@@ -1862,6 +1862,13 @@ export async function boot(): Promise<void> {
       aircraft.setStormBuffet(stormDrive)
       cameras.setStormBuffet(stormDrive)
 
+      const gamepadConnection = input.consumeGamepadConnection()
+      if (gamepadConnection === 'connected') {
+        showBanner('CONTROLLER LINKED / READY', 1500, 'success')
+      } else if (gamepadConnection === 'disconnected') {
+        showBanner('CONTROLLER LOST / INPUT CLEARED', 2400, 'danger')
+      }
+
       if (input.consumeCameraToggle()) {
         const mode = cameras.toggleMode(aircraft)
         cameraPreference = mode

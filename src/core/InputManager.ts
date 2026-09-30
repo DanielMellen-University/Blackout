@@ -42,6 +42,9 @@ export class InputManager {
   private gamepadStabilityHeld = false
   private gamepadGhostHeld = false
   private gamepadPauseHeld = false
+  private gamepadConnected = false
+  private gamepadMissingPolls = 0
+  private gamepadConnectionQueued: 'connected' | 'disconnected' | null = null
   private touchPitch = 0
   private touchRoll = 0
   private touchYaw = 0
@@ -376,6 +379,13 @@ export class InputManager {
     return true
   }
 
+  /** Consume a debounced controller link transition for a user-facing cue. */
+  consumeGamepadConnection(): 'connected' | 'disconnected' | null {
+    const transition = this.gamepadConnectionQueued
+    this.gamepadConnectionQueued = null
+    return transition
+  }
+
   private axis(positive: string, negative: string): number {
     return (this.keys.has(positive) ? 1 : 0) - (this.keys.has(negative) ? 1 : 0)
   }
@@ -393,7 +403,7 @@ export class InputManager {
     this.gamepadAirbrake = false
 
     if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') {
-      this.clearGamepadEdges()
+      this.markGamepadMissing()
       return
     }
     let pads: readonly (Gamepad | null)[]
@@ -401,7 +411,7 @@ export class InputManager {
       const rawPads = navigator.getGamepads()
       pads = Array.isArray(rawPads) ? rawPads : []
     } catch {
-      this.clearGamepadEdges()
+      this.markGamepadMissing()
       return
     }
     let pad: Gamepad | null = null
@@ -413,9 +423,10 @@ export class InputManager {
       }
     }
     if (!pad) {
-      this.clearGamepadEdges()
+      this.markGamepadMissing()
       return
     }
+    this.markGamepadPresent()
 
     // Browsers normally expose both arrays, but a disconnect during polling
     // can briefly hand back a partial object. Treat malformed arrays as an
@@ -548,7 +559,25 @@ export class InputManager {
     this.gamepadThrottle = 0
     this.gamepadBoost = false
     this.gamepadAirbrake = false
+    this.gamepadConnected = false
+    this.gamepadMissingPolls = 0
+    this.gamepadConnectionQueued = null
     this.clearGamepadEdges()
+  }
+
+  private markGamepadPresent(): void {
+    this.gamepadMissingPolls = 0
+    if (this.gamepadConnected) return
+    this.gamepadConnected = true
+    this.gamepadConnectionQueued = 'connected'
+  }
+
+  private markGamepadMissing(): void {
+    this.gamepadMissingPolls = Math.min(2, this.gamepadMissingPolls + 1)
+    this.clearGamepadEdges()
+    if (this.gamepadMissingPolls < 2 || !this.gamepadConnected) return
+    this.gamepadConnected = false
+    this.gamepadConnectionQueued = 'disconnected'
   }
 
   private clearGamepadEdges(): void {

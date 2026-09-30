@@ -406,6 +406,34 @@ describe('flight input one-shot controls', () => {
     vi.unstubAllGlobals()
   })
 
+  it('reports debounced controller link transitions without repeating steady state', () => {
+    const pad = {
+      connected: true,
+      axes: [0, 0, 0],
+      buttons: Array.from({ length: 16 }, () => ({ pressed: false })),
+    }
+    vi.stubGlobal('navigator', { getGamepads: () => [pad] })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    input.sampleWithDt(1)
+    expect(input.consumeGamepadConnection()).toBe('connected')
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    expect(input.consumeGamepadConnection()).toBe(null)
+
+    pad.connected = false
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    expect(input.consumeGamepadConnection()).toBe(null)
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    expect(input.consumeGamepadConnection()).toBe('disconnected')
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    expect(input.consumeGamepadConnection()).toBe(null)
+
+    input.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('fails closed when a browser returns malformed gamepad payloads', () => {
     vi.stubGlobal('navigator', {
       getGamepads: () => ({ connected: true }),
