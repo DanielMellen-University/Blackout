@@ -56,6 +56,9 @@ describe('external camera framing', () => {
       expect(cameras.camera.far).toBe(cameraFarForQuality('low'))
       cameras.setRenderQuality('high')
       expect(cameras.camera.far).toBe(CAMERA_FAR)
+      cameras.setRenderQuality('ultra' as never)
+      expect(cameras.camera.far).toBe(cameraFarForQuality('balanced'))
+      expect((cameras as unknown as { renderQuality: string }).renderQuality).toBe('balanced')
     } finally {
       cameras.dispose()
     }
@@ -220,6 +223,7 @@ describe('external camera framing', () => {
     expect(cameraOcclusionSampleCount(22)).toBe(8)
     expect(cameraOcclusionSampleCount(22.01)).toBe(10)
     expect(cameraOcclusionSampleCount(Number.NaN)).toBe(10)
+    expect(cameraOcclusionSampleCount(16, 'ultra' as never)).toBe(8)
   })
 
   it('uses a smaller bounded occlusion budget on Low', () => {

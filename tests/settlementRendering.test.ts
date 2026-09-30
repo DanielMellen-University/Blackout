@@ -108,6 +108,11 @@ describe('settlement rendering and lifecycle', () => {
 
       system.setRenderQuality('high')
       expect(markings.visible).toBe(true)
+      system.setRenderQuality('low')
+      expect(markings.visible).toBe(false)
+      system.setRenderQuality('ultra' as never)
+      expect((system as unknown as { renderQuality: string }).renderQuality).toBe('balanced')
+      expect(markings.visible).toBe(true)
     } finally {
       system.dispose()
     }

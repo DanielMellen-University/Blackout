@@ -14,8 +14,7 @@ import {
 } from '../world/ground'
 import { CHUNK_SIZE, FOG_MARGIN_CHUNKS, fogFarForViewRadius } from '../world/TerrainSystem'
 import { CockpitMode } from './CockpitMode'
-import type { RenderQuality } from '../core/RenderQuality'
-import { renderQualityProfile } from '../core/RenderQuality'
+import { normalizeRenderQuality, renderQualityProfile, type RenderQuality } from '../core/RenderQuality'
 import {
   stormBuffetOffsetInto,
   stormBuffetViewScale,
@@ -219,8 +218,9 @@ export class CameraSystem {
   /** Apply the shared render preset to chase-camera terrain probe detail. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.renderQuality = quality
-    const far = cameraFarForQuality(quality)
+    const safeQuality = normalizeRenderQuality(quality)
+    this.renderQuality = safeQuality
+    const far = cameraFarForQuality(safeQuality)
     if (Math.abs(this.camera.far - far) > 0.5) {
       this.camera.far = far
       this.camera.updateProjectionMatrix()
@@ -846,7 +846,7 @@ export function cameraViewportAspect(width: number, height: number): number {
 /** Distance-aware ground-occlusion probes for the external chase rig. */
 export function cameraOcclusionSampleCount(distance: number, quality: RenderQuality = 'balanced'): number {
   const d = Number.isFinite(distance) ? Math.max(0, distance) : Infinity
-  if (quality === 'low') {
+  if (normalizeRenderQuality(quality) === 'low') {
     if (d <= 10) return 4
     if (d <= 22) return 5
     return 6

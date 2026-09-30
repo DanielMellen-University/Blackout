@@ -15,7 +15,7 @@ import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 function finiteWeather01(value: number): number {
   return Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
@@ -694,7 +694,7 @@ export class SettlementSystem {
   /** Keep the settlement silhouette and routes while trimming secondary draws on Low. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.renderQuality = quality
+    this.renderQuality = normalizeRenderQuality(quality)
     for (const { detail } of this.loaded.values()) this.applyDetailQuality(detail)
   }
 
