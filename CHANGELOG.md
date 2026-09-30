@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.689** Reuse the aircraft's fixed-step ground-height cache during collision classification, removing a duplicate terrain sampler query from every airborne near-ground check.
 - **10.688** Make the version checker validate the README recent-changes marker, preventing stale roadmap metadata from shipping after a commit lands.
 - **10.687** Stabilize tied radar contacts with deterministic landmark identity and position ordering, preventing crowded city and village labels or target cycling from reshuffling when streamed source order changes.
 - **10.686** Replace capped settlement point probes with a bounded segment-vs-building sweep, preventing long physics steps from tunneling through loaded city or village buildings while retaining the cheap airfield fallback path.

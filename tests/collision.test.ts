@@ -189,7 +189,11 @@ describe('impact quaternion helper sanity', () => {
 describe('collision query budget', () => {
   it('skips the rich surface query for a high airborne jet', () => {
     let surfaceSamples = 0
-    setGroundHeightSampler(() => 0)
+    let heightSamples = 0
+    setGroundHeightSampler((_x, _z) => {
+      heightSamples++
+      return 0
+    })
     setGroundSurfaceSampler((_x, _z, out) => {
       surfaceSamples++
       out.height = 0
@@ -199,9 +203,13 @@ describe('collision query budget', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 1000, 0)
     aircraft.velocity.set(0, 0, 120)
+    heightSamples = 0
 
     expect(new CollisionSystem().check(aircraft)).toBe('air')
     expect(surfaceSamples).toBe(0)
+    // FlightModel's grounded probe is reused by CollisionSystem's near-ground
+    // envelope check instead of sampling the same point twice.
+    expect(heightSamples).toBe(1)
   })
 
   it('trusts the resolved impact surface without sampling it again', () => {

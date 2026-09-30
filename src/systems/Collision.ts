@@ -2,8 +2,8 @@ import { MathUtils, Quaternion, Vector3 } from 'three'
 import type { Aircraft, AircraftImpact, ContactSurfaceKind } from '../aircraft/Aircraft'
 import { flightConfig as C } from '../aircraft/flightConfig'
 import {
-  contactMinY,
   sampleGroundSurfaceInto,
+  undercarriageClearance,
   type GroundSurfaceSample,
 } from '../world/ground'
 
@@ -99,11 +99,11 @@ export class CollisionSystem {
     let onPad = !!impact || grounded
     let surface: ContactSurfaceKind = impact?.surface ?? 'land'
     if (!impact && !grounded) {
-      const minY = contactMinY(
-        aircraft.position.x,
-        aircraft.position.z,
-        aircraft.controls.gearDown,
-      )
+      // `aircraft.onGround` above has already populated the fixed-step
+      // caller-owned floor cache at this pose. Reuse its resolved height
+      // instead of invoking the terrain sampler a second time for the same
+      // near-ground envelope check.
+      const minY = aircraft.groundHeight + undercarriageClearance(aircraft.controls.gearDown)
       onPad = aircraft.position.y <= minY + 0.2
     }
     if (!impact && onPad) {
