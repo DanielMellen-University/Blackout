@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { planTerrainTiles, terrainBuildPriority, tileKey } from '../src/world/TerrainLayout'
-import { CHUNK_SIZE, fogFarForViewRadius, fogNearForViewRadius, FOG_FAR, STREAM_RADIUS_M, VIEW_RADIUS } from '../src/world/TerrainSystem'
+import { CHUNK_SIZE, fogFarForViewRadius, fogNearForViewRadius, FOG_FAR, STREAM_RADIUS_M, terrainFadeTargetAlpha, VIEW_RADIUS } from '../src/world/TerrainSystem'
 
 describe('long-range adaptive terrain coverage', () => {
   it('prioritizes contact detail and missing coverage over distant LOD rebuilds', () => {
@@ -23,6 +23,12 @@ describe('long-range adaptive terrain coverage', () => {
     expect(fogFarForViewRadius(52)).toBe(44 * CHUNK_SIZE)
     expect(fogNearForViewRadius(52)).toBe(Math.round(44 * CHUNK_SIZE * 0.34))
     expect(fogFarForViewRadius(Number.NaN)).toBe(FOG_FAR)
+  })
+
+  it('fades the active quality horizon instead of using the High radius', () => {
+    expect(terrainFadeTargetAlpha(51, 52)).toBeLessThan(1)
+    expect(terrainFadeTargetAlpha(51, 52)).toBeLessThan(terrainFadeTargetAlpha(51, 80))
+    expect(terrainFadeTargetAlpha(51, Number.NaN)).toBe(1)
   })
 
   it('covers the doubled horizon without overlapping leaves or unbounded mesh growth', () => {

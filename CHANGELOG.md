@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.612** Tie terrain horizon fades to the active render-quality radius so Low mode eases its shorter stream edge instead of popping fully opaque tiles at the cutoff.
+
 - **10.611** Deduplicate malformed seeded-world retention manifests by seed identity, preserving the newest touch instead of wasting bounded record slots.
 
 - **10.610** Clear stale explicit-seed identity when course selection changes through another tab or a storage reset, keeping the next random launch on the shared bounded record key.

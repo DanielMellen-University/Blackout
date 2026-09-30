@@ -91,6 +91,17 @@ export function fogNearForViewRadius(radius: number): number {
   return Math.round(fogFarForViewRadius(radius) * 0.34)
 }
 
+/** Fade tiles against the active quality radius instead of the High preset. */
+export function terrainFadeTargetAlpha(cellDist: number, viewRadius: number): number {
+  const safeRadius = Math.max(
+    FOG_MARGIN_CHUNKS + 2,
+    Number.isFinite(viewRadius) ? viewRadius : VIEW_RADIUS,
+  )
+  const safeDistance = Number.isFinite(cellDist) ? Math.max(0, cellDist) : 0
+  const fadeStart = safeRadius - FADE_CELLS
+  return 1 - MathUtils.smoothstep(safeDistance, fadeStart, safeRadius + 0.35)
+}
+
 export function lodFromDist(dist: number): TerrainLod {
   if (dist <= 3) return 0
   if (dist <= 11) return 1
@@ -892,7 +903,6 @@ export class TerrainSystem {
    */
   private updateFades(_pcx: number, _pcz: number, dt: number): void {
     const fadeK = 1 - Math.exp(-dt * 6)
-    const fadeStart = VIEW_RADIUS - FADE_CELLS
     const toRemove = this.fadeRemovals
     toRemove.length = 0
 
@@ -916,8 +926,7 @@ export class TerrainSystem {
       chunk.fadeAge += dt
       if (!chunk.fadingOut) {
         const cellDist = tileDistance(chunk.cx, chunk.cz, chunk.size, this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE)
-        chunk.targetAlpha =
-          1 - MathUtils.smoothstep(cellDist, fadeStart, VIEW_RADIUS + 0.35)
+        chunk.targetAlpha = terrainFadeTargetAlpha(cellDist, this.viewRadius)
       } else {
         chunk.targetAlpha = 0
       }
