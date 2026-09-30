@@ -47,6 +47,19 @@ interface BuiltPapi {
 const airfieldPapiState = new WeakMap<Group, PapiState>()
 const runwayPapiState = new WeakMap<Group, PapiState>()
 
+interface AirfieldLightingState {
+  readonly glass: MeshStandardMaterial
+  readonly bay: MeshStandardMaterial
+  readonly whiteLite: MeshStandardMaterial
+  readonly redLite: MeshStandardMaterial
+  readonly amberLite: MeshStandardMaterial
+  readonly mintLite: MeshStandardMaterial
+  lastContrast: number
+}
+
+const airfieldLightingState = new WeakMap<Group, AirfieldLightingState>()
+const runwayLightingState = new WeakMap<Group, AirfieldLightingState>()
+
 /** Axis-aligned box in runway-local metres (origin at pad centre). */
 export interface LocalBox {
   cx: number
@@ -107,6 +120,15 @@ export function createAirfieldLandmarks(): Group {
   root.add(buildFloods(mat))
   root.add(buildFence(mat))
   root.add(buildApronLights(mat))
+  airfieldLightingState.set(root, {
+    glass: mat.glass,
+    bay: mat.bay,
+    whiteLite: mat.whiteLite,
+    redLite: mat.redLite,
+    amberLite: mat.amberLite,
+    mintLite: mat.mintLite,
+    lastContrast: Number.NaN,
+  })
   freezeStaticAirfieldMeshes(root)
 
   return root
@@ -436,6 +458,59 @@ export function setAirfieldWind(root: Group, windX: number, windZ: number): void
   nodes.windsock.rotation.y = angle
   nodes.fabric.rotation.x = 0.12 + speed * 0.18
   nodes.fabric.scale.set(1, 0.84 + speed * 0.28, 1)
+}
+
+/**
+ * Collapse daylight and precipitation into one bounded operations-lighting
+ * contrast value. Existing meshes use this value to stay subtle in daylight,
+ * readable at night, and a little more legible through rain or snow.
+ */
+export function airfieldLightingContrast(
+  daylight: number,
+  rain = 0,
+  snow = 0,
+  cloudCover = 0,
+): number {
+  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 1
+  const safeRain = Number.isFinite(rain) ? MathUtils.clamp(rain, 0, 1) : 0
+  const safeSnow = Number.isFinite(snow) ? MathUtils.clamp(snow, 0, 1) : 0
+  const safeCloud = Number.isFinite(cloudCover) ? MathUtils.clamp(cloudCover, 0, 1) : 0
+  const obscuration = Math.max(safeRain, safeSnow, safeCloud * .65)
+  return MathUtils.clamp((1 - safeDaylight) * .9 + obscuration * .24, 0, 1)
+}
+
+/**
+ * Update existing airfield emissive materials without rebuilding geometry or
+ * walking the scene every frame. The runway root is accepted so callers do
+ * not need to retain a second reference to the nested landmark group.
+ */
+export function setAirfieldLighting(
+  root: Group,
+  daylight: number,
+  rain = 0,
+  snow = 0,
+  cloudCover = 0,
+): void {
+  let state = runwayLightingState.get(root)
+  if (!state) {
+    state = airfieldLightingState.get(root)
+    if (!state) {
+      const airfield = root.getObjectByName('Airfield')
+      if (airfield instanceof Group) state = airfieldLightingState.get(airfield)
+    }
+    if (state) runwayLightingState.set(root, state)
+  }
+  if (!state) return
+
+  const contrast = airfieldLightingContrast(daylight, rain, snow, cloudCover)
+  if (Number.isFinite(state.lastContrast) && Math.abs(state.lastContrast - contrast) < .01) return
+  state.lastContrast = contrast
+  state.glass.emissiveIntensity = .22 + contrast * .42
+  state.bay.emissiveIntensity = .18 + contrast * .4
+  state.whiteLite.emissiveIntensity = 1.4 + contrast * .52
+  state.redLite.emissiveIntensity = 1.6 + contrast * .56
+  state.amberLite.emissiveIntensity = 1.35 + contrast * .5
+  state.mintLite.emissiveIntensity = 1.15 + contrast * .46
 }
 
 /**

@@ -2,8 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
 import { createRunway, runwayLightIntensity, setRunwayDaylight } from '../src/world/Runway'
 import {
+  airfieldLightingContrast,
   papiLightIntensity,
   papiLightPattern,
+  setAirfieldLighting,
   setAirfieldPapi,
   setAirfieldWind,
 } from '../src/world/Airfield'
@@ -39,6 +41,36 @@ describe('runway lighting', () => {
     expect((light.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(.18)
     setRunwayDaylight(runway, 0)
     expect((light.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(1.8)
+  })
+
+  it('raises existing airfield operations lights at night and in weather', () => {
+    runway = createRunway()
+    const floodHead = runway.getObjectByName('Floods')?.children[2] as Mesh
+    const apronLight = runway.getObjectByName('ApronLights')?.children[0] as Mesh
+    expect(floodHead).toBeInstanceOf(Mesh)
+    expect(apronLight).toBeInstanceOf(Mesh)
+
+    setAirfieldLighting(runway, 1, 0, 0, 0)
+    const dayFlood = (floodHead.material as MeshStandardMaterial).emissiveIntensity
+    const dayApron = (apronLight.material as MeshStandardMaterial).emissiveIntensity
+    setAirfieldLighting(runway, 0, .9, 0, .8)
+
+    expect((floodHead.material as MeshStandardMaterial).emissiveIntensity).toBeGreaterThan(dayFlood)
+    expect((apronLight.material as MeshStandardMaterial).emissiveIntensity).toBeGreaterThan(dayApron)
+    expect(airfieldLightingContrast(1, 0, 0, 0)).toBe(0)
+    expect(airfieldLightingContrast(0, 1, 1, 1)).toBe(1)
+    expect(airfieldLightingContrast(Number.NaN, Number.NaN, Number.NaN, Number.NaN)).toBe(0)
+  })
+
+  it('caches airfield lighting materials after the first lookup', () => {
+    runway = createRunway()
+    const lookup = vi.spyOn(runway, 'getObjectByName')
+
+    setAirfieldLighting(runway, 0, .5, 0, .4)
+    lookup.mockClear()
+    setAirfieldLighting(runway, .2, .6, .1, .7)
+
+    expect(lookup).not.toHaveBeenCalled()
   })
 
   it('updates the cached shared material without traversing the runway', () => {

@@ -12,6 +12,7 @@ import type { WeatherSnapshot, WindSide } from './WeatherDirector'
 import {
   AIRFIELD_COLLIDERS,
   AIRFIELD_COLLISION_PADDING,
+  setAirfieldLighting,
   setAirfieldPapi,
   setAirfieldWind,
 } from './Airfield'
@@ -578,6 +579,7 @@ export class World {
       next.cloudCover,
     )
     this.settlements.setWeatherEffects(next.rain, next.snow, next.daylight)
+    setAirfieldLighting(this.runway, next.daylight, next.rain, next.snow, next.cloudCover)
     if (!this.appliedWeather) {
       this.appliedWeather = { ...next }
     } else {
