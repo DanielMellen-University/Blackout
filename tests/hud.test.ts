@@ -62,6 +62,7 @@ import {
   normalizeMissionPhase,
   navigationAltitudeCue,
   navigationApproachCue,
+  navigationAriaLabel,
   navigationLateralCue,
   navigationLateralLabel,
   navigationSpeedCue,
@@ -163,6 +164,25 @@ describe('HUD value formatting', () => {
     writeRadarMarkerPosition(80_000, Math.PI / 2, position, 8_000)
     expect(position.left).toBe(100)
     expect(position.top).toBe(50)
+  })
+
+  it('keeps navigation semantics complete and fails closed when hidden', () => {
+    expect(navigationAriaLabel(
+      'base',
+      1_250,
+      -84,
+      'left',
+      'closing',
+      9,
+      'turn-left',
+      'left',
+      'fast',
+      'high',
+    )).toBe(
+      'BASE navigation, 1.3 kilometres, left, 84 metres below target, closing, estimated arrival 9 seconds, turn left to align with runway, steer left toward runway centerline, above approach speed, above glide slope',
+    )
+    expect(navigationAriaLabel('gate', Number.NaN, Number.NaN, null, 'steady', null, null, null, null, null, 0, 5))
+      .toBe('GATE 1/5 navigation, 0 metres, ahead, level with target, holding range')
   })
 
   it('removes float noise at a bounded visual precision', () => {

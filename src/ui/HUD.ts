@@ -583,6 +583,54 @@ export function navigationTargetText(target: unknown, current?: number, total?: 
   return `GATE ${safeCurrent + 1}/${safeTotal}`
 }
 
+/** Describe the live navigation cue without exposing raw internal state. */
+export function navigationAriaLabel(
+  target: unknown,
+  distance: number,
+  altDelta: number,
+  sector: NavigationSector | null,
+  rangeCue: NavigationRangeCue,
+  etaSeconds: number | null,
+  approach: NavigationApproachCue | null = null,
+  lateral: NavigationLateralCue | null = null,
+  speed: NavigationSpeedCue | null = null,
+  glide: NavigationGlideCue | null = null,
+  current?: number,
+  total?: number,
+): string {
+  const targetText = navigationTargetText(target, current, total)
+  const safeDistance = Number.isFinite(distance) ? Math.max(0, distance) : 0
+  const distanceText = safeDistance >= 1_000
+    ? `${(safeDistance / 1_000).toFixed(safeDistance < 10_000 ? 1 : 0)} kilometres`
+    : `${Math.round(safeDistance)} metres`
+  const safeAltitude = Number.isFinite(altDelta) ? Math.round(altDelta) : 0
+  const altitudeText = safeAltitude > 0
+    ? `${safeAltitude} metres above target`
+    : safeAltitude < 0 ? `${Math.abs(safeAltitude)} metres below target` : 'level with target'
+  const direction = navigationSectorLabel(sector).toLowerCase()
+  const rangeText = rangeCue === 'closing' ? 'closing' : rangeCue === 'opening' ? 'opening' : 'holding range'
+  const etaText = etaSeconds !== null && Number.isFinite(etaSeconds)
+    ? `, estimated arrival ${Math.max(0, Math.round(etaSeconds))} seconds`
+    : ''
+  const approachText = approach === 'aligned'
+    ? ', aligned with runway'
+    : approach === 'turn-left' ? ', turn left to align with runway'
+      : approach === 'turn-right' ? ', turn right to align with runway' : ''
+  const lateralText = lateral === 'left'
+    ? ', steer left toward runway centerline'
+    : lateral === 'right' ? ', steer right toward runway centerline'
+      : lateral === 'center' ? ', on runway centerline' : ''
+  const speedText = speed === 'slow'
+    ? ', below approach speed'
+    : speed === 'fast' ? ', above approach speed'
+      : speed === 'on-speed' ? ', on approach speed' : ''
+  const glideText = glide === 'high'
+    ? ', above glide slope'
+    : glide === 'low' ? ', below glide slope'
+      : glide === 'on-slope' ? ', on glide slope' : ''
+  return `${targetText} navigation, ${distanceText}, ${direction}, ${altitudeText}, ${rangeText}${etaText}${approachText}${lateralText}${speedText}${glideText}`
+}
+
 /** Route the navigation cue to base while an engine-out sortie is recoverable. */
 export function emergencyReturnActive(engineOut: boolean, phase: unknown): boolean {
   return engineOut === true && phase !== 'complete' && phase !== 'failed'
@@ -2409,6 +2457,8 @@ export class HUD {
       this.setClass(this.navCueEl, 'nav-glide-on', false)
       this.setClass(this.navCueEl, 'nav-glide-low', false)
       this.setHidden(this.navCueEl, true)
+      this.setAttribute(this.navCueEl, 'aria-hidden', 'true')
+      this.setAttribute(this.navCueEl, 'aria-label', '')
       this.setNavigationSector(null)
       if (this.navTurnEl) this.setText(this.navTurnEl, '')
       this.navTurnText = ''
@@ -2442,6 +2492,7 @@ export class HUD {
     this.navTargetValue = targetLabel
     const altitudeCue = navigationAltitudeCue(safeAltDelta, targetLabel === 'BASE' ? 'base' : 'gate')
     this.setHidden(this.navCueEl, false)
+    this.setAttribute(this.navCueEl, 'aria-hidden', 'false')
     this.setClass(this.navCueEl, 'near-gate', targetLabel === 'NEXT GATE' && gateProximityHudActive(safeDist))
     this.setClass(this.navCueEl, 'return-home', targetLabel === 'BASE')
     this.setClass(this.navCueEl, 'nav-alt-high', altitudeCue === 'high')
@@ -2467,23 +2518,20 @@ export class HUD {
     }
     const sector = navigationSector(safeBearing)
     this.setNavigationSector(sector)
-    const approachLabel = approachCue === 'aligned'
-      ? 'aligned with runway'
-      : approachCue === 'turn-left' ? 'turn left to align with runway'
-        : approachCue === 'turn-right' ? 'turn right to align with runway' : ''
-    const lateralLabel = lateralCue === 'left'
-      ? 'steer left toward runway centerline'
-      : lateralCue === 'right' ? 'steer right toward runway centerline'
-        : lateralCue === 'center' ? 'on runway centerline' : ''
-    const speedLabel = landingSpeedCue === 'slow'
-      ? 'below approach speed'
-      : landingSpeedCue === 'fast' ? 'above approach speed'
-        : landingSpeedCue === 'on-speed' ? 'on approach speed' : ''
-    const glideLabel = landingGlideCue === 'high'
-      ? 'above glide slope'
-      : landingGlideCue === 'low' ? 'below glide slope'
-        : landingGlideCue === 'on-slope' ? 'on glide slope' : ''
-    this.setAttribute(this.navCueEl, 'aria-label', `${targetText} navigation, ${navigationSectorLabel(sector)}${approachLabel ? `, ${approachLabel}` : ''}${lateralLabel ? `, ${lateralLabel}` : ''}${speedLabel ? `, ${speedLabel}` : ''}${glideLabel ? `, ${glideLabel}` : ''}`)
+    this.setAttribute(this.navCueEl, 'aria-label', navigationAriaLabel(
+      target,
+      safeDist,
+      safeAltDelta,
+      sector,
+      rangeCue,
+      etaSeconds,
+      approachCue,
+      lateralCue,
+      landingSpeedCue,
+      landingGlideCue,
+      missionCurrent,
+      missionTotal,
+    ))
     if (this.navTurnEl) {
       const turnText = navigationSectorLabel(sector)
       if (turnText !== this.navTurnText) this.navTurnText = turnText
