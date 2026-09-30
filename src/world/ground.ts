@@ -33,12 +33,6 @@ let groundSurfaceSampler: GroundSurfaceSampler | null = null
 let terrainSamplerOwner: object | null = null
 let samplerRevision = 0
 
-/** Reused analytic fallback record for numeric mesh samplers. */
-const fallbackSurfaceSample: { height: number; kind: TerrainSurfaceKind } = {
-  height: 0,
-  kind: 'land',
-}
-
 interface GroundHeightCacheEntry {
   x: number
   z: number
@@ -243,11 +237,10 @@ export function sampleGroundSurfaceInto(
     return out
   }
   // Numeric mesh samplers provide the rendered height but not surface kind.
-  // Recover that kind through the allocation-free scalar terrain path instead
-  // of constructing a full TerrainSurface object on every contact probe.
-  const surface = sampleTerrainSurfaceInto(fallbackSurfaceSample, x, z)
+  // Recover that kind through the allocation-free scalar terrain path, using
+  // the caller-owned output record so the fallback remains re-entrant.
+  sampleTerrainSurfaceInto(out, x, z)
   out.height = sampled
-  out.kind = surface.kind
   return out
 }
 
