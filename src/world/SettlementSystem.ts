@@ -520,23 +520,7 @@ export class SettlementSystem {
           if (job) this.readyRoads.push({ ...job, road: result.road })
         }
       }
-      this.worker.onerror = () => {
-        this.worker?.terminate(); this.worker = null
-        if (this.inFlight?.generation === this.generation) {
-          if (this.inFlight.type === 'settlement') {
-            this.checked.delete(this.inFlight.key)
-            // The queue is reverse-prioritized and consumed with pop().
-            // Append the failed job so it remains the next retry.
-            this.queue.push(this.inFlight)
-          } else {
-            // Keep the canonical edge marked while the synchronous fallback
-            // consumes it. Otherwise a second endpoint can enqueue a duplicate.
-            // The road queue is reverse-prioritized and consumed with pop().
-            if (this.roadSources.has(this.inFlight.key)) this.linkQueue.push(this.inFlight)
-          }
-        }
-        this.inFlight = null
-      }
+      this.worker.onerror = () => this.handleWorkerFailure()
     }
     for (const material of [this.asphalt, this.gravelShoulder, this.highway, this.bridgeDeck, this.highwayEdge]) {
       this.configureWeatherRoadMaterial(material)
@@ -1063,7 +1047,11 @@ export class SettlementSystem {
         // postMessage clones the pad synchronously, so the staging record can
         // be reused without allocating for every streamed settlement job.
         this.inFlight = { type: 'settlement', ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
-        this.worker.postMessage(this.inFlight)
+        try {
+          this.worker.postMessage(this.inFlight)
+        } catch {
+          this.handleWorkerFailure()
+        }
       } else {
         const plan = settlementForCell(job.cx, job.cz)
         if (plan) {
@@ -1075,7 +1063,11 @@ export class SettlementSystem {
       const link = this.takeNearestRoadJob(x, z)
       if (link && this.worker) {
         this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
-        this.worker.postMessage(this.inFlight)
+        try {
+          this.worker.postMessage(this.inFlight)
+        } catch {
+          this.handleWorkerFailure()
+        }
       } else if (link) {
         const road = roadBetweenSettlements(link.from, link.to)
         if (road && this.checkedLinks.has(link.key)) this.readyRoads.push({ ...link, road })
@@ -1089,6 +1081,34 @@ export class SettlementSystem {
     for (const connection of this.connections.values()) {
       connection.root.visible = roadDistance(x, z, connection.road) < this.roadDetailRadius
     }
+  }
+
+  /** Stop a broken worker and put its current job back through safe fallback. */
+  private handleWorkerFailure(): void {
+    this.worker?.terminate()
+    this.worker = null
+    const failed = this.inFlight
+    if (failed?.generation === this.generation) {
+      if (failed.type === 'settlement') {
+        this.checked.delete(failed.key)
+        // The queue is reverse-prioritized and consumed with pop(). Append the
+        // failed job so it remains the next retry without losing its priority.
+        this.queue.push(failed)
+        this.queue.sort((a, b) => {
+          const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX
+          const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ
+          const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX
+          const bz = (b.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ
+          return Math.hypot(bx, bz) - Math.hypot(ax, az)
+        })
+      } else {
+        // Keep the canonical edge marked while the synchronous fallback
+        // consumes it. Otherwise a second endpoint can enqueue a duplicate.
+        // The road queue is reverse-prioritized and consumed with pop().
+        if (this.roadSources.has(failed.key)) this.linkQueue.push(failed)
+      }
+    }
+    this.inFlight = null
   }
 
   hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {

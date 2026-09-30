@@ -50,6 +50,29 @@ describe('settlement rendering and lifecycle', () => {
     }
   })
 
+  it('falls back cleanly when posting a settlement job throws synchronously', () => {
+    class FailingWorker {
+      static instance: FailingWorker
+      onmessage?: (event: { data: object }) => void
+      onerror?: () => void
+      terminate = vi.fn()
+      constructor() { FailingWorker.instance = this }
+      postMessage() { throw new Error('structured clone rejected') }
+    }
+    vi.stubGlobal('Worker', FailingWorker)
+    const system = new SettlementSystem(new Scene())
+    try {
+      expect(() => system.update(3000, 3000)).not.toThrow()
+      expect(FailingWorker.instance.terminate).toHaveBeenCalledOnce()
+      expect(system.pendingCount).toBeGreaterThan(0)
+      expect(() => system.update(3000, 3000)).not.toThrow()
+      expect(system.count).toBe(1)
+    } finally {
+      system.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('batches buildings and roofs into instanced draws and cleans up unloaded instances', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     system.update(3000, 3000)
