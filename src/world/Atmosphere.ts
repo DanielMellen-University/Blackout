@@ -281,6 +281,8 @@ export class Atmosphere {
   weather: WeatherId = 'clear'
   private readonly weatherDirector = new WeatherDirector()
   private readonly weatherState = {} as WeatherSnapshot
+  /** Rebuild the pooled snapshot only after a weather mutation or update. */
+  private weatherSnapshotDirty = true
   private readonly skyCloudDeck = {} as SkyCloudDeck
   private elapsed = 0
   private lightningCharge = 0
@@ -459,6 +461,7 @@ export class Atmosphere {
     scene.add(this.cloudRoot)
 
     this.weatherDirector.snapshotInto(this.weatherState)
+    this.weatherSnapshotDirty = false
     this.apply(0, 0, 0, 0, 0, this.weatherState)
   }
 
@@ -511,6 +514,7 @@ export class Atmosphere {
     if (this.disposed) return this.weather
     const next = this.weatherDirector.cycle()
     this.weather = next
+    this.weatherSnapshotDirty = true
     this.dirty = true
     return next
   }
@@ -531,6 +535,7 @@ export class Atmosphere {
     const safeId = normalizeWeatherId(id)
     this.weatherDirector.setWeather(safeId, instant)
     this.weather = safeId
+    this.weatherSnapshotDirty = true
     this.dirty = true
   }
 
@@ -538,6 +543,7 @@ export class Atmosphere {
   setWindHeading(heading: number | null): void {
     if (this.disposed) return
     this.weatherDirector.setWindHeading(heading)
+    this.weatherSnapshotDirty = true
     this.dirty = true
   }
 
@@ -557,6 +563,7 @@ export class Atmosphere {
     this.snowField.setSeed(seed)
     this.weather = w
     this.reseedCloudField(seed)
+    this.weatherSnapshotDirty = true
     this.cloudImmersion = this.cloudImmersionTarget = 0
     this.lightningCharge = LIGHTNING_MIN_CHARGE + this.seededPulse(seed) * LIGHTNING_CHARGE_RANGE
     this.lightningFlash = 0
@@ -589,7 +596,11 @@ export class Atmosphere {
 
   /** Continuous precipitation values for terrain surface shading. */
   get weatherSnapshot(): WeatherSnapshot {
-    return this.weatherDirector.snapshotInto(this.weatherState)
+    if (this.weatherSnapshotDirty) {
+      this.weatherDirector.snapshotInto(this.weatherState)
+      this.weatherSnapshotDirty = false
+    }
+    return this.weatherState
   }
 
   /** True while the current weather front is blending toward its target. */
@@ -675,7 +686,8 @@ export class Atmosphere {
     this.elapsed += safeDt
     this.weatherDirector.update(safeDt)
     this.weather = this.weatherDirector.targetId
-    this.weatherDirector.snapshotInto(this.weatherState)
+    this.weatherSnapshotDirty = true
+    this.weatherSnapshot
 
     this.apply(safeX, safeY, safeZ, safeDt, safeVisualDt, this.weatherState)
     this.dirty = false

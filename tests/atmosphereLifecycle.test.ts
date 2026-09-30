@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { Atmosphere, DEFAULT_ATMOSPHERE_TIME } from '../src/world/Atmosphere'
+import type { WeatherSnapshot } from '../src/world/WeatherDirector'
 
 describe('atmosphere lifecycle boundary', () => {
   it('uses a stable pre-reseed clock', () => {
@@ -54,5 +55,30 @@ describe('atmosphere lifecycle boundary', () => {
     expect(atmosphere.weather).toBe('clear')
     expect(calls).toEqual(['clear:true'])
     expect((atmosphere as unknown as { dirty: boolean }).dirty).toBe(true)
+  })
+
+  it('reuses a clean weather snapshot until the director changes', () => {
+    const atmosphere = Object.create(Atmosphere.prototype) as Atmosphere
+    let calls = 0
+    const state = {} as WeatherSnapshot
+    const director = {
+      snapshotInto(out: typeof state) {
+        calls += 1
+        out.rain = calls
+        return out
+      },
+    }
+    ;(atmosphere as unknown as { disposed: boolean }).disposed = false
+    ;(atmosphere as unknown as { weatherSnapshotDirty: boolean }).weatherSnapshotDirty = true
+    ;(atmosphere as unknown as { weatherState: typeof state }).weatherState = state
+    ;(atmosphere as unknown as { weatherDirector: typeof director }).weatherDirector = director
+
+    const first = atmosphere.weatherSnapshot
+    const second = atmosphere.weatherSnapshot
+
+    expect(first).toBe(state)
+    expect(second).toBe(first)
+    expect(second.rain).toBe(1)
+    expect(calls).toBe(1)
   })
 })
