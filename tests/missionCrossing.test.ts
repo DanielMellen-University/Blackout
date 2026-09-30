@@ -287,6 +287,17 @@ describe('MissionSystem gate crossing', () => {
     expect(['relaxed', 'standard', 'technical']).toContain(summary.difficulty)
   })
 
+  it('preserves authored descent on the approach profile', () => {
+    // Start well above the generated terrain so this isolates route shaping
+    // from clearance promotion and makes the intended base-to-final profile
+    // explicit.
+    const route = buildMissionRoute(0, 100_000, 0, 0, 'approach', 'steady')
+    expect(route[1]!.y).toBeGreaterThan(route[0]!.y)
+    expect(route[2]!.y).toBeLessThan(route[1]!.y)
+    expect(route[3]!.y).toBeLessThan(route[2]!.y)
+    expect(route[4]!.y).toBeLessThan(route[3]!.y)
+  })
+
   it('validates the bounded route contract before pooled gate placement', () => {
     const route = buildMissionRoute(0, 20, 0, 0, 'orbit')
     const summary = summarizeMissionRoute(0, 20, 0, route, 'orbit')

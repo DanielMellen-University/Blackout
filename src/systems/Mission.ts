@@ -415,7 +415,10 @@ export function buildMissionRoute(
   let previousZ = safeSpawnZ
   for (let i = 0; i < points.length; i++) {
     const point = points[i]!
-    let requiredY = Math.max(point.y, previousY)
+    // Preserve authored climbs and descents. The old max(previousY) clamp
+    // turned every route into a monotonic climb, which made the approach
+    // profile lose its base-to-final descent before it reached the gates.
+    let requiredY = point.y
     const dx = point.x - previousX
     const dz = point.z - previousZ
     const samples = routeSegmentSampleCount(dx, dz)
@@ -439,7 +442,6 @@ export function buildMissionRoute(
       }
     }
     point.y = Math.max(point.y, requiredY)
-    if (i > 0) points[i - 1]!.y = Math.max(points[i - 1]!.y, requiredY)
     previousX = point.x
     previousY = point.y
     previousZ = point.z

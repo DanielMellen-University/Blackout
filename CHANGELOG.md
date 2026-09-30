@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.666** Preserve authored descending approach profiles while solving terrain clearance, so base-to-final routes no longer get flattened into monotonic climbs.
 - **10.665** Make live navigation guidance fully screen-reader complete by exposing target range, altitude, trend, ETA, and approach cues, and clear hidden navigation semantics instead of leaving stale output behind.
 - **10.664** Add cue-specific warning descriptions to the HUD accessibility label so screen readers distinguish terrain, flare, go-around, gear, fuel, and speed warnings.
 - **10.663** Carry bounded warning identity into the HUD so `LOW ALT`, `FLARE`, and `GO AROUND` receive distinct visual treatment without extra render-loop work.
