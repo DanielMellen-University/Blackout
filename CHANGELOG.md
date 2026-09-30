@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.643** Add a held speed-brake action to the touch flight deck, merging it with the existing keyboard brake path so touch approaches can shed speed without adding per-frame work or changing desktop controls.
 - **10.642** Add camera-view and landing-gear edge actions to the touch flight deck, reusing the existing one-shot input queues so touch pilots can complete the full flight loop without changing desktop controls or per-frame allocations.
 - **10.641** Drive existing airfield windows, hangar bay, flood heads, tower beacon, and apron lamps from cached daylight/weather contrast so night operations stay readable without new lights, meshes, or draw calls.
 - **10.640** Add a weather-aware cool airframe fill at low daylight so storm clouds, rain, and snow preserve the F-35 silhouette without brightening clear nights or adding dynamic lights.

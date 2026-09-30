@@ -337,6 +337,23 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('merges the held touch speed brake with the keyboard brake binding', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    input.setTouchState({ airbrake: true })
+    expect(input.sampleWithDt(0).airbrake).toBe(true)
+
+    input.setTouchState(null)
+    expect(input.sampleWithDt(0).airbrake).toBe(false)
+    fake.fire('keydown', 'KeyB')
+    expect(input.sampleWithDt(0).airbrake).toBe(true)
+    fake.fire('keyup', 'KeyB')
+    expect(input.sampleWithDt(0).airbrake).toBe(false)
+    input.dispose()
+  })
+
   it('turns touch camera and gear presses into one-shot input queues', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

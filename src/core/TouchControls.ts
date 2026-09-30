@@ -9,6 +9,7 @@ export type TouchAction =
   | 'throttle-up'
   | 'throttle-down'
   | 'boost'
+  | 'airbrake'
   | 'camera-toggle'
   | 'gear-toggle'
 
@@ -19,6 +20,7 @@ export interface TouchInputState {
   roll: number
   throttle: number
   boost: boolean
+  airbrake?: boolean
   cameraToggle?: boolean
   gearToggle?: boolean
 }
@@ -33,6 +35,7 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'throttle-up',
   'throttle-down',
   'boost',
+  'airbrake',
   'camera-toggle',
   'gear-toggle',
 ])
@@ -195,6 +198,7 @@ export class TouchControls {
     let roll = 0
     let throttle = 0
     let boost = false
+    let airbrake = false
     let cameraToggle = false
     let gearToggle = false
     for (const { action } of this.activePointers.values()) {
@@ -207,6 +211,7 @@ export class TouchControls {
       if (action === 'throttle-up') throttle += 1
       if (action === 'throttle-down') throttle -= 1
       if (action === 'boost') boost = true
+      if (action === 'airbrake') airbrake = true
       if (action === 'camera-toggle') cameraToggle = true
       if (action === 'gear-toggle') gearToggle = true
     }
@@ -216,6 +221,7 @@ export class TouchControls {
       roll: clampAxis(roll),
       throttle: clampAxis(throttle),
       boost,
+      airbrake,
       cameraToggle,
       gearToggle,
     })

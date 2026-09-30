@@ -38,6 +38,7 @@ export class InputManager {
   private touchYaw = 0
   private touchThrottle = 0
   private touchBoost = false
+  private touchAirbrake = false
   private touchCameraToggle = false
   private touchGearToggle = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
@@ -179,7 +180,7 @@ export class InputManager {
       : this.axis('KeyQ', 'KeyE')
     this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll, this.touchRoll)
     this.controls.boost = this.keys.has(this.keyboardBindings.boost) || this.gamepadBoost || this.touchBoost
-    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake)
+    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake) || this.touchAirbrake
     this.controls.stabilityAssist = this.stabilityAssist
 
     // Engine power: Shift up, Ctrl down
@@ -219,6 +220,7 @@ export class InputManager {
     this.touchRoll = clampAxis(state?.roll)
     this.touchThrottle = clampAxis(state?.throttle)
     this.touchBoost = state?.boost === true
+    this.touchAirbrake = state?.airbrake === true
     const cameraToggle = state?.cameraToggle === true
     const gearToggle = state?.gearToggle === true
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
@@ -448,6 +450,7 @@ export class InputManager {
     this.touchYaw = 0
     this.touchThrottle = 0
     this.touchBoost = false
+    this.touchAirbrake = false
     this.touchCameraToggle = false
     this.touchGearToggle = false
   }

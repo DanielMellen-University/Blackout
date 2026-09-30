@@ -226,4 +226,19 @@ describe('touch flight controls support detection', () => {
     expect(changes.at(-1)?.gearToggle).toBe(false)
     controls.dispose()
   })
+
+  it('holds and releases the speed brake like the other flight axes', () => {
+    const root = new TestElement()
+    const brake = new TestElement('airbrake')
+    root.appendChild(brake)
+    const changes: TouchInputState[] = []
+    const controls = new TouchControls(root as unknown as HTMLElement, state => changes.push(state))
+    controls.setVisible(true)
+
+    root.dispatch('pointerdown', pointerEvent(brake, 13))
+    expect(changes.at(-1)?.airbrake).toBe(true)
+    testWindow.dispatch('pointerup', pointerEvent(brake, 13))
+    expect(changes.at(-1)?.airbrake).toBe(false)
+    controls.dispose()
+  })
 })
