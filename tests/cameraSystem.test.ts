@@ -241,6 +241,15 @@ describe('external camera framing', () => {
     expect(cameraRelativeBearing(camera, yawed, target)).toBeCloseTo(0)
   })
 
+  it('keeps cockpit gate cues aligned with the camera projection', () => {
+    const noseFlip = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI)
+    const rightWingTarget = new Vector3(100, 0, 0)
+    // CockpitMode applies the 180° nose flip because Three.js cameras look -Z.
+    // A target on the airframe +X side therefore projects to screen-left.
+    expect(cameraRelativeBearing(new Vector3(), noseFlip, rightWingTarget))
+      .toBeCloseTo(-Math.PI / 2)
+  })
+
   it('clamps invalid speed input into the designed envelope', () => {
     const stopped = resolveExternalSpeedFraming(17, 60, 10, -1)
     const overspeed = resolveExternalSpeedFraming(17, 60, 10, 2)

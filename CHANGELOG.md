@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.717** Route normal gate guidance through the active camera projection, fixing the mirrored cockpit left/right cue while preserving the existing bounded HUD and navigation paths.
 - **10.716** Add a cached target-speed marker to the live IAS dial, clamped to the visible envelope so current airspeed and ENG% equilibrium are readable without new geometry, draw calls, or per-frame DOM churn.
 - **10.715** Show the engine's level-flight target speed beside ENG%, with cached knots formatting and accessible text so the arcade speed model is readable without changing flight physics.
 - **10.714** Move night-storm fog readability to the atmosphere boundary that owns the final fog colour, preserving the sky background and preventing lightning amplification while keeping the update allocation-free.

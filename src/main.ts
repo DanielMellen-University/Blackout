@@ -2581,9 +2581,7 @@ export async function boot(): Promise<void> {
       const returning = challenge.phase === 'returning'
       const emergencyReturn = emergencyReturnActive(engineOut, challenge.phase)
       let navTarget: 'gate' | 'base' | 'city' | 'village' = returning || emergencyReturn ? 'base' : 'gate'
-      let navBearing = cameras.mode === 'cockpit'
-        ? nav.bearing
-        : gateScreenBearing(cameras.camera, gate)
+      let navBearing = gateScreenBearing(cameras.camera, gate)
       let navDist = nav.dist
       let navAltDelta = nav.altDelta
       let navApproach: 'aligned' | 'turn-left' | 'turn-right' | null = null
