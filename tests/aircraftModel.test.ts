@@ -284,6 +284,33 @@ describe('rebuilt aircraft', () => {
     expect(Number.isFinite(aircraft.engineState.effectivePower)).toBe(true)
   })
 
+  it('normalizes malformed controls before they reach physics', () => {
+    setContactHeightSampler(() => 0)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.pitch = Number.NaN
+    aircraft.controls.roll = Number.POSITIVE_INFINITY
+    aircraft.controls.yaw = Number.NEGATIVE_INFINITY
+    aircraft.controls.throttle = Number.NaN
+    aircraft.controls.gearDown = 'true' as unknown as boolean
+    aircraft.controls.boost = 'true' as unknown as boolean
+    aircraft.controls.airbrake = 'true' as unknown as boolean
+    aircraft.controls.stabilityAssist = 'true' as unknown as boolean
+
+    aircraft.step(1 / 60)
+
+    expect(aircraft.controls.pitch).toBe(0)
+    expect(aircraft.controls.roll).toBe(0)
+    expect(aircraft.controls.yaw).toBe(0)
+    expect(aircraft.controls.throttle).toBe(0)
+    expect(aircraft.controls.gearDown).toBe(false)
+    expect(aircraft.controls.boost).toBe(false)
+    expect(aircraft.controls.airbrake).toBe(false)
+    expect(aircraft.controls.stabilityAssist).toBe(false)
+    expect(Number.isFinite(aircraft.velocity.length())).toBe(true)
+    expect(Number.isFinite(aircraft.orientation.x)).toBe(true)
+  })
+
   it('spins deployed wheels with rollout speed and resets the spin', () => {
     setContactHeightSampler(() => 0)
     const aircraft = new Aircraft()

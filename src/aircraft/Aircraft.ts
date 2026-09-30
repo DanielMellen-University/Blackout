@@ -385,6 +385,7 @@ export class Aircraft {
     // a contact result across a new physics update.
     this.groundCacheValid = false
     this.prevVelocity.copy(this.velocity)
+    this.normalizeControls()
     updateFuel(this.fuel, dt, this.controls.throttle, this.controls.boost)
     resolveEngineState(this.controls, this.engineState, this.fuel.fraction, this.engineHeat.afterburnerLocked)
     updateEngineHeat(this.engineHeat, dt, this.controls.throttle, this.engineState.afterburnerActive)
@@ -392,6 +393,19 @@ export class Aircraft {
     this.updateLoadFactor(dt)
     this.autoGear()
     this.updateVisuals(dt, nowMs)
+  }
+
+  /** Fail closed at the physics boundary when a stale input object is malformed. */
+  private normalizeControls(): void {
+    const c = this.controls
+    c.pitch = Number.isFinite(c.pitch) ? MathUtils.clamp(c.pitch, -1, 1) : 0
+    c.roll = Number.isFinite(c.roll) ? MathUtils.clamp(c.roll, -1, 1) : 0
+    c.yaw = Number.isFinite(c.yaw) ? MathUtils.clamp(c.yaw, -1, 1) : 0
+    c.throttle = Number.isFinite(c.throttle) ? MathUtils.clamp(c.throttle, 0, 1) : 0
+    c.gearDown = c.gearDown === true
+    c.boost = c.boost === true
+    c.airbrake = c.airbrake === true
+    c.stabilityAssist = c.stabilityAssist === true
   }
 
   /** Feed the current front's gust strength into the fixed-step flight model. */
