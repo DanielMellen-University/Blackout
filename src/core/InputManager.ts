@@ -33,6 +33,9 @@ export class InputManager {
   private gamepadYaw = 0
   private gamepadThrottle = 0
   private gamepadBoost = false
+  private gamepadAirbrake = false
+  private gamepadCameraHeld = false
+  private gamepadGearHeld = false
   private touchPitch = 0
   private touchRoll = 0
   private touchYaw = 0
@@ -180,7 +183,7 @@ export class InputManager {
       : this.axis('KeyQ', 'KeyE')
     this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll, this.touchRoll)
     this.controls.boost = this.keys.has(this.keyboardBindings.boost) || this.gamepadBoost || this.touchBoost
-    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake) || this.touchAirbrake
+    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake) || this.gamepadAirbrake || this.touchAirbrake
     this.controls.stabilityAssist = this.stabilityAssist
 
     // Engine power: Shift up, Ctrl down
@@ -332,9 +335,18 @@ export class InputManager {
     this.gamepadPollIn -= dt
     if (this.gamepadPollIn > 0) return
     this.gamepadPollIn = GAMEPAD_POLL_INTERVAL
-    this.clearGamepadState()
+    this.gamepadRoll = 0
+    this.gamepadPitch = 0
+    this.gamepadYaw = 0
+    this.gamepadThrottle = 0
+    this.gamepadBoost = false
+    this.gamepadAirbrake = false
 
-    if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') return
+    if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') {
+      this.gamepadCameraHeld = false
+      this.gamepadGearHeld = false
+      return
+    }
     let pads: readonly (Gamepad | null)[]
     try {
       pads = navigator.getGamepads()
@@ -349,7 +361,11 @@ export class InputManager {
         break
       }
     }
-    if (!pad) return
+    if (!pad) {
+      this.gamepadCameraHeld = false
+      this.gamepadGearHeld = false
+      return
+    }
 
     // Standard mapping: left stick pitch/roll, right stick X yaw.
     this.gamepadRoll = normalizeGamepadAxis(pad.axes[0] ?? 0)
@@ -361,6 +377,16 @@ export class InputManager {
     const rightTrigger = normalizeGamepadTrigger(pad.buttons[7]?.value ?? 0)
     this.gamepadThrottle = rightTrigger - leftTrigger
     this.gamepadBoost = pad.buttons[0]?.pressed ?? false
+    this.gamepadAirbrake = pad.buttons[4]?.pressed ?? false
+
+    // Standard mapping: X toggles gear, Y toggles the camera. Queue only
+    // on the press edge so a held button cannot repeat at the poll cadence.
+    const cameraHeld = pad.buttons[3]?.pressed === true
+    const gearHeld = pad.buttons[2]?.pressed === true
+    if (cameraHeld && !this.gamepadCameraHeld) this.cameraToggleQueued = true
+    if (gearHeld && !this.gamepadGearHeld) this.gearToggleQueued = true
+    this.gamepadCameraHeld = cameraHeld
+    this.gamepadGearHeld = gearHeld
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -442,6 +468,9 @@ export class InputManager {
     this.gamepadYaw = 0
     this.gamepadThrottle = 0
     this.gamepadBoost = false
+    this.gamepadAirbrake = false
+    this.gamepadCameraHeld = false
+    this.gamepadGearHeld = false
   }
 
   private clearTouchState(): void {

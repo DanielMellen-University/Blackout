@@ -294,7 +294,7 @@ describe('flight input one-shot controls', () => {
         axes: [.6, -.7, .4],
         buttons: [
           { pressed: true, value: 1 },
-          {}, {}, {}, {}, {},
+          {}, {}, {}, { pressed: true, value: 1 }, {},
           { pressed: false, value: 0.1 },
           { pressed: false, value: 0.8 },
         ],
@@ -308,9 +308,43 @@ describe('flight input one-shot controls', () => {
     expect(controls.pitch).toBeGreaterThan(0.5)
     expect(controls.yaw).toBeGreaterThan(0.2)
     expect(controls.boost).toBe(true)
+    expect(controls.airbrake).toBe(true)
     expect(controls.throttle).toBeCloseTo(0.063, 5)
     fake.fire('keydown', 'KeyW')
     expect(input.sampleWithDt(.05).pitch).toBe(1)
+    input.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('queues standard gamepad camera and gear edges without repeating held buttons', () => {
+    const pad = {
+      connected: true,
+      axes: [0, 0, 0],
+      buttons: [
+        {}, {}, { pressed: true }, { pressed: true }, {}, {}, {}, {},
+      ],
+    }
+    vi.stubGlobal('navigator', { getGamepads: () => [pad] })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    input.sampleWithDt(1)
+    expect(input.consumeCameraToggle()).toBe(true)
+    expect(input.consumeGearToggle()).toBe(true)
+
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+    expect(input.consumeCameraToggle()).toBe(false)
+    expect(input.consumeGearToggle()).toBe(false)
+
+    pad.buttons[2] = { pressed: false }
+    pad.buttons[3] = { pressed: false }
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+    pad.buttons[2] = { pressed: true }
+    pad.buttons[3] = { pressed: true }
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+    expect(input.consumeCameraToggle()).toBe(true)
+    expect(input.consumeGearToggle()).toBe(true)
     input.dispose()
     vi.unstubAllGlobals()
   })
