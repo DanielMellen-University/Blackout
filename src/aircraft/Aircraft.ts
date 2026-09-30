@@ -504,15 +504,20 @@ export class Aircraft {
   }
 
   /**
-   * Add a restrained cool fill to dark airframe panels at night. This keeps
-   * the existing silhouette readable without adding lights or draw calls.
+   * Add a restrained cool fill to dark airframe panels at night and under
+   * heavy cloud cover. This keeps the existing silhouette readable without
+   * adding lights, meshes, or draw calls.
    */
   setNightReadability(daylight: number, weatherContrast = 0): void {
     if (this.disposed) return
-    const intensity = nightAirframeEmissiveIntensity(daylight, weatherContrast)
     this.presentationDaylight = Number.isFinite(daylight)
       ? MathUtils.clamp(daylight, 0, 1)
       : 0
+    const intensity = Math.min(
+      0.56,
+      nightAirframeEmissiveIntensity(this.presentationDaylight, weatherContrast) +
+        stormAirframeFillIntensity(this.presentationDaylight, weatherContrast),
+    )
     if (!Number.isFinite(this.nightReadabilityValue) || Math.abs(intensity - this.nightReadabilityValue) >= 0.005) {
       this.nightReadabilityValue = intensity
       for (const material of this.readabilityMaterials) {
@@ -1004,6 +1009,16 @@ export function nightAirframeEmissiveIntensity(daylight: number, weatherContrast
   // than a clear night does. Keep the fill additive-only and fully disabled
   // in daylight so the authored grey panels still own the daytime read.
   return (1 - safe) * (0.42 + weather * 0.14)
+}
+
+/**
+ * Keep the stealth finish readable when dense cloud cover blocks the direct
+ * sun, without adding any lift to a clear daytime scene.
+ */
+export function stormAirframeFillIntensity(daylight: number, weatherContrast = 0): number {
+  const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
+  const weather = Number.isFinite(weatherContrast) ? MathUtils.clamp(weatherContrast, 0, 1) : 0
+  return safeDaylight * weather * 0.18
 }
 
 /** Keep the physical canopy readable at night without making it glow by day. */

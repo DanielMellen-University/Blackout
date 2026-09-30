@@ -12,6 +12,7 @@ import {
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
   resolveLoadFactor,
+  stormAirframeFillIntensity,
   controlSurfaceTargets,
   wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
@@ -351,6 +352,9 @@ describe('rebuilt aircraft', () => {
     expect(nightAirframeEmissiveIntensity(0, Number.NaN)).toBeCloseTo(0.42)
     expect(nightAirframeEmissiveIntensity(-1)).toBeCloseTo(0.42)
     expect(nightAirframeEmissiveIntensity(Number.NaN)).toBeCloseTo(0.42)
+    expect(stormAirframeFillIntensity(1, 1)).toBeCloseTo(0.18)
+    expect(stormAirframeFillIntensity(1, 0)).toBe(0)
+    expect(stormAirframeFillIntensity(Number.NaN, Number.NaN)).toBe(0)
 
     const aircraft = new Aircraft()
     const body = aircraft.mesh.getObjectByName('BlendedFuselage') as Mesh
@@ -359,6 +363,8 @@ describe('rebuilt aircraft', () => {
     expect(material.emissiveIntensity).toBeCloseTo(0.42)
     aircraft.setNightReadability(1)
     expect(material.emissiveIntensity).toBeCloseTo(0)
+    aircraft.setNightReadability(1, 1)
+    expect(material.emissiveIntensity).toBeCloseTo(0.18)
   })
 
   it('keeps canopy glass restrained by day and readable at night', () => {
