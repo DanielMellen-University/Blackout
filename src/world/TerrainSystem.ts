@@ -252,6 +252,8 @@ export class TerrainSystem {
   private lastLodFocusZ = Number.NaN
   /** Settled far chunks only need a fade-target refresh after a stream/LOD move. */
   private fadeTargetsDirty = true
+  /** Detect direct desired-tile invalidation before the next fade pass. */
+  private lastDesiredTileCount = -1
   /** Reuse the common near-cell lookup used by collision and contact probes. */
   private sampledChunk: Chunk | null = null
   private sampledChunkCx = Number.NaN
@@ -527,6 +529,7 @@ export class TerrainSystem {
     this.lastLodFocusX = Number.NaN
     this.lastLodFocusZ = Number.NaN
     this.fadeTargetsDirty = true
+    this.lastDesiredTileCount = -1
     this.invalidateSampleChunk()
   }
 
@@ -954,11 +957,19 @@ export class TerrainSystem {
     toRemove.length = 0
     const refreshTargets = this.fadeTargetsDirty
     this.fadeTargetsDirty = false
+    const desiredTileCountChanged = this.lastDesiredTileCount !== this.desiredTiles.size
+    this.lastDesiredTileCount = this.desiredTiles.size
     if (refreshTargets) {
       // A focus move changes distance fade targets for every resident tile.
       // Mark the set once, then settle opaque far chunks back out of the
       // per-frame path as soon as their target is stable.
       for (const chunk of this.chunks.values()) this.fadeKeys.add(chunk.key)
+    } else if (desiredTileCountChanged) {
+      // Keep the lifecycle robust if a caller invalidates a desired tile
+      // between stream schedules, such as a failed replacement or teardown.
+      for (const chunk of this.chunks.values()) {
+        if (!this.desiredTiles.has(chunk.key)) this.fadeKeys.add(chunk.key)
+      }
     }
 
     for (const key of this.fadeKeys) {
@@ -1233,7 +1244,7 @@ export class TerrainSystem {
       // Retiring fallbacks use the replacement's fade age as their disposal
       // fence. Keep one short tail in the active set so that fence advances
       // even after the replacement has become visually opaque.
-      if (chunk.settled && !chunk.props && chunk.fadeAge >= FADE_SECONDS) {
+      if (chunk.settled && !chunk.props && chunk.fadeAge >= FADE_SECONDS && this.desiredTiles.has(chunk.key)) {
         this.fadeKeys.delete(chunk.key)
       }
       return
@@ -1249,7 +1260,9 @@ export class TerrainSystem {
     chunk.materials = [chunk.terrainMesh.material as MeshStandardMaterial]
     if (chunk.waterMesh) chunk.materials.push(this.waterMat)
     chunk.settled = true
-    if (!chunk.props && chunk.fadeAge >= FADE_SECONDS) this.fadeKeys.delete(chunk.key)
+    if (!chunk.props && chunk.fadeAge >= FADE_SECONDS && this.desiredTiles.has(chunk.key)) {
+      this.fadeKeys.delete(chunk.key)
+    }
   }
 
   /** Rehydrate unique fade materials before a settled tile changes opacity or is retired. */
