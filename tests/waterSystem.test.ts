@@ -68,6 +68,7 @@ describe('independent water surfaces', () => {
       expect(shader.fragmentShader).toContain('vWaterFlow')
       expect(shader.fragmentShader).toContain('riverRiffle')
       expect(shader.fragmentShader).toContain('flowStreak')
+      expect(shader.fragmentShader).toContain('riverSurfaceVariation')
       expect(shader.fragmentShader).toContain('riverDepthBand')
       expect(shader.fragmentShader).toContain('riverBankFoam')
       expect(shader.fragmentShader).toContain('shoreFoam')
@@ -80,7 +81,7 @@ describe('independent water surfaces', () => {
       expect(material.polygonOffset).toBe(true)
       expect(material.polygonOffsetFactor).toBe(-2)
       expect(material.polygonOffsetUnits).toBe(-2)
-      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v13')
+      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v14')
     } finally {
       mesh.geometry.dispose()
       material.dispose()

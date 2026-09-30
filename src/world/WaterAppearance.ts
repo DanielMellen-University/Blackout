@@ -61,7 +61,10 @@ export function applyWaterAppearance(
       deepWater = mix(deepWater, vec3(0.006, 0.032, 0.11), seaMix);
       diffuseColor.rgb = mix(shallowWater, deepWater, depthMix);
       float riverMix = smoothstep(0.2, 0.8, vWaterFlow);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.028, 0.28, 0.34), riverMix * 0.58);
+      // Keep channels darker and less saturated than the old cyan ribbon.
+      // The broad tint below is intentionally subtle so the river reads as
+      // water first, not as a single emissive-looking strip.
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.018, 0.2, 0.25), riverMix * 0.42);
       float riverDepthBand = smoothstep(0.32, 2.8, vWaterDepth) * riverMix;
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.018, 0.16, 0.23), riverDepthBand * 0.52);
       // Two broad, moving bands break up the old single-color sheet without
@@ -76,6 +79,10 @@ export function applyWaterAppearance(
         waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
       }
       diffuseColor.rgb *= 0.8 + waterPattern * 0.36;
+      float riverSurfaceVariation = smoothstep(0.16, 0.84, waterPattern * 0.88 + 0.06);
+      vec3 riverSurfaceTint = mix(vec3(0.014, 0.12, 0.17), vec3(0.052, 0.29, 0.33), riverSurfaceVariation);
+      diffuseColor.rgb = mix(diffuseColor.rgb, riverSurfaceTint,
+        riverMix * (0.2 + waterPattern * 0.14) * mix(0.38, 1.0, waterDistanceFade));
       diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.82, 1.04, 1.1),
         (1.0 - riverMix) * (0.12 + waterPattern * 0.1));
       // A broad shallow tint softens the clipped shoreline instead of leaving
@@ -97,9 +104,9 @@ export function applyWaterAppearance(
           vec2(vWaterWorld.x / 115.0 + worldWaterTime * 0.014,
             vWaterWorld.z / 19.0 - worldWaterTime * 0.004)).g);
       }
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.16, 0.5, 0.56), riverRiffle * riverMix * 0.48 * waterDistanceFade);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08, 0.3, 0.35), riverRiffle * riverMix * 0.32 * waterDistanceFade);
       float cascadeFoam = smoothstep(.18, .72, vWaterDrop) * riverMix;
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.48, .76, .78),
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.3, .58, .62),
         cascadeFoam * (.22 + waterRain * .1) * waterDistanceFade);
       // Long broken streaks make rivers read as moving water at flight scale.
       // Two oblique axes keep the pattern from looking like a tiled stripe
@@ -119,15 +126,15 @@ export function applyWaterAppearance(
           flowUvA * 0.72 + vec2(0.17, -0.31)).r);
       }
       float flowPulse = 0.72 + 0.28 * sin(worldWaterTime * 0.55 + dot(vWaterWorld.xz, flowAxisA) * 0.012);
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.61, 0.67), flowStreak * riverMix * 0.72 * flowPulse * mix(.22, 1.0, waterDistanceFade));
-      diffuseColor.rgb += vec3(0.05, 0.15, 0.16) * flowSpark * riverMix * waterDistanceFade;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.075, 0.34, 0.39), flowStreak * riverMix * 0.38 * flowPulse * mix(.22, 1.0, waterDistanceFade));
+      diffuseColor.rgb += vec3(0.025, 0.09, 0.1) * flowSpark * riverMix * waterDistanceFade;
       float riverBankFoam = 0.5;
       if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01 && riverMix > 0.01) {
         riverBankFoam = smoothstep(0.48, 0.84, texture2D(waterNormals,
           vWaterWorld.xz / 41.0 + vec2(worldWaterTime * 0.009, -worldWaterTime * 0.006)).b);
       }
       riverBankFoam *= riverMix * (1.0 - smoothstep(0.04, 0.9, vWaterDepth));
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.68, 0.86, 0.79), riverBankFoam * 0.34 * waterDistanceFade);
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.52, 0.74, 0.69), riverBankFoam * 0.24 * waterDistanceFade);
       float shoreBreak = 0.5;
       if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01) {
         shoreBreak = smoothstep(0.46, 0.8, texture2D(waterNormals,
@@ -168,5 +175,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v13'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v14'
 }
