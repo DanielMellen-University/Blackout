@@ -14,7 +14,7 @@ export class AltitudeMilestoneTracker {
   }
 
   update(altitudeM: number, airborne: boolean): AltitudeMilestoneEvent | null {
-    if (!airborne || !Number.isFinite(altitudeM)) return null
+    if (airborne !== true || !Number.isFinite(altitudeM)) return null
     const safeAltitude = Math.max(0, altitudeM)
     let lastThreshold = 0
     while (

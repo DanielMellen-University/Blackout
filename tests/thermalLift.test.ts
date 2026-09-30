@@ -30,6 +30,7 @@ describe('deterministic thermal lift', () => {
 
   it('fails closed for ground, malformed, and out-of-envelope samples', () => {
     expect(thermalLiftIntensity(42, 270, 420, -330, 1, 0, 0, false)).toBe(0)
+    expect(thermalLiftIntensity(42, 270, 420, -330, 1, 0, 0, 'true' as unknown as boolean)).toBe(0)
     expect(thermalLiftIntensity(Number.NaN, 270, 420, -330)).toBe(0)
     expect(thermalLiftIntensity(42, Number.NaN, 420, -330)).toBe(0)
     expect(thermalLiftIntensity(42, 270, THERMAL_MIN_ALTITUDE_M - 1, -330)).toBe(0)

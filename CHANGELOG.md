@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.701** Require an explicit boolean airborne state across stunt and altitude milestones, thermal lift, and water-contact classification, preventing malformed truthy payloads from changing scored progress or ditching outcomes.
 - **10.700** Require an explicit boolean airborne state across every event-driven contract recorder, preventing malformed truthy payloads from farming water, weather, terrain, distance, and high-speed objectives.
 - **10.699** Normalize bounded radar landmark identities during RADAR RUN arrival checks so long generated IDs can complete the lock-then-arrive contract consistently.
 - **10.698** Route fixed-step contract dispatch through the explicit airborne state, preventing fast runway rolls from earning low-level, speed-band, or storm progress and failing closed on malformed airborne values.

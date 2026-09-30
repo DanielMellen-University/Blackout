@@ -27,7 +27,7 @@ export class StuntTracker {
   }
 
   update(dt: number, airborne: boolean, rollRateRadSec: number): StuntEvent | null {
-    if (!airborne) {
+    if (airborne !== true) {
       this.rollTravel = 0
       this.rollDirection = 0
       return null

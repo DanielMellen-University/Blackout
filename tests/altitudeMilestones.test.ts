@@ -20,6 +20,8 @@ describe('AltitudeMilestoneTracker', () => {
 
   it('handles skipped tiers, malformed altitude, and reset safely', () => {
     const tracker = new AltitudeMilestoneTracker()
+    expect(tracker.update(6_000, 'true' as unknown as boolean)).toBeNull()
+    expect(tracker.highestThresholdM).toBe(0)
     expect(tracker.update(Number.NaN, true)).toBeNull()
     expect(tracker.update(6_000, true)).toEqual({ thresholdM: 6_000, crossedCount: 4 })
     expect(tracker.highestThresholdM).toBe(6_000)

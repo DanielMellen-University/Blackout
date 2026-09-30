@@ -152,7 +152,10 @@ export function classifyContactOutcome(input: ContactClassification): ContactOut
   const contacting = !!impact || input.onPad
   if (!contacting) return { result: 'air', reason: null }
 
-  const airborne = impact?.startedAirborne ?? input.airborne
+  const impactAirborne = impact?.startedAirborne
+  const airborne = impactAirborne === undefined
+    ? input.airborne === true
+    : impactAirborne === true
   const gearDown = impact?.gearDown ?? input.gearDown
   const vy = impact?.verticalVelocity ?? input.vy
   const gs = impact?.tangentialSpeed ?? input.groundSpeed

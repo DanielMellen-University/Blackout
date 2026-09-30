@@ -79,7 +79,7 @@ export function thermalLiftIntensity(
   snow = 0,
   airborne = true,
 ): number {
-  if (!airborne || !Number.isFinite(seed) || !Number.isFinite(x) ||
+  if (airborne !== true || !Number.isFinite(seed) || !Number.isFinite(x) ||
     !Number.isFinite(altitudeM) || !Number.isFinite(z)) return 0
   const safeAltitude = Math.max(0, altitudeM)
   const low = MathUtils.smoothstep(safeAltitude, THERMAL_MIN_ALTITUDE_M, THERMAL_PEAK_ALTITUDE_M)

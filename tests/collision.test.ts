@@ -71,6 +71,28 @@ describe('classifyContact', () => {
     expect(result).toBe('ditch')
   })
 
+  it('fails closed when impact airborne state is malformed', () => {
+    const result = classifyContact({
+      airborne: true,
+      impact: impact({
+        surface: 'water',
+        startedAirborne: 'true' as unknown as boolean,
+        verticalVelocity: -1,
+        tangentialSpeed: 10,
+      }),
+      onPad: true,
+      gearDown: true,
+      vy: -1,
+      groundSpeed: 10,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'water',
+    })
+    expect(result).toBe('roll')
+  })
+
   it('crashes a gear-up high-speed contact', () => {
     const result = classifyContact({
       airborne: true,

@@ -26,6 +26,8 @@ describe('StuntTracker', () => {
 
   it('clamps malformed rates and the total stunt budget', () => {
     const tracker = new StuntTracker()
+    expect(tracker.update(0.5, 'true' as unknown as boolean, Math.PI * 4)).toBeNull()
+    expect(tracker.totalRolls).toBe(0)
     expect(tracker.update(Number.NaN, true, Number.POSITIVE_INFINITY)).toBeNull()
     for (let i = 0; i < MAX_STUNT_ROLLS + 2; i++) {
       tracker.update(0.5, true, Math.PI * 4)
