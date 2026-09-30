@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.653** Add an edge-triggered PAUSE action to the touch flight deck, routing through the existing pause menu and clearing held controls before freezing simulation.
 - **10.652** Add an edge-triggered RESET action to the touch flight deck so mobile pilots can restart a sortie after a crash or bad approach, reusing the existing reset queue without per-frame polling work.
 - **10.651** Lift coarse/fine terrain skirt normals toward a soft upward blend so LOD crack covers stop reading as dark hairline seams, without adding geometry, draws, or runtime work.
 - **10.650** Complete touch replay parity with edge-triggered GHOST visibility and COPY seed/replay-link actions, reusing existing bounded queues without per-frame work.

@@ -455,6 +455,7 @@ describe('flight input one-shot controls', () => {
       ghostToggle: true,
       worldSeedCopy: true,
       reset: true,
+      pauseToggle: true,
     })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
@@ -465,6 +466,7 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeGhostToggle()).toBe(true)
     expect(input.consumeWorldSeedCopy()).toBe(true)
     expect(input.consumeReset()).toBe(true)
+    expect(input.consumePauseToggle()).toBe(true)
     input.setTouchState({
       cameraToggle: true,
       gearToggle: true,
@@ -475,6 +477,7 @@ describe('flight input one-shot controls', () => {
       ghostToggle: true,
       worldSeedCopy: true,
       reset: true,
+      pauseToggle: true,
     })
     expect(input.consumeCameraToggle()).toBe(false)
     expect(input.consumeGearToggle()).toBe(false)
@@ -485,6 +488,7 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeGhostToggle()).toBe(false)
     expect(input.consumeWorldSeedCopy()).toBe(false)
     expect(input.consumeReset()).toBe(false)
+    expect(input.consumePauseToggle()).toBe(false)
 
     input.setTouchState(null)
     input.setTouchState({
@@ -497,6 +501,7 @@ describe('flight input one-shot controls', () => {
       ghostToggle: true,
       worldSeedCopy: true,
       reset: true,
+      pauseToggle: true,
     })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
@@ -507,6 +512,7 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeGhostToggle()).toBe(true)
     expect(input.consumeWorldSeedCopy()).toBe(true)
     expect(input.consumeReset()).toBe(true)
+    expect(input.consumePauseToggle()).toBe(true)
     input.dispose()
   })
 

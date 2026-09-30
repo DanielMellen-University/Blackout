@@ -1812,7 +1812,15 @@ export async function boot(): Promise<void> {
 
     syncInputContext()
     overlay?.classList.toggle('cockpit-clean', cameras.mode === 'cockpit')
-    const simLive = playing && !menu.paused && !results.open
+    let simLive = playing && !menu.paused && !results.open
+    if (simLive && input.consumePauseToggle()) {
+      menu.togglePause()
+      audio.silence()
+      input.clearQueued()
+      time.reset()
+      syncInputContext()
+      simLive = false
+    }
     touchControls?.setVisible(touchDevice && simLive)
     if (!simLive) lastHudUpdateMs = Number.NaN
     const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)

@@ -56,6 +56,7 @@ export class InputManager {
   private touchGhostToggle = false
   private touchWorldSeedCopy = false
   private touchReset = false
+  private touchPauseToggle = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
@@ -68,6 +69,7 @@ export class InputManager {
 
   cameraToggleQueued = false
   resetQueued = false
+  pauseToggleQueued = false
   weatherCycleQueued = false
   audioToggleQueued = false
   radarTargetCycleQueued = false
@@ -245,6 +247,7 @@ export class InputManager {
     const ghostToggle = state?.ghostToggle === true
     const worldSeedCopy = state?.worldSeedCopy === true
     const reset = state?.reset === true
+    const pauseToggle = state?.pauseToggle === true
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
     if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
     if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
@@ -258,6 +261,7 @@ export class InputManager {
     if (this.flightLive && ghostToggle && !this.touchGhostToggle) this.ghostToggleQueued = true
     if (this.flightLive && worldSeedCopy && !this.touchWorldSeedCopy) this.worldSeedCopyQueued = true
     if (this.flightLive && reset && !this.touchReset) this.resetQueued = true
+    if (this.flightLive && pauseToggle && !this.touchPauseToggle) this.pauseToggleQueued = true
     this.touchCameraToggle = cameraToggle
     this.touchGearToggle = gearToggle
     this.touchStabilityAssistToggle = stabilityAssistToggle
@@ -267,12 +271,14 @@ export class InputManager {
     this.touchGhostToggle = ghostToggle
     this.touchWorldSeedCopy = worldSeedCopy
     this.touchReset = reset
+    this.touchPauseToggle = pauseToggle
   }
 
   /** Forget one-shot C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
   clearQueued(): void {
     this.cameraToggleQueued = false
     this.resetQueued = false
+    this.pauseToggleQueued = false
     this.weatherCycleQueued = false
     this.audioToggleQueued = false
     this.radarTargetCycleQueued = false
@@ -315,6 +321,12 @@ export class InputManager {
   consumeReset(): boolean {
     if (!this.resetQueued) return false
     this.resetQueued = false
+    return true
+  }
+
+  consumePauseToggle(): boolean {
+    if (!this.pauseToggleQueued) return false
+    this.pauseToggleQueued = false
     return true
   }
 
@@ -550,6 +562,7 @@ export class InputManager {
     this.touchGhostToggle = false
     this.touchWorldSeedCopy = false
     this.touchReset = false
+    this.touchPauseToggle = false
   }
 }
 
