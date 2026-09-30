@@ -27,4 +27,34 @@ describe('world weather propagation', () => {
     expect(weatherEffectsChanged(base, { ...base, windX: 4.0002 })).toBe(false)
     expect(weatherEffectsChanged(base, { ...base, daylight: .8004 })).toBe(false)
   })
+
+  it('normalizes malformed weather values before comparing propagation state', () => {
+    expect(weatherEffectsChanged(base, {
+      rain: Number.NaN,
+      snow: Number.POSITIVE_INFINITY,
+      windX: Number.NEGATIVE_INFINITY,
+      windZ: 999,
+      cloudCover: Number.NaN,
+      daylight: Number.NaN,
+    })).toBe(true)
+
+    expect(weatherEffectsChanged({
+      rain: Number.NaN,
+      snow: Number.POSITIVE_INFINITY,
+      windX: Number.NEGATIVE_INFINITY,
+      windZ: 999,
+      cloudCover: Number.NaN,
+      daylight: Number.NaN,
+    }, {
+      rain: 0,
+      snow: 0,
+      windX: 0,
+      windZ: 40,
+      cloudCover: 0,
+      daylight: 0,
+    })).toBe(false)
+
+    expect(weatherEffectsChanged({ ...base, windZ: 40 }, { ...base, windZ: 40.0001 })).toBe(false)
+    expect(weatherEffectsChanged({ ...base, rain: 1 }, { ...base, rain: 1.0001 })).toBe(false)
+  })
 })

@@ -74,6 +74,14 @@ function safeWorldCoordinate(value: number, fallback: number): number {
   return Number.isFinite(fallback) ? fallback : 0
 }
 
+function finiteWeather01(value: number): number {
+  return Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
+}
+
+function finiteWeatherWind(value: number): number {
+  return Number.isFinite(value) ? MathUtils.clamp(value, -40, 40) : 0
+}
+
 /** Ignore sub-pixel weather drift while retaining responsive transitions. */
 export function weatherEffectsChanged(
   previous: WeatherEffectState | null,
@@ -81,12 +89,12 @@ export function weatherEffectsChanged(
   epsilon = 0.0005,
 ): boolean {
   if (!previous) return true
-  return Math.abs(previous.rain - next.rain) > epsilon ||
-    Math.abs(previous.snow - next.snow) > epsilon ||
-    Math.abs(previous.windX - next.windX) > epsilon ||
-    Math.abs(previous.windZ - next.windZ) > epsilon ||
-    Math.abs(previous.cloudCover - next.cloudCover) > epsilon ||
-    Math.abs(previous.daylight - next.daylight) > epsilon
+  return Math.abs(finiteWeather01(previous.rain) - finiteWeather01(next.rain)) > epsilon ||
+    Math.abs(finiteWeather01(previous.snow) - finiteWeather01(next.snow)) > epsilon ||
+    Math.abs(finiteWeatherWind(previous.windX) - finiteWeatherWind(next.windX)) > epsilon ||
+    Math.abs(finiteWeatherWind(previous.windZ) - finiteWeatherWind(next.windZ)) > epsilon ||
+    Math.abs(finiteWeather01(previous.cloudCover) - finiteWeather01(next.cloudCover)) > epsilon ||
+    Math.abs(finiteWeather01(previous.daylight) - finiteWeather01(next.daylight)) > epsilon
 }
 
 /**
@@ -551,12 +559,15 @@ export class World {
 
   private applyWeatherEffects(weather: WeatherSnapshot, daylight: number): void {
     const next = this.weatherCandidate
-    next.rain = weather.rain
-    next.snow = weather.snow
-    next.windX = weather.windX
-    next.windZ = weather.windZ
-    next.cloudCover = Math.max(weather.lowClouds, weather.midClouds * .9)
-    next.daylight = daylight
+    next.rain = finiteWeather01(weather.rain)
+    next.snow = finiteWeather01(weather.snow)
+    next.windX = finiteWeatherWind(weather.windX)
+    next.windZ = finiteWeatherWind(weather.windZ)
+    next.cloudCover = Math.max(
+      finiteWeather01(weather.lowClouds),
+      finiteWeather01(weather.midClouds) * .9,
+    )
+    next.daylight = finiteWeather01(daylight)
     if (!weatherEffectsChanged(this.appliedWeather, next)) return
     this.terrain.setWeatherEffects(
       next.rain,
