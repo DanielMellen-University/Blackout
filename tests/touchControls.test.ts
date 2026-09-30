@@ -205,7 +205,7 @@ describe('touch flight controls support detection', () => {
     controls.dispose()
   })
 
-  it('emits edge-trigger actions for camera, gear, assist, radar, weather, and audio toggles', () => {
+  it('emits edge-trigger actions for camera, gear, assist, radar, weather, audio, ghost, and seed toggles', () => {
     const root = new TestElement()
     const camera = new TestElement('camera-toggle')
     const gear = new TestElement('gear-toggle')
@@ -213,12 +213,16 @@ describe('touch flight controls support detection', () => {
     const radar = new TestElement('radar-cycle')
     const weather = new TestElement('weather-cycle')
     const audio = new TestElement('audio-toggle')
+    const ghost = new TestElement('ghost-toggle')
+    const copy = new TestElement('seed-copy')
     root.appendChild(camera)
     root.appendChild(gear)
     root.appendChild(assist)
     root.appendChild(radar)
     root.appendChild(weather)
     root.appendChild(audio)
+    root.appendChild(ghost)
+    root.appendChild(copy)
     const changes: TouchInputState[] = []
     const controls = new TouchControls(root as unknown as HTMLElement, state => changes.push(state))
     controls.setVisible(true)
@@ -252,6 +256,16 @@ describe('touch flight controls support detection', () => {
     expect(changes.at(-1)?.audioToggle).toBe(true)
     testWindow.dispatch('pointerup', pointerEvent(audio, 17))
     expect(changes.at(-1)?.audioToggle).toBe(false)
+
+    root.dispatch('pointerdown', pointerEvent(ghost, 18))
+    expect(changes.at(-1)?.ghostToggle).toBe(true)
+    testWindow.dispatch('pointerup', pointerEvent(ghost, 18))
+    expect(changes.at(-1)?.ghostToggle).toBe(false)
+
+    root.dispatch('pointerdown', pointerEvent(copy, 19))
+    expect(changes.at(-1)?.worldSeedCopy).toBe(true)
+    testWindow.dispatch('pointerup', pointerEvent(copy, 19))
+    expect(changes.at(-1)?.worldSeedCopy).toBe(false)
     controls.dispose()
   })
 

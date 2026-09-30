@@ -53,6 +53,8 @@ export class InputManager {
   private touchRadarTargetCycle = false
   private touchWeatherCycle = false
   private touchAudioToggle = false
+  private touchGhostToggle = false
+  private touchWorldSeedCopy = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
@@ -239,6 +241,8 @@ export class InputManager {
     const radarTargetCycle = state?.radarTargetCycle === true
     const weatherCycle = state?.weatherCycle === true
     const audioToggle = state?.audioToggle === true
+    const ghostToggle = state?.ghostToggle === true
+    const worldSeedCopy = state?.worldSeedCopy === true
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
     if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
     if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
@@ -249,12 +253,16 @@ export class InputManager {
     }
     if (this.flightLive && weatherCycle && !this.touchWeatherCycle) this.weatherCycleQueued = true
     if (this.flightLive && audioToggle && !this.touchAudioToggle) this.audioToggleQueued = true
+    if (this.flightLive && ghostToggle && !this.touchGhostToggle) this.ghostToggleQueued = true
+    if (this.flightLive && worldSeedCopy && !this.touchWorldSeedCopy) this.worldSeedCopyQueued = true
     this.touchCameraToggle = cameraToggle
     this.touchGearToggle = gearToggle
     this.touchStabilityAssistToggle = stabilityAssistToggle
     this.touchRadarTargetCycle = radarTargetCycle
     this.touchWeatherCycle = weatherCycle
     this.touchAudioToggle = audioToggle
+    this.touchGhostToggle = ghostToggle
+    this.touchWorldSeedCopy = worldSeedCopy
   }
 
   /** Forget one-shot C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
@@ -535,6 +543,8 @@ export class InputManager {
     this.touchRadarTargetCycle = false
     this.touchWeatherCycle = false
     this.touchAudioToggle = false
+    this.touchGhostToggle = false
+    this.touchWorldSeedCopy = false
   }
 }
 

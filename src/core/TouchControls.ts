@@ -16,6 +16,8 @@ export type TouchAction =
   | 'radar-cycle'
   | 'weather-cycle'
   | 'audio-toggle'
+  | 'ghost-toggle'
+  | 'seed-copy'
 
 /** Event-driven touch input, normalized to the same ranges as ControlState. */
 export interface TouchInputState {
@@ -31,6 +33,8 @@ export interface TouchInputState {
   radarTargetCycle?: boolean
   weatherCycle?: boolean
   audioToggle?: boolean
+  ghostToggle?: boolean
+  worldSeedCopy?: boolean
 }
 
 const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
@@ -50,6 +54,8 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'radar-cycle',
   'weather-cycle',
   'audio-toggle',
+  'ghost-toggle',
+  'seed-copy',
 ])
 
 interface ActiveTouchPointer {
@@ -217,6 +223,8 @@ export class TouchControls {
     let radarTargetCycle = false
     let weatherCycle = false
     let audioToggle = false
+    let ghostToggle = false
+    let worldSeedCopy = false
     for (const { action } of this.activePointers.values()) {
       if (action === 'pitch-up') pitch += 1
       if (action === 'pitch-down') pitch -= 1
@@ -234,6 +242,8 @@ export class TouchControls {
       if (action === 'radar-cycle') radarTargetCycle = true
       if (action === 'weather-cycle') weatherCycle = true
       if (action === 'audio-toggle') audioToggle = true
+      if (action === 'ghost-toggle') ghostToggle = true
+      if (action === 'seed-copy') worldSeedCopy = true
     }
     this.onChange({
       pitch: clampAxis(pitch),
@@ -248,6 +258,8 @@ export class TouchControls {
       radarTargetCycle,
       weatherCycle,
       audioToggle,
+      ghostToggle,
+      worldSeedCopy,
     })
   }
 }

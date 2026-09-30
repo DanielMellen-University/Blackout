@@ -452,6 +452,8 @@ describe('flight input one-shot controls', () => {
       radarTargetCycle: true,
       weatherCycle: true,
       audioToggle: true,
+      ghostToggle: true,
+      worldSeedCopy: true,
     })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
@@ -459,6 +461,8 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeRadarTargetCycle()).toBe(true)
     expect(input.consumeWeatherCycle()).toBe(true)
     expect(input.consumeAudioToggle()).toBe(true)
+    expect(input.consumeGhostToggle()).toBe(true)
+    expect(input.consumeWorldSeedCopy()).toBe(true)
     input.setTouchState({
       cameraToggle: true,
       gearToggle: true,
@@ -466,6 +470,8 @@ describe('flight input one-shot controls', () => {
       radarTargetCycle: true,
       weatherCycle: true,
       audioToggle: true,
+      ghostToggle: true,
+      worldSeedCopy: true,
     })
     expect(input.consumeCameraToggle()).toBe(false)
     expect(input.consumeGearToggle()).toBe(false)
@@ -473,6 +479,8 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeRadarTargetCycle()).toBe(false)
     expect(input.consumeWeatherCycle()).toBe(false)
     expect(input.consumeAudioToggle()).toBe(false)
+    expect(input.consumeGhostToggle()).toBe(false)
+    expect(input.consumeWorldSeedCopy()).toBe(false)
 
     input.setTouchState(null)
     input.setTouchState({
@@ -482,6 +490,8 @@ describe('flight input one-shot controls', () => {
       radarTargetCycle: true,
       weatherCycle: true,
       audioToggle: true,
+      ghostToggle: true,
+      worldSeedCopy: true,
     })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
@@ -489,6 +499,8 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeRadarTargetCycle()).toBe(true)
     expect(input.consumeWeatherCycle()).toBe(true)
     expect(input.consumeAudioToggle()).toBe(true)
+    expect(input.consumeGhostToggle()).toBe(true)
+    expect(input.consumeWorldSeedCopy()).toBe(true)
     input.dispose()
   })
 

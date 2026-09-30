@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.650** Complete touch replay parity with edge-triggered GHOST visibility and COPY seed/replay-link actions, reusing existing bounded queues without per-frame work.
 - **10.649** Complete the touch utility deck with edge-triggered WX weather-cycle and AUDIO mute controls, reusing the existing queues without adding simulation-loop polling or allocations.
 - **10.648** Add an edge-triggered RADAR target-cycle button to the touch deck, reusing the existing radar queue so mobile pilots can lock nearby settlements and traffic without per-frame polling work.
 - **10.647** Lower and narrow the procedural F-35 canopy crown so the chase silhouette reads as a sleek stealth jet instead of a tall bubble cockpit, with no new geometry or draw calls.
