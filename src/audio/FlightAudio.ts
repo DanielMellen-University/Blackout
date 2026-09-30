@@ -6,6 +6,15 @@ import type { AudioChannel } from './AudioPreferences'
  */
 export const EVENT_NOISE_BUFFER_SECONDS = 0.75
 
+/** Advance the fixed noise stream used by event and ambience buffers. */
+export function nextProceduralNoiseState(state: number): number {
+  let next = (Number.isFinite(state) ? Math.trunc(state) : 0) >>> 0
+  next = (next + 0x6d2b79f5) >>> 0
+  let t = Math.imul(next ^ (next >>> 15), next | 1)
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+  return (t ^ (t >>> 14)) >>> 0
+}
+
 /** Conservative output guard for stacked engine, weather, and event cues. */
 export const FLIGHT_AUDIO_LIMITER = Object.freeze({
   threshold: -7,
@@ -779,12 +788,17 @@ function makeNoiseBuffer(
   const len = Math.max(1, Math.floor(rate * seconds))
   const buf = ctx.createBuffer(1, len, rate)
   const data = buf.getChannelData(0)
+  let state = kind === 'white' ? 0x243f6a88 : 0x9e3779b9
   if (kind === 'white') {
-    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1
+    for (let i = 0; i < len; i++) {
+      state = nextProceduralNoiseState(state)
+      data[i] = state / 2147483648 - 1
+    }
   } else {
     let last = 0
     for (let i = 0; i < len; i++) {
-      const white = Math.random() * 2 - 1
+      state = nextProceduralNoiseState(state)
+      const white = state / 2147483648 - 1
       last = (last + 0.02 * white) / 1.02
       data[i] = Math.max(-1, Math.min(1, last * 3.5))
     }

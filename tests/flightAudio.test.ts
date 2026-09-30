@@ -3,6 +3,7 @@ import {
   EVENT_NOISE_BUFFER_SECONDS,
   FLIGHT_AUDIO_LIMITER,
   FlightAudio,
+  nextProceduralNoiseState,
   audioContextUsable,
   airbrakeWindEnvelope,
   cloudAudioAttenuation,
@@ -18,6 +19,14 @@ import {
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('keeps procedural noise deterministic and unsigned', () => {
+    const first = nextProceduralNoiseState(0x12345678)
+    expect(first).toBe(nextProceduralNoiseState(0x12345678))
+    expect(first).not.toBe(nextProceduralNoiseState(0x12345679))
+    expect(first).toBeGreaterThanOrEqual(0)
+    expect(first).toBeLessThanOrEqual(0xffffffff)
+  })
+
   it('keeps cloud muffling bounded while preserving engine presence', () => {
     expect(cloudAudioAttenuation(0, 0.28, 0.7)).toBeCloseTo(1)
     expect(cloudAudioAttenuation(1, 0.28, 0.7)).toBeCloseTo(0.916)

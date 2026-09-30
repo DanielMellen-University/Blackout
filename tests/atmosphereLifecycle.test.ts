@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { Atmosphere } from '../src/world/Atmosphere'
+import { Atmosphere, DEFAULT_ATMOSPHERE_TIME } from '../src/world/Atmosphere'
 
 describe('atmosphere lifecycle boundary', () => {
+  it('uses a stable pre-reseed clock', () => {
+    expect(DEFAULT_ATMOSPHERE_TIME).toBe(.5)
+  })
+
   it('fails closed for public calls after disposal', () => {
     const atmosphere = Object.create(Atmosphere.prototype) as Atmosphere
     ;(atmosphere as unknown as { disposed: boolean }).disposed = true

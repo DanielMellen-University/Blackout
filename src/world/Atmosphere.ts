@@ -172,6 +172,8 @@ const LIGHTNING_CHARGE_RANGE = 9
 const LIGHTNING_MIN_STRENGTH = 0.35
 /** Cloud matrices are large instanced batches; update them at a stable 30 Hz. */
 const CLOUD_UPDATE_STEP_SEC = 1 / 30
+/** Stable pre-reseed clock used while the world is still booting. */
+export const DEFAULT_ATMOSPHERE_TIME = 0.5
 
 /** Clamp a cloud deck's instanced draw range to a safe quality budget. */
 export function cloudPuffCount(total: number, scale: number): number {
@@ -270,7 +272,7 @@ export function rainLateralVelocity(
  */
 export class Atmosphere {
   /** 0 = midnight, 0.25 = sunrise, 0.5 = noon, 0.75 = sunset. */
-  timeOfDay = Math.random()
+  timeOfDay = DEFAULT_ATMOSPHERE_TIME
   /** Real seconds for a full 24h cycle. */
   dayLengthSec = 480
   /** Authored night courses can hold their clock while ordinary worlds cycle. */
@@ -369,7 +371,7 @@ export class Atmosphere {
     this.baseFogNear = fogNear
     this.baseFogFar = fogFar
 
-    this.timeOfDay = Math.random()
+    this.timeOfDay = DEFAULT_ATMOSPHERE_TIME
     this.weather = 'clear'
 
     // Shader sky: gradient + sun/moon discs + stars
