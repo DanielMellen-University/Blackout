@@ -51,6 +51,8 @@ export class InputManager {
   private touchGearToggle = false
   private touchStabilityAssistToggle = false
   private touchRadarTargetCycle = false
+  private touchWeatherCycle = false
+  private touchAudioToggle = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
@@ -235,6 +237,8 @@ export class InputManager {
     const gearToggle = state?.gearToggle === true
     const stabilityAssistToggle = state?.stabilityAssistToggle === true
     const radarTargetCycle = state?.radarTargetCycle === true
+    const weatherCycle = state?.weatherCycle === true
+    const audioToggle = state?.audioToggle === true
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
     if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
     if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
@@ -243,10 +247,14 @@ export class InputManager {
     if (this.flightLive && radarTargetCycle && !this.touchRadarTargetCycle) {
       this.radarTargetCycleQueued = true
     }
+    if (this.flightLive && weatherCycle && !this.touchWeatherCycle) this.weatherCycleQueued = true
+    if (this.flightLive && audioToggle && !this.touchAudioToggle) this.audioToggleQueued = true
     this.touchCameraToggle = cameraToggle
     this.touchGearToggle = gearToggle
     this.touchStabilityAssistToggle = stabilityAssistToggle
     this.touchRadarTargetCycle = radarTargetCycle
+    this.touchWeatherCycle = weatherCycle
+    this.touchAudioToggle = audioToggle
   }
 
   /** Forget one-shot C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
@@ -525,6 +533,8 @@ export class InputManager {
     this.touchGearToggle = false
     this.touchStabilityAssistToggle = false
     this.touchRadarTargetCycle = false
+    this.touchWeatherCycle = false
+    this.touchAudioToggle = false
   }
 }
 

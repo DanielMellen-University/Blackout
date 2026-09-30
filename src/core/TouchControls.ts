@@ -14,6 +14,8 @@ export type TouchAction =
   | 'gear-toggle'
   | 'stability-toggle'
   | 'radar-cycle'
+  | 'weather-cycle'
+  | 'audio-toggle'
 
 /** Event-driven touch input, normalized to the same ranges as ControlState. */
 export interface TouchInputState {
@@ -27,6 +29,8 @@ export interface TouchInputState {
   gearToggle?: boolean
   stabilityAssistToggle?: boolean
   radarTargetCycle?: boolean
+  weatherCycle?: boolean
+  audioToggle?: boolean
 }
 
 const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
@@ -44,6 +48,8 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'gear-toggle',
   'stability-toggle',
   'radar-cycle',
+  'weather-cycle',
+  'audio-toggle',
 ])
 
 interface ActiveTouchPointer {
@@ -209,6 +215,8 @@ export class TouchControls {
     let gearToggle = false
     let stabilityAssistToggle = false
     let radarTargetCycle = false
+    let weatherCycle = false
+    let audioToggle = false
     for (const { action } of this.activePointers.values()) {
       if (action === 'pitch-up') pitch += 1
       if (action === 'pitch-down') pitch -= 1
@@ -224,6 +232,8 @@ export class TouchControls {
       if (action === 'gear-toggle') gearToggle = true
       if (action === 'stability-toggle') stabilityAssistToggle = true
       if (action === 'radar-cycle') radarTargetCycle = true
+      if (action === 'weather-cycle') weatherCycle = true
+      if (action === 'audio-toggle') audioToggle = true
     }
     this.onChange({
       pitch: clampAxis(pitch),
@@ -236,6 +246,8 @@ export class TouchControls {
       gearToggle,
       stabilityAssistToggle,
       radarTargetCycle,
+      weatherCycle,
+      audioToggle,
     })
   }
 }

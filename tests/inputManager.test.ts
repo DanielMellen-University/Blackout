@@ -440,28 +440,55 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
-  it('turns touch camera and gear presses into one-shot input queues', () => {
+  it('turns touch utility presses into one-shot input queues', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)
     input.flightLive = true
 
-    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true, radarTargetCycle: true })
+    input.setTouchState({
+      cameraToggle: true,
+      gearToggle: true,
+      stabilityAssistToggle: true,
+      radarTargetCycle: true,
+      weatherCycle: true,
+      audioToggle: true,
+    })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
     expect(input.consumeStabilityAssistToggle()).toBe(true)
     expect(input.consumeRadarTargetCycle()).toBe(true)
-    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true, radarTargetCycle: true })
+    expect(input.consumeWeatherCycle()).toBe(true)
+    expect(input.consumeAudioToggle()).toBe(true)
+    input.setTouchState({
+      cameraToggle: true,
+      gearToggle: true,
+      stabilityAssistToggle: true,
+      radarTargetCycle: true,
+      weatherCycle: true,
+      audioToggle: true,
+    })
     expect(input.consumeCameraToggle()).toBe(false)
     expect(input.consumeGearToggle()).toBe(false)
     expect(input.consumeStabilityAssistToggle()).toBe(null)
     expect(input.consumeRadarTargetCycle()).toBe(false)
+    expect(input.consumeWeatherCycle()).toBe(false)
+    expect(input.consumeAudioToggle()).toBe(false)
 
     input.setTouchState(null)
-    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true, radarTargetCycle: true })
+    input.setTouchState({
+      cameraToggle: true,
+      gearToggle: true,
+      stabilityAssistToggle: true,
+      radarTargetCycle: true,
+      weatherCycle: true,
+      audioToggle: true,
+    })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
     expect(input.consumeStabilityAssistToggle()).toBe(false)
     expect(input.consumeRadarTargetCycle()).toBe(true)
+    expect(input.consumeWeatherCycle()).toBe(true)
+    expect(input.consumeAudioToggle()).toBe(true)
     input.dispose()
   })
 
