@@ -520,7 +520,8 @@ export class SortieContractTracker {
   recordNight(daylight: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'night' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(daylight) || !Number.isFinite(dt)) return
-    const safeDaylight = Math.max(0, Math.min(1, daylight))
+    if (daylight < 0) return
+    const safeDaylight = Math.min(1, daylight)
     if (safeDaylight > NIGHT_MAX_DAYLIGHT) return
     const safeDt = Math.max(0, Math.min(5, dt))
     this.nightSeconds = Math.min(this.definition.target, this.nightSeconds + safeDt)
@@ -531,7 +532,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded high-speed airborne time without afterburner. */
   recordDry(afterburner: boolean, speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'dry' || this.completeValue || airborne !== true || afterburner === true) return
+    if (this.definition?.kind !== 'dry' || this.completeValue || airborne !== true || afterburner !== false) return
     if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     if (Math.max(0, speedMps) < DRY_MIN_MPS) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -659,7 +660,7 @@ export class SortieContractTracker {
   recordHeat(heatFraction: number, speedMps: number, dt: number, airborne = true): void {
     if (this.definition?.kind !== 'heat' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(heatFraction) || !Number.isFinite(speedMps) || !Number.isFinite(dt)) return
-    if (Math.max(0, speedMps) < HEAT_MIN_MPS || Math.max(0, heatFraction) > HEAT_MAX_FRACTION) return
+    if (Math.max(0, speedMps) < HEAT_MIN_MPS || heatFraction < 0 || heatFraction > HEAT_MAX_FRACTION) return
     const safeDt = Math.max(0, Math.min(5, dt))
     this.heatSeconds = Math.min(this.definition.target, this.heatSeconds + safeDt)
     this.progressValue = clamp01(this.heatSeconds / this.definition.target)

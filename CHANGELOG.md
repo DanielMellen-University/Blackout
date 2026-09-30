@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.703** Reject malformed afterburner, heat, and daylight values in DRY RUN, THERMAL CONTROL, NIGHT FLIGHT, and night-landing rewards so impossible scalar telemetry cannot farm bonuses.
 - **10.702** Reject negative fuel fractions in the DEADSTICK contract so impossible telemetry cannot complete the empty-tank objective or diverge from its landing payout.
 - **10.701** Require an explicit boolean airborne state across stunt and altitude milestones, thermal lift, and water-contact classification, preventing malformed truthy payloads from changing scored progress or ditching outcomes.
 - **10.700** Require an explicit boolean airborne state across every event-driven contract recorder, preventing malformed truthy payloads from farming water, weather, terrain, distance, and high-speed objectives.

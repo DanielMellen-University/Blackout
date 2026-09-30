@@ -407,7 +407,7 @@ describe('ChallengeRun', () => {
     expect(nightLandingScore(0, 0.5)).toBe(250)
     expect(nightLandingScore(Number.NaN, 1)).toBe(0)
     expect(nightLandingScore(0, Number.NaN)).toBe(0)
-    expect(nightLandingScore(-1, 1)).toBe(MAX_NIGHT_SCORE)
+    expect(nightLandingScore(-1, 1)).toBe(0)
     expect(nightLandingScore(2, -1)).toBe(0)
   })
 

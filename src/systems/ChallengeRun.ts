@@ -440,6 +440,7 @@ export function weatherLandingScore(risk: number, landingQuality = 1): number {
 /** Reward a clean night or dusk touchdown using the shared daylight envelope. */
 export function nightLandingScore(daylight: number, landingQuality = 1): number {
   if (!Number.isFinite(daylight) || !Number.isFinite(landingQuality)) return 0
+  if (daylight < 0 || daylight > 1) return 0
   const nightFactor = clamp01((0.42 - daylight) / 0.42)
   return Math.round(MAX_NIGHT_SCORE * nightFactor * clamp01(landingQuality))
 }
