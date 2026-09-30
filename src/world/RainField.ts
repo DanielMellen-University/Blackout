@@ -12,6 +12,18 @@ export function precipitationAtAltitude(altitude: number, storm: number): number
 }
 function wrap(value: number, span: number): number { return ((value % span) + span) % span }
 
+/** Stable integer mixer for seeded rain placement without touching world RNG state. */
+function rainHash(seed: number, index: number, salt: number): number {
+  let value = (Math.trunc(seed) | 0) ^ Math.imul(index + 1, 0x9e3779b9) ^ Math.imul(Math.trunc(salt) | 0, 0x85ebca6b)
+  value = Math.imul(value ^ (value >>> 16), 0x7feb352d)
+  value = Math.imul(value ^ (value >>> 15), 0x846ca68b)
+  return (value ^ (value >>> 16)) >>> 0
+}
+
+function rainRandom(seed: number, index: number, salt: number): number {
+  return rainHash(seed, index, salt) / 0x1_0000_0000
+}
+
 /** One pooled line draw. Rain remains in world space as the observer moves. */
 export class RainField {
   readonly mesh: LineSegments
@@ -26,21 +38,29 @@ export class RainField {
   private z = 0
   private anchored = false
   private count = COUNT
+  private seedValue = 0
   private disposed = false
   constructor() {
-    // Stable independent stream: weather visuals do not consume the world's RNG.
-    for (let i = 0; i < COUNT; i++) {
-      this.particles[i * 3] = ((i * .754877666) % 1 - .5) * WIDTH
-      this.particles[i * 3 + 1] = ((i * .569840291) % 1 - .5) * HEIGHT
-      this.particles[i * 3 + 2] = ((i * .438579127) % 1 - .5) * WIDTH
-      this.speeds[i] = 38 + (i % 29) * 1.3
-    }
+    this.setSeed(0)
     const geometry = new BufferGeometry()
     geometry.setAttribute('position', new BufferAttribute(this.positions, 3).setUsage(DynamicDrawUsage))
     this.mesh = new LineSegments(geometry, this.material)
     this.mesh.name = 'RainStreaks'
     this.mesh.frustumCulled = false
     this.mesh.visible = false
+  }
+  /** Re-key the pooled streaks when a deterministic world is committed. */
+  setSeed(seed: number): void {
+    if (this.disposed) return
+    this.seedValue = Number.isFinite(seed) ? Math.trunc(seed) : 0
+    for (let i = 0; i < COUNT; i++) {
+      const j = i * 3
+      this.particles[j] = (rainRandom(this.seedValue, i, 11) - .5) * WIDTH
+      this.particles[j + 1] = (rainRandom(this.seedValue, i, 23) - .5) * HEIGHT
+      this.particles[j + 2] = (rainRandom(this.seedValue, i, 37) - .5) * WIDTH
+      this.speeds[i] = 34 + rainRandom(this.seedValue, i, 53) * 48
+    }
+    this.anchored = false
   }
   setDensityScale(scale: number): void {
     this.count = scale <= 0 ? 0 : precipitationParticleCount(COUNT, scale)

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { AmbientLight, DirectionalLight, HemisphereLight, InstancedMesh, LineBasicMaterial, Matrix4, PointsMaterial, Scene, Vector3 } from 'three'
+import { AmbientLight, BufferAttribute, DirectionalLight, HemisphereLight, InstancedMesh, LineBasicMaterial, Matrix4, PointsMaterial, Scene, Vector3 } from 'three'
 import { Atmosphere } from '../src/world/Atmosphere'
 import { cloudInteriorDensity } from '../src/world/CloudMaterial'
 import { precipitationAtAltitude, RainField } from '../src/world/RainField'
@@ -70,6 +70,24 @@ describe('weather rendering', () => {
     expect(attribute.getZ(index) + rain.mesh.position.z).toBeCloseTo(oldZ, 4)
     expect(rain.mesh.geometry.getAttribute('position')).toBe(attribute)
     rain.dispose()
+  })
+
+  it('keys pooled rain placement and speeds to the world seed', () => {
+    const first = new RainField()
+    const second = new RainField()
+    const different = new RainField()
+    first.setSeed(731)
+    second.setSeed(731)
+    different.setSeed(732)
+    first.update(.016, 0, 1000, 0, 1, 12, -7)
+    second.update(.016, 0, 1000, 0, 1, 12, -7)
+    different.update(.016, 0, 1000, 0, 1, 12, -7)
+    const firstPositions = Array.from((first.mesh.geometry.getAttribute('position') as BufferAttribute).array)
+    const secondPositions = Array.from((second.mesh.geometry.getAttribute('position') as BufferAttribute).array)
+    const differentPositions = Array.from((different.mesh.geometry.getAttribute('position') as BufferAttribute).array)
+    expect(secondPositions).toEqual(firstPositions)
+    expect(differentPositions).not.toEqual(firstPositions)
+    first.dispose(); second.dispose(); different.dispose()
   })
 
   it('drifts and slants rain with wind, caps density, and releases buffers once', () => {
