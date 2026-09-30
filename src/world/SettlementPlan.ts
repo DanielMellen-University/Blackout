@@ -85,6 +85,8 @@ export function settlementNameForCell(
 
 const cache = new Map<string, SettlementPlan | null>()
 let cacheContext = ''
+const anchorCache = new Map<string, [number, number] | null>()
+let anchorCacheContext = ''
 // Settlement planning runs serially per worker message. Reuse a tiny bounded
 // set of climate records across candidate, survey, road, and lot probes
 // instead of allocating a full biome-weight record for every sample.
@@ -136,12 +138,24 @@ function anchorCandidates(kind: 'city' | 'village', pad: { x: number; z: number 
 }
 
 function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number] | null {
+  const context = `${getWorldSeed()}:${pad?.x}:${pad?.z}:${getOpsPad()?.y}`
+  if (context !== anchorCacheContext) {
+    anchorCache.clear()
+    anchorCacheContext = context
+  }
+  const key = `${kind}:${pad?.x}:${pad?.z}`
+  if (anchorCache.has(key)) return anchorCache.get(key) ?? null
   const candidates = anchorCandidates(kind, pad)
-  if (!candidates.length) return null
+  if (!candidates.length) {
+    anchorCache.set(key, null)
+    return null
+  }
   const padCellX = Math.floor(pad!.x / SETTLEMENT_CELL_SIZE)
   const padCellZ = Math.floor(pad!.z / SETTLEMENT_CELL_SIZE)
   if (kind === 'village') {
-    return candidates[0]!
+    const village = candidates[0]!
+    anchorCache.set(key, village)
+    return village
   }
   const salt = 9173
   // Never spend the only anchor cell on the city tier. A coincident city and
@@ -162,10 +176,15 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
       + hash2(padCellX * 311 + (cx - padCellX) * 71 + salt, padCellZ * 199 + (cz - padCellZ) * 97 - salt)
     if (score > bestScore) { bestScore = score; best = [cx, cz] }
   }
-  if (best) return best
-  return candidates.find(([cx, cz]) =>
+  if (best) {
+    anchorCache.set(key, best)
+    return best
+  }
+  const fallback = candidates.find(([cx, cz]) =>
     !villageAnchor || cx !== villageAnchor[0] || cz !== villageAnchor[1],
   ) ?? candidates[0]!
+  anchorCache.set(key, fallback)
+  return fallback
 }
 
 /** Ordered fallback cells used when the first protected landmark site fails validation. */
