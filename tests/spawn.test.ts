@@ -50,6 +50,15 @@ describe('airfield spawn', () => {
     expect(jet.biome).not.toBe('water')
   }, 25_000)
 
+  it('reuses a deterministic natural pad across repeated default searches', () => {
+    setWorldSeed(73)
+    clearOpsPad()
+    const first = findPlayableSpawn()
+    const second = findPlayableSpawn()
+    expect(first).not.toBeNull()
+    expect(second).toEqual(first)
+  }, 25_000)
+
   it('keeps the deterministic startup seed corpus playable', () => {
     for (let seed = 1; seed <= 30; seed += 1) {
       setWorldSeed(seed)

@@ -1,4 +1,4 @@
-import { clamp01, smoothstep, valueNoise } from './noise'
+import { clamp01, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { createClimateSample, sampleGeographyHeight, sampleGeographyInto, sampleGeographySurfaceInto, type GeographySurfaceSample } from './Geography'
 
 /**
@@ -18,6 +18,10 @@ let opsZ = 0
 let opsY = 0
 let opsYaw = 0
 let opsOn = false
+
+/** Reuse deterministic natural pads across retries without growing memory. */
+const SPAWN_CACHE_LIMIT = 24
+const spawnCache = new Map<number, FlatSpawn>()
 
 export interface OpsPadSnapshot {
   x: number
@@ -410,11 +414,37 @@ function hasWetNeighbors(x: number, z: number, r: number): boolean {
 
 /** Always a dry inland pad. Retries a cheap search before giving up. */
 export function findPlayableSpawn(maxRadius = 18000): FlatSpawn | null {
+  const cacheable = maxRadius === 18000 && getOpsPad() === null
+  const cacheKey = getWorldSeed()
+  if (cacheable) {
+    const cached = spawnCache.get(cacheKey)
+    if (cached && isUsableAirfield(cached)) {
+      // Refresh insertion order so repeatedly replayed seeds remain hot while
+      // old exploratory worlds naturally fall out of the bounded cache.
+      spawnCache.delete(cacheKey)
+      spawnCache.set(cacheKey, cached)
+      return { ...cached }
+    }
+    if (cached) spawnCache.delete(cacheKey)
+  }
+
   const found = findFlatSpawn(maxRadius)
-  if (found && isUsableAirfield(found)) return found
+  if (found && isUsableAirfield(found)) return rememberSpawn(cacheable, cacheKey, found)
   const inland = findInlandFallback()
-  if (inland) return inland
-  return findAnyDryLand()
+  if (inland) return rememberSpawn(cacheable, cacheKey, inland)
+  return rememberSpawn(cacheable, cacheKey, findAnyDryLand())
+}
+
+function rememberSpawn(cacheable: boolean, cacheKey: number, spawn: FlatSpawn | null): FlatSpawn | null {
+  if (!spawn) return null
+  if (!cacheable) return spawn
+  spawnCache.set(cacheKey, { ...spawn })
+  while (spawnCache.size > SPAWN_CACHE_LIMIT) {
+    const oldest = spawnCache.keys().next().value
+    if (oldest === undefined) break
+    spawnCache.delete(oldest)
+  }
+  return { ...spawn }
 }
 
 /** Higher is better. Negative = reject. */
