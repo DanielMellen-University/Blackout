@@ -204,4 +204,26 @@ describe('touch flight controls support detection', () => {
     expect(changes.at(-1)?.pitch).toBe(0)
     controls.dispose()
   })
+
+  it('emits edge-trigger actions for camera and landing gear toggles', () => {
+    const root = new TestElement()
+    const camera = new TestElement('camera-toggle')
+    const gear = new TestElement('gear-toggle')
+    root.appendChild(camera)
+    root.appendChild(gear)
+    const changes: TouchInputState[] = []
+    const controls = new TouchControls(root as unknown as HTMLElement, state => changes.push(state))
+    controls.setVisible(true)
+
+    root.dispatch('pointerdown', pointerEvent(camera, 11))
+    expect(changes.at(-1)?.cameraToggle).toBe(true)
+    testWindow.dispatch('pointerup', pointerEvent(camera, 11))
+    expect(changes.at(-1)?.cameraToggle).toBe(false)
+
+    root.dispatch('pointerdown', pointerEvent(gear, 12))
+    expect(changes.at(-1)?.gearToggle).toBe(true)
+    testWindow.dispatch('pointerup', pointerEvent(gear, 12))
+    expect(changes.at(-1)?.gearToggle).toBe(false)
+    controls.dispose()
+  })
 })

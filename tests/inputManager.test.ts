@@ -337,6 +337,25 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('turns touch camera and gear presses into one-shot input queues', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    input.setTouchState({ cameraToggle: true, gearToggle: true })
+    expect(input.consumeCameraToggle()).toBe(true)
+    expect(input.consumeGearToggle()).toBe(true)
+    input.setTouchState({ cameraToggle: true, gearToggle: true })
+    expect(input.consumeCameraToggle()).toBe(false)
+    expect(input.consumeGearToggle()).toBe(false)
+
+    input.setTouchState(null)
+    input.setTouchState({ cameraToggle: true, gearToggle: true })
+    expect(input.consumeCameraToggle()).toBe(true)
+    expect(input.consumeGearToggle()).toBe(true)
+    input.dispose()
+  })
+
   it('clears stale controller axes immediately when focus leaves', () => {
     vi.stubGlobal('navigator', {
       getGamepads: () => [{

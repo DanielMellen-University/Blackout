@@ -9,6 +9,8 @@ export type TouchAction =
   | 'throttle-up'
   | 'throttle-down'
   | 'boost'
+  | 'camera-toggle'
+  | 'gear-toggle'
 
 /** Event-driven touch input, normalized to the same ranges as ControlState. */
 export interface TouchInputState {
@@ -17,6 +19,8 @@ export interface TouchInputState {
   roll: number
   throttle: number
   boost: boolean
+  cameraToggle?: boolean
+  gearToggle?: boolean
 }
 
 const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
@@ -29,6 +33,8 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'throttle-up',
   'throttle-down',
   'boost',
+  'camera-toggle',
+  'gear-toggle',
 ])
 
 interface ActiveTouchPointer {
@@ -189,6 +195,8 @@ export class TouchControls {
     let roll = 0
     let throttle = 0
     let boost = false
+    let cameraToggle = false
+    let gearToggle = false
     for (const { action } of this.activePointers.values()) {
       if (action === 'pitch-up') pitch += 1
       if (action === 'pitch-down') pitch -= 1
@@ -199,6 +207,8 @@ export class TouchControls {
       if (action === 'throttle-up') throttle += 1
       if (action === 'throttle-down') throttle -= 1
       if (action === 'boost') boost = true
+      if (action === 'camera-toggle') cameraToggle = true
+      if (action === 'gear-toggle') gearToggle = true
     }
     this.onChange({
       pitch: clampAxis(pitch),
@@ -206,6 +216,8 @@ export class TouchControls {
       roll: clampAxis(roll),
       throttle: clampAxis(throttle),
       boost,
+      cameraToggle,
+      gearToggle,
     })
   }
 }
