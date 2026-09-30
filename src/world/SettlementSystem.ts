@@ -111,8 +111,11 @@ interface CollisionBuilding {
   sinYaw: number
   halfWidth: number
   halfDepth: number
+  /** Last multi-bucket query that visited this building. */
+  seenToken: number
 }
 const collisionIndexes = new WeakMap<SettlementPlan, CollisionIndex>()
+let collisionQueryToken = 0
 
 export interface SettlementCollisionPadding {
   readonly x: number
@@ -150,9 +153,8 @@ export function hitsSettlement(
   const maxBucketX = Math.floor((x + paddingX) / COLLISION_BUCKET_SIZE)
   const minBucketZ = Math.floor((z - paddingZ) / COLLISION_BUCKET_SIZE)
   const maxBucketZ = Math.floor((z + paddingZ) / COLLISION_BUCKET_SIZE)
-  const seen = minBucketX === maxBucketX && minBucketZ === maxBucketZ
-    ? undefined
-    : new Set<CollisionBuilding>()
+  const multiBucket = minBucketX !== maxBucketX || minBucketZ !== maxBucketZ
+  const queryToken = multiBucket ? nextCollisionQueryToken() : 0
   for (let bucketX = minBucketX; bucketX <= maxBucketX; bucketX++) {
     const column = index.buckets.get(bucketX)
     if (!column) continue
@@ -160,8 +162,10 @@ export function hitsSettlement(
       const bucket = column.get(bucketZ)
       if (!bucket) continue
       for (const candidate of bucket) {
-        if (seen?.has(candidate)) continue
-        seen?.add(candidate)
+        if (queryToken !== 0) {
+          if (candidate.seenToken === queryToken) continue
+          candidate.seenToken = queryToken
+        }
         const b = candidate.building
         const dx = x - b.x, dz = z - b.z
         const lx = Math.abs(dx * candidate.cosYaw - dz * candidate.sinYaw)
@@ -211,6 +215,7 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
       sinYaw: Math.sin(building.yaw),
       halfWidth: building.width / 2 + 2.6,
       halfDepth: building.depth / 2 + 2.6,
+      seenToken: 0,
     }
     for (let bx = minX; bx <= maxX; bx++) {
       for (let bz = minZ; bz <= maxZ; bz++) {
@@ -229,6 +234,13 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
   const index = { radius, buckets }
   collisionIndexes.set(plan, index)
   return index
+}
+
+function nextCollisionQueryToken(): number {
+  collisionQueryToken = collisionQueryToken >= Number.MAX_SAFE_INTEGER
+    ? 1
+    : collisionQueryToken + 1
+  return collisionQueryToken
 }
 
 function roofGeometry(): BufferGeometry {

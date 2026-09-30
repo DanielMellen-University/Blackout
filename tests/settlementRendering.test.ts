@@ -216,6 +216,20 @@ describe('settlement rendering and lifecycle', () => {
     expect(hitsSettlement(plan, 620, 120, 0)).toBe(false)
   })
 
+  it('deduplicates padded multi-bucket probes without changing collision results', () => {
+    const plan: SettlementPlan = {
+      id: 'multi-bucket-probe', kind: 'village', biome: 'plains', x: 512, y: 100, z: 512, radius: 180,
+      buildings: [{ x: 512, y: 100, z: 512, width: 52, depth: 52, height: 24,
+        yaw: Math.PI / 8, shape: 'block', roof: 'flat', wallColor: 0xffffff, roofColor: 0x333333 }],
+      roads: [],
+    }
+
+    for (let i = 0; i < 120; i++) {
+      expect(hitsSettlement(plan, 512, 112, 512, { x: 20, y: 3, z: 20 })).toBe(true)
+      expect(hitsSettlement(plan, 620, 112, 512, { x: 20, y: 3, z: 20 })).toBe(false)
+    }
+  })
+
   it('expands settlement collision sweeps for the aircraft body envelope', () => {
     const plan = example()
     const edge = 3018

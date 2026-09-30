@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.630** Remove transient `Set` allocations from padded multi-bucket settlement collision probes by using stamped collision candidates, reducing hot-path garbage without changing obstacle results.
+
 - **10.629** Fail closed on malformed terrain and settlement worker replies, returning active jobs through synchronous fallback instead of throwing or leaving streaming slots blocked.
 
 - **10.628** Reuse the fixed-step aircraft ground sample for terrain warning lookahead, removing a duplicate current-point climate query at the HUD cadence while preserving analytic fallback behavior.
