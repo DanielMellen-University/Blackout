@@ -4,6 +4,7 @@ import { precipitationParticleCount } from './SnowField'
 const COUNT = 1800
 const WIDTH = 180
 const HEIGHT = 120
+const STREAK_EXPOSURE = .016
 /** Fade precipitation above its source deck instead of raining in the upper sky. */
 export function precipitationAtAltitude(altitude: number, storm: number): number {
   if (!Number.isFinite(altitude)) return 0
@@ -39,6 +40,7 @@ export class RainField {
   private anchored = false
   private count = COUNT
   private seedValue = 0
+  private geometryReady = false
   private disposed = false
   constructor() {
     this.setSeed(0)
@@ -48,6 +50,7 @@ export class RainField {
     this.mesh.name = 'RainStreaks'
     this.mesh.frustumCulled = false
     this.mesh.visible = false
+    this.geometryReady = true
   }
   /** Re-key the pooled streaks when a deterministic world is committed. */
   setSeed(seed: number): void {
@@ -55,12 +58,26 @@ export class RainField {
     this.seedValue = Number.isFinite(seed) ? Math.trunc(seed) : 0
     for (let i = 0; i < COUNT; i++) {
       const j = i * 3
+      const k = i * 6
       this.particles[j] = (rainRandom(this.seedValue, i, 11) - .5) * WIDTH
       this.particles[j + 1] = (rainRandom(this.seedValue, i, 23) - .5) * HEIGHT
       this.particles[j + 2] = (rainRandom(this.seedValue, i, 37) - .5) * WIDTH
-      this.speeds[i] = 34 + rainRandom(this.seedValue, i, 53) * 48
+      const speed = this.speeds[i] = 34 + rainRandom(this.seedValue, i, 53) * 48
+      // Refresh the visible line buffer too. A world reseed can happen while
+      // rain is on screen; hiding the pool until the next update prevents one
+      // stale frame without allocating or rebuilding geometry.
+      this.positions[k] = this.particles[j]!
+      this.positions[k + 1] = this.particles[j + 1]!
+      this.positions[k + 2] = this.particles[j + 2]!
+      this.positions[k + 3] = this.particles[j]!
+      this.positions[k + 4] = this.particles[j + 1]! + speed * STREAK_EXPOSURE
+      this.positions[k + 5] = this.particles[j + 2]!
     }
     this.anchored = false
+    if (this.geometryReady) {
+      this.mesh.geometry.attributes.position!.needsUpdate = true
+      this.mesh.visible = false
+    }
   }
   setDensityScale(scale: number): void {
     this.count = scale <= 0 ? 0 : precipitationParticleCount(COUNT, scale)
@@ -92,7 +109,7 @@ export class RainField {
       const py = wrap(this.particles[j + 1]! - dy - speed * step + HEIGHT / 2, HEIGHT) - HEIGHT / 2
       const pz = wrap(this.particles[j + 2]! - dz + wz * step + WIDTH / 2, WIDTH) - WIDTH / 2
       this.particles[j] = px; this.particles[j + 1] = py; this.particles[j + 2] = pz
-      const exposure = .016 + rain * .018
+      const exposure = STREAK_EXPOSURE + rain * .018
       this.positions[k] = px; this.positions[k + 1] = py; this.positions[k + 2] = pz
       this.positions[k + 3] = px - wx * exposure
       this.positions[k + 4] = py + speed * exposure

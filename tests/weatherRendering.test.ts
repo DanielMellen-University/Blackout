@@ -90,6 +90,19 @@ describe('weather rendering', () => {
     first.dispose(); second.dispose(); different.dispose()
   })
 
+  it('refreshes visible streak buffers when a live field is reseeded', () => {
+    const rain = new RainField()
+    rain.update(.016, 0, 1000, 0, 1, 0, 0)
+    const before = Array.from((rain.mesh.geometry.getAttribute('position') as BufferAttribute).array)
+    rain.setSeed(991)
+    expect(rain.mesh.visible).toBe(false)
+    const refreshed = Array.from((rain.mesh.geometry.getAttribute('position') as BufferAttribute).array)
+    expect(refreshed).not.toEqual(before)
+    rain.update(0, 0, 1000, 0, 1, 0, 0)
+    expect(rain.mesh.visible).toBe(true)
+    rain.dispose()
+  })
+
   it('drifts and slants rain with wind, caps density, and releases buffers once', () => {
     const rain = new RainField()
     rain.setDensityScale(.5)

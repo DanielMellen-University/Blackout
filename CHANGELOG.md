@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.676** Refresh the pooled rain line buffer on world reseed so active storms cannot flash stale streaks while keeping the steady-state update allocation-free.
 - **10.675** Seed pooled rain placement and speeds from the active world so storms vary per world while keeping the existing draw budget and allocation-free frame updates.
 - **10.674** Remove unseeded startup and audio randomness so pre-reseed atmosphere state and procedural noise remain repeatable without adding per-frame work.
 - **10.673** Make the existing runway asphalt respond to rain and snow with bounded roughness and tint changes, improving wet and frost approach readability without adding geometry or draw calls.
