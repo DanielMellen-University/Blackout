@@ -521,6 +521,9 @@ export class SettlementSystem {
   private readonly buildingRain = { value: 0 }
   private readonly buildingSnow = { value: 0 }
   private readonly buildingDaylight = { value: 1 }
+  /** Stable read-only snapshots for diagnostics and HUD integrations. */
+  private readonly weatherEffectsState = { rain: 0, snow: 0 }
+  private readonly lightingEffectsState = { daylight: 1 }
   private readonly loaded = new Map<string, LoadedSettlement>()
   /** Bounded collision plan view avoids a Map iterator on every physics sweep. */
   private readonly loadedCollisionPlans: SettlementPlan[] = []
@@ -690,15 +693,18 @@ export class SettlementSystem {
     this.buildingRain.value = this.roadRain.value
     this.buildingSnow.value = this.roadSnow.value
     this.buildingDaylight.value = safeDaylight
+    this.weatherEffectsState.rain = safeRain
+    this.weatherEffectsState.snow = safeSnow
+    this.lightingEffectsState.daylight = safeDaylight
     this.streetLampGlow.opacity = .06 + (1 - this.buildingDaylight.value) * .72
   }
 
-  get weatherEffects(): { rain: number; snow: number } {
-    return { rain: this.roadRain.value, snow: this.roadSnow.value }
+  get weatherEffects(): Readonly<{ rain: number; snow: number }> {
+    return this.weatherEffectsState
   }
 
-  get lightingEffects(): { daylight: number } {
-    return { daylight: this.buildingDaylight.value }
+  get lightingEffects(): Readonly<{ daylight: number }> {
+    return this.lightingEffectsState
   }
 
   private configureWeatherRoadMaterial(material: MeshStandardMaterial): void {

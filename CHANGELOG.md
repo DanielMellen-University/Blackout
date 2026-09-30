@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.712** Reuse stable settlement weather and lighting snapshot objects across reads, removing accessor allocations while keeping normalized values current for diagnostics and HUD integrations.
 - **10.711** Pool settlement stream-cell staging containers and sort the live queue in place, removing temporary wanted sets, retained arrays, and mapped key lists during fast travel without changing settlement priority or eviction behavior.
 - **10.710** Drain mixed terrain retirement batches completely after swap-pop removal, preventing a waiting LOD replacement from skipping neighboring disposable fallbacks until a later frame.
 - **10.709** Reduce terrain streaming fade overhead by removing per-tile callback allocations and batching contact-cache invalidation across retiring and removed chunk batches.

@@ -270,8 +270,12 @@ describe('settlement rendering and lifecycle', () => {
   it('shares blended weather values with road materials', () => {
     const system = new SettlementSystem(new Scene())
     try {
+      const weatherSnapshot = system.weatherEffects
+      const lightingSnapshot = system.lightingEffects
       system.setWeatherEffects(1.2, -.1)
       expect(system.weatherEffects).toEqual({ rain: 1, snow: 0 })
+      expect(system.weatherEffects).toBe(weatherSnapshot)
+      expect(system.lightingEffects).toBe(lightingSnapshot)
       system.setWeatherEffects(.35, .7)
       expect(system.weatherEffects).toEqual({ rain: .35, snow: .7 })
       system.setWeatherEffects(.1, .2, -.4)
