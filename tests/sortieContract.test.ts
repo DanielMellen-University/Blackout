@@ -1201,20 +1201,36 @@ describe('sortie contracts', () => {
     let lowLevelSeed = -1
     let rangeSeed = -1
     let fuelSeed = -1
+    let speedBandSeed = -1
+    let weatherSeed = -1
     for (let seed = 0; seed < 4_096; seed += 1) {
       tracker.reset(seed, 5, true)
       if (tracker.kind === 'low-level' && lowLevelSeed < 0) lowLevelSeed = seed
       if (tracker.kind === 'range' && rangeSeed < 0) rangeSeed = seed
       if (tracker.kind === 'fuel' && fuelSeed < 0) fuelSeed = seed
-      if (lowLevelSeed >= 0 && rangeSeed >= 0 && fuelSeed >= 0) break
+      if (tracker.kind === 'speed-band' && speedBandSeed < 0) speedBandSeed = seed
+      if (tracker.kind === 'weather' && weatherSeed < 0) weatherSeed = seed
+      if (lowLevelSeed >= 0 && rangeSeed >= 0 && fuelSeed >= 0 && speedBandSeed >= 0 && weatherSeed >= 0) break
     }
     expect(lowLevelSeed).toBeGreaterThanOrEqual(0)
     expect(rangeSeed).toBeGreaterThanOrEqual(0)
     expect(fuelSeed).toBeGreaterThanOrEqual(0)
+    expect(speedBandSeed).toBeGreaterThanOrEqual(0)
+    expect(weatherSeed).toBeGreaterThanOrEqual(0)
 
     tracker.reset(lowLevelSeed, 5, true)
+    tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, false, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
+    expect(tracker.progress).toBe(0)
     tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)
     expect(tracker.progress).toBeCloseTo(0.5)
+
+    tracker.reset(speedBandSeed, 5, true)
+    tracker.recordFixedStep(5, 220, 300, 0, 0, false, false, 0.4, 12, 2, 0.5, false, false, 180, 0.5, 6_000, 0.8)
+    expect(tracker.progress).toBe(0)
+
+    tracker.reset(weatherSeed, 5, true)
+    tracker.recordFixedStep(5, 220, 300, 0.8, 0, false, false, 0.4, 12, 2, 0.5, false, false, 180, 0.5, 6_000, 0.8)
+    expect(tracker.progress).toBe(0)
 
     tracker.reset(rangeSeed, 5, true)
     tracker.recordFixedStep(5, 220, 300, 0.5, 0.2, false, true, 0.4, 12, 2, 0.5, true, true, 180, 0.5, 6_000, 0.8)

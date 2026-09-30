@@ -271,26 +271,27 @@ export class SortieContractTracker {
     weatherGust: number,
     thermalLift = 0,
   ): void {
+    const airborneNow = airborne === true
     switch (this.definition?.kind) {
-      case 'low-level': this.recordLowLevel(terrainClearanceM, dt, speedMps > 5); break
-      case 'speed-band': this.recordSpeedBand(speedMps, dt, speedMps > 5); break
+      case 'low-level': this.recordLowLevel(terrainClearanceM, dt, airborneNow); break
+      case 'speed-band': this.recordSpeedBand(speedMps, dt, airborneNow); break
       case 'fuel': this.recordFuel(fuelFraction); break
-      case 'weather': this.recordWeather(rain, snow, dt, speedMps > 5); break
-      case 'brake': this.recordBrake(speedMps, dt, airbrake, airborne); break
-      case 'heat': this.recordHeat(engineHeat, speedMps, dt, airborne); break
-      case 'crosswind': this.recordCrosswind(crosswindMps, dt, airborne); break
-      case 'g-control': this.recordGControl(loadFactor, speedMps, dt, airborne); break
-      case 'deadstick': this.recordDeadstick(fuelFraction, airborne); break
-      case 'front': this.recordFront(weatherTransitioning, dt, airborne); break
-      case 'boost': this.recordBoost(afterburner, speedMps, dt, airborne); break
-      case 'mach': this.recordMach(speedMps, dt, airborne); break
-      case 'level': this.recordLevelFlight(altitudeM, dt, airborne); break
-      case 'night': this.recordNight(daylight, dt, airborne); break
-      case 'dry': this.recordDry(afterburner, speedMps, dt, airborne); break
-      case 'gust': this.recordGust(weatherGust, dt, airborne); break
-      case 'range': this.recordDistance(distanceM, airborne); break
-      case 'high-dive': this.recordHighDive(altitudeM, airborne); break
-      case 'thermal-surf': this.recordThermalSurf(thermalLift, dt, airborne); break
+      case 'weather': this.recordWeather(rain, snow, dt, airborneNow); break
+      case 'brake': this.recordBrake(speedMps, dt, airbrake, airborneNow); break
+      case 'heat': this.recordHeat(engineHeat, speedMps, dt, airborneNow); break
+      case 'crosswind': this.recordCrosswind(crosswindMps, dt, airborneNow); break
+      case 'g-control': this.recordGControl(loadFactor, speedMps, dt, airborneNow); break
+      case 'deadstick': this.recordDeadstick(fuelFraction, airborneNow); break
+      case 'front': this.recordFront(weatherTransitioning, dt, airborneNow); break
+      case 'boost': this.recordBoost(afterburner, speedMps, dt, airborneNow); break
+      case 'mach': this.recordMach(speedMps, dt, airborneNow); break
+      case 'level': this.recordLevelFlight(altitudeM, dt, airborneNow); break
+      case 'night': this.recordNight(daylight, dt, airborneNow); break
+      case 'dry': this.recordDry(afterburner, speedMps, dt, airborneNow); break
+      case 'gust': this.recordGust(weatherGust, dt, airborneNow); break
+      case 'range': this.recordDistance(distanceM, airborneNow); break
+      case 'high-dive': this.recordHighDive(altitudeM, airborneNow); break
+      case 'thermal-surf': this.recordThermalSurf(thermalLift, dt, airborneNow); break
       default: break
     }
   }

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.698** Route fixed-step contract dispatch through the explicit airborne state, preventing fast runway rolls from earning low-level, speed-band, or storm progress and failing closed on malformed airborne values.
 - **10.697** Make settlement destination rewards distinct per streamed landmark ID within a sortie, preventing repeated arrivals from farming score or inflating SCOUT progress while preserving RADAR RUN's lock-then-arrive flow.
 - **10.696** Harden touch, ghost replay, and streamed-settlement visibility boundaries so malformed truthy values cannot leak visual layers across title, cockpit, menu, or flight states.
 - **10.695** Normalize RadarSystem reduced-motion input to an explicit boolean, preserving the full contact budget when malformed runtime values reach the visual boundary.
