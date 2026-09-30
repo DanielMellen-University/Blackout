@@ -406,6 +406,34 @@ describe('flight input one-shot controls', () => {
     vi.unstubAllGlobals()
   })
 
+  it('fails closed when a browser returns malformed gamepad payloads', () => {
+    vi.stubGlobal('navigator', {
+      getGamepads: () => ({ connected: true }),
+    })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    expect(() => input.sampleWithDt(1)).not.toThrow()
+    expect(input.sampleWithDt(0)).toMatchObject({
+      pitch: 0,
+      roll: 0,
+      yaw: 0,
+      throttle: 0,
+      boost: false,
+      airbrake: false,
+    })
+    expect(input.consumePauseToggle()).toBe(false)
+
+    vi.stubGlobal('navigator', {
+      getGamepads: () => [{ connected: true }],
+    })
+    expect(() => input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)).not.toThrow()
+    expect(input.sampleWithDt(0)).toMatchObject({ pitch: 0, roll: 0, yaw: 0 })
+    input.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('merges event-driven touch controls after keyboard and gamepad input', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

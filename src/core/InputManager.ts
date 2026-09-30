@@ -398,7 +398,8 @@ export class InputManager {
     }
     let pads: readonly (Gamepad | null)[]
     try {
-      pads = navigator.getGamepads()
+      const rawPads = navigator.getGamepads()
+      pads = Array.isArray(rawPads) ? rawPads : []
     } catch {
       this.clearGamepadEdges()
       return
@@ -406,7 +407,7 @@ export class InputManager {
     let pad: Gamepad | null = null
     for (let i = 0; i < pads.length; i++) {
       const candidate = pads[i]
-      if (candidate?.connected) {
+      if (candidate && typeof candidate === 'object' && candidate.connected === true) {
         pad = candidate
         break
       }
@@ -416,30 +417,39 @@ export class InputManager {
       return
     }
 
+    // Browsers normally expose both arrays, but a disconnect during polling
+    // can briefly hand back a partial object. Treat malformed arrays as an
+    // empty device so stale controls are cleared instead of crashing RAF.
+    const rawAxes = (pad as unknown as { axes?: unknown }).axes
+    const rawButtons = (pad as unknown as { buttons?: unknown }).buttons
+    const axes: readonly number[] = Array.isArray(rawAxes) ? rawAxes as readonly number[] : []
+    const buttons: readonly { pressed?: boolean; value?: number }[] =
+      Array.isArray(rawButtons) ? rawButtons as readonly { pressed?: boolean; value?: number }[] : []
+
     // Standard mapping: left stick pitch/roll, right stick X yaw.
-    this.gamepadRoll = normalizeGamepadAxis(pad.axes[0] ?? 0)
-    const pitch = normalizeGamepadAxis(pad.axes[1] ?? 0)
+    this.gamepadRoll = normalizeGamepadAxis(axes[0] ?? 0)
+    const pitch = normalizeGamepadAxis(axes[1] ?? 0)
     this.gamepadPitch = pitch === 0 ? 0 : -pitch
-    this.gamepadYaw = normalizeGamepadAxis(pad.axes[2] ?? 0)
+    this.gamepadYaw = normalizeGamepadAxis(axes[2] ?? 0)
     // LT brakes throttle, RT advances it, and A/ Cross is afterburner.
-    const leftTrigger = normalizeGamepadTrigger(pad.buttons[6]?.value ?? 0)
-    const rightTrigger = normalizeGamepadTrigger(pad.buttons[7]?.value ?? 0)
+    const leftTrigger = normalizeGamepadTrigger(buttons[6]?.value ?? 0)
+    const rightTrigger = normalizeGamepadTrigger(buttons[7]?.value ?? 0)
     this.gamepadThrottle = rightTrigger - leftTrigger
-    this.gamepadBoost = pad.buttons[0]?.pressed ?? false
-    this.gamepadAirbrake = pad.buttons[4]?.pressed ?? false
+    this.gamepadBoost = buttons[0]?.pressed === true
+    this.gamepadAirbrake = buttons[4]?.pressed === true
 
     // Standard mapping: X toggles gear, Y toggles the camera, B toggles trim
     // assist, View mutes, Start pauses, and the D-pad drives weather, ghost,
     // and radar.
     // Queue only on press edges so held buttons cannot repeat at poll cadence.
-    const cameraHeld = pad.buttons[3]?.pressed === true
-    const gearHeld = pad.buttons[2]?.pressed === true
-    const stabilityHeld = pad.buttons[1]?.pressed === true
-    const audioHeld = pad.buttons[8]?.pressed === true
-    const weatherHeld = pad.buttons[12]?.pressed === true
-    const ghostHeld = pad.buttons[14]?.pressed === true
-    const radarHeld = pad.buttons[15]?.pressed === true
-    const pauseHeld = pad.buttons[9]?.pressed === true
+    const cameraHeld = buttons[3]?.pressed === true
+    const gearHeld = buttons[2]?.pressed === true
+    const stabilityHeld = buttons[1]?.pressed === true
+    const audioHeld = buttons[8]?.pressed === true
+    const weatherHeld = buttons[12]?.pressed === true
+    const ghostHeld = buttons[14]?.pressed === true
+    const radarHeld = buttons[15]?.pressed === true
+    const pauseHeld = buttons[9]?.pressed === true
     if (cameraHeld && !this.gamepadCameraHeld) this.cameraToggleQueued = true
     if (gearHeld && !this.gamepadGearHeld) this.gearToggleQueued = true
     if (stabilityHeld && !this.gamepadStabilityHeld) this.stabilityAssistToggleQueued = true
