@@ -62,6 +62,22 @@ describe('runway lighting', () => {
     expect(airfieldLightingContrast(Number.NaN, Number.NaN, Number.NaN, Number.NaN)).toBe(0)
   })
 
+  it('lifts cached airfield structure surfaces without rebuilding the scene', () => {
+    runway = createRunway()
+    const hangar = runway.getObjectByName('Hangar')!
+    const shell = hangar.children[0] as Mesh
+    const material = shell.material as MeshStandardMaterial
+
+    setAirfieldLighting(runway, 1, 0, 0, 0)
+    const dayColor = material.color.getHex()
+    setAirfieldLighting(runway, 0, 0, 0, 0)
+
+    expect(material.color.getHex()).not.toBe(dayColor)
+    expect(material.emissiveIntensity).toBeGreaterThan(0)
+    setAirfieldLighting(runway, 1, 0, 0, 0)
+    expect(material.color.getHex()).toBe(dayColor)
+  })
+
   it('caches airfield lighting materials after the first lookup', () => {
     runway = createRunway()
     const lookup = vi.spyOn(runway, 'getObjectByName')

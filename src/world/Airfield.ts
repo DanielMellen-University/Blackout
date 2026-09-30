@@ -1,5 +1,6 @@
 import {
   BoxGeometry,
+  Color,
   ConeGeometry,
   CylinderGeometry,
   Group,
@@ -48,6 +49,7 @@ const airfieldPapiState = new WeakMap<Group, PapiState>()
 const runwayPapiState = new WeakMap<Group, PapiState>()
 
 interface AirfieldLightingState {
+  readonly surfaces: readonly AirfieldSurfaceState[]
   readonly glass: MeshStandardMaterial
   readonly bay: MeshStandardMaterial
   readonly whiteLite: MeshStandardMaterial
@@ -56,6 +58,15 @@ interface AirfieldLightingState {
   readonly mintLite: MeshStandardMaterial
   lastContrast: number
 }
+
+interface AirfieldSurfaceState {
+  readonly material: MeshStandardMaterial
+  readonly baseColor: Color
+  readonly baseEmissive: Color
+  readonly baseEmissiveIntensity: number
+}
+
+const AIRFIELD_FILL_COLOR = new Color(0x6d8294)
 
 const airfieldLightingState = new WeakMap<Group, AirfieldLightingState>()
 const runwayLightingState = new WeakMap<Group, AirfieldLightingState>()
@@ -121,6 +132,14 @@ export function createAirfieldLandmarks(): Group {
   root.add(buildFence(mat))
   root.add(buildApronLights(mat))
   airfieldLightingState.set(root, {
+    surfaces: [
+      mat.concrete,
+      mat.concreteDark,
+      mat.metal,
+      mat.metalDark,
+      mat.bay,
+      mat.paint,
+    ].map(trackAirfieldSurface),
     glass: mat.glass,
     bay: mat.bay,
     whiteLite: mat.whiteLite,
@@ -132,6 +151,15 @@ export function createAirfieldLandmarks(): Group {
   freezeStaticAirfieldMeshes(root)
 
   return root
+}
+
+function trackAirfieldSurface(material: MeshStandardMaterial): AirfieldSurfaceState {
+  return {
+    material,
+    baseColor: material.color.clone(),
+    baseEmissive: material.emissive.clone(),
+    baseEmissiveIntensity: material.emissiveIntensity,
+  }
 }
 
 interface Mats {
@@ -505,6 +533,16 @@ export function setAirfieldLighting(
   const contrast = airfieldLightingContrast(daylight, rain, snow, cloudCover)
   if (Number.isFinite(state.lastContrast) && Math.abs(state.lastContrast - contrast) < .01) return
   state.lastContrast = contrast
+  const surfaceLift = contrast * .18
+  const emissiveBlend = Math.min(.24, contrast * .24)
+  for (const surface of state.surfaces) {
+    surface.material.color.copy(surface.baseColor).multiplyScalar(1 + surfaceLift)
+    surface.material.emissive.copy(surface.baseEmissive)
+    if (surface.baseEmissiveIntensity <= .001 && emissiveBlend > 0) {
+      surface.material.emissive.lerp(AIRFIELD_FILL_COLOR, emissiveBlend)
+    }
+    surface.material.emissiveIntensity = surface.baseEmissiveIntensity + contrast * .08
+  }
   state.glass.emissiveIntensity = .22 + contrast * .42
   state.bay.emissiveIntensity = .18 + contrast * .4
   state.whiteLite.emissiveIntensity = 1.4 + contrast * .52
