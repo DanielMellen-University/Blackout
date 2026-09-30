@@ -41,6 +41,7 @@ export class InputManager {
   private gamepadRadarHeld = false
   private gamepadStabilityHeld = false
   private gamepadGhostHeld = false
+  private gamepadPauseHeld = false
   private touchPitch = 0
   private touchRoll = 0
   private touchYaw = 0
@@ -428,7 +429,8 @@ export class InputManager {
     this.gamepadAirbrake = pad.buttons[4]?.pressed ?? false
 
     // Standard mapping: X toggles gear, Y toggles the camera, B toggles trim
-    // assist, View mutes, and the D-pad drives weather, ghost, and radar.
+    // assist, View mutes, Start pauses, and the D-pad drives weather, ghost,
+    // and radar.
     // Queue only on press edges so held buttons cannot repeat at poll cadence.
     const cameraHeld = pad.buttons[3]?.pressed === true
     const gearHeld = pad.buttons[2]?.pressed === true
@@ -437,6 +439,7 @@ export class InputManager {
     const weatherHeld = pad.buttons[12]?.pressed === true
     const ghostHeld = pad.buttons[14]?.pressed === true
     const radarHeld = pad.buttons[15]?.pressed === true
+    const pauseHeld = pad.buttons[9]?.pressed === true
     if (cameraHeld && !this.gamepadCameraHeld) this.cameraToggleQueued = true
     if (gearHeld && !this.gamepadGearHeld) this.gearToggleQueued = true
     if (stabilityHeld && !this.gamepadStabilityHeld) this.stabilityAssistToggleQueued = true
@@ -444,6 +447,7 @@ export class InputManager {
     if (weatherHeld && !this.gamepadWeatherHeld) this.weatherCycleQueued = true
     if (ghostHeld && !this.gamepadGhostHeld) this.ghostToggleQueued = true
     if (radarHeld && !this.gamepadRadarHeld) this.radarTargetCycleQueued = true
+    if (pauseHeld && !this.gamepadPauseHeld) this.pauseToggleQueued = true
     this.gamepadCameraHeld = cameraHeld
     this.gamepadGearHeld = gearHeld
     this.gamepadStabilityHeld = stabilityHeld
@@ -451,6 +455,7 @@ export class InputManager {
     this.gamepadWeatherHeld = weatherHeld
     this.gamepadGhostHeld = ghostHeld
     this.gamepadRadarHeld = radarHeld
+    this.gamepadPauseHeld = pauseHeld
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -544,6 +549,7 @@ export class InputManager {
     this.gamepadRadarHeld = false
     this.gamepadStabilityHeld = false
     this.gamepadGhostHeld = false
+    this.gamepadPauseHeld = false
   }
 
   private clearTouchState(): void {

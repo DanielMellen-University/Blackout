@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.654** Map the standard gamepad Start edge to the existing pause queue so controller pilots can freeze flight without keyboard input, preserving the 30 Hz poll budget and edge-safe disconnect cleanup.
 - **10.653** Add an edge-triggered PAUSE action to the touch flight deck, routing through the existing pause menu and clearing held controls before freezing simulation.
 - **10.652** Add an edge-triggered RESET action to the touch flight deck so mobile pilots can restart a sortie after a crash or bad approach, reusing the existing reset queue without per-frame polling work.
 - **10.651** Lift coarse/fine terrain skirt normals toward a soft upward blend so LOD crack covers stop reading as dark hairline seams, without adding geometry, draws, or runtime work.
