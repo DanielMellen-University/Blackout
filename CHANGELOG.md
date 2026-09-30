@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **10.707** Synchronize runtime, README, changelog, and release-check metadata so the advertised roadmap chunk matches the latest shipped changes.
+- **10.706** Cache deterministic city and village anchor-cell selection per world and airfield context, avoiding repeated climate scoring during settlement streaming.
+- **10.705** Normalize malformed flight axes and boolean controls before fuel, engine, physics, and visual systems consume them, keeping stale input payloads finite and fail-closed.
+- **10.704** Bound stale fuel capacity values to the normalized 0–100 tank range so malformed saves cannot distort fuel fractions or refuel behavior.
 - **10.703** Reject malformed afterburner, heat, and daylight values in DRY RUN, THERMAL CONTROL, NIGHT FLIGHT, and night-landing rewards so impossible scalar telemetry cannot farm bonuses.
 - **10.702** Reject negative fuel fractions in the DEADSTICK contract so impossible telemetry cannot complete the empty-tank objective or diverge from its landing payout.
 - **10.701** Require an explicit boolean airborne state across stunt and altitude milestones, thermal lift, and water-contact classification, preventing malformed truthy payloads from changing scored progress or ditching outcomes.
