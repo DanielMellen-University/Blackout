@@ -87,7 +87,7 @@ describe('lightning comfort', () => {
     expect(nightWeatherReadability(0, 0, 0)).toBe(0)
     expect(nightWeatherReadability(0, 1, 1)).toBeCloseTo(0.9)
     expect(nightWeatherReadability(Number.NaN, Number.NaN, Number.NaN)).toBe(0)
-    expect(sceneExposure(0, 0, 0.9)).toBeCloseTo(1.112)
+    expect(sceneExposure(0, 0, 0.9)).toBeCloseTo(1.202)
     expect(sceneExposure(1, 0, 1)).toBeCloseTo(1.15)
   })
 })

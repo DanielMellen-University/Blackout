@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.635** Increase only the stormy-night readability lift so rain and cloud cover preserve terrain and aircraft silhouettes without brightening clear nights or lightning flashes.
 - **10.634** Replace sharp lowland grass cones with rounded instanced ground-cover clumps so snow and weather shading cannot turn smooth green terrain into white spike fields.
 - **10.633** Cache resolved land/water contact surfaces alongside frame-scoped heights so repeated aircraft probes reuse rendered surface kind without stale values across terrain revisions.
 

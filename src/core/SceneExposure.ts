@@ -31,5 +31,9 @@ export function sceneExposure(daylight: number, bloom = 0, nightReadability = 0)
   const safeNightReadability = Number.isFinite(nightReadability)
     ? Math.max(0, Math.min(1, nightReadability))
     : 0
-  return 0.95 + safeDaylight * 0.2 + safeBloom * 1.35 + (1 - safeDaylight) * safeNightReadability * 0.18
+  // Stormy darkness needs enough lift to preserve terrain silhouettes and
+  // aircraft shape, but clear nights remain on the authored deep-night base.
+  // Keep this separate from lightning bloom so readability never amplifies a
+  // flash or makes repeated storms headache-inducing.
+  return 0.95 + safeDaylight * 0.2 + safeBloom * 1.35 + (1 - safeDaylight) * safeNightReadability * 0.28
 }
