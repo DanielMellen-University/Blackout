@@ -218,4 +218,12 @@ describe('terrain streaming integration', () => {
     expect(terrain.root.children).toHaveLength(0)
     expect(terrain.root.parent).toBeNull()
   })
+
+  it('keeps terrain teardown idempotent across repeated shutdown calls', () => {
+    const nearDispose = vi.spyOn(internal.groundMatFar, 'dispose')
+    terrain.dispose()
+    terrain.dispose()
+    expect(nearDispose).toHaveBeenCalledOnce()
+    expect(terrain.root.parent).toBeNull()
+  })
 })

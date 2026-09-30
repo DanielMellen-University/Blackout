@@ -524,6 +524,7 @@ export class TerrainSystem {
 
   /** Release streamed geometry and the shared near-field prop factory. */
   dispose(): void {
+    if (this.disposed) return
     this.disposed = true
     this.workers.dispose()
     this.clearAll()
