@@ -90,34 +90,6 @@ export function fogNearForViewRadius(radius: number): number {
   return Math.round(fogFarForViewRadius(radius) * 0.34)
 }
 
-/**
- * Resolve a linear fog colour that stays close to the sky horizon as weather
- * and daylight change. The returned colour is deliberately restrained: cloud
- * and precipitation lift a dark horizon just enough to keep landforms legible
- * without turning clear nights into a bright wash.
- */
-export function weatherFogColor(
-  daylight: number,
-  rain: number,
-  snow: number,
-  cloudCover: number,
-  out: Color,
-): void {
-  const safeDaylight = finiteWeather01(daylight)
-  const safeRain = finiteWeather01(rain)
-  const safeSnow = finiteWeather01(snow)
-  const safeCloudCover = finiteWeather01(cloudCover)
-  const storm = MathUtils.clamp(safeRain * .34 + safeSnow * .42 + safeCloudCover * .24, 0, 1)
-  const night = 1 - safeDaylight
-  const weatherLift = night * storm * .12
-  const snowLift = safeSnow * .06
-  out.setRGB(
-    .16 + safeDaylight * .22 + weatherLift + snowLift,
-    .22 + safeDaylight * .25 + weatherLift * 1.08 + snowLift * 1.02,
-    .31 + safeDaylight * .27 + weatherLift * 1.18 + snowLift * 1.08,
-  )
-}
-
 /** Fade tiles against the active quality radius instead of the High preset. */
 export function terrainFadeTargetAlpha(cellDist: number, viewRadius: number): number {
   const safeRadius = Math.max(
@@ -305,8 +277,6 @@ export class TerrainSystem {
   private readonly groundMatFar: MeshStandardMaterial
   /** One shared opaque water material for settled streamed tiles. */
   private readonly waterMat: MeshStandardMaterial
-  private readonly fogColor = new Color(0x8eabc4)
-  private readonly fogBackground = new Color(0x8eabc4)
   private readonly weatherRain = { value: 0 }
   private readonly weatherSnow = { value: 0 }
   private readonly weatherClouds = { value: 0 }
@@ -368,14 +338,7 @@ export class TerrainSystem {
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
-  setWeatherEffects(
-    rain: number,
-    snow: number,
-    windX = 0,
-    windZ = 0,
-    cloudCover = 0,
-    daylight = 1,
-  ): void {
+  setWeatherEffects(rain: number, snow: number, windX = 0, windZ = 0, cloudCover = 0): void {
     const safeRain = finiteWeather01(rain)
     const safeSnow = finiteWeather01(snow)
     const safeCloudCover = finiteWeather01(cloudCover)
@@ -390,9 +353,6 @@ export class TerrainSystem {
     this.waterWindX.value = safeWindX
     this.waterWindZ.value = safeWindZ
     this.vegFactory?.setWeather(safeRain, safeSnow, safeWindX, safeWindZ)
-    weatherFogColor(daylight, safeRain, safeSnow, safeCloudCover, this.fogColor)
-    if (this.scene.fog instanceof Fog) this.scene.fog.color.copy(this.fogColor)
-    if (this.scene.background instanceof Color) this.scene.background.copy(this.fogColor)
   }
 
   get weatherEffects(): { rain: number; snow: number } {
@@ -527,9 +487,9 @@ export class TerrainSystem {
   }
 
   applyFog(near = FOG_NEAR, far = FOG_FAR): void {
-    this.fogBackground.copy(this.fogColor)
-    this.scene.background = this.fogBackground
-    this.scene.fog = new Fog(this.fogColor, near, far)
+    const fogColor = 0x8eabc4
+    this.scene.background = new Color(fogColor)
+    this.scene.fog = new Fog(fogColor, near, far)
   }
 
   clearAll(): void {

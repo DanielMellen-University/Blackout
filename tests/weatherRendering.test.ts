@@ -56,6 +56,15 @@ describe('weather rendering', () => {
     weather.dispose()
   })
 
+  it('keeps the sky background stable while atmosphere owns the final fog colour', () => {
+    const { scene, weather } = atmosphere()
+    const background = scene.background
+    weather.update(.1, 0, 1000, 0)
+    expect(scene.background).toBe(background)
+    expect(scene.fog).toBeTruthy()
+    weather.dispose()
+  })
+
   it('keeps stationary rain in world space when the observer moves', () => {
     const rain = new RainField()
     rain.update(0, 10, 1000, 20, 1, 0, 0)

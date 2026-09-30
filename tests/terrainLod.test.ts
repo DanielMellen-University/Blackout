@@ -1,4 +1,4 @@
-import { Color, InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
+import { InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flightConfig } from '../src/aircraft/flightConfig'
 import { planTerrainTiles } from '../src/world/TerrainLayout'
@@ -23,7 +23,6 @@ import {
   terrainSnowCoverage,
   VIEW_RADIUS,
   waterSegsForLod,
-  weatherFogColor,
 } from '../src/world/TerrainSystem'
 import { waterLandmarks } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
@@ -257,26 +256,6 @@ describe('TerrainSystem streaming LOD', () => {
     } finally {
       terrain.clearAll()
     }
-  })
-
-  it('keeps the fog horizon coupled to bounded daylight and weather', () => {
-    const out = new Color()
-    weatherFogColor(0, 0, 0, 0, out)
-    const clearNight = out.clone()
-    weatherFogColor(1, 0, 0, 0, out)
-    const clearDay = out.clone()
-    weatherFogColor(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NEGATIVE_INFINITY, out)
-    expect(out.r).toBeCloseTo(clearNight.r)
-    expect(out.g).toBeCloseTo(clearNight.g)
-    expect(out.b).toBeCloseTo(clearNight.b)
-    expect(clearDay.r).toBeGreaterThan(clearNight.r)
-    expect(clearDay.g).toBeGreaterThan(clearNight.g)
-    expect(clearDay.b).toBeGreaterThan(clearNight.b)
-
-    weatherFogColor(0, 1, 0, 1, out)
-    expect(out.r).toBeGreaterThan(clearNight.r)
-    expect(out.g).toBeGreaterThan(clearNight.g)
-    expect(out.b).toBeGreaterThan(clearNight.b)
   })
 
   it('injects weather shading after the normal is initialized', () => {

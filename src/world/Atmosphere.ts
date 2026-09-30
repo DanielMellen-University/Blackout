@@ -22,6 +22,7 @@ import { SnowField } from './SnowField'
 import { RainField, precipitationAtAltitude } from './RainField'
 import { createCloudMaterial, cloudInteriorDensity } from './CloudMaterial'
 import { disposeObjectTree } from '../core/dispose'
+import { nightWeatherReadability } from '../core/SceneExposure'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
 import {
   WEATHER_LABELS,
@@ -264,6 +265,15 @@ export function rainLateralVelocity(
   const wind = Number.isFinite(windX) ? windX : 0
   const rain = Number.isFinite(intensity) ? MathUtils.clamp(intensity, 0, 1) : 0
   return wind * 0.38 + streakSway * 3 * rain
+}
+
+/** Keep storm fog readable at night without touching clear skies or flashes. */
+export function fogHorizonReadability(
+  daylight: number,
+  precipitation: number,
+  cloudCover: number,
+): number {
+  return nightWeatherReadability(daylight, precipitation, cloudCover)
 }
 
 /**
@@ -744,6 +754,8 @@ export class Atmosphere {
       _c.lerp(COL_SNOW_SKY, 0.2)
       _horizon.lerp(COL_SNOW_HORIZ, 0.25)
     }
+    const fogReadability = fogHorizonReadability(dayFactor, Math.max(w.rain, w.snow), totalClouds)
+    if (fogReadability > 0) _horizon.multiplyScalar(1 + fogReadability * .12)
     if (this.lightningFlash > 0.01) {
       _c2.setHex(0xcfe3ff)
       _c.lerp(_c2, this.lightningFlash * 0.28)

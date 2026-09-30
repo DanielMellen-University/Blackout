@@ -5,6 +5,7 @@ import {
   cloudPuffBudget,
   cloudPuffCount,
   createCloudLayoutRandom,
+  fogHorizonReadability,
   lightningCooldown,
   lightningFlashEnvelope,
 } from '../src/world/Atmosphere'
@@ -89,5 +90,7 @@ describe('lightning comfort', () => {
     expect(nightWeatherReadability(Number.NaN, Number.NaN, Number.NaN)).toBe(0)
     expect(sceneExposure(0, 0, 0.9)).toBeCloseTo(1.202)
     expect(sceneExposure(1, 0, 1)).toBeCloseTo(1.15)
+    expect(fogHorizonReadability(0, 1, 1)).toBeCloseTo(0.9)
+    expect(fogHorizonReadability(1, 1, 1)).toBe(0)
   })
 })
