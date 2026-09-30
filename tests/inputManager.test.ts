@@ -333,18 +333,70 @@ describe('flight input one-shot controls', () => {
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
 
-    input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
     expect(input.consumeCameraToggle()).toBe(false)
     expect(input.consumeGearToggle()).toBe(false)
 
     pad.buttons[2] = { pressed: false }
     pad.buttons[3] = { pressed: false }
-    input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
     pad.buttons[2] = { pressed: true }
     pad.buttons[3] = { pressed: true }
-    input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
+    input.dispose()
+    vi.unstubAllGlobals()
+  })
+
+  it('queues standard gamepad utility edges and clears them on release', () => {
+    const pad: {
+      connected: boolean
+      axes: number[]
+      buttons: Array<{ pressed?: boolean; value?: number }>
+    } = {
+      connected: true,
+      axes: [0, 0, 0],
+      buttons: Array.from({ length: 16 }, () => ({ pressed: false })),
+    }
+    const press = (index: number): void => { pad.buttons[index] = { pressed: true } }
+    press(1)
+    press(8)
+    press(12)
+    press(14)
+    press(15)
+    vi.stubGlobal('navigator', { getGamepads: () => [pad] })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.flightLive = true
+
+    input.sampleWithDt(1)
+    expect(input.consumeStabilityAssistToggle()).toBe(true)
+    expect(input.consumeAudioToggle()).toBe(true)
+    expect(input.consumeWeatherCycle()).toBe(true)
+    expect(input.consumeGhostToggle()).toBe(true)
+    expect(input.consumeRadarTargetCycle()).toBe(true)
+
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    expect(input.consumeStabilityAssistToggle()).toBe(null)
+    expect(input.consumeAudioToggle()).toBe(false)
+    expect(input.consumeWeatherCycle()).toBe(false)
+    expect(input.consumeGhostToggle()).toBe(false)
+    expect(input.consumeRadarTargetCycle()).toBe(false)
+
+    pad.buttons = Array.from({ length: 16 }, () => ({ pressed: false }))
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    press(1)
+    press(8)
+    press(12)
+    press(14)
+    press(15)
+    input.sampleWithDt(GAMEPAD_POLL_INTERVAL * 2)
+    expect(input.consumeStabilityAssistToggle()).toBe(false)
+    expect(input.consumeAudioToggle()).toBe(true)
+    expect(input.consumeWeatherCycle()).toBe(true)
+    expect(input.consumeGhostToggle()).toBe(true)
+    expect(input.consumeRadarTargetCycle()).toBe(true)
     input.dispose()
     vi.unstubAllGlobals()
   })

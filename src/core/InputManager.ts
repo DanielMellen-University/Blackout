@@ -36,6 +36,11 @@ export class InputManager {
   private gamepadAirbrake = false
   private gamepadCameraHeld = false
   private gamepadGearHeld = false
+  private gamepadWeatherHeld = false
+  private gamepadAudioHeld = false
+  private gamepadRadarHeld = false
+  private gamepadStabilityHeld = false
+  private gamepadGhostHeld = false
   private touchPitch = 0
   private touchRoll = 0
   private touchYaw = 0
@@ -343,14 +348,14 @@ export class InputManager {
     this.gamepadAirbrake = false
 
     if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') {
-      this.gamepadCameraHeld = false
-      this.gamepadGearHeld = false
+      this.clearGamepadEdges()
       return
     }
     let pads: readonly (Gamepad | null)[]
     try {
       pads = navigator.getGamepads()
     } catch {
+      this.clearGamepadEdges()
       return
     }
     let pad: Gamepad | null = null
@@ -362,8 +367,7 @@ export class InputManager {
       }
     }
     if (!pad) {
-      this.gamepadCameraHeld = false
-      this.gamepadGearHeld = false
+      this.clearGamepadEdges()
       return
     }
 
@@ -379,14 +383,30 @@ export class InputManager {
     this.gamepadBoost = pad.buttons[0]?.pressed ?? false
     this.gamepadAirbrake = pad.buttons[4]?.pressed ?? false
 
-    // Standard mapping: X toggles gear, Y toggles the camera. Queue only
-    // on the press edge so a held button cannot repeat at the poll cadence.
+    // Standard mapping: X toggles gear, Y toggles the camera, B toggles trim
+    // assist, View mutes, and the D-pad drives weather, ghost, and radar.
+    // Queue only on press edges so held buttons cannot repeat at poll cadence.
     const cameraHeld = pad.buttons[3]?.pressed === true
     const gearHeld = pad.buttons[2]?.pressed === true
+    const stabilityHeld = pad.buttons[1]?.pressed === true
+    const audioHeld = pad.buttons[8]?.pressed === true
+    const weatherHeld = pad.buttons[12]?.pressed === true
+    const ghostHeld = pad.buttons[14]?.pressed === true
+    const radarHeld = pad.buttons[15]?.pressed === true
     if (cameraHeld && !this.gamepadCameraHeld) this.cameraToggleQueued = true
     if (gearHeld && !this.gamepadGearHeld) this.gearToggleQueued = true
+    if (stabilityHeld && !this.gamepadStabilityHeld) this.stabilityAssistToggleQueued = true
+    if (audioHeld && !this.gamepadAudioHeld) this.audioToggleQueued = true
+    if (weatherHeld && !this.gamepadWeatherHeld) this.weatherCycleQueued = true
+    if (ghostHeld && !this.gamepadGhostHeld) this.ghostToggleQueued = true
+    if (radarHeld && !this.gamepadRadarHeld) this.radarTargetCycleQueued = true
     this.gamepadCameraHeld = cameraHeld
     this.gamepadGearHeld = gearHeld
+    this.gamepadStabilityHeld = stabilityHeld
+    this.gamepadAudioHeld = audioHeld
+    this.gamepadWeatherHeld = weatherHeld
+    this.gamepadGhostHeld = ghostHeld
+    this.gamepadRadarHeld = radarHeld
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
@@ -469,8 +489,17 @@ export class InputManager {
     this.gamepadThrottle = 0
     this.gamepadBoost = false
     this.gamepadAirbrake = false
+    this.clearGamepadEdges()
+  }
+
+  private clearGamepadEdges(): void {
     this.gamepadCameraHeld = false
     this.gamepadGearHeld = false
+    this.gamepadWeatherHeld = false
+    this.gamepadAudioHeld = false
+    this.gamepadRadarHeld = false
+    this.gamepadStabilityHeld = false
+    this.gamepadGhostHeld = false
   }
 
   private clearTouchState(): void {
