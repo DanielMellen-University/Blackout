@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.697** Make settlement destination rewards distinct per streamed landmark ID within a sortie, preventing repeated arrivals from farming score or inflating SCOUT progress while preserving RADAR RUN's lock-then-arrive flow.
 - **10.696** Harden touch, ghost replay, and streamed-settlement visibility boundaries so malformed truthy values cannot leak visual layers across title, cockpit, menu, or flight states.
 - **10.695** Normalize RadarSystem reduced-motion input to an explicit boolean, preserving the full contact budget when malformed runtime values reach the visual boundary.
 - **10.694** Bound the radar discovery ledger with a FIFO eviction window, preserving one-shot landmark cues while preventing infinite-world exploration from retaining every discovered ID forever.

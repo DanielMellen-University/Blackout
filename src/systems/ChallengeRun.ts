@@ -986,6 +986,8 @@ export class ChallengeRun {
   private bestGateQualityStreak = 0
   private destinationScore = 0
   private destinationCount = 0
+  /** Stable streamed landmark keys already rewarded during this sortie. */
+  private readonly destinationIds: string[] = []
   private surveyedBiomeMask = 0
   private surveyedBiomeCount = 0
   private surveyedBiomeCue: Biome | null = null
@@ -1040,6 +1042,7 @@ export class ChallengeRun {
     this.bestGateQualityStreak = 0
     this.destinationScore = 0
     this.destinationCount = 0
+    this.destinationIds.length = 0
     this.surveyedBiomeMask = 0
     this.surveyedBiomeCount = 0
     this.surveyedBiomeCue = null
@@ -1221,16 +1224,21 @@ export class ChallengeRun {
     this.refreshScorePreview()
   }
 
-  /** Add one bounded reward when a selected streamed settlement is reached. */
+  /** Add one bounded reward for each selected streamed settlement landmark. */
   recordDestination(kind: 'city' | 'village', id?: string): void {
     if (this.phase !== 'running' && this.phase !== 'returning') return
     if (kind !== 'city' && kind !== 'village') return
     if (this.destinationCount >= MAX_DESTINATION_COUNT) return
+    const safeId = typeof id === 'string' && id.length > 0 ? `${kind}:${id.slice(0, 128)}` : null
+    const isNewDestination = safeId === null || !this.destinationIds.includes(safeId)
     const reward = kind === 'city' ? 600 : 300
     const wasComplete = this.contract.complete
     const previousDetail = this.contract.detail
-    this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
-    this.destinationCount += 1
+    if (isNewDestination) {
+      if (safeId !== null) this.destinationIds.push(safeId)
+      this.destinationScore = Math.min(MAX_DESTINATION_SCORE, this.destinationScore + reward)
+      this.destinationCount += 1
+    }
     this.contract.recordDestination(this.destinationCount, kind, id)
     this.contractCuePending ||= !wasComplete && this.contract.complete
     if (this.contract.complete) {

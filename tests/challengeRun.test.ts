@@ -507,6 +507,24 @@ describe('ChallengeRun', () => {
     )
   })
 
+  it('rewards each identified settlement only once per sortie', () => {
+    const run = new ChallengeRun(null)
+    run.reset('seed:destination-unique', 1)
+    run.update(0.1, 8)
+    run.recordDestination('city', 'cell-1')
+    run.recordDestination('city', 'cell-1')
+    run.recordDestination('village', 'cell-2')
+    run.recordGate(1)
+    const result = run.finishLanding({
+      verticalSpeed: -1,
+      groundSpeed: 20,
+      pitchRad: 0,
+      rollRad: 0,
+    })!
+    expect(result.destinationCount).toBe(2)
+    expect(result.destinationScore).toBe(900)
+  })
+
   it('awards a bounded survey bonus for distinct natural biomes', () => {
     const values = new Map<string, string>()
     const storage = {
