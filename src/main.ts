@@ -1271,6 +1271,7 @@ export async function boot(): Promise<void> {
     snow: 0,
     warning: null,
     warningLevel: 'none',
+    warningCue: null,
     clock: '',
     weather: '',
     worldSeed: 0,
@@ -2828,6 +2829,7 @@ export async function boot(): Promise<void> {
       hudFrame.audioMuted = audioMuted
       hudFrame.warning = warn.text
       hudFrame.warningLevel = warn.level
+      hudFrame.warningCue = warningCueForState(warn)
       hudFrame.clock = challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
       hudFrame.worldSeed = world.worldSeed

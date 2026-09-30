@@ -76,6 +76,7 @@ import {
   navigationTargetLabel,
   navigationTargetText,
   navigationSector,
+  warningCueClass,
   normalizeNavigationBearing,
   pauseStateLabel,
   missionPhaseClass,
@@ -130,6 +131,13 @@ import {
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
+  it('whitelists cue-specific warning classes', () => {
+    expect(warningCueClass('low-alt')).toBe('warning-low-alt')
+    expect(warningCueClass('flare')).toBe('warning-flare')
+    expect(warningCueClass('go-around')).toBe('warning-go-around')
+    expect(warningCueClass('not-a-cue')).toBe('')
+    expect(warningCueClass(null)).toBe('')
+  })
   it('keeps procedural seed identity finite and compact', () => {
     expect(worldSeedHudLabel(9876.8)).toBe('9876.8')
     expect(worldSeedHudLabel(9876)).toBe('9876')

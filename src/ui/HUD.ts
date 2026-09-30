@@ -16,6 +16,7 @@ import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
 import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT, MAX_WATER_BODY_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import { stormBuffetHudActive } from '../systems/StormBuffet'
+import type { WarningCue } from '../systems/FlightWarnings'
 import {
   blackoutVignetteIntensity,
   redoutWashIntensity,
@@ -61,6 +62,26 @@ export type EngineHeatCue = 'normal' | 'hot' | 'critical'
 export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | 'failed'
 
 export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
+
+const HUD_WARNING_CUES: readonly Exclude<WarningCue, null>[] = [
+  'warning',
+  'pull-up',
+  'obstacle',
+  'overspeed',
+  'stall',
+  'gear-warning',
+  'fuel',
+  'low-alt',
+  'go-around',
+  'flare',
+]
+
+/** Whitelist warning cue classes before they reach the DOM class list. */
+export function warningCueClass(cue: WarningCue | unknown): string {
+  return typeof cue === 'string' && HUD_WARNING_CUES.includes(cue as Exclude<WarningCue, null>)
+    ? `warning-${cue}`
+    : ''
+}
 
 export function pauseStateLabel(paused: boolean): string {
   return paused ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
@@ -1485,6 +1506,8 @@ export class HUD {
     /** Active caution / warning (STALL, LOW ALT, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
+    /** Bounded warning identity used for cue-specific visual treatment. */
+    warningCue?: WarningCue
     clock?: string
     weather?: string
     /** Active procedural world seed, kept visible for replayable exploration. */
@@ -2313,7 +2336,7 @@ export class HUD {
       this.updateAttitude(opts.pitch, opts.roll)
     }
 
-    this.updateWarning(opts.warning ?? null, opts.warningLevel ?? 'none')
+    this.updateWarning(opts.warning ?? null, opts.warningLevel ?? 'none', opts.warningCue)
 
     if (this.bannerEl) {
       if (opts.banner) {
@@ -2543,8 +2566,13 @@ export class HUD {
   private updateWarning(
     text: string | null,
     level: 'none' | 'caution' | 'warning',
+    cue: WarningCue | undefined,
   ): void {
     if (!this.warnEl || !this.warnTextEl) return
+    const activeCueClass = warningCueClass(cue)
+    for (const candidate of HUD_WARNING_CUES) {
+      this.setClass(this.warnEl, `warning-${candidate}`, `warning-${candidate}` === activeCueClass)
+    }
     if (!text || level === 'none') {
       this.setHidden(this.warnEl, true)
       this.setClass(this.warnEl, 'caution', false)

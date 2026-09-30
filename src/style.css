@@ -2586,6 +2586,29 @@ body,
   animation: warn-pulse 0.45s ease-in-out infinite alternate;
 }
 
+/* Keep the warning vocabulary readable at a glance without changing the
+   severity contract: low altitude is amber, flare is guidance teal, and a
+   go-around is a hotter escape cue than a generic red warning. */
+.warn.caution.warning-low-alt {
+  color: #201500;
+  background: linear-gradient(180deg, #ffc45a 0%, #d97914 100%);
+  border-color: rgba(255, 220, 130, 0.82);
+  box-shadow: 0 0 22px rgba(241, 142, 34, 0.48);
+}
+
+.warn.caution.warning-flare {
+  color: #061b1b;
+  background: linear-gradient(180deg, #9ff3dd 0%, #45b99d 100%);
+  border-color: rgba(190, 255, 236, 0.8);
+  box-shadow: 0 0 22px rgba(62, 210, 175, 0.42);
+}
+
+.warn.warning.warning-go-around {
+  background: linear-gradient(180deg, #ff835f 0%, #c62e24 100%);
+  border-color: rgba(255, 195, 155, 0.72);
+  box-shadow: 0 0 26px rgba(255, 88, 42, 0.56);
+}
+
 @keyframes warn-pulse {
   from {
     opacity: 0.75;

@@ -24,4 +24,10 @@ describe('live HUD budget', () => {
     expect(css).toContain('@media (max-width: 370px)')
     expect(css).toContain('width: calc(100vw - 150px);')
   })
+
+  it('keeps landing and terrain warning cues visually distinct', () => {
+    expect(css).toContain('.warn.caution.warning-low-alt')
+    expect(css).toContain('.warn.caution.warning-flare')
+    expect(css).toContain('.warn.warning.warning-go-around')
+  })
 })
