@@ -807,7 +807,7 @@ export class SettlementSystem {
   }
   get buildingCount(): number {
     let count = 0
-    for (const settlement of this.loaded.values()) count += settlement.plan.buildings.length
+    for (const plan of this.loadedCollisionPlans) count += plan.buildings.length
     return count
   }
   get pendingCount(): number {
@@ -822,7 +822,7 @@ export class SettlementSystem {
     const safeZ = Number.isFinite(z) ? z : 0
     const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
     let count = 0
-    for (const { plan } of this.loaded.values()) {
+    for (const plan of this.loadedCollisionPlans) {
       if (count >= MAX_LOADED_SETTLEMENTS) break
       if (Math.hypot(plan.x - safeX, plan.z - safeZ) > range) continue
       const landmark = this.radarLandmarkCache[count] ?? {
