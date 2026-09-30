@@ -116,6 +116,22 @@ describe('weather director', () => {
     expect(after.windZ).toBeCloseTo(before.windZ, 8)
   })
 
+  it('does not restart a moving front when the same target is reapplied', () => {
+    const director = new WeatherDirector()
+    director.randomize(91, 'clear')
+    director.setWeather('storm')
+    director.update(8)
+    const before = director.progress
+
+    director.setWeather('storm')
+
+    expect(director.progress).toBeCloseTo(before, 8)
+    expect(director.transitioning).toBe(true)
+    director.setWeather('storm', true)
+    expect(director.progress).toBe(1)
+    expect(director.transitioning).toBe(false)
+  })
+
   it('turns wind through the shortest arc without inventing a calm lull', () => {
     const middle = blendWind({ x: 12, z: 0 }, { x: -12, z: 0 }, .5)
     expect(Math.hypot(middle.x, middle.z)).toBeCloseTo(12, 8)

@@ -251,7 +251,10 @@ export class WeatherDirector {
 
   setWeather(id: WeatherId, instant = false): void {
     id = normalizeWeatherId(id)
-    if (id === this.targetId && !this.transitioning) return
+    // Reapplying a moving target is common when route/UI state is reconciled.
+    // Keep the current progress instead of restarting the front from zero;
+    // explicit instant requests still snap the active transition immediately.
+    if (id === this.targetId && !instant) return
     if (instant) {
       this.currentId = id
       this.targetId = id

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.691** Keep same-target weather requests idempotent during an active front transition, preventing repeated route/UI reconciliation from restarting weather shifts while preserving explicit instant snaps.
 - **10.690** Harden pooled water-wake teardown and reduced-motion transitions so late lifecycle calls are no-ops after disposal and active ditch splashes clear immediately when motion is reduced.
 - **10.689** Reuse the aircraft's fixed-step ground-height cache during collision classification, removing a duplicate terrain sampler query from every airborne near-ground check.
 - **10.688** Make the version checker validate the README recent-changes marker, preventing stale roadmap metadata from shipping after a commit lands.
