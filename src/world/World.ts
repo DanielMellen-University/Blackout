@@ -622,6 +622,7 @@ export class World {
       next.windX,
       next.windZ,
       next.cloudCover,
+      next.daylight,
     )
     this.settlements.setWeatherEffects(next.rain, next.snow, next.daylight)
     setRunwayWeather(this.runway, next.rain, next.snow)
