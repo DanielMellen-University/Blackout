@@ -162,6 +162,18 @@ describe('terrain worker pool', () => {
     expect(FakeWorker.instances.every(worker => worker.terminate.mock.calls.length === 1)).toBe(true)
   })
 
+  it('keeps a disposed pool terminal across quality changes and repeated shutdown', () => {
+    const pool = new TerrainWorkerPool(vi.fn(), vi.fn())
+    const workers = [...FakeWorker.instances]
+    pool.dispose()
+    pool.setWorkerLimit(1)
+    expect(pool.submit(request(2))).toBe(false)
+    expect(pool.available).toBe(false)
+    expect(pool.size).toBe(0)
+    pool.dispose()
+    expect(workers.every(worker => worker.terminate.mock.calls.length === 1)).toBe(true)
+  })
+
   it('supports environments without Worker', () => {
     vi.stubGlobal('Worker', undefined)
     const pool = new TerrainWorkerPool(vi.fn(), vi.fn())

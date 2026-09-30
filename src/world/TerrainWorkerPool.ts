@@ -25,6 +25,7 @@ interface Slot { worker: Worker; job: TerrainBuildRequest | null; retire: boolea
 export class TerrainWorkerPool {
   private slots: Slot[] = []
   private disabled = false
+  private disposed = false
   private busyCount = 0
   private readonly hardwareWorkerLimit: number
   private workerLimit: number
@@ -51,11 +52,12 @@ export class TerrainWorkerPool {
   get size(): number { return this.slots.length }
   get busy(): number { return this.busyCount }
   get available(): boolean {
-    return !this.disabled && this.slots.some(slot => slot.job === null && !slot.retire)
+    return !this.disabled && !this.disposed && this.slots.some(slot => slot.job === null && !slot.retire)
   }
 
   /** Adjust concurrency without interrupting a terrain job already in flight. */
   setWorkerLimit(maxWorkers: number): void {
+    if (this.disposed) return
     const next = Math.min(normalizeWorkerLimit(maxWorkers), this.hardwareWorkerLimit)
     if (next === this.workerLimit) return
     this.workerLimit = next
@@ -63,6 +65,7 @@ export class TerrainWorkerPool {
     this.reconcileSlots()
   }
   submit(job: TerrainBuildRequest): boolean {
+    if (this.disposed) return false
     const slot = this.slots.find(candidate => candidate.job === null && !candidate.retire)
     if (!slot) return false
     slot.job = job
@@ -73,7 +76,7 @@ export class TerrainWorkerPool {
 
   /** Cancel stale terrain work while keeping the configured worker capacity. */
   cancelJobs(): void {
-    if (this.disabled) return
+    if (this.disabled || this.disposed) return
     for (const slot of this.slots.slice()) {
       if (!slot.job) continue
       slot.job = null
@@ -120,7 +123,7 @@ export class TerrainWorkerPool {
 
   /** Reconcile pending retirements after a quality change or worker completion. */
   private reconcileSlots(): void {
-    if (this.disabled) return
+    if (this.disabled || this.disposed) return
     // A later quality change can make a previously scheduled retirement
     // unnecessary. Recompute the retirement set from the current target so a
     // rapid Low -> High switch cannot strand the pool below its new limit.
@@ -147,6 +150,8 @@ export class TerrainWorkerPool {
     }
   }
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     for (const slot of this.slots) {
       slot.job = null
       slot.worker.onmessage = null
