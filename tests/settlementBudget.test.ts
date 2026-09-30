@@ -1,4 +1,4 @@
-import { Scene } from 'three'
+import { Object3D, Scene } from 'three'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
@@ -101,6 +101,29 @@ describe('settlement streaming budgets', () => {
       for (let frame = 0; frame < 12; frame++) system.update(200000, 200000)
       expect(system.count).toBe(0)
       expect(system.buildingCount).toBe(0)
+    } finally {
+      system.dispose()
+    }
+  })
+
+  it('keeps the bounded collision-plan view ordered when a loaded plan is removed', () => {
+    const system = new SettlementSystem(new Scene())
+    const internals = system as unknown as {
+      loaded: Map<string, { plan: SettlementPlan; root: Object3D }>
+      loadedCollisionPlans: SettlementPlan[]
+      remove: (settlement: { plan: SettlementPlan; root: Object3D }) => void
+      deleteLoaded: (key: string) => void
+    }
+    try {
+      for (let frame = 0; frame < 24; frame++) system.update(0, 0)
+      const entries = [...internals.loaded.entries()]
+      expect(entries.length).toBeGreaterThanOrEqual(3)
+      const target = entries[Math.floor(entries.length / 2)]
+      if (!target) return
+      const before = [...internals.loadedCollisionPlans]
+      internals.remove(target[1])
+      internals.deleteLoaded(target[0])
+      expect(internals.loadedCollisionPlans).toEqual(before.filter(plan => plan !== target[1].plan))
     } finally {
       system.dispose()
     }

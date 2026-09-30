@@ -760,10 +760,11 @@ export class SettlementSystem {
     if (!settlement) return undefined
     this.loaded.delete(key)
     const index = this.loadedCollisionPlans.indexOf(settlement.plan)
-    if (index >= 0) {
-      const last = this.loadedCollisionPlans.pop()
-      if (last && index < this.loadedCollisionPlans.length) this.loadedCollisionPlans[index] = last
-    }
+    // Keep the bounded view in the same insertion order as the source map.
+    // It is small (MAX_LOADED_SETTLEMENTS), and eviction is rare compared to
+    // collision/radar reads, so a splice is preferable to silently reordering
+    // equal-distance landmarks after a swap-remove.
+    if (index >= 0) this.loadedCollisionPlans.splice(index, 1)
     return settlement
   }
 

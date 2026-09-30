@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.685** Preserve insertion order when removing a streamed settlement from the bounded collision-plan view, keeping equal-distance radar landmarks stable after eviction.
 - **10.684** Reuse the bounded settlement collision-plan view for building-budget totals and radar landmark snapshots, removing more streamed-map iterator churn without changing placement, eviction, or landmark order.
 - **10.683** Keep a bounded collision-plan array alongside streamed settlements so swept obstacle checks avoid allocating a `Map` iterator on every physics step while retaining the existing settlement lookup map for streaming and UI work.
 - **10.682** Add a conservative segment-level settlement broadphase to swept obstacle checks, skipping repeated building-bucket probes when a high-speed flight path misses every loaded landmark while preserving exact nearby collision results.
