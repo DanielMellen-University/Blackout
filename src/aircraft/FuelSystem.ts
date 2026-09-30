@@ -37,6 +37,13 @@ export function resetFuel(state: FuelState): void {
   state.fraction = 1
 }
 
+/** Keep the normalized arcade tank bounded even when a stale save mutates it. */
+function normalizedCapacity(capacity: number): number {
+  return Number.isFinite(capacity) && capacity > 0
+    ? Math.min(capacity, FUEL_CAPACITY)
+    : FUEL_CAPACITY
+}
+
 /** Consume fuel once per fixed simulation step and keep every field finite. */
 export function updateFuel(
   state: FuelState,
@@ -46,9 +53,7 @@ export function updateFuel(
 ): FuelState {
   const safeDt = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, 0.25) : 0
   const lever = Number.isFinite(throttle) ? MathUtils.clamp(throttle, 0, 1) : 0
-  const safeCapacity = Number.isFinite(state.capacity) && state.capacity > 0
-    ? state.capacity
-    : FUEL_CAPACITY
+  const safeCapacity = normalizedCapacity(state.capacity)
   const safeRemaining = Number.isFinite(state.remaining)
     ? MathUtils.clamp(state.remaining, 0, safeCapacity)
     : safeCapacity
@@ -69,9 +74,7 @@ export function refuelFuel(
 ): FuelState {
   const safeDt = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, 0.25) : 0
   const safeRate = Number.isFinite(rate) ? Math.max(0, rate) : AIRFIELD_REFUEL_RATE
-  const safeCapacity = Number.isFinite(state.capacity) && state.capacity > 0
-    ? state.capacity
-    : FUEL_CAPACITY
+  const safeCapacity = normalizedCapacity(state.capacity)
   const safeRemaining = Number.isFinite(state.remaining)
     ? MathUtils.clamp(state.remaining, 0, safeCapacity)
     : safeCapacity

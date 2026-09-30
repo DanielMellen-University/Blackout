@@ -36,6 +36,23 @@ describe('arcade fuel system', () => {
     expect(state.fraction).toBe(1)
   })
 
+  it('bounds stale over-capacity saves back to the normalized tank size', () => {
+    const state = createFuelState()
+    state.capacity = 250
+    state.remaining = 250
+    updateFuel(state, 0, 0, false)
+    expect(state.capacity).toBe(100)
+    expect(state.remaining).toBe(100)
+    expect(state.fraction).toBe(1)
+
+    state.capacity = 250
+    state.remaining = 12
+    refuelFuel(state, 0, 0)
+    expect(state.capacity).toBe(100)
+    expect(state.remaining).toBe(12)
+    expect(state.fraction).toBeCloseTo(0.12)
+  })
+
   it('refuels finite state without exceeding capacity', () => {
     const fuel = createFuelState()
     fuel.remaining = 12
