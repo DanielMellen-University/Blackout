@@ -1,5 +1,6 @@
 import {
   BoxGeometry,
+  Color,
   DoubleSide,
   Group,
   Mesh,
@@ -9,6 +10,12 @@ import {
 import { createAirfieldLandmarks, freezeStaticAirfieldMeshes } from './Airfield'
 
 const runwayLightMaterial = new WeakMap<Group, MeshStandardMaterial>()
+const runwaySurfaceState = new WeakMap<Group, {
+  material: MeshStandardMaterial
+  baseColor: Color
+  baseRoughness: number
+}>()
+const RUNWAY_SNOW_TINT = new Color(0xb7c3ca)
 
 /** Simple asphalt strip with centerline and threshold markings. */
 export function createRunway(): Group {
@@ -18,18 +25,21 @@ export function createRunway(): Group {
   const length = 120
   const width = 18
 
-  const asphalt = new Mesh(
-    new PlaneGeometry(width, length),
-    new MeshStandardMaterial({
-      color: 0x2a2e32,
-      roughness: 0.9,
-      metalness: 0.05,
-      side: DoubleSide,
-    }),
-  )
+  const asphaltMaterial = new MeshStandardMaterial({
+    color: 0x2a2e32,
+    roughness: 0.9,
+    metalness: 0.05,
+    side: DoubleSide,
+  })
+  const asphalt = new Mesh(new PlaneGeometry(width, length), asphaltMaterial)
   asphalt.rotation.x = -Math.PI / 2
   asphalt.receiveShadow = true
   root.add(asphalt)
+  runwaySurfaceState.set(root, {
+    material: asphaltMaterial,
+    baseColor: asphaltMaterial.color.clone(),
+    baseRoughness: asphaltMaterial.roughness,
+  })
 
   // Shared materials/geometries (many instances, one GPU program each)
   const dashMat = new MeshStandardMaterial({ color: 0xf0f0e8, roughness: 0.85 })
@@ -96,4 +106,17 @@ export function setRunwayDaylight(root: Group, daylight: number): void {
     if (!(object instanceof Mesh) || !(object.material instanceof MeshStandardMaterial)) return
     object.material.emissiveIntensity = intensity
   })
+}
+
+/** Keep the existing asphalt readable as weather changes without new draws. */
+export function setRunwayWeather(root: Group, rain = 0, snow = 0): void {
+  const state = runwaySurfaceState.get(root)
+  if (!state) return
+  const safeRain = Number.isFinite(rain) ? Math.min(1, Math.max(0, rain)) : 0
+  const safeSnow = Number.isFinite(snow) ? Math.min(1, Math.max(0, snow)) : 0
+  const wet = safeRain * (1 - safeSnow * .35)
+  state.material.roughness = Math.min(0.9, Math.max(0.34, state.baseRoughness - wet * .56 + safeSnow * .05))
+  state.material.color.copy(state.baseColor)
+    .multiplyScalar(1 - wet * .09)
+    .lerp(RUNWAY_SNOW_TINT, safeSnow * .16)
 }

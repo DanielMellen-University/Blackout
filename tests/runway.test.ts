@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
-import { createRunway, runwayLightIntensity, setRunwayDaylight } from '../src/world/Runway'
+import { createRunway, runwayLightIntensity, setRunwayDaylight, setRunwayWeather } from '../src/world/Runway'
 import {
   airfieldLightingContrast,
   papiLightIntensity,
@@ -41,6 +41,26 @@ describe('runway lighting', () => {
     expect((light.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(.18)
     setRunwayDaylight(runway, 0)
     expect((light.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(1.8)
+  })
+
+  it('makes the existing asphalt respond to rain and snow', () => {
+    runway = createRunway()
+    const asphalt = runway.children[0] as Mesh
+    const material = asphalt.material as MeshStandardMaterial
+
+    setRunwayWeather(runway, 0, 0)
+    const dryRoughness = material.roughness
+    const dryColor = material.color.getHex()
+    setRunwayWeather(runway, .9, 0)
+    const wetRoughness = material.roughness
+    expect(wetRoughness).toBeLessThan(dryRoughness)
+    expect(material.color.getHex()).not.toBe(dryColor)
+    setRunwayWeather(runway, 0, 1)
+    expect(material.color.getHex()).not.toBe(dryColor)
+    expect(material.roughness).toBeGreaterThan(wetRoughness)
+    setRunwayWeather(runway, 0, 0)
+    expect(material.roughness).toBeCloseTo(dryRoughness)
+    expect(material.color.getHex()).toBe(dryColor)
   })
 
   it('raises existing airfield operations lights at night and in weather', () => {

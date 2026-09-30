@@ -17,7 +17,7 @@ import {
   setAirfieldWind,
 } from './Airfield'
 import { randomizeWorldSeed, setWorldSeed } from './noise'
-import { createRunway, setRunwayDaylight } from './Runway'
+import { createRunway, setRunwayDaylight, setRunwayWeather } from './Runway'
 import {
   clearOpsPad,
   findPlayableSpawn,
@@ -579,6 +579,7 @@ export class World {
       next.cloudCover,
     )
     this.settlements.setWeatherEffects(next.rain, next.snow, next.daylight)
+    setRunwayWeather(this.runway, next.rain, next.snow)
     setAirfieldLighting(this.runway, next.daylight, next.rain, next.snow, next.cloudCover)
     if (!this.appliedWeather) {
       this.appliedWeather = { ...next }
