@@ -51,6 +51,9 @@ export function warningCueForState(state: WarningState): WarningCue {
 const _fwd = new Vector3()
 const _up = new Vector3()
 const _vel = new Vector3()
+// Fixed fractions keep the obstacle lookahead allocation-free at the HUD
+// cadence while preserving the near/mid/far early-exit order.
+const OBSTACLE_LOOKAHEAD_FRACTIONS = [0.35, 0.68, 1] as const
 
 const NONE_WARNING = Object.freeze({
   text: null,
@@ -354,19 +357,19 @@ export function evaluateWarnings(
       const dirX = aircraft.velocity.x * invHorizontalSpeed
       const dirZ = aircraft.velocity.z * invHorizontalSpeed
       const lookaheadDistance = MathUtils.clamp(horizontalSpeed * 1.1, 90, 420)
-      const nearDistance = lookaheadDistance * .35
-      const midDistance = lookaheadDistance * .68
-      const farDistance = lookaheadDistance
-      const probe = (distance: number): boolean => {
+      for (const fraction of OBSTACLE_LOOKAHEAD_FRACTIONS) {
+        const distance = lookaheadDistance * fraction
         const secondsAhead = distance / horizontalSpeed
         const y = aircraft.position.y + aircraft.velocity.y * secondsAhead
-        return obstacleSampler(
+        if (obstacleSampler(
           aircraft.position.x + dirX * distance,
           y,
           aircraft.position.z + dirZ * distance,
-        )
+        )) {
+          obstacle = true
+          break
+        }
       }
-      obstacle = probe(nearDistance) || probe(midDistance) || probe(farDistance)
     }
   }
   const overspeed = overspeedWarningActive(speed)
