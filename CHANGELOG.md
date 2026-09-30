@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **10.632** Keep numeric contact-mesh fallbacks allocation-free and re-entrant by deriving land/water kind directly into the caller-owned contact record.
+- **10.633** Cache resolved land/water contact surfaces alongside frame-scoped heights so repeated aircraft probes reuse rendered surface kind without stale values across terrain revisions.
 
 ## v0.12.0 - 2026-09-22
 

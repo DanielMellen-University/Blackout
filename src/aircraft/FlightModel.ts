@@ -4,7 +4,7 @@ import {
   contactMinYCached,
   createGroundHeightCache,
   sampleGroundNormalCached,
-  sampleGroundSurfaceInto,
+  sampleGroundSurfaceCached,
   undercarriageClearance,
   type GroundSurfaceSample,
 } from '../world/ground'
@@ -430,7 +430,7 @@ export class FlightModel {
       const px = ox + _pt.x
       const py = oy + _pt.y
       const pz = oz + _pt.z
-      const surface = sampleGroundSurfaceInto(px, pz, this.surfaceSample)
+      const surface = sampleGroundSurfaceCached(px, pz, this.groundHeightCache, this.surfaceSample)
       const clearance = i === 0 ? undercarriageClearance(gearDown) : 0.4
       const minY = surface.height + clearance
       const d = minY - py

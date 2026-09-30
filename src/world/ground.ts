@@ -37,6 +37,8 @@ interface GroundHeightCacheEntry {
   x: number
   z: number
   height: number
+  kind: TerrainSurfaceKind
+  surfaceKnown: boolean
 }
 
 /**
@@ -58,7 +60,9 @@ export function createGroundHeightCache(capacity = 8): GroundHeightCache {
   const entries: GroundHeightCacheEntry[] = []
   // Empty slots must never match the valid world coordinate (0, 0) before a
   // caller clears or fills the cache for its first solve.
-  for (let i = 0; i < safeCapacity; i++) entries.push({ x: Number.NaN, z: Number.NaN, height: 0 })
+  for (let i = 0; i < safeCapacity; i++) {
+    entries.push({ x: Number.NaN, z: Number.NaN, height: 0, kind: 'land', surfaceKnown: false })
+  }
   return { entries, cursor: 0, revision: samplerRevision }
 }
 
@@ -68,6 +72,7 @@ export function clearGroundHeightCache(cache: GroundHeightCache): void {
   for (const entry of cache.entries) {
     entry.x = Number.NaN
     entry.z = Number.NaN
+    entry.surfaceKnown = false
   }
 }
 
@@ -178,6 +183,7 @@ export function sampleGroundHeightCached(
   entry.x = x
   entry.z = z
   entry.height = height
+  entry.surfaceKnown = false
   cache.cursor = (cache.cursor + 1) % cache.entries.length
   return height
 }
@@ -241,6 +247,50 @@ export function sampleGroundSurfaceInto(
   // the caller-owned output record so the fallback remains re-entrant.
   sampleTerrainSurfaceInto(out, x, z)
   out.height = sampled
+  return out
+}
+
+/**
+ * Rendered surface probe backed by the same frame-scoped cache as heights.
+ * Height-only callers can populate an entry first; this function upgrades
+ * that entry with the resolved land/water kind without sampling it twice on
+ * subsequent contact points in the same solve.
+ */
+export function sampleGroundSurfaceCached(
+  x: number,
+  z: number,
+  cache: GroundHeightCache,
+  out: GroundSurfaceSample,
+): GroundSurfaceSample {
+  if (cache.revision !== samplerRevision) clearGroundHeightCache(cache)
+  if (!Number.isFinite(x) || !Number.isFinite(z)) return sampleGroundSurfaceInto(x, z, out)
+
+  for (const entry of cache.entries) {
+    if (entry.x !== x || entry.z !== z || !entry.surfaceKnown) continue
+    out.height = entry.height
+    out.kind = entry.kind
+    return out
+  }
+
+  sampleGroundSurfaceInto(x, z, out)
+  if (!Number.isFinite(out.height)) return out
+
+  let entryIndex = cache.cursor
+  let entry = cache.entries[entryIndex]!
+  for (let i = 0; i < cache.entries.length; i++) {
+    const candidate = cache.entries[i]!
+    if (candidate.x === x && candidate.z === z) {
+      entryIndex = i
+      entry = candidate
+      break
+    }
+  }
+  entry.x = x
+  entry.z = z
+  entry.height = out.height
+  entry.kind = out.kind === 'water' ? 'water' : 'land'
+  entry.surfaceKnown = true
+  cache.cursor = (entryIndex + 1) % cache.entries.length
   return out
 }
 

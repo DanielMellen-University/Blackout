@@ -4,7 +4,9 @@ import { flightConfig } from '../src/aircraft/flightConfig'
 import { planTerrainTiles } from '../src/world/TerrainLayout'
 import {
   sampleGroundHeight,
+  sampleGroundSurfaceCached,
   sampleGroundSurfaceInto,
+  createGroundHeightCache,
   setContactHeightSampler,
   setGroundHeightSampler,
   setGroundSurfaceSampler,
@@ -318,6 +320,35 @@ describe('visible mesh contact sampling', () => {
     expect(sampleGroundSurfaceInto(8, -3, out)).toBe(out)
     expect(out.height).toBe(24)
     expect(out.kind).toBe(expected.kind)
+  })
+
+  it('reuses a resolved surface kind within the frame cache', () => {
+    let calls = 0
+    setGroundSurfaceSampler((_x, _z, out) => {
+      calls++
+      out.height = 18
+      out.kind = 'water'
+      return true
+    })
+    const cache = createGroundHeightCache(2)
+    const first = { height: 0, kind: 'land' as const }
+    const second = { height: 0, kind: 'land' as const }
+
+    expect(sampleGroundSurfaceCached(14, -6, cache, first)).toBe(first)
+    expect(sampleGroundSurfaceCached(14, -6, cache, second)).toBe(second)
+    expect(first).toEqual({ height: 18, kind: 'water' })
+    expect(second).toEqual(first)
+    expect(calls).toBe(1)
+
+    setGroundSurfaceSampler((_x, _z, out) => {
+      calls++
+      out.height = 7
+      out.kind = 'land'
+      return true
+    })
+    expect(sampleGroundSurfaceCached(14, -6, cache, second)).toBe(second)
+    expect(second).toEqual({ height: 7, kind: 'land' })
+    expect(calls).toBe(2)
   })
 
   it('matches the rendered vertex at a chunk corner', () => {
