@@ -399,7 +399,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time inside a deterministic updraft pocket. */
   recordThermalSurf(lift: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'thermal-surf' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'thermal-surf' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(lift) || !Number.isFinite(dt)) return
     if (Math.max(0, Math.min(1, lift)) < THERMAL_SURF_MIN_FRACTION) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -411,7 +411,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time through strong weather gusts. */
   recordGust(gust: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'gust' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'gust' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(gust) || !Number.isFinite(dt)) return
     if (Math.max(0, Math.min(1, gust)) < GUST_MIN_FRACTION) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -427,7 +427,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne distance for the exploration contract. */
   recordDistance(distanceM: number, airborne = true): void {
-    if (this.definition?.kind !== 'range' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'range' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(distanceM)) return
     const safeDistance = Math.max(0, Math.min(10_000, distanceM))
     this.rangeMeters = Math.min(this.definition.target, this.rangeMeters + safeDistance)
@@ -442,7 +442,7 @@ export class SortieContractTracker {
 
   /** Require a high climb followed by an airborne recovery dive. */
   recordHighDive(altitudeM: number, airborne = true): void {
-    if (this.definition?.kind !== 'high-dive' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'high-dive' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(altitudeM)) return
     const safeAltitude = Math.max(0, Math.min(100_000, altitudeM))
     if (!this.highDiveReached) {
@@ -459,7 +459,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded low-altitude airborne time over a rendered water surface. */
   recordWaterSkim(isWater: boolean, altitudeM: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'water-skim' || this.completeValue || !airborne || isWater !== true) return
+    if (this.definition?.kind !== 'water-skim' || this.completeValue || airborne !== true || isWater !== true) return
     if (!Number.isFinite(altitudeM) || !Number.isFinite(dt)) return
     const safeAltitude = Math.max(0, Math.min(100_000, altitudeM))
     if (safeAltitude < WATER_SKIM_MIN_ALTITUDE_M || safeAltitude > WATER_SKIM_MAX_ALTITUDE_M) return
@@ -472,7 +472,7 @@ export class SortieContractTracker {
 
   /** Accumulate a controlled low pass through high-relief terrain biomes. */
   recordRidgeRun(biome: string, terrainClearanceM: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'ridge-run' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'ridge-run' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(terrainClearanceM) || !Number.isFinite(dt)) return
     if (!isRidgeBiome(biome)) return
     const safeClearance = Math.max(0, Math.min(100_000, terrainClearanceM))
@@ -486,7 +486,7 @@ export class SortieContractTracker {
 
   /** Track distinct rendered waterway families without creating scene state. */
   recordWaterBody(body: string | undefined, airborne = true): void {
-    if (this.definition?.kind !== 'waterway-tour' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'waterway-tour' || this.completeValue || airborne !== true) return
     const bit = waterwayBit(body)
     if (bit === 0 || (this.waterwayMask & bit) !== 0) return
     this.waterwayMask |= bit
@@ -518,7 +518,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time through the existing dusk and night envelope. */
   recordNight(daylight: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'night' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'night' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(daylight) || !Number.isFinite(dt)) return
     const safeDaylight = Math.max(0, Math.min(1, daylight))
     if (safeDaylight > NIGHT_MAX_DAYLIGHT) return
@@ -531,7 +531,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded high-speed airborne time without afterburner. */
   recordDry(afterburner: boolean, speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'dry' || this.completeValue || !airborne || afterburner === true) return
+    if (this.definition?.kind !== 'dry' || this.completeValue || airborne !== true || afterburner === true) return
     if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     if (Math.max(0, speedMps) < DRY_MIN_MPS) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -595,7 +595,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded time in a low-altitude airborne band for the terrain-hugger contract. */
   recordLowLevel(altitudeM: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'low-level' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'low-level' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(altitudeM) || !Number.isFinite(dt)) return
     const safeAltitude = Math.max(0, altitudeM)
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -608,7 +608,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time inside a forgiving cruise-speed band. */
   recordSpeedBand(speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'speed-band' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'speed-band' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     const safeSpeed = Math.max(0, speedMps)
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -621,7 +621,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time while precipitation is meaningfully active. */
   recordWeather(rain: number, snow: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'weather' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'weather' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(rain) || !Number.isFinite(snow) || !Number.isFinite(dt)) return
     const active = Math.max(0, Math.min(1, Math.max(rain, snow))) >= 0.25
     if (!active) return
@@ -634,7 +634,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time over the rendered water surface. */
   recordWater(isWater: boolean, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'water' || this.completeValue || !airborne || isWater !== true) return
+    if (this.definition?.kind !== 'water' || this.completeValue || airborne !== true || isWater !== true) return
     if (!Number.isFinite(dt)) return
     const safeDt = Math.max(0, Math.min(5, dt))
     this.waterSeconds = Math.min(this.definition.target, this.waterSeconds + safeDt)
@@ -645,7 +645,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded high-speed time with the pilot's speed brake deployed. */
   recordBrake(speedMps: number, dt: number, active: boolean, airborne = true): void {
-    if (this.definition?.kind !== 'brake' || this.completeValue || !airborne || active !== true) return
+    if (this.definition?.kind !== 'brake' || this.completeValue || airborne !== true || active !== true) return
     if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     if (Math.max(0, speedMps) < BRAKE_MIN_MPS) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -657,7 +657,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded high-speed time while engine heat stays controlled. */
   recordHeat(heatFraction: number, speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'heat' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'heat' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(heatFraction) || !Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     if (Math.max(0, speedMps) < HEAT_MIN_MPS || Math.max(0, heatFraction) > HEAT_MAX_FRACTION) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -669,7 +669,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time while handling meaningful crosswind. */
   recordCrosswind(crosswindMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'crosswind' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'crosswind' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(crosswindMps) || !Number.isFinite(dt)) return
     if (Math.max(0, crosswindMps) < CROSSWIND_MIN_MPS) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -681,7 +681,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time inside a controllable high-speed G envelope. */
   recordGControl(loadFactor: number, speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'g-control' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'g-control' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(loadFactor) || !Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     const safeLoad = loadFactor
     if (Math.max(0, speedMps) < G_CONTROL_MIN_MPS || safeLoad < G_CONTROL_MIN || safeLoad > G_CONTROL_MAX) return
@@ -694,7 +694,7 @@ export class SortieContractTracker {
 
   /** Complete only after an airborne sortie actually runs the tank dry. */
   recordDeadstick(fuelFraction: number, airborne = true): void {
-    if (this.definition?.kind !== 'deadstick' || this.completeValue || !airborne || this.deadstickTriggered) return
+    if (this.definition?.kind !== 'deadstick' || this.completeValue || airborne !== true || this.deadstickTriggered) return
     if (!Number.isFinite(fuelFraction) || fuelFraction > 0.0001) return
     this.deadstickTriggered = true
     this.progressValue = 1
@@ -703,7 +703,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time while an existing weather front shifts. */
   recordFront(transitioning: boolean, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'front' || this.completeValue || !airborne || transitioning !== true) return
+    if (this.definition?.kind !== 'front' || this.completeValue || airborne !== true || transitioning !== true) return
     if (!Number.isFinite(dt)) return
     const safeDt = Math.max(0, Math.min(5, dt))
     this.frontSeconds = Math.min(this.definition.target, this.frontSeconds + safeDt)
@@ -714,7 +714,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time with afterburner active at high speed. */
   recordBoost(active: boolean, speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'boost' || this.completeValue || !airborne || active !== true) return
+    if (this.definition?.kind !== 'boost' || this.completeValue || airborne !== true || active !== true) return
     if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     if (Math.max(0, speedMps) < BOOST_MIN_MPS) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -726,7 +726,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time above the supersonic threshold. */
   recordMach(speedMps: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'mach' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'mach' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(speedMps) || !Number.isFinite(dt)) return
     if (Math.max(0, speedMps) < MACH_MIN_MPS) return
     const safeDt = Math.max(0, Math.min(5, dt))
@@ -738,7 +738,7 @@ export class SortieContractTracker {
 
   /** Accumulate bounded airborne time while holding a forgiving altitude window. */
   recordLevelFlight(altitudeM: number, dt: number, airborne = true): void {
-    if (this.definition?.kind !== 'level' || this.completeValue || !airborne) return
+    if (this.definition?.kind !== 'level' || this.completeValue || airborne !== true) return
     if (!Number.isFinite(altitudeM) || !Number.isFinite(dt)) return
     const safeAltitude = Math.max(0, altitudeM)
     const safeDt = Math.max(0, Math.min(5, dt))

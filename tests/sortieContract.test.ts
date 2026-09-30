@@ -1262,6 +1262,54 @@ describe('sortie contracts', () => {
     expect(tracker.complete).toBe(false)
   })
 
+  it('fails closed when event-driven contract paths receive malformed airborne flags', () => {
+    type AirborneProbe = {
+      kind: SortieContractKind
+      record: (tracker: SortieContractTracker, airborne: boolean) => void
+    }
+    const probes: readonly AirborneProbe[] = [
+      { kind: 'thermal-surf', record: (tracker, airborne) => tracker.recordThermalSurf(0.8, 5, airborne) },
+      { kind: 'gust', record: (tracker, airborne) => tracker.recordGust(0.8, 5, airborne) },
+      { kind: 'range', record: (tracker, airborne) => tracker.recordDistance(5_000, airborne) },
+      { kind: 'high-dive', record: (tracker, airborne) => tracker.recordHighDive(1_800, airborne) },
+      { kind: 'water-skim', record: (tracker, airborne) => tracker.recordWaterSkim(true, 80, 5, airborne) },
+      { kind: 'ridge-run', record: (tracker, airborne) => tracker.recordRidgeRun('mountain', 120, 5, airborne) },
+      { kind: 'waterway-tour', record: (tracker, airborne) => tracker.recordWaterBody('river', airborne) },
+      { kind: 'night', record: (tracker, airborne) => tracker.recordNight(0.2, 5, airborne) },
+      { kind: 'dry', record: (tracker, airborne) => tracker.recordDry(false, 300, 5, airborne) },
+      { kind: 'low-level', record: (tracker, airborne) => tracker.recordLowLevel(180, 5, airborne) },
+      { kind: 'speed-band', record: (tracker, airborne) => tracker.recordSpeedBand(220, 5, airborne) },
+      { kind: 'weather', record: (tracker, airborne) => tracker.recordWeather(0.8, 0, 5, airborne) },
+      { kind: 'water', record: (tracker, airborne) => tracker.recordWater(true, 5, airborne) },
+      { kind: 'brake', record: (tracker, airborne) => tracker.recordBrake(260, 5, true, airborne) },
+      { kind: 'heat', record: (tracker, airborne) => tracker.recordHeat(0.4, 220, 5, airborne) },
+      { kind: 'crosswind', record: (tracker, airborne) => tracker.recordCrosswind(12, 5, airborne) },
+      { kind: 'g-control', record: (tracker, airborne) => tracker.recordGControl(2, 180, 5, airborne) },
+      { kind: 'deadstick', record: (tracker, airborne) => tracker.recordDeadstick(0, airborne) },
+      { kind: 'front', record: (tracker, airborne) => tracker.recordFront(true, 5, airborne) },
+      { kind: 'boost', record: (tracker, airborne) => tracker.recordBoost(true, 260, 5, airborne) },
+      { kind: 'mach', record: (tracker, airborne) => tracker.recordMach(360, 5, airborne) },
+      { kind: 'level', record: (tracker, airborne) => tracker.recordLevelFlight(300, 5, airborne) },
+    ]
+    const tracker = new SortieContractTracker()
+    const malformedAirborne = 'true' as unknown as boolean
+    for (const probe of probes) {
+      let seed = -1
+      for (let candidate = 0; candidate < 4_096; candidate += 1) {
+        tracker.reset(candidate, 5, true)
+        if (tracker.kind === probe.kind) {
+          seed = candidate
+          break
+        }
+      }
+      expect(seed).toBeGreaterThanOrEqual(0)
+      tracker.reset(seed, 5, true)
+      probe.record(tracker, malformedAirborne)
+      expect(tracker.progress).toBe(0)
+      expect(tracker.complete).toBe(false)
+    }
+  })
+
   it('does not assign a gate-only contract to a no-gate sortie', () => {
     const tracker = new SortieContractTracker()
     let cleanSeed = -1
