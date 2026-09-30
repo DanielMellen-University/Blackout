@@ -388,6 +388,19 @@ describe('visible mesh contact sampling', () => {
     expect(terrain.sampleMeshHeight(0, 0)).toBeNull()
   })
 
+  it('keeps the newest terrain sampler alive when an older world is disposed', () => {
+    const older = new TerrainSystem(new Scene())
+    const newer = new TerrainSystem(new Scene())
+    const height = vi.spyOn(newer, 'sampleMeshHeight').mockReturnValue(77)
+    try {
+      older.dispose()
+      expect(sampleGroundHeight(12, -8)).toBe(77)
+      expect(height).toHaveBeenCalledWith(12, -8)
+    } finally {
+      newer.dispose()
+    }
+  })
+
   it('matches heights and lighting normals across neighbouring near tiles', () => {
     const terrain = new TerrainSystem(new Scene())
     pump(terrain, 210, 210, 12)

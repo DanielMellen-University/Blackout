@@ -24,10 +24,9 @@ import {
 import { createClimateSample } from './Geography'
 import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
 import {
+  clearTerrainSamplers,
   invalidateGroundSamplerCaches,
-  setContactHeightSampler,
-  setGroundHeightSampler,
-  setGroundSurfaceSampler,
+  registerTerrainSamplers,
   type GroundSurfaceSample,
 } from './ground'
 import { makeWaterMaterial } from './WaterSystem'
@@ -330,9 +329,12 @@ export class TerrainSystem {
     this.configureWeatherMaterial(this.groundMatNear)
     this.configureWeatherMaterial(this.groundMatFar)
     this.applyFog()
-    setContactHeightSampler((x, z) => this.sampleMeshSurface(x, z))
-    setGroundHeightSampler((x, z) => this.sampleMeshHeight(x, z))
-    setGroundSurfaceSampler((x, z, out) => this.sampleMeshSurfaceInto(x, z, out))
+    registerTerrainSamplers(
+      this,
+      (x, z) => this.sampleMeshSurface(x, z),
+      (x, z) => this.sampleMeshHeight(x, z),
+      (x, z, out) => this.sampleMeshSurfaceInto(x, z, out),
+    )
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
@@ -535,7 +537,7 @@ export class TerrainSystem {
     this.waterMat.dispose()
     disposeObjectTree(this.root)
     this.root.removeFromParent()
-    setContactHeightSampler(null)
+    clearTerrainSamplers(this)
   }
 
   /**

@@ -29,6 +29,8 @@ export type GroundSurfaceSampler = (
 let meshHeightSampler: MeshHeightSampler | null = null
 let groundHeightSampler: GroundHeightSampler | null = null
 let groundSurfaceSampler: GroundSurfaceSampler | null = null
+/** Terrain systems can overlap briefly during transactional world rebuilds. */
+let terrainSamplerOwner: object | null = null
 let samplerRevision = 0
 
 interface GroundHeightCacheEntry {
@@ -70,6 +72,7 @@ export function clearGroundHeightCache(cache: GroundHeightCache): void {
 }
 
 export function setContactHeightSampler(sampler: MeshHeightSampler | null): void {
+  terrainSamplerOwner = null
   meshHeightSampler = sampler
   samplerRevision++
   // The dedicated height callback belongs to the same streamed terrain
@@ -81,6 +84,7 @@ export function setContactHeightSampler(sampler: MeshHeightSampler | null): void
 
 /** Register the allocation-free height path used by hot queries. */
 export function setGroundHeightSampler(sampler: GroundHeightSampler | null): void {
+  terrainSamplerOwner = null
   groundHeightSampler = sampler
   samplerRevision++
 }
@@ -97,7 +101,36 @@ export function groundSamplerRevision(): number {
 
 /** Register the caller-owned surface path used by collision hot loops. */
 export function setGroundSurfaceSampler(sampler: GroundSurfaceSampler | null): void {
+  terrainSamplerOwner = null
   groundSurfaceSampler = sampler
+  samplerRevision++
+}
+
+/**
+ * Register all terrain callbacks as one owned bundle. The owner token keeps
+ * an older TerrainSystem from clearing a newer world's live samplers during
+ * overlapping teardown or transactional startup recovery.
+ */
+export function registerTerrainSamplers(
+  owner: object,
+  mesh: MeshHeightSampler,
+  height: GroundHeightSampler,
+  surface: GroundSurfaceSampler,
+): void {
+  terrainSamplerOwner = owner
+  meshHeightSampler = mesh
+  groundHeightSampler = height
+  groundSurfaceSampler = surface
+  samplerRevision++
+}
+
+/** Clear only the sampler bundle still owned by this terrain system. */
+export function clearTerrainSamplers(owner: object): void {
+  if (terrainSamplerOwner !== owner) return
+  terrainSamplerOwner = null
+  meshHeightSampler = null
+  groundHeightSampler = null
+  groundSurfaceSampler = null
   samplerRevision++
 }
 
