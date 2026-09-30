@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.723** Add persistent Relaxed, Standard, and Technical course filters to the title and pause pickers, with bounded counts, explicit empty states, and focused regression coverage.
 - **10.722** Remove avoidable settlement queue comparator closures during kilometre-cell crossings and add caller-owned terrain streaming telemetry for allocation-free debug profiling, with regression coverage for the stats contract.
 - **10.721** Harden active terrain fade invalidation so a desired-tile removal between stream schedules reactivates its chunk for disposal and clears cached contact ownership without restoring the all-resident per-frame scan.
 - **10.720** Keep settled distant terrain out of the per-frame fade scan, refreshing all targets only after stream or LOD focus changes while preserving near props, replacement fences, and fallback retirement coverage.

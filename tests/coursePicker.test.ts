@@ -62,6 +62,13 @@ describe('course picker copy', () => {
     expect(filterCoursePickerItems(items, '', 'unplayed')).toEqual([items[0], items[2]])
     const mastered = items.map((item, index) => ({ ...item, mastery: index === 0 ? 'legend' as const : 'rookie' as const }))
     expect(filterCoursePickerItems(mastered, '', 'mastered')).toEqual([mastered[0]])
+    const difficultyTagged = items.map((item, index) => ({
+      ...item,
+      difficulty: index === 0 ? 'technical' as const : index === 1 ? 'standard' as const : 'relaxed' as const,
+    }))
+    expect(filterCoursePickerItems(difficultyTagged, '', 'technical')).toEqual([difficultyTagged[0]])
+    expect(filterCoursePickerItems(difficultyTagged, '', 'standard')).toEqual([difficultyTagged[1]])
+    expect(filterCoursePickerItems(difficultyTagged, '', 'relaxed')).toEqual([difficultyTagged[2]])
   })
 
   it('keeps Recent and Favorites filters in player-defined newest-first order', () => {
@@ -108,6 +115,7 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryLabel('favorites', 2.9)).toBe('Favorites (2)')
     expect(coursePickerCategoryLabel('recent', Number.NaN)).toBe('Recent (0)')
     expect(coursePickerCategoryLabel('mastered', 4)).toBe('Mastered (4)')
+    expect(coursePickerCategoryLabel('technical', 4)).toBe('Technical difficulty (4)')
     expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('time')).toBe('Best time')
@@ -144,6 +152,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerCategory('favorites')).toBe('favorites')
     expect(normalizeCoursePickerCategory('unplayed')).toBe('unplayed')
     expect(normalizeCoursePickerCategory('mastered')).toBe('mastered')
+    expect(normalizeCoursePickerCategory('technical')).toBe('technical')
     expect(normalizeCoursePickerCategory('bogus')).toBe('all')
     expect(normalizeCoursePickerFilter('  storm  ')).toBe('storm')
     expect(normalizeCoursePickerFilter(null)).toBe('')

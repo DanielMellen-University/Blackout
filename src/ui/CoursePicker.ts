@@ -75,7 +75,10 @@ export interface CoursePickerItem {
 }
 
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
-const COURSE_PICKER_CATEGORY_VALUES = ['all', 'ops', 'routes', 'contracts', 'explore', 'recent', 'favorites', 'unplayed', 'mastered'] as const
+const COURSE_PICKER_CATEGORY_VALUES = [
+  'all', 'ops', 'routes', 'contracts', 'explore', 'recent', 'favorites', 'unplayed', 'mastered',
+  'relaxed', 'standard', 'technical',
+] as const
 export type CoursePickerCategory = typeof COURSE_PICKER_CATEGORY_VALUES[number]
 const COURSE_PICKER_CATEGORY_SET = new Set<string>(COURSE_PICKER_CATEGORY_VALUES)
 
@@ -104,6 +107,9 @@ const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, strin
   favorites: 'Favorites',
   unplayed: 'Unplayed',
   mastered: 'Mastered',
+  relaxed: 'Relaxed difficulty',
+  standard: 'Standard difficulty',
+  technical: 'Technical difficulty',
 }
 const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   catalog: 'Catalog order',
@@ -384,6 +390,8 @@ export function filterCoursePickerItems(
         ? items.filter(item => finiteCount(item.runs) === 0)
       : category === 'mastered'
         ? items.filter(item => item.mastery === 'legend')
+      : category === 'relaxed' || category === 'standard' || category === 'technical'
+        ? items.filter(item => item.difficulty === category)
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -423,6 +431,9 @@ export function coursePickerEmptyMessage(category: CoursePickerCategory, query: 
   if (category === 'recent') return 'NO RECENT COURSES YET'
   if (category === 'unplayed') return 'NO UNPLAYED COURSES · YOU HAVE FLOWN THE CATALOG'
   if (category === 'mastered') return 'NO MASTERED COURSES · REACH LEGEND TIER'
+  if (category === 'relaxed') return 'NO RELAXED COURSES AVAILABLE'
+  if (category === 'standard') return 'NO STANDARD COURSES AVAILABLE'
+  if (category === 'technical') return 'NO TECHNICAL COURSES AVAILABLE'
   return 'NO COURSES AVAILABLE'
 }
 
@@ -863,6 +874,9 @@ export class CoursePicker {
       favorites: this.items.filter(item => item.favorite === true).length,
       unplayed: this.items.filter(item => finiteCount(item.runs) === 0).length,
       mastered: this.items.filter(item => item.mastery === 'legend').length,
+      relaxed: this.items.filter(item => item.difficulty === 'relaxed').length,
+      standard: this.items.filter(item => item.difficulty === 'standard').length,
+      technical: this.items.filter(item => item.difficulty === 'technical').length,
     }
     for (const [category, option] of this.categoryOptions) {
       option.textContent = coursePickerCategoryLabel(category, counts[category])
