@@ -934,10 +934,20 @@ export class TerrainSystem {
       // Keep old coverage until every replacement leaf has finished building.
       // This handles both splitting a distant tile and merging near tiles.
       if (chunk.fadingOut) {
-        const waiting = this.replacementKeys.get(key)?.some(nextKey => (this.chunks.get(nextKey)?.fadeAge ?? 0) < FADE_SECONDS)
+        const replacements = this.replacementKeys.get(key)
+        let waiting = false
+        if (replacements) {
+          // Avoid a per-frame callback allocation for every retiring tile.
+          for (const nextKey of replacements) {
+            if ((this.chunks.get(nextKey)?.fadeAge ?? 0) < FADE_SECONDS) {
+              waiting = true
+              break
+            }
+          }
+        }
         if (waiting) { this.offsetFallback(chunk); continue }
         // Replacement coverage has completed its fade; retire the old surface.
-        if (this.replacementKeys.get(key)?.length) {
+        if (replacements?.length) {
           toRemove.push(key)
           continue
         }
@@ -990,34 +1000,43 @@ export class TerrainSystem {
       }
     }
 
+    // Every retiring chunk invalidates the same bounded contact lookup. Track
+    // whether this pass actually disposes anything, then clear it once for
+    // the batch instead of once per disposed tile or once per waiting frame.
+    let retiredAny = false
     for (let i = this.retiring.length - 1; i >= 0; i--) {
       const old = this.retiring[i]!
       const replacement = this.chunks.get(old.key)
       if (replacement && replacement.fadeAge < FADE_SECONDS && this.desiredTiles.has(old.key)) continue
       // The lookup can retain this chunk for a different streamed cell even
-      // when the last queried cell points elsewhere. Clear all entries before
-      // disposing the geometry so contact probes never resurrect dead LOD data.
-      this.invalidateSampleChunk()
+      // when the last queried cell points elsewhere. The batch invalidation
+      // below runs before the next contact solve, so dead LOD data cannot be
+      // resurrected after this geometry is released.
       old.root.removeFromParent()
       this.disposeChunk(old)
+      retiredAny = true
       // Retiring chunks are walked backwards, so swap-pop avoids shifting the
       // remaining fade records while preserving the teardown order already
       // visited by this pass.
       const last = this.retiring.pop()
       if (last && i < this.retiring.length) this.retiring[i] = last
     }
+    if (retiredAny) this.invalidateSampleChunk()
 
+    // The removal batch shares one sampler invalidation for the same reason
+    // as the retiring batch above.
+    let removedAny = false
     for (const key of toRemove) {
       const chunk = this.chunks.get(key)
       if (!chunk) continue
       // A removed chunk may still be referenced by a cached coarse-cell key.
-      // Invalidate the whole bounded lookup before releasing its buffers.
-      this.invalidateSampleChunk()
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
       this.chunks.delete(key)
       this.replacementKeys.delete(key)
+      removedAny = true
     }
+    if (removedAny) this.invalidateSampleChunk()
   }
 
   private applyChunkAlpha(chunk: Chunk): void {
