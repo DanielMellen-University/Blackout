@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.710** Drain mixed terrain retirement batches completely after swap-pop removal, preventing a waiting LOD replacement from skipping neighboring disposable fallbacks until a later frame.
 - **10.709** Reduce terrain streaming fade overhead by removing per-tile callback allocations and batching contact-cache invalidation across retiring and removed chunk batches.
 - **10.708** Invalidate every cached terrain-cell ownership entry before unloading or disposing streamed geometry, preventing collision and radio-altitude probes from resurrecting dead LOD surfaces.
 - **10.707** Synchronize runtime, README, changelog, and release-check metadata so the advertised roadmap chunk matches the latest shipped changes.

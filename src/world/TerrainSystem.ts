@@ -1004,10 +1004,15 @@ export class TerrainSystem {
     // whether this pass actually disposes anything, then clear it once for
     // the batch instead of once per disposed tile or once per waiting frame.
     let retiredAny = false
-    for (let i = this.retiring.length - 1; i >= 0; i--) {
+    let retiringIndex = this.retiring.length - 1
+    while (retiringIndex >= 0) {
+      const i = retiringIndex
       const old = this.retiring[i]!
       const replacement = this.chunks.get(old.key)
-      if (replacement && replacement.fadeAge < FADE_SECONDS && this.desiredTiles.has(old.key)) continue
+      if (replacement && replacement.fadeAge < FADE_SECONDS && this.desiredTiles.has(old.key)) {
+        retiringIndex--
+        continue
+      }
       // The lookup can retain this chunk for a different streamed cell even
       // when the last queried cell points elsewhere. The batch invalidation
       // below runs before the next contact solve, so dead LOD data cannot be
@@ -1016,10 +1021,11 @@ export class TerrainSystem {
       this.disposeChunk(old)
       retiredAny = true
       // Retiring chunks are walked backwards, so swap-pop avoids shifting the
-      // remaining fade records while preserving the teardown order already
-      // visited by this pass.
+      // remaining fade records. Keep the index on a swapped-in record so a
+      // mixed waiting/disposable batch cannot skip cleanup until a later frame.
       const last = this.retiring.pop()
       if (last && i < this.retiring.length) this.retiring[i] = last
+      if (i >= this.retiring.length) retiringIndex--
     }
     if (retiredAny) this.invalidateSampleChunk()
 

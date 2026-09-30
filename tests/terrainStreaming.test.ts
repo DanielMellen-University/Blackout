@@ -27,6 +27,7 @@ interface Chunk { root: Group; fadeAge: number; alpha: number; targetAlpha: numb
 interface Internals {
   desiredTiles: Map<string, Tile>
   chunks: Map<string, Chunk>
+  retiring: Array<{ key: string; root: Group }>
   pending: (Tile & { rebuild: boolean })[]
   pendingKeys: Set<string>
   replacementKeys: Map<string, string[]>
@@ -146,6 +147,32 @@ describe('terrain streaming integration', () => {
     expect(old.root.parent).toBeNull()
     expect(disposed).toHaveBeenCalledOnce()
     expect(terrain.root.children).toHaveLength(1)
+  })
+
+  it('drains disposable retiring tiles beside a still-fading replacement', () => {
+    for (const cx of [20, 21, 22]) {
+      desire(cx, 12)
+      internal.install(job(cx, 2), fixture)
+    }
+    internal.updateFades(0, 0, .65)
+    for (const cx of [20, 21, 22]) {
+      desire(cx, 4)
+      internal.install(job(cx, 1), fixture)
+    }
+
+    // Leave the first replacement waiting while the other two are ready to
+    // retire. A swap-pop teardown must revisit the swapped-in entry instead
+    // of skipping it until a later frame.
+    internal.chunks.get(key(20))!.fadeAge = 0
+    internal.chunks.get(key(21))!.fadeAge = .65
+    internal.chunks.get(key(22))!.fadeAge = .65
+    expect(internal.retiring).toHaveLength(3)
+    internal.updateFades(0, 0, 0)
+
+    expect(internal.retiring).toHaveLength(1)
+    expect(internal.retiring[0]!.key).toBe(key(20))
+    expect(internal.chunks.has(key(21))).toBe(true)
+    expect(internal.chunks.has(key(22))).toBe(true)
   })
 
   it('retires covered outer-ring fallback even when its replacement stays below full opacity', () => {
