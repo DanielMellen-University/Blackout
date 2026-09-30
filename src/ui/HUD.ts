@@ -55,6 +55,19 @@ export function machAriaLabel(value: number): string {
   return `${label}, ${description}`
 }
 
+/** Keep the engine's level-flight equilibrium visible without exposing raw m/s. */
+export function targetSpeedHudLabel(speedMps: number): string {
+  if (!Number.isFinite(speedMps)) return 'TGT --'
+  const knots = Math.min(9_999, Math.round(displayedKnots(Math.max(0, speedMps))))
+  return `TGT ${knots}`
+}
+
+/** Describe the target-speed cue for assistive technology. */
+export function targetSpeedAriaLabel(speedMps: number): string {
+  const label = targetSpeedHudLabel(speedMps)
+  return label === 'TGT --' ? 'Target speed unavailable' : `Target speed ${label.slice(4)} knots`
+}
+
 export type AltitudeCue = 'normal' | 'caution' | 'warning'
 
 export type EngineHeatCue = 'normal' | 'hot' | 'critical'
@@ -1102,6 +1115,7 @@ export class HUD {
   private readonly audioEl: HTMLElement | null
   private readonly fpsEl: HTMLElement | null
   private readonly thrEl: HTMLElement | null
+  private readonly targetSpeedEl: HTMLElement | null
   private readonly airbrakeEl: HTMLElement | null
   private readonly gearEl: HTMLElement | null
   private readonly gearRowEl: HTMLElement | null
@@ -1225,6 +1239,9 @@ export class HUD {
   private machCueValue: MachCue | null = null
   private throttleValue = Number.NaN
   private throttleText = ''
+  private targetSpeedValue = Number.NaN
+  private targetSpeedText = 'TGT --'
+  private targetSpeedAriaText = 'Target speed unavailable'
   private speedValue = Number.NaN
   private speedText = ''
   private speedAriaText = ''
@@ -1397,6 +1414,7 @@ export class HUD {
     this.audioEl = root.getElementById('hud-audio')
     this.fpsEl = root.getElementById('hud-fps')
     this.thrEl = root.getElementById('hud-thr')
+    this.targetSpeedEl = root.getElementById('hud-target-speed')
     this.airbrakeEl = root.getElementById('hud-airbrake')
     this.gearEl = root.getElementById('hud-gear')
     this.gearRowEl = root.getElementById('hud-gear-row')
@@ -1540,6 +1558,8 @@ export class HUD {
     audioMuted?: boolean
     fps: number
     throttle?: number
+    /** Level-flight equilibrium speed in metres per second for the current engine command. */
+    targetSpeed?: number
     boost?: boolean
     airbrake?: boolean
     /** Bounded engine stress fraction used by the compact temperature row. */
@@ -2354,6 +2374,17 @@ export class HUD {
 
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
+    }
+    if (this.targetSpeedEl && opts.targetSpeed !== undefined) {
+      const label = targetSpeedHudLabel(opts.targetSpeed)
+      const knots = label === 'TGT --' ? Number.NaN : Number(label.slice(4))
+      if (!Object.is(knots, this.targetSpeedValue)) {
+        this.targetSpeedValue = knots
+        this.targetSpeedText = label
+        this.targetSpeedAriaText = targetSpeedAriaLabel(opts.targetSpeed)
+      }
+      this.setText(this.targetSpeedEl, this.targetSpeedText)
+      this.setAttribute(this.targetSpeedEl, 'aria-label', this.targetSpeedAriaText)
     }
     if (this.airbrakeEl && opts.airbrake !== undefined) {
       const open = opts.airbrake === true

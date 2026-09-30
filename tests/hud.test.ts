@@ -88,6 +88,8 @@ import {
   machCue,
   machLabel,
   machNumber,
+  targetSpeedAriaLabel,
+  targetSpeedHudLabel,
   missionPaceLabel,
   missionHudLabel,
   createMissionHudLabelCache,
@@ -133,6 +135,15 @@ import {
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
+  it('formats the engine equilibrium speed as a compact knots cue', () => {
+    expect(targetSpeedHudLabel(0)).toBe('TGT 0')
+    expect(targetSpeedHudLabel(100)).toBe('TGT 194')
+    expect(targetSpeedHudLabel(-10)).toBe('TGT 0')
+    expect(targetSpeedHudLabel(Number.NaN)).toBe('TGT --')
+    expect(targetSpeedAriaLabel(100)).toBe('Target speed 194 knots')
+    expect(targetSpeedAriaLabel(Number.POSITIVE_INFINITY)).toBe('Target speed unavailable')
+  })
+
   it('whitelists cue-specific warning classes', () => {
     expect(warningCueClass('low-alt')).toBe('warning-low-alt')
     expect(warningCueClass('flare')).toBe('warning-flare')
