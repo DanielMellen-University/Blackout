@@ -102,6 +102,14 @@ export function terrainFadeTargetAlpha(cellDist: number, viewRadius: number): nu
   return 1 - MathUtils.smoothstep(safeDistance, fadeStart, safeRadius + 0.35)
 }
 
+function finiteWeather01(value: number): number {
+  return Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
+}
+
+function finiteWeatherWind(value: number): number {
+  return Number.isFinite(value) ? MathUtils.clamp(value, -40, 40) : 0
+}
+
 export function lodFromDist(dist: number): TerrainLod {
   if (dist <= 3) return 0
   if (dist <= 11) return 1
@@ -329,15 +337,20 @@ export class TerrainSystem {
 
   /** Update visual weather response without rebuilding streamed terrain. */
   setWeatherEffects(rain: number, snow: number, windX = 0, windZ = 0, cloudCover = 0): void {
-    this.weatherRain.value = MathUtils.clamp(rain, 0, 1)
-    this.weatherSnow.value = MathUtils.clamp(snow, 0, 1)
-    this.weatherClouds.value = MathUtils.clamp(cloudCover, 0, 1)
-    this.weatherWind.set(windX, windZ)
-    this.waterRain.value = this.weatherRain.value
-    this.waterSnow.value = this.weatherSnow.value
-    this.waterWindX.value = windX
-    this.waterWindZ.value = windZ
-    this.vegFactory?.setWeather(this.weatherRain.value, this.weatherSnow.value, windX, windZ)
+    const safeRain = finiteWeather01(rain)
+    const safeSnow = finiteWeather01(snow)
+    const safeCloudCover = finiteWeather01(cloudCover)
+    const safeWindX = finiteWeatherWind(windX)
+    const safeWindZ = finiteWeatherWind(windZ)
+    this.weatherRain.value = safeRain
+    this.weatherSnow.value = safeSnow
+    this.weatherClouds.value = safeCloudCover
+    this.weatherWind.set(safeWindX, safeWindZ)
+    this.waterRain.value = safeRain
+    this.waterSnow.value = safeSnow
+    this.waterWindX.value = safeWindX
+    this.waterWindZ.value = safeWindZ
+    this.vegFactory?.setWeather(safeRain, safeSnow, safeWindX, safeWindZ)
   }
 
   get weatherEffects(): { rain: number; snow: number } {

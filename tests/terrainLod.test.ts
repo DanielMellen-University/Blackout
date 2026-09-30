@@ -217,6 +217,19 @@ describe('TerrainSystem streaming LOD', () => {
       expect(terrain.weatherEffects).toEqual({ rain: 1, snow: 0 })
       terrain.setWeatherEffects(.2, .8)
       expect(terrain.weatherEffects).toEqual({ rain: .2, snow: .8 })
+      terrain.setWeatherEffects(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY)
+      expect(terrain.weatherEffects).toEqual({ rain: 0, snow: 0 })
+      const weatherInternals = terrain as unknown as {
+        weatherClouds: { value: number }
+        weatherWind: { x: number; y: number }
+        waterWindX: { value: number }
+        waterWindZ: { value: number }
+      }
+      expect(weatherInternals.weatherClouds.value).toBe(0)
+      expect(weatherInternals.weatherWind.x).toBe(0)
+      expect(weatherInternals.weatherWind.y).toBe(0)
+      expect(weatherInternals.waterWindX.value).toBe(0)
+      expect(weatherInternals.waterWindZ.value).toBe(0)
       terrain.setWaterDetailScale(.35)
       expect((terrain as unknown as { waterDetailScale: { value: number } }).waterDetailScale.value).toBe(.35)
       terrain.setWaterDetailScale(4)
