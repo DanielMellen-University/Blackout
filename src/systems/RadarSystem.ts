@@ -44,6 +44,31 @@ export const MAX_RADAR_CONTACTS = 6
 export const RADAR_UPDATE_INTERVAL_MS = 100
 /** Bound source work even if a caller hands radar an unexpectedly large list. */
 export const MAX_RADAR_LANDMARK_SCAN = 128
+/** Keep long exploratory sorties from retaining every streamed landmark forever. */
+export const MAX_RADAR_DISCOVERED = 512
+
+/**
+ * Remember a newly discovered landmark while keeping the session ledger
+ * bounded. The order array is caller-owned so the hot render path keeps its
+ * existing Set lookup and the eviction bookkeeping allocates only on an
+ * actual first-time discovery.
+ */
+export function rememberRadarDiscovery(
+  seen: Set<string>,
+  order: string[],
+  id: unknown,
+  limit = MAX_RADAR_DISCOVERED,
+): boolean {
+  if (typeof id !== 'string' || id.length === 0 || seen.has(id)) return false
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : MAX_RADAR_DISCOVERED
+  seen.add(id)
+  order.push(id)
+  while (order.length > safeLimit) {
+    const evicted = order.shift()
+    if (evicted !== undefined) seen.delete(evicted)
+  }
+  return true
+}
 
 export type RadarVerticalCue = 'ABOVE' | 'BELOW' | 'LEVEL'
 

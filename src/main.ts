@@ -167,6 +167,7 @@ import {
   RADAR_UPDATE_INTERVAL_MS,
   radarUpdateDue,
   radarDiscoveryLabel,
+  rememberRadarDiscovery,
   radarTargetArrivalLabel,
   radarTargetArrivalRadius,
   RadarSystem,
@@ -1319,6 +1320,7 @@ export async function boot(): Promise<void> {
   let prevEngineHeat: 'normal' | 'hot' | 'critical' | null = null
   let controlHintUntilMs = 0
   const radarDiscovered = new Set<string>()
+  const radarDiscoveryOrder: string[] = []
   let radarDiscoveryCooldownUntil = 0
   let radarTargetCycleQueued = false
   let radarNextUpdateMs = Number.NaN
@@ -1491,6 +1493,7 @@ export async function boot(): Promise<void> {
     prevWarning = null
     prevEngineHeat = null
     radarDiscovered.clear()
+    radarDiscoveryOrder.length = 0
     radarDiscoveryCooldownUntil = 0
     radar.clearTarget()
     radarTargetCycleQueued = false
@@ -2717,7 +2720,7 @@ export async function boot(): Promise<void> {
       if (aircraft.status === 'ok' && !aircraft.onGround && nowMs >= radarDiscoveryCooldownUntil) {
         for (const contact of radarContacts) {
           if (contact.kind === 'gate' || contact.kind === 'traffic' || !contact.id || radarDiscovered.has(contact.id)) continue
-          radarDiscovered.add(contact.id)
+          if (!rememberRadarDiscovery(radarDiscovered, radarDiscoveryOrder, contact.id)) continue
           radarDiscoveryCooldownUntil = nowMs + 2400
           showBanner(radarDiscoveryLabel(contact.kind, contact.biome, contact.name), 2800, 'success')
           break

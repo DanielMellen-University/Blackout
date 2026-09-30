@@ -3,6 +3,7 @@ import {
   radarContactLabel,
   radarDiscoveryLabel,
   radarDistanceLabel,
+  rememberRadarDiscovery,
   radarTargetArrivalLabel,
   radarTargetArrivalRadius,
   RadarSystem,
@@ -44,5 +45,19 @@ describe('radar exploration cues', () => {
     expect(radarTargetArrivalLabel('city')).toBe('CITY DESTINATION REACHED')
     expect(radarTargetArrivalLabel('village')).toBe('VILLAGE DESTINATION REACHED')
     expect(radarTargetArrivalLabel('gate')).toBe('')
+  })
+
+  it('bounds the discovery ledger for effectively unbounded worlds', () => {
+    const seen = new Set<string>()
+    const order: string[] = []
+    expect(rememberRadarDiscovery(seen, order, 'village-1', 2)).toBe(true)
+    expect(rememberRadarDiscovery(seen, order, 'village-1', 2)).toBe(false)
+    expect(rememberRadarDiscovery(seen, order, 'city-2', 2)).toBe(true)
+    expect(rememberRadarDiscovery(seen, order, 'village-3', 2)).toBe(true)
+    expect(order).toEqual(['city-2', 'village-3'])
+    expect(seen.has('village-1')).toBe(false)
+    expect(rememberRadarDiscovery(seen, order, 'village-1', 2)).toBe(true)
+    expect(rememberRadarDiscovery(seen, order, '', 2)).toBe(false)
+    expect(rememberRadarDiscovery(seen, order, null, 2)).toBe(false)
   })
 })
