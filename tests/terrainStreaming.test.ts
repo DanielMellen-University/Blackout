@@ -115,7 +115,9 @@ describe('terrain streaming integration', () => {
     const chunk = internal.chunks.get(key(5))!
     expect(chunk.root.visible).toBe(false)
     expect(material(chunk).opacity).toBe(0)
-    expect(material(chunk).alphaHash).toBe(true)
+    expect(material(chunk).transparent).toBe(true)
+    expect(material(chunk).alphaHash).toBe(false)
+    expect(material(chunk).depthWrite).toBe(false)
     internal.updateFades(0, 0, .325)
     expect(chunk.root.visible).toBe(true)
     expect(material(chunk).opacity).toBeCloseTo(.5)

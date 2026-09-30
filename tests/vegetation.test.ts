@@ -37,6 +37,8 @@ describe('weathered vegetation materials', () => {
       expect(shader.uniforms.vegetationTime).toBe(clock)
       expect(shader.vertexShader).toContain('vegetationGust')
       expect(shader.fragmentShader).toContain('vegetationSnow')
+      expect(shader.fragmentShader).toContain('snowMask = vegetationSnow')
+      expect(shader.fragmentShader).toContain('vec3(.62, .7, .76)')
     } finally {
       factory.disposeShared()
     }

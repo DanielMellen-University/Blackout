@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.670** Keep pooled snow above the aircraft anchor, lower its peak transparent overdraw, soften snow-tinted vegetation, and replace terrain/water fade dithering with smooth blends so runway-level storms and streamed transitions stop veiling the ground with white static.
 - **10.669** Add a bounded cloud-driven airframe fill so overcast daylight keeps the stealth silhouette readable without brightening clear daytime scenes or adding lights, meshes, or draw calls.
 - **10.668** Gate distant and Low-quality water roughness sampling behind the shared detail and distance budget, removing invisible normal-texture fetches without changing the water look up close.
 - **10.667** Give river ribbons a bounded local flow signal derived from channel width and grade, so streams, main channels, and steep reaches no longer share one uniform shader response without adding geometry or draw calls.

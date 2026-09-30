@@ -1129,6 +1129,7 @@ export class TerrainSystem {
       if (!(child instanceof Mesh)) continue
       const materials = Array.isArray(child.material) ? child.material : [child.material]
       for (const material of materials) {
+        if (!material.alphaHash) continue
         const configure = material.onBeforeCompile
         const cacheKey = material.customProgramCacheKey()
         material.onBeforeCompile = (shader: Parameters<MeshStandardMaterial['onBeforeCompile']>[0],
@@ -1179,10 +1180,13 @@ export class TerrainSystem {
     if (!chunk.settled) return
     const clone = (source: MeshStandardMaterial): MeshStandardMaterial => {
       const material = source.clone()
-      material.transparent = false
-      material.alphaHash = true
+      // Ground and water are broad opaque surfaces. Alpha-hash dithering on
+      // them reads as white/black static during every streamed fade, while a
+      // short smooth blend is both cleaner and cheaper for the GPU.
+      material.transparent = true
+      material.alphaHash = false
       material.opacity = MathUtils.clamp(chunk.alpha, 0, 1)
-      material.depthWrite = true
+      material.depthWrite = false
       return material
     }
     const terrainMaterial = clone(chunk.lod === 0 ? this.groundMatNear : this.groundMatFar)
@@ -1202,9 +1206,9 @@ export class TerrainSystem {
       if (!(obj instanceof Mesh)) return
       if (obj.name === 'WaterSurface') {
         obj.material.opacity = opacity
-        obj.material.transparent = false
-        obj.material.alphaHash = true
-        obj.material.depthWrite = true
+        obj.material.transparent = true
+        obj.material.alphaHash = false
+        obj.material.depthWrite = false
         obj.matrixAutoUpdate = false
         obj.updateMatrix()
         return
@@ -1222,11 +1226,12 @@ export class TerrainSystem {
         })
       } else {
         const c = obj.material.clone()
-        c.transparent = false
-        c.alphaHash = true
+        const smoothGroundFade = obj.name === 'TerrainChunk'
+        c.transparent = smoothGroundFade
+        c.alphaHash = !smoothGroundFade
         c.opacity = opacity
         if (c instanceof MeshStandardMaterial) {
-          c.depthWrite = true
+          c.depthWrite = !smoothGroundFade
           if (obj.name === 'TerrainChunk') this.configureWeatherMaterial(c)
         }
         obj.material = c

@@ -59,4 +59,14 @@ describe('snow wrap', () => {
     }
     field.dispose()
   })
+
+  it('keeps runway-level flakes above the aircraft anchor instead of veiling terrain', () => {
+    const field = new SnowField()
+    field.update(1 / 60, 0, 0, 0, 1, 0, 0)
+    const position = field.points.geometry.getAttribute('position')
+    for (let i = 0; i < position.count; i += 173) {
+      expect(position.getY(i)).toBeGreaterThanOrEqual(18)
+    }
+    field.dispose()
+  })
 })

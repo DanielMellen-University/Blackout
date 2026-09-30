@@ -102,8 +102,11 @@ function configureWeatherMaterial(
       // Keep rain and snow on the shared material path. Only upward-facing
       // surfaces collect snow, so trunks and dark rocks remain readable.
       diffuseColor.rgb *= 1.0 - vegetationRain * .1;
-      float snowMask = vegetationSnow * smoothstep(.38, .92, normal.y) * .62;
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.72, .8, .88), snowMask);`,
+      // Keep lowland cover from turning into a white stipple field during
+      // storms. Terrain owns the broad snow sheet; foliage only gets a soft
+      // edge tint on upward-facing facets.
+      float snowMask = vegetationSnow * smoothstep(.38, .92, normal.y) * .34;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.62, .7, .76), snowMask);`,
     )
   }
   material.customProgramCacheKey = () => `vegetation-weather-v2-${sway > 0 ? 'sway' : 'static'}`

@@ -13,6 +13,8 @@ const FLAKE_COUNT = 4200
 /** Half-size of the wrapping volume around the jet, metres. */
 const HALF = 110
 const SPAN = HALF * 2
+/** Leave a clear band over the ground so close flakes cannot veil terrain. */
+const GROUND_CLEARANCE = 18
 const SNOW_WAVE_SIZE = 256
 const SNOW_WAVE_MASK = SNOW_WAVE_SIZE - 1
 const SNOW_WAVE_SCALE = SNOW_WAVE_SIZE / (Math.PI * 2)
@@ -61,7 +63,7 @@ export class SnowField {
     for (let i = 0; i < FLAKE_COUNT; i++) {
       this.fall[i] = 3.8 + Math.random() * 8.4
       this.phase[i] = Math.random() * Math.PI * 2
-      this.size[i] = .56 + Math.random() * .56
+      this.size[i] = .46 + Math.random() * .42
     }
 
     const geo = new BufferGeometry()
@@ -72,7 +74,7 @@ export class SnowField {
     this.mat = new PointsMaterial({
       color: 0xd9e8f4,
       map: this.tex,
-      size: 0.42,
+      size: 0.36,
       transparent: true,
       opacity: 0,
       depthWrite: false,
@@ -139,13 +141,15 @@ export class SnowField {
     }
 
     if (!this.scattered) {
-      this.scatter(safeCx, safeCy + 10, safeCz)
+      // Keep the pooled volume above the aircraft anchor. At runway height,
+      // flakes below y=0 render through transparent terrain and read as static.
+      this.scatter(safeCx, safeCy + HALF + GROUND_CLEARANCE, safeCz)
       this.scattered = true
     }
 
     this.clock += safeDt
     this.points.visible = true
-    this.mat.opacity = Math.min(0.58, 0.22 + safeIntensity * 0.36)
+    this.mat.opacity = Math.min(0.36, 0.12 + safeIntensity * 0.24)
 
     const fallMul = 0.5 + safeIntensity * 1.15
     const wind = 1.8 + safeIntensity * 8.5
@@ -155,7 +159,7 @@ export class SnowField {
     const driftX = safeWindX * (.22 + safeIntensity * .16)
     const driftZ = safeWindZ * (.22 + safeIntensity * .16)
     const t = this.clock
-    const yCenter = safeCy + 10
+    const yCenter = safeCy + HALF + GROUND_CLEARANCE
 
     for (let i = 0; i < this.activeCountValue; i++) {
       const ix = i * 3
