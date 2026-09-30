@@ -1,4 +1,4 @@
-import type { TerrainGeometryData } from './TerrainGeometry'
+import type { TerrainGeometryBuffers, TerrainGeometryData } from './TerrainGeometry'
 import type { TerrainLod } from './TerrainGeometry'
 import type { getOpsPad } from './terrainSample'
 
@@ -98,13 +98,23 @@ export class TerrainWorkerPool {
     const slot: Slot = { worker, job: null, retire: false }
     worker.onmessage = (event: MessageEvent<TerrainBuildReply>) => {
       const job = slot.job
-      if (!job || event.data.id !== job.id || event.data.generation !== job.generation) return
+      if (!job) return
+      const reply = event?.data
+      if (!reply || reply.id !== job.id || reply.generation !== job.generation) return
+      if (!isTerrainGeometryData(reply.data)) {
+        // A worker can survive a structured-clone or application-level
+        // protocol failure without emitting onerror. Do not leave the slot
+        // busy forever or pass malformed buffers into Three.js; disable the
+        // pool and route every in-flight job through the synchronous fallback.
+        this.fail()
+        return
+      }
       slot.job = null
       this.busyCount = Math.max(0, this.busyCount - 1)
       const shouldRetire = slot.retire || this.slots.length > this.workerLimit
       if (shouldRetire) this.removeSlot(slot)
       this.reconcileSlots()
-      this.complete(job, event.data.data)
+      this.complete(job, reply.data)
     }
     worker.onerror = () => this.fail()
     worker.onmessageerror = () => this.fail()
@@ -166,4 +176,28 @@ export class TerrainWorkerPool {
 
 function normalizeWorkerLimit(value: number): number {
   return Math.min(6, Math.max(1, Number.isFinite(value) ? Math.floor(value) : 6))
+}
+
+function isTerrainGeometryData(value: unknown): value is TerrainGeometryData {
+  if (!isRecord(value) || !Number.isInteger(value.segs) || value.segs < 1) return false
+  const expected = (value.segs + 1) ** 2
+  if (!(value.heights instanceof Float32Array) || value.heights.length !== expected) return false
+  if (!(value.waterLevels instanceof Float32Array) || value.waterLevels.length !== expected) return false
+  return isTerrainGeometryBuffers(value.ground) &&
+    (value.water === null || isTerrainGeometryBuffers(value.water))
+}
+
+function isTerrainGeometryBuffers(value: unknown): value is TerrainGeometryBuffers {
+  if (!isRecord(value) || !isRecord(value.attributes) || !isRecord(value.bounds)) return false
+  const bounds = value.bounds
+  if (![bounds.x, bounds.y, bounds.z, bounds.radius].every(Number.isFinite)) return false
+  for (const attribute of Object.values(value.attributes)) {
+    if (!isRecord(attribute) || !Number.isInteger(attribute.itemSize) || attribute.itemSize < 1) return false
+    if (!ArrayBuffer.isView(attribute.array)) return false
+  }
+  return value.index === null || ArrayBuffer.isView(value.index)
+}
+
+function isRecord(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null
 }

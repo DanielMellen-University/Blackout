@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.629** Fail closed on malformed terrain and settlement worker replies, returning active jobs through synchronous fallback instead of throwing or leaving streaming slots blocked.
+
 - **10.628** Reuse the fixed-step aircraft ground sample for terrain warning lookahead, removing a duplicate current-point climate query at the HUD cadence while preserving analytic fallback behavior.
 
 - **10.627** Prevent a synchronous terrain-worker post failure from duplicating the tile that the worker pool already requeued for synchronous fallback.

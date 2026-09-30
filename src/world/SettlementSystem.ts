@@ -17,6 +17,49 @@ import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlemen
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
+function isSettlementWorkerReply(value: unknown): value is SettlementWorkerReply {
+  if (!isRecord(value) || (value.type !== 'settlement' && value.type !== 'road') ||
+    typeof value.key !== 'string' || !Number.isFinite(value.generation)) return false
+  if (value.type === 'settlement') {
+    return value.plan === null || isSettlementPlan(value.plan)
+  }
+  return (value.road === null || isSettlementRoad(value.road)) &&
+    typeof value.fromId === 'string' && typeof value.toId === 'string'
+}
+
+function isSettlementPlan(value: unknown): value is SettlementPlan {
+  if (!isRecord(value) || typeof value.id !== 'string' || typeof value.biome !== 'string' ||
+    (value.kind !== 'city' && value.kind !== 'village') ||
+    ![value.x, value.y, value.z, value.radius].every(isFiniteNumber) ||
+    !Array.isArray(value.buildings) || !Array.isArray(value.roads)) return false
+  return value.buildings.every(isSettlementBuilding) && value.roads.every(isSettlementRoad)
+}
+
+function isSettlementBuilding(value: unknown): value is SettlementBuilding {
+  if (!isRecord(value) || ![value.x, value.y, value.z, value.width, value.depth, value.height, value.yaw,
+    value.wallColor, value.roofColor].every(isFiniteNumber)) return false
+  return (value.shape === 'block' || value.shape === 'slab' || value.shape === 'tower' ||
+    value.shape === 'stepped' || value.shape === 'hangar') &&
+    (value.roof === 'pitched' || value.roof === 'flat')
+}
+
+function isSettlementRoad(value: unknown): value is SettlementRoad {
+  if (!isRecord(value) || !isFiniteNumber(value.width) || !Array.isArray(value.points)) return false
+  return value.points.every(point => {
+    if (!isRecord(point) || ![point.x, point.y, point.z].every(isFiniteNumber)) return false
+    return [point.leftX, point.leftY, point.leftZ, point.rightX, point.rightY, point.rightZ]
+      .every(value => value === undefined || isFiniteNumber(value))
+  })
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 function finiteWeather01(value: number): number {
   return Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
 }
@@ -500,7 +543,15 @@ export class SettlementSystem {
       try {
         this.worker = new Worker(new URL('./settlement.worker.ts', import.meta.url), { type: 'module' })
         this.worker.onmessage = (event: MessageEvent<SettlementWorkerReply>) => {
-          const result = event.data
+          const result = event?.data
+          if (!isSettlementWorkerReply(result)) {
+            // A worker can stay alive after returning a malformed protocol
+            // payload. Fail closed and return the active job through the
+            // synchronous path instead of throwing through the render loop or
+            // leaving the stream permanently blocked.
+            if (this.inFlight) this.handleWorkerFailure()
+            return
+          }
           // A reseed can clear the stream while the previous worker request is
           // still running. Only the matching request may release the current
           // in-flight slot; an older reply must never unblock or overwrite a

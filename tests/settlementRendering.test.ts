@@ -73,6 +73,30 @@ describe('settlement rendering and lifecycle', () => {
     }
   })
 
+  it('falls back cleanly when a settlement worker sends a malformed reply', () => {
+    class MalformedWorker {
+      static instance: MalformedWorker
+      onmessage?: (event: { data: object }) => void
+      onerror?: () => void
+      terminate = vi.fn()
+      constructor() { MalformedWorker.instance = this }
+      postMessage() { /* hold the request until the test injects the reply */ }
+    }
+    vi.stubGlobal('Worker', MalformedWorker)
+    const system = new SettlementSystem(new Scene())
+    try {
+      expect(() => system.update(3000, 3000)).not.toThrow()
+      expect(() => MalformedWorker.instance.onmessage!({ data: null } as never)).not.toThrow()
+      expect(MalformedWorker.instance.terminate).toHaveBeenCalledOnce()
+      expect(system.pendingCount).toBeGreaterThan(0)
+      expect(() => system.update(3000, 3000)).not.toThrow()
+      expect(system.count).toBe(1)
+    } finally {
+      system.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('keeps startup alive when the settlement worker constructor throws', () => {
     class ThrowingWorker {
       constructor() { throw new Error('worker blocked by policy') }

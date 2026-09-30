@@ -148,6 +148,17 @@ describe('terrain worker pool', () => {
     expect(pool.size).toBe(0)
   })
 
+  it('falls back when a worker acknowledges a job with malformed geometry', () => {
+    const retry = vi.fn()
+    const pool = new TerrainWorkerPool(vi.fn(), retry)
+    pool.submit(request(1))
+    const worker = FakeWorker.instances[0]!
+    expect(() => worker.onmessage?.({ data: { id: 1, generation: 0, data: null } } as never)).not.toThrow()
+    expect(retry).toHaveBeenCalledExactlyOnceWith(request(1))
+    expect(pool.size).toBe(0)
+    expect(pool.busy).toBe(0)
+  })
+
   it('terminates workers and ignores a reply already queued when disposed', () => {
     const complete = vi.fn()
     const retry = vi.fn()
