@@ -121,6 +121,7 @@ import {
   speedWarningLevel,
   speedJuiceIntensity,
   speedNeedleKts,
+  speedTargetNeedleKts,
   verticalSpeedTone,
   windDirectionDegrees,
   windSpeedMps,
@@ -142,6 +143,13 @@ describe('HUD value formatting', () => {
     expect(targetSpeedHudLabel(Number.NaN)).toBe('TGT --')
     expect(targetSpeedAriaLabel(100)).toBe('Target speed 194 knots')
     expect(targetSpeedAriaLabel(Number.POSITIVE_INFINITY)).toBe('Target speed unavailable')
+  })
+
+  it('keeps the target-speed marker inside the IAS dial envelope', () => {
+    expect(speedTargetNeedleKts(0)).toBe(0)
+    expect(speedTargetNeedleKts(520 * 1.94384)).toBe(900)
+    expect(speedTargetNeedleKts(Number.NaN)).toBe(0)
+    expect(speedTargetNeedleKts(240, 600)).toBe(240)
   })
 
   it('whitelists cue-specific warning classes', () => {

@@ -5,6 +5,7 @@ export const LIVE_HUD_IDS = [
   'heading-tape',
   'attitude',
   'hud-thr',
+  'spd-target',
   'hud-ab-state',
   'nav-cue',
   'nav-arrow',

@@ -1126,6 +1126,7 @@ export class HUD {
   private readonly stateEl: HTMLElement | null
   private readonly bannerEl: HTMLElement | null
   private readonly spdNeedle: SVGLineElement | null
+  private readonly spdTarget: SVGCircleElement | null
   private readonly spdArc: SVGPathElement | null
   private readonly engFill: HTMLElement | null
   private readonly engMarker: HTMLElement | null
@@ -1389,6 +1390,11 @@ export class HUD {
   private speedNeedleValue = Number.NaN
   private speedArcValue = Number.NaN
   private speedArcText = ''
+  private speedTargetValue = Number.NaN
+  private speedTargetXValue = Number.NaN
+  private speedTargetYValue = Number.NaN
+  private speedTargetXText = ''
+  private speedTargetYText = ''
   private adiBallPitchValue = Number.NaN
   private adiBallRollValue = Number.NaN
   private adiBallTransform = ''
@@ -1425,6 +1431,7 @@ export class HUD {
     this.stateEl = root.getElementById('hud-state')
     this.bannerEl = root.getElementById('hud-banner')
     this.spdNeedle = root.getElementById('spd-needle') as SVGLineElement | null
+    this.spdTarget = root.getElementById('spd-target') as SVGCircleElement | null
     this.spdArc = root.getElementById('spd-arc') as SVGPathElement | null
     this.engFill = root.getElementById('eng-fill')
     this.engMarker = root.getElementById('eng-marker')
@@ -1811,7 +1818,10 @@ export class HUD {
         this.setClass(this.speedoPanel, 'overspeed', warning === 'overspeed')
       }
     }
-    this.updateSpeedo(kts)
+    const targetKts = opts.targetSpeed !== undefined && Number.isFinite(opts.targetSpeed)
+      ? Math.max(0, displayedKnots(opts.targetSpeed))
+      : 0
+    this.updateSpeedo(kts, targetKts)
     this.updateSpeedJuice(kts, !!opts.boost)
     this.updateCanopyTint(
       kts,
@@ -2731,7 +2741,7 @@ export class HUD {
     }
   }
 
-  private updateSpeedo(kts: number): void {
+  private updateSpeedo(kts: number, targetKts: number): void {
     const t = Math.min(1, kts / this.maxKts)
     const cx = 70
     const cy = 70
@@ -2756,6 +2766,27 @@ export class HUD {
         }
         this.setAttribute(this.spdNeedle, 'x2', this.speedNeedleXText)
         this.setAttribute(this.spdNeedle, 'y2', this.speedNeedleYText)
+      }
+    }
+    if (this.spdTarget) {
+      const markerKts = speedTargetNeedleKts(targetKts, this.maxKts)
+      if (markerKts !== this.speedTargetValue) {
+        this.speedTargetValue = markerKts
+        const angleDeg = -120 + (markerKts / this.maxKts) * 240
+        const rad = (angleDeg * Math.PI) / 180
+        const markerRadius = 50
+        const x = quantizeHudNumber(cx + Math.sin(rad) * markerRadius, 10)
+        const y = quantizeHudNumber(cy - Math.cos(rad) * markerRadius, 10)
+        if (x !== this.speedTargetXValue) {
+          this.speedTargetXValue = x
+          this.speedTargetXText = String(x)
+        }
+        if (y !== this.speedTargetYValue) {
+          this.speedTargetYValue = y
+          this.speedTargetYText = String(y)
+        }
+        this.setAttribute(this.spdTarget, 'cx', this.speedTargetXText)
+        this.setAttribute(this.spdTarget, 'cy', this.speedTargetYText)
       }
     }
     if (this.spdArc) {
@@ -3295,6 +3326,13 @@ export function speedWarningLevel(knots: number, maxKts = 900): SpeedWarningLeve
 /** Whole-knot input shared by the speed readout and needle geometry. */
 export function speedNeedleKts(knots: number): number {
   return Math.round(Number.isFinite(knots) ? Math.max(0, knots) : 0)
+}
+
+/** Clamp the commanded target to the visible IAS dial envelope. */
+export function speedTargetNeedleKts(knots: number, maxKts = 900): number {
+  const safeMax = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 900
+  const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
+  return Math.min(safeMax, Math.round(safeKnots))
 }
 
 /**

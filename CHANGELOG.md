@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.716** Add a cached target-speed marker to the live IAS dial, clamped to the visible envelope so current airspeed and ENG% equilibrium are readable without new geometry, draw calls, or per-frame DOM churn.
 - **10.715** Show the engine's level-flight target speed beside ENG%, with cached knots formatting and accessible text so the arcade speed model is readable without changing flight physics.
 - **10.714** Move night-storm fog readability to the atmosphere boundary that owns the final fog colour, preserving the sky background and preventing lightning amplification while keeping the update allocation-free.
 - **10.713** Couple the pooled terrain fog horizon to normalized daylight, cloud, rain, and snow state so weather transitions keep landforms readable without adding geometry, draws, or per-frame allocations.
