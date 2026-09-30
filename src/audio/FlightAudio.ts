@@ -297,6 +297,8 @@ export class FlightAudio {
       | 'stall'
       | 'gear-warning'
       | 'fuel'
+      | 'go-around'
+      | 'flare'
       | 'g-high'
       | 'g-negative'
       | 'gear-up'
@@ -415,6 +417,16 @@ export class FlightAudio {
       // a return-to-base emergency from ordinary threshold cautions.
       this.tone(300, now, 0.09, 'triangle', 0.06, 220)
       this.tone(210, now + 0.14, 0.13, 'triangle', 0.05, 150)
+    } else if (kind === 'go-around') {
+      // A rising pair confirms the landing escape instruction without the
+      // sustained harshness of terrain or stall alarms.
+      this.tone(430, now, 0.08, 'triangle', 0.07, 590)
+      this.tone(680, now + 0.11, 0.13, 'sine', 0.06, 820)
+    } else if (kind === 'flare') {
+      // A soft descending pair marks the landing flare window as guidance,
+      // keeping it distinct from an actual go-around or caution alarm.
+      this.tone(620, now, 0.08, 'sine', 0.05, 520)
+      this.tone(430, now + 0.11, 0.12, 'sine', 0.04, 360)
     } else if (kind === 'pull-up') {
       // A short double pulse marks the predictive terrain warning without
       // repeating while the HUD holds the sustained state.

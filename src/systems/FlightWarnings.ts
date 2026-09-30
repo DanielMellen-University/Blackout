@@ -7,7 +7,7 @@ import { sampleGroundHeight, undercarriageClearance } from '../world/ground'
 export type WarningLevel = 'none' | 'caution' | 'warning'
 
 /** Event cue selected when a warning state first becomes visible. */
-export type WarningCue = 'warning' | 'pull-up' | 'obstacle' | 'overspeed' | 'stall' | 'gear-warning' | 'fuel' | null
+export type WarningCue = 'warning' | 'pull-up' | 'obstacle' | 'overspeed' | 'stall' | 'gear-warning' | 'fuel' | 'go-around' | 'flare' | null
 
 /** Keep threshold warnings readable without delaying an urgent escalation. */
 export const WARNING_CLEAR_HOLD_SEC = 0.22
@@ -40,8 +40,10 @@ export function warningCueForState(state: WarningState): WarningCue {
   if (state.obstacle) return 'obstacle'
   if (state.stall) return 'stall'
   if (state.gear) return 'gear-warning'
+  if (state.goAround) return 'go-around'
   if (state.overspeed) return 'overspeed'
   if (state.fuel) return 'fuel'
+  if (state.flare) return 'flare'
   return 'warning'
 }
 
