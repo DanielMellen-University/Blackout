@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.659** Map standard gamepad D-pad left to edge-triggered sortie reset, completing controller recovery parity without changing the 30 Hz poll budget.
 - **10.658** Add an edge-triggered `P` pause shortcut for keyboard pilots, routing through the existing pause queue without changing Escape modal behavior or adding frame work.
 - **10.657** Reflow the touch utility deck into a compact phone layout, preserving large-screen controls while keeping the HUD visible on narrow and very small screens.
 - **10.656** Add debounced controller link cues so pilots see when a gamepad connects or disappears, while failed polls still clear flight input immediately.

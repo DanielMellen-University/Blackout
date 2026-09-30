@@ -42,6 +42,7 @@ export class InputManager {
   private gamepadStabilityHeld = false
   private gamepadGhostHeld = false
   private gamepadPauseHeld = false
+  private gamepadResetHeld = false
   private gamepadConnected = false
   private gamepadMissingPolls = 0
   private gamepadConnectionQueued: 'connected' | 'disconnected' | null = null
@@ -450,14 +451,15 @@ export class InputManager {
     this.gamepadAirbrake = buttons[4]?.pressed === true
 
     // Standard mapping: X toggles gear, Y toggles the camera, B toggles trim
-    // assist, View mutes, Start pauses, and the D-pad drives weather, ghost,
-    // and radar.
+    // assist, View mutes, Start pauses, and the D-pad drives reset, weather,
+    // ghost, and radar.
     // Queue only on press edges so held buttons cannot repeat at poll cadence.
     const cameraHeld = buttons[3]?.pressed === true
     const gearHeld = buttons[2]?.pressed === true
     const stabilityHeld = buttons[1]?.pressed === true
     const audioHeld = buttons[8]?.pressed === true
     const weatherHeld = buttons[12]?.pressed === true
+    const resetHeld = buttons[13]?.pressed === true
     const ghostHeld = buttons[14]?.pressed === true
     const radarHeld = buttons[15]?.pressed === true
     const pauseHeld = buttons[9]?.pressed === true
@@ -466,6 +468,7 @@ export class InputManager {
     if (stabilityHeld && !this.gamepadStabilityHeld) this.stabilityAssistToggleQueued = true
     if (audioHeld && !this.gamepadAudioHeld) this.audioToggleQueued = true
     if (weatherHeld && !this.gamepadWeatherHeld) this.weatherCycleQueued = true
+    if (resetHeld && !this.gamepadResetHeld) this.resetQueued = true
     if (ghostHeld && !this.gamepadGhostHeld) this.ghostToggleQueued = true
     if (radarHeld && !this.gamepadRadarHeld) this.radarTargetCycleQueued = true
     if (pauseHeld && !this.gamepadPauseHeld) this.pauseToggleQueued = true
@@ -474,6 +477,7 @@ export class InputManager {
     this.gamepadStabilityHeld = stabilityHeld
     this.gamepadAudioHeld = audioHeld
     this.gamepadWeatherHeld = weatherHeld
+    this.gamepadResetHeld = resetHeld
     this.gamepadGhostHeld = ghostHeld
     this.gamepadRadarHeld = radarHeld
     this.gamepadPauseHeld = pauseHeld
@@ -591,6 +595,7 @@ export class InputManager {
     this.gamepadStabilityHeld = false
     this.gamepadGhostHeld = false
     this.gamepadPauseHeld = false
+    this.gamepadResetHeld = false
   }
 
   private clearTouchState(): void {
