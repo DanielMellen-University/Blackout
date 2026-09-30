@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.690** Harden pooled water-wake teardown and reduced-motion transitions so late lifecycle calls are no-ops after disposal and active ditch splashes clear immediately when motion is reduced.
 - **10.689** Reuse the aircraft's fixed-step ground-height cache during collision classification, removing a duplicate terrain sampler query from every airborne near-ground check.
 - **10.688** Make the version checker validate the README recent-changes marker, preventing stale roadmap metadata from shipping after a commit lands.
 - **10.687** Stabilize tied radar contacts with deterministic landmark identity and position ordering, preventing crowded city and village labels or target cycling from reshuffling when streamed source order changes.

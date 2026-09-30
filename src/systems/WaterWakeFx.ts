@@ -88,12 +88,15 @@ export class WaterWakeFx {
   }
 
   setRenderQuality(quality: RenderQuality): void {
+    if (this.disposed) return
     this.enabled = normalizeRenderQuality(quality) !== 'low'
     if (!this.enabled) this.reset()
   }
 
   setReducedMotion(enabled: boolean): void {
+    if (this.disposed) return
     this.reducedMotion = enabled === true
+    if (this.reducedMotion) this.reset()
   }
 
   /** Update the shared foam material only when the blended weather tint changes. */
@@ -146,6 +149,7 @@ export class WaterWakeFx {
   }
 
   reset(): void {
+    if (this.disposed) return
     this.active = false
     this.ditchRemaining = 0
     this.root.visible = false
