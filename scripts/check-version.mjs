@@ -20,6 +20,7 @@ const changelogChunkMatch = changelog.match(/^- \*\*([^*]+)\*\* /m)
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
 const readmeRoadmapMatch = readme.match(/Roadmap chunk:\s+\*\*([^*]+)\*\*/)
+const readmeRecentMatch = readme.match(/Recent changes from\s+\*\*([^*]+)\*\*/)
 
 const errors = []
 if (!packageVersion) errors.push('package.json is missing a string version')
@@ -38,6 +39,11 @@ if (!readmeRoadmapMatch) {
   errors.push('README.md is missing the current roadmap chunk')
 } else if (roadmapChunk && readmeRoadmapMatch[1] !== roadmapChunk) {
   errors.push(`README.md roadmap chunk (${readmeRoadmapMatch[1]}) does not match src/core/Version.ts (${roadmapChunk})`)
+}
+if (!readmeRecentMatch) {
+  errors.push('README.md is missing the recent-changes roadmap marker')
+} else if (roadmapChunk && readmeRecentMatch[1] !== roadmapChunk) {
+  errors.push(`README.md recent-changes marker (${readmeRecentMatch[1]}) does not match src/core/Version.ts (${roadmapChunk})`)
 }
 if (!changelogChunkMatch) {
   errors.push('CHANGELOG.md is missing a numbered top ship entry for the current roadmap chunk')
