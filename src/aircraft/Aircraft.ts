@@ -23,7 +23,7 @@ import {
 } from './EngineState'
 import { flightConfig } from './flightConfig'
 import { FlightModel, runwayGripForWeather } from './FlightModel'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 import { createFuelState, resetFuel, updateFuel, type FuelState } from './FuelSystem'
 import { createEngineHeatState, resetEngineHeat, updateEngineHeat, type EngineHeatState } from './EngineHeatSystem'
 
@@ -534,7 +534,7 @@ export class Aircraft {
   /** Apply the shared render preset to aircraft-only visual detail. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.visualQuality = quality
+    this.visualQuality = normalizeRenderQuality(quality)
     this.applyVisualQuality()
   }
 

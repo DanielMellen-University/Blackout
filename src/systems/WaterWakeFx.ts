@@ -8,7 +8,7 @@ import {
   Vector3,
   type Scene,
 } from 'three'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 export const WATER_WAKE_MAX_ALTITUDE_M = 180
 export const WATER_WAKE_MIN_SPEED_MPS = 30
@@ -88,7 +88,7 @@ export class WaterWakeFx {
   }
 
   setRenderQuality(quality: RenderQuality): void {
-    this.enabled = quality !== 'low'
+    this.enabled = normalizeRenderQuality(quality) !== 'low'
     if (!this.enabled) this.reset()
   }
 

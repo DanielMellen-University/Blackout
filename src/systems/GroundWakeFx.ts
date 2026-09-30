@@ -8,7 +8,7 @@ import {
   Vector3,
   type Scene,
 } from 'three'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 export const GROUND_WAKE_MAX_ALTITUDE_M = 120
 export const GROUND_WAKE_MIN_SPEED_MPS = 45
@@ -92,7 +92,7 @@ export class GroundWakeFx {
 
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.enabled = quality !== 'low'
+    this.enabled = normalizeRenderQuality(quality) !== 'low'
     if (!this.enabled) this.reset()
   }
 

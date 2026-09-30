@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.619** Normalize render-quality requests across aircraft, radar, and pooled flight effects, keeping malformed runtime values inside the shared visual-budget contract.
+
 - **10.618** Normalize direct camera and settlement render-quality requests, keeping malformed runtime values from changing occlusion budgets or bypassing the shared detail envelope.
 
 - **10.617** Normalize direct air-traffic render-quality requests before sizing pooled silhouettes, contrails, and beacons, so malformed runtime values cannot silently select the High traffic budget.

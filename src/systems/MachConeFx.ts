@@ -9,7 +9,7 @@ import {
   Vector3,
   type Scene,
 } from 'three'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 export const MACH_CONE_MIN_SPEED_MPS = 340
 export const MACH_CONE_MAX_SPEED_MPS = 520
@@ -73,7 +73,7 @@ export class MachConeFx {
 
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.enabled = quality !== 'low'
+    this.enabled = normalizeRenderQuality(quality) !== 'low'
     if (!this.enabled) this.reset()
   }
 

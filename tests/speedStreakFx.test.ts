@@ -30,6 +30,7 @@ describe('speed streak effect', () => {
     expect(speedStreakCount('low')).toBe(0)
     expect(speedStreakCount('balanced')).toBe(8)
     expect(speedStreakCount('high')).toBe(SPEED_STREAK_MAX_COUNT)
+    expect(speedStreakCount('ultra' as never)).toBe(8)
   })
 
   it('updates and resets one pooled batch without adding scene children', () => {

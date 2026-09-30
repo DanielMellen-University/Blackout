@@ -6,7 +6,7 @@ import {
   TorusGeometry,
   Vector3,
 } from 'three'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 export const SONIC_BOOM_DURATION_SEC = 0.72
 
@@ -64,7 +64,7 @@ export class SonicBoomFx {
 
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.visualQuality = quality
+    this.visualQuality = normalizeRenderQuality(quality)
     if (!this.active) return
     this.updatePresentation()
   }

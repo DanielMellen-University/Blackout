@@ -11,7 +11,7 @@ import {
 } from 'three'
 import { sampleGroundHeight } from '../world/ground'
 import { disposeObjectTree } from '../core/dispose'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 interface Bit {
   mesh: Mesh
@@ -125,7 +125,7 @@ export class CrashFx {
   /** Reduce transient particle pressure on constrained render presets. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.renderQuality = quality
+    this.renderQuality = normalizeRenderQuality(quality)
   }
 
   /** Keep the readable crash fade while removing large transient motion. */

@@ -1,4 +1,4 @@
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 export type RadarContactKind = 'gate' | 'city' | 'village' | 'traffic'
 
@@ -76,7 +76,7 @@ export class RadarSystem {
 
   /** Reduce label crowding on constrained render and motion settings. */
   setRenderQuality(quality: RenderQuality): void {
-    this.visibleContactLimit = quality === 'low' ? 3 : this.reducedMotion ? 4 : MAX_RADAR_CONTACTS
+    this.visibleContactLimit = normalizeRenderQuality(quality) === 'low' ? 3 : this.reducedMotion ? 4 : MAX_RADAR_CONTACTS
   }
 
   /** Keep the compact radar calm when the browser requests less motion. */

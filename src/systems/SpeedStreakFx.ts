@@ -10,7 +10,7 @@ import {
   Vector3,
   type Scene,
 } from 'three'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 
 export const SPEED_STREAK_MAX_COUNT = 12
 export const SPEED_STREAK_MIN_SPEED_MPS = 140
@@ -39,8 +39,9 @@ export function speedStreakActive(
 
 /** Quality-aware pool sizing with no allocations when the preset changes. */
 export function speedStreakCount(quality: RenderQuality): number {
-  if (quality === 'low') return 0
-  return quality === 'high' ? SPEED_STREAK_MAX_COUNT : 8
+  const safeQuality = normalizeRenderQuality(quality)
+  if (safeQuality === 'low') return 0
+  return safeQuality === 'high' ? SPEED_STREAK_MAX_COUNT : 8
 }
 
 const STREAK_LAYOUT = [
