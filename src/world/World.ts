@@ -453,7 +453,17 @@ export class World {
   /** True if a world-space point overlaps hangar, tower, or shack. */
   hitObstacle(x: number, y: number, z: number, padding?: ObstaclePadding): boolean {
     if (this.disposed) return false
-    if (this.settlements.hitObstacle(x, y, z, padding)) return true
+    return this.hitObstaclePoint(x, y, z, padding, true)
+  }
+
+  private hitObstaclePoint(
+    x: number,
+    y: number,
+    z: number,
+    padding: ObstaclePadding | undefined,
+    includeSettlements: boolean,
+  ): boolean {
+    if (includeSettlements && this.settlements.hitObstacle(x, y, z, padding)) return true
     return this.hitAirfieldObstacle(x, y, z, padding)
   }
 
@@ -506,15 +516,32 @@ export class World {
     if (!Number.isFinite(distance)) {
       return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
     }
+    // Do one cheap segment-level settlement test before the bounded probe
+    // loop. High-speed flight can otherwise ask every loaded city to walk its
+    // building buckets at every 8 m probe, even on empty terrain.
+    const settlements = this.settlements as SettlementSystem | undefined
+    const includeSettlements = settlements?.segmentMayHitObstacle
+      ? settlements.segmentMayHitObstacle(previous, current, AIRFIELD_COLLISION_PADDING)
+      : true
     const steps = Math.max(1, Math.min(OBSTACLE_SWEEP_MAX_STEPS, Math.ceil(distance / OBSTACLE_SWEEP_SPACING)))
+    if (includeSettlements) {
+      for (let step = 1; step < steps; step++) {
+        const t = step / steps
+        const x = previous.x + dx * t
+        const y = previous.y + dy * t
+        const z = previous.z + dz * t
+        if (this.hitObstacle(x, y, z, AIRFIELD_COLLISION_PADDING)) return true
+      }
+      return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
+    }
     for (let step = 1; step < steps; step++) {
       const t = step / steps
       const x = previous.x + dx * t
       const y = previous.y + dy * t
       const z = previous.z + dz * t
-      if (this.hitObstacle(x, y, z, AIRFIELD_COLLISION_PADDING)) return true
+      if (this.hitObstaclePoint(x, y, z, AIRFIELD_COLLISION_PADDING, false)) return true
     }
-    return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
+    return this.hitObstaclePoint(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING, false)
   }
 
   cycleWeather(): WeatherId {

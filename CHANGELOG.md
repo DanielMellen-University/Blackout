@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.682** Add a conservative segment-level settlement broadphase to swept obstacle checks, skipping repeated building-bucket probes when a high-speed flight path misses every loaded landmark while preserving exact nearby collision results.
 - **10.681** Remove the per-update obstacle-probe closure from flight warnings, preserving near/mid/far early exit and coordinates while keeping the HUD lookahead allocation-free.
 - **10.680** Reuse one caller-owned control-surface target record across aircraft fixed steps, removing steady-state target-object allocations while preserving the public helper and all articulation values.
 - **10.679** Reuse caller-owned climate records and static probe layouts during procedural airfield searches, removing transient allocations from slope, coastal, departure, footprint, wet-neighbor, and pad validation without changing deterministic candidate rules.

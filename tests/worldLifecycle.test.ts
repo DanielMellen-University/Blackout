@@ -192,6 +192,36 @@ describe('world lifecycle boundary', () => {
     }
   })
 
+  it('skips detailed settlement probes when the whole sweep misses loaded plans', () => {
+    const world = Object.create(World.prototype) as World
+    ;(world as unknown as { disposed: boolean }).disposed = false
+    const settlementHit = vi.fn(() => false)
+    const segmentMayHitObstacle = vi.fn(() => false)
+    ;(world as unknown as { settlements: {
+      hitObstacle: typeof settlementHit
+      segmentMayHitObstacle: typeof segmentMayHitObstacle
+    } }).settlements = { hitObstacle: settlementHit, segmentMayHitObstacle }
+    ;(world as unknown as { obstaclePad: { x: number; y: number; z: number; yaw: number } }).obstaclePad = {
+      x: 10_000,
+      y: 0,
+      z: 10_000,
+      yaw: 0,
+    }
+    ;(world as unknown as { spawn: { yaw: number } }).spawn = { yaw: 0 }
+    setOpsPad(10_000, 10_000, 0, 0)
+
+    try {
+      expect(world.hitObstacleSegment(
+        { x: 0, y: 80, z: 0 },
+        { x: 240, y: 80, z: 0 },
+      )).toBe(false)
+      expect(segmentMayHitObstacle).toHaveBeenCalledOnce()
+      expect(settlementHit).not.toHaveBeenCalled()
+    } finally {
+      clearOpsPad()
+    }
+  })
+
   it('rebuilds a usable previous world when replacement fails after clearing terrain', () => {
     const world = new World()
     const previousSeed = world.worldSeed

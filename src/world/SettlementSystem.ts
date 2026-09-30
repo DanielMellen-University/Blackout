@@ -469,6 +469,11 @@ interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; ro
 interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
 interface ReadyRoad extends RoadJob { road: SettlementRoad }
 
+export interface SettlementSweepPoint {
+  readonly x: number
+  readonly z: number
+}
+
 /** Independent scenery stream: shared geometry, instanced buildings, no shadow passes. */
 export class SettlementSystem {
   readonly root = new Group()
@@ -1186,6 +1191,38 @@ export class SettlementSystem {
 
   hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {
     for (const { plan } of this.loaded.values()) if (hitsSettlement(plan, x, y, z, padding)) return true
+    return false
+  }
+
+  /**
+   * Conservative broadphase for a swept aircraft segment. A whole segment
+   * that misses every loaded settlement footprint cannot hit one of its
+   * buildings, so the detailed bucket query can be skipped for every probe.
+   * The margin covers the aircraft envelope and the building-index padding;
+   * false positives are harmless, false negatives are not possible.
+   */
+  segmentMayHitObstacle(
+    previous: SettlementSweepPoint,
+    current: SettlementSweepPoint,
+    padding?: SettlementCollisionPadding,
+  ): boolean {
+    const px = Number.isFinite(previous.x) ? previous.x : 0
+    const pz = Number.isFinite(previous.z) ? previous.z : 0
+    const cx = Number.isFinite(current.x) ? current.x : px
+    const cz = Number.isFinite(current.z) ? current.z : pz
+    const paddingX = Number.isFinite(padding?.x) ? Math.max(0, padding!.x) : 0
+    const paddingZ = Number.isFinite(padding?.z) ? Math.max(0, padding!.z) : 0
+    const margin = Math.hypot(paddingX, paddingZ) + COLLISION_INDEX_MARGIN
+    const minX = Math.min(px, cx)
+    const maxX = Math.max(px, cx)
+    const minZ = Math.min(pz, cz)
+    const maxZ = Math.max(pz, cz)
+    for (const { plan } of this.loaded.values()) {
+      const radius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : 0) + margin
+      if (plan.x < minX - radius || plan.x > maxX + radius ||
+        plan.z < minZ - radius || plan.z > maxZ + radius) continue
+      if (segmentDistance(plan.x, plan.z, px, pz, cx, cz) <= radius) return true
+    }
     return false
   }
 
