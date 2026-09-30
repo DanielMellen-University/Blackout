@@ -994,7 +994,10 @@ export class TerrainSystem {
       const old = this.retiring[i]!
       const replacement = this.chunks.get(old.key)
       if (replacement && replacement.fadeAge < FADE_SECONDS && this.desiredTiles.has(old.key)) continue
-      if (this.sampledChunk === old) this.invalidateSampleChunk()
+      // The lookup can retain this chunk for a different streamed cell even
+      // when the last queried cell points elsewhere. Clear all entries before
+      // disposing the geometry so contact probes never resurrect dead LOD data.
+      this.invalidateSampleChunk()
       old.root.removeFromParent()
       this.disposeChunk(old)
       // Retiring chunks are walked backwards, so swap-pop avoids shifting the
@@ -1007,7 +1010,9 @@ export class TerrainSystem {
     for (const key of toRemove) {
       const chunk = this.chunks.get(key)
       if (!chunk) continue
-      if (this.sampledChunk === chunk) this.invalidateSampleChunk()
+      // A removed chunk may still be referenced by a cached coarse-cell key.
+      // Invalidate the whole bounded lookup before releasing its buffers.
+      this.invalidateSampleChunk()
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
       this.chunks.delete(key)

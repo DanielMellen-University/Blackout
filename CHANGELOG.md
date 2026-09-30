@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.708** Invalidate every cached terrain-cell ownership entry before unloading or disposing streamed geometry, preventing collision and radio-altitude probes from resurrecting dead LOD surfaces.
 - **10.707** Synchronize runtime, README, changelog, and release-check metadata so the advertised roadmap chunk matches the latest shipped changes.
 - **10.706** Cache deterministic city and village anchor-cell selection per world and airfield context, avoiding repeated climate scoring during settlement streaming.
 - **10.705** Normalize malformed flight axes and boolean controls before fuel, engine, physics, and visual systems consume them, keeping stale input payloads finite and fail-closed.

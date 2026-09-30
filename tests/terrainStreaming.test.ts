@@ -194,6 +194,33 @@ describe('terrain streaming integration', () => {
     expect(internal.sampledChunkLookup.size).toBe(0)
   })
 
+  it('clears every cached cell when an unloaded chunk is disposed', () => {
+    const coarse = generateTerrainGeometry(0, 0, 2, 1)
+    desire(0, 4)
+    desire(2, 4)
+    internal.install(job(0, 1), coarse)
+    internal.install(job(2, 1), coarse)
+    internal.updateFades(0, 0, .65)
+
+    const chunkAHeight = terrain.sampleMeshHeight(CHUNK_SIZE * .2, CHUNK_SIZE * .2)
+    const chunkBHeight = terrain.sampleMeshHeight(CHUNK_SIZE * 2.2, CHUNK_SIZE * .2)
+    expect(chunkAHeight).not.toBeNull()
+    expect(chunkBHeight).not.toBeNull()
+    expect(internal.sampledChunkLookup.size).toBe(2)
+
+    internal.desiredTiles.delete(key(0))
+    const removed = internal.chunks.get(key(0))!
+    removed.fadingOut = true
+    removed.targetAlpha = 0
+    internal.updateFades(0, 0, .65)
+    internal.updateFades(0, 0, .65)
+
+    expect(internal.chunks.has(key(0))).toBe(false)
+    expect(internal.sampledChunkLookup.size).toBe(0)
+    expect(terrain.sampleMeshHeight(CHUNK_SIZE * .2, CHUNK_SIZE * .2)).toBeNull()
+    expect(terrain.sampleMeshHeight(CHUNK_SIZE * 2.2, CHUNK_SIZE * .2)).not.toBeNull()
+  })
+
   it('retries failed worker jobs through synchronous fallback', () => {
     queue(5, 5)
     internal.dispatchWorkers()
