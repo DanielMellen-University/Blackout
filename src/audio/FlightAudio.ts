@@ -297,6 +297,7 @@ export class FlightAudio {
       | 'stall'
       | 'gear-warning'
       | 'fuel'
+      | 'low-alt'
       | 'go-around'
       | 'flare'
       | 'g-high'
@@ -417,6 +418,11 @@ export class FlightAudio {
       // a return-to-base emergency from ordinary threshold cautions.
       this.tone(300, now, 0.09, 'triangle', 0.06, 220)
       this.tone(210, now + 0.14, 0.13, 'triangle', 0.05, 150)
+    } else if (kind === 'low-alt') {
+      // Low altitude gets a mid-register descending pulse, separating terrain
+      // proximity from the higher overspeed and lower gear/fuel cues.
+      this.tone(520, now, 0.08, 'triangle', 0.055, 420)
+      this.tone(360, now + 0.12, 0.11, 'triangle', 0.045, 280)
     } else if (kind === 'go-around') {
       // A rising pair confirms the landing escape instruction without the
       // sustained harshness of terrain or stall alarms.

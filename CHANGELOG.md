@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.662** Give `LOW ALT` a distinct restrained descending cue so terrain proximity does not collapse into the generic warning tone.
 - **10.661** Give `GO AROUND` and `FLARE` landing guidance distinct restrained edge cues instead of collapsing both into the generic warning tone.
 - **10.660** Give low and empty fuel warnings a distinct restrained edge cue instead of collapsing them into the generic warning tone, without changing hysteresis or audio cadence.
 - **10.659** Map standard gamepad D-pad left to edge-triggered sortie reset, completing controller recovery parity without changing the 30 Hz poll budget.

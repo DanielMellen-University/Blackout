@@ -233,9 +233,10 @@ describe('flight cautions', () => {
     expect(warningCueForState({ ...base, text: 'GEAR', gear: true, lowAlt: false })).toBe('gear-warning')
     expect(warningCueForState({ ...base, text: 'OVERSPEED', overspeed: true, lowAlt: false })).toBe('overspeed')
     expect(warningCueForState({ ...base, text: 'FUEL LOW', fuel: true, lowAlt: false })).toBe('fuel')
+    expect(warningCueForState({ ...base, text: 'LOW ALT', lowAlt: true })).toBe('low-alt')
     expect(warningCueForState({ ...base, text: 'GO AROUND', level: 'warning', goAround: true, lowAlt: false })).toBe('go-around')
     expect(warningCueForState({ ...base, text: 'FLARE', flare: true, lowAlt: false })).toBe('flare')
-    expect(warningCueForState(base)).toBe('warning')
+    expect(warningCueForState({ ...base, lowAlt: false })).toBe('warning')
   })
 
   it('raises low-fuel caution bands only after the flight leaves the ground', () => {
