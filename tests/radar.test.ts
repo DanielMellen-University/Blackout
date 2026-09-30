@@ -60,4 +60,18 @@ describe('radar exploration cues', () => {
     expect(rememberRadarDiscovery(seen, order, '', 2)).toBe(false)
     expect(rememberRadarDiscovery(seen, order, null, 2)).toBe(false)
   })
+
+  it('fails closed when reduced-motion input is malformed', () => {
+    const radar = new RadarSystem()
+    radar.setRenderQuality('high')
+    radar.setReducedMotion('true' as never)
+    const contacts = radar.update(0, 0, 0, null, Array.from({ length: 6 }, (_, index) => ({
+      x: 100 + index * 100,
+      y: 0,
+      z: 0,
+      kind: 'village' as const,
+      id: `village-${index}`,
+    })))
+    expect(contacts).toHaveLength(6)
+  })
 })

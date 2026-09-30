@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.695** Normalize RadarSystem reduced-motion input to an explicit boolean, preserving the full contact budget when malformed runtime values reach the visual boundary.
 - **10.694** Bound the radar discovery ledger with a FIFO eviction window, preserving one-shot landmark cues while preventing infinite-world exploration from retaining every discovered ID forever.
 - **10.693** Normalize reduced-motion setters to strict booleans across visual systems and make CameraSystem ignore late calls after disposal, preventing malformed preference values from enabling effects or reviving torn-down state.
 - **10.692** Cache Atmosphere's pooled weather snapshot between weather mutations and simulation updates, removing duplicate same-frame profile and wind blending work without changing live transition behavior.

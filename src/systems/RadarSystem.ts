@@ -106,7 +106,7 @@ export class RadarSystem {
 
   /** Keep the compact radar calm when the browser requests less motion. */
   setReducedMotion(reduced: boolean): void {
-    this.reducedMotion = reduced
+    this.reducedMotion = reduced === true
     this.visibleContactLimit = this.reducedMotion
       ? Math.min(this.visibleContactLimit, 4)
       : this.visibleContactLimit === 4 ? MAX_RADAR_CONTACTS : this.visibleContactLimit
