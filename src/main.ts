@@ -97,10 +97,10 @@ import {
   weeklyOpsWeekKey,
   courseRunId,
   COURSE_LIBRARY,
-  COURSE_SELECTION_STORAGE_KEY,
   courseSessionId,
   readSelectedCourseId,
   resolveCourseDefinition,
+  shouldResetSeededRandomWorldForStorageKey,
   writeSelectedCourseId,
   type CourseId,
 } from './systems/CourseLibrary'
@@ -1554,7 +1554,8 @@ export async function boot(): Promise<void> {
   const onProgressStorageChange = (event: Event): void => {
     const storageEvent = event as StorageEvent
     const key = storageEvent.key
-    if (key === COURSE_SELECTION_STORAGE_KEY || key === null) {
+    if (shouldResetSeededRandomWorldForStorageKey(key)) {
+      seededRandomWorld = false
       selectedCourseId = readSelectedCourseId(qualityStorage)
       replaySeed = null
       replaySeedFallback = false

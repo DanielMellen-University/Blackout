@@ -21,6 +21,7 @@ import {
   weeklyOpsWeekKey,
   readSelectedCourseId,
   resolveCourseDefinition,
+  shouldResetSeededRandomWorldForStorageKey,
   writeSelectedCourseId,
 } from '../src/systems/CourseLibrary'
 import { clearOpsPad, findPlayableSpawn, isUsableAirfield } from '../src/world/terrainSample'
@@ -358,6 +359,12 @@ describe('course library', () => {
     values.set(COURSE_SELECTION_STORAGE_KEY, 'not-a-course')
     expect(readSelectedCourseId(storage)).toBe('random')
     expect(() => writeSelectedCourseId(null, 'training-orbit')).not.toThrow()
+  })
+
+  it('invalidates in-memory seeded-world identity only for selection resets', () => {
+    expect(shouldResetSeededRandomWorldForStorageKey(COURSE_SELECTION_STORAGE_KEY)).toBe(true)
+    expect(shouldResetSeededRandomWorldForStorageKey(null)).toBe(true)
+    expect(shouldResetSeededRandomWorldForStorageKey('blackout.course-recents')).toBe(false)
   })
 
   it('keeps every authored course record identity unique', () => {

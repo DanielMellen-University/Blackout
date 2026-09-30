@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.610** Clear stale explicit-seed identity when course selection changes through another tab or a storage reset, keeping the next random launch on the shared bounded record key.
+
 - **10.609** Keep the live HUD BUFFET cue on the ungated weather drive so gear damp restrains camera and airframe motion without stealing the weather read on approach.
 - **10.608** Prefer BUFFET over SHIFT in the compact weather row when both would show, keeping the live handling cue readable.
 - **10.607** Hold the HUD BUFFET cue through a hysteretic exit floor so gear damp and weather noise cannot flash the compact weather label.

@@ -993,3 +993,8 @@ export function writeSelectedCourseId(
     // Private browsing/storage denial should never block course selection.
   }
 }
+
+/** A selection update from another tab invalidates any in-memory seed identity. */
+export function shouldResetSeededRandomWorldForStorageKey(key: string | null): boolean {
+  return key === null || key === COURSE_SELECTION_STORAGE_KEY
+}
