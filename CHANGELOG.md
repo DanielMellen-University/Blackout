@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.664** Add cue-specific warning descriptions to the HUD accessibility label so screen readers distinguish terrain, flare, go-around, gear, fuel, and speed warnings.
 - **10.663** Carry bounded warning identity into the HUD so `LOW ALT`, `FLARE`, and `GO AROUND` receive distinct visual treatment without extra render-loop work.
 - **10.662** Give `LOW ALT` a distinct restrained descending cue so terrain proximity does not collapse into the generic warning tone.
 - **10.661** Give `GO AROUND` and `FLARE` landing guidance distinct restrained edge cues instead of collapsing both into the generic warning tone.

@@ -83,6 +83,24 @@ export function warningCueClass(cue: WarningCue | unknown): string {
     : ''
 }
 
+/** Explain the bounded warning identity to assistive technology. */
+export function warningCueAriaLabel(text: unknown, cue: WarningCue | unknown): string {
+  const safeText = typeof text === 'string' ? text.trim() : ''
+  if (!safeText) return ''
+  switch (cue) {
+    case 'low-alt': return `${safeText}: low altitude warning`
+    case 'flare': return `${safeText}: landing flare guidance`
+    case 'go-around': return `${safeText}: go-around warning`
+    case 'pull-up': return `${safeText}: terrain closure warning`
+    case 'obstacle': return `${safeText}: obstacle warning`
+    case 'stall': return `${safeText}: stall warning`
+    case 'gear-warning': return `${safeText}: landing gear warning`
+    case 'overspeed': return `${safeText}: overspeed warning`
+    case 'fuel': return `${safeText}: fuel warning`
+    default: return safeText
+  }
+}
+
 export function pauseStateLabel(paused: boolean): string {
   return paused ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
 }
@@ -2575,12 +2593,14 @@ export class HUD {
     }
     if (!text || level === 'none') {
       this.setHidden(this.warnEl, true)
+      this.setAttribute(this.warnEl, 'aria-label', '')
       this.setClass(this.warnEl, 'caution', false)
       this.setClass(this.warnEl, 'warning', false)
       this.setText(this.warnTextEl, '')
       return
     }
     this.setHidden(this.warnEl, false)
+    this.setAttribute(this.warnEl, 'aria-label', warningCueAriaLabel(text, cue))
     this.setText(this.warnTextEl, text)
     this.setClass(this.warnEl, 'caution', level === 'caution')
     this.setClass(this.warnEl, 'warning', level === 'warning')
