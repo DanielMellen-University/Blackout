@@ -516,14 +516,28 @@ export class World {
     if (!Number.isFinite(distance)) {
       return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
     }
-    // Do one cheap segment-level settlement test before the bounded probe
-    // loop. High-speed flight can otherwise ask every loaded city to walk its
-    // building buckets at every 8 m probe, even on empty terrain.
+    const steps = Math.max(1, Math.min(OBSTACLE_SWEEP_MAX_STEPS, Math.ceil(distance / OBSTACLE_SWEEP_SPACING)))
+    // Use the exact bucketed segment sweep when the live settlement system
+    // provides it. This prevents a long physics segment from tunneling between
+    // capped point probes while leaving airfield checks bounded and cheap.
     const settlements = this.settlements as SettlementSystem | undefined
+    if (settlements?.segmentHitsObstacle) {
+      if (settlements.segmentHitsObstacle(previous, current, AIRFIELD_COLLISION_PADDING)) return true
+      for (let step = 1; step < steps; step++) {
+        const t = step / steps
+        const x = previous.x + dx * t
+        const y = previous.y + dy * t
+        const z = previous.z + dz * t
+        if (this.hitObstaclePoint(x, y, z, AIRFIELD_COLLISION_PADDING, false)) return true
+      }
+      return this.hitObstaclePoint(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING, false)
+    }
+    // Do one cheap segment-level settlement test before the bounded probe
+    // loop for older test/tooling doubles. High-speed flight can otherwise ask
+    // every loaded city to walk its building buckets at every 8 m probe.
     const includeSettlements = settlements?.segmentMayHitObstacle
       ? settlements.segmentMayHitObstacle(previous, current, AIRFIELD_COLLISION_PADDING)
       : true
-    const steps = Math.max(1, Math.min(OBSTACLE_SWEEP_MAX_STEPS, Math.ceil(distance / OBSTACLE_SWEEP_SPACING)))
     if (includeSettlements) {
       for (let step = 1; step < steps; step++) {
         const t = step / steps

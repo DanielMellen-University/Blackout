@@ -471,6 +471,7 @@ interface ReadyRoad extends RoadJob { road: SettlementRoad }
 
 export interface SettlementSweepPoint {
   readonly x: number
+  readonly y?: number
   readonly z: number
 }
 
@@ -1212,6 +1213,113 @@ export class SettlementSystem {
 
   hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {
     for (const plan of this.loadedCollisionPlans) if (hitsSettlement(plan, x, y, z, padding)) return true
+    return false
+  }
+
+  /**
+   * Exact bounded sweep against loaded building footprints. Point probes are
+   * adequate for normal physics steps, but a capped probe count can tunnel
+   * through a narrow building when a long segment crosses a city. Reuse the
+   * existing bucket indexes and clip the segment against each candidate's
+   * oriented footprint once, then resolve the vertical overlap over the same
+   * interval. The result is conservative for stepped/tower roofs, so it may
+   * report a harmless false positive but never lets a building be skipped.
+   */
+  segmentHitsObstacle(
+    previous: SettlementSweepPoint,
+    current: SettlementSweepPoint,
+    padding?: SettlementCollisionPadding,
+  ): boolean {
+    const px = Number.isFinite(previous.x) ? previous.x : 0
+    const pz = Number.isFinite(previous.z) ? previous.z : 0
+    const cx = Number.isFinite(current.x) ? current.x : px
+    const cz = Number.isFinite(current.z) ? current.z : pz
+    const paddingX = Number.isFinite(padding?.x) ? Math.max(0, padding!.x) : 0
+    const paddingY = Number.isFinite(padding?.y) ? Math.max(0, padding!.y) : 0
+    const paddingZ = Number.isFinite(padding?.z) ? Math.max(0, padding!.z) : 0
+    const minX = Math.min(px, cx) - paddingX
+    const maxX = Math.max(px, cx) + paddingX
+    const minZ = Math.min(pz, cz) - paddingZ
+    const maxZ = Math.max(pz, cz) + paddingZ
+    const yKnown = Number.isFinite(previous.y) && Number.isFinite(current.y)
+    const py = yKnown ? previous.y! : 0
+    const cy = yKnown ? current.y! : py
+    const dy = cy - py
+
+    for (const plan of this.loadedCollisionPlans) {
+      const index = getCollisionIndex(plan)
+      const planRadius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : index.radius) +
+        Math.hypot(paddingX, paddingZ) + COLLISION_INDEX_MARGIN
+      if (segmentDistance(plan.x, plan.z, px, pz, cx, cz) > planRadius) continue
+
+      const minBucketX = Math.floor(minX / COLLISION_BUCKET_SIZE)
+      const maxBucketX = Math.floor(maxX / COLLISION_BUCKET_SIZE)
+      const minBucketZ = Math.floor(minZ / COLLISION_BUCKET_SIZE)
+      const maxBucketZ = Math.floor(maxZ / COLLISION_BUCKET_SIZE)
+      const queryToken = nextCollisionQueryToken()
+      for (let bucketX = minBucketX; bucketX <= maxBucketX; bucketX++) {
+        const column = index.buckets.get(bucketX)
+        if (!column) continue
+        for (let bucketZ = minBucketZ; bucketZ <= maxBucketZ; bucketZ++) {
+          const bucket = column.get(bucketZ)
+          if (!bucket) continue
+          for (const candidate of bucket) {
+            if (candidate.seenToken === queryToken) continue
+            candidate.seenToken = queryToken
+            const b = candidate.building
+            const startDx = px - b.x
+            const startDz = pz - b.z
+            const endDx = cx - b.x
+            const endDz = cz - b.z
+            const startX = startDx * candidate.cosYaw - startDz * candidate.sinYaw
+            const startZ = startDx * candidate.sinYaw + startDz * candidate.cosYaw
+            const endX = endDx * candidate.cosYaw - endDz * candidate.sinYaw
+            const endZ = endDx * candidate.sinYaw + endDz * candidate.cosYaw
+            const localPaddingWidth = Math.abs(candidate.cosYaw) * paddingX + Math.abs(candidate.sinYaw) * paddingZ
+            const localPaddingDepth = Math.abs(candidate.sinYaw) * paddingX + Math.abs(candidate.cosYaw) * paddingZ
+            const halfWidth = candidate.halfWidth + localPaddingWidth
+            const halfDepth = candidate.halfDepth + localPaddingDepth
+            let enter = 0
+            let exit = 1
+            const localDx = endX - startX
+            const localDz = endZ - startZ
+
+            if (Math.abs(localDx) < 1e-7) {
+              if (Math.abs(startX) > halfWidth) continue
+            } else {
+              let t0 = (-halfWidth - startX) / localDx
+              let t1 = (halfWidth - startX) / localDx
+              if (t0 > t1) { const swap = t0; t0 = t1; t1 = swap }
+              enter = Math.max(enter, t0)
+              exit = Math.min(exit, t1)
+              if (enter > exit) continue
+            }
+            if (Math.abs(localDz) < 1e-7) {
+              if (Math.abs(startZ) > halfDepth) continue
+            } else {
+              let t0 = (-halfDepth - startZ) / localDz
+              let t1 = (halfDepth - startZ) / localDz
+              if (t0 > t1) { const swap = t0; t0 = t1; t1 = swap }
+              enter = Math.max(enter, t0)
+              exit = Math.min(exit, t1)
+              if (enter > exit) continue
+            }
+
+            if (yKnown) {
+              const yEnter = py + dy * enter
+              const yExit = py + dy * exit
+              const segmentMinY = Math.min(yEnter, yExit)
+              const segmentMaxY = Math.max(yEnter, yExit)
+              const roofHeight = Math.min(b.width, b.depth) * .3 + 3.2
+              const civicCap = plan.kind === 'city' && b.height > 250 ? b.height * .1 + 2 : 0
+              const top = b.y + b.height + Math.max(roofHeight, civicCap) + paddingY
+              if (segmentMaxY < b.y - 2 - paddingY || segmentMinY > top) continue
+            }
+            return true
+          }
+        }
+      }
+    }
     return false
   }
 

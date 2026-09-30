@@ -216,6 +216,21 @@ describe('settlement rendering and lifecycle', () => {
     expect(hitsSettlement(plan, 620, 120, 0)).toBe(false)
   })
 
+  it('catches a building crossed between sparse sweep samples and respects altitude', () => {
+    const system = Object.create(SettlementSystem.prototype) as SettlementSystem
+    ;(system as unknown as { loadedCollisionPlans: SettlementPlan[] }).loadedCollisionPlans = [example()]
+    expect(system.segmentHitsObstacle(
+      { x: 2900, y: 110, z: 3000 },
+      { x: 3100, y: 110, z: 3000 },
+      { x: 5.5, y: 2.5, z: 5.5 },
+    )).toBe(true)
+    expect(system.segmentHitsObstacle(
+      { x: 2900, y: 400, z: 3000 },
+      { x: 3100, y: 400, z: 3000 },
+      { x: 5.5, y: 2.5, z: 5.5 },
+    )).toBe(false)
+  })
+
   it('deduplicates padded multi-bucket probes without changing collision results', () => {
     const plan: SettlementPlan = {
       id: 'multi-bucket-probe', kind: 'village', biome: 'plains', x: 512, y: 100, z: 512, radius: 180,
