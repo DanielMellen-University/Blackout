@@ -76,6 +76,12 @@ afterEach(() => {
 })
 
 describe('terrain streaming integration', () => {
+  it('fills caller-owned streaming telemetry without allocating a snapshot', () => {
+    const stats = { loaded: -1, pending: -1, inFlight: -1, ready: -1, workers: -1 }
+    expect(terrain.streamingStatsInto(stats)).toBe(stats)
+    expect(stats).toEqual(terrain.streamingStats)
+  })
+
   it('uploads closer completed chunks first even when the farther worker finishes first', () => {
     queue(5, 5)
     queue(9, 9)

@@ -1086,28 +1086,31 @@ export class SettlementSystem {
       this.queue.length = 0
       this.queue.push(...retained)
       const pad = getOpsPad()
-      this.queue.sort((a, b) => {
-        const queueScore = (job: { cx: number; cz: number }): number => {
-          // Some unit tests replace SettlementPlan with a minimal mock. The
-          // optional call keeps that harness compatible while production
-          // builds still give guaranteed landmarks a useful spawn bonus.
-          let anchor: 'city' | 'village' | null = null
-          try {
-            anchor = settlementPlanApi.settlementAnchorForCell?.(job.cx, job.cz, pad) ?? null
-          } catch {
-            // A partial module mock may throw when an optional export is read.
-          }
-          const cx = (job.cx + .5) * SETTLEMENT_CELL_SIZE - x
-          const cz = (job.cz + .5) * SETTLEMENT_CELL_SIZE - z
-          const distance = Math.hypot(cx, cz)
-          // Anchors get a bounded distance bonus, not an absolute rank. The
-          // old all-or-nothing ordering let a protected city near the runway
-          // block the actual city or village the player had flown toward.
-          // A nearby anchor still wins the opening stream, while a selected
-          // destination wins once it is materially closer to the aircraft.
-          const bonus = anchor === 'city' ? 12000 : anchor === 'village' ? 8000 : 0
-          return distance - bonus
+      // Keep the anchor resolver outside the comparator. Cell crossings are
+      // event-driven, but the queue can still be large enough for repeated
+      // comparator closures to show up in a fast flight profile.
+      const queueScore = (job: { cx: number; cz: number }): number => {
+        // Some unit tests replace SettlementPlan with a minimal mock. The
+        // optional call keeps that harness compatible while production
+        // builds still give guaranteed landmarks a useful spawn bonus.
+        let anchor: 'city' | 'village' | null = null
+        try {
+          anchor = settlementPlanApi.settlementAnchorForCell?.(job.cx, job.cz, pad) ?? null
+        } catch {
+          // A partial module mock may throw when an optional export is read.
         }
+        const cx = (job.cx + .5) * SETTLEMENT_CELL_SIZE - x
+        const cz = (job.cz + .5) * SETTLEMENT_CELL_SIZE - z
+        const distance = Math.hypot(cx, cz)
+        // Anchors get a bounded distance bonus, not an absolute rank. The
+        // old all-or-nothing ordering let a protected city near the runway
+        // block the actual city or village the player had flown toward.
+        // A nearby anchor still wins the opening stream, while a selected
+        // destination wins once it is materially closer to the aircraft.
+        const bonus = anchor === 'city' ? 12000 : anchor === 'village' ? 8000 : 0
+        return distance - bonus
+      }
+      this.queue.sort((a, b) => {
         const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - x
         const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - z
         const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - x

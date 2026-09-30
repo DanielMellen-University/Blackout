@@ -1106,6 +1106,15 @@ export async function boot(): Promise<void> {
     debug = new DebugOverlayClass(world.scene)
     debug.syncPad()
   }
+  // Keep the opt-in inspector allocation-free while the renderer is being
+  // profiled. Production flight never fills this snapshot.
+  const debugStreamingStats = {
+    loaded: 0,
+    pending: 0,
+    inFlight: 0,
+    ready: 0,
+    workers: 0,
+  }
 
   let disposed = false
   let contextLost = false
@@ -2543,11 +2552,12 @@ export async function boot(): Promise<void> {
       const renderStart = debug ? performance.now() : 0
       renderer.render(world.scene, cameras.camera)
       if (debug) {
+        world.terrain.streamingStatsInto(debugStreamingStats)
         debug.update(aircraft, world.spawn, cameras.modeLabel, time.fps, {
           renderMs: performance.now() - renderStart,
           drawCalls: renderer.info.render.calls,
           triangles: renderer.info.render.triangles,
-          streaming: world.terrain.streamingStats,
+          streaming: debugStreamingStats,
         })
       }
       lastRenderMs = nowMs

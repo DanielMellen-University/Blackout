@@ -581,8 +581,17 @@ export class TerrainSystem {
   }
 
   get streamingStats(): TerrainStreamingStats {
-    return { loaded: this.chunks.size, pending: this.pending.length,
-      inFlight: this.workers.busy, ready: this.ready.length, workers: this.workers.size }
+    return this.streamingStatsInto({ loaded: 0, pending: 0, inFlight: 0, ready: 0, workers: 0 })
+  }
+
+  /** Fill a caller-owned stream snapshot for debug and diagnostics hot paths. */
+  streamingStatsInto(out: TerrainStreamingStats): TerrainStreamingStats {
+    out.loaded = this.chunks.size
+    out.pending = this.pending.length
+    out.inFlight = this.workers.busy
+    out.ready = this.ready.length
+    out.workers = this.workers.size
+    return out
   }
 
   /** Test/debug: current LOD and grid density for a cell. */
