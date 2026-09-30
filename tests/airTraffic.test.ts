@@ -64,6 +64,20 @@ describe('bounded air traffic', () => {
     traffic.dispose()
   })
 
+  it('fails closed to Balanced for malformed quality requests', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    const contrails = parent.getObjectByName('AirTrafficContrails') as InstancedMesh
+    const beacons = parent.getObjectByName('AirTrafficBeacons') as InstancedMesh
+    traffic.setRenderQuality('ultra' as never)
+    expect(traffic.count).toBe(5)
+    expect(contrails.count).toBe(5)
+    expect(beacons.count).toBe(5)
+    traffic.setRenderQuality('invalid' as never)
+    expect(traffic.count).toBe(5)
+    traffic.dispose()
+  })
+
   it('exposes nearby traffic through a pooled radar snapshot', () => {
     const parent = new Group()
     const traffic = new AirTrafficSystem(parent)

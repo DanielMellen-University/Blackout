@@ -15,7 +15,7 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three'
-import type { RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 import { radarVerticalLabel, type RadarLandmark } from '../systems/RadarSystem'
 
 /** Fixed traffic pool. Distant silhouettes add life without growing the scene. */
@@ -319,9 +319,10 @@ export class AirTrafficSystem {
   /** Keep low-end devices at three silhouettes while High gets the full pool. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.activeCount = quality === 'low' ? 3 : quality === 'balanced' ? 5 : AIR_TRAFFIC_COUNT
-    this.activeContrailCount = quality === 'low' ? 0 : this.activeCount
-    this.activeBeaconCount = quality === 'low' ? 0 : this.activeCount
+    const safeQuality = normalizeRenderQuality(quality)
+    this.activeCount = safeQuality === 'low' ? 3 : safeQuality === 'balanced' ? 5 : AIR_TRAFFIC_COUNT
+    this.activeContrailCount = safeQuality === 'low' ? 0 : this.activeCount
+    this.activeBeaconCount = safeQuality === 'low' ? 0 : this.activeCount
     this.mesh.count = this.activeCount
     this.contrailMesh.count = this.activeContrailCount
     this.beaconMesh.count = this.activeBeaconCount

@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.617** Normalize direct air-traffic render-quality requests before sizing pooled silhouettes, contrails, and beacons, so malformed runtime values cannot silently select the High traffic budget.
+
 - **10.616** Normalize malformed World render-quality requests before applying the shared terrain, settlement, traffic, and atmosphere envelope, keeping invalid runtime values from selecting an unintended quality budget.
 
 - **10.615** Normalize the shared weather propagation candidate before change detection, so malformed precipitation, daylight, cloud, and wind values fail closed without freezing stale terrain or reapplying shader uniforms every frame.
