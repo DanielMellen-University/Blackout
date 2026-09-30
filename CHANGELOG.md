@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **10.631** Keep numeric contact-mesh fallbacks allocation-free by deriving land/water kind through the scalar terrain sampler instead of constructing a transient surface record for every probe.
+
 ## v0.12.0 - 2026-09-22
 
 ### Ship

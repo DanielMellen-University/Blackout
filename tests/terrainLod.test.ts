@@ -24,7 +24,7 @@ import {
 } from '../src/world/TerrainSystem'
 import { waterLandmarks } from '../src/world/Hydrology'
 import { setWorldSeed } from '../src/world/noise'
-import { sampleTerrainHeight } from '../src/world/terrainSample'
+import { sampleTerrainHeight, sampleTerrainSurfaceInto } from '../src/world/terrainSample'
 import { generateTerrainGeometry } from '../src/world/TerrainGeometry'
 
 function pump(terrain: TerrainSystem, x: number, z: number, frames: number): void {
@@ -307,6 +307,17 @@ describe('visible mesh contact sampling', () => {
     expect(sampleGroundSurfaceInto(8, -3, out)).toBe(out)
     expect(out).toEqual({ height: 24, kind: 'water' })
     expect(calls).toBe(1)
+  })
+
+  it('recovers kind without allocating a full surface for numeric mesh samples', () => {
+    setContactHeightSampler(() => 24)
+    const expected = { height: 0, kind: 'land' as const }
+    const out = { height: 0, kind: 'water' as const }
+    sampleTerrainSurfaceInto(expected, 8, -3)
+
+    expect(sampleGroundSurfaceInto(8, -3, out)).toBe(out)
+    expect(out.height).toBe(24)
+    expect(out.kind).toBe(expected.kind)
   })
 
   it('matches the rendered vertex at a chunk corner', () => {
