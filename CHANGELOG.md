@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.647** Lower and narrow the procedural F-35 canopy crown so the chase silhouette reads as a sleek stealth jet instead of a tall bubble cockpit, with no new geometry or draw calls.
 - **10.646** Add a touch stability-assist toggle, reusing the existing one-shot input queue so touch pilots can enable gentle trim without adding per-frame work or changing keyboard/gamepad behavior.
 - **10.645** Add standard-gamepad utility actions for trim assist, mute, weather, ghost, and radar target cycling, with edge-safe disconnect/error cleanup so stale button presses cannot leak across polls or pauses.
 - **10.644** Complete standard gamepad flight parity with held left-bumper speed brake plus edge-triggered X gear and Y camera actions, reusing the existing input queues without adding simulation-loop allocations.

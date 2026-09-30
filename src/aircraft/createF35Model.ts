@@ -170,11 +170,13 @@ export function createF35Model(): Group {
     [-.16, .8, 2.4], [.16, .8, 2.4], [.1, .76, -3.15], [-.1, .76, -3.15],
   ], .018, panelBreak, 'SpineStripe')
 
-  // Section-built teardrop canopy with a narrow rear deck and swept windscreen.
+  // Section-built low-profile teardrop canopy with a narrow rear deck and
+  // swept windscreen. The reduced crown keeps the chase silhouette sleek
+  // instead of reading as a tall bubble cockpit.
   const canopySections = [
     [1.2, .07, .74, .77], [1.65, .44, .7, .99],
-    [2.4, .66, .61, 1.075], [3.2, .67, .56, 1.065],
-    [3.95, .51, .51, .91], [4.65, .25, .47, .64], [4.95, .025, .45, .465],
+    [2.4, .62, .61, .98], [3.2, .63, .56, .97],
+    [3.95, .49, .51, .85], [4.65, .24, .47, .62], [4.95, .025, .45, .465],
   ] as const
   const canopyPos: number[] = [], canopyIndex: number[] = []
   const arches = 20

@@ -54,7 +54,7 @@ describe('rebuilt aircraft', () => {
     expect(ray.intersectObject(body).length).toBeGreaterThan(0)
     const canopy = model.getObjectByName('GoldCanopy')!
     const canopyBounds = new Box3().setFromObject(canopy)
-    expect(canopyBounds.max.y).toBeLessThan(1.1)
+    expect(canopyBounds.max.y).toBeLessThan(1.0)
     expect(canopyBounds.max.y - canopyBounds.min.y).toBeLessThan(1.0)
     expect(canopy).toBeInstanceOf(Mesh)
     expect((canopy as Mesh).material).toBeInstanceOf(MeshPhysicalMaterial)
