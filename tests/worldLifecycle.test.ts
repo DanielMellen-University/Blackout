@@ -54,6 +54,28 @@ describe('world lifecycle boundary', () => {
     }
   }, 60_000)
 
+  it('normalizes malformed quality requests before applying the shared envelope', () => {
+    const world = new World('low')
+    try {
+      world.setRenderQuality('ultra' as never)
+
+      const state = world as unknown as {
+        renderQuality: string | null
+        terrain: { viewRadius: number }
+        traffic: { count: number }
+      }
+      expect(state.renderQuality).toBe('balanced')
+      expect(state.terrain.viewRadius).toBe(80)
+      expect(state.traffic.count).toBe(5)
+
+      const before = state.terrain.viewRadius
+      world.setRenderQuality('invalid' as never)
+      expect(state.terrain.viewRadius).toBe(before)
+    } finally {
+      world.dispose()
+    }
+  }, 60_000)
+
   it('fails closed when a world frame reports malformed timing or position', () => {
     const world = new World('low')
     try {

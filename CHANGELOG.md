@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.616** Normalize malformed World render-quality requests before applying the shared terrain, settlement, traffic, and atmosphere envelope, keeping invalid runtime values from selecting an unintended quality budget.
+
 - **10.615** Normalize the shared weather propagation candidate before change detection, so malformed precipitation, daylight, cloud, and wind values fail closed without freezing stale terrain or reapplying shader uniforms every frame.
 
 - **10.614** Fail closed on malformed settlement weather inputs so non-finite precipitation and daylight cannot poison city, village, or road shader uniforms.

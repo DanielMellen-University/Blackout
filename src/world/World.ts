@@ -31,7 +31,7 @@ import { MissionSystem, type MissionRouteProfile } from '../systems/Mission'
 import { SettlementSystem } from './SettlementSystem'
 import { disposeObjectTree } from '../core/dispose'
 import { AirTrafficSystem } from './AirTrafficSystem'
-import { renderQualityProfile, type RenderQuality } from '../core/RenderQuality'
+import { normalizeRenderQuality, renderQualityProfile, type RenderQuality } from '../core/RenderQuality'
 
 const OBSTACLE_SWEEP_SPACING = 8
 const OBSTACLE_SWEEP_MAX_STEPS = 32
@@ -218,19 +218,20 @@ export class World {
 
   setTrafficQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    this.traffic.setRenderQuality(quality)
+    this.traffic.setRenderQuality(normalizeRenderQuality(quality))
   }
 
   /** Apply the shared quality envelope to terrain streaming and atmosphere fog. */
   setRenderQuality(quality: RenderQuality): void {
     if (this.disposed) return
-    if (this.renderQuality === quality) return
-    this.renderQuality = quality
-    const profile = renderQualityProfile(quality)
-    this.settlements.setRenderQuality(quality)
+    const safeQuality = normalizeRenderQuality(quality)
+    if (this.renderQuality === safeQuality) return
+    this.renderQuality = safeQuality
+    const profile = renderQualityProfile(safeQuality)
+    this.settlements.setRenderQuality(safeQuality)
     this.settlements.setDetailRadius(profile.settlementDetailRadius)
     this.settlements.setRoadDetailRadius(profile.settlementRoadRadius)
-    this.traffic.setRenderQuality(quality)
+    this.traffic.setRenderQuality(safeQuality)
     this.terrain.setViewRadius(profile.terrainViewRadius)
     this.terrain.setWorkerLimit(profile.terrainWorkers)
     this.terrain.setUploadBudget(profile.terrainUploadBudgetMs, profile.terrainMaxUploadsPerFrame)
