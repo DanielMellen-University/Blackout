@@ -326,13 +326,13 @@ export class SortieContractTracker {
   recordDestination(count: number, kind?: 'city' | 'village', id?: string): void {
     if (this.completeValue) return
     if (this.definition?.kind === 'target') {
+      const safeId = typeof id === 'string' ? id.slice(0, 128) : ''
       if (
         !this.radarLocked ||
         (kind !== 'city' && kind !== 'village') ||
         kind !== this.radarLockKind ||
-        typeof id !== 'string' ||
-        id.length === 0 ||
-        id !== this.radarLockId
+        safeId.length === 0 ||
+        safeId !== this.radarLockId
       ) return
       this.progressValue = 1
       this.completeValue = true

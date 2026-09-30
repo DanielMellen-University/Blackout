@@ -630,6 +630,26 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 1)).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('matches bounded radar identities when a landmark id is long', () => {
+    const tracker = new SortieContractTracker()
+    let targetSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5, true)
+      if (tracker.kind === 'target') {
+        targetSeed = seed
+        break
+      }
+    }
+    expect(targetSeed).toBeGreaterThanOrEqual(0)
+    const longId = `city-${'x'.repeat(160)}`
+    tracker.reset(targetSeed, 5, true)
+    tracker.recordRadarLock(true, 'city', longId)
+    expect(tracker.progress).toBeCloseTo(0.5)
+    tracker.recordDestination(1, 'city', longId)
+    expect(tracker.complete).toBe(true)
+    expect(tracker.progress).toBe(1)
+  })
+
   it('accumulates only airborne time through the dusk envelope', () => {
     const tracker = new SortieContractTracker()
     let nightSeed = -1

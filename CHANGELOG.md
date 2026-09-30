@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.699** Normalize bounded radar landmark identities during RADAR RUN arrival checks so long generated IDs can complete the lock-then-arrive contract consistently.
 - **10.698** Route fixed-step contract dispatch through the explicit airborne state, preventing fast runway rolls from earning low-level, speed-band, or storm progress and failing closed on malformed airborne values.
 - **10.697** Make settlement destination rewards distinct per streamed landmark ID within a sortie, preventing repeated arrivals from farming score or inflating SCOUT progress while preserving RADAR RUN's lock-then-arrive flow.
 - **10.696** Harden touch, ghost replay, and streamed-settlement visibility boundaries so malformed truthy values cannot leak visual layers across title, cockpit, menu, or flight states.
