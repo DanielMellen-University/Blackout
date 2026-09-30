@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.620** Expand deterministic thermal sampling to a fixed 3x3 cell neighborhood, keeping diagonal lift pockets reachable at streamed-cell corners without allocating in the flight step.
+
 - **10.619** Normalize render-quality requests across aircraft, radar, and pooled flight effects, keeping malformed runtime values inside the shared visual-budget contract.
 
 - **10.618** Normalize direct camera and settlement render-quality requests, keeping malformed runtime values from changing occlusion budgets or bypassing the shared detail envelope.

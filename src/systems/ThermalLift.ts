@@ -6,6 +6,8 @@ export const THERMAL_MIN_ALTITUDE_M = 90
 export const THERMAL_PEAK_ALTITUDE_M = 420
 /** Keep lift useful above tall relief without creating an unbounded force band. */
 export const THERMAL_FADE_ALTITUDE_M = 3_600
+/** Include diagonal cells so pockets do not disappear at streamed-cell corners. */
+export const THERMAL_NEIGHBOUR_RADIUS_CELLS = 1
 
 export interface ThermalPocket {
   readonly cellX: number
@@ -35,7 +37,7 @@ export function thermalPocketForCell(
   }
 }
 
-/** Find the nearest candidate in the same cross-shaped neighbourhood sampled in flight. */
+/** Find the nearest candidate in the same fixed 3x3 neighbourhood sampled in flight. */
 export function nearestThermalPocket(
   seed: number,
   x: number,
@@ -46,15 +48,15 @@ export function nearestThermalPocket(
   const cellZ = Math.floor(z / THERMAL_CELL_SIZE_M)
   let nearest: ThermalPocket | null = null
   let nearestDistance = Number.POSITIVE_INFINITY
-  for (let offset = 0; offset < 5; offset += 1) {
-    const sampleCellX = cellX + (offset === 1 ? -1 : offset === 2 ? 1 : 0)
-    const sampleCellZ = cellZ + (offset === 3 ? -1 : offset === 4 ? 1 : 0)
-    const pocket = thermalPocketForCell(seed, sampleCellX, sampleCellZ)
-    if (!pocket) continue
-    const distance = Math.hypot(x - pocket.x, z - pocket.z)
-    if (distance < nearestDistance) {
-      nearest = pocket
-      nearestDistance = distance
+  for (let offsetX = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX += 1) {
+    for (let offsetZ = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ += 1) {
+      const pocket = thermalPocketForCell(seed, cellX + offsetX, cellZ + offsetZ)
+      if (!pocket) continue
+      const distance = Math.hypot(x - pocket.x, z - pocket.z)
+      if (distance < nearestDistance) {
+        nearest = pocket
+        nearestDistance = distance
+      }
     }
   }
   return nearest
@@ -87,19 +89,21 @@ export function thermalLiftIntensity(
   const cellX = Math.floor(x / THERMAL_CELL_SIZE_M)
   const cellZ = Math.floor(z / THERMAL_CELL_SIZE_M)
   let strongest = 0
-  for (let offset = 0; offset < 5; offset += 1) {
-    const sampleCellX = cellX + (offset === 1 ? -1 : offset === 2 ? 1 : 0)
-    const sampleCellZ = cellZ + (offset === 3 ? -1 : offset === 4 ? 1 : 0)
-    // Keep this fixed-step path allocation-free. Route planning uses the
-    // object helper above once per mission, while flight samples stay scalar.
-    const centerX = (sampleCellX + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 11) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
-    const centerZ = (sampleCellZ + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 17) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
-    const radius = 360 + thermalHash(seed, sampleCellX, sampleCellZ, 23) * 220
-    const distance = Math.hypot(x - centerX, z - centerZ)
-    const radial = 1 - MathUtils.smoothstep(distance, radius * 0.48, radius)
-    if (radial <= 0) continue
-    const strength = 0.58 + thermalHash(seed, sampleCellX, sampleCellZ, 29) * 0.42
-    strongest = Math.max(strongest, radial * strength)
+  for (let offsetX = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX += 1) {
+    for (let offsetZ = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ += 1) {
+      const sampleCellX = cellX + offsetX
+      const sampleCellZ = cellZ + offsetZ
+      // Keep this fixed-step path allocation-free. Route planning uses the
+      // object helper above once per mission, while flight samples stay scalar.
+      const centerX = (sampleCellX + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 11) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
+      const centerZ = (sampleCellZ + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 17) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
+      const radius = 360 + thermalHash(seed, sampleCellX, sampleCellZ, 23) * 220
+      const distance = Math.hypot(x - centerX, z - centerZ)
+      const radial = 1 - MathUtils.smoothstep(distance, radius * 0.48, radius)
+      if (radial <= 0) continue
+      const strength = 0.58 + thermalHash(seed, sampleCellX, sampleCellZ, 29) * 0.42
+      strongest = Math.max(strongest, radial * strength)
+    }
   }
 
   const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0

@@ -51,4 +51,11 @@ describe('deterministic thermal lift', () => {
     }
     expect(peak).toBeGreaterThan(0.2)
   })
+
+  it('keeps diagonal pockets alive at streamed-cell corners', () => {
+    const diagonal = thermalLiftIntensity(44_767, 1_780, 420, 1_780)
+    expect(diagonal).toBeGreaterThan(0.1)
+    expect(nearestThermalPocket(44_767, 1_780, 1_780)?.cellX).toBe(1)
+    expect(nearestThermalPocket(44_767, 1_780, 1_780)?.cellZ).toBe(1)
+  })
 })
