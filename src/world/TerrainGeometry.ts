@@ -187,6 +187,19 @@ export function buildTerrainSkirtGeometry(
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('color', new Float32BufferAttribute(skirtColors, 3))
   geometry.computeVertexNormals()
+  // Skirt triangles are vertical by design. Leaving their raw wall normals
+  // untouched makes coarse/fine LOD seams collapse into dark hairlines under
+  // the directional key light. Bias only the skirt copy toward a soft upward
+  // normal so the crack cover inherits the terrain's readable daylight while
+  // preserving the existing geometry and draw budget.
+  const normals = geometry.getAttribute('normal')
+  for (let i = 0; i < normals.count; i++) {
+    const nx = normals.getX(i)
+    const ny = Math.max(0.56, normals.getY(i))
+    const nz = normals.getZ(i)
+    const length = Math.hypot(nx, ny, nz)
+    if (length > 1e-6) normals.setXYZ(i, nx / length, ny / length, nz / length)
+  }
   geometry.computeBoundingSphere()
   return geometry
 }

@@ -91,6 +91,8 @@ describe('terrain LOD bands', () => {
     const dry = buildTerrainSkirtGeometry(heights, new Float32Array(9), colors, 2, CHUNK_SIZE)
     expect(dry).not.toBeNull()
     expect(dry!.getAttribute('position').count).toBe(48)
+    const skirtNormals = dry!.getAttribute('normal')
+    expect(Math.min(...Array.from({ length: skirtNormals.count }, (_, i) => skirtNormals.getY(i)))).toBeGreaterThanOrEqual(.42)
     expect(Math.min(...(dry!.getAttribute('position').array as Float32Array))).toBeLessThan(100)
     dry!.dispose()
     const wetLevels = new Float32Array(9).fill(120)

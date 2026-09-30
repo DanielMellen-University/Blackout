@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.651** Lift coarse/fine terrain skirt normals toward a soft upward blend so LOD crack covers stop reading as dark hairline seams, without adding geometry, draws, or runtime work.
 - **10.650** Complete touch replay parity with edge-triggered GHOST visibility and COPY seed/replay-link actions, reusing existing bounded queues without per-frame work.
 - **10.649** Complete the touch utility deck with edge-triggered WX weather-cycle and AUDIO mute controls, reusing the existing queues without adding simulation-loop polling or allocations.
 - **10.648** Add an edge-triggered RADAR target-cycle button to the touch deck, reusing the existing radar queue so mobile pilots can lock nearby settlements and traffic without per-frame polling work.
