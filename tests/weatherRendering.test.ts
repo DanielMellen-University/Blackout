@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { AmbientLight, DirectionalLight, HemisphereLight, InstancedMesh, Matrix4, Scene, Vector3 } from 'three'
+import { AmbientLight, DirectionalLight, HemisphereLight, InstancedMesh, LineBasicMaterial, Matrix4, PointsMaterial, Scene, Vector3 } from 'three'
 import { Atmosphere } from '../src/world/Atmosphere'
 import { cloudInteriorDensity } from '../src/world/CloudMaterial'
 import { precipitationAtAltitude, RainField } from '../src/world/RainField'
 import { skyLayerVisibility } from '../src/world/SkyDome'
+import { SnowField } from '../src/world/SnowField'
 
 function atmosphere() {
   const scene = new Scene()
@@ -102,6 +103,18 @@ describe('weather rendering', () => {
     expect(Number.isFinite(rain.mesh.position.y)).toBe(true)
     expect(Number.isFinite(rain.mesh.position.z)).toBe(true)
     rain.dispose()
+  })
+
+  it('keeps peak precipitation soft enough to preserve scene contrast', () => {
+    const rain = new RainField()
+    rain.update(.016, 0, 1000, 0, 1, 0, 0)
+    expect((rain.mesh.material as LineBasicMaterial).opacity).toBeLessThan(.3)
+    rain.dispose()
+
+    const snow = new SnowField()
+    snow.update(.016, 0, 1000, 0, 1, 0, 0)
+    expect((snow.points.material as PointsMaterial).opacity).toBeLessThan(.6)
+    snow.dispose()
   })
 
   it('clears precipitation and the overhead deck above cloud tops', () => {

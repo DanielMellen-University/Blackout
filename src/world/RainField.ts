@@ -18,7 +18,9 @@ export class RainField {
   private readonly particles = new Float32Array(COUNT * 3)
   private readonly speeds = new Float32Array(COUNT)
   private readonly positions = new Float32Array(COUNT * 6)
-  private readonly material = new LineBasicMaterial({ color: 0xb5cee1, transparent: true, opacity: .35, depthWrite: false })
+  // Keep storm streaks present without turning every pass through a cloud into
+  // a wall of white cards. The pooled line draw stays unchanged.
+  private readonly material = new LineBasicMaterial({ color: 0x9eb9c7, transparent: true, opacity: .24, depthWrite: false })
   private x = 0
   private y = 0
   private z = 0
@@ -60,7 +62,7 @@ export class RainField {
     const step = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, .1) : 0
     const wx = Number.isFinite(windX) ? windX : 0
     const wz = Number.isFinite(windZ) ? windZ : 0
-    this.material.opacity = rain * .42
+    this.material.opacity = rain * .28
     const count = Math.floor(this.count * (.2 + rain * .8))
     this.mesh.geometry.setDrawRange(0, count * 2)
     for (let i = 0; i < count; i++) {
@@ -70,7 +72,7 @@ export class RainField {
       const py = wrap(this.particles[j + 1]! - dy - speed * step + HEIGHT / 2, HEIGHT) - HEIGHT / 2
       const pz = wrap(this.particles[j + 2]! - dz + wz * step + WIDTH / 2, WIDTH) - WIDTH / 2
       this.particles[j] = px; this.particles[j + 1] = py; this.particles[j + 2] = pz
-      const exposure = .022 + rain * .026
+      const exposure = .016 + rain * .018
       this.positions[k] = px; this.positions[k + 1] = py; this.positions[k + 2] = pz
       this.positions[k + 3] = px - wx * exposure
       this.positions[k + 4] = py + speed * exposure

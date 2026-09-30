@@ -61,7 +61,7 @@ export class SnowField {
     for (let i = 0; i < FLAKE_COUNT; i++) {
       this.fall[i] = 3.8 + Math.random() * 8.4
       this.phase[i] = Math.random() * Math.PI * 2
-      this.size[i] = .68 + Math.random() * .72
+      this.size[i] = .56 + Math.random() * .56
     }
 
     const geo = new BufferGeometry()
@@ -70,7 +70,7 @@ export class SnowField {
 
     this.tex = makeSoftDiscTexture(64)
     this.mat = new PointsMaterial({
-      color: 0xeaf3ff,
+      color: 0xd9e8f4,
       map: this.tex,
       size: 0.42,
       transparent: true,
@@ -78,7 +78,7 @@ export class SnowField {
       depthWrite: false,
       sizeAttenuation: true,
       fog: true,
-      alphaTest: 0.04,
+      alphaTest: 0.08,
     })
     this.mat.onBeforeCompile = (shader) => {
       shader.vertexShader = shader.vertexShader.replace(
@@ -87,7 +87,7 @@ export class SnowField {
       )
       shader.vertexShader = shader.vertexShader.replace(
         '#include <fog_vertex>',
-        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 18.0);',
+        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 15.0);',
       )
     }
 
@@ -145,7 +145,7 @@ export class SnowField {
 
     this.clock += safeDt
     this.points.visible = true
-    this.mat.opacity = Math.min(0.92, 0.32 + safeIntensity * 0.6)
+    this.mat.opacity = Math.min(0.58, 0.22 + safeIntensity * 0.36)
 
     const fallMul = 0.5 + safeIntensity * 1.15
     const wind = 1.8 + safeIntensity * 8.5
