@@ -167,14 +167,15 @@ export class GhostReplay {
   /** Toggle presentation without mutating the recorded path. */
   setVisible(visible: boolean): void {
     if (this.disposed) return
-    this.showRequested = visible
-    this.root.visible = visible && this.ghostCount >= 2
+    const nextVisible = visible === true
+    this.showRequested = nextVisible
+    this.root.visible = nextVisible && this.ghostCount >= 2
   }
 
   /** Move the marker along the loaded best path using the current run clock. */
   update(time: number, externalView: boolean): void {
     if (this.disposed) return
-    const visible = this.showRequested && externalView && this.ghostCount >= 2
+    const visible = this.showRequested && externalView === true && this.ghostCount >= 2
     this.root.visible = visible
     if (!visible || !Number.isFinite(time)) {
       this.marker.visible = false

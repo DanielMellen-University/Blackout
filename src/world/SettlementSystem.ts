@@ -771,7 +771,7 @@ export class SettlementSystem {
 
   /** Toggle the streamed settlement layer without discarding generated data. */
   setVisible(visible: boolean): void {
-    this.root.visible = visible
+    this.root.visible = visible === true
   }
 
   /** Keep the settlement silhouette and routes while trimming secondary draws on Low. */

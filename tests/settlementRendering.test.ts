@@ -140,6 +140,8 @@ describe('settlement rendering and lifecycle', () => {
       system.setVisible(false)
       expect(system.root.visible).toBe(false)
       expect(system.count).toBe(1)
+      system.setVisible('false' as never)
+      expect(system.root.visible).toBe(false)
       system.setVisible(true)
       expect(system.root.visible).toBe(true)
     } finally {

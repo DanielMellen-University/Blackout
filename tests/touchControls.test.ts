@@ -143,6 +143,14 @@ describe('touch flight controls support detection', () => {
     expect(touchInputSupported(Number.NaN, true)).toBe(true)
   })
 
+  it('fails closed when visibility input is malformed', () => {
+    const { root, controls } = createHarness()
+    controls.setVisible('false' as never)
+    expect(root.hidden).toBe(true)
+    expect(root.attributes.get('aria-hidden')).toBe('true')
+    controls.dispose()
+  })
+
   it('captures a held control and releases it on pointerup', () => {
     const { root, pitch, controls, changes } = createHarness()
     const down = pointerEvent(pitch, 7)

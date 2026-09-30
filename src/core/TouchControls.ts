@@ -100,11 +100,13 @@ export class TouchControls {
   }
 
   setVisible(visible: boolean): void {
-    if (this.disposed || this.visible === visible) return
-    this.visible = visible
-    this.root.hidden = !visible
-    this.root.setAttribute('aria-hidden', visible ? 'false' : 'true')
-    if (!visible) {
+    if (this.disposed) return
+    const nextVisible = visible === true
+    if (this.visible === nextVisible) return
+    this.visible = nextVisible
+    this.root.hidden = !nextVisible
+    this.root.setAttribute('aria-hidden', nextVisible ? 'false' : 'true')
+    if (!nextVisible) {
       this.clearActivePointers()
     }
   }
