@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.668** Gate distant and Low-quality water roughness sampling behind the shared detail and distance budget, removing invisible normal-texture fetches without changing the water look up close.
 - **10.667** Give river ribbons a bounded local flow signal derived from channel width and grade, so streams, main channels, and steep reaches no longer share one uniform shader response without adding geometry or draw calls.
 - **10.666** Preserve authored descending approach profiles while solving terrain clearance, so base-to-final routes no longer get flattened into monotonic climbs.
 - **10.665** Make live navigation guidance fully screen-reader complete by exposing target range, altitude, trend, ETA, and approach cues, and clear hidden navigation semantics instead of leaving stale output behind.

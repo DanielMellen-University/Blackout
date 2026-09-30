@@ -40,7 +40,7 @@ export function applyWaterAppearance(
     shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform float waterDetailScale;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <roughnessmap_fragment>',
-      '#include <roughnessmap_fragment>\nfloat waterDetail = clamp(waterDetailScale, 0.0, 1.0);\nfloat waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18) * waterDetail);',
+      '#include <roughnessmap_fragment>\nfloat waterDetail = clamp(waterDetailScale, 0.0, 1.0);\nfloat waterSpecField = 0.5;\nfloat waterSpecDistanceFade = 1.0 - smoothstep(480.0, 3600.0, length(vWaterWorld - cameraPosition));\n// Roughness is the last water path that can still trigger a normal-texture\n// fetch after fine detail has faded. Keep it coherent with the color/normal\n// budget so Low quality and far water stop paying for invisible highlights.\nif (waterDetail > 0.05 && waterSpecDistanceFade > 0.01) {\n  waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\n}\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18) * waterDetail * waterSpecDistanceFade);',
     ).replace(
       '#include <color_fragment>',
       `#include <color_fragment>
@@ -175,5 +175,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v14'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v15'
 }
