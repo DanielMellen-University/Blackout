@@ -129,12 +129,19 @@ describe('independent water surfaces', () => {
     expect(flowDir.count).toBe(positions.count)
     expect(kind.count).toBe(positions.count)
     expect(Math.hypot(flowDir.getX(0), flowDir.getY(0))).toBeCloseTo(1, 5)
+    const flowValues: number[] = []
     for (let i = 0; i < positions.count; i++) {
       expect(positions.getY(i)).toBeGreaterThan(90)
       expect(depths.getX(i)).toBeGreaterThan(0)
-      expect(flow.getX(i)).toBe(1)
+      expect(flow.getX(i)).toBeGreaterThanOrEqual(.24)
+      expect(flow.getX(i)).toBeLessThanOrEqual(1)
+      flowValues.push(flow.getX(i))
       expect(kind.getX(i)).toBe(0)
     }
+    // Flow is now a bounded local signal, not a binary river flag. A reach
+    // that widens downstream should carry visibly stronger highlights without
+    // changing the shared material or adding a second draw.
+    expect(Math.max(...flowValues) - Math.min(...flowValues)).toBeGreaterThan(.05)
     mesh!.geometry.dispose()
     ;(mesh!.material as MeshStandardMaterial).dispose()
   })

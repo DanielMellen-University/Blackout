@@ -283,7 +283,9 @@ function appendRiverRibbons(
     return result
   }
 
-  const appendPolygon = (input: RibbonVertex[], flowX: number, flowZ: number, drop: number): void => {
+  const appendPolygon = (
+    input: RibbonVertex[], flowX: number, flowZ: number, drop: number, flow: number,
+  ): void => {
     let polygon = input
     polygon = clip(polygon, 'x', -half, true)
     polygon = clip(polygon, 'x', half, false)
@@ -293,7 +295,7 @@ function appendRiverRibbons(
       for (const point of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
         positions.push(point.x, point.y, point.z)
         depths.push(point.depth)
-        flowValues.push(1)
+        flowValues.push(flow)
         flowDirections.push(flowX, flowZ)
         waterKinds.push(0)
         waterDrops.push(drop)
@@ -302,11 +304,13 @@ function appendRiverRibbons(
   }
 
   const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
-    flowX: number, flowZ: number, drop: number): void => {
-    appendPolygon([a, b, c, d], flowX, flowZ, drop)
+    flowX: number, flowZ: number, drop: number, flow: number): void => {
+    appendPolygon([a, b, c, d], flowX, flowZ, drop, flow)
   }
 
-  const appendRoundCap = (section: Section, radius: number, flowX: number, flowZ: number, drop: number): void => {
+  const appendRoundCap = (
+    section: Section, radius: number, flowX: number, flowZ: number, drop: number, flow: number,
+  ): void => {
     const center = section.center
     const points: RibbonVertex[] = []
     for (let i = 0; i < 8; i++) {
@@ -315,12 +319,12 @@ function appendRiverRibbons(
         y: center.y, depth: Math.max(.08, center.depth * .5) })
     }
     for (let i = 0; i < points.length; i++) {
-      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!], flowX, flowZ, drop)
+      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!], flowX, flowZ, drop, flow)
     }
   }
 
   const appendTaperedCap = (
-    section: Section, flowX: number, flowZ: number, distance: number, drop: number,
+    section: Section, flowX: number, flowZ: number, distance: number, drop: number, flow: number,
   ): void => {
     // Tributaries that end at a streamed catchment boundary should fade into
     // the terrain instead of exposing a circular hose cap from above. The
@@ -377,16 +381,18 @@ function appendRiverRibbons(
       y: section.center.y - .012,
       depth: .008,
     }
-    appendPolygon([section.left, section.right, nearRight, nearLeft], flowX, flowZ, drop)
-    appendPolygon([nearLeft, nearRight, midRight, midLeft], flowX, flowZ, drop)
-    appendPolygon([midLeft, midRight, tip], flowX, flowZ, drop)
+    appendPolygon([section.left, section.right, nearRight, nearLeft], flowX, flowZ, drop, flow)
+    appendPolygon([nearLeft, nearRight, midRight, midLeft], flowX, flowZ, drop, flow)
+    appendPolygon([midLeft, midRight, tip], flowX, flowZ, drop, flow)
   }
 
-  const appendJunctionPad = (section: Section, radius: number, flowX: number, flowZ: number, drop: number): void => {
+  const appendJunctionPad = (
+    section: Section, radius: number, flowX: number, flowZ: number, drop: number, flow: number,
+  ): void => {
     // A chain can begin or end at a confluence without owning a terminal
     // marker. A small shared pad hides the miter seam where the neighbouring
     // chain arrives, while keeping the actual endpoint taper for true ends.
-    appendRoundCap(section, radius * 1.06, flowX, flowZ, drop)
+    appendRoundCap(section, radius * 1.06, flowX, flowZ, drop, flow)
   }
 
   for (const reach of reaches) {
@@ -400,7 +406,7 @@ function appendRiverRibbons(
     const drop = Math.max(0, Math.min(1, (reach.ya - reach.yb) / length * 5.5))
     // A section roughly every 120 m is enough for visible meanders without
     // turning a whole catchment into a high-poly water surface.
-    const sections: Section[] = []
+    const sections: (Section & { flow: number })[] = []
     const steps = Math.max(4, Math.min(12, Math.ceil(length / 120)))
     for (let step = 0; step <= steps; step++) {
       const t = step / steps
@@ -423,18 +429,28 @@ function appendRiverRibbons(
         : Math.max(.45, Math.min(4, channelHalfWidth * .028))
       const y = reach.ya + (reach.yb - reach.ya) * t + .04
       const edgeDepth = Math.max(.08, Math.min(.55, depth * .16))
+      // Flow strength is intentionally tied to the local channel size and
+      // grade. Small tributaries stay calmer, while broad or steep reaches
+      // receive the stronger riffle/highlight treatment in the shared shader.
+      // Clamp the result so a narrow stream never disappears into a dry tint
+      // and a huge channel cannot become an over-bright cyan stripe.
+      const flow = Math.max(.24, Math.min(1,
+        .24 + Math.pow(Math.min(1, channelHalfWidth / 90), .65) * .66 + drop * .1,
+      ))
       const centerX = baseX, centerZ = baseZ
       sections.push({
         left: { x: centerX + nx * channelHalfWidth - originX - half, z: centerZ + nz * channelHalfWidth - originZ - half, y, depth: edgeDepth },
         center: { x: centerX - originX - half, z: centerZ - originZ - half, y, depth },
         right: { x: centerX - nx * channelHalfWidth - originX - half, z: centerZ - nz * channelHalfWidth - originZ - half, y, depth: edgeDepth },
+        flow,
       })
     }
 
     for (let step = 0; step < sections.length - 1; step++) {
       const a = sections[step]!, b = sections[step + 1]!
-      appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ, drop)
-      appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ, drop)
+      const flow = (a.flow + b.flow) * .5
+      appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ, drop, flow)
+      appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ, drop, flow)
     }
     // Extend a mouth a short distance below the receiving basin. The basin
     // owns the final water level, while this submerged overlap removes the
@@ -452,9 +468,9 @@ function appendRiverRibbons(
           x: point.x + ox, z: point.z + oz, y: last.center.y, depth: Math.max(point.depth, .18),
         })
         const nextLeft = submerged(last.left), nextCenter = submerged(last.center), nextRight = submerged(last.right)
-        appendQuad(last.left, nextLeft, nextCenter, last.center, flowX, flowZ, drop)
-        appendQuad(last.center, nextCenter, nextRight, last.right, flowX, flowZ, drop)
-        last = { left: nextLeft, center: nextCenter, right: nextRight }
+        appendQuad(last.left, nextLeft, nextCenter, last.center, flowX, flowZ, drop, last.flow)
+        appendQuad(last.center, nextCenter, nextRight, last.right, flowX, flowZ, drop, last.flow)
+        last = { left: nextLeft, center: nextCenter, right: nextRight, flow: last.flow }
       }
     }
     // Rounded joins/mouths hide tiny miter gaps when adjacent curved reaches
@@ -464,21 +480,21 @@ function appendRiverRibbons(
     const source = reach.source ?? true
     const terminal = reach.terminal ?? true
     if (source) {
-      if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ, drop)
-      else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4), drop)
+      if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ, drop, first.flow)
+      else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4), drop, first.flow)
     } else if (!reach.mouth) {
-      appendJunctionPad(first, radius, -flowX, -flowZ, drop)
+      appendJunctionPad(first, radius, -flowX, -flowZ, drop, first.flow)
     }
     if (terminal) {
-      if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop)
+      if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop, last.flow)
       else {
-        appendTaperedCap(last, flowX, flowZ, Math.max(140, radius * 3.4), drop)
+        appendTaperedCap(last, flowX, flowZ, Math.max(140, radius * 3.4), drop, last.flow)
         // Keep a shallow rounded shoulder at the live section so a bank that
         // rises faster than the feather cannot expose a square terminal edge.
-        appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ, drop)
+        appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ, drop, last.flow)
       }
     } else if (!reach.mouth) {
-      appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop)
+      appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop, last.flow)
     }
   }
 
