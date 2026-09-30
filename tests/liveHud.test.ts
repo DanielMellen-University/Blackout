@@ -17,4 +17,11 @@ describe('live HUD budget', () => {
     expect(source.includes("classList.remove('hud-ledger')")).toBe(false)
     expect(source.includes('classList.remove("hud-ledger")')).toBe(false)
   })
+
+  it('keeps the touch utility deck compact on phone widths', () => {
+    expect(css).toContain('grid-template-columns: repeat(4, minmax(36px, 1fr));')
+    expect(css).toContain('width: min(200px, calc(100vw - 170px));')
+    expect(css).toContain('@media (max-width: 370px)')
+    expect(css).toContain('width: calc(100vw - 150px);')
+  })
 })

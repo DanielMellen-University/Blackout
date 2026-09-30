@@ -1382,24 +1382,51 @@ body,
 
 @media (max-width: 560px) {
   .touch-controls {
-    gap: 8px;
+    gap: 6px;
     padding-top: 8px;
+    padding-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
   }
 
   .touch-cluster-left {
-    grid-template-columns: repeat(3, minmax(38px, 48px));
-    grid-template-rows: repeat(3, minmax(38px, 48px));
+    grid-template-columns: repeat(3, minmax(36px, 44px));
+    grid-template-rows: repeat(3, minmax(36px, 44px));
   }
 
   .touch-cluster-right {
-    grid-template-columns: repeat(2, minmax(48px, 64px));
+    width: min(200px, calc(100vw - 170px));
+    grid-template-columns: repeat(4, minmax(36px, 1fr));
   }
 
   .touch-controls button {
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 36px;
+    min-height: 36px;
     padding: 5px 4px;
     font-size: 0.54rem;
+  }
+}
+
+@media (max-width: 370px) {
+  .touch-controls {
+    gap: 5px;
+    padding-inline: 6px;
+  }
+
+  .touch-cluster-left {
+    grid-template-columns: repeat(3, minmax(32px, 38px));
+    grid-template-rows: repeat(3, minmax(32px, 38px));
+  }
+
+  .touch-cluster-right {
+    width: calc(100vw - 150px);
+    grid-template-columns: repeat(4, minmax(30px, 1fr));
+  }
+
+  .touch-controls button {
+    min-width: 30px;
+    min-height: 34px;
+    padding-inline: 2px;
+    font-size: 0.48rem;
+    letter-spacing: 0.06em;
   }
 }
 
