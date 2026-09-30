@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.687** Stabilize tied radar contacts with deterministic landmark identity and position ordering, preventing crowded city and village labels or target cycling from reshuffling when streamed source order changes.
 - **10.686** Replace capped settlement point probes with a bounded segment-vs-building sweep, preventing long physics steps from tunneling through loaded city or village buildings while retaining the cheap airfield fallback path.
 - **10.685** Preserve insertion order when removing a streamed settlement from the bounded collision-plan view, keeping equal-distance radar landmarks stable after eviction.
 - **10.684** Reuse the bounded settlement collision-plan view for building-budget totals and radar landmark snapshots, removing more streamed-map iterator churn without changing placement, eviction, or landmark order.

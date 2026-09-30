@@ -83,6 +83,19 @@ describe('arcade radar sweep', () => {
     expect(contacts).toHaveLength(MAX_RADAR_CONTACTS)
   })
 
+  it('keeps tied generated contacts in deterministic identity order', () => {
+    const radar = new RadarSystem()
+    const reversed = [
+      { x: 300, y: 0, z: 400, kind: 'village' as const, id: 'village-z' },
+      { x: 400, y: 0, z: 300, kind: 'village' as const, id: 'village-a' },
+    ]
+    const first = radar.update(0, 0, 0, null, reversed)
+    expect(first.map(contact => contact.id)).toEqual(['village-a', 'village-z'])
+
+    const second = radar.update(0, 0, 0, null, [...reversed].reverse())
+    expect(second.map(contact => contact.id)).toEqual(['village-a', 'village-z'])
+  })
+
   it('trims the sweep on low quality and reduced-motion displays', () => {
     const radar = new RadarSystem()
     const landmarks = Array.from({ length: MAX_RADAR_CONTACTS }, (_, index) => ({

@@ -226,7 +226,15 @@ export class RadarSystem {
         if (contactIsWorse(current, worst, this.selectedTargetId)) worstIndex = index
       }
       const worst = this.contacts[worstIndex]!
-      if (!candidateBeats(candidatePriority, distance, id, worst, this.selectedTargetId)) return
+      if (!candidateBeats(
+        candidatePriority,
+        distance,
+        id,
+        x,
+        z,
+        worst,
+        this.selectedTargetId,
+      )) return
       contactIndex = worstIndex
     } else {
       this.contacts.push(this.contactPool[contactIndex]!)
@@ -319,23 +327,25 @@ function sortRadarContacts(contacts: RadarContact[]): void {
 }
 
 function compareRadarContacts(a: RadarContact, b: RadarContact): number {
-  return radarKindPriority(a.kind) - radarKindPriority(b.kind) || a.distance - b.distance
+  return radarKindPriority(a.kind) - radarKindPriority(b.kind) ||
+    a.distance - b.distance ||
+    compareRadarIdentity(a.id, a.x, a.z, b.id, b.x, b.z) ||
+    (a.y ?? 0) - (b.y ?? 0)
 }
 
 function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact, selectedId: string): boolean {
   const candidateSelected = candidate.id !== '' && candidate.id === selectedId
   const currentSelected = currentWorst.id !== '' && currentWorst.id === selectedId
   if (candidateSelected !== currentSelected) return !candidateSelected
-  const candidatePriority = radarKindPriority(candidate.kind)
-  const worstPriority = radarKindPriority(currentWorst.kind)
-  return candidatePriority > worstPriority ||
-    (candidatePriority === worstPriority && candidate.distance > currentWorst.distance)
+  return compareRadarContacts(candidate, currentWorst) > 0
 }
 
 function candidateBeats(
   priority: number,
   distance: number,
   id: string | undefined,
+  x: number,
+  z: number,
   currentWorst: RadarContact,
   selectedId: string,
 ): boolean {
@@ -344,7 +354,41 @@ function candidateBeats(
   if (currentSelected) return false
   if (candidateSelected) return true
   const worstPriority = radarKindPriority(currentWorst.kind)
-  return priority < worstPriority || (priority === worstPriority && distance < currentWorst.distance)
+  if (priority !== worstPriority) return priority < worstPriority
+  if (distance !== currentWorst.distance) return distance < currentWorst.distance
+  return compareRadarIdentity(id, x, z, currentWorst.id, currentWorst.x, currentWorst.z) < 0
+}
+
+/**
+ * Stable final ordering for generated landmarks that share a radar tier and
+ * range. Streamed settlement order can change as chunks enter and leave the
+ * bounded view, so relying on source order makes labels and target cycling
+ * appear to jump even when the world has not moved.
+ */
+function compareRadarIdentity(
+  aId: string | undefined,
+  aX: number | undefined,
+  aZ: number | undefined,
+  bId: string | undefined,
+  bX: number | undefined,
+  bZ: number | undefined,
+): number {
+  const a = typeof aId === 'string' ? aId : ''
+  const b = typeof bId === 'string' ? bId : ''
+  if (a !== b) {
+    // Identified streamed landmarks are more useful than anonymous fallback
+    // contacts when every other ranking key is tied.
+    if (!a) return 1
+    if (!b) return -1
+    return a < b ? -1 : 1
+  }
+  const xOrder = finiteTieValue(aX) - finiteTieValue(bX)
+  if (xOrder !== 0) return xOrder
+  return finiteTieValue(aZ) - finiteTieValue(bZ)
+}
+
+function finiteTieValue(value: number | undefined): number {
+  return Number.isFinite(value) ? value! : 0
 }
 
 function normalizeRadarKind(value: unknown): RadarContactKind {
