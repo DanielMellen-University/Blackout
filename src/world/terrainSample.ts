@@ -224,6 +224,27 @@ export interface FlatSpawn {
 }
 
 /**
+ * Last-resort airfield used only when a brand-new world exhausts every
+ * natural-pad search. The active operations pad flattens this bounded disk,
+ * so even a pathological water or mountain sample cannot strand boot behind
+ * a dead title screen. Normal worlds never take this path.
+ */
+export function emergencySpawn(): FlatSpawn {
+  const natural = sampleClimate(0, 0)
+  const naturalHeight = Number.isFinite(natural.height) ? natural.height : 0
+  const y = natural.biome === 'ocean' || natural.biome === 'water'
+    ? 8
+    : Math.max(8, Math.min(120, naturalHeight))
+  return {
+    x: 0,
+    z: 0,
+    y,
+    yaw: 0,
+    biome: FLAT_SPAWN_BIOMES.has(natural.biome) ? natural.biome : 'plains',
+  }
+}
+
+/**
  * Search for naturally flat inland ground with a clear takeoff lane.
  * Returns null instead of throwing so boot/reseed can keep the previous world
  * or fall back to {@link findInlandFallback} / {@link findAnyDryLand}.

@@ -20,6 +20,7 @@ import { randomizeWorldSeed, setWorldSeed } from './noise'
 import { createRunway, setRunwayDaylight, setRunwayWeather } from './Runway'
 import {
   clearOpsPad,
+  emergencySpawn,
   findPlayableSpawn,
   getOpsPad,
   getOpsPadInto,
@@ -312,7 +313,10 @@ export class World {
         const nextSeed = requestedSeed ?? randomizeWorldSeed()
         setWorldSeed(nextSeed)
         clearOpsPad()
-        const pad = findPlayableSpawn()
+        // A first-ever boot must remain recoverable even if a future terrain
+        // change makes every natural-pad probe reject. Re-seeds after a world
+        // is committed still use the normal rollback path below.
+        const pad = findPlayableSpawn() ?? (!this.committed ? emergencySpawn() : null)
         if (!pad) continue
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed

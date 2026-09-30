@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.677** Add a bounded emergency airfield for first-boot world generation, so pathological terrain seeds still produce a playable recovery pad while committed worlds retain transactional reseed rollback.
 - **10.676** Refresh the pooled rain line buffer on world reseed so active storms cannot flash stale streaks while keeping the steady-state update allocation-free.
 - **10.675** Seed pooled rain placement and speeds from the active world so storms vary per world while keeping the existing draw budget and allocation-free frame updates.
 - **10.674** Remove unseeded startup and audio randomness so pre-reseed atmosphere state and procedural noise remain repeatable without adding per-frame work.
