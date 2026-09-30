@@ -232,6 +232,7 @@ describe('flight cautions', () => {
     expect(warningCueForState({ ...base, text: 'STALL', level: 'warning', stall: true, lowAlt: false })).toBe('stall')
     expect(warningCueForState({ ...base, text: 'GEAR', gear: true, lowAlt: false })).toBe('gear-warning')
     expect(warningCueForState({ ...base, text: 'OVERSPEED', overspeed: true, lowAlt: false })).toBe('overspeed')
+    expect(warningCueForState({ ...base, text: 'FUEL LOW', fuel: true, lowAlt: false })).toBe('fuel')
     expect(warningCueForState(base)).toBe('warning')
   })
 

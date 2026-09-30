@@ -193,6 +193,7 @@ describe('flight audio automation', () => {
     audio.playCue('milestone')
     audio.playCue('radar-lock')
     audio.playCue('radar-lost')
+    audio.playCue('fuel')
     audio.playCue('sonic-boom')
     audio.silence()
     expect(audio.isDisposed).toBe(true)

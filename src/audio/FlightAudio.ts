@@ -296,6 +296,7 @@ export class FlightAudio {
       | 'overspeed'
       | 'stall'
       | 'gear-warning'
+      | 'fuel'
       | 'g-high'
       | 'g-negative'
       | 'gear-up'
@@ -409,6 +410,11 @@ export class FlightAudio {
       // Keep unsafe-approach gear distinct from the mechanical gear toggle.
       this.tone(230, now, 0.08, 'triangle', 0.06, 170)
       this.tone(230, now + 0.15, 0.1, 'triangle', 0.05, 170)
+    } else if (kind === 'fuel') {
+      // Fuel gets a low, deliberate double pulse so the pilot can distinguish
+      // a return-to-base emergency from ordinary threshold cautions.
+      this.tone(300, now, 0.09, 'triangle', 0.06, 220)
+      this.tone(210, now + 0.14, 0.13, 'triangle', 0.05, 150)
     } else if (kind === 'pull-up') {
       // A short double pulse marks the predictive terrain warning without
       // repeating while the HUD holds the sustained state.
