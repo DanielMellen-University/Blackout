@@ -23,6 +23,40 @@ let opsOn = false
 const SPAWN_CACHE_LIMIT = 24
 const spawnCache = new Map<number, FlatSpawn>()
 
+/**
+ * Spawn searches are synchronous but can probe thousands of candidates during
+ * a reseed. Keep independent records for the candidate, wet-neighbor, and
+ * footprint checks so nested validation never overwrites the active sample.
+ */
+const spawnClimateScratch = createClimateSample()
+const wetNeighborClimateScratch = createClimateSample()
+const airfieldClimateScratch = createClimateSample()
+const slopeClimateScratch = createClimateSample()
+const footprintClimateScratch = createClimateSample()
+const nearOceanClimateScratch = createClimateSample()
+const departureClimateScratch = createClimateSample()
+
+const AIRFIELD_PROBE_FORWARD = [0, -45, 36, 0, 0] as const
+const AIRFIELD_PROBE_RIGHT = [0, 0, 0, 18, -18] as const
+const FOOTPRINT_PROBES: readonly [number, number][] = [
+  [0, 0],
+  [0, 55],
+  [0, -55],
+  [0, 22],
+  [0, -22],
+  [9, 40],
+  [-9, 40],
+  [9, -40],
+  [-9, -40],
+  [22, -4],
+  [38, 2],
+  [38, -12],
+  [38, 14],
+  [20, -46],
+]
+const DEPARTURE_RANGES = [90, 180, 320, 480, 680, 900, 1150] as const
+const DEPARTURE_LATERALS = [0, -55, 55] as const
+
 export interface OpsPadSnapshot {
   x: number
   z: number
@@ -234,7 +268,7 @@ export interface FlatSpawn {
  * a dead title screen. Normal worlds never take this path.
  */
 export function emergencySpawn(): FlatSpawn {
-  const natural = sampleClimate(0, 0)
+  const natural = sampleClimateInto(spawnClimateScratch, 0, 0)
   const naturalHeight = Number.isFinite(natural.height) ? natural.height : 0
   const y = natural.biome === 'ocean' || natural.biome === 'water'
     ? 8
@@ -263,7 +297,7 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
       const ang = (i / steps) * Math.PI * 2 + ring * 0.017
       const x = Math.cos(ang) * ring
       const z = Math.sin(ang) * ring
-      const c = sampleClimate(x, z)
+      const c = sampleClimateInto(spawnClimateScratch, x, z)
       const pad = scoreFlatPad(x, z, c)
       if (pad < 0) continue
       // The coastal scan is far more expensive than the local pad test.  Only
@@ -291,7 +325,7 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
       const a = (i / 16) * Math.PI * 2 + r * 0.01
       const x = Math.cos(a) * r
       const z = Math.sin(a) * r
-      const c = sampleClimate(x, z)
+      const c = sampleClimateInto(spawnClimateScratch, x, z)
       if (scoreFlatPad(x, z, c) <= 0) continue
       if (nearOcean(x, z)) continue
       const dep = bestDeparture(x, z, c.height)
@@ -308,7 +342,7 @@ export function findFlatSpawn(maxRadius = 18000): FlatSpawn | null {
     const a = n * 2.399963
     const x = Math.cos(a) * r
     const z = Math.sin(a) * r
-    const c = sampleClimate(x, z)
+    const c = sampleClimateInto(spawnClimateScratch, x, z)
     if (scoreFlatPad(x, z, c) <= 0) continue
     if (nearOcean(x, z)) continue
     const dep = bestDeparture(x, z, c.height)
@@ -334,7 +368,7 @@ export function findInlandFallback(maxRadius = 32000): FlatSpawn | null {
       const a = (i / steps) * Math.PI * 2 + ring * 0.011
       const x = Math.cos(a) * ring
       const z = Math.sin(a) * ring
-      const c = sampleClimate(x, z)
+      const c = sampleClimateInto(spawnClimateScratch, x, z)
       const pad = scoreFlatPad(x, z, c)
       if (pad <= 0) continue
       if (hasWetNeighbors(x, z, 90)) continue
@@ -363,7 +397,7 @@ export function findAnyDryLand(): FlatSpawn | null {
     const a = n * 2.399963
     const x = Math.cos(a) * r
     const z = Math.sin(a) * r
-    const c = sampleClimate(x, z)
+    const c = sampleClimateInto(spawnClimateScratch, x, z)
     if (c.biome === 'ocean' || c.biome === 'water' || c.biome === 'swamp') continue
     if (c.land < 0.76 || c.height < 7 || c.coastal > 0.08) continue
     if (terrainSurfaceFromClimate(c).kind !== 'land') continue
@@ -387,15 +421,10 @@ export function isUsableAirfield(pad: FlatSpawn): boolean {
   const fz = Math.cos(pad.yaw)
   const rx = Math.cos(pad.yaw)
   const rz = -Math.sin(pad.yaw)
-  const spots: [number, number][] = [
-    [pad.x, pad.z],
-    [pad.x - fx * 45, pad.z - fz * 45],
-    [pad.x + fx * 36, pad.z + fz * 36],
-    [pad.x + rx * 18, pad.z + rz * 18],
-    [pad.x - rx * 18, pad.z - rz * 18],
-  ]
-  for (const [x, z] of spots) {
-    const c = sampleClimate(x, z)
+  for (let i = 0; i < AIRFIELD_PROBE_FORWARD.length; i++) {
+    const x = pad.x + fx * AIRFIELD_PROBE_FORWARD[i]! + rx * AIRFIELD_PROBE_RIGHT[i]!
+    const z = pad.z + fz * AIRFIELD_PROBE_FORWARD[i]! + rz * AIRFIELD_PROBE_RIGHT[i]!
+    const c = sampleClimateInto(airfieldClimateScratch, x, z)
     if (c.biome === 'ocean' || c.biome === 'water' || c.biome === 'swamp') return false
     if (c.land < 0.62 || c.height < 4) return false
     if (terrainSurfaceFromClimate(c).kind !== 'land') return false
@@ -406,7 +435,11 @@ export function isUsableAirfield(pad: FlatSpawn): boolean {
 function hasWetNeighbors(x: number, z: number, r: number): boolean {
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2
-    const s = sampleClimate(x + Math.cos(a) * r, z + Math.sin(a) * r)
+    const s = sampleClimateInto(
+      wetNeighborClimateScratch,
+      x + Math.cos(a) * r,
+      z + Math.sin(a) * r,
+    )
     if (s.biome === 'ocean' || s.biome === 'water' || s.land < 0.55) return true
   }
   return false
@@ -472,10 +505,10 @@ function scoreFlatPad(x: number, z: number, c: Climate): number {
 
   const d = 28
   const h0 = c.height
-  const hx = sampleClimate(x + d, z).height
-  const hz = sampleClimate(x, z + d).height
-  const hxm = sampleClimate(x - d, z).height
-  const hzm = sampleClimate(x, z - d).height
+  const hx = sampleClimateInto(slopeClimateScratch, x + d, z).height
+  const hz = sampleClimateInto(slopeClimateScratch, x, z + d).height
+  const hxm = sampleClimateInto(slopeClimateScratch, x - d, z).height
+  const hzm = sampleClimateInto(slopeClimateScratch, x, z - d).height
   const slope =
     (Math.abs(hx - h0) + Math.abs(hz - h0) + Math.abs(hxm - h0) + Math.abs(hzm - h0)) / 4
   if (slope > 2.2) return -1e5
@@ -499,28 +532,12 @@ function footprintRelief(
   const fz = Math.cos(yaw)
   const rx = Math.cos(yaw)
   const rz = -Math.sin(yaw)
-  const pts: [number, number][] = [
-    [0, 0],
-    [0, 55],
-    [0, -55],
-    [0, 22],
-    [0, -22],
-    [9, 40],
-    [-9, 40],
-    [9, -40],
-    [-9, -40],
-    [22, -4],
-    [38, 2],
-    [38, -12],
-    [38, 14],
-    [20, -46],
-  ]
   let minH = 1e9
   let maxH = -1e9
-  for (const [lat, along] of pts) {
+  for (const [lat, along] of FOOTPRINT_PROBES) {
     const px = x + fx * along + rx * lat
     const pz = z + fz * along + rz * lat
-    const s = sampleClimate(px, pz)
+    const s = sampleClimateInto(footprintClimateScratch, px, pz)
     if (isWet(s)) return null
     if (s.features.ravine > 0.22 || s.features.river > 0.55) return null
     if (s.height > minH + 8 && minH < 1e8) return null
@@ -550,12 +567,12 @@ function bestDeparture(x: number, z: number, h0: number): { yaw: number; score: 
 
 /** True if ocean/water/coast sits inside ~800 m (dense grid so gaps cannot hide sea). */
 function nearOcean(x: number, z: number): boolean {
-  if (isWet(sampleClimate(x, z))) return true
+  if (isWet(sampleClimateInto(nearOceanClimateScratch, x, z))) return true
   for (let dx = -800; dx <= 800; dx += 200) {
     for (let dz = -800; dz <= 800; dz += 200) {
       if (dx === 0 && dz === 0) continue
       if (dx * dx + dz * dz > 800 * 800) continue
-      const s = sampleClimate(x + dx, z + dz)
+      const s = sampleClimateInto(nearOceanClimateScratch, x + dx, z + dz)
       if (s.biome === 'ocean' || s.biome === 'water' || s.land < 0.5 || s.coastal > 0.15) {
         return true
       }
@@ -570,10 +587,13 @@ function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
   const rx = Math.cos(yaw)
   const rz = -Math.sin(yaw)
   let score = 0
-  const ranges = [90, 180, 320, 480, 680, 900, 1150]
-  for (const d of ranges) {
-    for (const lat of [0, -55, 55]) {
-      const s = sampleClimate(x + fx * d + rx * lat, z + fz * d + rz * lat)
+  for (const d of DEPARTURE_RANGES) {
+    for (const lat of DEPARTURE_LATERALS) {
+      const s = sampleClimateInto(
+        departureClimateScratch,
+        x + fx * d + rx * lat,
+        z + fz * d + rz * lat,
+      )
       if (isWet(s) || s.land < 0.5) return -1e6
       const h = s.height
       const rise = h - h0

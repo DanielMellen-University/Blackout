@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.679** Reuse caller-owned climate records and static probe layouts during procedural airfield searches, removing transient allocations from slope, coastal, departure, footprint, wet-neighbor, and pad validation without changing deterministic candidate rules.
 - **10.678** Cache successful natural airfield pads per world seed inside a bounded 24-entry window, avoiding repeated deterministic spawn searches on retries while leaving active-pad and non-default searches uncached.
 - **10.677** Add a bounded emergency airfield for first-boot world generation, so pathological terrain seeds still produce a playable recovery pad while committed worlds retain transactional reseed rollback.
 - **10.676** Refresh the pooled rain line buffer on world reseed so active storms cannot flash stale streaks while keeping the steady-state update allocation-free.
