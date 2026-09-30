@@ -159,6 +159,24 @@ describe('flight input one-shot controls', () => {
     input.dispose()
   })
 
+  it('queues the keyboard pause shortcut only during live flight', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+
+    fake.fire('keydown', 'KeyP')
+    expect(input.consumePauseToggle()).toBe(false)
+
+    input.flightLive = true
+    fake.fire('keydown', 'KeyP')
+    expect(input.consumePauseToggle()).toBe(true)
+    expect(input.consumePauseToggle()).toBe(false)
+
+    fake.fire('keyup', 'KeyP')
+    fake.fire('keydown', 'KeyP')
+    expect(input.consumePauseToggle()).toBe(true)
+    input.dispose()
+  })
+
   it('queues best-run ghost visibility toggles only during live flight', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

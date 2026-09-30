@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.658** Add an edge-triggered `P` pause shortcut for keyboard pilots, routing through the existing pause queue without changing Escape modal behavior or adding frame work.
 - **10.657** Reflow the touch utility deck into a compact phone layout, preserving large-screen controls while keeping the HUD visible on narrow and very small screens.
 - **10.656** Add debounced controller link cues so pilots see when a gamepad connects or disappears, while failed polls still clear flight input immediately.
 - **10.655** Fail closed on malformed or partially disconnected gamepad payloads, clearing stale axes and utility edges instead of throwing through the animation loop.

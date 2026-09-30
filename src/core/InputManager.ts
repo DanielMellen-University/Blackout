@@ -278,7 +278,7 @@ export class InputManager {
     this.touchPauseToggle = pauseToggle
   }
 
-  /** Forget one-shot C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
+  /** Forget one-shot P / C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
   clearQueued(): void {
     this.cameraToggleQueued = false
     this.resetQueued = false
@@ -490,6 +490,7 @@ export class InputManager {
     if (!this.flightLive) return
 
     if (e.code === 'KeyC') this.cameraToggleQueued = true
+    if (e.code === 'KeyP') this.pauseToggleQueued = true
     if (e.code === 'KeyR') this.resetQueued = true
     if (e.code === 'KeyN') this.weatherCycleQueued = true
     if (e.code === 'KeyM') this.audioToggleQueued = true
@@ -524,6 +525,7 @@ export class InputManager {
       e.code === 'KeyR' ||
       e.code === 'KeyG' ||
       e.code === 'KeyC' ||
+      e.code === 'KeyP' ||
       e.code === 'KeyN' ||
       e.code === 'KeyM' ||
       e.code === 'KeyB' ||
