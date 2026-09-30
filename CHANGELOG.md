@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.652** Add an edge-triggered RESET action to the touch flight deck so mobile pilots can restart a sortie after a crash or bad approach, reusing the existing reset queue without per-frame polling work.
 - **10.651** Lift coarse/fine terrain skirt normals toward a soft upward blend so LOD crack covers stop reading as dark hairline seams, without adding geometry, draws, or runtime work.
 - **10.650** Complete touch replay parity with edge-triggered GHOST visibility and COPY seed/replay-link actions, reusing existing bounded queues without per-frame work.
 - **10.649** Complete the touch utility deck with edge-triggered WX weather-cycle and AUDIO mute controls, reusing the existing queues without adding simulation-loop polling or allocations.

@@ -55,6 +55,7 @@ export class InputManager {
   private touchAudioToggle = false
   private touchGhostToggle = false
   private touchWorldSeedCopy = false
+  private touchReset = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
@@ -243,6 +244,7 @@ export class InputManager {
     const audioToggle = state?.audioToggle === true
     const ghostToggle = state?.ghostToggle === true
     const worldSeedCopy = state?.worldSeedCopy === true
+    const reset = state?.reset === true
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
     if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
     if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
@@ -255,6 +257,7 @@ export class InputManager {
     if (this.flightLive && audioToggle && !this.touchAudioToggle) this.audioToggleQueued = true
     if (this.flightLive && ghostToggle && !this.touchGhostToggle) this.ghostToggleQueued = true
     if (this.flightLive && worldSeedCopy && !this.touchWorldSeedCopy) this.worldSeedCopyQueued = true
+    if (this.flightLive && reset && !this.touchReset) this.resetQueued = true
     this.touchCameraToggle = cameraToggle
     this.touchGearToggle = gearToggle
     this.touchStabilityAssistToggle = stabilityAssistToggle
@@ -263,6 +266,7 @@ export class InputManager {
     this.touchAudioToggle = audioToggle
     this.touchGhostToggle = ghostToggle
     this.touchWorldSeedCopy = worldSeedCopy
+    this.touchReset = reset
   }
 
   /** Forget one-shot C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
@@ -545,6 +549,7 @@ export class InputManager {
     this.touchAudioToggle = false
     this.touchGhostToggle = false
     this.touchWorldSeedCopy = false
+    this.touchReset = false
   }
 }
 

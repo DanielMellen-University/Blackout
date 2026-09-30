@@ -18,6 +18,7 @@ export type TouchAction =
   | 'audio-toggle'
   | 'ghost-toggle'
   | 'seed-copy'
+  | 'reset'
 
 /** Event-driven touch input, normalized to the same ranges as ControlState. */
 export interface TouchInputState {
@@ -35,6 +36,7 @@ export interface TouchInputState {
   audioToggle?: boolean
   ghostToggle?: boolean
   worldSeedCopy?: boolean
+  reset?: boolean
 }
 
 const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
@@ -56,6 +58,7 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'audio-toggle',
   'ghost-toggle',
   'seed-copy',
+  'reset',
 ])
 
 interface ActiveTouchPointer {
@@ -225,6 +228,7 @@ export class TouchControls {
     let audioToggle = false
     let ghostToggle = false
     let worldSeedCopy = false
+    let reset = false
     for (const { action } of this.activePointers.values()) {
       if (action === 'pitch-up') pitch += 1
       if (action === 'pitch-down') pitch -= 1
@@ -244,6 +248,7 @@ export class TouchControls {
       if (action === 'audio-toggle') audioToggle = true
       if (action === 'ghost-toggle') ghostToggle = true
       if (action === 'seed-copy') worldSeedCopy = true
+      if (action === 'reset') reset = true
     }
     this.onChange({
       pitch: clampAxis(pitch),
@@ -260,6 +265,7 @@ export class TouchControls {
       audioToggle,
       ghostToggle,
       worldSeedCopy,
+      reset,
     })
   }
 }
