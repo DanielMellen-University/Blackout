@@ -12,6 +12,7 @@ export type TouchAction =
   | 'airbrake'
   | 'camera-toggle'
   | 'gear-toggle'
+  | 'stability-toggle'
 
 /** Event-driven touch input, normalized to the same ranges as ControlState. */
 export interface TouchInputState {
@@ -23,6 +24,7 @@ export interface TouchInputState {
   airbrake?: boolean
   cameraToggle?: boolean
   gearToggle?: boolean
+  stabilityAssistToggle?: boolean
 }
 
 const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
@@ -38,6 +40,7 @@ const TOUCH_ACTIONS: ReadonlySet<string> = new Set<TouchAction>([
   'airbrake',
   'camera-toggle',
   'gear-toggle',
+  'stability-toggle',
 ])
 
 interface ActiveTouchPointer {
@@ -201,6 +204,7 @@ export class TouchControls {
     let airbrake = false
     let cameraToggle = false
     let gearToggle = false
+    let stabilityAssistToggle = false
     for (const { action } of this.activePointers.values()) {
       if (action === 'pitch-up') pitch += 1
       if (action === 'pitch-down') pitch -= 1
@@ -214,6 +218,7 @@ export class TouchControls {
       if (action === 'airbrake') airbrake = true
       if (action === 'camera-toggle') cameraToggle = true
       if (action === 'gear-toggle') gearToggle = true
+      if (action === 'stability-toggle') stabilityAssistToggle = true
     }
     this.onChange({
       pitch: clampAxis(pitch),
@@ -224,6 +229,7 @@ export class TouchControls {
       airbrake,
       cameraToggle,
       gearToggle,
+      stabilityAssistToggle,
     })
   }
 }

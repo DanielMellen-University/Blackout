@@ -49,6 +49,7 @@ export class InputManager {
   private touchAirbrake = false
   private touchCameraToggle = false
   private touchGearToggle = false
+  private touchStabilityAssistToggle = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
@@ -231,10 +232,15 @@ export class InputManager {
     this.touchAirbrake = state?.airbrake === true
     const cameraToggle = state?.cameraToggle === true
     const gearToggle = state?.gearToggle === true
+    const stabilityAssistToggle = state?.stabilityAssistToggle === true
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
     if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
+    if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
+      this.stabilityAssistToggleQueued = true
+    }
     this.touchCameraToggle = cameraToggle
     this.touchGearToggle = gearToggle
+    this.touchStabilityAssistToggle = stabilityAssistToggle
   }
 
   /** Forget one-shot C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
@@ -511,6 +517,7 @@ export class InputManager {
     this.touchAirbrake = false
     this.touchCameraToggle = false
     this.touchGearToggle = false
+    this.touchStabilityAssistToggle = false
   }
 }
 

@@ -205,12 +205,14 @@ describe('touch flight controls support detection', () => {
     controls.dispose()
   })
 
-  it('emits edge-trigger actions for camera and landing gear toggles', () => {
+  it('emits edge-trigger actions for camera, landing gear, and assist toggles', () => {
     const root = new TestElement()
     const camera = new TestElement('camera-toggle')
     const gear = new TestElement('gear-toggle')
+    const assist = new TestElement('stability-toggle')
     root.appendChild(camera)
     root.appendChild(gear)
+    root.appendChild(assist)
     const changes: TouchInputState[] = []
     const controls = new TouchControls(root as unknown as HTMLElement, state => changes.push(state))
     controls.setVisible(true)
@@ -224,6 +226,11 @@ describe('touch flight controls support detection', () => {
     expect(changes.at(-1)?.gearToggle).toBe(true)
     testWindow.dispatch('pointerup', pointerEvent(gear, 12))
     expect(changes.at(-1)?.gearToggle).toBe(false)
+
+    root.dispatch('pointerdown', pointerEvent(assist, 14))
+    expect(changes.at(-1)?.stabilityAssistToggle).toBe(true)
+    testWindow.dispatch('pointerup', pointerEvent(assist, 14))
+    expect(changes.at(-1)?.stabilityAssistToggle).toBe(false)
     controls.dispose()
   })
 

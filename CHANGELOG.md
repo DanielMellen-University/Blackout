@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.646** Add a touch stability-assist toggle, reusing the existing one-shot input queue so touch pilots can enable gentle trim without adding per-frame work or changing keyboard/gamepad behavior.
 - **10.645** Add standard-gamepad utility actions for trim assist, mute, weather, ghost, and radar target cycling, with edge-safe disconnect/error cleanup so stale button presses cannot leak across polls or pauses.
 - **10.644** Complete standard gamepad flight parity with held left-bumper speed brake plus edge-triggered X gear and Y camera actions, reusing the existing input queues without adding simulation-loop allocations.
 - **10.643** Add a held speed-brake action to the touch flight deck, merging it with the existing keyboard brake path so touch approaches can shed speed without adding per-frame work or changing desktop controls.
