@@ -60,6 +60,25 @@ describe('snow wrap', () => {
     field.dispose()
   })
 
+  it('keeps motion and placement repeatable for the same world seed', () => {
+    const first = new SnowField()
+    const second = new SnowField()
+    first.setSeed(731)
+    second.setSeed(731)
+    first.update(1 / 60, 840, 0, -420, 1, 8, -3)
+    second.update(1 / 60, 840, 0, -420, 1, 8, -3)
+    const firstPositions = Array.from(first.points.geometry.getAttribute('position').array as Float32Array)
+    const secondPositions = Array.from(second.points.geometry.getAttribute('position').array as Float32Array)
+    expect(firstPositions).toEqual(secondPositions)
+
+    second.setSeed(732)
+    second.update(1 / 60, 840, 0, -420, 1, 8, -3)
+    expect(Array.from(second.points.geometry.getAttribute('position').array as Float32Array))
+      .not.toEqual(firstPositions)
+    first.dispose()
+    second.dispose()
+  })
+
   it('keeps runway-level flakes above the aircraft anchor instead of veiling terrain', () => {
     const field = new SnowField()
     field.update(1 / 60, 0, 0, 0, 1, 0, 0)

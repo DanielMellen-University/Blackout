@@ -23,6 +23,18 @@ const SNOW_WAVE = Float32Array.from(
   (_, i) => Math.sin((i / SNOW_WAVE_SIZE) * Math.PI * 2),
 )
 
+/** Stable integer mixer for seeded precipitation without a shared RNG stream. */
+function snowHash(seed: number, index: number, salt: number): number {
+  let value = (Math.trunc(seed) | 0) ^ Math.imul(index + 1, 0x9e3779b9) ^ Math.imul(Math.trunc(salt) | 0, 0x85ebca6b)
+  value = Math.imul(value ^ (value >>> 16), 0x7feb352d)
+  value = Math.imul(value ^ (value >>> 15), 0x846ca68b)
+  return (value ^ (value >>> 16)) >>> 0
+}
+
+function snowRandom(seed: number, index: number, salt: number): number {
+  return snowHash(seed, index, salt) / 0x1_0000_0000
+}
+
 /** Clamp a pooled particle budget without allowing an accidental zero draw. */
 export function precipitationParticleCount(total: number, scale: number): number {
   const safeTotal = Math.max(0, Math.floor(Number.isFinite(total) ? total : 0))
@@ -53,6 +65,7 @@ export class SnowField {
   private clock = 0
   private scattered = false
   private activeCountValue = FLAKE_COUNT
+  private seedValue = 0
   private disposed = false
 
   constructor() {
@@ -60,11 +73,7 @@ export class SnowField {
     this.fall = new Float32Array(FLAKE_COUNT)
     this.phase = new Float32Array(FLAKE_COUNT)
     this.size = new Float32Array(FLAKE_COUNT)
-    for (let i = 0; i < FLAKE_COUNT; i++) {
-      this.fall[i] = 3.8 + Math.random() * 8.4
-      this.phase[i] = Math.random() * Math.PI * 2
-      this.size[i] = .46 + Math.random() * .42
-    }
+    this.setSeed(0)
 
     const geo = new BufferGeometry()
     geo.setAttribute('position', new BufferAttribute(this.pos, 3))
@@ -101,6 +110,19 @@ export class SnowField {
 
   get activeCount(): number {
     return this.activeCountValue
+  }
+
+  /** Re-key the pooled field when a new deterministic world is committed. */
+  setSeed(seed: number): void {
+    if (this.disposed) return
+    this.seedValue = Number.isFinite(seed) ? Math.trunc(seed) : 0
+    for (let i = 0; i < FLAKE_COUNT; i++) {
+      this.fall[i] = 3.8 + snowRandom(this.seedValue, i, 11) * 8.4
+      this.phase[i] = snowRandom(this.seedValue, i, 23) * Math.PI * 2
+      this.size[i] = .46 + snowRandom(this.seedValue, i, 37) * .42
+    }
+    this.clock = 0
+    this.scattered = false
   }
 
   /** Apply the selected graphics preset to the pooled snow budget. */
@@ -185,10 +207,15 @@ export class SnowField {
   }
 
   private scatter(cx: number, cy: number, cz: number): void {
+    // Quantized anchor salts keep a retried seed visually identical while the
+    // wrapping volume still gets a fresh deterministic pattern after travel.
+    const cellX = Math.floor(cx / SPAN)
+    const cellZ = Math.floor(cz / SPAN)
+    const anchorSalt = Math.imul(cellX, 374761393) ^ Math.imul(cellZ, 668265263)
     for (let i = 0; i < FLAKE_COUNT; i++) {
-      this.pos[i * 3] = cx + (Math.random() - 0.5) * SPAN
-      this.pos[i * 3 + 1] = cy + (Math.random() - 0.5) * SPAN
-      this.pos[i * 3 + 2] = cz + (Math.random() - 0.5) * SPAN
+      this.pos[i * 3] = cx + (snowRandom(this.seedValue, i, anchorSalt + 41) - 0.5) * SPAN
+      this.pos[i * 3 + 1] = cy + (snowRandom(this.seedValue, i, anchorSalt + 53) - 0.5) * SPAN
+      this.pos[i * 3 + 2] = cz + (snowRandom(this.seedValue, i, anchorSalt + 67) - 0.5) * SPAN
     }
     ;(this.points.geometry.attributes.position as BufferAttribute).needsUpdate = true
   }

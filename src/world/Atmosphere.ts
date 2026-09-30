@@ -551,6 +551,7 @@ export class Atmosphere {
     const w = weatherIdForSeed(seed, this.timeOfDay)
 
     this.weatherDirector.randomize(seed, w)
+    this.snowField.setSeed(seed)
     this.weather = w
     this.reseedCloudField(seed)
     this.cloudImmersion = this.cloudImmersionTarget = 0
