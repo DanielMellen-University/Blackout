@@ -18,7 +18,7 @@ import {
   terrainLookaheadWarningActive,
   warningCueForState,
 } from '../src/systems/FlightWarnings'
-import { sampleGroundHeight, setContactHeightSampler } from '../src/world/ground'
+import { sampleGroundHeight, setContactHeightSampler, setGroundHeightSampler } from '../src/world/ground'
 
 describe('flight cautions', () => {
   afterEach(() => setContactHeightSampler(null))
@@ -161,6 +161,22 @@ describe('flight cautions', () => {
     const warning = evaluateWarnings(aircraft, 120)
     expect(warning.text).toBe('PULL UP')
     expect(warning.terrainClosure).toBe(true)
+  })
+
+  it('reuses a supplied current ground height instead of resampling the same point', () => {
+    let samples = 0
+    setGroundHeightSampler((x, z) => {
+      samples++
+      return x === 0 && z === 0 ? 10 : 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 120, 0)
+    aircraft.velocity.set(0, 0, 120)
+    aircraft.controls.gearDown = true
+    samples = 0
+    // The onGround guard consumes the cached current contact sample first.
+    expect(evaluateWarnings(aircraft, 108, null, 10).text).toBeNull()
+    expect(samples).toBe(3)
   })
 
   it('warns about a loaded obstacle before the padded flight path reaches it', () => {

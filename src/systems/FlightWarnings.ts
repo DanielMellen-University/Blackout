@@ -257,6 +257,7 @@ export function evaluateWarnings(
   aircraft: Aircraft,
   altAgl: number,
   obstacleSampler: ((x: number, y: number, z: number) => boolean) | null = null,
+  currentGroundHeight: number | null = null,
 ): WarningState {
   if (aircraft.status === 'crashed') return NONE_WARNING
   if (aircraft.onGround) return NONE_WARNING
@@ -305,7 +306,9 @@ export function evaluateWarnings(
   if (!terrainClosure) {
     const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
     if (horizontalSpeed >= 84) {
-      const groundNow = sampleGroundHeight(aircraft.position.x, aircraft.position.z)
+      const groundNow = Number.isFinite(currentGroundHeight)
+        ? currentGroundHeight!
+        : sampleGroundHeight(aircraft.position.x, aircraft.position.z)
       if (Number.isFinite(groundNow)) {
         const invHorizontalSpeed = 1 / horizontalSpeed
         const dirX = aircraft.velocity.x * invHorizontalSpeed

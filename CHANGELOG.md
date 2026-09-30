@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.628** Reuse the fixed-step aircraft ground sample for terrain warning lookahead, removing a duplicate current-point climate query at the HUD cadence while preserving analytic fallback behavior.
+
 - **10.627** Prevent a synchronous terrain-worker post failure from duplicating the tile that the worker pool already requeued for synchronous fallback.
 
 - **10.626** Make terrain sampler registration owner-aware so stale world teardown cannot clear the newer world's contact, height, or surface callbacks during overlapping rebuilds.

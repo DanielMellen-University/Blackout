@@ -15,7 +15,7 @@ import { stormAirframeWobble, stormBuffetViewScale } from '../systems/StormBuffe
 import { disposeObjectTree } from '../core/dispose'
 import { createDefaultControls, type ControlState } from '../core/types'
 import { createF35Model } from './createF35Model'
-import { groundSamplerRevision } from '../world/ground'
+import { groundSamplerRevision, undercarriageClearance } from '../world/ground'
 import {
   createEngineState,
   resolveEngineState,
@@ -903,6 +903,13 @@ export class Aircraft {
     if (this.disposed) return 0
     const floor = this.flight.contactMinYAt(this.position.x, this.position.z, this.controls.gearDown)
     return Math.max(0, this.position.y - floor)
+  }
+
+  /** Current resolved ground height, reusing the fixed-step contact cache. */
+  get groundHeight(): number {
+    if (this.disposed) return 0
+    const floor = this.flight.contactMinYAt(this.position.x, this.position.z, this.controls.gearDown)
+    return floor - undercarriageClearance(this.controls.gearDown)
   }
 
   get onGround(): boolean {
