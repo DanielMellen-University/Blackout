@@ -232,6 +232,8 @@ export class TerrainSystem {
   /** Completed results retain their nearest-first order between stream reschedules. */
   private readySorted = false
   private readonly activeKeys = new Set<string>()
+  /** Chunks that still need per-frame opacity or prop-distance work. */
+  private readonly fadeKeys = new Set<string>()
   private readonly retiring: Chunk[] = []
   /** Reused fade-removal list keeps the per-frame stream path allocation-free. */
   private readonly fadeRemovals: string[] = []
@@ -248,6 +250,8 @@ export class TerrainSystem {
   private lastCz = Number.NaN
   private lastLodFocusX = Number.NaN
   private lastLodFocusZ = Number.NaN
+  /** Settled far chunks only need a fade-target refresh after a stream/LOD move. */
+  private fadeTargetsDirty = true
   /** Reuse the common near-cell lookup used by collision and contact probes. */
   private sampledChunk: Chunk | null = null
   private sampledChunkCx = Number.NaN
@@ -502,6 +506,7 @@ export class TerrainSystem {
     this.ready.length = 0
     this.readySorted = false
     this.activeKeys.clear()
+    this.fadeKeys.clear()
     for (const chunk of this.retiring) {
       chunk.root.removeFromParent()
       this.disposeChunk(chunk)
@@ -521,6 +526,7 @@ export class TerrainSystem {
     this.lastCz = Number.NaN
     this.lastLodFocusX = Number.NaN
     this.lastLodFocusZ = Number.NaN
+    this.fadeTargetsDirty = true
     this.invalidateSampleChunk()
   }
 
@@ -740,6 +746,7 @@ export class TerrainSystem {
   }
 
   private scheduleAround(cx: number, cz: number): void {
+    this.fadeTargetsDirty = true
     this.readySorted = false
     const needed = new Set<string>()
     this.desiredTiles.clear()
@@ -785,6 +792,7 @@ export class TerrainSystem {
         if (!chunk.fadingOut) this.prepareChunkForFade(chunk)
         chunk.fadingOut = true
         chunk.targetAlpha = 0
+        this.fadeKeys.add(key)
         // The layout only changes on cell crossings. Cache dependencies here
         // instead of scanning every desired tile for every fallback each frame.
         const replacements: string[] = []
@@ -854,6 +862,7 @@ export class TerrainSystem {
       this.offsetFallback(existing)
     }
     this.chunks.set(key, chunk)
+    this.fadeKeys.add(key)
     this.invalidateSampleChunk()
     invalidateGroundSamplerCaches()
   }
@@ -943,8 +952,21 @@ export class TerrainSystem {
     const fadeK = 1 - Math.exp(-dt * 6)
     const toRemove = this.fadeRemovals
     toRemove.length = 0
+    const refreshTargets = this.fadeTargetsDirty
+    this.fadeTargetsDirty = false
+    if (refreshTargets) {
+      // A focus move changes distance fade targets for every resident tile.
+      // Mark the set once, then settle opaque far chunks back out of the
+      // per-frame path as soon as their target is stable.
+      for (const chunk of this.chunks.values()) this.fadeKeys.add(chunk.key)
+    }
 
-    for (const [key, chunk] of this.chunks) {
+    for (const key of this.fadeKeys) {
+      const chunk = this.chunks.get(key)
+      if (!chunk) {
+        this.fadeKeys.delete(key)
+        continue
+      }
       this.fadeProps(chunk)
       // Keep old coverage until every replacement leaf has finished building.
       // This handles both splitting a distant tile and merging near tiles.
@@ -972,10 +994,10 @@ export class TerrainSystem {
         continue
       }
       chunk.fadeAge += dt
-      if (!chunk.fadingOut) {
+      if (!chunk.fadingOut && (refreshTargets || !chunk.settled)) {
         const cellDist = tileDistance(chunk.cx, chunk.cz, chunk.size, this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE)
         chunk.targetAlpha = terrainFadeTargetAlpha(cellDist, this.viewRadius)
-      } else {
+      } else if (chunk.fadingOut) {
         chunk.targetAlpha = 0
       }
 
@@ -1055,6 +1077,7 @@ export class TerrainSystem {
       this.disposeChunk(chunk)
       this.chunks.delete(key)
       this.replacementKeys.delete(key)
+      this.fadeKeys.delete(key)
       removedAny = true
     }
     if (removedAny) this.invalidateSampleChunk()
@@ -1206,7 +1229,15 @@ export class TerrainSystem {
 
   /** Replace private fade materials with shared opaque variants once a tile is stable. */
   private settleChunk(chunk: Chunk): void {
-    if (chunk.settled || chunk.fadingOut) return
+    if (chunk.settled || chunk.fadingOut) {
+      // Retiring fallbacks use the replacement's fade age as their disposal
+      // fence. Keep one short tail in the active set so that fence advances
+      // even after the replacement has become visually opaque.
+      if (chunk.settled && !chunk.props && chunk.fadeAge >= FADE_SECONDS) {
+        this.fadeKeys.delete(chunk.key)
+      }
+      return
+    }
     const previous = chunk.materials
     chunk.terrainMesh.material = chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
     if (chunk.waterMesh) chunk.waterMesh.material = this.waterMat
@@ -1218,10 +1249,12 @@ export class TerrainSystem {
     chunk.materials = [chunk.terrainMesh.material as MeshStandardMaterial]
     if (chunk.waterMesh) chunk.materials.push(this.waterMat)
     chunk.settled = true
+    if (!chunk.props && chunk.fadeAge >= FADE_SECONDS) this.fadeKeys.delete(chunk.key)
   }
 
   /** Rehydrate unique fade materials before a settled tile changes opacity or is retired. */
   private prepareChunkForFade(chunk: Chunk): void {
+    this.fadeKeys.add(chunk.key)
     if (!chunk.settled) return
     const clone = (source: MeshStandardMaterial): MeshStandardMaterial => {
       const material = source.clone()
