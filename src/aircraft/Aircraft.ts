@@ -507,9 +507,9 @@ export class Aircraft {
    * Add a restrained cool fill to dark airframe panels at night. This keeps
    * the existing silhouette readable without adding lights or draw calls.
    */
-  setNightReadability(daylight: number): void {
+  setNightReadability(daylight: number, weatherContrast = 0): void {
     if (this.disposed) return
-    const intensity = nightAirframeEmissiveIntensity(daylight)
+    const intensity = nightAirframeEmissiveIntensity(daylight, weatherContrast)
     this.presentationDaylight = Number.isFinite(daylight)
       ? MathUtils.clamp(daylight, 0, 1)
       : 0
@@ -997,12 +997,13 @@ export function navigationLightOpacity(timeMs: number, daylight = 0): number {
 }
 
 /** Cool panel fill strength, zero in daylight and stronger through dusk. */
-export function nightAirframeEmissiveIntensity(daylight: number): number {
+export function nightAirframeEmissiveIntensity(daylight: number, weatherContrast = 0): number {
   const safe = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 0
+  const weather = Number.isFinite(weatherContrast) ? MathUtils.clamp(weatherContrast, 0, 1) : 0
   // A dark stealth finish needs a little more separation from storm clouds
   // than a clear night does. Keep the fill additive-only and fully disabled
   // in daylight so the authored grey panels still own the daytime read.
-  return (1 - safe) * 0.42
+  return (1 - safe) * (0.42 + weather * 0.14)
 }
 
 /** Keep the physical canopy readable at night without making it glow by day. */

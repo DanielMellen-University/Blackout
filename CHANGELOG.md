@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.640** Add a weather-aware cool airframe fill at low daylight so storm clouds, rain, and snow preserve the F-35 silhouette without brightening clear nights or adding dynamic lights.
 - **10.639** Raise only the far terrain grid from six to eight samples so rounded mountain landforms keep a smooth horizon silhouette without promoting distant tiles to mid-range detail.
 - **10.638** Soften peak rain and snow presentation with lower-contrast pooled materials, shorter rain streaks, and smaller feathered snow sprites without changing precipitation budgets or draw calls.
 - **10.637** Fade settlement facade windows and panel rhythm with view distance so close buildings stay readable while distant skylines stop shimmering, without adding instances or draw calls.

@@ -347,6 +347,8 @@ describe('rebuilt aircraft', () => {
   it('keeps the airframe readable at night without a daylight glow', () => {
     expect(nightAirframeEmissiveIntensity(1)).toBe(0)
     expect(nightAirframeEmissiveIntensity(0)).toBeCloseTo(0.42)
+    expect(nightAirframeEmissiveIntensity(0, 1)).toBeCloseTo(0.56)
+    expect(nightAirframeEmissiveIntensity(0, Number.NaN)).toBeCloseTo(0.42)
     expect(nightAirframeEmissiveIntensity(-1)).toBeCloseTo(0.42)
     expect(nightAirframeEmissiveIntensity(Number.NaN)).toBeCloseTo(0.42)
 
