@@ -73,6 +73,22 @@ describe('settlement rendering and lifecycle', () => {
     }
   })
 
+  it('keeps startup alive when the settlement worker constructor throws', () => {
+    class ThrowingWorker {
+      constructor() { throw new Error('worker blocked by policy') }
+    }
+    vi.stubGlobal('Worker', ThrowingWorker)
+    let system: SettlementSystem | null = null
+    try {
+      expect(() => { system = new SettlementSystem(new Scene()) }).not.toThrow()
+      system!.update(3000, 3000)
+      expect(system!.count).toBe(1)
+    } finally {
+      system?.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('batches buildings and roofs into instanced draws and cleans up unloaded instances', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     system.update(3000, 3000)

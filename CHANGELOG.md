@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.625** Make settlement worker construction fail closed so CSP or browser worker startup errors preserve synchronous settlement generation instead of aborting world creation.
+
 - **10.624** Harden settlement worker dispatch so synchronous structured-clone or worker-post failures terminate the broken worker, requeue the active job, and fall back without throwing through the frame loop.
 
 - **10.623** Make the input manager terminal after disposal, preventing late keyboard, gamepad, or touch state from re-entering a torn-down flight runtime.

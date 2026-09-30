@@ -497,30 +497,34 @@ export class SettlementSystem {
     this.root.name = 'Settlements'
     scene.add(this.root)
     if (typeof Worker !== 'undefined') {
-      this.worker = new Worker(new URL('./settlement.worker.ts', import.meta.url), { type: 'module' })
-      this.worker.onmessage = (event: MessageEvent<SettlementWorkerReply>) => {
-        const result = event.data
-        // A reseed can clear the stream while the previous worker request is
-        // still running. Only the matching request may release the current
-        // in-flight slot; an older reply must never unblock or overwrite a
-        // newer destination stream.
-        const current = this.inFlight
-        const matchesCurrent = !!current
-          && current.generation === result.generation
-          && current.key === result.key
-        if (matchesCurrent) this.inFlight = null
-        if (result.generation !== this.generation) return
-        if (result.type === 'settlement') {
-          if (this.checked.has(result.key) && result.plan) {
-            this.scheduleLinks(result.plan, result.key)
-            this.ready.push({ key: result.key, plan: result.plan })
+      try {
+        this.worker = new Worker(new URL('./settlement.worker.ts', import.meta.url), { type: 'module' })
+        this.worker.onmessage = (event: MessageEvent<SettlementWorkerReply>) => {
+          const result = event.data
+          // A reseed can clear the stream while the previous worker request is
+          // still running. Only the matching request may release the current
+          // in-flight slot; an older reply must never unblock or overwrite a
+          // newer destination stream.
+          const current = this.inFlight
+          const matchesCurrent = !!current
+            && current.generation === result.generation
+            && current.key === result.key
+          if (matchesCurrent) this.inFlight = null
+          if (result.generation !== this.generation) return
+          if (result.type === 'settlement') {
+            if (this.checked.has(result.key) && result.plan) {
+              this.scheduleLinks(result.plan, result.key)
+              this.ready.push({ key: result.key, plan: result.plan })
+            }
+          } else if (this.checkedLinks.has(result.key) && result.road) {
+            const job = this.roadJobs.get(result.key)
+            if (job) this.readyRoads.push({ ...job, road: result.road })
           }
-        } else if (this.checkedLinks.has(result.key) && result.road) {
-          const job = this.roadJobs.get(result.key)
-          if (job) this.readyRoads.push({ ...job, road: result.road })
         }
+        this.worker.onerror = () => this.handleWorkerFailure()
+      } catch {
+        this.worker = null
       }
-      this.worker.onerror = () => this.handleWorkerFailure()
     }
     for (const material of [this.asphalt, this.gravelShoulder, this.highway, this.bridgeDeck, this.highwayEdge]) {
       this.configureWeatherRoadMaterial(material)
