@@ -957,6 +957,25 @@ describe('sortie contracts', () => {
     expect(tracker.finish(99, 0)).toBe(MAX_CONTRACT_SCORE)
   })
 
+  it('rejects negative fuel telemetry for DEADSTICK', () => {
+    const tracker = new SortieContractTracker()
+    let deadstickSeed = -1
+    for (let seed = 0; seed < 4_096; seed += 1) {
+      tracker.reset(seed, 5, true)
+      if (tracker.kind === 'deadstick') {
+        deadstickSeed = seed
+        break
+      }
+    }
+    expect(deadstickSeed).toBeGreaterThanOrEqual(0)
+    tracker.reset(deadstickSeed, 5, true)
+    tracker.recordDeadstick(-0.01)
+    expect(tracker.progress).toBe(0)
+    expect(tracker.complete).toBe(false)
+    tracker.recordDeadstick(0)
+    expect(tracker.complete).toBe(true)
+  })
+
   it('accumulates only airborne time during a weather-front shift', () => {
     const tracker = new SortieContractTracker()
     let frontSeed = -1

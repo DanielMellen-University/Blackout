@@ -695,7 +695,7 @@ export class SortieContractTracker {
   /** Complete only after an airborne sortie actually runs the tank dry. */
   recordDeadstick(fuelFraction: number, airborne = true): void {
     if (this.definition?.kind !== 'deadstick' || this.completeValue || airborne !== true || this.deadstickTriggered) return
-    if (!Number.isFinite(fuelFraction) || fuelFraction > 0.0001) return
+    if (!Number.isFinite(fuelFraction) || fuelFraction < 0 || fuelFraction > 0.0001) return
     this.deadstickTriggered = true
     this.progressValue = 1
     this.completeValue = true
