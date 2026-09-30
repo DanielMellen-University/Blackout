@@ -156,15 +156,19 @@ function readSeededRandomRecordEntries(storage: IndexedRecordStorage): SeededRan
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    const entries: SeededRandomRecordEntry[] = []
+    const entriesById = new Map<string, SeededRandomRecordEntry>()
     for (const value of parsed) {
       if (!value || typeof value !== 'object') continue
       const candidate = value as Partial<SeededRandomRecordEntry>
       if (typeof candidate.id !== 'string' || !SEEDED_RANDOM_RECORD_ID.test(candidate.id) ||
         !Number.isFinite(candidate.touched)) continue
-      entries.push({ id: candidate.id, touched: Math.max(0, Math.floor(candidate.touched!)) })
+      const touched = Math.max(0, Math.floor(candidate.touched!))
+      const existing = entriesById.get(candidate.id)
+      if (!existing || touched > existing.touched) {
+        entriesById.set(candidate.id, { id: candidate.id, touched })
+      }
     }
-    return entries.slice(0, SEEDED_RANDOM_RECORD_RETENTION * 4)
+    return Array.from(entriesById.values()).slice(0, SEEDED_RANDOM_RECORD_RETENTION * 4)
   } catch {
     return []
   }

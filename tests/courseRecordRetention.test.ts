@@ -73,4 +73,31 @@ describe('rotating course record retention', () => {
     const manifest = JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY) ?? '[]') as unknown[]
     expect(manifest).toHaveLength(SEEDED_RANDOM_RECORD_RETENTION)
   })
+
+  it('deduplicates malformed seeded-world manifests using the newest touch', () => {
+    const data = new Map<string, string>()
+    const duplicateId = 'seed:4:orbit:custom'
+    const storage: IndexedRecordStorage = {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) => data.set(key, value),
+      removeItem: (key) => data.delete(key),
+    }
+    data.set(SEEDED_RANDOM_RECORDS_STORAGE_KEY, JSON.stringify([
+      { id: duplicateId, touched: 1 },
+      { id: duplicateId, touched: 9 },
+      { id: 'seed:2:ridge:custom', touched: 8 },
+      { id: 'not-a-seed', touched: 99 },
+    ]))
+
+    touchSeededRandomCourseRecord(storage, 'seed:99:orbit:custom', 10)
+
+    const manifest = JSON.parse(data.get(SEEDED_RANDOM_RECORDS_STORAGE_KEY) ?? '[]') as Array<{ id: string; touched: number }>
+    expect(manifest.filter(entry => entry.id === duplicateId)).toHaveLength(1)
+    expect(manifest.find(entry => entry.id === duplicateId)?.touched).toBe(9)
+    expect(manifest.map(entry => entry.id)).toEqual([
+      'seed:99:orbit:custom',
+      duplicateId,
+      'seed:2:ridge:custom',
+    ])
+  })
 })

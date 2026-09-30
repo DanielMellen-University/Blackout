@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.611** Deduplicate malformed seeded-world retention manifests by seed identity, preserving the newest touch instead of wasting bounded record slots.
+
 - **10.610** Clear stale explicit-seed identity when course selection changes through another tab or a storage reset, keeping the next random launch on the shared bounded record key.
 
 - **10.609** Keep the live HUD BUFFET cue on the ungated weather drive so gear damp restrains camera and airframe motion without stealing the weather read on approach.
