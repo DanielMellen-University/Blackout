@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.719** Align hidden debug flight telemetry with the authoritative engine state so nonlinear target speed, resolved lever, and afterburner lockout stay truthful, with regression coverage for invalid target values.
 - **10.718** Remove the temporary resident-chunk array from terrain diagnostics and prefer the smallest desired tile during overlapping LOD replacements, with regression coverage for coarse-to-near ownership.
 - **10.717** Route normal gate guidance through the active camera projection, fixing the mirrored cockpit left/right cue while preserving the existing bounded HUD and navigation paths.
 - **10.716** Add a cached target-speed marker to the live IAS dial, clamped to the visible envelope so current airspeed and ENG% equilibrium are readable without new geometry, draw calls, or per-frame DOM churn.

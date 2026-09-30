@@ -7,7 +7,7 @@ import {
   type Scene,
 } from 'three'
 import type { Aircraft } from '../aircraft/Aircraft'
-import { flightConfig } from '../aircraft/flightConfig'
+import type { EngineState } from '../aircraft/EngineState'
 import { displayedKnots } from '../core/airspeed'
 import {
   OPS_PAD_INNER,
@@ -24,6 +24,15 @@ export interface DebugRenderStats {
   drawCalls: number
   triangles: number
   streaming: TerrainStreamingStats
+}
+
+/**
+ * Keep the hidden telemetry aligned with the same resolved target that drives
+ * thrust, audio, afterburner visuals, and the live HUD.
+ */
+export function debugTargetSpeedKnots(engine: Pick<EngineState, 'targetSpeed'>): number {
+  const targetSpeed = Number.isFinite(engine.targetSpeed) ? Math.max(0, engine.targetSpeed) : 0
+  return displayedKnots(targetSpeed)
 }
 
 /** Keep optional performance telemetry finite before it reaches the debug DOM. */
@@ -116,9 +125,8 @@ export class DebugOverlay {
     const c = sampleClimate(x, z)
     const pad = getOpsPad()
     const kts = displayedKnots(aircraft.speed)
-    const targetKts = aircraft.controls.boost
-      ? displayedKnots(flightConfig.maxSpeedBoost)
-      : displayedKnots(aircraft.controls.throttle * flightConfig.maxSpeed)
+    const engine = aircraft.engineState
+    const targetKts = debugTargetSpeedKnots(engine)
     const blend = opsPadBlend(x, z)
     const padDist = pad ? Math.hypot(x - pad.x, z - pad.z) : -1
 
@@ -130,7 +138,7 @@ export class DebugOverlay {
       `water r${c.features.river.toFixed(2)} lk${c.features.lake.toFixed(2)} rv${c.features.ravine.toFixed(2)}`,
       `pad   ${pad ? `${pad.x.toFixed(0)},${pad.z.toFixed(0)} y=${pad.y.toFixed(1)}` : 'off'}  d=${padDist.toFixed(0)}  blend=${blend.toFixed(2)}`,
       `spawn ${spawn.biome}  yaw=${((spawn.yaw * 180) / Math.PI).toFixed(0)}  y=${spawn.y.toFixed(1)}`,
-      `ias   ${kts.toFixed(0)} kts  tgt ${targetKts.toFixed(0)}  eng ${(aircraft.controls.throttle * 100).toFixed(1)}%${aircraft.controls.boost ? ' BOOST' : ''}`,
+      `ias   ${kts.toFixed(0)} kts  tgt ${targetKts.toFixed(0)}  eng ${(engine.lever * 100).toFixed(1)}%${engine.afterburnerActive ? ' BOOST' : engine.afterburnerRequested ? ' BOOST LOCK' : ''}`,
       `gnd   ${aircraft.onGround ? 'yes' : 'no'}  impactVy ${aircraft.impactVy.toFixed(1)}  cam ${cam}  ${fps.toFixed(0)} fps`,
       debugPerformanceLine(performance),
     ].join('\n')
