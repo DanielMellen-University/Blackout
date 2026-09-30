@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.637** Fade settlement facade windows and panel rhythm with view distance so close buildings stay readable while distant skylines stop shimmering, without adding instances or draw calls.
 - **10.636** Break up river shading with darker low-saturation water, broad surface variation, and restrained flow highlights so channels stop reading as uniform cyan ribbons without adding geometry or draw calls.
 - **10.635** Increase only the stormy-night readability lift so rain and cloud cover preserve terrain and aircraft silhouettes without brightening clear nights or lightning flashes.
 - **10.634** Replace sharp lowland grass cones with rounded instanced ground-cover clumps so snow and weather shading cannot turn smooth green terrain into white spike fields.

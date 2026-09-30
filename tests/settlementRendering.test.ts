@@ -334,9 +334,11 @@ describe('settlement rendering and lifecycle', () => {
       expect(shader.fragmentShader).toContain('(.42 + (1.0 - settlementDaylight) * .24)')
       expect(shader.fragmentShader).toContain('panelPeriod')
       expect(shader.fragmentShader).toContain('floorPeriod')
-      expect(shader.fragmentShader).toContain('totalEmissiveRadiance += windowColor * windowMask')
+      expect(shader.fragmentShader).toContain('settlementDetailFade')
+      expect(shader.fragmentShader).toContain('totalEmissiveRadiance += windowColor * windowMask * nightFactor * settlementDetailFade')
       expect(shader.fragmentShader).toContain('vec3(.012, .018, .03)')
       expect(system.lightingEffects.daylight).toBe(1)
+      expect(walls.customProgramCacheKey()).toBe('settlement-facades-weather-v6')
     } finally {
       system.dispose()
     }

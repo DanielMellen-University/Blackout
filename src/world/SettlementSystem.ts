@@ -632,8 +632,14 @@ export class SettlementSystem {
         vec3 coolWindows = vec3(.075, .12, .15);
         vec3 windowColor = mix(warmWindows, coolWindows, settlementDaylight);
         windowColor = mix(windowColor, vec3(.32, .58, .78), smoothstep(.72, .96, fract(settlementSeed * 13.7)) * .42);
+        // High-frequency facade rhythm is useful close to the aircraft but
+        // turns into shimmer across a distant skyline. Fade it in view space
+        // so far buildings keep their silhouette without spending the same
+        // contrast budget as near walls.
+        float settlementDetailFade = 1.0 - smoothstep(560.0, 2600.0, length(vViewPosition));
         float lightVariation = mix(.58, 1.0, smoothstep(.18, .82, fract(settlementSeed * 19.1 + grid.x * .13)));
         float windowStrength = windowMask * lightVariation * (.42 + (1.0 - settlementDaylight) * .24);
+        windowStrength *= settlementDetailFade;
         diffuseColor.rgb = mix(diffuseColor.rgb, windowColor, windowStrength);
         // Night lighting can leave a whole skyline below the tone-mapper's
         // useful range when the moon is behind cloud or below the horizon.
@@ -642,7 +648,7 @@ export class SettlementSystem {
         // materials, adding lights, or creating extra draw calls.
         float nightFactor = 1.0 - settlementDaylight;
         totalEmissiveRadiance += vec3(.012, .018, .03) * nightFactor;
-        totalEmissiveRadiance += windowColor * windowMask * nightFactor * .16;
+        totalEmissiveRadiance += windowColor * windowMask * nightFactor * settlementDetailFade * .16;
         // A second, low-contrast scale breaks large walls into readable
         // facade panels and floor bands. It is material-only, so villages
         // and cities gain architectural rhythm without extra instance draws.
@@ -653,13 +659,13 @@ export class SettlementSystem {
         float floorCell = fract(settlementUv.y / floorPeriod);
         float floorEdge = 1.0 - smoothstep(.04, .13, min(floorCell, 1.0 - floorCell));
         vec3 facadeTrim = mix(vec3(.68, .72, .7), vec3(1.04, .92, .72), fract(settlementSeed * 3.7));
-        float trimMask = settlementWall * (panelEdge * .7 + floorEdge * .42);
+        float trimMask = settlementWall * (panelEdge * .7 + floorEdge * .42) * settlementDetailFade;
         diffuseColor.rgb = mix(diffuseColor.rgb, facadeTrim, trimMask * .12);
         diffuseColor.rgb *= 1.0 - settlementRain * .08;
         float wallSnowMask = (1.0 - settlementWall) * settlementSnow * .2;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.68, .74, .8), wallSnowMask);`)
     }
-    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v5'
+    this.walls.customProgramCacheKey = () => 'settlement-facades-weather-v6'
   }
 
   setWeatherEffects(rain: number, snow: number, daylight = this.buildingDaylight.value): void {
