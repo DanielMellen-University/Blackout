@@ -17,6 +17,10 @@ import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlemen
 import type { RadarLandmark } from '../systems/RadarSystem'
 import type { RenderQuality } from '../core/RenderQuality'
 
+function finiteWeather01(value: number): number {
+  return Number.isFinite(value) ? MathUtils.clamp(value, 0, 1) : 0
+}
+
 // Terrain horizon growth must not quadruple settlement planning work.
 const LOAD_RADIUS = Math.min(FOG_FAR, 15120)
 const DETAIL_RADIUS = 4200
@@ -608,11 +612,14 @@ export class SettlementSystem {
   }
 
   setWeatherEffects(rain: number, snow: number, daylight = this.buildingDaylight.value): void {
-    this.roadRain.value = MathUtils.clamp(rain, 0, 1)
-    this.roadSnow.value = MathUtils.clamp(snow, 0, 1)
+    const safeRain = finiteWeather01(rain)
+    const safeSnow = finiteWeather01(snow)
+    const safeDaylight = finiteWeather01(daylight)
+    this.roadRain.value = safeRain
+    this.roadSnow.value = safeSnow
     this.buildingRain.value = this.roadRain.value
     this.buildingSnow.value = this.roadSnow.value
-    this.buildingDaylight.value = MathUtils.clamp(daylight, 0, 1)
+    this.buildingDaylight.value = safeDaylight
     this.streetLampGlow.opacity = .06 + (1 - this.buildingDaylight.value) * .72
   }
 

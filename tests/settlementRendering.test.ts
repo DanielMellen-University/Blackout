@@ -181,6 +181,10 @@ describe('settlement rendering and lifecycle', () => {
       system.setWeatherEffects(.1, .2, .4)
       expect(system.lightingEffects).toEqual({ daylight: .4 })
       expect((system as unknown as { streetLampGlow: { opacity: number } }).streetLampGlow.opacity).toBeCloseTo(.492)
+      system.setWeatherEffects(Number.NaN, Number.POSITIVE_INFINITY, Number.NaN)
+      expect(system.weatherEffects).toEqual({ rain: 0, snow: 0 })
+      expect(system.lightingEffects).toEqual({ daylight: 0 })
+      expect((system as unknown as { streetLampGlow: { opacity: number } }).streetLampGlow.opacity).toBeCloseTo(.78)
     } finally {
       system.dispose()
     }
