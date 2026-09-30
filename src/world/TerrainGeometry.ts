@@ -9,7 +9,10 @@ export type TerrainLod = 0 | 1 | 2
 export type TerrainGeometryQuality = 'full' | 'fallback'
 const SEGS_NEAR = 24
 const SEGS_MID = 12
-const SEGS_FAR = 6
+// Far tiles still shape the visible mountain horizon. Six samples made the
+// otherwise rounded landforms collapse into triangular needle silhouettes;
+// eight keeps the horizon smooth while remaining far below mid-tile detail.
+const SEGS_FAR = 8
 const WATER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 7, 1: 20, 2: 60 }
 const WATER_MAX_SEGS: Record<TerrainLod, number> = { 0: 56, 1: 40, 2: 16 }
 const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 10, 1: 26, 2: 70 }

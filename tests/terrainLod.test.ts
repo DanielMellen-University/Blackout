@@ -64,6 +64,11 @@ describe('terrain LOD bands', () => {
     expect(waterSegsForLod(2, CHUNK_SIZE * 3)).toBeLessThan(waterSegsForLod(1, CHUNK_SIZE * 2))
   })
 
+  it('keeps far terrain smooth without promoting it to mid-range detail', () => {
+    expect(segsForLod(2)).toBe(8)
+    expect(segsForLod(2)).toBeLessThan(segsForLod(1))
+  })
+
   it('reduces far fallback geometry without changing near detail', () => {
     const full = generateTerrainGeometry(0, 0, 2)
     const fallback = generateTerrainGeometry(0, 0, 2, 1, null, 'fallback')
