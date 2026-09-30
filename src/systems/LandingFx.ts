@@ -86,7 +86,7 @@ export class LandingFx {
   /** Keep the readable landing fade while removing drifting particle motion. */
   setReducedMotion(enabled: boolean): void {
     if (this.disposed) return
-    this.reducedMotion = enabled
+    this.reducedMotion = enabled === true
   }
 
   /** Burst on airborne-to-ground contact. Intensity 0-1. */

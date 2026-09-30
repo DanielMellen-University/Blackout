@@ -205,8 +205,9 @@ export class CameraSystem {
 
   /** Honor the browser's reduced-motion preference for camera-only effects. */
   setReducedMotion(enabled: boolean): void {
-    this.reducedMotion = enabled
-    if (enabled) {
+    if (this.disposed) return
+    this.reducedMotion = enabled === true
+    if (this.reducedMotion) {
       this.shake = 0
       this.boostSway = 0
       this.stormSway = 0

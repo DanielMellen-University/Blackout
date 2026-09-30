@@ -561,8 +561,8 @@ export class Aircraft {
   /** Disable continuous aircraft-only visual motion for motion-sensitive play. */
   setReducedMotion(enabled: boolean): void {
     if (this.disposed) return
-    this.reducedMotion = enabled
-    if (enabled) this.stormBuffet = 0
+    this.reducedMotion = enabled === true
+    if (this.reducedMotion) this.stormBuffet = 0
   }
 
   /** Tiny pooled airframe wobble while precipitation or strong gusts buffet the jet. */

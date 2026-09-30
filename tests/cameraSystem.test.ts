@@ -328,6 +328,24 @@ describe('external camera framing', () => {
     cameras.dispose()
   })
 
+  it('normalizes reduced-motion input and ignores late updates after disposal', () => {
+    const target = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }
+    vi.stubGlobal('window', target)
+    const canvas = { ...target, style: {} } as unknown as HTMLCanvasElement
+    const cameras = new CameraSystem(canvas)
+
+    cameras.setReducedMotion('true' as never)
+    expect(cameras.prefersReducedMotion).toBe(false)
+    cameras.setReducedMotion(true)
+    expect(cameras.prefersReducedMotion).toBe(true)
+    cameras.dispose()
+    cameras.setReducedMotion(false)
+    expect(cameras.prefersReducedMotion).toBe(true)
+  })
+
   it('attaches and detaches the camera so camera children render safely', () => {
     const target = {
       addEventListener: vi.fn(),

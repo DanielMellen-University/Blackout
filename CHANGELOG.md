@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.693** Normalize reduced-motion setters to strict booleans across visual systems and make CameraSystem ignore late calls after disposal, preventing malformed preference values from enabling effects or reviving torn-down state.
 - **10.692** Cache Atmosphere's pooled weather snapshot between weather mutations and simulation updates, removing duplicate same-frame profile and wind blending work without changing live transition behavior.
 - **10.691** Keep same-target weather requests idempotent during an active front transition, preventing repeated route/UI reconciliation from restarting weather shifts while preserving explicit instant snaps.
 - **10.690** Harden pooled water-wake teardown and reduced-motion transitions so late lifecycle calls are no-ops after disposal and active ditch splashes clear immediately when motion is reduced.

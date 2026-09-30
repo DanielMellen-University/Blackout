@@ -131,7 +131,7 @@ export class CrashFx {
   /** Keep the readable crash fade while removing large transient motion. */
   setReducedMotion(enabled: boolean): void {
     if (this.disposed) return
-    this.reducedMotion = enabled
+    this.reducedMotion = enabled === true
   }
 
   get bloom(): number {

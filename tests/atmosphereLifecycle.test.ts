@@ -32,6 +32,8 @@ describe('atmosphere lifecycle boundary', () => {
 
     expect(atmosphere.prefersReducedMotion).toBe(false)
     expect(atmosphere.lightningActive).toBe(true)
+    atmosphere.setReducedMotion('true' as never)
+    expect(atmosphere.prefersReducedMotion).toBe(false)
     atmosphere.setReducedMotion(true)
     expect(atmosphere.prefersReducedMotion).toBe(true)
     expect(atmosphere.lightningActive).toBe(false)

@@ -616,9 +616,10 @@ export class Atmosphere {
   /** Respect the browser's reduced-motion preference for storm flashes. */
   setReducedMotion(enabled: boolean): void {
     if (this.disposed) return
-    this.reducedMotion = enabled
-    this.sky?.setReducedMotion(enabled)
-    if (enabled) {
+    const reduced = enabled === true
+    this.reducedMotion = reduced
+    this.sky?.setReducedMotion(reduced)
+    if (reduced) {
       this.lightningFlash = 0
       this.lightningFlashAge = Infinity
     }
