@@ -536,6 +536,11 @@ export class SettlementSystem {
   private readonly roadJobs = new Map<string, RoadJob>()
   private readonly roadSources = new Map<string, Set<string>>()
   private queue: { cx: number; cz: number; key: string }[] = []
+  /** Reused stream-cell staging containers; crossings are event-driven but can happen frequently at top speed. */
+  private readonly wantedCells = new Set<string>()
+  private readonly pendingCells: { cx: number; cz: number; key: string; distance: number }[] = []
+  private readonly retainedQueue: { cx: number; cz: number; key: string }[] = []
+  private readonly retainedQueueKeys = new Set<string>()
   private linkQueue: RoadJob[] = []
   /** Numeric stream-cell coordinates avoid a string allocation on every frame. */
   private lastCellX = Number.NaN
@@ -857,6 +862,10 @@ export class SettlementSystem {
     this.roadJobs.clear()
     this.roadSources.clear()
     this.queue = []
+    this.wantedCells.clear()
+    this.pendingCells.length = 0
+    this.retainedQueue.length = 0
+    this.retainedQueueKeys.clear()
     this.linkQueue = []
     this.ready = []
     this.readyRoads = []
@@ -1030,8 +1039,10 @@ export class SettlementSystem {
         this.protectedRetryPending = true
         this.protectedRetryCooldown = 0
       }
-      const wanted = new Set<string>()
-      const pending: { cx: number; cz: number; key: string; distance: number }[] = []
+      const wanted = this.wantedCells
+      wanted.clear()
+      const pending = this.pendingCells
+      pending.length = 0
       const r = LOAD_RADIUS + SETTLEMENT_CELL_SIZE
       for (let cx = Math.floor((x - r) / SETTLEMENT_CELL_SIZE); cx <= Math.floor((x + r) / SETTLEMENT_CELL_SIZE); cx++) {
         for (let cz = Math.floor((z - r) / SETTLEMENT_CELL_SIZE); cz <= Math.floor((z + r) / SETTLEMENT_CELL_SIZE); cz++) {
@@ -1054,13 +1065,22 @@ export class SettlementSystem {
       // Keep queued cells that are still inside the new envelope. Replacing
       // the queue on every kilometre discarded work faster than the worker
       // could finish it at top speed, making valid settlements appear absent.
-      const retained = this.queue.filter(job => wanted.has(job.key) && !this.checked.has(job.key))
-      const retainedKeys = new Set(retained.map(job => job.key))
+      const retained = this.retainedQueue
+      retained.length = 0
+      const retainedKeys = this.retainedQueueKeys
+      retainedKeys.clear()
+      for (const job of this.queue) {
+        if (!wanted.has(job.key) || this.checked.has(job.key)) continue
+        retained.push(job)
+        retainedKeys.add(job.key)
+      }
       for (const job of pending) {
         if (!retainedKeys.has(job.key)) retained.push(job)
       }
-      this.queue = retained.sort((a, b) => {
-        const pad = getOpsPad()
+      this.queue.length = 0
+      this.queue.push(...retained)
+      const pad = getOpsPad()
+      this.queue.sort((a, b) => {
         const queueScore = (job: { cx: number; cz: number }): number => {
           // Some unit tests replace SettlementPlan with a minimal mock. The
           // optional call keeps that harness compatible while production
