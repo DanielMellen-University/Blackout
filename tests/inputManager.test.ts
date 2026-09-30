@@ -445,20 +445,23 @@ describe('flight input one-shot controls', () => {
     const input = new InputManager(fake.target)
     input.flightLive = true
 
-    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true })
+    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true, radarTargetCycle: true })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
     expect(input.consumeStabilityAssistToggle()).toBe(true)
-    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true })
+    expect(input.consumeRadarTargetCycle()).toBe(true)
+    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true, radarTargetCycle: true })
     expect(input.consumeCameraToggle()).toBe(false)
     expect(input.consumeGearToggle()).toBe(false)
     expect(input.consumeStabilityAssistToggle()).toBe(null)
+    expect(input.consumeRadarTargetCycle()).toBe(false)
 
     input.setTouchState(null)
-    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true })
+    input.setTouchState({ cameraToggle: true, gearToggle: true, stabilityAssistToggle: true, radarTargetCycle: true })
     expect(input.consumeCameraToggle()).toBe(true)
     expect(input.consumeGearToggle()).toBe(true)
     expect(input.consumeStabilityAssistToggle()).toBe(false)
+    expect(input.consumeRadarTargetCycle()).toBe(true)
     input.dispose()
   })
 
