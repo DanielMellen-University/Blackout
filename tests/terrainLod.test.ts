@@ -219,6 +219,31 @@ describe('TerrainSystem streaming LOD', () => {
     expect(terrain.chunkStats(0, 12)?.lod).toBe(2)
   }, 20_000)
 
+  it('reports the smallest active tile when coarse coverage overlaps a near tile', () => {
+    const terrain = new TerrainSystem(new Scene())
+    const internal = terrain as unknown as {
+      desiredTiles: Map<string, { cx: number; cz: number; size: number; dist: number }>
+      chunks: Map<string, { key: string; cx: number; cz: number; size: number; lod: 0 | 1 | 2; segs: number; heights: Float32Array }>
+    }
+    try {
+      internal.desiredTiles.set('0,0:2', { cx: 0, cz: 0, size: 2, dist: 12 })
+      internal.chunks.set('0,0:2', {
+        key: '0,0:2', cx: 0, cz: 0, size: 2, lod: 2, segs: 8, heights: new Float32Array(81),
+      })
+      expect(terrain.chunkStats(1, 1)?.lod).toBe(2)
+
+      internal.desiredTiles.set('1,1', { cx: 1, cz: 1, size: 1, dist: 2 })
+      internal.chunks.set('1,1', {
+        key: '1,1', cx: 1, cz: 1, size: 1, lod: 0, segs: 16, heights: new Float32Array(289),
+      })
+      expect(terrain.chunkStats(1, 1)?.lod).toBe(0)
+    } finally {
+      internal.chunks.clear()
+      internal.desiredTiles.clear()
+      terrain.dispose()
+    }
+  })
+
   it('updates rain and snow response without rebuilding the terrain stream', () => {
     const terrain = new TerrainSystem(new Scene())
     try {

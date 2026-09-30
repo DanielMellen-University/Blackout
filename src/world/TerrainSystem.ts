@@ -582,8 +582,23 @@ export class TerrainSystem {
     segs: number
     vertices: number
   } | null {
-    const chunk = [...this.chunks.values()].find(c => this.desiredTiles.has(c.key)
-      && cx >= c.cx && cx < c.cx + c.size && cz >= c.cz && cz < c.cz + c.size)
+    let chunk: Chunk | undefined
+    // The common near-field case is an exact size-one key. Keep this debug
+    // inspector allocation-free instead of spreading every resident chunk
+    // into a temporary array on each probe.
+    const direct = this.chunks.get(tileKey(cx, cz))
+    if (direct && this.desiredTiles.has(direct.key)) {
+      chunk = direct
+    } else {
+      for (const candidate of this.chunks.values()) {
+        if (!this.desiredTiles.has(candidate.key) ||
+          cx < candidate.cx || cx >= candidate.cx + candidate.size ||
+          cz < candidate.cz || cz >= candidate.cz + candidate.size) continue
+        // LOD replacements can overlap while fading. Prefer the smallest
+        // containing tile so stats follow the active near-field surface.
+        if (!chunk || candidate.size < chunk.size) chunk = candidate
+      }
+    }
     if (!chunk) return null
     return {
       lod: chunk.lod,

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.718** Remove the temporary resident-chunk array from terrain diagnostics and prefer the smallest desired tile during overlapping LOD replacements, with regression coverage for coarse-to-near ownership.
 - **10.717** Route normal gate guidance through the active camera projection, fixing the mirrored cockpit left/right cue while preserving the existing bounded HUD and navigation paths.
 - **10.716** Add a cached target-speed marker to the live IAS dial, clamped to the visible envelope so current airspeed and ENG% equilibrium are readable without new geometry, draw calls, or per-frame DOM churn.
 - **10.715** Show the engine's level-flight target speed beside ENG%, with cached knots formatting and accessible text so the arcade speed model is readable without changing flight physics.
