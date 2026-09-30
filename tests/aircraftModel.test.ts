@@ -14,6 +14,7 @@ import {
   resolveLoadFactor,
   stormAirframeFillIntensity,
   controlSurfaceTargets,
+  controlSurfaceTargetsInto,
   wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
 import { contactSweepNeedsDetailedProbes, runwayGripForWeather } from '../src/aircraft/FlightModel'
@@ -405,6 +406,21 @@ describe('rebuilt aircraft', () => {
     expect(boards.flaperonLeftX).toBeCloseTo(0.34)
     expect(boards.stabilatorLeftX).toBeCloseTo(0.28)
     expect(Math.abs(pull.flaperonLeftX)).toBeGreaterThan(0.2)
+  })
+
+  it('fills a caller-owned control target record for fixed-step reuse', () => {
+    const target = {
+      flaperonLeftX: 0,
+      flaperonRightX: 0,
+      stabilatorLeftX: 0,
+      stabilatorRightX: 0,
+      rudderY: 0,
+    }
+    const result = controlSurfaceTargetsInto(target, 0, -0.5, 0.25, true)
+    expect(result).toBe(target)
+    expect(result.flaperonLeftX).toBeCloseTo(0.46)
+    expect(result.flaperonRightX).toBeCloseTo(0.22)
+    expect(result.rudderY).toBeCloseTo(0.055)
   })
 
   it('builds hidden shared-material wingtip vapor nodes', () => {

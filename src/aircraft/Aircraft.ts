@@ -54,6 +54,14 @@ export type AircraftStatus = 'ok' | 'crashed' | 'landed'
 
 export type ContactSurfaceKind = 'land' | 'water'
 
+export interface ControlSurfaceTargets {
+  flaperonLeftX: number
+  flaperonRightX: number
+  stabilatorLeftX: number
+  stabilatorRightX: number
+  rudderY: number
+}
+
 /** Immutable snapshot of a newly detected terrain contact. */
 export interface AircraftImpact {
   /** Aircraft-origin position at the first detected contact. */
@@ -149,6 +157,13 @@ export class Aircraft {
   private stabilatorRight: Object3D | null = null
   private tailLeft: Object3D | null = null
   private tailRight: Object3D | null = null
+  private readonly controlSurfaceTarget: ControlSurfaceTargets = {
+    flaperonLeftX: 0,
+    flaperonRightX: 0,
+    stabilatorLeftX: 0,
+    stabilatorRightX: 0,
+    rudderY: 0,
+  }
   private afterburner: Object3D | null = null
   private readonly wheels: Object3D[] = []
   private wheelSpin = 0
@@ -736,7 +751,8 @@ export class Aircraft {
 
   /** Animate the procedural F-35's hinged panels from the live stick input. */
   private updateControlSurfaces(dt: number): void {
-    const targets = controlSurfaceTargets(
+    const targets = controlSurfaceTargetsInto(
+      this.controlSurfaceTarget,
       this.controls.pitch,
       this.controls.roll,
       this.controls.yaw,
@@ -1063,29 +1079,39 @@ export function resolveLoadFactor(
  * Arcade stick and speed-brake panel targets for the procedural F-35.
  * Throws stay chase-readable; holding B dumps the boards without new meshes.
  */
+export function controlSurfaceTargetsInto(
+  out: ControlSurfaceTargets,
+  pitch: number,
+  roll: number,
+  yaw: number,
+  airbrake: boolean,
+): ControlSurfaceTargets {
+  const p = MathUtils.clamp(Number.isFinite(pitch) ? pitch : 0, -1, 1)
+  const r = MathUtils.clamp(Number.isFinite(roll) ? roll : 0, -1, 1)
+  const y = MathUtils.clamp(Number.isFinite(yaw) ? yaw : 0, -1, 1)
+  const b = airbrake ? 1 : 0
+  out.flaperonLeftX = -p * 0.28 - r * 0.24 + b * 0.34
+  out.flaperonRightX = -p * 0.28 + r * 0.24 + b * 0.34
+  out.stabilatorLeftX = -p * 0.22 - r * 0.12 + b * 0.28
+  out.stabilatorRightX = -p * 0.22 + r * 0.12 + b * 0.28
+  out.rudderY = y * 0.22
+  return out
+}
+
+/** Public convenience wrapper; the aircraft hot path uses the caller-owned form. */
 export function controlSurfaceTargets(
   pitch: number,
   roll: number,
   yaw: number,
   airbrake: boolean,
-): {
-  flaperonLeftX: number
-  flaperonRightX: number
-  stabilatorLeftX: number
-  stabilatorRightX: number
-  rudderY: number
-} {
-  const p = MathUtils.clamp(Number.isFinite(pitch) ? pitch : 0, -1, 1)
-  const r = MathUtils.clamp(Number.isFinite(roll) ? roll : 0, -1, 1)
-  const y = MathUtils.clamp(Number.isFinite(yaw) ? yaw : 0, -1, 1)
-  const b = airbrake ? 1 : 0
-  return {
-    flaperonLeftX: -p * 0.28 - r * 0.24 + b * 0.34,
-    flaperonRightX: -p * 0.28 + r * 0.24 + b * 0.34,
-    stabilatorLeftX: -p * 0.22 - r * 0.12 + b * 0.28,
-    stabilatorRightX: -p * 0.22 + r * 0.12 + b * 0.28,
-    rudderY: y * 0.22,
-  }
+): ControlSurfaceTargets {
+  return controlSurfaceTargetsInto(
+    { flaperonLeftX: 0, flaperonRightX: 0, stabilatorLeftX: 0, stabilatorRightX: 0, rudderY: 0 },
+    pitch,
+    roll,
+    yaw,
+    airbrake,
+  )
 }
 
 /**
