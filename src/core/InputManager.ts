@@ -46,6 +46,7 @@ export class InputManager {
     airbrake: 'KeyB',
     gear: 'KeyG',
   }
+  private disposed = false
 
   cameraToggleQueued = false
   resetQueued = false
@@ -71,6 +72,7 @@ export class InputManager {
   }
 
   setKeyboardYawPreference(preference: KeyboardYawPreference): void {
+    if (this.disposed) return
     this.keyboardYawPreference = normalizeKeyboardYawPreference(preference)
   }
 
@@ -79,6 +81,7 @@ export class InputManager {
   }
 
   setKeyboardRollPreference(preference: KeyboardRollPreference): void {
+    if (this.disposed) return
     this.keyboardRollPreference = normalizeKeyboardRollPreference(preference)
   }
 
@@ -87,10 +90,12 @@ export class InputManager {
   }
 
   setKeyboardPitchPreference(preference: KeyboardPitchPreference): void {
+    if (this.disposed) return
     this.keyboardPitchPreference = normalizeKeyboardPitchPreference(preference)
   }
 
   setStabilityAssist(enabled: boolean): void {
+    if (this.disposed) return
     this.stabilityAssist = enabled === true
     this.controls.stabilityAssist = this.stabilityAssist
   }
@@ -104,6 +109,7 @@ export class InputManager {
   }
 
   setKeyboardBindings(bindings: KeyboardBindings): void {
+    if (this.disposed) return
     this.keyboardBindings = normalizeKeyboardBindings(bindings)
   }
 
@@ -119,6 +125,7 @@ export class InputManager {
    * so keyboard, gamepad, and touch state are cleared at the boundary.
    */
   setFlightLive(enabled: boolean): void {
+    if (this.disposed) return
     const next = enabled === true
     if (this.flightLive === next) {
       if (!next) {
@@ -135,6 +142,8 @@ export class InputManager {
   }
 
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     this.target.removeEventListener('keydown', this.onKeyDown)
     this.target.removeEventListener('keyup', this.onKeyUp)
     this.target.removeEventListener('blur', this.onBlur)
@@ -144,6 +153,13 @@ export class InputManager {
   }
 
   sampleWithDt(dt: number): ControlState {
+    if (this.disposed) {
+      this.keys.clear()
+      this.clearFlightState()
+      this.clearQueued()
+      this.controls.throttle = 0
+      return this.controls
+    }
     const step = Number.isFinite(dt) ? Math.max(0, Math.min(dt, 0.05)) : 0
     if (this.flightLive) this.updateGamepad(step)
     else this.clearGamepadState()
@@ -182,6 +198,7 @@ export class InputManager {
 
   /** Sync throttle/gear when the aircraft is reset to the runway. */
   resetFlightControls(throttle = 0): void {
+    if (this.disposed) return
     this.controls.throttle = clamp01(throttle)
     this.controls.boost = false
     this.controls.airbrake = false
@@ -194,6 +211,7 @@ export class InputManager {
 
   /** Feed the optional event-driven touch deck into the normal input sampler. */
   setTouchState(state: Partial<TouchInputState> | null): void {
+    if (this.disposed) return
     this.touchPitch = clampAxis(state?.pitch)
     this.touchYaw = clampAxis(state?.yaw)
     this.touchRoll = clampAxis(state?.roll)
@@ -216,11 +234,13 @@ export class InputManager {
 
   /** Drop a single code (e.g. Space used to start) without killing held stick. */
   release(code: string): void {
+    if (this.disposed) return
     this.keys.delete(code)
   }
 
   /** Full key wipe — window blur only. */
   clearKeys(): void {
+    if (this.disposed) return
     this.keys.clear()
     this.clearFlightState()
     this.clearQueued()
@@ -334,6 +354,7 @@ export class InputManager {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    if (this.disposed) return
     if (this.flightLive && this.shouldPreventBrowserDefault(e)) {
       e.preventDefault()
     }
@@ -392,10 +413,12 @@ export class InputManager {
   }
 
   private onKeyUp = (e: KeyboardEvent): void => {
+    if (this.disposed) return
     this.keys.delete(e.code)
   }
 
   private onBlur = (): void => {
+    if (this.disposed) return
     this.keys.clear()
     this.clearGamepadState()
     this.clearTouchState()

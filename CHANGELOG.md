@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.623** Make the input manager terminal after disposal, preventing late keyboard, gamepad, or touch state from re-entering a torn-down flight runtime.
+
 - **10.622** Make the terrain worker pool terminal after disposal, preventing post-shutdown quality changes from recreating workers or accepting new jobs.
 
 - **10.621** Make terrain streaming teardown idempotent, preventing repeated shutdown paths from disposing shared GPU materials more than once or touching an already-detached scene.

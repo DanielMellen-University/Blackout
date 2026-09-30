@@ -363,6 +363,27 @@ describe('flight input one-shot controls', () => {
     vi.unstubAllGlobals()
   })
 
+  it('keeps the input surface terminal after disposal', () => {
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    input.setFlightLive(true)
+    fake.fire('keydown', 'KeyW')
+    input.sampleWithDt(0)
+
+    input.dispose()
+    input.dispose()
+    input.setFlightLive(true)
+    input.setTouchState({ pitch: 1, throttle: 1, boost: true })
+    expect(input.sampleWithDt(.05)).toMatchObject({
+      pitch: 0,
+      yaw: 0,
+      roll: 0,
+      throttle: 0,
+      boost: false,
+    })
+    expect(input.consumeCameraToggle()).toBe(false)
+  })
+
   it('normalizes gamepad axes without leaking invalid values', () => {
     expect(normalizeGamepadAxis(0.1)).toBe(0)
     expect(normalizeGamepadAxis(1)).toBe(1)
