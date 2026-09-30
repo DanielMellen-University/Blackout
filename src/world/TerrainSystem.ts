@@ -893,9 +893,16 @@ export class TerrainSystem {
       this.activeKeys.add(key)
       if (!this.workers.submit(job)) {
         this.activeKeys.delete(key)
-        this.pending.push(pending)
-        this.pendingKeys.add(key)
-        this.pendingSorted = false
+        // A synchronous worker failure already routes every in-flight job,
+        // including this one, through the pool retry callback. Re-adding it
+        // here would duplicate the fallback queue entry. A false return with
+        // surviving workers still means the slot was unavailable, so retain
+        // the old local requeue path for that case.
+        if (this.workers.size > 0) {
+          this.pending.push(pending)
+          this.pendingKeys.add(key)
+          this.pendingSorted = false
+        }
         break
       }
     }

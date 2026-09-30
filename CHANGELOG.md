@@ -4,6 +4,8 @@
 
 ### Ship
 
+- **10.627** Prevent a synchronous terrain-worker post failure from duplicating the tile that the worker pool already requeued for synchronous fallback.
+
 - **10.626** Make terrain sampler registration owner-aware so stale world teardown cannot clear the newer world's contact, height, or surface callbacks during overlapping rebuilds.
 
 - **10.625** Make settlement worker construction fail closed so CSP or browser worker startup errors preserve synchronous settlement generation instead of aborting world creation.

@@ -203,6 +203,21 @@ describe('terrain streaming integration', () => {
     expect(terrain.streamingStats.pending).toBe(0)
   })
 
+  it('does not duplicate a tile already requeued after synchronous post failure', () => {
+    queue(5, 5)
+    vi.spyOn(FakeWorker.instances[0]!, 'postMessage').mockImplementation(() => {
+      throw new Error('worker closed before dispatch')
+    })
+
+    internal.dispatchWorkers()
+
+    expect(terrain.streamingStats.workers).toBe(0)
+    expect(terrain.streamingStats.pending).toBe(1)
+    internal.drainBuildQueue()
+    expect(internal.chunks.has(key(5))).toBe(true)
+    expect(terrain.streamingStats.pending).toBe(0)
+  })
+
   it('terminates all workers and never adds chunks from late replies after disposal', () => {
     queue(5, 5)
     internal.dispatchWorkers()
