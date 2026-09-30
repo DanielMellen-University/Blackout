@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.683** Keep a bounded collision-plan array alongside streamed settlements so swept obstacle checks avoid allocating a `Map` iterator on every physics step while retaining the existing settlement lookup map for streaming and UI work.
 - **10.682** Add a conservative segment-level settlement broadphase to swept obstacle checks, skipping repeated building-bucket probes when a high-speed flight path misses every loaded landmark while preserving exact nearby collision results.
 - **10.681** Remove the per-update obstacle-probe closure from flight warnings, preserving near/mid/far early exit and coordinates while keeping the HUD lookahead allocation-free.
 - **10.680** Reuse one caller-owned control-surface target record across aircraft fixed steps, removing steady-state target-object allocations while preserving the public helper and all articulation values.

@@ -521,6 +521,8 @@ export class SettlementSystem {
   private readonly buildingSnow = { value: 0 }
   private readonly buildingDaylight = { value: 1 }
   private readonly loaded = new Map<string, LoadedSettlement>()
+  /** Bounded collision plan view avoids a Map iterator on every physics sweep. */
+  private readonly loadedCollisionPlans: SettlementPlan[] = []
   private readonly radarLandmarkCache: RadarLandmark[] = []
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
@@ -748,6 +750,23 @@ export class SettlementSystem {
 
   get count(): number { return this.loaded.size }
 
+  private setLoaded(key: string, settlement: LoadedSettlement): void {
+    this.loaded.set(key, settlement)
+    this.loadedCollisionPlans.push(settlement.plan)
+  }
+
+  private deleteLoaded(key: string): LoadedSettlement | undefined {
+    const settlement = this.loaded.get(key)
+    if (!settlement) return undefined
+    this.loaded.delete(key)
+    const index = this.loadedCollisionPlans.indexOf(settlement.plan)
+    if (index >= 0) {
+      const last = this.loadedCollisionPlans.pop()
+      if (last && index < this.loadedCollisionPlans.length) this.loadedCollisionPlans[index] = last
+    }
+    return settlement
+  }
+
   /** Toggle the streamed settlement layer without discarding generated data. */
   setVisible(visible: boolean): void {
     this.root.visible = visible
@@ -827,6 +846,7 @@ export class SettlementSystem {
     for (const settlement of this.loaded.values()) this.remove(settlement)
     for (const connection of this.connections.values()) this.removeRoad(connection)
     this.loaded.clear()
+    this.loadedCollisionPlans.length = 0
     this.connections.clear()
     this.checked.clear()
     this.checkedLinks.clear()
@@ -900,7 +920,7 @@ export class SettlementSystem {
       this.scheduleLinks(plan, key)
       if (this.canLoad(plan, x, z)) {
         this.checked.add(key)
-        this.loaded.set(key, this.build(plan))
+        this.setLoaded(key, this.build(plan))
       } else {
         // Do not permanently consume an anchor when the shared instance
         // budget is temporarily full. Leaving it unchecked lets the normal
@@ -934,7 +954,7 @@ export class SettlementSystem {
         this.scheduleLinks(plan, key)
         if (this.canLoad(plan, x, z)) {
           this.checked.add(key)
-          this.loaded.set(key, this.build(plan))
+          this.setLoaded(key, this.build(plan))
         } else {
           this.queue = this.queue.filter(job => job.key !== key)
         }
@@ -970,7 +990,7 @@ export class SettlementSystem {
         continue
       }
       this.checked.add(key)
-      this.loaded.set(key, this.build(plan))
+      this.setLoaded(key, this.build(plan))
     }
     this.protectedRetryPending = retryPending
     if (retryPending) this.protectedRetryCooldown = PROTECTED_RETRY_INTERVAL_FRAMES
@@ -1024,7 +1044,7 @@ export class SettlementSystem {
         if (wanted.has(key)) continue
         const settlement = this.loaded.get(key)
         if (settlement) {
-          this.remove(settlement); this.loaded.delete(key)
+          this.remove(settlement); this.deleteLoaded(key)
         }
         this.releaseLinksForCell(key)
         this.checked.delete(key)
@@ -1102,7 +1122,7 @@ export class SettlementSystem {
       if (readyIndex < this.ready.length) this.ready[readyIndex] = last
     }
     if (ready && this.checked.has(ready.key)) {
-      if (this.canLoad(ready.plan, x, z)) this.loaded.set(ready.key, this.build(ready.plan))
+      if (this.canLoad(ready.plan, x, z)) this.setLoaded(ready.key, this.build(ready.plan))
       else this.ready.push(ready)
     }
     const readyRoadIndex = this.nearestReadyRoad(x, z)
@@ -1134,7 +1154,7 @@ export class SettlementSystem {
         const plan = settlementForCell(job.cx, job.cz)
         if (plan) {
           this.scheduleLinks(plan, job.key)
-          if (this.canLoad(plan, x, z)) this.loaded.set(job.key, this.build(plan))
+          if (this.canLoad(plan, x, z)) this.setLoaded(job.key, this.build(plan))
         }
       }
     } else if (!this.inFlight) {
@@ -1190,7 +1210,7 @@ export class SettlementSystem {
   }
 
   hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {
-    for (const { plan } of this.loaded.values()) if (hitsSettlement(plan, x, y, z, padding)) return true
+    for (const plan of this.loadedCollisionPlans) if (hitsSettlement(plan, x, y, z, padding)) return true
     return false
   }
 
@@ -1217,7 +1237,7 @@ export class SettlementSystem {
     const maxX = Math.max(px, cx)
     const minZ = Math.min(pz, cz)
     const maxZ = Math.max(pz, cz)
-    for (const { plan } of this.loaded.values()) {
+    for (const plan of this.loadedCollisionPlans) {
       const radius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : 0) + margin
       if (plan.x < minX - radius || plan.x > maxX + radius ||
         plan.z < minZ - radius || plan.z > maxZ + radius) continue
@@ -1266,7 +1286,7 @@ export class SettlementSystem {
       const farthest = this.loaded.get(farthestKey)
       if (!farthest) return false
       this.remove(farthest)
-      this.loaded.delete(farthestKey)
+      this.deleteLoaded(farthestKey)
     }
     return true
   }
