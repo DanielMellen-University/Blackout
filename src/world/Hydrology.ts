@@ -754,6 +754,87 @@ function lineIntersectsBounds(
     clip(-dz, az - minZ) && clip(dz, maxZ - az)
 }
 
+interface RiverBoundsQuery {
+  startCx: number
+  endCx: number
+  startCz: number
+  endCz: number
+  expandedMinX: number
+  expandedMinZ: number
+  expandedMaxX: number
+  expandedMaxZ: number
+}
+
+function normalizeRiverBounds(
+  minX: number,
+  minZ: number,
+  maxX: number,
+  maxZ: number,
+  margin: number,
+): RiverBoundsQuery | null {
+  if (!Number.isFinite(minX) || !Number.isFinite(minZ) ||
+    !Number.isFinite(maxX) || !Number.isFinite(maxZ) || !Number.isFinite(margin)) return null
+  if (maxX < minX || maxZ < minZ) return null
+  const safeMargin = Math.max(0, Math.min(CATCHMENT_SIZE * 2, margin))
+  const expandedMinX = minX - safeMargin, expandedMinZ = minZ - safeMargin
+  const expandedMaxX = maxX + safeMargin, expandedMaxZ = maxZ + safeMargin
+  return {
+    startCx: Math.floor(expandedMinX / CATCHMENT_SIZE),
+    endCx: Math.floor(expandedMaxX / CATCHMENT_SIZE),
+    startCz: Math.floor(expandedMinZ / CATCHMENT_SIZE),
+    endCz: Math.floor(expandedMaxZ / CATCHMENT_SIZE),
+    expandedMinX,
+    expandedMinZ,
+    expandedMaxX,
+    expandedMaxZ,
+  }
+}
+
+/**
+ * Visit reaches intersecting a normalized bounds query. Passing a result set
+ * collects every reach; passing null returns immediately on the first hit.
+ * The latter is used by terrain culling so a boolean query never materializes
+ * an intermediate array or performs work for distant catchments after a hit.
+ */
+function collectRiverReachesInBounds(
+  query: RiverBoundsQuery,
+  result: Set<Reach> | null,
+): boolean {
+  let found = false
+  for (let cz = query.startCz; cz <= query.endCz; cz++) for (let cx = query.startCx; cx <= query.endCx; cx++) {
+    const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
+    const region = catchment(cx, cz)
+    const localMinX = Math.max(0, query.expandedMinX - ox)
+    const localMaxX = Math.min(CATCHMENT_SIZE, query.expandedMaxX - ox)
+    const localMinZ = Math.max(0, query.expandedMinZ - oz)
+    const localMaxZ = Math.min(CATCHMENT_SIZE, query.expandedMaxZ - oz)
+    if (localMinX > localMaxX || localMinZ > localMaxZ) continue
+    const minBinX = Math.max(0, Math.floor(localMinX / BIN))
+    const maxBinX = Math.min(BINS - 1, Math.floor(localMaxX / BIN))
+    const minBinZ = Math.max(0, Math.floor(localMinZ / BIN))
+    const maxBinZ = Math.min(BINS - 1, Math.floor(localMaxZ / BIN))
+    const seen = result ? new Set<Reach>() : null
+    for (let iz = minBinZ; iz <= maxBinZ; iz++) for (let ix = minBinX; ix <= maxBinX; ix++) {
+      for (const reach of region.bins[iz * BINS + ix]!) {
+        if (seen) {
+          if (seen.has(reach)) continue
+          seen.add(reach)
+        }
+        const width = Math.max(reach.wa, reach.wb)
+        if (!lineIntersectsBounds(
+          reach.ax, reach.az, reach.bx, reach.bz,
+          query.expandedMinX - width, query.expandedMinZ - width,
+          query.expandedMaxX + width, query.expandedMaxZ + width,
+        )) continue
+        if (!result) return true
+        result.add(reach)
+        found = true
+      }
+    }
+  }
+  return found
+}
+
 /** Locate cached river reaches that touch an axis-aligned streamed tile. */
 export function riverReachesInBounds(
   minX: number,
@@ -762,43 +843,10 @@ export function riverReachesInBounds(
   maxZ: number,
   margin = 0,
 ): ReadonlyArray<Readonly<RiverReach>> {
-  if (![minX, minZ, maxX, maxZ, margin].every(Number.isFinite)) return []
-  if (maxX < minX || maxZ < minZ) return []
-  const safeMargin = Math.max(0, Math.min(CATCHMENT_SIZE * 2, margin))
-  const startCx = Math.floor((minX - safeMargin) / CATCHMENT_SIZE)
-  const endCx = Math.floor((maxX + safeMargin) / CATCHMENT_SIZE)
-  const startCz = Math.floor((minZ - safeMargin) / CATCHMENT_SIZE)
-  const endCz = Math.floor((maxZ + safeMargin) / CATCHMENT_SIZE)
-  const expandedMinX = minX - safeMargin, expandedMinZ = minZ - safeMargin
-  const expandedMaxX = maxX + safeMargin, expandedMaxZ = maxZ + safeMargin
+  const query = normalizeRiverBounds(minX, minZ, maxX, maxZ, margin)
+  if (!query) return []
   const result = new Set<Reach>()
-
-  for (let cz = startCz; cz <= endCz; cz++) for (let cx = startCx; cx <= endCx; cx++) {
-    const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
-    const region = catchment(cx, cz)
-    const localMinX = Math.max(0, expandedMinX - ox)
-    const localMaxX = Math.min(CATCHMENT_SIZE, expandedMaxX - ox)
-    const localMinZ = Math.max(0, expandedMinZ - oz)
-    const localMaxZ = Math.min(CATCHMENT_SIZE, expandedMaxZ - oz)
-    if (localMinX > localMaxX || localMinZ > localMaxZ) continue
-    const minBinX = Math.max(0, Math.floor(localMinX / BIN))
-    const maxBinX = Math.min(BINS - 1, Math.floor(localMaxX / BIN))
-    const minBinZ = Math.max(0, Math.floor(localMinZ / BIN))
-    const maxBinZ = Math.min(BINS - 1, Math.floor(localMaxZ / BIN))
-    const seen = new Set<Reach>()
-    for (let iz = minBinZ; iz <= maxBinZ; iz++) for (let ix = minBinX; ix <= maxBinX; ix++) {
-      for (const reach of region.bins[iz * BINS + ix]!) {
-        if (seen.has(reach)) continue
-        seen.add(reach)
-        const width = Math.max(reach.wa, reach.wb)
-        if (lineIntersectsBounds(
-          reach.ax, reach.az, reach.bx, reach.bz,
-          expandedMinX - width, expandedMinZ - width,
-          expandedMaxX + width, expandedMaxZ + width,
-        )) result.add(reach)
-      }
-    }
-  }
+  collectRiverReachesInBounds(query, result)
   return [...result]
 }
 
@@ -815,5 +863,6 @@ export function hydrologyIntersectsBounds(
   maxZ: number,
   margin = 0,
 ): boolean {
-  return riverReachesInBounds(minX, minZ, maxX, maxZ, margin).length > 0
+  const query = normalizeRiverBounds(minX, minZ, maxX, maxZ, margin)
+  return query ? collectRiverReachesInBounds(query, null) : false
 }

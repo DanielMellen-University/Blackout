@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, sampleHydrology, sampleHydrologyInto, waterLandmarks } from '../src/world/Hydrology'
+import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterLandmarks } from '../src/world/Hydrology'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
@@ -146,6 +146,21 @@ describe('natural drainage', () => {
     const midX = (reach!.ax + reach!.bx) / 2
     const midZ = (reach!.az + reach!.bz) / 2
     expect(hydrologyIntersectsBounds(midX - 90, midZ - 90, midX + 90, midZ + 90)).toBe(true)
+  })
+
+  it('keeps the boolean river query equivalent to the detailed query', () => {
+    for (const seed of [1, 73, 1337]) {
+      setWorldSeed(seed)
+      for (const bounds of [
+        [-18000, -12000, -14000, -8000, 0],
+        [-4200, 6800, 2200, 11600, 240],
+        [31000, -9000, 32600, -7400, 1200],
+      ] as const) {
+        const [minX, minZ, maxX, maxZ, margin] = bounds
+        expect(hydrologyIntersectsBounds(minX, minZ, maxX, maxZ, margin))
+          .toBe(riverReachesInBounds(minX, minZ, maxX, maxZ, margin).length > 0)
+      }
+    }
   })
 
   it('keeps broad river banks dry outside the analytic channel ribbon', () => {
