@@ -38,6 +38,8 @@ export interface ContactClassification {
   upY: number
   obstacle: boolean
   surface: ContactSurfaceKind
+  /** Upward ground-normal component for non-impact grounded rolls. */
+  surfaceNormalY?: number
 }
 
 const _fwd = new Vector3()
@@ -70,6 +72,7 @@ export class CollisionSystem {
     upY: 1,
     obstacle: false,
     surface: 'land',
+    surfaceNormalY: 1,
   }
   private readonly surfaceSample: GroundSurfaceSample = {
     height: 0,
@@ -130,6 +133,7 @@ export class CollisionSystem {
     contact.upY = pose.upY
     contact.obstacle = this.hitObstacle(aircraft)
     contact.surface = surface
+    contact.surfaceNormalY = aircraft.groundNormalY
     const outcome = classifyContactOutcome(contact)
     this.failureReasonValue = outcome.reason
     return outcome.result
@@ -163,13 +167,17 @@ export function classifyContactOutcome(input: ContactClassification): ContactOut
   const nVel = impact?.normalVelocity ?? vy
   const slope = impact
     ? Math.acos(MathUtils.clamp(impact.surfaceNormal.y, -1, 1))
-    : 0
+    : Math.acos(MathUtils.clamp(
+      Number.isFinite(input.surfaceNormalY) ? input.surfaceNormalY! : 1,
+      -1,
+      1,
+    ))
 
   if (surface === 'water' && airborne) return { result: 'ditch', reason: 'water' }
   if (input.upY < 0.35) return { result: 'crash', reason: 'attitude' }
   if (Math.abs(input.pitch) > C.maxLandingPitch) return { result: 'crash', reason: 'pitch' }
   if (Math.abs(input.roll) > C.maxLandingBank) return { result: 'crash', reason: 'bank' }
-  if (airborne && slope > C.maxLandingSlope) return { result: 'crash', reason: 'slope' }
+  if (slope > C.maxLandingSlope) return { result: 'crash', reason: 'slope' }
 
   const crashLimit = gearDown ? C.crashVy : C.crashVy * 0.55
   if (vy < crashLimit) return { result: 'crash', reason: 'vertical-speed' }

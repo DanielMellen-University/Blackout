@@ -131,6 +131,8 @@ export class Aircraft {
   }
   /** First terrain contact produced by the latest simulation step. */
   impact: AircraftImpact | null = null
+  /** Upward component of the resolved ground normal during grounded contact. */
+  groundNormalY = 1
   /**
    * Vertical speed at the moment we touched this frame (negative = downward).
    * 0 if we did not newly contact. Collision reads this, not post-clamp vy.
@@ -300,6 +302,7 @@ export class Aircraft {
     this.loadFactor = 1
     this.impactVy = 0
     this.impact = null
+    this.groundNormalY = 1
     this.groundCacheValid = false
     _spawnQuat.setFromAxisAngle(_Y_UP, yaw)
     this.orientation.copy(_spawnQuat)
@@ -390,6 +393,15 @@ export class Aircraft {
     resolveEngineState(this.controls, this.engineState, this.fuel.fraction, this.engineHeat.afterburnerLocked)
     updateEngineHeat(this.engineHeat, dt, this.controls.throttle, this.engineState.afterburnerActive)
     this.flight.step(this, dt)
+    if (this.impact) {
+      this.groundNormalY = Number.isFinite(this.impact.surfaceNormal.y)
+        ? MathUtils.clamp(this.impact.surfaceNormal.y, -1, 1)
+        : 1
+    } else if (dt > 0 && this.onGround) {
+      this.groundNormalY = this.flight.contactNormalY(this)
+    } else {
+      this.groundNormalY = 1
+    }
     this.updateLoadFactor(dt)
     this.autoGear()
     this.updateVisuals(dt, nowMs)
@@ -465,6 +477,7 @@ export class Aircraft {
     this.thermalLift = 0
     this.impactVy = 0
     this.impact = null
+    this.groundNormalY = 1
     this.groundCacheValid = false
     this.controls.throttle = 0
     this.controls.boost = false

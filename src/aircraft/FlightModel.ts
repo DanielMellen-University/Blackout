@@ -472,6 +472,18 @@ export class FlightModel {
     return contactMinYCached(x, z, gearDown, this.groundHeightCache)
   }
 
+  /** Resolve the current terrain normal through the fixed-step probe cache. */
+  contactNormalY(aircraft: Aircraft): number {
+    sampleGroundNormalCached(
+      aircraft.position.x,
+      aircraft.position.z,
+      2,
+      this.groundHeightCache,
+      _normal,
+    )
+    return Number.isFinite(_normal.y) ? MathUtils.clamp(_normal.y, -1, 1) : 1
+  }
+
   private grounded(y: number, minY: number, vy: number, upY: number): boolean {
     return y >= minY - GROUNDED_PENETRATION_TOLERANCE &&
       y <= minY + 0.18 && vy < 1.8 && upY > 0.35

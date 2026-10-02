@@ -50,6 +50,7 @@ describe('classifyContact', () => {
       upY: -1,
       obstacle: false,
       surface: 'land',
+      surfaceNormalY: 1,
     })
     expect(result).toBe('crash')
   })
@@ -134,6 +135,24 @@ describe('classifyContact', () => {
       surface: 'land',
     })
     expect(result).toBe('landed')
+  })
+
+  it('rejects a grounded roll on a slope beyond the landing envelope', () => {
+    const result = classifyContact({
+      airborne: false,
+      impact: null,
+      onPad: true,
+      gearDown: true,
+      vy: 0,
+      groundSpeed: 18,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'land',
+      surfaceNormalY: Math.cos(0.8),
+    })
+    expect(result).toBe('crash')
   })
 
   it('crashes airfield obstacle hits', () => {

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.725** Carry the cached terrain normal into non-impact landing classification so over-limit grounded slopes fail as a slope crash without adding airborne contact sampling.
 - **10.724** Add persistent Approach, Range, Precision, and Climb course-focus filters to the title and pause pickers, derived from authored route profiles without rebuilding worlds.
 - **10.723** Add persistent Relaxed, Standard, and Technical course filters to the title and pause pickers, with bounded counts, explicit empty states, and focused regression coverage.
 - **10.722** Remove avoidable settlement queue comparator closures during kilometre-cell crossings and add caller-owned terrain streaming telemetry for allocation-free debug profiling, with regression coverage for the stats contract.
