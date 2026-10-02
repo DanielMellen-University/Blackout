@@ -136,7 +136,16 @@ export class GhostReplay {
     this.recordPositions[index * 3 + 1] = position.y
     this.recordPositions[index * 3 + 2] = position.z
     this.recordCount += 1
-    this.nextRecordTime = time + GHOST_SAMPLE_INTERVAL
+    // Keep the sampling clock on its original cadence after a render hitch.
+    // Advancing from the previous target avoids shifting every later sample
+    // by the hitch duration, while the bounded skip keeps this call to one
+    // sample even when the clock jumps across many intervals.
+    let next = this.nextRecordTime + GHOST_SAMPLE_INTERVAL
+    if (next <= time) {
+      const skipped = Math.floor((time - next) / GHOST_SAMPLE_INTERVAL) + 1
+      next += skipped * GHOST_SAMPLE_INTERVAL
+    }
+    this.nextRecordTime = next
   }
 
   /** Persist only a new best score, keeping local storage bounded. */

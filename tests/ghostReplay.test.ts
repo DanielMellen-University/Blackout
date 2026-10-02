@@ -66,6 +66,20 @@ describe('GhostReplay', () => {
     expect(replay.recordedSampleCount).toBe(MAX_GHOST_SAMPLES)
   })
 
+  it('keeps the replay sampling phase after a long frame gap', () => {
+    const { values, storage } = storageFixture()
+    const replay = new GhostReplay(new Group(), storage)
+    replay.reset('seed:phase:balanced')
+    replay.record(.05, new Vector3(0, 0, 0))
+    replay.record(.35, new Vector3(1, 0, 0))
+    replay.record(.41, new Vector3(2, 0, 0))
+
+    expect(replay.recordedSampleCount).toBe(3)
+    expect(replay.commitIfBest(true, 10)).toBe(true)
+    const payload = JSON.parse(values.get(`${GHOST_STORAGE_PREFIX}seed:phase:balanced`)!) as { samples: number[] }
+    expect(payload.samples.filter((_value, index) => index % 4 === 0)).toEqual([.05, .35, .41])
+  })
+
   it('survives storage failures and disposal', () => {
     const storage = {
       getItem: () => { throw new Error('blocked') },
