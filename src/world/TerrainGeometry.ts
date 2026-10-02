@@ -169,6 +169,11 @@ export function buildTerrainSkirtGeometry(
   const skirtColors: number[] = []
   const half = span * .5
   const cell = span / segs
+  const addVertex = (x: number, y: number, z: number, source: number, shade: number): void => {
+    positions.push(x, y, z)
+    skirtColors.push(colors[source * 3]! * shade, colors[source * 3 + 1]! * shade,
+      colors[source * 3 + 2]! * shade)
+  }
   const add = (a: number, b: number): void => {
     // One wet point is enough to leave the whole edge open. This is slightly
     // conservative, but keeps a shoreline from acquiring a single isolated
@@ -178,20 +183,14 @@ export function buildTerrainSkirtGeometry(
     const az = -half + Math.floor(a / stride) * cell
     const bx = -half + (b % stride) * cell
     const bz = -half + Math.floor(b / stride) * cell
-    const values = [
-      [ax, heights[a]!, az], [bx, heights[b]!, bz],
-      [ax, heights[a]! - depth, az], [bx, heights[b]! - depth, bz],
-    ] as const
-    for (const [i, j, k] of [[0, 1, 2], [1, 3, 2]] as const) {
-      for (const index of [i, j, k]) {
-        const point = values[index]!
-        positions.push(point[0], point[1], point[2])
-        const source = index === 3 ? b : index === 2 ? a : index === 1 ? b : a
-        const shade = index >= 2 ? .97 : 1
-        skirtColors.push(colors[source * 3]! * shade, colors[source * 3 + 1]! * shade,
-          colors[source * 3 + 2]! * shade)
-      }
-    }
+    const heightA = heights[a]!
+    const heightB = heights[b]!
+    addVertex(ax, heightA, az, a, 1)
+    addVertex(bx, heightB, bz, b, 1)
+    addVertex(ax, heightA - depth, az, a, .97)
+    addVertex(bx, heightB, bz, b, 1)
+    addVertex(bx, heightB - depth, bz, b, .97)
+    addVertex(ax, heightA - depth, az, a, .97)
   }
   if (edges[0]) for (let ix = 0; ix < segs; ix++) add(ix, ix + 1)
   if (edges[1]) for (let iz = 0; iz < segs; iz++) add(iz * stride + segs, (iz + 1) * stride + segs)
