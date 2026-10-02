@@ -743,20 +743,20 @@ export class TerrainSystem {
     this.sampledChunkCz = cz
     this.sampledChunk = this.chunks.get(key) ?? null
     if (!this.sampledChunk) {
-      // Horizon tiles cover several cells. Keep the common near-cell lookup
-      // O(1), then fall back to the bounded resident tile set when a coarse
-      // tile owns the queried cell. The cell cache prevents repeated scans.
-      let best: Chunk | null = null
-      for (const chunk of this.chunks.values()) {
-        if (cx >= chunk.cx && cx < chunk.cx + chunk.size &&
-          cz >= chunk.cz && cz < chunk.cz + chunk.size) {
-          // LOD replacement keeps old coverage alive while the finer tile
-          // fades in. Prefer the smallest containing tile so contact follows
-          // the new surface during that overlap instead of stale far data.
-          if (!best || chunk.size < best.size) best = chunk
+      // Horizon tiles are power-of-two, quadtree-aligned leaves. Probe their
+      // owning keys from fine to coarse instead of scanning every resident
+      // tile on the first contact query in a cell. During an LOD transition
+      // both keys can be resident, so the first hit preserves the smallest
+      // containing-tile preference of the old scan.
+      for (let size = 2; size <= 32; size *= 2) {
+        const tileCx = Math.floor(cx / size) * size
+        const tileCz = Math.floor(cz / size) * size
+        const candidate = this.chunks.get(tileKey(tileCx, tileCz, size))
+        if (candidate) {
+          this.sampledChunk = candidate
+          break
         }
       }
-      this.sampledChunk = best
     }
     if (this.sampledChunkLookup.size >= SAMPLE_LOOKUP_LIMIT) {
       const oldest = this.sampledChunkLookup.keys().next().value

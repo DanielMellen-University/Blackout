@@ -27,6 +27,7 @@ interface Chunk { root: Group; fadeAge: number; alpha: number; targetAlpha: numb
 interface Internals {
   desiredTiles: Map<string, Tile>
   chunks: Map<string, Chunk>
+  sampledChunk: unknown
   retiring: Array<{ key: string; root: Group }>
   pending: (Tile & { rebuild: boolean })[]
   pendingKeys: Set<string>
@@ -225,6 +226,18 @@ describe('terrain streaming integration', () => {
     desire(0, 4, 2)
     internal.install(job(0, 1, 2), coarse)
     expect(internal.sampledChunkLookup.size).toBe(0)
+  })
+
+  it('chooses the finest aligned resident tile during overlapping LOD coverage', () => {
+    const coarse = generateTerrainGeometry(0, 0, 2, 4)
+    const fine = generateTerrainGeometry(CHUNK_SIZE, 0, 1)
+    desire(0, 30, 4)
+    internal.install(job(0, 2, 4), coarse)
+    desire(1, 4)
+    internal.install(job(1, 1), fine)
+
+    expect(terrain.sampleMeshHeight(CHUNK_SIZE * 1.2, CHUNK_SIZE * .2)).not.toBeNull()
+    expect(internal.sampledChunk).toBe(internal.chunks.get(key(1)))
   })
 
   it('clears every cached cell when an unloaded chunk is disposed', () => {
