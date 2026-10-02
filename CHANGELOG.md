@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.766** Pool terrain-skirt numeric staging buffers and verify previously built skirts remain stable across reuse, reducing coarse-tile generation garbage without changing LOD seams.
 - **10.765** Emit terrain skirt vertices directly instead of constructing per-edge point and triangle arrays, preserving LOD seam coverage and wet-edge behavior while reducing tile-build garbage.
 - **10.764** Reuse analytic basin and river-ribbon polygon inputs plus round-cap points, removing repeated container allocations while preserving clipped water geometry and flow attributes.
 - **10.763** Remove per-triangle water emission arrays from clipped terrain, analytic basin, and river ribbon geometry, preserving vertex attributes while reducing streamed water generation garbage.

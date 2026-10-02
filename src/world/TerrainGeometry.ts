@@ -20,6 +20,11 @@ const RIVER_MAX_SEGS: Record<TerrainLod, number> = { 0: 64, 1: 64, 2: 16 }
 const TERRAIN_SKIRT_DEPTH = 60
 const CLIMATE_POOL_LIMIT = 1024
 const climatePool: Climate[] = []
+// Skirt geometry is converted to typed attributes before this synchronous
+// builder returns, so its numeric staging arrays can be reused by the next
+// tile without retaining one allocation per coarse edge set.
+const skirtPositionsScratch: number[] = []
+const skirtColorsScratch: number[] = []
 /** Reused detailed river list; generation is synchronous within each worker. */
 const riverReachScratch: RiverReach[] = []
 /** Reused fixed-basin list; water meshes consume it before generation returns. */
@@ -165,8 +170,10 @@ export function buildTerrainSkirtGeometry(
   const stride = segs + 1
   if (heights.length !== stride * stride || waterLevels.length !== heights.length ||
     colors.length !== heights.length * 3 || segs < 1 || depth <= 0) return null
-  const positions: number[] = []
-  const skirtColors: number[] = []
+  const positions = skirtPositionsScratch
+  const skirtColors = skirtColorsScratch
+  positions.length = 0
+  skirtColors.length = 0
   const half = span * .5
   const cell = span / segs
   const addVertex = (x: number, y: number, z: number, source: number, shade: number): void => {

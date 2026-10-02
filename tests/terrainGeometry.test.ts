@@ -4,6 +4,7 @@ import { setWorldSeed } from '../src/world/noise'
 import { clearOpsPad, sampleClimate, sampleTerrainHeightFast, sampleTerrainSurface, sampleTerrainSurfaceHeightFast, sampleTerrainSurfaceInto, setOpsPad } from '../src/world/terrainSample'
 import {
   CHUNK_SIZE,
+  buildTerrainSkirtGeometry,
   deserializeTerrainGeometry,
   generateTerrainGeometry,
   terrainTransferables,
@@ -83,6 +84,25 @@ describe('worker terrain geometry', () => {
       water.dispose()
     }
     geometry.dispose()
+  })
+
+  it('keeps an earlier skirt geometry stable when the staging pool is reused', () => {
+    const heights = new Float32Array([10, 12, 14, 16])
+    const waterLevels = new Float32Array(heights.length)
+    const colors = new Float32Array([
+      1, 0, 0, 0, 1, 0,
+      0, 0, 1, 1, 1, 1,
+    ])
+    const first = buildTerrainSkirtGeometry(heights, waterLevels, colors, 1, 20, 5)
+    expect(first).not.toBeNull()
+    const original = [...first!.getAttribute('position').array]
+    const second = buildTerrainSkirtGeometry(
+      new Float32Array([30, 32, 34, 36]), waterLevels, colors, 1, 20, 7,
+    )
+    expect(second).not.toBeNull()
+    expect([...first!.getAttribute('position').array]).toEqual(original)
+    first!.dispose()
+    second!.dispose()
   })
 
   it('retains water appearance attributes through transfer for an analytic pond', () => {
