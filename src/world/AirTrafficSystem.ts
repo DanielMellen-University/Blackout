@@ -405,14 +405,9 @@ export class AirTrafficSystem {
   private renderInstances(playerX: number, playerZ: number): void {
     for (let index = 0; index < AIR_TRAFFIC_COUNT; index += 1) {
       const slot = this.slots[index]!
-      if (index >= this.activeCount) {
-        _matrix.makeScale(0, 0, 0)
-        this.mesh.setMatrixAt(index, _matrix)
-        this.contrailMesh.setMatrixAt(index, _matrix)
-        this.beaconMesh.setMatrixAt(index, _matrix)
-        continue
-      }
-
+      // Contact positions belong to the simulation, not the visual budget.
+      // Low quality hides meshes but radar and traffic contracts still need
+      // every deterministic slot to advance on the same cadence.
       const phase = slot.phase + this.elapsed * slot.angularVelocity
       const sin = Math.sin(phase)
       const cos = Math.cos(phase)
@@ -425,7 +420,7 @@ export class AirTrafficSystem {
       contact.y = y
       contact.z = z
       const distance = Math.hypot(x - playerX, z - playerZ)
-      if (!trafficInRange(distance)) {
+      if (index >= this.activeCount || !trafficInRange(distance)) {
         _matrix.makeScale(0, 0, 0)
         this.mesh.setMatrixAt(index, _matrix)
         this.contrailMesh.setMatrixAt(index, _matrix)

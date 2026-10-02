@@ -93,6 +93,25 @@ describe('bounded air traffic', () => {
     traffic.dispose()
   })
 
+  it('keeps hidden low-quality contacts moving for radar and contracts', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    traffic.reset(1234, 5_000, 0, 5_000)
+    const initial = traffic.getRadarLandmarks(5_000, 5_000, 8_000)
+      .find(contact => contact.id === 'traffic:0:0:5')
+    expect(initial).toBeDefined()
+    const initialX = initial!.x
+    const initialZ = initial!.z
+
+    traffic.setRenderQuality('low')
+    traffic.update(5_000, 5_000, AIR_TRAFFIC_UPDATE_INTERVAL_SEC)
+    const advanced = traffic.getRadarLandmarks(5_000, 5_000, 8_000)
+      .find(contact => contact.id === 'traffic:0:0:5')
+    expect(advanced).toBeDefined()
+    expect(Math.hypot(advanced!.x - initialX, advanced!.z - initialZ)).toBeGreaterThan(.01)
+    traffic.dispose()
+  })
+
   it('keeps close traffic on radar while the visual silhouette fades out', () => {
     expect(trafficRadarInRange(0, 8_000)).toBe(true)
     expect(trafficRadarInRange(899, 8_000)).toBe(true)
