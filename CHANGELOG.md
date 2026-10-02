@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.769** Make settlement worker payload validation allocation-free across plans, buildings, roads, and road points while preserving fail-closed malformed-reply handling.
 - **10.768** Consolidate settlement building, roof, civic-accent, and crown classification into one pass and scan plaza anchors directly, reducing large-landmark install allocations while preserving instance order and silhouettes.
 - **10.767** Make terrain worker geometry validation allocation-free by replacing temporary bounds and attribute arrays with scalar and direct-key checks, preserving fail-closed malformed-payload handling.
 - **10.766** Pool terrain-skirt numeric staging buffers and verify previously built skirts remain stable across reuse, reducing coarse-tile generation garbage without changing LOD seams.

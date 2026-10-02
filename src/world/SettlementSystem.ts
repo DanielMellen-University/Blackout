@@ -30,14 +30,19 @@ function isSettlementWorkerReply(value: unknown): value is SettlementWorkerReply
 function isSettlementPlan(value: unknown): value is SettlementPlan {
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.biome !== 'string' ||
     (value.kind !== 'city' && value.kind !== 'village') ||
-    ![value.x, value.y, value.z, value.radius].every(isFiniteNumber) ||
+    !isFiniteNumber(value.x) || !isFiniteNumber(value.y) ||
+    !isFiniteNumber(value.z) || !isFiniteNumber(value.radius) ||
     !Array.isArray(value.buildings) || !Array.isArray(value.roads)) return false
-  return value.buildings.every(isSettlementBuilding) && value.roads.every(isSettlementRoad)
+  for (const building of value.buildings) if (!isSettlementBuilding(building)) return false
+  for (const road of value.roads) if (!isSettlementRoad(road)) return false
+  return true
 }
 
 function isSettlementBuilding(value: unknown): value is SettlementBuilding {
-  if (!isRecord(value) || ![value.x, value.y, value.z, value.width, value.depth, value.height, value.yaw,
-    value.wallColor, value.roofColor].every(isFiniteNumber)) return false
+  if (!isRecord(value) || !isFiniteNumber(value.x) || !isFiniteNumber(value.y) ||
+    !isFiniteNumber(value.z) || !isFiniteNumber(value.width) || !isFiniteNumber(value.depth) ||
+    !isFiniteNumber(value.height) || !isFiniteNumber(value.yaw) ||
+    !isFiniteNumber(value.wallColor) || !isFiniteNumber(value.roofColor)) return false
   return (value.shape === 'block' || value.shape === 'slab' || value.shape === 'tower' ||
     value.shape === 'stepped' || value.shape === 'hangar') &&
     (value.roof === 'pitched' || value.roof === 'flat')
@@ -45,11 +50,17 @@ function isSettlementBuilding(value: unknown): value is SettlementBuilding {
 
 function isSettlementRoad(value: unknown): value is SettlementRoad {
   if (!isRecord(value) || !isFiniteNumber(value.width) || !Array.isArray(value.points)) return false
-  return value.points.every(point => {
-    if (!isRecord(point) || ![point.x, point.y, point.z].every(isFiniteNumber)) return false
-    return [point.leftX, point.leftY, point.leftZ, point.rightX, point.rightY, point.rightZ]
-      .every(value => value === undefined || isFiniteNumber(value))
-  })
+  for (const point of value.points) {
+    if (!isRecord(point)) return false
+    if (!isFiniteNumber(point.x) || !isFiniteNumber(point.y) || !isFiniteNumber(point.z) ||
+      point.leftX !== undefined && !isFiniteNumber(point.leftX) ||
+      point.leftY !== undefined && !isFiniteNumber(point.leftY) ||
+      point.leftZ !== undefined && !isFiniteNumber(point.leftZ) ||
+      point.rightX !== undefined && !isFiniteNumber(point.rightX) ||
+      point.rightY !== undefined && !isFiniteNumber(point.rightY) ||
+      point.rightZ !== undefined && !isFiniteNumber(point.rightZ)) return false
+  }
+  return true
 }
 
 function isFiniteNumber(value: unknown): value is number {
