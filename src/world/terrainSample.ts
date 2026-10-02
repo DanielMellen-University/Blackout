@@ -808,7 +808,9 @@ function biomeColorSolidInto(
   }
 }
 
-export function biomeColor(
+/** Fill a caller-owned RGB tuple for one terrain vertex. */
+export function biomeColorInto(
+  out: ColorTuple,
   biome: Biome,
   height: number,
   moisture: number,
@@ -821,7 +823,7 @@ export function biomeColor(
   biomeMix = 0,
   biomeWeights?: [Biome, number][],
   landform?: Climate['landform'],
-): [number, number, number] {
+): ColorTuple {
   const n = valueNoise(x / 90, z / 90)
   const speck = (n - 0.5) * 0.05
   const river = features?.river ?? 0
@@ -829,7 +831,7 @@ export function biomeColor(
   const pond = features?.pond ?? 0
   const stream = features?.stream ?? 0
   const ravine = features?.ravine ?? 0
-  const col: ColorTuple = [0, 0, 0]
+  const col = out
   if (biome === 'ocean' || biome === 'water') {
     // This mesh is sediment below the independent water surface, never blue
     // paint. Feature-aware mud and gravel tones keep a shallow exposed bank
@@ -1084,6 +1086,25 @@ export function biomeColor(
   }
 
   return col
+}
+
+/** Return a standalone RGB tuple for callers that do not already own storage. */
+export function biomeColor(
+  biome: Biome,
+  height: number,
+  moisture: number,
+  x: number,
+  z: number,
+  features?: TerrainFeatures,
+  coastal = 0,
+  land = 1,
+  biomeB: Biome = biome,
+  biomeMix = 0,
+  biomeWeights?: [Biome, number][],
+  landform?: Climate['landform'],
+): ColorTuple {
+  return biomeColorInto([0, 0, 0], biome, height, moisture, x, z,
+    features, coastal, land, biomeB, biomeMix, biomeWeights, landform)
 }
 
 /**

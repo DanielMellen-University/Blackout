@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
+import { applySlopeShading, applySlopeShadingInto, biomeColor, biomeColorInto, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto, sampleTerrainHeight, setOpsPad, type Biome } from '../src/world/terrainSample'
 import { createClimateSample } from '../src/world/Geography'
 
 describe('continuous terrain generation', () => {
@@ -110,6 +110,16 @@ describe('continuous terrain generation', () => {
     const expected = applySlopeShading([.42, .5, .28], .63)
     const actual: [number, number, number] = [0, 0, 0]
     applySlopeShadingInto(actual, .42, .5, .28, .63)
+    expect(actual).toEqual(expected)
+  })
+
+  it('fills a caller-owned terrain color tuple without replacing it', () => {
+    const weights: [Biome, number][] = [['plains', .5], ['hills', .3], ['forest', .1]]
+    const actual: [number, number, number] = [0, 0, 0]
+    const expected = biomeColor('plains', 240, .48, 520, 640, undefined, .2, 1, 'hills', .15,
+      weights, { ridge: .2, alpineValley: .1, plateau: 0, caldera: 0 })
+    expect(biomeColorInto(actual, 'plains', 240, .48, 520, 640, undefined, .2, 1, 'hills', .15,
+      weights, { ridge: .2, alpineValley: .1, plateau: 0, caldera: 0 })).toBe(actual)
     expect(actual).toEqual(expected)
   })
 

@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
-import { applySlopeShadingInto, biomeColor, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
+import { applySlopeShadingInto, biomeColorInto, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
 import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type RiverReach, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
@@ -323,6 +323,7 @@ export function generateTerrainGeometry(
   const basinMask = new Float32Array(pos.count)
   const stride = segs + 1
   const cell = span / segs
+  const vertexColor: [number, number, number] = [0, 0, 0]
   for (let i = 0; i < pos.count; i++) {
     const wx = originX + (i % stride) * span / segs
     const wz = originZ + Math.floor(i / stride) * span / segs
@@ -333,12 +334,12 @@ export function generateTerrainGeometry(
     basinMask[i] = climate.biome === 'ocean' || (climate.biome === 'water' &&
       climate.features.lake + climate.features.pond > climate.features.river * .55) ? 1 : 0
     pos.setY(i, h)
-    const [r, g, b] = biomeColor(climate.biome, h, climate.moisture, wx, wz,
+    biomeColorInto(vertexColor, climate.biome, h, climate.moisture, wx, wz,
       climate.features, climate.coastal, climate.land, climate.biomeB, climate.biomeMix,
       climate.biomeWeights, climate.landform)
-    colors[i * 3] = r
-    colors[i * 3 + 1] = g
-    colors[i * 3 + 2] = b
+    colors[i * 3] = vertexColor[0]
+    colors[i * 3 + 1] = vertexColor[1]
+    colors[i * 3 + 2] = vertexColor[2]
   }
   // Neighbour samples outside the tile give shared edges the same normal.
   // Clamping to an edge vertex used to halve the slope along every seam.
