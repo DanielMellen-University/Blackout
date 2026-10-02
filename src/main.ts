@@ -2976,6 +2976,7 @@ export async function boot(): Promise<void> {
           missionPhase: challenge.phase,
           gatesPassed: challenge.gatesPassed,
           gearDown: aircraft.controls.gearDown,
+          keyboardScheme: input.keyboardScheme,
         })
         : null
       hudFrame.timeMs = nowMs

@@ -22,6 +22,10 @@ import {
   redoutWashIntensity,
 } from '../systems/GLoadFeedback'
 import { formatWorldSeed } from '../core/WorldSeed'
+import {
+  keyboardControlSchemeLabel,
+  type KeyboardControlScheme,
+} from '../core/FlightPreferences'
 
 export type HudBannerTone = 'info' | 'success' | 'danger'
 
@@ -150,6 +154,7 @@ export function flightBriefingHint(state: {
   missionPhase: MissionPhaseCue | string
   gatesPassed: number
   gearDown: boolean
+  keyboardScheme?: KeyboardControlScheme
 }): string {
   const speed = Number.isFinite(state.speed) ? Math.max(0, state.speed) : 0
   const altitude = Number.isFinite(state.altitudeM) ? Math.max(0, state.altitudeM) : 0
@@ -169,7 +174,7 @@ export function flightBriefingHint(state: {
       ? 'PITCH TO CLIMB · FOLLOW THE ARROW TO GATE 1'
       : 'FOLLOW THE ARROW · FLY THROUGH GATE 1'
   }
-  return 'FOLLOW THE ARROW · A/D YAW · Q/E ROLL'
+  return `FOLLOW THE ARROW · ${keyboardControlSchemeLabel(state.keyboardScheme ?? 'arcade')}`
 }
 
 export type WeatherCue = 'calm' | 'active' | 'severe'

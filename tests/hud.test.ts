@@ -873,6 +873,15 @@ describe('HUD value formatting', () => {
     })).toBe('FOLLOW THE ARROW · A/D YAW · Q/E ROLL')
     expect(flightBriefingHint({
       onGround: false,
+      speed: 220,
+      altitudeM: 240,
+      missionPhase: 'running',
+      gatesPassed: 2,
+      gearDown: false,
+      keyboardScheme: 'conventional',
+    })).toBe('FOLLOW THE ARROW · A/D ROLL · Q/E YAW')
+    expect(flightBriefingHint({
+      onGround: false,
       speed: 120,
       altitudeM: 80,
       missionPhase: 'returning',

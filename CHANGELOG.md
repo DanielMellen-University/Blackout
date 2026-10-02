@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.740** Keep the first-sortie flight briefing hint aligned with the selected Arcade or Conventional keyboard control layout.
 - **10.739** Keep keyboard direction banners and axis documentation aligned with the selected Arcade or Conventional control layout.
 - **10.738** Add a persisted Arcade or Conventional keyboard control layout, keeping the default A/D yaw and Q/E roll scheme while allowing pilots to put roll on A/D and yaw on Q/E with live labels and focused input coverage.
 - **10.737** Cache each catchment's unique river-reach list so repeated terrain and water generation queries avoid flattening spatial bins and allocating a temporary deduplication set.
