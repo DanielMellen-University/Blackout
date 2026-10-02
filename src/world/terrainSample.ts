@@ -18,6 +18,7 @@ let opsZ = 0
 let opsY = 0
 let opsYaw = 0
 let opsOn = false
+let opsRevision = 0
 
 /** Reuse deterministic natural pads across retries without growing memory. */
 const SPAWN_CACHE_LIMIT = 24
@@ -67,6 +68,7 @@ export interface OpsPadSnapshot {
 /** Disable pad leveling while searching for a natural flat. */
 export function clearOpsPad(): void {
   opsOn = false
+  opsRevision++
 }
 
 /** Level only the immediate airfield to this surface height (not a corridor). */
@@ -76,6 +78,12 @@ export function setOpsPad(x: number, z: number, y: number, yaw?: number): void {
   opsY = y
   opsYaw = yaw !== undefined && Number.isFinite(yaw) ? yaw : 0
   opsOn = true
+  opsRevision++
+}
+
+/** Monotonic identity for the shared pad state, used to invalidate local caches. */
+export function getOpsPadRevision(): number {
+  return opsRevision
 }
 
 function padBlend(x: number, z: number): number {

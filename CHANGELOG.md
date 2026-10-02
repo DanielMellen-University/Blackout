@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.755** Invalidate the cached airfield obstacle frame when the shared OpsPad revision changes, preventing stale runway collisions after external pad updates without restoring per-probe allocations or trigonometry.
 - **10.754** Remove protected settlement retry jobs in place, avoiding queue-array allocations while preserving anchor priority and retry ordering.
 - **10.753** Cache the airfield runway frame used by swept obstacle probes, removing repeated pad copies and yaw trigonometry while preserving the aircraft collision envelope.
 - **10.752** Cache settlement building yaw sine and cosine in the occupancy index, removing repeated trig work from collision rejection without changing placement rules.

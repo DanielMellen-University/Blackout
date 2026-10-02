@@ -24,6 +24,7 @@ import {
   findPlayableSpawn,
   getOpsPad,
   getOpsPadInto,
+  getOpsPadRevision,
   setOpsPad,
   type FlatSpawn,
   type OpsPadSnapshot,
@@ -128,6 +129,7 @@ export class World {
   private obstacleFrameForwardZ = 1
   private obstacleFrameRightX = 1
   private obstacleFrameRightZ = 0
+  private obstacleFrameRevision = -1
 
   /** Current airfield spawn (flat biome pad). */
   spawn: SpawnPose = {
@@ -492,11 +494,17 @@ export class World {
     padding?: ObstaclePadding,
   ): boolean {
     if (this.disposed || !this.obstaclePad || !this.spawn || !finiteObstaclePoint(x, y, z)) return false
-    if (!this.obstacleFrameReady) {
+    const padRevision = getOpsPadRevision()
+    if (this.obstacleFrameRevision !== padRevision) {
       const pad = getOpsPadInto(this.obstaclePad)
-      if (!pad) return false
+      if (!pad) {
+        this.obstacleFrameReady = false
+        this.obstacleFrameRevision = padRevision
+        return false
+      }
       this.cacheObstacleFrame(pad.x, pad.z, pad.y, pad.yaw)
     }
+    if (!this.obstacleFrameReady) return false
     const dx = x - this.obstacleFrameX
     const dz = z - this.obstacleFrameZ
     const lx = dx * this.obstacleFrameRightX + dz * this.obstacleFrameRightZ
@@ -528,6 +536,7 @@ export class World {
     this.obstacleFrameRightX = Math.cos(safeYaw)
     this.obstacleFrameRightZ = -Math.sin(safeYaw)
     this.obstacleFrameReady = true
+    this.obstacleFrameRevision = getOpsPadRevision()
   }
 
   /**

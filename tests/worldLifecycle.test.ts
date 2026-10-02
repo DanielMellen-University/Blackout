@@ -208,6 +208,32 @@ describe('world lifecycle boundary', () => {
     }
   })
 
+  it('refreshes the cached runway frame when the shared pad moves', () => {
+    const world = Object.create(World.prototype) as World
+    ;(world as unknown as { disposed: boolean }).disposed = false
+    ;(world as unknown as { settlements: { hitObstacle: () => boolean } }).settlements = {
+      hitObstacle: () => false,
+    }
+    ;(world as unknown as { obstaclePad: { x: number; y: number; z: number; yaw: number } }).obstaclePad = {
+      x: 0,
+      y: 0,
+      z: 0,
+      yaw: 0,
+    }
+    ;(world as unknown as { spawn: { yaw: number } }).spawn = { yaw: 0 }
+
+    setOpsPad(0, 0, 0, 0)
+    try {
+      expect(world.hitObstacle(30, 5.8, 2)).toBe(true)
+      setOpsPad(10_000, 10_000, 0, 0)
+      expect(world.hitObstacle(30, 5.8, 2)).toBe(false)
+      clearOpsPad()
+      expect(world.hitObstacle(30, 5.8, 2)).toBe(false)
+    } finally {
+      clearOpsPad()
+    }
+  })
+
   it('skips detailed settlement probes when the whole sweep misses loaded plans', () => {
     const world = Object.create(World.prototype) as World
     ;(world as unknown as { disposed: boolean }).disposed = false
