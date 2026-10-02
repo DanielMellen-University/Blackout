@@ -354,12 +354,14 @@ describe('course library', () => {
       setItem: (key: string, value: string) => values.set(key, value),
     }
     expect(readSelectedCourseId(storage)).toBe('random')
+    expect(readSelectedCourseId(storage, 'training-orbit')).toBe('training-orbit')
     writeSelectedCourseId(storage, 'range-sweep')
     expect(readSelectedCourseId(storage)).toBe('range-sweep')
     writeSelectedCourseId(storage, 'not-a-course' as never)
     expect(values.get(COURSE_SELECTION_STORAGE_KEY)).toBe('random')
     values.set(COURSE_SELECTION_STORAGE_KEY, 'not-a-course')
     expect(readSelectedCourseId(storage)).toBe('random')
+    expect(readSelectedCourseId(storage, 'training-orbit')).toBe('training-orbit')
     expect(() => writeSelectedCourseId(null, 'training-orbit')).not.toThrow()
   })
 

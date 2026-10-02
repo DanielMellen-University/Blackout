@@ -977,11 +977,15 @@ function courseIdentitySuffix(id: CourseId): string {
 
 export function readSelectedCourseId(
   storage: Pick<Storage, 'getItem'> | null,
+  fallback: CourseId = 'random',
 ): CourseId {
+  const safeFallback = normalizeCourseId(fallback)
   try {
-    return courseDefinitionForId(storage?.getItem(COURSE_SELECTION_STORAGE_KEY)).id
+    const stored = storage?.getItem(COURSE_SELECTION_STORAGE_KEY)
+    if (stored === null || stored === undefined) return safeFallback
+    return normalizeCourseId(stored, safeFallback)
   } catch {
-    return 'random'
+    return safeFallback
   }
 }
 

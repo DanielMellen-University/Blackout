@@ -415,7 +415,9 @@ export async function boot(): Promise<void> {
 
   let recentCourseIds = readRecentCourseIds(qualityStorage)
   let favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
-  let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage)
+  // Give a brand-new pilot the clear onboarding route. Existing saved course
+  // choices still win, including an explicit Random selection.
+  let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage, 'training-orbit')
   const replayParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
     : null
@@ -1665,6 +1667,7 @@ export async function boot(): Promise<void> {
   const startGame = (): void => {
     if (playing) return
     rememberRecentCourse(selectedCourseId)
+    writeSelectedCourseId(qualityStorage, selectedCourseId)
     playing = true
     cameras.setMode(cameraPreference, aircraft)
     world.setSettlementsVisible(true)

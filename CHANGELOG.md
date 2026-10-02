@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.747** Start brand-new pilots in Training Orbit when no course preference exists, preserving saved Random selections and replay/custom-seed launches.
 - **10.746** Make Training Orbit a dependable onboarding route with locked clear midday conditions, while Random and advanced courses retain their full weather and time variety.
 - **10.745** Add a restrained single-mesh canopy frame to cockpit view, keeping first-person flight grounded without restoring the oversized cockpit geometry or adding per-frame work.
 - **10.744** Reuse the terrain scheduler's desired-key set across focus and LOD reschedules, reducing transient allocations during fast travel without changing queue priority, retirement, or coverage behavior.
