@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.760** Reuse the bounded basin list during terrain water-mesh setup, removing a per-tile generation allocation while preserving shoreline and water geometry.
 - **10.759** Build terrain worker transfer lists with direct unique-buffer appends, removing temporary Sets and attribute arrays while preserving zero-copy geometry delivery.
 - **10.758** Remove released regional-road jobs in place during settlement unloads, preserving road queue order while avoiding replacement-array allocations.
 - **10.757** Reuse caller-owned river reach buffers and stamped deduplication during terrain generation, removing per-catchment Sets and per-tile array spreads without changing water detail or geometry.

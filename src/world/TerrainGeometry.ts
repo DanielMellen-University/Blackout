@@ -22,6 +22,8 @@ const CLIMATE_POOL_LIMIT = 1024
 const climatePool: Climate[] = []
 /** Reused detailed river list; generation is synchronous within each worker. */
 const riverReachScratch: RiverReach[] = []
+/** Reused fixed-basin list; water meshes consume it before generation returns. */
+const basinScratch: WaterBasin[] = []
 
 function acquireClimateGrid(count: number): Climate[] {
   const samples = new Array<Climate>((count + 1) * (count + 1))
@@ -112,7 +114,8 @@ export function pondIntersectsBounds(originX: number, originZ: number, span: num
 }
 
 function basinsInBounds(originX: number, originZ: number, span: number): WaterBasin[] {
-  const result: WaterBasin[] = []
+  const result = basinScratch
+  result.length = 0
   // The largest generated sea has radius 4500; warped shorelines remain
   // inside 1.75 radii. Broad far tiles must not expand queries by their span.
   const margin = Math.min(span * .8, 8000)
