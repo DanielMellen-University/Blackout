@@ -232,6 +232,31 @@ describe('classifyContact', () => {
     expect(contactFailureLabel('overspeed')).toBe('OVERSPEED')
     expect(contactFailureLabel(null)).toBe('IMPACT')
   })
+
+  it('fails closed on malformed impact scalars and normals', () => {
+    const result = classifyContactOutcome({
+      airborne: true,
+      impact: impact({
+        surface: 'land',
+        surfaceNormal: { x: Number.NaN, y: Number.NaN, z: Number.NaN } as Vector3,
+        normalVelocity: Number.NaN,
+        verticalVelocity: Number.NaN,
+        tangentialSpeed: Number.NaN,
+        gearDown: 'yes' as unknown as boolean,
+      }),
+      onPad: true,
+      gearDown: true,
+      vy: -2,
+      groundSpeed: 40,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'land',
+      surfaceNormalY: 1,
+    })
+    expect(result).toEqual({ result: 'crash', reason: 'gear' })
+  })
 })
 
 describe('impact quaternion helper sanity', () => {

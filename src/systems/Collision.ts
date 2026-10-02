@@ -170,13 +170,20 @@ export function classifyContactOutcomeInto(
   const airborne = impactAirborne === undefined
     ? input.airborne === true
     : impactAirborne === true
-  const gearDown = impact?.gearDown ?? input.gearDown
-  const vy = impact?.verticalVelocity ?? input.vy
-  const gs = impact?.tangentialSpeed ?? input.groundSpeed
-  const surface = impact?.surface ?? input.surface
-  const nVel = impact?.normalVelocity ?? vy
+  const gearDown = impact?.gearDown === undefined
+    ? input.gearDown === true
+    : impact.gearDown === true
+  const vy = finiteContactScalar(impact?.verticalVelocity, input.vy, 0)
+  const gs = Math.max(0, finiteContactScalar(impact?.tangentialSpeed, input.groundSpeed, 0))
+  const surface = normalizeContactSurface(impact?.surface ?? input.surface)
+  const nVel = finiteContactScalar(impact?.normalVelocity, vy, vy)
+  const impactNormalY = impact?.surfaceNormal?.y
   const slope = impact
-    ? Math.acos(MathUtils.clamp(impact.surfaceNormal.y, -1, 1))
+    ? Math.acos(MathUtils.clamp(
+      Number.isFinite(impactNormalY) ? impactNormalY! : 1,
+      -1,
+      1,
+    ))
     : Math.acos(MathUtils.clamp(
       Number.isFinite(input.surfaceNormalY) ? input.surfaceNormalY! : 1,
       -1,
@@ -216,6 +223,16 @@ function setContactOutcome(
   out.result = result
   out.reason = reason
   return out
+}
+
+function finiteContactScalar(primary: number | undefined, fallback: number, safeDefault: number): number {
+  if (Number.isFinite(primary)) return primary!
+  if (Number.isFinite(fallback)) return fallback
+  return safeDefault
+}
+
+function normalizeContactSurface(value: unknown): ContactSurfaceKind {
+  return value === 'water' ? 'water' : 'land'
 }
 
 /** Keep impact copy short enough for the banner and accessible debrief. */

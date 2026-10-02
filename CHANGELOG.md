@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.731** Harden landing classification against malformed impact scalars, surface kinds, gear flags, and terrain normals so corrupt contact telemetry fails closed without throwing through the flight loop.
 - **10.730** Reuse a caller-owned collision outcome in fixed-step landing checks, removing one result-object allocation per physics tick while preserving the public classifier helpers and outcome semantics.
 - **10.729** Make mission startup retry one malformed authored route with a canonical orbit fallback, exposing the fallback in the briefing and preserving a playable gate circuit without adding frame-time work.
 - **10.728** Add a low-cost analytic water-body variation field so distant rivers, lakes, and seas keep broad visual breakup after fine texture detail fades, without adding a texture fetch or draw call.
