@@ -74,15 +74,25 @@ export function deserializeTerrainGeometry(data: TerrainGeometryBuffers): Buffer
 
 /** Deduplicate backing buffers so postMessage can transfer without copying. */
 export function terrainTransferables(payload: TerrainGeometryData): ArrayBuffer[] {
-  const buffers = new Set<ArrayBuffer>()
-  buffers.add(payload.heights.buffer as ArrayBuffer)
-  buffers.add(payload.waterLevels.buffer as ArrayBuffer)
-  for (const data of [payload.ground, payload.water]) {
-    if (!data) continue
-    for (const attribute of Object.values(data.attributes)) buffers.add(attribute.array.buffer as ArrayBuffer)
-    if (data.index) buffers.add(data.index.buffer as ArrayBuffer)
+  const buffers: ArrayBuffer[] = []
+  appendUniqueTransferable(buffers, payload.heights.buffer as ArrayBuffer)
+  appendUniqueTransferable(buffers, payload.waterLevels.buffer as ArrayBuffer)
+  appendGeometryTransferables(buffers, payload.ground)
+  if (payload.water) appendGeometryTransferables(buffers, payload.water)
+  return buffers
+}
+
+function appendGeometryTransferables(buffers: ArrayBuffer[], data: TerrainGeometryBuffers): void {
+  for (const name in data.attributes) {
+    const attribute = data.attributes[name]
+    if (attribute) appendUniqueTransferable(buffers, attribute.array.buffer as ArrayBuffer)
   }
-  return [...buffers]
+  if (data.index) appendUniqueTransferable(buffers, data.index.buffer as ArrayBuffer)
+}
+
+function appendUniqueTransferable(buffers: ArrayBuffer[], buffer: ArrayBuffer): void {
+  for (const existing of buffers) if (existing === buffer) return
+  buffers.push(buffer)
 }
 
 /** True when a streamed tile overlaps an analytic pond that coarse vertices can miss. */
