@@ -178,6 +178,29 @@ export interface Climate {
   }
 }
 
+type ColorTuple = [number, number, number]
+
+/** Mutate a color tuple in place so streamed terrain vertices avoid throwaway arrays. */
+function scaleColorInPlace(color: ColorTuple, scale: number): void {
+  color[0] *= scale
+  color[1] *= scale
+  color[2] *= scale
+}
+
+/** Blend a color tuple toward a target without allocating a second tuple. */
+function mixColorInPlace(color: ColorTuple, target: ColorTuple, mix: number): void {
+  color[0] += (target[0] - color[0]) * mix
+  color[1] += (target[1] - color[1]) * mix
+  color[2] += (target[2] - color[2]) * mix
+}
+
+/** Clamp a tinted color tuple in place after a material-only blend. */
+function tintColorInPlace(color: ColorTuple, target: ColorTuple, mix: number): void {
+  color[0] = clamp01(color[0] + (target[0] - color[0]) * mix)
+  color[1] = clamp01(color[1] + (target[1] - color[1]) * mix)
+  color[2] = clamp01(color[2] + (target[2] - color[2]) * mix)
+}
+
 export type TerrainSurfaceKind = 'land' | 'water'
 export type TerrainWaterBody = 'sea' | 'lake' | 'river' | 'stream' | 'pond' | 'inland'
 
@@ -780,7 +803,9 @@ export function biomeColor(
   let col = biomeColorSolid(biome, height, moisture, n, speck, land)
   // Seamless cross-fade into neighboring biome color
   if (biomeWeights?.length) {
-    col = [0, 0, 0]
+    col[0] = 0
+    col[1] = 0
+    col[2] = 0
     let total = 0
     for (const [candidate, weight] of biomeWeights) {
       const w = weight * weight
@@ -789,15 +814,11 @@ export function biomeColor(
       for (let i = 0; i < 3; i++) col[i]! += c[i]! * w
       total += w
     }
-    col = col.map(c => c / Math.max(total, .00001)) as [number, number, number]
+    scaleColorInPlace(col, 1 / Math.max(total, .00001))
   } else if (biomeMix > 0 && biomeB !== biome) {
     const colB = biomeColorSolid(biomeB, height, moisture, n, speck, land)
     const t = clamp01(biomeMix)
-    col = [
-      col[0] + (colB[0] - col[0]) * t,
-      col[1] + (colB[1] - col[1]) * t,
-      col[2] + (colB[2] - col[2]) * t,
-    ]
+    mixColorInPlace(col, colB, t)
   }
 
   // Volcanic provinces need more than one gray tone to read as cooled lava,
@@ -807,11 +828,9 @@ export function biomeColor(
   if (biome === 'volcanic') {
     const ashField = valueNoise(x / 520, z / 520)
     const cinder = (ashField - .5) * .2
-    col = [
-      clamp01(col[0] + cinder * .9),
-      clamp01(col[1] + cinder * .82),
-      clamp01(col[2] + cinder * .72),
-    ]
+    col[0] = clamp01(col[0] + cinder * .9)
+    col[1] = clamp01(col[1] + cinder * .82)
+    col[2] = clamp01(col[2] + cinder * .72)
     const fissureField = valueNoise(x / 980 + 37, z / 980 - 19)
     const calderaBoost = landform?.caldera ?? 0
     const fissure = smoothstep(.72, .92, fissureField) * (.15 + calderaBoost * .68)
@@ -819,17 +838,9 @@ export function biomeColor(
       valueNoise(x / 240 + 71, z / 240 - 17) * .3
     const flow = smoothstep(.58, .82, flowField) * (.12 + calderaBoost * .26)
     const ember: [number, number, number] = [0.48 + ashField * .14, .075 + ashField * .035, .018]
-    col = [
-      col[0] + (ember[0] - col[0]) * fissure,
-      col[1] + (ember[1] - col[1]) * fissure,
-      col[2] + (ember[2] - col[2]) * fissure,
-    ]
+    mixColorInPlace(col, ember, fissure)
     const lavaRock: [number, number, number] = [.3 + ashField * .1, .055 + ashField * .03, .016]
-    col = [
-      col[0] + (lavaRock[0] - col[0]) * flow,
-      col[1] + (lavaRock[1] - col[1]) * flow,
-      col[2] + (lavaRock[2] - col[2]) * flow,
-    ]
+    mixColorInPlace(col, lavaRock, flow)
   }
 
   // Salt flats need broad mineral bands to read as a real playa rather than a
@@ -841,11 +852,9 @@ export function biomeColor(
     const mineralField = .5 + .5 * Math.sin(z / 410 + Math.sin(x / 980) * 1.2)
     const crust = smoothstep(.34, .78, crustField * .68 + mineralField * .32)
     const damp = (1 - crust) * (.06 + mineralField * .06)
-    col = [
-      clamp01(col[0] + crust * .045 - damp * .08),
-      clamp01(col[1] + crust * .04 - damp * .04),
-      clamp01(col[2] + crust * .02 + damp * .035),
-    ]
+    col[0] = clamp01(col[0] + crust * .045 - damp * .08)
+    col[1] = clamp01(col[1] + crust * .04 - damp * .04)
+    col[2] = clamp01(col[2] + crust * .02 + damp * .035)
   }
 
   // Tundra is broad and wind-scoured, but not a single gray-green sheet.
@@ -856,11 +865,9 @@ export function biomeColor(
     const screeField = .5 + .5 * Math.sin(z / 520 + Math.sin(x / 1180) * 1.1)
     const frost = smoothstep(.28, .76, frostField * .72 + screeField * .28)
     const scree = (1 - frost) * (.035 + screeField * .05)
-    col = [
-      clamp01(col[0] + frost * .055 + scree * .015),
-      clamp01(col[1] + frost * .06 + scree * .005),
-      clamp01(col[2] + frost * .075 + scree * .01),
-    ]
+    col[0] = clamp01(col[0] + frost * .055 + scree * .015)
+    col[1] = clamp01(col[1] + frost * .06 + scree * .005)
+    col[2] = clamp01(col[2] + frost * .075 + scree * .01)
   }
 
   // Lowland terrain is intentionally prop-free for now, so distant green
@@ -877,11 +884,9 @@ export function biomeColor(
     const fine = (patch - .5) * .035
     const breakup = broad + fine
     const green = biome === 'plains' || biome === 'forest' || biome === 'rainforest' || biome === 'swamp' || biome === 'hills'
-    col = [
-      col[0] * (1 + breakup) + (green ? (regional - .5) * .012 : 0),
-      col[1] * (1 + breakup * .82) + (green ? (regional - .5) * .022 : 0),
-      col[2] * (1 + breakup * .64) - (green ? (regional - .5) * .008 : 0),
-    ]
+    col[0] = col[0] * (1 + breakup) + (green ? (regional - .5) * .012 : 0)
+    col[1] = col[1] * (1 + breakup * .82) + (green ? (regional - .5) * .022 : 0)
+    col[2] = col[2] * (1 + breakup * .64) - (green ? (regional - .5) * .008 : 0)
   }
 
   // Give dry river shoulders their own ecological band. Hydrology already
@@ -898,11 +903,7 @@ export function biomeColor(
         ? [.16, .4, .2]
         : [.18, .5, .22]
     const riparianMix = smoothstep(.04, .82, riparian) * (.1 + n * .05)
-    col = [
-      col[0] + (riparianColor[0] - col[0]) * riparianMix,
-      col[1] + (riparianColor[1] - col[1]) * riparianMix,
-      col[2] + (riparianColor[2] - col[2]) * riparianMix,
-    ]
+    mixColorInPlace(col, riparianColor, riparianMix)
   }
 
   // Inland basins deserve a soft wet shore instead of a hard blue-to-green
@@ -913,11 +914,7 @@ export function biomeColor(
   if (inlandShore > 0) {
     const wetSand: [number, number, number] = [0.53 + speck * .4, 0.55 + speck * .25, 0.38]
     const shoreMix = smoothstep(.04, .72, inlandShore) * .42
-    col = [
-      col[0] + (wetSand[0] - col[0]) * shoreMix,
-      col[1] + (wetSand[1] - col[1]) * shoreMix,
-      col[2] + (wetSand[2] - col[2]) * shoreMix,
-    ]
+    mixColorInPlace(col, wetSand, shoreMix)
   }
 
   if (landform) {
@@ -927,7 +924,7 @@ export function biomeColor(
     const valleyShade = landform.alpineValley * (biome === 'snow' ? .14 : .1)
     const calderaShade = landform.caldera * .12
     const relief = ridgeLight - valleyShade - calderaShade
-    col = col.map(c => c * (1 + relief)) as [number, number, number]
+    scaleColorInPlace(col, 1 + relief)
     if (landform.plateau > .35 && (biome === 'mesa' || biome === 'desert')) {
       const shelf = smoothstep(.35, .9, landform.plateau) * .08
       col[0] = Math.min(.98, col[0] + shelf)
@@ -946,7 +943,7 @@ export function biomeColor(
         ? [.68, .57, .29]
         : [.9, .75, .44]
       const duneMix = band * .14
-      col = col.map((value, index) => clamp01(value + (duneTint[index]! - value) * duneMix)) as [number, number, number]
+      tintColorInPlace(col, duneTint, duneMix)
     }
     const alluvialSignal = clamp01(landform.alluvial ?? 0)
     if (alluvialSignal > .06 && (biome === 'desert' || biome === 'savanna' || biome === 'mesa')) {
@@ -958,8 +955,7 @@ export function biomeColor(
           ? [.62, .31, .15]
           : [.78, .58, .3]
       const fanMix = fanBands * .12
-      col = col.map((value, index) =>
-        clamp01(value + (fanTint[index]! - value) * fanMix)) as [number, number, number]
+      tintColorInPlace(col, fanTint, fanMix)
     }
     const badlandSignal = clamp01(landform.badlands ?? 0)
     if (badlandSignal > .08 && (biome === 'mesa' || biome === 'desert')) {
@@ -969,7 +965,7 @@ export function biomeColor(
         ? [.66, .24, .1]
         : [.74, .48, .23]
       const strataMix = strata * .16
-      col = col.map((value, index) => clamp01(value + (strataTint[index]! - value) * strataMix)) as [number, number, number]
+      tintColorInPlace(col, strataTint, strataMix)
     }
     const karstSignal = clamp01(landform.karst ?? 0)
     if (karstSignal > .06 && (biome === 'plains' || biome === 'forest' || biome === 'swamp' || biome === 'hills')) {
@@ -979,8 +975,7 @@ export function biomeColor(
         ? [.28, .4, .25]
         : [.36, .45, .28]
       const limestoneMix = limestone * .14
-      col = col.map((value, index) =>
-        clamp01(value + (limestoneTint[index]! - value) * limestoneMix)) as [number, number, number]
+      tintColorInPlace(col, limestoneTint, limestoneMix)
     }
     const glacialSignal = clamp01(landform.glacial ?? 0)
     if (glacialSignal > .06 && (biome === 'snow' || biome === 'mountain' || biome === 'tundra')) {
@@ -989,8 +984,7 @@ export function biomeColor(
       const iceTint: [number, number, number] = biome === 'tundra'
         ? [.48, .56, .58]
         : [.28, .4, .5]
-      col = col.map((value, index) =>
-        clamp01(value + (iceTint[index]! - value) * iceMix)) as [number, number, number]
+      tintColorInPlace(col, iceTint, iceMix)
     }
 
     // Foothills are a broad transition zone, not a new biome. A restrained
@@ -1003,11 +997,7 @@ export function biomeColor(
         ? [.38, .36, .18]
         : [.2, .34, .18]
       const shoulderMix = foothill * .18
-      col = [
-        col[0] + (shoulder[0] - col[0]) * shoulderMix,
-        col[1] + (shoulder[1] - col[1]) * shoulderMix,
-        col[2] + (shoulder[2] - col[2]) * shoulderMix,
-      ]
+      mixColorInPlace(col, shoulder, shoulderMix)
     }
 
     // Snow and high alpine faces need a second visual scale. A single pale
@@ -1024,11 +1014,7 @@ export function biomeColor(
       const rock: [number, number, number] = biome === 'snow'
         ? [.12, .16, .22]
         : [.22, .215, .21]
-      col = [
-        col[0] + (rock[0] - col[0]) * rockMix,
-        col[1] + (rock[1] - col[1]) * rockMix,
-        col[2] + (rock[2] - col[2]) * rockMix,
-      ]
+      mixColorInPlace(col, rock, rockMix)
       const valley = smoothstep(.18, .9, landform.alpineValley)
       col[0] *= 1 - valley * .22
       col[1] *= 1 - valley * .14
@@ -1038,18 +1024,14 @@ export function biomeColor(
 
   const ravineShade = smoothstep(.25, .9, ravine) * .3
   const riverShade = smoothstep(.1, .9, river) * .12
-  col = col.map(c => c * (1 - ravineShade - riverShade)) as [number, number, number]
+  scaleColorInPlace(col, 1 - ravineShade - riverShade)
   // Low coasts deserve a soft beach band instead of a hard grass-to-sediment
   // transition. Hydrology limits `coastal` to the warped sea edge, while the
   // height gate keeps this sand tint off cliffs and elevated inland shelves.
   if (coastal > 0) {
     const sand: [number, number, number] = [0.82 + speck, 0.72 + speck * 0.5, 0.48]
     const t = clamp01(coastal) * smoothstep(320, 40, height) * .58
-    col = [
-      col[0] + (sand[0] - col[0]) * t,
-      col[1] + (sand[1] - col[1]) * t,
-      col[2] + (sand[2] - col[2]) * t,
-    ]
+    mixColorInPlace(col, sand, t)
   }
 
   return col
