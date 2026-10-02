@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.749** Remove transient iterator and slot-array allocations from terrain worker dispatch and reseed cancellation, preserving bounded streaming behavior under rapid travel and world resets.
 - **10.748** Reject empty or non-finite optional aircraft models before replacement, keeping the procedural F-35 fallback intact and leak-free when an external asset is malformed.
 - **10.747** Start brand-new pilots in Training Orbit when no course preference exists, preserving saved Random selections and replay/custom-seed launches.
 - **10.746** Make Training Orbit a dependable onboarding route with locked clear midday conditions, while Random and advanced courses retain their full weather and time variety.

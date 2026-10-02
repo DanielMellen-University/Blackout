@@ -66,7 +66,15 @@ export class TerrainWorkerPool {
   }
   submit(job: TerrainBuildRequest): boolean {
     if (this.disposed) return false
-    const slot = this.slots.find(candidate => candidate.job === null && !candidate.retire)
+    // Dispatch runs for every streamed tile. Keep the slot scan explicit so
+    // the normal worker path does not allocate a callback for Array.find().
+    let slot: Slot | undefined
+    for (const candidate of this.slots) {
+      if (candidate.job === null && !candidate.retire) {
+        slot = candidate
+        break
+      }
+    }
     if (!slot) return false
     slot.job = job
     this.busyCount++
@@ -77,7 +85,10 @@ export class TerrainWorkerPool {
   /** Cancel stale terrain work while keeping the configured worker capacity. */
   cancelJobs(): void {
     if (this.disabled || this.disposed) return
-    for (const slot of this.slots.slice()) {
+    // Walk backwards because removeSlot() splice-removes the current entry.
+    // This avoids cloning the slot array during every world reseed.
+    for (let index = this.slots.length - 1; index >= 0; index--) {
+      const slot = this.slots[index]!
       if (!slot.job) continue
       slot.job = null
       this.busyCount = Math.max(0, this.busyCount - 1)
