@@ -6,6 +6,9 @@ export interface TerrainTile {
   dist: number
 }
 
+/** Aligned root span shared by the planner and streamed ownership indexes. */
+export const TERRAIN_ROOT_SIZE = 32
+
 export function tileKey(cx: number, cz: number, size = 1): string {
   return size === 1 ? `${cx},${cz}` : `${cx},${cz}:${size}`
 }
@@ -43,7 +46,7 @@ export function planTerrainTiles(x: number, z: number, radius: number): TerrainT
       tiles.push({ cx, cz, size, dist: Math.hypot(cx + size / 2 - x, cz + size / 2 - z) })
     }
   }
-  const rootSize = 32
+  const rootSize = TERRAIN_ROOT_SIZE
   const minX = Math.floor((x - radius) / rootSize) * rootSize
   const minZ = Math.floor((z - radius) / rootSize) * rootSize
   for (let cx = minX; cx <= x + radius; cx += rootSize) {

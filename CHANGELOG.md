@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.795** Index desired terrain leaves by pooled aligned quadtree roots, preserving LOD replacement fade dependencies while avoiding full desired-horizon scans during stream reschedules.
 - **10.794** Preserve the ghost replay sample clock across long frame gaps, keeping interpolation cadence stable without adding samples or per-frame allocations.
 - **10.793** Probe aligned quadtree ownership keys for terrain contact sampling, preserving the finest overlapping LOD surface while removing resident-tile scans on cell misses.
 - **10.792** Query only aligned quadtree neighbors when preparing terrain LOD skirts, preserving seam coverage while avoiding four whole-horizon map scans per tile request.

@@ -1,7 +1,7 @@
 import { Group, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateTerrainGeometry, type TerrainGeometryData } from '../src/world/TerrainGeometry'
-import { tileKey } from '../src/world/TerrainLayout'
+import { TERRAIN_ROOT_SIZE, tileKey } from '../src/world/TerrainLayout'
 import { CHUNK_SIZE, TerrainSystem } from '../src/world/TerrainSystem'
 import type { TerrainBuildRequest, TerrainBuildReply } from '../src/world/TerrainWorkerPool'
 import { setWorldSeed } from '../src/world/noise'
@@ -26,6 +26,7 @@ interface Tile { cx: number; cz: number; size: number; dist: number }
 interface Chunk { root: Group; fadeAge: number; alpha: number; targetAlpha: number; fadingOut: boolean; settled: boolean }
 interface Internals {
   desiredTiles: Map<string, Tile>
+  desiredTileBuckets: Map<string, Tile[]>
   chunks: Map<string, Chunk>
   sampledChunk: unknown
   retiring: Array<{ key: string; root: Group }>
@@ -77,6 +78,19 @@ afterEach(() => {
 })
 
 describe('terrain streaming integration', () => {
+  it('indexes desired leaves by aligned quadtree roots', () => {
+    terrain.update(0, 0, 0)
+
+    let indexed = 0
+    for (const bucket of internal.desiredTileBuckets.values()) indexed += bucket.length
+    expect(indexed).toBe(internal.desiredTiles.size)
+    for (const tile of internal.desiredTiles.values()) {
+      const rootCx = Math.floor(tile.cx / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+      const rootCz = Math.floor(tile.cz / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+      expect(internal.desiredTileBuckets.get(tileKey(rootCx, rootCz, TERRAIN_ROOT_SIZE))).toContain(tile)
+    }
+  })
+
   it('fills caller-owned streaming telemetry without allocating a snapshot', () => {
     const stats = { loaded: -1, pending: -1, inFlight: -1, ready: -1, workers: -1 }
     expect(terrain.streamingStatsInto(stats)).toBe(stats)

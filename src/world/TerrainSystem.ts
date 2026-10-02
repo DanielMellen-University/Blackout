@@ -42,7 +42,7 @@ import {
 import { TerrainWorkerPool, type TerrainBuildRequest } from './TerrainWorkerPool'
 export { CHUNK_SIZE, segsForLod, waterSegsForLod, pondIntersectsBounds,
   buildTerrainSkirtGeometry, type TerrainLod } from './TerrainGeometry'
-import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance } from './TerrainLayout'
+import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance, TERRAIN_ROOT_SIZE } from './TerrainLayout'
 import { disposeObjectTree } from '../core/dispose'
 
 /**
@@ -214,6 +214,13 @@ interface PendingChunk {
   rebuild: boolean
 }
 
+interface DesiredTile {
+  cx: number
+  cz: number
+  size: number
+  dist: number
+}
+
 /** Read-only stream pressure snapshot used by the opt-in debug inspector. */
 export interface TerrainStreamingStats {
   loaded: number
@@ -250,7 +257,11 @@ export class TerrainSystem {
   private readonly workers: TerrainWorkerPool
   private uploadBudgetMs = DEFAULT_UPLOAD_BUDGET_MS
   private maxUploadsPerFrame = DEFAULT_MAX_UPLOADS_PER_FRAME
-  private desiredTiles = new Map<string, { cx: number; cz: number; size: number; dist: number }>()
+  private desiredTiles = new Map<string, DesiredTile>()
+  /** Desired leaves grouped by their aligned 32-cell quadtree root. */
+  private readonly desiredTileBuckets = new Map<string, DesiredTile[]>()
+  /** Reuse bucket arrays across stream-cell schedules to avoid churn. */
+  private readonly desiredTileBucketPool: DesiredTile[][] = []
   private readonly replacementKeys = new Map<string, string[]>()
   private readonly scene: Scene
   private lastCx = Number.NaN
@@ -535,6 +546,9 @@ export class TerrainSystem {
     this.pendingKeys.clear()
     this.pendingSorted = false
     this.desiredTiles.clear()
+    for (const bucket of this.desiredTileBuckets.values()) bucket.length = 0
+    this.desiredTileBuckets.clear()
+    this.desiredTileBucketPool.length = 0
     this.neededKeys.clear()
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
@@ -779,10 +793,24 @@ export class TerrainSystem {
     const needed = this.neededKeys
     needed.clear()
     this.desiredTiles.clear()
+    for (const bucket of this.desiredTileBuckets.values()) {
+      bucket.length = 0
+      this.desiredTileBucketPool.push(bucket)
+    }
+    this.desiredTileBuckets.clear()
     for (const tile of planTerrainTiles(cx + .5, cz + .5, this.viewRadius)) {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
         this.desiredTiles.set(key, tile)
+        const rootCx = Math.floor(kx / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+        const rootCz = Math.floor(kz / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+        const rootKey = tileKey(rootCx, rootCz, TERRAIN_ROOT_SIZE)
+        let bucket = this.desiredTileBuckets.get(rootKey)
+        if (!bucket) {
+          bucket = this.desiredTileBucketPool.pop() ?? []
+          this.desiredTileBuckets.set(rootKey, bucket)
+        }
+        bucket.push(tile)
         needed.add(key)
         const existing = this.chunks.get(key)
         if (existing) {
@@ -825,10 +853,20 @@ export class TerrainSystem {
         // The layout only changes on cell crossings. Cache dependencies here
         // instead of scanning every desired tile for every fallback each frame.
         const replacements: string[] = []
-        for (const [nextKey, next] of this.desiredTiles) {
-          if (next.cx >= chunk.cx + chunk.size || next.cx + next.size <= chunk.cx
-            || next.cz >= chunk.cz + chunk.size || next.cz + next.size <= chunk.cz) continue
-          replacements.push(nextKey)
+        const minRootCx = Math.floor(chunk.cx / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+        const maxRootCx = Math.floor((chunk.cx + chunk.size - 1) / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+        const minRootCz = Math.floor(chunk.cz / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+        const maxRootCz = Math.floor((chunk.cz + chunk.size - 1) / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
+        for (let rootCx = minRootCx; rootCx <= maxRootCx; rootCx += TERRAIN_ROOT_SIZE) {
+          for (let rootCz = minRootCz; rootCz <= maxRootCz; rootCz += TERRAIN_ROOT_SIZE) {
+            const bucket = this.desiredTileBuckets.get(tileKey(rootCx, rootCz, TERRAIN_ROOT_SIZE))
+            if (!bucket) continue
+            for (const next of bucket) {
+              if (next.cx >= chunk.cx + chunk.size || next.cx + next.size <= chunk.cx
+                || next.cz >= chunk.cz + chunk.size || next.cz + next.size <= chunk.cz) continue
+              replacements.push(tileKey(next.cx, next.cz, next.size))
+            }
+          }
         }
         this.replacementKeys.set(key, replacements)
       }
