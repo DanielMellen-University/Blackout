@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.756** Key protected settlement anchor planning to the job's pad snapshot, removing an extra global OpsPad allocation and preventing stale cache context during overlapping reseeds.
 - **10.755** Invalidate the cached airfield obstacle frame when the shared OpsPad revision changes, preventing stale runway collisions after external pad updates without restoring per-probe allocations or trigonometry.
 - **10.754** Remove protected settlement retry jobs in place, avoiding queue-array allocations while preserving anchor priority and retry ordering.
 - **10.753** Cache the airfield runway frame used by swept obstacle probes, removing repeated pad copies and yaw trigonometry while preserving the aircraft collision envelope.

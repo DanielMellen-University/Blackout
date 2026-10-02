@@ -87,6 +87,7 @@ const cache = new Map<string, SettlementPlan | null>()
 let cacheContext = ''
 const anchorCache = new Map<string, [number, number] | null>()
 let anchorCacheContext = ''
+type AnchorPad = { x: number; z: number; y?: number }
 // Settlement planning runs serially per worker message. Reuse a tiny bounded
 // set of climate records across candidate, survey, road, and lot probes
 // instead of allocating a full biome-weight record for every sample.
@@ -115,7 +116,7 @@ function dry(c: Climate): boolean {
  * anchor only promotes a normal cell into a candidate; all water, relief, and
  * building-fit checks below still have to pass.
  */
-function anchorCandidates(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number][] {
+function anchorCandidates(kind: 'city' | 'village', pad: AnchorPad | null): [number, number][] {
   if (!pad) return []
   const padCellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
   const padCellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
@@ -137,8 +138,12 @@ function anchorCandidates(kind: 'city' | 'village', pad: { x: number; z: number 
   return offsets.map(([ox, oz]) => [padCellX + ox, padCellZ + oz])
 }
 
-function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | null): [number, number] | null {
-  const context = `${getWorldSeed()}:${pad?.x}:${pad?.z}:${getOpsPad()?.y}`
+function anchorCell(kind: 'city' | 'village', pad: AnchorPad | null): [number, number] | null {
+  // Worker replies carry the pad snapshot used for that job. Avoid reading
+  // the mutable global pad again: that allocates and can key the cache to a
+  // different reseed when a replacement starts before the reply is handled.
+  const padHeight = pad && Number.isFinite(pad.y) ? pad.y : undefined
+  const context = `${getWorldSeed()}:${pad?.x}:${pad?.z}:${padHeight}`
   if (context !== anchorCacheContext) {
     anchorCache.clear()
     anchorCacheContext = context
@@ -189,7 +194,7 @@ function anchorCell(kind: 'city' | 'village', pad: { x: number; z: number } | nu
 
 /** Ordered fallback cells used when the first protected landmark site fails validation. */
 export function settlementAnchorCells(
-  kind: 'city' | 'village', pad: { x: number; z: number } | null,
+  kind: 'city' | 'village', pad: AnchorPad | null,
 ): [number, number][] {
   const candidates = anchorCandidates(kind, pad)
   if (kind !== 'city' || !pad) return candidates
@@ -199,7 +204,7 @@ export function settlementAnchorCells(
 
 /** Queue metadata for the streaming layer; null means a normal cell. */
 export function settlementAnchorForCell(
-  cx: number, cz: number, pad: { x: number; z: number } | null,
+  cx: number, cz: number, pad: AnchorPad | null,
 ): 'city' | 'village' | null {
   if (isAnchorCell(cx, cz, 'city', pad)) return 'city'
   if (isAnchorCell(cx, cz, 'village', pad)) return 'village'
