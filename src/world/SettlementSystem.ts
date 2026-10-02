@@ -1128,7 +1128,10 @@ export class SettlementSystem {
       retainedKeys.clear()
       for (const job of this.queue) {
         if (!wanted.has(job.key) || this.checked.has(job.key)) continue
-        retained.push({ ...job, score: 0 })
+        // Keep the existing job record. Distance and priority are refreshed
+        // below, so cloning here only creates garbage during fast cell hops.
+        job.score = 0
+        retained.push(job)
         retainedKeys.add(job.key)
       }
       for (const job of pending) {
