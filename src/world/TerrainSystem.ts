@@ -234,6 +234,8 @@ export class TerrainSystem {
   private readonly activeKeys = new Set<string>()
   /** Chunks that still need per-frame opacity or prop-distance work. */
   private readonly fadeKeys = new Set<string>()
+  /** Reused schedule membership set avoids churn during rapid focus changes. */
+  private readonly neededKeys = new Set<string>()
   private readonly retiring: Chunk[] = []
   /** Reused fade-removal list keeps the per-frame stream path allocation-free. */
   private readonly fadeRemovals: string[] = []
@@ -527,6 +529,7 @@ export class TerrainSystem {
     this.pendingKeys.clear()
     this.pendingSorted = false
     this.desiredTiles.clear()
+    this.neededKeys.clear()
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
@@ -764,7 +767,8 @@ export class TerrainSystem {
   private scheduleAround(cx: number, cz: number): void {
     this.fadeTargetsDirty = true
     this.readySorted = false
-    const needed = new Set<string>()
+    const needed = this.neededKeys
+    needed.clear()
     this.desiredTiles.clear()
     for (const tile of planTerrainTiles(cx + .5, cz + .5, this.viewRadius)) {
         const { cx: kx, cz: kz, size, dist } = tile
