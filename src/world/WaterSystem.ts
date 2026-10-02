@@ -110,17 +110,26 @@ export function buildWaterMesh(
         polygon.push(intersection)
       }
     }
+    const first = polygon[0]!
     for (let i = 1; i < polygon.length - 1; i++) {
-      for (const p of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
-        positions.push(p.x, p.level, p.z)
-        depths.push(Math.max(0, p.level - p.bed))
-        flowValues.push(0)
-        flowDirections.push(0, 0)
-        waterDrops.push(0)
-        // Raster water is the compatibility path for a fixed basin. Analytic
-        // basins below carry their exact lake, pond, or sea kind.
-        waterKinds.push(1)
-      }
+      const second = polygon[i]!
+      const third = polygon[i + 1]!
+      positions.push(
+        first.x, first.level, first.z,
+        second.x, second.level, second.z,
+        third.x, third.level, third.z,
+      )
+      depths.push(
+        Math.max(0, first.level - first.bed),
+        Math.max(0, second.level - second.bed),
+        Math.max(0, third.level - third.bed),
+      )
+      flowValues.push(0, 0, 0)
+      flowDirections.push(0, 0, 0, 0, 0, 0)
+      waterDrops.push(0, 0, 0)
+      // Raster water is the compatibility path for a fixed basin. Analytic
+      // basins below carry their exact lake, pond, or sea kind.
+      waterKinds.push(1, 1, 1)
     }
   }
   for (let z = 0; z < segs; z++) for (let x = 0; x < segs; x++) {
@@ -197,15 +206,20 @@ function appendAnalyticBasins(
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
     polygon = clip(polygon, 'z', half, false)
+    const first = polygon[0]!
     for (let i = 1; i < polygon.length - 1; i++) {
-      for (const point of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
-        positions.push(point.x, point.y, point.z)
-        depths.push(point.depth)
-        flowValues.push(0)
-        flowDirections.push(0, 0)
-        waterKinds.push(kind)
-        waterDrops.push(0)
-      }
+      const second = polygon[i]!
+      const third = polygon[i + 1]!
+      positions.push(
+        first.x, first.y, first.z,
+        second.x, second.y, second.z,
+        third.x, third.y, third.z,
+      )
+      depths.push(first.depth, second.depth, third.depth)
+      flowValues.push(0, 0, 0)
+      flowDirections.push(0, 0, 0, 0, 0, 0)
+      waterKinds.push(kind, kind, kind)
+      waterDrops.push(0, 0, 0)
     }
   }
 
@@ -322,15 +336,20 @@ function appendRiverRibbons(
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
     polygon = clip(polygon, 'z', half, false)
+    const first = polygon[0]!
     for (let i = 1; i < polygon.length - 1; i++) {
-      for (const point of [polygon[0]!, polygon[i]!, polygon[i + 1]!]) {
-        positions.push(point.x, point.y, point.z)
-        depths.push(point.depth)
-        flowValues.push(flow)
-        flowDirections.push(flowX, flowZ)
-        waterKinds.push(0)
-        waterDrops.push(drop)
-      }
+      const second = polygon[i]!
+      const third = polygon[i + 1]!
+      positions.push(
+        first.x, first.y, first.z,
+        second.x, second.y, second.z,
+        third.x, third.y, third.z,
+      )
+      depths.push(first.depth, second.depth, third.depth)
+      flowValues.push(flow, flow, flow)
+      flowDirections.push(flowX, flowZ, flowX, flowZ, flowX, flowZ)
+      waterKinds.push(0, 0, 0)
+      waterDrops.push(drop, drop, drop)
     }
   }
 
