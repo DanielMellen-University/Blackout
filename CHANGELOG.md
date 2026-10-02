@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.732** Pool terrain weather snapshots across reads, removing avoidable diagnostic and HUD allocations while preserving normalized rain and snow values.
 - **10.731** Harden landing classification against malformed impact scalars, surface kinds, gear flags, and terrain normals so corrupt contact telemetry fails closed without throwing through the flight loop.
 - **10.730** Reuse a caller-owned collision outcome in fixed-step landing checks, removing one result-object allocation per physics tick while preserving the public classifier helpers and outcome semantics.
 - **10.729** Make mission startup retry one malformed authored route with a canonical orbit fallback, exposing the fallback in the briefing and preserving a playable gate circuit without adding frame-time work.

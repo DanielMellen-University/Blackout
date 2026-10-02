@@ -287,6 +287,8 @@ export class TerrainSystem {
   private readonly weatherSnow = { value: 0 }
   private readonly weatherClouds = { value: 0 }
   private readonly weatherWind = new Vector2()
+  /** Stable read-only snapshot for diagnostics and HUD integrations. */
+  private readonly weatherEffectsState = { rain: 0, snow: 0 }
   private vegFactory: ReturnType<typeof createVegetationFactory> | null = null
   private vegetationScale = 1
 
@@ -354,6 +356,8 @@ export class TerrainSystem {
     this.weatherSnow.value = safeSnow
     this.weatherClouds.value = safeCloudCover
     this.weatherWind.set(safeWindX, safeWindZ)
+    this.weatherEffectsState.rain = safeRain
+    this.weatherEffectsState.snow = safeSnow
     this.waterRain.value = safeRain
     this.waterSnow.value = safeSnow
     this.waterWindX.value = safeWindX
@@ -361,8 +365,8 @@ export class TerrainSystem {
     this.vegFactory?.setWeather(safeRain, safeSnow, safeWindX, safeWindZ)
   }
 
-  get weatherEffects(): { rain: number; snow: number } {
-    return { rain: this.weatherRain.value, snow: this.weatherSnow.value }
+  get weatherEffects(): Readonly<{ rain: number; snow: number }> {
+    return this.weatherEffectsState
   }
 
   /** Scale near-field vegetation batches without rebuilding terrain geometry. */
