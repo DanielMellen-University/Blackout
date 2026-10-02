@@ -139,6 +139,8 @@ export const COURSE_LIBRARY = [
     detail: 'Gentle circuit and approach practice',
     seed: 1,
     profile: 'orbit',
+    weather: 'clear',
+    timeOfDay: 0.5,
   },
   {
     id: 'range-sweep',

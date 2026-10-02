@@ -44,6 +44,8 @@ describe('course library', () => {
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()
     expect(courseSeedForId('training-orbit')).toBe(1)
+    expect(courseDefinitionForId('training-orbit').weather).toBe('clear')
+    expect(courseDefinitionForId('training-orbit').timeOfDay).toBeCloseTo(0.5)
     expect(courseDefinitionForId('free-flight').profile).toBe('free')
     expect(courseRunId(courseDefinitionForId('free-flight'))).toBeNull()
     expect(courseDefinitionForId('precision-slalom').profile).toBe('slalom')
