@@ -257,6 +257,36 @@ describe('classifyContact', () => {
     })
     expect(result).toEqual({ result: 'crash', reason: 'gear' })
   })
+
+  it('fails closed on malformed contact attitude and pad state', () => {
+    const base = {
+      airborne: true,
+      impact: null,
+      onPad: true,
+      gearDown: true,
+      vy: -1,
+      groundSpeed: 18,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'land' as const,
+      surfaceNormalY: 1,
+    }
+
+    expect(classifyContactOutcome({ ...base, pitch: Number.NaN })).toEqual({
+      result: 'crash', reason: 'pitch',
+    })
+    expect(classifyContactOutcome({ ...base, roll: Number.POSITIVE_INFINITY })).toEqual({
+      result: 'crash', reason: 'bank',
+    })
+    expect(classifyContactOutcome({ ...base, upY: 2 })).toEqual({
+      result: 'crash', reason: 'attitude',
+    })
+    expect(classifyContactOutcome({ ...base, onPad: 'yes' as unknown as boolean })).toEqual({
+      result: 'air', reason: null,
+    })
+  })
 })
 
 describe('impact quaternion helper sanity', () => {

@@ -163,8 +163,17 @@ export function classifyContactOutcomeInto(
   if (input.obstacle) return setContactOutcome(out, 'crash', 'obstacle')
 
   const impact = input.impact
-  const contacting = !!impact || input.onPad
+  const contacting = !!impact || input.onPad === true
   if (!contacting) return setContactOutcome(out, 'air', null)
+
+  // Attitude is derived from the aircraft quaternion, but this classifier is
+  // also a public boundary for replay/debug payloads. Do not let malformed
+  // angles turn a contact into a safe rollout or landing.
+  if (!Number.isFinite(input.upY) || input.upY < -1 || input.upY > 1) {
+    return setContactOutcome(out, 'crash', 'attitude')
+  }
+  if (!Number.isFinite(input.pitch)) return setContactOutcome(out, 'crash', 'pitch')
+  if (!Number.isFinite(input.roll)) return setContactOutcome(out, 'crash', 'bank')
 
   const impactAirborne = impact?.startedAirborne
   const airborne = impactAirborne === undefined
