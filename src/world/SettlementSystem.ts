@@ -296,18 +296,24 @@ function roofGeometry(): BufferGeometry {
   return geometry
 }
 
-function segmentDistance(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+function segmentDistanceSquared(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
   const dx = bx - ax, dz = bz - az
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / Math.max(1, dx * dx + dz * dz)))
-  return Math.hypot(px - ax - dx * t, pz - az - dz * t)
+  const rx = px - ax - dx * t
+  const rz = pz - az - dz * t
+  return rx * rx + rz * rz
+}
+
+function segmentDistance(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
+  return Math.sqrt(segmentDistanceSquared(px, pz, ax, az, bx, bz))
 }
 
 /** Exact route proximity prevents a curved connector disappearing near its bend. */
-function roadDistance(px: number, pz: number, road: SettlementRoad): number {
+function roadDistanceSquared(px: number, pz: number, road: SettlementRoad): number {
   let nearest = Infinity
   for (let i = 1; i < road.points.length; i++) {
     const a = road.points[i - 1]!, b = road.points[i]!
-    nearest = Math.min(nearest, segmentDistance(px, pz, a.x, a.z, b.x, b.z))
+    nearest = Math.min(nearest, segmentDistanceSquared(px, pz, a.x, a.z, b.x, b.z))
   }
   return nearest
 }
@@ -1241,12 +1247,16 @@ export class SettlementSystem {
       }
     }
     for (const { plan, root, detail } of this.loaded.values()) {
-      const distance = Math.hypot(plan.x - x, plan.z - z)
-      root.visible = distance < LOAD_RADIUS + plan.radius
-      detail.visible = distance < this.detailRadius + plan.radius
+      const dx = plan.x - x
+      const dz = plan.z - z
+      const distanceSquared = dx * dx + dz * dz
+      const loadRadius = LOAD_RADIUS + plan.radius
+      const detailRadius = this.detailRadius + plan.radius
+      root.visible = distanceSquared < loadRadius * loadRadius
+      detail.visible = distanceSquared < detailRadius * detailRadius
     }
     for (const connection of this.connections.values()) {
-      connection.root.visible = roadDistance(x, z, connection.road) < this.roadDetailRadius
+      connection.root.visible = roadDistanceSquared(x, z, connection.road) < this.roadDetailRadius * this.roadDetailRadius
     }
   }
 
@@ -1755,7 +1765,7 @@ export class SettlementSystem {
   /** Keep cached road plans but release GPU meshes as the player flies away. */
   private pruneDistantRoads(x: number, z: number): void {
     for (const [key, connection] of this.connections) {
-      if (roadDistance(x, z, connection.road) <= ROAD_KEEP_RADIUS) continue
+      if (roadDistanceSquared(x, z, connection.road) <= ROAD_KEEP_RADIUS * ROAD_KEEP_RADIUS) continue
       this.connections.delete(key)
       this.removeRoad(connection)
       this.deferRoad({ key, from: connection.from, to: connection.to, road: connection.road })
@@ -1776,12 +1786,12 @@ export class SettlementSystem {
       this.readyRoads[write++] = road
     }
     this.readyRoads.length = write
-    let nearest = -1, nearestDistance = Infinity
+    let nearest = -1, nearestDistanceSquared = Infinity
     for (let i = 0; i < this.readyRoads.length; i++) {
-      const distance = roadDistance(x, z, this.readyRoads[i]!.road)
-      if (distance > ROAD_LOAD_RADIUS || distance >= nearestDistance) continue
+      const distanceSquared = roadDistanceSquared(x, z, this.readyRoads[i]!.road)
+      if (distanceSquared > ROAD_LOAD_RADIUS * ROAD_LOAD_RADIUS || distanceSquared >= nearestDistanceSquared) continue
       nearest = i
-      nearestDistance = distance
+      nearestDistanceSquared = distanceSquared
     }
     return nearest
   }
@@ -1813,13 +1823,17 @@ export class SettlementSystem {
   /** A fixed mesh budget prevents a dense road graph from growing frame cost. */
   private canLoadRoad(candidate: ReadyRoad, x: number, z: number): boolean {
     if (this.connections.size < MAX_LOADED_REGIONAL_ROADS) return true
-    const candidateDistance = roadDistance(x, z, candidate.road)
-    let farthestKey = '', farthest: LoadedRoad | undefined, farthestDistance = -Infinity
+    const candidateDistanceSquared = roadDistanceSquared(x, z, candidate.road)
+    let farthestKey = '', farthest: LoadedRoad | undefined, farthestDistanceSquared = -Infinity
     for (const [key, connection] of this.connections) {
-      const distance = roadDistance(x, z, connection.road)
-      if (distance > farthestDistance) { farthestKey = key; farthest = connection; farthestDistance = distance }
+      const distanceSquared = roadDistanceSquared(x, z, connection.road)
+      if (distanceSquared > farthestDistanceSquared) {
+        farthestKey = key
+        farthest = connection
+        farthestDistanceSquared = distanceSquared
+      }
     }
-    if (!farthest || candidateDistance >= farthestDistance) return false
+    if (!farthest || candidateDistanceSquared >= farthestDistanceSquared) return false
     this.connections.delete(farthestKey)
     this.removeRoad(farthest)
     this.deferRoad({ key: farthestKey, from: farthest.from, to: farthest.to, road: farthest.road })

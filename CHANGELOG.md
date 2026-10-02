@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.786** Use squared-distance visibility and regional-road comparisons, preserving settlement and curved-road thresholds while removing repeated square roots from render-frame checks.
 - **10.785** Fast-path repeated ground-cache coordinates through the most recent slot, reducing collision, camera, and normal-probe scans without changing cache bounds or sampler invalidation.
 - **10.784** Cache normalized radar landmark names in pooled contacts and reuse an empty traffic list, preserving label updates while trimming duplicate string work during 10 Hz sweeps.
 - **10.783** Cache completed terrain result keys and distances before sorting, preserving nearest-first uploads while removing repeated key construction and map lookups from the comparator.
