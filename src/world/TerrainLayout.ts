@@ -27,8 +27,14 @@ export function tileDistance(cx: number, cz: number, size: number, x: number, z:
 }
 
 /** Non-overlapping quadtree leaves; no far ring of thousands of tiny meshes. */
-export function planTerrainTiles(x: number, z: number, radius: number): TerrainTile[] {
-  const tiles: TerrainTile[] = []
+export function planTerrainTiles(
+  x: number,
+  z: number,
+  radius: number,
+  out?: TerrainTile[],
+): TerrainTile[] {
+  const tiles = out ?? []
+  let count = 0
   function visit(cx: number, cz: number, size: number): void {
     const edgeDistance = tileDistance(cx, cz, size, x, z)
     if (edgeDistance > radius) return
@@ -43,7 +49,13 @@ export function planTerrainTiles(x: number, z: number, radius: number): TerrainT
       visit(cx + half, cz, half)
       visit(cx + half, cz + half, half)
     } else {
-      tiles.push({ cx, cz, size, dist: Math.hypot(cx + size / 2 - x, cz + size / 2 - z) })
+      const tile = tiles[count] ?? { cx: 0, cz: 0, size: 1, dist: 0 }
+      tile.cx = cx
+      tile.cz = cz
+      tile.size = size
+      tile.dist = Math.hypot(cx + size / 2 - x, cz + size / 2 - z)
+      tiles[count] = tile
+      count++
     }
   }
   const rootSize = TERRAIN_ROOT_SIZE
@@ -52,5 +64,6 @@ export function planTerrainTiles(x: number, z: number, radius: number): TerrainT
   for (let cx = minX; cx <= x + radius; cx += rootSize) {
     for (let cz = minZ; cz <= z + radius; cz += rootSize) visit(cx, cz, rootSize)
   }
+  tiles.length = count
   return tiles.sort((a, b) => a.dist - b.dist)
 }

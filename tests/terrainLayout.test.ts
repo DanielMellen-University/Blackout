@@ -67,4 +67,14 @@ describe('long-range adaptive terrain coverage', () => {
     const second = planTerrainTiles(170.5, -280.5, 80)
     expect(second).toEqual(first)
   })
+
+  it('reuses caller-owned tile records when a planner buffer is provided', () => {
+    const output = planTerrainTiles(0.5, 0.5, 40)
+    const firstRecord = output[0]
+    expect(firstRecord).toBeDefined()
+    const reused = planTerrainTiles(8.5, 3.5, 40, output)
+    expect(reused).toBe(output)
+    expect(reused).toContain(firstRecord)
+    expect(reused).toEqual(planTerrainTiles(8.5, 3.5, 40))
+  })
 })

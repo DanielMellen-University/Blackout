@@ -42,7 +42,8 @@ import {
 import { TerrainWorkerPool, type TerrainBuildRequest } from './TerrainWorkerPool'
 export { CHUNK_SIZE, segsForLod, waterSegsForLod, pondIntersectsBounds,
   buildTerrainSkirtGeometry, type TerrainLod } from './TerrainGeometry'
-import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance, TERRAIN_ROOT_SIZE } from './TerrainLayout'
+import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance, TERRAIN_ROOT_SIZE,
+  type TerrainTile } from './TerrainLayout'
 import { disposeObjectTree } from '../core/dispose'
 
 /**
@@ -258,6 +259,8 @@ export class TerrainSystem {
   private uploadBudgetMs = DEFAULT_UPLOAD_BUDGET_MS
   private maxUploadsPerFrame = DEFAULT_MAX_UPLOADS_PER_FRAME
   private desiredTiles = new Map<string, DesiredTile>()
+  /** Reused quadtree output keeps cell-crossing schedules allocation-light. */
+  private readonly plannedTiles: TerrainTile[] = []
   /** Desired leaves grouped by their aligned 32-cell quadtree root. */
   private readonly desiredTileBuckets = new Map<string, DesiredTile[]>()
   /** Reuse bucket arrays across stream-cell schedules to avoid churn. */
@@ -798,7 +801,7 @@ export class TerrainSystem {
       this.desiredTileBucketPool.push(bucket)
     }
     this.desiredTileBuckets.clear()
-    for (const tile of planTerrainTiles(cx + .5, cz + .5, this.viewRadius)) {
+    for (const tile of planTerrainTiles(cx + .5, cz + .5, this.viewRadius, this.plannedTiles)) {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
         this.desiredTiles.set(key, tile)
