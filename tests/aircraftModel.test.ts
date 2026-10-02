@@ -195,6 +195,39 @@ describe('rebuilt aircraft', () => {
     expect(aircraft.controls.gearDown).toBe(false)
   })
 
+  it('reuses grounded slope probes until the jet moves or terrain is replaced', () => {
+    let samples = 0
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    const aircraft = new Aircraft()
+    aircraft.reset({ x: 0, y: 1.4, z: 0, yaw: 0 })
+    samples = 0
+
+    aircraft.step(1 / 60)
+    const firstStepSamples = samples
+    expect(firstStepSamples).toBeGreaterThan(0)
+
+    samples = 0
+    aircraft.step(1 / 60)
+    const cachedStepSamples = samples
+    expect(cachedStepSamples).toBeLessThan(firstStepSamples)
+
+    aircraft.position.x += 5
+    samples = 0
+    aircraft.step(1 / 60)
+    expect(samples).toBeGreaterThan(cachedStepSamples)
+
+    setContactHeightSampler(() => {
+      samples++
+      return 0
+    })
+    samples = 0
+    aircraft.step(1 / 60)
+    expect(samples).toBeGreaterThan(cachedStepSamples)
+  })
+
   it('reuses the fixed-step contact floor for repeated radio-altitude reads', () => {
     let samples = 0
     setContactHeightSampler(() => {

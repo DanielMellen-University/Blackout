@@ -36,6 +36,9 @@ const _loadAcceleration = new Vector3()
 const _loadUp = new Vector3()
 const AIRFRAME_NIGHT_EMISSIVE = 0x153244
 const EXTERNAL_MODEL_LENGTH = 15.7
+/** Re-sample grounded slopes after a short taxi distance or terrain swap. */
+const GROUNDED_NORMAL_REFRESH_DISTANCE = 4
+const GROUNDED_NORMAL_REFRESH_DISTANCE_SQ = GROUNDED_NORMAL_REFRESH_DISTANCE ** 2
 
 /**
  * Contract for optional GLB replacements: nose points +Z, up is +Y, units are
@@ -187,6 +190,11 @@ export class Aircraft {
   private groundCacheOw = Number.NaN
   private groundCacheGearDown = false
   private groundCacheRevision = 0
+  /** Bounded slope cache for grounded landing classification. */
+  private groundNormalCacheValid = false
+  private groundNormalCacheX = Number.NaN
+  private groundNormalCacheZ = Number.NaN
+  private groundNormalCacheRevision = 0
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
   private landingLightNose: Object3D | null = null
@@ -304,6 +312,7 @@ export class Aircraft {
     this.impact = null
     this.groundNormalY = 1
     this.groundCacheValid = false
+    this.groundNormalCacheValid = false
     _spawnQuat.setFromAxisAngle(_Y_UP, yaw)
     this.orientation.copy(_spawnQuat)
     this.controls = createDefaultControls()
@@ -397,10 +406,26 @@ export class Aircraft {
       this.groundNormalY = Number.isFinite(this.impact.surfaceNormal.y)
         ? MathUtils.clamp(this.impact.surfaceNormal.y, -1, 1)
         : 1
+      this.groundNormalCacheValid = true
+      this.groundNormalCacheX = this.position.x
+      this.groundNormalCacheZ = this.position.z
+      this.groundNormalCacheRevision = groundSamplerRevision()
     } else if (dt > 0 && this.onGround) {
-      this.groundNormalY = this.flight.contactNormalY(this)
+      const revision = groundSamplerRevision()
+      const dx = this.position.x - this.groundNormalCacheX
+      const dz = this.position.z - this.groundNormalCacheZ
+      const moved = !Number.isFinite(dx) || !Number.isFinite(dz) ||
+        dx * dx + dz * dz > GROUNDED_NORMAL_REFRESH_DISTANCE_SQ
+      if (!this.groundNormalCacheValid || moved || this.groundNormalCacheRevision !== revision) {
+        this.groundNormalY = this.flight.contactNormalY(this)
+        this.groundNormalCacheValid = true
+        this.groundNormalCacheX = this.position.x
+        this.groundNormalCacheZ = this.position.z
+        this.groundNormalCacheRevision = revision
+      }
     } else {
       this.groundNormalY = 1
+      this.groundNormalCacheValid = false
     }
     this.updateLoadFactor(dt)
     this.autoGear()
@@ -479,6 +504,7 @@ export class Aircraft {
     this.impact = null
     this.groundNormalY = 1
     this.groundCacheValid = false
+    this.groundNormalCacheValid = false
     this.controls.throttle = 0
     this.controls.boost = false
     resolveEngineState(this.controls, this.engineState, this.fuel.fraction)
