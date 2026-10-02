@@ -408,7 +408,14 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     for (let bx = Math.floor((x - hx) / 400); bx <= Math.floor((x + hx) / 400); bx++) {
       for (let bz = Math.floor((z - hz) / 400); bz <= Math.floor((z + hz) / 400); bz++) {
         const key = `${bx},${bz}`
-        for (const other of occupied.get(key) ?? []) {
+        // Empty buckets are the common case while a settlement is being
+        // populated. Avoid allocating a throwaway [] for every empty probe.
+        const occupiedBucket = occupied.get(key)
+        if (!occupiedBucket) {
+          keys.push(key)
+          continue
+        }
+        for (const other of occupiedBucket) {
           if (Math.abs(x - other.x) >= hx + other.hx || Math.abs(z - other.z) >= hz + other.hz) continue
           const separate = [yaw, yaw + Math.PI / 2, other.yaw, other.yaw + Math.PI / 2].some(a => {
             const ux = Math.cos(a), uz = -Math.sin(a)

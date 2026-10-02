@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.750** Avoid temporary empty-bucket arrays while populating procedural settlements, reducing generation garbage without changing placement, collision, or silhouette rules.
 - **10.749** Remove transient iterator and slot-array allocations from terrain worker dispatch and reseed cancellation, preserving bounded streaming behavior under rapid travel and world resets.
 - **10.748** Reject empty or non-finite optional aircraft models before replacement, keeping the procedural F-35 fallback intact and leak-free when an external asset is malformed.
 - **10.747** Start brand-new pilots in Training Orbit when no course preference exists, preserving saved Random selections and replay/custom-seed launches.
