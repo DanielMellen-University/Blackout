@@ -7,6 +7,14 @@ interface BasinVertex { x: number; z: number; y: number; depth: number }
 
 /** Cached warped shoreline samples reused by every terrain tile touching a basin. */
 const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
+// Water geometry is built synchronously within one worker/main-thread turn.
+// Reuse the short-lived numeric staging arrays before they become typed buffers.
+const positionsScratch: number[] = []
+const depthsScratch: number[] = []
+const flowValuesScratch: number[] = []
+const flowDirectionsScratch: number[] = []
+const waterKindsScratch: number[] = []
+const waterDropsScratch: number[] = []
 
 export function makeWaterMaterial(
   clock: { value: number },
@@ -41,12 +49,18 @@ export function buildWaterMesh(
   const reaches: readonly RiverReach[] = basinMaskOrReaches instanceof Float32Array
     ? reachesArg
     : basinMaskOrReaches ?? reachesArg
-  const positions: number[] = []
-  const depths: number[] = []
-  const flowValues: number[] = []
-  const flowDirections: number[] = []
-  const waterKinds: number[] = []
-  const waterDrops: number[] = []
+  const positions = positionsScratch
+  const depths = depthsScratch
+  const flowValues = flowValuesScratch
+  const flowDirections = flowDirectionsScratch
+  const waterKinds = waterKindsScratch
+  const waterDrops = waterDropsScratch
+  positions.length = 0
+  depths.length = 0
+  flowValues.length = 0
+  flowDirections.length = 0
+  waterKinds.length = 0
+  waterDrops.length = 0
   const stride = segs + 1
   const cell = size / segs
   const vertex = (i: number): WaterVertex => ({
