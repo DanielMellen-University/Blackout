@@ -63,6 +63,8 @@ describe('natural drainage', () => {
     setWorldSeed(1)
     const reaches = riverReaches(-1, -1)
     expect(reaches.length).toBeGreaterThan(50)
+    expect(riverReaches(-1, -1)).toBe(reaches)
+    expect(new Set(reaches).size).toBe(reaches.length)
     const widths = reaches.map(r => r.wa)
     expect(Math.max(...widths) / Math.min(...widths)).toBeGreaterThan(2)
     for (const r of reaches) {

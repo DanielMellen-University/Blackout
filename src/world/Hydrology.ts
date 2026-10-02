@@ -41,7 +41,7 @@ export interface RiverReach {
   mouthX?: number; mouthZ?: number; mouthWidth?: number
 }
 type Reach = RiverReach
-interface Catchment { basins: Basin[]; bins: Reach[][] }
+interface Catchment { basins: Basin[]; bins: Reach[][]; reaches: Reach[] }
 interface FlowGrid {
   height: Float64Array
   moisture: Float32Array
@@ -517,10 +517,12 @@ function catchment(cx: number, cz: number): Catchment {
   }
 
   const bins: Reach[][] = Array.from({ length: BINS * BINS }, () => [])
+  const reaches: Reach[] = []
   let renderedReaches = 0
   function addReach(r: Reach): void {
     if (renderedReaches >= MAX_RENDER_REACHES) return
     renderedReaches++
+    reaches.push(r)
     const margin = 1250 + Math.max(r.wa, r.wb)
     const minX = Math.max(0, Math.floor((Math.min(r.ax, r.bx) - margin - ox) / BIN))
     const maxX = Math.min(BINS - 1, Math.floor((Math.max(r.ax, r.bx) + margin - ox) / BIN))
@@ -586,7 +588,7 @@ function catchment(cx: number, cz: number): Catchment {
       () => renderedReaches < MAX_RENDER_REACHES)
   }
 
-  const result = { basins, bins }
+  const result = { basins, bins, reaches }
   if (cache.size >= 128) cache.delete(cache.keys().next().value!)
   cache.set(key, result)
   return result
@@ -727,7 +729,7 @@ export function waterLandmarks(cx: number, cz: number): ReadonlyArray<Readonly<B
 }
 
 export function riverReaches(cx: number, cz: number): ReadonlyArray<Readonly<Reach>> {
-  return [...new Set(catchment(cx, cz).bins.flat())]
+  return catchment(cx, cz).reaches
 }
 
 function lineIntersectsBounds(
