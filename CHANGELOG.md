@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.790** Reuse bounded shoreline clipping buffers for analytic basins, preserving clipped lake and sea geometry while removing per-edge arrays and intersection allocations during water builds.
 - **10.789** Use a squared settlement-radius gate for point obstacle probes, preserving collision candidates while removing one square root per loaded plan.
 - **10.788** Use squared range gates for pooled traffic rendering and radar collection, preserving alert distances while removing unnecessary square roots from bounded slot scans.
 - **10.787** Remove comparison-only square roots from terrain LOD rechecks and settlement collision broad-phases, preserving thresholds while trimming hot-loop math.

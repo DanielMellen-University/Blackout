@@ -183,36 +183,58 @@ function appendAnalyticBasins(
     { x: 0, z: 0, y: 0, depth: 0 },
     { x: 0, z: 0, y: 0, depth: 0 },
   ]
-  const clip = (input: BasinVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): BasinVertex[] => {
-    if (!input.length) return input
-    const result: BasinVertex[] = []
+  // A convex triangle clipped by four tile edges can produce at most eight
+  // vertices. Keep both ping-pong buffers at that bound so shoreline fans do
+  // not allocate arrays or intersection records for every tile edge.
+  const clipScratchA: BasinVertex[] = Array.from({ length: 8 }, () => ({ x: 0, z: 0, y: 0, depth: 0 }))
+  const clipScratchB: BasinVertex[] = Array.from({ length: 8 }, () => ({ x: 0, z: 0, y: 0, depth: 0 }))
+  const clipInto = (
+    input: BasinVertex[], inputCount: number, axis: 'x' | 'z', bound: number,
+    keepGreater: boolean, output: BasinVertex[],
+  ): number => {
+    if (inputCount <= 0) return 0
     const inside = (point: BasinVertex): boolean => keepGreater ? point[axis] >= bound : point[axis] <= bound
-    const intersection = (a: BasinVertex, b: BasinVertex): BasinVertex => {
-      const delta = b[axis] - a[axis]
-      const t = Math.abs(delta) < 1e-9 ? 0 : (bound - a[axis]) / delta
-      return {
-        x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t,
-        y: a.y + (b.y - a.y) * t, depth: a.depth + (b.depth - a.depth) * t,
-      }
-    }
-    let previous = input[input.length - 1]!, previousInside = inside(previous)
-    for (const current of input) {
+    let outputCount = 0
+    let previous = input[inputCount - 1]!
+    let previousInside = inside(previous)
+    for (let index = 0; index < inputCount; index++) {
+      const current = input[index]!
       const currentInside = inside(current)
-      if (currentInside !== previousInside) result.push(intersection(previous, current))
-      if (currentInside) result.push(current)
+      if (currentInside !== previousInside) {
+        const delta = current[axis] - previous[axis]
+        const t = Math.abs(delta) < 1e-9 ? 0 : (bound - previous[axis]) / delta
+        const intersection = output[outputCount++]!
+        intersection.x = previous.x + (current.x - previous.x) * t
+        intersection.z = previous.z + (current.z - previous.z) * t
+        intersection.y = previous.y + (current.y - previous.y) * t
+        intersection.depth = previous.depth + (current.depth - previous.depth) * t
+      }
+      if (currentInside) {
+        const kept = output[outputCount++]!
+        kept.x = current.x
+        kept.z = current.z
+        kept.y = current.y
+        kept.depth = current.depth
+      }
       previous = current
       previousInside = currentInside
     }
-    return result
+    return outputCount
   }
   const appendPolygon = (input: BasinVertex[], kind: number): void => {
     let polygon = input
-    polygon = clip(polygon, 'x', -half, true)
-    polygon = clip(polygon, 'x', half, false)
-    polygon = clip(polygon, 'z', -half, true)
-    polygon = clip(polygon, 'z', half, false)
+    let polygonCount = 3
+    polygonCount = clipInto(polygon, polygonCount, 'x', -half, true, clipScratchA)
+    polygon = clipScratchA
+    polygonCount = clipInto(polygon, polygonCount, 'x', half, false, clipScratchB)
+    polygon = clipScratchB
+    polygonCount = clipInto(polygon, polygonCount, 'z', -half, true, clipScratchA)
+    polygon = clipScratchA
+    polygonCount = clipInto(polygon, polygonCount, 'z', half, false, clipScratchB)
+    polygon = clipScratchB
+    if (polygonCount < 3) return
     const first = polygon[0]!
-    for (let i = 1; i < polygon.length - 1; i++) {
+    for (let i = 1; i < polygonCount - 1; i++) {
       const second = polygon[i]!
       const third = polygon[i + 1]!
       positions.push(
