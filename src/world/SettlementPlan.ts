@@ -417,14 +417,30 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         }
         for (const other of occupiedBucket) {
           if (Math.abs(x - other.x) >= hx + other.hx || Math.abs(z - other.z) >= hz + other.hz) continue
-          const separate = [yaw, yaw + Math.PI / 2, other.yaw, other.yaw + Math.PI / 2].some(a => {
-            const ux = Math.cos(a), uz = -Math.sin(a)
-            const extent = (rotation: number, w: number, d: number) =>
-              Math.abs(ux * Math.cos(rotation) - uz * Math.sin(rotation)) * w / 2 +
-              Math.abs(ux * Math.sin(rotation) + uz * Math.cos(rotation)) * d / 2
-            return Math.abs((x - other.x) * ux + (z - other.z) * uz) >=
-              extent(yaw, width, depth) + extent(other.yaw, other.width, other.depth) + 10
-          })
+          // Probe the four separating axes inline. This hot loop used to
+          // allocate an angle array plus two closures for every occupied
+          // candidate, even though the result is only a short boolean scan.
+          const deltaX = x - other.x
+          const deltaZ = z - other.z
+          const otherCos = Math.cos(other.yaw)
+          const otherSin = Math.sin(other.yaw)
+          let separate = false
+          for (let axis = 0; axis < 4; axis++) {
+            const rotation = axis < 2
+              ? yaw + axis * Math.PI / 2
+              : other.yaw + (axis - 2) * Math.PI / 2
+            const ux = Math.cos(rotation), uz = -Math.sin(rotation)
+            const currentExtent =
+              Math.abs(ux * bc - uz * bs) * width / 2 +
+              Math.abs(ux * bs + uz * bc) * depth / 2
+            const otherExtent =
+              Math.abs(ux * otherCos - uz * otherSin) * other.width / 2 +
+              Math.abs(ux * otherSin + uz * otherCos) * other.depth / 2
+            if (Math.abs(deltaX * ux + deltaZ * uz) >= currentExtent + otherExtent + 10) {
+              separate = true
+              break
+            }
+          }
           if (!separate) return
         }
         keys.push(key)
