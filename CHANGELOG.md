@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.780** Route solid terrain palettes through caller-owned tuples, removing the base and weighted-candidate RGB allocations from streamed vertex coloring while preserving deterministic biome blends.
 - **10.779** Reuse terrain palette tuples in place, removing short-lived RGB arrays from streamed vertex coloring while preserving blended biome output and draw budgets.
 - **10.778** Collapse terrain contact-cache hits to one bounded map lookup, preserving cached misses while trimming repeated work when physics revisits streamed cells.
 - **10.777** Remove recursive array allocations from terrain quadtree planning, preserving deterministic coverage while reducing garbage during rapid stream reschedules.

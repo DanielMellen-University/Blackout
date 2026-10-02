@@ -688,77 +688,123 @@ export function sampleTerrainSurfaceInto(
   return out
 }
 
-function biomeColorSolid(
+const solidColorScratch: ColorTuple = [0, 0, 0]
+
+function biomeColorSolidInto(
+  out: ColorTuple,
   biome: Biome,
   height: number,
   moisture: number,
   n: number,
   speck: number,
   land: number,
-): [number, number, number] {
+): void {
   switch (biome) {
     case 'runway':
-      return [0.24 + speck, 0.3 + speck, 0.2]
+      out[0] = 0.24 + speck
+      out[1] = 0.3 + speck
+      out[2] = 0.2
+      return
     case 'ocean': {
       const shallow = clamp01((land - 0.25) / 0.2)
       const deep = 1 - shallow
-      return [
-        0.04 + shallow * 0.12 + n * 0.02,
-        0.16 + shallow * 0.22 + n * 0.05,
-        0.28 + shallow * 0.12 + deep * 0.2 + n * 0.04,
-      ]
+      out[0] = 0.04 + shallow * 0.12 + n * 0.02
+      out[1] = 0.16 + shallow * 0.22 + n * 0.05
+      out[2] = 0.28 + shallow * 0.12 + deep * 0.2 + n * 0.04
+      return
     }
     case 'water':
-      return [0.045, 0.23 + n * 0.025, 0.31 + n * 0.025]
+      out[0] = 0.045
+      out[1] = 0.23 + n * 0.025
+      out[2] = 0.31 + n * 0.025
+      return
     case 'volcanic':
       // Basalt starts charcoal so volcanic provinces do not wash into the
       // adjacent snow and mountain weights under bright flight lighting.
-      return [.105 + speck * .65, .085 + speck * .58, .07 + speck * .48]
+      out[0] = .105 + speck * .65
+      out[1] = .085 + speck * .58
+      out[2] = .07 + speck * .48
+      return
     case 'saltflat':
-      return [.82 + speck, .8 + speck, .71 + speck]
+      out[0] = .82 + speck
+      out[1] = .8 + speck
+      out[2] = .71 + speck
+      return
     case 'tundra':
-      return [.37 + speck, .39 + speck, .29 + speck]
+      out[0] = .37 + speck
+      out[1] = .39 + speck
+      out[2] = .29 + speck
+      return
     case 'savanna':
-      return [.53 + speck, .46 + speck, .22 + speck]
+      out[0] = .53 + speck
+      out[1] = .46 + speck
+      out[2] = .22 + speck
+      return
     case 'desert':
-      return [0.78 + speck, 0.66 + speck * 0.4, 0.38 + speck]
+      out[0] = 0.78 + speck
+      out[1] = 0.66 + speck * 0.4
+      out[2] = 0.38 + speck
+      return
     case 'mesa': {
       const band = Math.sin(height * 0.055) * 0.035
       const depth = smoothstep(5, 80, height)
       const r = 0.72 + band + speck * 0.5 + depth * 0.12
       const g = 0.28 + band * 0.35 + depth * 0.14 + speck * 0.2
       const b = 0.12 + depth * 0.06
-      return [Math.min(0.95, r), Math.min(0.55, g), Math.min(0.28, b)]
+      out[0] = Math.min(0.95, r)
+      out[1] = Math.min(0.55, g)
+      out[2] = Math.min(0.28, b)
+      return
     }
     case 'swamp':
-      return [0.2 + speck, 0.3 + moisture * 0.08, 0.16]
+      out[0] = 0.2 + speck
+      out[1] = 0.3 + moisture * 0.08
+      out[2] = 0.16
+      return
     case 'forest':
-      return [0.15 + speck, 0.36 + moisture * 0.1, 0.14]
+      out[0] = 0.15 + speck
+      out[1] = 0.36 + moisture * 0.1
+      out[2] = 0.14
+      return
     case 'rainforest':
-      return [0.07 + speck, 0.3 + moisture * 0.1, 0.1]
+      out[0] = 0.07 + speck
+      out[1] = 0.3 + moisture * 0.1
+      out[2] = 0.1
+      return
     case 'hills': {
       const rockBlend = smoothstep(70, 180, height)
-      const grass: [number, number, number] = [0.3 + speck, 0.42 + speck, 0.2]
-      const rock: [number, number, number] = [0.4 + n * 0.08, 0.38, 0.34]
-      return [
-        grass[0] + (rock[0] - grass[0]) * rockBlend,
-        grass[1] + (rock[1] - grass[1]) * rockBlend,
-        grass[2] + (rock[2] - grass[2]) * rockBlend,
-      ]
+      const grassR = 0.3 + speck
+      const grassG = 0.42 + speck
+      const grassB = 0.2
+      const rockR = 0.4 + n * 0.08
+      const rockG = 0.38
+      const rockB = 0.34
+      out[0] = grassR + (rockR - grassR) * rockBlend
+      out[1] = grassG + (rockG - grassG) * rockBlend
+      out[2] = grassB + (rockB - grassB) * rockBlend
+      return
     }
     case 'mountain': {
       const rock = 0.3 + n * 0.08
-      return [rock, rock * .98, rock * .95]
+      out[0] = rock
+      out[1] = rock * .98
+      out[2] = rock * .95
+      return
     }
     case 'snow': {
       // Snow is cool blue-gray rather than clipped white. The darker base
       // leaves ridge shadow and exposed stone readable in bright daylight.
       const t = smoothstep(450, 2200, height)
-      return [0.34 + t * .28 + n * .025, 0.39 + t * .27 + n * .02, 0.47 + t * .3]
+      out[0] = 0.34 + t * .28 + n * .025
+      out[1] = 0.39 + t * .27 + n * .02
+      out[2] = 0.47 + t * .3
+      return
     }
     case 'plains':
     default:
-      return [0.28 + speck, 0.44 + speck + moisture * 0.04, 0.18]
+      out[0] = 0.28 + speck
+      out[1] = 0.44 + speck + moisture * 0.04
+      out[2] = 0.18
   }
 }
 
@@ -783,24 +829,27 @@ export function biomeColor(
   const pond = features?.pond ?? 0
   const stream = features?.stream ?? 0
   const ravine = features?.ravine ?? 0
+  const col: ColorTuple = [0, 0, 0]
   if (biome === 'ocean' || biome === 'water') {
     // This mesh is sediment below the independent water surface, never blue
     // paint. Feature-aware mud and gravel tones keep a shallow exposed bank
     // from reading as a repeated dark cutout when the water is below it.
     const wetNoise = valueNoise(x / 240 + 17, z / 240 - 9) - .5
     if (biome === 'ocean') {
-      return [.11 + wetNoise * .035, .2 + wetNoise * .045, .24 + wetNoise * .055]
+      col[0] = .11 + wetNoise * .035
+      col[1] = .2 + wetNoise * .045
+      col[2] = .24 + wetNoise * .055
+      return col
     }
     const channel = clamp01(Math.max(stream, river) * .8 + pond * .35 + lake * .25)
     const shore = clamp01(coastal)
-    return [
-      .31 + wetNoise * .06 - channel * .035 + shore * .12,
-      .28 + wetNoise * .055 + channel * .01 + shore * .1,
-      .2 + wetNoise * .04 + channel * .035 + shore * .055,
-    ]
+    col[0] = .31 + wetNoise * .06 - channel * .035 + shore * .12
+    col[1] = .28 + wetNoise * .055 + channel * .01 + shore * .1
+    col[2] = .2 + wetNoise * .04 + channel * .035 + shore * .055
+    return col
   }
 
-  let col = biomeColorSolid(biome, height, moisture, n, speck, land)
+  biomeColorSolidInto(col, biome, height, moisture, n, speck, land)
   // Seamless cross-fade into neighboring biome color
   if (biomeWeights?.length) {
     col[0] = 0
@@ -810,15 +859,15 @@ export function biomeColor(
     for (const [candidate, weight] of biomeWeights) {
       const w = weight * weight
       if (w === 0) continue
-      const c = biomeColorSolid(candidate, height, moisture, n, speck, land)
-      for (let i = 0; i < 3; i++) col[i]! += c[i]! * w
+      biomeColorSolidInto(solidColorScratch, candidate, height, moisture, n, speck, land)
+      for (let i = 0; i < 3; i++) col[i]! += solidColorScratch[i]! * w
       total += w
     }
     scaleColorInPlace(col, 1 / Math.max(total, .00001))
   } else if (biomeMix > 0 && biomeB !== biome) {
-    const colB = biomeColorSolid(biomeB, height, moisture, n, speck, land)
+    biomeColorSolidInto(solidColorScratch, biomeB, height, moisture, n, speck, land)
     const t = clamp01(biomeMix)
-    mixColorInPlace(col, colB, t)
+    mixColorInPlace(col, solidColorScratch, t)
   }
 
   // Volcanic provinces need more than one gray tone to read as cooled lava,
