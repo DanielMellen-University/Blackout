@@ -32,6 +32,11 @@ export interface RadarContact {
   selected?: boolean
 }
 
+/** Internal extension for pooled contacts so stable names are normalized once. */
+interface RadarContactBuffer extends RadarContact {
+  sourceName: string
+}
+
 export interface RadarGate {
   x: number
   y: number
@@ -46,6 +51,7 @@ export const RADAR_UPDATE_INTERVAL_MS = 100
 export const MAX_RADAR_LANDMARK_SCAN = 128
 /** Keep long exploratory sorties from retaining every streamed landmark forever. */
 export const MAX_RADAR_DISCOVERED = 512
+const EMPTY_RADAR_LANDMARKS: readonly RadarLandmark[] = []
 
 /**
  * Remember a newly discovered landmark while keeping the session ledger
@@ -90,9 +96,9 @@ export function radarUpdateDue(nowMs: number, nextUpdateMs: number): boolean {
  * when the HUD asks for them, not from the render loop itself.
  */
 export class RadarSystem {
-  private readonly contactPool: RadarContact[] = Array.from(
+  private readonly contactPool: RadarContactBuffer[] = Array.from(
     { length: MAX_RADAR_CONTACTS },
-    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, vertical: 0, name: '', id: '', biome: '', selected: false }),
+    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, vertical: 0, name: '', id: '', biome: '', selected: false, sourceName: '' }),
   )
   private readonly contacts: RadarContact[] = []
   private visibleContactLimit = MAX_RADAR_CONTACTS
@@ -120,7 +126,7 @@ export class RadarSystem {
     heading: number,
     gate: RadarGate | null,
     landmarks: readonly RadarLandmark[],
-    traffic: readonly RadarLandmark[] = [],
+    traffic: readonly RadarLandmark[] = EMPTY_RADAR_LANDMARKS,
     py = 0,
   ): readonly RadarContact[] {
     this.contacts.length = 0
@@ -272,18 +278,27 @@ export class RadarSystem {
     contact.y = Number.isFinite(y) ? y : 0
     contact.z = z
     contact.vertical = contact.y - py
-    contact.name = safeRadarName(name)
+    const sourceName = typeof name === 'string' ? name : ''
+    const buffered = contact as RadarContactBuffer
+    if (buffered.sourceName !== sourceName) {
+      buffered.sourceName = sourceName
+      contact.name = safeRadarName(sourceName)
+    }
     contact.id = typeof id === 'string' ? id : ''
     contact.biome = typeof biome === 'string' ? biome : ''
-    contact.label = radarContactLabel(contact.kind, contact.name)
+    contact.label = radarContactLabelFromSafeName(contact.kind, contact.name ?? '')
   }
 }
 
 export function radarContactLabel(kind: RadarContactKind, name?: string): string {
+  return radarContactLabelFromSafeName(kind, safeRadarName(name))
+}
+
+function radarContactLabelFromSafeName(kind: RadarContactKind, name: string): string {
   if (kind === 'gate') return 'GATE'
-  if (kind === 'city') return safeRadarName(name) || 'CITY'
+  if (kind === 'city') return name || 'CITY'
   if (kind === 'traffic') return 'TRAFFIC'
-  return safeRadarName(name) || 'VILLAGE'
+  return name || 'VILLAGE'
 }
 
 /** One-shot exploration copy for a newly entered city or village range. */

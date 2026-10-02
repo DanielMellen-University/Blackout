@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.784** Cache normalized radar landmark names in pooled contacts and reuse an empty traffic list, preserving label updates while trimming duplicate string work during 10 Hz sweeps.
 - **10.783** Cache completed terrain result keys and distances before sorting, preserving nearest-first uploads while removing repeated key construction and map lookups from the comparator.
 - **10.782** Reuse retained settlement stream jobs across cell hops, refreshing their priority in place instead of cloning every queued record during fast flight.
 - **10.781** Add a caller-owned terrain color path and use it during tile generation, removing the remaining per-vertex result tuple allocation while preserving the public color helper and palette output.

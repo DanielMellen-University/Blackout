@@ -38,6 +38,20 @@ describe('radar exploration cues', () => {
     expect(radarDistanceLabel(second[0]?.distance ?? Number.NaN)).toBe('900M')
   })
 
+  it('refreshes pooled normalized names when a streamed landmark changes', () => {
+    const radar = new RadarSystem()
+    const first = radar.update(0, 0, 0, null, [
+      { x: 500, y: 0, z: 0, kind: 'city', id: 'city-1', name: 'Dune Reach' },
+    ])
+    expect(first[0]?.name).toBe('DUNE REACH')
+    expect(first[0]?.label).toBe('DUNE REACH')
+    const second = radar.update(0, 0, 0, null, [
+      { x: 500, y: 0, z: 0, kind: 'city', id: 'city-1', name: 'Ash Port' },
+    ])
+    expect(second[0]?.name).toBe('ASH PORT')
+    expect(second[0]?.label).toBe('ASH PORT')
+  })
+
   it('gives settlement locks a bounded arrival envelope', () => {
     expect(radarTargetArrivalRadius('city')).toBeGreaterThan(radarTargetArrivalRadius('village'))
     expect(radarTargetArrivalRadius('village')).toBeGreaterThan(0)
