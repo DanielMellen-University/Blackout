@@ -166,6 +166,23 @@ describe('bounded air traffic', () => {
     traffic.dispose()
   })
 
+  it('retains fractional cadence time instead of slowing after uneven frames', () => {
+    const parent = new Group()
+    const traffic = new AirTrafficSystem(parent)
+    const initialRevision = traffic.updateRevision
+
+    // Four 100 ms frames contain four bounded 12 Hz visual steps. The final
+    // 66 ms remains queued for the next frame instead of being dropped.
+    for (let i = 0; i < 4; i += 1) {
+      traffic.update(0, 0, 0.1)
+    }
+    expect(traffic.updateRevision).toBe(initialRevision + 4)
+
+    traffic.update(0, 0, 0.02)
+    expect(traffic.updateRevision).toBe(initialRevision + 5)
+    traffic.dispose()
+  })
+
   it('suspends hidden traffic work and refreshes when shown again', () => {
     const parent = new Group()
     const traffic = new AirTrafficSystem(parent)

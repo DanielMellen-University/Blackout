@@ -368,8 +368,11 @@ export class AirTrafficSystem {
     if (safeDt <= 0) return
     this.accumulator += safeDt
     if (this.accumulator < AIR_TRAFFIC_UPDATE_INTERVAL_SEC) return
-    const step = Math.min(this.accumulator, AIR_TRAFFIC_UPDATE_INTERVAL_SEC * 2)
-    this.accumulator = 0
+    const step = AIR_TRAFFIC_UPDATE_INTERVAL_SEC
+    // Preserve fractional time so uneven render frames do not make the
+    // deterministic traffic simulation drift behind real time. Keep one
+    // bounded step per render update to protect the frame budget after a hitch.
+    this.accumulator = Math.max(0, this.accumulator - step)
     this.elapsed += step
     this.renderInstances(safeX, safeZ)
   }
