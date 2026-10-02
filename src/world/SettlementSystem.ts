@@ -86,6 +86,37 @@ const ROAD_KEEP_RADIUS = ROAD_LOAD_RADIUS + 5000
 // render frame while the anchor is off-screen or the budget is full.
 const PROTECTED_RETRY_INTERVAL_FRAMES = 12
 
+interface SettlementQueueJob {
+  cx: number
+  cz: number
+  key: string
+  /** Cached focus-relative priority, refreshed on stream-cell changes. */
+  score: number
+  /** Cached geometric distance used for stable tie-breaking. */
+  distance: number
+}
+
+/** Resolve the bounded landmark-aware queue priority once per pending cell. */
+function settlementQueuePriority(
+  cx: number,
+  cz: number,
+  focusX: number,
+  focusZ: number,
+  pad: OpsPadSnapshot | null,
+): number {
+  let anchor: 'city' | 'village' | null = null
+  try {
+    anchor = settlementPlanApi.settlementAnchorForCell?.(cx, cz, pad) ?? null
+  } catch {
+    // A partial test or worker harness may omit the optional anchor resolver.
+  }
+  const dx = (cx + .5) * SETTLEMENT_CELL_SIZE - focusX
+  const dz = (cz + .5) * SETTLEMENT_CELL_SIZE - focusZ
+  const distance = Math.hypot(dx, dz)
+  const bonus = anchor === 'city' ? 12000 : anchor === 'village' ? 8000 : 0
+  return distance - bonus
+}
+
 // Waterfront and bridge presentation probes run serially during attachment.
 // Reuse one climate record so visual settlement details do not allocate a full
 // biome-weight sample for every shoreline or pier point.
@@ -551,11 +582,11 @@ export class SettlementSystem {
   /** One canonical job per graph edge, retained while one nearby cell owns it. */
   private readonly roadJobs = new Map<string, RoadJob>()
   private readonly roadSources = new Map<string, Set<string>>()
-  private queue: { cx: number; cz: number; key: string }[] = []
+  private queue: SettlementQueueJob[] = []
   /** Reused stream-cell staging containers; crossings are event-driven but can happen frequently at top speed. */
   private readonly wantedCells = new Set<string>()
   private readonly pendingCells: { cx: number; cz: number; key: string; distance: number }[] = []
-  private readonly retainedQueue: { cx: number; cz: number; key: string }[] = []
+  private readonly retainedQueue: SettlementQueueJob[] = []
   private readonly retainedQueueKeys = new Set<string>()
   private linkQueue: RoadJob[] = []
   /** Numeric stream-cell coordinates avoid a string allocation on every frame. */
@@ -1097,48 +1128,32 @@ export class SettlementSystem {
       retainedKeys.clear()
       for (const job of this.queue) {
         if (!wanted.has(job.key) || this.checked.has(job.key)) continue
-        retained.push(job)
+        retained.push({ ...job, score: 0 })
         retainedKeys.add(job.key)
       }
       for (const job of pending) {
-        if (!retainedKeys.has(job.key)) retained.push(job)
+        if (!retainedKeys.has(job.key)) {
+          retained.push({ cx: job.cx, cz: job.cz, key: job.key, score: 0, distance: job.distance })
+        }
       }
       this.queue.length = 0
       this.queue.push(...retained)
       const pad = getOpsPad()
-      // Keep the anchor resolver outside the comparator. Cell crossings are
-      // event-driven, but the queue can still be large enough for repeated
-      // comparator closures to show up in a fast flight profile.
-      const queueScore = (job: { cx: number; cz: number }): number => {
-        // Some unit tests replace SettlementPlan with a minimal mock. The
-        // optional call keeps that harness compatible while production
-        // builds still give guaranteed landmarks a useful spawn bonus.
-        let anchor: 'city' | 'village' | null = null
-        try {
-          anchor = settlementPlanApi.settlementAnchorForCell?.(job.cx, job.cz, pad) ?? null
-        } catch {
-          // A partial module mock may throw when an optional export is read.
-        }
-        const cx = (job.cx + .5) * SETTLEMENT_CELL_SIZE - x
-        const cz = (job.cz + .5) * SETTLEMENT_CELL_SIZE - z
-        const distance = Math.hypot(cx, cz)
+      for (const job of this.queue) {
+        const dx = (job.cx + .5) * SETTLEMENT_CELL_SIZE - x
+        const dz = (job.cz + .5) * SETTLEMENT_CELL_SIZE - z
+        job.distance = Math.hypot(dx, dz)
         // Anchors get a bounded distance bonus, not an absolute rank. The
         // old all-or-nothing ordering let a protected city near the runway
         // block the actual city or village the player had flown toward.
         // A nearby anchor still wins the opening stream, while a selected
         // destination wins once it is materially closer to the aircraft.
-        const bonus = anchor === 'city' ? 12000 : anchor === 'village' ? 8000 : 0
-        return distance - bonus
+        job.score = settlementQueuePriority(job.cx, job.cz, x, z, pad)
       }
       this.queue.sort((a, b) => {
-        const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - x
-        const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - z
-        const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - x
-        const bz = (b.cz + .5) * SETTLEMENT_CELL_SIZE - z
         // Keep the farthest job at index zero so pop() consumes the nearest
         // cell without shifting every queued plan on each dispatch.
-        return queueScore(b) - queueScore(a)
-          || Math.hypot(bx, bz) - Math.hypot(ax, az)
+        return b.score - a.score || b.distance - a.distance
       })
     }
     this.retryProtectedAnchors(x, z)
@@ -1242,13 +1257,19 @@ export class SettlementSystem {
         this.checked.delete(failed.key)
         // The queue is reverse-prioritized and consumed with pop(). Append the
         // failed job so it remains the next retry without losing its priority.
-        this.queue.push(failed)
+        const failedJob: SettlementQueueJob = {
+          cx: failed.cx,
+          cz: failed.cz,
+          key: failed.key,
+          score: settlementQueuePriority(failed.cx, failed.cz, this.focusX, this.focusZ, getOpsPad()),
+          distance: Math.hypot(
+            (failed.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX,
+            (failed.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ,
+          ),
+        }
+        this.queue.push(failedJob)
         this.queue.sort((a, b) => {
-          const ax = (a.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX
-          const az = (a.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ
-          const bx = (b.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX
-          const bz = (b.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ
-          return Math.hypot(bx, bz) - Math.hypot(ax, az)
+          return b.score - a.score || b.distance - a.distance
         })
       } else {
         // Keep the canonical edge marked while the synchronous fallback

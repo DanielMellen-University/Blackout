@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.774** Cache settlement stream-cell priority and distance before sorting, preserving landmark-aware ordering while removing repeated anchor resolution and distance work from the comparator.
 - **10.773** Measure mission clearance across the full runway-width route corridor, keeping route briefings and validation honest when terrain rises under a wing.
 - **10.772** Add deterministic broad vegetation clustering so forest and lowland coverage forms readable patches without changing instance budgets or draw counts.
 - **10.771** Replace regional settlement link filtering and sorting with a bounded deterministic best-candidate scan, preserving sparse graph selection while reducing streaming-planner allocations.
