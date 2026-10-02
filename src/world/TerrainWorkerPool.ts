@@ -201,8 +201,10 @@ function isTerrainGeometryData(value: unknown): value is TerrainGeometryData {
 function isTerrainGeometryBuffers(value: unknown): value is TerrainGeometryBuffers {
   if (!isRecord(value) || !isRecord(value.attributes) || !isRecord(value.bounds)) return false
   const bounds = value.bounds
-  if (![bounds.x, bounds.y, bounds.z, bounds.radius].every(Number.isFinite)) return false
-  for (const attribute of Object.values(value.attributes)) {
+  if (!Number.isFinite(bounds.x) || !Number.isFinite(bounds.y) ||
+    !Number.isFinite(bounds.z) || !Number.isFinite(bounds.radius)) return false
+  for (const name in value.attributes) {
+    const attribute = value.attributes[name]
     if (!isRecord(attribute) || !Number.isInteger(attribute.itemSize) || attribute.itemSize < 1) return false
     if (!ArrayBuffer.isView(attribute.array)) return false
   }
