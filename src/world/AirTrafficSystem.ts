@@ -27,6 +27,9 @@ export const AIR_TRAFFIC_MAX_DISTANCE_M = 8_000
 export const AIR_TRAFFIC_ALERT_RANGE_M = 1_800
 export const AIR_TRAFFIC_ALERT_VERTICAL_M = 520
 export const AIR_TRAFFIC_BEACON_COUNT = AIR_TRAFFIC_COUNT
+const AIR_TRAFFIC_MIN_DISTANCE_SQUARED = AIR_TRAFFIC_MIN_DISTANCE_M * AIR_TRAFFIC_MIN_DISTANCE_M
+const AIR_TRAFFIC_MAX_DISTANCE_SQUARED = AIR_TRAFFIC_MAX_DISTANCE_M * AIR_TRAFFIC_MAX_DISTANCE_M
+const AIR_TRAFFIC_ALERT_RANGE_SQUARED = AIR_TRAFFIC_ALERT_RANGE_M * AIR_TRAFFIC_ALERT_RANGE_M
 
 export interface TrafficAlert {
   readonly id: string
@@ -244,10 +247,13 @@ export class AirTrafficSystem {
     const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
     const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
     this.radarCache.length = 0
+    const rangeSquared = range * range
     for (let index = 0; index < AIR_TRAFFIC_COUNT; index += 1) {
       const contact = this.radarPool[index]!
-      const distance = Math.hypot(contact.x - safeX, contact.z - safeZ)
-      if (!trafficRadarInRange(distance, range)) continue
+      const dx = contact.x - safeX
+      const dz = contact.z - safeZ
+      const distanceSquared = dx * dx + dz * dz
+      if (!Number.isFinite(distanceSquared) || distanceSquared > rangeSquared) continue
       this.radarCache.push(contact)
     }
     return this.radarCache
@@ -272,7 +278,9 @@ export class AirTrafficSystem {
       const contact = this.radarPool[index]!
       const dx = contact.x - safeX
       const dz = contact.z - safeZ
-      const distance = Math.hypot(dx, dz)
+      const distanceSquared = dx * dx + dz * dz
+      if (!Number.isFinite(distanceSquared) || distanceSquared > AIR_TRAFFIC_ALERT_RANGE_SQUARED) continue
+      const distance = Math.sqrt(distanceSquared)
       const vertical = Math.abs(contact.y - safeY)
       const conflictDistance = trafficConflictDistance(distance, vertical)
       if (
@@ -419,8 +427,12 @@ export class AirTrafficSystem {
       contact.x = x
       contact.y = y
       contact.z = z
-      const distance = Math.hypot(x - playerX, z - playerZ)
-      if (index >= this.activeCount || !trafficInRange(distance)) {
+      const dxToPlayer = x - playerX
+      const dzToPlayer = z - playerZ
+      const distanceSquared = dxToPlayer * dxToPlayer + dzToPlayer * dzToPlayer
+      if (index >= this.activeCount || !Number.isFinite(distanceSquared) ||
+        distanceSquared < AIR_TRAFFIC_MIN_DISTANCE_SQUARED ||
+        distanceSquared > AIR_TRAFFIC_MAX_DISTANCE_SQUARED) {
         _matrix.makeScale(0, 0, 0)
         this.mesh.setMatrixAt(index, _matrix)
         this.contrailMesh.setMatrixAt(index, _matrix)

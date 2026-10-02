@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.788** Use squared range gates for pooled traffic rendering and radar collection, preserving alert distances while removing unnecessary square roots from bounded slot scans.
 - **10.787** Remove comparison-only square roots from terrain LOD rechecks and settlement collision broad-phases, preserving thresholds while trimming hot-loop math.
 - **10.786** Use squared-distance visibility and regional-road comparisons, preserving settlement and curved-road thresholds while removing repeated square roots from render-frame checks.
 - **10.785** Fast-path repeated ground-cache coordinates through the most recent slot, reducing collision, camera, and normal-probe scans without changing cache bounds or sampler invalidation.
