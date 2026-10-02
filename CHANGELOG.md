@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.773** Measure mission clearance across the full runway-width route corridor, keeping route briefings and validation honest when terrain rises under a wing.
 - **10.772** Add deterministic broad vegetation clustering so forest and lowland coverage forms readable patches without changing instance budgets or draw counts.
 - **10.771** Replace regional settlement link filtering and sorting with a bounded deterministic best-candidate scan, preserving sparse graph selection while reducing streaming-planner allocations.
 - **10.770** Remove temporary numeric arrays from settlement plan, building, road, and point validation, preserving malformed-worker fail-closed behavior while reducing large-city reply checks.

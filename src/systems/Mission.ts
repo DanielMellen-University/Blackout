@@ -761,6 +761,7 @@ export function summarizeMissionRoute(
   route: readonly MissionRoutePoint[],
   profile: MissionRouteProfile,
   modifier = routeModifierForSpawn(spawnX, spawnZ, 0, profile),
+  corridorYaw = 0,
 ): MissionRouteSummary {
   const safeSpawnX = finiteOr(spawnX, 0)
   const safeSpawnY = finiteOr(spawnY, 0)
@@ -775,8 +776,8 @@ export function summarizeMissionRoute(
   let lengthMeters = 0
   let maxTurnDegrees = 0
   let maxSlopeDegrees = 0
-  let minClearanceMeters = Number.POSITIVE_INFINITY
   let maxAltitudeMeters = safeSpawnY
+  const safeCorridorYaw = finiteOr(corridorYaw, 0)
 
   for (const point of route) {
     const dx = point.x - previousX
@@ -795,16 +796,6 @@ export function summarizeMissionRoute(
       maxTurnDegrees = Math.max(maxTurnDegrees, Math.acos(MathUtils.clamp(dot, -1, 1)) * 180 / Math.PI)
     }
 
-    const samples = routeSegmentSampleCount(dx, dz)
-    for (let sample = 1; sample <= samples; sample++) {
-      const t = sample / samples
-      const x = previousX + dx * t
-      const y = previousY + dy * t
-      const z = previousZ + dz * t
-      const ground = sampleTerrainSurfaceHeightFast(x, z)
-      if (Number.isFinite(ground)) minClearanceMeters = Math.min(minClearanceMeters, y - ground)
-    }
-
     previousX = point.x
     previousY = point.y
     previousZ = point.z
@@ -812,7 +803,13 @@ export function summarizeMissionRoute(
     previousDz = dz
   }
 
-  if (!Number.isFinite(minClearanceMeters)) minClearanceMeters = ROUTE_CLEARANCE
+  const minClearanceMeters = routeCorridorMinClearance(
+    safeSpawnX,
+    safeSpawnY,
+    safeSpawnZ,
+    route,
+    safeCorridorYaw,
+  )
   const climbMeters = Math.max(0, maxAltitudeMeters - safeSpawnY)
   const difficulty: MissionRouteDifficulty =
     maxTurnDegrees >= 112 || maxSlopeDegrees >= 18 || climbMeters >= 420 || lengthMeters >= 7_200
@@ -880,6 +877,7 @@ export function resolveMissionRouteWithFallback(
       route,
       candidateProfile,
       candidateModifier,
+      spawnYaw,
     )
     return {
       profile: candidateProfile,
@@ -910,6 +908,58 @@ function routeSegmentSampleCount(dx: number, dz: number): number {
     ROUTE_MAX_SEGMENT_SAMPLES,
     Math.max(ROUTE_MIN_SEGMENT_SAMPLES, Math.ceil(length / ROUTE_SAMPLE_SPACING)),
   )
+}
+
+/**
+ * Measure the minimum terrain clearance across the same fixed-width corridor
+ * that route generation raises around each gate leg. The sampler is injectable
+ * for deterministic contract tests; production uses the fast terrain query.
+ */
+export function routeCorridorMinClearance(
+  spawnX: number,
+  spawnY: number,
+  spawnZ: number,
+  route: readonly MissionRoutePoint[],
+  corridorYaw = 0,
+  sampleHeight: (x: number, z: number) => number = sampleTerrainSurfaceHeightFast,
+): number {
+  const safeSpawnX = finiteOr(spawnX, 0)
+  const safeSpawnY = finiteOr(spawnY, 0)
+  const safeSpawnZ = finiteOr(spawnZ, 0)
+  const safeCorridorYaw = finiteOr(corridorYaw, 0)
+  const corridorRightX = Math.cos(safeCorridorYaw)
+  const corridorRightZ = -Math.sin(safeCorridorYaw)
+  let previousX = safeSpawnX
+  let previousY = safeSpawnY
+  let previousZ = safeSpawnZ
+  let minClearanceMeters = Number.POSITIVE_INFINITY
+
+  for (const point of route) {
+    const dx = point.x - previousX
+    const dy = point.y - previousY
+    const dz = point.z - previousZ
+    const samples = routeSegmentSampleCount(dx, dz)
+    for (let sample = 1; sample <= samples; sample++) {
+      const t = sample / samples
+      const x = previousX + dx * t
+      const y = previousY + dy * t
+      const z = previousZ + dz * t
+      // Keep the advertised clearance honest across the same fixed-width
+      // runway corridor used by buildMissionRoute, not just its centreline.
+      for (const lateral of ROUTE_CORRIDOR_OFFSETS) {
+        const ground = sampleHeight(
+          x + corridorRightX * lateral,
+          z + corridorRightZ * lateral,
+        )
+        if (Number.isFinite(ground)) minClearanceMeters = Math.min(minClearanceMeters, y - ground)
+      }
+    }
+    previousX = point.x
+    previousY = point.y
+    previousZ = point.z
+  }
+
+  return Math.max(0, finiteOr(minClearanceMeters, ROUTE_CLEARANCE))
 }
 
 /**

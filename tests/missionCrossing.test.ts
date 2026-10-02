@@ -14,6 +14,7 @@ import {
   missionChallengeForProfile,
   routeModifierForSpawn,
   routeModifierLabel,
+  routeCorridorMinClearance,
   scoringFocusForModifier,
   scoringFocusLabel,
   summarizeMissionRoute,
@@ -348,6 +349,19 @@ describe('MissionSystem gate crossing', () => {
     })
   })
 
+  it('measures wing-corridor clearance instead of only the route centreline', () => {
+    const route: MissionRoutePoint[] = [{ x: 0, y: 100, z: 960, fwdX: 0, fwdZ: 1 }]
+    const clearance = routeCorridorMinClearance(
+      0,
+      100,
+      0,
+      route,
+      0,
+      (x, _z) => Math.abs(x) > 20 ? 80 : 0,
+    )
+    expect(clearance).toBe(20)
+  })
+
   it('keeps every generated route leg above terrain between gates', () => {
     const profiles = ['orbit', 'sweep', 'slalom', 'ridge', 'canyon', 'coast', 'fjord', 'river', 'volcanic', 'desert', 'alpine', 'storm', 'night', 'mesa', 'badlands', 'saltflat', 'savanna', 'tundra', 'swamp', 'archipelago', 'thermal', 'approach'] as const
     const starts = [
@@ -618,7 +632,7 @@ describe('MissionSystem gate crossing', () => {
 
   it('exposes cached route feedback after mission start', () => {
     const mission = new MissionSystem(new Scene())
-    mission.start(0, 20, 0, 0)
+    mission.start(0, 20, 0, 0.8)
     expect(mission.routeSummary.label).toBe(mission.routeProfileLabel)
     expect(mission.routeBriefing).toContain('MIN CLR')
     expect(mission.routeBriefing).toContain('TURN ')
