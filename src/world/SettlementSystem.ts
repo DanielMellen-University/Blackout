@@ -289,16 +289,18 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
     if (!length) continue
     const nx = -(b.z - a.z) / length * road.width / 2
     const nz = (b.x - a.x) / length * road.width / 2
-    const vertices = [
-      { x: a.leftX ?? a.x + nx, z: a.leftZ ?? a.z + nz, y: a.leftY ?? a.y },
-      { x: a.rightX ?? a.x - nx, z: a.rightZ ?? a.z - nz, y: a.rightY ?? a.y },
-      { x: b.leftX ?? b.x + nx, z: b.leftZ ?? b.z + nz, y: b.leftY ?? b.y },
-      { x: b.rightX ?? b.x - nx, z: b.rightZ ?? b.z - nz, y: b.rightY ?? b.y },
-    ]
-    for (const index of [0, 2, 1, 1, 2, 3]) {
-      const v = vertices[index]!
-      positions.push(v.x - originX, v.y - originY, v.z - originZ)
-    }
+    const aLeftX = a.leftX ?? a.x + nx, aLeftY = a.leftY ?? a.y, aLeftZ = a.leftZ ?? a.z + nz
+    const aRightX = a.rightX ?? a.x - nx, aRightY = a.rightY ?? a.y, aRightZ = a.rightZ ?? a.z - nz
+    const bLeftX = b.leftX ?? b.x + nx, bLeftY = b.leftY ?? b.y, bLeftZ = b.leftZ ?? b.z + nz
+    const bRightX = b.rightX ?? b.x - nx, bRightY = b.rightY ?? b.y, bRightZ = b.rightZ ?? b.z - nz
+    positions.push(
+      aLeftX - originX, aLeftY - originY, aLeftZ - originZ,
+      bLeftX - originX, bLeftY - originY, bLeftZ - originZ,
+      aRightX - originX, aRightY - originY, aRightZ - originZ,
+      aRightX - originX, aRightY - originY, aRightZ - originZ,
+      bLeftX - originX, bLeftY - originY, bLeftZ - originZ,
+      bRightX - originX, bRightY - originY, bRightZ - originZ,
+    )
   }
   if (!positions.length) return null
   const geometry = new BufferGeometry()

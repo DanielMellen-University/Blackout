@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.770** Remove temporary numeric arrays from settlement plan, building, road, and point validation, preserving malformed-worker fail-closed behavior while reducing large-city reply checks.
 - **10.769** Make settlement worker payload validation allocation-free across plans, buildings, roads, and road points while preserving fail-closed malformed-reply handling.
 - **10.768** Consolidate settlement building, roof, civic-accent, and crown classification into one pass and scan plaza anchors directly, reducing large-landmark install allocations while preserving instance order and silhouettes.
 - **10.767** Make terrain worker geometry validation allocation-free by replacing temporary bounds and attribute arrays with scalar and direct-key checks, preserving fail-closed malformed-payload handling.
