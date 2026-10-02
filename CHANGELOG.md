@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.752** Cache settlement building yaw sine and cosine in the occupancy index, removing repeated trig work from collision rejection without changing placement rules.
 - **10.751** Inline procedural settlement collision-axis probes, removing per-candidate angle arrays and closures while preserving exact placement and overlap rules.
 - **10.750** Avoid temporary empty-bucket arrays while populating procedural settlements, reducing generation garbage without changing placement, collision, or silhouette rules.
 - **10.749** Remove transient iterator and slot-array allocations from terrain worker dispatch and reseed cancellation, preserving bounded streaming behavior under rapid travel and world resets.

@@ -389,7 +389,17 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   const localRoadScale = drySettlementBiome ? 1.1
     : wetSettlementBiome ? .88 : coldSettlementBiome ? 1.02 : 1
   const world = (x: number, z: number) => ({ x: plan.x + cos * x + sin * z, z: plan.z - sin * x + cos * z })
-  const occupied = new Map<string, { x: number; z: number; hx: number; hz: number; yaw: number; width: number; depth: number }[]>()
+  const occupied = new Map<string, {
+    x: number
+    z: number
+    hx: number
+    hz: number
+    yaw: number
+    cosYaw: number
+    sinYaw: number
+    width: number
+    depth: number
+  }[]>()
   const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number }[] = []
   let serial = 100
   const building = (lx: number, lz: number, width: number, depth: number, height: number, yaw = angle) => {
@@ -422,8 +432,8 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
           // candidate, even though the result is only a short boolean scan.
           const deltaX = x - other.x
           const deltaZ = z - other.z
-          const otherCos = Math.cos(other.yaw)
-          const otherSin = Math.sin(other.yaw)
+          const otherCos = other.cosYaw
+          const otherSin = other.sinYaw
           let separate = false
           for (let axis = 0; axis < 4; axis++) {
             const rotation = axis < 2
@@ -461,7 +471,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     if (max - min > reliefLimit) return
     for (const key of keys) {
       const bucket = occupied.get(key) ?? []
-      bucket.push({ x, z, hx, hz, yaw, width, depth }); occupied.set(key, bucket)
+      bucket.push({ x, z, hx, hz, yaw, cosYaw: bc, sinYaw: bs, width, depth }); occupied.set(key, bucket)
     }
     const n = serial++
     const shapeRoll = rand(n + 2000)
