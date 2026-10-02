@@ -198,7 +198,7 @@ import {
   DEFAULT_KEYBOARD_YAW,
   DEFAULT_REDUCED_MOTION,
   DEFAULT_STABILITY_ASSIST,
-  keyboardYawPreferenceLabel,
+  keyboardYawPreferenceLabelForScheme,
   keyboardControlSchemeLabel,
   normalizeKeyboardControlScheme,
   readKeyboardControlScheme,
@@ -206,7 +206,7 @@ import {
   normalizeKeyboardYawPreference,
   readKeyboardYawPreference,
   writeKeyboardYawPreference,
-  keyboardRollPreferenceLabel,
+  keyboardRollPreferenceLabelForScheme,
   normalizeKeyboardRollPreference,
   readKeyboardRollPreference,
   writeKeyboardRollPreference,
@@ -942,12 +942,8 @@ export async function boot(): Promise<void> {
       if (rollSelect.options[0]) rollSelect.options[0].textContent = `${rollPrimary} right / ${rollSecondary} left`
       if (rollSelect.options[1]) rollSelect.options[1].textContent = `${rollPrimary} left / ${rollSecondary} right`
     }
-    const yawDirection = input.keyboardYaw === 'a-left'
-      ? `${yawPrimary} LEFT / ${yawSecondary} RIGHT`
-      : `${yawPrimary} RIGHT / ${yawSecondary} LEFT`
-    const rollDirection = input.keyboardRoll === 'q-left'
-      ? `${rollPrimary} LEFT / ${rollSecondary} RIGHT`
-      : `${rollPrimary} RIGHT / ${rollSecondary} LEFT`
+    const yawDirection = keyboardYawPreferenceLabelForScheme(input.keyboardYaw, input.keyboardScheme)
+    const rollDirection = keyboardRollPreferenceLabelForScheme(input.keyboardRoll, input.keyboardScheme)
     if (yawLabel) yawLabel.textContent = `Yaw (${yawDirection})`
     if (rollLabel) rollLabel.textContent = `Roll (${rollDirection})`
   }
@@ -980,7 +976,7 @@ export async function boot(): Promise<void> {
     if (!yawSelect) return
     applyKeyboardYaw(yawSelect.value as KeyboardYawPreference)
     if (playing && !menu.paused && !results.open) {
-      showBanner(`KEYBOARD YAW ${keyboardYawPreferenceLabel(input.keyboardYaw)}`, 1500, 'info')
+      showBanner(`KEYBOARD YAW ${keyboardYawPreferenceLabelForScheme(input.keyboardYaw, input.keyboardScheme)}`, 1500, 'info')
     }
   }
   uiListeners.add(yawSelect, 'change', onKeyboardYawChange)
@@ -996,7 +992,7 @@ export async function boot(): Promise<void> {
     if (!rollSelect) return
     applyKeyboardRoll(rollSelect.value as KeyboardRollPreference)
     if (playing && !menu.paused && !results.open) {
-      showBanner(`KEYBOARD ROLL ${keyboardRollPreferenceLabel(input.keyboardRoll)}`, 1500, 'info')
+      showBanner(`KEYBOARD ROLL ${keyboardRollPreferenceLabelForScheme(input.keyboardRoll, input.keyboardScheme)}`, 1500, 'info')
     }
   }
   uiListeners.add(rollSelect, 'change', onKeyboardRollChange)

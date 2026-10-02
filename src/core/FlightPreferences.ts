@@ -78,6 +78,28 @@ export function keyboardControlSchemeLabel(scheme: KeyboardControlScheme): strin
     ? 'A/D ROLL · Q/E YAW'
     : 'A/D YAW · Q/E ROLL'
 }
+
+export function keyboardYawPreferenceLabelForScheme(
+  preference: KeyboardYawPreference,
+  scheme: KeyboardControlScheme,
+): string {
+  const first = normalizeKeyboardControlScheme(scheme) === 'conventional' ? 'Q' : 'A'
+  const second = normalizeKeyboardControlScheme(scheme) === 'conventional' ? 'E' : 'D'
+  return normalizeKeyboardYawPreference(preference) === 'a-left'
+    ? `${first} LEFT / ${second} RIGHT`
+    : `${first} RIGHT / ${second} LEFT`
+}
+
+export function keyboardRollPreferenceLabelForScheme(
+  preference: KeyboardRollPreference,
+  scheme: KeyboardControlScheme,
+): string {
+  const first = normalizeKeyboardControlScheme(scheme) === 'conventional' ? 'A' : 'Q'
+  const second = normalizeKeyboardControlScheme(scheme) === 'conventional' ? 'D' : 'E'
+  return normalizeKeyboardRollPreference(preference) === 'q-left'
+    ? `${first} LEFT / ${second} RIGHT`
+    : `${first} RIGHT / ${second} LEFT`
+}
 export const KEYBOARD_BINDING_CODES: readonly KeyboardBindingCode[] = [
   'Space', 'KeyB', 'KeyG', 'KeyF', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyI',
 ]

@@ -36,6 +36,8 @@ import {
   readKeyboardBindings,
   writeKeyboardBindings,
   keyboardControlSchemeLabel,
+  keyboardYawPreferenceLabelForScheme,
+  keyboardRollPreferenceLabelForScheme,
   normalizeKeyboardControlScheme,
   readKeyboardControlScheme,
   writeKeyboardControlScheme,
@@ -95,6 +97,8 @@ describe('keyboard flight preferences', () => {
     expect(values.get(KEYBOARD_SCHEME_STORAGE_KEY)).toBe('conventional')
     expect(readKeyboardControlScheme(storage)).toBe('conventional')
     expect(keyboardControlSchemeLabel('conventional')).toBe('A/D ROLL · Q/E YAW')
+    expect(keyboardYawPreferenceLabelForScheme('a-left', 'conventional')).toBe('Q LEFT / E RIGHT')
+    expect(keyboardRollPreferenceLabelForScheme('q-right', 'conventional')).toBe('A RIGHT / D LEFT')
   })
 
   it('normalizes invalid values to the safe default', () => {
