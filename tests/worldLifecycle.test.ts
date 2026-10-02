@@ -158,6 +158,22 @@ describe('world lifecycle boundary', () => {
     expect(hit).toHaveBeenCalledWith(5, 10, 0, expect.anything())
   })
 
+  it('fails closed on malformed obstacle sweep coordinates', () => {
+    const world = Object.create(World.prototype) as World
+    ;(world as unknown as { disposed: boolean }).disposed = false
+    const settlementHit = vi.fn(() => true)
+    ;(world as unknown as { settlements: { hitObstacle: typeof settlementHit } }).settlements = {
+      hitObstacle: settlementHit,
+    }
+
+    expect(world.hitObstacle(Number.NaN, 10, 0)).toBe(false)
+    expect(world.hitObstacleSegment(
+      { x: 0, y: 10, z: 0 },
+      { x: Number.POSITIVE_INFINITY, y: 10, z: 0 },
+    )).toBe(false)
+    expect(settlementHit).not.toHaveBeenCalled()
+  })
+
   it('uses a padded aircraft envelope for airfield buildings without inflating camera probes', () => {
     const world = Object.create(World.prototype) as World
     ;(world as unknown as { disposed: boolean }).disposed = false

@@ -452,7 +452,7 @@ export class World {
 
   /** True if a world-space point overlaps hangar, tower, or shack. */
   hitObstacle(x: number, y: number, z: number, padding?: ObstaclePadding): boolean {
-    if (this.disposed) return false
+    if (this.disposed || !finiteObstaclePoint(x, y, z)) return false
     return this.hitObstaclePoint(x, y, z, padding, true)
   }
 
@@ -463,6 +463,7 @@ export class World {
     padding: ObstaclePadding | undefined,
     includeSettlements: boolean,
   ): boolean {
+    if (!finiteObstaclePoint(x, y, z)) return false
     if (includeSettlements && this.settlements.hitObstacle(x, y, z, padding)) return true
     return this.hitAirfieldObstacle(x, y, z, padding)
   }
@@ -474,7 +475,7 @@ export class World {
     z: number,
     padding?: ObstaclePadding,
   ): boolean {
-    if (this.disposed || !this.obstaclePad || !this.spawn) return false
+    if (this.disposed || !this.obstaclePad || !this.spawn || !finiteObstaclePoint(x, y, z)) return false
     const pad = getOpsPadInto(this.obstaclePad)
     if (!pad) return false
     const yaw = this.spawn.yaw
@@ -487,9 +488,9 @@ export class World {
     const lx = dx * rx + dz * rz
     const lz = dx * fx + dz * fz
     const ly = y - pad.y
-    const paddingX = padding?.x ?? 0
-    const paddingY = padding?.y ?? 0
-    const paddingZ = padding?.z ?? 0
+    const paddingX = finiteObstaclePadding(padding?.x)
+    const paddingY = finiteObstaclePadding(padding?.y)
+    const paddingZ = finiteObstaclePadding(padding?.z)
     for (const b of AIRFIELD_COLLIDERS) {
       if (
         Math.abs(lx - b.cx) <= b.hx + paddingX &&
@@ -508,7 +509,8 @@ export class World {
    * checked; only the bounded interior probes are added to the normal frame.
    */
   hitObstacleSegment(previous: ObstacleSweepPoint, current: ObstacleSweepPoint): boolean {
-    if (this.disposed) return false
+    if (this.disposed || !finiteObstaclePoint(previous.x, previous.y, previous.z) ||
+      !finiteObstaclePoint(current.x, current.y, current.z)) return false
     const dx = current.x - previous.x
     const dy = current.y - previous.y
     const dz = current.z - previous.z
@@ -681,4 +683,12 @@ export class World {
     moon.castShadow = false
     return moon
   }
+}
+
+function finiteObstaclePoint(x: number, y: number, z: number): boolean {
+  return Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)
+}
+
+function finiteObstaclePadding(value: number | undefined): number {
+  return Number.isFinite(value) ? Math.max(0, value!) : 0
 }

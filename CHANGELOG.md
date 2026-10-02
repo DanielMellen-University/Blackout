@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.734** Harden obstacle point and segment queries against malformed coordinates and padding so invalid collision telemetry fails closed before settlement or airfield broadphases.
 - **10.733** Harden landing classification against malformed pitch, bank, up-vector, and pad-state values so corrupt contact payloads fail closed before safe outcomes are awarded.
 - **10.732** Pool terrain weather snapshots across reads, removing avoidable diagnostic and HUD allocations while preserving normalized rain and snow values.
 - **10.731** Harden landing classification against malformed impact scalars, surface kinds, gear flags, and terrain normals so corrupt contact telemetry fails closed without throwing through the flight loop.
