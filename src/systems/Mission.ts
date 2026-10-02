@@ -838,6 +838,67 @@ export function summarizeMissionRoute(
   }
 }
 
+export interface MissionRouteResolution {
+  profile: MissionRouteProfile
+  modifier: MissionRouteModifier
+  route: MissionRoutePoint[]
+  summary: MissionRouteSummary
+  validation: MissionRouteValidation
+  fallbackUsed: boolean
+}
+
+/**
+ * Resolve a generated route without allowing one malformed profile to strand
+ * the sortie. The injected builders keep this policy deterministic and easy to
+ * exercise without touching the render-facing MissionSystem.
+ */
+export function resolveMissionRouteWithFallback(
+  spawnX: number,
+  spawnY: number,
+  spawnZ: number,
+  spawnYaw: number,
+  requestedProfile: MissionRouteProfile,
+  requestedModifier: MissionRouteModifier,
+  routeBuilder: typeof buildMissionRoute = buildMissionRoute,
+  summaryBuilder: typeof summarizeMissionRoute = summarizeMissionRoute,
+): MissionRouteResolution {
+  const profile = normalizeMissionRouteProfile(requestedProfile)
+  const modifier = normalizeMissionRouteModifier(requestedModifier)
+  const resolve = (candidateProfile: MissionRouteProfile, candidateModifier: MissionRouteModifier): MissionRouteResolution => {
+    const route = routeBuilder(
+      spawnX,
+      spawnY,
+      spawnZ,
+      spawnYaw,
+      candidateProfile,
+      candidateModifier,
+    )
+    const summary = summaryBuilder(
+      spawnX,
+      spawnY,
+      spawnZ,
+      route,
+      candidateProfile,
+      candidateModifier,
+    )
+    return {
+      profile: candidateProfile,
+      modifier: candidateModifier,
+      route,
+      summary,
+      validation: validateMissionRoute(route, summary.minClearanceMeters),
+      fallbackUsed: false,
+    }
+  }
+
+  const primary = resolve(profile, modifier)
+  if (primary.validation.valid || profile === 'orbit') return primary
+
+  const fallback = resolve('orbit', 'steady')
+  fallback.fallbackUsed = true
+  return fallback
+}
+
 /**
  * Keep route construction cheap on short legs while bounding the terrain
  * distance between clearance probes on long, fast-flight legs.
@@ -910,6 +971,7 @@ export class MissionSystem {
   private readonly routeTrace: Line
   private readonly routeTracePositions = new Float32Array(GATE_COUNT * 3)
   private routeTraceRequested = true
+  private routeFallbackUsedValue = false
   private passFlashStartedAt = 0
   /** Presentation clock in milliseconds, supplied by RAF when available. */
   private presentationTimeMs = 0
@@ -1026,7 +1088,7 @@ export class MissionSystem {
       : normalizeMissionRouteModifier(requestedModifier)
     this.scoringFocusValue = scoringFocusForModifier(this.modifier)
 
-    const route = buildMissionRoute(
+    const resolution = resolveMissionRouteWithFallback(
       safeSpawnX,
       safeSpawnY,
       safeSpawnZ,
@@ -1034,15 +1096,13 @@ export class MissionSystem {
       this.profile,
       this.modifier,
     )
-    const summary = summarizeMissionRoute(
-      safeSpawnX,
-      safeSpawnY,
-      safeSpawnZ,
-      route,
-      this.profile,
-      this.modifier,
-    )
-    const validation = validateMissionRoute(route, summary.minClearanceMeters)
+    this.profile = resolution.profile
+    this.modifier = resolution.modifier
+    this.scoringFocusValue = scoringFocusForModifier(this.modifier)
+    this.routeFallbackUsedValue = resolution.fallbackUsed
+    const route = resolution.route
+    const summary = resolution.summary
+    const validation = resolution.validation
     if (!validation.valid) {
       this.status = 'idle'
       this.liveLabel = 'ROUTE UNAVAILABLE'
@@ -1065,10 +1125,11 @@ export class MissionSystem {
     this.summary.maxSlopeDegrees = summary.maxSlopeDegrees
     this.summary.minClearanceMeters = summary.minClearanceMeters
     this.summary.maxAltitudeMeters = summary.maxAltitudeMeters
+    const routeLabel = resolution.fallbackUsed ? `FALLBACK ${summary.label}` : summary.label
     this.routeBriefingText = this.profile === 'free'
       ? `FREE FLIGHT / EXPLORE / ${summary.modifierLabel} / ${summary.scoringFocusLabel}`
       : [
-        `ROUTE ${summary.label}`,
+        `ROUTE ${routeLabel}`,
         summary.challengeLabel,
         summary.modifierLabel,
         summary.scoringFocusLabel,
@@ -1245,6 +1306,10 @@ export class MissionSystem {
     return routeModifierLabel(this.modifier)
   }
 
+  get routeFallbackUsed(): boolean {
+    return this.routeFallbackUsedValue
+  }
+
   get scoringFocus(): MissionScoringFocus {
     return this.scoringFocusValue
   }
@@ -1362,6 +1427,7 @@ export class MissionSystem {
     this.next = 0
     this.status = 'idle'
     this.liveLabel = '—'
+    this.routeFallbackUsedValue = false
     this.havePrev = false
     this.beacon.visible = false
     this.passFlashMat.opacity = 0

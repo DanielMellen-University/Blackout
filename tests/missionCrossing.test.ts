@@ -1,5 +1,5 @@
 import { Scene } from 'three'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   gateProximityEmphasis,
   gateBeaconDistanceOpacity,
@@ -18,6 +18,7 @@ import {
   scoringFocusLabel,
   summarizeMissionRoute,
   validateMissionRoute,
+  resolveMissionRouteWithFallback,
   MissionSystem,
   gateQualityLabel,
   type MissionRouteProfile,
@@ -49,6 +50,31 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.totalGates).toBe(5)
     expect(mission.activeGatePos()).not.toBeNull()
     mission.dispose()
+  })
+
+  it('falls back to a playable orbit when an authored route fails validation', () => {
+    const invalidRoute: MissionRoutePoint[] = [{ x: 0, y: 20, z: 0, fwdX: 0, fwdZ: 0 }]
+    const orbitRoute = buildMissionRoute(0, 20, 0, 0, 'orbit', 'steady')
+    const routeBuilder: typeof buildMissionRoute = vi.fn((_x, _y, _z, _yaw, profile) =>
+      profile === 'orbit' ? orbitRoute : invalidRoute)
+
+    const resolution = resolveMissionRouteWithFallback(
+      0,
+      20,
+      0,
+      0,
+      'canyon',
+      'tempo',
+      routeBuilder,
+    )
+
+    expect(routeBuilder).toHaveBeenCalledTimes(2)
+    expect(resolution.fallbackUsed).toBe(true)
+    expect(resolution.profile).toBe('orbit')
+    expect(resolution.modifier).toBe('steady')
+    expect(resolution.validation.valid).toBe(true)
+    expect(resolution.route).toBe(orbitRoute)
+    expect(resolution.summary.profile).toBe('orbit')
   })
 
   it('maps finite gate quality into readable event labels', () => {
