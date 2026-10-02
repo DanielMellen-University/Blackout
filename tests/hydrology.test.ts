@@ -42,6 +42,23 @@ describe('natural drainage', () => {
     expect(hydrologyIntersectsBounds(100, 100, 0, 0)).toBe(false)
   })
 
+  it('treats malformed basin geometry as outside water', () => {
+    setWorldSeed(1)
+    const valid = waterLandmarks(-1, -1)[0]!
+    expect(basinDistance(valid, valid.x, valid.z)).toBeLessThan(0)
+    const malformed = [
+      null,
+      { ...valid, x: Number.NaN },
+      { ...valid, radius: 0 },
+      { ...valid, aspect: Number.POSITIVE_INFINITY },
+      { ...valid, level: Number.NaN },
+    ]
+    for (const basin of malformed) {
+      expect(basinDistance(basin as never, valid.x, valid.z)).toBe(Number.POSITIVE_INFINITY)
+    }
+    expect(basinDistance(valid, Number.NaN, valid.z)).toBe(Number.POSITIVE_INFINITY)
+  })
+
   it('keeps rivers connected and descending, with varying widths', () => {
     setWorldSeed(1)
     const reaches = riverReaches(-1, -1)

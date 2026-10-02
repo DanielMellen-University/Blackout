@@ -111,8 +111,27 @@ function forEachNeighbor(id: number, visit: (neighbor: number) => void): void {
   }
 }
 
+/**
+ * Keep public shoreline queries fail-closed when a worker or debug payload
+ * supplies malformed basin metadata. Invalid geometry is treated as being
+ * outside the basin instead of allowing NaN to leak into terrain or water
+ * clipping math.
+ */
+function validBasin(value: unknown): value is Basin {
+  if (!value || typeof value !== 'object') return false
+  const basin = value as Partial<Basin>
+  const radius = basin.radius
+  const aspect = basin.aspect
+  return Number.isFinite(basin.x) && Number.isFinite(basin.z) &&
+    Number.isFinite(radius) && radius! > 0 &&
+    Number.isFinite(aspect) && aspect! > 0 &&
+    Number.isFinite(basin.angle) && Number.isFinite(basin.phase) &&
+    Number.isFinite(basin.level)
+}
+
 /** Signed shore distance, warped in space and broken into coves and peninsulas. */
 export function basinDistance(b: Basin, x: number, z: number): number {
+  if (!validBasin(b) || !Number.isFinite(x) || !Number.isFinite(z)) return Number.POSITIVE_INFINITY
   const scale = b.sea ? 2100 : b.pond ? 260 : 700
   const warp = b.sea ? 950 : b.pond ? 90 : 320
   const dx = x - b.x + (fbm(x / scale + 19, z / scale, 2) - .5) * warp
