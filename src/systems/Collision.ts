@@ -74,6 +74,8 @@ export class CollisionSystem {
     surface: 'land',
     surfaceNormalY: 1,
   }
+  /** Reused outcome record for the fixed-step collision path. */
+  private readonly outcome: ContactOutcome = { result: 'air', reason: null }
   private readonly surfaceSample: GroundSurfaceSample = {
     height: 0,
     kind: 'land',
@@ -134,7 +136,7 @@ export class CollisionSystem {
     contact.obstacle = this.hitObstacle(aircraft)
     contact.surface = surface
     contact.surfaceNormalY = aircraft.groundNormalY
-    const outcome = classifyContactOutcome(contact)
+    const outcome = classifyContactOutcomeInto(contact, this.outcome)
     this.failureReasonValue = outcome.reason
     return outcome.result
   }
@@ -150,11 +152,19 @@ export function classifyContact(input: ContactClassification): TouchResult {
 }
 
 export function classifyContactOutcome(input: ContactClassification): ContactOutcome {
-  if (input.obstacle) return { result: 'crash', reason: 'obstacle' }
+  return classifyContactOutcomeInto(input, { result: 'air', reason: null })
+}
+
+/** Classify into caller-owned storage for allocation-free fixed-step checks. */
+export function classifyContactOutcomeInto(
+  input: ContactClassification,
+  out: ContactOutcome,
+): ContactOutcome {
+  if (input.obstacle) return setContactOutcome(out, 'crash', 'obstacle')
 
   const impact = input.impact
   const contacting = !!impact || input.onPad
-  if (!contacting) return { result: 'air', reason: null }
+  if (!contacting) return setContactOutcome(out, 'air', null)
 
   const impactAirborne = impact?.startedAirborne
   const airborne = impactAirborne === undefined
@@ -173,17 +183,17 @@ export function classifyContactOutcome(input: ContactClassification): ContactOut
       1,
     ))
 
-  if (surface === 'water' && airborne) return { result: 'ditch', reason: 'water' }
-  if (input.upY < 0.35) return { result: 'crash', reason: 'attitude' }
-  if (Math.abs(input.pitch) > C.maxLandingPitch) return { result: 'crash', reason: 'pitch' }
-  if (Math.abs(input.roll) > C.maxLandingBank) return { result: 'crash', reason: 'bank' }
-  if (slope > C.maxLandingSlope) return { result: 'crash', reason: 'slope' }
+  if (surface === 'water' && airborne) return setContactOutcome(out, 'ditch', 'water')
+  if (input.upY < 0.35) return setContactOutcome(out, 'crash', 'attitude')
+  if (Math.abs(input.pitch) > C.maxLandingPitch) return setContactOutcome(out, 'crash', 'pitch')
+  if (Math.abs(input.roll) > C.maxLandingBank) return setContactOutcome(out, 'crash', 'bank')
+  if (slope > C.maxLandingSlope) return setContactOutcome(out, 'crash', 'slope')
 
   const crashLimit = gearDown ? C.crashVy : C.crashVy * 0.55
-  if (vy < crashLimit) return { result: 'crash', reason: 'vertical-speed' }
-  if (nVel < crashLimit) return { result: 'crash', reason: 'normal-speed' }
-  if (airborne && !gearDown && gs > 28) return { result: 'crash', reason: 'gear' }
-  if (airborne && gs > C.maxLandingSpeed) return { result: 'crash', reason: 'overspeed' }
+  if (vy < crashLimit) return setContactOutcome(out, 'crash', 'vertical-speed')
+  if (nVel < crashLimit) return setContactOutcome(out, 'crash', 'normal-speed')
+  if (airborne && !gearDown && gs > 28) return setContactOutcome(out, 'crash', 'gear')
+  if (airborne && gs > C.maxLandingSpeed) return setContactOutcome(out, 'crash', 'overspeed')
 
   if (
     airborne &&
@@ -192,10 +202,20 @@ export function classifyContactOutcome(input: ContactClassification): ContactOut
     vy > C.softLandingVy &&
     gs < 55
   ) {
-    return { result: 'landed', reason: null }
+    return setContactOutcome(out, 'landed', null)
   }
 
-  return { result: 'roll', reason: null }
+  return setContactOutcome(out, 'roll', null)
+}
+
+function setContactOutcome(
+  out: ContactOutcome,
+  result: TouchResult,
+  reason: ContactFailureReason | null,
+): ContactOutcome {
+  out.result = result
+  out.reason = reason
+  return out
 }
 
 /** Keep impact copy short enough for the banner and accessible debrief. */

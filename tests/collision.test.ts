@@ -5,6 +5,7 @@ import {
   attitudeInto,
   classifyContact,
   classifyContactOutcome,
+  classifyContactOutcomeInto,
   contactFailureLabel,
 } from '../src/systems/Collision'
 import { CollisionSystem } from '../src/systems/Collision'
@@ -183,6 +184,26 @@ describe('classifyContact', () => {
       obstacle: true,
       surface: 'land',
     })).toEqual({ result: 'crash', reason: 'obstacle' })
+  })
+
+  it('fills a caller-owned outcome record without allocating a replacement', () => {
+    const input = {
+      airborne: false,
+      impact: null,
+      onPad: false,
+      gearDown: true,
+      vy: 0,
+      groundSpeed: 0,
+      pitch: 0,
+      roll: 0,
+      upY: 1,
+      obstacle: false,
+      surface: 'land' as const,
+      surfaceNormalY: 1,
+    }
+    const outcome = { result: 'crash' as const, reason: 'obstacle' as const }
+    expect(classifyContactOutcomeInto(input, outcome)).toBe(outcome)
+    expect(outcome).toEqual({ result: 'air', reason: null })
   })
 
   it('reports finite impact reasons instead of collapsing every failure to crash', () => {
