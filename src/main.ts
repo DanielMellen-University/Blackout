@@ -192,12 +192,17 @@ import {
   DEFAULT_GHOST_VISIBLE,
   DEFAULT_HUD_DISPLAY,
   DEFAULT_KEYBOARD_BINDINGS,
+  DEFAULT_KEYBOARD_SCHEME,
   DEFAULT_KEYBOARD_PITCH,
   DEFAULT_KEYBOARD_ROLL,
   DEFAULT_KEYBOARD_YAW,
   DEFAULT_REDUCED_MOTION,
   DEFAULT_STABILITY_ASSIST,
   keyboardYawPreferenceLabel,
+  keyboardControlSchemeLabel,
+  normalizeKeyboardControlScheme,
+  readKeyboardControlScheme,
+  writeKeyboardControlScheme,
   normalizeKeyboardYawPreference,
   readKeyboardYawPreference,
   writeKeyboardYawPreference,
@@ -246,6 +251,7 @@ import {
   type KeyboardYawPreference,
   type KeyboardBindingCode,
   type KeyboardBindings,
+  type KeyboardControlScheme,
 } from './core/FlightPreferences'
 import {
   defaultRenderQuality,
@@ -274,6 +280,7 @@ export async function boot(): Promise<void> {
   const titleSeedLoad = document.getElementById('title-seed-load') as HTMLButtonElement | null
   const titleSeedStatus = document.getElementById('title-seed-status')
   const qualitySelect = document.getElementById('menu-quality') as HTMLSelectElement | null
+  const controlSchemeSelect = document.getElementById('menu-control-scheme') as HTMLSelectElement | null
   const yawSelect = document.getElementById('menu-yaw') as HTMLSelectElement | null
   const rollSelect = document.getElementById('menu-roll') as HTMLSelectElement | null
   const pitchSelect = document.getElementById('menu-pitch') as HTMLSelectElement | null
@@ -290,6 +297,10 @@ export async function boot(): Promise<void> {
   const resetSettingsButton = document.getElementById('menu-reset-settings') as HTMLButtonElement | null
   const yawLabel = document.getElementById('controls-yaw-label')
   const rollLabel = document.getElementById('controls-roll-label')
+  const yawKeyPrimary = document.getElementById('controls-yaw-keys')
+  const yawKeySecondary = document.getElementById('controls-yaw-keys-secondary')
+  const rollKeyPrimary = document.getElementById('controls-roll-keys')
+  const rollKeySecondary = document.getElementById('controls-roll-keys-secondary')
   const pitchLabel = document.getElementById('controls-pitch-label')
   const boostKeyLabel = document.getElementById('controls-boost-label')
   const airbrakeKeyLabel = document.getElementById('controls-airbrake-label')
@@ -665,6 +676,7 @@ export async function boot(): Promise<void> {
   const initialKeyboardYaw = readKeyboardYawPreference(qualityStorage)
   const initialKeyboardRoll = readKeyboardRollPreference(qualityStorage)
   const initialKeyboardPitch = readKeyboardPitchPreference(qualityStorage)
+  const initialKeyboardScheme = readKeyboardControlScheme(qualityStorage)
   const initialKeyboardBindings = readKeyboardBindings(qualityStorage)
   const initialCameraSensitivity = readCameraSensitivityPreference(qualityStorage)
   const initialCameraSpeedFraming = readCameraSpeedFramingPreference(qualityStorage)
@@ -849,6 +861,7 @@ export async function boot(): Promise<void> {
   const onReducedMotionChange = (): void => syncReducedMotion()
   reducedMotionQuery?.addEventListener?.('change', onReducedMotionChange)
   const input = new InputManager()
+  input.setKeyboardControlScheme(initialKeyboardScheme)
   input.setKeyboardYawPreference(initialKeyboardYaw)
   input.setKeyboardRollPreference(initialKeyboardRoll)
   input.setKeyboardPitchPreference(initialKeyboardPitch)
@@ -856,6 +869,7 @@ export async function boot(): Promise<void> {
   input.setStabilityAssist(initialStabilityAssist)
   if (yawSelect) yawSelect.value = initialKeyboardYaw
   if (rollSelect) rollSelect.value = initialKeyboardRoll
+  if (controlSchemeSelect) controlSchemeSelect.value = initialKeyboardScheme
   if (pitchSelect) pitchSelect.value = initialKeyboardPitch
   if (boostKeySelect) boostKeySelect.value = initialKeyboardBindings.boost
   if (airbrakeKeySelect) airbrakeKeySelect.value = initialKeyboardBindings.airbrake
@@ -910,11 +924,55 @@ export async function boot(): Promise<void> {
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
   const audio = new FlightAudio()
+  const syncKeyboardAxisLabels = (): void => {
+    const conventional = input.keyboardScheme === 'conventional'
+    const yawPrimary = conventional ? 'Q' : 'A'
+    const yawSecondary = conventional ? 'E' : 'D'
+    const rollPrimary = conventional ? 'A' : 'Q'
+    const rollSecondary = conventional ? 'D' : 'E'
+    if (yawKeyPrimary) yawKeyPrimary.textContent = yawPrimary
+    if (yawKeySecondary) yawKeySecondary.textContent = yawSecondary
+    if (rollKeyPrimary) rollKeyPrimary.textContent = rollPrimary
+    if (rollKeySecondary) rollKeySecondary.textContent = rollSecondary
+    if (yawSelect) {
+      if (yawSelect.options[0]) yawSelect.options[0].textContent = `${yawPrimary} right / ${yawSecondary} left`
+      if (yawSelect.options[1]) yawSelect.options[1].textContent = `${yawPrimary} left / ${yawSecondary} right`
+    }
+    if (rollSelect) {
+      if (rollSelect.options[0]) rollSelect.options[0].textContent = `${rollPrimary} right / ${rollSecondary} left`
+      if (rollSelect.options[1]) rollSelect.options[1].textContent = `${rollPrimary} left / ${rollSecondary} right`
+    }
+    const yawDirection = input.keyboardYaw === 'a-left'
+      ? `${yawPrimary} LEFT / ${yawSecondary} RIGHT`
+      : `${yawPrimary} RIGHT / ${yawSecondary} LEFT`
+    const rollDirection = input.keyboardRoll === 'q-left'
+      ? `${rollPrimary} LEFT / ${rollSecondary} RIGHT`
+      : `${rollPrimary} RIGHT / ${rollSecondary} LEFT`
+    if (yawLabel) yawLabel.textContent = `Yaw (${yawDirection})`
+    if (rollLabel) rollLabel.textContent = `Roll (${rollDirection})`
+  }
+  const applyKeyboardScheme = (next: KeyboardControlScheme): void => {
+    const scheme = normalizeKeyboardControlScheme(next)
+    input.setKeyboardControlScheme(scheme)
+    if (controlSchemeSelect) controlSchemeSelect.value = scheme
+    syncKeyboardAxisLabels()
+    writeKeyboardControlScheme(qualityStorage, scheme)
+  }
+  applyKeyboardScheme(initialKeyboardScheme)
+  const onKeyboardSchemeChange = (): void => {
+    if (!controlSchemeSelect) return
+    const scheme = normalizeKeyboardControlScheme(controlSchemeSelect.value)
+    applyKeyboardScheme(scheme)
+    if (playing && !menu.paused && !results.open) {
+      showBanner(`CONTROL LAYOUT ${keyboardControlSchemeLabel(scheme)}`, 1600, 'info')
+    }
+  }
+  uiListeners.add(controlSchemeSelect, 'change', onKeyboardSchemeChange)
   const applyKeyboardYaw = (next: KeyboardYawPreference): void => {
     const preference = normalizeKeyboardYawPreference(next)
     input.setKeyboardYawPreference(preference)
     if (yawSelect) yawSelect.value = preference
-    if (yawLabel) yawLabel.textContent = `Yaw (${keyboardYawPreferenceLabel(preference)})`
+    syncKeyboardAxisLabels()
     writeKeyboardYawPreference(qualityStorage, preference)
   }
   applyKeyboardYaw(initialKeyboardYaw)
@@ -930,7 +988,7 @@ export async function boot(): Promise<void> {
     const preference = normalizeKeyboardRollPreference(next)
     input.setKeyboardRollPreference(preference)
     if (rollSelect) rollSelect.value = preference
-    if (rollLabel) rollLabel.textContent = `Roll (${keyboardRollPreferenceLabel(preference)})`
+    syncKeyboardAxisLabels()
     writeKeyboardRollPreference(qualityStorage, preference)
   }
   applyKeyboardRoll(initialKeyboardRoll)
@@ -1662,6 +1720,7 @@ export async function boot(): Promise<void> {
     applyKeyboardYaw(DEFAULT_KEYBOARD_YAW)
     applyKeyboardRoll(DEFAULT_KEYBOARD_ROLL)
     applyKeyboardPitch(DEFAULT_KEYBOARD_PITCH)
+    applyKeyboardScheme(DEFAULT_KEYBOARD_SCHEME)
     applyKeyboardBindings(DEFAULT_KEYBOARD_BINDINGS)
     applyCameraSensitivity(DEFAULT_CAMERA_SENSITIVITY)
     applyCameraSpeedFraming(DEFAULT_CAMERA_SPEED_FRAMING)

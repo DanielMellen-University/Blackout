@@ -139,6 +139,13 @@
                   <option value="a-left">A left / D right</option>
                 </select>
               </label>
+              <label class="menu-setting" for="menu-control-scheme">
+                <span>Control layout</span>
+                <select id="menu-control-scheme" aria-label="Keyboard control layout">
+                  <option value="arcade">A/D yaw · Q/E roll</option>
+                  <option value="conventional">A/D roll · Q/E yaw</option>
+                </select>
+              </label>
               <label class="menu-setting" for="menu-roll">
                 <span>Keyboard roll</span>
                 <select id="menu-roll" aria-label="Keyboard roll direction">
@@ -247,8 +254,8 @@
             <h2 id="menu-controls-heading">Controls</h2>
             <div class="ctrl-table">
               <div><kbd>W</kbd><kbd>S</kbd></div><div id="controls-pitch-label">Pitch (W up / S down by default)</div>
-              <div><kbd>A</kbd><kbd>D</kbd></div><div id="controls-yaw-label">Yaw (A left / D right by default)</div>
-              <div><kbd>Q</kbd><kbd>E</kbd></div><div id="controls-roll-label">Roll (Q right / E left by default)</div>
+              <div><kbd id="controls-yaw-keys">A</kbd><kbd id="controls-yaw-keys-secondary">D</kbd></div><div id="controls-yaw-label">Yaw (A left / D right by default)</div>
+              <div><kbd id="controls-roll-keys">Q</kbd><kbd id="controls-roll-keys-secondary">E</kbd></div><div id="controls-roll-label">Roll (Q right / E left by default)</div>
               <div><kbd>Shift</kbd> / <kbd>2</kbd></div><div>Engine +</div>
               <div><kbd>Ctrl</kbd> / <kbd>1</kbd></div><div>Engine − / brake</div>
               <div><kbd id="controls-boost-label">Space</kbd></div><div>Afterburner</div>

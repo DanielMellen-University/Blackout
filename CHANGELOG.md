@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.738** Add a persisted Arcade or Conventional keyboard control layout, keeping the default A/D yaw and Q/E roll scheme while allowing pilots to put roll on A/D and yaw on Q/E with live labels and focused input coverage.
 - **10.737** Cache each catchment's unique river-reach list so repeated terrain and water generation queries avoid flattening spatial bins and allocating a temporary deduplication set.
 - **10.736** Harden basin shoreline distance queries against malformed geometry and coordinates so invalid hydrology payloads fail closed outside water instead of poisoning terrain or water clipping.
 - **10.735** Cache flight-log HUD aria text with its distance and G-load buckets, removing repeated live-update string and array work without changing visible telemetry.

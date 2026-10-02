@@ -4,6 +4,8 @@ import { CAMERA_MODES, type CameraMode } from './types'
 export type KeyboardYawPreference = 'a-right' | 'a-left'
 export type KeyboardRollPreference = 'q-right' | 'q-left'
 export type KeyboardPitchPreference = 'w-up' | 'w-down'
+/** Which key pair owns yaw versus roll. */
+export type KeyboardControlScheme = 'arcade' | 'conventional'
 export type KeyboardBindingCode =
   | 'Space'
   | 'KeyB'
@@ -27,6 +29,9 @@ export type HudDisplay = 'full' | 'minimal'
 export const KEYBOARD_YAW_STORAGE_KEY = 'blackout.keyboardYaw'
 /** Conventional flight-deck yaw: A turns left, D turns right. */
 export const DEFAULT_KEYBOARD_YAW: KeyboardYawPreference = 'a-left'
+export const KEYBOARD_SCHEME_STORAGE_KEY = 'blackout.keyboardScheme'
+/** Preserve the shipped A/D yaw, Q/E roll layout. */
+export const DEFAULT_KEYBOARD_SCHEME: KeyboardControlScheme = 'arcade'
 export const KEYBOARD_ROLL_STORAGE_KEY = 'blackout.keyboardRoll'
 export const DEFAULT_KEYBOARD_ROLL: KeyboardRollPreference = 'q-right'
 export const KEYBOARD_PITCH_STORAGE_KEY = 'blackout.keyboardPitch'
@@ -36,6 +41,42 @@ export const DEFAULT_KEYBOARD_BINDINGS: KeyboardBindings = {
   boost: 'Space',
   airbrake: 'KeyB',
   gear: 'KeyG',
+}
+
+export function normalizeKeyboardControlScheme(
+  value: unknown,
+  fallback: KeyboardControlScheme = DEFAULT_KEYBOARD_SCHEME,
+): KeyboardControlScheme {
+  if (value === 'arcade' || value === 'conventional') return value
+  return fallback === 'conventional' ? 'conventional' : DEFAULT_KEYBOARD_SCHEME
+}
+
+export function readKeyboardControlScheme(
+  storage: Pick<Storage, 'getItem'> | null | undefined,
+  fallback: KeyboardControlScheme = DEFAULT_KEYBOARD_SCHEME,
+): KeyboardControlScheme {
+  try {
+    return normalizeKeyboardControlScheme(storage?.getItem(KEYBOARD_SCHEME_STORAGE_KEY), fallback)
+  } catch {
+    return normalizeKeyboardControlScheme(undefined, fallback)
+  }
+}
+
+export function writeKeyboardControlScheme(
+  storage: Pick<Storage, 'setItem'> | null | undefined,
+  scheme: KeyboardControlScheme,
+): void {
+  try {
+    storage?.setItem(KEYBOARD_SCHEME_STORAGE_KEY, normalizeKeyboardControlScheme(scheme))
+  } catch {
+    /* Storage is optional. */
+  }
+}
+
+export function keyboardControlSchemeLabel(scheme: KeyboardControlScheme): string {
+  return normalizeKeyboardControlScheme(scheme) === 'conventional'
+    ? 'A/D ROLL · Q/E YAW'
+    : 'A/D YAW · Q/E ROLL'
 }
 export const KEYBOARD_BINDING_CODES: readonly KeyboardBindingCode[] = [
   'Space', 'KeyB', 'KeyG', 'KeyF', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyI',

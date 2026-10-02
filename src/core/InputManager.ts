@@ -6,7 +6,9 @@ import {
   normalizeKeyboardRollPreference,
   normalizeKeyboardPitchPreference,
   normalizeKeyboardBindings,
+  normalizeKeyboardControlScheme,
   type KeyboardBindings,
+  type KeyboardControlScheme,
   type KeyboardPitchPreference,
   type KeyboardRollPreference,
   type KeyboardYawPreference,
@@ -18,7 +20,8 @@ export const GAMEPAD_POLL_INTERVAL = 1 / 30
 
 /**
  * Maps keyboard into ControlState for arcade flight.
- * W/S pitch, A/D yaw (configurable direction), Q/E roll, Space boost, B speed brake, G gear, V trim assist, Shift/Ctrl throttle.
+ * W/S pitch, selectable A/D yaw + Q/E roll or conventional A/D roll + Q/E yaw,
+ * Space boost, B speed brake, G gear, V trim assist, Shift/Ctrl throttle.
  *
  * Throttle is a held continuous setpoint (0–1): Shift raises, Ctrl lowers
  * every frame so the ENG bar can track live.
@@ -65,6 +68,7 @@ export class InputManager {
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
+  private keyboardControlScheme: KeyboardControlScheme = 'arcade'
   private keyboardBindings: KeyboardBindings = {
     boost: 'Space',
     airbrake: 'KeyB',
@@ -103,6 +107,15 @@ export class InputManager {
 
   get keyboardYaw(): KeyboardYawPreference {
     return this.keyboardYawPreference
+  }
+
+  setKeyboardControlScheme(scheme: KeyboardControlScheme): void {
+    if (this.disposed) return
+    this.keyboardControlScheme = normalizeKeyboardControlScheme(scheme)
+  }
+
+  get keyboardScheme(): KeyboardControlScheme {
+    return this.keyboardControlScheme
   }
 
   setKeyboardRollPreference(preference: KeyboardRollPreference): void {
@@ -193,13 +206,17 @@ export class InputManager {
       ? this.axis('KeyS', 'KeyW')
       : this.axis('KeyW', 'KeyS')
     this.controls.pitch = mergeAxis(keyboardPitch, this.gamepadPitch, this.touchPitch)
+    const yawFirst = this.keyboardControlScheme === 'conventional' ? 'KeyQ' : 'KeyA'
+    const yawSecond = this.keyboardControlScheme === 'conventional' ? 'KeyE' : 'KeyD'
     const keyboardYaw = this.keyboardYawPreference === 'a-left'
-      ? this.axis('KeyD', 'KeyA')
-      : this.axis('KeyA', 'KeyD')
+      ? this.axis(yawSecond, yawFirst)
+      : this.axis(yawFirst, yawSecond)
     this.controls.yaw = mergeAxis(keyboardYaw, this.gamepadYaw, this.touchYaw)
+    const rollFirst = this.keyboardControlScheme === 'conventional' ? 'KeyA' : 'KeyQ'
+    const rollSecond = this.keyboardControlScheme === 'conventional' ? 'KeyD' : 'KeyE'
     const keyboardRoll = this.keyboardRollPreference === 'q-left'
-      ? this.axis('KeyE', 'KeyQ')
-      : this.axis('KeyQ', 'KeyE')
+      ? this.axis(rollSecond, rollFirst)
+      : this.axis(rollFirst, rollSecond)
     this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll, this.touchRoll)
     this.controls.boost = this.keys.has(this.keyboardBindings.boost) || this.gamepadBoost || this.touchBoost
     this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake) || this.gamepadAirbrake || this.touchAirbrake

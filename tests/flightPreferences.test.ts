@@ -5,6 +5,8 @@ import {
   DEFAULT_KEYBOARD_PITCH,
   DEFAULT_KEYBOARD_BINDINGS,
   KEYBOARD_BINDINGS_STORAGE_KEY,
+  KEYBOARD_SCHEME_STORAGE_KEY,
+  DEFAULT_KEYBOARD_SCHEME,
   DEFAULT_GHOST_VISIBLE,
   GHOST_VISIBILITY_STORAGE_KEY,
   CAMERA_MODE_STORAGE_KEY,
@@ -33,6 +35,10 @@ import {
   normalizeKeyboardBindings,
   readKeyboardBindings,
   writeKeyboardBindings,
+  keyboardControlSchemeLabel,
+  normalizeKeyboardControlScheme,
+  readKeyboardControlScheme,
+  writeKeyboardControlScheme,
   normalizeKeyboardRollPreference,
   normalizeKeyboardYawPreference,
   normalizeKeyboardPitchPreference,
@@ -76,6 +82,21 @@ import {
 } from '../src/core/FlightPreferences'
 
 describe('keyboard flight preferences', () => {
+  it('persists the selectable keyboard control layout', () => {
+    const values = new Map<string, string>([[KEYBOARD_SCHEME_STORAGE_KEY, 'bad']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    expect(normalizeKeyboardControlScheme('conventional')).toBe('conventional')
+    expect(normalizeKeyboardControlScheme('bad')).toBe(DEFAULT_KEYBOARD_SCHEME)
+    expect(readKeyboardControlScheme(storage)).toBe(DEFAULT_KEYBOARD_SCHEME)
+    writeKeyboardControlScheme(storage, 'conventional')
+    expect(values.get(KEYBOARD_SCHEME_STORAGE_KEY)).toBe('conventional')
+    expect(readKeyboardControlScheme(storage)).toBe('conventional')
+    expect(keyboardControlSchemeLabel('conventional')).toBe('A/D ROLL · Q/E YAW')
+  })
+
   it('normalizes invalid values to the safe default', () => {
     expect(normalizeKeyboardYawPreference('a-left')).toBe('a-left')
     expect(normalizeKeyboardYawPreference('bad')).toBe(DEFAULT_KEYBOARD_YAW)
