@@ -53,6 +53,8 @@ export interface GroundHeightCache {
   readonly entries: GroundHeightCacheEntry[]
   cursor: number
   revision: number
+  /** Most recent slot, allowing adjacent normal/contact probes to skip a scan. */
+  lastIndex: number
 }
 
 export function createGroundHeightCache(capacity = 8): GroundHeightCache {
@@ -63,12 +65,13 @@ export function createGroundHeightCache(capacity = 8): GroundHeightCache {
   for (let i = 0; i < safeCapacity; i++) {
     entries.push({ x: Number.NaN, z: Number.NaN, height: 0, kind: 'land', surfaceKnown: false })
   }
-  return { entries, cursor: 0, revision: samplerRevision }
+  return { entries, cursor: 0, revision: samplerRevision, lastIndex: -1 }
 }
 
 export function clearGroundHeightCache(cache: GroundHeightCache): void {
   cache.cursor = 0
   cache.revision = samplerRevision
+  cache.lastIndex = -1
   for (const entry of cache.entries) {
     entry.x = Number.NaN
     entry.z = Number.NaN
@@ -174,8 +177,18 @@ export function sampleGroundHeightCached(
 ): number {
   if (cache.revision !== samplerRevision) clearGroundHeightCache(cache)
   if (!Number.isFinite(x) || !Number.isFinite(z)) return sampleGroundHeight(x, z)
-  for (const entry of cache.entries) {
-    if (entry.x === x && entry.z === z) return entry.height
+
+  const lastIndex = cache.lastIndex
+  if (lastIndex >= 0) {
+    const last = cache.entries[lastIndex]
+    if (last && last.x === x && last.z === z) return last.height
+  }
+  for (let i = 0; i < cache.entries.length; i++) {
+    const entry = cache.entries[i]!
+    if (entry.x === x && entry.z === z) {
+      cache.lastIndex = i
+      return entry.height
+    }
   }
   const height = sampleGroundHeight(x, z)
   if (!Number.isFinite(height)) return height
@@ -184,6 +197,7 @@ export function sampleGroundHeightCached(
   entry.z = z
   entry.height = height
   entry.surfaceKnown = false
+  cache.lastIndex = cache.cursor
   cache.cursor = (cache.cursor + 1) % cache.entries.length
   return height
 }
@@ -265,8 +279,20 @@ export function sampleGroundSurfaceCached(
   if (cache.revision !== samplerRevision) clearGroundHeightCache(cache)
   if (!Number.isFinite(x) || !Number.isFinite(z)) return sampleGroundSurfaceInto(x, z, out)
 
-  for (const entry of cache.entries) {
+  const lastIndex = cache.lastIndex
+  if (lastIndex >= 0) {
+    const last = cache.entries[lastIndex]
+    if (last && last.x === x && last.z === z && last.surfaceKnown) {
+      out.height = last.height
+      out.kind = last.kind
+      return out
+    }
+  }
+
+  for (let i = 0; i < cache.entries.length; i++) {
+    const entry = cache.entries[i]!
     if (entry.x !== x || entry.z !== z || !entry.surfaceKnown) continue
+    cache.lastIndex = i
     out.height = entry.height
     out.kind = entry.kind
     return out
@@ -277,12 +303,21 @@ export function sampleGroundSurfaceCached(
 
   let entryIndex = cache.cursor
   let entry = cache.entries[entryIndex]!
-  for (let i = 0; i < cache.entries.length; i++) {
-    const candidate = cache.entries[i]!
-    if (candidate.x === x && candidate.z === z) {
-      entryIndex = i
-      entry = candidate
-      break
+  if (lastIndex >= 0) {
+    const last = cache.entries[lastIndex]
+    if (last && last.x === x && last.z === z) {
+      entryIndex = lastIndex
+      entry = last
+    }
+  }
+  if (entryIndex === cache.cursor && (entry.x !== x || entry.z !== z)) {
+    for (let i = 0; i < cache.entries.length; i++) {
+      const candidate = cache.entries[i]!
+      if (candidate.x === x && candidate.z === z) {
+        entryIndex = i
+        entry = candidate
+        break
+      }
     }
   }
   entry.x = x
@@ -290,6 +325,7 @@ export function sampleGroundSurfaceCached(
   entry.height = out.height
   entry.kind = out.kind === 'water' ? 'water' : 'land'
   entry.surfaceKnown = true
+  cache.lastIndex = entryIndex
   cache.cursor = (entryIndex + 1) % cache.entries.length
   return out
 }
