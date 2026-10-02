@@ -108,25 +108,32 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
 
   // A broad winding band inside each massif produces ranges instead of blobs.
   // The wide smoothstep keeps the ridges flyable and avoids needle peaks.
-  const ridgeNoise = fbm(wx / 5200 + 81, wz / 5200 - 52, 2)
+  // Keep the main ridge field broad enough for an aircraft to read the
+  // shoulder before reaching the summit. The old 5.2 km signal could move
+  // several kilometres of uplift across a few hundred metres, producing the
+  // needle/arch silhouettes visible in the terrain review scene.
+  const ridgeNoise = fbm(wx / 14000 + 81, wz / 14000 - 52, 2)
   const ridgeBand = 1 - Math.abs(ridgeNoise * 2 - 1)
   const ridge = smoothstep(.58, .94, ridgeBand) * highlands
   const ridgeSpine = Math.pow(Math.max(0, smoothstep(.58, .94, ridgeBand)), 1.9) * highlands
-  const summitNoise = fbm(wx / 4600 - 47, wz / 4600 + 116, 2)
+  const summitNoise = fbm(wx / 10500 - 47, wz / 10500 + 116, 2)
   const summit = .32 + summitNoise * .68
   const summitRefined = .22 + summitNoise * .78
-  const summitFold = fbm(wx / 2600 + 173, wz / 2600 - 94, 2)
+  const summitFold = fbm(wx / 6500 + 173, wz / 6500 - 94, 2)
   // A second, tighter scale breaks the broad massif field into linked peaks.
   // Keep this as a signed, bounded sculpt rather than a raw high-frequency
   // height term so alpine faces gain shoulders and saddles without turning
   // into the sharp green-biome spikes this generator used to produce.
-  const peakNoise = fbm(wx / 1850 + 293, wz / 1850 - 337, 3, 2, .56)
+  const peakNoise = fbm(wx / 4500 + 293, wz / 4500 - 337, 3, 2, .56)
   const peakMask = smoothstep(.4, .78, peakNoise)
   const peakSculpt = (peakNoise - .5) * (.55 + ridgeSpine * .9)
 
   // Long winding troughs break mountain walls into recognizable valleys.
   const valleyLine = Math.abs(valueNoise(wx / 6800 + 141, wz / 6800 - 207) - .5)
-  const alpineValley = (1 - smoothstep(.025, .15, valleyLine)) * highlands
+  // Valley cuts must have a broad shoulder. A narrow .025-.15 band made the
+  // mountain uplift switch off across a few samples, which rendered as an
+  // artificial vertical wall instead of a flyable valley.
+  const alpineValley = (1 - smoothstep(.02, .34, valleyLine)) * highlands
 
   const hills = fbm(wx / 1700, wz / 1700, 2)
   const gentle = smoothstep(.18, .78, valueNoise(wx / 6500 + 5, wz / 6500 - 23))
@@ -141,13 +148,16 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
   height += foothills * (180 + hills * hills * 720)
   const alpineExposure = Math.max(smoothstep(.92, 1, dry), smoothstep(.76, .96, cold))
   const mountainBlend = smoothstep(.35, .65, highlands) * alpineExposure
-  const legacyUplift = highlands * (1050 + summit * 2100 + ridge * 4300)
-  const refinedUplift = highlands * (650 + summitRefined * (2600 + summitFold * 850) + ridgeSpine * 2100)
+  // Broad summit mass carries the high elevation. Ridge contribution is
+  // intentionally bounded so elevation changes stay flyable instead of
+  // turning a biome transition into a vertical wall.
+  const legacyUplift = highlands * (1050 + summit * 3000 + ridge * 1200)
+  const refinedUplift = highlands * (650 + summitRefined * (3200 + summitFold * 500) + ridgeSpine * 700)
   const mountainUplift = legacyUplift * (1 - mountainBlend) + refinedUplift * mountainBlend
-  height += mountainUplift * (1 - alpineValley * (.68 + mountainBlend * .18))
+  height += mountainUplift * (1 - alpineValley * (.36 + mountainBlend * .1))
   const alpineSculpt = highlands * alpineExposure * (
-    peakSculpt * (450 + summitRefined * 900) +
-    (peakMask - .5) * ridgeSpine * 520
+    peakSculpt * (220 + summitRefined * 400) +
+    (peakMask - .5) * ridgeSpine * 240
   )
   height += alpineSculpt
   // Cold highlands occasionally open into broad glacial cirques. Reuse the

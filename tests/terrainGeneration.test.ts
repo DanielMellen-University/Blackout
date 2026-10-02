@@ -1,10 +1,45 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto, setOpsPad } from '../src/world/terrainSample'
+import { applySlopeShading, applySlopeShadingInto, biomeColor, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto, sampleTerrainHeight, setOpsPad } from '../src/world/terrainSample'
 import { createClimateSample } from '../src/world/Geography'
 
 describe('continuous terrain generation', () => {
   afterEach(clearOpsPad)
+
+  it('keeps tall alpine relief broad and green terrain free of needle jumps', () => {
+    const scan = (seed: number, centerX: number, centerZ: number, radius: number, step: number) => {
+      setWorldSeed(seed)
+      let min = Infinity
+      let max = -Infinity
+      let maxStep = 0
+      const samples = new Map<string, number>()
+      for (let x = centerX - radius; x <= centerX + radius; x += step) {
+        for (let z = centerZ - radius; z <= centerZ + radius; z += step) {
+          const height = sampleTerrainHeight(x, z)
+          expect(Number.isFinite(height)).toBe(true)
+          min = Math.min(min, height)
+          max = Math.max(max, height)
+          samples.set(`${x},${z}`, height)
+        }
+      }
+      for (const [key, height] of samples) {
+        const [x, z] = key.split(',').map(Number)
+        for (const [dx, dz] of [[step, 0], [0, step]]) {
+          const neighbor = samples.get(`${x + dx},${z + dz}`)
+          if (neighbor !== undefined) maxStep = Math.max(maxStep, Math.abs(height - neighbor))
+        }
+      }
+      return { min, max, maxStep }
+    }
+
+    const alpine = scan(1337, -9600, 8400, 6000, 200)
+    expect(alpine.max).toBeGreaterThan(4000)
+    expect(alpine.maxStep).toBeLessThan(650)
+
+    const green = scan(1, -30000, -17400, 6000, 200)
+    expect(green.max).toBeLessThan(2200)
+    expect(green.maxStep).toBeLessThan(360)
+  })
 
   it('copies the active airfield pad into caller-owned storage', () => {
     clearOpsPad()
