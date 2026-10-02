@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.771** Replace regional settlement link filtering and sorting with a bounded deterministic best-candidate scan, preserving sparse graph selection while reducing streaming-planner allocations.
 - **10.770** Remove temporary numeric arrays from settlement plan, building, road, and point validation, preserving malformed-worker fail-closed behavior while reducing large-city reply checks.
 - **10.769** Make settlement worker payload validation allocation-free across plans, buildings, roads, and road points while preserving fail-closed malformed-reply handling.
 - **10.768** Consolidate settlement building, roof, civic-accent, and crown classification into one pass and scan plaza anchors directly, reducing large-landmark install allocations while preserving instance order and silhouettes.

@@ -43,29 +43,32 @@ export function regionalRoadKey(a: SettlementAnchor, b: SettlementAnchor): strin
  */
 export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readonly SettlementPlan[]): RegionalRoadLink[] {
   const limit = plan.kind === 'city' ? MAX_CITY_REGIONAL_LINKS : MAX_VILLAGE_REGIONAL_LINKS
-  const selected = candidates
-    .filter(other => other.id !== plan.id && shouldConnectSettlements(plan, other))
-    .sort((a, b) => {
-      // Prefer a cross-tier endpoint for both sides of the edge. Villages use
-      // their one slot to reach a city, while cities spend their two slots on
-      // nearby village spokes before adding another city-to-city link. This
-      // keeps the sparse graph readable without increasing its road budget.
-      const aHub = a.kind !== plan.kind ? 0 : 1
-      const bHub = b.kind !== plan.kind ? 0 : 1
-      if (aHub !== bHub) return aHub - bHub
-      const distanceA = Math.hypot(plan.x - a.x, plan.z - a.z)
-      const distanceB = Math.hypot(plan.x - b.x, plan.z - b.z)
-      return distanceA - distanceB || a.id.localeCompare(b.id)
-    })
-
   const links: RegionalRoadLink[] = []
   const seen = new Set<string>()
-  for (const other of selected) {
-    const key = regionalRoadKey(plan, other)
-    if (seen.has(key)) continue
+  // Pick one winner per bounded slot instead of materializing and sorting the
+  // entire candidate list. The comparison is identical to the former sort:
+  // cross-tier hubs first, then distance, then stable ID order.
+  for (let slot = 0; slot < limit; slot++) {
+    let best: SettlementPlan | null = null
+    let bestHub = Infinity
+    let bestDistance = Infinity
+    for (const other of candidates) {
+      if (other.id === plan.id || !shouldConnectSettlements(plan, other)) continue
+      const key = regionalRoadKey(plan, other)
+      if (seen.has(key)) continue
+      const hub = other.kind !== plan.kind ? 0 : 1
+      const distance = Math.hypot(plan.x - other.x, plan.z - other.z)
+      if (hub < bestHub || (hub === bestHub &&
+        (distance < bestDistance || (distance === bestDistance && (best === null || other.id.localeCompare(best.id) < 0))))) {
+        best = other
+        bestHub = hub
+        bestDistance = distance
+      }
+    }
+    if (!best) break
+    const key = regionalRoadKey(plan, best)
     seen.add(key)
-    links.push(plan.id < other.id ? { key, from: plan, to: other } : { key, from: other, to: plan })
-    if (links.length >= limit) break
+    links.push(plan.id < best.id ? { key, from: plan, to: best } : { key, from: best, to: plan })
   }
   return links
 }
