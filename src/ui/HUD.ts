@@ -477,10 +477,12 @@ export function flightLogHudLabel(
   const distance = Number.isFinite(distanceM) ? Math.max(0, Math.min(2_000_000, distanceM)) : 0
   const positive = Number.isFinite(peakPositiveG) ? Math.max(0, Math.min(20, peakPositiveG)) : 0
   const negative = Number.isFinite(peakNegativeG) ? Math.max(-9, Math.min(0, peakNegativeG)) : 0
-  const parts: string[] = []
-  if (distance >= 1) parts.push(`DIST ${formatFlightLogDistance(distance)}`)
-  if (positive > 1 || negative < 0) parts.push(`G +${positive.toFixed(1)}/${negative.toFixed(1)}`)
-  return parts.join(' · ')
+  let label = distance >= 1 ? `DIST ${formatFlightLogDistance(distance)}` : ''
+  if (positive > 1 || negative < 0) {
+    const gLabel = `G +${positive.toFixed(1)}/${negative.toFixed(1)}`
+    label = label ? `${label} · ${gLabel}` : gLabel
+  }
+  return label
 }
 
 export function flightLogAriaLabel(
@@ -1231,6 +1233,7 @@ export class HUD {
   private gValue = Number.NaN
   private gText = ''
   private flightLogText = ''
+  private flightLogAriaText = ''
   private flightLogDistanceValue = -1
   private flightLogPositiveGValue = Number.NaN
   private flightLogNegativeGValue = Number.NaN
@@ -1769,10 +1772,11 @@ export class HUD {
         this.flightLogPositiveGValue = positiveStep
         this.flightLogNegativeGValue = negativeStep
         this.flightLogText = flightLogHudLabel(distanceStep, positiveStep, negativeStep)
+        this.flightLogAriaText = flightLogAriaLabel(distanceStep, positiveStep, negativeStep)
       }
       this.setText(this.flightLogEl, this.flightLogText)
       this.setHidden(this.flightLogRowEl, this.flightLogText.length === 0)
-      this.setAttribute(this.flightLogEl, 'aria-label', flightLogAriaLabel(distanceStep, positiveStep, negativeStep))
+      this.setAttribute(this.flightLogEl, 'aria-label', this.flightLogAriaText)
     }
 
     if (this.machEl) {

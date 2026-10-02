@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.735** Cache flight-log HUD aria text with its distance and G-load buckets, removing repeated live-update string and array work without changing visible telemetry.
 - **10.734** Harden obstacle point and segment queries against malformed coordinates and padding so invalid collision telemetry fails closed before settlement or airfield broadphases.
 - **10.733** Harden landing classification against malformed pitch, bank, up-vector, and pad-state values so corrupt contact payloads fail closed before safe outcomes are awarded.
 - **10.732** Pool terrain weather snapshots across reads, removing avoidable diagnostic and HUD allocations while preserving normalized rain and snow values.
