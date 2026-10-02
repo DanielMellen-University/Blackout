@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.762** Reuse fixed water-triangle clipping workspaces, removing per-triangle vertex, polygon, and intersection allocations while preserving clipped shoreline geometry.
 - **10.761** Reuse synchronous water-mesh staging arrays before typed-buffer creation, reducing per-tile generation garbage without changing water geometry or GPU attributes.
 - **10.760** Reuse the bounded basin list during terrain water-mesh setup, removing a per-tile generation allocation while preserving shoreline and water geometry.
 - **10.759** Build terrain worker transfer lists with direct unique-buffer appends, removing temporary Sets and attribute arrays while preserving zero-copy geometry delivery.

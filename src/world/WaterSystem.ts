@@ -63,11 +63,24 @@ export function buildWaterMesh(
   waterDrops.length = 0
   const stride = segs + 1
   const cell = size / segs
-  const vertex = (i: number): WaterVertex => ({
-    x: (i % stride) * cell - size / 2,
-    z: Math.floor(i / stride) * cell - size / 2,
-    bed: beds[i]!, level: levels[i]!, basin: basinMask?.[i] ?? 1,
-  })
+  const input: [WaterVertex, WaterVertex, WaterVertex] = [
+    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+  ]
+  const intersections: [WaterVertex, WaterVertex, WaterVertex] = [
+    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+  ]
+  const polygon: WaterVertex[] = []
+  const setVertex = (target: WaterVertex, index: number): void => {
+    target.x = (index % stride) * cell - size / 2
+    target.z = Math.floor(index / stride) * cell - size / 2
+    target.bed = beds[index]!
+    target.level = levels[index]!
+    target.basin = basinMask?.[index] ?? 1
+  }
   function triangle(a: number, b: number, c: number): void {
     if (basinMask && basinMask[a]! <= .5 && basinMask[b]! <= .5 && basinMask[c]! <= .5) return
     // Fixed-level basins get their own smooth analytic shoreline below. Do not
@@ -76,8 +89,10 @@ export function buildWaterMesh(
     if (basins.length > 0 && basinMask &&
       (basinMask[a]! > .5 || basinMask[b]! > .5 || basinMask[c]! > .5)) return
     if (beds[a]! >= levels[a]! && beds[b]! >= levels[b]! && beds[c]! >= levels[c]!) return
-    const input = [vertex(a), vertex(b), vertex(c)]
-    const polygon: WaterVertex[] = []
+    setVertex(input[0], a)
+    setVertex(input[1], b)
+    setVertex(input[2], c)
+    polygon.length = 0
     for (let i = 0; i < 3; i++) {
       const p = input[i]!
       const q = input[(i + 1) % 3]!
@@ -86,11 +101,13 @@ export function buildWaterMesh(
       if (dp > 0) polygon.push(p)
       if ((dp > 0) !== (dq > 0)) {
         const t = dp / (dp - dq)
-        polygon.push({
-          x: p.x + (q.x - p.x) * t, z: p.z + (q.z - p.z) * t,
-          bed: p.bed + (q.bed - p.bed) * t, level: p.level + (q.level - p.level) * t,
-          basin: p.basin + (q.basin - p.basin) * t,
-        })
+        const intersection = intersections[i]!
+        intersection.x = p.x + (q.x - p.x) * t
+        intersection.z = p.z + (q.z - p.z) * t
+        intersection.bed = p.bed + (q.bed - p.bed) * t
+        intersection.level = p.level + (q.level - p.level) * t
+        intersection.basin = p.basin + (q.basin - p.basin) * t
+        polygon.push(intersection)
       }
     }
     for (let i = 1; i < polygon.length - 1; i++) {
