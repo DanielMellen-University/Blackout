@@ -119,6 +119,15 @@ export class World {
   private readonly fill: DirectionalLight
   /** Reused collision snapshot; obstacle probes run every physics frame. */
   private readonly obstaclePad: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
+  /** Cached runway-local frame for repeated airfield obstacle probes. */
+  private obstacleFrameReady = false
+  private obstacleFrameX = 0
+  private obstacleFrameZ = 0
+  private obstacleFrameY = 0
+  private obstacleFrameForwardX = 0
+  private obstacleFrameForwardZ = 1
+  private obstacleFrameRightX = 1
+  private obstacleFrameRightZ = 0
 
   /** Current airfield spawn (flat biome pad). */
   spawn: SpawnPose = {
@@ -304,8 +313,13 @@ export class World {
       this.weatherCycleLockedValue = previousWeatherCycleLocked
       this.atmosphere.setWeatherLocked(previousWeatherLocked)
       this.atmosphere.setTimeOfDayLocked(previousTimeOfDayLocked)
-      if (previousPad) setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
-      else clearOpsPad()
+      if (previousPad) {
+        setOpsPad(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
+        this.cacheObstacleFrame(previousPad.x, previousPad.z, previousPad.y, previousPad.yaw)
+      } else {
+        clearOpsPad()
+        this.obstacleFrameReady = false
+      }
     }
 
     try {
@@ -420,8 +434,10 @@ export class World {
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.runway.position.set(pad.x, pad.y + 0.05, pad.z)
         this.runway.rotation.y = pad.yaw ?? spawn.yaw
+        this.cacheObstacleFrame(pad.x, pad.z, pad.y, pad.yaw ?? spawn.yaw)
       } else {
         clearOpsPad()
+        this.obstacleFrameReady = false
       }
     } catch { /* runway restoration is cosmetic */ }
     try { this.terrain.clearAll() } catch { /* continue rebuilding other world layers */ }
@@ -476,18 +492,16 @@ export class World {
     padding?: ObstaclePadding,
   ): boolean {
     if (this.disposed || !this.obstaclePad || !this.spawn || !finiteObstaclePoint(x, y, z)) return false
-    const pad = getOpsPadInto(this.obstaclePad)
-    if (!pad) return false
-    const yaw = this.spawn.yaw
-    const dx = x - pad.x
-    const dz = z - pad.z
-    const fx = Math.sin(yaw)
-    const fz = Math.cos(yaw)
-    const rx = Math.cos(yaw)
-    const rz = -Math.sin(yaw)
-    const lx = dx * rx + dz * rz
-    const lz = dx * fx + dz * fz
-    const ly = y - pad.y
+    if (!this.obstacleFrameReady) {
+      const pad = getOpsPadInto(this.obstaclePad)
+      if (!pad) return false
+      this.cacheObstacleFrame(pad.x, pad.z, pad.y, pad.yaw)
+    }
+    const dx = x - this.obstacleFrameX
+    const dz = z - this.obstacleFrameZ
+    const lx = dx * this.obstacleFrameRightX + dz * this.obstacleFrameRightZ
+    const lz = dx * this.obstacleFrameForwardX + dz * this.obstacleFrameForwardZ
+    const ly = y - this.obstacleFrameY
     const paddingX = finiteObstaclePadding(padding?.x)
     const paddingY = finiteObstaclePadding(padding?.y)
     const paddingZ = finiteObstaclePadding(padding?.z)
@@ -501,6 +515,19 @@ export class World {
       }
     }
     return false
+  }
+
+  /** Cache the immutable runway-local basis used by every airfield probe. */
+  private cacheObstacleFrame(x: number, z: number, y: number, yaw: number): void {
+    const safeYaw = Number.isFinite(yaw) ? yaw : 0
+    this.obstacleFrameX = Number.isFinite(x) ? x : 0
+    this.obstacleFrameZ = Number.isFinite(z) ? z : 0
+    this.obstacleFrameY = Number.isFinite(y) ? y : 0
+    this.obstacleFrameForwardX = Math.sin(safeYaw)
+    this.obstacleFrameForwardZ = Math.cos(safeYaw)
+    this.obstacleFrameRightX = Math.cos(safeYaw)
+    this.obstacleFrameRightZ = -Math.sin(safeYaw)
+    this.obstacleFrameReady = true
   }
 
   /**
@@ -654,6 +681,7 @@ export class World {
       yaw,
       biome: pad.biome,
     }
+    this.cacheObstacleFrame(pad.x, pad.z, pad.y, yaw)
 
     this.runway.position.set(pad.x, pad.y + 0.05, pad.z)
     this.runway.rotation.y = yaw
