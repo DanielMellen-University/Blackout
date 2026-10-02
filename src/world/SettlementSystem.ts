@@ -1672,13 +1672,22 @@ export class SettlementSystem {
       this.roadSources.delete(key)
       this.checkedLinks.delete(key)
       this.roadJobs.delete(key)
-      this.linkQueue = this.linkQueue.filter(job => job.key !== key)
-      this.readyRoads = this.readyRoads.filter(road => road.key !== key)
+      this.removeRoadQueueEntries(key)
       const connection = this.connections.get(key)
       if (connection) {
         this.removeRoad(connection)
         this.connections.delete(key)
       }
+    }
+  }
+
+  /** Remove one released edge without allocating replacement road queues. */
+  private removeRoadQueueEntries(key: string): void {
+    for (let index = this.linkQueue.length - 1; index >= 0; index--) {
+      if (this.linkQueue[index]!.key === key) this.linkQueue.splice(index, 1)
+    }
+    for (let index = this.readyRoads.length - 1; index >= 0; index--) {
+      if (this.readyRoads[index]!.key === key) this.readyRoads.splice(index, 1)
     }
   }
 
