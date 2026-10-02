@@ -190,7 +190,10 @@ export function hitsSettlement(
   const paddingY = Number.isFinite(padding?.y) ? Math.max(0, padding!.y) : 0
   const paddingZ = Number.isFinite(padding?.z) ? Math.max(0, padding!.z) : 0
   const queryRadius = Math.hypot(paddingX, paddingZ)
-  if (Math.hypot(x - plan.x, z - plan.z) > index.radius + queryRadius) return false
+  const planRadius = index.radius + queryRadius
+  const planDx = x - plan.x
+  const planDz = z - plan.z
+  if (planDx * planDx + planDz * planDz > planRadius * planRadius) return false
   const minBucketX = Math.floor((x - paddingX) / COLLISION_BUCKET_SIZE)
   const maxBucketX = Math.floor((x + paddingX) / COLLISION_BUCKET_SIZE)
   const minBucketZ = Math.floor((z - paddingZ) / COLLISION_BUCKET_SIZE)
