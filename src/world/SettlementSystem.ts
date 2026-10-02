@@ -1442,30 +1442,48 @@ export class SettlementSystem {
     root.position.set(plan.x, plan.y, plan.z)
     root.add(detail)
     const transform = new Object3D(), color = new Color()
-    const regular = plan.buildings.filter(b => (b.shape ?? 'block') !== 'tower' && b.shape !== 'stepped')
-    const towers = plan.buildings.filter(b => b.shape === 'tower')
-    const stepped = plan.buildings.filter(b => b.shape === 'stepped')
+    const regular: SettlementBuilding[] = []
+    const towers: SettlementBuilding[] = []
+    const stepped: SettlementBuilding[] = []
+    const spireBuildings: SettlementBuilding[] = []
+    const domeBuildings: SettlementBuilding[] = []
+    const pitched: SettlementBuilding[] = []
+    const flat: SettlementBuilding[] = []
+    const flatHangars: SettlementBuilding[] = []
+    const crowns: SettlementBuilding[] = []
+    let highestRoof = plan.y
+    for (let i = 0; i < plan.buildings.length; i++) {
+      const building = plan.buildings[i]!
+      const shape = building.shape ?? 'block'
+      if (shape === 'tower') towers.push(building)
+      else if (shape === 'stepped') stepped.push(building)
+      else regular.push(building)
+      if (building.roof === 'pitched') pitched.push(building)
+      else {
+        flat.push(building)
+        if (shape === 'hangar') flatHangars.push(building)
+        if (plan.kind === 'city' && building.height > 250) crowns.push(building)
+      }
+      highestRoof = Math.max(highestRoof, building.y + building.height)
+      if (plan.kind === 'city') {
+        if (building.height > 620 && i % 17 === 4 && spireBuildings.length < 12) spireBuildings.push(building)
+        if ((shape === 'hangar' || shape === 'slab') && i % 23 === 9 && domeBuildings.length < 12) domeBuildings.push(building)
+      } else {
+        if ((shape === 'tower' || shape === 'stepped') && i % 7 === 2 && spireBuildings.length < 3) spireBuildings.push(building)
+        if ((shape === 'hangar' || shape === 'slab' || shape === 'block') && i % 11 === 3 && domeBuildings.length < 2) domeBuildings.push(building)
+      }
+    }
     // A few high-rise and hall lots become deterministic civic landmarks. The
     // accents are instanced and capped, so a 1,000-building city adds at most
     // twenty-four transforms while breaking the repeated-box skyline. Larger
     // villages borrow the same shared accents at a much smaller cap, giving
     // each rural profile a readable civic center without new draw families.
-    const spireBuildings = plan.kind === 'city'
-      ? plan.buildings.filter((b, i) => b.height > 620 && i % 17 === 4).slice(0, 12)
-      : plan.buildings.filter((b, i) => (b.shape === 'tower' || b.shape === 'stepped') && i % 7 === 2).slice(0, 3)
-    const domeBuildings = plan.kind === 'city'
-      ? plan.buildings.filter((b, i) => (b.shape === 'hangar' || b.shape === 'slab') && i % 23 === 9).slice(0, 12)
-      : plan.buildings.filter((b, i) => (b.shape === 'hangar' || b.shape === 'slab' || b.shape === 'block') && i % 11 === 3).slice(0, 2)
     const body = new InstancedMesh(this.box, this.walls, regular.length)
     const towerBodies = new InstancedMesh(this.tower, this.walls, towers.length)
     const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
     const spires = new InstancedMesh(this.spire, this.roofs, spireBuildings.length)
     const domes = new InstancedMesh(this.dome, this.roofs, domeBuildings.length)
-    const pitched = plan.buildings.filter(b => b.roof === 'pitched')
-    const flat = plan.buildings.filter(b => b.roof === 'flat')
-    const flatHangars = plan.buildings.filter(b => b.shape === 'hangar' && b.roof === 'flat')
     const gables = new InstancedMesh(this.roof, this.roofs, pitched.length)
-    const crowns = flat.filter(b => plan.kind === 'city' && b.height > 250)
     const caps = new InstancedMesh(this.box, this.roofs, flat.length + crowns.length)
     const hangarCaps = new InstancedMesh(this.roof, this.roofs, flatHangars.length)
     const put = (mesh: InstancedMesh, index: number, x: number, y: number, z: number, w: number, h: number, d: number, yaw: number, tint: number) => {
@@ -1515,7 +1533,6 @@ export class SettlementSystem {
       // The marker is only present on the two protected spawn landmarks. It
       // sits above the tallest roof, stays visible through the flight fog,
       // and costs one shared low-poly draw per loaded anchor at most.
-      const highestRoof = Math.max(plan.y, ...plan.buildings.map(building => building.y + building.height))
       const height = plan.kind === 'city' ? 520 : 260
       const radius = plan.kind === 'city' ? 24 : 16
       const beacon = new Mesh(this.anchorBeacon, plan.kind === 'city' ? this.cityBeacon : this.villageBeacon)
@@ -1531,9 +1548,16 @@ export class SettlementSystem {
     const plaza = new Mesh(plazaGeometry, plan.kind === 'city' ? this.cityPlaza : this.villageGreen)
     plaza.name = plan.kind === 'city' ? 'SettlementPlaza' : 'SettlementGreen'
     plaza.rotation.x = -Math.PI / 2
-    const centralRoadPoint = plan.roads
-      .flatMap(road => road.points)
-      .sort((a, b) => Math.hypot(a.x - plan.x, a.z - plan.z) - Math.hypot(b.x - plan.x, b.z - plan.z))[0]
+    let centralRoadPoint: SettlementRoad['points'][number] | undefined
+    let centralRoadDistance = Infinity
+    for (const road of plan.roads) for (const point of road.points) {
+      const dx = point.x - plan.x, dz = point.z - plan.z
+      const distance = dx * dx + dz * dz
+      if (distance < centralRoadDistance) {
+        centralRoadDistance = distance
+        centralRoadPoint = point
+      }
+    }
     plaza.position.set(0, (centralRoadPoint?.y ?? plan.y) - plan.y + .22, 0)
     detail.add(plaza)
     const lightPoints = settlementStreetLightPoints(plan)
