@@ -4,18 +4,23 @@ import { Aircraft } from '../src/aircraft/Aircraft'
 import { CockpitMode } from '../src/camera/CockpitMode'
 
 describe('cockpit camera presentation', () => {
-  it('locks the seat view without adding cockpit geometry', () => {
+  it('shows a restrained camera-attached canopy frame only in cockpit mode', () => {
     const cockpit = new CockpitMode()
     const camera = new PerspectiveCamera()
     const aircraft = new Aircraft()
 
     cockpit.enter(camera)
     cockpit.update(camera, aircraft)
-    expect(camera.children).toHaveLength(0)
-    expect(camera.getObjectByName('CockpitFrame')).toBeUndefined()
+    const frame = camera.getObjectByName('CockpitFrame')
+    expect(camera.children).toHaveLength(1)
+    expect(frame).toBeDefined()
+    expect(frame?.visible).toBe(true)
+    expect(frame?.renderOrder).toBe(20)
     expect(camera.position.length()).toBeGreaterThan(0)
 
     cockpit.exit(camera)
+    expect(camera.children).toHaveLength(0)
+    expect(camera.getObjectByName('CockpitFrame')).toBeUndefined()
     cockpit.dispose()
     cockpit.dispose()
     cockpit.enter(camera)
