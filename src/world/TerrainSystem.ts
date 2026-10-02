@@ -22,7 +22,12 @@ import {
   type TerrainSurface,
 } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { createVegetationFactory, vegetationDensity, vegetationInstanceCount } from './vegetation'
+import {
+  createVegetationFactory,
+  vegetationClusterFactor,
+  vegetationDensity,
+  vegetationInstanceCount,
+} from './vegetation'
 import {
   clearTerrainSamplers,
   invalidateGroundSamplerCaches,
@@ -1379,7 +1384,8 @@ export class TerrainSystem {
       if (f.ravine > 0.55) continue
 
       const density = vegetationDensity(climate.biome, climate.moisture, f)
-      if (hash2(i + cx, cz - i) > density) continue
+      const cluster = vegetationClusterFactor(wx, wz)
+      if (hash2(i + cx, cz - i) > Math.min(1, density * cluster)) continue
 
       const nearWater =
         f.lake > 0.35 ||

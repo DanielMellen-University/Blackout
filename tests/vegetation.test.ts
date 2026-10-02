@@ -1,6 +1,10 @@
 import { DodecahedronGeometry, Mesh, MeshStandardMaterial } from 'three'
 import { describe, expect, it } from 'vitest'
-import { createVegetationFactory, vegetationInstanceCount } from '../src/world/vegetation'
+import {
+  createVegetationFactory,
+  vegetationClusterFactor,
+  vegetationInstanceCount,
+} from '../src/world/vegetation'
 
 describe('weathered vegetation materials', () => {
   it('clamps quality-scaled instance counts to the authored batch', () => {
@@ -8,6 +12,17 @@ describe('weathered vegetation materials', () => {
     expect(vegetationInstanceCount(100, 1.4)).toBe(100)
     expect(vegetationInstanceCount(100, 0)).toBe(0)
     expect(vegetationInstanceCount(0, .5)).toBe(0)
+  })
+
+  it('keeps broad vegetation clustering deterministic and bounded', () => {
+    const samples = [[0, 0], [181, 0], [360, 240], [-640, 512]]
+    for (const [x, z] of samples) {
+      const factor = vegetationClusterFactor(x, z)
+      expect(factor).toBeGreaterThanOrEqual(.48)
+      expect(factor).toBeLessThanOrEqual(1.35)
+      expect(vegetationClusterFactor(x, z)).toBe(factor)
+    }
+    expect(Number.isFinite(vegetationClusterFactor(Number.NaN, Number.POSITIVE_INFINITY))).toBe(true)
   })
 
   it('shares wind and clock uniforms with pooled foliage shaders', () => {

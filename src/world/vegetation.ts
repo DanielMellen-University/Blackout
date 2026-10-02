@@ -133,6 +133,27 @@ export function vegetationInstanceCount(total: number, scale: number): number {
   return Math.max(0, Math.min(Math.floor(total), Math.floor(total * safeScale)))
 }
 
+/**
+ * Return a deterministic broad coverage multiplier for near-field vegetation.
+ *
+ * A single per-sample hash makes foliage read like evenly scattered confetti.
+ * Two coarse hash bands give forests and grasslands readable patches while the
+ * fine band keeps their edges from looking like square authored zones. The
+ * finite guard is intentional because this helper runs while streamed worker
+ * data is being promoted to renderable props.
+ */
+export function vegetationClusterFactor(x: number, z: number): number {
+  const safeX = Number.isFinite(x) ? x : 0
+  const safeZ = Number.isFinite(z) ? z : 0
+  const coarseX = Math.floor(safeX / 180)
+  const coarseZ = Math.floor(safeZ / 180)
+  const fineX = Math.floor(safeX / 64)
+  const fineZ = Math.floor(safeZ / 64)
+  const coarse = hash2(coarseX * 17 + coarseZ * 7, coarseZ * 19 - coarseX * 11)
+  const fine = hash2(fineX * 13 + fineZ * 5 + 97, fineZ * 23 - fineX * 3 - 41)
+  return Math.max(.48, Math.min(1.35, .52 + coarse * .68 + fine * .15))
+}
+
 function setAt(
   inst: InstancedMesh,
   index: number,
