@@ -33,6 +33,8 @@ type Basin = WaterBasin
 export interface RiverReach {
   ax: number; az: number; bx: number; bz: number
   wa: number; wb: number; ya: number; yb: number
+  /** Cached horizontal segment metrics used by repeated terrain samples. */
+  dx: number; dz: number; lengthSq: number; length: number
   /** Chain-end markers let the renderer taper orphaned tributaries cleanly. */
   source?: boolean; terminal?: boolean
   /** True when this reach terminates at a lake or sea shoreline. */
@@ -474,10 +476,16 @@ function emitDrainageChain(
         const endT = ta + (t - ta) * shore.t
         const startLevel = ya + (yb - ya) * ta
         const shoreLevel = shore.level ?? ya + (yb - ya) * endT
+        const reachDx = shore.x - a.x
+        const reachDz = shore.z - a.z
         addReach({
           ax: a.x, az: a.z, bx: shore.x, bz: shore.z,
           wa: wa + (wb - wa) * ta, wb: wa + (wb - wa) * endT,
           ya: startLevel, yb: Math.min(startLevel - .05, shoreLevel),
+          dx: reachDx,
+          dz: reachDz,
+          lengthSq: reachDx * reachDx + reachDz * reachDz,
+          length: Math.hypot(reachDx, reachDz),
           source: !startsAtJunction && segment === 0 && step === 1,
           terminal: !endsAtJunction && segment === nodes.length - 2 && (shore.level !== undefined || step === 4),
           mouth: shore.level !== undefined,
@@ -618,10 +626,9 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   let nearest = Infinity, level = 0, width = 1
   let nearestReach: Reach | null = null
   for (const r of reaches) {
-    const dx = r.bx - r.ax, dz = r.bz - r.az
-    const t = Math.max(0, Math.min(1, ((safeX - r.ax) * dx + (safeZ - r.az) * dz) / (dx * dx + dz * dz)))
+    const t = Math.max(0, Math.min(1, ((safeX - r.ax) * r.dx + (safeZ - r.az) * r.dz) / r.lengthSq))
     const w = r.wa + (r.wb - r.wa) * t
-    const d = Math.hypot(safeX - r.ax - dx * t, safeZ - r.az - dz * t) - w
+    const d = Math.hypot(safeX - r.ax - r.dx * t, safeZ - r.az - r.dz * t) - w
     if (d < nearest) {
       nearest = d
       nearestReach = r
@@ -635,9 +642,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   if (nearest > 0 && nearest < valleyRange) {
     let sum = 0, total = 0
     for (const r of reaches) {
-      const dx = r.bx - r.ax, dz = r.bz - r.az
-      const t = Math.max(0, Math.min(1, ((safeX - r.ax) * dx + (safeZ - r.az) * dz) / (dx * dx + dz * dz)))
-      const d = Math.hypot(safeX - r.ax - dx * t, safeZ - r.az - dz * t) - r.wa - (r.wb - r.wa) * t
+      const t = Math.max(0, Math.min(1, ((safeX - r.ax) * r.dx + (safeZ - r.az) * r.dz) / r.lengthSq))
+      const d = Math.hypot(safeX - r.ax - r.dx * t, safeZ - r.az - r.dz * t) - r.wa - (r.wb - r.wa) * t
       const weight = Math.exp(-Math.max(0, d - nearest) / 160)
       sum += (r.ya + (r.yb - r.ya) * t) * weight
       total += weight
@@ -665,12 +671,11 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   // clips matching water geometry instead of relying on a renderer-only fan.
   for (const reach of reaches) {
     if (!reach.mouth || reach.mouthX === undefined || reach.mouthZ === undefined) continue
-    const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
-    const length = Math.hypot(dx, dz)
+    const length = reach.length
     if (length < 1) continue
     const px = safeX - reach.mouthX, pz = safeZ - reach.mouthZ
-    const along = (px * dx + pz * dz) / length
-    const lateral = Math.abs(px * dz - pz * dx) / length
+    const along = (px * reach.dx + pz * reach.dz) / length
+    const lateral = Math.abs(px * reach.dz - pz * reach.dx) / length
     const channelWidth = Math.max(24, reach.mouthWidth ?? reach.wb)
     const deltaLength = Math.max(260, Math.min(620, channelWidth * 3.6))
     const deltaWidth = Math.max(90, Math.min(260, channelWidth * 2.15))

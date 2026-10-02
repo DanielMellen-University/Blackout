@@ -69,6 +69,10 @@ describe('natural drainage', () => {
     expect(Math.max(...widths) / Math.min(...widths)).toBeGreaterThan(2)
     for (const r of reaches) {
       expect(r.ya).toBeGreaterThanOrEqual(r.yb)
+      expect(r.dx).toBeCloseTo(r.bx - r.ax, 8)
+      expect(r.dz).toBeCloseTo(r.bz - r.az, 8)
+      expect(r.lengthSq).toBeCloseTo(r.dx * r.dx + r.dz * r.dz, 8)
+      expect(r.length).toBeCloseTo(Math.hypot(r.dx, r.dz), 8)
       const c = sampleGeography((r.ax + r.bx) / 2, (r.az + r.bz) / 2)
       expect(terrainSurfaceFromClimate(c).kind).toBe('water')
       expect(c.waterLevel).toBeCloseTo((r.ya + r.yb) / 2, 0)

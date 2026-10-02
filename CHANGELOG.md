@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.743** Cache immutable river-reach segment metrics at generation time so repeated terrain samples avoid recomputing deltas and lengths across channel, shoulder, and delta checks, with geometry and water regression coverage.
 - **10.742** Short-circuit boolean hydrology tile queries so terrain streaming can detect river intersections without materializing a reach-result array, while preserving detailed reach enumeration and adding cross-seed equivalence coverage.
 - **10.741** Broaden Alpine valley shoulders and bound mountain uplift so tall ranges stay flyable instead of forming needle walls, with focused continuity coverage for alpine and green terrain.
 - **10.740** Keep the first-sortie flight briefing hint aligned with the selected Arcade or Conventional keyboard control layout.
