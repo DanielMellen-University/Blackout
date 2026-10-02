@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.775** Keep the full deterministic traffic contact pool on radar and contracts while Low quality trims only visual instances, so graphics presets cannot change gameplay fairness.
 - **10.774** Cache settlement stream-cell priority and distance before sorting, preserving landmark-aware ordering while removing repeated anchor resolution and distance work from the comparator.
 - **10.773** Measure mission clearance across the full runway-width route corridor, keeping route briefings and validation honest when terrain rises under a wing.
 - **10.772** Add deterministic broad vegetation clustering so forest and lowland coverage forms readable patches without changing instance budgets or draw counts.

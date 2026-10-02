@@ -228,7 +228,13 @@ export class AirTrafficSystem {
     return this.revision
   }
 
-  /** Return a pooled nearby snapshot for the radar sweep. */
+  /**
+   * Return a pooled nearby snapshot for the radar sweep.
+   *
+   * Render presets only trim silhouettes, contrails, and beacons. Keep the
+   * full deterministic contact pool available to radar and contracts so a
+   * performance preference cannot change the playable traffic layout.
+   */
   getRadarLandmarks(x: number, z: number, maxRange: number): readonly RadarLandmark[] {
     if (this.disposed) {
       this.radarCache.length = 0
@@ -238,7 +244,7 @@ export class AirTrafficSystem {
     const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
     const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
     this.radarCache.length = 0
-    for (let index = 0; index < this.activeCount; index += 1) {
+    for (let index = 0; index < AIR_TRAFFIC_COUNT; index += 1) {
       const contact = this.radarPool[index]!
       const distance = Math.hypot(contact.x - safeX, contact.z - safeZ)
       if (!trafficRadarInRange(distance, range)) continue
@@ -259,7 +265,10 @@ export class AirTrafficSystem {
     let best: RadarLandmark | null = null
     let bestVerticalOffset = 0
     let bestVertical = 0
-    for (let index = 0; index < this.activeCount; index += 1) {
+    // Keep alert and contract semantics independent of the visual mesh budget.
+    // Low quality hides some silhouettes but must not make traffic objectives
+    // easier, harder, or silently disappear from the radar.
+    for (let index = 0; index < AIR_TRAFFIC_COUNT; index += 1) {
       const contact = this.radarPool[index]!
       const dx = contact.x - safeX
       const dz = contact.z - safeZ

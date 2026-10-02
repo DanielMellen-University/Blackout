@@ -87,7 +87,9 @@ describe('bounded air traffic', () => {
     expect(contacts.every(contact => contact.kind === 'traffic')).toBe(true)
     expect(new Set(contacts.map(contact => contact.id)).size).toBe(AIR_TRAFFIC_COUNT)
     traffic.setRenderQuality('low')
-    expect(traffic.getRadarLandmarks(5_000, 5_000, 8_000)).toHaveLength(3)
+    // Low quality trims only visual instances. Radar and traffic contracts
+    // retain the same deterministic contact pool for gameplay parity.
+    expect(traffic.getRadarLandmarks(5_000, 5_000, 8_000)).toHaveLength(AIR_TRAFFIC_COUNT)
     traffic.dispose()
   })
 
