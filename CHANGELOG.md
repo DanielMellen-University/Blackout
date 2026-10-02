@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.726** Add persistent Clear, Cloudy, Fog, Rain, Storm, Snow, and Night course-condition filters to the title and pause pickers, allowing night routes to overlap their weather condition without rebuilding worlds.
 - **10.725** Carry the cached terrain normal into non-impact landing classification so over-limit grounded slopes fail as a slope crash without adding airborne contact sampling.
 - **10.724** Add persistent Approach, Range, Precision, and Climb course-focus filters to the title and pause pickers, derived from authored route profiles without rebuilding worlds.
 - **10.723** Add persistent Relaxed, Standard, and Technical course filters to the title and pause pickers, with bounded counts, explicit empty states, and focused regression coverage.

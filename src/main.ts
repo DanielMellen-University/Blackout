@@ -323,6 +323,7 @@ export async function boot(): Promise<void> {
     coursePickerDifficultyForCourse,
     coursePickerDifficultyLabel,
     coursePickerMasteryLabel,
+    coursePickerNightForCourse,
     coursePickerFlightLogLabel,
     coursePickerCopy,
     readCoursePickerCategory,
@@ -539,6 +540,8 @@ export async function boot(): Promise<void> {
         precision: record?.bestPrecisionStreak,
         difficulty,
         challenge,
+        weather: resolvedCourse.weather,
+        night: coursePickerNightForCourse(resolvedCourse),
         mastery,
       }
     })

@@ -12,6 +12,7 @@ import {
   coursePickerDifficultyLabel,
   coursePickerFlightLogLabel,
   coursePickerMasteryLabel,
+  coursePickerNightForCourse,
   coursePickerCategoryLabel,
   coursePickerEmptyMessage,
   coursePickerMetaLabel,
@@ -78,6 +79,14 @@ describe('course picker copy', () => {
     expect(filterCoursePickerItems(challengeTagged, '', 'precision')).toEqual([challengeTagged[0]])
     expect(filterCoursePickerItems(challengeTagged, '', 'range')).toEqual([challengeTagged[1]])
     expect(filterCoursePickerItems(challengeTagged, '', 'altitude')).toEqual([challengeTagged[2]])
+    const conditionTagged = items.map((item, index) => ({
+      ...item,
+      weather: index === 0 ? 'storm' as const : index === 1 ? 'rain' as const : 'snow' as const,
+      night: index !== 1,
+    }))
+    expect(filterCoursePickerItems(conditionTagged, '', 'storm')).toEqual([conditionTagged[0]])
+    expect(filterCoursePickerItems(conditionTagged, '', 'rain')).toEqual([conditionTagged[1]])
+    expect(filterCoursePickerItems(conditionTagged, '', 'night')).toEqual([conditionTagged[0], conditionTagged[2]])
   })
 
   it('keeps Recent and Favorites filters in player-defined newest-first order', () => {
@@ -107,6 +116,10 @@ describe('course picker copy', () => {
     expect(coursePickerChallengeForCourse({ profile: 'sweep' })).toBe('range')
     expect(coursePickerChallengeForCourse({ profile: 'slalom' })).toBe('precision')
     expect(coursePickerChallengeForCourse({ profile: 'alpine' })).toBe('altitude')
+    expect(coursePickerNightForCourse({ timeOfDay: 0.84 })).toBe(true)
+    expect(coursePickerNightForCourse({ timeOfDay: 0.02 })).toBe(true)
+    expect(coursePickerNightForCourse({ timeOfDay: 0.5 })).toBe(false)
+    expect(coursePickerNightForCourse({ timeOfDay: Number.NaN })).toBe(false)
     expect(coursePickerDifficultyLabel('relaxed')).toBe('RELAXED')
     expect(coursePickerDifficultyLabel('standard')).toBe('STANDARD')
     expect(coursePickerDifficultyLabel('technical')).toBe('TECHNICAL')
@@ -134,6 +147,7 @@ describe('course picker copy', () => {
     expect(coursePickerCategoryLabel('mastered', 4)).toBe('Mastered (4)')
     expect(coursePickerCategoryLabel('technical', 4)).toBe('Technical difficulty (4)')
     expect(coursePickerCategoryLabel('precision', 3)).toBe('Precision focus (3)')
+    expect(coursePickerCategoryLabel('storm', 4)).toBe('Storm weather (4)')
     expect(coursePickerSortLabel('catalog')).toBe('Catalog order')
     expect(coursePickerSortLabel('score')).toBe('Best score')
     expect(coursePickerSortLabel('time')).toBe('Best time')
@@ -172,6 +186,7 @@ describe('course picker copy', () => {
     expect(normalizeCoursePickerCategory('mastered')).toBe('mastered')
     expect(normalizeCoursePickerCategory('technical')).toBe('technical')
     expect(normalizeCoursePickerCategory('altitude')).toBe('altitude')
+    expect(normalizeCoursePickerCategory('night')).toBe('night')
     expect(normalizeCoursePickerCategory('bogus')).toBe('all')
     expect(normalizeCoursePickerFilter('  storm  ')).toBe('storm')
     expect(normalizeCoursePickerFilter(null)).toBe('')
@@ -368,6 +383,7 @@ describe('course picker copy', () => {
     expect(coursePickerEmptyMessage('unplayed', '')).toContain('NO UNPLAYED COURSES')
     expect(coursePickerEmptyMessage('mastered', '')).toContain('NO MASTERED COURSES')
     expect(coursePickerEmptyMessage('precision', '')).toBe('NO PRECISION COURSES AVAILABLE')
+    expect(coursePickerEmptyMessage('storm', '')).toBe('NO STORM COURSES AVAILABLE')
     expect(coursePickerEmptyMessage('all', '  unknown  ')).toBe('NO MATCHING COURSES')
     expect(coursePickerMetaLabel('NEW', true)).toBe('★ NEW')
     expect(coursePickerMetaLabel('', true)).toBe('★ FAVORITE')

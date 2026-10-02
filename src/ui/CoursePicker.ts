@@ -72,6 +72,10 @@ export interface CoursePickerItem {
   difficulty?: CoursePickerDifficulty
   /** Stable authored challenge focus used by the optional focus filters. */
   challenge?: CoursePickerChallenge
+  /** Authored or rotating weather condition used by the optional condition filters. */
+  weather?: WeatherId
+  /** True when the authored time of day is a repeatable night run. */
+  night?: boolean
   /** Persisted per-course mastery tier used only by the optional mastery sort. */
   mastery?: CourseMasteryTier
 }
@@ -82,6 +86,7 @@ const COURSE_PICKER_CATEGORY_VALUES = [
   'all', 'ops', 'routes', 'contracts', 'explore', 'recent', 'favorites', 'unplayed', 'mastered',
   'relaxed', 'standard', 'technical',
   'approach', 'range', 'precision', 'altitude',
+  'clear', 'cloudy', 'fog', 'rain', 'storm', 'snow', 'night',
 ] as const
 export type CoursePickerCategory = typeof COURSE_PICKER_CATEGORY_VALUES[number]
 const COURSE_PICKER_CATEGORY_SET = new Set<string>(COURSE_PICKER_CATEGORY_VALUES)
@@ -118,6 +123,13 @@ const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, strin
   range: 'Range focus',
   precision: 'Precision focus',
   altitude: 'Climb focus',
+  clear: 'Clear weather',
+  cloudy: 'Cloudy weather',
+  fog: 'Fog weather',
+  rain: 'Rain weather',
+  storm: 'Storm weather',
+  snow: 'Snow weather',
+  night: 'Night runs',
 }
 const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   catalog: 'Catalog order',
@@ -197,6 +209,16 @@ export function coursePickerChallengeForCourse(
   course: Pick<CourseDefinition, 'profile'>,
 ): CoursePickerChallenge {
   return missionChallengeForProfile((course.profile ?? 'orbit') as MissionRouteProfile)
+}
+
+/** Resolve a bounded authored night flag without rebuilding the route. */
+export function coursePickerNightForCourse(
+  course: Pick<CourseDefinition, 'timeOfDay'>,
+): boolean {
+  const time = course.timeOfDay
+  if (!Number.isFinite(time)) return false
+  const normalized = ((time! % 1) + 1) % 1
+  return normalized <= 0.16 || normalized >= 0.78
 }
 
 /** Keep persisted course mastery readable in compact card metadata. */
@@ -419,6 +441,10 @@ export function filterCoursePickerItems(
         ? items.filter(item => item.difficulty === category)
       : category === 'approach' || category === 'range' || category === 'precision' || category === 'altitude'
         ? items.filter(item => item.challenge === category)
+      : category === 'clear' || category === 'cloudy' || category === 'fog' || category === 'rain' || category === 'storm' || category === 'snow'
+        ? items.filter(item => item.weather === category)
+      : category === 'night'
+        ? items.filter(item => item.night === true)
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -465,6 +491,13 @@ export function coursePickerEmptyMessage(category: CoursePickerCategory, query: 
   if (category === 'range') return 'NO RANGE COURSES AVAILABLE'
   if (category === 'precision') return 'NO PRECISION COURSES AVAILABLE'
   if (category === 'altitude') return 'NO CLIMB COURSES AVAILABLE'
+  if (category === 'clear') return 'NO CLEAR-WEATHER COURSES AVAILABLE'
+  if (category === 'cloudy') return 'NO CLOUDY-WEATHER COURSES AVAILABLE'
+  if (category === 'fog') return 'NO FOG COURSES AVAILABLE'
+  if (category === 'rain') return 'NO RAIN COURSES AVAILABLE'
+  if (category === 'storm') return 'NO STORM COURSES AVAILABLE'
+  if (category === 'snow') return 'NO SNOW COURSES AVAILABLE'
+  if (category === 'night') return 'NO NIGHT COURSES AVAILABLE'
   return 'NO COURSES AVAILABLE'
 }
 
@@ -912,6 +945,13 @@ export class CoursePicker {
       range: this.items.filter(item => item.challenge === 'range').length,
       precision: this.items.filter(item => item.challenge === 'precision').length,
       altitude: this.items.filter(item => item.challenge === 'altitude').length,
+      clear: this.items.filter(item => item.weather === 'clear').length,
+      cloudy: this.items.filter(item => item.weather === 'cloudy').length,
+      fog: this.items.filter(item => item.weather === 'fog').length,
+      rain: this.items.filter(item => item.weather === 'rain').length,
+      storm: this.items.filter(item => item.weather === 'storm').length,
+      snow: this.items.filter(item => item.weather === 'snow').length,
+      night: this.items.filter(item => item.night === true).length,
     }
     for (const [category, option] of this.categoryOptions) {
       option.textContent = coursePickerCategoryLabel(category, counts[category])
