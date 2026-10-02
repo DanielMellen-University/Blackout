@@ -729,10 +729,13 @@ export class TerrainSystem {
     const cz = Math.floor(z / CHUNK_SIZE)
     if (cx === this.sampledChunkCx && cz === this.sampledChunkCz) return this.sampledChunk
     const key = `${cx},${cz}`
-    if (this.sampledChunkLookup.has(key)) {
+    const cached = this.sampledChunkLookup.get(key)
+    // `null` is a meaningful cached miss. Only `undefined` means the cell
+    // has not been inspected yet, so one Map lookup handles both cases.
+    if (cached !== undefined) {
       this.sampledChunkCx = cx
       this.sampledChunkCz = cz
-      this.sampledChunk = this.sampledChunkLookup.get(key) ?? null
+      this.sampledChunk = cached
       return this.sampledChunk
     }
     this.sampledChunkCx = cx

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.778** Collapse terrain contact-cache hits to one bounded map lookup, preserving cached misses while trimming repeated work when physics revisits streamed cells.
 - **10.777** Remove recursive array allocations from terrain quadtree planning, preserving deterministic coverage while reducing garbage during rapid stream reschedules.
 - **10.776** Keep hidden low-quality traffic contacts advancing in the simulation while trimming only their meshes, so radar, alerts, and traffic contracts never freeze when visual budgets change.
 - **10.775** Keep the full deterministic traffic contact pool on radar and contracts while Low quality trims only visual instances, so graphics presets cannot change gameplay fairness.
