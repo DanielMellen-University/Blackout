@@ -9,7 +9,7 @@ import {
 } from '../systems/ChallengeRun'
 import type { CourseDefinition } from '../systems/CourseLibrary'
 import type { CourseMasteryTier } from '../systems/ChallengeRun'
-import type { MissionRouteProfile } from '../systems/Mission'
+import { missionChallengeForProfile, type MissionChallenge, type MissionRouteProfile } from '../systems/Mission'
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
 import { WEATHER_LABELS, weatherIdForSeed, type WeatherId, type WindSide } from '../world/WeatherDirector'
 
@@ -70,14 +70,18 @@ export interface CoursePickerItem {
   precision?: number
   /** Stable authored route difficulty used only by the optional difficulty sort. */
   difficulty?: CoursePickerDifficulty
+  /** Stable authored challenge focus used by the optional focus filters. */
+  challenge?: CoursePickerChallenge
   /** Persisted per-course mastery tier used only by the optional mastery sort. */
   mastery?: CourseMasteryTier
 }
 
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
+export type CoursePickerChallenge = MissionChallenge
 const COURSE_PICKER_CATEGORY_VALUES = [
   'all', 'ops', 'routes', 'contracts', 'explore', 'recent', 'favorites', 'unplayed', 'mastered',
   'relaxed', 'standard', 'technical',
+  'approach', 'range', 'precision', 'altitude',
 ] as const
 export type CoursePickerCategory = typeof COURSE_PICKER_CATEGORY_VALUES[number]
 const COURSE_PICKER_CATEGORY_SET = new Set<string>(COURSE_PICKER_CATEGORY_VALUES)
@@ -110,6 +114,10 @@ const COURSE_PICKER_CATEGORY_LABELS: Readonly<Record<CoursePickerCategory, strin
   relaxed: 'Relaxed difficulty',
   standard: 'Standard difficulty',
   technical: 'Technical difficulty',
+  approach: 'Approach focus',
+  range: 'Range focus',
+  precision: 'Precision focus',
+  altitude: 'Climb focus',
 }
 const COURSE_PICKER_SORT_LABELS: Readonly<Record<CoursePickerSort, string>> = {
   catalog: 'Catalog order',
@@ -172,6 +180,23 @@ export function coursePickerDifficultyLabel(value: CoursePickerDifficulty): stri
     case 'technical': return 'TECHNICAL'
     default: return 'STANDARD'
   }
+}
+
+/** Keep the authored challenge focus readable in compact picker controls. */
+export function coursePickerChallengeLabel(value: CoursePickerChallenge): string {
+  switch (value) {
+    case 'range': return 'RANGE'
+    case 'precision': return 'PRECISION'
+    case 'altitude': return 'CLIMB'
+    default: return 'APPROACH'
+  }
+}
+
+/** Resolve a stable browsing focus without constructing a mission route. */
+export function coursePickerChallengeForCourse(
+  course: Pick<CourseDefinition, 'profile'>,
+): CoursePickerChallenge {
+  return missionChallengeForProfile((course.profile ?? 'orbit') as MissionRouteProfile)
 }
 
 /** Keep persisted course mastery readable in compact card metadata. */
@@ -392,6 +417,8 @@ export function filterCoursePickerItems(
         ? items.filter(item => item.mastery === 'legend')
       : category === 'relaxed' || category === 'standard' || category === 'technical'
         ? items.filter(item => item.difficulty === category)
+      : category === 'approach' || category === 'range' || category === 'precision' || category === 'altitude'
+        ? items.filter(item => item.challenge === category)
       : items.filter(item => item.category === category)
   if (terms.length === 0) return categorized.slice()
   return categorized.filter(item => {
@@ -434,6 +461,10 @@ export function coursePickerEmptyMessage(category: CoursePickerCategory, query: 
   if (category === 'relaxed') return 'NO RELAXED COURSES AVAILABLE'
   if (category === 'standard') return 'NO STANDARD COURSES AVAILABLE'
   if (category === 'technical') return 'NO TECHNICAL COURSES AVAILABLE'
+  if (category === 'approach') return 'NO APPROACH COURSES AVAILABLE'
+  if (category === 'range') return 'NO RANGE COURSES AVAILABLE'
+  if (category === 'precision') return 'NO PRECISION COURSES AVAILABLE'
+  if (category === 'altitude') return 'NO CLIMB COURSES AVAILABLE'
   return 'NO COURSES AVAILABLE'
 }
 
@@ -877,6 +908,10 @@ export class CoursePicker {
       relaxed: this.items.filter(item => item.difficulty === 'relaxed').length,
       standard: this.items.filter(item => item.difficulty === 'standard').length,
       technical: this.items.filter(item => item.difficulty === 'technical').length,
+      approach: this.items.filter(item => item.challenge === 'approach').length,
+      range: this.items.filter(item => item.challenge === 'range').length,
+      precision: this.items.filter(item => item.challenge === 'precision').length,
+      altitude: this.items.filter(item => item.challenge === 'altitude').length,
     }
     for (const [category, option] of this.categoryOptions) {
       option.textContent = coursePickerCategoryLabel(category, counts[category])

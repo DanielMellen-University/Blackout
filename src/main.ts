@@ -318,6 +318,8 @@ export async function boot(): Promise<void> {
     courseConditionSummary,
     courseMasteryProgressLabel,
     coursePickerCategoryForCourse,
+    coursePickerChallengeForCourse,
+    coursePickerChallengeLabel,
     coursePickerDifficultyForCourse,
     coursePickerDifficultyLabel,
     coursePickerMasteryLabel,
@@ -481,6 +483,7 @@ export async function boot(): Promise<void> {
         contractDetail: sortieContractDetailForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
       })
       const difficulty = coursePickerDifficultyForCourse(course)
+      const challenge = coursePickerChallengeForCourse({ profile: resolvedCourse.profile })
       const mastery = courseMasteryTierForProgress({
         completionCount: record?.history?.completionCount,
         bestScore: record?.bestScore,
@@ -492,7 +495,7 @@ export async function boot(): Promise<void> {
         id: course.id,
         label: course.label,
         detail: copy.detail,
-        meta: [copy.meta, `DIFF ${coursePickerDifficultyLabel(difficulty)}`, `TIER ${coursePickerMasteryLabel(mastery)}`, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
+        meta: [copy.meta, `DIFF ${coursePickerDifficultyLabel(difficulty)}`, `FOCUS ${coursePickerChallengeLabel(challenge)}`, `TIER ${coursePickerMasteryLabel(mastery)}`, opsStreakLabel(opsStreaks, course.id, course.id === 'daily-ops'
           ? dailyOpsDayKey(opsTimestamp)
           : course.id === 'weekly-ops'
             ? weeklyOpsWeekKey(opsTimestamp)
@@ -535,6 +538,7 @@ export async function boot(): Promise<void> {
         negativeG: record?.history?.peakNegativeG,
         precision: record?.bestPrecisionStreak,
         difficulty,
+        challenge,
         mastery,
       }
     })
