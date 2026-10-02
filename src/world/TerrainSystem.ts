@@ -578,10 +578,10 @@ export class TerrainSystem {
     const cz = Math.floor(safeZ / CHUNK_SIZE)
 
     const crossedStreamCell = cx !== this.lastCx || cz !== this.lastCz
-    const movedForLod = Number.isFinite(this.lastLodFocusX) && Number.isFinite(this.lastLodFocusZ)
-      ? Math.hypot(safeX - this.lastLodFocusX, safeZ - this.lastLodFocusZ)
+    const movedForLodSquared = Number.isFinite(this.lastLodFocusX) && Number.isFinite(this.lastLodFocusZ)
+      ? (safeX - this.lastLodFocusX) ** 2 + (safeZ - this.lastLodFocusZ) ** 2
       : Infinity
-    if (crossedStreamCell || movedForLod >= LOD_RECHECK_DISTANCE_M) {
+    if (crossedStreamCell || movedForLodSquared >= LOD_RECHECK_DISTANCE_M ** 2) {
       this.lastCx = cx
       this.lastCz = cz
       this.lastLodFocusX = safeX

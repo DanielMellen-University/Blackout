@@ -304,10 +304,6 @@ function segmentDistanceSquared(px: number, pz: number, ax: number, az: number, 
   return rx * rx + rz * rz
 }
 
-function segmentDistance(px: number, pz: number, ax: number, az: number, bx: number, bz: number): number {
-  return Math.sqrt(segmentDistanceSquared(px, pz, ax, az, bx, bz))
-}
-
 /** Exact route proximity prevents a curved connector disappearing near its bend. */
 function roadDistanceSquared(px: number, pz: number, road: SettlementRoad): number {
   let nearest = Infinity
@@ -1333,7 +1329,7 @@ export class SettlementSystem {
       const index = getCollisionIndex(plan)
       const planRadius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : index.radius) +
         Math.hypot(paddingX, paddingZ) + COLLISION_INDEX_MARGIN
-      if (segmentDistance(plan.x, plan.z, px, pz, cx, cz) > planRadius) continue
+      if (segmentDistanceSquared(plan.x, plan.z, px, pz, cx, cz) > planRadius * planRadius) continue
 
       const minBucketX = Math.floor(minX / COLLISION_BUCKET_SIZE)
       const maxBucketX = Math.floor(maxX / COLLISION_BUCKET_SIZE)
@@ -1433,7 +1429,7 @@ export class SettlementSystem {
       const radius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : 0) + margin
       if (plan.x < minX - radius || plan.x > maxX + radius ||
         plan.z < minZ - radius || plan.z > maxZ + radius) continue
-      if (segmentDistance(plan.x, plan.z, px, pz, cx, cz) <= radius) return true
+      if (segmentDistanceSquared(plan.x, plan.z, px, pz, cx, cz) <= radius * radius) return true
     }
     return false
   }
