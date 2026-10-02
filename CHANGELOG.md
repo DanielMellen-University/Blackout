@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.792** Query only aligned quadtree neighbors when preparing terrain LOD skirts, preserving seam coverage while avoiding four whole-horizon map scans per tile request.
 - **10.791** Retain fractional pooled-traffic cadence time, preventing uneven render frames from slowing deterministic traffic contacts and desynchronizing radar or contract timing.
 
 - **10.790** Reuse bounded shoreline clipping buffers for analytic basins, preserving clipped lake and sea geometry while removing per-edge arrays and intersection allocations during water builds.

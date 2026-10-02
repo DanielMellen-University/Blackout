@@ -1184,22 +1184,33 @@ export class TerrainSystem {
     size: number,
     lod: TerrainLod,
   ): readonly [boolean, boolean, boolean, boolean] {
+    // Terrain leaves are power-of-two quadtree tiles. Query only the aligned
+    // leaves that can touch this edge instead of walking every desired tile
+    // four times during a stream refresh. The largest tile checks 63 keys per
+    // edge, while the previous map scan scaled with the whole horizon.
     const finerAt = (edge: 'north' | 'east' | 'south' | 'west'): boolean => {
-      for (const tile of this.desiredTiles.values()) {
-        const overlaps = edge === 'north' || edge === 'south'
-          ? tile.cx < cx + size && tile.cx + tile.size > cx
-          : tile.cz < cz + size && tile.cz + tile.size > cz
-        if (!overlaps) continue
-        const touches = edge === 'north'
-          ? tile.cz + tile.size === cz
-          : edge === 'east'
-            ? tile.cx === cx + size
-            : edge === 'south'
-              ? tile.cz === cz + size
-              : tile.cx + tile.size === cx
-        if (!touches || (tile.cx === cx && tile.cz === cz && tile.size === size)) continue
-        const neighborLod = lodFromDist(tile.dist)
-        if (tile.size < size || (tile.size === size && neighborLod < lod)) return true
+      for (let neighborSize = 1; neighborSize <= size; neighborSize *= 2) {
+        for (let offset = 0; offset < size; offset += neighborSize) {
+          let neighborCx = cx + offset
+          let neighborCz = cz + offset
+          if (edge === 'north') {
+            neighborCx = cx + offset
+            neighborCz = cz - neighborSize
+          } else if (edge === 'east') {
+            neighborCx = cx + size
+            neighborCz = cz + offset
+          } else if (edge === 'south') {
+            neighborCx = cx + offset
+            neighborCz = cz + size
+          } else {
+            neighborCx = cx - neighborSize
+            neighborCz = cz + offset
+          }
+          const tile = this.desiredTiles.get(tileKey(neighborCx, neighborCz, neighborSize))
+          if (!tile) continue
+          const neighborLod = lodFromDist(tile.dist)
+          if (tile.size < size || (tile.size === size && neighborLod < lod)) return true
+        }
       }
       return false
     }

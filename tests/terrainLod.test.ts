@@ -192,6 +192,25 @@ describe('TerrainSystem streaming LOD', () => {
     }
   })
 
+  it('finds only aligned finer neighbors when preparing LOD skirts', () => {
+    const terrain = new TerrainSystem(new Scene())
+    const internal = terrain as unknown as {
+      desiredTiles: Map<string, { cx: number; cz: number; size: number; dist: number }>
+      skirtEdgesForTile: (cx: number, cz: number, size: number, lod: 0 | 1 | 2) => readonly [boolean, boolean, boolean, boolean]
+    }
+    try {
+      internal.desiredTiles.set('0,-1', { cx: 0, cz: -1, size: 1, dist: 1 })
+      internal.desiredTiles.set('2,0', { cx: 2, cz: 0, size: 1, dist: 1 })
+      internal.desiredTiles.set('0,2:2', { cx: 0, cz: 2, size: 2, dist: 20 })
+      internal.desiredTiles.set('-1,0', { cx: -1, cz: 0, size: 1, dist: 1 })
+
+      expect(internal.skirtEdgesForTile(0, 0, 2, 2)).toEqual([true, true, false, true])
+    } finally {
+      internal.desiredTiles.clear()
+      terrain.dispose()
+    }
+  })
+
   it('reuses the last valid focus when stream coordinates are malformed', () => {
     const terrain = new TerrainSystem(new Scene())
     const internal = terrain as unknown as { focusX: number; focusZ: number }
