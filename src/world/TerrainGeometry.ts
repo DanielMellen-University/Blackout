@@ -1,7 +1,7 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
 import { applySlopeShadingInto, biomeColor, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type WaterBasin } from './Hydrology'
+import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type RiverReach, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
 
 export const CHUNK_SIZE = 420
@@ -20,6 +20,8 @@ const RIVER_MAX_SEGS: Record<TerrainLod, number> = { 0: 64, 1: 64, 2: 16 }
 const TERRAIN_SKIRT_DEPTH = 60
 const CLIMATE_POOL_LIMIT = 1024
 const climatePool: Climate[] = []
+/** Reused detailed river list; generation is synchronous within each worker. */
+const riverReachScratch: RiverReach[] = []
 
 function acquireClimateGrid(count: number): Climate[] {
   const samples = new Array<Climate>((count + 1) * (count + 1))
@@ -264,7 +266,7 @@ export function generateTerrainGeometry(
     : size > 1 ? SEGS_MID : segsForLod(lod)
   const reaches = reducedFar
     ? []
-    : riverReachesInBounds(originX, originZ, originX + span, originZ + span)
+    : riverReachesInBounds(originX, originZ, originX + span, originZ + span, 0, riverReachScratch)
   const riverSegs = Math.min(RIVER_MAX_SEGS[lod],
     Math.max(baseSegs, Math.ceil(span / RIVER_TARGET_CELL_M[lod])))
   const detailSegs = Math.max(baseSegs, waterSegsForLod(lod, span), reaches.length ? riverSegs : 0)

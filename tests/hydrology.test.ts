@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterLandmarks } from '../src/world/Hydrology'
+import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterLandmarks, type RiverReach } from '../src/world/Hydrology'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
@@ -165,6 +165,22 @@ describe('natural drainage', () => {
           .toBe(riverReachesInBounds(minX, minZ, maxX, maxZ, margin).length > 0)
       }
     }
+  })
+
+  it('fills a caller-owned river reach buffer without changing detailed results', () => {
+    setWorldSeed(1)
+    const out: RiverReach[] = []
+    const first = riverReachesInBounds(-18000, -12000, -14000, -8000, 0, out)
+    expect(first).toBe(out)
+    expect(first.length).toBeGreaterThan(0)
+    const signature = first.map((reach) => `${reach.ax}:${reach.az}:${reach.bx}:${reach.bz}`)
+    const second = riverReachesInBounds(31_000, -9_000, 32_600, -7_400, 1200, out)
+    expect(second).toBe(out)
+    expect(second).not.toEqual(signature)
+    expect(out.every((reach) => Number.isFinite(reach.length))).toBe(true)
+    expect(riverReachesInBounds(-18000, -12000, -14000, -8000, 0).map((reach) =>
+      `${reach.ax}:${reach.az}:${reach.bx}:${reach.bz}`,
+    )).toEqual(signature)
   })
 
   it('keeps broad river banks dry outside the analytic channel ribbon', () => {

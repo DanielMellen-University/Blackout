@@ -42,7 +42,7 @@ export interface RiverReach {
   /** The shoreline point and width used to form a small, query-time delta. */
   mouthX?: number; mouthZ?: number; mouthWidth?: number
 }
-type Reach = RiverReach
+type Reach = RiverReach & { queryToken?: number }
 interface Catchment { basins: Basin[]; bins: Reach[][]; reaches: Reach[] }
 interface FlowGrid {
   height: Float64Array
@@ -94,6 +94,7 @@ class MinHeap {
 
 let seed = Number.NaN
 const cache = new Map<string, Catchment>()
+let riverBoundsQueryToken = 0
 
 function gridId(ix: number, iz: number): number { return iz * FLOW_GRID + ix }
 function gridX(ox: number, id: number): number { return ox + (id % FLOW_GRID) * FLOW_STEP }
@@ -803,9 +804,10 @@ function normalizeRiverBounds(
  */
 function collectRiverReachesInBounds(
   query: RiverBoundsQuery,
-  result: Set<Reach> | null,
+  result: Reach[] | null,
 ): boolean {
   let found = false
+  const queryToken = result ? nextRiverBoundsQueryToken() : 0
   for (let cz = query.startCz; cz <= query.endCz; cz++) for (let cx = query.startCx; cx <= query.endCx; cx++) {
     const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
     const region = catchment(cx, cz)
@@ -818,13 +820,9 @@ function collectRiverReachesInBounds(
     const maxBinX = Math.min(BINS - 1, Math.floor(localMaxX / BIN))
     const minBinZ = Math.max(0, Math.floor(localMinZ / BIN))
     const maxBinZ = Math.min(BINS - 1, Math.floor(localMaxZ / BIN))
-    const seen = result ? new Set<Reach>() : null
     for (let iz = minBinZ; iz <= maxBinZ; iz++) for (let ix = minBinX; ix <= maxBinX; ix++) {
       for (const reach of region.bins[iz * BINS + ix]!) {
-        if (seen) {
-          if (seen.has(reach)) continue
-          seen.add(reach)
-        }
+        if (result && reach.queryToken === queryToken) continue
         const width = Math.max(reach.wa, reach.wb)
         if (!lineIntersectsBounds(
           reach.ax, reach.az, reach.bx, reach.bz,
@@ -832,12 +830,19 @@ function collectRiverReachesInBounds(
           query.expandedMaxX + width, query.expandedMaxZ + width,
         )) continue
         if (!result) return true
-        result.add(reach)
+        reach.queryToken = queryToken
+        result.push(reach)
         found = true
       }
     }
   }
   return found
+}
+
+function nextRiverBoundsQueryToken(): number {
+  riverBoundsQueryToken = (riverBoundsQueryToken + 1) >>> 0
+  if (riverBoundsQueryToken === 0) riverBoundsQueryToken = 1
+  return riverBoundsQueryToken
 }
 
 /** Locate cached river reaches that touch an axis-aligned streamed tile. */
@@ -847,12 +852,14 @@ export function riverReachesInBounds(
   maxX: number,
   maxZ: number,
   margin = 0,
+  out?: RiverReach[],
 ): ReadonlyArray<Readonly<RiverReach>> {
+  const result = out ?? []
+  result.length = 0
   const query = normalizeRiverBounds(minX, minZ, maxX, maxZ, margin)
-  if (!query) return []
-  const result = new Set<Reach>()
+  if (!query) return result
   collectRiverReachesInBounds(query, result)
-  return [...result]
+  return result
 }
 
 /**
