@@ -178,6 +178,11 @@ function appendAnalyticBasins(
   if (!basins.length) return
   const half = size / 2
   const centerX = originX + half, centerZ = originZ + half
+  const polygonScratch: BasinVertex[] = [
+    { x: 0, z: 0, y: 0, depth: 0 },
+    { x: 0, z: 0, y: 0, depth: 0 },
+    { x: 0, z: 0, y: 0, depth: 0 },
+  ]
   const clip = (input: BasinVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): BasinVertex[] => {
     if (!input.length) return input
     const result: BasinVertex[] = []
@@ -271,11 +276,18 @@ function appendAnalyticBasins(
     for (let i = 0; i < boundary.length; i += boundaryStep) {
       const edge = boundary[i]!
       const next = boundary[(i + boundaryStep) % boundary.length]!
-      appendPolygon([
-        center,
-        { ...edge, x: basin.x + edge.x - centerX, z: basin.z + edge.z - centerZ },
-        { ...next, x: basin.x + next.x - centerX, z: basin.z + next.z - centerZ },
-      ], basin.sea ? 2 : basin.pond ? .5 : 1)
+      polygonScratch[0] = center
+      const edgeVertex = polygonScratch[1]!
+      edgeVertex.x = basin.x + edge.x - centerX
+      edgeVertex.z = basin.z + edge.z - centerZ
+      edgeVertex.y = edge.y
+      edgeVertex.depth = edge.depth
+      const nextVertex = polygonScratch[2]!
+      nextVertex.x = basin.x + next.x - centerX
+      nextVertex.z = basin.z + next.z - centerZ
+      nextVertex.y = next.y
+      nextVertex.depth = next.depth
+      appendPolygon(polygonScratch, basin.sea ? 2 : basin.pond ? .5 : 1)
     }
   }
 }
@@ -301,6 +313,8 @@ function appendRiverRibbons(
   const half = size / 2
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
   type Section = { left: RibbonVertex; center: RibbonVertex; right: RibbonVertex }
+  const polygonScratch: RibbonVertex[] = new Array(4)
+  const capPoints: RibbonVertex[] = Array.from({ length: 8 }, () => ({ x: 0, z: 0, y: 0, depth: 0 }))
 
   const clip = (polygon: RibbonVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): RibbonVertex[] => {
     if (!polygon.length) return polygon
@@ -329,9 +343,15 @@ function appendRiverRibbons(
   }
 
   const appendPolygon = (
-    input: RibbonVertex[], flowX: number, flowZ: number, drop: number, flow: number,
+    a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex | undefined,
+    flowX: number, flowZ: number, drop: number, flow: number,
   ): void => {
-    let polygon = input
+    polygonScratch[0] = a
+    polygonScratch[1] = b
+    polygonScratch[2] = c
+    polygonScratch.length = d ? 4 : 3
+    if (d) polygonScratch[3] = d
+    let polygon = polygonScratch
     polygon = clip(polygon, 'x', -half, true)
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
@@ -355,21 +375,24 @@ function appendRiverRibbons(
 
   const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
     flowX: number, flowZ: number, drop: number, flow: number): void => {
-    appendPolygon([a, b, c, d], flowX, flowZ, drop, flow)
+    appendPolygon(a, b, c, d, flowX, flowZ, drop, flow)
   }
 
   const appendRoundCap = (
     section: Section, radius: number, flowX: number, flowZ: number, drop: number, flow: number,
   ): void => {
     const center = section.center
-    const points: RibbonVertex[] = []
     for (let i = 0; i < 8; i++) {
       const angle = i / 8 * Math.PI * 2
-      points.push({ x: center.x + Math.cos(angle) * radius, z: center.z + Math.sin(angle) * radius,
-        y: center.y, depth: Math.max(.08, center.depth * .5) })
+      const point = capPoints[i]!
+      point.x = center.x + Math.cos(angle) * radius
+      point.z = center.z + Math.sin(angle) * radius
+      point.y = center.y
+      point.depth = Math.max(.08, center.depth * .5)
     }
-    for (let i = 0; i < points.length; i++) {
-      appendPolygon([center, points[i]!, points[(i + 1) % points.length]!], flowX, flowZ, drop, flow)
+    for (let i = 0; i < capPoints.length; i++) {
+      appendPolygon(center, capPoints[i]!, capPoints[(i + 1) % capPoints.length]!, undefined,
+        flowX, flowZ, drop, flow)
     }
   }
 
@@ -431,9 +454,9 @@ function appendRiverRibbons(
       y: section.center.y - .012,
       depth: .008,
     }
-    appendPolygon([section.left, section.right, nearRight, nearLeft], flowX, flowZ, drop, flow)
-    appendPolygon([nearLeft, nearRight, midRight, midLeft], flowX, flowZ, drop, flow)
-    appendPolygon([midLeft, midRight, tip], flowX, flowZ, drop, flow)
+    appendPolygon(section.left, section.right, nearRight, nearLeft, flowX, flowZ, drop, flow)
+    appendPolygon(nearLeft, nearRight, midRight, midLeft, flowX, flowZ, drop, flow)
+    appendPolygon(midLeft, midRight, tip, undefined, flowX, flowZ, drop, flow)
   }
 
   const appendJunctionPad = (
