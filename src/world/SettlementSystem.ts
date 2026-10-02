@@ -942,7 +942,7 @@ export class SettlementSystem {
         // Do not permanently consume an anchor when the shared instance
         // budget is temporarily full. Leaving it unchecked lets the normal
         // nearest-first queue retry after an ordinary settlement is evicted.
-        this.queue = this.queue.filter(job => job.key !== key)
+        this.removeQueuedCell(key)
       }
     }
     // A protected cell can still fail if the new terrain revision puts its
@@ -973,7 +973,7 @@ export class SettlementSystem {
           this.checked.add(key)
           this.setLoaded(key, this.build(plan))
         } else {
-          this.queue = this.queue.filter(job => job.key !== key)
+          this.removeQueuedCell(key)
         }
         break
       }
@@ -994,7 +994,7 @@ export class SettlementSystem {
       // A protected cell can be re-enqueued by the normal radius scan before
       // this retry runs. Remove that ordinary job so the fallback tier is
       // rebuilt synchronously instead of waiting behind unrelated cells.
-      this.queue = this.queue.filter(job => job.key !== key)
+      this.removeQueuedCell(key)
       const [cx, cz] = key.split(',').map(Number)
       // Fallback cells are not returned by settlementAnchorForCell, so the
       // ordinary call would rebuild them as a random settlement after a
@@ -1025,6 +1025,13 @@ export class SettlementSystem {
     this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
     this.dockDeckMaterial.dispose(); this.dockPostMaterial.dispose()
     this.cityPlaza.dispose(); this.villageGreen.dispose()
+  }
+
+  /** Remove one protected cell without allocating a replacement queue. */
+  private removeQueuedCell(key: string): void {
+    for (let index = this.queue.length - 1; index >= 0; index--) {
+      if (this.queue[index]!.key === key) this.queue.splice(index, 1)
+    }
   }
 
   update(x: number, z: number): void {
