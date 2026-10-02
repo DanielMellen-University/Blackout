@@ -32,7 +32,13 @@ export function planTerrainTiles(x: number, z: number, radius: number): TerrainT
     const splitAt = size === 32 ? 48 : size === 16 ? 32 : size === 8 ? 20 : size === 4 ? 12 : 8
     if (size > 1 && edgeDistance < splitAt) {
       const half = size / 2
-      for (const dx of [0, half]) for (const dz of [0, half]) visit(cx + dx, cz + dz, half)
+      // Keep the recursive planner allocation-free. The old nested array
+      // literals created two short-lived arrays at every quadtree split,
+      // which multiplied during rapid stream reschedules.
+      visit(cx, cz, half)
+      visit(cx, cz + half, half)
+      visit(cx + half, cz, half)
+      visit(cx + half, cz + half, half)
     } else {
       tiles.push({ cx, cz, size, dist: Math.hypot(cx + size / 2 - x, cz + size / 2 - z) })
     }

@@ -61,4 +61,10 @@ describe('long-range adaptive terrain coverage', () => {
       expect(tiles.map(t => t.dist)).toEqual(tiles.map(t => t.dist).sort((a, b) => a - b))
     }
   })
+
+  it('keeps the quadtree plan deterministic across repeated stream reschedules', () => {
+    const first = planTerrainTiles(170.5, -280.5, 80)
+    const second = planTerrainTiles(170.5, -280.5, 80)
+    expect(second).toEqual(first)
+  })
 })
