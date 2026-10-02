@@ -233,7 +233,7 @@ export class TerrainSystem {
   /** Pending work stays reverse-prioritized so dispatch can pop without shifts. */
   private pendingSorted = false
   private readonly pendingKeys = new Set<string>()
-  private readonly ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[] = []
+  private readonly ready: { job: TerrainBuildRequest; data: TerrainGeometryData; key?: string; dist?: number }[] = []
   /** Completed results retain their nearest-first order between stream reschedules. */
   private readySorted = false
   private readonly activeKeys = new Set<string>()
@@ -303,7 +303,8 @@ export class TerrainSystem {
     this.scene = scene
     this.workers = new TerrainWorkerPool((job, data) => {
       if (this.disposed || job.generation !== this.generation) return
-      this.ready.push({ job, data })
+      const key = tileKey(job.cx, job.cz, job.size)
+      this.ready.push({ job, data, key, dist: this.desiredTiles.get(key)?.dist ?? Infinity })
       this.readySorted = false
       this.dispatchWorkers()
     }, job => {
@@ -902,11 +903,12 @@ export class TerrainSystem {
     // Sort farthest-first so pop() removes the nearest result without shifting
     // every remaining ready item on each upload.
     if (this.ready.length > 1 && !this.readySorted) {
-      this.ready.sort((a, b) => {
-        const aDistance = this.desiredTiles.get(tileKey(a.job.cx, a.job.cz, a.job.size))?.dist ?? Infinity
-        const bDistance = this.desiredTiles.get(tileKey(b.job.cx, b.job.cz, b.job.size))?.dist ?? Infinity
-        return bDistance - aDistance
-      })
+      for (const result of this.ready) {
+        const key = result.key ?? tileKey(result.job.cx, result.job.cz, result.job.size)
+        result.key = key
+        result.dist = this.desiredTiles.get(key)?.dist ?? Infinity
+      }
+      this.ready.sort((a, b) => (b.dist ?? Infinity) - (a.dist ?? Infinity))
       this.readySorted = true
     }
     while (this.ready.length && uploads < this.maxUploadsPerFrame &&
