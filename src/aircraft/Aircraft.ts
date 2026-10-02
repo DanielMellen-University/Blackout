@@ -268,7 +268,9 @@ export class Aircraft {
         return false
       }
 
-      normalizeExternalAircraftModel(model)
+      if (!normalizeExternalAircraftModel(model)) {
+        throw new Error('External aircraft model has no finite geometry')
+      }
 
       model.traverse(enableShadows)
 
@@ -1029,18 +1031,23 @@ export function disposeAircraftObject(root: Object3D): void {
 }
 
 /** Normalize an optional GLB to the same origin and scale as the procedural F-35. */
-export function normalizeExternalAircraftModel(model: Object3D): void {
+export function normalizeExternalAircraftModel(model: Object3D): boolean {
   model.updateMatrixWorld(true)
   _box.setFromObject(model)
   _box.getSize(_size)
   const maxDim = Math.max(_size.x, _size.y, _size.z)
-  if (maxDim > 0.001) {
-    model.scale.multiplyScalar(EXTERNAL_AIRCRAFT_MODEL_CONTRACT.lengthMeters / maxDim)
-    model.updateMatrixWorld(true)
-  }
+  if (!Number.isFinite(maxDim) || maxDim <= 0.001) return false
+
+  model.scale.multiplyScalar(EXTERNAL_AIRCRAFT_MODEL_CONTRACT.lengthMeters / maxDim)
+  model.updateMatrixWorld(true)
 
   _box.setFromObject(model)
   _box.getCenter(_center)
+  if (!Number.isFinite(_box.min.x) || !Number.isFinite(_box.min.y) || !Number.isFinite(_box.min.z)
+    || !Number.isFinite(_box.max.x) || !Number.isFinite(_box.max.y) || !Number.isFinite(_box.max.z)
+    || !Number.isFinite(_center.x) || !Number.isFinite(_center.y) || !Number.isFinite(_center.z)) {
+    return false
+  }
   // Keep the aircraft origin over the model's centerline. The vertical anchor
   // intentionally is not centered: flight/contact code measures gear height
   // from the origin and expects the wheels to touch at local Y=-1.4 m.
@@ -1048,6 +1055,7 @@ export function normalizeExternalAircraftModel(model: Object3D): void {
   model.position.z -= _center.z
   model.position.y += EXTERNAL_AIRCRAFT_MODEL_CONTRACT.gearBottomY - _box.min.y
   model.updateMatrixWorld(true)
+  return true
 }
 
 /** Rare dorsal anti-collision strobe envelope, hidden between flashes. */

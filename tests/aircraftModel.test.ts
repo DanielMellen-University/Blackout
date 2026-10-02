@@ -1,4 +1,4 @@
-import { Box3, BoxGeometry, Euler, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
+import { Box3, BoxGeometry, Euler, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
@@ -26,7 +26,7 @@ describe('rebuilt aircraft', () => {
 
   it('normalizes an external model to the aircraft origin contract', () => {
     const model = new Mesh(new BoxGeometry(2, 4, 8), new MeshStandardMaterial())
-    normalizeExternalAircraftModel(model)
+    expect(normalizeExternalAircraftModel(model)).toBe(true)
     model.updateMatrixWorld(true)
     const bounds = new Box3().setFromObject(model)
     const size = new Vector3()
@@ -39,6 +39,17 @@ describe('rebuilt aircraft', () => {
 
     model.geometry.dispose()
     ;(model.material as MeshStandardMaterial).dispose()
+  })
+
+  it('rejects empty external models before they can poison the aircraft transform', () => {
+    const model = new Group()
+    expect(normalizeExternalAircraftModel(model)).toBe(false)
+    expect(model.position.x).toBe(0)
+    expect(model.position.y).toBe(0)
+    expect(model.position.z).toBe(0)
+    expect(model.scale.x).toBe(1)
+    expect(model.scale.y).toBe(1)
+    expect(model.scale.z).toBe(1)
   })
 
   it('has outward facing wings on both sides and wheels at the contact height', () => {
