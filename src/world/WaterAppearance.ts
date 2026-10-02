@@ -79,6 +79,16 @@ export function applyWaterAppearance(
         waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
       }
       diffuseColor.rgb *= 0.8 + waterPattern * 0.36;
+      // Add a slow analytic body field so distant water does not collapse into
+      // one cyan ribbon after high-frequency detail fades. It is continuous
+      // across streamed tiles and costs only ALU, not another texture fetch.
+      float broadBodyField = 0.5 + 0.5 * sin(
+        vWaterWorld.x * 0.0031 + sin(vWaterWorld.z * 0.0023) * 1.7 +
+        vWaterWorld.z * 0.0009 + vWaterKind * 1.8);
+      broadBodyField = smoothstep(0.16, 0.84, broadBodyField);
+      float bodyContrast = mix(0.84, 1.14, broadBodyField);
+      bodyContrast = mix(1.0, bodyContrast, 0.68 + seaMix * 0.18);
+      diffuseColor.rgb *= bodyContrast;
       float riverSurfaceVariation = smoothstep(0.16, 0.84, waterPattern * 0.88 + 0.06);
       vec3 riverSurfaceTint = mix(vec3(0.014, 0.12, 0.17), vec3(0.052, 0.29, 0.33), riverSurfaceVariation);
       diffuseColor.rgb = mix(diffuseColor.rgb, riverSurfaceTint,
@@ -175,5 +185,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v15'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v16'
 }

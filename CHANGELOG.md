@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.728** Add a low-cost analytic water-body variation field so distant rivers, lakes, and seas keep broad visual breakup after fine texture detail fades, without adding a texture fetch or draw call.
 - **10.727** Cache grounded terrain normals across short unchanged taxi poses, refreshing after 4 m of movement or a sampler revision so landing-slope checks stay accurate without four extra terrain probes every physics tick.
 - **10.726** Add persistent Clear, Cloudy, Fog, Rain, Storm, Snow, and Night course-condition filters to the title and pause pickers, allowing night routes to overlap their weather condition without rebuilding worlds.
 - **10.725** Carry the cached terrain normal into non-impact landing classification so over-limit grounded slopes fail as a slope crash without adding airborne contact sampling.
