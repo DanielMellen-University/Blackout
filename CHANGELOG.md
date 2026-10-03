@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.804** Assemble the live mission HUD label without temporary arrays or filter/join work, preserving bounded copy and truncation.
 - **10.803** Use squared settlement radar range gates, preserving nearby landmark selection while removing bounded sweep square roots.
 - **10.802** Reuse bounded climate-grid containers during terrain generation, reducing short-lived streamed-tile arrays while preserving deterministic geometry output.
 - **10.801** Reuse one typed deterministic cell order for hydrology priority routing and drainage grading, reducing bounded catchment-build allocations without changing river output.

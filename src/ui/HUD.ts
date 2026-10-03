@@ -412,7 +412,11 @@ export function missionHudLabel(routeLabel: unknown, objective: unknown, contrac
   const route = typeof routeLabel === 'string' ? routeLabel.trim() : ''
   const task = typeof objective === 'string' ? objective.trim() : ''
   const contract = typeof contractLabel === 'string' ? contractLabel.trim() : ''
-  return [route, task, contract].filter(Boolean).join(' · ').slice(0, 120)
+  let label = ''
+  if (route) label = route
+  if (task) label = label ? `${label} · ${task}` : task
+  if (contract) label = label ? `${label} · ${contract}` : contract
+  return label.slice(0, 120)
 }
 
 /** Keep route difficulty, rhythm, and steepness visible after the launch briefing fades. */
