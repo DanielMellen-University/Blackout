@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.819** Rank radar candidates with squared range and materialize exact distances only for the six retained contacts, preserving HUD ordering while reducing refresh square roots.
 - **10.818** Reject out-of-envelope wake altitudes before horizontal speed square roots, preserving pooled wake behavior while reducing high-altitude effect work.
 - **10.817** Defer grounded-flight speed square roots until the aircraft is actually on the runway, preserving surface authority while reducing airborne physics work.
 - **10.816** Rank air-traffic alerts with squared 3D separation and defer exact distance math until the nearest candidate wins, preserving warning behavior while reducing HUD polling square roots.

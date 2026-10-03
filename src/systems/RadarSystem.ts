@@ -34,6 +34,7 @@ export interface RadarContact {
 
 /** Internal extension for pooled contacts so stable names are normalized once. */
 interface RadarContactBuffer extends RadarContact {
+  distanceSquared: number
   sourceName: string
 }
 
@@ -99,9 +100,9 @@ export function radarUpdateDue(nowMs: number, nextUpdateMs: number): boolean {
 export class RadarSystem {
   private readonly contactPool: RadarContactBuffer[] = Array.from(
     { length: MAX_RADAR_CONTACTS },
-    () => ({ kind: 'village', distance: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, vertical: 0, name: '', id: '', biome: '', selected: false, sourceName: '' }),
+    () => ({ kind: 'village', distance: 0, distanceSquared: 0, bearing: 0, label: '', x: 0, y: 0, z: 0, vertical: 0, name: '', id: '', biome: '', selected: false, sourceName: '' }),
   )
-  private readonly contacts: RadarContact[] = []
+  private readonly contacts: RadarContactBuffer[] = []
   private visibleContactLimit = MAX_RADAR_CONTACTS
   private selectedTargetId = ''
   private lockLostPending = false
@@ -171,6 +172,7 @@ export class RadarSystem {
       )
     }
     sortRadarContacts(this.contacts)
+    for (const contact of this.contacts) contact.distance = Math.sqrt(contact.distanceSquared)
     let selectedPresent = this.selectedTargetId === ''
     for (const contact of this.contacts) {
       contact.selected = contact.id !== '' && contact.id === this.selectedTargetId
@@ -246,7 +248,6 @@ export class RadarSystem {
     const dz = z - pz
     const distanceSquared = dx * dx + dz * dz
     if (!Number.isFinite(distanceSquared) || distanceSquared > RADAR_RANGE_SQUARED) return
-    const distance = Math.sqrt(distanceSquared)
     const bearing = wrapAngle(Math.atan2(dx, dz) - heading)
     const normalizedKind = normalizeRadarKind(kind)
     const candidatePriority = radarKindPriority(normalizedKind)
@@ -261,7 +262,7 @@ export class RadarSystem {
       const worst = this.contacts[worstIndex]!
       if (!candidateBeats(
         candidatePriority,
-        distance,
+        distanceSquared,
         id,
         x,
         z,
@@ -274,7 +275,7 @@ export class RadarSystem {
     }
     const contact = this.contacts[contactIndex]!
     contact.kind = normalizedKind
-    contact.distance = distance
+    contact.distanceSquared = distanceSquared
     contact.bearing = bearing
     contact.x = x
     contact.y = Number.isFinite(y) ? y : 0
@@ -356,7 +357,7 @@ function radarKindPriority(kind: RadarContactKind): number {
 }
 
 /** Stable bounded ordering without invoking Array.sort on every radar sweep. */
-function sortRadarContacts(contacts: RadarContact[]): void {
+function sortRadarContacts(contacts: RadarContactBuffer[]): void {
   for (let index = 1; index < contacts.length; index++) {
     const candidate = contacts[index]!
     let insert = index
@@ -368,14 +369,14 @@ function sortRadarContacts(contacts: RadarContact[]): void {
   }
 }
 
-function compareRadarContacts(a: RadarContact, b: RadarContact): number {
+function compareRadarContacts(a: RadarContactBuffer, b: RadarContactBuffer): number {
   return radarKindPriority(a.kind) - radarKindPriority(b.kind) ||
-    a.distance - b.distance ||
+    a.distanceSquared - b.distanceSquared ||
     compareRadarIdentity(a.id, a.x, a.z, b.id, b.x, b.z) ||
     (a.y ?? 0) - (b.y ?? 0)
 }
 
-function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact, selectedId: string): boolean {
+function contactIsWorse(candidate: RadarContactBuffer, currentWorst: RadarContactBuffer, selectedId: string): boolean {
   const candidateSelected = candidate.id !== '' && candidate.id === selectedId
   const currentSelected = currentWorst.id !== '' && currentWorst.id === selectedId
   if (candidateSelected !== currentSelected) return !candidateSelected
@@ -384,11 +385,11 @@ function contactIsWorse(candidate: RadarContact, currentWorst: RadarContact, sel
 
 function candidateBeats(
   priority: number,
-  distance: number,
+  distanceSquared: number,
   id: string | undefined,
   x: number,
   z: number,
-  currentWorst: RadarContact,
+  currentWorst: RadarContactBuffer,
   selectedId: string,
 ): boolean {
   const candidateSelected = typeof id === 'string' && id !== '' && id === selectedId
@@ -397,7 +398,7 @@ function candidateBeats(
   if (candidateSelected) return true
   const worstPriority = radarKindPriority(currentWorst.kind)
   if (priority !== worstPriority) return priority < worstPriority
-  if (distance !== currentWorst.distance) return distance < currentWorst.distance
+  if (distanceSquared !== currentWorst.distanceSquared) return distanceSquared < currentWorst.distanceSquared
   return compareRadarIdentity(id, x, z, currentWorst.id, currentWorst.x, currentWorst.z) < 0
 }
 

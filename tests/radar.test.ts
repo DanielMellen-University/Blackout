@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  MAX_RADAR_CONTACTS,
   radarContactLabel,
   radarDiscoveryLabel,
   radarDistanceLabel,
@@ -87,5 +88,28 @@ describe('radar exploration cues', () => {
       id: `village-${index}`,
     })))
     expect(contacts).toHaveLength(6)
+  })
+
+  it('defers exact distance math until contacts survive the bounded pool', () => {
+    const radar = new RadarSystem()
+    const originalSqrt = Math.sqrt
+    let sqrtCalls = 0
+    Math.sqrt = ((value: number) => {
+      sqrtCalls++
+      return originalSqrt(value)
+    }) as typeof Math.sqrt
+    try {
+      const contacts = radar.update(0, 0, 0, null, Array.from({ length: 24 }, (_, index) => ({
+        x: 100 + index * 100,
+        y: 0,
+        z: 0,
+        kind: 'village' as const,
+        id: `village-${index}`,
+      })))
+      expect(contacts).toHaveLength(MAX_RADAR_CONTACTS)
+      expect(sqrtCalls).toBe(MAX_RADAR_CONTACTS)
+    } finally {
+      Math.sqrt = originalSqrt
+    }
   })
 })
