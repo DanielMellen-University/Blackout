@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.823** Gate mission beacon opacity with squared distance at the close/far envelope edges, preserving visual falloff while reducing per-tick square roots.
 - **10.822** Fast-path full-strength thermal cores before square roots, preserving lift falloff while reducing centered fixed-step pocket math.
 - **10.821** Rank thermal route pockets with squared separation, preserving nearest-pocket selection while removing fixed-neighborhood square roots.
 - **10.820** Replace vegetation slope square roots with an equivalent squared threshold, preserving prop placement while reducing terrain-generation math.

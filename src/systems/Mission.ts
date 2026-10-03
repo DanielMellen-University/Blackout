@@ -1269,8 +1269,8 @@ export class MissionSystem {
     }
     this.liveMat.opacity = 0.85 + near * 0.12
     const pulse = 0.42 + (Math.sin(now * 0.006) + 1) * 0.18
-    const distance = finiteDistanceToGate(playerX, playerY, playerZ, g.pos)
-    this.beaconMat.opacity = (pulse + near * 0.18) * gateBeaconDistanceOpacity(distance)
+    const distanceSquared = finiteDistanceSquaredToGate(playerX, playerY, playerZ, g.pos)
+    this.beaconMat.opacity = (pulse + near * 0.18) * gateBeaconDistanceOpacitySquared(distanceSquared)
   }
 
   update(px: number, py: number, pz: number, nowMs?: number): 'none' | 'pass' | 'miss' | 'complete' {
@@ -1507,14 +1507,17 @@ export class MissionSystem {
   }
 }
 
-function finiteDistanceToGate(
+function finiteDistanceSquaredToGate(
   x: number | undefined,
   y: number | undefined,
   z: number | undefined,
   gate: Vector3,
 ): number {
   if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return Number.NaN
-  return Math.hypot(x! - gate.x, y! - gate.y, z! - gate.z)
+  const dx = x! - gate.x
+  const dy = y! - gate.y
+  const dz = z! - gate.z
+  return dx * dx + dy * dy + dz * dz
 }
 
 function finiteCoordinates(x: number, y: number, z: number): boolean {
@@ -1565,6 +1568,14 @@ export function gateBeaconDistanceOpacity(distance: number): number {
   if (!Number.isFinite(distance)) return 1
   const safeDistance = Math.max(0, distance)
   return 0.24 + MathUtils.smoothstep(safeDistance, 80, 420) * 0.76
+}
+
+/** Skip beacon distance roots when the opacity is already at an envelope edge. */
+export function gateBeaconDistanceOpacitySquared(distanceSquared: number): number {
+  if (!Number.isFinite(distanceSquared) || distanceSquared < 0) return 1
+  if (distanceSquared <= 80 ** 2) return 0.24
+  if (distanceSquared >= 420 ** 2) return 1
+  return gateBeaconDistanceOpacity(Math.sqrt(distanceSquared))
 }
 
 function clamp01(value: number): number {

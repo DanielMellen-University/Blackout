@@ -4,6 +4,7 @@ import {
   gateProximityEmphasis,
   gateProximityEmphasisSquared,
   gateBeaconDistanceOpacity,
+  gateBeaconDistanceOpacitySquared,
   missionPassFlashOpacity,
   missionPassFlashScale,
   buildMissionRoute,
@@ -248,6 +249,25 @@ describe('MissionSystem gate crossing', () => {
     expect(gateBeaconDistanceOpacity(420)).toBeCloseTo(1)
     expect(gateBeaconDistanceOpacity(1000)).toBeCloseTo(1)
     expect(gateBeaconDistanceOpacity(Number.NaN)).toBe(1)
+  })
+
+  it('skips beacon square roots at the opacity envelope edges', () => {
+    const originalSqrt = Math.sqrt
+    let sqrtCalls = 0
+    Math.sqrt = ((value: number) => {
+      sqrtCalls++
+      return originalSqrt(value)
+    }) as typeof Math.sqrt
+    try {
+      expect(gateBeaconDistanceOpacitySquared(0)).toBeCloseTo(0.24)
+      expect(gateBeaconDistanceOpacitySquared(420 ** 2)).toBeCloseTo(1)
+      expect(gateBeaconDistanceOpacitySquared(1000 ** 2)).toBe(1)
+      expect(gateBeaconDistanceOpacitySquared(Number.NaN)).toBe(1)
+      expect(sqrtCalls).toBe(0)
+    } finally {
+      Math.sqrt = originalSqrt
+    }
+    expect(gateBeaconDistanceOpacitySquared(200 ** 2)).toBeCloseTo(gateBeaconDistanceOpacity(200))
   })
 
   it('contains malformed telemetry without poisoning the mission state', () => {
