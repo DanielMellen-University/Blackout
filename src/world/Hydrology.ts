@@ -9,6 +9,7 @@ const BINS = CATCHMENT_SIZE / BIN
 // time keeps the old compact basin + spatial-bin representation.
 const FLOW_GRID = 18
 const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
+const FLOW_CELL_COUNT = FLOW_GRID * FLOW_GRID
 const MAX_CHANNEL_EDGES = 72
 const MAX_RENDER_REACHES = 300
 const SEA_RADIUS_MIN = 3200
@@ -107,10 +108,27 @@ class MinHeap {
 let seed = Number.NaN
 const cache = new Map<string, Catchment>()
 let riverBoundsQueryToken = 0
+/** Reused bounded ID order for priority routing and drainage grading. */
+const flowOrderScratch = new Int32Array(FLOW_CELL_COUNT)
 
 function gridId(ix: number, iz: number): number { return iz * FLOW_GRID + ix }
 function gridX(ox: number, id: number): number { return ox + (id % FLOW_GRID) * FLOW_STEP }
 function gridZ(oz: number, id: number): number { return oz + Math.floor(id / FLOW_GRID) * FLOW_STEP }
+
+function prepareFlowOrder(grid: FlowGrid): Int32Array {
+  for (let id = 0; id < FLOW_CELL_COUNT; id++) flowOrderScratch[id] = id
+  flowOrderScratch.sort((a, b) => {
+    const aLevel = grid.filled[a]!
+    const bLevel = grid.filled[b]!
+    // Priority levels can be equal, infinite, or NaN at the boundary. Keep
+    // descending order for every comparable value, then tie by ID so the
+    // typed sort remains replay-stable across engines.
+    if (aLevel > bLevel) return -1
+    if (aLevel < bLevel) return 1
+    return a - b
+  })
+  return flowOrderScratch
+}
 
 function insideGrid(id: number, inset = 0): boolean {
   const x = id % FLOW_GRID, z = Math.floor(id / FLOW_GRID)
@@ -243,14 +261,13 @@ function routeFlow(grid: FlowGrid, seaCell: number | null): void {
     })
   }
 
-  const order = Array.from({ length: grid.height.length }, (_, id) => id)
+  const order = prepareFlowOrder(grid)
   for (const id of order) {
     // Humid hills contribute more runoff while dry terrain only feeds the
     // largest channels. This changes which tributaries survive without a
     // texture, mesh, or per-frame simulation.
     grid.flow[id] = .08 + grid.moisture[id]! * .42 + grid.highlands[id]! * .1
   }
-  order.sort((a, b) => grid.filled[b]! - grid.filled[a]!)
   for (const id of order) {
     const parent = grid.parent[id]!
     if (parent >= 0) grid.flow[parent] = grid.flow[parent]! + grid.flow[id]!
@@ -556,8 +573,7 @@ function catchment(cx: number, cz: number): Catchment {
   }
 
   const levels = new Float64Array(grid.height.length)
-  const drainageOrder = Array.from({ length: levels.length }, (_, id) => id)
-  drainageOrder.sort((a, b) => grid.filled[b]! - grid.filled[a]!)
+  const drainageOrder = prepareFlowOrder(grid)
   for (let id = 0; id < levels.length; id++) {
     // `filled` is a routing aid, not a water surface. Limiting levels to the
     // sampled ground keeps drainage channels carving down into valleys instead
