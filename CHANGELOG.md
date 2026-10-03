@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.816** Rank air-traffic alerts with squared 3D separation and defer exact distance math until the nearest candidate wins, preserving warning behavior while reducing HUD polling square roots.
 - **10.815** Defer exact obstacle-sweep distance math beyond the fixed 32-probe cap, preserving collision coverage while reducing long-segment square roots.
 - **10.814** Defer exact contact-sweep distance math until the broad phase needs detailed probes, preserving collision coverage while reducing airborne sweep square roots.
 - **10.813** Gate pooled landing scrub speed math before square roots below its activation floor, preserving touchdown effects while reducing rollout work.

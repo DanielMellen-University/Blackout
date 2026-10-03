@@ -267,7 +267,7 @@ export class AirTrafficSystem {
     const safeZ = Number.isFinite(z) ? z : this.lastPlayerZ
     const safeHeading = Number.isFinite(heading) ? heading : 0
     let bestDistance = Number.POSITIVE_INFINITY
-    let bestConflictDistance = Number.POSITIVE_INFINITY
+    let bestConflictDistanceSquared = Number.POSITIVE_INFINITY
     let best: RadarLandmark | null = null
     let bestVerticalOffset = 0
     let bestVertical = 0
@@ -280,18 +280,18 @@ export class AirTrafficSystem {
       const dz = contact.z - safeZ
       const distanceSquared = dx * dx + dz * dz
       if (!Number.isFinite(distanceSquared) || distanceSquared > AIR_TRAFFIC_ALERT_RANGE_SQUARED) continue
-      const distance = Math.sqrt(distanceSquared)
       const vertical = Math.abs(contact.y - safeY)
-      const conflictDistance = trafficConflictDistance(distance, vertical)
+      const conflictDistanceSquared = distanceSquared + vertical * vertical
       if (
-        !Number.isFinite(distance) ||
         !Number.isFinite(vertical) ||
-        distance > AIR_TRAFFIC_ALERT_RANGE_M ||
+        !Number.isFinite(conflictDistanceSquared) ||
         vertical > AIR_TRAFFIC_ALERT_VERTICAL_M ||
-        conflictDistance >= bestConflictDistance
+        conflictDistanceSquared >= bestConflictDistanceSquared
       ) continue
+      const distance = Math.sqrt(distanceSquared)
+      if (!Number.isFinite(distance)) continue
       bestDistance = distance
-      bestConflictDistance = conflictDistance
+      bestConflictDistanceSquared = conflictDistanceSquared
       best = contact
       bestVerticalOffset = contact.y - safeY
       bestVertical = vertical
