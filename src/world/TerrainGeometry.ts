@@ -19,7 +19,10 @@ const RIVER_TARGET_CELL_M: Record<TerrainLod, number> = { 0: 10, 1: 26, 2: 70 }
 const RIVER_MAX_SEGS: Record<TerrainLod, number> = { 0: 64, 1: 64, 2: 16 }
 const TERRAIN_SKIRT_DEPTH = 60
 const CLIMATE_POOL_LIMIT = 1024
+const CLIMATE_GRID_POOL_LIMIT = 12
 const climatePool: Climate[] = []
+/** Reuse the small per-tile climate-grid containers as well as their entries. */
+const climateGridPool: Climate[][] = []
 // Skirt geometry is converted to typed attributes before this synchronous
 // builder returns, so its numeric staging arrays can be reused by the next
 // tile without retaining one allocation per coarse edge set.
@@ -31,7 +34,8 @@ const riverReachScratch: RiverReach[] = []
 const basinScratch: WaterBasin[] = []
 
 function acquireClimateGrid(count: number): Climate[] {
-  const samples = new Array<Climate>((count + 1) * (count + 1))
+  const samples = climateGridPool.pop() ?? []
+  samples.length = (count + 1) * (count + 1)
   for (let i = 0; i < samples.length; i++) samples[i] = climatePool.pop() ?? createClimateSample()
   return samples
 }
@@ -41,6 +45,9 @@ function releaseClimateGrid(samples: readonly Climate[]): void {
     if (climatePool.length >= CLIMATE_POOL_LIMIT) break
     climatePool.push(climate)
   }
+  const reusable = samples as Climate[]
+  reusable.length = 0
+  if (climateGridPool.length < CLIMATE_GRID_POOL_LIMIT) climateGridPool.push(reusable)
 }
 
 export interface TerrainGeometryBuffers {
