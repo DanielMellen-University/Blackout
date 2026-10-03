@@ -12,6 +12,8 @@ export const SEA_LEVEL = 0
 export const OPS_PAD_INNER = 78
 /** Blend from pad height back to natural ground. */
 export const OPS_PAD_OUTER = 118
+const OPS_PAD_INNER_SQUARED = OPS_PAD_INNER ** 2
+const OPS_PAD_OUTER_SQUARED = OPS_PAD_OUTER ** 2
 
 let opsX = 0
 let opsZ = 0
@@ -88,10 +90,12 @@ export function getOpsPadRevision(): number {
 
 function padBlend(x: number, z: number): number {
   if (!opsOn) return 0
-  const d = Math.hypot(x - opsX, z - opsZ)
-  if (d <= OPS_PAD_INNER) return 1
-  if (d >= OPS_PAD_OUTER) return 0
-  return 1 - smoothstep(OPS_PAD_INNER, OPS_PAD_OUTER, d)
+  const dx = x - opsX
+  const dz = z - opsZ
+  const distanceSquared = dx * dx + dz * dz
+  if (distanceSquared <= OPS_PAD_INNER_SQUARED) return 1
+  if (distanceSquared >= OPS_PAD_OUTER_SQUARED) return 0
+  return 1 - smoothstep(OPS_PAD_INNER, OPS_PAD_OUTER, Math.sqrt(distanceSquared))
 }
 
 export function getOpsPad(): OpsPadSnapshot | null {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { applySlopeShading, applySlopeShadingInto, biomeColor, biomeColorInto, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, sampleClimate, sampleClimateInto, sampleTerrainHeight, setOpsPad, type Biome } from '../src/world/terrainSample'
+import { applySlopeShading, applySlopeShadingInto, biomeColor, biomeColorInto, clearOpsPad, getOpsPad, getOpsPadInto, INLAND_WATER_LEVEL, opsPadBlend, OPS_PAD_INNER, OPS_PAD_OUTER, sampleClimate, sampleClimateInto, sampleTerrainHeight, setOpsPad, type Biome } from '../src/world/terrainSample'
 import { createClimateSample } from '../src/world/Geography'
 
 describe('continuous terrain generation', () => {
@@ -49,6 +49,27 @@ describe('continuous terrain generation', () => {
     expect(getOpsPadInto(snapshot)).toBe(snapshot)
     expect(snapshot).toEqual({ x: 12, z: -34, y: 56, yaw: 0.75 })
     expect(getOpsPad()).not.toBe(snapshot)
+  })
+
+  it('fast-paths pad blending outside the transition band', () => {
+    setOpsPad(12, -34, 56)
+    const originalSqrt = Math.sqrt
+    let sqrtCalls = 0
+    Math.sqrt = ((value: number) => {
+      sqrtCalls++
+      return originalSqrt(value)
+    }) as typeof Math.sqrt
+    try {
+      expect(opsPadBlend(12, -34)).toBe(1)
+      expect(opsPadBlend(12 + OPS_PAD_OUTER * 2, -34)).toBe(0)
+      expect(sqrtCalls).toBe(0)
+      const edge = 12 + (OPS_PAD_INNER + OPS_PAD_OUTER) / 2
+      expect(opsPadBlend(edge, -34)).toBeGreaterThan(0)
+      expect(opsPadBlend(edge, -34)).toBeLessThan(1)
+      expect(sqrtCalls).toBe(2)
+    } finally {
+      Math.sqrt = originalSqrt
+    }
   })
 
   it('only labels submerged basins as inland water across seeds and distant coordinates', () => {
