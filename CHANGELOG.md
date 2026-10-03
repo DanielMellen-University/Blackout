@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.829** Reuse the grounded speed already resolved for runway authority after orientation updates, preserving taxi handling while removing a duplicate fixed-step square root.
 - **10.828** Defer PAPI approach-distance square roots until the aircraft is inside the landing corridor, preserving neutral fly-by lights while reducing per-tick runway work.
 - **10.827** Gate airfield pad blend square roots with squared inner and outer bounds, preserving runway grading while reducing streamed terrain sampling work.
 - **10.826** Fast-path pooled cloud fade distances at full-opacity and out-of-range bounds, preserving transition-band rendering while reducing atmospheric square roots.

@@ -234,7 +234,9 @@ export class FlightModel {
       _velDir.copy(velocity).normalize().lerp(_fwd, t).normalize()
       velocity.copy(_velDir).multiplyScalar(spd)
     } else if (onGround) {
-      const gs = Math.hypot(velocity.x, velocity.z)
+      // Ground speed was already resolved before runway attitude authority;
+      // reuse it after the orientation update instead of rooting twice.
+      const gs = groundSpeed
       if (gs > 0.08) {
         _flatFwd.set(_fwd.x, 0, _fwd.z)
         if (_flatFwd.lengthSq() > 1e-6) {
