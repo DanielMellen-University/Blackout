@@ -54,6 +54,7 @@ const _vel = new Vector3()
 // Fixed fractions keep the obstacle lookahead allocation-free at the HUD
 // cadence while preserving the near/mid/far early-exit order.
 const OBSTACLE_LOOKAHEAD_FRACTIONS = [0.35, 0.68, 1] as const
+const OBSTACLE_LOOKAHEAD_MIN_SPEED_SQ = 60 ** 2
 
 const NONE_WARNING = Object.freeze({
   text: null,
@@ -305,9 +306,13 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
-  // Both forward-looking warning paths use the same horizontal velocity. Do
-  // the square root once per HUD evaluation instead of once per predicate.
-  const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
+  // Both forward-looking warning paths use the same horizontal velocity. Most
+  // HUD ticks are below the obstacle lookahead floor, so reject those with a
+  // squared gate and pay for the square root only when a probe can run.
+  const horizontalSpeedSq = aircraft.velocity.x ** 2 + aircraft.velocity.z ** 2
+  const horizontalSpeed = horizontalSpeedSq >= OBSTACLE_LOOKAHEAD_MIN_SPEED_SQ
+    ? Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
+    : 0
   let terrainClosure = terrainClosureWarningActive(
     altAgl,
     speed,

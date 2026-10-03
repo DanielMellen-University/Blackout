@@ -110,6 +110,25 @@ describe('flight cautions', () => {
     expect(evaluateWarnings(aircraft, 9000)).toBe(evaluateWarnings(aircraft, 9000))
   })
 
+  it('skips horizontal-speed square roots below lookahead speed', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 10000, 0)
+    aircraft.velocity.set(0, 0, 40)
+
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      expect(evaluateWarnings(aircraft, 9000).text).toBeNull()
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
   it('scales low-altitude caution distance with speed', () => {
     expect(lowAltitudeWarningCeiling(35)).toBe(48)
     expect(lowAltitudeWarningCeiling(flightConfig.cruiseSpeed)).toBeGreaterThan(48)

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.810** Gate warning lookahead speed math with a squared threshold, preserving terrain and obstacle cues while removing slow-flight HUD square roots.
 - **10.809** Gate collision attitude and horizontal-speed math to real contact frames, preserving landing outcomes while reducing fixed-step work during normal airborne flight.
 - **10.808** Reject out-of-radius thermal pockets with squared distance during fixed-step lift sampling, preserving the lift envelope while removing most pocket square roots.
 - **10.807** Skip distant terrain-prop fade square roots while preserving the smooth near-field fade and opaque chunk alpha.
