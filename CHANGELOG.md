@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.828** Defer PAPI approach-distance square roots until the aircraft is inside the landing corridor, preserving neutral fly-by lights while reducing per-tick runway work.
 - **10.827** Gate airfield pad blend square roots with squared inner and outer bounds, preserving runway grading while reducing streamed terrain sampling work.
 - **10.826** Fast-path pooled cloud fade distances at full-opacity and out-of-range bounds, preserving transition-band rendering while reducing atmospheric square roots.
 - **10.825** Reuse settlement footprint radii and rank street clearance with squared distances, preserving procedural placement while reducing city-generation square roots.

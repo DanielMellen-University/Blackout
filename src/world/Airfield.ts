@@ -642,9 +642,8 @@ export function setAirfieldPapi(
   // Outside the landing corridor, hold a neutral two-white/two-red pattern so
   // distant fly-bys do not make the approach lights flash unpredictably.
   const inApproach = along > 8 && along < 1200 && Math.abs(lateral) < 100
-  const distance = Math.hypot(along, lateral)
   const pattern = inApproach
-    ? papiLightPattern(wy - root.position.y, distance)
+    ? papiLightPattern(wy - root.position.y, Math.hypot(along, lateral))
     : 2
   if (
     pattern === state.lastPattern &&

@@ -195,6 +195,25 @@ describe('runway lighting', () => {
     expect((lenses[0]!.material as MeshStandardMaterial).emissiveIntensity).toBeCloseTo(2.058)
   })
 
+  it('defers PAPI distance roots until the approach corridor', () => {
+    runway = createRunway()
+    setAirfieldPapi(runway, 0, 0, 0)
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      setAirfieldPapi(runway, 2_000, 0, 0)
+      expect(hypotCalls).toBe(0)
+      setAirfieldPapi(runway, -13.5, 8, -138)
+      expect(hypotCalls).toBe(1)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
   it('invalidates cached PAPI pose when the runway rotates', () => {
     runway = createRunway()
     const lookup = vi.spyOn(runway, 'getObjectByName')
