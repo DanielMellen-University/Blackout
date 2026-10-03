@@ -67,6 +67,15 @@ describe('arcade radar sweep', () => {
     expect(contacts.every(contact => Number.isFinite(contact.bearing))).toBe(true)
   })
 
+  it('keeps the inclusive radar boundary while rejecting the next metre', () => {
+    const radar = new RadarSystem()
+    const contacts = radar.update(0, 0, 0, null, [
+      { x: RADAR_RANGE_METERS, y: 0, z: 0, kind: 'city', id: 'edge' },
+      { x: RADAR_RANGE_METERS + 1, y: 0, z: 0, kind: 'city', id: 'outside' },
+    ])
+    expect(contacts.map(contact => contact.id)).toEqual(['edge'])
+  })
+
   it('keeps higher-tier and nearer contacts when source order is noisy', () => {
     const radar = new RadarSystem()
     const landmarks: RadarLandmark[] = Array.from({ length: MAX_RADAR_CONTACTS }, (_, index) => ({

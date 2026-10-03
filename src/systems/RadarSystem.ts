@@ -44,6 +44,7 @@ export interface RadarGate {
 }
 
 export const RADAR_RANGE_METERS = 8_000
+const RADAR_RANGE_SQUARED = RADAR_RANGE_METERS * RADAR_RANGE_METERS
 export const MAX_RADAR_CONTACTS = 6
 /** Radar labels and target positions remain readable at a bounded 10 Hz sweep. */
 export const RADAR_UPDATE_INTERVAL_MS = 100
@@ -243,8 +244,9 @@ export class RadarSystem {
     if (!Number.isFinite(x) || !Number.isFinite(z)) return
     const dx = x - px
     const dz = z - pz
-    const distance = Math.hypot(dx, dz)
-    if (!Number.isFinite(distance) || distance > RADAR_RANGE_METERS) return
+    const distanceSquared = dx * dx + dz * dz
+    if (!Number.isFinite(distanceSquared) || distanceSquared > RADAR_RANGE_SQUARED) return
+    const distance = Math.sqrt(distanceSquared)
     const bearing = wrapAngle(Math.atan2(dx, dz) - heading)
     const normalizedKind = normalizeRadarKind(kind)
     const candidatePriority = radarKindPriority(normalizedKind)
