@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.797** Reuse one horizontal-speed calculation across terrain and obstacle warning lookahead, preserving cue precedence while removing duplicate HUD math.
 - **10.796** Reuse caller-owned terrain planner output during stream reschedules, preserving deterministic coverage while reducing short-lived tile-array and record allocations.
 - **10.795** Index desired terrain leaves by pooled aligned quadtree roots, preserving LOD replacement fade dependencies while avoiding full desired-horizon scans during stream reschedules.
 - **10.794** Preserve the ghost replay sample clock across long frame gaps, keeping interpolation cadence stable without adding samples or per-frame allocations.

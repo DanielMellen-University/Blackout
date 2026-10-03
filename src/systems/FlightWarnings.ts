@@ -305,13 +305,15 @@ export function evaluateWarnings(
     aircraft.velocity.y,
     aircraft.controls.gearDown,
   )
+  // Both forward-looking warning paths use the same horizontal velocity. Do
+  // the square root once per HUD evaluation instead of once per predicate.
+  const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
   let terrainClosure = terrainClosureWarningActive(
     altAgl,
     speed,
     aircraft.velocity.y,
   )
   if (!terrainClosure) {
-    const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
     if (horizontalSpeed >= 84) {
       const groundNow = Number.isFinite(currentGroundHeight)
         ? currentGroundHeight!
@@ -351,7 +353,6 @@ export function evaluateWarnings(
   }
   let obstacle = false
   if (obstacleSampler && obstacleLookaheadWarningActive(altAgl, speed)) {
-    const horizontalSpeed = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
     if (horizontalSpeed >= 60) {
       const invHorizontalSpeed = 1 / horizontalSpeed
       const dirX = aircraft.velocity.x * invHorizontalSpeed
