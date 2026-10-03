@@ -2,6 +2,7 @@ import { Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import {
   gateProximityEmphasis,
+  gateProximityEmphasisSquared,
   gateBeaconDistanceOpacity,
   missionPassFlashOpacity,
   missionPassFlashScale,
@@ -237,6 +238,9 @@ describe('MissionSystem gate crossing', () => {
     expect(gateProximityEmphasis(90, 36)).toBeGreaterThan(0)
     expect(gateProximityEmphasis(90, 36)).toBeLessThan(1)
     expect(gateProximityEmphasis(Number.NaN, 36)).toBe(0)
+    expect(gateProximityEmphasisSquared(400 ** 2, 36)).toBe(0)
+    expect(gateProximityEmphasisSquared(36 ** 2, 36)).toBe(1)
+    expect(gateProximityEmphasisSquared(Number.NaN, 36)).toBe(0)
   })
 
   it('dims the tall beacon at close range without losing distant guidance', () => {

@@ -1256,12 +1256,10 @@ export class MissionSystem {
     const g = this.gates[this.next]!
     let near = 0
     if (this.havePrev) {
-      const dist = Math.hypot(
-        this.prevX - g.pos.x,
-        this.prevY - g.pos.y,
-        this.prevZ - g.pos.z,
-      )
-      near = gateProximityEmphasis(dist, g.radius)
+      const dx = this.prevX - g.pos.x
+      const dy = this.prevY - g.pos.y
+      const dz = this.prevZ - g.pos.z
+      near = gateProximityEmphasisSquared(dx * dx + dy * dy + dz * dz, g.radius)
     }
     const ring = g.root.children[0]
     if (ring) {
@@ -1551,6 +1549,15 @@ export function gateProximityEmphasis(dist: number, gateRadius: number): number 
   const inner = gateRadius * 1.15
   if (dist <= inner) return 1
   return 1 - (dist - inner) / (outer - inner)
+}
+
+/** Skip the square root when a gate is already outside the proximity envelope. */
+export function gateProximityEmphasisSquared(distanceSquared: number, gateRadius: number): number {
+  if (!Number.isFinite(distanceSquared) || distanceSquared < 0 ||
+    !Number.isFinite(gateRadius) || gateRadius <= 0) return 0
+  const outer = gateRadius * 4.5
+  if (distanceSquared >= outer * outer) return 0
+  return gateProximityEmphasis(Math.sqrt(distanceSquared), gateRadius)
 }
 
 /** Keep the tall gate beacon quiet at close range while preserving far guidance. */
