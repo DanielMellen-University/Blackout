@@ -104,8 +104,10 @@ export function thermalLiftIntensity(
       const dz = z - centerZ
       const distanceSquared = dx * dx + dz * dz
       if (!Number.isFinite(distanceSquared) || distanceSquared >= radius * radius) continue
-      const distance = Math.sqrt(distanceSquared)
-      const radial = 1 - MathUtils.smoothstep(distance, radius * 0.48, radius)
+      const innerRadius = radius * 0.48
+      const radial = distanceSquared <= innerRadius * innerRadius
+        ? 1
+        : 1 - MathUtils.smoothstep(Math.sqrt(distanceSquared), innerRadius, radius)
       if (radial <= 0) continue
       const strength = 0.58 + thermalHash(seed, sampleCellX, sampleCellZ, 29) * 0.42
       strongest = Math.max(strongest, radial * strength)

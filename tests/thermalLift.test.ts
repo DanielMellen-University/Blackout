@@ -44,6 +44,22 @@ describe('deterministic thermal lift', () => {
     expect(first).toBeLessThanOrEqual(1)
   })
 
+  it('skips radial square roots inside a full-strength pocket core', () => {
+    const pocket = thermalPocketForCell(42, 0, 0)!
+    const originalSqrt = Math.sqrt
+    let sqrtCalls = 0
+    Math.sqrt = ((value: number) => {
+      sqrtCalls++
+      return originalSqrt(value)
+    }) as typeof Math.sqrt
+    try {
+      expect(thermalLiftIntensity(42, pocket.x, 420, pocket.z)).toBeGreaterThan(0)
+      expect(sqrtCalls).toBe(0)
+    } finally {
+      Math.sqrt = originalSqrt
+    }
+  })
+
   it('fails closed for ground, malformed, and out-of-envelope samples', () => {
     expect(thermalLiftIntensity(42, 270, 420, -330, 1, 0, 0, false)).toBe(0)
     expect(thermalLiftIntensity(42, 270, 420, -330, 1, 0, 0, 'true' as unknown as boolean)).toBe(0)
