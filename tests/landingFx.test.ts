@@ -108,6 +108,24 @@ describe('landing scrub pooling', () => {
     expect(landingScrubRate(65)).toBeGreaterThan(landingScrubRate(20))
   })
 
+  it('skips scrub speed math below the activation floor', () => {
+    const fx = new LandingFx(new Scene())
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      fx.scrub(new Vector3(), new Vector3(0, 0, 9), 1 / 60)
+      fx.scrub(new Vector3(), new Vector3(Number.NaN, 0, 12), 1 / 60)
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+      fx.dispose()
+    }
+  })
+
   it('replays the same touchdown burst deterministically', () => {
     const first = new LandingFx(new Scene())
     const second = new LandingFx(new Scene())

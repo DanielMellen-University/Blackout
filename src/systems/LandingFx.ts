@@ -24,6 +24,7 @@ interface Puff {
 
 const POOL_DUST = 18
 const POOL_SMOKE = 10
+const LANDING_SCRUB_MIN_SPEED_SQUARED = 10 ** 2
 const _side = new Vector3()
 const _fwd = new Vector3()
 
@@ -129,9 +130,12 @@ export class LandingFx {
   scrub(pos: Vector3, vel: Vector3, dt: number): void {
     if (this.disposed) return
     const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
+    if (safeDt <= 0) return
+    const speedSquared = vel.x * vel.x + vel.z * vel.z
+    if (!Number.isFinite(speedSquared) || speedSquared < LANDING_SCRUB_MIN_SPEED_SQUARED) return
     const gs = Math.hypot(vel.x, vel.z)
     const rate = landingScrubRate(gs)
-    if (rate <= 0 || safeDt <= 0) return
+    if (rate <= 0) return
     this.scrubCooldown -= safeDt
     if (this.scrubCooldown > 0) return
     this.scrubCooldown = 1 / rate
