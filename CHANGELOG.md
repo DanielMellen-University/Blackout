@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.824** Remove duplicate wind magnitude roots from HUD direction formatting while preserving calm thresholds and compass output.
 - **10.823** Gate mission beacon opacity with squared distance at the close/far envelope edges, preserving visual falloff while reducing per-tick square roots.
 - **10.822** Fast-path full-strength thermal cores before square roots, preserving lift falloff while reducing centered fixed-step pocket math.
 - **10.821** Rank thermal route pockets with squared separation, preserving nearest-pocket selection while removing fixed-neighborhood square roots.

@@ -717,6 +717,23 @@ describe('HUD value formatting', () => {
     expect(formatCrosswindCrab(8.2, 'left')).toBe('CRAB R')
   })
 
+  it('avoids duplicate wind magnitude roots during formatting', () => {
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      expect(formatWind(3, 4)).toBe('5 M/S 037°')
+      expect(hypotCalls).toBe(1)
+      expect(windDirectionDegrees(0.1, 0.1)).toBe(0)
+      expect(hypotCalls).toBe(1)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
   it('normalizes stable ground, airborne, and crash state cues', () => {
     expect(normalizeFlightState('ground')).toBe('ground')
     expect(normalizeFlightState('airborne')).toBe('airborne')

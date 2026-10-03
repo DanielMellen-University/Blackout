@@ -3155,8 +3155,9 @@ export function formatCrosswindCrab(crosswind: number, side: CrosswindSide = 'ca
 
 /** Direction the weather vector travels toward, in degrees from world north. */
 export function windDirectionDegrees(windX: number, windZ: number): number {
-  const speed = windSpeedMps(windX, windZ)
-  if (speed < 0.5) return 0
+  if (!Number.isFinite(windX) || !Number.isFinite(windZ)) return 0
+  const speedSquared = windX * windX + windZ * windZ
+  if (speedSquared < 0.5 ** 2) return 0
   const degrees = Math.round((Math.atan2(windX, windZ) * 180) / Math.PI)
   return ((degrees % 360) + 360) % 360
 }
