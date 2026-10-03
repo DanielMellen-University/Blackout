@@ -26,6 +26,10 @@ const _normal = new Vector3()
 const CONTACT_BROADPHASE_MARGIN = 24
 const CONTACT_BROADPHASE_TRAVEL_FACTOR = 0.75
 const CONTACT_BROADPHASE_TRAVEL_CAP = 32
+const CONTACT_BROADPHASE_TRAVEL_CAP_DISTANCE =
+  CONTACT_BROADPHASE_TRAVEL_CAP / CONTACT_BROADPHASE_TRAVEL_FACTOR
+const CONTACT_BROADPHASE_TRAVEL_CAP_DISTANCE_SQUARED =
+  CONTACT_BROADPHASE_TRAVEL_CAP_DISTANCE ** 2
 /** Small numerical tolerance; deep terrain penetration is never "grounded". */
 const GROUNDED_PENETRATION_TOLERANCE = 1.5
 
@@ -327,7 +331,7 @@ export class FlightModel {
     const dx = position.x - prev.x
     const dy = position.y - prev.y
     const dz = position.z - prev.z
-    const dist = Math.hypot(dx, dy, dz)
+    const distanceSquared = dx * dx + dy * dy + dz * dz
 
     // A fast jet spends most of its time far above the heightfield. Check the
     // old, new, and midpoint clearances first; only paths that enter a
@@ -345,9 +349,11 @@ export class FlightModel {
         prev.y - previousMinY,
         position.y - currentMinY,
         midpointClearance,
-        dist,
+        contactSweepBroadphaseTravel(distanceSquared, dx, dy, dz),
       )) return
     }
+
+    const dist = contactSweepDistance(distanceSquared, dx, dy, dz)
 
     const steps = Math.max(1, Math.min(24, Math.ceil(dist / C.contactSweepSpacing)))
 
@@ -518,4 +524,29 @@ export function contactSweepNeedsDetailedProbes(
     travel * CONTACT_BROADPHASE_TRAVEL_FACTOR,
   )
   return Math.min(previousClearance, currentClearance, midpointClearance) <= margin
+}
+
+/** Preserve exact sweep travel only when detailed probes actually run. */
+export function contactSweepDistance(
+  distanceSquared: number,
+  dx: number,
+  dy: number,
+  dz: number,
+): number {
+  if (Number.isFinite(distanceSquared) && distanceSquared >= 0) return Math.sqrt(distanceSquared)
+  return Math.hypot(dx, dy, dz)
+}
+
+/** Cap the broad-phase travel contribution without paying for a full distance. */
+export function contactSweepBroadphaseTravel(
+  distanceSquared: number,
+  dx: number,
+  dy: number,
+  dz: number,
+): number {
+  if (!Number.isFinite(distanceSquared) || distanceSquared < 0) return Math.hypot(dx, dy, dz)
+  if (distanceSquared >= CONTACT_BROADPHASE_TRAVEL_CAP_DISTANCE_SQUARED) {
+    return CONTACT_BROADPHASE_TRAVEL_CAP_DISTANCE
+  }
+  return Math.sqrt(distanceSquared)
 }

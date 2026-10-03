@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.814** Defer exact contact-sweep distance math until the broad phase needs detailed probes, preserving collision coverage while reducing airborne sweep square roots.
 - **10.813** Gate pooled landing scrub speed math before square roots below its activation floor, preserving touchdown effects while reducing rollout work.
 - **10.812** Gate ground and water wake speed math before square roots when the pooled effects cannot activate, preserving wake thresholds while reducing render-loop work.
 - **10.811** Use a squared home-airfield refuel gate, preserving the inclusive 75 m envelope while removing a fixed-step distance square root.

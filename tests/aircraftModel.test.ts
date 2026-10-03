@@ -17,7 +17,12 @@ import {
   controlSurfaceTargetsInto,
   wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
-import { contactSweepNeedsDetailedProbes, runwayGripForWeather } from '../src/aircraft/FlightModel'
+import {
+  contactSweepBroadphaseTravel,
+  contactSweepDistance,
+  contactSweepNeedsDetailedProbes,
+  runwayGripForWeather,
+} from '../src/aircraft/FlightModel'
 import { createF35Model } from '../src/aircraft/createF35Model'
 import { setContactHeightSampler } from '../src/world/ground'
 
@@ -311,6 +316,13 @@ describe('rebuilt aircraft', () => {
     expect(contactSweepNeedsDetailedProbes(80, 80, 80, 20)).toBe(false)
     expect(contactSweepNeedsDetailedProbes(38, 38, 38, 20)).toBe(true)
     expect(contactSweepNeedsDetailedProbes(Number.NaN, 100, 100, 20)).toBe(true)
+  })
+
+  it('caps far broad-phase travel before detailed sweep distance is needed', () => {
+    expect(contactSweepBroadphaseTravel(20 ** 2, 20, 0, 0)).toBe(20)
+    expect(contactSweepBroadphaseTravel(100 ** 2, 100, 0, 0)).toBeCloseTo(32 / .75)
+    expect(contactSweepDistance(20 ** 2, 20, 0, 0)).toBe(20)
+    expect(contactSweepDistance(Number.NaN, Number.NaN, 0, 0)).toBeNaN()
   })
 
   it('ignores malformed frame deltas without poisoning the flight state', () => {
