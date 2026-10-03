@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.812** Gate ground and water wake speed math before square roots when the pooled effects cannot activate, preserving wake thresholds while reducing render-loop work.
 - **10.811** Use a squared home-airfield refuel gate, preserving the inclusive 75 m envelope while removing a fixed-step distance square root.
 - **10.810** Gate warning lookahead speed math with a squared threshold, preserving terrain and obstacle cues while removing slow-flight HUD square roots.
 - **10.809** Gate collision attitude and horizontal-speed math to real contact frames, preserving landing outcomes while reducing fixed-step work during normal airborne flight.

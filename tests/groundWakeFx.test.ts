@@ -57,4 +57,22 @@ describe('ground wake effect', () => {
     expect(() => fx.update(new Vector3(), new Vector3(Number.NaN, 0, 10), 40, false, false, true)).not.toThrow()
     fx.dispose()
   })
+
+  it('skips horizontal-speed math when a land wake cannot activate', () => {
+    const fx = new GroundWakeFx(new Scene())
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      fx.update(new Vector3(), new Vector3(0, 0, 40), 40, false, false, true)
+      fx.update(new Vector3(), new Vector3(0, 0, 180), 40, true, false, true)
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+      fx.dispose()
+    }
+  })
 })

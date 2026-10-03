@@ -13,6 +13,7 @@ import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQualit
 export const WATER_WAKE_MAX_ALTITUDE_M = 180
 export const WATER_WAKE_MIN_SPEED_MPS = 30
 export const DITCH_SPLASH_DURATION_SEC = 1.25
+const WATER_WAKE_MIN_SPEED_SQUARED = WATER_WAKE_MIN_SPEED_MPS ** 2
 
 /** Keep water-skim wake intensity finite and bounded for the pooled batch. */
 export function waterWakeIntensity(speedMps: number, clearanceM: number): number {
@@ -126,6 +127,15 @@ export class WaterWakeFx {
       this.root.scale.set(pulse * 1.65, 1, pulse * 1.65)
       this.material.opacity = Math.max(0, Math.min(.7, life * .7))
       if (this.ditchRemaining <= 0) this.reset()
+      return
+    }
+    if (isWater !== true || onGround === true) {
+      this.reset()
+      return
+    }
+    const speedSquared = velocity.x * velocity.x + velocity.z * velocity.z
+    if (!Number.isFinite(speedSquared) || speedSquared < WATER_WAKE_MIN_SPEED_SQUARED) {
+      this.reset()
       return
     }
     const speed = Math.hypot(velocity.x, velocity.z)

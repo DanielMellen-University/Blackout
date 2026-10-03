@@ -78,4 +78,22 @@ describe('water skim wake presentation', () => {
     expect(fx.root.visible).toBe(false)
     fx.dispose()
   })
+
+  it('skips horizontal-speed math when water wake cannot activate', () => {
+    const fx = new WaterWakeFx(new Scene())
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      fx.update(1 / 60, new Vector3(), new Vector3(0, 0, 20), 40, true, false)
+      fx.update(1 / 60, new Vector3(), new Vector3(0, 0, 280), 40, false, false)
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+      fx.dispose()
+    }
+  })
 })

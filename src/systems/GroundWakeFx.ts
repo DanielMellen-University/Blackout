@@ -12,6 +12,7 @@ import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQualit
 
 export const GROUND_WAKE_MAX_ALTITUDE_M = 120
 export const GROUND_WAKE_MIN_SPEED_MPS = 45
+const GROUND_WAKE_MIN_SPEED_SQUARED = GROUND_WAKE_MIN_SPEED_MPS ** 2
 
 /** Keep low land-pass wake intensity finite and clearance-aware. */
 export function groundWakeIntensity(speedMps: number, clearanceM: number): number {
@@ -120,6 +121,15 @@ export class GroundWakeFx {
     externalView: boolean,
   ): void {
     if (this.disposed || !this.enabled || this.reducedMotion || externalView !== true) {
+      this.reset()
+      return
+    }
+    if (isWater === true || onGround === true) {
+      this.reset()
+      return
+    }
+    const speedSquared = velocity.x * velocity.x + velocity.z * velocity.z
+    if (!Number.isFinite(speedSquared) || speedSquared < GROUND_WAKE_MIN_SPEED_SQUARED) {
       this.reset()
       return
     }
