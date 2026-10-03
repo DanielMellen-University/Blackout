@@ -329,6 +329,26 @@ describe('collision query budget', () => {
     expect(heightSamples).toBe(1)
   })
 
+  it('skips horizontal-speed math for a high airborne jet', () => {
+    setGroundHeightSampler(() => 0)
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.velocity.set(120, 40, 260)
+
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      expect(new CollisionSystem().check(aircraft)).toBe('air')
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
   it('trusts the resolved impact surface without sampling it again', () => {
     let surfaceSamples = 0
     setGroundSurfaceSampler((_x, _z, out) => {

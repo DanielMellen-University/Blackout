@@ -119,9 +119,21 @@ export class CollisionSystem {
       ).kind
     }
 
+    const contacting = onPad || !!impact
+    const obstacle = this.hitObstacle(aircraft)
+    // Airborne frames classify as `air` before reading any attitude or speed
+    // thresholds. Keep those fixed-step probes out of the common flight path;
+    // only a real contact needs the richer kinematics.
+    const pose = contacting
+      ? attitudeInto(this.pose, aircraft.orientation)
+      : this.pose
+    if (!contacting) {
+      pose.pitch = 0
+      pose.roll = 0
+      pose.upY = 1
+    }
     const vy = aircraft.impactVy < 0 ? aircraft.impactVy : aircraft.velocity.y
-    const gs = Math.hypot(aircraft.velocity.x, aircraft.velocity.z)
-    const pose = attitudeInto(this.pose, aircraft.orientation)
+    const gs = contacting ? Math.hypot(aircraft.velocity.x, aircraft.velocity.z) : 0
 
     const contact = this.contact
     contact.airborne = impact?.startedAirborne ?? !grounded
@@ -133,7 +145,7 @@ export class CollisionSystem {
     contact.pitch = pose.pitch
     contact.roll = pose.roll
     contact.upY = pose.upY
-    contact.obstacle = this.hitObstacle(aircraft)
+    contact.obstacle = obstacle
     contact.surface = surface
     contact.surfaceNormalY = aircraft.groundNormalY
     const outcome = classifyContactOutcomeInto(contact, this.outcome)
