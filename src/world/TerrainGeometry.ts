@@ -1,7 +1,7 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
 import { applySlopeShadingInto, biomeColorInto, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { CATCHMENT_SIZE, riverReachesInBounds, waterLandmarks, type RiverReach, type WaterBasin } from './Hydrology'
+import { CATCHMENT_SIZE, riverReachesInBounds, waterBasinBoundsRadius, waterLandmarks, type RiverReach, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
 
 export const CHUNK_SIZE = 420
@@ -112,7 +112,9 @@ export function pondIntersectsBounds(originX: number, originZ: number, span: num
       if (!basin.pond) continue
       const nearestX = Math.max(minX, Math.min(maxX, basin.x))
       const nearestZ = Math.max(minZ, Math.min(maxZ, basin.z))
-      if (Math.hypot(nearestX - basin.x, nearestZ - basin.z) < basin.radius * 1.7 + 120) return true
+      const dx = nearestX - basin.x, dz = nearestZ - basin.z
+      const bound = waterBasinBoundsRadius(basin) + 120
+      if (dx * dx + dz * dz < bound * bound) return true
     }
   }
   return false
@@ -130,7 +132,7 @@ function basinsInBounds(originX: number, originZ: number, span: number): WaterBa
   const maxCz = Math.floor((originZ + span + margin) / CATCHMENT_SIZE)
   for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
     for (const basin of waterLandmarks(cx, cz)) {
-      const extent = basin.radius * 1.75 + span * .5
+      const extent = waterBasinBoundsRadius(basin) + span * .5
       const centerX = originX + span * .5, centerZ = originZ + span * .5
       if (Math.abs(basin.x - centerX) <= extent && Math.abs(basin.z - centerZ) <= extent) {
         result.push(basin)

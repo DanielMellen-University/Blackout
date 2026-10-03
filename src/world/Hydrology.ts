@@ -17,6 +17,18 @@ const SEA_RADIUS_SPAN = 1000
 export interface WaterBasin {
   x: number; z: number; radius: number; aspect: number; angle: number; phase: number
   level: number; sea: boolean; pond: boolean
+  /** Conservative outer radius of the warped shoreline used by tile culling. */
+  boundsRadius?: number
+}
+
+/**
+ * Return the cached conservative radius for a warped basin. Older authored or
+ * test basins may omit the field, so retain the exact historical fallback.
+ */
+export function waterBasinBoundsRadius(basin: Pick<WaterBasin, 'radius' | 'boundsRadius'>): number {
+  const radius = Number.isFinite(basin.radius) && basin.radius > 0 ? basin.radius : 0
+  const cached = basin.boundsRadius
+  return typeof cached === 'number' && Number.isFinite(cached) && cached > 0 ? cached : radius * 1.75
 }
 /** Scalar hydrology output. Callers sampling many terrain points can reuse it. */
 export interface HydrologySample {
@@ -286,13 +298,15 @@ function chooseLakeCells(grid: FlowGrid, seaCell: number | null, cx: number, cz:
 
 function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, phase: number): Basin {
   const jitter = FLOW_STEP * .18
+  const radius = SEA_RADIUS_MIN + hash2(cx - 23, cz + 61) * SEA_RADIUS_SPAN
   return {
     x: gridX(ox, cell) + (hash2(cx + 113, cz - 29) - .5) * jitter,
     z: gridZ(oz, cell) + (hash2(cx - 47, cz + 89) - .5) * jitter,
     // A sea is deliberately smaller than the old 3.3-5.2 km footprint. It
     // should read as a broad enclosed coast, not an ocean swallowing a whole
     // review tile or dominating every flight route.
-    radius: SEA_RADIUS_MIN + hash2(cx - 23, cz + 61) * SEA_RADIUS_SPAN,
+    radius,
+    boundsRadius: radius * 1.75,
     aspect: .72 + hash2(cx + 31, cz - 41) * .24,
     angle: phase,
     phase,
@@ -326,6 +340,7 @@ function makeLake(ox: number, oz: number, cell: number, index: number, cx: numbe
     x,
     z,
     radius,
+    boundsRadius: radius * 1.75,
     aspect: .46 + hash2(cx - 82, cz + index * 21) * .46,
     angle: phase + index * 1.71 + (hash2(cx + index * 13, cz - 17) - .5) * .8,
     phase: phase + index * 1.71 + hash2(cx - index * 31, cz + 17) * 1.6,

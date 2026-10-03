@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterLandmarks, type RiverReach } from '../src/world/Hydrology'
+import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches, riverReachesInBounds, sampleHydrology, sampleHydrologyInto, waterBasinBoundsRadius, waterLandmarks, type RiverReach } from '../src/world/Hydrology'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
@@ -40,6 +40,18 @@ describe('natural drainage', () => {
     )).toBe(true)
     expect(hydrologyIntersectsBounds(Number.NaN, 0, 100, 100)).toBe(false)
     expect(hydrologyIntersectsBounds(100, 100, 0, 0)).toBe(false)
+  })
+
+  it('caches a conservative warped-shoreline bound with a legacy fallback', () => {
+    setWorldSeed(1)
+    const basins = waterLandmarks(-1, -1)
+    expect(basins.length).toBeGreaterThan(0)
+    for (const basin of basins) {
+      expect(basin.boundsRadius).toBeCloseTo(basin.radius * 1.75, 8)
+      expect(waterBasinBoundsRadius(basin)).toBe(basin.boundsRadius)
+    }
+    expect(waterBasinBoundsRadius({ radius: 720 })).toBeCloseTo(1260, 8)
+    expect(waterBasinBoundsRadius({ radius: Number.NaN, boundsRadius: Number.NaN })).toBe(0)
   })
 
   it('treats malformed basin geometry as outside water', () => {

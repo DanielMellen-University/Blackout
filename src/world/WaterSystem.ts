@@ -1,5 +1,5 @@
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three'
-import { basinDistance, type RiverReach, type WaterBasin } from './Hydrology'
+import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
@@ -251,7 +251,7 @@ function appendAnalyticBasins(
   }
 
   for (const basin of basins) {
-    const extent = basin.radius * 1.75 + size * .72
+    const extent = waterBasinBoundsRadius(basin) + size * .72
     if (Math.abs(basin.x - centerX) > extent || Math.abs(basin.z - centerZ) > extent) continue
     const samples = basin.sea ? 256 : basin.pond ? 96 : 160
     let boundary = basinBoundaryCache.get(basin)
