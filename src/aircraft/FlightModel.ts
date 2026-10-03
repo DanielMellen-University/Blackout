@@ -100,9 +100,11 @@ export class FlightModel {
 
     const { controls, orientation, velocity, angularVelocity, position } = aircraft
     const minY = contactMinYCached(position.x, position.z, controls.gearDown, this.groundHeightCache)
-    const groundSpeed = Math.hypot(velocity.x, velocity.z)
     this.axes(orientation)
     let onGround = this.grounded(position.y, minY, velocity.y, _up.y)
+    // Ground speed only influences runway authority. Airborne steps avoid the
+    // square root entirely while preserving the exact grounded behavior.
+    const groundSpeed = onGround ? Math.hypot(velocity.x, velocity.z) : 0
     const startedAirborne = !onGround
     aircraft.impactVy = 0
     aircraft.impact = null
