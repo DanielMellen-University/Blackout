@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.820** Replace vegetation slope square roots with an equivalent squared threshold, preserving prop placement while reducing terrain-generation math.
 - **10.819** Rank radar candidates with squared range and materialize exact distances only for the six retained contacts, preserving HUD ordering while reducing refresh square roots.
 - **10.818** Reject out-of-envelope wake altitudes before horizontal speed square roots, preserving pooled wake behavior while reducing high-altitude effect work.
 - **10.817** Defer grounded-flight speed square roots until the aircraft is actually on the runway, preserving surface authority while reducing airborne physics work.

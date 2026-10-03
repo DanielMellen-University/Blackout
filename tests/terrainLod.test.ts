@@ -22,6 +22,7 @@ import {
   TerrainSystem,
   terrainSnowCoverage,
   terrainPropFadeAlpha,
+  vegetationSlopePasses,
   VIEW_RADIUS,
   waterSegsForLod,
 } from '../src/world/TerrainSystem'
@@ -75,6 +76,13 @@ describe('terrain LOD bands', () => {
     expect(terrainPropFadeAlpha(2.1 ** 2, 1)).toBeGreaterThan(0)
     expect(terrainPropFadeAlpha(2.7 ** 2, 1)).toBe(0)
     expect(Number.isNaN(terrainPropFadeAlpha(Number.NaN, 1))).toBe(true)
+  })
+
+  it('keeps vegetation slope acceptance at the exact squared boundary', () => {
+    expect(vegetationSlopePasses(0, 0)).toBe(true)
+    expect(vegetationSlopePasses(1.95, 0)).toBe(true)
+    expect(vegetationSlopePasses(1.96, 0)).toBe(false)
+    expect(vegetationSlopePasses(Number.NaN, 0)).toBe(true)
   })
 
   it('reduces far fallback geometry without changing near detail', () => {

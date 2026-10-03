@@ -68,6 +68,7 @@ export const ENABLE_VEGETATION = true
 const PROP_RADIUS = 2
 const PROP_FADE_END = PROP_RADIUS + .7
 const PROP_FADE_END_SQUARED = PROP_FADE_END * PROP_FADE_END
+const PROP_SLOPE_MAX_DELTA_SQUARED = (3 * .65) ** 2
 /** Soft opacity fade across the fog margin. */
 const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Short smoothstep appearance transition, independent of frame rate. */
@@ -114,6 +115,11 @@ export function terrainPropFadeAlpha(distanceSquared: number, chunkAlpha: number
   if (!Number.isFinite(distanceSquared) || distanceSquared < 0) return Number.NaN
   if (distanceSquared >= PROP_FADE_END_SQUARED) return 0
   return chunkAlpha * (1 - MathUtils.smoothstep(Math.sqrt(distanceSquared), 2, PROP_FADE_END))
+}
+
+/** Keep vegetation off steep samples without a square root per prop probe. */
+export function vegetationSlopePasses(deltaX: number, deltaZ: number): boolean {
+  return !(deltaX * deltaX + deltaZ * deltaZ > PROP_SLOPE_MAX_DELTA_SQUARED)
 }
 
 function finiteWeather01(value: number): number {
@@ -1443,7 +1449,7 @@ export class TerrainSystem {
       if (climate.biome === 'water') continue
       const hx = interpolateGridHeight(heights, segs, originX, originZ, wx + 3, wz)
       const hz = interpolateGridHeight(heights, segs, originX, originZ, wx, wz + 3)
-      if (Math.hypot(hx - h, hz - h) / 3 > .65) continue
+      if (!vegetationSlopePasses(hx - h, hz - h)) continue
       if (f.river > 0.82) continue
       if (f.ravine > 0.55) continue
 
