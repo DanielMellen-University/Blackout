@@ -57,6 +57,16 @@ const CLOUD_SPAWN_MAX = FOG_FAR * 0.98
 /** Full opacity inside this range; fade 1→0 from here to despawn. */
 const CLOUD_FADE_FULL = FOG_FAR * 0.5
 const CLOUD_FADE_OUT = CLOUD_DESPAWN
+const CLOUD_FADE_FULL_SQUARED = CLOUD_FADE_FULL ** 2
+const CLOUD_FADE_OUT_SQUARED = CLOUD_FADE_OUT ** 2
+
+/** Fade pooled cloud clusters without roots outside the transition band. */
+export function cloudDistanceFade(distanceSquared: number): number {
+  if (!Number.isFinite(distanceSquared) || distanceSquared < 0) return Number.NaN
+  if (distanceSquared <= CLOUD_FADE_FULL_SQUARED) return 1
+  if (distanceSquared >= CLOUD_FADE_OUT_SQUARED) return 0
+  return 1 - MathUtils.smoothstep(Math.sqrt(distanceSquared), CLOUD_FADE_FULL, CLOUD_FADE_OUT)
+}
 
 /**
  * Cloud decks — altitude is the *base* (underside) of the formation.
@@ -1081,9 +1091,7 @@ export class Atmosphere {
 
       // 3D distance for high decks so they don't pop when you're under them
       const dy = wpos.y - _ay
-      const dist3 = Math.sqrt(distSq + dy * dy)
-      const distFade =
-        1 - MathUtils.smoothstep(dist3, CLOUD_FADE_FULL, CLOUD_FADE_OUT)
+      const distFade = cloudDistanceFade(distSq + dy * dy)
 
       const layerCover =
         layer === 'cumulus'

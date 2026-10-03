@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   atmosphereNeedsUpdate,
   cloudImmersionBand,
+  cloudDistanceFade,
   cloudPuffBudget,
   cloudPuffCount,
   createCloudLayoutRandom,
@@ -9,6 +10,7 @@ import {
   lightningCooldown,
   lightningFlashEnvelope,
 } from '../src/world/Atmosphere'
+import { FOG_FAR, STREAM_RADIUS_M } from '../src/world/TerrainSystem'
 import { nightWeatherReadability, sceneExposure } from '../src/core/SceneExposure'
 
 describe('lightning comfort', () => {
@@ -18,6 +20,28 @@ describe('lightning comfort', () => {
     expect(cloudImmersionBand(0.3)).toBe('edge')
     expect(cloudImmersionBand(1)).toBe('inside')
     expect(cloudImmersionBand(-4)).toBe('clear')
+  })
+
+  it('skips cloud fade roots at full and out-of-range bounds', () => {
+    const full = (FOG_FAR * 0.5) ** 2
+    const out = STREAM_RADIUS_M ** 2
+    const originalSqrt = Math.sqrt
+    let sqrtCalls = 0
+    Math.sqrt = ((value: number) => {
+      sqrtCalls++
+      return originalSqrt(value)
+    }) as typeof Math.sqrt
+    try {
+      expect(cloudDistanceFade(0)).toBe(1)
+      expect(cloudDistanceFade(full)).toBe(1)
+      expect(cloudDistanceFade(out)).toBe(0)
+      expect(cloudDistanceFade(out * 2)).toBe(0)
+      expect(sqrtCalls).toBe(0)
+    } finally {
+      Math.sqrt = originalSqrt
+    }
+    expect(cloudDistanceFade((FOG_FAR * .75) ** 2)).toBeGreaterThan(0)
+    expect(cloudDistanceFade((FOG_FAR * .75) ** 2)).toBeLessThan(1)
   })
 
   it('keeps cloud layout streams stable for replayable skies', () => {
