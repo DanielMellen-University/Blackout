@@ -21,6 +21,7 @@ import {
   segsForLod,
   TerrainSystem,
   terrainSnowCoverage,
+  terrainPropFadeAlpha,
   VIEW_RADIUS,
   waterSegsForLod,
 } from '../src/world/TerrainSystem'
@@ -67,6 +68,13 @@ describe('terrain LOD bands', () => {
   it('keeps far terrain smooth without promoting it to mid-range detail', () => {
     expect(segsForLod(2)).toBe(8)
     expect(segsForLod(2)).toBeLessThan(segsForLod(1))
+  })
+
+  it('keeps prop fades smooth nearby and zero once outside their band', () => {
+    expect(terrainPropFadeAlpha(0, 1)).toBe(1)
+    expect(terrainPropFadeAlpha(2.1 ** 2, 1)).toBeGreaterThan(0)
+    expect(terrainPropFadeAlpha(2.7 ** 2, 1)).toBe(0)
+    expect(Number.isNaN(terrainPropFadeAlpha(Number.NaN, 1))).toBe(true)
   })
 
   it('reduces far fallback geometry without changing near detail', () => {

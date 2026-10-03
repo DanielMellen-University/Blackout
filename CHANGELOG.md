@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.807** Skip distant terrain-prop fade square roots while preserving the smooth near-field fade and opaque chunk alpha.
 - **10.806** Skip far-gate proximity square roots with a squared envelope check, preserving the existing near-ring emphasis curve.
 - **10.805** Reject out-of-range radar candidates with squared distance before the required contact distance is computed, preserving the inclusive boundary.
 - **10.804** Assemble the live mission HUD label without temporary arrays or filter/join work, preserving bounded copy and truncation.

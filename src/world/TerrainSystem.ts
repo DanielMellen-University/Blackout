@@ -66,6 +66,8 @@ export const FOG_MARGIN_CHUNKS = 8
 export const ENABLE_VEGETATION = true
 /** Detailed props only near the jet (cells). */
 const PROP_RADIUS = 2
+const PROP_FADE_END = PROP_RADIUS + .7
+const PROP_FADE_END_SQUARED = PROP_FADE_END * PROP_FADE_END
 /** Soft opacity fade across the fog margin. */
 const FADE_CELLS = FOG_MARGIN_CHUNKS + 0.4
 /** Short smoothstep appearance transition, independent of frame rate. */
@@ -105,6 +107,13 @@ export function terrainFadeTargetAlpha(cellDist: number, viewRadius: number): nu
   const safeDistance = Number.isFinite(cellDist) ? Math.max(0, cellDist) : 0
   const fadeStart = safeRadius - FADE_CELLS
   return 1 - MathUtils.smoothstep(safeDistance, fadeStart, safeRadius + 0.35)
+}
+
+/** Fade near-field props without taking a square root once they are distant. */
+export function terrainPropFadeAlpha(distanceSquared: number, chunkAlpha: number): number {
+  if (!Number.isFinite(distanceSquared) || distanceSquared < 0) return Number.NaN
+  if (distanceSquared >= PROP_FADE_END_SQUARED) return 0
+  return chunkAlpha * (1 - MathUtils.smoothstep(Math.sqrt(distanceSquared), 2, PROP_FADE_END))
 }
 
 function finiteWeather01(value: number): number {
@@ -1178,11 +1187,9 @@ export class TerrainSystem {
   private fadeProps(chunk: Chunk): void {
     const props = chunk.props
     if (!props) return
-    const distance = Math.hypot(
-      chunk.originX + CHUNK_SIZE / 2 - this.focusX,
-      chunk.originZ + CHUNK_SIZE / 2 - this.focusZ,
-    ) / CHUNK_SIZE
-    const alpha = chunk.alpha * (1 - MathUtils.smoothstep(distance, 2, PROP_RADIUS + .7))
+    const dx = (chunk.originX + CHUNK_SIZE / 2 - this.focusX) / CHUNK_SIZE
+    const dz = (chunk.originZ + CHUNK_SIZE / 2 - this.focusZ) / CHUNK_SIZE
+    const alpha = terrainPropFadeAlpha(dx * dx + dz * dz, chunk.alpha)
     props.visible = alpha > .01
     if (Math.abs((props.userData.alpha ?? -1) - alpha) < .02) return
     props.userData.alpha = alpha
