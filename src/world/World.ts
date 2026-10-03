@@ -38,6 +38,8 @@ import { normalizeRenderQuality, renderQualityProfile, type RenderQuality } from
 
 const OBSTACLE_SWEEP_SPACING = 8
 const OBSTACLE_SWEEP_MAX_STEPS = 32
+const OBSTACLE_SWEEP_MAX_TRAVEL = OBSTACLE_SWEEP_SPACING * OBSTACLE_SWEEP_MAX_STEPS
+const OBSTACLE_SWEEP_MAX_TRAVEL_SQUARED = OBSTACLE_SWEEP_MAX_TRAVEL ** 2
 
 interface ObstaclePadding {
   readonly x: number
@@ -66,6 +68,21 @@ export interface WeatherEffectState {
   windZ: number
   cloudCover: number
   daylight: number
+}
+
+/** Preserve the capped probe count without an exact distance on long sweeps. */
+export function obstacleSweepDistance(
+  distanceSquared: number,
+  dx: number,
+  dy: number,
+  dz: number,
+): number {
+  if (Number.isFinite(distanceSquared) && distanceSquared >= 0) {
+    return distanceSquared >= OBSTACLE_SWEEP_MAX_TRAVEL_SQUARED
+      ? OBSTACLE_SWEEP_MAX_TRAVEL
+      : Math.sqrt(distanceSquared)
+  }
+  return Math.hypot(dx, dy, dz)
 }
 
 function safeWorldDelta(value: number): number {
@@ -550,7 +567,7 @@ export class World {
     const dx = current.x - previous.x
     const dy = current.y - previous.y
     const dz = current.z - previous.z
-    const distance = Math.hypot(dx, dy, dz)
+    const distance = obstacleSweepDistance(dx * dx + dy * dy + dz * dz, dx, dy, dz)
     if (!Number.isFinite(distance)) {
       return this.hitObstacle(current.x, current.y, current.z, AIRFIELD_COLLISION_PADDING)
     }

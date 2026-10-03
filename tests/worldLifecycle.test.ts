@@ -1,8 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
-import { World } from '../src/world/World'
+import { obstacleSweepDistance, World } from '../src/world/World'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
 describe('world lifecycle boundary', () => {
+  it('caps long obstacle sweeps before exact distance math is needed', () => {
+    expect(obstacleSweepDistance(128 ** 2, 128, 0, 0)).toBe(128)
+    expect(obstacleSweepDistance(256 ** 2, 256, 0, 0)).toBe(256)
+    expect(obstacleSweepDistance(500 ** 2, 500, 0, 0)).toBe(256)
+    expect(obstacleSweepDistance(Number.NaN, Number.NaN, 0, 0)).toBeNaN()
+  })
+
   it('applies the complete quality envelope during construction', () => {
     const world = new World('low')
     try {
