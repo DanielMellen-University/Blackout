@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  AIRFIELD_REFUEL_RADIUS,
   FUEL_CRITICAL_FRACTION,
   FUEL_LOW_FRACTION,
   createFuelState,
@@ -9,9 +10,17 @@ import {
   refuelFuel,
   resetFuel,
   updateFuel,
+  withinAirfieldRefuelRadius,
 } from '../src/aircraft/FuelSystem'
 
 describe('arcade fuel system', () => {
+  it('uses a squared home-airfield gate with an inclusive edge', () => {
+    expect(withinAirfieldRefuelRadius(0, 0, 0, 0)).toBe(true)
+    expect(withinAirfieldRefuelRadius(AIRFIELD_REFUEL_RADIUS, 0, 0, 0)).toBe(true)
+    expect(withinAirfieldRefuelRadius(AIRFIELD_REFUEL_RADIUS + 0.01, 0, 0, 0)).toBe(false)
+    expect(withinAirfieldRefuelRadius(Number.NaN, 0, 0, 0)).toBe(false)
+  })
+
   it('burns substantially more fuel with afterburner than dry power', () => {
     const dry = createFuelState()
     const boost = createFuelState()

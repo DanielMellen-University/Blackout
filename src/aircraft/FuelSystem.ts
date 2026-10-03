@@ -16,6 +16,9 @@ export const FUEL_CRITICAL_FRACTION = 0.1
 export const FUEL_AFTERBURNER_RESERVE_FRACTION = 0.05
 /** Arcade refuel rate when the aircraft is stationary on the home strip. */
 export const AIRFIELD_REFUEL_RATE = 8
+/** Keep refueling tied to the authored home-airfield footprint. */
+export const AIRFIELD_REFUEL_RADIUS = 75
+const AIRFIELD_REFUEL_RADIUS_SQUARED = AIRFIELD_REFUEL_RADIUS ** 2
 
 /** Fuel units per second at idle, before throttle and afterburner multipliers. */
 const IDLE_BURN_RATE = 0.008
@@ -82,6 +85,19 @@ export function refuelFuel(
   state.remaining = MathUtils.clamp(safeRemaining + safeRate * safeDt, 0, safeCapacity)
   state.fraction = safeCapacity > 0 ? state.remaining / safeCapacity : 0
   return state
+}
+
+/** Gate home-strip refueling without paying for a distance square root. */
+export function withinAirfieldRefuelRadius(
+  aircraftX: number,
+  aircraftZ: number,
+  airfieldX: number,
+  airfieldZ: number,
+): boolean {
+  const dx = aircraftX - airfieldX
+  const dz = aircraftZ - airfieldZ
+  const distanceSquared = dx * dx + dz * dz
+  return Number.isFinite(distanceSquared) && distanceSquared <= AIRFIELD_REFUEL_RADIUS_SQUARED
 }
 
 export function fuelPercent(state: Pick<FuelState, 'fraction'>): number {

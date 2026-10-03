@@ -175,7 +175,7 @@ import {
 import { type GroundSurfaceSample } from './world/ground'
 import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
-import { fuelEnduranceSeconds, refuelFuel } from './aircraft/FuelSystem'
+import { fuelEnduranceSeconds, refuelFuel, withinAirfieldRefuelRadius } from './aircraft/FuelSystem'
 import { World } from './world/World'
 import { cloudImmersionBand, type CloudImmersionBand } from './world/Atmosphere'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
@@ -2041,10 +2041,12 @@ export async function boot(): Promise<void> {
         if (combo.consumeExpiryWarning()) showBanner('COMBO ENDING / HIT A GATE OR STUNT', 1100, 'info')
         if (comboExpired) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
 
-        const atAirfield = Math.hypot(
-          aircraft.position.x - world.spawn.x,
-          aircraft.position.z - world.spawn.z,
-        ) <= 75
+        const atAirfield = withinAirfieldRefuelRadius(
+          aircraft.position.x,
+          aircraft.position.z,
+          world.spawn.x,
+          world.spawn.z,
+        )
         const refuelEligible = wasAirborne &&
           aircraft.status !== 'crashed' &&
           aircraft.onGround &&
