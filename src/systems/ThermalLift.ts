@@ -98,7 +98,11 @@ export function thermalLiftIntensity(
       const centerX = (sampleCellX + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 11) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
       const centerZ = (sampleCellZ + 0.5 + (thermalHash(seed, sampleCellX, sampleCellZ, 17) - 0.5) * 0.64) * THERMAL_CELL_SIZE_M
       const radius = 360 + thermalHash(seed, sampleCellX, sampleCellZ, 23) * 220
-      const distance = Math.hypot(x - centerX, z - centerZ)
+      const dx = x - centerX
+      const dz = z - centerZ
+      const distanceSquared = dx * dx + dz * dz
+      if (!Number.isFinite(distanceSquared) || distanceSquared >= radius * radius) continue
+      const distance = Math.sqrt(distanceSquared)
       const radial = 1 - MathUtils.smoothstep(distance, radius * 0.48, radius)
       if (radial <= 0) continue
       const strength = 0.58 + thermalHash(seed, sampleCellX, sampleCellZ, 29) * 0.42
