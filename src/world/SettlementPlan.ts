@@ -337,7 +337,12 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
       const x = anchored ? anchored.x : organicCoordinate(cx, rand(10 + attempt * 2))
       const z = anchored ? anchored.z : organicCoordinate(cz, rand(11 + attempt * 2))
       const padClearance = kind === 'city' ? CITY_PAD_CLEARANCE_M : VILLAGE_PAD_CLEARANCE_M
-      if (pad && Math.hypot(x - pad.x, z - pad.z) < radius + padClearance) continue
+      if (pad) {
+        const padDx = x - pad.x
+        const padDz = z - pad.z
+        const padExclusion = radius + padClearance
+        if (padDx * padDx + padDz * padDz < padExclusion * padExclusion) continue
+      }
       const c = sampleSettlementClimate(x, z)
       if (!dry(c) || (kind === 'city' && !cityBiomes.has(c.biome))) continue
       let min = c.height, max = c.height, suitable = true, drySamples = 1
@@ -409,16 +414,18 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   let serial = 100
   const building = (lx: number, lz: number, width: number, depth: number, height: number, yaw = angle) => {
     const { x, z } = world(lx, lz)
-    const districtCore = Math.max(0, 1 - Math.hypot(lx, lz) / (plan.radius * .65))
+    const localRadius = Math.hypot(lx, lz)
+    const halfDiagonal = Math.hypot(width, depth) / 2
+    const districtCore = Math.max(0, 1 - localRadius / (plan.radius * .65))
     const bc = Math.cos(yaw), bs = Math.sin(yaw)
     const hx = (Math.abs(bc) * width + Math.abs(bs) * depth) / 2 + 5
     const hz = (Math.abs(bs) * width + Math.abs(bc) * depth) / 2 + 5
-    if (Math.hypot(lx, lz) + Math.hypot(width, depth) / 2 > plan.radius * .97) return
+    if (localRadius + halfDiagonal > plan.radius * .97) return
     // Keep a small central breathing space for a civic square or village
     // green. Roads still converge through it, but buildings no longer fill
     // the exact origin and turn every settlement into a solid block.
     const plazaBuffer = plan.kind === 'city' ? 620 : Math.min(420, plan.radius * .13)
-    if (Math.hypot(lx, lz) < plazaBuffer && rand(serial + 701) < .78) return
+    if (localRadius < plazaBuffer && rand(serial + 701) < .78) return
     const keys: string[] = []
     for (let bx = Math.floor((x - hx) / 400); bx <= Math.floor((x + hx) / 400); bx++) {
       for (let bz = Math.floor((z - hz) / 400); bz <= Math.floor((z + hz) / 400); bz++) {
@@ -698,16 +705,23 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * villageFootprintScale * landmarkScale)
     const depth = city ? (160 + rand(n + 3) * 180) * cityFootprintScale
       : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * villageFootprintScale * landmarkScale)
-    let nearest = Infinity, yaw = angle + a, clear = true
+    const halfDiagonal = Math.hypot(width, depth) / 2
+    let nearestDistanceSquared = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
       const t = Math.max(0, Math.min(1, ((p.x - street.a.x) * dx + (p.z - street.a.z) * dz) / (dx * dx + dz * dz)))
-      const d = Math.hypot(p.x - street.a.x - dx * t, p.z - street.a.z - dz * t)
-      if (d < Math.hypot(width, depth) / 2 + street.width / 2 + 8) { clear = false; break }
-      if (d < nearest) { nearest = d; yaw = angle + Math.atan2(dx, dz) }
+      const distanceX = p.x - street.a.x - dx * t
+      const distanceZ = p.z - street.a.z - dz * t
+      const distanceSquared = distanceX * distanceX + distanceZ * distanceZ
+      const clearance = halfDiagonal + street.width / 2 + 8
+      if (distanceSquared < clearance * clearance) { clear = false; break }
+      if (distanceSquared < nearestDistanceSquared) {
+        nearestDistanceSquared = distanceSquared
+        yaw = angle + Math.atan2(dx, dz)
+      }
     }
     const villageRoadReach = plan.anchor === 'village' ? 720 : 420
-    if (!clear || (!city && nearest > villageRoadReach)) continue
+    if (!clear || (!city && nearestDistanceSquared > villageRoadReach * villageRoadReach)) continue
     const core = Math.max(0, 1 - distance / (plan.radius * .65))
     const height = city ? 180 + rand(n + 4) * 260 + core ** 2 * (760 + rand(n + 5) * 1250) : 150 + rand(n + 4) * 240
     building(p.x, p.z, width, depth, height, yaw + (rand(n + 6) - .5) * .35)

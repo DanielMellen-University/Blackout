@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.825** Reuse settlement footprint radii and rank street clearance with squared distances, preserving procedural placement while reducing city-generation square roots.
 - **10.824** Remove duplicate wind magnitude roots from HUD direction formatting while preserving calm thresholds and compass output.
 - **10.823** Gate mission beacon opacity with squared distance at the close/far envelope edges, preserving visual falloff while reducing per-tick square roots.
 - **10.822** Fast-path full-strength thermal cores before square roots, preserving lift falloff while reducing centered fixed-step pocket math.
