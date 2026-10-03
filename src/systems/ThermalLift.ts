@@ -47,15 +47,17 @@ export function nearestThermalPocket(
   const cellX = Math.floor(x / THERMAL_CELL_SIZE_M)
   const cellZ = Math.floor(z / THERMAL_CELL_SIZE_M)
   let nearest: ThermalPocket | null = null
-  let nearestDistance = Number.POSITIVE_INFINITY
+  let nearestDistanceSquared = Number.POSITIVE_INFINITY
   for (let offsetX = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX += 1) {
     for (let offsetZ = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ += 1) {
       const pocket = thermalPocketForCell(seed, cellX + offsetX, cellZ + offsetZ)
       if (!pocket) continue
-      const distance = Math.hypot(x - pocket.x, z - pocket.z)
-      if (distance < nearestDistance) {
+      const dx = x - pocket.x
+      const dz = z - pocket.z
+      const distanceSquared = dx * dx + dz * dz
+      if (distanceSquared < nearestDistanceSquared) {
         nearest = pocket
-        nearestDistance = distance
+        nearestDistanceSquared = distanceSquared
       }
     }
   }

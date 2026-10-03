@@ -19,6 +19,22 @@ describe('deterministic thermal lift', () => {
     expect(nearestThermalPocket(Number.NaN, 0, 0)).toBeNull()
   })
 
+  it('ranks the fixed neighborhood without horizontal square roots', () => {
+    const pocket = thermalPocketForCell(27, 0, 0)!
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      expect(nearestThermalPocket(27, pocket.x, pocket.z)).toEqual(pocket)
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
   it('is repeatable and finite for the same seeded world sample', () => {
     const first = thermalLiftIntensity(42, 270, 420, -330, 0.9, 0.1, 0.02)
     const second = thermalLiftIntensity(42, 270, 420, -330, 0.9, 0.1, 0.02)
