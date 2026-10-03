@@ -90,6 +90,7 @@ describe('water skim wake presentation', () => {
     try {
       fx.update(1 / 60, new Vector3(), new Vector3(0, 0, 20), 40, true, false)
       fx.update(1 / 60, new Vector3(), new Vector3(0, 0, 280), 40, false, false)
+      fx.update(1 / 60, new Vector3(), new Vector3(0, 0, 280), WATER_WAKE_MAX_ALTITUDE_M + 1, true, false)
       expect(hypotCalls).toBe(0)
     } finally {
       Math.hypot = originalHypot

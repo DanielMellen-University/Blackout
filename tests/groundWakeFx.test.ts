@@ -69,6 +69,7 @@ describe('ground wake effect', () => {
     try {
       fx.update(new Vector3(), new Vector3(0, 0, 40), 40, false, false, true)
       fx.update(new Vector3(), new Vector3(0, 0, 180), 40, true, false, true)
+      fx.update(new Vector3(), new Vector3(0, 0, 180), GROUND_WAKE_MAX_ALTITUDE_M + 1, false, false, true)
       expect(hypotCalls).toBe(0)
     } finally {
       Math.hypot = originalHypot

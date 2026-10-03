@@ -128,15 +128,19 @@ export class GroundWakeFx {
       this.reset()
       return
     }
+    // Altitude alone can rule out the effect, so avoid speed math during
+    // normal high-altitude flight before checking the pooled wake envelope.
+    if (!Number.isFinite(clearanceM) || clearanceM > GROUND_WAKE_MAX_ALTITUDE_M) {
+      this.reset()
+      return
+    }
     const speedSquared = velocity.x * velocity.x + velocity.z * velocity.z
     if (!Number.isFinite(speedSquared) || speedSquared < GROUND_WAKE_MIN_SPEED_SQUARED) {
       this.reset()
       return
     }
     const speed = Math.hypot(velocity.x, velocity.z)
-    const intensity = groundWakeActive(isWater, onGround, speed, clearanceM)
-      ? groundWakeIntensity(speed, clearanceM)
-      : 0
+    const intensity = groundWakeIntensity(speed, clearanceM)
     if (intensity <= 0) {
       this.reset()
       return

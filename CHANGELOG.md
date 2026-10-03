@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.818** Reject out-of-envelope wake altitudes before horizontal speed square roots, preserving pooled wake behavior while reducing high-altitude effect work.
 - **10.817** Defer grounded-flight speed square roots until the aircraft is actually on the runway, preserving surface authority while reducing airborne physics work.
 - **10.816** Rank air-traffic alerts with squared 3D separation and defer exact distance math until the nearest candidate wins, preserving warning behavior while reducing HUD polling square roots.
 - **10.815** Defer exact obstacle-sweep distance math beyond the fixed 32-probe cap, preserving collision coverage while reducing long-segment square roots.

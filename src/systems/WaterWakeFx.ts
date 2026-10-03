@@ -133,15 +133,19 @@ export class WaterWakeFx {
       this.reset()
       return
     }
+    // Water wakes disappear above the bounded skim envelope. Reject the
+    // altitude before paying for horizontal speed math on ordinary flight.
+    if (!Number.isFinite(clearanceM) || clearanceM > WATER_WAKE_MAX_ALTITUDE_M) {
+      this.reset()
+      return
+    }
     const speedSquared = velocity.x * velocity.x + velocity.z * velocity.z
     if (!Number.isFinite(speedSquared) || speedSquared < WATER_WAKE_MIN_SPEED_SQUARED) {
       this.reset()
       return
     }
     const speed = Math.hypot(velocity.x, velocity.z)
-    const intensity = waterWakeActive(isWater, onGround, speed, clearanceM)
-      ? waterWakeIntensity(speed, clearanceM)
-      : 0
+    const intensity = waterWakeIntensity(speed, clearanceM)
     if (intensity <= 0) {
       this.reset()
       return
