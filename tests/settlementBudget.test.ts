@@ -92,6 +92,25 @@ describe('settlement streaming budgets', () => {
     }
   })
 
+  it('keeps radar landmark range checks squared and malformed-safe', () => {
+    const system = new SettlementSystem(new Scene())
+    const internals = system as unknown as { loadedCollisionPlans: SettlementPlan[] }
+    try {
+      const near = planFor(0, 0)
+      near.x = 300
+      near.z = 400
+      const far = planFor(0, 1)
+      far.x = 2_000
+      far.z = 0
+      internals.loadedCollisionPlans.push(near, far)
+      expect(system.getRadarLandmarks(0, 0, 500).map(landmark => landmark.id)).toEqual([near.id])
+      expect(system.getRadarLandmarks(0, 0, Number.NaN)).toHaveLength(0)
+      expect(system.getRadarLandmarks(Number.POSITIVE_INFINITY, 0, 1_000).map(landmark => landmark.id)).toEqual([near.id])
+    } finally {
+      system.dispose()
+    }
+  })
+
   it('caps nearby generated settlements before they allocate visible instance buffers', () => {
     const system = new SettlementSystem(new Scene())
     try {

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.803** Use squared settlement radar range gates, preserving nearby landmark selection while removing bounded sweep square roots.
 - **10.802** Reuse bounded climate-grid containers during terrain generation, reducing short-lived streamed-tile arrays while preserving deterministic geometry output.
 - **10.801** Reuse one typed deterministic cell order for hydrology priority routing and drainage grading, reducing bounded catchment-build allocations without changing river output.
 - **10.800** Cache conservative warped-shoreline bounds on generated basins and reuse them for pond, terrain, and water tile culling while retaining legacy fallback behavior.

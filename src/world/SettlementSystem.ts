@@ -883,10 +883,13 @@ export class SettlementSystem {
     const safeX = Number.isFinite(x) ? x : 0
     const safeZ = Number.isFinite(z) ? z : 0
     const range = Number.isFinite(maxRange) ? Math.max(0, maxRange) : 0
+    const rangeSquared = range * range
     let count = 0
     for (const plan of this.loadedCollisionPlans) {
       if (count >= MAX_LOADED_SETTLEMENTS) break
-      if (Math.hypot(plan.x - safeX, plan.z - safeZ) > range) continue
+      const dx = plan.x - safeX
+      const dz = plan.z - safeZ
+      if (dx * dx + dz * dz > rangeSquared) continue
       const landmark = this.radarLandmarkCache[count] ?? {
         x: 0, y: 0, z: 0, kind: 'village' as const, name: '', id: '', biome: '',
       }
