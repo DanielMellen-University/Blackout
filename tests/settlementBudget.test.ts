@@ -173,6 +173,37 @@ describe('settlement streaming budgets', () => {
     }
   })
 
+  it('ranks admission and eviction with squared distances', () => {
+    const system = new SettlementSystem(new Scene())
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    try {
+      for (let frame = 0; frame < 24; frame++) system.update(0, 0)
+      const loaded = (system as unknown as { loaded: Map<string, { plan: SettlementPlan }> }).loaded
+      expect(loaded.size).toBe(MAX_LOADED_SETTLEMENTS)
+      const canLoad = (system as unknown as { canLoad(plan: SettlementPlan, x: number, z: number): boolean }).canLoad
+      Math.hypot = ((...values: number[]) => {
+        hypotCalls++
+        return originalHypot(...values)
+      }) as typeof Math.hypot
+      // Beyond the fog envelope, and farther than every loaded root, both
+      // reject exactly as before without a root per candidate or loaded plan.
+      expect(canLoad.call(system, planFor(3, 3), 0, 0)).toBe(false)
+      let farthest = 0
+      for (const entry of loaded.values()) farthest = Math.max(farthest, entry.plan.x * entry.plan.x + entry.plan.z * entry.plan.z)
+      const outer = planFor(0, 0)
+      outer.id = 'outer-village'
+      outer.x = Math.sqrt(farthest) + 50
+      outer.z = 0
+      expect(canLoad.call(system, outer, 0, 0)).toBe(false)
+      expect(loaded.size).toBe(MAX_LOADED_SETTLEMENTS)
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+      system.dispose()
+    }
+  })
+
   it('does not load a cell-edge plan whose actual buildings are beyond the fog envelope', () => {
     const system = new SettlementSystem(new Scene())
     try {

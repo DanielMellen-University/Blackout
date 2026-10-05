@@ -1181,15 +1181,18 @@ export class SettlementSystem {
     this.ready.length = readyWrite
     let readyIndex = -1
     let readyPriority = Infinity
-    let readyDistance = Infinity
+    // Ranking only compares distances, so squared distance keeps the same
+    // nearest pick without a square root per ready plan each frame.
+    let readyDistanceSquared = Infinity
     for (let index = 0; index < this.ready.length; index++) {
       const candidate = this.ready[index]!
       const priority = settlementLoadPriority(candidate.plan)
-      const distance = Math.hypot(candidate.plan.x - x, candidate.plan.z - z)
-      if (priority < readyPriority || (priority === readyPriority && distance < readyDistance)) {
+      const dx = candidate.plan.x - x, dz = candidate.plan.z - z
+      const distanceSquared = dx * dx + dz * dz
+      if (priority < readyPriority || (priority === readyPriority && distanceSquared < readyDistanceSquared)) {
         readyIndex = index
         readyPriority = priority
-        readyDistance = distance
+        readyDistanceSquared = distanceSquared
       }
     }
     let ready: { key: string; plan: SettlementPlan } | undefined
@@ -1448,27 +1451,30 @@ export class SettlementSystem {
     // settlement when either cap is reached. The old nearest-only policy let
     // four ordinary villages crowd out the guaranteed city and village, so
     // the landmarks existed in the worker but never appeared in the scene.
-    const candidateDistance = Math.hypot(plan.x - x, plan.z - z)
+    const candidateDx = plan.x - x, candidateDz = plan.z - z
+    const candidateDistanceSquared = candidateDx * candidateDx + candidateDz * candidateDz
     // Cell centres are only a coarse streaming index. An anchored city can
     // sit near a cell edge, so the cell may be inside the envelope while its
     // actual buildings are already behind the fog. Do not spend the protected
     // instance budget on an off-screen plan; this is what previously hid the
     // selected village or city behind a stale anchor.
-    if (candidateDistance > LOAD_RADIUS + plan.radius + 3000) return false
+    const loadReach = LOAD_RADIUS + plan.radius + 3000
+    if (loadReach < 0 || candidateDistanceSquared > loadReach * loadReach) return false
     while (this.loaded.size >= MAX_LOADED_SETTLEMENTS ||
       this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) {
       let farthestKey = ''
-      let farthestDistance = -Infinity
+      let farthestDistanceSquared = -Infinity
       let farthestPriority = -Infinity
       for (const [key, loaded] of this.loaded) {
         // Anchor landmarks are mutually protected. Only ordinary settlements
         // can be displaced to make room for a missing guaranteed tier.
         if (loaded.plan.anchor) continue
-        const distance = Math.hypot(loaded.plan.x - x, loaded.plan.z - z)
+        const dx = loaded.plan.x - x, dz = loaded.plan.z - z
+        const distanceSquared = dx * dx + dz * dz
         const priority = settlementLoadPriority(loaded.plan)
-        if (priority > farthestPriority || (priority === farthestPriority && distance > farthestDistance)) {
+        if (priority > farthestPriority || (priority === farthestPriority && distanceSquared > farthestDistanceSquared)) {
           farthestPriority = priority
-          farthestDistance = distance
+          farthestDistanceSquared = distanceSquared
           farthestKey = key
         }
       }
@@ -1476,7 +1482,7 @@ export class SettlementSystem {
       // Anchors are allowed to displace a random plan from anywhere in the
       // envelope. Ordinary plans still need to be nearer than the eviction
       // candidate, preserving the normal streaming budget behavior.
-      if (!plan.anchor && candidateDistance >= farthestDistance) return false
+      if (!plan.anchor && candidateDistanceSquared >= farthestDistanceSquared) return false
       const farthest = this.loaded.get(farthestKey)
       if (!farthest) return false
       this.remove(farthest)
