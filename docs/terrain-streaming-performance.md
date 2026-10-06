@@ -19,9 +19,9 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 - Outer quadtree leaves reach 32 cells. Representative layouts contain 540-575
   leaves, versus 516 in the original benchmark. Near mesh density is unchanged;
   distant water terrain uses at most 16 segments. Analytic water surfaces remain.
-- New terrain and water fade in over 650 ms using opaque depth-writing alpha
-  hashing. Previous coverage stays through the transition. Opaque surfaces skip
-  hash work without recompiling shaders. Vegetation retains its distance fade.
+- New terrain and water fade in over 650 ms with smooth opaque fades (alpha-hash
+  dithering was removed). Previous coverage stays through the transition.
+  Vegetation retains its distance fade.
 - Settlement planning keeps its previous range and object caps so extending the
   landscape does not quadruple background settlement work.
 - Browsers without working workers retain synchronous generation with the same
