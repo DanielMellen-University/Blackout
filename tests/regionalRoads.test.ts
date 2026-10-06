@@ -85,15 +85,45 @@ describe('regional settlement roads', () => {
       const links = selectRegionalRoadLinks(village, [farVillage, nearVillage, city])
       expect(links).toHaveLength(1)
       expect(links[0]!.from.kind === 'city' || links[0]!.to.kind === 'city').toBe(true)
-      // Three connection gates still root. Ranking used to root once more
-      // per surviving candidate; squared distance removes those extras.
-      expect(hypotCalls).toBe(3)
+      // Connection gates and ranking both compare squared ranges, so the
+      // planner no longer roots while choosing a regional spoke.
+      expect(hypotCalls).toBe(0)
       hypotCalls = 0
       const sameTier = selectRegionalRoadLinks(village, [farVillage, nearVillage])
       expect(sameTier).toHaveLength(1)
       const other = sameTier[0]!.from.id === village.id ? sameTier[0]!.to : sameTier[0]!.from
       expect(other.id).toBe(nearVillage.id)
-      expect(hypotCalls).toBe(2)
+      expect(hypotCalls).toBe(0)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
+
+  it('gates regional connections with squared distances', () => {
+    setWorldSeed(1)
+    const hub = plan('0,0', 0, 0, 'city')
+    // City radius 9000 => near-band reject below 5850 m.
+    const near = plan('1,0', 4000, 0, 'village')
+    const mid = plan('2,0', 30000, 0, 'village')
+    const far = plan('3,0', 50000, 0, 'village')
+    const tooFar = plan('4,0', 70000, 0, 'village')
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      // Overlapping footprints stay rejected; mid-range stays accepted; the
+      // hard outer envelope stays rejected. Sparse long links keep their
+      // seeded roll without materializing a root for the range checks.
+      expect(shouldConnectSettlements(hub, near)).toBe(false)
+      expect(shouldConnectSettlements(hub, mid)).toBe(true)
+      expect(shouldConnectSettlements(hub, tooFar)).toBe(false)
+      const midDecision = shouldConnectSettlements(hub, far)
+      expect(typeof midDecision).toBe('boolean')
+      expect(hypotCalls).toBe(0)
     } finally {
       Math.hypot = originalHypot
     }

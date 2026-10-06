@@ -96,11 +96,15 @@ export function regionalLinksForSettlement(plan: SettlementPlan): RegionalRoadLi
 
 /** Sparse seeded graph: cities are strong hubs, villages form occasional links. */
 export function shouldConnectSettlements(a: SettlementAnchor, b: SettlementAnchor): boolean {
-  const distance = Math.hypot(a.x - b.x, a.z - b.z)
-  if (distance < Math.max(a.radius, b.radius) * .65 || distance > 62000) return false
+  const dx = a.x - b.x, dz = a.z - b.z
+  // Connection gates only compare range bands, so squared thresholds keep the
+  // same accept/reject decisions without a square root per candidate pair.
+  const distanceSquared = dx * dx + dz * dz
+  const minDistance = Math.max(a.radius, b.radius) * .65
+  if (distanceSquared < minDistance * minDistance || distanceSquared > 62000 * 62000) return false
   // Rare settlements should not sit side by side without a route. Longer
   // links remain sparse so the world never turns into a uniform road web.
-  if (distance <= 42000) return true
+  if (distanceSquared <= 42000 * 42000) return true
   const [ax, az] = idNumbers(a.id), [bx, bz] = idNumbers(b.id)
   const loX = Math.min(ax, bx), loZ = Math.min(az, bz)
   const hiX = Math.max(ax, bx), hiZ = Math.max(az, bz)
