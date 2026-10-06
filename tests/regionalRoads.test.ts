@@ -69,6 +69,36 @@ describe('regional settlement roads', () => {
     expect(road!.width).toBe(54)
   })
 
+  it('ranks regional candidates with squared distances', () => {
+    setWorldSeed(1)
+    const village = plan('0,0', 0, 0, 'village')
+    const nearVillage = plan('1,0', 18000, 0, 'village')
+    const farVillage = plan('3,0', 36000, 0, 'village')
+    const city = plan('2,0', 30000, 0, 'city')
+    const originalHypot = Math.hypot
+    let hypotCalls = 0
+    Math.hypot = ((...values: number[]) => {
+      hypotCalls++
+      return originalHypot(...values)
+    }) as typeof Math.hypot
+    try {
+      const links = selectRegionalRoadLinks(village, [farVillage, nearVillage, city])
+      expect(links).toHaveLength(1)
+      expect(links[0]!.from.kind === 'city' || links[0]!.to.kind === 'city').toBe(true)
+      // Three connection gates still root. Ranking used to root once more
+      // per surviving candidate; squared distance removes those extras.
+      expect(hypotCalls).toBe(3)
+      hypotCalls = 0
+      const sameTier = selectRegionalRoadLinks(village, [farVillage, nearVillage])
+      expect(sameTier).toHaveLength(1)
+      const other = sameTier[0]!.from.id === village.id ? sameTier[0]!.to : sameTier[0]!.from
+      expect(other.id).toBe(nearVillage.id)
+      expect(hypotCalls).toBe(2)
+    } finally {
+      Math.hypot = originalHypot
+    }
+  })
+
   it('gives a village priority access to a reachable city hub', () => {
     setWorldSeed(1)
     const village = plan('0,0', 0, 0, 'village')
