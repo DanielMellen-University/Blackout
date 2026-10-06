@@ -26,7 +26,7 @@ describe('natural drainage', () => {
     const storage = { height: 0, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0 }
     const sample = sampleHydrologyInto(storage, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY)
     expect(sample).toBe(storage)
-    expect(Object.values(sample).every((value) => Number.isFinite(value))).toBe(true)
+    expect(Object.values(sample).every((value) => Number.isFinite(value)).toBe(true)
 
     const replay = sampleHydrologyInto(storage, 0, 0, 0)
     expect(Object.values(replay).every((value) => Number.isFinite(value))).toBe(true)
@@ -301,4 +301,23 @@ describe('natural drainage', () => {
     expect(ponds).toBeGreaterThan(0)
     expect(streams).toBeGreaterThan(0)
   })
+
+  it('keeps lakes clear of earlier basins by the squared overlap gate', () => {
+    setWorldSeed(1)
+    for (let cx = -1; cx <= 1; cx++) {
+      for (let cz = -1; cz <= 1; cz++) {
+        const basins = waterLandmarks(cx, cz)
+        for (let i = 1; i < basins.length; i++) {
+          const lake = basins[i]!
+          for (let j = 0; j < i; j++) {
+            const earlier = basins[j]!
+            const dx = lake.x - earlier.x, dz = lake.z - earlier.z
+            const minDistance = lake.radius + earlier.radius * .7
+            expect(dx * dx + dz * dz).toBeGreaterThanOrEqual(minDistance * minDistance)
+          }
+        }
+      }
+    }
+  })
+
 })
