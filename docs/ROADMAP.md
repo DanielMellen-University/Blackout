@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.852** is current. Previous ship: **10.851**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.853** is current. Previous ship: **10.852**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.853 removes camera-attached cockpit frame geometry and the canopy tint/streak/vignette DOM layer, styles, and updates. First person stays unobstructed with the same seat position, FOV, orientation, hidden airframe/HUD, and camera toggle controls. Geometry/lifecycle and absence regressions guard the removal; no replacement cockpit system is introduced.
 
 Chunk 10.852 delays crash results for a 3.2-second cinematic, slows the initial impact burst, and gently raises/pulls back the external camera while keeping terrain occlusion checks. Water crashes use a separate, fixed-capacity instanced spray and foam effect anchored to the resolved water surface; Low trims the spray rather than disabling it. Reduced motion uses a shorter stationary shot and static fading spray. Physics, scoring, and ghost recording stop at impact; pause/focus loss freezes the shot, and retry/title/disposal cancel pending results. Impact sounds finish without engine/weather beds. Automated timing, camera, pooling, water-level, audio, and reset checks cover behavior; browser pixel QA remains outstanding under the existing access limitation.
 

@@ -120,10 +120,6 @@ body,
     animation: none;
   }
 
-  #canopy-tint.is-active {
-    animation: none;
-  }
-
   #heat-veil.is-active {
     animation: none;
   }
@@ -131,55 +127,6 @@ body,
 
   #flight-path-marker {
     transition: none;
-  }
-}
-
-/* Cockpit-only high-speed canopy fog / soft vignette. */
-#canopy-tint {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  --canopy-wet: 0;
-  --canopy-cloud: 0;
-  opacity: 0;
-  background:
-    repeating-linear-gradient(
-      104deg,
-      transparent 0 24px,
-      rgba(188, 226, 242, calc(var(--canopy-wet) * 0.7)) 25px 26px,
-      transparent 27px 54px
-    ),
-    radial-gradient(ellipse at center, rgba(172, 195, 207, calc(var(--canopy-cloud) * 0.55)) 0%, transparent 72%),
-    radial-gradient(ellipse at center, transparent 42%, rgba(18, 28, 40, 0.22) 78%, rgba(8, 14, 22, 0.46) 100%),
-    linear-gradient(180deg, rgba(var(--accent-rgb), 0.05), transparent 34%, transparent 68%, rgba(20, 30, 42, 0.12));
-  background-size: 180px 180px, auto, auto, auto;
-  mix-blend-mode: multiply;
-  transition: opacity 0.22s ease;
-}
-
-#canopy-tint.is-active {
-  animation:
-    canopy-tint-breathe 2.8s ease-in-out infinite,
-    canopy-tint-sweep 1.8s linear infinite;
-}
-
-@keyframes canopy-tint-breathe {
-  0%,
-  100% {
-    filter: saturate(1);
-  }
-  50% {
-    filter: saturate(1.08);
-  }
-}
-
-@keyframes canopy-tint-sweep {
-  from {
-    background-position: 0 0, 0 0, 0 0;
-  }
-  to {
-    background-position: 52px 24px, 0 0, 0 0;
   }
 }
 
@@ -291,7 +238,6 @@ body,
 
 /* Low quality keeps state cues readable while removing continuous compositor work. */
 .quality-lite #speed-juice.is-active,
-.quality-lite #canopy-tint.is-active,
 .quality-lite #heat-veil.is-active,
 .quality-lite #nav-cue.near-gate,
 .quality-lite #flight-path-marker {

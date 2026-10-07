@@ -7,9 +7,6 @@ import {
   waterSurveyHudLabel,
   contractStreakAriaLabel,
   contractStreakHudLabel,
-  canopyTintIntensity,
-  canopyCloudIntensity,
-  canopyWeatherIntensity,
   crosswindDirection,
   crosswindSpeedMps,
   crosswindCrabDirection,
@@ -334,23 +331,6 @@ describe('HUD value formatting', () => {
     expect(gearTransitionActive(700, 700)).toBe(false)
     expect(gearTransitionActive(800, 700)).toBe(false)
     expect(gearTransitionActive(Number.NaN, 700)).toBe(false)
-  })
-
-  it('limits canopy tint to cockpit view and high IAS', () => {
-    expect(canopyTintIntensity(2400, false)).toBe(0)
-    expect(canopyTintIntensity(150, true)).toBe(0)
-    expect(canopyTintIntensity(500, true)).toBeGreaterThan(0)
-    expect(canopyTintIntensity(900, true)).toBeCloseTo(0.28)
-    expect(canopyTintIntensity(5000, true)).toBeCloseTo(0.28)
-  })
-
-  it('adds a bounded weather veil only to the cockpit canopy', () => {
-    expect(canopyWeatherIntensity(1, 0, true)).toBeCloseTo(0.09)
-    expect(canopyWeatherIntensity(0, 1, true)).toBeCloseTo(0.045)
-    expect(canopyWeatherIntensity(4, 4, true)).toBeCloseTo(0.12)
-    expect(canopyWeatherIntensity(1, 1, false)).toBe(0)
-    expect(canopyTintIntensity(0, true, 3000, 1, 0)).toBeCloseTo(0.09)
-    expect(canopyTintIntensity(0, false, 3000, 1, 1)).toBe(0)
   })
 
   it('keeps afterburner heat veil soft and boost-only', () => {
@@ -898,15 +878,6 @@ describe('HUD value formatting', () => {
       gatesPassed: 5,
       gearDown: false,
     })).toBe('CTRL / 1 REDUCE POWER · G GEAR DOWN · FOLLOW BASE ARROW')
-  })
-
-  it('keeps cockpit cloud mist subtle and disabled outside first person', () => {
-    expect(canopyCloudIntensity(0, true)).toBe(0)
-    expect(canopyCloudIntensity(1, true)).toBeCloseTo(0.08)
-    expect(canopyCloudIntensity(4, true)).toBeCloseTo(0.08)
-    expect(canopyCloudIntensity(1, false)).toBe(0)
-    expect(canopyTintIntensity(0, true, 3000, 0, 0, 1)).toBeCloseTo(0.08)
-    expect(canopyTintIntensity(0, false, 3000, 0, 0, 1)).toBe(0)
   })
 
   it('classifies severe weather without trusting malformed labels', () => {

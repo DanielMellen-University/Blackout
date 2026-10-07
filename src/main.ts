@@ -1337,8 +1337,6 @@ export async function boot(): Promise<void> {
     flightState: 'ground',
     pitch: 0,
     roll: 0,
-    rain: 0,
-    snow: 0,
     warning: null,
     warningLevel: 'none',
     warningCue: null,
@@ -2895,9 +2893,6 @@ export async function boot(): Promise<void> {
         : aircraft.onGround ? 'ground' : 'airborne'
       hudFrame.pitch = pose.pitch
       hudFrame.roll = pose.roll
-      hudFrame.rain = precipitation.rain
-      hudFrame.snow = precipitation.snow
-      hudFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
       hudFrame.heading = pose.heading
       hudFrame.audioMuted = audioMuted
       hudFrame.warning = warn.text

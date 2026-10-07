@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.853** Remove the camera-attached cockpit frame and canopy tint/streak/vignette overlay, including geometry/material allocation, DOM/CSS animations, HUD updates, and obsolete weather/intensity helpers. Preserve first-person seat/FOV/orientation, hidden aircraft/HUD, camera cycling, flight controls, and physics. Replace frame-presence tests with unobstructed-view/lifecycle and source-absence checks; update current documentation.
+
 - **10.852** Give crashes a pause-safe 3.2-second impact cinematic before the debrief, with an initial slow-motion burst and a rising external camera pullback. Reuse the pooled land explosion and add a separate fixed-capacity instanced water spray/foam effect at the resolved surface level, with bounded Low and reduced-motion variants. Capture pre-impact velocity and results once; stop flight input/physics/scoring/ghost recording, hide the HUD, preserve impact audio without continuous flight beds, and cancel pending results/effects on retry, title, and disposal. Restore the preferred flight camera on reset. Add timing, finite-data, camera, water-height, pool/lifecycle, audio, and runtime-routing regressions. Browser pixel QA remains unverified under the existing access limitation; no FPS claim is made.
 
 - **10.851** Remove Pull up and Low alt warnings, their audio/HUD cue identities and styles, sink/ridge prediction helpers and terrain probes, and low-clearance altimeter alarm styling. Keep numeric altitude telemetry, obstacle lookahead, landing flare/go-around, stall, gear, fuel, overspeed, collision detection, and flight handling. Add low-descent/ridge silence and neutral-altimeter regressions, and retain remaining warning-priority/hold coverage.
