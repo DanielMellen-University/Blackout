@@ -18,12 +18,12 @@ describe('live HUD budget', () => {
     expect(source.includes('classList.remove("hud-ledger")')).toBe(false)
   })
 
-  it('keeps the touch utility deck compact on phone widths', () => {
-    expect(html).toContain('<details class="touch-utilities">')
-    expect(html).toContain('<summary aria-label="More flight controls">TOOLS</summary>')
-    expect(css).toContain('grid-template-columns: repeat(3, 44px)')
-    expect(css).toContain('min-height: 44px')
-    expect(css).toContain('.touch-flight #overlay')
+  it('keeps navigation compact rather than stretching across the viewport', () => {
+    const layout = css.slice(css.indexOf('/* One flight-deck layout'))
+    expect(layout).toContain('#nav-cue { grid-area: navigation; width: fit-content;')
+    expect(layout).toContain('max-width: min(380px, 100%)')
+    const primary = html.match(/<div class="nav-primary">([\s\S]*?)<\/div>\s*<div id="nav-meta">/)?.[1] ?? ''
+    for (const id of ['nav-target', 'nav-arrow', 'nav-turn', 'nav-range']) expect(primary).toContain(`id="${id}"`)
   })
 
   it('gives the compass and navigation independent grid ownership on short screens', () => {
@@ -32,7 +32,6 @@ describe('live HUD budget', () => {
     expect(layout).toContain('#nav-cue { grid-area: navigation;')
     expect(layout).toContain('"brand compass readouts"')
     expect(layout).toContain('"gauges navigation readouts"')
-    expect(layout).toContain('"compass compass"')
     expect(layout).toContain('inset: auto;')
     expect(layout).toContain('transform: none;')
   })

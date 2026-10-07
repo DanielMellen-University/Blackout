@@ -18,14 +18,6 @@ describe('flight briefing', () => {
     }
   })
 
-  it('uses touch labels without leaking keyboard mapping or duplicating GEAR', () => {
-    const state = { ...takeoff, inputSource: 'touch' as const, keyboardPitch: 'w-down' as const }
-    expect(flightBriefingHint(state)).toBe('+ PWR POWER · ▲ ROTATE · GEAR AUTO')
-    expect(flightBriefingHint({ ...state, onGround: false, missionPhase: 'returning', gearDown: false }))
-      .toBe('− PWR REDUCE POWER · GEAR DOWN · FOLLOW BASE ARROW')
-    expect(flightBriefingHint({ ...state, onGround: false, gatesPassed: 2 })).toContain('YAW L / R')
-  })
-
   it('describes the actual standard-controller mapping', () => {
     const state = { ...takeoff, inputSource: 'gamepad' as const }
     expect(flightBriefingHint(state)).toBe('RT / R2 POWER · LEFT STICK UP ROTATE · GEAR AUTO')

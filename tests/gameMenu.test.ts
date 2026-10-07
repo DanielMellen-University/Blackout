@@ -101,6 +101,42 @@ function menuFixture(): { root: FakeElement; resume: FakeElement; state: FakeEle
 }
 
 describe('menu focus flow', () => {
+  it('shows one category, preserves control nodes, rejects unknown pages, and removes navigation listeners', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = menuFixture()
+    const panels = ['general', 'controls', 'camera', 'course'].map(category => {
+      const panel = new FakeElement()
+      panel.setAttribute('data-settings-panel', category)
+      return panel
+    })
+    const buttons = ['general', 'controls', 'camera', 'course'].map(category => {
+      const button = new FakeElement()
+      button.setAttribute('data-settings-tab', category)
+      return button
+    })
+    const savedControl = new FakeElement()
+    savedControl.textContent = 'persisted value'
+    panels[1]!.set('#preference', savedControl)
+    fixture.root.setList('[data-settings-panel]', panels)
+    fixture.root.setList('[data-settings-tab]', buttons)
+    const menu = new GameMenu(fixture.root as unknown as HTMLElement)
+    expect(panels.map(panel => panel.hidden)).toEqual([false, true, true, true])
+    buttons[1]!.dispatch('click', {})
+    expect(panels.map(panel => panel.hidden)).toEqual([true, false, true, true])
+    expect(buttons.map(button => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'false'])
+    menu.showSettingsCategory('unknown')
+    expect(panels[1]!.hidden).toBe(false)
+    buttons[0]!.dispatch('click', {})
+    buttons[1]!.dispatch('click', {})
+    expect(panels[1]!.querySelector('#preference')).toBe(savedControl)
+    expect(savedControl.textContent).toBe('persisted value')
+    menu.dispose()
+    buttons[2]!.dispatch('click', {})
+    menu.showSettingsCategory('course')
+    expect(panels.map(panel => panel.hidden)).toEqual([true, false, true, true])
+    vi.unstubAllGlobals()
+  })
+
   it('keeps disclosure summaries in the trap but excludes controls inside hidden sections', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const documentState = { activeElement: null as FakeElement | null, fullscreenElement: null }
@@ -136,7 +172,7 @@ describe('menu focus flow', () => {
 
     menu.openPause()
     expect(fixture.resume.focus).toHaveBeenCalled()
-    expect(fixture.state.textContent).toBe('FLIGHT PAUSED · SIMULATION HOLD')
+    expect(fixture.state.textContent).toBe('Simulation paused')
     expect(fixture.state.hidden).toBe(false)
     expect(fixture.root.getAttribute('aria-describedby')).toBe('menu-state')
     expect(fixture.root.getAttribute('aria-labelledby')).toBe('menu-heading')
@@ -199,9 +235,9 @@ describe('menu focus flow', () => {
   })
 
   it('explains why an automatic pause was triggered', () => {
-    expect(pauseReasonLabel('focus')).toBe('FLIGHT PAUSED · WINDOW FOCUS LOST')
-    expect(pauseReasonLabel('fullscreen')).toBe('FLIGHT PAUSED · FULLSCREEN EXITED')
-    expect(pauseReasonLabel('graphics')).toBe('FLIGHT PAUSED · GRAPHICS RECOVERING')
-    expect(pauseReasonLabel('manual')).toBe('FLIGHT PAUSED · SIMULATION HOLD')
+    expect(pauseReasonLabel('focus')).toBe('Window focus lost')
+    expect(pauseReasonLabel('fullscreen')).toBe('Exited fullscreen')
+    expect(pauseReasonLabel('graphics')).toBe('Graphics recovering')
+    expect(pauseReasonLabel('manual')).toBe('Simulation paused')
   })
 })

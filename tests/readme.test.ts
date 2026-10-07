@@ -24,9 +24,10 @@ describe('game info', () => {
   const info = html.slice(html.indexOf('id="menu-info"'), html.indexOf('id="overlay"'))
 
   it('describes thrust and the short task list, not the old speed target or timer tasks', () => {
-    expect(info).toContain('Throttle is thrust')
-    expect(info).toContain('clean circuit')
-    expect(info).toContain('deadstick')
+    expect(info).toContain('Throttle controls thrust')
+    expect(info).toContain('Fly gates in order')
+    expect(info).toContain('return and land')
+    expect(info).toContain('Crashes also show your score')
     expect(info).not.toContain('1500 kts')
     expect(info).not.toContain('speed target')
     expect(info).not.toContain('CROSSWIND')

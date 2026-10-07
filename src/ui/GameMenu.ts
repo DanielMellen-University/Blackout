@@ -8,13 +8,13 @@ export type PauseReason = 'manual' | 'focus' | 'fullscreen' | 'graphics'
 export function pauseReasonLabel(reason: PauseReason): string {
   switch (reason) {
     case 'focus':
-      return 'FLIGHT PAUSED · WINDOW FOCUS LOST'
+      return 'Window focus lost'
     case 'fullscreen':
-      return 'FLIGHT PAUSED · FULLSCREEN EXITED'
+      return 'Exited fullscreen'
     case 'graphics':
-      return 'FLIGHT PAUSED · GRAPHICS RECOVERING'
+      return 'Graphics recovering'
     default:
-      return 'FLIGHT PAUSED · SIMULATION HOLD'
+      return 'Simulation paused'
   }
 }
 
@@ -41,6 +41,9 @@ export class GameMenu {
   private readonly flightFocus: HTMLElement | null
   private returnFocus: HTMLElement | null = null
   private disposed = false
+  private readonly settingsPanels: HTMLElement[]
+  private readonly settingsButtons: HTMLElement[]
+  private readonly settingsListeners: Array<[HTMLElement, () => void]> = []
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || !this.open || event.key !== 'Tab') return
     const focusable = this.activeFocusable()
@@ -72,7 +75,24 @@ export class GameMenu {
     this.btnFs = must(root, '#menu-fullscreen')
     this.fsState = must(root, '#menu-fs-state')
     this.btnClose = must(root, '#menu-close')
+    this.settingsPanels = Array.from(root.querySelectorAll<HTMLElement>('[data-settings-panel]'))
+    this.settingsButtons = Array.from(root.querySelectorAll<HTMLElement>('[data-settings-tab]'))
+    for (const button of this.settingsButtons) {
+      const listener = (): void => this.showSettingsCategory(button.getAttribute('data-settings-tab') ?? '')
+      button.addEventListener('click', listener)
+      this.settingsListeners.push([button, listener])
+    }
+    this.showSettingsCategory('general')
     this.root.addEventListener('keydown', this.onKeyDown)
+  }
+
+  /** Navigation changes visibility only; preference values and course selection survive. */
+  showSettingsCategory(category: string): void {
+    if (this.disposed || !this.settingsPanels.some(panel => panel.getAttribute('data-settings-panel') === category)) return
+    for (const panel of this.settingsPanels) panel.hidden = panel.getAttribute('data-settings-panel') !== category
+    for (const button of this.settingsButtons) {
+      button.setAttribute('aria-pressed', String(button.getAttribute('data-settings-tab') === category))
+    }
   }
 
   get open(): boolean {
@@ -147,6 +167,8 @@ export class GameMenu {
     if (this.disposed) return
     this.disposed = true
     this.root.removeEventListener('keydown', this.onKeyDown)
+    for (const [button, listener] of this.settingsListeners) button.removeEventListener('click', listener)
+    this.settingsListeners.length = 0
     this.returnFocus = null
   }
 

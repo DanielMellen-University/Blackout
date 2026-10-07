@@ -54,7 +54,6 @@ import {
   shouldRegenerateWorldOnLaunch,
   worldSeedLaunchStatus,
 } from './core/WorldSeed'
-import { TouchControls, touchInputSupported } from './core/TouchControls'
 import {
   lockGameKeyboard,
   lockKeysOnly,
@@ -316,7 +315,6 @@ export async function boot(): Promise<void> {
   const environmentVolumeValue = document.getElementById('menu-environment-volume-value')
   const effectsVolumeRange = document.getElementById('menu-effects-volume') as HTMLInputElement | null
   const effectsVolumeValue = document.getElementById('menu-effects-volume-value')
-  const touchRoot = document.getElementById('touch-controls')
   if (!menuEl) throw new Error('#menu not found')
   if (!titleCoursePickerRoot || !menuCoursePickerRoot) throw new Error('course picker not found')
   const [coursePickerModule, gameMenuModule, hudModule, runResultsModule] = await Promise.all([
@@ -883,16 +881,9 @@ export async function boot(): Promise<void> {
   if (airbrakeKeySelect) airbrakeKeySelect.value = initialKeyboardBindings.airbrake
   if (gearKeySelect) gearKeySelect.value = initialKeyboardBindings.gear
   if (stabilityAssistToggle) stabilityAssistToggle.checked = initialStabilityAssist
-  const touchDevice = touchInputSupported(
-    typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0,
-    typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches,
-  )
-  const touchControls = touchRoot && touchDevice
-    ? new TouchControls(touchRoot, (state) => input.setTouchState(state))
-    : null
   const syncTakeoffBrief = (): void => {
     const controls = briefingControls({
-      inputSource: input.inputSource ?? (touchDevice ? 'touch' : 'keyboard'),
+      inputSource: input.inputSource ?? 'keyboard',
       keyboardPitch: input.keyboardPitch,
       keyboardBindings: input.bindings,
     })
@@ -1258,7 +1249,6 @@ export async function boot(): Promise<void> {
     for (const picker of coursePickers) picker.dispose()
     menu.dispose()
     results.dispose()
-    touchControls?.dispose()
     input.dispose()
     reducedMotionQuery?.removeEventListener?.('change', onReducedMotionChange)
     cameras.dispose()
@@ -1943,7 +1933,6 @@ export async function boot(): Promise<void> {
       syncInputContext()
       simLive = false
     }
-    touchControls?.setVisible(touchDevice && simLive)
     if (!simLive) lastHudUpdateMs = Number.NaN
     const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)
     previousFrame = nowMs
@@ -3039,7 +3028,7 @@ export async function boot(): Promise<void> {
           keyboardScheme: input.keyboardScheme,
           keyboardPitch: input.keyboardPitch,
           keyboardBindings: input.bindings,
-          inputSource: input.inputSource ?? (touchDevice ? 'touch' : 'keyboard'),
+          inputSource: input.inputSource ?? 'keyboard',
         })
         : null
       hudFrame.timeMs = nowMs

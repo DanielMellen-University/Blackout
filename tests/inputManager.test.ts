@@ -35,16 +35,15 @@ describe('flight input one-shot controls', () => {
     try {
       expect(input.inputSource).toBeNull()
       fake.fire('keydown', 'KeyW')
-      input.setTouchState({ pitch: 1 })
       expect(input.inputSource).toBeNull()
       input.setFlightLive(true)
       input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
       expect(input.inputSource).toBeNull()
-      input.setTouchState({ throttle: 1 })
-      expect(input.inputSource).toBe('touch')
-      input.setTouchState(null)
+      fake.fire('keydown', 'ShiftLeft')
+      expect(input.inputSource).toBe('keyboard')
+      fake.fire('keyup', 'ShiftLeft')
       input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
-      expect(input.inputSource).toBe('touch')
+      expect(input.inputSource).toBe('keyboard')
       axes[0] = .8
       input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
       expect(input.inputSource).toBe('gamepad')
@@ -63,7 +62,7 @@ describe('flight input one-shot controls', () => {
       fake.fire('keydown', 'KeyK')
       expect(input.inputSource).toBe('keyboard')
       input.setFlightLive(false)
-      input.setTouchState({ gearToggle: true })
+      fake.fire('keydown', 'KeyW')
       expect(input.inputSource).toBe('keyboard')
     } finally {
       input.dispose()
@@ -349,7 +348,6 @@ describe('flight input one-shot controls', () => {
     // but it must not become a held control when Play takes ownership.
     fake.fire('keydown', 'KeyW')
     fake.fire('keydown', 'ShiftLeft')
-    input.setTouchState({ pitch: 1, throttle: 1, boost: true })
     input.setFlightLive(true)
     expect(input.sampleWithDt(0).pitch).toBe(0)
     expect(input.sampleWithDt(0.05).throttle).toBe(0)
@@ -549,121 +547,6 @@ describe('flight input one-shot controls', () => {
     vi.unstubAllGlobals()
   })
 
-  it('merges event-driven touch controls after keyboard and gamepad input', () => {
-    const fake = fakeWindow()
-    const input = new InputManager(fake.target)
-    input.flightLive = true
-    input.setTouchState({ pitch: 1, yaw: -1, roll: 0.5, throttle: 1, boost: true })
-
-    const touch = input.sampleWithDt(0)
-    expect(touch.pitch).toBe(1)
-    expect(touch.yaw).toBe(-1)
-    expect(touch.roll).toBeCloseTo(0.5)
-    expect(touch.boost).toBe(true)
-    expect(input.sampleWithDt(0.05).throttle).toBeCloseTo(0.09, 5)
-
-    fake.fire('keydown', 'KeyS')
-    expect(input.sampleWithDt(0).pitch).toBe(-1)
-    fake.fire('keyup', 'KeyS')
-    input.setTouchState(null)
-    expect(input.sampleWithDt(0).boost).toBe(false)
-    expect(input.sampleWithDt(0).yaw).toBe(0)
-    input.dispose()
-  })
-
-  it('merges the held touch speed brake with the keyboard brake binding', () => {
-    const fake = fakeWindow()
-    const input = new InputManager(fake.target)
-    input.flightLive = true
-
-    input.setTouchState({ airbrake: true })
-    expect(input.sampleWithDt(0).airbrake).toBe(true)
-
-    input.setTouchState(null)
-    expect(input.sampleWithDt(0).airbrake).toBe(false)
-    fake.fire('keydown', 'KeyB')
-    expect(input.sampleWithDt(0).airbrake).toBe(true)
-    fake.fire('keyup', 'KeyB')
-    expect(input.sampleWithDt(0).airbrake).toBe(false)
-    input.dispose()
-  })
-
-  it('turns touch utility presses into one-shot input queues', () => {
-    const fake = fakeWindow()
-    const input = new InputManager(fake.target)
-    input.flightLive = true
-
-    input.setTouchState({
-      cameraToggle: true,
-      gearToggle: true,
-      stabilityAssistToggle: true,
-      radarTargetCycle: true,
-      weatherCycle: true,
-      audioToggle: true,
-      ghostToggle: true,
-      worldSeedCopy: true,
-      reset: true,
-      pauseToggle: true,
-    })
-    expect(input.consumeCameraToggle()).toBe(true)
-    expect(input.consumeGearToggle()).toBe(true)
-    expect(input.consumeStabilityAssistToggle()).toBe(true)
-    expect(input.consumeRadarTargetCycle()).toBe(true)
-    expect(input.consumeWeatherCycle()).toBe(true)
-    expect(input.consumeAudioToggle()).toBe(true)
-    expect(input.consumeGhostToggle()).toBe(true)
-    expect(input.consumeWorldSeedCopy()).toBe(true)
-    expect(input.consumeReset()).toBe(true)
-    expect(input.consumePauseToggle()).toBe(true)
-    input.setTouchState({
-      cameraToggle: true,
-      gearToggle: true,
-      stabilityAssistToggle: true,
-      radarTargetCycle: true,
-      weatherCycle: true,
-      audioToggle: true,
-      ghostToggle: true,
-      worldSeedCopy: true,
-      reset: true,
-      pauseToggle: true,
-    })
-    expect(input.consumeCameraToggle()).toBe(false)
-    expect(input.consumeGearToggle()).toBe(false)
-    expect(input.consumeStabilityAssistToggle()).toBe(null)
-    expect(input.consumeRadarTargetCycle()).toBe(false)
-    expect(input.consumeWeatherCycle()).toBe(false)
-    expect(input.consumeAudioToggle()).toBe(false)
-    expect(input.consumeGhostToggle()).toBe(false)
-    expect(input.consumeWorldSeedCopy()).toBe(false)
-    expect(input.consumeReset()).toBe(false)
-    expect(input.consumePauseToggle()).toBe(false)
-
-    input.setTouchState(null)
-    input.setTouchState({
-      cameraToggle: true,
-      gearToggle: true,
-      stabilityAssistToggle: true,
-      radarTargetCycle: true,
-      weatherCycle: true,
-      audioToggle: true,
-      ghostToggle: true,
-      worldSeedCopy: true,
-      reset: true,
-      pauseToggle: true,
-    })
-    expect(input.consumeCameraToggle()).toBe(true)
-    expect(input.consumeGearToggle()).toBe(true)
-    expect(input.consumeStabilityAssistToggle()).toBe(false)
-    expect(input.consumeRadarTargetCycle()).toBe(true)
-    expect(input.consumeWeatherCycle()).toBe(true)
-    expect(input.consumeAudioToggle()).toBe(true)
-    expect(input.consumeGhostToggle()).toBe(true)
-    expect(input.consumeWorldSeedCopy()).toBe(true)
-    expect(input.consumeReset()).toBe(true)
-    expect(input.consumePauseToggle()).toBe(true)
-    input.dispose()
-  })
-
   it('clears stale controller axes immediately when focus leaves', () => {
     vi.stubGlobal('navigator', {
       getGamepads: () => [{
@@ -700,7 +583,6 @@ describe('flight input one-shot controls', () => {
     input.dispose()
     input.dispose()
     input.setFlightLive(true)
-    input.setTouchState({ pitch: 1, throttle: 1, boost: true })
     expect(input.sampleWithDt(.05)).toMatchObject({
       pitch: 0,
       yaw: 0,

@@ -11,39 +11,6 @@
     <div id="app">
       <canvas id="game" oncontextmenu="return false;"></canvas>
 
-      <!-- Optional live-flight deck for touch-capable browsers. -->
-      <div id="touch-controls" class="touch-controls" aria-label="Touch flight controls" hidden>
-        <div class="touch-cluster touch-cluster-left" aria-label="Pitch and roll">
-          <button type="button" data-touch-action="pitch-up" aria-label="Pitch up" aria-pressed="false">▲</button>
-          <button type="button" data-touch-action="roll-left" aria-label="Roll left" aria-pressed="false">◀</button>
-          <button type="button" data-touch-action="roll-right" aria-label="Roll right" aria-pressed="false">▶</button>
-          <button type="button" data-touch-action="pitch-down" aria-label="Pitch down" aria-pressed="false">▼</button>
-        </div>
-        <div class="touch-cluster touch-cluster-right" aria-label="Yaw, throttle, speed brake, flight utilities, and boost">
-          <button type="button" data-touch-action="yaw-left" aria-label="Yaw left" aria-pressed="false">YAW L</button>
-          <button type="button" data-touch-action="yaw-right" aria-label="Yaw right" aria-pressed="false">YAW R</button>
-          <button type="button" data-touch-action="throttle-down" aria-label="Decrease throttle" aria-pressed="false">− PWR</button>
-          <button type="button" data-touch-action="throttle-up" aria-label="Increase throttle" aria-pressed="false">+ PWR</button>
-          <button type="button" class="touch-airbrake" data-touch-action="airbrake" aria-label="Speed brake" aria-pressed="false">BRAKE</button>
-          <button type="button" data-touch-action="gear-toggle" aria-label="Toggle landing gear" aria-pressed="false">GEAR</button>
-          <button type="button" data-touch-action="camera-toggle" aria-label="Toggle camera view" aria-pressed="false">VIEW</button>
-          <details class="touch-utilities">
-            <summary aria-label="More flight controls">TOOLS</summary>
-            <div class="touch-utilities-grid">
-              <button type="button" class="touch-assist" data-touch-action="stability-toggle" aria-label="Toggle stability assist" aria-pressed="false">ASSIST</button>
-              <button type="button" class="touch-radar" data-touch-action="radar-cycle" aria-label="Cycle radar target" aria-pressed="false">RADAR</button>
-              <button type="button" class="touch-weather" data-touch-action="weather-cycle" aria-label="Cycle weather" aria-pressed="false">WX</button>
-              <button type="button" class="touch-audio" data-touch-action="audio-toggle" aria-label="Toggle audio mute" aria-pressed="false">AUDIO</button>
-              <button type="button" class="touch-ghost" data-touch-action="ghost-toggle" aria-label="Toggle ghost replay" aria-pressed="false">GHOST</button>
-              <button type="button" class="touch-copy" data-touch-action="seed-copy" aria-label="Copy replay seed" aria-pressed="false">COPY</button>
-              <button type="button" class="touch-reset" data-touch-action="reset" aria-label="Reset sortie" aria-pressed="false">RESET</button>
-            </div>
-          </details>
-          <button type="button" class="touch-pause" data-touch-action="pause-toggle" aria-label="Pause flight" aria-pressed="false">PAUSE</button>
-          <button type="button" class="touch-boost" data-touch-action="boost" aria-label="Afterburner" aria-pressed="false">BOOST</button>
-        </div>
-      </div>
-
       <!-- Title / menu — shown before flight -->
       <div id="title-screen" class="title-screen">
         <div class="title-panel">
@@ -109,198 +76,212 @@
       <div id="menu" class="menu" role="dialog" aria-modal="true" aria-labelledby="menu-heading" hidden>
         <div class="menu-backdrop" data-menu-close></div>
         <div class="menu-sheet">
-          <div id="menu-root" class="menu-panel">
-            <p class="menu-kicker">Blackout</p>
-            <h2 id="menu-heading">Settings</h2>
-            <p id="menu-state" class="menu-state" role="status" aria-live="polite" hidden></p>
-            <div class="menu-stack">
-              <div class="menu-flight-actions">
+          <div id="menu-root" class="menu-panel settings-shell">
+            <header class="settings-header">
+              <h2 id="menu-heading">Settings</h2>
+              <p id="menu-state" class="menu-state" role="status" aria-live="polite" hidden></p>
+            </header>
+            <div class="menu-flight-actions">
               <button type="button" id="menu-resume" class="btn-play" hidden>Resume</button>
-              <button type="button" id="menu-retry" class="btn-ghost" hidden>Retry same course</button>
+              <button type="button" id="menu-retry" class="btn-ghost" hidden>Retry</button>
               <button type="button" id="menu-new-world" class="btn-ghost" hidden>New world</button>
-              <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">
-                Fullscreen <span id="menu-fs-state">OFF</span>
-              </button>
-              </div>
-              <details class="settings-section settings-course">
-                <summary>Next sortie <span>Course & progress</span></summary>
-              <div id="menu-course-picker" class="course-picker course-picker-compact">
-                <p class="course-picker-kicker" id="menu-course-label">Course</p>
-                <div class="course-picker-list" role="radiogroup" aria-labelledby="menu-course-label"></div>
-                <p class="course-picker-detail"></p>
-                <p class="course-picker-stats" hidden></p>
-              </div>
-              </details>
-              <div class="settings-grid">
-              <details class="settings-section">
-                <summary>Display & sound <span>Graphics · audio mix</span></summary>
-                <div class="settings-section-body">
-              <label class="menu-setting" for="menu-quality">
-                <span>Graphics</span>
-                <select id="menu-quality" aria-label="Graphics quality">
-                  <option value="low">Low</option>
-                  <option value="balanced">Balanced</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-volume">
-                <span>Audio</span>
-                <span class="menu-setting-control">
-                  <input id="menu-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Audio volume" />
-                  <output id="menu-volume-value" for="menu-volume">100%</output>
-                </span>
-              </label>
-              <label class="menu-setting" for="menu-engine-volume">
-                <span>Engine mix</span>
-                <span class="menu-setting-control">
-                  <input id="menu-engine-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Engine audio volume" />
-                  <output id="menu-engine-volume-value" for="menu-engine-volume">100%</output>
-                </span>
-              </label>
-              <label class="menu-setting" for="menu-environment-volume">
-                <span>Environment mix</span>
-                <span class="menu-setting-control">
-                  <input id="menu-environment-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Environment audio volume" />
-                  <output id="menu-environment-volume-value" for="menu-environment-volume">100%</output>
-                </span>
-              </label>
-              <label class="menu-setting" for="menu-effects-volume">
-                <span>Effects mix</span>
-                <span class="menu-setting-control">
-                  <input id="menu-effects-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Flight effects audio volume" />
-                  <output id="menu-effects-volume-value" for="menu-effects-volume">100%</output>
-                </span>
-              </label>
-                </div>
-              </details>
-              <details class="settings-section" open>
-                <summary>Flight controls <span>Handling · key bindings</span></summary>
-                <div class="settings-section-body">
-              <label class="menu-setting" for="menu-yaw">
-                <span>Keyboard yaw</span>
-                <select id="menu-yaw" aria-label="Keyboard yaw direction">
-                  <option value="a-right">A right / D left</option>
-                  <option value="a-left">A left / D right</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-control-scheme">
-                <span>Control layout</span>
-                <select id="menu-control-scheme" aria-label="Keyboard control layout">
-                  <option value="arcade">A/D yaw · Q/E roll</option>
-                  <option value="conventional">A/D roll · Q/E yaw</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-roll">
-                <span>Keyboard roll</span>
-                <select id="menu-roll" aria-label="Keyboard roll direction">
-                  <option value="q-right">Q right / E left</option>
-                  <option value="q-left">Q left / E right</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-pitch">
-                <span>Keyboard pitch</span>
-                <select id="menu-pitch" aria-label="Keyboard pitch direction">
-                  <option value="w-up">W up / S down</option>
-                  <option value="w-down">W down / S up</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-boost-key">
-                <span>Boost key</span>
-                <select id="menu-boost-key" aria-label="Afterburner key">
-                  <option value="Space">Space</option>
-                  <option value="KeyB">B</option>
-                  <option value="KeyG">G</option>
-                  <option value="KeyF">F</option>
-                  <option value="KeyH">H</option>
-                  <option value="KeyJ">J</option>
-                  <option value="KeyK">K</option>
-                  <option value="KeyL">L</option>
-                  <option value="KeyU">U</option>
-                  <option value="KeyI">I</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-airbrake-key">
-                <span>Speed-brake key</span>
-                <select id="menu-airbrake-key" aria-label="Speed-brake key">
-                  <option value="Space">Space</option>
-                  <option value="KeyB">B</option>
-                  <option value="KeyG">G</option>
-                  <option value="KeyF">F</option>
-                  <option value="KeyH">H</option>
-                  <option value="KeyJ">J</option>
-                  <option value="KeyK">K</option>
-                  <option value="KeyL">L</option>
-                  <option value="KeyU">U</option>
-                  <option value="KeyI">I</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-gear-key">
-                <span>Landing-gear key</span>
-                <select id="menu-gear-key" aria-label="Landing-gear key">
-                  <option value="Space">Space</option>
-                  <option value="KeyB">B</option>
-                  <option value="KeyG">G</option>
-                  <option value="KeyF">F</option>
-                  <option value="KeyH">H</option>
-                  <option value="KeyJ">J</option>
-                  <option value="KeyK">K</option>
-                  <option value="KeyL">L</option>
-                  <option value="KeyU">U</option>
-                  <option value="KeyI">I</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-stability-assist">
-                <span>Flight assist</span>
-                <input id="menu-stability-assist" type="checkbox" aria-label="Gentle pitch and bank trim assist" />
-              </label>
-                </div>
-              </details>
-              <details class="settings-section" open>
-                <summary>View & comfort <span>Camera · HUD · motion</span></summary>
-                <div class="settings-section-body">
-              <label class="menu-setting" for="menu-camera-sensitivity">
-                <span>Camera look</span>
-                <select id="menu-camera-sensitivity" aria-label="External camera look sensitivity">
-                  <option value="low">Low</option>
-                  <option value="normal">Normal</option>
-                  <option value="high">High</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-camera-speed-framing">
-                <span>Speed framing</span>
-                <select id="menu-camera-speed-framing" aria-label="External camera speed framing intensity">
-                  <option value="subtle">Subtle</option>
-                  <option value="standard">Standard</option>
-                  <option value="wide">Wide</option>
-                </select>
-              </label>
-              <label class="menu-setting" for="menu-camera-auto-return">
-                <span>Camera auto-return</span>
-                <input id="menu-camera-auto-return" type="checkbox" aria-label="Automatically recenter external camera after idle" checked />
-              </label>
-              <label class="menu-setting" for="menu-camera-effects">
-                <span>Camera effects</span>
-                <input id="menu-camera-effects" type="checkbox" aria-label="Enable cinematic camera motion effects" checked />
-              </label>
-              <label class="menu-setting" for="menu-reduced-motion">
-                <span>Reduce motion</span>
-                <input id="menu-reduced-motion" type="checkbox" aria-label="Reduce camera, weather, and effects motion" />
-              </label>
-              <label class="menu-setting" for="menu-hud-display">
-                <span>Minimal HUD</span>
-                <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" checked />
-              </label>
-                </div>
-              </details>
-              </div>
-              <div class="menu-footer-actions">
-              <button type="button" id="menu-reset-settings" class="btn-ghost">Reset settings</button>
-              <button type="button" id="menu-open-controls" class="btn-ghost">Controls</button>
-              <button type="button" id="menu-open-info" class="btn-ghost">Game info</button>
-              <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>
-              <button type="button" id="menu-close" class="btn-ghost" data-menu-close>Back</button>
+              <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">Fullscreen <span id="menu-fs-state">OFF</span></button>
+            </div>
+            <div class="settings-workspace">
+              <nav class="settings-navigation" aria-label="Settings categories">
+                <button type="button" class="btn-ghost" data-settings-tab="general" aria-controls="settings-general" aria-pressed="true">General</button>
+                <button type="button" class="btn-ghost" data-settings-tab="controls" aria-controls="settings-controls" aria-pressed="false">Controls</button>
+                <button type="button" class="btn-ghost" data-settings-tab="camera" aria-controls="settings-camera" aria-pressed="false">Camera</button>
+                <button type="button" class="btn-ghost" data-settings-tab="course" aria-controls="settings-course" aria-pressed="false">Next sortie</button>
+              </nav>
+              <div class="settings-content">
+                <section id="settings-general" data-settings-panel="general" aria-labelledby="settings-general-heading">
+                  <h3 id="settings-general-heading">General</h3>
+                  <label class="menu-setting" for="menu-quality">
+                    <span>Graphics</span>
+                    <select id="menu-quality" aria-label="Graphics quality">
+                      <option value="low">Low</option>
+                      <option value="balanced">Balanced</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
+                  <label class="menu-setting" for="menu-volume">
+                    <span>Audio</span>
+                    <span class="menu-setting-control">
+                      <input id="menu-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Audio volume" />
+                      <output id="menu-volume-value" for="menu-volume">100%</output>
+                    </span>
+                  </label>
+                  <label class="menu-setting" for="menu-hud-display">
+                    <span>Minimal HUD</span>
+                    <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" checked />
+                  </label>
+                  <label class="menu-setting" for="menu-reduced-motion">
+                    <span>Reduce motion</span>
+                    <input id="menu-reduced-motion" type="checkbox" aria-label="Reduce camera, weather, and effects motion" />
+                  </label>
+                  <details class="settings-section">
+                    <summary>Audio mix</summary>
+                    <div class="settings-section-body">
+                      <label class="menu-setting" for="menu-engine-volume">
+                        <span>Engine mix</span>
+                        <span class="menu-setting-control">
+                          <input id="menu-engine-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Engine audio volume" />
+                          <output id="menu-engine-volume-value" for="menu-engine-volume">100%</output>
+                        </span>
+                      </label>
+                      <label class="menu-setting" for="menu-environment-volume">
+                        <span>Environment mix</span>
+                        <span class="menu-setting-control">
+                          <input id="menu-environment-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Environment audio volume" />
+                          <output id="menu-environment-volume-value" for="menu-environment-volume">100%</output>
+                        </span>
+                      </label>
+                      <label class="menu-setting" for="menu-effects-volume">
+                        <span>Effects mix</span>
+                        <span class="menu-setting-control">
+                          <input id="menu-effects-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Flight effects audio volume" />
+                          <output id="menu-effects-volume-value" for="menu-effects-volume">100%</output>
+                        </span>
+                      </label>
+                    </div>
+                  </details>
+                  <details class="settings-section">
+                    <summary>Reset settings</summary>
+                    <div class="settings-section-body">
+                      <button type="button" id="menu-reset-settings" class="btn-ghost">Restore defaults</button>
+                    </div>
+                  </details>
+                </section>
+                <section id="settings-controls" data-settings-panel="controls" aria-labelledby="settings-controls-heading" hidden>
+                  <h3 id="settings-controls-heading">Controls</h3>
+                  <label class="menu-setting" for="menu-control-scheme">
+                    <span>Control layout</span>
+                    <select id="menu-control-scheme" aria-label="Keyboard control layout">
+                      <option value="arcade">A/D yaw · Q/E roll</option>
+                      <option value="conventional">A/D roll · Q/E yaw</option>
+                    </select>
+                  </label>
+                  <label class="menu-setting" for="menu-stability-assist">
+                    <span>Flight assist</span>
+                    <input id="menu-stability-assist" type="checkbox" aria-label="Gentle pitch and bank trim assist" />
+                  </label>
+                  <details class="settings-section">
+                    <summary>Key bindings</summary>
+                    <div class="settings-section-body">
+                      <label class="menu-setting" for="menu-pitch">
+                        <span>Keyboard pitch</span>
+                        <select id="menu-pitch" aria-label="Keyboard pitch direction">
+                          <option value="w-up">W up / S down</option>
+                          <option value="w-down">W down / S up</option>
+                        </select>
+                      </label>
+                      <label class="menu-setting" for="menu-yaw">
+                        <span>Keyboard yaw</span>
+                        <select id="menu-yaw" aria-label="Keyboard yaw direction">
+                          <option value="a-right">A right / D left</option>
+                          <option value="a-left">A left / D right</option>
+                        </select>
+                      </label>
+                      <label class="menu-setting" for="menu-roll">
+                        <span>Keyboard roll</span>
+                        <select id="menu-roll" aria-label="Keyboard roll direction">
+                          <option value="q-right">Q right / E left</option>
+                          <option value="q-left">Q left / E right</option>
+                        </select>
+                      </label>
+                      <label class="menu-setting" for="menu-boost-key">
+                        <span>Boost key</span>
+                        <select id="menu-boost-key" aria-label="Afterburner key">
+                          <option value="Space">Space</option>
+                          <option value="KeyB">B</option>
+                          <option value="KeyG">G</option>
+                          <option value="KeyF">F</option>
+                          <option value="KeyH">H</option>
+                          <option value="KeyJ">J</option>
+                          <option value="KeyK">K</option>
+                          <option value="KeyL">L</option>
+                          <option value="KeyU">U</option>
+                          <option value="KeyI">I</option>
+                        </select>
+                      </label>
+                      <label class="menu-setting" for="menu-airbrake-key">
+                        <span>Speed-brake key</span>
+                        <select id="menu-airbrake-key" aria-label="Speed-brake key">
+                          <option value="Space">Space</option>
+                          <option value="KeyB">B</option>
+                          <option value="KeyG">G</option>
+                          <option value="KeyF">F</option>
+                          <option value="KeyH">H</option>
+                          <option value="KeyJ">J</option>
+                          <option value="KeyK">K</option>
+                          <option value="KeyL">L</option>
+                          <option value="KeyU">U</option>
+                          <option value="KeyI">I</option>
+                        </select>
+                      </label>
+                      <label class="menu-setting" for="menu-gear-key">
+                        <span>Landing-gear key</span>
+                        <select id="menu-gear-key" aria-label="Landing-gear key">
+                          <option value="Space">Space</option>
+                          <option value="KeyB">B</option>
+                          <option value="KeyG">G</option>
+                          <option value="KeyF">F</option>
+                          <option value="KeyH">H</option>
+                          <option value="KeyJ">J</option>
+                          <option value="KeyK">K</option>
+                          <option value="KeyL">L</option>
+                          <option value="KeyU">U</option>
+                          <option value="KeyI">I</option>
+                        </select>
+                      </label>
+                    </div>
+                  </details>
+                </section>
+                <section id="settings-camera" data-settings-panel="camera" aria-labelledby="settings-camera-heading" hidden>
+                  <h3 id="settings-camera-heading">Camera</h3>
+                  <label class="menu-setting" for="menu-camera-sensitivity">
+                    <span>Camera look</span>
+                    <select id="menu-camera-sensitivity" aria-label="External camera look sensitivity">
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                    </select>
+                  </label>
+                  <label class="menu-setting" for="menu-camera-speed-framing">
+                    <span>Speed framing</span>
+                    <select id="menu-camera-speed-framing" aria-label="External camera speed framing intensity">
+                      <option value="subtle">Subtle</option>
+                      <option value="standard">Standard</option>
+                      <option value="wide">Wide</option>
+                    </select>
+                  </label>
+                  <label class="menu-setting" for="menu-camera-auto-return">
+                    <span>Camera auto-return</span>
+                    <input id="menu-camera-auto-return" type="checkbox" aria-label="Automatically recenter external camera after idle" checked />
+                  </label>
+                  <label class="menu-setting" for="menu-camera-effects">
+                    <span>Camera effects</span>
+                    <input id="menu-camera-effects" type="checkbox" aria-label="Enable cinematic camera motion effects" checked />
+                  </label>
+                </section>
+                <section id="settings-course" data-settings-panel="course" aria-labelledby="settings-course-heading" hidden>
+                  <h3 id="settings-course-heading">Next sortie</h3>
+                  <div id="menu-course-picker" class="course-picker course-picker-compact">
+                    <p class="course-picker-kicker" id="menu-course-label">Course</p>
+                    <div class="course-picker-list" role="radiogroup" aria-labelledby="menu-course-label"></div>
+                    <p class="course-picker-detail"></p>
+                    <p class="course-picker-stats" hidden></p>
+                  </div>
+                </section>
               </div>
             </div>
+            <footer class="menu-footer-actions">
+              <button type="button" id="menu-open-controls" class="btn-ghost">Controls reference</button>
+              <button type="button" id="menu-open-info" class="btn-ghost">Help</button>
+              <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>
+              <button type="button" id="menu-close" class="btn-ghost" data-menu-close>Back</button>
+            </footer>
           </div>
 
           <div id="menu-controls" class="menu-panel" hidden>
@@ -323,7 +304,6 @@
               <div><kbd>M</kbd></div><div>Mute audio</div>
               <div><kbd>Y</kbd></div><div>Copy replay link</div>
               <div><kbd>Gamepad</kbd></div><div>Left stick pitch/roll, right stick yaw, triggers throttle, A afterburner, LB brake, X gear, Y camera, B assist, View mute, Start pause, D-pad left reset, up weather, down ghost, right radar</div>
-              <div><kbd>Touch</kbd></div><div>Live-flight pitch, yaw, roll, throttle, speed brake, camera, gear, reset, pause, and afterburner deck on touch devices</div>
               <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
               <div><kbd>R</kbd></div><div>New world</div>
               <div><kbd>P</kbd> / <kbd>Esc</kbd></div><div>Pause menu</div>
@@ -333,16 +313,14 @@
 
           <div id="menu-info" class="menu-panel" hidden>
             <p class="menu-kicker">Settings</p>
-            <h2 id="menu-info-heading">Game info</h2>
+            <h2 id="menu-info-heading">Help</h2>
             <ul class="menu-copy">
-              <li>Spawn on a flat airfield. Spool the engine, build speed, then rotate.</li>
-              <li>Throttle is thrust. A climb spends speed, and closing the throttle slows you down. Afterburner is a short burst, not a cruise setting.</li>
-              <li>Fly the glowing rings in order. The cue at the top points at the next gate.</li>
-              <li>A sortie may ask for a clean circuit, a low pass, a centered landing, a soft landing, or, rarely, a deadstick glide.</li>
-              <li>Land to score the run. A crash or ditch opens the same card: time, gates cleared, and the score.</li>
+              <li>Increase power, build speed, then pitch up to take off.</li>
+              <li>Throttle controls thrust. Climbing costs speed; afterburner is for short bursts.</li>
+              <li>Fly gates in order, then return and land. Follow the navigation arrow.</li>
+              <li>Landings finish the run. Crashes also show your score and flight data.</li>
               <li><kbd>R</kbd> rolls a new world. Enter a safe integer seed on the launch screen to revisit an exact procedural world.</li>
             </ul>
-            <p class="menu-about">Blackout is a browser arcade F-35 toy. Take off, fly the gates, and land or crash.</p>
             <button type="button" class="btn-ghost menu-back">Back</button>
           </div>
         </div>
@@ -628,94 +606,53 @@
           <div id="fps" class="hud-ledger hud-secondary"><span id="hud-fps">-</span> fps</div>
         </div>
 
-        <!-- Bottom-left: speedometer + engine power (min↔max) -->
+        <!-- Paired digital flight instruments; markers show the commanded speed. -->
         <div id="gauges">
-          <div class="gauge-panel" id="speedo-panel" aria-label="Airspeed">
-            <svg class="gauge-svg" viewBox="0 0 140 140" aria-hidden="true">
-              <defs>
-                <linearGradient id="spd-arc-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#1a6a52" />
-                  <stop offset="45%" stop-color="#3dcea8" />
-                  <stop offset="80%" stop-color="#7aefc8" />
-                  <stop offset="100%" stop-color="#f0b429" />
-                </linearGradient>
-              </defs>
-              <circle class="gauge-face" cx="70" cy="70" r="58" />
-              <path
-                class="gauge-track"
-                d="M 22 96 A 52 52 0 1 1 118 96"
-                fill="none"
-              />
-              <path
-                id="spd-arc"
-                class="gauge-arc spd"
-                d="M 22 96 A 52 52 0 1 1 118 96"
-                fill="none"
-                pathLength="100"
-              />
-              <g id="spd-ticks" class="gauge-ticks"></g>
-              <circle id="spd-target" class="gauge-target" cx="70" cy="20" r="3" aria-hidden="true" />
-              <line id="spd-needle" class="gauge-needle" x1="70" y1="70" x2="70" y2="24" />
-              <circle class="gauge-hub" cx="70" cy="70" r="5" />
-            </svg>
-            <div class="gauge-readout">
-              <span
-                id="hud-spd"
-                class="gauge-value"
-                role="meter"
-                aria-valuemin="0"
-                aria-valuemax="900"
-                aria-valuenow="0"
-                aria-valuetext="0 knots"
-              >0</span>
-              <span class="gauge-unit">KTS</span>
+          <section id="speedo-panel" class="flight-instrument" aria-label="Airspeed">
+            <header class="instrument-header">
+              <span>Airspeed</span>
+              <span id="hud-speed-state" class="instrument-status">IAS</span>
+            </header>
+            <div class="instrument-readout">
+              <span id="hud-spd" class="instrument-value" role="meter" aria-valuemin="0" aria-valuemax="900" aria-valuenow="0" aria-valuetext="0 knots">0</span>
+              <span class="instrument-unit">KTS</span>
             </div>
-            <div class="gauge-title">IAS</div>
-          </div>
-
-          <div class="gauge-panel" id="eng-panel" aria-label="Engine power and target speed">
-            <div class="eng-header">
-              <span class="gauge-title">ENG</span>
-              <span class="eng-readout">
-                <span id="hud-thr" class="eng-pct">0%</span>
-                <span id="hud-target-speed" class="eng-target-speed" aria-label="Target speed unavailable">TGT --</span>
-                <span id="hud-ab-state" class="eng-ab-state">AB READY</span>
-              </span>
+            <div class="instrument-rail" aria-hidden="true">
+              <div id="spd-fill" class="instrument-fill"></div>
+              <span id="spd-target" class="instrument-target"></span>
             </div>
-            <div class="eng-bar-wrap">
-              <div class="eng-scale" aria-hidden="true">
-                <span>MAX</span>
-                <span>50</span>
-                <span>MIN</span>
-              </div>
-              <div class="eng-track">
-                <div class="eng-ticks" aria-hidden="true"></div>
-                <div
-                  id="eng-fill"
-                  class="eng-fill"
-                  role="meter"
-                  aria-label="Engine power"
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                  aria-valuenow="0"
-                ></div>
-                <div id="eng-marker" class="eng-marker"></div>
-              </div>
+            <div class="instrument-footer" aria-hidden="true"><span>0</span><span>900</span></div>
+          </section>
+          <section id="eng-panel" class="flight-instrument" aria-label="Engine command">
+            <header class="instrument-header">
+              <span>Engine</span>
+              <span id="hud-ab-state" class="instrument-status">AB READY</span>
+            </header>
+            <div class="instrument-readout">
+              <span id="hud-thr" class="instrument-value">0%</span>
             </div>
-          </div>
+            <div class="instrument-rail">
+              <div id="eng-fill" class="instrument-fill" role="meter" aria-label="Engine command" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+            </div>
+            <div class="instrument-footer">
+              <span id="hud-target-speed" aria-label="Target speed unavailable">TGT --</span><span>KTS</span>
+            </div>
+          </section>
         </div>
 
         <!-- Next-gate cue: heading caret + range -->
         <div id="nav-cue" hidden>
-          <div id="nav-target" class="nav-target">NEXT GATE</div>
-          <div id="nav-arrow" aria-hidden="true">▲</div>
-          <div id="nav-meta">
+          <div class="nav-primary">
+            <div id="nav-target" class="nav-target">NEXT GATE</div>
+            <div id="nav-arrow" aria-hidden="true">▲</div>
             <span id="nav-turn">AHEAD</span>
+            <span id="nav-range">—</span>
+          </div>
+          <div id="nav-meta">
             <span id="nav-approach" class="hud-ledger hud-secondary" aria-hidden="true"></span>
             <span id="nav-line" class="hud-ledger hud-secondary" aria-hidden="true"></span>
             <span id="nav-speed" aria-hidden="true"></span>
             <span id="nav-glide" aria-hidden="true"></span>
-            <span id="nav-range">—</span>
             <span id="nav-trend" class="hud-ledger hud-secondary" aria-hidden="true">HOLD</span>
             <span id="nav-eta" class="hud-ledger hud-secondary" aria-hidden="true">ETA --</span>
             <span id="nav-alt" class="hud-ledger hud-secondary"></span>

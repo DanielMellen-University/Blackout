@@ -67,9 +67,9 @@ export class DebugOverlay {
       'padding:8px 10px',
       'max-width:min(420px,46vw)',
       'font:11px/1.35 ui-monospace,SFMono-Regular,Menlo,monospace',
-      'color:#c8f0e0',
+      'color:var(--ink)',
       'background:rgba(4,8,12,0.78)',
-      'border:1px solid rgba(61,206,168,0.35)',
+      'border:1px solid var(--panel-border)',
       'border-radius:6px',
       'pointer-events:none',
       'white-space:pre',
@@ -80,14 +80,14 @@ export class DebugOverlay {
     this.marks = new Group()
     this.marks.name = 'DebugPadMarks'
     const innerMat = new MeshBasicMaterial({
-      color: 0x3dcea8,
+      color: 0x83c7ff,
       transparent: true,
       opacity: 0.55,
       side: DoubleSide,
       depthWrite: false,
     })
     const outerMat = new MeshBasicMaterial({
-      color: 0xf0b429,
+      color: 0xffb765,
       transparent: true,
       opacity: 0.4,
       side: DoubleSide,

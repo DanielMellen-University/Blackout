@@ -13,7 +13,6 @@ import {
   type KeyboardRollPreference,
   type KeyboardYawPreference,
 } from './FlightPreferences'
-import type { TouchInputState } from './TouchControls'
 import type { FlightInputSource } from './FlightBriefing'
 
 const FLIGHT_KEYS = new Set([
@@ -56,22 +55,6 @@ export class InputManager {
   private gamepadConnected = false
   private gamepadMissingPolls = 0
   private gamepadConnectionQueued: 'connected' | 'disconnected' | null = null
-  private touchPitch = 0
-  private touchRoll = 0
-  private touchYaw = 0
-  private touchThrottle = 0
-  private touchBoost = false
-  private touchAirbrake = false
-  private touchCameraToggle = false
-  private touchGearToggle = false
-  private touchStabilityAssistToggle = false
-  private touchRadarTargetCycle = false
-  private touchWeatherCycle = false
-  private touchAudioToggle = false
-  private touchGhostToggle = false
-  private touchWorldSeedCopy = false
-  private touchReset = false
-  private touchPauseToggle = false
   private keyboardYawPreference: KeyboardYawPreference = DEFAULT_KEYBOARD_YAW
   private keyboardRollPreference: KeyboardRollPreference = 'q-right'
   private keyboardPitchPreference: KeyboardPitchPreference = 'w-up'
@@ -173,7 +156,7 @@ export class InputManager {
    *
    * Menu, pause, results, and focus-loss transitions must not carry held
    * controls into the next flight. The runtime uses this guarded transition
-   * so keyboard, gamepad, and touch state are cleared at the boundary.
+   * so keyboard and gamepad state are cleared at the boundary.
    */
   setFlightLive(enabled: boolean): void {
     if (this.disposed) return
@@ -200,7 +183,6 @@ export class InputManager {
     this.target.removeEventListener('blur', this.onBlur)
     this.keys.clear()
     this.clearGamepadState()
-    this.clearTouchState()
   }
 
   sampleWithDt(dt: number): ControlState {
@@ -218,21 +200,21 @@ export class InputManager {
     const keyboardPitch = this.keyboardPitchPreference === 'w-down'
       ? this.axis('KeyS', 'KeyW')
       : this.axis('KeyW', 'KeyS')
-    this.controls.pitch = mergeAxis(keyboardPitch, this.gamepadPitch, this.touchPitch)
+    this.controls.pitch = mergeAxis(keyboardPitch, this.gamepadPitch)
     const yawFirst = this.keyboardControlScheme === 'conventional' ? 'KeyQ' : 'KeyA'
     const yawSecond = this.keyboardControlScheme === 'conventional' ? 'KeyE' : 'KeyD'
     const keyboardYaw = this.keyboardYawPreference === 'a-left'
       ? this.axis(yawSecond, yawFirst)
       : this.axis(yawFirst, yawSecond)
-    this.controls.yaw = mergeAxis(keyboardYaw, this.gamepadYaw, this.touchYaw)
+    this.controls.yaw = mergeAxis(keyboardYaw, this.gamepadYaw)
     const rollFirst = this.keyboardControlScheme === 'conventional' ? 'KeyA' : 'KeyQ'
     const rollSecond = this.keyboardControlScheme === 'conventional' ? 'KeyD' : 'KeyE'
     const keyboardRoll = this.keyboardRollPreference === 'q-left'
       ? this.axis(rollSecond, rollFirst)
       : this.axis(rollFirst, rollSecond)
-    this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll, this.touchRoll)
-    this.controls.boost = this.keys.has(this.keyboardBindings.boost) || this.gamepadBoost || this.touchBoost
-    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake) || this.gamepadAirbrake || this.touchAirbrake
+    this.controls.roll = mergeAxis(keyboardRoll, this.gamepadRoll)
+    this.controls.boost = this.keys.has(this.keyboardBindings.boost) || this.gamepadBoost
+    this.controls.airbrake = this.keys.has(this.keyboardBindings.airbrake) || this.gamepadAirbrake
     this.controls.stabilityAssist = this.stabilityAssist
 
     // Engine power: Shift up, Ctrl down
@@ -245,7 +227,6 @@ export class InputManager {
       thr += thrRate * step
     }
     thr += this.gamepadThrottle * thrRate * step
-    thr += this.touchThrottle * thrRate * step
     this.controls.throttle = clamp01(thr)
 
     // Keyboard wins the same mixed-input frames in which it owns the controls.
@@ -272,55 +253,6 @@ export class InputManager {
     this.controls.yaw = 0
     this.controls.gearDown = true
     this.controls.stabilityAssist = this.stabilityAssist
-  }
-
-  /** Feed the optional event-driven touch deck into the normal input sampler. */
-  setTouchState(state: Partial<TouchInputState> | null): void {
-    if (this.disposed) return
-    this.touchPitch = clampAxis(state?.pitch)
-    this.touchYaw = clampAxis(state?.yaw)
-    this.touchRoll = clampAxis(state?.roll)
-    this.touchThrottle = clampAxis(state?.throttle)
-    this.touchBoost = state?.boost === true
-    this.touchAirbrake = state?.airbrake === true
-    const cameraToggle = state?.cameraToggle === true
-    const gearToggle = state?.gearToggle === true
-    const stabilityAssistToggle = state?.stabilityAssistToggle === true
-    const radarTargetCycle = state?.radarTargetCycle === true
-    const weatherCycle = state?.weatherCycle === true
-    const audioToggle = state?.audioToggle === true
-    const ghostToggle = state?.ghostToggle === true
-    const worldSeedCopy = state?.worldSeedCopy === true
-    const reset = state?.reset === true
-    const pauseToggle = state?.pauseToggle === true
-    if (this.flightLive && (this.touchPitch !== 0 || this.touchYaw !== 0 || this.touchRoll !== 0 ||
-      this.touchThrottle !== 0 || this.touchBoost || this.touchAirbrake || cameraToggle || gearToggle ||
-      stabilityAssistToggle || radarTargetCycle || weatherCycle || audioToggle || ghostToggle ||
-      worldSeedCopy || reset || pauseToggle)) this.inputSourceValue = 'touch'
-    if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
-    if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
-    if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
-      this.stabilityAssistToggleQueued = true
-    }
-    if (this.flightLive && radarTargetCycle && !this.touchRadarTargetCycle) {
-      this.radarTargetCycleQueued = true
-    }
-    if (this.flightLive && weatherCycle && !this.touchWeatherCycle) this.weatherCycleQueued = true
-    if (this.flightLive && audioToggle && !this.touchAudioToggle) this.audioToggleQueued = true
-    if (this.flightLive && ghostToggle && !this.touchGhostToggle) this.ghostToggleQueued = true
-    if (this.flightLive && worldSeedCopy && !this.touchWorldSeedCopy) this.worldSeedCopyQueued = true
-    if (this.flightLive && reset && !this.touchReset) this.resetQueued = true
-    if (this.flightLive && pauseToggle && !this.touchPauseToggle) this.pauseToggleQueued = true
-    this.touchCameraToggle = cameraToggle
-    this.touchGearToggle = gearToggle
-    this.touchStabilityAssistToggle = stabilityAssistToggle
-    this.touchRadarTargetCycle = radarTargetCycle
-    this.touchWeatherCycle = weatherCycle
-    this.touchAudioToggle = audioToggle
-    this.touchGhostToggle = ghostToggle
-    this.touchWorldSeedCopy = worldSeedCopy
-    this.touchReset = reset
-    this.touchPauseToggle = pauseToggle
   }
 
   /** Forget one-shot P / C / R / N / M / T / G / V / X / Y so the title screen cannot leak into Play. */
@@ -353,7 +285,6 @@ export class InputManager {
 
   private clearFlightState(): void {
     this.clearGamepadState()
-    this.clearTouchState()
     this.controls.boost = false
     this.controls.airbrake = false
     this.controls.pitch = 0
@@ -608,7 +539,6 @@ export class InputManager {
     if (this.disposed) return
     this.keys.clear()
     this.clearGamepadState()
-    this.clearTouchState()
     this.clearQueued()
   }
 
@@ -653,25 +583,6 @@ export class InputManager {
     this.gamepadPauseHeld = false
     this.gamepadResetHeld = false
   }
-
-  private clearTouchState(): void {
-    this.touchPitch = 0
-    this.touchRoll = 0
-    this.touchYaw = 0
-    this.touchThrottle = 0
-    this.touchBoost = false
-    this.touchAirbrake = false
-    this.touchCameraToggle = false
-    this.touchGearToggle = false
-    this.touchStabilityAssistToggle = false
-    this.touchRadarTargetCycle = false
-    this.touchWeatherCycle = false
-    this.touchAudioToggle = false
-    this.touchGhostToggle = false
-    this.touchWorldSeedCopy = false
-    this.touchReset = false
-    this.touchPauseToggle = false
-  }
 }
 
 /** Apply a centered dead zone and rescale the remaining stick travel. */
@@ -687,15 +598,10 @@ export function normalizeGamepadAxis(value: number, deadzone = 0.14): number {
   return Math.sign(clamped) * scaled
 }
 
-function mergeAxis(keyboard: number, gamepad: number, touch: number): number {
+function mergeAxis(keyboard: number, gamepad: number): number {
   if (Math.abs(keyboard) > 0.001) return keyboard
   if (Number.isFinite(gamepad) && Math.abs(gamepad) > 0.001) return gamepad
-  return Number.isFinite(touch) ? touch : 0
-}
-
-function clampAxis(value: number | undefined): number {
-  const finite = typeof value === 'number' && Number.isFinite(value) ? value : 0
-  return Math.max(-1, Math.min(1, finite))
+  return 0
 }
 
 function normalizeGamepadTrigger(value: number): number {

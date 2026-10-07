@@ -7,7 +7,7 @@ import {
   type KeyboardPitchPreference,
 } from './FlightPreferences'
 
-export type FlightInputSource = 'keyboard' | 'touch' | 'gamepad'
+export type FlightInputSource = 'keyboard' | 'gamepad'
 export const BRIEFING_DURATION_SECONDS = 16
 export interface BriefingControls {
   inputSource?: FlightInputSource
@@ -18,7 +18,6 @@ export interface BriefingControls {
 
 /** Resolve labels from the same normalized controls that the input sampler uses. */
 export function briefingControls(options: BriefingControls): { power: string; rotate: string; gear: string } {
-  if (options.inputSource === 'touch') return { power: '+ PWR', rotate: '▲', gear: 'GEAR' }
   if (options.inputSource === 'gamepad') return { power: 'RT / R2', rotate: 'LEFT STICK UP', gear: 'X / SQUARE' }
   return {
     power: 'SHIFT / 2',
@@ -111,10 +110,8 @@ export function flightBriefingHint(state: BriefingControls & {
     return `${speed < 55 ? `${controls.power} POWER · ` : ''}${controls.rotate} ROTATE · GEAR AUTO`
   }
   if (state.emergencyReturn || state.approachActive || (state.missionPhase === 'returning' && state.totalGates !== 0)) {
-    const powerDown = state.inputSource === 'touch' ? '− PWR'
-      : state.inputSource === 'gamepad' ? 'LT / L2' : 'CTRL / 1'
-    const gearAction = state.gearDown ? '' : state.inputSource === 'touch'
-      ? 'GEAR DOWN · ' : `${briefingControls(state).gear} GEAR DOWN · `
+    const powerDown = state.inputSource === 'gamepad' ? 'LT / L2' : 'CTRL / 1'
+    const gearAction = state.gearDown ? '' : `${briefingControls(state).gear} GEAR DOWN · `
     return state.approachActive
       ? altitude <= 14 ? `${gearAction}FLARE GENTLY · KEEP WINGS LEVEL`
         : `${gearAction}TWO WHITE / TWO RED · STEADY DESCENT`
@@ -129,8 +126,7 @@ export function flightBriefingHint(state: BriefingControls & {
       ? 'PITCH TO CLIMB · FOLLOW THE ARROW TO GATE 1'
       : 'FOLLOW THE ARROW · FLY THROUGH GATE 1'
   }
-  const axes = state.inputSource === 'touch' ? 'ARROWS PITCH / ROLL · YAW L / R'
-    : state.inputSource === 'gamepad' ? 'LEFT STICK PITCH / ROLL · RIGHT STICK YAW'
+  const axes = state.inputSource === 'gamepad' ? 'LEFT STICK PITCH / ROLL · RIGHT STICK YAW'
     : keyboardControlSchemeLabel(state.keyboardScheme ?? 'arcade')
   return `FOLLOW THE ARROW · ${axes}`
 }

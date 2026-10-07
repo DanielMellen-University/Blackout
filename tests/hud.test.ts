@@ -120,8 +120,8 @@ import {
   safeHudValue,
   speedWarningLevel,
   speedJuiceIntensity,
-  speedNeedleKts,
-  speedTargetNeedleKts,
+  speedReadoutKnots,
+  speedRailTargetKnots,
   verticalSpeedTone,
   windDirectionDegrees,
   windSpeedMps,
@@ -146,10 +146,10 @@ describe('HUD value formatting', () => {
   })
 
   it('keeps the target-speed marker inside the IAS dial envelope', () => {
-    expect(speedTargetNeedleKts(0)).toBe(0)
-    expect(speedTargetNeedleKts(520 * 1.94384)).toBe(900)
-    expect(speedTargetNeedleKts(Number.NaN)).toBe(0)
-    expect(speedTargetNeedleKts(240, 600)).toBe(240)
+    expect(speedRailTargetKnots(0)).toBe(0)
+    expect(speedRailTargetKnots(520 * 1.94384)).toBe(900)
+    expect(speedRailTargetKnots(Number.NaN)).toBe(0)
+    expect(speedRailTargetKnots(240, 600)).toBe(240)
   })
 
   it('whitelists cue-specific warning classes', () => {
@@ -240,11 +240,11 @@ describe('HUD value formatting', () => {
     expect(speedWarningLevel(Number.NaN)).toBe('normal')
   })
 
-  it('coalesces the speed needle to the displayed knot resolution', () => {
-    expect(speedNeedleKts(1200.49)).toBe(1200)
-    expect(speedNeedleKts(1200.5)).toBe(1201)
-    expect(speedNeedleKts(-12)).toBe(0)
-    expect(speedNeedleKts(Number.NaN)).toBe(0)
+  it('coalesces the speed rail to the displayed knot resolution', () => {
+    expect(speedReadoutKnots(1200.49)).toBe(1200)
+    expect(speedReadoutKnots(1200.5)).toBe(1201)
+    expect(speedReadoutKnots(-12)).toBe(0)
+    expect(speedReadoutKnots(Number.NaN)).toBe(0)
   })
 
   it('formats climb and sink rates with a readable sign', () => {

@@ -1112,11 +1112,10 @@ export class HUD {
   private readonly engineHeatEl: HTMLElement | null
   private readonly stateEl: HTMLElement | null
   private readonly bannerEl: HTMLElement | null
-  private readonly spdNeedle: SVGLineElement | null
-  private readonly spdTarget: SVGCircleElement | null
-  private readonly spdArc: SVGPathElement | null
+  private readonly spdTarget: HTMLElement | null
+  private readonly spdFill: HTMLElement | null
+  private readonly speedStateEl: HTMLElement | null
   private readonly engFill: HTMLElement | null
-  private readonly engMarker: HTMLElement | null
   private readonly engPanel: HTMLElement | null
   private readonly abStateEl: HTMLElement | null
   private readonly adiBall: HTMLElement | null
@@ -1371,18 +1370,7 @@ export class HUD {
   private flightPathYValue = Number.NaN
   private flightPathXText = ''
   private flightPathYText = ''
-  private speedNeedleXValue = Number.NaN
-  private speedNeedleXText = ''
-  private speedNeedleYValue = Number.NaN
-  private speedNeedleYText = ''
-  private speedNeedleValue = Number.NaN
-  private speedArcValue = Number.NaN
-  private speedArcText = ''
-  private speedTargetValue = Number.NaN
-  private speedTargetXValue = Number.NaN
-  private speedTargetYValue = Number.NaN
-  private speedTargetXText = ''
-  private speedTargetYText = ''
+
   private adiBallPitchValue = Number.NaN
   private adiBallRollValue = Number.NaN
   private adiBallTransform = ''
@@ -1418,11 +1406,10 @@ export class HUD {
     this.engineHeatEl = root.getElementById('hud-engine-heat')
     this.stateEl = root.getElementById('hud-state')
     this.bannerEl = root.getElementById('hud-banner')
-    this.spdNeedle = root.getElementById('spd-needle') as SVGLineElement | null
-    this.spdTarget = root.getElementById('spd-target') as SVGCircleElement | null
-    this.spdArc = root.getElementById('spd-arc') as SVGPathElement | null
+    this.spdTarget = root.getElementById('spd-target')
+    this.spdFill = root.getElementById('spd-fill')
+    this.speedStateEl = root.getElementById('hud-speed-state')
     this.engFill = root.getElementById('eng-fill')
-    this.engMarker = root.getElementById('eng-marker')
     this.engPanel = root.getElementById('eng-panel')
     this.abStateEl = root.getElementById('hud-ab-state')
     this.adiBall = root.getElementById('adi-ball')
@@ -1502,7 +1489,6 @@ export class HUD {
     this.navTrendEl = root.getElementById('nav-trend')
     this.navEtaEl = root.getElementById('nav-eta')
     this.navAltEl = root.getElementById('nav-alt')
-    this.buildSpeedTicks(root)
     this.buildAttitudeLadder(root)
     this.buildBankMarks(root)
     this.buildHeadingTape(root)
@@ -1790,7 +1776,7 @@ export class HUD {
     const rawKts = displayedKnots(opts.speed)
     const kts = Number.isFinite(rawKts) ? rawKts : 0
     if (this.spdEl) {
-      const speed = Math.round(kts)
+      const speed = speedReadoutKnots(kts)
       const warning = speedWarningLevel(kts, this.maxKts)
       if (speed !== this.speedValue || warning !== this.speedWarningValue) {
         this.speedValue = speed
@@ -1814,7 +1800,7 @@ export class HUD {
     const targetKts = opts.targetSpeed !== undefined && Number.isFinite(opts.targetSpeed)
       ? Math.max(0, displayedKnots(opts.targetSpeed))
       : 0
-    this.updateSpeedo(kts, targetKts)
+    this.updateSpeedRail(kts, targetKts)
     this.updateSpeedJuice(kts, !!opts.boost)
     this.updateCanopyTint(
       kts,
@@ -2739,62 +2725,17 @@ export class HUD {
     }
   }
 
-  private updateSpeedo(kts: number, targetKts: number): void {
-    const t = Math.min(1, kts / this.maxKts)
-    const cx = 70
-    const cy = 70
-    const len = 42
-    if (this.spdNeedle) {
-      // The numeric readout is whole-knot precision. Reuse that same input
-      // for the needle so steady flight does not redo trig every frame.
-      const needleKts = speedNeedleKts(kts)
-      if (needleKts !== this.speedNeedleValue) {
-        this.speedNeedleValue = needleKts
-        const angleDeg = -120 + Math.min(1, needleKts / this.maxKts) * 240
-        const rad = (angleDeg * Math.PI) / 180
-        const x2 = quantizeHudNumber(cx + Math.sin(rad) * len, 10)
-        if (x2 !== this.speedNeedleXValue) {
-          this.speedNeedleXValue = x2
-          this.speedNeedleXText = String(x2)
-        }
-        const y2 = quantizeHudNumber(cy - Math.cos(rad) * len, 10)
-        if (y2 !== this.speedNeedleYValue) {
-          this.speedNeedleYValue = y2
-          this.speedNeedleYText = String(y2)
-        }
-        this.setAttribute(this.spdNeedle, 'x2', this.speedNeedleXText)
-        this.setAttribute(this.spdNeedle, 'y2', this.speedNeedleYText)
-      }
-    }
+  /** Linear rails share the readout envelope; cached writes replace dial trigonometry. */
+  private updateSpeedRail(kts: number, targetKts: number): void {
+    const level = Math.max(0, Math.min(1, safeHudValue(kts) / this.maxKts))
+    if (this.spdFill) this.setStyle(this.spdFill, 'width', `${quantizeHudNumber(level * 100, 10)}%`)
     if (this.spdTarget) {
-      const markerKts = speedTargetNeedleKts(targetKts, this.maxKts)
-      if (markerKts !== this.speedTargetValue) {
-        this.speedTargetValue = markerKts
-        const angleDeg = -120 + (markerKts / this.maxKts) * 240
-        const rad = (angleDeg * Math.PI) / 180
-        const markerRadius = 50
-        const x = quantizeHudNumber(cx + Math.sin(rad) * markerRadius, 10)
-        const y = quantizeHudNumber(cy - Math.cos(rad) * markerRadius, 10)
-        if (x !== this.speedTargetXValue) {
-          this.speedTargetXValue = x
-          this.speedTargetXText = String(x)
-        }
-        if (y !== this.speedTargetYValue) {
-          this.speedTargetYValue = y
-          this.speedTargetYText = String(y)
-        }
-        this.setAttribute(this.spdTarget, 'cx', this.speedTargetXText)
-        this.setAttribute(this.spdTarget, 'cy', this.speedTargetYText)
-      }
+      const target = speedRailTargetKnots(targetKts, this.maxKts) / this.maxKts
+      this.setStyle(this.spdTarget, 'left', `${quantizeHudNumber(target * 100, 10)}%`)
     }
-    if (this.spdArc) {
-      const shown = Math.max(0.5, quantizeHudNumber(t * 100, 10))
-      if (shown !== this.speedArcValue) {
-        this.speedArcValue = shown
-        this.speedArcText = `${shown} 100`
-      }
-      this.setStyle(this.spdArc, 'stroke-dasharray', this.speedArcText)
-      this.setStyle(this.spdArc, 'stroke-dashoffset', '0')
+    if (this.speedStateEl) {
+      const warning = speedWarningLevel(kts, this.maxKts)
+      this.setText(this.speedStateEl, warning === 'overspeed' ? 'OVERSPEED' : warning === 'redline' ? 'LIMIT' : 'IAS')
     }
   }
 
@@ -2876,19 +2817,14 @@ export class HUD {
       this.setText(this.thrEl, this.throttleText)
     }
     if (this.engFill) {
-      // Height % (not scaleY) so the bar fills cleanly from MIN→MAX
+      // The horizontal rail uses the same bounded lever value as ENG%.
       const shownLevel = quantizeHudNumber(level, 1000)
-      this.setStyle(this.engFill, 'height', `${shownLevel * 100}%`)
+      this.setStyle(this.engFill, 'width', `${shownLevel * 100}%`)
       this.setClass(this.engFill, 'boost', boost)
       this.setAttribute(this.engFill, 'aria-valuenow', String(pct))
     }
-    if (this.engMarker) {
-      this.setStyle(this.engMarker, 'bottom', `${quantizeHudNumber(level, 1000) * 100}%`)
-    }
     if (this.engPanel) {
       this.setClass(this.engPanel, 'boost', boost)
-      this.setClass(this.engPanel, 'spooled', level >= 0.95)
-      this.setStyle(this.engPanel, '--eng-level', formatHudNumber(level, 1000))
     }
   }
 
@@ -2998,37 +2934,6 @@ export class HUD {
       tick.className = 'tick' + (Math.abs(deg) % 30 === 0 ? ' major' : '')
       tick.style.transform = `rotate(${deg}deg)`
       marks.appendChild(tick)
-    }
-  }
-
-  private buildSpeedTicks(root: Document): void {
-    const g = root.getElementById('spd-ticks')
-    if (!g) return
-    const cx = 70
-    const cy = 70
-    const rOuter = 52
-    const rInnerMajor = 44
-    const rInnerMinor = 47
-    const tickKts = 50
-    const steps = this.maxKts / tickKts
-    for (let i = 0; i <= steps; i++) {
-      const kts = i * tickKts
-      const t = kts / this.maxKts
-      const angleDeg = -120 + t * 240
-      const rad = (angleDeg * Math.PI) / 180
-      const major = i % 2 === 0
-      const rIn = major ? rInnerMajor : rInnerMinor
-      const x1 = cx + Math.sin(rad) * rIn
-      const y1 = cy - Math.cos(rad) * rIn
-      const x2 = cx + Math.sin(rad) * rOuter
-      const y2 = cy - Math.cos(rad) * rOuter
-      const line = root.createElementNS('http://www.w3.org/2000/svg', 'line')
-      line.setAttribute('x1', String(x1))
-      line.setAttribute('y1', String(y1))
-      line.setAttribute('x2', String(x2))
-      line.setAttribute('y2', String(y2))
-      line.setAttribute('class', major ? 'tick major' : 'tick minor')
-      g.appendChild(line)
     }
   }
 
@@ -3322,13 +3227,13 @@ export function speedWarningLevel(knots: number, maxKts = 900): SpeedWarningLeve
   return 'normal'
 }
 
-/** Whole-knot input shared by the speed readout and needle geometry. */
-export function speedNeedleKts(knots: number): number {
+/** Whole-knot readout stays honest even above the displayed rail envelope. */
+export function speedReadoutKnots(knots: number): number {
   return Math.round(Number.isFinite(knots) ? Math.max(0, knots) : 0)
 }
 
-/** Clamp the commanded target to the visible IAS dial envelope. */
-export function speedTargetNeedleKts(knots: number, maxKts = 900): number {
+/** Clamp the commanded target to the visible IAS rail envelope. */
+export function speedRailTargetKnots(knots: number, maxKts = 900): number {
   const safeMax = Number.isFinite(maxKts) ? Math.max(1, maxKts) : 900
   const safeKnots = Number.isFinite(knots) ? Math.max(0, knots) : 0
   return Math.min(safeMax, Math.round(safeKnots))
