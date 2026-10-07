@@ -224,7 +224,6 @@ export function createF35Model(): Group {
 
   buildNozzle(root, metal, black)
   buildGear(root, metal, rubber, skin)
-  root.add(buildVaporTrails())
   root.add(buildAfterburner())
   const beacon = new Mesh(
     new SphereGeometry(.07, 8, 6),
@@ -259,20 +258,6 @@ export function createF35Model(): Group {
     nav.position.set(x, .035, -1.83)
     root.add(nav)
   }
-  const landingLight = new Mesh(
-    new SphereGeometry(.09, 8, 6),
-    new MeshBasicMaterial({
-      name: 'landingLightMaterial',
-      color: 0xfff2cf,
-      transparent: true,
-      opacity: .95,
-      depthWrite: false,
-      toneMapped: false,
-    }),
-  )
-  landingLight.name = 'landingLightNose'
-  landingLight.position.set(0, -.76, 3.58)
-  root.add(landingLight)
   root.traverse((obj) => {
     if (obj instanceof Mesh) {
       obj.castShadow = !(obj.material instanceof MeshBasicMaterial)
@@ -296,7 +281,6 @@ function markPresentationNodes(root: Group): void {
     'tailLeft',
     'tailRight',
     'afterburner',
-    'vaporTrails',
   ]
   for (const name of dynamicRoots) {
     root.getObjectByName(name)?.traverse((object) => {
@@ -317,33 +301,6 @@ function freezeStaticMatrices(root: Group): void {
     object.updateMatrix()
     object.matrixAutoUpdate = false
   })
-}
-
-/** Two shared-material wingtip vapor ribbons for fast, hard-bank turns. */
-function buildVaporTrails(): Group {
-  const group = new Group()
-  group.name = 'vaporTrails'
-  const material = new MeshBasicMaterial({
-    name: 'vaporTrail',
-    color: 0xb8d8e6,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    blending: AdditiveBlending,
-    toneMapped: false,
-  })
-  for (const side of [-1, 1] as const) {
-    const trail = new Mesh(
-      new CylinderGeometry(.14, .018, 5.2, 8, 1, true),
-      material,
-    )
-    trail.name = side < 0 ? 'vaporTrailLeft' : 'vaporTrailRight'
-    trail.rotation.x = Math.PI / 2
-    trail.position.set(side * 4.78, .06, -4.68)
-    trail.visible = false
-    group.add(trail)
-  }
-  return group
 }
 
 function buildNozzle(root: Group, metal: Material, black: Material): void {

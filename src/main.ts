@@ -109,10 +109,7 @@ import {
 import { CollisionSystem, contactFailureLabel } from './systems/Collision'
 import { CrashFx } from './systems/CrashFx'
 import { LandingFx } from './systems/LandingFx'
-import { SonicBoomFx } from './systems/SonicBoomFx'
 import { WaterWakeFx } from './systems/WaterWakeFx'
-import { SpeedStreakFx } from './systems/SpeedStreakFx'
-import { MachConeFx } from './systems/MachConeFx'
 import { GroundWakeFx } from './systems/GroundWakeFx'
 import { thermalLiftIntensity } from './systems/ThermalLift'
 import { stormBuffetDrive, stormBuffetGearScale } from './systems/StormBuffet'
@@ -909,27 +906,18 @@ export async function boot(): Promise<void> {
   )
   const crashFx = new CrashFx(world.scene)
   const landingFx = new LandingFx(world.scene)
-  const sonicBoomFx = new SonicBoomFx(world.scene)
   const waterWakeFx = new WaterWakeFx(world.scene)
-  const speedStreakFx = new SpeedStreakFx(world.scene)
-  const machConeFx = new MachConeFx(world.scene)
   const groundWakeFx = new GroundWakeFx(world.scene)
   applyEffectsQuality = (quality): void => {
     crashFx.setRenderQuality(quality)
     landingFx.setRenderQuality(quality)
-    sonicBoomFx.setRenderQuality(quality)
     waterWakeFx.setRenderQuality(quality)
-    speedStreakFx.setRenderQuality(quality)
-    machConeFx.setRenderQuality(quality)
     groundWakeFx.setRenderQuality(quality)
   }
   applyEffectsMotion = (reduced): void => {
     crashFx.setReducedMotion(reduced)
     landingFx.setReducedMotion(reduced)
-    sonicBoomFx.setReducedMotion(reduced)
     waterWakeFx.setReducedMotion(reduced)
-    speedStreakFx.setReducedMotion(reduced)
-    machConeFx.setReducedMotion(reduced)
     groundWakeFx.setReducedMotion(reduced)
   }
   applyEffectsQuality(renderQuality)
@@ -1269,10 +1257,7 @@ export async function boot(): Promise<void> {
     world.dispose()
     crashFx.dispose()
     landingFx.dispose()
-    sonicBoomFx.dispose()
     waterWakeFx.dispose()
-    speedStreakFx.dispose()
-    machConeFx.dispose()
     groundWakeFx.dispose()
     debug?.dispose()
     aircraft.dispose()
@@ -1545,10 +1530,7 @@ export async function boot(): Promise<void> {
     cameras.setMode(cameras.mode, aircraft)
     crashFx.reset()
     landingFx.reset()
-    sonicBoomFx.reset()
     waterWakeFx.reset()
-    speedStreakFx.reset()
-    machConeFx.reset()
     groundWakeFx.reset()
     stunts.reset()
     combo.reset()
@@ -2068,7 +2050,6 @@ export async function boot(): Promise<void> {
         aircraft.step(dt, nowMs)
         if (supersonic.update(aircraft.speed) === 'boom') {
           audio.playCue('sonic-boom')
-          sonicBoomFx.trigger(aircraft.position, aircraft.orientation)
           if (!banner || bannerUntil <= nowMs) showBanner('MACH 1 / SONIC BOOM', 1500, 'success')
         }
         const comboExpired = combo.update(dt)
@@ -2423,7 +2404,6 @@ export async function boot(): Promise<void> {
     aircraft.setNightReadability(world.atmosphere.daylight, weatherContrast)
     crashFx.update(simLive ? visualDt : 0)
     landingFx.update(simLive ? visualDt : 0)
-    sonicBoomFx.update(simLive ? visualDt : 0)
     waterWakeFx.update(
       simLive ? visualDt : 0,
       aircraft.position,
@@ -2431,21 +2411,6 @@ export async function boot(): Promise<void> {
       terrainClearanceM,
       overWater,
       aircraft.onGround,
-    )
-    speedStreakFx.update(
-      aircraft.displayPosition,
-      aircraft.displayOrientation,
-      aircraft.speed,
-      aircraft.engineState.afterburnerActive,
-      aircraft.onGround,
-      playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
-    )
-    machConeFx.update(
-      aircraft.displayPosition,
-      aircraft.displayOrientation,
-      aircraft.speed,
-      aircraft.onGround,
-      playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
     )
     const wakeWeather = world.atmosphere.weatherSnapshot
     waterWakeFx.setWeather(wakeWeather.rain, wakeWeather.snow)

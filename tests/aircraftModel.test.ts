@@ -7,7 +7,6 @@ import {
   canopyGlassEmissiveIntensity,
   disposeAircraftObject,
   EXTERNAL_AIRCRAFT_MODEL_CONTRACT,
-  landingLightOpacity,
   normalizeExternalAircraftModel,
   navigationLightOpacity,
   nightAirframeEmissiveIntensity,
@@ -15,7 +14,6 @@ import {
   stormAirframeFillIntensity,
   controlSurfaceTargets,
   controlSurfaceTargetsInto,
-  wingtipVaporIntensity,
 } from '../src/aircraft/Aircraft'
 import {
   contactSweepBroadphaseTravel,
@@ -118,7 +116,6 @@ describe('rebuilt aircraft', () => {
     expect(model.getObjectByName('flaperonLeft')!.matrixAutoUpdate).toBe(true)
     expect(model.getObjectByName('afterburner')!.matrixAutoUpdate).toBe(true)
     expect(model.getObjectByName('nozzlePetal0')!.matrixAutoUpdate).toBe(true)
-    expect(model.getObjectByName('vaporTrailLeft')!.matrixAutoUpdate).toBe(true)
   })
 
   it('keeps the core exhaust cue while trimming secondary effects on Low', () => {
@@ -418,15 +415,11 @@ describe('rebuilt aircraft', () => {
     expect(navigationLightOpacity(1000, 1)).toBeGreaterThan(.3)
   })
 
-  it('links the nose landing lamp to gear extension without a dynamic light', () => {
+  it('omits the floating nose lamp while retaining landing gear', () => {
     const model = createF35Model()
-    const lamp = model.getObjectByName('landingLightNose') as Mesh
-    expect(lamp).toBeTruthy()
-    expect((lamp.material as MeshBasicMaterial).toneMapped).toBe(false)
-    expect(landingLightOpacity(0)).toBe(0)
-    expect(landingLightOpacity(.5)).toBe(0)
-    expect(landingLightOpacity(1)).toBeCloseTo(.95)
-    expect(landingLightOpacity(Number.NaN)).toBe(0)
+    expect(model.getObjectByName('landingLightNose')).toBeUndefined()
+    expect(model.getObjectByName('landingGear')).toBeTruthy()
+    disposeAircraftObject(model)
   })
 
   it('keeps the airframe readable at night without a daylight glow', () => {
@@ -472,15 +465,6 @@ describe('rebuilt aircraft', () => {
     expect(resolveLoadFactor(new Vector3(Number.NaN, 0, 0), new Vector3(0, 1, 0))).toBeCloseTo(1)
   })
 
-  it('keeps wingtip vapor quiet in straight mil cruise and readable in a hard turn', () => {
-    expect(wingtipVaporIntensity(0, 1)).toBe(0)
-    expect(wingtipVaporIntensity(520, 1)).toBe(0)
-    expect(wingtipVaporIntensity(780, 1)).toBe(0)
-    expect(wingtipVaporIntensity(520, 3.2)).toBeCloseTo(0.22)
-    expect(wingtipVaporIntensity(1600, 5)).toBeCloseTo(0.22)
-    expect(wingtipVaporIntensity(Number.NaN, Number.NaN)).toBe(0)
-  })
-
   it('opens the stick throws and dumps the boards when the brake is held', () => {
     const neutral = controlSurfaceTargets(0, 0, 0, false)
     const boards = controlSurfaceTargets(0, 0, 0, true)
@@ -506,15 +490,27 @@ describe('rebuilt aircraft', () => {
     expect(result.rudderY).toBeCloseTo(0.055)
   })
 
-  it('builds hidden shared-material wingtip vapor nodes', () => {
-    const model = createF35Model()
-    const left = model.getObjectByName('vaporTrailLeft') as Mesh
-    const right = model.getObjectByName('vaporTrailRight') as Mesh
-    expect(left).toBeTruthy()
-    expect(right).toBeTruthy()
-    expect(left.visible).toBe(false)
-    expect(right.visible).toBe(false)
-    expect(left.material).toBe(right.material)
+  it('has no vapor trails at any quality, speed, or gear state but retains exhaust', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1500, 0)
+    aircraft.controls.throttle = 1
+    aircraft.controls.boost = true
+    for (const quality of ['low', 'balanced', 'high'] as const) {
+      aircraft.setRenderQuality(quality)
+      for (const gearDown of [false, true]) {
+        aircraft.controls.gearDown = gearDown
+        aircraft.velocity.set(0, 0, 520)
+        aircraft.step(1 / 60)
+        for (const name of ['landingLightNose', 'vaporTrails', 'vaporTrailLeft', 'vaporTrailRight']) {
+          expect(aircraft.mesh.getObjectByName(name), name).toBeUndefined()
+        }
+        expect(aircraft.mesh.getObjectByName('afterburner')!.visible).toBe(true)
+      }
+    }
+    aircraft.reset()
+    expect(aircraft.mesh.getObjectByName('landingLightNose')).toBeUndefined()
+    expect(aircraft.mesh.getObjectByName('vaporTrails')).toBeUndefined()
+    aircraft.dispose()
   })
 
   it('turns off both the plume and nozzle glow when power is cut', () => {

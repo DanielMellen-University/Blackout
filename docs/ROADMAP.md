@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.848** is current. Previous ship: **10.847**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.849** is current. Previous ship: **10.848**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -27,6 +27,8 @@ Chunk 10.843 extends the existing cooperative iterator into cold catchment sampl
 Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle thresholds with HUD glide advice. Two white/two red and `GS OK` now use the same 2.5–3° window, measured above the resident runway surface rather than the elevated, offset spawn pose. The HUD only shows glide advice inside the near-threshold corridor while airborne with both nose and ground track inbound; distant fly-bys, crossings, opposite-end approaches, departures, and rollout suppress it. PAPI remains neutral outside its corridor, writes materials only on pattern/daylight changes, and skips distance roots outside that corridor. Caller-owned scratch avoids new per-frame allocations. Cached poses invalidate on runway translations and sub-metre threshold crossings. Pure geometry, actual Three.js lens colors, HUD adapters, and the World boundary have regression coverage; browser approach/playability inspection remains outstanding under the existing access limitation. Flight physics, scoring, speed guidance, warning priority, and audio cadence are unchanged.
 
 ## Current priorities
+
+Chunk 10.849 removes the nose landing-light dot and the aircraft's vapor/cone/streak/shockwave overlays at the source, rather than hiding them only on one quality preset. Their geometry, materials, and runtime hooks are removed. Afterburner, animated gear, aircraft navigation/beacon lights, Mach-crossing sound/HUD, weather, and ground/water wakes remain. Model-state and runtime-source regression checks supplement production compilation; browser pixel inspection remains unverified. Fewer effects are submitted, but no measured FPS improvement is claimed.
 
 Chunk 10.848 uses mission consistently for a flight attempt in UI, accessible descriptions, copied reports, and current documentation. Internal APIs, save fields, and the existing first-mission achievement ID stay unchanged for compatibility. Historical changelog entries retain their original terminology. This is a copy-only change with no flight, layout, or runtime-budget changes.
 

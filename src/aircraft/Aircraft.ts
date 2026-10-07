@@ -197,9 +197,6 @@ export class Aircraft {
   private groundNormalCacheRevision = 0
   private antiCollisionBeacon: Object3D | null = null
   private antiCollisionBeaconMaterial: MeshBasicMaterial | null = null
-  private landingLightNose: Object3D | null = null
-  private landingLightMaterial: MeshBasicMaterial | null = null
-  private landingLightOpacityValue = Number.NaN
   private readonly plumeMaterials: Array<{ name: string; material: MeshBasicMaterial }> = []
   private readonly lowQualityPlumeNodes: Object3D[] = []
   private readonly plumeDiamonds: Array<{
@@ -208,9 +205,6 @@ export class Aircraft {
     y: number
     z: number
   }> = []
-  private readonly vaporNodes: Object3D[] = []
-  private vaporMaterial: MeshBasicMaterial | null = null
-  private vaporOpacity = Number.NaN
   private readonly nozzlePetals: Array<{ node: Object3D; angle: number }> = []
   private readonly nozzleGlows: MeshStandardMaterial[] = []
   private plumeResponseValue = Number.NaN
@@ -334,12 +328,10 @@ export class Aircraft {
     this.wheelSpin = 0
     this.visualTimeMs = 0
     this.navLightOpacity = Number.NaN
-    this.landingLightOpacityValue = Number.NaN
     this.nightReadabilityValue = Number.NaN
     this.canopyGlassIntensityValue = Number.NaN
     this.nozzleFlareValue = Number.NaN
     this.resetPlumeCache()
-    this.vaporOpacity = Number.NaN
     for (const wheel of this.wheels) wheel.rotation.x = 0
     if (this.gearNose) this.gearNose.rotation.y = 0
     resolveEngineState(this.controls, this.engineState, this.fuel.fraction, this.engineHeat.afterburnerLocked)
@@ -658,21 +650,11 @@ export class Aircraft {
     this.updateControlSurfaces(dt)
     this.updateWheelSpin(dt)
     this.updateNoseGearSteering(dt)
-    this.updateVaporTrails()
 
     if (this.antiCollisionBeacon && this.antiCollisionBeaconMaterial) {
       const opacity = antiCollisionBeaconOpacity(now, this.reducedMotion)
       this.antiCollisionBeacon.visible = opacity > 0.01
       this.antiCollisionBeaconMaterial.opacity = opacity
-    }
-
-    if (this.landingLightNose && this.landingLightMaterial) {
-      const opacity = landingLightOpacity(this.gearExtension)
-      if (Math.abs(opacity - this.landingLightOpacityValue) > .01) {
-        this.landingLightOpacityValue = opacity
-        this.landingLightNose.visible = opacity > .01
-        this.landingLightMaterial.opacity = opacity
-      }
     }
 
     const navOpacity = navigationLightOpacity(
@@ -787,23 +769,6 @@ export class Aircraft {
     }
   }
 
-  /** Reveal the pooled wingtip vapor only when speed or load makes it readable. */
-  private updateVaporTrails(): void {
-    if (this.vaporNodes.length === 0) return
-    const intensity = this.status === 'crashed'
-      ? 0
-      : wingtipVaporIntensity(this.speed, this.loadFactor)
-    if (Number.isFinite(this.vaporOpacity) && Math.abs(intensity - this.vaporOpacity) < 0.006) return
-    this.vaporOpacity = intensity
-    const amount = intensity / 0.22
-    const visible = this.visualQuality !== 'low' && intensity > 0.004
-    for (const node of this.vaporNodes) {
-      node.visible = visible
-      node.scale.set(.72 + amount * .42, .62 + amount * .92, .72 + amount * .42)
-    }
-    if (this.vaporMaterial) this.vaporMaterial.opacity = intensity
-  }
-
   /** Animate the procedural F-35's hinged panels from the live stick input. */
   private updateControlSurfaces(dt: number): void {
     const targets = controlSurfaceTargetsInto(
@@ -882,17 +847,9 @@ export class Aircraft {
       this.antiCollisionBeacon.material instanceof MeshBasicMaterial
         ? this.antiCollisionBeacon.material
         : null
-    this.landingLightNose = find('landingLightNose')
-    this.landingLightMaterial =
-      this.landingLightNose instanceof Mesh &&
-      this.landingLightNose.material instanceof MeshBasicMaterial
-        ? this.landingLightNose.material
-        : null
     this.plumeMaterials.length = 0
     this.plumeDiamonds.length = 0
     this.lowQualityPlumeNodes.length = 0
-    this.vaporNodes.length = 0
-    this.vaporMaterial = null
     this.nozzlePetals.length = 0
     this.nozzleGlows.length = 0
     this.resetPlumeCache()
@@ -916,13 +873,6 @@ export class Aircraft {
         if (object.material.name === 'abOuter') this.lowQualityPlumeNodes.push(object)
       }
     })
-    for (const name of ['vaporTrailLeft', 'vaporTrailRight']) {
-      const vapor = find(name)
-      if (vapor) this.vaporNodes.push(vapor)
-      if (vapor instanceof Mesh && vapor.material instanceof MeshBasicMaterial) {
-        this.vaporMaterial = vapor.material
-      }
-    }
     this.mesh.traverse((object) => {
       if (object.name.startsWith('nozzlePetal')) {
         const angle = object.userData.nozzleAngle
@@ -955,9 +905,6 @@ export class Aircraft {
   private applyVisualQuality(): void {
     const low = this.visualQuality === 'low'
     for (const node of this.lowQualityPlumeNodes) node.visible = !low
-    if (low) {
-      for (const node of this.vaporNodes) node.visible = false
-    }
   }
 
   private resetPlumeCache(): void {
@@ -1104,12 +1051,6 @@ export function canopyGlassEmissiveIntensity(daylight: number): number {
   return 0.08 + (1 - safe) * 0.16
 }
 
-/** Gear-linked landing-lamp envelope, kept independent of dynamic lights. */
-export function landingLightOpacity(gearExtension: number): number {
-  const t = Number.isFinite(gearExtension) ? MathUtils.clamp(gearExtension, 0, 1) : 0
-  return MathUtils.smoothstep(t, 0.55, 0.9) * 0.95
-}
-
 /** Small procedural Mach-diamond pulse used by the external exhaust plume. */
 export function afterburnerDiamondPulse(
   index: number,
@@ -1173,18 +1114,6 @@ export function controlSurfaceTargets(
     yaw,
     airbrake,
   )
-}
-
-/**
- * Wingtip vapor for mil-cruise turns: quiet in straight flight, readable when
- * the jet is pulling, without permanent trails at the raised cruise.
- */
-export function wingtipVaporIntensity(speed: number, loadFactor: number): number {
-  const safeSpeed = Number.isFinite(speed) ? Math.max(0, speed) : 0
-  const safeLoad = Number.isFinite(loadFactor) ? Math.abs(loadFactor) : 1
-  const speedT = MathUtils.smoothstep(safeSpeed, 220, 520)
-  const loadT = MathUtils.smoothstep(safeLoad, 1.2, 3.2)
-  return MathUtils.clamp(speedT * loadT * 0.22, 0, 0.22)
 }
 
 function enableShadows(obj: Object3D): void {
