@@ -182,6 +182,9 @@ export class CameraSystem {
   private readonly stormOffset: StormBuffetOffset = { x: 0, y: 0, z: 0 }
   private reducedMotion = false
   private disposed = false
+  private crashShot = false
+  private crashProgress = 0
+  private crashYaw = 0
   private renderQuality: RenderQuality = 'balanced'
   private obstacleSampler: CameraObstacleSampler | null = null
   /** Reused ground probes for the external rig's per-frame occlusion solve. */
@@ -293,6 +296,7 @@ export class CameraSystem {
 
   setMode(mode: CameraMode, aircraft?: Aircraft): void {
     if (this.disposed) return
+    this.crashShot = false
     const leavingCockpit = this.mode === 'cockpit' && mode !== 'cockpit'
     const externalYaw = this.yaw
     const externalPitch = this.pitch
@@ -348,6 +352,33 @@ export class CameraSystem {
     if (amount > 0) this.shakePhase = (this.shakePhase + amount * 1.7) % (Math.PI * 2)
   }
 
+  /** Hold the impact in frame, then gently rise and pull away from the burst. */
+  beginCrashShot(aircraft: Aircraft): void {
+    if (this.disposed) return
+    if (this.mode === 'cockpit') this.setMode('chase', aircraft)
+    this.initialized = true
+    this.crashShot = true
+    this.crashProgress = 0
+    this.panDown = false
+    this.canvas.style.cursor = 'crosshair'
+    this.crashYaw = Math.atan2(
+      this.camera.position.x - aircraft.position.x,
+      -(this.camera.position.z - aircraft.position.z),
+    )
+    this.boostSway = this.stormSway = this.stormTarget = 0
+    if (this.reducedMotion || !this.cameraEffectsEnabled) {
+      _pivot.copy(aircraft.displayPosition)
+      _pivot.y += 2
+      this.camera.up.copy(_Y_UP)
+      this.camera.lookAt(_pivot)
+    }
+    this.impulse(0.55)
+  }
+
+  setCrashProgress(progress: number): void {
+    this.crashProgress = Number.isFinite(progress) ? MathUtils.clamp(progress, 0, 1) : 0
+  }
+
   /**
    * Feed the active weather drive for continuous storm buffet.
    * Callers pass the already-gated 0..1 intensity (or 0 on pause / title).
@@ -380,6 +411,30 @@ export class CameraSystem {
     // Paused, title, and results frames keep rendering the last camera pose.
     // Avoid re-running ground occlusion probes when no visual time elapsed.
     if (!Number.isFinite(dt) || dt <= 0) return
+
+    if (this.crashShot) {
+      // Comfort settings retain a stationary external impact shot.
+      if (this.reducedMotion || !this.cameraEffectsEnabled) return
+      clearGroundHeightCache(this.groundHeightCache)
+      _pivot.copy(aircraft.displayPosition)
+      _pivot.y += 2
+      const p = this.crashProgress * this.crashProgress * (3 - 2 * this.crashProgress)
+      this.sphericalOffset(_offsetWorld, this.crashYaw + p * 0.22, 0.34 + p * 0.12, 28 + p * 18)
+      _desired.copy(_pivot).add(_offsetWorld)
+      this.resolveGroundOcclusion(_pivot, _desired, _desired, dt, false)
+      this.camera.position.lerp(_desired, 1 - Math.exp(-2.5 * dt))
+      this.applyShake(dt)
+      this.clampAboveGround(this.camera.position)
+      this.camera.up.copy(_Y_UP)
+      this.camera.lookAt(_pivot)
+      const fov = MathUtils.damp(this.camera.fov, 58, 3, dt)
+      if (Math.abs(fov - this.camera.fov) > 0.01) {
+        this.camera.fov = fov
+        this.camera.updateProjectionMatrix()
+      }
+      this.applyAircraftVisibility(aircraft)
+      return
+    }
 
     if (this.mode === 'cockpit') {
       this.cockpit.update(this.camera, aircraft)
@@ -773,6 +828,7 @@ export class CameraSystem {
   }
 
   private onPointerDown = (e: PointerEvent): void => {
+    if (this.crashShot) return
     if (e.button !== 1) return // middle mouse only
     e.preventDefault()
     e.stopPropagation()
@@ -805,6 +861,7 @@ export class CameraSystem {
   }
 
   private onPointerMove = (e: PointerEvent): void => {
+    if (this.crashShot) return
     if (!this.panDown) return
     if ((e.buttons & 4) === 0) {
       this.panDown = false
@@ -828,6 +885,7 @@ export class CameraSystem {
 
   private onWheel = (e: WheelEvent): void => {
     e.preventDefault()
+    if (this.crashShot) return
     if (this.mode === 'cockpit') return
 
     const cfg = MODE_CONFIG[this.mode]

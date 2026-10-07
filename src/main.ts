@@ -166,7 +166,9 @@ import {
   radarTargetArrivalRadius,
   RadarSystem,
 } from './systems/RadarSystem'
-import { type GroundSurfaceSample } from './world/ground'
+import { sampleGroundSurfaceInto, type GroundSurfaceSample } from './world/ground'
+import { CrashCinematic } from './systems/CrashCinematic'
+import { WaterImpactFx } from './systems/WaterImpactFx'
 import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
 import { fuelEnduranceSeconds, refuelFuel, withinAirfieldRefuelRadius } from './aircraft/FuelSystem'
@@ -900,17 +902,21 @@ export async function boot(): Promise<void> {
     world.hitObstacleSegment(jet.previousPosition, jet.position),
   )
   const crashFx = new CrashFx(world.scene)
+  const waterImpactFx = new WaterImpactFx(world.scene)
+  const crashSurface: GroundSurfaceSample = { height: 0, kind: 'land' }
   const landingFx = new LandingFx(world.scene)
   const waterWakeFx = new WaterWakeFx(world.scene)
   const groundWakeFx = new GroundWakeFx(world.scene)
   applyEffectsQuality = (quality): void => {
     crashFx.setRenderQuality(quality)
+    waterImpactFx.setRenderQuality(quality)
     landingFx.setRenderQuality(quality)
     waterWakeFx.setRenderQuality(quality)
     groundWakeFx.setRenderQuality(quality)
   }
   applyEffectsMotion = (reduced): void => {
     crashFx.setReducedMotion(reduced)
+    waterImpactFx.setReducedMotion(reduced)
     landingFx.setReducedMotion(reduced)
     waterWakeFx.setReducedMotion(reduced)
     groundWakeFx.setReducedMotion(reduced)
@@ -1145,6 +1151,7 @@ export async function boot(): Promise<void> {
   uiListeners.add(environmentVolumeRange, 'input', onEnvironmentVolumeInput)
   uiListeners.add(effectsVolumeRange, 'input', onEffectsVolumeInput)
   const results = new RunResults()
+  const crashCinematic = new CrashCinematic<Parameters<typeof results.show>>()
   const challenge = new ChallengeRun()
   const ghost = new GhostReplay(world.scene, qualityStorage)
   const stunts = new StuntTracker()
@@ -1251,6 +1258,8 @@ export async function boot(): Promise<void> {
     ghost.dispose()
     world.dispose()
     crashFx.dispose()
+    waterImpactFx.dispose()
+    crashCinematic.reset()
     landingFx.dispose()
     waterWakeFx.dispose()
     groundWakeFx.dispose()
@@ -1413,9 +1422,9 @@ export async function boot(): Promise<void> {
 
   let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {
-    const live = playing && !menu.paused && !results.open
+    const live = playing && !menu.paused && !results.open && !crashCinematic.active
     hud.setPaused(menu.paused)
-    hud.setBackgroundHidden(hudBackgroundHidden(menu.open, results.open))
+    hud.setBackgroundHidden(crashCinematic.active || hudBackgroundHidden(menu.open, results.open))
     const contextNow = performance.now()
     if (lastInputContextLive === true && !live && banner) {
       bannerPausedRemainingMs = bannerRemainingMs(contextNow, bannerUntil)
@@ -1518,8 +1527,10 @@ export async function boot(): Promise<void> {
     aircraft.reset(world.spawn)
     _stableHeading = world.spawn.yaw
     supersonic.reset(aircraft.speed)
-    cameras.setMode(cameras.mode, aircraft)
+    cameras.setMode(cameraPreference, aircraft)
     crashFx.reset()
+    waterImpactFx.reset()
+    crashCinematic.reset()
     landingFx.reset()
     waterWakeFx.reset()
     groundWakeFx.reset()
@@ -1805,13 +1816,15 @@ export async function boot(): Promise<void> {
       return
     }
     if (menu.open) return
-    if (results.open && playing) {
+    if ((results.open || crashCinematic.active) && playing) {
       if (e.code === 'KeyR') {
         e.preventDefault()
+        e.stopPropagation()
         resetFlight(true, true)
         syncInputContext()
       } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
         e.preventDefault()
+        e.stopPropagation()
         resetFlight(false, true)
         syncInputContext()
       }
@@ -1921,6 +1934,10 @@ export async function boot(): Promise<void> {
       if (!playing) input.resetFlightControls(0)
       aircraft.setStormBuffet(0)
       cameras.setStormBuffet(0)
+      aircraft.snapDisplay(nowMs)
+    } else if (crashCinematic.active) {
+      // Advance presentation only: no flight input, physics, score, or ghost recording.
+      visualDt = time.beginFrame(nowMs).frameDt
       aircraft.snapDisplay(nowMs)
     } else {
       const { frameDt, steps, stepDt, alpha } = time.beginFrame(nowMs)
@@ -2083,19 +2100,28 @@ export async function boot(): Promise<void> {
               : `CRASH / ${contactFailureLabel(collision.failureReason)} - press R`
             _crashPoint.copy(aircraft.position)
             _crashVelocity.copy(aircraft.velocity)
-            if (ditching) waterWakeFx.triggerDitch(_crashPoint, _crashVelocity)
-            if (cameras.mode === 'cockpit') cameras.setMode('chase', aircraft)
+            // Preserve the real impact, not the resolver's clamped rollout velocity.
+            if (aircraft.impact) {
+              _crashPoint.copy(aircraft.impact.point)
+              _crashVelocity.copy(aircraft.impact.preImpactVelocity)
+            }
+            if (ditching) {
+              const waterLevel = aircraft.impact?.surfacePoint.y ??
+                sampleGroundSurfaceInto(_crashPoint.x, _crashPoint.z, crashSurface).height
+              waterWakeFx.reset()
+              waterImpactFx.trigger(_crashPoint, _crashVelocity, waterLevel)
+            } else {
+              crashFx.trigger(_crashPoint, _crashVelocity)
+            }
             aircraft.crash()
+            cameras.beginCrashShot(aircraft)
             const crashed = challenge.crashDebrief(
               ditching,
               ditching ? 'WATER CONTACT' : contactFailureLabel(collision.failureReason),
             )
             combo.break()
-            crashFx.trigger(_crashPoint, _crashVelocity)
-            cameras.impulse(1)
             audio.playCue(ditching ? 'ditch' : 'crash')
-            showBanner(crashMessage, 1600, 'danger')
-            results.show(
+            crashCinematic.begin([
               crashed,
               currentPilotRank,
               false,
@@ -2106,7 +2132,7 @@ export async function boot(): Promise<void> {
                 activeSortie.periodLabel,
               ),
               world.worldSeed,
-            )
+            ], reducedMotion)
             syncInputContext()
             break
           }
@@ -2334,7 +2360,7 @@ export async function boot(): Promise<void> {
       if (banner && nowMs > bannerUntil && aircraft.status !== 'crashed') {
         banner = null
       }
-      aircraft.present(alpha)
+      aircraft.present(aircraft.status === 'crashed' ? 1 : alpha)
       ghost.update(
         challenge.elapsedSec,
         playing && !menu.paused && !results.open && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
@@ -2389,7 +2415,18 @@ export async function boot(): Promise<void> {
       weatherForExposure.midClouds * .55,
     )
     aircraft.setNightReadability(world.atmosphere.daylight, weatherContrast)
-    crashFx.update(simLive ? visualDt : 0)
+    const impactDt = simLive ? visualDt * (crashCinematic.active ? crashCinematic.effectTimeScale : 1) : 0
+    crashFx.update(impactDt)
+    waterImpactFx.update(impactDt)
+    if (crashCinematic.active) {
+      const debrief = crashCinematic.update(simLive ? visualDt : 0)
+      cameras.setCrashProgress(crashCinematic.progress)
+      if (debrief) {
+        results.show(...debrief)
+        syncInputContext()
+        simLive = false
+      }
+    }
     landingFx.update(simLive ? visualDt : 0)
     waterWakeFx.update(
       simLive ? visualDt : 0,
@@ -2545,8 +2582,10 @@ export async function boot(): Promise<void> {
     audioFrame.weatherGust = precipitation.gust
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
+    audioFrame.impactOnly = crashCinematic.active
     audioFrame.mute =
-      audioMuted || document.hidden || !playing || menu.paused || results.open || aircraft.status === 'crashed'
+      audioMuted || document.hidden || !playing || menu.paused || results.open ||
+      (aircraft.status === 'crashed' && !crashCinematic.active)
     audioFrame.dt = visualDt || 1 / 60
     audio.update(audioFrame)
 
@@ -2581,7 +2620,7 @@ export async function boot(): Promise<void> {
       lastRenderedSimulationLive = simLive
     }
 
-    if (shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {
+    if (!crashCinematic.active && shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {
       const previousHudUpdateMs = lastHudUpdateMs
       lastHudUpdateMs = nowMs
       const alt = aircraft.onGround ? 0 : aircraft.altitudeAgl

@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.851**. Previous roadmap chunk: **10.850**.
-Recent changes from **10.851**. Remove Pull up and Low alt alerts, tones, terrain-warning probes, and low-clearance altimeter styling. Keep altitude readings, landing guidance, obstacle/stall/gear/fuel/overspeed warnings, collision detection, and flight handling.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.852**. Previous roadmap chunk: **10.851**.
+Recent changes from **10.852**. Crashes play a 3.2-second impact cinematic before results, with slow-motion explosions and a rising camera pullback. Water impacts use spray and foam ripples at the actual water level, not fireballs. Esc pauses the sequence; Enter retries the course, R starts a new world. Reduced motion keeps a shorter, stationary shot. Flight physics and scoring are unchanged.
 
 ## Run
 

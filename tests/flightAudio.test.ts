@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   EVENT_NOISE_BUFFER_SECONDS,
   FLIGHT_AUDIO_LIMITER,
@@ -18,6 +18,33 @@ import {
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('keeps impact audio audible while silencing continuous flight beds', () => {
+    const audio = new FlightAudio()
+    const param = () => ({ setTargetAtTime: vi.fn() })
+    const master = { gain: param() }
+    const beds = Array.from({ length: 4 }, () => ({ gain: param() }))
+    const oscillator = { frequency: param(), stop: vi.fn() }
+    Object.assign(audio, {
+      ctx: { state: 'running', currentTime: 0 }, built: true, muted: false,
+      master, engineGain: beds[0], windGain: beds[1], precipGain: beds[2],
+      engineWhineGain: beds[3], engineWhine: oscillator,
+    })
+    try {
+      const frame = { throttle: 1, boost: true, speed: 250, rain: 1, snow: 1,
+        mute: false, impactOnly: true, dt: 1 / 60 }
+      audio.update(frame)
+      expect(master.gain.setTargetAtTime.mock.calls[0]![0]).toBe(1)
+      for (const bed of beds) expect(bed.gain.setTargetAtTime.mock.calls[0]![0]).toBe(0)
+      audio.update({ ...frame, impactOnly: false })
+      for (const bed of beds) expect(bed.gain.setTargetAtTime.mock.calls.at(-1)![0]).toBeGreaterThan(0)
+      audio.update({ ...frame, mute: true })
+      expect(master.gain.setTargetAtTime.mock.calls.at(-1)![0]).toBe(0)
+    } finally {
+      // No real browser AudioContext was created by this adapter test.
+      Object.assign(audio, { ctx: null })
+      audio.dispose()
+    }
+  })
   it('keeps procedural noise deterministic and unsigned', () => {
     const first = nextProceduralNoiseState(0x12345678)
     expect(first).toBe(nextProceduralNoiseState(0x12345678))

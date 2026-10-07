@@ -136,7 +136,7 @@ export class FlightAudio {
   }
 
   /**
-   * Per-frame levels. Pass mute on title, pause, or crash.
+   * Per-frame levels. Pass mute on title/pause/results, impactOnly during death.
    * speed is m/s (same as Aircraft.speed).
    */
   update(opts: {
@@ -152,6 +152,8 @@ export class FlightAudio {
     /** Smoothed local cloud density, 0 clear to 1 inside a formation. */
     cloudImmersion?: number
     mute: boolean
+    /** Keep the one-shot impact audible without the live engine/weather beds. */
+    impactOnly?: boolean
     dt: number
     /** True when the player is inside the camera-attached cockpit. */
     cockpit?: boolean
@@ -197,11 +199,12 @@ export class FlightAudio {
     const cloudWhine = cloudAudioAttenuation(cloudImmersion, 0.08, 0.9)
 
     this.muted = opts.mute
+    const bedsMuted = opts.mute || opts.impactOnly === true
     const masterTarget = opts.mute ? 0 : this.volume
-    const engTarget = opts.mute ? 0 : eng * 0.42 * view.engine * cloudEngine * this.engineVolume
-    const windTarget = opts.mute ? 0 : wind * 0.28 * view.wind * cloudWind * this.environmentVolume
-    const precipTarget = opts.mute ? 0 : precip * 0.18 * view.precipitation * cloudPrecip * this.environmentVolume
-    const whineTarget = opts.mute ? 0 : whine * 0.065 * view.whine * cloudWhine * this.engineVolume
+    const engTarget = bedsMuted ? 0 : eng * 0.42 * view.engine * cloudEngine * this.engineVolume
+    const windTarget = bedsMuted ? 0 : wind * 0.28 * view.wind * cloudWind * this.environmentVolume
+    const precipTarget = bedsMuted ? 0 : precip * 0.18 * view.precipitation * cloudPrecip * this.environmentVolume
+    const whineTarget = bedsMuted ? 0 : whine * 0.065 * view.whine * cloudWhine * this.engineVolume
 
     const now = ctx.currentTime
     const dt = Number.isFinite(opts.dt) && opts.dt > 0 ? Math.min(opts.dt, 0.25) : 1 / 60

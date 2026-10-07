@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.851** is current. Previous ship: **10.850**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.852** is current. Previous ship: **10.851**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.852 delays crash results for a 3.2-second cinematic, slows the initial impact burst, and gently raises/pulls back the external camera while keeping terrain occlusion checks. Water crashes use a separate, fixed-capacity instanced spray and foam effect anchored to the resolved water surface; Low trims the spray rather than disabling it. Reduced motion uses a shorter stationary shot and static fading spray. Physics, scoring, and ghost recording stop at impact; pause/focus loss freezes the shot, and retry/title/disposal cancel pending results. Impact sounds finish without engine/weather beds. Automated timing, camera, pooling, water-level, audio, and reset checks cover behavior; browser pixel QA remains outstanding under the existing access limitation.
 
 The playable loop includes courses, contracts, landings, Daily/Weekly/Monthly Ops, ghost replay, Training Orbit, and persisted course filters. Procedural terrain, waterways, settlements, and roads stream with bounded queues and instance budgets.
 
