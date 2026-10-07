@@ -18,10 +18,6 @@ import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT, MAX_WATER_BODY_CO
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import { stormBuffetHudActive } from '../systems/StormBuffet'
 import type { WarningCue } from '../systems/FlightWarnings'
-import {
-  blackoutVignetteIntensity,
-  redoutWashIntensity,
-} from '../systems/GLoadFeedback'
 import { formatWorldSeed } from '../core/WorldSeed'
 export { flightBriefingHint } from '../core/FlightBriefing'
 
@@ -1179,7 +1175,6 @@ export class HUD {
   private readonly speedJuiceEl: HTMLElement | null
   private readonly canopyTintEl: HTMLElement | null
   private readonly heatVeilEl: HTMLElement | null
-  private readonly gLoadVeilEl: HTMLElement | null
   private readonly flightPathEl: HTMLElement | null
   private readonly navCueEl: HTMLElement | null
   private readonly navTargetEl: HTMLElement | null
@@ -1475,7 +1470,6 @@ export class HUD {
     this.speedJuiceEl = root.getElementById('speed-juice')
     this.canopyTintEl = root.getElementById('canopy-tint')
     this.heatVeilEl = root.getElementById('heat-veil')
-    this.gLoadVeilEl = root.getElementById('g-load-veil')
     this.flightPathEl = root.getElementById('flight-path-marker')
     this.navCueEl = root.getElementById('nav-cue')
     this.navTargetEl = root.getElementById('nav-target')
@@ -1496,7 +1490,6 @@ export class HUD {
 
   /** Keep the frozen-flight state explicit even while live telemetry is paused. */
   setPaused(paused: boolean): void {
-    if (paused) this.updateGLoadVeil(1)
     if (!this.pausedEl || paused === this.pausedValue) return
     this.pausedValue = paused
     const label = pauseStateLabel(paused)
@@ -1507,7 +1500,6 @@ export class HUD {
 
   /** Keep stale telemetry out of the accessibility tree while a modal is open. */
   setBackgroundHidden(hidden: boolean): void {
-    if (hidden) this.updateGLoadVeil(1)
     if (!this.hudRoot || hidden === this.hudBackgroundHiddenValue) return
     this.hudBackgroundHiddenValue = hidden
     this.setAttribute(this.hudRoot, 'aria-hidden', hidden ? 'true' : 'false')
@@ -1810,7 +1802,6 @@ export class HUD {
       opts.cloudImmersion ?? 0,
     )
     this.updateHeatVeil(kts, !!opts.boost)
-    this.updateGLoadVeil(opts.gForce)
     this.updateFlightPath(
       opts.flightPathVisible === true,
       opts.flightPathX ?? 50,
@@ -2769,21 +2760,6 @@ export class HUD {
     const intensity = afterburnerHeatIntensity(kts, boost, this.maxKts)
     this.setClass(this.heatVeilEl, 'is-active', intensity > 0)
     this.setStyle(this.heatVeilEl, 'opacity', formatHudNumber(intensity, 1000))
-  }
-
-  /** Drive the arcade blackout / redout veil from the existing pilot load scalar. */
-  private updateGLoadVeil(loadFactor: number | undefined): void {
-    if (!this.gLoadVeilEl) return
-    const safe = loadFactor === undefined ? 1 : loadFactor
-    const blackout = blackoutVignetteIntensity(safe)
-    const redout = redoutWashIntensity(safe)
-    const active = blackout > 0.01 || redout > 0.01
-    this.setClass(this.gLoadVeilEl, 'is-active', active)
-    this.setClass(this.gLoadVeilEl, 'is-blackout', blackout >= redout && blackout > 0.01)
-    this.setClass(this.gLoadVeilEl, 'is-redout', redout > blackout && redout > 0.01)
-    this.setStyle(this.gLoadVeilEl, 'opacity', formatHudNumber(Math.max(blackout, redout), 1000))
-    this.setStyle(this.gLoadVeilEl, '--g-load-blackout', formatHudNumber(blackout, 1000))
-    this.setStyle(this.gLoadVeilEl, '--g-load-redout', formatHudNumber(redout, 1000))
   }
 
   private updateFlightPath(visible: boolean, x: number, y: number): void {

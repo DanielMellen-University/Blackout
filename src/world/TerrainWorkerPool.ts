@@ -12,7 +12,6 @@ export interface TerrainBuildRequest {
   cz: number
   size: number
   lod: TerrainLod
-  withProps: boolean
   skirtEdges: readonly [boolean, boolean, boolean, boolean]
 }
 export interface TerrainBuildReply {

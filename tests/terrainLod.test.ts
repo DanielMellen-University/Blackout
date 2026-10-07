@@ -21,8 +21,6 @@ import {
   segsForLod,
   TerrainSystem,
   terrainSnowCoverage,
-  terrainPropFadeAlpha,
-  vegetationSlopePasses,
   VIEW_RADIUS,
   waterSegsForLod,
 } from '../src/world/TerrainSystem'
@@ -71,19 +69,7 @@ describe('terrain LOD bands', () => {
     expect(segsForLod(2)).toBeLessThan(segsForLod(1))
   })
 
-  it('keeps prop fades smooth nearby and zero once outside their band', () => {
-    expect(terrainPropFadeAlpha(0, 1)).toBe(1)
-    expect(terrainPropFadeAlpha(2.1 ** 2, 1)).toBeGreaterThan(0)
-    expect(terrainPropFadeAlpha(2.7 ** 2, 1)).toBe(0)
-    expect(Number.isNaN(terrainPropFadeAlpha(Number.NaN, 1))).toBe(true)
-  })
 
-  it('keeps vegetation slope acceptance at the exact squared boundary', () => {
-    expect(vegetationSlopePasses(0, 0)).toBe(true)
-    expect(vegetationSlopePasses(1.95, 0)).toBe(true)
-    expect(vegetationSlopePasses(1.96, 0)).toBe(false)
-    expect(vegetationSlopePasses(Number.NaN, 0)).toBe(true)
-  })
 
   it('reduces far fallback geometry without changing near detail', () => {
     const full = generateTerrainGeometry(0, 0, 2)
@@ -542,32 +528,23 @@ describe('visible mesh contact sampling', () => {
     }
   })
 
-  it('streams a bounded near-field vegetation kit', () => {
+  it('streams terrain and water without natural-prop batches, including after reset', () => {
     const terrain = new TerrainSystem(new Scene())
-    pump(terrain, 210, 210, 24)
-    const props = terrain.root.getObjectByName('TerrainProps')
-    expect(props).toBeDefined()
-    const instances: InstancedMesh[] = []
-    props!.traverse(object => { if (object instanceof InstancedMesh) instances.push(object) })
-    expect(instances.length).toBeLessThanOrEqual(20)
-    const scaledInstances: InstancedMesh[] = []
-    terrain.root.traverse(object => { if (object instanceof InstancedMesh) scaledInstances.push(object) })
-    expect(scaledInstances.length).toBeGreaterThan(0)
-    const chunks = (terrain as unknown as {
-      chunks: Map<string, { hasProps: boolean; props: object | null; propMeshes: object[] }>
-    }).chunks
-    const propChunk = [...chunks.values()].find(chunk => chunk.hasProps)
-    expect(propChunk?.props).not.toBeNull()
-    const cachedMeshes = propChunk?.propMeshes.length ?? -1
-    let traversedMeshes = 0
-    ;(propChunk?.props as { traverse?: (visit: (object: object) => void) => void } | null)?.traverse?.(object => {
-      if (object instanceof InstancedMesh) traversedMeshes++
-    })
-    expect(cachedMeshes).toBe(traversedMeshes)
-    terrain.setVegetationScale(0)
-    for (const instance of scaledInstances) expect(instance.visible).toBe(false)
-    terrain.setVegetationScale(1)
-    expect(scaledInstances.some(instance => instance.visible && instance.count > 0)).toBe(true)
-    terrain.clearAll()
+    terrain.setViewRadius(12)
+    try {
+      for (const [x, z] of [[210, 210], [1260, 210]]) {
+        const cx = Math.floor(x! / CHUNK_SIZE), cz = Math.floor(z! / CHUNK_SIZE)
+        for (let i = 0; i < 1000 && !terrain.chunkStats(cx, cz); i++) pump(terrain, x!, z!, 1)
+        expect(terrain.chunkStats(cx, cz)).not.toBeNull()
+        expect(terrain.root.getObjectByName('TerrainChunk')).toBeDefined()
+        expect(terrain.root.getObjectByName('TerrainProps')).toBeUndefined()
+        const instances: InstancedMesh[] = []
+        terrain.root.traverse(object => { if (object instanceof InstancedMesh) instances.push(object) })
+        expect(instances).toHaveLength(0)
+        terrain.clearAll()
+      }
+    } finally {
+      terrain.dispose()
+    }
   })
 })

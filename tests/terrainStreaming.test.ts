@@ -48,7 +48,7 @@ let fixture: TerrainGeometryData
 const key = (cx: number, size = 1): string => tileKey(cx, 0, size)
 function job(cx: number, lod: 0 | 1 | 2 = 1, size = 1): TerrainBuildRequest {
   return { id: cx + 100, generation: 0, seed: 1, pad: null, cx, cz: 0, size, lod,
-    withProps: false, skirtEdges: [false, false, false, false] }
+    skirtEdges: [false, false, false, false] }
 }
 function desire(cx: number, dist: number, size = 1): void {
   internal.desiredTiles.set(key(cx, size), { cx, cz: 0, size, dist })

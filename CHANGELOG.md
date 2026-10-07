@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.850** Remove blackout/redout veils, transition banners, and associated G-load tones while preserving load telemetry, scoring, and flight physics. Delete the entire vegetation/tree/rock prop factory, shader/material pools, placement samples, streaming rebuild/fade bookkeeping, and quality/adaptive controls. Remove obsolete feature claims and development recommendations from documentation, including historical notes; record an explicit user-controlled pause in AGENTS and the roadmap. Add absence, streaming/reset, worker, quality, and HUD/audio regression coverage. Deleted code remains recoverable in Git history; terrain, water, settlements, and weather remain in scope. No measured FPS improvement is claimed.
+
 - **10.849** Remove the floating nose landing-light mesh, wingtip vapor, speed streaks, Mach cone, and visual sonic-boom ring, along with their materials, per-frame updates, and obsolete effect tests. Add model-state and runtime-removal regressions. Retain afterburner and nozzle response, animated gear, navigation/beacon lights, Mach-crossing sound/HUD, weather, ground/water wakes, and flight physics. Deleted effect code remains recoverable in Git history; no measured FPS improvement is claimed.
 
 - **10.848** Rename player-facing flight attempts to missions across launch, Esc settings, course goals, results, copy/share actions, accessible descriptions, landing advice, and the first-mission commendation. Update current documentation and remove stale touch-support claims. Preserve internal identifiers, achievement IDs, serialized records, and replay links so existing progress remains compatible; no gameplay or layout changes.
@@ -36,7 +38,6 @@
 - **10.823** Gate mission beacon opacity with squared distance at the close/far envelope edges, preserving visual falloff while reducing per-tick square roots.
 - **10.822** Fast-path full-strength thermal cores before square roots, preserving lift falloff while reducing centered fixed-step pocket math.
 - **10.821** Rank thermal route pockets with squared separation, preserving nearest-pocket selection while removing fixed-neighborhood square roots.
-- **10.820** Replace vegetation slope square roots with an equivalent squared threshold, preserving prop placement while reducing terrain-generation math.
 - **10.819** Rank radar candidates with squared range and materialize exact distances only for the six retained contacts, preserving HUD ordering while reducing refresh square roots.
 - **10.818** Reject out-of-envelope wake altitudes before horizontal speed square roots, preserving pooled wake behavior while reducing high-altitude effect work.
 - **10.817** Defer grounded-flight speed square roots until the aircraft is actually on the runway, preserving surface authority while reducing airborne physics work.
@@ -85,7 +86,6 @@
 - **10.775** Keep the full deterministic traffic contact pool on radar and contracts while Low quality trims only visual instances, so graphics presets cannot change gameplay fairness.
 - **10.774** Cache settlement stream-cell priority and distance before sorting, preserving landmark-aware ordering while removing repeated anchor resolution and distance work from the comparator.
 - **10.773** Measure mission clearance across the full runway-width route corridor, keeping route briefings and validation honest when terrain rises under a wing.
-- **10.772** Add deterministic broad vegetation clustering so forest and lowland coverage forms readable patches without changing instance budgets or draw counts.
 - **10.771** Replace regional settlement link filtering and sorting with a bounded deterministic best-candidate scan, preserving sparse graph selection while reducing streaming-planner allocations.
 - **10.770** Remove temporary numeric arrays from settlement plan, building, road, and point validation, preserving malformed-worker fail-closed behavior while reducing large-city reply checks.
 - **10.769** Make settlement worker payload validation allocation-free across plans, buildings, roads, and road points while preserving fail-closed malformed-reply handling.
@@ -187,7 +187,7 @@
 - **10.673** Make the existing runway asphalt respond to rain and snow with bounded roughness and tint changes, improving wet and frost approach readability without adding geometry or draw calls.
 - **10.672** Add a bounded cached fill to airfield structure materials so hangars, towers, and apron shells remain readable in cloud and night contrast without adding lights, meshes, or draw calls.
 - **10.671** Seed pooled snow motion and placement from the active world so retries and replay/debug captures keep the same precipitation without adding draw calls or per-frame allocations.
-- **10.670** Keep pooled snow above the aircraft anchor, lower its peak transparent overdraw, soften snow-tinted vegetation, and replace terrain/water fade dithering with smooth blends so runway-level storms and streamed transitions stop veiling the ground with white static.
+- **10.670** Keep pooled snow above the aircraft anchor, lower its peak transparent overdraw, replace terrain/water fade dithering with smooth blends so runway-level storms and streamed transitions stop veiling the ground with white static.
 - **10.669** Add a bounded cloud-driven airframe fill so overcast daylight keeps the stealth silhouette readable without brightening clear daytime scenes or adding lights, meshes, or draw calls.
 - **10.668** Gate distant and Low-quality water roughness sampling behind the shared detail and distance budget, removing invisible normal-texture fetches without changing the water look up close.
 - **10.667** Give river ribbons a bounded local flow signal derived from channel width and grade, so streams, main channels, and steep reaches no longer share one uniform shader response without adding geometry or draw calls.
@@ -386,8 +386,6 @@
 - **10.498** Reuse the fixed-step ground cache for post-step grounded-state checks, removing a duplicate terrain height query and hardening empty-slot sentinels so the world origin can never read as an uninitialized zero.
 - **10.497** Reuse frame-scoped ground probes in the fixed-step flight contact sweep, reducing duplicate terrain height and normal sampling without retaining values across streamed terrain changes.
 - **10.496** Reuse one climate record across each regional settlement-road candidate pass, reducing worker-side planning garbage while preserving deterministic terrain-following road selection.
-- **10.495** Avoid temporary surface records in vegetation water rejection, keeping near-field prop streaming deterministic while trimming another bounded allocation burst per chunk.
-- **10.494** Reuse a caller-owned climate record while building near-field vegetation, removing per-sample climate garbage from streamed LOD promotions without changing deterministic placement or quality budgets.
 - **10.493** Route corridor and summary probes now use the scalar resolved surface sampler, retaining water-level correctness while avoiding climate-object work during launch and retry setup.
 - **10.492** Reuse exact external-camera ground probes within a frame through a bounded caller-owned cache, reducing duplicate terrain work without allowing streamed sampler changes to leak stale heights.
 - **10.491** Validate a bounded wing-width corridor between route gates so generated courses clear terrain across the flight path, not only at the centreline.
@@ -433,8 +431,7 @@
 - **10.451** Clear consumed custom seeds from the launch controls, keeping the visible pending-seed state aligned with the world that the next Play action will actually create.
 - **10.450** Add safe custom-seed launch input, letting pilots revisit exact procedural worlds from the title screen while preserving authored course selection and replay-link behavior.
 - **10.449** Keep graphics preset changes synchronized with the live adaptive detail budget, preventing a temporary full-cost shader burst when switching quality under load.
-- **10.448** Couple adaptive resolution to cloud and precipitation budgets, reducing atmospheric draw and particle pressure alongside terrain, water, and vegetation detail under sustained GPU load.
-- **10.447** Couple adaptive resolution to near-field vegetation instance density, shedding draw pressure under sustained GPU load while restoring authored detail without terrain rebuilds.
+- **10.448** Couple adaptive resolution to cloud and precipitation budgets, reducing atmospheric draw and particle pressure alongside terrain and water detail under sustained GPU load.
 - **10.446** Add an accessible course-catalog filter to the title and pause pickers, keeping the growing route library searchable and the visible card list bounded.
 - **10.445** Couple adaptive pixel resolution to terrain-weather and water shader detail, shedding GPU work under sustained load while preserving geometry, visibility, and flight behavior.
 - Dampen storm buffet while landing gear is down, and cue BUFFET on the live weather HUD when the gated drive is meaningful.
@@ -505,7 +502,6 @@
 - **10.380** Make un-authored sorties choose deterministic route families from the generated airfield biome while preserving explicit curated-course profiles.
 - **10.379** Add a deterministic Badlands Run course with shelf-to-shelf red-rock navigation and a new replayable route profile.
 - **10.378** Stabilize flight-warning transitions with immediate escalation and bounded release hysteresis, and clear the G-load veil whenever pause or results hides live telemetry.
-- **10.377** Enable the existing high-G feedback path with hysteretic blackout/redout bands, smooth bounded veil ramps, and one-shot transition callouts while keeping malformed load values safe.
 - **10.376** Reuse caller-owned climate and pad snapshots for rendered-surface probes and terrain/settlement worker dispatches, reducing streamed-flight garbage without changing contact or generation results.
 - **10.375** Give Low quality a shorter regional-road draw radius, reducing distant connector, bridge, and marking work while preserving settlement silhouettes and destinations.
 - **10.374** Make terrain and settlement streaming reuse the last valid focus when malformed coordinates arrive, preventing `NaN` or infinity from poisoning fade, visibility, and queue math.
@@ -515,9 +511,9 @@
 - **10.370** Prefer the finest overlapping terrain tile during LOD transitions, keeping contact queries on the new surface while old coarse coverage fades out.
 - **10.369** Make rendered/contact sampling span-aware for coarse terrain tiles, so far LOD surfaces resolve the correct cell and height instead of falling back or compressing a multi-cell tile into one cell.
 - **10.368** Give terrain attachment a quality-aware main-thread budget, reducing Low upload bursts while preserving bounded worker streaming and allowing High to catch up faster.
-- **10.367** Route render-quality changes through one world-owned update path, removing duplicate traffic, atmosphere, vegetation, and shader-budget writes during preset switches.
+- **10.367** Route render-quality changes through one world-owned update path, removing duplicate traffic, atmosphere and shader-budget writes during preset switches.
 - **10.366** Align the external camera far plane with the active terrain quality envelope, reducing Low frustum and depth work while preserving the full High-quality horizon.
-- **10.365** Make `World` apply the complete Low/Balanced/High quality envelope during construction as well as live switches, keeping terrain, atmosphere, vegetation, traffic, and shader budgets consistent for direct runtime use.
+- **10.365** Make `World` apply the complete Low/Balanced/High quality envelope during construction as well as live switches, keeping terrain, atmosphere, traffic, and shader budgets consistent for direct runtime use.
 - **10.364** Add quality-aware terrain weather shading so Low skips moving cloud-shadow and wind-exposure detail while preserving biome color, elevation shading, and streamed geometry.
 - **10.363** Add quality-aware water shading so Low reduces high-frequency foam, flow, and ripple work through a shared live uniform while preserving water levels and broad surface color.
 - **10.362** Add the deterministic Archipelago Run course, a foggy island-hop route that expands water-focused replay content without changing bounded terrain or traffic budgets.
@@ -549,7 +545,6 @@
 - Make traffic teardown idempotent and detach its pooled scene root, so world resets and late stream callbacks cannot update or reuse disposed traffic resources.
 - Split the large course/career modules into a cacheable application chunk, reducing the initial entry bundle without changing runtime behavior or adding per-frame work.
 - Keep shared settlement geometry alive during streamed unloads, preventing an anchor beacon or instanced prop family from invalidating landmarks that remain visible after settlement churn.
-- Preserve shared vegetation materials during streamed chunk teardown, preventing one retiring tile from disposing foliage shaders still used by visible neighboring tiles.
 - Reuse shared opaque terrain and water materials after streamed tiles finish fading, rehydrating private fade materials only for transitions and retirement to reduce resident GPU state without changing terrain geometry or stream budgets.
 - Clear keyboard, gamepad, and touch state whenever the runtime leaves live flight, preventing held controls from leaking through pause, results, focus loss, or title transitions into the next sortie.
 - Harden touch flight controls with per-button pointer capture and lost-capture cleanup, keeping multi-touch steering, throttle, and boost responsive without adding render-loop work.
@@ -604,7 +599,7 @@
 - Replace aircraft-locked rain sprites with pooled wind-driven world-space streaks. Fade rain, snow, haze, and overhead cloud cover above their source decks, and darken the distant cloud layer at night.
 
 - Raise military cruise and throttle response, and leave the cockpit as a clear view with no canopy frame or instruments.
-- Remove blackout, redout, engine heat, and the afterburner lock, and stop the center-screen callouts.
+- Remove engine heat, and the afterburner lock, and stop the center-screen callouts.
 - Keep a guaranteed city off the airfield so its footprint does not cover the runway.
 
 ## v0.11.0 - 2026-09-20
@@ -690,7 +685,6 @@
 
 ### Ship
 
-- Add arcade high-G vision feedback from the existing pilot load scalar: a dark tunnel vignette on hard positive G, a restrained red wash on strong negative G, hysteretic BLACKOUT / REDOUT banners, and no new scene work.
 
 ## 2026-09-16
 
@@ -749,9 +743,7 @@
 - Compact expired landing dust and smoke with swap-pop removal, eliminating per-frame array shifts while preserving the fixed pooled touchdown effect.
 - Route loaded-tile contact checks through one caller-owned height and land/water record, removing rich surface allocations from collision sweeps while retaining the metadata fallback.
 - Make chase-camera ground occlusion distance-aware, trimming redundant close-rig terrain probes while preserving full sampling on long sightlines.
-- Hide zero-count vegetation batches under reduced graphics presets, preserving authored matrices for instant restoration and removing empty renderer submissions.
 - Split visible mesh height queries from richer contact metadata so camera, AGL, collision-clearance, and landing-effect hot paths avoid redundant climate sampling.
-- Scale near-field instanced vegetation with the graphics presets, preserving authored batch counts so quality changes remain reversible without rebuilding terrain.
 - Reuse swept-contact results in the flight model so high-speed collision probes avoid per-sample object allocation while preserving the existing crash and landing envelope.
 - Keep dark airframe panels readable at night with a bounded cool emissive fill that fades out in daylight without adding lights, meshes, or draw calls.
 - Scale instanced cloud draw ranges with graphics quality and skip hidden cloud simulation work on reduced budgets, keeping Low atmospheric performance predictable while High stays unchanged.

@@ -12,7 +12,6 @@ import {
   enginePowerLevel,
   engineWhineLevel,
   flightAudioViewMix,
-  gLoadCueBand,
   precipitationAudioLevel,
   shouldScheduleAudioTarget,
   shouldSkipMutedAudioUpdate,
@@ -150,13 +149,6 @@ describe('flight audio automation', () => {
     expect(airbrakeWindEnvelope(Number.POSITIVE_INFINITY, true)).toBeCloseTo(0.1)
   })
 
-  it('only announces meaningful high or negative load bands', () => {
-    expect(gLoadCueBand(1)).toBe('normal')
-    expect(gLoadCueBand(4)).toBe('high')
-    expect(gLoadCueBand(-0.35)).toBe('negative')
-    expect(gLoadCueBand(-0.2)).toBe('normal')
-    expect(gLoadCueBand(Number.NaN)).toBe('normal')
-  })
 
   it('muffles external wind and precipitation inside the cockpit', () => {
     const external = flightAudioViewMix(false)

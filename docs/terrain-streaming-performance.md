@@ -12,7 +12,7 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
   current job completes, so no terrain result is dropped. No terrain generator
   runs on the render thread when workers are available.
 - Render-thread attachment has a 2 ms inter-upload deadline and a 16-tile cap.
-  A single attachment can exceed that deadline, especially near-field props.
+  A single attachment can exceed that deadline.
 - Contact detail takes priority, followed by nearest missing coverage, then
   distant LOD changes. Movement reprioritizes waiting work; stale world replies
   cannot install after a reset or disposal.
@@ -21,7 +21,6 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
   distant water terrain uses at most 16 segments. Analytic water surfaces remain.
 - New terrain and water fade in over 650 ms with smooth opaque fades (alpha-hash
   dithering was removed). Previous coverage stays through the transition.
-  Vegetation retains its distance fade.
 - Settlement planning keeps its previous range and object caps so extending the
   landscape does not quadruple background settlement work.
 - Browsers without working workers use the same geometry iterator as workers,

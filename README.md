@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.849**. Previous roadmap chunk: **10.848**.
-Recent changes from **10.849**. Remove the floating nose lamp, wingtip vapor, Mach cone, speed streaks, and visual sonic-boom ring. Keep the afterburner, animated gear, aircraft lights, weather, and sonic-boom sound; flight handling is unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.850**. Previous roadmap chunk: **10.849**.
+Recent changes from **10.850**. Remove G-load vision penalties, banners, and tones; delete natural-prop generation and its streaming/quality hooks. Flight handling, G telemetry, biomes, terrain, water, and settlements remain unchanged.
 
 ## Run
 
@@ -33,6 +33,8 @@ Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in
 A mission is one flight attempt, from launch until landing or a crash. Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Infinite World and custom seeds let you revisit procedural worlds; Daily, Weekly, and Monthly Ops share rotating challenges. Records, favorites, and best-run ghosts are saved locally.
 
 ## Project
+
+Vegetation (trees, rocks, and other natural props) is removed and development is paused. Do not restore or develop it unless explicitly requested; see [repository rules](AGENTS.md) and [roadmap exclusions](docs/ROADMAP.md#paused-systems).
 
 Built with TypeScript, Three.js, and Vite. Graphics presets and adaptive resolution scale visual detail. Terrain and settlements stream through bounded worker queues, with synchronous fallback when workers are unavailable.
 

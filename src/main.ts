@@ -116,12 +116,7 @@ import { stormBuffetDrive, stormBuffetGearScale } from './systems/StormBuffet'
 import { StuntTracker } from './systems/StuntTracker'
 import { FlightComboTracker, type FlightComboEvent } from './systems/FlightCombo'
 import { AltitudeMilestoneTracker } from './systems/AltitudeMilestones'
-import { FlightAudio, gLoadCueBand, type GLoadCueBand } from './audio/FlightAudio'
-import {
-  GLoadFeedbackTracker,
-  gLoadVisionBanner,
-  type GLoadVisionBand,
-} from './systems/GLoadFeedback'
+import { FlightAudio } from './audio/FlightAudio'
 import { SupersonicTracker } from './systems/Supersonic'
 import { GhostReplay } from './systems/GhostReplay'
 import {
@@ -1285,10 +1280,6 @@ export async function boot(): Promise<void> {
   let previousCloudBand: CloudImmersionBand = 'clear'
   let cloudBandPrimed = false
   let thermalLiftActive = false
-  let prevGLoadBand: GLoadCueBand = 'normal'
-  let gLoadCueUntil = 0
-  const gLoadFeedback = new GLoadFeedbackTracker()
-  let prevGLoadVision: GLoadVisionBand | null = null
   let audioMuted = false
   const onVisibilityChange = (): void => {
     if (document.hidden) {
@@ -1563,10 +1554,6 @@ export async function boot(): Promise<void> {
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
     thermalLiftActive = false
-    prevGLoadBand = 'normal'
-    gLoadCueUntil = 0
-    gLoadFeedback.reset(1)
-    prevGLoadVision = null
     prevWarning = null
     prevEngineHeat = null
     radarDiscovered.clear()
@@ -2545,39 +2532,6 @@ export async function boot(): Promise<void> {
         showBanner(heatBanner, engineHeatState === 'critical' ? 2600 : 1800, engineHeatState === 'critical' ? 'danger' : 'info')
       }
       prevEngineHeat = engineHeatState
-    }
-
-    const gBand = gLoadCueBand(aircraft.loadFactor)
-    if (
-      simLive &&
-      playing &&
-      !menu.paused &&
-      !results.open &&
-      aircraft.status !== 'crashed' &&
-      gBand !== prevGLoadBand &&
-      gBand !== 'normal' &&
-      nowMs >= gLoadCueUntil
-    ) {
-      audio.playCue(gBand === 'high' ? 'g-high' : 'g-negative')
-      gLoadCueUntil = nowMs + 450
-    }
-    prevGLoadBand = gBand
-
-    const visionBand = gLoadFeedback.update(aircraft.loadFactor)
-    if (visionBand !== prevGLoadVision) {
-      const visionBanner = gLoadVisionBanner(visionBand, prevGLoadVision)
-      if (
-        visionBanner &&
-        simLive &&
-        playing &&
-        !menu.paused &&
-        !results.open &&
-        aircraft.status !== 'crashed'
-      ) {
-        audio.playCue(visionBand === 'blackout' ? 'g-high' : 'g-negative')
-        showBanner(visionBanner, 2200, 'danger')
-      }
-      prevGLoadVision = visionBand
     }
 
     audioFrame.throttle = aircraft.engineState.lever

@@ -34,7 +34,6 @@ export interface FlightAudioViewMix {
   precipitationFilter: number
 }
 
-export type GLoadCueBand = 'negative' | 'normal' | 'high'
 
 const EXTERNAL_VIEW_MIX = Object.freeze({
   engine: 1,
@@ -309,8 +308,6 @@ export class FlightAudio {
       | 'low-alt'
       | 'go-around'
       | 'flare'
-      | 'g-high'
-      | 'g-negative'
       | 'gear-up'
       | 'gear-down'
       | 'airbrake-open'
@@ -452,14 +449,6 @@ export class FlightAudio {
       // closure while staying event-only and below the crash impact cue.
       this.tone(420, now, 0.09, 'triangle', 0.07, 310)
       this.tone(300, now + 0.12, 0.12, 'triangle', 0.055, 220)
-    } else if (kind === 'g-high') {
-      // A restrained rising cue marks a real high-load transition once.
-      this.tone(430, now, 0.08, 'triangle', 0.045, 690)
-      this.tone(690, now + 0.08, 0.1, 'sine', 0.035, 820)
-    } else if (kind === 'g-negative') {
-      // Negative load gets a lower descending cue so it is distinct from stall.
-      this.tone(300, now, 0.09, 'triangle', 0.045, 180)
-      this.tone(180, now + 0.08, 0.1, 'sine', 0.035, 120)
     } else if (kind === 'warning') {
       // A short, soft edge cue. The HUD carries the sustained warning state;
       // audio only announces a new caution so it cannot become a siren.
@@ -764,15 +753,6 @@ export function airbrakeWindEnvelope(speed: number, active: boolean): number {
   return clamp01(base + 0.1 + windT * 0.12)
 }
 
-/** Classify meaningful pilot-load transitions without reacting to tiny drift. */
-export function gLoadCueBand(value: number, highThreshold = 4, negativeThreshold = -0.35): GLoadCueBand {
-  const safe = Number.isFinite(value) ? value : 1
-  const high = Number.isFinite(highThreshold) ? Math.max(0, highThreshold) : 4
-  const negative = Number.isFinite(negativeThreshold) ? Math.min(0, negativeThreshold) : -0.35
-  if (safe >= high) return 'high'
-  if (safe <= negative) return 'negative'
-  return 'normal'
-}
 
 function clamp01(v: number): number {
   if (!Number.isFinite(v)) return 0

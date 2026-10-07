@@ -16,7 +16,7 @@ class FakeWorker {
 }
 const request = (id: number, generation = 0): TerrainBuildRequest => ({
   id, generation, seed: 1, pad: null, cx: id, cz: 0, size: 1, lod: 2,
-  withProps: false, skirtEdges: [false, false, false, false],
+  skirtEdges: [false, false, false, false],
 })
 let data: TerrainGeometryData
 

@@ -269,7 +269,6 @@ export class World {
     this.terrain.setUploadBudget(profile.terrainUploadBudgetMs, profile.terrainMaxUploadsPerFrame)
     this.terrain.setWaterDetailScale(profile.waterDetailScale * this.adaptiveDetailScale)
     this.terrain.setTerrainDetailScale(profile.terrainDetailScale * this.adaptiveDetailScale)
-    this.terrain.setVegetationScale(profile.vegetationScale * this.adaptiveDetailScale)
     this.atmosphere.setPrecipitationScale(profile.precipitationScale * this.adaptiveDetailScale)
     this.atmosphere.setCloudDensityScale(profile.cloudScale * this.adaptiveDetailScale)
     this.atmosphere.setFogRange(
@@ -291,7 +290,6 @@ export class World {
     const profile = renderQualityProfile(this.renderQuality ?? 'balanced')
     this.terrain.setWaterDetailScale(profile.waterDetailScale * safe)
     this.terrain.setTerrainDetailScale(profile.terrainDetailScale * safe)
-    this.terrain.setVegetationScale(profile.vegetationScale * safe)
     this.atmosphere.setPrecipitationScale(profile.precipitationScale * safe)
     this.atmosphere.setCloudDensityScale(profile.cloudScale * safe)
   }

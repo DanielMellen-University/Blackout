@@ -34,7 +34,6 @@ describe('world lifecycle boundary', () => {
       const terrain = world.terrain as unknown as {
         waterDetailScale: { value: number }
         terrainDetailScale: { value: number }
-        vegetationScale: number
         uploadBudgetMs: number
         maxUploadsPerFrame: number
       }
@@ -45,7 +44,6 @@ describe('world lifecycle boundary', () => {
       const settlements = world.settlements as unknown as { detailRadius: number; roadDetailRadius: number }
       expect(terrain.waterDetailScale.value).toBe(.35)
       expect(terrain.terrainDetailScale.value).toBe(.42)
-      expect(terrain.vegetationScale).toBe(.45)
       expect(terrain.uploadBudgetMs).toBe(1.25)
       expect(terrain.maxUploadsPerFrame).toBe(8)
       expect(settlements.detailRadius).toBe(2800)
@@ -120,7 +118,6 @@ describe('world lifecycle boundary', () => {
       const terrain = world.terrain as unknown as {
         waterDetailScale: { value: number }
         terrainDetailScale: { value: number }
-        vegetationScale: number
       }
       const atmosphere = world.atmosphere as unknown as {
         precipitationScale: number
@@ -128,21 +125,18 @@ describe('world lifecycle boundary', () => {
       }
       expect(terrain.waterDetailScale.value).toBe(.72)
       expect(terrain.terrainDetailScale.value).toBe(.75)
-      expect(terrain.vegetationScale).toBe(.75)
       expect(atmosphere.precipitationScale).toBe(.72)
       expect(atmosphere.cloudDensityScale).toBe(.78)
 
       world.setAdaptiveDetailScale(.5)
       expect(terrain.waterDetailScale.value).toBeCloseTo(.36)
       expect(terrain.terrainDetailScale.value).toBeCloseTo(.375)
-      expect(terrain.vegetationScale).toBeCloseTo(.375)
       expect(atmosphere.precipitationScale).toBeCloseTo(.36)
       expect(atmosphere.cloudDensityScale).toBeCloseTo(.39)
 
       world.setAdaptiveDetailScale(Number.NaN)
       expect(terrain.waterDetailScale.value).toBeCloseTo(.72)
       expect(terrain.terrainDetailScale.value).toBeCloseTo(.75)
-      expect(terrain.vegetationScale).toBe(.75)
       expect(atmosphere.precipitationScale).toBe(.72)
       expect(atmosphere.cloudDensityScale).toBe(.78)
 
@@ -150,7 +144,6 @@ describe('world lifecycle boundary', () => {
       world.setRenderQuality('low')
       expect(terrain.waterDetailScale.value).toBeCloseTo(.21)
       expect(terrain.terrainDetailScale.value).toBeCloseTo(.252)
-      expect(terrain.vegetationScale).toBeCloseTo(.27)
       expect(atmosphere.precipitationScale).toBeCloseTo(.252)
       expect(atmosphere.cloudDensityScale).toBeCloseTo(.3)
     } finally {
