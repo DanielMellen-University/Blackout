@@ -87,6 +87,7 @@ import {
   repairCourseHistory,
   repairMasteryBadges,
 } from './systems/ChallengeRun'
+import { touchdownKinematics } from './systems/LandingAssessment'
 import {
   courseDefinitionForId,
   dailyOpsDayKey,
@@ -2134,10 +2135,7 @@ export async function boot(): Promise<void> {
             const runwayLateralM = baseDx * runwayRightX + baseDz * runwayRightZ
             const headingDelta = pose.heading - world.spawn.yaw
             const finished = challenge.finishLanding({
-              verticalSpeed: aircraft.impactVy || aircraft.velocity.y,
-              groundSpeed: Math.hypot(aircraft.velocity.x, aircraft.velocity.z),
-              pitchRad: pose.pitch,
-              rollRad: pose.roll,
+              ...touchdownKinematics(aircraft, pose.pitch, pose.roll),
               baseDistanceM: Math.hypot(baseDx, baseDz),
               runwayLateralM,
               headingErrorRad: Math.atan2(Math.sin(headingDelta), Math.cos(headingDelta)),

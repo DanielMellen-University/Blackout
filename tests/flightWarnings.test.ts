@@ -103,6 +103,39 @@ describe('flight cautions', () => {
     expect(warning.goAround).toBe(true)
   })
 
+  it('never asks for a flare above the collision landing-speed limit', () => {
+    const limit = flightConfig.maxLandingSpeed
+    expect(flareWarningActive(8, limit, -2, true)).toBe(true)
+    expect(flareWarningActive(8, limit + .01, -2, true)).toBe(false)
+    expect(goAroundWarningActive(8, limit + .01, -2, true)).toBe(true)
+    expect(goAroundWarningActive(28, limit + 10, -2, true)).toBe(true)
+    expect(goAroundWarningActive(29, limit + 10, -2, true)).toBe(false)
+    expect(goAroundWarningActive(8, limit + 10, 3, true)).toBe(false)
+    expect(goAroundWarningActive(8, limit + 10, 0, true)).toBe(false)
+    expect(goAroundWarningActive(8, limit + 10, -2, false)).toBe(false)
+
+    const aircraft = new Aircraft()
+    try {
+      aircraft.position.set(0, 10000, 0)
+      aircraft.velocity.set(0, -2, limit + 2)
+      aircraft.controls.gearDown = true
+      expect(evaluateWarnings(aircraft, 8).text).toBe('GO AROUND')
+      aircraft.velocity.y = 3
+      expect(evaluateWarnings(aircraft, 8).text).toBeNull()
+    } finally {
+      aircraft.dispose()
+    }
+  })
+
+  it('leaves no quiet sink-rate gap between flare and go-around cues', () => {
+    for (const sink of [-7.49, -7.5, -8, -8.5]) {
+      const flare = flareWarningActive(8, 52, sink, true)
+      const goAround = goAroundWarningActive(8, 52, sink, true)
+      expect(flare || goAround).toBe(true)
+      expect(flare && goAround).toBe(false)
+    }
+  })
+
   it('reuses the stable no-warning state between frames', () => {
     const aircraft = new Aircraft()
     aircraft.position.set(0, 10000, 0)

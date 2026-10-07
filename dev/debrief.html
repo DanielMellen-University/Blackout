@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blackout · Landing debrief review</title>
+<style>
+  .review-controls { position: fixed; inset: 8px 8px auto; z-index: 100; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center }
+  .review-controls button { padding: 6px 10px; background: #172a3c; color: #edf4fa; border: 1px solid #4c647a; border-radius: 5px; cursor: pointer }
+</style>
+<nav class="review-controls" aria-label="Review landing scenarios"></nav>
+<script type="module">
+import '/src/style.css'
+import markup from '/index.html?raw'
+import { ChallengeRun } from '/src/systems/ChallengeRun.ts'
+import { RunResults } from '/src/ui/RunResults.ts'
+
+// Use the real game's markup and renderer without booting terrain, WebGL, audio,
+// or writing records. This page remains cheap enough for layout-only review.
+const template = new DOMParser().parseFromString(markup, 'text/html')
+document.body.append(template.getElementById('run-results'))
+const results = new RunResults()
+const smooth = { verticalSpeed: -1, groundSpeed: 30, pitchRad: .12, rollRad: 0 }
+const scenarios = {
+  Smooth: smooth,
+  Sink: { ...smooth, verticalSpeed: -6 },
+  Speed: { ...smooth, groundSpeed: 70 },
+  Bank: { ...smooth, rollRad: -.4 },
+  Pitch: { ...smooth, pitchRad: .6 },
+  'Off runway': { ...smooth, baseDistanceM: 300 },
+  'Gear crash': 'GEAR UP',
+  Ditch: 'WATER CONTACT',
+}
+let selected = 'Sink'
+function show(name) {
+  selected = name
+  const run = new ChallengeRun(null)
+  run.reset('review:landing', 1)
+  run.update(42, 120)
+  run.recordGate(1)
+  const scenario = scenarios[name]
+  const result = typeof scenario === 'string'
+    ? run.crashDebrief(scenario === 'WATER CONTACT', scenario)
+    : run.finishLanding(scenario)
+  results.show(result, undefined, false, [], 'Landing review', 'CLEAR / DAY')
+}
+for (const name of Object.keys(scenarios)) {
+  const button = document.createElement('button')
+  button.textContent = name
+  button.onclick = () => show(name)
+  document.querySelector('.review-controls').append(button)
+}
+document.getElementById('btn-retry').onclick = () => show(selected)
+document.getElementById('btn-new-world').onclick = () => show('Smooth')
+for (const id of ['btn-share-replay', 'btn-copy-summary', 'btn-copy-seed', 'btn-load-seed']) {
+  document.getElementById(id).hidden = true
+}
+const requested = new URLSearchParams(location.search).get('scenario')
+show(Object.hasOwn(scenarios, requested) ? requested : selected)
+</script>
+</html>

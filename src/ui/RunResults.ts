@@ -9,6 +9,7 @@ import {
 import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
 import { sortieStyleForResult, sortieStyleLabel } from '../systems/FlightStyle'
 import { formatWorldSeed, type ClipboardWriter } from '../core/WorldSeed'
+import { failedLandingCorrection } from '../systems/LandingAssessment'
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
@@ -89,6 +90,8 @@ export class RunResults {
   private readonly time: HTMLElement
   private readonly landing: HTMLElement
   private readonly landingDetail: HTMLElement
+  private readonly coaching: HTMLElement | null
+  private readonly touchdown: HTMLElement | null
   private readonly gates: HTMLElement
   private readonly streak: HTMLElement
   private readonly streakDetail: HTMLElement
@@ -151,6 +154,8 @@ export class RunResults {
     this.time = must(root, 'result-time')
     this.landing = must(root, 'result-landing')
     this.landingDetail = must(root, 'result-landing-detail')
+    this.coaching = root.getElementById('result-coaching')
+    this.touchdown = root.getElementById('result-touchdown')
     this.gates = must(root, 'result-gates')
     this.streak = must(root, 'result-streak')
     this.streakDetail = must(root, 'result-streak-detail')
@@ -167,7 +172,7 @@ export class RunResults {
     this.root.setAttribute('role', 'dialog')
     this.root.setAttribute('aria-modal', 'true')
     this.root.setAttribute('aria-labelledby', 'result-title')
-    this.root.setAttribute('aria-describedby', 'result-summary')
+    this.root.setAttribute('aria-describedby', this.coaching ? 'result-summary result-coaching' : 'result-summary')
     this.root.addEventListener('keydown', this.onKeyDown)
     this.shareReplay?.addEventListener('click', this.onShareReplay)
     this.copySummary?.addEventListener('click', this.onCopySummary)
@@ -282,6 +287,18 @@ export class RunResults {
     this.landing.textContent = crashed ? landingName : `${Math.round(result.landingQuality * 100)}%`
     this.landingDetail.textContent = crashed ? 'FLIGHT FAILURE' : landingName
     this.landingDetail.setAttribute('aria-label', crashed ? `${landingName} flight failure` : `Landing quality ${landingName}`)
+    const correction = crashed
+      ? failedLandingCorrection(result.failureReason, result.ditched)
+      : result.landingDebrief?.correction ?? ''
+    const touchdown = crashed ? '' : result.landingDebrief?.telemetry ?? ''
+    if (this.coaching) {
+      this.coaching.textContent = correction
+      this.coaching.hidden = correction.length === 0
+    }
+    if (this.touchdown) {
+      this.touchdown.textContent = touchdown
+      this.touchdown.hidden = touchdown.length === 0
+    }
     const gatesLabel = gatesClearedLabel(result)
     const gateMisses = gateMissesLabel(result)
     this.gates.textContent = gatesLabel

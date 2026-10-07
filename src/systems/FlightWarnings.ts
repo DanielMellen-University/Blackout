@@ -456,7 +456,7 @@ export function flareWarningActive(
   const safeAlt = Math.max(0, altAgl)
   const safeSpeed = Math.max(0, speed)
   return safeAlt > 1.5 && safeAlt <= 14 &&
-    safeSpeed >= 38 && safeSpeed <= 78 &&
+    safeSpeed >= 38 && safeSpeed <= C.maxLandingSpeed &&
     verticalSpeed < -0.8 && verticalSpeed > -7.5
 }
 
@@ -473,9 +473,13 @@ export function goAroundWarningActive(
   const safeAlt = Math.max(0, altAgl)
   const safeSpeed = Math.max(0, speed)
   if (safeAlt <= 1.5 || safeAlt > 28) return false
-  const fastSink = verticalSpeed < -8.5 && safeSpeed >= 34
+  // Cover the end of the flare envelope without a silent sink-rate gap.
+  const fastSink = verticalSpeed <= -7.5 && safeSpeed >= 34
   const deepStall = safeSpeed < 34 && safeAlt > 4
-  return fastSink || deepStall
+  // A configured descending approach over the contact-speed limit must not
+  // receive FLARE or stay silent. Climbing takeoffs remain quiet.
+  const tooFast = safeSpeed > C.maxLandingSpeed && verticalSpeed < -.8
+  return fastSink || deepStall || tooFast
 }
 
 /** Warn only after the jet leaves the dry displayed airspeed envelope. */

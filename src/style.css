@@ -2402,6 +2402,9 @@ body,
 
 .run-results-panel {
   width: min(420px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 22px 24px 20px;
   background: rgba(6, 10, 16, 0.94);
   border: 1px solid var(--panel-border);
@@ -2433,6 +2436,21 @@ body,
   font-weight: 700;
   letter-spacing: 0.1em;
   line-height: 1.5;
+}
+
+.result-coaching {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.result-touchdown {
+  margin: 0 0 14px;
+  color: var(--ink-dim);
+  font-size: 0.6rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
 }
 
 .result-grid {

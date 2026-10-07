@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.837** Add targeted landing coaching and first-contact telemetry, score horizontal speed from the pre-impact snapshot, align flare/go-around warnings with the collision limit and remove the sink-rate cue gap, make results scroll on short screens, and add a world-free debrief review page.
 - **10.836** Correct navigation ETA using velocity toward the target, make slow-approach trends independent of HUD cadence, reset guidance when switching gates or radar landmarks, and keep unavailable ETA labels consistent.
 - **10.835** Repair release metadata and README controls, restore hydrology explanations stripped during file recovery, and reuse settlement queue distances with deterministic squared road-job ranking.
 - **10.834** Refresh the roadmap and project overview, remove stale README chunk metadata, and align terrain streaming documentation with smooth fades.

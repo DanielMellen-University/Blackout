@@ -7,6 +7,8 @@ import {
   type SortieStyleId,
 } from './FlightStyle'
 import type { Biome, TerrainWaterBody } from '../world/terrainSample'
+import { assessLanding, landingQualityForMetrics, type LandingDebrief } from './LandingAssessment'
+export { landingQualityForMetrics } from './LandingAssessment'
 
 export type ChallengePhase =
   | 'ready'
@@ -58,6 +60,8 @@ export interface ChallengeResult {
   landingQuality: number
   /** Human-readable touchdown quality band. */
   landingLabel?: LandingQualityLabel
+  /** One transient coaching cue from first-contact telemetry, not persisted history. */
+  landingDebrief?: LandingDebrief
   totalScore: number
   /** Whether bonus stacking reached the finite course-score ceiling. */
   scoreCapped?: boolean
@@ -391,23 +395,6 @@ export function landingQualityLabel(quality: number): LandingQualityLabel {
   if (safe >= 0.78) return 'SMOOTH'
   if (safe >= 0.6) return 'FIRM'
   return 'HARD'
-}
-
-/** Compute the finite touchdown-quality score shared by results and approach preview. */
-export function landingQualityForMetrics(
-  metrics: Pick<LandingMetrics, 'verticalSpeed' | 'groundSpeed' | 'pitchRad' | 'rollRad'>,
-): number {
-  const verticalSpeed = finiteOr(metrics.verticalSpeed)
-  const groundSpeed = Math.max(0, finiteOr(metrics.groundSpeed))
-  const rollRad = finiteOr(metrics.rollRad)
-  const pitchRad = finiteOr(metrics.pitchRad)
-  const sinkPenalty = Math.max(0, Math.max(0, -verticalSpeed) - 1.2) / 5
-  const speedPenalty = Math.max(0, groundSpeed - 32) / 38
-  const bankPenalty = Math.abs(rollRad) / (Math.PI / 5)
-  const pitchPenalty = Math.max(0, Math.abs(pitchRad) - 0.22) / 0.65
-  return clamp01(
-    1 - sinkPenalty * 0.45 - speedPenalty * 0.3 - bankPenalty * 0.2 - pitchPenalty * 0.05,
-  )
 }
 
 /** Reward a completed landing for preserving fuel, with a finite cap. */
@@ -1620,6 +1607,7 @@ export class ChallengeRun {
       landingScore,
       landingQuality,
       landingLabel: landingQualityLabel(landingQuality),
+      landingDebrief: assessLanding(metrics),
       totalScore,
       scoreCapped,
       medal,
@@ -2010,10 +1998,6 @@ function clamp01(value: number): number {
 
 function safeCount(value: number | undefined, max: number): number {
   return Number.isFinite(value) ? Math.min(max, Math.max(0, Math.floor(value!))) : 0
-}
-
-function finiteOr(value: number, fallback = 0): number {
-  return Number.isFinite(value) ? value : fallback
 }
 
 function browserStorage(): ScoreStore | null {

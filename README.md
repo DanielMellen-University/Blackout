@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.836**. Previous roadmap chunk: **10.835**.
-Recent changes from **10.836**. Navigation arrival estimates now use speed toward the target, with reliable slow-approach trends and fresh guidance when switching gates or radar landmarks.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.837**. Previous roadmap chunk: **10.836**.
+Recent changes from **10.837**. Landing debriefs explain the biggest touchdown error using first-contact telemetry. Flare and go-around guidance now agree with the landing-speed limit, and short screens can scroll the results panel.
 
 ## Run
 
@@ -38,4 +38,4 @@ Built with TypeScript, Three.js, and Vite. Graphics presets and adaptive resolut
 - [Roadmap](docs/ROADMAP.md)
 - [Changelog](CHANGELOG.md)
 
-Use `/dev/aircraft.html` for model inspection and `/dev/terrain.html` for terrain and weather review.
+Use `/dev/aircraft.html` for model inspection, `/dev/terrain.html` for terrain and weather review, and `/dev/debrief.html` for lightweight landing-feedback review without terrain or WebGL.

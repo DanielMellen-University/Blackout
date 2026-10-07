@@ -120,6 +120,8 @@ function resultsFixture(): {
     ['result-time', new FakeElement()],
     ['result-landing', new FakeElement()],
     ['result-landing-detail', new FakeElement()],
+    ['result-coaching', new FakeElement()],
+    ['result-touchdown', new FakeElement()],
     ['result-gates', new FakeElement()],
     ['result-streak', new FakeElement()],
     ['result-streak-detail', new FakeElement()],
@@ -159,6 +161,31 @@ const result = {
 }
 
 describe('run results focus flow', () => {
+  it('shows calm touchdown coaching and clears it across crash and legacy results', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    results.show({ ...result, landingDebrief: {
+      focus: 'sink', correction: 'Soften the flare: reduce descent before contact.',
+      telemetry: 'Sink 5.0 m/s · 97 kt · Bank 0° · Pitch 7°',
+    } })
+    expect(elementsFor(fixture.document, 'result-coaching')?.textContent).toContain('Soften the flare')
+    expect(elementsFor(fixture.document, 'result-coaching')?.hidden).toBe(false)
+    expect(elementsFor(fixture.document, 'result-touchdown')?.textContent).toContain('Sink 5.0 m/s')
+    expect(elementsFor(fixture.document, 'result-touchdown')?.hidden).toBe(false)
+    expect(fixture.root.getAttribute('aria-describedby')).toContain('result-coaching')
+    results.show({ ...result, endedByCrash: true, failureReason: 'GEAR UP' })
+    expect(elementsFor(fixture.document, 'result-coaching')?.textContent).toContain('Lower the landing gear')
+    expect(elementsFor(fixture.document, 'result-touchdown')?.textContent).toBe('')
+    expect(elementsFor(fixture.document, 'result-touchdown')?.hidden).toBe(true)
+    results.show(result)
+    expect(elementsFor(fixture.document, 'result-coaching')?.textContent).toBe('')
+    expect(elementsFor(fixture.document, 'result-coaching')?.hidden).toBe(true)
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('formats finite replay seeds and fails closed for malformed values', () => {
     expect(resultSeedLabel(9876.8)).toBe('SEED 9876.8')
     expect(resultSeedLabel(undefined)).toBe('')
