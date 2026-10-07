@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.853**. Previous roadmap chunk: **10.852**.
-Recent changes from **10.853**. First person is a clear, full-screen view: no cockpit frame, canopy tint, streak overlay, or artificial vignette. Camera position, field of view, controls, and flight physics are unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.854**. Previous roadmap chunk: **10.853**.
+Recent changes from **10.854**. Remove the entire flight-warning strip and its alert sounds, including stall, go-around, flare, gear, obstacle, fuel, and overspeed alerts. Instruments, navigation/glide guidance, collisions, and flight physics are unchanged. First person remains unobstructed.
 
 ## Run
 

@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.853** is current. Previous ship: **10.852**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.854** is current. Previous ship: **10.853**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.854 removes the entire flight-warning strip, dedicated alert sounds, warning evaluator/tracker and obstacle lookahead probes, HUD cue plumbing, and warning-specific styling. Instruments, normal navigation/glide guidance, physical stalls, gear/fuel behavior, and actual terrain/obstacle collision checks are unchanged. Removal is guarded by runtime/UI/audio absence regressions and documented for future agents; no replacement warning system is planned.
 
 Chunk 10.853 removes camera-attached cockpit frame geometry and the canopy tint/streak/vignette DOM layer, styles, and updates. First person stays unobstructed with the same seat position, FOV, orientation, hidden airframe/HUD, and camera toggle controls. Geometry/lifecycle and absence regressions guard the removal; no replacement cockpit system is introduced.
 
@@ -48,7 +50,7 @@ Chunk 10.846 rebuilds the launch, catalog, settings, live instruments, touch con
 
 Chunk 10.845 keeps takeoff coaching available while waiting on the runway, renews one 16-second budget at first flight, the first passed gate, return, and actual inbound approach, and prevents repeated refresh from bounces or approach jitter. Training Orbit keeps first-gate guidance until that gate is passed. Simulation-time budgets remain independent of HUD cadence and pause/loading time. Grounded free flight still teaches takeoff; airborne free flight invites exploration, and engine-out return overrides it. Gear is described as automatic, with its override still shown in the title; keyboard, touch, and gamepad return hints identify power reduction. Final approach explains the shared PAPI cue, and selected landmarks do not falsely direct pilots to gate one. Existing warnings/audio and flight handling are untouched. Focused lifecycle and hint tests cover the flow; real-device/browser playability remains unverified.
 
-1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
+1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the debrief on desktop screens when browser inspection is available. Keep the removed flight-warning category out of future work.
 2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.
 3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Cold drainage and analytic water assembly are now cooperative. Measure scene/prop attachment and remaining indivisible allocations, bound cold/JIT spikes further, and inspect workerless loading throughput without reducing geometry, collision, or water detail. Preserve bounded memory and worker budgets; verify actual rendering before claiming FPS gains.
 4. **Catalog and Ops.** Inspect the streamlined picker visually and play through its medal/time goals. Exercise long-open rollover, paused selection/resume/retry, historical replay release, and retention end-to-end in the browser; core lifetime and storage invariants are covered. Review cross-tab progression handling without introducing parallel record systems.
@@ -67,6 +69,6 @@ No weapons, combat, multiplayer, Discord integration, or parallel world systems.
 
 ## Paused systems
 
-Pull-up and low-altitude warnings are removed at the user's request. Do not restore their alerts, tones, terrain-warning probes, or altimeter alarm styling unless explicitly requested; altitude telemetry and terrain collisions remain active.
+The entire flight-warning strip is removed at the user's request, including stall, go-around, flare, gear, obstacle, fuel, overspeed, pull-up, and low-altitude alerts. Do not restore its UI, tones, evaluators/lookahead probes, or alarm styling unless explicitly requested; instruments, navigation/glide guidance, flight physics, and actual collisions remain active.
 
 Vegetation, trees, rocks, bushes, grass props, and foliage rendering are removed and their development is paused by the user. Do not resume development, restore the old code, build a replacement, or add this system to future work unless the user explicitly requests it. Broad game-improvement instructions do not override this pause. Blackout/redout veils, banners, and associated G-load tones are also removed and must not be reintroduced without an explicit request. Keep load telemetry and the G readout; this is not a physics change. These exclusions are also recorded in the root AGENTS.md for future agents.

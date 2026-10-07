@@ -4,10 +4,15 @@ import { describe, expect, it } from 'vitest'
 const read = (path: string): string => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
 
 describe('removed vision and natural-prop systems', () => {
-  it('removes pull-up and low-altitude alert generation, audio, and styling', () => {
-    for (const path of ['src/systems/FlightWarnings.ts', 'src/audio/FlightAudio.ts', 'src/ui/HUD.ts', 'src/style.css']) {
+  it('removes the flight-warning category, evaluation, audio, and styling', () => {
+    expect(existsSync(new URL('../src/systems/FlightWarnings.ts', import.meta.url))).toBe(false)
+    for (const path of ['src/main.ts', 'src/audio/FlightAudio.ts', 'src/ui/HUD.ts', 'src/style.css', 'index.html']) {
       expect(read(path), path).not.toMatch(/lowAltitudeWarning|terrainClosureWarning|terrainLookaheadWarning|warning-low-alt|'pull-up'|'low-alt'|clearance-warning|clearance-caution/)
+      expect(read(path), path).not.toMatch(/FlightWarningTracker|evaluateWarnings|warningObstacleSampler|hud-warn|warningCueForState|warningCueClass|\.warn\b|'stall'|'go-around'|'flare'|'gear-warning'/)
     }
+    expect(read('src/main.ts')).toContain('collision.check(aircraft)')
+    expect(read('src/main.ts')).toContain('hudFrame.y =')
+    expect(read('src/aircraft/FlightModel.ts')).toContain('C.minSpeed')
   })
 
   it('removes vision effects, banners, and audio triggers, but keeps load telemetry', () => {

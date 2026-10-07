@@ -12,8 +12,6 @@ export const LIVE_HUD_IDS = [
   'nav-range',
   'nav-speed',
   'nav-glide',
-  'hud-warn',
-  'hud-warn-text',
   'hud-fuel-bar',
   'hud-fuel-fill',
   'hud-sky-mark',

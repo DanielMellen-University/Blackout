@@ -16,6 +16,8 @@ The closest traffic contact now remains visible in a bounded HUD row after its a
 
 ## Fly
 
+The flight-warning strip and its alert sounds are removed, including stall, go-around, flare, gear, obstacle, fuel, and overspeed alerts. Flight physics, collision checks, instrument readings, and ordinary navigation/glide guidance remain unchanged.
+
 First person is an unobstructed full-screen view, with no cockpit frame or canopy tint/streak/vignette overlay. The aircraft and instruments remain hidden in this view; seat position, FOV, and controls are unchanged.
 
 Press Play when the airfield is ready.

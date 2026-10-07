@@ -302,13 +302,6 @@ export class FlightAudio {
       | 'ab-off'
       | 'thunder'
       | 'warning'
-      | 'obstacle'
-      | 'overspeed'
-      | 'stall'
-      | 'gear-warning'
-      | 'fuel'
-      | 'go-around'
-      | 'flare'
       | 'gear-up'
       | 'gear-down'
       | 'airbrake-open'
@@ -406,42 +399,8 @@ export class FlightAudio {
       const second = lowering ? 225 : 300
       this.tone(first, now, 0.08, 'triangle', 0.07, lowering ? 118 : 165)
       this.tone(second, now + 0.055, 0.09, 'sine', 0.05, lowering ? 190 : 250)
-    } else if (kind === 'overspeed') {
-      // A descending pair separates speed-envelope pressure from stall and
-      // flight cautions without turning the cue into a harsh alarm.
-      this.tone(680, now, 0.08, 'sine', 0.06, 520)
-      this.tone(470, now + 0.1, 0.1, 'sine', 0.05, 360)
-    } else if (kind === 'stall') {
-      // A clear descending pair separates loss-of-lift from speed-envelope
-      // pressure while remaining a one-shot edge cue.
-      this.tone(920, now, 0.08, 'triangle', 0.065, 700)
-      this.tone(620, now + 0.1, 0.12, 'triangle', 0.055, 440)
-    } else if (kind === 'gear-warning') {
-      // Keep unsafe-approach gear distinct from the mechanical gear toggle.
-      this.tone(230, now, 0.08, 'triangle', 0.06, 170)
-      this.tone(230, now + 0.15, 0.1, 'triangle', 0.05, 170)
-    } else if (kind === 'fuel') {
-      // Fuel gets a low, deliberate double pulse so the pilot can distinguish
-      // a return-to-base emergency from ordinary threshold cautions.
-      this.tone(300, now, 0.09, 'triangle', 0.06, 220)
-      this.tone(210, now + 0.14, 0.13, 'triangle', 0.05, 150)
-    } else if (kind === 'go-around') {
-      // A rising pair confirms the landing escape instruction without the
-      // sustained harshness of stall alarms.
-      this.tone(430, now, 0.08, 'triangle', 0.07, 590)
-      this.tone(680, now + 0.11, 0.13, 'sine', 0.06, 820)
-    } else if (kind === 'flare') {
-      // A soft descending pair marks the landing flare window as guidance,
-      // keeping it distinct from an actual go-around or caution alarm.
-      this.tone(620, now, 0.08, 'sine', 0.05, 520)
-      this.tone(430, now + 0.11, 0.12, 'sine', 0.04, 360)
-    } else if (kind === 'obstacle') {
-      // A lower double pulse keeps building closure distinct from other cues while staying event-only and below the crash impact cue.
-      this.tone(420, now, 0.09, 'triangle', 0.07, 310)
-      this.tone(300, now + 0.12, 0.12, 'triangle', 0.055, 220)
     } else if (kind === 'warning') {
-      // A short, soft edge cue. The HUD carries the sustained warning state;
-      // audio only announces a new caution so it cannot become a siren.
+      // Short one-shot feedback for a missed gate or failed contract.
       this.tone(760, now, 0.09, 'sine', 0.07, 690)
       this.tone(540, now + 0.1, 0.12, 'sine', 0.055, 500)
     } else if (kind === 'ditch') {

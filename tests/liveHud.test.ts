@@ -6,7 +6,7 @@ const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8')
 
 describe('live HUD budget', () => {
-  it('keeps speed, altitude, heading, attitude, throttle, one objective, and one warning', () => {
+  it('keeps instruments and the objective without a flight-warning strip', () => {
     expect(liveHudViolations(html, css)).toEqual([])
     for (const id of LIVE_HUD_IDS) expect(html).toContain(`id="${id}"`)
     for (const id of LEDGER_HUD_IDS) expect(html).toContain(`id="${id}"`)
@@ -43,11 +43,13 @@ describe('live HUD budget', () => {
       .toContain('debrief records must remain accessible when expanded')
   })
 
-  it('keeps landing guidance distinct without removed terrain warning styles', () => {
+  it('removes the whole flight-warning strip and its styling', () => {
     expect(css).not.toContain('warning-low-alt')
     expect(css).not.toContain('clearance-warning')
-    expect(css).toContain('.warn.caution.warning-flare')
-    expect(css).toContain('.warn.warning.warning-go-around')
+    expect(css).not.toMatch(/\.warn\b|warning-flare|warning-go-around|warn-pulse/)
+    expect(css).not.toContain('#hud-vs.flare')
+    expect(html).not.toContain('hud-warn')
+    expect(html).toContain('id="nav-glide"')
   })
 
   it('keeps debrief coaching visible and results scrollable on short screens', () => {

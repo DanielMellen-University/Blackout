@@ -141,7 +141,6 @@ import {
   writeAudioChannelVolume,
   type AudioChannel,
 } from './audio/AudioPreferences'
-import { evaluateWarnings, FlightWarningTracker, warningCueForState } from './systems/FlightWarnings'
 import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
@@ -798,8 +797,6 @@ export async function boot(): Promise<void> {
   const cameras = new CameraSystem(canvas)
   cameras.attachToScene(world.scene)
   cameras.setObstacleSampler((x, y, z) => world.hitObstacle(x, y, z))
-  const warningObstacleSampler = (x: number, y: number, z: number): boolean =>
-    world.hitObstacle(x, y, z, { x: 5.5, y: 2.5, z: 5.5 })
   // Seed the chase rig before the first title frame. Without an explicit pose
   // here, the paused title loop has no render delta to drive CameraSystem and
   // the hero camera stays at the origin until Play is pressed.
@@ -1157,7 +1154,6 @@ export async function boot(): Promise<void> {
   const stunts = new StuntTracker()
   const combo = new FlightComboTracker()
   const altitudeMilestones = new AltitudeMilestoneTracker()
-  const warningTracker = new FlightWarningTracker()
   const supersonic = new SupersonicTracker()
   const radar = new RadarSystem()
   applyRadarQuality = (quality): void => radar.setRenderQuality(quality)
@@ -1337,9 +1333,6 @@ export async function boot(): Promise<void> {
     flightState: 'ground',
     pitch: 0,
     roll: 0,
-    warning: null,
-    warningLevel: 'none',
-    warningCue: null,
     clock: '',
     weather: '',
     worldSeed: 0,
@@ -1385,7 +1378,6 @@ export async function boot(): Promise<void> {
     flightPathX: 50,
     flightPathY: 50,
   }
-  let prevWarning: string | null = null
   let prevEngineHeat: 'normal' | 'hot' | 'critical' | null = null
   const flightBriefing = new FlightBriefingSession()
   const radarDiscovered = new Set<string>()
@@ -1535,7 +1527,6 @@ export async function boot(): Promise<void> {
     stunts.reset()
     combo.reset()
     altitudeMilestones.reset()
-    warningTracker.reset()
     input.clearQueued()
     input.resetFlightControls(0)
     const activeCourseId = courseId()
@@ -1563,7 +1554,6 @@ export async function boot(): Promise<void> {
     prevGearDown = aircraft.controls.gearDown
     prevLightning = false
     thermalLiftActive = false
-    prevWarning = null
     prevEngineHeat = null
     radarDiscovered.clear()
     radarDiscoveryOrder.length = 0
@@ -2619,22 +2609,9 @@ export async function boot(): Promise<void> {
     }
 
     if (!crashCinematic.active && shouldUpdateLiveHud(playing, simLive) && hudUpdateDue(renderQuality, nowMs, lastHudUpdateMs)) {
-      const previousHudUpdateMs = lastHudUpdateMs
       lastHudUpdateMs = nowMs
       const alt = aircraft.onGround ? 0 : aircraft.altitudeAgl
       const pose = attitudeFromOrientation(aircraft.orientation)
-      const hudStepSec = Number.isFinite(previousHudUpdateMs) && previousHudUpdateMs >= 0
-        ? Math.min(.5, Math.max(0, (nowMs - previousHudUpdateMs) / 1000))
-        : 0
-      const warn = warningTracker.update(
-        evaluateWarnings(aircraft, alt, warningObstacleSampler),
-        hudStepSec,
-      )
-      if (warn.text !== prevWarning) {
-        const warningCue = warningCueForState(warn)
-        if (warningCue) audio.playCue(warningCue)
-        prevWarning = warn.text
-      }
       const nav = world.mission.hud(
         aircraft.position.x,
         aircraft.position.y,
@@ -2895,9 +2872,6 @@ export async function boot(): Promise<void> {
       hudFrame.roll = pose.roll
       hudFrame.heading = pose.heading
       hudFrame.audioMuted = audioMuted
-      hudFrame.warning = warn.text
-      hudFrame.warningLevel = warn.level
-      hudFrame.warningCue = warningCueForState(warn)
       hudFrame.clock = challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
       hudFrame.worldSeed = world.worldSeed

@@ -73,8 +73,6 @@ import {
   navigationTargetLabel,
   navigationTargetText,
   navigationSector,
-  warningCueClass,
-  warningCueAriaLabel,
   normalizeNavigationBearing,
   pauseStateLabel,
   missionPhaseClass,
@@ -148,18 +146,6 @@ describe('HUD value formatting', () => {
     expect(speedRailTargetKnots(240, 600)).toBe(240)
   })
 
-  it('whitelists cue-specific warning classes', () => {
-    expect(warningCueClass('low-alt')).toBe('')
-    expect(warningCueClass('flare')).toBe('warning-flare')
-    expect(warningCueClass('go-around')).toBe('warning-go-around')
-    expect(warningCueClass('not-a-cue')).toBe('')
-    expect(warningCueClass(null)).toBe('')
-    expect(warningCueClass('pull-up')).toBe('')
-    expect(warningCueAriaLabel('FLARE', 'flare')).toBe('FLARE: landing flare guidance')
-    expect(warningCueAriaLabel('GO AROUND', 'go-around')).toBe('GO AROUND: go-around warning')
-    expect(warningCueAriaLabel('UNKNOWN', 'not-a-cue')).toBe('UNKNOWN')
-    expect(warningCueAriaLabel('', 'low-alt')).toBe('')
-  })
   it('keeps procedural seed identity finite and compact', () => {
     expect(worldSeedHudLabel(9876.8)).toBe('9876.8')
     expect(worldSeedHudLabel(9876)).toBe('9876')

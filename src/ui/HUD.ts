@@ -17,7 +17,6 @@ import { COMBO_WINDOW_SEC, MAX_COMBO_COUNT } from '../systems/FlightCombo'
 import { landingQualityLabel, MAX_BEST_SCORE, MAX_BIOME_COUNT, MAX_WATER_BODY_COUNT } from '../systems/ChallengeRun'
 import { SUPERSONIC_THRESHOLD_MPS } from '../systems/Supersonic'
 import { stormBuffetHudActive } from '../systems/StormBuffet'
-import type { WarningCue } from '../systems/FlightWarnings'
 import { formatWorldSeed } from '../core/WorldSeed'
 export { flightBriefingHint } from '../core/FlightBriefing'
 
@@ -72,40 +71,6 @@ export type EngineHeatCue = 'normal' | 'hot' | 'critical'
 export type MissionPhaseCue = 'ready' | 'running' | 'returning' | 'complete' | 'failed'
 
 export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
-
-const HUD_WARNING_CUES: readonly Exclude<WarningCue, null>[] = [
-  'warning',
-  'obstacle',
-  'overspeed',
-  'stall',
-  'gear-warning',
-  'fuel',
-  'go-around',
-  'flare',
-]
-
-/** Whitelist warning cue classes before they reach the DOM class list. */
-export function warningCueClass(cue: WarningCue | unknown): string {
-  return typeof cue === 'string' && HUD_WARNING_CUES.includes(cue as Exclude<WarningCue, null>)
-    ? `warning-${cue}`
-    : ''
-}
-
-/** Explain the bounded warning identity to assistive technology. */
-export function warningCueAriaLabel(text: unknown, cue: WarningCue | unknown): string {
-  const safeText = typeof text === 'string' ? text.trim() : ''
-  if (!safeText) return ''
-  switch (cue) {
-    case 'flare': return `${safeText}: landing flare guidance`
-    case 'go-around': return `${safeText}: go-around warning`
-    case 'obstacle': return `${safeText}: obstacle warning`
-    case 'stall': return `${safeText}: stall warning`
-    case 'gear-warning': return `${safeText}: landing gear warning`
-    case 'overspeed': return `${safeText}: overspeed warning`
-    case 'fuel': return `${safeText}: fuel warning`
-    default: return safeText
-  }
-}
 
 export function pauseStateLabel(paused: boolean): string {
   return paused ? 'FLIGHT PAUSED · SIMULATION HOLD' : ''
@@ -1113,8 +1078,6 @@ export class HUD {
   private readonly adiBankPtr: HTMLElement | null
   private readonly adiPitchEl: HTMLElement | null
   private readonly adiRollEl: HTMLElement | null
-  private readonly warnEl: HTMLElement | null
-  private readonly warnTextEl: HTMLElement | null
   private readonly clockEl: HTMLElement | null
   private readonly weatherEl: HTMLElement | null
   private readonly windEl: HTMLElement | null
@@ -1404,8 +1367,6 @@ export class HUD {
     this.adiBankPtr = root.getElementById('adi-bank-ptr')
     this.adiPitchEl = root.getElementById('adi-pitch')
     this.adiRollEl = root.getElementById('adi-roll')
-    this.warnEl = root.getElementById('hud-warn')
-    this.warnTextEl = root.getElementById('hud-warn-text')
     this.clockEl = root.getElementById('hud-clock')
     this.weatherEl = root.getElementById('hud-weather')
     this.windEl = root.getElementById('hud-wind')
@@ -1548,11 +1509,6 @@ export class HUD {
     crosswind?: number | null
     /** Side of the runway toward which the live crosswind vector points. */
     crosswindSide?: CrosswindSide
-    /** Active caution / warning (STALL, OBSTACLE, GEAR). */
-    warning?: string | null
-    warningLevel?: 'none' | 'caution' | 'warning'
-    /** Bounded warning identity used for cue-specific visual treatment. */
-    warningCue?: WarningCue
     clock?: string
     weather?: string
     /** Active procedural world seed, kept visible for replayable exploration. */
@@ -1678,7 +1634,6 @@ export class HUD {
       const tone = verticalSpeedTone(opts.verticalSpeed ?? 0)
       this.setClass(this.verticalSpeedEl, 'climb', tone === 'climb')
       this.setClass(this.verticalSpeedEl, 'sink', tone === 'sink')
-      this.setClass(this.verticalSpeedEl, 'flare', opts.warning === 'FLARE')
     }
 
     if (this.gEl && opts.gForce !== undefined) {
@@ -2385,8 +2340,6 @@ export class HUD {
       this.updateAttitude(opts.pitch, opts.roll)
     }
 
-    this.updateWarning(opts.warning ?? null, opts.warningLevel ?? 'none', opts.warningCue)
-
     if (this.bannerEl) {
       if (opts.banner) {
         this.setText(this.bannerEl, opts.banner)
@@ -2613,31 +2566,6 @@ export class HUD {
     for (const candidate of NAVIGATION_SECTORS) {
       this.setClass(this.navCueEl, `guidance-${candidate}`, candidate === sector)
     }
-  }
-
-  private updateWarning(
-    text: string | null,
-    level: 'none' | 'caution' | 'warning',
-    cue: WarningCue | undefined,
-  ): void {
-    if (!this.warnEl || !this.warnTextEl) return
-    const activeCueClass = warningCueClass(cue)
-    for (const candidate of HUD_WARNING_CUES) {
-      this.setClass(this.warnEl, `warning-${candidate}`, `warning-${candidate}` === activeCueClass)
-    }
-    if (!text || level === 'none') {
-      this.setHidden(this.warnEl, true)
-      this.setAttribute(this.warnEl, 'aria-label', '')
-      this.setClass(this.warnEl, 'caution', false)
-      this.setClass(this.warnEl, 'warning', false)
-      this.setText(this.warnTextEl, '')
-      return
-    }
-    this.setHidden(this.warnEl, false)
-    this.setAttribute(this.warnEl, 'aria-label', warningCueAriaLabel(text, cue))
-    this.setText(this.warnTextEl, text)
-    this.setClass(this.warnEl, 'caution', level === 'caution')
-    this.setClass(this.warnEl, 'warning', level === 'warning')
   }
 
   /**
