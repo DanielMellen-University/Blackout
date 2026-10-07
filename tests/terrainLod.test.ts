@@ -514,21 +514,32 @@ describe('visible mesh contact sampling', () => {
 
   it('matches heights and lighting normals across neighbouring near tiles', () => {
     const terrain = new TerrainSystem(new Scene())
-    pump(terrain, 210, 210, 12)
-    const left = terrain.root.getObjectByName('chunk_0_0')!.getObjectByName('TerrainChunk') as Mesh
-    const right = terrain.root.getObjectByName('chunk_1_0')!.getObjectByName('TerrainChunk') as Mesh
-    const segs = terrain.chunkStats(0, 0)!.segs
-    for (let z = 0; z <= segs; z++) {
-      const a = z * (segs + 1) + segs
-      const b = z * (segs + 1)
-      expect(left.geometry.attributes.position!.getY(a))
-        .toBeCloseTo(right.geometry.attributes.position!.getY(b), 5)
-      for (const axis of [0, 1, 2]) {
-        expect(left.geometry.attributes.normal!.getComponent(a, axis))
-          .toBeCloseTo(right.geometry.attributes.normal!.getComponent(b, axis), 5)
+    try {
+      // Streaming is wall-clock budgeted: a fixed 12 frames is not readiness
+      // under CPU contention or a cold catchment. Keep the wait bounded, and
+      // retain the exact seam checks instead of testing host scheduling speed.
+      for (let frame = 0; frame < 512; frame++) {
+        terrain.update(210, 210, 1 / 60)
+        if (terrain.root.getObjectByName('chunk_0_0') && terrain.root.getObjectByName('chunk_1_0')) break
       }
+      const left = terrain.root.getObjectByName('chunk_0_0')?.getObjectByName('TerrainChunk') as Mesh | undefined
+      const right = terrain.root.getObjectByName('chunk_1_0')?.getObjectByName('TerrainChunk') as Mesh | undefined
+      expect(left).toBeDefined()
+      expect(right).toBeDefined()
+      const segs = terrain.chunkStats(0, 0)!.segs
+      for (let z = 0; z <= segs; z++) {
+        const a = z * (segs + 1) + segs
+        const b = z * (segs + 1)
+        expect(left!.geometry.attributes.position!.getY(a))
+          .toBeCloseTo(right!.geometry.attributes.position!.getY(b), 5)
+        for (const axis of [0, 1, 2]) {
+          expect(left!.geometry.attributes.normal!.getComponent(a, axis))
+            .toBeCloseTo(right!.geometry.attributes.normal!.getComponent(b, axis), 5)
+        }
+      }
+    } finally {
+      terrain.dispose()
     }
-    terrain.clearAll()
   })
 
   it('streams a bounded near-field vegetation kit', () => {

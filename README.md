@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.844**. Previous roadmap chunk: **10.843**.
-Recent changes from **10.844**. Landing glide advice now agrees with the runway's PAPI lights and uses the actual runway surface, including rotated and elevated pads. It appears only during an airborne inbound approach, not distant fly-bys, crossings, departures, or rollout. Flight handling and scoring are unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.845**. Previous roadmap chunk: **10.844**.
+Recent changes from **10.845**. Coaching stays available before takeoff, renews at flight milestones and final approach, and keeps Training Orbit's first-gate advice until that gate is reached. Device-specific power reduction, automatic gear, free flight, and landmark selection now have accurate guidance without additional alerts or timers.
 
 ## Run
 

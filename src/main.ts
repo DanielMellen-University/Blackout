@@ -74,7 +74,7 @@ import {
   Time,
 } from './core/Time'
 import { bannerRemainingMs, bannerUntilFromRemaining, MAX_BANNER_DURATION_MS } from './core/BannerClock'
-import { BRIEFING_DURATION_SECONDS, briefingControls, briefingRemainingSeconds } from './core/FlightBriefing'
+import { FlightBriefingSession, briefingControls } from './core/FlightBriefing'
 import {
   ChallengeRun,
   courseMasteryTierForProgress,
@@ -1414,7 +1414,7 @@ export async function boot(): Promise<void> {
   }
   let prevWarning: string | null = null
   let prevEngineHeat: 'normal' | 'hot' | 'critical' | null = null
-  let controlHintRemainingSec = 0
+  const flightBriefing = new FlightBriefingSession()
   const radarDiscovered = new Set<string>()
   const radarDiscoveryOrder: string[] = []
   let radarDiscoveryCooldownUntil = 0
@@ -1610,7 +1610,7 @@ export async function boot(): Promise<void> {
     overWater = false
     refueling = false
     prevFuelHomeCue = null
-    controlHintRemainingSec = briefing ? BRIEFING_DURATION_SECONDS : 0
+    flightBriefing.reset(briefing, activeSortie.course.id === 'training-orbit')
     time.reset()
     if (briefing) {
       const resetLabel = worldFallback
@@ -1968,7 +1968,7 @@ export async function boot(): Promise<void> {
       const { frameDt, steps, stepDt, alpha } = time.beginFrame(nowMs)
       visualDt = frameDt
       simDt = steps * stepDt
-      controlHintRemainingSec = briefingRemainingSeconds(controlHintRemainingSec, simDt, simLive)
+      flightBriefing.advance(simDt, simLive)
       const dt = stepDt
       const weather = world.atmosphere.weatherSnapshot
       aircraft.setWeatherGust(weather.gust)
@@ -3022,7 +3022,9 @@ export async function boot(): Promise<void> {
       hudFrame.trafficAlertSide = trafficSideCue
       hudFrame.trafficAlertVertical = trafficVerticalCue
       hudFrame.trafficAlertDistance = trafficAlert?.distance ?? null
-      hudFrame.controlHint = controlHintRemainingSec > 0 && aircraft.status !== 'crashed'
+      flightBriefing.observe(aircraft.onGround, challenge.gatesPassed, challenge.phase,
+        navGlide !== null, world.mission.totalGates, emergencyReturn)
+      hudFrame.controlHint = flightBriefing.visible && aircraft.status !== 'crashed'
         ? flightBriefingHint({
           onGround: aircraft.onGround,
           speed: aircraft.speed,
@@ -3030,6 +3032,10 @@ export async function boot(): Promise<void> {
           missionPhase: challenge.phase,
           gatesPassed: challenge.gatesPassed,
           gearDown: aircraft.controls.gearDown,
+          totalGates: world.mission.totalGates,
+          approachActive: navGlide !== null,
+          emergencyReturn,
+          navTarget,
           keyboardScheme: input.keyboardScheme,
           keyboardPitch: input.keyboardPitch,
           keyboardBindings: input.bindings,

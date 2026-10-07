@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.844** is current. Previous ship: **10.843**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.845** is current. Previous ship: **10.844**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -27,6 +27,8 @@ Chunk 10.843 extends the existing cooperative iterator into cold catchment sampl
 Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle thresholds with HUD glide advice. Two white/two red and `GS OK` now use the same 2.5–3° window, measured above the resident runway surface rather than the elevated, offset spawn pose. The HUD only shows glide advice inside the near-threshold corridor while airborne with both nose and ground track inbound; distant fly-bys, crossings, opposite-end approaches, departures, and rollout suppress it. PAPI remains neutral outside its corridor, writes materials only on pattern/daylight changes, and skips distance roots outside that corridor. Caller-owned scratch avoids new per-frame allocations. Cached poses invalidate on runway translations and sub-metre threshold crossings. Pure geometry, actual Three.js lens colors, HUD adapters, and the World boundary have regression coverage; browser approach/playability inspection remains outstanding under the existing access limitation. Flight physics, scoring, speed guidance, warning priority, and audio cadence are unchanged.
 
 ## Current priorities
+
+Chunk 10.845 keeps takeoff coaching available while waiting on the runway, renews one 16-second budget at first flight, the first passed gate, return, and actual inbound approach, and prevents repeated refresh from bounces or approach jitter. Training Orbit keeps first-gate guidance until that gate is passed. Simulation-time budgets remain independent of HUD cadence and pause/loading time. Grounded free flight still teaches takeoff; airborne free flight invites exploration, and engine-out return overrides it. Gear is described as automatic, with its override still shown in the title; keyboard, touch, and gamepad return hints identify power reduction. Final approach explains the shared PAPI cue, and selected landmarks do not falsely direct pilots to gate one. Existing warnings/audio and flight handling are untouched. Focused lifecycle and hint tests cover the flow; real-device/browser playability remains unverified.
 
 1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
 2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.

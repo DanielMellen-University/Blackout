@@ -873,7 +873,7 @@ describe('HUD value formatting', () => {
       missionPhase: 'ready',
       gatesPassed: 0,
       gearDown: true,
-    })).toBe('SHIFT / 2 POWER · W ROTATE · G GEAR AFTER TAKEOFF')
+    })).toBe('SHIFT / 2 POWER · W ROTATE · GEAR AUTO')
     expect(flightBriefingHint({
       onGround: false,
       speed: 180,
@@ -906,7 +906,7 @@ describe('HUD value formatting', () => {
       missionPhase: 'returning',
       gatesPassed: 5,
       gearDown: false,
-    })).toBe('G GEAR DOWN · ALIGN WITH RUNWAY · FLARE & LAND')
+    })).toBe('CTRL / 1 REDUCE POWER · G GEAR DOWN · FOLLOW BASE ARROW')
   })
 
   it('keeps cockpit cloud mist subtle and disabled outside first person', () => {
