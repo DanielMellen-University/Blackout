@@ -830,7 +830,8 @@ describe('HUD value formatting', () => {
   })
 
   it('keeps the return glide window bounded and explicit', () => {
-    expect(navigationGlideCue(1000, 100)).toBe('on-slope')
+    expect(navigationGlideCue(1000, Math.tan(2.75 * Math.PI / 180) * 1000)).toBe('on-slope')
+    expect(navigationGlideCue(1000, 100)).toBe('high')
     expect(navigationGlideCue(1000, 140)).toBe('high')
     expect(navigationGlideCue(1000, 10)).toBe('low')
     expect(navigationGlideCue(1000, 100, 'gate')).toBeNull()
@@ -845,7 +846,8 @@ describe('HUD value formatting', () => {
   it('converts target-relative return altitude into the correct glide cue', () => {
     expect(navigationGlideCueFromTargetDelta(1000, -140)).toBe('high')
     expect(navigationGlideCueFromTargetDelta(1000, 10)).toBe('low')
-    expect(navigationGlideCueFromTargetDelta(1000, -100)).toBe('on-slope')
+    expect(navigationGlideCueFromTargetDelta(1000, -Math.tan(2.75 * Math.PI / 180) * 1000)).toBe('on-slope')
+    expect(navigationGlideCueFromTargetDelta(1000, -100)).toBe('high')
     expect(navigationGlideCueFromTargetDelta(1000, Number.NaN)).toBeNull()
   })
 

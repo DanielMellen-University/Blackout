@@ -3,6 +3,24 @@ import { obstacleSweepDistance, World } from '../src/world/World'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
 describe('world lifecycle boundary', () => {
+  it('resolves landing guidance from the resident runway rather than the spawn pose', () => {
+    // Exercise the public boundary without starting terrain or atmospheric work.
+    const world = Object.create(World.prototype) as World
+    Object.assign(world, {
+      disposed: false,
+      runway: { position: { x: 300, y: 800, z: -200 }, rotation: { y: Math.PI / 2 } },
+      runwayApproach: { height: 0, distance: 0, inApproach: false },
+      spawn: { x: 999, y: -999, z: 999, yaw: 0 },
+    })
+    const position = { x: 300 - 538, y: 825, z: -200 + 13.5 }
+    const velocity = { x: 50, y: -2, z: 0 }
+    expect(world.landingGlideCue(position, Math.PI / 2, velocity, false)).toBe('on-slope')
+    expect(world.landingGlideCue(position, Math.PI / 2, velocity, true)).toBeNull()
+    expect(world.landingGlideCue(position, Math.PI / 2, { ...velocity, x: -50 }, false)).toBeNull()
+    Object.assign(world, { disposed: true })
+    expect(world.landingGlideCue(position, Math.PI / 2, velocity, false)).toBeNull()
+  })
+
   it('caps long obstacle sweeps before exact distance math is needed', () => {
     expect(obstacleSweepDistance(128 ** 2, 128, 0, 0)).toBe(128)
     expect(obstacleSweepDistance(256 ** 2, 256, 0, 0)).toBe(256)

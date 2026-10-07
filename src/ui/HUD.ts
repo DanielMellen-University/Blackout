@@ -3,6 +3,7 @@
  * attitude indicator (pitch ladder + bank), banner.
  */
 import { displayedKnots } from '../core/airspeed'
+import { runwayGlideCue, type RunwayGlideCue } from '../core/RunwayGuidance'
 import { fuelEnduranceSeconds, fuelPercent, fuelWarningLevel } from '../aircraft/FuelSystem'
 import {
   MAX_RADAR_CONTACTS,
@@ -632,7 +633,7 @@ export type NavigationLateralCue = 'center' | 'left' | 'right'
 
 export type NavigationSpeedCue = 'slow' | 'on-speed' | 'fast'
 
-export type NavigationGlideCue = 'high' | 'on-slope' | 'low'
+export type NavigationGlideCue = RunwayGlideCue
 
 /** Convert target altitude error into a calm climb, descent, or level cue. */
 export function navigationAltitudeCue(
@@ -733,18 +734,13 @@ export function navigationSpeedLabel(cue: NavigationSpeedCue | null): string {
   return ''
 }
 
-/** Compare base-return altitude to a forgiving straight-in glide window. */
+/** Use the same glide window as the runway's two-white/two-red PAPI lights. */
 export function navigationGlideCue(
   distance: number,
   altDelta: number,
   target: unknown = 'base',
 ): NavigationGlideCue | null {
-  if (target !== 'base' || !Number.isFinite(distance) || !Number.isFinite(altDelta)) return null
-  const safeDistance = Math.max(120, distance)
-  const slope = altDelta / safeDistance
-  if (slope > 0.12) return 'high'
-  if (slope < 0.02) return 'low'
-  return 'on-slope'
+  return target === 'base' ? runwayGlideCue(altDelta, distance) : null
 }
 
 /** Convert the shared target-relative altitude delta into a glide-slope cue. */

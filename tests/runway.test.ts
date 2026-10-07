@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Mesh, MeshStandardMaterial } from 'three'
+import { landingGlideCue, writeRunwayApproach } from '../src/core/RunwayGuidance'
+import { navigationGlideCue } from '../src/ui/HUD'
 import { createRunway, runwayLightIntensity, setRunwayDaylight, setRunwayWeather } from '../src/world/Runway'
 import {
   airfieldLightingContrast,
@@ -224,5 +226,53 @@ describe('runway lighting', () => {
     setAirfieldPapi(runway, 0, 0, 0)
 
     expect(lookup).not.toHaveBeenCalled()
+  })
+
+  it.each([0, Math.PI / 2, -Math.PI / 3])('keeps rendered lenses and HUD consistent on elevated pads at yaw %s', yaw => {
+    runway = createRunway()
+    runway.position.set(400, 750, -300)
+    runway.rotation.y = yaw
+    const papi = runway.getObjectByName('PAPI')!
+    const lenses = papi.children.filter(child => child.name.startsWith('PapiLens')) as Mesh[]
+    const sample = { height: 0, distance: 0, inApproach: false }
+    for (const degrees of [1, 2, 2.75, 3.2, 5.7]) {
+      const localX = -13.5
+      const localZ = -538
+      const position = {
+        x: runway.position.x + Math.cos(yaw) * localX + Math.sin(yaw) * localZ,
+        y: runway.position.y + Math.tan(degrees * Math.PI / 180) * 500,
+        z: runway.position.z - Math.sin(yaw) * localX + Math.cos(yaw) * localZ,
+      }
+      setAirfieldPapi(runway, position.x, position.y, position.z)
+      writeRunwayApproach(sample, position, runway.position, yaw)
+      const whites = lenses.filter(lens => (lens.material as MeshStandardMaterial).color.getHex() === 0xf4f8ff).length
+      const expected = whites > 2 ? 'high' : whites < 2 ? 'low' : 'on-slope'
+      expect(navigationGlideCue(sample.distance, sample.height)).toBe(expected)
+      expect(landingGlideCue(sample, yaw, Math.sin(yaw) * 50, Math.cos(yaw) * 50, yaw, false)).toBe(expected)
+    }
+  })
+
+  it('invalidates the cached PAPI pose when the runway moves beneath an unchanged aircraft', () => {
+    runway = createRunway()
+    setAirfieldPapi(runway, -13.5, 50, -538)
+    const lens = runway.getObjectByName('PapiLens3') as Mesh
+    expect((lens.material as MeshStandardMaterial).color.getHex()).toBe(0xf4f8ff)
+    runway.position.y = 25
+    setAirfieldPapi(runway, -13.5, 50, -538)
+    expect((lens.material as MeshStandardMaterial).color.getHex()).toBe(0xff4030)
+    runway.position.z = -1000
+    setAirfieldPapi(runway, -13.5, 50, -538)
+    const lens2 = runway.getObjectByName('PapiLens2') as Mesh
+    expect((lens2.material as MeshStandardMaterial).color.getHex()).toBe(0xff4030)
+  })
+
+  it('does not retain the wrong lights after a sub-metre glide-boundary crossing', () => {
+    runway = createRunway()
+    const boundary = Math.tan(3 * Math.PI / 180) * 500
+    setAirfieldPapi(runway, -13.5, boundary - .05, -538)
+    const lens = runway.getObjectByName('PapiLens2') as Mesh
+    expect((lens.material as MeshStandardMaterial).color.getHex()).toBe(0xff4030)
+    setAirfieldPapi(runway, -13.5, boundary + .05, -538)
+    expect((lens.material as MeshStandardMaterial).color.getHex()).toBe(0xf4f8ff)
   })
 })

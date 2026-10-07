@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.843**. Previous roadmap chunk: **10.842**.
-Recent changes from **10.843**. Workerless terrain generation can now yield during cold river routing, shoreline solving, water clipping, and water-normal preparation. Terrain and water detail stay byte-for-byte identical; cancellation and interleaved builds keep their own state. CPU profiles show shorter uninterrupted steps, not a guaranteed FPS or total-generation speedup.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.844**. Previous roadmap chunk: **10.843**.
+Recent changes from **10.844**. Landing glide advice now agrees with the runway's PAPI lights and uses the actual runway surface, including rotated and elevated pads. It appears only during an airborne inbound approach, not distant fly-bys, crossings, departures, or rollout. Flight handling and scoring are unchanged.
 
 ## Run
 

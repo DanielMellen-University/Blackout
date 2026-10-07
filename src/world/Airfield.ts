@@ -14,12 +14,16 @@ import {
   Vector3,
   MathUtils,
 } from 'three'
+import { papiLightPattern, RUNWAY_PAPI_X, RUNWAY_PAPI_Z, writeRunwayApproach, type RunwayApproach } from '../core/RunwayGuidance'
+export { papiLightPattern } from '../core/RunwayGuidance'
 
 const _pos = new Vector3()
 const _quat = new Quaternion()
 const _scale = new Vector3()
 const _mat = new Matrix4()
 const _Y = new Vector3(0, 1, 0)
+const _papiPosition = { x: 0, y: 0, z: 0 }
+const _papiApproach: RunwayApproach = { height: 0, distance: 0, inApproach: false }
 const windsockState = new WeakMap<Group, {
   angle: number
   speed: number
@@ -38,6 +42,9 @@ interface PapiState {
   lastY: number
   lastZ: number
   lastYaw: number
+  lastRootX: number
+  lastRootY: number
+  lastRootZ: number
 }
 
 interface BuiltPapi {
@@ -127,6 +134,9 @@ export function createAirfieldLandmarks(): Group {
     lastY: Number.NaN,
     lastZ: Number.NaN,
     lastYaw: Number.NaN,
+    lastRootX: Number.NaN,
+    lastRootY: Number.NaN,
+    lastRootZ: Number.NaN,
   })
   root.add(buildFloods(mat))
   root.add(buildFence(mat))
@@ -564,23 +574,6 @@ export function freezeStaticAirfieldMeshes(root: Group): void {
   })
 }
 
-/**
- * Pick the four-light PAPI pattern from the aircraft's approach angle.
- * The return value is the number of white lenses, from 0 (all red) to 4
- * (all white). Invalid inputs resolve to a level two-white/two-red cue.
- */
-export function papiLightPattern(height: number, distance: number): number {
-  if (!Number.isFinite(height) || !Number.isFinite(distance)) return 2
-  const safeHeight = Math.max(0, height)
-  const safeDistance = Math.max(1, distance)
-  const angleDeg = Math.atan2(safeHeight, safeDistance) * 180 / Math.PI
-  if (angleDeg >= 3.5) return 4
-  if (angleDeg >= 3) return 3
-  if (angleDeg >= 2.5) return 2
-  if (angleDeg >= 1.8) return 1
-  return 0
-}
-
 /** Keep approach lights readable at night without overpowering daylight. */
 export function papiLightIntensity(daylight: number, white: boolean): number {
   const safeDaylight = Number.isFinite(daylight) ? MathUtils.clamp(daylight, 0, 1) : 1
@@ -617,33 +610,31 @@ export function setAirfieldPapi(
   const yaw = root.rotation.y
   if (
     Number.isFinite(state.lastX) &&
-    Math.abs(wx - state.lastX) < 0.35 &&
-    Math.abs(wy - state.lastY) < 0.35 &&
-    Math.abs(wz - state.lastZ) < 0.35 &&
-    Math.abs(angleDelta(state.lastYaw, yaw)) < 0.001 &&
+    wx === state.lastX &&
+    wy === state.lastY &&
+    wz === state.lastZ &&
+    yaw === state.lastYaw &&
+    state.lastRootX === root.position.x &&
+    state.lastRootY === root.position.y &&
+    state.lastRootZ === root.position.z &&
     Math.abs(safeDaylight - state.lastDaylight) < 0.01
   ) return
   state.lastX = wx
   state.lastY = wy
   state.lastZ = wz
   state.lastYaw = yaw
+  state.lastRootX = root.position.x
+  state.lastRootY = root.position.y
+  state.lastRootZ = root.position.z
 
-  const dx = wx - root.position.x
-  const dz = wz - root.position.z
-  const localX = Math.cos(yaw) * dx - Math.sin(yaw) * dz
-  const localZ = Math.sin(yaw) * dx + Math.cos(yaw) * dz
-
-  const papiX = -13.5
-  const papiZ = -38
-  // The PAPI is mounted at the near (-Z) threshold and faces incoming
-  // aircraft on that side of the strip.
-  const along = papiZ - localZ
-  const lateral = localX - papiX
+  _papiPosition.x = wx
+  _papiPosition.y = wy
+  _papiPosition.z = wz
+  writeRunwayApproach(_papiApproach, _papiPosition, root.position, yaw)
   // Outside the landing corridor, hold a neutral two-white/two-red pattern so
   // distant fly-bys do not make the approach lights flash unpredictably.
-  const inApproach = along > 8 && along < 1200 && Math.abs(lateral) < 100
-  const pattern = inApproach
-    ? papiLightPattern(wy - root.position.y, Math.hypot(along, lateral))
+  const pattern = _papiApproach.inApproach
+    ? papiLightPattern(_papiApproach.height, _papiApproach.distance)
     : 2
   if (
     pattern === state.lastPattern &&
@@ -665,7 +656,7 @@ export function setAirfieldPapi(
 function buildPapi(mat: Mats): BuiltPapi {
   const g = new Group()
   g.name = 'PAPI'
-  g.position.set(-13.5, 0, -38)
+  g.position.set(RUNWAY_PAPI_X, 0, RUNWAY_PAPI_Z)
 
   const boxGeo = new BoxGeometry(0.9, 0.45, 0.7)
   const lensGeo = new BoxGeometry(0.62, 0.22, 0.08)

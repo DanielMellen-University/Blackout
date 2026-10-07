@@ -370,7 +370,6 @@ export async function boot(): Promise<void> {
     navigationClosingSpeed,
     navigationLateralCue,
     navigationSpeedCue,
-    navigationGlideCueFromTargetDelta,
     weatherCycleBanner,
     waterSurfaceCue,
     terrainRegionLabel,
@@ -2738,7 +2737,7 @@ export async function boot(): Promise<void> {
         })
         navLateral = navigationLateralCue(lateralOffset, 'base')
         navSpeed = navigationSpeedCue(aircraft.speed, 'base')
-        navGlide = navigationGlideCueFromTargetDelta(navDist, navAltDelta, 'base')
+        navGlide = world.landingGlideCue(aircraft.position, pose.heading, aircraft.velocity, aircraft.onGround)
         navCrosswind = crosswindSpeedMps(
           precipitation.windX,
           precipitation.windZ,

@@ -7,6 +7,7 @@ import {
   Scene,
 } from 'three'
 import { flightConfig } from '../aircraft/flightConfig'
+import { landingGlideCue, writeRunwayApproach, type RunwayApproach, type RunwayGlideCue } from '../core/RunwayGuidance'
 import { Atmosphere, type WeatherId } from './Atmosphere'
 import type { WeatherSnapshot, WindSide } from './WeatherDirector'
 import {
@@ -132,6 +133,7 @@ export class World {
   readonly mission: MissionSystem
   private seed = 0
   private readonly runway: Group
+  private readonly runwayApproach: RunwayApproach = { height: 0, distance: 0, inApproach: false }
   private readonly hemi: HemisphereLight
   private readonly ambient: AmbientLight
   private readonly fill: DirectionalLight
@@ -643,6 +645,13 @@ export class World {
     this.applyWeatherEffects(weather, this.atmosphere.daylight)
     setAirfieldWind(this.runway, weather.windX, weather.windZ)
     setAirfieldPapi(this.runway, safeX, safeY, safeZ, this.atmosphere.daylight)
+  }
+
+  /** Landing geometry uses the actual runway surface, not the elevated spawn pose. */
+  landingGlideCue(position: ObstacleSweepPoint, heading: number, velocity: ObstacleSweepPoint, onGround: boolean): RunwayGlideCue | null {
+    if (this.disposed) return null
+    writeRunwayApproach(this.runwayApproach, position, this.runway.position, this.runway.rotation.y)
+    return landingGlideCue(this.runwayApproach, heading, velocity.x, velocity.z, this.runway.rotation.y, onGround)
   }
 
   /** Release all streamed and persistent world resources before renderer teardown. */
