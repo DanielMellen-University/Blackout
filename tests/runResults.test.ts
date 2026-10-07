@@ -211,13 +211,13 @@ describe('run results focus flow', () => {
     expect(resultFuelBandClass(Number.NaN)).toBe('fuel-critical')
   })
 
-  it('formats bounded flight-log distance for short and long sorties', () => {
+  it('formats bounded flight-log distance for short and long missions', () => {
     expect(formatDistance(420)).toBe('420M')
     expect(formatDistance(2_450)).toBe('2.5KM')
     expect(formatDistance(Number.NaN)).toBe('0M')
   })
 
-  it('copies a bounded sortie summary and fails closed when clipboard access is unavailable', async () => {
+  it('copies a bounded mission summary and fails closed when clipboard access is unavailable', async () => {
     const writeText = vi.fn(async (_text: string) => {})
     expect(await copySortieSummary('  BLACKOUT · ROUTE COMPLETE  ', { writeText })).toBe(true)
     expect(writeText).toHaveBeenCalledWith('BLACKOUT · ROUTE COMPLETE')
@@ -255,7 +255,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('0')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'SORTIE · ROUTE COMPLETE · 0:42.00 · 0 GATES · HARD',
+      'MISSION · ROUTE COMPLETE · 0:42.00 · 0 GATES · HARD',
     )
 
     fixture.document.activeElement = fixture.newWorld
@@ -304,15 +304,15 @@ describe('run results focus flow', () => {
     vi.stubGlobal('document', fixture.document)
     const results = new RunResults(fixture.document as unknown as Document)
 
-    results.show(result, 'wingman', false, ['FIRST SORTIE', 'SPEED DEMON'])
+    results.show(result, 'wingman', false, ['FIRST MISSION', 'SPEED DEMON'])
     expect(elementsFor(fixture.document, 'result-badges')?.textContent)
-      .toBe('NEW COMMENDATIONS · FIRST SORTIE / SPEED DEMON')
+      .toBe('NEW COMMENDATIONS · FIRST MISSION / SPEED DEMON')
 
     results.dispose()
     vi.unstubAllGlobals()
   })
 
-  it('shows the deterministic precision sortie style in score detail', () => {
+  it('shows the deterministic precision mission style in score detail', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
     vi.stubGlobal('document', fixture.document)
@@ -348,13 +348,18 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
-  it('dispatches sortie summary sharing through a disposable results action', () => {
+  it('dispatches mission summary sharing through a disposable results action', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
     vi.stubGlobal('document', fixture.document)
     const results = new RunResults(fixture.document as unknown as Document)
     const handler = vi.fn()
     results.setCopySummaryHandler(handler)
+    results.setCopySummaryFeedback(false)
+    expect(fixture.copySummary.textContent).toBe('Copy mission summary')
+    expect(fixture.copySummary.getAttribute('aria-label')).toBe('Copy mission summary blocked by browser permissions')
+    results.setCopySummaryFeedback(true)
+    expect(fixture.copySummary.getAttribute('aria-label')).toBe('Mission summary copied')
     fixture.copySummary.dispatch('click', {})
     expect(handler).toHaveBeenCalledTimes(1)
     results.dispose()
@@ -532,7 +537,7 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE TOP 1,020KT')
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toContain('COURSE ALT 1,800M')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(
-      'SORTIE · ROUTE COMPLETE · 0:42.00 · 0 GATES · BUTTER',
+      'MISSION · ROUTE COMPLETE · 0:42.00 · 0 GATES · BUTTER',
     )
     results.dispose()
     vi.unstubAllGlobals()
@@ -707,6 +712,8 @@ describe('run results focus flow', () => {
 
     results.show({ ...result, courseId: 'seed:11:night' }, undefined, false, [], 'Night ops', 'WEATHER LOW FOG / TIME NIGHT')
     expect(elementsFor(fixture.document, 'result-conditions')?.textContent).toBe('WEATHER LOW FOG / TIME NIGHT')
+    expect(elementsFor(fixture.document, 'result-conditions')?.getAttribute('aria-label'))
+      .toBe('Mission conditions WEATHER LOW FOG, TIME NIGHT')
     expect(elementsFor(fixture.document, 'result-conditions')?.hidden).toBe(false)
     expect(elementsFor(fixture.document, 'result-summary')?.textContent)
       .toContain('Night ops · WEATHER LOW FOG · TIME NIGHT · ROUTE COMPLETE')
@@ -718,7 +725,7 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
-  it('labels a free-flight result as a scenic sortie', () => {
+  it('labels a free-flight result as a scenic mission', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
     vi.stubGlobal('document', fixture.document)
@@ -726,7 +733,7 @@ describe('run results focus flow', () => {
 
     results.show({ ...result, freeFlight: true })
     expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('FREE FLIGHT COMPLETE')
-    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('SCENIC SORTIE COMPLETE')
+    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('SCENIC MISSION COMPLETE')
     results.dispose()
     vi.unstubAllGlobals()
   })

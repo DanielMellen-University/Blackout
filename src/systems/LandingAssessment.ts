@@ -78,7 +78,7 @@ export function assessLanding(metrics: LandingMetrics): LandingDebrief | undefin
 
 /** Crash labels come from CollisionSystem; unknown or old records get a safe fallback. */
 export function failedLandingCorrection(reason: string | undefined, ditched = false): string {
-  if (ditched || reason === 'WATER CONTACT') return 'Choose dry ground or the runway; water contact ends the sortie.'
+  if (ditched || reason === 'WATER CONTACT') return 'Choose dry ground or the runway; water contact ends the mission.'
   switch (reason) {
     case 'SINK RATE':
     case 'IMPACT LOAD': return 'Reduce descent earlier. Go around if the approach is still steep near the ground.'

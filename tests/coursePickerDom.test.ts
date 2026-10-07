@@ -152,8 +152,9 @@ describe('course picker interaction', () => {
     expect(options()[0].getAttribute('aria-checked')).toBe('true')
   })
 
-  it('does not reannounce unchanged sortie targets on search or sort changes', () => {
+  it('does not reannounce unchanged mission targets on search or sort changes', () => {
     const [title, detail] = element('.course-picker-goal').children
+    expect(title.textContent).toMatch(/^NEXT MISSION · /)
     const titleWrites = vi.spyOn(title, 'textContent', 'set')
     const detailWrites = vi.spyOn(detail, 'textContent', 'set')
     picker.setFilter('mountain')

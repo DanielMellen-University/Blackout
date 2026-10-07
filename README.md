@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.847**. Previous roadmap chunk: **10.846**.
-Recent changes from **10.847**. Esc settings use a desktop/fullscreen shell with four categories and closed submenus for key bindings, audio mixing, and resets. Airspeed and engine command are rebuilt as matching blue/pale-orange digital cards with horizontal rails; navigation is compact and remaining green/turquoise interface colors are removed. Touch controls, input plumbing, and phone layouts are removed; keyboard/gamepad handling and the launch-screen layout remain unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.848**. Previous roadmap chunk: **10.847**.
+Recent changes from **10.848**. Rename flight attempts to missions throughout the interface, accessible labels, and copied reports. Existing saves, records, and replay links remain compatible.
 
 ## Run
 
@@ -25,12 +25,12 @@ Default keyboard controls:
 - Space afterburner; B speed brake and wheel brake
 - G landing gear; V stability assist
 - C cycles chase, orbit, and cockpit; middle mouse looks around
-- P or Escape pauses; R resets the sortie
+- P or Escape pauses; R resets the mission
 - N cycles weather; T cycles radar targets; X toggles ghost replay
 
-Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Touch and standard gamepads also support the core flight controls.
+Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Standard gamepads also support the core flight controls.
 
-Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Infinite World and custom seeds let you revisit procedural worlds; Daily, Weekly, and Monthly Ops share rotating challenges. Records, favorites, and best-run ghosts are saved locally.
+A mission is one flight attempt, from launch until landing or a crash. Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Infinite World and custom seeds let you revisit procedural worlds; Daily, Weekly, and Monthly Ops share rotating challenges. Records, favorites, and best-run ghosts are saved locally.
 
 ## Project
 

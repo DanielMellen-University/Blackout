@@ -49,7 +49,7 @@ export function resultScoreComparisonLabel(
   return gap > 0 ? `BEST +${gap.toLocaleString()}` : ''
 }
 
-/** Copy a bounded human-readable sortie recap without leaking runtime state. */
+/** Copy a bounded human-readable mission recap without leaking runtime state. */
 export async function copySortieSummary(
   summary: string,
   clipboard: ClipboardWriter | null | undefined,
@@ -206,10 +206,10 @@ export class RunResults {
 
   setCopySummaryFeedback(copied: boolean): void {
     if (this.disposed || !this.copySummary) return
-    this.copySummary.textContent = copied ? 'Summary copied' : 'Copy sortie summary'
+    this.copySummary.textContent = copied ? 'Summary copied' : 'Copy mission summary'
     this.copySummary.setAttribute(
       'aria-label',
-      copied ? 'Sortie summary copied' : 'Copy sortie summary blocked by browser permissions',
+      copied ? 'Mission summary copied' : 'Copy mission summary blocked by browser permissions',
     )
   }
 
@@ -239,7 +239,7 @@ export class RunResults {
     if (this.disposed) return
     if (this.shareReplay) {
       this.shareReplay.textContent = 'Copy replay link'
-      this.shareReplay.setAttribute('aria-label', 'Copy replay link for this sortie')
+      this.shareReplay.setAttribute('aria-label', 'Copy replay link for this mission')
     }
     this.setCopySummaryFeedback(false)
     this.setCopySeedFeedback(false)
@@ -250,15 +250,15 @@ export class RunResults {
     const ditched = crashed && result.ditched === true
     const label = typeof courseLabel === 'string' ? courseLabel.trim() : ''
     const rawCourse = result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : ''
-    const course = label || rawCourse || 'SORTIE'
-    const summaryCourse = label || (rawCourse && !rawCourse.startsWith('seed:') ? rawCourse : 'SORTIE')
+    const course = label || rawCourse || 'MISSION'
+    const summaryCourse = label || (rawCourse && !rawCourse.startsWith('seed:') ? rawCourse : 'MISSION')
     const conditions = typeof courseConditions === 'string' ? courseConditions.trim() : ''
     const courseEl = this.root.querySelector('#result-course')
     if (courseEl) courseEl.textContent = course
     if (this.conditions) {
       this.conditions.textContent = conditions
       this.conditions.hidden = conditions.length === 0
-      if (conditions) this.conditions.setAttribute('aria-label', `Sortie conditions ${conditions.replaceAll(' / ', ', ')}`)
+      if (conditions) this.conditions.setAttribute('aria-label', `Mission conditions ${conditions.replaceAll(' / ', ', ')}`)
       else this.conditions.removeAttribute('aria-label')
     }
     if (this.seedEl) {
@@ -317,9 +317,9 @@ export class RunResults {
     this.streak.setAttribute(
       'aria-label',
       precisionStreak >= 2
-        ? `Best sortie precision streak ${precisionStreak} gates; course best ${courseBestPrecisionStreak}`
+        ? `Best mission precision streak ${precisionStreak} gates; course best ${courseBestPrecisionStreak}`
         : courseBestPrecisionStreak >= 2
-          ? `No precision streak this sortie; course best ${courseBestPrecisionStreak}`
+          ? `No precision streak this mission; course best ${courseBestPrecisionStreak}`
           : 'No precision streak',
     )
     const fuelRemaining = Number.isFinite(result.fuelRemainingPercent)
@@ -337,7 +337,7 @@ export class RunResults {
     const outcome = crashed
       ? landingName
       : result.freeFlight
-        ? 'SCENIC SORTIE COMPLETE'
+        ? 'SCENIC MISSION COMPLETE'
         : 'ROUTE COMPLETE'
     this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES${gateMisses ? ` · ${gateMisses}` : ''} · ${landingName}`
     const summaryScore = Number.isFinite(result.totalScore)
@@ -690,7 +690,7 @@ function must(root: Document, id: string): HTMLElement {
   return el
 }
 
-/** Keep the flight-log distance compact on results without hiding short sorties. */
+/** Keep the flight-log distance compact on results without hiding short missions. */
 export function formatDistance(distanceM: number): string {
   const safe = Number.isFinite(distanceM) ? Math.max(0, Math.min(2_000_000, distanceM)) : 0
   if (safe < 1_000) return `${Math.round(safe)}M`

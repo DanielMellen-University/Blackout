@@ -688,7 +688,7 @@ export function courseTimePreviewLabel(timeOfDay: number | undefined): string {
   return normalized < 0.22 || normalized > 0.78 ? 'NIGHT' : ''
 }
 
-/** Keep authored runway wind pressure explicit before the sortie starts. */
+/** Keep authored runway wind pressure explicit before the mission starts. */
 export function courseWindPreviewLabel(windSide: WindSide | undefined): string {
   if (windSide !== 'left' && windSide !== 'right') return ''
   const crab = windSide === 'left' ? 'R' : 'L'
@@ -1039,7 +1039,7 @@ export class CoursePicker {
     if (!recordCopy) this.records.open = false
     this.goal.hidden = !selected
     const goal = selected ? courseSortieGoal(selected) : null
-    const goalTitle = goal ? `NEXT SORTIE · ${goal.title}` : ''
+    const goalTitle = goal ? `NEXT MISSION · ${goal.title}` : ''
     const goalDetail = goal?.detail ?? ''
     // Search/filter changes must not repeatedly announce an unchanged target.
     if (this.goalTitle.textContent !== goalTitle) this.goalTitle.textContent = goalTitle

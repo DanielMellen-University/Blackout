@@ -5,7 +5,7 @@ import { ROADMAP_CHUNK } from '../src/core/Version'
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
 
 describe('README pitch', () => {
-  it('says what the game is, how to run it, how to fly, and how a sortie ends', () => {
+  it('says what the game is, how to run it, how to fly, and how a mission ends', () => {
     expect(readme).toContain('Current release: **v0.12.0** (`Systems expansion`)')
     expect(readme).toContain(`Roadmap chunk: **${ROADMAP_CHUNK}**`)
     expect(readme).toContain('npm run dev')
@@ -13,9 +13,23 @@ describe('README pitch', () => {
     expect(readme).toContain('land or crash')
     expect(readme).toMatch(/retry the same course/i)
     expect(readme.split('\n').length).toBeLessThan(80)
-    expect(readme).not.toContain('Seeded sorties')
+    expect(readme).not.toMatch(/\bsorties?\b/i)
+    expect(readme).toContain('A mission is one flight attempt')
+    expect(readme).not.toContain('Touch and standard gamepads')
     expect(readme).not.toContain('THERMAL SURF')
     expect(readme).not.toContain('commendation')
+  })
+})
+
+describe('current mission documentation', () => {
+  it('uses mission consistently and defines the difference from a course', () => {
+    for (const path of ['../docs/PROJECT_OVERVIEW.md', '../docs/ROADMAP.md']) {
+      const source = readFileSync(new URL(path, import.meta.url), 'utf8')
+      expect(source).not.toMatch(/\bsorties?\b/i)
+    }
+    const overview = readFileSync(new URL('../docs/PROJECT_OVERVIEW.md', import.meta.url), 'utf8')
+    expect(overview).toContain('retrying the same course starts another mission')
+    expect(overview).not.toContain('Touch-capable browsers get a pointer-captured flight deck')
   })
 })
 

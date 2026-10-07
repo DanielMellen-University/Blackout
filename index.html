@@ -52,7 +52,7 @@
           <div class="deck-catalog">
             <div class="deck-section-heading"><span>01 / Flight plan</span><span>Choose your horizon</span></div>
             <div id="title-course-picker" class="course-picker">
-              <p class="course-picker-kicker" id="title-course-label">Select a sortie</p>
+              <p class="course-picker-kicker" id="title-course-label">Select a mission</p>
               <div class="course-picker-list" role="radiogroup" aria-labelledby="title-course-label"></div>
               <p class="course-picker-detail"></p>
               <p class="course-picker-stats" hidden></p>
@@ -92,7 +92,7 @@
                 <button type="button" class="btn-ghost" data-settings-tab="general" aria-controls="settings-general" aria-pressed="true">General</button>
                 <button type="button" class="btn-ghost" data-settings-tab="controls" aria-controls="settings-controls" aria-pressed="false">Controls</button>
                 <button type="button" class="btn-ghost" data-settings-tab="camera" aria-controls="settings-camera" aria-pressed="false">Camera</button>
-                <button type="button" class="btn-ghost" data-settings-tab="course" aria-controls="settings-course" aria-pressed="false">Next sortie</button>
+                <button type="button" class="btn-ghost" data-settings-tab="course" aria-controls="settings-course" aria-pressed="false">Next mission</button>
               </nav>
               <div class="settings-content">
                 <section id="settings-general" data-settings-panel="general" aria-labelledby="settings-general-heading">
@@ -266,7 +266,7 @@
                   </label>
                 </section>
                 <section id="settings-course" data-settings-panel="course" aria-labelledby="settings-course-heading" hidden>
-                  <h3 id="settings-course-heading">Next sortie</h3>
+                  <h3 id="settings-course-heading">Next mission</h3>
                   <div id="menu-course-picker" class="course-picker course-picker-compact">
                     <p class="course-picker-kicker" id="menu-course-label">Course</p>
                     <div class="course-picker-list" role="radiogroup" aria-labelledby="menu-course-label"></div>
@@ -677,7 +677,7 @@
       <div id="run-results" class="run-results" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
         <div class="run-results-panel">
           <p class="report-kicker">Blackout / Flight report</p>
-          <p id="result-course" class="menu-kicker">SORTIE</p>
+          <p id="result-course" class="menu-kicker">MISSION</p>
           <p id="result-conditions" class="result-conditions" hidden></p>
           <p id="result-seed" class="result-conditions" aria-label="World seed" hidden></p>
           <h2 id="result-title">COMPLETE RUN</h2>
@@ -728,7 +728,7 @@
             <summary>Share or revisit this flight</summary>
             <div class="report-share-actions">
               <button type="button" id="btn-share-replay" class="btn-ghost">Copy replay link</button>
-              <button type="button" id="btn-copy-summary" class="btn-ghost">Copy sortie summary</button>
+              <button type="button" id="btn-copy-summary" class="btn-ghost">Copy mission summary</button>
               <button type="button" id="btn-copy-seed" class="btn-ghost">Copy world seed</button>
               <button type="button" id="btn-load-seed" class="btn-ghost">Load seed on title</button>
             </div>

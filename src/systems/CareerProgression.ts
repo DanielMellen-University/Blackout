@@ -15,6 +15,7 @@ export interface PilotCareerProgress {
   styleVarietyCount?: number
 }
 
+/** Persisted IDs are stable even when player-facing commendation names change. */
 export type PilotCommendationId = 'first-sortie' | 'course-collector' | 'speed-demon' | 'high-flyer' | 'long-haul' | 'style-variety'
 export const PILOT_COMMENDATION_COUNT = 6
 
@@ -81,7 +82,7 @@ export function pilotCommendationsForProgress(progress: PilotCareerProgress): Pi
 }
 
 export function pilotCommendationLabel(id: PilotCommendationId): string {
-  if (id === 'first-sortie') return 'FIRST SORTIE'
+  if (id === 'first-sortie') return 'FIRST MISSION'
   if (id === 'course-collector') return 'COURSE COLLECTOR'
   if (id === 'speed-demon') return 'SPEED DEMON'
   if (id === 'high-flyer') return 'HIGH FLYER'

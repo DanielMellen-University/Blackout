@@ -5,6 +5,13 @@ const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8')
 
 describe('unified flight deck contracts', () => {
+  it('uses mission terminology in launch, settings, and results', () => {
+    expect(html).not.toMatch(/\bsorties?\b/i)
+    expect(html).toContain('Select a mission')
+    expect(html).toContain('Next mission')
+    expect(html).toContain('Copy mission summary')
+  })
+
   it('has unique IDs and valid native label/dialog references', () => {
     const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1])
     const known = new Set(ids)

@@ -90,7 +90,7 @@ describe('CareerProgression', () => {
     })).toEqual(['first-sortie', 'course-collector', 'speed-demon', 'high-flyer', 'long-haul', 'style-variety'])
     expect(pilotCommendationLabel('long-haul')).toBe('LONG HAUL')
     expect(pilotCommendationLabel('style-variety')).toBe('STYLE VARIETY')
-    expect(pilotCommendationsLabel(['first-sortie', 'high-flyer'])).toBe('EARNED · FIRST SORTIE · HIGH FLYER')
+    expect(pilotCommendationsLabel(['first-sortie', 'high-flyer'])).toBe('EARNED · FIRST MISSION · HIGH FLYER')
     expect(pilotCommendationsLabel([])).toBe('EARNED · NONE')
     expect(pilotCommendationsForProgress({
       ...base,
