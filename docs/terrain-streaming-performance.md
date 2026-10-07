@@ -24,8 +24,14 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
   Vegetation retains its distance fade.
 - Settlement planning keeps its previous range and object caps so extending the
   landscape does not quadruple background settlement work.
-- Browsers without working workers retain synchronous generation with the same
-  inter-build deadline. Their loading speed and frame times will differ.
+- Browsers without working workers use the same geometry iterator as workers,
+  but yield between batches of eight climate/color/gradient samples. The stream
+  retains one unfinished tile and shares the 2 ms upload deadline, with a hard
+  256-step ceiling even if a clock is coarse or frozen. Unfinished work counts
+  as in-flight and is cancelled on reset, disposal, seed changes, or unloading.
+  Cold catchment creation, water assembly, and attachment remain indivisible;
+  a single step can exceed the deadline. Loading speed and frame times differ
+  from the worker path. No timers or additional background processes are used.
 - Silent terrain and settlement jobs expire after 15 seconds of active world
   updates and use the existing bounded fallback queues. No wall-clock timer runs
   during pause or hidden-tab time. Settlement replies must match the outstanding
@@ -53,10 +59,37 @@ Observed with Node v22.23.2 and eight available execution threads on 2026-10-06:
 Seed 1337, eight samples, also showed a 42.52 ms first near build and a 6.65 ms
 later median. Near generation, rather than distance-ranking arithmetic, is the
 main CPU cost in these samples. Keep it off the render thread. The existing
-inter-build deadline cannot interrupt one synchronous near build; sliced fallback
-generation remains a candidate, not a shipped improvement. Re-run in a separate
+inter-build deadline could not interrupt one synchronous near build in 10.839.
+Re-run in a separate
 process without the test suite for comparisons. Samples and hardware are limited;
 browser rendering and dense/weather-heavy full-flight profiling are still needed.
+
+## Cooperative CPU steps (chunk 10.840)
+
+Run `npm run perf:terrain -- --seed=42 --samples=16 --sliced`, then repeat with
+seed 1337 in another process. Each `next()` reports the phase just performed;
+the profiler includes whole-tile timings, maximum individual step cost, and
+maximum costs by phase. It drains the iterator immediately, not over browser
+frames, and does not include game scheduling, collision probes, uploads, or FPS.
+Steps preserve the previous typed buffers and bounds, verified against hashes
+captured independently from commit `1065d0b` for six terrain/water/pad cases.
+
+Separate unloaded runs on the same Node environment/date, 16 near tiles each:
+
+| Seed | First complete tile | Later tile median | Later tile p95 | Largest step |
+| --- | ---: | ---: | ---: | ---: |
+| 42 | 46.84 ms | 6.85 ms | 12.82 ms | 15.24 ms |
+| 1337 | 43.97 ms | 9.20 ms | 40.55 ms | 12.40 ms |
+
+The largest near step in both runs was layout/cold catchment creation. Normal
+probes can create adjacent catchments (8.56 / 6.70 ms maxima); water assembly
+reached 5.58 / 7.01 ms. Seed 1337's longer route also contains promoted water
+grids, with a 218,964-byte maximum payload versus seed 42's 39,412 bytes.
+An earlier run concurrent with focused tests showed an 83.70 ms first tile and
+25.40 ms maximum step; host load matters. These observations are not a hard
+frame-time guarantee or a cross-device speedup claim. Slicing stops an entire
+tile from being one mandatory uninterrupted sampling call, but cold hydrology,
+water assembly, and scene attachment remain profiling/optimization priorities.
 
 ## Reproduce
 

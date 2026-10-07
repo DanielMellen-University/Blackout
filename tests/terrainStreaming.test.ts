@@ -1,6 +1,6 @@
 import { Group, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { generateTerrainGeometry, type TerrainGeometryData } from '../src/world/TerrainGeometry'
+import { generateTerrainGeometry, type TerrainGeometryData, type TerrainGeometrySteps } from '../src/world/TerrainGeometry'
 import { TERRAIN_ROOT_SIZE, tileKey } from '../src/world/TerrainLayout'
 import { CHUNK_SIZE, TerrainSystem } from '../src/world/TerrainSystem'
 import type { TerrainBuildRequest, TerrainBuildReply } from '../src/world/TerrainWorkerPool'
@@ -35,6 +35,8 @@ interface Internals {
   replacementKeys: Map<string, string[]>
   sampledChunkLookup: Map<string, unknown>
   groundMatFar: MeshStandardMaterial
+  ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[]
+  fallback: { job: TerrainBuildRequest; key: string; steps: TerrainGeometrySteps } | null
   dispatchWorkers(): void
   drainBuildQueue(): void
   install(job: TerrainBuildRequest, data: TerrainGeometryData): void
@@ -297,6 +299,7 @@ describe('terrain streaming integration', () => {
     FakeWorker.instances[0]!.onerror?.()
     expect(terrain.streamingStats.workers).toBe(0)
     expect(terrain.streamingStats.pending).toBe(1)
+    vi.spyOn(performance, 'now').mockReturnValue(0)
     internal.drainBuildQueue()
     expect(internal.chunks.has(key(5))).toBe(true)
     expect(terrain.streamingStats.pending).toBe(0)
@@ -312,9 +315,81 @@ describe('terrain streaming integration', () => {
 
     expect(terrain.streamingStats.workers).toBe(0)
     expect(terrain.streamingStats.pending).toBe(1)
+    vi.spyOn(performance, 'now').mockReturnValue(0)
     internal.drainBuildQueue()
     expect(internal.chunks.has(key(5))).toBe(true)
     expect(terrain.streamingStats.pending).toBe(0)
+  })
+
+  it('suspends a fallback tile at the frame deadline and installs only completed geometry', () => {
+    queue(0, 0)
+    internal.dispatchWorkers()
+    FakeWorker.instances[0]!.onerror?.()
+    const clock = vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValue(3)
+    internal.drainBuildQueue()
+    expect(terrain.streamingStats).toMatchObject({ loaded: 0, pending: 0, inFlight: 1, workers: 0 })
+    expect(internal.fallback).not.toBeNull()
+    const steps = internal.fallback!.steps
+    const advance = vi.spyOn(steps, 'next')
+    clock.mockReturnValueOnce(0).mockReturnValue(3)
+    internal.drainBuildQueue()
+    expect(advance).toHaveBeenCalledOnce()
+    expect(terrain.streamingStats.loaded).toBe(0)
+    clock.mockReturnValue(0)
+    for (let frame = 0; frame < 20 && !internal.chunks.has(key(0)); frame++) internal.drainBuildQueue()
+    expect(internal.chunks.has(key(0))).toBe(true)
+    expect(terrain.streamingStats.inFlight).toBe(0)
+    expect(internal.fallback).toBeNull()
+  })
+
+  it.each(['clear', 'dispose', 'unwanted', 'seed'] as const)('cancels suspended fallback on %s', reason => {
+    queue(0, 0)
+    internal.dispatchWorkers()
+    FakeWorker.instances[0]!.onerror?.()
+    vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValue(3)
+    internal.drainBuildQueue()
+    const steps = internal.fallback!.steps
+    const cancel = vi.spyOn(steps, 'return')
+    if (reason === 'clear') terrain.clearAll()
+    if (reason === 'dispose') terrain.dispose()
+    if (reason === 'unwanted') { internal.desiredTiles.delete(key(0)); internal.drainBuildQueue() }
+    if (reason === 'seed') { setWorldSeed(2); internal.drainBuildQueue() }
+    expect(cancel).toHaveBeenCalledOnce()
+    expect(internal.fallback).toBeNull()
+    expect(terrain.streamingStats.inFlight).toBe(0)
+    expect(terrain.streamingStats.loaded).toBe(0)
+  })
+
+  it('bounds fallback advances even when the timer never advances', () => {
+    queue(0, 0)
+    internal.dispatchWorkers()
+    FakeWorker.instances[0]!.onerror?.()
+    const clock = vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValue(3)
+    internal.drainBuildQueue()
+    const advance = vi.spyOn(internal.fallback!.steps, 'next').mockReturnValue({ done: false, value: 'climate' })
+    clock.mockReturnValue(0)
+    internal.drainBuildQueue()
+    expect(advance).toHaveBeenCalledTimes(256)
+    expect(terrain.streamingStats.loaded).toBe(0)
+    expect(terrain.streamingStats.inFlight).toBe(1)
+  })
+
+  it('releases a failed iterator instead of trying to install its empty next result', () => {
+    queue(0, 0)
+    internal.dispatchWorkers()
+    FakeWorker.instances[0]!.onerror?.()
+    const clock = vi.spyOn(performance, 'now').mockReturnValueOnce(0).mockReturnValue(3)
+    internal.drainBuildQueue()
+    const steps = internal.fallback!.steps
+    const cancel = vi.spyOn(steps, 'return')
+    vi.spyOn(steps, 'next').mockImplementation(() => { throw new Error('generation failed') })
+    clock.mockReturnValue(0)
+    expect(() => internal.drainBuildQueue()).toThrow('generation failed')
+    expect(cancel).toHaveBeenCalledOnce()
+    expect(internal.fallback).toBeNull()
+    expect(terrain.streamingStats.inFlight).toBe(0)
+    expect(() => internal.drainBuildQueue()).not.toThrow()
+    expect(terrain.streamingStats.loaded).toBe(0)
   })
 
   it('terminates all workers and never adds chunks from late replies after disposal', () => {

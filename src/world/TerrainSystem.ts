@@ -36,8 +36,8 @@ import {
 } from './ground'
 import { makeWaterMaterial } from './WaterSystem'
 import {
-  CHUNK_SIZE, deserializeTerrainGeometry, generateTerrainGeometry,
-  type TerrainGeometryData, type TerrainLod,
+  CHUNK_SIZE, deserializeTerrainGeometry, generateTerrainGeometrySteps,
+  type TerrainGeometryData, type TerrainGeometrySteps, type TerrainLod,
 } from './TerrainGeometry'
 import { TerrainWorkerPool, type TerrainBuildRequest } from './TerrainWorkerPool'
 export { CHUNK_SIZE, segsForLod, waterSegsForLod, pondIntersectsBounds,
@@ -76,6 +76,8 @@ const FADE_SECONDS = .65
 /** Main-thread mesh attachment stays bounded, even when workers complete together. */
 const DEFAULT_UPLOAD_BUDGET_MS = 2
 const DEFAULT_MAX_UPLOADS_PER_FRAME = 16
+/** A deterministic ceiling also bounds progress if the clock is coarse/frozen. */
+const MAX_FALLBACK_STEPS_PER_FRAME = 256
 /** Keep coarse-tile ownership lookups cheap without retaining an unbounded map. */
 const SAMPLE_LOOKUP_LIMIT = 512
 export const STREAM_RADIUS_M = VIEW_RADIUS * CHUNK_SIZE
@@ -260,6 +262,8 @@ export class TerrainSystem {
   /** Completed results retain their nearest-first order between stream reschedules. */
   private readySorted = false
   private readonly activeKeys = new Set<string>()
+  /** Only one suspended CPU tile is retained, never an iterator per queued tile. */
+  private fallback: { job: TerrainBuildRequest; key: string; steps: TerrainGeometrySteps } | null = null
   /** Chunks that still need per-frame opacity or prop-distance work. */
   private readonly fadeKeys = new Set<string>()
   /** Reused schedule membership set avoids churn during rapid focus changes. */
@@ -544,6 +548,7 @@ export class TerrainSystem {
     // jobs before rebuilding so the new world's near-field tiles do not wait
     // behind geometry that can no longer be installed.
     if (!this.disposed) this.workers.cancelJobs()
+    this.cancelFallback()
     this.generation++
     invalidateGroundSamplerCaches()
     this.ready.length = 0
@@ -636,7 +641,7 @@ export class TerrainSystem {
   streamingStatsInto(out: TerrainStreamingStats): TerrainStreamingStats {
     out.loaded = this.chunks.size
     out.pending = this.pending.length
-    out.inFlight = this.workers.busy
+    out.inFlight = this.workers.busy + (this.fallback ? 1 : 0)
     out.ready = this.ready.length
     out.workers = this.workers.size
     return out
@@ -978,19 +983,53 @@ export class TerrainSystem {
     }
     this.dispatchWorkers()
     if (this.workers.size > 0) return
-    // Unsupported/failed workers retain deterministic streaming with a strict
-    // inter-build deadline. Browser workers are the normal generation path.
-    while (this.pending.length && uploads < this.maxUploadsPerFrame &&
-      (uploads === 0 || performance.now() < deadline)) {
-      const pending = this.pending.pop()!
-      this.pendingKeys.delete(tileKey(pending.cx, pending.cz, pending.size))
-      const job = this.requestFor(pending)
-      if (!job) continue
-      const quality = pending.dist > 8 ? 'fallback' : 'full'
-      this.install(job, generateTerrainGeometry(job.cx * CHUNK_SIZE, job.cz * CHUNK_SIZE,
-        job.lod, job.size, job.skirtEdges, quality))
-      uploads++
+    // Unsupported/failed workers share the upload deadline but can suspend
+    // a tile between small sampling batches instead of overrunning it with
+    // an entire near grid. One indivisible phase can still exceed the budget.
+    let advances = 0
+    while ((this.fallback || this.pending.length) && uploads < this.maxUploadsPerFrame &&
+      advances < MAX_FALLBACK_STEPS_PER_FRAME &&
+      ((advances === 0 && uploads === 0) || performance.now() < deadline)) {
+      if (this.fallback && (this.fallback.job.generation !== this.generation ||
+        this.fallback.job.seed !== getWorldSeed() || !this.desiredTiles.has(this.fallback.key))) {
+        this.cancelFallback()
+      }
+      if (!this.fallback) {
+        const pending = this.pending.pop()
+        if (!pending) break
+        const key = tileKey(pending.cx, pending.cz, pending.size)
+        this.pendingKeys.delete(key)
+        const job = this.requestFor(pending)
+        if (!job) continue
+        const quality = pending.dist > 8 ? 'fallback' : 'full'
+        this.fallback = { job, key, steps: generateTerrainGeometrySteps(job.cx * CHUNK_SIZE,
+          job.cz * CHUNK_SIZE, job.lod, job.size, job.skirtEdges, quality) }
+        this.activeKeys.add(key)
+      }
+      const current = this.fallback
+      let result: IteratorResult<unknown, TerrainGeometryData>
+      try {
+        result = current.steps.next()
+      } catch (error) {
+        // Preserve error reporting, but never keep a terminated iterator that
+        // would return an undefined payload on the next frame.
+        this.cancelFallback()
+        throw error
+      }
+      advances++
+      if (result.done) {
+        this.fallback = null
+        this.install(current.job, result.value)
+        uploads++
+      }
     }
+  }
+
+  private cancelFallback(): void {
+    if (!this.fallback) return
+    this.fallback.steps.return(undefined as never)
+    this.activeKeys.delete(this.fallback.key)
+    this.fallback = null
   }
 
   private dispatchWorkers(): void {

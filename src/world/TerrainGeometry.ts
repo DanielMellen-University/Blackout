@@ -1,7 +1,7 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
 import { applySlopeShadingInto, biomeColorInto, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { CATCHMENT_SIZE, riverReachesInBounds, waterBasinBoundsRadius, waterLandmarks, type RiverReach, type WaterBasin } from './Hydrology'
+import { CATCHMENT_SIZE, riverReachesInBounds, waterBasinBoundsRadius, waterLandmarks, type WaterBasin } from './Hydrology'
 import { buildWaterMesh } from './WaterSystem'
 
 export const CHUNK_SIZE = 420
@@ -28,8 +28,6 @@ const climateGridPool: Climate[][] = []
 // tile without retaining one allocation per coarse edge set.
 const skirtPositionsScratch: number[] = []
 const skirtColorsScratch: number[] = []
-/** Reused detailed river list; generation is synchronous within each worker. */
-const riverReachScratch: RiverReach[] = []
 /** Reused fixed-basin list; water meshes consume it before generation returns. */
 const basinScratch: WaterBasin[] = []
 
@@ -283,137 +281,176 @@ export function generateTerrainGeometry(
   skirtEdges: readonly [boolean, boolean, boolean, boolean] | null = null,
   quality: TerrainGeometryQuality = 'full',
 ): TerrainGeometryData {
-  const span = CHUNK_SIZE * size
-  // Older browsers can lack module workers, so the synchronous fallback must
-  // stay responsive while the full worker path retains the authored horizon.
-  // Far fallback tiles are hidden behind fog and rebuild at full detail when
-  // they approach the jet.
-  const reducedFar = quality === 'fallback' && lod === 2
-  const baseSegs = reducedFar
-    ? (size > 1 ? 8 : 4)
-    : size > 1 ? SEGS_MID : segsForLod(lod)
-  const reaches = reducedFar
-    ? []
-    : riverReachesInBounds(originX, originZ, originX + span, originZ + span, 0, riverReachScratch)
-  const riverSegs = Math.min(RIVER_MAX_SEGS[lod],
-    Math.max(baseSegs, Math.ceil(span / RIVER_TARGET_CELL_M[lod])))
-  const detailSegs = Math.max(baseSegs, waterSegsForLod(lod, span), reaches.length ? riverSegs : 0)
-  // Analytic hydrology determines the grid before expensive colors/normals.
-  // Ocean detection still probes the base grid; shared vertices are reused
-  // if that probe promotes the tile, instead of constructing two meshes.
-  let segs = reducedFar
-    ? baseSegs
-    : reaches.length || pondIntersectsBounds(originX, originZ, span) ? detailSegs : baseSegs
-  // Sampling is deterministic for a world coordinate. Avoid a string-keyed
-  // cache here: every vertex otherwise creates a coordinate string and a Map
-  // entry even when the tile is never promoted to water detail. Promotion
-  // recomputes the few shared coordinates instead of carrying that churn into
-  // every worker request.
-  const climatesForGrid = (count: number): Climate[] => {
-    const samples = acquireClimateGrid(count)
-    for (let iz = 0; iz <= count; iz++) for (let ix = 0; ix <= count; ix++) {
-      const wx = originX + ix * span / count, wz = originZ + iz * span / count
-      sampleClimateInto(samples[iz * (count + 1) + ix]!, wx, wz)
+  const steps = generateTerrainGeometrySteps(originX, originZ, lod, size, skirtEdges, quality)
+  let result = steps.next()
+  while (!result.done) result = steps.next()
+  return result.value
+}
+
+export type TerrainBuildPhase = 'layout' | 'climate' | 'ground' | 'normals' | 'skirt' | 'water'
+export type TerrainGeometrySteps = Generator<TerrainBuildPhase, TerrainGeometryData, void>
+
+/**
+ * The worker drains this iterator synchronously; the main-thread fallback can
+ * stop between small sampling batches. return() releases suspended CPU state.
+ * Each yielded phase names the work just performed, for scoped CPU profiling.
+ */
+export function* generateTerrainGeometrySteps(
+  originX: number,
+  originZ: number,
+  lod: TerrainLod,
+  size = 1,
+  skirtEdges: readonly [boolean, boolean, boolean, boolean] | null = null,
+  quality: TerrainGeometryQuality = 'full',
+): TerrainGeometrySteps {
+  let climates: Climate[] | null = null
+  let geo: BufferGeometry | null = null
+  let waterMesh: ReturnType<typeof buildWaterMesh> = null
+  try {
+    const span = CHUNK_SIZE * size
+    // Older browsers can lack module workers, so the synchronous fallback must
+    // stay responsive while the full worker path retains the authored horizon.
+    // Far fallback tiles are hidden behind fog and rebuild at full detail when
+    // they approach the jet.
+    const reducedFar = quality === 'fallback' && lod === 2
+    const baseSegs = reducedFar
+      ? (size > 1 ? 8 : 4)
+      : size > 1 ? SEGS_MID : segsForLod(lod)
+    const reaches = reducedFar
+      ? []
+      : riverReachesInBounds(originX, originZ, originX + span, originZ + span)
+    const riverSegs = Math.min(RIVER_MAX_SEGS[lod],
+      Math.max(baseSegs, Math.ceil(span / RIVER_TARGET_CELL_M[lod])))
+    const detailSegs = Math.max(baseSegs, waterSegsForLod(lod, span), reaches.length ? riverSegs : 0)
+    // Analytic hydrology determines the grid before expensive colors/normals.
+    // Ocean detection still probes the base grid; shared vertices are reused
+    // if that probe promotes the tile, instead of constructing two meshes.
+    let segs = reducedFar
+      ? baseSegs
+      : reaches.length || pondIntersectsBounds(originX, originZ, span) ? detailSegs : baseSegs
+    yield 'layout'
+    // Sampling is deterministic for a world coordinate. Avoid a string-keyed
+    // cache here: every vertex otherwise creates a coordinate string and a Map
+    // entry even when the tile is never promoted to water detail. Promotion
+    // recomputes the few shared coordinates instead of carrying that churn into
+    // every worker request.
+    function* climatesForGrid(count: number): Generator<TerrainBuildPhase, void, void> {
+      const samples = acquireClimateGrid(count)
+      climates = samples
+      for (let iz = 0; iz <= count; iz++) for (let ix = 0; ix <= count; ix++) {
+        const wx = originX + ix * span / count, wz = originZ + iz * span / count
+        const index = iz * (count + 1) + ix
+        sampleClimateInto(samples[index]!, wx, wz)
+        if (index % 8 === 7) yield 'climate'
+      }
+      yield 'climate'
     }
-    return samples
-  }
-  let climates = climatesForGrid(segs)
-  if (!reducedFar && segs < detailSegs && climates.some(climate => (climate.waterLevel ?? 0) > climate.height + .01)) {
-    releaseClimateGrid(climates)
-    segs = detailSegs
-    climates = climatesForGrid(segs)
-  }
-  let geo: BufferGeometry = new PlaneGeometry(span, span, segs, segs)
-  geo.rotateX(-Math.PI / 2)
-  const pos = geo.attributes.position as BufferAttribute
-  const colors = new Float32Array(pos.count * 3)
-  const heights = new Float32Array(pos.count)
-  const waterLevels = new Float32Array(pos.count)
-  const basinMask = new Float32Array(pos.count)
-  const stride = segs + 1
-  const cell = span / segs
-  const vertexColor: [number, number, number] = [0, 0, 0]
-  for (let i = 0; i < pos.count; i++) {
-    const wx = originX + (i % stride) * span / segs
-    const wz = originZ + Math.floor(i / stride) * span / segs
-    const climate = climates[i]!
-    const h = climate.height
-    heights[i] = h
-    waterLevels[i] = climate.waterLevel ?? 0
-    basinMask[i] = climate.biome === 'ocean' || (climate.biome === 'water' &&
-      climate.features.lake + climate.features.pond > climate.features.river * .55) ? 1 : 0
-    pos.setY(i, h)
-    biomeColorInto(vertexColor, climate.biome, h, climate.moisture, wx, wz,
-      climate.features, climate.coastal, climate.land, climate.biomeB, climate.biomeMix,
-      climate.biomeWeights, climate.landform)
-    colors[i * 3] = vertexColor[0]
-    colors[i * 3 + 1] = vertexColor[1]
-    colors[i * 3 + 2] = vertexColor[2]
-  }
-  // Neighbour samples outside the tile give shared edges the same normal.
-  // Clamping to an edge vertex used to halve the slope along every seam.
-  const gradientX = new Float32Array(heights.length)
-  const gradientZ = new Float32Array(heights.length)
-  for (let iz = 0; iz < stride; iz++) for (let ix = 0; ix < stride; ix++) {
-    const i = iz * stride + ix
-    const wx = originX + ix * cell
-    const wz = originZ + iz * cell
-    const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleTerrainHeightFast(wx - cell, wz))
-    const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleTerrainHeightFast(wx + cell, wz))
-    const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleTerrainHeightFast(wx, wz - cell))
-    const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleTerrainHeightFast(wx, wz + cell))
-    gradientX[i] = (hr - hl) / (2 * cell)
-    gradientZ[i] = (hu - hd) / (2 * cell)
-  }
-  {
-    const shaded: [number, number, number] = [0, 0, 0]
-    for (let iz = 0; iz < stride; iz++) {
-      for (let ix = 0; ix < stride; ix++) {
-        const i = iz * stride + ix
-        const dx = gradientX[i]!
-        const dz = gradientZ[i]!
-        const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
-        applySlopeShadingInto(shaded, colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!, slope)
-        colors[i * 3] = shaded[0]
-        colors[i * 3 + 1] = shaded[1]
-        colors[i * 3 + 2] = shaded[2]
+    yield* climatesForGrid(segs)
+    // The delegated sampler owns the grid until this builder completes/cancels.
+    const sampledGrid = (): Climate[] => climates!
+    if (!reducedFar && segs < detailSegs && sampledGrid().some(climate => (climate.waterLevel ?? 0) > climate.height + .01)) {
+      releaseClimateGrid(sampledGrid())
+      climates = null
+      segs = detailSegs
+      yield* climatesForGrid(segs)
+    }
+    geo = new PlaneGeometry(span, span, segs, segs)
+    geo.rotateX(-Math.PI / 2)
+    const pos = geo.attributes.position as BufferAttribute
+    const colors = new Float32Array(pos.count * 3)
+    const heights = new Float32Array(pos.count)
+    const waterLevels = new Float32Array(pos.count)
+    const basinMask = new Float32Array(pos.count)
+    const stride = segs + 1
+    const cell = span / segs
+    const vertexColor: [number, number, number] = [0, 0, 0]
+    for (let i = 0; i < pos.count; i++) {
+      const wx = originX + (i % stride) * span / segs
+      const wz = originZ + Math.floor(i / stride) * span / segs
+      const climate = sampledGrid()[i]!
+      const h = climate.height
+      heights[i] = h
+      waterLevels[i] = climate.waterLevel ?? 0
+      basinMask[i] = climate.biome === 'ocean' || (climate.biome === 'water' &&
+        climate.features.lake + climate.features.pond > climate.features.river * .55) ? 1 : 0
+      pos.setY(i, h)
+      biomeColorInto(vertexColor, climate.biome, h, climate.moisture, wx, wz,
+        climate.features, climate.coastal, climate.land, climate.biomeB, climate.biomeMix,
+        climate.biomeWeights, climate.landform)
+      colors[i * 3] = vertexColor[0]
+      colors[i * 3 + 1] = vertexColor[1]
+      colors[i * 3 + 2] = vertexColor[2]
+      if (i % 8 === 7 || i === pos.count - 1) yield 'ground'
+    }
+    // Neighbour samples outside the tile give shared edges the same normal.
+    // Clamping to an edge vertex used to halve the slope along every seam.
+    const gradientX = new Float32Array(heights.length)
+    const gradientZ = new Float32Array(heights.length)
+    for (let iz = 0; iz < stride; iz++) for (let ix = 0; ix < stride; ix++) {
+      const i = iz * stride + ix
+      const wx = originX + ix * cell
+      const wz = originZ + iz * cell
+      const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleTerrainHeightFast(wx - cell, wz))
+      const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleTerrainHeightFast(wx + cell, wz))
+      const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleTerrainHeightFast(wx, wz - cell))
+      const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleTerrainHeightFast(wx, wz + cell))
+      gradientX[i] = (hr - hl) / (2 * cell)
+      gradientZ[i] = (hu - hd) / (2 * cell)
+      if (i % 8 === 7 || i === heights.length - 1) yield 'normals'
+    }
+    {
+      const shaded: [number, number, number] = [0, 0, 0]
+      for (let iz = 0; iz < stride; iz++) {
+        for (let ix = 0; ix < stride; ix++) {
+          const i = iz * stride + ix
+          const dx = gradientX[i]!
+          const dz = gradientZ[i]!
+          const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
+          applySlopeShadingInto(shaded, colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!, slope)
+          colors[i * 3] = shaded[0]
+          colors[i * 3 + 1] = shaded[1]
+          colors[i * 3 + 2] = shaded[2]
+        }
       }
     }
-  }
 
-  geo.setAttribute('color', new BufferAttribute(colors, 3))
-  // Shared world-space edge samples keep neighbouring tiles aligned. A
-  // merged dry-edge skirt covers the remaining T-junctions between quadtree
-  // LODs while wet edges stay open for independent water clipping.
-  // PlaneGeometry already allocated normals; every value is replaced below.
-  const normals = geo.attributes.normal as BufferAttribute
-  for (let i = 0; i < heights.length; i++) {
-    const dx = gradientX[i]!
-    const dz = gradientZ[i]!
-    const length = Math.hypot(dx, 1, dz)
-    normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
+    geo.setAttribute('color', new BufferAttribute(colors, 3))
+    // Shared world-space edge samples keep neighbouring tiles aligned. A
+    // merged dry-edge skirt covers the remaining T-junctions between quadtree
+    // LODs while wet edges stay open for independent water clipping.
+    // PlaneGeometry already allocated normals; every value is replaced below.
+    const normals = geo.attributes.normal as BufferAttribute
+    for (let i = 0; i < heights.length; i++) {
+      const dx = gradientX[i]!
+      const dz = gradientZ[i]!
+      const length = Math.hypot(dx, 1, dz)
+      normals.setXYZ(i, -dx / length, 1 / length, -dz / length)
+    }
+    const skirt = lod === 0 || !skirtEdges ? null : buildTerrainSkirtGeometry(
+      heights, waterLevels, colors, segs, span, TERRAIN_SKIRT_DEPTH, skirtEdges,
+    )
+    if (skirt) {
+      const merged = mergeTerrainSkirt(geo, skirt)
+      geo.dispose()
+      skirt.dispose()
+      geo = merged
+    }
+    yield 'skirt'
+    waterMesh = reducedFar
+      ? null
+      : buildWaterMesh(heights, waterLevels, segs, span, originX, originZ,
+        { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span))
+    yield 'water'
+    const ground = serializeGeometry(geo)
+    const water = waterMesh ? serializeGeometry(waterMesh.geometry) : null
+    return { ground, water, heights, waterLevels, segs }
+  } finally {
+    geo?.dispose()
+    if (waterMesh) {
+      waterMesh.geometry.dispose()
+      const materials = Array.isArray(waterMesh.material) ? waterMesh.material : [waterMesh.material]
+      for (const material of materials) material.dispose()
+    }
+    if (climates) releaseClimateGrid(climates)
   }
-  const skirt = lod === 0 || !skirtEdges ? null : buildTerrainSkirtGeometry(
-    heights, waterLevels, colors, segs, span, TERRAIN_SKIRT_DEPTH, skirtEdges,
-  )
-  if (skirt) {
-    const merged = mergeTerrainSkirt(geo, skirt)
-    geo.dispose()
-    skirt.dispose()
-    geo = merged
-  }
-  const waterMesh = reducedFar
-    ? null
-    : buildWaterMesh(heights, waterLevels, segs, span, originX, originZ,
-      { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span))
-  const ground = serializeGeometry(geo)
-  const water = waterMesh ? serializeGeometry(waterMesh.geometry) : null
-  geo.dispose()
-  if (waterMesh) {
-    waterMesh.geometry.dispose()
-    const materials = Array.isArray(waterMesh.material) ? waterMesh.material : [waterMesh.material]
-    for (const material of materials) material.dispose()
-  }
-  releaseClimateGrid(climates)
-  return { ground, water, heights, waterLevels, segs }
 }
