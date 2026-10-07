@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.835** is current. Previous ship: **10.834**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.836** is current. Previous ship: **10.835**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -8,13 +8,14 @@ The playable loop includes courses, contracts, landings, Daily/Weekly/Monthly Op
 
 The distance-math pass covers traffic, radar, collision sweeps, wakes, warnings, thermals, vegetation, cloud fades, airfield pads, PAPI, and settlement scheduling. Chunk 10.835 finishes reuse of queue distances and deterministic squared ranking of road jobs. Changelog entries 10.831 through 10.834 are restored and the production version gate is synchronized again.
 
+Chunk 10.836 makes navigation ETA use target-relative velocity, keeps slow approaches independent of HUD refresh cadence, and resets trend history when gates or radar landmarks change. Direct approaches, crossing flight, departures, and target switches have regression coverage.
+
 ## Current priorities
 
-1. **Navigation feedback.** Show arrival estimates based on velocity toward the target, and reset distance-trend cues when gates or radar targets change. Verify direct approaches, crossing flight, and departures.
-2. **Landing clarity.** Review approach cues, warning priority, and touchdown debriefs. Give pilots actionable corrections with restrained visual and audio feedback.
-3. **Controls and onboarding.** Keep keyboard, touch, and gamepad hints accurate after remapping. Make recovery and first flights easy to understand.
-4. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Prioritize measured bottlenecks, bounded memory, and worker fallback coverage.
-5. **Catalog and Ops.** Improve course selection, personal goals, and record retention within the existing modes.
+1. **Landing clarity.** Review approach cues, warning priority, and touchdown debriefs. Give pilots actionable corrections with restrained visual and audio feedback.
+2. **Controls and onboarding.** Keep keyboard, touch, and gamepad hints accurate after remapping. Make recovery and first flights easy to understand.
+3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Prioritize measured bottlenecks, bounded memory, and worker fallback coverage.
+4. **Catalog and Ops.** Improve course selection, personal goals, and record retention within the existing modes.
 
 ## Work and verification
 

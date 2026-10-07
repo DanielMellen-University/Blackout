@@ -362,6 +362,7 @@ export async function boot(): Promise<void> {
     crosswindDirection,
     crosswindSpeedMps,
     navigationApproachCue,
+    navigationClosingSpeed,
     navigationLateralCue,
     navigationSpeedCue,
     navigationGlideCueFromTargetDelta,
@@ -1372,6 +1373,8 @@ export async function boot(): Promise<void> {
     waterBodyCount: 0,
     terrainRegion: '',
     navDist: 0,
+    navClosingSpeed: 0,
+    navTargetId: null,
     navBearing: null,
     navAltDelta: 0,
     combo: 0,
@@ -2658,6 +2661,8 @@ export async function boot(): Promise<void> {
       const returning = challenge.phase === 'returning'
       const emergencyReturn = emergencyReturnActive(engineOut, challenge.phase)
       let navTarget: 'gate' | 'base' | 'city' | 'village' = returning || emergencyReturn ? 'base' : 'gate'
+      let navPosition = gate
+      let navTargetId: string | null = null
       let navBearing = gateScreenBearing(cameras.camera, gate)
       let navDist = nav.dist
       let navAltDelta = nav.altDelta
@@ -2670,6 +2675,7 @@ export async function boot(): Promise<void> {
       let approachPreviewScore = Number.NaN
       if (returning || emergencyReturn) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
+        navPosition = returnTarget
         navDist = Math.hypot(
           returnTarget.x - aircraft.position.x,
           returnTarget.y - aircraft.position.y,
@@ -2768,6 +2774,8 @@ export async function boot(): Promise<void> {
         const targetY = Number.isFinite(selectedRadarTarget.y) ? selectedRadarTarget.y! : aircraft.position.y
         const targetZ = Number.isFinite(selectedRadarTarget.z) ? selectedRadarTarget.z! : aircraft.position.z
         returnTarget.set(targetX, targetY, targetZ)
+        navPosition = returnTarget
+        navTargetId = selectedRadarTarget.id ?? null
         navDist = Math.hypot(
           targetX - aircraft.position.x,
           targetY - aircraft.position.y,
@@ -2960,6 +2968,8 @@ export async function boot(): Promise<void> {
       hudFrame.combo = combo.current
       hudFrame.comboRemaining = combo.remainingSeconds
       hudFrame.navDist = navDist
+      hudFrame.navClosingSpeed = navigationClosingSpeed(aircraft.position, aircraft.velocity, navPosition, navDist)
+      hudFrame.navTargetId = navTargetId
       hudFrame.navBearing = navBearing
       hudFrame.navAltDelta = navAltDelta
       hudFrame.navTarget = navTarget

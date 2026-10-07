@@ -684,10 +684,14 @@ export function navigationAltitudeCue(
   return 'level'
 }
 
-/** Turn target distance change into a calm closing, opening, or steady cue. */
-export function navigationRangeCue(current: number, previous: number): NavigationRangeCue {
+/** Use target-relative velocity when available, independent of HUD cadence. */
+export function navigationRangeCue(current: number, previous: number, closingSpeed?: number): NavigationRangeCue {
   const safeCurrent = Number.isFinite(current) ? Math.max(0, current) : 0
   if (!Number.isFinite(previous)) return 'steady'
+  if (closingSpeed !== undefined) {
+    if (!Number.isFinite(closingSpeed) || Math.abs(closingSpeed) <= 5) return 'steady'
+    return closingSpeed > 0 ? 'closing' : 'opening'
+  }
   const safePrevious = Math.max(0, previous)
   const delta = safeCurrent - safePrevious
   if (Math.abs(delta) <= 4) return 'steady'
@@ -702,6 +706,20 @@ export function navigationEtaSeconds(
 ): number | null {
   if (rangeCue !== 'closing' || !Number.isFinite(distance) || !Number.isFinite(speed) || speed < 1) return null
   return Math.min(5999, Math.max(0, Math.round(Math.max(0, distance) / speed)))
+}
+
+/** Signed velocity toward the current target, reusing its resolved range. */
+export function navigationClosingSpeed(
+  position: { x: number; y: number; z: number },
+  velocity: { x: number; y: number; z: number },
+  target: { x: number; y: number; z: number } | null,
+  distance: number,
+): number {
+  if (!target || !Number.isFinite(distance) || distance <= .01) return 0
+  const speed = ((target.x - position.x) * velocity.x +
+    (target.y - position.y) * velocity.y +
+    (target.z - position.z) * velocity.z) / distance
+  return Number.isFinite(speed) ? speed : 0
 }
 
 /** Compare aircraft heading with the home runway for the return leg. */
@@ -1381,9 +1399,9 @@ export class HUD {
   private navRangeValue = Number.NaN
   private navRangeCueValue: NavigationRangeCue | null = null
   private navRangeCueText = ''
-  private navTargetValue: 'NEXT GATE' | 'BASE' | 'CITY' | 'VILLAGE' | null = null
+  private navTargetValue: string | null = null
   private navEtaValue = -1
-  private navEtaText = '--'
+  private navEtaText = 'ETA --'
   private navAltMode = -1
   private navAltStep = Number.NaN
   private navAltText = ''
@@ -1692,6 +1710,10 @@ export class HUD {
     navBearing?: number | null
     /** Navigation target kind for the cue header. */
     navTarget?: 'gate' | 'base' | string
+    /** Stable radar target identity, so switching landmarks resets range trends. */
+    navTargetId?: string | null
+    /** Signed metres per second toward the target, used for arrival estimates. */
+    navClosingSpeed?: number
     /** Return-leg runway alignment cue. */
     navApproach?: NavigationApproachCue | null
     /** Return-leg runway centerline correction cue. */
@@ -2393,6 +2415,8 @@ export class HUD {
       opts.navLateral,
       opts.navSpeed,
       opts.navGlide,
+      opts.navTargetId,
+      opts.navClosingSpeed,
     )
 
     if (opts.throttle !== undefined) {
@@ -2486,6 +2510,8 @@ export class HUD {
     lateral?: NavigationLateralCue | null,
     speedCue?: NavigationSpeedCue | null,
     glideCue?: NavigationGlideCue | null,
+    targetId?: string | null,
+    closingSpeed?: number,
   ): void {
     if (!this.navCueEl) return
     const safeBearing = normalizeNavigationBearing(bearing)
@@ -2539,11 +2565,12 @@ export class HUD {
     const lateralCue = targetLabel === 'BASE' ? (lateral ?? null) : null
     const landingSpeedCue = targetLabel === 'BASE' ? (speedCue ?? null) : null
     const landingGlideCue = targetLabel === 'BASE' ? (glideCue ?? null) : null
-    const previousDist = targetLabel === this.navTargetValue ? this.navRangeValue : Number.NaN
-    const rangeCue = navigationRangeCue(safeDist, previousDist)
-    const etaSeconds = navigationEtaSeconds(safeDist, speed, rangeCue)
+    const targetKey = targetId ?? targetText
+    const previousDist = targetKey === this.navTargetValue ? this.navRangeValue : Number.NaN
+    const rangeCue = navigationRangeCue(safeDist, previousDist, closingSpeed)
+    const etaSeconds = navigationEtaSeconds(safeDist, closingSpeed ?? speed, rangeCue)
     this.navRangeValue = safeDist
-    this.navTargetValue = targetLabel
+    this.navTargetValue = targetKey
     const altitudeCue = navigationAltitudeCue(safeAltDelta, targetLabel === 'BASE' ? 'base' : 'gate')
     this.setHidden(this.navCueEl, false)
     this.setAttribute(this.navCueEl, 'aria-hidden', 'false')
