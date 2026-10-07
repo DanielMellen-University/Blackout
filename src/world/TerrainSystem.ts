@@ -621,6 +621,9 @@ export class TerrainSystem {
       this.scheduleAround(cx, cz)
     }
 
+    // Only active world updates consume the watchdog; a paused tab cannot
+    // turn a healthy slow worker into a synchronous-fallback false alarm.
+    this.workers.advance(dt)
     this.drainBuildQueue()
     this.updateFades(cx, cz, dt)
   }

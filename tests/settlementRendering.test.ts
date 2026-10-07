@@ -2,6 +2,7 @@ import { Group, InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import { hitsSettlement, SettlementSystem, settlementStreetLightPoints, settlementWaterfrontPoints } from '../src/world/SettlementSystem'
+import { WORKER_STALL_SECONDS } from '../src/core/WorkerWatchdog'
 
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
@@ -19,6 +20,62 @@ function example(): SettlementPlan {
 }
 
 describe('settlement rendering and lifecycle', () => {
+  it('recovers a silent settlement worker without accepting its late duplicate reply', () => {
+    class SilentWorker {
+      static instance: SilentWorker
+      onmessage?: ((event: { data: object }) => void) | null
+      onerror?: (() => void) | null
+      onmessageerror?: (() => void) | null
+      request?: { type: string; generation: number; key: string }
+      terminate = vi.fn()
+      constructor() { SilentWorker.instance = this }
+      postMessage(request: { type: string; generation: number; key: string }) { this.request = request }
+    }
+    vi.stubGlobal('Worker', SilentWorker)
+    const system = new SettlementSystem(new Scene())
+    try {
+      system.update(3000, 3000, 0)
+      const worker = SilentWorker.instance
+      const queuedReply = worker.onmessage!
+      for (let i = 0; i < WORKER_STALL_SECONDS * 10 - 1; i++) system.update(3000, 3000, .1)
+      for (let i = 0; i < 200; i++) system.update(3000, 3000, 0)
+      expect(worker.terminate).not.toHaveBeenCalled()
+      system.update(3000, 3000, .1)
+      system.update(3000, 3000, .1)
+      expect(worker.terminate).toHaveBeenCalledOnce()
+      expect(system.count).toBe(1)
+      queuedReply({ data: { ...worker.request, plan: example() } })
+      const ready = (system as unknown as { ready: unknown[] }).ready
+      expect(ready).toHaveLength(0)
+      expect(worker.onmessage).toBeNull()
+    } finally {
+      system.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('routes structured-clone message errors through the settlement fallback', () => {
+    class CloneErrorWorker {
+      static instance: CloneErrorWorker
+      onmessageerror?: () => void
+      terminate = vi.fn()
+      constructor() { CloneErrorWorker.instance = this }
+      postMessage() {}
+    }
+    vi.stubGlobal('Worker', CloneErrorWorker)
+    const system = new SettlementSystem(new Scene())
+    try {
+      system.update(3000, 3000, 0)
+      CloneErrorWorker.instance.onmessageerror!()
+      expect(CloneErrorWorker.instance.terminate).toHaveBeenCalledOnce()
+      system.update(3000, 3000, 0)
+      expect(system.count).toBe(1)
+    } finally {
+      system.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('rejects stale worker replies after reseeding and bounds in-flight work', () => {
     const requests: { generation: number; key: string }[] = []
     class TestWorker {
@@ -41,6 +98,8 @@ describe('settlement rendering and lifecycle', () => {
       expect(system.count).toBe(0)
       expect(requests).toHaveLength(2)
       TestWorker.instance.onmessage!({ data: { type: 'settlement', ...requests[1], plan: example() } })
+      TestWorker.instance.onmessage!({ data: { type: 'settlement', ...requests[1], plan: example() } })
+      expect((system as unknown as { ready: unknown[] }).ready).toHaveLength(1)
       system.update(3000, 3000)
       expect(system.count).toBe(1)
     } finally {

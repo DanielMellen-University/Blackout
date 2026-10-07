@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.838** is current. Previous ship: **10.837**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.839** is current. Previous ship: **10.838**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -14,11 +14,13 @@ Chunk 10.837 captures pre-resolution touchdown speed, adds one targeted landing 
 
 Chunk 10.838 centralizes takeoff labels, follows inverted pitch and remapped gear keys in the title and live briefing, and uses touch/controller labels after meaningful device input. Idle pads, menu typing, and released touch controls do not steal the active-source cue; controller disconnects clear stale device guidance. The briefing budget now consumes simulated flight time, not pause/loading time. Existing input priorities and 30 Hz controller polling remain unchanged.
 
+Chunk 10.839 adds active-update watchdogs for silent terrain/settlement workers, reuses existing bounded failure queues, handles settlement message errors, and rejects duplicate/nonmatching replies. `npm run perf:terrain` profiles actual CPU geometry without a listening or lingering server. Recorded seeds 42 and 1337 show near builds dominate the sampled CPU cost, including 42–47 ms first builds; these are not FPS measurements. Previous browser benchmark numbers are explicitly historical.
+
 ## Current priorities
 
 1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
 2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.
-3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Prioritize measured bottlenecks, bounded memory, and worker fallback coverage.
+3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Silent-worker recovery is covered. Evaluate sliced near-tile synchronous fallback against the measured first-build stalls; the inter-build deadline cannot interrupt a single generator call. Preserve geometry, collision, water detail, bounded memory, and worker budgets.
 4. **Catalog and Ops.** Improve course selection, personal goals, and record retention within the existing modes.
 
 ## Work and verification

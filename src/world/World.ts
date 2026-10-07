@@ -635,7 +635,7 @@ export class World {
     const safeSimDt = safeWorldDelta(simDt)
     const safeVisualDt = safeWorldDelta(visualDt)
     this.terrain.update(safeX, safeZ, safeDt)
-    this.settlements.update(safeX, safeZ)
+    this.settlements.update(safeX, safeZ, safeDt)
     this.traffic.update(safeX, safeZ, safeVisualDt)
     this.atmosphere.update(safeSimDt, safeX, safeY, safeZ, safeVisualDt)
     setRunwayDaylight(this.runway, this.atmosphere.daylight)

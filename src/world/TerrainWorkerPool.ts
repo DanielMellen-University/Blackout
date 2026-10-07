@@ -1,6 +1,7 @@
 import type { TerrainGeometryBuffers, TerrainGeometryData } from './TerrainGeometry'
 import type { TerrainLod } from './TerrainGeometry'
 import type { getOpsPad } from './terrainSample'
+import { WorkerWatchdog } from '../core/WorkerWatchdog'
 
 export interface TerrainBuildRequest {
   id: number
@@ -19,7 +20,7 @@ export interface TerrainBuildReply {
   generation: number
   data: TerrainGeometryData
 }
-interface Slot { worker: Worker; job: TerrainBuildRequest | null; retire: boolean }
+interface Slot { worker: Worker; job: TerrainBuildRequest | null; retire: boolean; watchdog: WorkerWatchdog }
 
 /** One outstanding job per worker bounds memory and prevents stale FIFO backlogs. */
 export class TerrainWorkerPool {
@@ -77,9 +78,21 @@ export class TerrainWorkerPool {
     }
     if (!slot) return false
     slot.job = job
+    slot.watchdog.begin()
     this.busyCount++
     try { slot.worker.postMessage(job) } catch { this.fail(); return false }
     return true
+  }
+
+  /** A worker can stop responding without emitting an error or messageerror. */
+  advance(seconds: number): void {
+    if (this.disabled || this.disposed || this.busyCount === 0) return
+    for (const slot of this.slots) {
+      if (slot.job && slot.watchdog.advance(seconds)) {
+        this.fail()
+        return
+      }
+    }
   }
 
   /** Cancel stale terrain work while keeping the configured worker capacity. */
@@ -106,7 +119,7 @@ export class TerrainWorkerPool {
 
   private createSlot(): void {
     const worker = new Worker(new URL('./terrain.worker.ts', import.meta.url), { type: 'module' })
-    const slot: Slot = { worker, job: null, retire: false }
+    const slot: Slot = { worker, job: null, retire: false, watchdog: new WorkerWatchdog() }
     worker.onmessage = (event: MessageEvent<TerrainBuildReply>) => {
       const job = slot.job
       if (!job) return
@@ -121,6 +134,7 @@ export class TerrainWorkerPool {
         return
       }
       slot.job = null
+      slot.watchdog.clear()
       this.busyCount = Math.max(0, this.busyCount - 1)
       const shouldRetire = slot.retire || this.slots.length > this.workerLimit
       if (shouldRetire) this.removeSlot(slot)

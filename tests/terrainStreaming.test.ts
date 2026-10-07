@@ -78,6 +78,16 @@ afterEach(() => {
 })
 
 describe('terrain streaming integration', () => {
+  it('advances worker recovery only by the bounded active terrain delta', () => {
+    const workers = (terrain as unknown as { workers: { advance(dt: number): void } }).workers
+    const advance = vi.spyOn(workers, 'advance')
+    terrain.update(0, 0, 0)
+    terrain.update(0, 0, Number.NaN)
+    terrain.update(0, 0, .05)
+    terrain.update(0, 0, 300)
+    expect(advance.mock.calls.map(([dt]) => dt)).toEqual([0, 0, .05, .1])
+  })
+
   it('indexes desired leaves by aligned quadtree roots', () => {
     terrain.update(0, 0, 0)
 

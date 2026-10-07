@@ -16,6 +16,7 @@ import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } f
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
+import { WorkerWatchdog } from '../core/WorkerWatchdog'
 
 function isSettlementWorkerReply(value: unknown): value is SettlementWorkerReply {
   if (!isRecord(value) || (value.type !== 'settlement' && value.type !== 'road') ||
@@ -599,6 +600,7 @@ export class SettlementSystem {
   private protectedRetryCooldown = 0
   private worker: Worker | null = null
   private inFlight: SettlementWorkerRequest | null = null
+  private readonly workerWatchdog = new WorkerWatchdog()
   private ready: { key: string; plan: SettlementPlan }[] = []
   private readyRoads: ReadyRoad[] = []
   private generation = 0
@@ -616,6 +618,7 @@ export class SettlementSystem {
       try {
         this.worker = new Worker(new URL('./settlement.worker.ts', import.meta.url), { type: 'module' })
         this.worker.onmessage = (event: MessageEvent<SettlementWorkerReply>) => {
+          if (this.disposed) return
           const result = event?.data
           if (!isSettlementWorkerReply(result)) {
             // A worker can stay alive after returning a malformed protocol
@@ -633,8 +636,12 @@ export class SettlementSystem {
           const matchesCurrent = !!current
             && current.generation === result.generation
             && current.key === result.key
-          if (matchesCurrent) this.inFlight = null
-          if (result.generation !== this.generation) return
+            && current.type === result.type
+          if (matchesCurrent) {
+            this.inFlight = null
+            this.workerWatchdog.clear()
+          }
+          if (!matchesCurrent || result.generation !== this.generation) return
           if (result.type === 'settlement') {
             if (this.checked.has(result.key) && result.plan) {
               this.scheduleLinks(result.plan, result.key)
@@ -646,6 +653,7 @@ export class SettlementSystem {
           }
         }
         this.worker.onerror = () => this.handleWorkerFailure()
+        this.worker.onmessageerror = () => this.handleWorkerFailure()
       } catch {
         this.worker = null
       }
@@ -927,6 +935,7 @@ export class SettlementSystem {
     // destination. Let the next update dispatch immediately; stale replies
     // are ignored by the generation check above.
     this.inFlight = null
+    this.workerWatchdog.clear()
     this.generation++
     this.lastCellX = Number.NaN
     this.lastCellZ = Number.NaN
@@ -1082,12 +1091,14 @@ export class SettlementSystem {
     }
   }
 
-  update(x: number, z: number): void {
+  update(x: number, z: number, dt = 1 / 60): void {
     if (this.disposed) return
     const safeX = Number.isFinite(x) ? x : this.focusX
     const safeZ = Number.isFinite(z) ? z : this.focusZ
     this.focusX = safeX
     this.focusZ = safeZ
+    const activeDt = Number.isFinite(dt) ? Math.max(0, Math.min(.1, dt)) : 0
+    if (this.inFlight && this.workerWatchdog.advance(activeDt)) this.handleWorkerFailure()
     x = safeX
     z = safeZ
     if (this.protectedRetryCooldown > 0) this.protectedRetryCooldown--
@@ -1222,6 +1233,7 @@ export class SettlementSystem {
         // postMessage clones the pad synchronously, so the staging record can
         // be reused without allocating for every streamed settlement job.
         this.inFlight = { type: 'settlement', ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
+        this.workerWatchdog.begin()
         try {
           this.worker.postMessage(this.inFlight)
         } catch {
@@ -1238,6 +1250,7 @@ export class SettlementSystem {
       const link = this.takeNearestRoadJob(x, z)
       if (link && this.worker) {
         this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
+        this.workerWatchdog.begin()
         try {
           this.worker.postMessage(this.inFlight)
         } catch {
@@ -1264,6 +1277,11 @@ export class SettlementSystem {
 
   /** Stop a broken worker and put its current job back through safe fallback. */
   private handleWorkerFailure(): void {
+    if (this.worker) {
+      this.worker.onmessage = null
+      this.worker.onerror = null
+      this.worker.onmessageerror = null
+    }
     this.worker?.terminate()
     this.worker = null
     const failed = this.inFlight
@@ -1295,6 +1313,7 @@ export class SettlementSystem {
       }
     }
     this.inFlight = null
+    this.workerWatchdog.clear()
   }
 
   hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {

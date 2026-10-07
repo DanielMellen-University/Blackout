@@ -26,21 +26,57 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
   landscape does not quadruple background settlement work.
 - Browsers without working workers retain synchronous generation with the same
   inter-build deadline. Their loading speed and frame times will differ.
+- Silent terrain and settlement jobs expire after 15 seconds of active world
+  updates and use the existing bounded fallback queues. No wall-clock timer runs
+  during pause or hidden-tab time. Settlement replies must match the outstanding
+  key, generation, and request kind; late or duplicate results cannot add meshes.
+
+## CPU generation profile (chunk 10.839)
+
+Run `npm run perf:terrain -- --seed=42 --samples=16`. The loader does not open an
+HTTP/WebSocket server and closes on completion. The fixed route samples a
+northeast diagonal from the world origin. Results include first-build timing,
+subsequent-build median/p95, and maximum transferable payload size. A separate
+process starts with fresh module/JIT state; later profile rows share warmed
+generation caches. These are CPU geometry timings, **not FPS**, worker throughput,
+GPU uploads, or full-game measurements.
+
+Observed with Node v22.23.2 and eight available execution threads on 2026-10-06:
+
+| Profile | First build | Later median | Later p95 | Max payload |
+| --- | ---: | ---: | ---: | ---: |
+| Near, 1 cell | 46.87 ms | 6.57 ms | 12.56 ms | 39,412 B |
+| Mid, 1 cell | 1.80 ms | 1.19 ms | 1.75 ms | 10,516 B |
+| Far, 8 cells | 0.74 ms | 1.47 ms | 2.34 ms | 10,516 B |
+| Far fallback, 8 cells | 1.22 ms | 1.05 ms | 1.19 ms | 4,980 B |
+
+Seed 1337, eight samples, also showed a 42.52 ms first near build and a 6.65 ms
+later median. Near generation, rather than distance-ranking arithmetic, is the
+main CPU cost in these samples. Keep it off the render thread. The existing
+inter-build deadline cannot interrupt one synchronous near build; sliced fallback
+generation remains a candidate, not a shipped improvement. Re-run in a separate
+process without the test suite for comparisons. Samples and hardware are limited;
+browser rendering and dense/weather-heavy full-flight profiling are still needed.
 
 ## Reproduce
 
 Run `npm run dev` and open `/dev/streaming.html?seed=1337`, or use seed `1`.
 The benchmark reports time until all requested terrain is attached, before the
 last chunk's fade completes. Restart loading repeats the same seed. Maximum-speed
-flight travels northeast at 1,605.06 m/s at 5,000 m altitude. Export results saves
+flight travels northeast at `flightConfig.maxSpeedBoost` (currently 680 m/s) at
+5,000 m altitude. Export results saves
 load timing, frame distributions, worker queues, draw counts, and triangle counts.
 
-For a comparison, run the same page against commit `929d8cf`, then against this
-change. Use one benchmark tab at a time, the same viewport and seed, and no test
+For a comparison, pin explicit baseline and candidate commits, and use the same
+flight speed in both. Use one benchmark tab at a time, the same viewport and seed, and no test
 suite running in parallel. The original implementation has no worker stats, so
 the page reads its synchronous queue length for the same completion criterion.
 
-## Measurements
+## Historical stream-radius measurements
+
+The following archived observations predate the current flight-speed tuning and
+chunk 10.839. Their flight speed was 1,605.06 m/s, with baseline commit `929d8cf`.
+They are retained as history, not validation of the current build or devices.
 
 Measured in the Codex in-app browser at 1280 x 720, pixel ratio 1, four Balanced
 workers on
@@ -66,6 +102,6 @@ Regression coverage includes grid seams and collision interpolation, buffer
 transfer, near-first scheduling and uploads, bounded layouts during fast flight,
 fade retention, worker failure fallback, reseeding, and disposal.
 
-Validation: `npm run build` passed; all 536 tests across 64 files passed.
+Historical validation: `npm run build` passed; all 536 tests across 64 files passed.
 After integrating the newer high-G feedback changes, the build and 73 focused
 HUD, high-G, world lifecycle, and streaming tests also passed.

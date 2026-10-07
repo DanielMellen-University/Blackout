@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.839** Recover silent terrain and settlement workers with pause-safe active-update watchdogs, reuse bounded fallback queues, handle settlement message errors and reject late/duplicate replies, and add a server-free CPU terrain profiler with scoped measurement notes.
 - **10.838** Make title and live takeoff/landing hints honor pitch and gear remapping, adapt briefing controls to meaningful keyboard/touch/controller activity without idle-device takeover, and preserve the briefing through pauses by counting simulated flight time.
 - **10.837** Add targeted landing coaching and first-contact telemetry, score horizontal speed from the pre-impact snapshot, align flare/go-around warnings with the collision limit and remove the sink-rate cue gap, make results scroll on short screens, and add a world-free debrief review page.
 - **10.836** Correct navigation ETA using velocity toward the target, make slow-approach trends independent of HUD cadence, reset guidance when switching gates or radar landmarks, and keep unavailable ETA labels consistent.

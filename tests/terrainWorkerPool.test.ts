@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateTerrainGeometry, type TerrainGeometryData } from '../src/world/TerrainGeometry'
 import { TerrainWorkerPool, type TerrainBuildRequest, type TerrainBuildReply } from '../src/world/TerrainWorkerPool'
+import { WORKER_STALL_SECONDS } from '../src/core/WorkerWatchdog'
 
 class FakeWorker {
   static instances: FakeWorker[] = []
@@ -28,6 +29,47 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('terrain worker pool', () => {
+  it('recovers all outstanding jobs from a silent worker exactly once', () => {
+    const complete = vi.fn()
+    const retry = vi.fn()
+    const pool = new TerrainWorkerPool(complete, retry, 2)
+    pool.submit(request(1))
+    pool.submit(request(2))
+    const queuedHandler = FakeWorker.instances[0]!.onmessage!
+    pool.advance(WORKER_STALL_SECONDS - 1)
+    for (const delta of [0, -1, Number.NaN, Infinity]) pool.advance(delta)
+    expect(pool.busy).toBe(2)
+    expect(retry).not.toHaveBeenCalled()
+    pool.advance(1)
+    expect(pool.size).toBe(0)
+    expect(pool.busy).toBe(0)
+    expect(retry.mock.calls.map(([job]) => job.id)).toEqual([1, 2])
+    queuedHandler({ data: { id: 1, generation: 0, data } } as MessageEvent<TerrainBuildReply>)
+    pool.advance(WORKER_STALL_SECONDS)
+    expect(complete).not.toHaveBeenCalled()
+    expect(retry).toHaveBeenCalledTimes(2)
+    expect(FakeWorker.instances.every(worker => worker.terminate.mock.calls.length === 1)).toBe(true)
+    pool.dispose()
+  })
+
+  it('resets timeouts after completion and world-reseed cancellation', () => {
+    const retry = vi.fn()
+    const pool = new TerrainWorkerPool(vi.fn(), retry, 1)
+    pool.submit(request(1))
+    pool.advance(WORKER_STALL_SECONDS - 1)
+    FakeWorker.instances[0]!.reply({ id: 1, generation: 0, data })
+    pool.submit(request(2))
+    pool.advance(1)
+    expect(pool.busy).toBe(1)
+    expect(retry).not.toHaveBeenCalled()
+    pool.cancelJobs()
+    pool.submit(request(3))
+    pool.advance(WORKER_STALL_SECONDS - 1)
+    expect(pool.busy).toBe(1)
+    expect(retry).not.toHaveBeenCalled()
+    pool.dispose()
+  })
+
   it.each([[1, 1], [2, 1], [4, 2], [8, 6], [64, 6]])('bounds concurrency on %i cores to %i workers', (cores, count) => {
     vi.stubGlobal('navigator', { hardwareConcurrency: cores })
     const pool = new TerrainWorkerPool(vi.fn(), vi.fn())

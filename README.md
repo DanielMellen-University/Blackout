@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.838**. Previous roadmap chunk: **10.837**.
-Recent changes from **10.838**. Takeoff and landing hints follow pitch and gear remapping, with touch/controller instructions for the active input device. The first-flight briefing counts flight time and survives pauses.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.839**. Previous roadmap chunk: **10.838**.
+Recent changes from **10.839**. Silent terrain and settlement workers recover through existing fallback queues. Pause-safe watchdogs and matching-reply checks prevent stalled streams and duplicate settlement meshes.
 
 ## Run
 
@@ -13,6 +13,8 @@ npm run dev
 ```
 
 Open the URL Vite prints. Run `npm test` for the suite and `npm run build` for version checks, TypeScript, and the production build.
+
+Run `npm run perf:terrain -- --seed=42 --samples=16` for a CPU geometry profile that closes on completion. It does not measure FPS; see [streaming performance notes](docs/terrain-streaming-performance.md) for scope and recorded samples.
 
 ## Fly
 
