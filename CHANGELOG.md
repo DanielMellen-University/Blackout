@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.842** Separate active sortie identity from next-course selection, pin retry records/debriefs/contracts/replay links to the actual resident world and Ops period, refresh long-open catalogs without background timers, scope historical replay pins to their own mode, protect active/replayed record families during retention, prevent historical completions from rewinding streaks, and restart retained missions after a failed replacement.
 - **10.841** Simplify course cards while retaining full progress and flight records in a native expander, add first-circuit/next-medal/time-record/exploration goals, repair filtered-list tab stops and responsive keyboard navigation, keep selected-course identity explicit, synchronize Escape search clears, let catalog controls own their activation keys, and resolve seeded conditions and rotating Ops difficulty correctly.
 - **10.840** Slice workerless terrain sampling across frame deadlines without reducing geometry or water detail, bound retained work to one cancellable tile, include that work in streaming telemetry, pin legacy payloads with independent byte hashes, and report CPU slice/phase costs alongside whole-tile timing.
 - **10.839** Recover silent terrain and settlement workers with pause-safe active-update watchdogs, reuse bounded fallback queues, handle settlement message errors and reject late/duplicate replies, and add a server-free CPU terrain profiler with scoped measurement notes.

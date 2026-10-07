@@ -48,6 +48,7 @@ interface SeededRandomRecordEntry {
  */
 export function pruneRotatingCourseRecords(
   storage: IndexedRecordStorage | null | undefined,
+  protectedRunIds: ReadonlySet<string> = new Set(),
 ): number {
   if (!storage || typeof storage.key !== 'function' || typeof storage.removeItem !== 'function') return 0
   const length = Number.isFinite(storage.length) ? Math.max(0, Math.floor(storage.length!)) : 0
@@ -99,6 +100,8 @@ export function pruneRotatingCourseRecords(
     const keep = ROTATING_RECORD_RETENTION[kind]
     for (const period of periods.slice(keep)) {
       for (const key of period.keys) {
+        const prefix = ROTATING_RECORD_PREFIXES.find(prefix => key.startsWith(prefix))!
+        if (protectedRunIds.has(key.slice(prefix.length))) continue
         if (removeNow(key)) removed += 1
       }
     }

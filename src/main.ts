@@ -23,9 +23,11 @@ import {
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
 import { pruneRotatingCourseRecords, touchSeededRandomCourseRecord } from './core/CourseRecordRetention'
+import { CourseSession, launchNeedsNewWorld } from './core/CourseSession'
 import { resetFlightPreferences } from './core/PreferenceReset'
 import {
   bestOpsStreak,
+  OPS_STREAK_STORAGE_KEY,
   opsStreakLabel,
   readOpsStreak,
   recordOpsCompletion,
@@ -99,7 +101,6 @@ import {
   weeklyOpsWeekKey,
   courseRunId,
   COURSE_LIBRARY,
-  courseSessionId,
   readSelectedCourseId,
   resolveCourseDefinition,
   shouldResetSeededRandomWorldForStorageKey,
@@ -415,7 +416,6 @@ export async function boot(): Promise<void> {
     picker.onBrowseState((category, sort) => syncCoursePickerBrowseState(picker, category, sort))
     picker.onFilter((query) => syncCoursePickerFilter(picker, query))
   }
-  pruneRotatingCourseRecords(qualityStorage)
   let opsStreaks: OpsStreakSnapshot = readOpsStreak(qualityStorage)
 
   let recentCourseIds = readRecentCourseIds(qualityStorage)
@@ -436,34 +436,22 @@ export async function boot(): Promise<void> {
   const replayMonthTimestamp = replayCourseId === 'monthly-ops'
     ? monthlyOpsTimestampForMonthKey(replayParams?.get('month'))
     : null
-  // Keep a single UTC snapshot for this page session so the picker, records,
-  // and a retry all refer to the same rotating Ops challenge around a period
-  // boundary.
-  const opsTimestamp = replayDayTimestamp ?? replayWeekTimestamp ?? replayMonthTimestamp ?? Date.now()
-  const selectedCoursePeriodKey = (): string | undefined => {
-    if (selectedCourseId === 'daily-ops') return `DAY ${dailyOpsDayKey(opsTimestamp)}`
-    if (selectedCourseId === 'weekly-ops') return `WEEK ${weeklyOpsWeekKey(opsTimestamp)}`
-    if (selectedCourseId === 'monthly-ops') return `MONTH ${monthlyOpsMonthKey(opsTimestamp)}`
-    return undefined
-  }
-  const selectedCourseReplayKey = (): string | undefined => {
-    if (selectedCourseId === 'daily-ops') return dailyOpsDayKey(opsTimestamp)
-    if (selectedCourseId === 'weekly-ops') return weeklyOpsWeekKey(opsTimestamp)
-    if (selectedCourseId === 'monthly-ops') return monthlyOpsMonthKey(opsTimestamp)
-    return undefined
-  }
+  const replayPeriodTimestamp = replayDayTimestamp ?? replayWeekTimestamp ?? replayMonthTimestamp
+  const courseSession = new CourseSession(Date.now(), replayPeriodTimestamp === null ? null : {
+    courseId: courseDefinitionForId(replayCourseId).id, timestamp: replayPeriodTimestamp,
+  })
+  const protectedRecords = new Set<string>()
+  if (courseSession.replayRecordId) protectedRecords.add(courseSession.replayRecordId)
   const selectedCourse = () => resolveCourseDefinition(
     courseDefinitionForId(selectedCourseId),
-    opsTimestamp,
+    courseSession.timestampFor(selectedCourseId),
   )
   let replaySeed = parseWorldSeed(
     replayParams?.get('seed'),
   )
   let replaySeedFallback = false
-  if (replaySeed !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
+  if (replaySeed !== null || replayPeriodTimestamp !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
   if (titleSeedInput && replaySeed !== null) titleSeedInput.value = formatWorldSeed(replaySeed)
-  /** True only after an explicit custom/replay seed successfully built a random world. */
-  let seededRandomWorld = false
 
   type CourseRecordSnapshot = {
     history: ReturnType<typeof repairCourseHistory>
@@ -487,6 +475,7 @@ export async function boot(): Promise<void> {
 
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
+      const opsTimestamp = courseSession.timestampFor(course.id)
       const resolvedCourse = resolveCourseDefinition(course, opsTimestamp)
       const runId = courseRunId(course, opsTimestamp)
       const record = runId ? readCourseRecord(runId) : null
@@ -590,7 +579,7 @@ export async function boot(): Promise<void> {
   const refreshCourseProgress = (): void => {
     if (!titleProgress) return
     const curated = COURSE_LIBRARY.filter((course) => {
-      const resolved = resolveCourseDefinition(course, opsTimestamp)
+      const resolved = resolveCourseDefinition(course, courseSession.timestampFor(course.id))
       return resolved.seed !== null && resolved.profile !== null
     })
     let completed = 0
@@ -609,7 +598,7 @@ export async function boot(): Promise<void> {
     }
     const styleVariety = new Set<string>()
     for (const course of curated) {
-      const runId = courseRunId(course, opsTimestamp)
+      const runId = courseRunId(course, courseSession.timestampFor(course.id))
       if (!runId) continue
       const record = readCourseRecord(runId)
       const history = record.history
@@ -781,6 +770,17 @@ export async function boot(): Promise<void> {
     replaySeedFallback = world.lastReseedUsedFallback
     if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(requestedReplaySeed, replaySeedFallback)
   }
+  // The menu describes the next attempt; this snapshot describes the actual
+  // resident world, including fallback to the original random runway.
+  let activeSortie = courseSession.capture(replaySeed !== null && !replaySeedFallback ? selectedCourseId : 'random',
+    world.worldSeed, world.mission.routeProfile, replaySeed !== null && selectedCourseId === 'random' && !replaySeedFallback)
+  const pruneCourseRecords = (): void => {
+    protectedRecords.clear()
+    protectedRecords.add(activeSortie.recordId)
+    if (courseSession.replayRecordId) protectedRecords.add(courseSession.replayRecordId)
+    pruneRotatingCourseRecords(qualityStorage, protectedRecords)
+  }
+  pruneCourseRecords()
   applyShadowQuality = (mapSize: number): void => {
     const safeSize = Number.isFinite(mapSize) ? Math.max(256, Math.floor(mapSize)) : 1024
     if (world.sun.shadow.mapSize.x === safeSize && world.sun.shadow.mapSize.y === safeSize) return
@@ -1212,8 +1212,8 @@ export async function boot(): Promise<void> {
       seed,
       clipboard,
       href,
-      selectedCourseId,
-      selectedCourseReplayKey(),
+      activeSortie.course.id,
+      activeSortie.periodKey,
     ).then((copied) => {
       if (disposed || !shareReplayButton) return
       shareReplayButton.textContent = copied ? 'Replay link copied' : 'Copy blocked'
@@ -1243,6 +1243,7 @@ export async function boot(): Promise<void> {
     if (seed === null || !Number.isSafeInteger(seed)) return
     replaySeed = seed
     selectedCourseId = 'random'
+    leaveOpsReplay()
     if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
     replaySeedFallback = false
     if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(seed)
@@ -1322,6 +1323,7 @@ export async function boot(): Promise<void> {
       return
     }
     if (playing && !menu.paused && !results.open) void audio.resume()
+    refreshOpsCatalog()
   }
   document.addEventListener('visibilitychange', onVisibilityChange)
   const audioFrame: Parameters<FlightAudio['update']>[0] = {
@@ -1431,13 +1433,18 @@ export async function boot(): Promise<void> {
   let prevFuelHomeCue: FuelHomeCue = null
   const returnTarget = new Vector3()
 
-  const courseId = (): string => courseSessionId(
-    selectedCourseId,
-    world.worldSeed,
-    world.mission.routeProfile,
-    selectedCourseReplayKey(),
-    seededRandomWorld,
-  )
+  const courseId = (): string => activeSortie.recordId
+
+  const refreshOpsCatalog = (force = false): void => {
+    const advanced = courseSession.refresh(Date.now())
+    if (!advanced && !force) return
+    pruneCourseRecords()
+    refreshCourseUi()
+  }
+
+  const leaveOpsReplay = (): void => {
+    if (courseSession.leaveReplay()) refreshOpsCatalog(true)
+  }
 
   let lastInputContextLive: boolean | null = null
   const syncInputContext = (): void => {
@@ -1504,6 +1511,7 @@ export async function boot(): Promise<void> {
   canvas.addEventListener('webglcontextrestored', onContextRestored, false)
 
   const resetFlight = (newWorld: boolean, briefing = false): void => {
+    refreshOpsCatalog()
     results.hide()
     const replaying = replaySeed !== null
     let worldFallback = false
@@ -1520,7 +1528,9 @@ export async function boot(): Promise<void> {
       worldFallback = world.lastReseedUsedFallback
       replaySeedFallback = worldFallback
       if (!worldFallback) {
-        seededRandomWorld = replaying && selectedCourseId === 'random'
+        const seededRandomWorld = replaying && selectedCourseId === 'random'
+        activeSortie = courseSession.capture(selectedCourseId, world.worldSeed, world.mission.routeProfile, seededRandomWorld)
+        pruneCourseRecords()
         replaySeed = null
       }
       if (replaying && !worldFallback) {
@@ -1530,7 +1540,8 @@ export async function boot(): Promise<void> {
         titleSeedStatus.textContent = worldSeedLaunchStatus(replaySeed!, true)
       }
       debug?.syncPad()
-    } else {
+    }
+    if (!newWorld || worldFallback) {
       world.mission.start(
         world.spawn.x,
         world.spawn.y,
@@ -1557,13 +1568,13 @@ export async function boot(): Promise<void> {
     input.clearQueued()
     input.resetFlightControls(0)
     const activeCourseId = courseId()
-    if (seededRandomWorld) touchSeededRandomCourseRecord(qualityStorage, activeCourseId)
+    touchSeededRandomCourseRecord(qualityStorage, activeCourseId)
     challenge.reset(
       activeCourseId,
       world.mission.totalGates,
       world.mission.scoringFocus,
       world.worldSeed,
-      selectedCourse().contractCatalog === true,
+      activeSortie.course.contractCatalog === true,
     )
     ghost.reset(activeCourseId)
     ghost.setVisible(playing && ghostVisible)
@@ -1609,16 +1620,15 @@ export async function boot(): Promise<void> {
         ? replaying
           ? `REPLAY SEED ${formatWorldSeed(world.worldSeed)}`
           : 'NEW WORLD'
-          : replaySeed !== null
-            ? `REPLAY SEED ${formatWorldSeed(replaySeed)}`
-            : 'RETRY SAME COURSE'
+          : 'RETRY SAME COURSE'
       showBanner(`${resetLabel} / ${world.mission.routeBriefing}`, 7000)
     }
   }
 
   const onCourseChange = (id: string): void => {
     selectedCourseId = courseDefinitionForId(id).id
-    seededRandomWorld = false
+    leaveOpsReplay()
+    refreshOpsCatalog()
     replaySeed = null
     replaySeedFallback = false
     if (titleSeedInput) titleSeedInput.value = ''
@@ -1639,7 +1649,7 @@ export async function boot(): Promise<void> {
     }
     replaySeed = seed
     selectedCourseId = 'random'
-    seededRandomWorld = false
+    leaveOpsReplay()
     if (titleSeedInput) titleSeedInput.value = formatWorldSeed(seed)
     replaySeedFallback = false
     if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(seed)
@@ -1653,8 +1663,11 @@ export async function boot(): Promise<void> {
   const onProgressStorageChange = (event: Event): void => {
     const storageEvent = event as StorageEvent
     const key = storageEvent.key
+    if (key === OPS_STREAK_STORAGE_KEY || key === null) {
+      opsStreaks = readOpsStreak(qualityStorage)
+      refreshCourseUi()
+    }
     if (shouldResetSeededRandomWorldForStorageKey(key)) {
-      seededRandomWorld = false
       selectedCourseId = readSelectedCourseId(qualityStorage)
       replaySeed = null
       replaySeedFallback = false
@@ -1689,6 +1702,7 @@ export async function boot(): Promise<void> {
 
   const startGame = (): void => {
     if (playing) return
+    refreshOpsCatalog()
     rememberRecentCourse(selectedCourseId)
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     playing = true
@@ -1702,7 +1716,8 @@ export async function boot(): Promise<void> {
       overlay.hidden = false
       overlay.classList.remove('overlay-hidden')
     }
-    resetFlight(shouldRegenerateWorldOnLaunch(selectedCourseId, replaySeed), true)
+    resetFlight(launchNeedsNewWorld(shouldRegenerateWorldOnLaunch(selectedCourseId, replaySeed),
+      selectedCourseId, activeSortie, replaySeed), true)
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')
@@ -1908,9 +1923,15 @@ export async function boot(): Promise<void> {
   let lastHudUpdateMs = Number.NaN
   let lastRenderMs = Number.NaN
   let lastRenderedSimulationLive = false
+  let nextCatalogCheckMs = 0
   const tick = (nowMs: number): void => {
     if (disposed) return
     requestAnimationFrame(tick)
+    // Reuse RAF, with no background timer and no wall-clock reads in flight.
+    if ((!playing || menu.open) && !document.hidden && nowMs >= nextCatalogCheckMs) {
+      nextCatalogCheckMs = nowMs + 60_000
+      refreshOpsCatalog()
+    }
 
     syncInputContext()
     overlay?.classList.toggle('cockpit-clean', cameras.mode === 'cockpit')
@@ -2009,8 +2030,8 @@ export async function boot(): Promise<void> {
           seed,
           clipboard,
           href,
-          selectedCourseId,
-          selectedCourseReplayKey(),
+          activeSortie.course.id,
+          activeSortie.periodKey,
         ).then((copied) => {
           if (disposed) return
           showBanner(
@@ -2123,10 +2144,10 @@ export async function boot(): Promise<void> {
               currentPilotRank,
               false,
               [],
-              selectedCourse().label,
+              activeSortie.course.label,
               courseConditionSummary(
-                selectedCourse(),
-                selectedCoursePeriodKey(),
+                activeSortie.course,
+                activeSortie.periodLabel,
               ),
               world.worldSeed,
             )
@@ -2176,8 +2197,8 @@ export async function boot(): Promise<void> {
               const opsUpdate = recordOpsCompletion(
                 qualityStorage,
                 opsStreaks,
-                selectedCourseId,
-                selectedCourseReplayKey(),
+                activeSortie.course.id,
+                activeSortie.periodKey,
               )
               if (opsUpdate) opsStreaks = opsUpdate.snapshot
               refreshCourseUi()
@@ -2193,10 +2214,10 @@ export async function boot(): Promise<void> {
                 currentPilotRank,
                 careerRankPromoted,
                 newCareerCommendations,
-                selectedCourse().label,
+                activeSortie.course.label,
                 courseConditionSummary(
-                  selectedCourse(),
-                  selectedCoursePeriodKey(),
+                  activeSortie.course,
+                  activeSortie.periodLabel,
                 ),
                 world.worldSeed,
               )
@@ -3046,7 +3067,7 @@ export async function boot(): Promise<void> {
         world.mission.totalGates,
         world.mission.scoringFocus,
         world.worldSeed,
-        selectedCourse().contractCatalog === true,
+        activeSortie.course.contractCatalog === true,
       )
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB

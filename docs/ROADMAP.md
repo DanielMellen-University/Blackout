@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.841** is current. Previous ship: **10.840**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.842** is current. Previous ship: **10.841**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -20,12 +20,14 @@ Chunk 10.840 uses a shared cooperative geometry iterator for fallback sampling, 
 
 Chunk 10.841 separates compact catalog scanning from the selected briefing and expandable progress/records. A single next-sortie target follows first completion, the next medal gap, then repeatable complete-circuit time after gold. Random-world goals never compare different routes' times; free flight remains exploration without a checkpoint clock. Filtered-out selections retain their identity and a visible-list tab stop. Arrow navigation follows actual CSS columns and scrolls choices into view. Escape clears the shared search before global pause capture; Enter/Space activate native picker controls instead of launching. The records disclosure participates in pause focus trapping, which excludes hidden ancestors. Ops difficulty uses resolved profiles, and weather/night filters include repeatable seeded launch conditions. No new storage, timers, or per-flight-frame work is added. Behavior/native-element adapter tests pass; pixel-level and real-device visual QA remain outstanding under the browser access limitation.
 
+Chunk 10.842 captures the active sortie independently of next-course menu selection. Records, ghosts, contracts, debriefs, and copied replay links use that immutable identity; same-course retries retain the original Ops period. Fresh launches apply pending selections/custom seeds, while failed rebuilds retain the actual course and restart its mission. Catalog time advances on visible idle/pause RAF checks (at most once a minute), visibility return, and launch/reset actions, with no background timer or wall-clock polling in live flight. Explicit historical pins affect only their matching Ops mode and are released when selecting another course/custom seed. Retention protects exact active/replayed record families, not whole stale periods; historical completions never rewind newer streaks. UTC day/month/ISO-week boundaries, record persistence, replay links, retention release, invalid clocks, and monotonic streaks have focused regression coverage. Browser end-to-end QA remains outstanding under the existing access limitation; no FPS improvement is claimed.
+
 ## Current priorities
 
 1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
 2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.
 3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Silent-worker recovery and sliced fallback sampling are covered. Cold catchment creation (including normal probes), analytic water assembly, and mesh attachment can still overrun their indivisible phases; measure and address those next without reducing geometry, collision, or water detail. Preserve bounded memory and worker budgets.
-4. **Catalog and Ops.** Inspect the streamlined picker visually and play through its medal/time goals. Audit long-open UTC period rollover without changing an in-flight or explicitly replayed Ops period, and audit record retention lifecycle behavior within the existing modes.
+4. **Catalog and Ops.** Inspect the streamlined picker visually and play through its medal/time goals. Exercise long-open rollover, paused selection/resume/retry, historical replay release, and retention end-to-end in the browser; core lifetime and storage invariants are covered. Review cross-tab progression handling without introducing parallel record systems.
 
 ## Work and verification
 

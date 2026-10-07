@@ -64,6 +64,13 @@ export function recordOpsCompletion(
   if (!kind || !periodKey || periodTimestamp(kind, periodKey) === null) return null
   const currentRecord = snapshot[kind]
   const safeCurrent = currentRecord ? sanitizeRecord(kind, currentRecord) : null
+  const timestamp = periodTimestamp(kind, periodKey)!
+  // A historical replay may earn its own score, but cannot rewind today's
+  // progression and break a later consecutive completion chain.
+  if (safeCurrent && timestamp < periodTimestamp(kind, safeCurrent.lastPeriod)!) return {
+    kind, periodKey, current: safeCurrent.current, best: safeCurrent.best,
+    advanced: false, snapshot: withRecord(snapshot, kind, safeCurrent),
+  }
   if (safeCurrent?.lastPeriod === periodKey) {
     return {
       kind,
@@ -74,7 +81,6 @@ export function recordOpsCompletion(
       snapshot: withRecord(snapshot, kind, safeCurrent),
     }
   }
-  const timestamp = periodTimestamp(kind, periodKey)!
   const previousKey = previousPeriodKey(kind, timestamp)
   const nextCurrent = safeCurrent?.lastPeriod === previousKey
     ? Math.min(MAX_OPS_STREAK, safeCurrent.current + 1)

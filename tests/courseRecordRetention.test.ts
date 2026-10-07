@@ -21,6 +21,26 @@ function storageFixture(values: readonly string[]): IndexedRecordStorage & { val
 }
 
 describe('rotating course record retention', () => {
+  it.each([
+    ['daily', '2025-01-01', '2026-01-', ROTATING_RECORD_RETENTION.daily],
+    ['weekly', '2025-W01', '2026-W', ROTATING_RECORD_RETENTION.weekly],
+    ['monthly', '2025-01', '2026-', ROTATING_RECORD_RETENTION.monthly],
+  ] as const)('protects only the active/replayed %s family until released', (kind, oldPeriod, newerPrefix, limit) => {
+    const prefixes = ['best', 'streak', 'history', 'badges', 'trace', 'ghost']
+    const runId = `seed:42:ridge:${kind}:${oldPeriod}`
+    const siblings = prefixes.map(prefix => `blackout.${prefix}.${runId}`)
+    const otherOld = `blackout.history.seed:43:ridge:${kind}:${oldPeriod}`
+    const recent = Array.from({ length: limit }, (_, i) =>
+      `blackout.history.seed:99:ridge:${kind}:${newerPrefix}${String(i + 1).padStart(2, '0')}`)
+    const storage = storageFixture([...siblings, otherOld, ...recent])
+    expect(pruneRotatingCourseRecords(storage, new Set([runId]))).toBe(1)
+    expect(siblings.every(key => storage.values.has(key))).toBe(true)
+    expect(recent.every(key => storage.values.has(key))).toBe(true)
+    expect(storage.values.has(otherOld)).toBe(false)
+    expect(pruneRotatingCourseRecords(storage)).toBe(6)
+    expect(siblings.some(key => storage.values.has(key))).toBe(false)
+  })
+
   it('keeps recent periods, removes stale rotating records, and preserves authored records', () => {
     const daily = Array.from({ length: ROTATING_RECORD_RETENTION.daily + 2 }, (_, index) =>
       `blackout.history.seed:${index}:sweep:daily:2026-01-${String(index + 1).padStart(2, '0')}`)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   OPS_STREAK_STORAGE_KEY,
   bestOpsStreak,
@@ -28,6 +28,27 @@ function throwingStorage(): Pick<Storage, 'getItem' | 'setItem'> {
 }
 
 describe('Ops streaks', () => {
+  it.each([
+    ['daily-ops', 'daily', '2026-10-04', '2026-10-05', '2026-09-01', '2026-10-06'],
+    ['weekly-ops', 'weekly', '2026-W39', '2026-W40', '2026-W01', '2026-W41'],
+    ['monthly-ops', 'monthly', '2026-08', '2026-09', '2025-01', '2026-10'],
+  ] as const)('does not rewind %s streaks when replaying history', (course, kind, first, second, history, next) => {
+    const storage = storageFixture()
+    let snapshot = recordOpsCompletion(storage, readOpsStreak(storage), course, first)!.snapshot
+    snapshot = recordOpsCompletion(storage, snapshot, course, second)!.snapshot
+    const persisted = storage.getItem(OPS_STREAK_STORAGE_KEY)
+    const write = vi.spyOn(storage, 'setItem')
+    const replay = recordOpsCompletion(storage, snapshot, course, history)!
+    expect(replay.advanced).toBe(false)
+    expect(replay.snapshot[kind]).toEqual({ lastPeriod: second, current: 2, best: 2 })
+    expect(write).not.toHaveBeenCalled()
+    expect(storage.getItem(OPS_STREAK_STORAGE_KEY)).toBe(persisted)
+    expect(opsStreakLabel(replay.snapshot, course, history)).toBe('')
+    const completion = recordOpsCompletion(storage, replay.snapshot, course, next)!
+    expect(completion.current).toBe(3)
+    expect(completion.snapshot[kind]?.lastPeriod).toBe(next)
+  })
+
   it('advances once per daily period, resets gaps, and keeps the best', () => {
     const storage = storageFixture()
     let snapshot = readOpsStreak(storage)
