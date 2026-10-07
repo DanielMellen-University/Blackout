@@ -10,6 +10,7 @@ import { pilotRankLabel, type PilotRank } from '../systems/CareerProgression'
 import { sortieStyleForResult, sortieStyleLabel } from '../systems/FlightStyle'
 import { formatWorldSeed, type ClipboardWriter } from '../core/WorldSeed'
 import { failedLandingCorrection } from '../systems/LandingAssessment'
+import { modalFocusable } from './ModalFocus'
 
 /** Return the compact course records that deserve a touchdown cue. */
 export function flightRecordCueLabel(
@@ -679,9 +680,7 @@ export class RunResults {
   }
 
   private activeFocusable(): HTMLElement[] {
-    return Array.from(this.root.querySelectorAll<HTMLElement>(
-      'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
-    )).filter((element) => !element.hidden && element.tabIndex >= 0)
+    return modalFocusable(this.root)
   }
 }
 

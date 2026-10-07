@@ -32,6 +32,7 @@ class TestElement extends TestEventHub {
   readonly children: TestElement[] = []
   hidden = false
   parent: TestElement | null = null
+  get parentElement(): TestElement | null { return this.parent }
 
   constructor(action?: string) {
     super()
@@ -130,6 +131,20 @@ function pointerEvent(target: TestElement, pointerId: number): { target: TestEle
 }
 
 describe('touch flight controls support detection', () => {
+  it('reserves HUD space only while touch controls are visible and clears it on disposal', () => {
+    const app = new TestElement()
+    const root = new TestElement()
+    app.appendChild(root)
+    const controls = new TouchControls(root as unknown as HTMLElement, () => {})
+    controls.setVisible(true)
+    expect(app.classes.has('touch-flight')).toBe(true)
+    controls.setVisible(false)
+    expect(app.classes.has('touch-flight')).toBe(false)
+    controls.setVisible(true)
+    controls.dispose()
+    expect(app.classes.has('touch-flight')).toBe(false)
+  })
+
   it('accepts touch points or a coarse pointer', () => {
     expect(touchInputSupported(5, false)).toBe(true)
     expect(touchInputSupported(0, true)).toBe(true)

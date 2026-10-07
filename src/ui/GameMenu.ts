@@ -1,3 +1,5 @@
+import { modalFocusable } from './ModalFocus'
+
 export type MenuMode = 'title' | 'pause'
 type MenuView = 'root' | 'controls' | 'info'
 
@@ -227,9 +229,7 @@ export class GameMenu {
       : this.view === 'controls'
         ? this.panelControls
         : this.panelInfo
-    return Array.from(panel.querySelectorAll<HTMLElement>(
-      'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
-    )).filter((element) => !element.hidden && !element.closest('[hidden]') && element.tabIndex >= 0)
+    return modalFocusable(panel)
   }
 }
 

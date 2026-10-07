@@ -27,13 +27,18 @@
           <button type="button" class="touch-airbrake" data-touch-action="airbrake" aria-label="Speed brake" aria-pressed="false">BRAKE</button>
           <button type="button" data-touch-action="gear-toggle" aria-label="Toggle landing gear" aria-pressed="false">GEAR</button>
           <button type="button" data-touch-action="camera-toggle" aria-label="Toggle camera view" aria-pressed="false">VIEW</button>
-          <button type="button" class="touch-assist" data-touch-action="stability-toggle" aria-label="Toggle stability assist" aria-pressed="false">ASSIST</button>
-          <button type="button" class="touch-radar" data-touch-action="radar-cycle" aria-label="Cycle radar target" aria-pressed="false">RADAR</button>
-          <button type="button" class="touch-weather" data-touch-action="weather-cycle" aria-label="Cycle weather" aria-pressed="false">WX</button>
-          <button type="button" class="touch-audio" data-touch-action="audio-toggle" aria-label="Toggle audio mute" aria-pressed="false">AUDIO</button>
-          <button type="button" class="touch-ghost" data-touch-action="ghost-toggle" aria-label="Toggle ghost replay" aria-pressed="false">GHOST</button>
-          <button type="button" class="touch-copy" data-touch-action="seed-copy" aria-label="Copy replay seed" aria-pressed="false">COPY</button>
-          <button type="button" class="touch-reset" data-touch-action="reset" aria-label="Reset sortie" aria-pressed="false">RESET</button>
+          <details class="touch-utilities">
+            <summary aria-label="More flight controls">TOOLS</summary>
+            <div class="touch-utilities-grid">
+              <button type="button" class="touch-assist" data-touch-action="stability-toggle" aria-label="Toggle stability assist" aria-pressed="false">ASSIST</button>
+              <button type="button" class="touch-radar" data-touch-action="radar-cycle" aria-label="Cycle radar target" aria-pressed="false">RADAR</button>
+              <button type="button" class="touch-weather" data-touch-action="weather-cycle" aria-label="Cycle weather" aria-pressed="false">WX</button>
+              <button type="button" class="touch-audio" data-touch-action="audio-toggle" aria-label="Toggle audio mute" aria-pressed="false">AUDIO</button>
+              <button type="button" class="touch-ghost" data-touch-action="ghost-toggle" aria-label="Toggle ghost replay" aria-pressed="false">GHOST</button>
+              <button type="button" class="touch-copy" data-touch-action="seed-copy" aria-label="Copy replay seed" aria-pressed="false">COPY</button>
+              <button type="button" class="touch-reset" data-touch-action="reset" aria-label="Reset sortie" aria-pressed="false">RESET</button>
+            </div>
+          </details>
           <button type="button" class="touch-pause" data-touch-action="pause-toggle" aria-label="Pause flight" aria-pressed="false">PAUSE</button>
           <button type="button" class="touch-boost" data-touch-action="boost" aria-label="Afterburner" aria-pressed="false">BOOST</button>
         </div>
@@ -42,37 +47,62 @@
       <!-- Title / menu — shown before flight -->
       <div id="title-screen" class="title-screen">
         <div class="title-panel">
-          <p class="title-kicker">Arcade Flight</p>
-          <h1 class="title-logo">BLACKOUT</h1>
-          <p id="title-version" class="title-version">v0.12.0 / Systems expansion</p>
-
-          <div class="title-actions">
-            <button type="button" id="btn-play" class="btn-play" disabled>PLAY</button>
-            <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
-            <button type="button" id="btn-info" class="btn-ghost">Game info</button>
-          </div>
-          <div id="title-course-picker" class="course-picker">
-            <p class="course-picker-kicker" id="title-course-label">World</p>
-            <div class="course-picker-list" role="radiogroup" aria-labelledby="title-course-label"></div>
-            <p class="course-picker-detail"></p>
-            <p class="course-picker-stats" hidden></p>
-          </div>
-          <div class="seed-launch">
-            <label class="seed-launch-label" for="title-seed-input">Custom seed</label>
-            <div class="seed-launch-controls">
-              <input id="title-seed-input" type="text" inputmode="decimal" pattern="[+-]?(?:\d+(?:\.\d{1,6})?|\.\d{1,6})" autocomplete="off" placeholder="Random" aria-label="Custom world seed" />
-              <button type="button" id="title-seed-load" class="btn-ghost">Load seed</button>
+          <header class="deck-masthead">
+            <div>
+              <p class="title-kicker">Independent flight / F-35</p>
+              <h1 class="title-logo">BLACKOUT<span aria-hidden="true">/</span></h1>
             </div>
-            <p id="title-seed-status" class="seed-launch-status" role="status" aria-live="polite"></p>
+            <p id="title-version" class="title-version">v0.12.0 / Systems expansion</p>
+          </header>
+          <section class="deck-hero" aria-labelledby="deck-headline">
+            <p class="deck-eyebrow">No borders. Just altitude.</p>
+            <h2 id="deck-headline">Own<br />the sky.</h2>
+            <p class="deck-description">An endless world. A single jet. Make your next flight the one to beat.</p>
+            <svg class="deck-blueprint" viewBox="0 0 380 170" aria-hidden="true" focusable="false">
+              <g class="blueprint-grid" fill="none">
+                <path d="M0 42H380M0 85H380M0 128H380M76 0V170M152 0V170M228 0V170M304 0V170" />
+                <ellipse cx="190" cy="85" rx="142" ry="65" /><path d="M20 85H360M190 8V162" />
+              </g>
+              <path class="blueprint-aircraft" d="M190 12 201 56 211 63 263 104 270 116 217 100 210 123 239 144 241 153 200 144 195 157 185 157 180 144 139 153 141 144 170 123 163 100 110 116 117 104 169 63 179 56Z" />
+              <path class="blueprint-seam" d="M190 20V150M179 56 190 48 201 56M170 123 185 129M210 123 195 129M169 63 179 85 163 100M211 63 201 85 217 100" fill="none" />
+              <circle class="blueprint-route" cx="326" cy="31" r="5" /><path class="blueprint-route" d="M272 64 294 43 321 32" fill="none" />
+              <text x="18" y="157">AIRFRAME / F-35</text><text x="282" y="157">READY TO FLY</text>
+            </svg>
+            <div class="title-actions">
+              <button type="button" id="btn-play" class="btn-play" disabled>Launch flight <span aria-hidden="true">↗</span></button>
+              <div class="deck-secondary-actions">
+                <button type="button" id="btn-controls" class="btn-ghost">Controls</button>
+                <button type="button" id="btn-info" class="btn-ghost">Flight manual</button>
+              </div>
+            </div>
+            <p id="title-status" class="title-status" role="status" aria-live="polite">Finding an airfield…</p>
+            <p id="title-hint" class="title-hint"><kbd>Enter</kbd> launches when the airfield is ready.</p>
+            <div class="deck-career">
+              <p id="title-progress" class="title-progress" aria-live="polite">COURSES 0/3 COMPLETE</p>
+              <p id="title-commendations" class="title-commendations" aria-live="polite" hidden></p>
+            </div>
+          </section>
+          <div class="deck-catalog">
+            <div class="deck-section-heading"><span>01 / Flight plan</span><span>Choose your horizon</span></div>
+            <div id="title-course-picker" class="course-picker">
+              <p class="course-picker-kicker" id="title-course-label">Select a sortie</p>
+              <div class="course-picker-list" role="radiogroup" aria-labelledby="title-course-label"></div>
+              <p class="course-picker-detail"></p>
+              <p class="course-picker-stats" hidden></p>
+            </div>
+            <div class="seed-launch">
+              <label class="seed-launch-label" for="title-seed-input">Or revisit a world</label>
+              <div class="seed-launch-controls">
+                <input id="title-seed-input" type="text" inputmode="decimal" pattern="[+-]?(?:\d+(?:\.\d{1,6})?|\.\d{1,6})" autocomplete="off" placeholder="Enter world seed" aria-label="Custom world seed" />
+                <button type="button" id="title-seed-load" class="btn-ghost">Load seed</button>
+              </div>
+              <p id="title-seed-status" class="seed-launch-status" role="status" aria-live="polite"></p>
+            </div>
           </div>
-          <div class="title-takeoff" aria-label="Takeoff briefing">
-            <strong>Takeoff brief</strong>
+          <footer class="title-takeoff" aria-label="Takeoff briefing">
+            <strong>02 / Takeoff brief</strong>
             <span><kbd id="title-power-control">Shift / 2</kbd> spool power · <kbd id="title-rotate-control">W</kbd> rotate · gear automatic · <kbd id="title-gear-control">G</kbd> override</span>
-          </div>
-          <p id="title-hint" class="title-hint"><kbd>Enter</kbd> launches when the airfield is ready.</p>
-          <p id="title-status" class="title-status" role="status" aria-live="polite">Finding an airfield…</p>
-          <p id="title-progress" class="title-progress" aria-live="polite">COURSES 0/3 COMPLETE</p>
-          <p id="title-commendations" class="title-commendations" aria-live="polite" hidden></p>
+          </footer>
         </div>
       </div>
 
@@ -84,18 +114,27 @@
             <h2 id="menu-heading">Settings</h2>
             <p id="menu-state" class="menu-state" role="status" aria-live="polite" hidden></p>
             <div class="menu-stack">
+              <div class="menu-flight-actions">
               <button type="button" id="menu-resume" class="btn-play" hidden>Resume</button>
               <button type="button" id="menu-retry" class="btn-ghost" hidden>Retry same course</button>
               <button type="button" id="menu-new-world" class="btn-ghost" hidden>New world</button>
               <button type="button" id="menu-fullscreen" class="btn-ghost" aria-pressed="false">
                 Fullscreen <span id="menu-fs-state">OFF</span>
               </button>
+              </div>
+              <details class="settings-section settings-course">
+                <summary>Next sortie <span>Course & progress</span></summary>
               <div id="menu-course-picker" class="course-picker course-picker-compact">
                 <p class="course-picker-kicker" id="menu-course-label">Course</p>
                 <div class="course-picker-list" role="radiogroup" aria-labelledby="menu-course-label"></div>
                 <p class="course-picker-detail"></p>
                 <p class="course-picker-stats" hidden></p>
               </div>
+              </details>
+              <div class="settings-grid">
+              <details class="settings-section">
+                <summary>Display & sound <span>Graphics · audio mix</span></summary>
+                <div class="settings-section-body">
               <label class="menu-setting" for="menu-quality">
                 <span>Graphics</span>
                 <select id="menu-quality" aria-label="Graphics quality">
@@ -132,6 +171,11 @@
                   <output id="menu-effects-volume-value" for="menu-effects-volume">100%</output>
                 </span>
               </label>
+                </div>
+              </details>
+              <details class="settings-section" open>
+                <summary>Flight controls <span>Handling · key bindings</span></summary>
+                <div class="settings-section-body">
               <label class="menu-setting" for="menu-yaw">
                 <span>Keyboard yaw</span>
                 <select id="menu-yaw" aria-label="Keyboard yaw direction">
@@ -205,6 +249,15 @@
                   <option value="KeyI">I</option>
                 </select>
               </label>
+              <label class="menu-setting" for="menu-stability-assist">
+                <span>Flight assist</span>
+                <input id="menu-stability-assist" type="checkbox" aria-label="Gentle pitch and bank trim assist" />
+              </label>
+                </div>
+              </details>
+              <details class="settings-section" open>
+                <summary>View & comfort <span>Camera · HUD · motion</span></summary>
+                <div class="settings-section-body">
               <label class="menu-setting" for="menu-camera-sensitivity">
                 <span>Camera look</span>
                 <select id="menu-camera-sensitivity" aria-label="External camera look sensitivity">
@@ -237,15 +290,16 @@
                 <span>Minimal HUD</span>
                 <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" checked />
               </label>
-              <label class="menu-setting" for="menu-stability-assist">
-                <span>Flight assist</span>
-                <input id="menu-stability-assist" type="checkbox" aria-label="Gentle pitch and bank trim assist" />
-              </label>
+                </div>
+              </details>
+              </div>
+              <div class="menu-footer-actions">
               <button type="button" id="menu-reset-settings" class="btn-ghost">Reset settings</button>
               <button type="button" id="menu-open-controls" class="btn-ghost">Controls</button>
               <button type="button" id="menu-open-info" class="btn-ghost">Game info</button>
               <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>
               <button type="button" id="menu-close" class="btn-ghost" data-menu-close>Back</button>
+              </div>
             </div>
           </div>
 
@@ -310,6 +364,7 @@
           <div id="heading-tape-caret" aria-hidden="true">▼</div>
         </div>
         <div id="hud" class="hud-minimal">
+          <p class="instrument-kicker">Flight systems</p>
           <div id="hud-gear-row" class="hud-row">
             <span class="label">GEAR</span>
             <span id="hud-gear">DOWN</span>
@@ -373,7 +428,7 @@
             <span class="label">SEED</span>
             <span id="hud-world-seed" aria-label="World seed unavailable">--</span>
           </div>
-          <div class="hud-row hud-ledger">
+          <div class="hud-row hud-primary-row">
             <span class="label">RUN</span>
             <span id="hud-mission">GATE 1/5</span>
           </div>
@@ -391,7 +446,7 @@
           </div>
           <div
             id="hud-gate-progress"
-            class="gate-progress hud-ledger"
+            class="gate-progress"
             role="progressbar"
             aria-label="Gate progress"
             aria-valuemin="0"
@@ -461,7 +516,7 @@
             <span class="label">COMBO</span>
             <span id="hud-combo" class="hud-combo" aria-label=""></span>
           </div>
-          <div class="hud-row">
+          <div id="hud-fuel-row" class="hud-row">
             <span class="label hud-ledger">FUEL</span>
             <span
               id="hud-fuel-bar"
@@ -658,8 +713,8 @@
             <span id="nav-turn">AHEAD</span>
             <span id="nav-approach" class="hud-ledger hud-secondary" aria-hidden="true"></span>
             <span id="nav-line" class="hud-ledger hud-secondary" aria-hidden="true"></span>
-            <span id="nav-speed" class="hud-ledger hud-secondary" aria-hidden="true"></span>
-            <span id="nav-glide" class="hud-ledger hud-secondary" aria-hidden="true"></span>
+            <span id="nav-speed" aria-hidden="true"></span>
+            <span id="nav-glide" aria-hidden="true"></span>
             <span id="nav-range">—</span>
             <span id="nav-trend" class="hud-ledger hud-secondary" aria-hidden="true">HOLD</span>
             <span id="nav-eta" class="hud-ledger hud-secondary" aria-hidden="true">ETA --</span>
@@ -684,13 +739,14 @@
 
       <div id="run-results" class="run-results" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
         <div class="run-results-panel">
+          <p class="report-kicker">Blackout / Flight report</p>
           <p id="result-course" class="menu-kicker">SORTIE</p>
           <p id="result-conditions" class="result-conditions" hidden></p>
           <p id="result-seed" class="result-conditions" aria-label="World seed" hidden></p>
           <h2 id="result-title">COMPLETE RUN</h2>
           <p id="result-summary" class="result-summary" role="status" aria-live="polite">ROUTE COMPLETE · ENTER RETRY · R NEW WORLD</p>
           <div class="result-grid">
-            <div>
+            <div class="result-score-card">
               <span class="label">SCORE</span>
               <span id="result-score">0</span>
             </div>
@@ -707,12 +763,12 @@
               <span class="label">GATES</span>
               <span id="result-gates">0</span>
             </div>
-            <div class="result-ledger">
+            <div>
               <span class="label">STREAK</span>
               <span id="result-streak">NONE</span>
               <span id="result-streak-detail" class="result-streak-detail">NO COURSE STREAK</span>
             </div>
-            <div class="result-ledger">
+            <div>
               <span class="label">FUEL</span>
               <span id="result-fuel">100%</span>
               <span id="result-fuel-detail" class="result-fuel-detail">NO BURN</span>
@@ -720,18 +776,26 @@
           </div>
           <p id="result-coaching" class="result-coaching" hidden></p>
           <p id="result-touchdown" class="result-touchdown" aria-label="First-contact telemetry" hidden></p>
-          <p id="result-score-detail" class="result-score-detail result-ledger" aria-label="Score breakdown"></p>
-          <p id="result-badges" class="result-badges result-ledger" aria-label="Mastery badges"></p>
-          <p id="result-splits" class="result-splits result-ledger" aria-label="Gate split history"></p>
-          <p id="result-best" class="result-best result-ledger">BEST · 0</p>
-          <div class="menu-stack">
+          <details class="report-records">
+            <summary>Flight records & score breakdown</summary>
+            <p id="result-score-detail" class="result-score-detail" aria-label="Score breakdown"></p>
+            <p id="result-badges" class="result-badges result-ledger" aria-label="Mastery badges"></p>
+            <p id="result-splits" class="result-splits result-ledger" aria-label="Gate split history"></p>
+            <p id="result-best" class="result-best result-ledger">BEST · 0</p>
+          </details>
+          <div class="report-actions">
             <button type="button" id="btn-retry" class="btn-play">Retry same course</button>
-            <button type="button" id="btn-share-replay" class="btn-ghost">Copy replay link</button>
-            <button type="button" id="btn-copy-summary" class="btn-ghost">Copy sortie summary</button>
-            <button type="button" id="btn-copy-seed" class="btn-ghost">Copy world seed</button>
-            <button type="button" id="btn-load-seed" class="btn-ghost">Load seed on title</button>
             <button type="button" id="btn-new-world" class="btn-ghost">New world</button>
           </div>
+          <details class="report-share">
+            <summary>Share or revisit this flight</summary>
+            <div class="report-share-actions">
+              <button type="button" id="btn-share-replay" class="btn-ghost">Copy replay link</button>
+              <button type="button" id="btn-copy-summary" class="btn-ghost">Copy sortie summary</button>
+              <button type="button" id="btn-copy-seed" class="btn-ghost">Copy world seed</button>
+              <button type="button" id="btn-load-seed" class="btn-ghost">Load seed on title</button>
+            </div>
+          </details>
         </div>
       </div>
     </div>

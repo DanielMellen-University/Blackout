@@ -106,6 +106,7 @@ export class TouchControls {
     this.visible = nextVisible
     this.root.hidden = !nextVisible
     this.root.setAttribute('aria-hidden', nextVisible ? 'false' : 'true')
+    this.root.parentElement?.classList.toggle('touch-flight', nextVisible)
     if (!nextVisible) {
       this.clearActivePointers()
     }
@@ -123,6 +124,7 @@ export class TouchControls {
     this.clearActivePointers()
     this.root.hidden = true
     this.root.setAttribute('aria-hidden', 'true')
+    this.root.parentElement?.classList.remove('touch-flight')
   }
 
   private onPointerDown = (event: PointerEvent): void => {

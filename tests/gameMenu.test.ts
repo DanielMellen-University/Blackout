@@ -1,3 +1,4 @@
+import { MODAL_FOCUSABLE_SELECTOR } from '../src/ui/ModalFocus'
 import { describe, expect, it, vi } from 'vitest'
 import { GameMenu, pauseReasonLabel } from '../src/ui/GameMenu'
 
@@ -93,7 +94,7 @@ function menuFixture(): { root: FakeElement; resume: FakeElement; state: FakeEle
   root.set('#menu-fs-state', fsState)
   root.set('#menu-close', close)
   panelRoot.setList(
-    'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
+    MODAL_FOCUSABLE_SELECTOR,
     [resume, close],
   )
   return { root, resume, state }
@@ -110,7 +111,7 @@ describe('menu focus flow', () => {
     vi.spyOn(hiddenSummary, 'closest').mockReturnValue(new FakeElement())
     const last = new FakeElement()
     fixture.root.querySelector('#menu-root')!.setList(
-      'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
+      MODAL_FOCUSABLE_SELECTOR,
       [fixture.resume, summary, last, hiddenSummary],
     )
     const menu = new GameMenu(fixture.root as unknown as HTMLElement)

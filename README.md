@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.845**. Previous roadmap chunk: **10.844**.
-Recent changes from **10.845**. Coaching stays available before takeoff, renews at flight milestones and final approach, and keeps Training Orbit's first-gate advice until that gate is reached. Device-specific power reduction, automatic gear, free flight, and landmark selection now have accurate guidance without additional alerts or timers.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.846**. Previous roadmap chunk: **10.845**.
+Recent changes from **10.846**. A rebuilt midnight-blue flight deck unifies the launch screen, course catalog, grouped settings, instruments, touch controls, and flight reports. Compass and waypoint guidance occupy separate responsive layout slots. Landing speed/glide remain visible in minimal mode, while expandable records and native disclosures preserve access to every existing control.
 
 ## Run
 

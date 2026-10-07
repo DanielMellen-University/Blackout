@@ -1,3 +1,4 @@
+import { MODAL_FOCUSABLE_SELECTOR } from '../src/ui/ModalFocus'
 import { describe, expect, it, vi } from 'vitest'
 import {
   flightRecordCueLabel,
@@ -138,7 +139,7 @@ function resultsFixture(): {
     ['btn-load-seed', loadSeed],
   ])
   root.setList(
-    'button:not([hidden]):not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+    MODAL_FOCUSABLE_SELECTOR,
     [retry, newWorld],
   )
   root.setList('#result-course', [elements.get('result-course')!])

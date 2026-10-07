@@ -19,10 +19,29 @@ describe('live HUD budget', () => {
   })
 
   it('keeps the touch utility deck compact on phone widths', () => {
-    expect(css).toContain('grid-template-columns: repeat(4, minmax(36px, 1fr));')
-    expect(css).toContain('width: min(200px, calc(100vw - 170px));')
-    expect(css).toContain('@media (max-width: 370px)')
-    expect(css).toContain('width: calc(100vw - 150px);')
+    expect(html).toContain('<details class="touch-utilities">')
+    expect(html).toContain('<summary aria-label="More flight controls">TOOLS</summary>')
+    expect(css).toContain('grid-template-columns: repeat(3, 44px)')
+    expect(css).toContain('min-height: 44px')
+    expect(css).toContain('.touch-flight #overlay')
+  })
+
+  it('gives the compass and navigation independent grid ownership on short screens', () => {
+    const layout = css.slice(css.indexOf('/* One flight-deck layout'))
+    expect(layout).toContain('#heading-tape { grid-area: compass;')
+    expect(layout).toContain('#nav-cue { grid-area: navigation;')
+    expect(layout).toContain('"brand compass readouts"')
+    expect(layout).toContain('"gauges navigation readouts"')
+    expect(layout).toContain('"compass compass"')
+    expect(layout).toContain('inset: auto;')
+    expect(layout).toContain('transform: none;')
+  })
+
+  it('rejects hiding essential landing guidance or expanded debrief records', () => {
+    const hiddenGlide = html.replace('id="nav-glide"', 'class="hud-ledger" id="nav-glide"')
+    expect(liveHudViolations(hiddenGlide, css)).toContain('live instrument nav-glide is in the ledger')
+    expect(liveHudViolations(html, `${css}\n.result-ledger { display: none !important; }`))
+      .toContain('debrief records must remain accessible when expanded')
   })
 
   it('keeps landing and terrain warning cues visually distinct', () => {

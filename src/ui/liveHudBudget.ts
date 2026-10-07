@@ -10,6 +10,8 @@ export const LIVE_HUD_IDS = [
   'nav-cue',
   'nav-arrow',
   'nav-range',
+  'nav-speed',
+  'nav-glide',
   'hud-warn',
   'hud-warn-text',
   'hud-fuel-bar',
@@ -19,7 +21,7 @@ export const LIVE_HUD_IDS = [
 
 /**
  * Ledger readouts. Each id must sit on an element with `hud-ledger`,
- * or on a descendant of one, so the flight picture cannot show it.
+ * or on a descendant of one, so minimal mode excludes optional telemetry.
  */
 export const LEDGER_HUD_IDS = [
   'hud-mach',
@@ -47,8 +49,6 @@ export const LEDGER_HUD_IDS = [
   'hud-contract-detail',
   'nav-approach',
   'nav-line',
-  'nav-speed',
-  'nav-glide',
   'nav-trend',
   'nav-eta',
   'nav-alt',
@@ -92,8 +92,15 @@ export function liveHudViolations(html: string, css: string): string[] {
   if (!/\.hud-minimal\b[^{}]*\.hud-ledger\b[^{}]*\{[^}]*display:\s*none\s*!important/.test(css)) {
     violations.push('css does not hide .hud-minimal .hud-ledger')
   }
-  if (!/\.result-ledger\b[^{]*\{[^}]*display:\s*none\s*!important/.test(css)) {
-    violations.push('css does not hide .result-ledger')
+  const records = html.match(/<details\b[^>]*class="report-records"[^>]*>[\s\S]*?<\/details>/)?.[0] ?? ''
+  if (!records.includes('<summary>') || /<details[^>]*\bopen\b/.test(records)) {
+    violations.push('debrief records need a closed native disclosure')
+  }
+  for (const id of ['result-score-detail', 'result-badges', 'result-splits', 'result-best']) {
+    if (!records.includes(`id="${id}"`)) violations.push(`missing disclosed record ${id}`)
+  }
+  if (/\.result-ledger\b[^{]*\{[^}]*display:\s*none/.test(css)) {
+    violations.push('debrief records must remain accessible when expanded')
   }
   for (const id of LIVE_HUD_IDS) {
     if (!html.includes(`id="${id}"`)) violations.push(`missing live instrument ${id}`)
