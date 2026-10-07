@@ -1,8 +1,12 @@
 import { fbm, getWorldSeed, hash2, smoothstep, valueNoise } from './noise'
 import { sampleLandforms } from './Landforms'
+
 export const CATCHMENT_SIZE = 32000
 const BIN = 2000
 const BINS = CATCHMENT_SIZE / BIN
+
+// This grid only exists while a catchment cache entry is being built. Query
+// time keeps the old compact basin + spatial-bin representation.
 const FLOW_GRID = 18
 const FLOW_STEP = CATCHMENT_SIZE / (FLOW_GRID - 1)
 const FLOW_CELL_COUNT = FLOW_GRID * FLOW_GRID
@@ -10,16 +14,24 @@ const MAX_CHANNEL_EDGES = 72
 const MAX_RENDER_REACHES = 300
 const SEA_RADIUS_MIN = 3200
 const SEA_RADIUS_SPAN = 1000
+
 export interface WaterBasin {
   x: number; z: number; radius: number; aspect: number; angle: number; phase: number
   level: number; sea: boolean; pond: boolean
+  /** Conservative outer radius of the warped shoreline used by tile culling. */
   boundsRadius?: number
 }
+
+/**
+ * Return the cached conservative radius for a warped basin. Older authored or
+ * test basins may omit the field, so retain the exact historical fallback.
+ */
 export function waterBasinBoundsRadius(basin: Pick<WaterBasin, 'radius' | 'boundsRadius'>): number {
   const radius = Number.isFinite(basin.radius) && basin.radius > 0 ? basin.radius : 0
   const cached = basin.boundsRadius
   return typeof cached === 'number' && Number.isFinite(cached) && cached > 0 ? cached : radius * 1.75
 }
+/** Scalar hydrology output. Callers sampling many terrain points can reuse it. */
 export interface HydrologySample {
   height: number
   waterLevel: number
@@ -30,12 +42,17 @@ export interface HydrologySample {
   coastal: number
 }
 type Basin = WaterBasin
+/** A cached analytic river segment, shared by terrain carving and water rendering. */
 export interface RiverReach {
   ax: number; az: number; bx: number; bz: number
   wa: number; wb: number; ya: number; yb: number
+  /** Cached horizontal segment metrics used by repeated terrain samples. */
   dx: number; dz: number; lengthSq: number; length: number
+  /** Chain-end markers let the renderer taper orphaned tributaries cleanly. */
   source?: boolean; terminal?: boolean
+  /** True when this reach terminates at a lake or sea shoreline. */
   mouth?: boolean
+  /** The shoreline point and width used to form a small, query-time delta. */
   mouthX?: number; mouthZ?: number; mouthWidth?: number
 }
 type Reach = RiverReach & { queryToken?: number }
@@ -49,9 +66,12 @@ interface FlowGrid {
   flow: Float64Array
 }
 interface FlowEdge { from: number; to: number; flow: number }
+
 class MinHeap {
   private readonly entries: { id: number; level: number }[] = []
+
   get size(): number { return this.entries.length }
+
   push(id: number, level: number): void {
     const entry = { id, level }
     const values = this.entries
@@ -65,6 +85,7 @@ class MinHeap {
     }
     values[child] = entry
   }
+
   pop(): { id: number; level: number } | undefined {
     const values = this.entries
     if (values.length === 0) return undefined
@@ -83,28 +104,37 @@ class MinHeap {
     return root
   }
 }
+
 let seed = Number.NaN
 const cache = new Map<string, Catchment>()
 let riverBoundsQueryToken = 0
+/** Reused bounded ID order for priority routing and drainage grading. */
 const flowOrderScratch = new Int32Array(FLOW_CELL_COUNT)
+
 function gridId(ix: number, iz: number): number { return iz * FLOW_GRID + ix }
 function gridX(ox: number, id: number): number { return ox + (id % FLOW_GRID) * FLOW_STEP }
 function gridZ(oz: number, id: number): number { return oz + Math.floor(id / FLOW_GRID) * FLOW_STEP }
+
 function prepareFlowOrder(grid: FlowGrid): Int32Array {
   for (let id = 0; id < FLOW_CELL_COUNT; id++) flowOrderScratch[id] = id
   flowOrderScratch.sort((a, b) => {
     const aLevel = grid.filled[a]!
     const bLevel = grid.filled[b]!
+    // Priority levels can be equal, infinite, or NaN at the boundary. Keep
+    // descending order for every comparable value, then tie by ID so the
+    // typed sort remains replay-stable across engines.
     if (aLevel > bLevel) return -1
     if (aLevel < bLevel) return 1
     return a - b
   })
   return flowOrderScratch
 }
+
 function insideGrid(id: number, inset = 0): boolean {
   const x = id % FLOW_GRID, z = Math.floor(id / FLOW_GRID)
   return x >= inset && z >= inset && x < FLOW_GRID - inset && z < FLOW_GRID - inset
 }
+
 function forEachNeighbor(id: number, visit: (neighbor: number) => void): void {
   const x = id % FLOW_GRID, z = Math.floor(id / FLOW_GRID)
   for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
@@ -113,6 +143,13 @@ function forEachNeighbor(id: number, visit: (neighbor: number) => void): void {
     if (nx >= 0 && nz >= 0 && nx < FLOW_GRID && nz < FLOW_GRID) visit(gridId(nx, nz))
   }
 }
+
+/**
+ * Keep public shoreline queries fail-closed when a worker or debug payload
+ * supplies malformed basin metadata. Invalid geometry is treated as being
+ * outside the basin instead of allowing NaN to leak into terrain or water
+ * clipping math.
+ */
 function validBasin(value: unknown): value is Basin {
   if (!value || typeof value !== 'object') return false
   const basin = value as Partial<Basin>
@@ -124,6 +161,8 @@ function validBasin(value: unknown): value is Basin {
     Number.isFinite(basin.angle) && Number.isFinite(basin.phase) &&
     Number.isFinite(basin.level)
 }
+
+/** Signed shore distance, warped in space and broken into coves and peninsulas. */
 export function basinDistance(b: Basin, x: number, z: number): number {
   if (!validBasin(b) || !Number.isFinite(x) || !Number.isFinite(z)) return Number.POSITIVE_INFINITY
   const scale = b.sea ? 2100 : b.pond ? 260 : 700
@@ -133,7 +172,12 @@ export function basinDistance(b: Basin, x: number, z: number): number {
   const u = (dx * Math.cos(b.angle) + dz * Math.sin(b.angle)) / b.radius
   const v = (-dx * Math.sin(b.angle) + dz * Math.cos(b.angle)) / (b.radius * b.aspect)
   const theta = Math.atan2(v, u)
+  // Multiple low-frequency lobes make coves and peninsulas. A broad value
+  // field breaks the last hint of a repeated ellipse without noisy shorelines.
   const shoreNoise = valueNoise(dx / (b.radius * .72) + b.phase * 1.7, dz / (b.radius * .72) - b.phase)
+  // A broad directional lobe gives each basin a distinct headland and
+  // shoreline shoulder. The second field breaks that lobe into coves without
+  // introducing high-frequency noise or a new shoreline mesh.
   const broadShore = valueNoise(dx / (b.radius * 1.45) - b.phase, dz / (b.radius * 1.45) + b.phase * 1.3)
   const coveShore = valueNoise(dx / (b.radius * .42) + b.phase * 2.1, dz / (b.radius * .42) - b.phase * .8)
   const outline = 1 + .1 * Math.sin(theta - b.phase * .8) +
@@ -143,6 +187,8 @@ export function basinDistance(b: Basin, x: number, z: number): number {
     (shoreNoise - .5) * .26 + (broadShore - .5) * .2 + (coveShore - .5) * .1
   return (Math.hypot(u, v) - outline) * b.radius * b.aspect
 }
+
+/** Sample broad terrain once before creating the cached drainage graph. */
 function makeFlowGrid(ox: number, oz: number): FlowGrid {
   const count = FLOW_GRID * FLOW_GRID
   const height = new Float64Array(count)
@@ -161,7 +207,12 @@ function makeFlowGrid(ox: number, oz: number): FlowGrid {
   parent.fill(-1)
   return { height, moisture, highlands, filled, parent, flow: new Float64Array(count) }
 }
+
+/** Pick an infrequent sea in naturally low country, never as a default background. */
 function chooseSeaCell(grid: FlowGrid, cx: number, cz: number): number | null {
+  // Seas are regional landmarks, not the default background. Keep them below
+  // one third of catchments so long dry provinces, lakes, and river valleys
+  // have room to breathe between shoreline encounters.
   if (hash2(cx - 91, cz + 101) <= .68) return null
   const candidates: { id: number; score: number }[] = []
   for (let z = 3; z < FLOW_GRID - 3; z++) for (let x = 3; x < FLOW_GRID - 3; x++) {
@@ -175,6 +226,8 @@ function chooseSeaCell(grid: FlowGrid, cx: number, cz: number): number | null {
   const pool = Math.min(8, candidates.length)
   return candidates[Math.floor(hash2(cx + 41, cz - 61) * pool)]!.id
 }
+
+/** Priority-flood routing resolves local sinks once and gives every cell one downstream parent. */
 function routeFlow(grid: FlowGrid, seaCell: number | null): void {
   const heap = new MinHeap()
   const closed = new Uint8Array(grid.height.length)
@@ -187,10 +240,13 @@ function routeFlow(grid: FlowGrid, seaCell: number | null): void {
   for (let z = 0; z < FLOW_GRID; z++) for (let x = 0; x < FLOW_GRID; x++) {
     if (x === 0 || z === 0 || x === FLOW_GRID - 1 || z === FLOW_GRID - 1) {
       const id = gridId(x, z)
+      // Boundary routes vanish into the existing edge fade. A small penalty
+      // keeps the occasional inland sea attractive when there is one.
       seedCell(id, grid.height[id]! + 90)
     }
   }
   if (seaCell !== null) seedCell(seaCell, 0)
+
   while (heap.size > 0) {
     const next = heap.pop()!
     if (closed[next.id]) continue
@@ -204,8 +260,12 @@ function routeFlow(grid: FlowGrid, seaCell: number | null): void {
       heap.push(neighbor, level)
     })
   }
+
   const order = prepareFlowOrder(grid)
   for (const id of order) {
+    // Humid hills contribute more runoff while dry terrain only feeds the
+    // largest channels. This changes which tributaries survive without a
+    // texture, mesh, or per-frame simulation.
     grid.flow[id] = .08 + grid.moisture[id]! * .42 + grid.highlands[id]! * .1
   }
   for (const id of order) {
@@ -213,11 +273,13 @@ function routeFlow(grid: FlowGrid, seaCell: number | null): void {
     if (parent >= 0) grid.flow[parent] = grid.flow[parent]! + grid.flow[id]!
   }
 }
+
 function localDepression(grid: FlowGrid, id: number): number {
   let sum = 0, count = 0
   forEachNeighbor(id, neighbor => { sum += grid.height[neighbor]!; count++ })
   return Math.max(0, sum / Math.max(1, count) - grid.height[id]!)
 }
+
 function chooseLakeCells(grid: FlowGrid, seaCell: number | null, cx: number, cz: number): number[] {
   const requested = 1 + Math.floor(hash2(cx - 17, cz + 73) * 3)
   const candidates: { id: number; score: number }[] = []
@@ -227,6 +289,8 @@ function chooseLakeCells(grid: FlowGrid, seaCell: number | null, cx: number, cz:
     const depression = localDepression(grid, id)
     const spill = Math.max(0, grid.filled[id]! - grid.height[id]!)
     const altitude = grid.height[id]!
+    // A broad local low is more important than random placement. The small
+    // province term still mixes lowland, foothill, and occasional alpine lakes.
     const score = depression * 3.2 + spill * 1.8 + grid.moisture[id]! * 52 +
       Math.min(65, altitude * .025) + hash2(cx * 113 + x * 31, cz * 127 + z * 47) * 28
     candidates.push({ id, score })
@@ -244,15 +308,21 @@ function chooseLakeCells(grid: FlowGrid, seaCell: number | null, cx: number, cz:
     selected.push(candidate.id)
     if (selected.length >= requested) break
   }
+  // A catchment always keeps at least one inland landmark, even in unusually
+  // flat or dry provinces where no cell has a strong numerical depression.
   if (selected.length === 0 && candidates[0]) selected.push(candidates[0].id)
   return selected
 }
+
 function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, phase: number): Basin {
   const jitter = FLOW_STEP * .18
   const radius = SEA_RADIUS_MIN + hash2(cx - 23, cz + 61) * SEA_RADIUS_SPAN
   return {
     x: gridX(ox, cell) + (hash2(cx + 113, cz - 29) - .5) * jitter,
     z: gridZ(oz, cell) + (hash2(cx - 47, cz + 89) - .5) * jitter,
+    // A sea is deliberately smaller than the old 3.3-5.2 km footprint. It
+    // should read as a broad enclosed coast, not an ocean swallowing a whole
+    // review tile or dominating every flight route.
     radius,
     boundsRadius: radius * 1.75,
     aspect: .72 + hash2(cx + 31, cz - 41) * .24,
@@ -263,6 +333,7 @@ function makeSea(ox: number, oz: number, cell: number, cx: number, cz: number, p
     pond: false,
   }
 }
+
 function makeLake(ox: number, oz: number, cell: number, index: number, cx: number, cz: number, grid: FlowGrid, phase: number): Basin {
   const jitter = FLOW_STEP * .24
   const x = gridX(ox, cell) + (hash2(cx + index * 17, cz - index * 31) - .5) * jitter
@@ -278,6 +349,9 @@ function makeLake(ox: number, oz: number, cell: number, index: number, cx: numbe
     rim = Math.min(rim, sampleLandforms(x + Math.cos(angle) * radius * 1.6,
       z + Math.sin(angle) * radius * 1.6).height)
   }
+  // The filled field identifies a real local bowl, but it can sit above the
+  // raw terrain at a spill saddle. Clamp the water below the sampled rim so a
+  // lake never turns that hidden routing value into an elevated landform.
   const level = Math.max(pond ? 8 : 45, Math.min(rim - (pond ? 5 : 12),
     Math.max(land.height - 12, Math.min(land.height + 95, grid.filled[cell]! - 9))))
   return {
@@ -293,13 +367,18 @@ function makeLake(ox: number, oz: number, cell: number, index: number, cx: numbe
     pond,
   }
 }
+
 function insideBasin(basins: readonly Basin[], x: number, z: number): boolean {
   return basins.some(basin => basinDistance(basin, x, z) < 0)
 }
+
+/** Grade a river gently into a lower lake or sea before reaches are emitted. */
 function outletGrade(basins: readonly Basin[], x: number, z: number, level: number): number {
   let receivingLevel = level
   let receivingBlend = 0
   for (const basin of basins) {
+    // A nearby lake higher than this route is not a receiving outlet. Raising
+    // the grade here would make a river climb uphill and recreate a dam.
     if (basin.level >= level - .25) continue
     const limit = basin.radius * 1.65 + 2000
     if (Math.abs(x - basin.x) > limit || Math.abs(z - basin.z) > limit) continue
@@ -314,6 +393,8 @@ function outletGrade(basins: readonly Basin[], x: number, z: number, level: numb
   }
   return level + (receivingLevel - level) * receivingBlend
 }
+
+/** Keep a river surface outside a basin, ending exactly at its water level. */
 function clipRiverAtShore(
   basins: readonly Basin[],
   a: { x: number; z: number },
@@ -324,9 +405,12 @@ function clipRiverAtShore(
   if (startInside) return null
   if (!endInside) {
     const middle = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 }
+    // A curved reach can clip a narrow peninsula twice in one emitted span.
+    // Dropping that one span is cleaner than drawing an impossible bridge.
     if (insideBasin(basins, middle.x, middle.z)) return null
     return { x: b.x, z: b.z, t: 1 }
   }
+
   let low = 0, high = 1
   for (let i = 0; i < 12; i++) {
     const t = (low + high) / 2
@@ -342,6 +426,7 @@ function clipRiverAtShore(
     level: endInside.level,
   }
 }
+
 function catmullPoint(
   a: { x: number; z: number },
   b: { x: number; z: number },
@@ -356,6 +441,8 @@ function catmullPoint(
   )
   return { x: point(a.x, b.x, c.x, d.x), z: point(a.z, b.z, c.z, d.z) }
 }
+
+/** Turn linked coarse drainage cells into a continuously curving river chain. */
 function emitDrainageChain(
   addReach: (reach: Reach) => void,
   basins: readonly Basin[],
@@ -372,11 +459,16 @@ function emitDrainageChain(
   canAdd: () => boolean,
 ): void {
   if (nodes.length < 2) return
+  // A stable local offset removes the coarse routing grid from the silhouette
+  // while keeping shared confluence points identical across tributaries.
   const points = nodes.map(id => ({
     x: gridX(ox, id) + (hash2(cx * 59 + id * 23, cz * 83 - id * 41) - .5) * FLOW_STEP * .16,
     z: gridZ(oz, id) + (hash2(cx * 97 - id * 37, cz * 71 + id * 19) - .5) * FLOW_STEP * .16,
   }))
   const width = (value: number, node: number) => {
+    // Flow accumulation sets the broad scale; a stable node jitter prevents
+    // every reach from reading as a ruler-straight uniform ribbon while
+    // keeping joins deterministic and shared between terrain and water.
     const variation = .96 + hash2(cx * 131 + node * 17 + 29, cz * 157 - node * 23 - 43) * .08
     return Math.max(14, Math.min(230, (8 + Math.pow(value, .58) * 12) * variation))
   }
@@ -388,6 +480,10 @@ function emitDrainageChain(
     const p3 = points[Math.min(points.length - 1, segment + 2)]!
     const dx = p2.x - p1.x, dz = p2.z - p1.z, length = Math.hypot(dx, dz)
     if (length < 1) continue
+    // Coarse flow cells are useful for performance, but their raw joins read
+    // as ruler-straight or right-angled rivers from the flight camera. Add a
+    // bounded lateral bow to each shared reach so the carved channel and the
+    // rendered ribbon keep a natural meander without extra route samples.
     const bend = (hash2(from * 53 + salt * 17, to * 71 - salt * 31) - .5) * Math.min(300, length * .22)
     const middle = { x: (p1.x + p2.x) / 2 - dz / length * bend, z: (p1.z + p2.z) / 2 + dx / length * bend }
     const point = (t: number) => nodes.length === 2
@@ -400,11 +496,15 @@ function emitDrainageChain(
     const wb = width(Math.max(flow[from]!, flow[to]!), to)
     const ya = levels[from]!
     const yb = Math.min(ya - .25, levels[to]!)
+    // Four exact Catmull samples preserve the carved curve instead of asking
+    // the renderer to invent a second spline that could float off the bed.
     let a = point(0)
     for (let step = 1; step <= 4; step++) {
       if (!canAdd()) return
       const t = step / 4, b = point(t)
       const shore = clipRiverAtShore(basins, a, b)
+      // Rivers stop at the true shore instead of cutting through a lake or
+      // sea and fighting its fixed water level in the query-time resolver.
       if (shore) {
         const ta = (step - 1) / 4
         const endT = ta + (t - ta) * shore.t
@@ -432,6 +532,7 @@ function emitDrainageChain(
     }
   }
 }
+
 function catchment(cx: number, cz: number): Catchment {
   cx = Number.isFinite(cx) ? Math.trunc(cx) : 0
   cz = Number.isFinite(cz) ? Math.trunc(cz) : 0
@@ -439,16 +540,19 @@ function catchment(cx: number, cz: number): Catchment {
   const key = `${cx},${cz}`
   const previous = cache.get(key)
   if (previous) return previous
+
   const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
   const phase = hash2(cx + 79, cz - 41) * Math.PI * 2
   const grid = makeFlowGrid(ox, oz)
   const seaCell = chooseSeaCell(grid, cx, cz)
   routeFlow(grid, seaCell)
+
   const basins: Basin[] = []
   if (seaCell !== null) basins.push(makeSea(ox, oz, seaCell, cx, cz, phase))
   const lakeCells = chooseLakeCells(grid, seaCell, cx, cz)
   for (let i = 0; i < lakeCells.length; i++) {
     const lake = makeLake(ox, oz, lakeCells[i]!, i, cx, cz, grid, phase)
+    // Avoid a rare overlap between an organically shaped lake and sea.
     if (!basins.some(basin => {
       const dx = lake.x - basin.x, dz = lake.z - basin.z
       const minDistance = lake.radius + basin.radius * .7
@@ -457,6 +561,7 @@ function catchment(cx: number, cz: number): Catchment {
       basins.push(lake)
     }
   }
+
   const bins: Reach[][] = Array.from({ length: BINS * BINS }, () => [])
   const reaches: Reach[] = []
   let renderedReaches = 0
@@ -471,9 +576,13 @@ function catchment(cx: number, cz: number): Catchment {
     const maxZ = Math.min(BINS - 1, Math.floor((Math.max(r.az, r.bz) + margin - oz) / BIN))
     for (let ix = minX; ix <= maxX; ix++) for (let iz = minZ; iz <= maxZ; iz++) bins[iz * BINS + ix]!.push(r)
   }
+
   const levels = new Float64Array(grid.height.length)
   const drainageOrder = prepareFlowOrder(grid)
   for (let id = 0; id < levels.length; id++) {
+    // `filled` is a routing aid, not a water surface. Limiting levels to the
+    // sampled ground keeps drainage channels carving down into valleys instead
+    // of ever lifting terrain across a hidden saddle.
     const rawLevel = Math.min(grid.height[id]! - 6,
       grid.filled[id]! - Math.min(26, 8 + Math.sqrt(grid.flow[id]!) * 1.25))
     levels[id] = outletGrade(basins, gridX(ox, id), gridZ(oz, id), rawLevel)
@@ -483,6 +592,7 @@ function catchment(cx: number, cz: number): Catchment {
     if (parent >= 0) levels[parent] = Math.min(levels[parent]!, levels[id]! - .25)
   }
   if (seaCell !== null) levels[seaCell] = 0
+
   const edges: FlowEdge[] = []
   for (let id = 0; id < grid.parent.length; id++) {
     const parent = grid.parent[id]!
@@ -493,6 +603,8 @@ function catchment(cx: number, cz: number): Catchment {
     if (insideBasin(basins, midX, midZ)) continue
     edges.push({ from: id, to: parent, flow: grid.flow[id]! })
   }
+  // Flow is monotonic downstream, so retaining the strongest bounded set also
+  // retains every trunk needed to keep those tributaries connected.
   edges.sort((a, b) => b.flow - a.flow)
   const selected = edges.slice(0, MAX_CHANNEL_EDGES)
   const outgoing = new Map<number, FlowEdge>()
@@ -520,16 +632,21 @@ function catchment(cx: number, cz: number): Catchment {
       (incoming.get(edge.from) ?? 0) > 1, endsAtJunction,
       () => renderedReaches < MAX_RENDER_REACHES)
   }
+
   const result = { basins, bins, reaches }
   if (cache.size >= 128) cache.delete(cache.keys().next().value!)
   cache.set(key, result)
   return result
 }
+
+/** Lakes/seas have fixed levels. River reaches grade continuously downstream. */
 export function sampleHydrology(x: number, z: number, ground: number): HydrologySample {
   return sampleHydrologyInto({
     height: ground, waterLevel: 0, river: 0, lake: 0, pond: 0, stream: 0, coastal: 0,
   }, x, z, ground)
 }
+
+/** Write one hydrology sample into caller-owned storage to avoid hot-path churn. */
 export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, ground: number): HydrologySample {
   const safeX = Number.isFinite(x) ? x : 0
   const safeZ = Number.isFinite(z) ? z : 0
@@ -539,6 +656,7 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   const localX = safeX - cx * CATCHMENT_SIZE, localZ = safeZ - cz * CATCHMENT_SIZE
   const edgeFade = smoothstep(0, 1600, Math.min(localX, localZ, CATCHMENT_SIZE - localX, CATCHMENT_SIZE - localZ))
   let height = safeGround, waterLevel = 0, river = 0, lake = 0, pond = 0, stream = 0, coastal = 0
+  // Tiny negative coordinates can round their local remainder up to 32000.
   const binX = Math.max(0, Math.min(BINS - 1, Math.floor(localX / BIN)))
   const binZ = Math.max(0, Math.min(BINS - 1, Math.floor(localZ / BIN)))
   const reaches = region.bins[binZ * BINS + binX]!
@@ -556,6 +674,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     }
   }
   const valleyRange = Math.max(650, Math.min(1250, width * 5 + 160))
+  // On an inside bend, the closest reach can switch between different river
+  // elevations. Blend the dry valley shoulders to avoid a step at that switch.
   if (nearest > 0 && nearest < valleyRange) {
     let sum = 0, total = 0
     for (const r of reaches) {
@@ -567,15 +687,25 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     }
     level += (sum / total - level) * smoothstep(0, 240, nearest)
   }
+
   if (nearest < valleyRange) {
     const d = nearest
     const blend = (1 - smoothstep(0, valleyRange, Math.max(0, d))) * edgeFade
     const bank = d < 0 ? -(5 + width * .04) * smoothstep(0, width, -d) : d * .075 + d * d * .00007
     height += (level + bank - height) * blend
+    // The broad valley blend shapes banks and floodplain relief, but only the
+    // channel itself owns a water surface. Marking the whole valley wet left
+    // a dark triangular bed wherever the analytic river ribbon was absent.
     if (blend > 0 && Math.max(0, d) <= Math.max(42, width * 1.35)) waterLevel = level
     river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
     stream = width < 48 ? river : 0
   }
+
+  // A river should not stop at a mathematically exact shoreline and leave a
+  // dry triangular peninsula between its channel and the receiving basin.
+  // Fill a restrained, downstream delta corridor in the same query that
+  // carves the river. WaterSystem receives the resulting levels and therefore
+  // clips matching water geometry instead of relying on a renderer-only fan.
   for (const reach of reaches) {
     if (!reach.mouth || reach.mouthX === undefined || reach.mouthZ === undefined) continue
     const length = reach.length
@@ -592,6 +722,9 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     const lateralFade = 1 - smoothstep(edgeWidth * .55, edgeWidth, lateral)
     const blend = alongFade * lateralFade * edgeFade
     if (blend <= .08) continue
+    // A broad mouth delta can overlap a nearby tributary after the coastline
+    // is warped. Only the closest reach may own the local water level, or the
+    // delta would flatten an upstream channel to sea level.
     if (nearest < valleyRange && nearestReach && nearestReach !== reach) continue
     const deltaLevel = reach.yb
     height += (deltaLevel - 1.5 - height) * Math.min(1, blend * 1.25)
@@ -604,6 +737,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     const limit = basin.radius * 1.65 + 2000
     if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
     const d = basinDistance(basin, safeX, safeZ)
+    // Keep a readable shallow shelf, not a kilometre-wide exposed brown
+    // wedge between dry terrain and the independent water surface.
     const margin = basin.sea ? 900 : basin.pond ? 360 : 780
     if (d >= margin) continue
     const blend = (1 - smoothstep(0, margin, Math.max(0, d))) * edgeFade
@@ -611,6 +746,7 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
       ? -(basin.sea ? 150 : 32) * smoothstep(0, basin.sea ? 2300 : 500, -d) + d * .012
       : d * .065 + d * d * .000035
     const basinHeight = height + (basin.level + bed - height) * blend
+    // Preserve an existing outlet through the bank instead of damming it shut.
     height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river : basinHeight
     if (d <= 0 || nearest >= valleyRange) waterLevel = basin.level
     if (basin.sea) {
@@ -628,12 +764,16 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   out.coastal = coastal
   return out
 }
+
+/** Read-only landmarks for repeatable visual review and hydrology tests. */
 export function waterLandmarks(cx: number, cz: number): ReadonlyArray<Readonly<Basin>> {
   return catchment(cx, cz).basins
 }
+
 export function riverReaches(cx: number, cz: number): ReadonlyArray<Readonly<Reach>> {
   return catchment(cx, cz).reaches
 }
+
 function lineIntersectsBounds(
   ax: number, az: number, bx: number, bz: number,
   minX: number, minZ: number, maxX: number, maxZ: number,
@@ -655,6 +795,7 @@ function lineIntersectsBounds(
   return clip(-dx, ax - minX) && clip(dx, maxX - ax) &&
     clip(-dz, az - minZ) && clip(dz, maxZ - az)
 }
+
 interface RiverBoundsQuery {
   startCx: number
   endCx: number
@@ -665,6 +806,7 @@ interface RiverBoundsQuery {
   expandedMaxX: number
   expandedMaxZ: number
 }
+
 function normalizeRiverBounds(
   minX: number,
   minZ: number,
@@ -689,6 +831,13 @@ function normalizeRiverBounds(
     expandedMaxZ,
   }
 }
+
+/**
+ * Visit reaches intersecting a normalized bounds query. Passing a result set
+ * collects every reach; passing null returns immediately on the first hit.
+ * The latter is used by terrain culling so a boolean query never materializes
+ * an intermediate array or performs work for distant catchments after a hit.
+ */
 function collectRiverReachesInBounds(
   query: RiverBoundsQuery,
   result: Reach[] | null,
@@ -725,11 +874,14 @@ function collectRiverReachesInBounds(
   }
   return found
 }
+
 function nextRiverBoundsQueryToken(): number {
   riverBoundsQueryToken = (riverBoundsQueryToken + 1) >>> 0
   if (riverBoundsQueryToken === 0) riverBoundsQueryToken = 1
   return riverBoundsQueryToken
 }
+
+/** Locate cached river reaches that touch an axis-aligned streamed tile. */
 export function riverReachesInBounds(
   minX: number,
   minZ: number,
@@ -745,6 +897,13 @@ export function riverReachesInBounds(
   collectRiverReachesInBounds(query, result)
   return result
 }
+
+/**
+ * Fast cached query for streaming LOD: reports whether a drainage reach could
+ * touch an axis-aligned tile. It avoids missing a thin river merely because
+ * every coarse terrain vertex happens to land on its dry bank. Broad basins
+ * are intentionally left to normal vertex sampling to preserve the budget.
+ */
 export function hydrologyIntersectsBounds(
   minX: number,
   minZ: number,

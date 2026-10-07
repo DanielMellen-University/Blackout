@@ -53,6 +53,61 @@ function planFor(cx: number, cz: number): SettlementPlan {
 }
 
 describe('settlement streaming budgets', () => {
+  it('dispatches road jobs by the closest endpoint with deterministic ties', () => {
+    const system = new SettlementSystem(new Scene())
+    type Job = { key: string; from: SettlementPlan; to: SettlementPlan }
+    const internal = system as unknown as { linkQueue: Job[]; takeNearestRoadJob(x: number, z: number): Job | undefined }
+    const job = (key: string, fromX: number, fromZ: number, toX: number, toZ: number): Job => ({
+      key, from: { ...planFor(0, 0), x: fromX, z: fromZ },
+      to: { ...planFor(0, 0), x: toX, z: toZ },
+    })
+    try {
+      const far = job('far', 100, 100, 200, 200)
+      const tiedZ = job('z-tie', 3, 4, 80, 80)
+      const tiedA = job('a-tie', 90, 90, -3, -4)
+      const nearest = job('near', 90, 90, 0, 1)
+      internal.linkQueue.push(far, tiedZ, tiedA, nearest)
+      expect(internal.takeNearestRoadJob(0, 0)).toBe(nearest)
+      expect(internal.takeNearestRoadJob(0, 0)).toBe(tiedA)
+      expect(internal.takeNearestRoadJob(0, 0)).toBe(tiedZ)
+      expect(internal.takeNearestRoadJob(0, 0)).toBe(far)
+      expect(internal.takeNearestRoadJob(0, 0)).toBeUndefined()
+    } finally {
+      system.dispose()
+    }
+  })
+
+  it('preserves distance bonuses when reprioritizing retained settlement jobs', () => {
+    class HoldingWorker {
+      onmessage = null
+      onerror = null
+      postMessage() {}
+      terminate() {}
+    }
+    vi.stubGlobal('Worker', HoldingWorker)
+    const system = new SettlementSystem(new Scene())
+    const internal = system as unknown as {
+      queue: { cx: number; cz: number; key: string; distance: number; score: number }[]
+    }
+    try {
+      system.update(12_000, 12_000)
+      const retained = internal.queue.find(job => job.key === '1,0')!
+      expect(retained).toBeDefined()
+      system.update(36_000, 12_000)
+      expect(internal.queue).toContain(retained)
+      for (const job of internal.queue) {
+        const distance = Math.hypot((job.cx + .5) * 24_000 - 36_000, (job.cz + .5) * 24_000 - 12_000)
+        const bonus = job.key === '1,0' ? 12_000 : job.key === '0,1' ? 8_000 : 0
+        expect(job.distance).toBeCloseTo(distance)
+        expect(job.score).toBeCloseTo(distance - bonus)
+      }
+      expect(internal.queue.at(-1)).toBe(retained)
+    } finally {
+      system.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('reuses the last valid focus when stream coordinates are malformed', () => {
     const system = new SettlementSystem(new Scene())
     const internal = system as unknown as { focusX: number; focusZ: number }

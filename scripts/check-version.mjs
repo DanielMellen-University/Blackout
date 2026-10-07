@@ -12,6 +12,7 @@ const sourceMatch = versionSource.match(/APP_VERSION\s*=\s*'([^']+)'/)
 const sourceVersion = sourceMatch?.[1] ?? ''
 const roadmapMatch = versionSource.match(/ROADMAP_CHUNK\s*=\s*'([^']+)'/)
 const roadmapChunk = roadmapMatch?.[1] ?? ''
+const previousChunk = versionSource.match(/PREVIOUS_ROADMAP_CHUNK\s*=\s*'([^']+)'/)?.[1] ?? ''
 const releaseNameMatch = versionSource.match(/RELEASE_NAME\s*=\s*'([^']+)'/)
 const releaseName = releaseNameMatch?.[1] ?? ''
 const changelog = readFileSync(new URL('../CHANGELOG.md', import.meta.url), 'utf8')
@@ -21,6 +22,10 @@ const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8'
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8')
 const readmeRoadmapMatch = readme.match(/Roadmap chunk:\s+\*\*([^*]+)\*\*/)
 const readmeRecentMatch = readme.match(/Recent changes from\s+\*\*([^*]+)\*\*/)
+const roadmap = readFileSync(new URL('../docs/ROADMAP.md', import.meta.url), 'utf8')
+const roadmapCurrent = roadmap.match(/Chunk\s+\*\*([^*]+)\*\* is current/)
+const roadmapPrevious = roadmap.match(/Previous ship:\s+\*\*([^*]+)\*\*/)
+const readmePrevious = readme.match(/Previous roadmap chunk:\s+\*\*([^*]+)\*\*/)
 
 const errors = []
 if (!packageVersion) errors.push('package.json is missing a string version')
@@ -32,6 +37,16 @@ if (!lockfileRootVersion) errors.push('package-lock.json is missing the package 
 if (!sourceVersion) errors.push('src/core/Version.ts is missing APP_VERSION')
 if (!roadmapChunk) errors.push('src/core/Version.ts is missing ROADMAP_CHUNK')
 if (!releaseName) errors.push('src/core/Version.ts is missing RELEASE_NAME')
+if (!previousChunk) errors.push('src/core/Version.ts is missing PREVIOUS_ROADMAP_CHUNK')
+if (!roadmapCurrent || roadmapCurrent[1] !== roadmapChunk) {
+  errors.push('docs/ROADMAP.md current chunk must match src/core/Version.ts')
+}
+if (!roadmapPrevious || roadmapPrevious[1] !== previousChunk) {
+  errors.push('docs/ROADMAP.md previous ship must match PREVIOUS_ROADMAP_CHUNK')
+}
+if (!readmePrevious || readmePrevious[1] !== previousChunk) {
+  errors.push('README.md previous chunk must match PREVIOUS_ROADMAP_CHUNK')
+}
 if (roadmapChunk && !/^\d+\.\d+$/.test(roadmapChunk)) {
   errors.push(`src/core/Version.ts roadmap chunk (${roadmapChunk}) is not a valid internal chunk ID`)
 }

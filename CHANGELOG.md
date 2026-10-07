@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **10.835** Repair release metadata and README controls, restore hydrology explanations stripped during file recovery, and reuse settlement queue distances with deterministic squared road-job ranking.
+- **10.834** Refresh the roadmap and project overview, remove stale README chunk metadata, and align terrain streaming documentation with smooth fades.
+- **10.833** Use squared lake spacing and basin separation checks while retaining deterministic hydrology placement.
+- **10.832** Use squared regional-road connection range gates while retaining inclusive connection bounds.
+- **10.831** Rank regional-road candidates with squared distances and document the shipped project systems.
 - **10.830** Rank ready settlement plans and budget evictions with squared distances, preserving nearest-first loading and anchor displacement while removing per-frame streaming square roots.
 - **10.829** Reuse the grounded speed already resolved for runway authority after orientation updates, preserving taxi handling while removing a duplicate fixed-step square root.
 - **10.828** Defer PAPI approach-distance square roots until the aircraft is inside the landing corridor, preserving neutral fly-by lights while reducing per-tick runway work.

@@ -100,8 +100,7 @@ interface SettlementQueueJob {
 function settlementQueuePriority(
   cx: number,
   cz: number,
-  focusX: number,
-  focusZ: number,
+  distance: number,
   pad: OpsPadSnapshot | null,
 ): number {
   let anchor: 'city' | 'village' | null = null
@@ -110,9 +109,6 @@ function settlementQueuePriority(
   } catch {
     // A partial test or worker harness may omit the optional anchor resolver.
   }
-  const dx = (cx + .5) * SETTLEMENT_CELL_SIZE - focusX
-  const dz = (cz + .5) * SETTLEMENT_CELL_SIZE - focusZ
-  const distance = Math.hypot(dx, dz)
   const bonus = anchor === 'city' ? 12000 : anchor === 'village' ? 8000 : 0
   return distance - bonus
 }
@@ -590,7 +586,7 @@ export class SettlementSystem {
   private queue: SettlementQueueJob[] = []
   /** Reused stream-cell staging containers; crossings are event-driven but can happen frequently at top speed. */
   private readonly wantedCells = new Set<string>()
-  private readonly pendingCells: { cx: number; cz: number; key: string; distance: number }[] = []
+  private readonly pendingCells: { cx: number; cz: number; key: string }[] = []
   private readonly retainedQueue: SettlementQueueJob[] = []
   private readonly retainedQueueKeys = new Set<string>()
   private linkQueue: RoadJob[] = []
@@ -1112,10 +1108,11 @@ export class SettlementSystem {
       for (let cx = Math.floor((x - r) / SETTLEMENT_CELL_SIZE); cx <= Math.floor((x + r) / SETTLEMENT_CELL_SIZE); cx++) {
         for (let cz = Math.floor((z - r) / SETTLEMENT_CELL_SIZE); cz <= Math.floor((z + r) / SETTLEMENT_CELL_SIZE); cz++) {
           const key = `${cx},${cz}`
-          const distance = Math.hypot((cx + .5) * SETTLEMENT_CELL_SIZE - x, (cz + .5) * SETTLEMENT_CELL_SIZE - z)
-          if (distance > r) continue
+          const dx = (cx + .5) * SETTLEMENT_CELL_SIZE - x
+          const dz = (cz + .5) * SETTLEMENT_CELL_SIZE - z
+          if (dx * dx + dz * dz > r * r) continue
           wanted.add(key)
-          if (!this.checked.has(key)) pending.push({ cx, cz, key, distance })
+          if (!this.checked.has(key)) pending.push({ cx, cz, key })
         }
       }
       for (const key of this.checked) {
@@ -1144,7 +1141,7 @@ export class SettlementSystem {
       }
       for (const job of pending) {
         if (!retainedKeys.has(job.key)) {
-          retained.push({ cx: job.cx, cz: job.cz, key: job.key, score: 0, distance: job.distance })
+          retained.push({ cx: job.cx, cz: job.cz, key: job.key, score: 0, distance: 0 })
         }
       }
       this.queue.length = 0
@@ -1159,7 +1156,7 @@ export class SettlementSystem {
         // block the actual city or village the player had flown toward.
         // A nearby anchor still wins the opening stream, while a selected
         // destination wins once it is materially closer to the aircraft.
-        job.score = settlementQueuePriority(job.cx, job.cz, x, z, pad)
+        job.score = settlementQueuePriority(job.cx, job.cz, job.distance, pad)
       }
       this.queue.sort((a, b) => {
         // Keep the farthest job at index zero so pop() consumes the nearest
@@ -1273,17 +1270,18 @@ export class SettlementSystem {
     if (failed?.generation === this.generation) {
       if (failed.type === 'settlement') {
         this.checked.delete(failed.key)
+        const distance = Math.hypot(
+          (failed.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX,
+          (failed.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ,
+        )
         // The queue is reverse-prioritized and consumed with pop(). Append the
         // failed job so it remains the next retry without losing its priority.
         const failedJob: SettlementQueueJob = {
           cx: failed.cx,
           cz: failed.cz,
           key: failed.key,
-          score: settlementQueuePriority(failed.cx, failed.cz, this.focusX, this.focusZ, getOpsPad()),
-          distance: Math.hypot(
-            (failed.cx + .5) * SETTLEMENT_CELL_SIZE - this.focusX,
-            (failed.cz + .5) * SETTLEMENT_CELL_SIZE - this.focusZ,
-          ),
+          score: settlementQueuePriority(failed.cx, failed.cz, distance, getOpsPad()),
+          distance,
         }
         this.queue.push(failedJob)
         this.queue.sort((a, b) => {
@@ -1807,17 +1805,16 @@ export class SettlementSystem {
   /** Consume the connector nearest to the aircraft without sorting the queue. */
   private takeNearestRoadJob(x: number, z: number): RoadJob | undefined {
     let nearestIndex = -1
-    let nearestDistance = Infinity
+    let nearestDistanceSquared = Infinity
     let nearestKey = ''
     for (let index = 0; index < this.linkQueue.length; index++) {
       const job = this.linkQueue[index]!
-      const distance = Math.min(
-        Math.hypot(job.from.x - x, job.from.z - z),
-        Math.hypot(job.to.x - x, job.to.z - z),
-      )
-      if (distance < nearestDistance || (distance === nearestDistance && (nearestKey === '' || job.key < nearestKey))) {
+      const fromDx = job.from.x - x, fromDz = job.from.z - z
+      const toDx = job.to.x - x, toDz = job.to.z - z
+      const distanceSquared = Math.min(fromDx * fromDx + fromDz * fromDz, toDx * toDx + toDz * toDz)
+      if (distanceSquared < nearestDistanceSquared || (distanceSquared === nearestDistanceSquared && (nearestKey === '' || job.key < nearestKey))) {
         nearestIndex = index
-        nearestDistance = distance
+        nearestDistanceSquared = distanceSquared
         nearestKey = job.key
       }
     }
