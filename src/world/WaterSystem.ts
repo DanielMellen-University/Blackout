@@ -1,4 +1,4 @@
-import { BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial } from 'three'
+import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, Vector3 } from 'three'
 import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
@@ -7,14 +7,25 @@ interface BasinVertex { x: number; z: number; y: number; depth: number }
 
 /** Cached warped shoreline samples reused by every terrain tile touching a basin. */
 const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
-// Water geometry is built synchronously within one worker/main-thread turn.
-// Reuse the short-lived numeric staging arrays before they become typed buffers.
-const positionsScratch: number[] = []
-const depthsScratch: number[] = []
-const flowValuesScratch: number[] = []
-const flowDirectionsScratch: number[] = []
-const waterKindsScratch: number[] = []
-const waterDropsScratch: number[] = []
+interface WaterStaging {
+  positions: number[]; depths: number[]; flowValues: number[]
+  flowDirections: number[]; waterKinds: number[]; waterDrops: number[]
+}
+// A suspended builder owns its arrays. Retain only one idle workspace, matching
+// the old scratch budget; synchronous workers still reuse it between jobs.
+const stagingPool: WaterStaging[] = []
+function acquireStaging(): WaterStaging {
+  return stagingPool.pop() ?? { positions: [], depths: [], flowValues: [],
+    flowDirections: [], waterKinds: [], waterDrops: [] }
+}
+function releaseStaging(staging: WaterStaging): void {
+  staging.positions.length = staging.depths.length = staging.flowValues.length = 0
+  staging.flowDirections.length = staging.waterKinds.length = staging.waterDrops.length = 0
+  if (stagingPool.length === 0) stagingPool.push(staging)
+}
+
+export type WaterBuildPhase = 'grid' | 'shore' | 'basin' | 'river' | 'attributes' | 'normals' | 'bounds'
+export type WaterMeshSteps = Generator<WaterBuildPhase, Mesh | null, void>
 
 export function makeWaterMaterial(
   clock: { value: number },
@@ -42,120 +53,171 @@ export function buildWaterMesh(
   reachesArg: readonly RiverReach[] = [],
   basins: readonly WaterBasin[] = [],
 ): Mesh | null {
+  const steps = buildWaterMeshSteps(beds, levels, segs, size, originX, originZ,
+    clock, weather, basinMaskOrReaches, reachesArg, basins)
+  let result = steps.next()
+  while (!result.done) result = steps.next()
+  return result.value
+}
+
+/** Same output as the synchronous API, with cancellable bounded work batches. */
+export function* buildWaterMeshSteps(
+  beds: Float32Array, levels: Float32Array, segs: number, size: number,
+  originX: number, originZ: number, clock: { value: number }, weather?: WaterWeatherUniforms,
+  basinMaskOrReaches?: Float32Array | readonly RiverReach[],
+  reachesArg: readonly RiverReach[] = [],
+  basins: readonly WaterBasin[] = [],
+): WaterMeshSteps {
   // Keep the old reaches-only call shape usable for focused tools and tests,
   // while terrain tiles pass an explicit mask to distinguish rivers from
   // fixed-level lakes and seas.
   const basinMask = basinMaskOrReaches instanceof Float32Array ? basinMaskOrReaches : undefined
-  const reaches: readonly RiverReach[] = basinMaskOrReaches instanceof Float32Array
+  const reaches: readonly RiverReach[] = (basinMaskOrReaches instanceof Float32Array
     ? reachesArg
-    : basinMaskOrReaches ?? reachesArg
-  const positions = positionsScratch
-  const depths = depthsScratch
-  const flowValues = flowValuesScratch
-  const flowDirections = flowDirectionsScratch
-  const waterKinds = waterKindsScratch
-  const waterDrops = waterDropsScratch
-  positions.length = 0
-  depths.length = 0
-  flowValues.length = 0
-  flowDirections.length = 0
-  waterKinds.length = 0
-  waterDrops.length = 0
-  const stride = segs + 1
-  const cell = size / segs
-  const input: [WaterVertex, WaterVertex, WaterVertex] = [
-    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
-    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
-    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
-  ]
-  const intersections: [WaterVertex, WaterVertex, WaterVertex] = [
-    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
-    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
-    { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
-  ]
-  const polygon: WaterVertex[] = []
-  const setVertex = (target: WaterVertex, index: number): void => {
-    target.x = (index % stride) * cell - size / 2
-    target.z = Math.floor(index / stride) * cell - size / 2
-    target.bed = beds[index]!
-    target.level = levels[index]!
-    target.basin = basinMask?.[index] ?? 1
-  }
-  function triangle(a: number, b: number, c: number): void {
-    if (basinMask && basinMask[a]! <= .5 && basinMask[b]! <= .5 && basinMask[c]! <= .5) return
-    // Fixed-level basins get their own smooth analytic shoreline below. Do not
-    // also rasterize these triangles, or the two surfaces recreate the old
-    // sawtooth edge and expose a dark bed wedge between cells.
-    if (basins.length > 0 && basinMask &&
-      (basinMask[a]! > .5 || basinMask[b]! > .5 || basinMask[c]! > .5)) return
-    if (beds[a]! >= levels[a]! && beds[b]! >= levels[b]! && beds[c]! >= levels[c]!) return
-    setVertex(input[0], a)
-    setVertex(input[1], b)
-    setVertex(input[2], c)
-    polygon.length = 0
-    for (let i = 0; i < 3; i++) {
-      const p = input[i]!
-      const q = input[(i + 1) % 3]!
-      const dp = p.basin > .5 ? p.level - p.bed : -1
-      const dq = q.basin > .5 ? q.level - q.bed : -1
-      if (dp > 0) polygon.push(p)
-      if ((dp > 0) !== (dq > 0)) {
-        const t = dp / (dp - dq)
-        const intersection = intersections[i]!
-        intersection.x = p.x + (q.x - p.x) * t
-        intersection.z = p.z + (q.z - p.z) * t
-        intersection.bed = p.bed + (q.bed - p.bed) * t
-        intersection.level = p.level + (q.level - p.level) * t
-        intersection.basin = p.basin + (q.basin - p.basin) * t
-        polygon.push(intersection)
+    : basinMaskOrReaches ?? reachesArg).slice()
+  // Terrain's bounds collector reuses a list; later builds cannot overwrite
+  // this suspended job's membership. Landmark/reach metadata stays immutable.
+  basins = basins.slice()
+  const staging = acquireStaging()
+  const { positions, depths, flowValues, flowDirections, waterKinds, waterDrops } = staging
+  let geometry: BufferGeometry | null = null
+  let material: MeshStandardMaterial | null = null
+  let delivered = false
+  try {
+    const stride = segs + 1
+    const cell = size / segs
+    const input: [WaterVertex, WaterVertex, WaterVertex] = [
+      { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+      { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+      { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+    ]
+    const intersections: [WaterVertex, WaterVertex, WaterVertex] = [
+      { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+      { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+      { x: 0, z: 0, bed: 0, level: 0, basin: 0 },
+    ]
+    const polygon: WaterVertex[] = []
+    const setVertex = (target: WaterVertex, index: number): void => {
+      target.x = (index % stride) * cell - size / 2
+      target.z = Math.floor(index / stride) * cell - size / 2
+      target.bed = beds[index]!
+      target.level = levels[index]!
+      target.basin = basinMask?.[index] ?? 1
+    }
+    function triangle(a: number, b: number, c: number): void {
+      if (basinMask && basinMask[a]! <= .5 && basinMask[b]! <= .5 && basinMask[c]! <= .5) return
+      // Fixed-level basins get their own smooth analytic shoreline below. Do not
+      // also rasterize these triangles, or the two surfaces recreate the old
+      // sawtooth edge and expose a dark bed wedge between cells.
+      if (basins.length > 0 && basinMask &&
+        (basinMask[a]! > .5 || basinMask[b]! > .5 || basinMask[c]! > .5)) return
+      if (beds[a]! >= levels[a]! && beds[b]! >= levels[b]! && beds[c]! >= levels[c]!) return
+      setVertex(input[0], a)
+      setVertex(input[1], b)
+      setVertex(input[2], c)
+      polygon.length = 0
+      for (let i = 0; i < 3; i++) {
+        const p = input[i]!
+        const q = input[(i + 1) % 3]!
+        const dp = p.basin > .5 ? p.level - p.bed : -1
+        const dq = q.basin > .5 ? q.level - q.bed : -1
+        if (dp > 0) polygon.push(p)
+        if ((dp > 0) !== (dq > 0)) {
+          const t = dp / (dp - dq)
+          const intersection = intersections[i]!
+          intersection.x = p.x + (q.x - p.x) * t
+          intersection.z = p.z + (q.z - p.z) * t
+          intersection.bed = p.bed + (q.bed - p.bed) * t
+          intersection.level = p.level + (q.level - p.level) * t
+          intersection.basin = p.basin + (q.basin - p.basin) * t
+          polygon.push(intersection)
+        }
+      }
+      const first = polygon[0]!
+      for (let i = 1; i < polygon.length - 1; i++) {
+        const second = polygon[i]!
+        const third = polygon[i + 1]!
+        positions.push(
+          first.x, first.level, first.z,
+          second.x, second.level, second.z,
+          third.x, third.level, third.z,
+        )
+        depths.push(
+          Math.max(0, first.level - first.bed),
+          Math.max(0, second.level - second.bed),
+          Math.max(0, third.level - third.bed),
+        )
+        flowValues.push(0, 0, 0)
+        flowDirections.push(0, 0, 0, 0, 0, 0)
+        waterDrops.push(0, 0, 0)
+        // Raster water is the compatibility path for a fixed basin. Analytic
+        // basins below carry their exact lake, pond, or sea kind.
+        waterKinds.push(1, 1, 1)
       }
     }
-    const first = polygon[0]!
-    for (let i = 1; i < polygon.length - 1; i++) {
-      const second = polygon[i]!
-      const third = polygon[i + 1]!
-      positions.push(
-        first.x, first.level, first.z,
-        second.x, second.level, second.z,
-        third.x, third.level, third.z,
-      )
-      depths.push(
-        Math.max(0, first.level - first.bed),
-        Math.max(0, second.level - second.bed),
-        Math.max(0, third.level - third.bed),
-      )
-      flowValues.push(0, 0, 0)
-      flowDirections.push(0, 0, 0, 0, 0, 0)
-      waterDrops.push(0, 0, 0)
-      // Raster water is the compatibility path for a fixed basin. Analytic
-      // basins below carry their exact lake, pond, or sea kind.
-      waterKinds.push(1, 1, 1)
+    for (let z = 0; z < segs; z++) for (let x = 0; x < segs; x++) {
+      const a = z * stride + x, b = a + stride, c = b + 1, d = a + 1
+      triangle(a, b, d)
+      triangle(b, c, d)
+      if ((z * segs + x) % 32 === 31) yield 'grid'
     }
+    yield 'grid'
+    yield* appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
+    yield* appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
+    if (!positions.length) return null
+    geometry = new BufferGeometry()
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    yield 'attributes'
+    geometry.setAttribute('waterDepth', new Float32BufferAttribute(depths, 1))
+    geometry.setAttribute('waterFlow', new Float32BufferAttribute(flowValues, 1))
+    geometry.setAttribute('waterFlowDir', new Float32BufferAttribute(flowDirections, 2))
+    yield 'attributes'
+    geometry.setAttribute('waterKind', new Float32BufferAttribute(waterKinds, 1))
+    geometry.setAttribute('waterDrop', new Float32BufferAttribute(waterDrops, 1))
+    yield 'attributes'
+    yield* computeWaterNormalsSteps(geometry)
+    // Water triangles are clipped per terrain cell, so give the renderer an
+    // explicit bound for fast streamed-tile culling.
+    geometry.computeBoundingSphere()
+    yield 'bounds'
+    material = makeWaterMaterial(clock, weather)
+    const mesh = new Mesh(geometry, material)
+    mesh.name = 'WaterSurface'
+    mesh.position.set(originX + size / 2, 0, originZ + size / 2)
+    delivered = true
+    return mesh
+  } finally {
+    if (!delivered) { geometry?.dispose(); material?.dispose() }
+    releaseStaging(staging)
   }
-  for (let z = 0; z < segs; z++) for (let x = 0; x < segs; x++) {
-    const a = z * stride + x, b = a + stride, c = b + 1, d = a + 1
-    triangle(a, b, d)
-    triangle(b, c, d)
+}
+
+/** Preserve Three's non-indexed face-normal and Float32 normalization order. */
+function* computeWaterNormalsSteps(geometry: BufferGeometry): Generator<WaterBuildPhase, void, void> {
+  const positions = geometry.getAttribute('position')
+  const normals = new BufferAttribute(new Float32Array(positions.count * 3), 3)
+  geometry.setAttribute('normal', normals)
+  const a = new Vector3(), b = new Vector3(), c = new Vector3()
+  const cb = new Vector3(), ab = new Vector3()
+  for (let i = 0; i < positions.count; i += 3) {
+    a.fromBufferAttribute(positions, i)
+    b.fromBufferAttribute(positions, i + 1)
+    c.fromBufferAttribute(positions, i + 2)
+    cb.subVectors(c, b)
+    ab.subVectors(a, b)
+    cb.cross(ab)
+    normals.setXYZ(i, cb.x, cb.y, cb.z)
+    normals.setXYZ(i + 1, cb.x, cb.y, cb.z)
+    normals.setXYZ(i + 2, cb.x, cb.y, cb.z)
+    if (i % 96 === 93) yield 'normals'
   }
-  appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
-  appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
-  if (!positions.length) return null
-  const geometry = new BufferGeometry()
-  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-  geometry.setAttribute('waterDepth', new Float32BufferAttribute(depths, 1))
-  geometry.setAttribute('waterFlow', new Float32BufferAttribute(flowValues, 1))
-  geometry.setAttribute('waterFlowDir', new Float32BufferAttribute(flowDirections, 2))
-  geometry.setAttribute('waterKind', new Float32BufferAttribute(waterKinds, 1))
-  geometry.setAttribute('waterDrop', new Float32BufferAttribute(waterDrops, 1))
-  geometry.computeVertexNormals()
-  // Water triangles are clipped per terrain cell, so give the renderer an
-  // explicit bound for fast streamed-tile culling.
-  geometry.computeBoundingSphere()
-  const material = makeWaterMaterial(clock, weather)
-  const mesh = new Mesh(geometry, material)
-  mesh.name = 'WaterSurface'
-  mesh.position.set(originX + size / 2, 0, originZ + size / 2)
-  return mesh
+  for (let i = 0; i < normals.count; i++) {
+    cb.fromBufferAttribute(normals, i).normalize()
+    normals.setXYZ(i, cb.x, cb.y, cb.z)
+    if (i % 96 === 95) yield 'normals'
+  }
+  normals.needsUpdate = true
+  yield 'normals'
 }
 
 /**
@@ -163,7 +225,7 @@ export function buildWaterMesh(
  * fan is clipped to the streamed tile, so a lake keeps one continuous outline
  * while still batching into the existing water draw per tile.
  */
-function appendAnalyticBasins(
+function* appendAnalyticBasins(
   basins: readonly WaterBasin[],
   size: number,
   originX: number,
@@ -174,7 +236,7 @@ function appendAnalyticBasins(
   flowDirections: number[],
   waterKinds: number[],
   waterDrops: number[],
-): void {
+): Generator<WaterBuildPhase, void, void> {
   if (!basins.length) return
   const half = size / 2
   const centerX = originX + half, centerZ = originZ + half
@@ -280,6 +342,7 @@ function appendAnalyticBasins(
           y: basin.level,
           depth: .08,
         })
+        if (i % 8 === 7) yield 'shore'
       }
       basinBoundaryCache.set(basin, boundary)
     }
@@ -310,7 +373,9 @@ function appendAnalyticBasins(
       nextVertex.y = next.y
       nextVertex.depth = next.depth
       appendPolygon(polygonScratch, basin.sea ? 2 : basin.pond ? .5 : 1)
+      if ((i / boundaryStep) % 8 === 7) yield 'basin'
     }
+    yield 'basin'
   }
 }
 
@@ -320,7 +385,7 @@ function appendAnalyticBasins(
  * narrow stream. Every tile clips its own piece, so adjacent tiles meet at a
  * shared boundary without overlapping geometry.
  */
-function appendRiverRibbons(
+function* appendRiverRibbons(
   reaches: readonly RiverReach[],
   size: number,
   originX: number,
@@ -331,7 +396,7 @@ function appendRiverRibbons(
   flowDirections: number[],
   waterKinds: number[],
   waterDrops: number[],
-): void {
+): Generator<WaterBuildPhase, void, void> {
   const half = size / 2
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
   type Section = { left: RibbonVertex; center: RibbonVertex; right: RibbonVertex }
@@ -546,6 +611,7 @@ function appendRiverRibbons(
       const flow = (a.flow + b.flow) * .5
       appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ, drop, flow)
       appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ, drop, flow)
+      if (step % 4 === 3) yield 'river'
     }
     // Extend a mouth a short distance below the receiving basin. The basin
     // owns the final water level, while this submerged overlap removes the
@@ -591,6 +657,7 @@ function appendRiverRibbons(
     } else if (!reach.mouth) {
       appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop, last.flow)
     }
+    yield 'river'
   }
 
 }

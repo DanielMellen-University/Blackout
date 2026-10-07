@@ -66,6 +66,7 @@ interface FlowGrid {
   flow: Float64Array
 }
 interface FlowEdge { from: number; to: number; flow: number }
+export type HydrologyBuildPhase = 'samples' | 'routing' | 'basins' | 'grade' | 'channels'
 
 class MinHeap {
   private readonly entries: { id: number; level: number }[] = []
@@ -110,6 +111,13 @@ const cache = new Map<string, Catchment>()
 let riverBoundsQueryToken = 0
 /** Reused bounded ID order for priority routing and drainage grading. */
 const flowOrderScratch = new Int32Array(FLOW_CELL_COUNT)
+
+function ensureCatchmentSeed(expected: number): void {
+  if (getWorldSeed() !== expected) throw new Error('World seed changed during hydrology preparation')
+  // A failed world search can temporarily visit another seed and restore this
+  // one before a suspended builder resumes. Never reuse that other seed's cache.
+  if (seed !== expected) { cache.clear(); seed = expected }
+}
 
 function gridId(ix: number, iz: number): number { return iz * FLOW_GRID + ix }
 function gridX(ox: number, id: number): number { return ox + (id % FLOW_GRID) * FLOW_STEP }
@@ -189,7 +197,7 @@ export function basinDistance(b: Basin, x: number, z: number): number {
 }
 
 /** Sample broad terrain once before creating the cached drainage graph. */
-function makeFlowGrid(ox: number, oz: number): FlowGrid {
+function* makeFlowGridSteps(ox: number, oz: number): Generator<HydrologyBuildPhase, FlowGrid, void> {
   const count = FLOW_GRID * FLOW_GRID
   const height = new Float64Array(count)
   const moisture = new Float32Array(count)
@@ -200,6 +208,7 @@ function makeFlowGrid(ox: number, oz: number): FlowGrid {
     height[id] = land.height
     moisture[id] = land.moisture
     highlands[id] = land.highlands
+    if (id % 8 === 7) yield 'samples'
   }
   const filled = new Float64Array(count)
   filled.fill(Infinity)
@@ -228,7 +237,7 @@ function chooseSeaCell(grid: FlowGrid, cx: number, cz: number): number | null {
 }
 
 /** Priority-flood routing resolves local sinks once and gives every cell one downstream parent. */
-function routeFlow(grid: FlowGrid, seaCell: number | null): void {
+function* routeFlowSteps(grid: FlowGrid, seaCell: number | null): Generator<HydrologyBuildPhase, void, void> {
   const heap = new MinHeap()
   const closed = new Uint8Array(grid.height.length)
   const seedCell = (id: number, level: number) => {
@@ -247,7 +256,10 @@ function routeFlow(grid: FlowGrid, seaCell: number | null): void {
   }
   if (seaCell !== null) seedCell(seaCell, 0)
 
+  let visits = 0
   while (heap.size > 0) {
+    if (visits > 0 && visits % 32 === 0) yield 'routing'
+    visits++
     const next = heap.pop()!
     if (closed[next.id]) continue
     closed[next.id] = 1
@@ -443,7 +455,7 @@ function catmullPoint(
 }
 
 /** Turn linked coarse drainage cells into a continuously curving river chain. */
-function emitDrainageChain(
+function* emitDrainageChain(
   addReach: (reach: Reach) => void,
   basins: readonly Basin[],
   ox: number,
@@ -457,7 +469,7 @@ function emitDrainageChain(
   startsAtJunction: boolean,
   endsAtJunction: boolean,
   canAdd: () => boolean,
-): void {
+): Generator<HydrologyBuildPhase, void, void> {
   if (nodes.length < 2) return
   // A stable local offset removes the coarse routing grid from the silhouette
   // while keeping shared confluence points identical across tributaries.
@@ -530,6 +542,7 @@ function emitDrainageChain(
       }
       a = b
     }
+    yield 'channels'
   }
 }
 
@@ -541,11 +554,24 @@ function catchment(cx: number, cz: number): Catchment {
   const previous = cache.get(key)
   if (previous) return previous
 
+  // Cached point queries keep their iterator-free fast path. Only misses
+  // create an iterator; workers and analytic collision queries drain it.
+  const steps = buildCatchmentSteps(cx, cz)
+  let result = steps.next()
+  while (!result.done) result = steps.next()
+  return result.value
+}
+
+function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildPhase, Catchment, void> {
+  const buildSeed = getWorldSeed()
+  const key = `${cx},${cz}`
+
   const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
   const phase = hash2(cx + 79, cz - 41) * Math.PI * 2
-  const grid = makeFlowGrid(ox, oz)
+  const grid = yield* makeFlowGridSteps(ox, oz)
   const seaCell = chooseSeaCell(grid, cx, cz)
-  routeFlow(grid, seaCell)
+  yield* routeFlowSteps(grid, seaCell)
+  yield 'routing'
 
   const basins: Basin[] = []
   if (seaCell !== null) basins.push(makeSea(ox, oz, seaCell, cx, cz, phase))
@@ -560,6 +586,7 @@ function catchment(cx: number, cz: number): Catchment {
     })) {
       basins.push(lake)
     }
+    yield 'basins'
   }
 
   const bins: Reach[][] = Array.from({ length: BINS * BINS }, () => [])
@@ -578,7 +605,9 @@ function catchment(cx: number, cz: number): Catchment {
   }
 
   const levels = new Float64Array(grid.height.length)
-  const drainageOrder = prepareFlowOrder(grid)
+  // The shared sort workspace can be reused by another build while grading
+  // is suspended. Retain this tiny order, never the shared scratch view.
+  const drainageOrder = prepareFlowOrder(grid).slice()
   for (let id = 0; id < levels.length; id++) {
     // `filled` is a routing aid, not a water surface. Limiting levels to the
     // sampled ground keeps drainage channels carving down into valleys instead
@@ -586,6 +615,7 @@ function catchment(cx: number, cz: number): Catchment {
     const rawLevel = Math.min(grid.height[id]! - 6,
       grid.filled[id]! - Math.min(26, 8 + Math.sqrt(grid.flow[id]!) * 1.25))
     levels[id] = outletGrade(basins, gridX(ox, id), gridZ(oz, id), rawLevel)
+    if (id % 8 === 7) yield 'grade'
   }
   for (const id of drainageOrder) {
     const parent = grid.parent[id]!
@@ -595,6 +625,7 @@ function catchment(cx: number, cz: number): Catchment {
 
   const edges: FlowEdge[] = []
   for (let id = 0; id < grid.parent.length; id++) {
+    if (id > 0 && id % 16 === 0) yield 'channels'
     const parent = grid.parent[id]!
     if (parent < 0 || !insideGrid(id, 1) || !insideGrid(parent, 1)) continue
     if (grid.flow[id]! < 2.8) continue
@@ -628,15 +659,55 @@ function catchment(cx: number, cz: number): Catchment {
         break
       }
     }
-    emitDrainageChain(addReach, basins, ox, oz, cx, cz, nodes, levels, grid.flow, chain++,
+    yield* emitDrainageChain(addReach, basins, ox, oz, cx, cz, nodes, levels, grid.flow, chain++,
       (incoming.get(edge.from) ?? 0) > 1, endsAtJunction,
       () => renderedReaches < MAX_RENDER_REACHES)
   }
 
   const result = { basins, bins, reaches }
+  ensureCatchmentSeed(buildSeed)
+  // Another interleaved synchronous query may have completed this region.
+  // Keep its canonical basin objects and shoreline cache rather than replace it.
+  const existing = cache.get(key)
+  if (existing) return existing
   if (cache.size >= 128) cache.delete(cache.keys().next().value!)
   cache.set(key, result)
   return result
+}
+
+/**
+ * Prepare only the regions needed by one tile before climate/edge/water
+ * sampling. Partial drainage is private until complete; return() abandons it.
+ * No worker, timer, or additional persistent cache is created.
+ */
+export function* prepareHydrologyInBoundsSteps(minX: number, minZ: number, maxX: number, maxZ: number):
+  Generator<HydrologyBuildPhase, void, void> {
+  if (!Number.isFinite(minX) || !Number.isFinite(minZ) || !Number.isFinite(maxX) || !Number.isFinite(maxZ) ||
+    maxX < minX || maxZ < minZ || maxX - minX > CATCHMENT_SIZE * 4 || maxZ - minZ > CATCHMENT_SIZE * 4) return
+  const startCx = Math.floor(minX / CATCHMENT_SIZE), endCx = Math.floor(maxX / CATCHMENT_SIZE)
+  const startCz = Math.floor(minZ / CATCHMENT_SIZE), endCz = Math.floor(maxZ / CATCHMENT_SIZE)
+  // Beyond safe integer cells, ++ can stop advancing and freeze the iterator.
+  if (!Number.isSafeInteger(startCx) || !Number.isSafeInteger(endCx) ||
+    !Number.isSafeInteger(startCz) || !Number.isSafeInteger(endCz)) return
+  const buildSeed = getWorldSeed()
+  ensureCatchmentSeed(buildSeed)
+  for (let cz = startCz; cz <= endCz; cz++) {
+    for (let cx = startCx; cx <= endCx; cx++) {
+      ensureCatchmentSeed(buildSeed)
+      if (cache.has(`${cx},${cz}`)) continue
+      const steps = buildCatchmentSteps(cx, cz)
+      try {
+        let result = steps.next()
+        while (!result.done) {
+          yield result.value
+          ensureCatchmentSeed(buildSeed)
+          result = steps.next()
+        }
+      } finally {
+        steps.return(undefined as never)
+      }
+    }
+  }
 }
 
 /** Lakes/seas have fixed levels. River reaches grade continuously downstream. */

@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.842** is current. Previous ship: **10.841**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.843** is current. Previous ship: **10.842**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -22,11 +22,13 @@ Chunk 10.841 separates compact catalog scanning from the selected briefing and e
 
 Chunk 10.842 captures the active sortie independently of next-course menu selection. Records, ghosts, contracts, debriefs, and copied replay links use that immutable identity; same-course retries retain the original Ops period. Fresh launches apply pending selections/custom seeds, while failed rebuilds retain the actual course and restart its mission. Catalog time advances on visible idle/pause RAF checks (at most once a minute), visibility return, and launch/reset actions, with no background timer or wall-clock polling in live flight. Explicit historical pins affect only their matching Ops mode and are released when selecting another course/custom seed. Retention protects exact active/replayed record families, not whole stale periods; historical completions never rewind newer streaks. UTC day/month/ISO-week boundaries, record persistence, replay links, retention release, invalid clocks, and monotonic streaks have focused regression coverage. Browser end-to-end QA remains outstanding under the existing access limitation; no FPS improvement is claimed.
 
+Chunk 10.843 extends the existing cooperative iterator into cold catchment sampling/routing/grading/channel emission and water grid/shoreline/basin/river/attribute/normal preparation. The tile prepares its basin-query and normal-probe envelope first; cached point queries stay iterator-free. Only completed drainage enters the unchanged 128-region cache. Suspended jobs retain their own sort order and water staging, with at most one idle water workspace. Cancellation releases child iterators and partial geometry; failed seed searches cannot inject another seed's cache into a resumed builder. Independent old hydrology and water hashes supplement full terrain payload hashes and lifecycle/interleave tests. CPU profiles show shorter uninterrupted steps with unchanged payload sizes, but whole-tile time may be higher and there is no hard 2 ms or FPS guarantee. Scene attachment, allocation/JIT costs, and full-game browser measurement remain open.
+
 ## Current priorities
 
 1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
 2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.
-3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Silent-worker recovery and sliced fallback sampling are covered. Cold catchment creation (including normal probes), analytic water assembly, and mesh attachment can still overrun their indivisible phases; measure and address those next without reducing geometry, collision, or water detail. Preserve bounded memory and worker budgets.
+3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Cold drainage and analytic water assembly are now cooperative. Measure scene/prop attachment and remaining indivisible allocations, bound cold/JIT spikes further, and inspect workerless loading throughput without reducing geometry, collision, or water detail. Preserve bounded memory and worker budgets; verify actual rendering before claiming FPS gains.
 4. **Catalog and Ops.** Inspect the streamlined picker visually and play through its medal/time goals. Exercise long-open rollover, paused selection/resume/retry, historical replay release, and retention end-to-end in the browser; core lifetime and storage invariants are covered. Review cross-tab progression handling without introducing parallel record systems.
 
 ## Work and verification

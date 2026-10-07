@@ -25,11 +25,14 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 - Settlement planning keeps its previous range and object caps so extending the
   landscape does not quadruple background settlement work.
 - Browsers without working workers use the same geometry iterator as workers,
-  but yield between batches of eight climate/color/gradient samples. The stream
+  but yield between batches of eight climate/color/gradient samples, cold
+  hydrology phases, and water assembly phases. The stream
   retains one unfinished tile and shares the 2 ms upload deadline, with a hard
   256-step ceiling even if a clock is coarse or frozen. Unfinished work counts
   as in-flight and is cancelled on reset, disposal, seed changes, or unloading.
-  Cold catchment creation, water assembly, and attachment remain indivisible;
+  Cold catchments publish only complete drainage and use the existing 128-region
+  cache. Water jobs own staging arrays; at most one idle workspace is retained.
+  Attribute allocation, bounds computation, and attachment remain indivisible;
   a single step can exceed the deadline. Loading speed and frame times differ
   from the worker path. No timers or additional background processes are used.
 - Silent terrain and settlement jobs expire after 15 seconds of active world
@@ -90,6 +93,43 @@ An earlier run concurrent with focused tests showed an 83.70 ms first tile and
 frame-time guarantee or a cross-device speedup claim. Slicing stops an entire
 tile from being one mandatory uninterrupted sampling call, but cold hydrology,
 water assembly, and scene attachment remain profiling/optimization priorities.
+
+## Cold hydrology and water steps (chunk 10.843)
+
+The same `--sliced` profile now identifies `hydrology-*` and `water-*` phases.
+Cold landform samples are batched eight at a time, priority-flood visits 32 at a
+time, and channel emission one coarse segment at a time. Water clips 32 terrain
+cells, solves eight shoreline rays, clips eight basin wedges, or emits four
+river sections per batch. Face normals and normalization run in bounded batches,
+preserving Three's Float32 rounding order. The synchronous API and workers drain
+the same iterators; only the unsupported/failed-worker path spreads them across
+frames. No detail, triangles, collision data, worker count, or stream radius is
+reduced by this change.
+
+Separate 16-sample runs on 2026-10-07, Node v22.23.2 / eight execution threads, without other
+agent builds/tests running during measurement:
+
+| Seed / candidate | First complete tile | Later median | Later p95 | Largest step | Max payload |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 42 | 50.50 ms | 5.89 ms | 11.56 ms | 2.65 ms | 39,412 B |
+| 1337 | 63.73 ms | 11.62 ms | 46.30 ms | 3.72 ms | 218,964 B |
+
+A seed-1337 baseline collected from 10.842 immediately before implementation
+measured 42.94 ms first tile, 9.68 ms later median, 42.44 ms later p95, and an
+11.84 ms largest step. Its water phase reached 7.00 ms. The final candidate's
+largest water substep was 0.56 ms, layout 0.45 ms, and cold hydrology substeps
+at most 2.73 ms; climate sampling became the largest step. An earlier candidate
+run showed 3.65 ms largest step and 9.49 ms later median. Host/JIT variability
+and additional yield points matter: this is a shorter-uninterrupted-work result,
+**not** proof of faster total generation, a hard 2 ms limit, or an FPS increase.
+Scene/prop attachment and complete browser flight remain unmeasured here.
+
+Independent legacy hashes captured from 10.842 cover six catchment graphs and
+seven raster/basin/river water payloads (including normals and bounds). Existing
+full terrain hashes also remain unchanged. Regression tests cover partial-cache
+publication, cancellation before/after geometry allocation, owned staging and
+input lists, interleaved drainage sort scratch, canonical landmarks completed by
+another query, direct seed changes, and failed seed-search restoration.
 
 ## Reproduce
 

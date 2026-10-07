@@ -27,6 +27,45 @@ beforeEach(() => { setWorldSeed(1); clearOpsPad() })
 afterEach(() => { clearOpsPad(); vi.restoreAllMocks() })
 
 describe('cooperative terrain geometry', () => {
+  it('delegates cancellation during cold preparation without allocating a mesh', () => {
+    setWorldSeed(424242)
+    const steps = generateTerrainGeometrySteps(0, 0, 0)
+    const disposal = vi.spyOn(BufferGeometry.prototype, 'dispose')
+    expect(steps.next()).toEqual({ value: 'hydrology-samples', done: false })
+    steps.return(undefined as never)
+    expect(disposal).not.toHaveBeenCalled()
+    const restart = generateTerrainGeometrySteps(0, 0, 0)
+    expect(restart.next()).toEqual({ value: 'hydrology-samples', done: false })
+    restart.return(undefined as never)
+  })
+
+  it('releases both suspended ground and child water geometry exactly once', () => {
+    const steps = generateTerrainGeometrySteps(-41580, -37800, 0)
+    while (true) {
+      const result = steps.next()
+      expect(result.done).toBe(false)
+      if (result.value === 'water-attributes') break
+    }
+    const geometryDispose = vi.spyOn(BufferGeometry.prototype, 'dispose')
+    const materialDispose = vi.spyOn(Material.prototype, 'dispose')
+    steps.return(undefined as never)
+    expect(geometryDispose).toHaveBeenCalledTimes(2)
+    expect(materialDispose).not.toHaveBeenCalled()
+    steps.return(undefined as never)
+    expect(geometryDispose).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps suspended analytic water independent of other tiles using the basin collector', () => {
+    const steps = generateTerrainGeometrySteps(-41580, -37800, 0)
+    while (true) {
+      const result = steps.next()
+      expect(result.done).toBe(false)
+      if (result.value === 'water-grid') break
+    }
+    generateTerrainGeometry(-6720, -6720, 2, 32)
+    expect(digest(finish(steps))).toBe('a33a074d96c1717a8e379efc8384f55f87597669c5bdff558cc451cb62de55e7')
+  })
+
   // Captured from the unsliced generator at 1065d0b, not from this iterator.
   // These pin every output buffer and bounds across independent water/detail paths.
   it.each([

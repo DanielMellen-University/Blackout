@@ -1,8 +1,9 @@
-import { BufferAttribute, BufferGeometry, Float32BufferAttribute, PlaneGeometry, Sphere, Vector3 } from 'three'
+import { BufferAttribute, BufferGeometry, Float32BufferAttribute, Mesh, PlaneGeometry, Sphere, Vector3 } from 'three'
 import { applySlopeShadingInto, biomeColorInto, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { CATCHMENT_SIZE, riverReachesInBounds, waterBasinBoundsRadius, waterLandmarks, type WaterBasin } from './Hydrology'
-import { buildWaterMesh } from './WaterSystem'
+import { CATCHMENT_SIZE, prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius, waterLandmarks,
+  type HydrologyBuildPhase, type WaterBasin } from './Hydrology'
+import { buildWaterMeshSteps, type WaterBuildPhase } from './WaterSystem'
 
 export const CHUNK_SIZE = 420
 export type TerrainLod = 0 | 1 | 2
@@ -287,7 +288,8 @@ export function generateTerrainGeometry(
   return result.value
 }
 
-export type TerrainBuildPhase = 'layout' | 'climate' | 'ground' | 'normals' | 'skirt' | 'water'
+export type TerrainBuildPhase = 'layout' | 'climate' | 'ground' | 'normals' | 'skirt' | 'water' |
+  `hydrology-${HydrologyBuildPhase}` | `water-${WaterBuildPhase}`
 export type TerrainGeometrySteps = Generator<TerrainBuildPhase, TerrainGeometryData, void>
 
 /**
@@ -305,7 +307,7 @@ export function* generateTerrainGeometrySteps(
 ): TerrainGeometrySteps {
   let climates: Climate[] | null = null
   let geo: BufferGeometry | null = null
-  let waterMesh: ReturnType<typeof buildWaterMesh> = null
+  let waterMesh: Mesh | null = null
   try {
     const span = CHUNK_SIZE * size
     // Older browsers can lack module workers, so the synchronous fallback must
@@ -316,6 +318,20 @@ export function* generateTerrainGeometrySteps(
     const baseSegs = reducedFar
       ? (size > 1 ? 8 : 4)
       : size > 1 ? SEGS_MID : segsForLod(lod)
+    // Cover analytic basin collection and the normal probes beyond each edge,
+    // so neither point sampling nor water setup creates a cold region mid-step.
+    const margin = Math.max(span / baseSegs, reducedFar ? 0 : Math.min(span * .8, 8000))
+    const hydrologySteps = prepareHydrologyInBoundsSteps(originX - margin, originZ - margin,
+      originX + span + margin, originZ + span + margin)
+    try {
+      let result = hydrologySteps.next()
+      while (!result.done) {
+        yield `hydrology-${result.value}`
+        result = hydrologySteps.next()
+      }
+    } finally {
+      hydrologySteps.return()
+    }
     const reaches = reducedFar
       ? []
       : riverReachesInBounds(originX, originZ, originX + span, originZ + span)
@@ -436,10 +452,22 @@ export function* generateTerrainGeometrySteps(
       geo = merged
     }
     yield 'skirt'
-    waterMesh = reducedFar
-      ? null
-      : buildWaterMesh(heights, waterLevels, segs, span, originX, originZ,
+    if (!reducedFar) {
+      const waterSteps = buildWaterMeshSteps(heights, waterLevels, segs, span, originX, originZ,
         { value: 0 }, undefined, basinMask, reaches, basinsInBounds(originX, originZ, span))
+      // Manual delegation maps phase labels while preserving cancellation of
+      // the child iterator if this terrain tile is abandoned mid-water-build.
+      try {
+        let result = waterSteps.next()
+        while (!result.done) {
+          yield `water-${result.value}`
+          result = waterSteps.next()
+        }
+        waterMesh = result.value
+      } finally {
+        waterSteps.return(null)
+      }
+    }
     yield 'water'
     const ground = serializeGeometry(geo)
     const water = waterMesh ? serializeGeometry(waterMesh.geometry) : null
