@@ -15,7 +15,7 @@ class Instrument {
 
 function fixture() {
   const elements = new Map<string, Instrument>()
-  for (const id of ['speedo-panel', 'spd-fill', 'spd-target', 'hud-spd', 'hud-speed-state', 'eng-panel', 'eng-fill', 'hud-thr', 'hud-target-speed', 'hud-ab-state']) elements.set(id, new Instrument())
+  for (const id of ['hud-pos', 'speedo-panel', 'spd-fill', 'spd-target', 'hud-spd', 'hud-speed-state', 'eng-panel', 'eng-fill', 'hud-thr', 'hud-target-speed', 'hud-ab-state']) elements.set(id, new Instrument())
   const hud = new HUD({ getElementById: (id: string) => elements.get(id) ?? null } as unknown as Document)
   const frame = { y: 200, speed: 150, cameraMode: 'chase', fps: 60, throttle: 0.5, targetSpeed: 200, boost: false }
   const read = (id: string): Instrument => elements.get(id)!
@@ -23,6 +23,18 @@ function fixture() {
 }
 
 describe('digital flight instrument adapters', () => {
+  it('keeps low-altitude readings numeric and neutral instead of raising alerts', () => {
+    const { hud, frame, read } = fixture()
+    for (const altitude of [120, 31, 6, 0, Number.NaN]) {
+      hud.update({ ...frame, y: altitude, onGround: false })
+      const shown = Number.isFinite(altitude) ? altitude : 0
+      expect(read('hud-pos').textContent).toBe(String(shown))
+      expect(read('hud-pos').attributes.get('aria-valuetext')).toBe(`${shown} metres`)
+      expect(read('hud-pos').classes.has('clearance-caution')).toBe(false)
+      expect(read('hud-pos').classes.has('clearance-warning')).toBe(false)
+    }
+  })
+
   it('uses live speed, commanded speed and engine lever values on horizontal rails', () => {
     const { hud, frame, read } = fixture()
     hud.update(frame)

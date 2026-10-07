@@ -195,7 +195,6 @@ describe('flight audio automation', () => {
     audio.playCue('radar-lock')
     audio.playCue('radar-lost')
     audio.playCue('fuel')
-    audio.playCue('low-alt')
     audio.playCue('go-around')
     audio.playCue('flare')
     audio.playCue('sonic-boom')

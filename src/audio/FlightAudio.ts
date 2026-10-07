@@ -299,13 +299,11 @@ export class FlightAudio {
       | 'ab-off'
       | 'thunder'
       | 'warning'
-      | 'pull-up'
       | 'obstacle'
       | 'overspeed'
       | 'stall'
       | 'gear-warning'
       | 'fuel'
-      | 'low-alt'
       | 'go-around'
       | 'flare'
       | 'gear-up'
@@ -376,7 +374,7 @@ export class FlightAudio {
       this.tone(opening ? 260 : 340, now, 0.11, 'triangle', opening ? 0.045 : 0.035, opening ? 520 : 160)
     } else if (kind === 'traffic') {
       // A restrained double pulse keeps proximity readable without sounding like
-      // the sustained terrain or stall warnings.
+      // the sustained stall warning.
       this.tone(540, now, 0.08, 'triangle', 0.06, 430)
       this.tone(540, now + 0.13, 0.09, 'triangle', 0.05, 430)
     } else if (kind === 'radar-lock') {
@@ -407,7 +405,7 @@ export class FlightAudio {
       this.tone(second, now + 0.055, 0.09, 'sine', 0.05, lowering ? 190 : 250)
     } else if (kind === 'overspeed') {
       // A descending pair separates speed-envelope pressure from stall and
-      // terrain cautions without turning the cue into a harsh alarm.
+      // flight cautions without turning the cue into a harsh alarm.
       this.tone(680, now, 0.08, 'sine', 0.06, 520)
       this.tone(470, now + 0.1, 0.1, 'sine', 0.05, 360)
     } else if (kind === 'stall') {
@@ -424,14 +422,9 @@ export class FlightAudio {
       // a return-to-base emergency from ordinary threshold cautions.
       this.tone(300, now, 0.09, 'triangle', 0.06, 220)
       this.tone(210, now + 0.14, 0.13, 'triangle', 0.05, 150)
-    } else if (kind === 'low-alt') {
-      // Low altitude gets a mid-register descending pulse, separating terrain
-      // proximity from the higher overspeed and lower gear/fuel cues.
-      this.tone(520, now, 0.08, 'triangle', 0.055, 420)
-      this.tone(360, now + 0.12, 0.11, 'triangle', 0.045, 280)
     } else if (kind === 'go-around') {
       // A rising pair confirms the landing escape instruction without the
-      // sustained harshness of terrain or stall alarms.
+      // sustained harshness of stall alarms.
       this.tone(430, now, 0.08, 'triangle', 0.07, 590)
       this.tone(680, now + 0.11, 0.13, 'sine', 0.06, 820)
     } else if (kind === 'flare') {
@@ -439,14 +432,8 @@ export class FlightAudio {
       // keeping it distinct from an actual go-around or caution alarm.
       this.tone(620, now, 0.08, 'sine', 0.05, 520)
       this.tone(430, now + 0.11, 0.12, 'sine', 0.04, 360)
-    } else if (kind === 'pull-up') {
-      // A short double pulse marks the predictive terrain warning without
-      // repeating while the HUD holds the sustained state.
-      this.tone(860, now, 0.08, 'triangle', 0.075, 780)
-      this.tone(650, now + 0.12, 0.1, 'triangle', 0.06, 560)
     } else if (kind === 'obstacle') {
-      // A lower double pulse keeps building closure distinct from terrain
-      // closure while staying event-only and below the crash impact cue.
+      // A lower double pulse keeps building closure distinct from other cues while staying event-only and below the crash impact cue.
       this.tone(420, now, 0.09, 'triangle', 0.07, 310)
       this.tone(300, now + 0.12, 0.12, 'triangle', 0.055, 220)
     } else if (kind === 'warning') {

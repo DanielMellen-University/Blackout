@@ -2590,7 +2590,7 @@ export async function boot(): Promise<void> {
         ? Math.min(.5, Math.max(0, (nowMs - previousHudUpdateMs) / 1000))
         : 0
       const warn = warningTracker.update(
-        evaluateWarnings(aircraft, alt, warningObstacleSampler, aircraft.groundHeight),
+        evaluateWarnings(aircraft, alt, warningObstacleSampler),
         hudStepSec,
       )
       if (warn.text !== prevWarning) {

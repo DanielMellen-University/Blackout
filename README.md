@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.850**. Previous roadmap chunk: **10.849**.
-Recent changes from **10.850**. Remove G-load vision penalties, banners, and tones; delete natural-prop generation and its streaming/quality hooks. Flight handling, G telemetry, biomes, terrain, water, and settlements remain unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.851**. Previous roadmap chunk: **10.850**.
+Recent changes from **10.851**. Remove Pull up and Low alt alerts, tones, terrain-warning probes, and low-clearance altimeter styling. Keep altitude readings, landing guidance, obstacle/stall/gear/fuel/overspeed warnings, collision detection, and flight handling.
 
 ## Run
 

@@ -66,7 +66,6 @@ export function targetSpeedAriaLabel(speedMps: number): string {
   return label === 'TGT --' ? 'Target speed unavailable' : `Target speed ${label.slice(4)} knots`
 }
 
-export type AltitudeCue = 'normal' | 'caution' | 'warning'
 
 export type EngineHeatCue = 'normal' | 'hot' | 'critical'
 
@@ -76,13 +75,11 @@ export type FlightStateCue = 'ground' | 'airborne' | 'crashed'
 
 const HUD_WARNING_CUES: readonly Exclude<WarningCue, null>[] = [
   'warning',
-  'pull-up',
   'obstacle',
   'overspeed',
   'stall',
   'gear-warning',
   'fuel',
-  'low-alt',
   'go-around',
   'flare',
 ]
@@ -99,10 +96,8 @@ export function warningCueAriaLabel(text: unknown, cue: WarningCue | unknown): s
   const safeText = typeof text === 'string' ? text.trim() : ''
   if (!safeText) return ''
   switch (cue) {
-    case 'low-alt': return `${safeText}: low altitude warning`
     case 'flare': return `${safeText}: landing flare guidance`
     case 'go-around': return `${safeText}: go-around warning`
-    case 'pull-up': return `${safeText}: terrain closure warning`
     case 'obstacle': return `${safeText}: obstacle warning`
     case 'stall': return `${safeText}: stall warning`
     case 'gear-warning': return `${safeText}: landing gear warning`
@@ -1205,7 +1200,6 @@ export class HUD {
   private altitudeValue = Number.NaN
   private altitudeText = ''
   private altitudeAriaText = ''
-  private altitudeCueValue: AltitudeCue | null = null
   private verticalSpeedValue = Number.NaN
   private verticalSpeedText = ''
   private verticalSpeedAriaText = ''
@@ -1562,7 +1556,7 @@ export class HUD {
     crosswind?: number | null
     /** Side of the runway toward which the live crosswind vector points. */
     crosswindSide?: CrosswindSide
-    /** Active caution / warning (STALL, LOW ALT, GEAR). */
+    /** Active caution / warning (STALL, OBSTACLE, GEAR). */
     warning?: string | null
     warningLevel?: 'none' | 'caution' | 'warning'
     /** Bounded warning identity used for cue-specific visual treatment. */
@@ -1668,24 +1662,15 @@ export class HUD {
   }): void {
     if (this.posEl) {
       const altitude = Number.isFinite(opts.y) ? Math.round(opts.y) : 0
-      const cue = altitudeCue(opts.y, opts.onGround === true)
       const altitudeChanged = altitude !== this.altitudeValue
       if (altitudeChanged) {
         this.altitudeValue = altitude
         this.altitudeText = String(altitude)
-      }
-      if (cue !== this.altitudeCueValue || altitudeChanged) {
-        this.altitudeCueValue = cue
-        const cueText = cue === 'warning'
-          ? ', terrain clearance warning'
-          : cue === 'caution' ? ', low terrain clearance' : ''
-        this.altitudeAriaText = `${this.altitudeText} metres${cueText}`
+        this.altitudeAriaText = `${this.altitudeText} metres`
       }
       this.setText(this.posEl, this.altitudeText)
       this.setAttribute(this.posEl, 'aria-valuenow', String(Math.max(0, altitude)))
       this.setAttribute(this.posEl, 'aria-valuetext', this.altitudeAriaText)
-      this.setClass(this.posEl, 'clearance-caution', cue === 'caution')
-      this.setClass(this.posEl, 'clearance-warning', cue === 'warning')
     }
 
     if (this.verticalSpeedEl) {
@@ -2957,15 +2942,6 @@ export function quantizeHudNumber(value: number, precision: number): number {
 /** Keep malformed live telemetry from reaching DOM text or CSS values. */
 export function safeHudValue(value: number, fallback = 0): number {
   return Number.isFinite(value) ? value : fallback
-}
-
-/** Keep terrain clearance legible without turning normal low-level flight into an alarm. */
-export function altitudeCue(altitude: number, onGround = false): AltitudeCue {
-  if (onGround || !Number.isFinite(altitude)) return 'normal'
-  const safeAltitude = Math.max(0, altitude)
-  if (safeAltitude <= 12) return 'warning'
-  if (safeAltitude <= 48) return 'caution'
-  return 'normal'
 }
 
 /** Horizontal wind speed used by the compact weather readout. */

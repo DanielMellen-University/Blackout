@@ -1685,15 +1685,7 @@ body,
   text-shadow: 0 0 10px rgba(255, 159, 159, 0.24);
 }
 
-#hud-pos.clearance-caution {
-  color: #ffcf83;
-  text-shadow: 0 0 16px rgba(var(--amber-rgb), 0.42);
-}
 
-#hud-pos.clearance-warning {
-  color: #ff9f9f;
-  text-shadow: 0 0 16px rgba(255, 92, 92, 0.42);
-}
 
 #hud-state.flight-airborne {
   color: var(--accent);
@@ -2461,14 +2453,8 @@ body,
 }
 
 /* Keep the warning vocabulary readable at a glance without changing the
-   severity contract: low altitude is amber, flare is guidance blue, and a
+   severity contract: flare is guidance blue, and a
    go-around is a hotter escape cue than a generic red warning. */
-.warn.caution.warning-low-alt {
-  color: var(--bg);
-  background: var(--amber);
-  border-color: rgba(255, 220, 130, 0.82);
-  box-shadow: none;
-}
 
 .warn.caution.warning-flare {
   color: var(--bg);

@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.850** is current. Previous ship: **10.849**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.851** is current. Previous ship: **10.850**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -27,6 +27,8 @@ Chunk 10.843 extends the existing cooperative iterator into cold catchment sampl
 Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle thresholds with HUD glide advice. Two white/two red and `GS OK` now use the same 2.5–3° window, measured above the resident runway surface rather than the elevated, offset spawn pose. The HUD only shows glide advice inside the near-threshold corridor while airborne with both nose and ground track inbound; distant fly-bys, crossings, opposite-end approaches, departures, and rollout suppress it. PAPI remains neutral outside its corridor, writes materials only on pattern/daylight changes, and skips distance roots outside that corridor. Caller-owned scratch avoids new per-frame allocations. Cached poses invalidate on runway translations and sub-metre threshold crossings. Pure geometry, actual Three.js lens colors, HUD adapters, and the World boundary have regression coverage; browser approach/playability inspection remains outstanding under the existing access limitation. Flight physics, scoring, speed guidance, warning priority, and audio cadence are unchanged.
 
 ## Current priorities
+
+Chunk 10.851 removes Pull up and Low alt alerts, audio cues, predictive terrain-warning sampling, and low-clearance altimeter alarm colors/ARIA descriptions. Altitude readings, terrain collision checks, flight handling, obstacle lookahead, stall, gear, flare/go-around, fuel, and overspeed warnings remain. Regression cases cover fast low descents, rising ridges without warning probes, remaining warning priorities, and neutral low-altitude readouts.
 
 Chunk 10.850 removes G-load vision penalties, their banners and tones, and the complete natural-prop generation/streaming/quality path. Load telemetry, G readout, scoring, physics, terrain, water, weather, and settlements are unchanged. Terrain no longer allocates prop batches or rebuilds tiles to add/remove them. Tests cover absent effects and batches, stream/reset behavior, quality budgets, and worker lifecycle. No measured FPS claim is made.
 
@@ -60,5 +62,7 @@ Chunk 10.845 keeps takeoff coaching available while waiting on the runway, renew
 No weapons, combat, multiplayer, Discord integration, or parallel world systems. Do not rewrite published commit history as part of source cleanup. Do not mark unverified or unshipped features complete.
 
 ## Paused systems
+
+Pull-up and low-altitude warnings are removed at the user's request. Do not restore their alerts, tones, terrain-warning probes, or altimeter alarm styling unless explicitly requested; altitude telemetry and terrain collisions remain active.
 
 Vegetation, trees, rocks, bushes, grass props, and foliage rendering are removed and their development is paused by the user. Do not resume development, restore the old code, build a replacement, or add this system to future work unless the user explicitly requests it. Broad game-improvement instructions do not override this pause. Blackout/redout veils, banners, and associated G-load tones are also removed and must not be reintroduced without an explicit request. Keep load telemetry and the G readout; this is not a physics change. These exclusions are also recorded in the root AGENTS.md for future agents.

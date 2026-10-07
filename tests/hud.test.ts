@@ -14,7 +14,6 @@ import {
   crosswindSpeedMps,
   crosswindCrabDirection,
   formatCrosswindCrab,
-  altitudeCue,
   formatAudioState,
   formatRadarContacts,
   formatRadarContactsAria,
@@ -153,15 +152,14 @@ describe('HUD value formatting', () => {
   })
 
   it('whitelists cue-specific warning classes', () => {
-    expect(warningCueClass('low-alt')).toBe('warning-low-alt')
+    expect(warningCueClass('low-alt')).toBe('')
     expect(warningCueClass('flare')).toBe('warning-flare')
     expect(warningCueClass('go-around')).toBe('warning-go-around')
     expect(warningCueClass('not-a-cue')).toBe('')
     expect(warningCueClass(null)).toBe('')
-    expect(warningCueAriaLabel('LOW ALT', 'low-alt')).toBe('LOW ALT: low altitude warning')
+    expect(warningCueClass('pull-up')).toBe('')
     expect(warningCueAriaLabel('FLARE', 'flare')).toBe('FLARE: landing flare guidance')
     expect(warningCueAriaLabel('GO AROUND', 'go-around')).toBe('GO AROUND: go-around warning')
-    expect(warningCueAriaLabel('PULL UP', 'pull-up')).toBe('PULL UP: terrain closure warning')
     expect(warningCueAriaLabel('UNKNOWN', 'not-a-cue')).toBe('UNKNOWN')
     expect(warningCueAriaLabel('', 'low-alt')).toBe('')
   })
@@ -677,13 +675,6 @@ describe('HUD value formatting', () => {
     expect(cache('technical', 'tempo', 25).text).toBe('TECHNICAL · TEMPO · SLOPE 25°')
   })
 
-  it('keeps terrain clearance cues calm on the ground and explicit in flight', () => {
-    expect(altitudeCue(0, true)).toBe('normal')
-    expect(altitudeCue(10)).toBe('warning')
-    expect(altitudeCue(32)).toBe('caution')
-    expect(altitudeCue(49)).toBe('normal')
-    expect(altitudeCue(Number.NaN)).toBe('normal')
-  })
 
   it('normalizes mission phases before styling the live route row', () => {
     expect(normalizeMissionPhase('returning')).toBe('returning')

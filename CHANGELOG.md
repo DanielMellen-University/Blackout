@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.851** Remove Pull up and Low alt warnings, their audio/HUD cue identities and styles, sink/ridge prediction helpers and terrain probes, and low-clearance altimeter alarm styling. Keep numeric altitude telemetry, obstacle lookahead, landing flare/go-around, stall, gear, fuel, overspeed, collision detection, and flight handling. Add low-descent/ridge silence and neutral-altimeter regressions, and retain remaining warning-priority/hold coverage.
+
 - **10.850** Remove blackout/redout veils, transition banners, and associated G-load tones while preserving load telemetry, scoring, and flight physics. Delete the entire vegetation/tree/rock prop factory, shader/material pools, placement samples, streaming rebuild/fade bookkeeping, and quality/adaptive controls. Remove obsolete feature claims and development recommendations from documentation, including historical notes; record an explicit user-controlled pause in AGENTS and the roadmap. Add absence, streaming/reset, worker, quality, and HUD/audio regression coverage. Deleted code remains recoverable in Git history; terrain, water, settlements, and weather remain in scope. No measured FPS improvement is claimed.
 
 - **10.849** Remove the floating nose landing-light mesh, wingtip vapor, speed streaks, Mach cone, and visual sonic-boom ring, along with their materials, per-frame updates, and obsolete effect tests. Add model-state and runtime-removal regressions. Retain afterburner and nozzle response, animated gear, navigation/beacon lights, Mach-crossing sound/HUD, weather, ground/water wakes, and flight physics. Deleted effect code remains recoverable in Git history; no measured FPS improvement is claimed.

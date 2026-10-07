@@ -43,8 +43,9 @@ describe('live HUD budget', () => {
       .toContain('debrief records must remain accessible when expanded')
   })
 
-  it('keeps landing and terrain warning cues visually distinct', () => {
-    expect(css).toContain('.warn.caution.warning-low-alt')
+  it('keeps landing guidance distinct without removed terrain warning styles', () => {
+    expect(css).not.toContain('warning-low-alt')
+    expect(css).not.toContain('clearance-warning')
     expect(css).toContain('.warn.caution.warning-flare')
     expect(css).toContain('.warn.warning.warning-go-around')
   })
