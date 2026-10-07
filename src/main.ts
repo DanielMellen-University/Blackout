@@ -337,6 +337,8 @@ export async function boot(): Promise<void> {
     coursePickerDifficultyLabel,
     coursePickerMasteryLabel,
     coursePickerNightForCourse,
+    coursePickerWeatherForCourse,
+    coursePickerOwnsGlobalKey,
     coursePickerFlightLogLabel,
     coursePickerCopy,
     readCoursePickerCategory,
@@ -499,7 +501,7 @@ export async function boot(): Promise<void> {
         contractLabel: sortieContractLabelForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
         contractDetail: sortieContractDetailForSeed(resolvedCourse.seed ?? undefined, 5, resolvedCourse.contractCatalog === true),
       })
-      const difficulty = coursePickerDifficultyForCourse(course)
+      const difficulty = coursePickerDifficultyForCourse(resolvedCourse)
       const challenge = coursePickerChallengeForCourse({ profile: resolvedCourse.profile })
       const mastery = courseMasteryTierForProgress({
         completionCount: record?.history?.completionCount,
@@ -556,9 +558,11 @@ export async function boot(): Promise<void> {
         precision: record?.bestPrecisionStreak,
         difficulty,
         challenge,
-        weather: resolvedCourse.weather,
+        weather: coursePickerWeatherForCourse(resolvedCourse),
         night: coursePickerNightForCourse(resolvedCourse),
         mastery,
+        freeFlight: resolvedCourse.profile === 'free',
+        repeatable: resolvedCourse.seed !== null,
       }
     })
     for (const picker of coursePickers) picker.setItems(items, selectedCourseId)
@@ -1812,6 +1816,7 @@ export async function boot(): Promise<void> {
   })
 
   const onGlobalKeyDown = (e: KeyboardEvent): void => {
+    if (coursePickerOwnsGlobalKey(e)) return
     if (e.code === 'Escape') {
       e.preventDefault()
       e.stopPropagation()

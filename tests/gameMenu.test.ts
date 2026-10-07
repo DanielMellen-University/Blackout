@@ -46,7 +46,7 @@ class FakeElement {
     for (const listener of this.listeners.get(type) ?? []) listener(event as never)
   }
 
-  closest(): null {
+  closest(): FakeElement | null {
     return null
   }
 
@@ -100,6 +100,32 @@ function menuFixture(): { root: FakeElement; resume: FakeElement; state: FakeEle
 }
 
 describe('menu focus flow', () => {
+  it('keeps disclosure summaries in the trap but excludes controls inside hidden sections', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const documentState = { activeElement: null as FakeElement | null, fullscreenElement: null }
+    vi.stubGlobal('document', documentState)
+    const fixture = menuFixture()
+    const summary = new FakeElement()
+    const hiddenSummary = new FakeElement()
+    vi.spyOn(hiddenSummary, 'closest').mockReturnValue(new FakeElement())
+    const last = new FakeElement()
+    fixture.root.querySelector('#menu-root')!.setList(
+      'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
+      [fixture.resume, summary, last, hiddenSummary],
+    )
+    const menu = new GameMenu(fixture.root as unknown as HTMLElement)
+    menu.openPause()
+    documentState.activeElement = summary
+    const middle = vi.fn()
+    fixture.root.dispatch('keydown', { key: 'Tab', shiftKey: false, preventDefault: middle })
+    expect(middle).not.toHaveBeenCalled()
+    documentState.activeElement = fixture.resume
+    fixture.root.dispatch('keydown', { key: 'Tab', shiftKey: true, preventDefault: vi.fn() })
+    expect(last.focus).toHaveBeenCalled()
+    expect(hiddenSummary.focus).not.toHaveBeenCalled()
+    menu.dispose()
+    vi.unstubAllGlobals()
+  })
   it('returns focus to the control that opened pause', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const source = new FakeElement()

@@ -229,7 +229,7 @@ export class GameMenu {
         : this.panelInfo
     return Array.from(panel.querySelectorAll<HTMLElement>(
       'button:not([hidden]):not([disabled]), select:not([hidden]), input:not([hidden]), [href], [tabindex]:not([tabindex="-1"])',
-    )).filter((element) => !element.hidden && element.tabIndex >= 0)
+    )).filter((element) => !element.hidden && !element.closest('[hidden]') && element.tabIndex >= 0)
   }
 }
 

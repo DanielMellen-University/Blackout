@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.841** Simplify course cards while retaining full progress and flight records in a native expander, add first-circuit/next-medal/time-record/exploration goals, repair filtered-list tab stops and responsive keyboard navigation, keep selected-course identity explicit, synchronize Escape search clears, let catalog controls own their activation keys, and resolve seeded conditions and rotating Ops difficulty correctly.
 - **10.840** Slice workerless terrain sampling across frame deadlines without reducing geometry or water detail, bound retained work to one cancellable tile, include that work in streaming telemetry, pin legacy payloads with independent byte hashes, and report CPU slice/phase costs alongside whole-tile timing.
 - **10.839** Recover silent terrain and settlement workers with pause-safe active-update watchdogs, reuse bounded fallback queues, handle settlement message errors and reject late/duplicate replies, and add a server-free CPU terrain profiler with scoped measurement notes.
 - **10.838** Make title and live takeoff/landing hints honor pitch and gear remapping, adapt briefing controls to meaningful keyboard/touch/controller activity without idle-device takeover, and preserve the briefing through pauses by counting simulated flight time.

@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.840** is current. Previous ship: **10.839**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.841** is current. Previous ship: **10.840**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -18,12 +18,14 @@ Chunk 10.839 adds active-update watchdogs for silent terrain/settlement workers,
 
 Chunk 10.840 uses a shared cooperative geometry iterator for fallback sampling, preserves worker output and detail, and retains only one suspended tile. Resets, disposal, unwanted tiles, and seed changes cancel that tile and release partial geometry/climate state. Streaming telemetry counts suspended work, so benchmark completion cannot mistake it for an idle stream. Independent legacy byte hashes cover land, skirts, ponds, broad water, reduced far fallback, and the runway pad. CPU slice measurements still expose cold hydrology and water assembly over budget; no hard 2 ms or FPS claim is made.
 
+Chunk 10.841 separates compact catalog scanning from the selected briefing and expandable progress/records. A single next-sortie target follows first completion, the next medal gap, then repeatable complete-circuit time after gold. Random-world goals never compare different routes' times; free flight remains exploration without a checkpoint clock. Filtered-out selections retain their identity and a visible-list tab stop. Arrow navigation follows actual CSS columns and scrolls choices into view. Escape clears the shared search before global pause capture; Enter/Space activate native picker controls instead of launching. The records disclosure participates in pause focus trapping, which excludes hidden ancestors. Ops difficulty uses resolved profiles, and weather/night filters include repeatable seeded launch conditions. No new storage, timers, or per-flight-frame work is added. Behavior/native-element adapter tests pass; pixel-level and real-device visual QA remain outstanding under the browser access limitation.
+
 ## Current priorities
 
 1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
 2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.
 3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Silent-worker recovery and sliced fallback sampling are covered. Cold catchment creation (including normal probes), analytic water assembly, and mesh attachment can still overrun their indivisible phases; measure and address those next without reducing geometry, collision, or water detail. Preserve bounded memory and worker budgets.
-4. **Catalog and Ops.** Improve course selection, personal goals, and record retention within the existing modes.
+4. **Catalog and Ops.** Inspect the streamlined picker visually and play through its medal/time goals. Audit long-open UTC period rollover without changing an in-flight or explicitly replayed Ops period, and audit record retention lifecycle behavior within the existing modes.
 
 ## Work and verification
 

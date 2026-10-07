@@ -11,7 +11,8 @@ import type { CourseDefinition } from '../systems/CourseLibrary'
 import type { CourseMasteryTier } from '../systems/ChallengeRun'
 import { missionChallengeForProfile, type MissionChallenge, type MissionRouteProfile } from '../systems/Mission'
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
-import { WEATHER_LABELS, weatherIdForSeed, type WeatherId, type WindSide } from '../world/WeatherDirector'
+import { WEATHER_LABELS, timeOfDayForSeed, weatherIdForSeed, type WeatherId, type WindSide } from '../world/WeatherDirector'
+import { courseCardCopy, courseSortieGoal } from './CourseBriefing'
 
 export interface CoursePickerItem {
   id: string
@@ -78,6 +79,10 @@ export interface CoursePickerItem {
   night?: boolean
   /** Persisted per-course mastery tier used only by the optional mastery sort. */
   mastery?: CourseMasteryTier
+  /** Free exploration has no gate/time goal, unlike a randomized circuit. */
+  freeFlight?: boolean
+  /** Rotating/authored seeds repeat a circuit; fresh random worlds do not. */
+  repeatable?: boolean
 }
 
 export type CoursePickerDifficulty = 'relaxed' | 'standard' | 'technical'
@@ -211,14 +216,20 @@ export function coursePickerChallengeForCourse(
   return missionChallengeForProfile((course.profile ?? 'orbit') as MissionRouteProfile)
 }
 
-/** Resolve a bounded authored night flag without rebuilding the route. */
+/** Resolve the repeatable launch weather, including courses without an override. */
+export function coursePickerWeatherForCourse(
+  course: Pick<CourseDefinition, 'seed' | 'weather'>,
+): WeatherId | undefined {
+  return course.weather ?? (Number.isFinite(course.seed) ? weatherIdForSeed(course.seed!) : undefined)
+}
+
+/** Resolve the repeatable launch clock and match the briefing's night label. */
 export function coursePickerNightForCourse(
-  course: Pick<CourseDefinition, 'timeOfDay'>,
+  course: Pick<CourseDefinition, 'timeOfDay'> & Partial<Pick<CourseDefinition, 'seed'>>,
 ): boolean {
-  const time = course.timeOfDay
-  if (!Number.isFinite(time)) return false
-  const normalized = ((time! % 1) + 1) % 1
-  return normalized <= 0.16 || normalized >= 0.78
+  const time = Number.isFinite(course.timeOfDay) ? course.timeOfDay
+    : Number.isFinite(course.seed) ? timeOfDayForSeed(course.seed!) : undefined
+  return courseTimePreviewLabel(time) === 'NIGHT'
 }
 
 /** Keep persisted course mastery readable in compact card metadata. */
@@ -672,7 +683,8 @@ export function courseWeatherPreviewLabel(
 /** Keep authored night conditions explicit without exposing raw clock fractions. */
 export function courseTimePreviewLabel(timeOfDay: number | undefined): string {
   if (!Number.isFinite(timeOfDay)) return ''
-  const normalized = ((timeOfDay! % 1) + 1) % 1
+  const fraction = timeOfDay! % 1
+  const normalized = fraction < 0 ? fraction + 1 : fraction
   return normalized < 0.22 || normalized > 0.78 ? 'NIGHT' : ''
 }
 
@@ -750,6 +762,16 @@ function coursePeriodLabel(value: string | undefined): string {
 /**
  * Title and pause world picker: radio cards, short labels, selected-world copy.
  */
+/** Native catalog controls must get their keys before capture-phase launch/pause shortcuts. */
+export function coursePickerOwnsGlobalKey(event: Pick<KeyboardEvent, 'code' | 'target'>): boolean {
+  const target = event.target
+  if (!(target instanceof Element) || !target.closest('.course-picker')) return false
+  if (event.code === 'Enter' || event.code === 'NumpadEnter' || event.code === 'Space') return true
+  if (event.code !== 'Escape') return false
+  const filter = target.closest<HTMLInputElement>('.course-picker-filter')
+  return !!filter?.value.trim()
+}
+
 export class CoursePicker {
   private readonly list: HTMLElement
   private readonly detail: HTMLElement
@@ -758,6 +780,11 @@ export class CoursePicker {
   private readonly categorySelect: HTMLSelectElement
   private readonly sortSelect: HTMLSelectElement
   private readonly favoriteButton: HTMLButtonElement
+  private readonly browseControls: HTMLElement
+  private readonly goal: HTMLElement
+  private readonly goalTitle: HTMLElement
+  private readonly goalDetail: HTMLElement
+  private readonly records: HTMLDetailsElement
   private readonly empty: HTMLElement
   private readonly filterStatus: HTMLElement
   private readonly categoryOptions = new Map<CoursePickerCategory, HTMLOptionElement>()
@@ -815,12 +842,31 @@ export class CoursePicker {
     this.filterStatus.className = 'course-picker-filter-status'
     this.filterStatus.hidden = true
     this.filterStatus.setAttribute('aria-live', 'polite')
-    root.insertBefore(this.categorySelect, this.list)
-    root.insertBefore(this.sortSelect, this.list)
-    root.insertBefore(this.filter, this.list)
+    this.browseControls = document.createElement('div')
+    this.browseControls.className = 'course-picker-browse'
+    this.browseControls.append(this.categorySelect, this.sortSelect, this.filter)
+    this.goal = document.createElement('p')
+    this.goal.className = 'course-picker-goal'
+    this.goal.hidden = true
+    this.goal.setAttribute('aria-live', 'polite')
+    this.goalTitle = document.createElement('strong')
+    this.goalDetail = document.createElement('span')
+    this.goal.append(this.goalTitle, this.goalDetail)
+    this.records = document.createElement('details')
+    this.records.className = 'course-picker-records'
+    this.records.hidden = true
+    const recordSummary = document.createElement('summary')
+    recordSummary.textContent = 'Progress & flight records'
+    // Include the native disclosure in the pause menu's explicit focus trap.
+    recordSummary.setAttribute('tabindex', '0')
+    this.records.append(recordSummary)
+    root.insertBefore(this.browseControls, this.list)
     root.insertBefore(this.filterStatus, this.list)
     root.insertBefore(this.favoriteButton, this.list)
     root.insertBefore(this.empty, this.list)
+    root.insertBefore(this.goal, this.detail)
+    root.insertBefore(this.records, this.stats)
+    this.records.append(this.stats)
     this.list.setAttribute('role', 'radiogroup')
     this.list.addEventListener('click', this.onClick)
     this.list.addEventListener('keydown', this.onKeyDown)
@@ -873,7 +919,7 @@ export class CoursePicker {
   setItems(items: readonly CoursePickerItem[], selectedId: string): void {
     if (this.disposed) return
     this.items = items.slice()
-    this.setValue(selectedId)
+    this.selectedId = this.items.some(item => item.id === selectedId) ? selectedId : (this.items[0]?.id ?? '')
     this.renderList()
   }
 
@@ -900,9 +946,9 @@ export class CoursePicker {
     this.categorySelect.removeEventListener('change', this.onCategoryChange)
     this.sortSelect.removeEventListener('change', this.onSortChange)
     this.favoriteButton.removeEventListener('click', this.onFavoriteClick)
-    this.categorySelect.remove()
-    this.sortSelect.remove()
-    this.filter.remove()
+    this.browseControls.remove()
+    this.goal.remove()
+    this.records.replaceWith(this.stats)
     this.filterStatus.remove()
     this.favoriteButton.remove()
     this.empty.remove()
@@ -918,12 +964,6 @@ export class CoursePicker {
     this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
     this.empty.hidden = visible.length > 0
     if (visible.length === 0) this.empty.textContent = coursePickerEmptyMessage(this.category, this.filter.value)
-    const query = this.filter.value.trim()
-    const categoryLabel = this.category === 'all' ? '' : this.category.toUpperCase()
-    this.filterStatus.textContent = query || categoryLabel
-      ? [categoryLabel, `${visible.length} MATCH${visible.length === 1 ? '' : 'ES'}`].filter(Boolean).join(' · ')
-      : ''
-    this.filterStatus.hidden = !query && this.category === 'all'
     this.syncSelection()
   }
 
@@ -964,38 +1004,54 @@ export class CoursePicker {
     button.className = 'course-option'
     button.dataset.courseId = item.id
     button.setAttribute('role', 'radio')
-    const metaLabel = coursePickerMetaLabel(item.meta, item.favorite === true)
-    const accessibleLabel = [item.label, metaLabel, item.detail, item.stats].filter(Boolean).join(', ')
+    const copy = courseCardCopy(item)
+    const accessibleLabel = [item.label, copy.meta, copy.record].filter(Boolean).join(', ')
     button.setAttribute('aria-label', accessibleLabel)
     const name = document.createElement('span')
     name.className = 'course-option-name'
     name.textContent = item.label
     const meta = document.createElement('span')
     meta.className = 'course-option-meta'
-    meta.textContent = metaLabel
-    const detail = document.createElement('span')
-    detail.className = 'course-option-detail'
-    detail.textContent = item.detail
-    detail.hidden = item.detail.trim().length === 0
+    meta.textContent = copy.meta
+    meta.hidden = !copy.meta
     const stats = document.createElement('span')
     stats.className = 'course-option-stats'
-    stats.textContent = item.stats
-    stats.hidden = item.stats.trim().length === 0
-    button.append(name, meta, detail, stats)
+    stats.textContent = copy.record
+    button.append(name, meta, stats)
     return button
   }
 
   private syncSelection(): void {
     const selected = this.items.find((item) => item.id === this.selectedId)
-    for (const option of Array.from(this.list.querySelectorAll<HTMLElement>('.course-option'))) {
+    const options = Array.from(this.list.querySelectorAll<HTMLElement>('.course-option'))
+    const tabStop = options.find(option => option.dataset.courseId === this.selectedId) ?? options[0]
+    for (const option of options) {
       const on = option.dataset.courseId === this.selectedId
       option.setAttribute('aria-checked', on ? 'true' : 'false')
-      option.tabIndex = on ? 0 : -1
+      option.tabIndex = option === tabStop ? 0 : -1
       option.classList.toggle('is-selected', on)
     }
-    this.detail.textContent = selected?.detail ?? ''
-    this.stats.textContent = selected?.stats ?? ''
-    this.stats.hidden = !selected?.stats
+    this.detail.textContent = selected ? `${selected.label} — ${selected.detail}` : ''
+    const recordCopy = selected ? [selected.meta, selected.stats].filter(Boolean).join(' · ') : ''
+    this.stats.textContent = recordCopy
+    this.stats.hidden = !recordCopy
+    this.records.hidden = !recordCopy
+    if (!recordCopy) this.records.open = false
+    this.goal.hidden = !selected
+    const goal = selected ? courseSortieGoal(selected) : null
+    const goalTitle = goal ? `NEXT SORTIE · ${goal.title}` : ''
+    const goalDetail = goal?.detail ?? ''
+    // Search/filter changes must not repeatedly announce an unchanged target.
+    if (this.goalTitle.textContent !== goalTitle) this.goalTitle.textContent = goalTitle
+    if (this.goalDetail.textContent !== goalDetail) this.goalDetail.textContent = goalDetail
+    const query = this.filter.value.trim()
+    const categoryLabel = this.category === 'all' ? '' : this.category.toUpperCase()
+    const selectedHidden = !!selected && !options.some(option => option.dataset.courseId === selected.id)
+    this.filterStatus.textContent = query || categoryLabel || selectedHidden
+      ? [categoryLabel, `${options.length} MATCH${options.length === 1 ? '' : 'ES'}`,
+        selectedHidden ? 'SELECTED COURSE OUTSIDE FILTER' : ''].filter(Boolean).join(' · ')
+      : ''
+    this.filterStatus.hidden = !query && this.category === 'all' && !selectedHidden
     const favorite = selected?.favorite === true
     this.favoriteButton.disabled = !selected
     this.favoriteButton.textContent = favorite ? '★ Favorite' : '☆ Favorite'
@@ -1012,6 +1068,7 @@ export class CoursePicker {
     this.syncSelection()
     const option = this.list.querySelector<HTMLElement>(`[data-course-id="${cssEscape(id)}"]`)
     option?.focus({ preventScroll: true })
+    option?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
     if (persist) this.changeHandler?.(id)
   }
 
@@ -1036,8 +1093,11 @@ export class CoursePicker {
       this.sort,
     )
     if (visible.length === 0) return
-    const index = Math.max(0, visible.findIndex((item) => item.id === this.selectedId))
-    const next = coursePickerNavigationIndex(event.key, index, visible.length)
+    const focused = event.target instanceof Element ? event.target.closest<HTMLElement>('.course-option')?.dataset.courseId : undefined
+    const index = Math.max(0, visible.findIndex((item) => item.id === (focused ?? this.selectedId)))
+    const tracks = getComputedStyle(this.list).gridTemplateColumns.trim()
+    const columns = tracks && tracks !== 'none' ? tracks.split(/\s+/).length : 1
+    const next = coursePickerNavigationIndex(event.key, index, visible.length, columns)
     if (next === null) return
     event.preventDefault()
     const item = visible[next]
@@ -1084,7 +1144,7 @@ export class CoursePicker {
     if (event.key !== 'Escape' || !this.filter.value) return
     event.preventDefault()
     this.filter.value = ''
-    this.renderList()
+    this.onFilterInput()
   }
 }
 

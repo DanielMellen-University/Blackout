@@ -13,6 +13,7 @@ import {
   coursePickerFlightLogLabel,
   coursePickerMasteryLabel,
   coursePickerNightForCourse,
+  coursePickerWeatherForCourse,
   coursePickerCategoryLabel,
   coursePickerEmptyMessage,
   coursePickerMetaLabel,
@@ -30,6 +31,8 @@ import {
   writeCoursePickerCategory,
   writeCoursePickerSort,
 } from '../src/ui/CoursePicker'
+import { timeOfDayForSeed, weatherIdForSeed } from '../src/world/WeatherDirector'
+import { COURSE_LIBRARY, resolveCourseDefinition } from '../src/systems/CourseLibrary'
 
 const orbit = {
   seed: 1 as number | null,
@@ -38,6 +41,24 @@ const orbit = {
 }
 
 describe('course picker copy', () => {
+  it('uses repeatable seeded conditions and resolved rotating difficulty in the catalog', () => {
+    for (const course of COURSE_LIBRARY) {
+      const resolved = resolveCourseDefinition(course, Date.UTC(2026, 9, 6))
+      const weather = coursePickerWeatherForCourse(resolved)
+      expect(weather).toBe(resolved.weather ?? (resolved.seed === null ? undefined : weatherIdForSeed(resolved.seed)))
+      const time = resolved.timeOfDay ?? (resolved.seed === null ? undefined : timeOfDayForSeed(resolved.seed))
+      expect(coursePickerNightForCourse(resolved)).toBe(courseTimePreviewLabel(time) === 'NIGHT')
+      if (course.daily || course.weekly || course.monthly) {
+        // This fixed period resolves to Night / Canyon / Storm, not the raw
+        // null profile whose old picker tag incorrectly claimed Standard.
+        expect(coursePickerDifficultyForCourse(resolved)).toBe('technical')
+        expect(coursePickerDifficultyForCourse(course)).toBe('standard')
+      }
+    }
+    expect(coursePickerWeatherForCourse({ seed: null, weather: undefined })).toBeUndefined()
+    expect(coursePickerNightForCourse({ timeOfDay: .2 })).toBe(true)
+    expect(coursePickerNightForCourse({ timeOfDay: .22 })).toBe(false)
+  })
   it('keeps keyboard navigation inside filtered results', () => {
     expect(coursePickerNavigationIndex('End', 0, 3)).toBe(2)
     expect(coursePickerNavigationIndex('Home', 2, 3)).toBe(0)

@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.840**. Previous roadmap chunk: **10.839**.
-Recent changes from **10.840**. Workerless terrain generation yields between sampling batches, keeps one unfinished tile, and cancels it on world changes. Terrain/water payloads retain the previous detail; cold hydrology and mesh assembly can still exceed a frame budget.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.841**. Previous roadmap chunk: **10.840**.
+Recent changes from **10.841**. Compact course cards keep the catalog scannable, with full progress/records in an expandable panel and one next-sortie target in the selected briefing. Filtering and phone-layout keyboard navigation are repaired; Ops difficulty and seeded conditions use the resolved launch world.
 
 ## Run
 
