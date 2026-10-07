@@ -871,7 +871,7 @@ describe('HUD value formatting', () => {
       missionPhase: 'ready',
       gatesPassed: 0,
       gearDown: true,
-    })).toBe('SHIFT / 2 POWER · W ROTATE · G GEAR')
+    })).toBe('SHIFT / 2 POWER · W ROTATE · G GEAR AFTER TAKEOFF')
     expect(flightBriefingHint({
       onGround: false,
       speed: 180,

@@ -26,6 +26,51 @@ function fakeWindow(): { target: Window; fire(type: string, code: string): void 
 }
 
 describe('flight input one-shot controls', () => {
+  it('keeps hints on the last meaningful device, not idle controllers or menu typing', () => {
+    let connected = true
+    const axes = [0, 0, 0]
+    vi.stubGlobal('navigator', { getGamepads: () => connected ? [{ connected: true, axes, buttons: [] }] : [] })
+    const fake = fakeWindow()
+    const input = new InputManager(fake.target)
+    try {
+      expect(input.inputSource).toBeNull()
+      fake.fire('keydown', 'KeyW')
+      input.setTouchState({ pitch: 1 })
+      expect(input.inputSource).toBeNull()
+      input.setFlightLive(true)
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBeNull()
+      input.setTouchState({ throttle: 1 })
+      expect(input.inputSource).toBe('touch')
+      input.setTouchState(null)
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBe('touch')
+      axes[0] = .8
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBe('gamepad')
+      fake.fire('keydown', 'KeyA')
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBe('keyboard')
+      fake.fire('keyup', 'KeyA')
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBe('gamepad')
+      connected = false
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBe('gamepad')
+      input.sampleWithDt(GAMEPAD_POLL_INTERVAL)
+      expect(input.inputSource).toBeNull()
+      input.setKeyboardBindings({ boost: 'KeyH', airbrake: 'KeyJ', gear: 'KeyK' })
+      fake.fire('keydown', 'KeyK')
+      expect(input.inputSource).toBe('keyboard')
+      input.setFlightLive(false)
+      input.setTouchState({ gearToggle: true })
+      expect(input.inputSource).toBe('keyboard')
+    } finally {
+      input.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('maps the default A/D keys to conventional left/right yaw', () => {
     const fake = fakeWindow()
     const input = new InputManager(fake.target)

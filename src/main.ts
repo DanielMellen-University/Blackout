@@ -72,6 +72,7 @@ import {
   Time,
 } from './core/Time'
 import { bannerRemainingMs, bannerUntilFromRemaining, MAX_BANNER_DURATION_MS } from './core/BannerClock'
+import { BRIEFING_DURATION_SECONDS, briefingControls, briefingRemainingSeconds } from './core/FlightBriefing'
 import {
   ChallengeRun,
   courseMasteryTierForProgress,
@@ -886,6 +887,18 @@ export async function boot(): Promise<void> {
   const touchControls = touchRoot && touchDevice
     ? new TouchControls(touchRoot, (state) => input.setTouchState(state))
     : null
+  const syncTakeoffBrief = (): void => {
+    const controls = briefingControls({
+      inputSource: input.inputSource ?? (touchDevice ? 'touch' : 'keyboard'),
+      keyboardPitch: input.keyboardPitch,
+      keyboardBindings: input.bindings,
+    })
+    const labels = [['title-power-control', controls.power], ['title-rotate-control', controls.rotate], ['title-gear-control', controls.gear]] as const
+    for (const [id, label] of labels) {
+      const element = document.getElementById(id)
+      if (element) element.textContent = label
+    }
+  }
   const time = new Time()
   const hud = new HUD()
   const applyHudDisplay = (next: HudDisplay): void => {
@@ -1005,6 +1018,7 @@ export async function boot(): Promise<void> {
     input.setKeyboardPitchPreference(preference)
     if (pitchSelect) pitchSelect.value = preference
     if (pitchLabel) pitchLabel.textContent = `Pitch (${keyboardPitchPreferenceLabel(preference)})`
+    syncTakeoffBrief()
     writeKeyboardPitchPreference(qualityStorage, preference)
   }
   applyKeyboardPitch(initialKeyboardPitch)
@@ -1025,6 +1039,7 @@ export async function boot(): Promise<void> {
     if (boostKeyLabel) boostKeyLabel.textContent = keyboardBindingLabel(bindings.boost)
     if (airbrakeKeyLabel) airbrakeKeyLabel.textContent = keyboardBindingLabel(bindings.airbrake)
     if (gearKeyLabel) gearKeyLabel.textContent = keyboardBindingLabel(bindings.gear)
+    syncTakeoffBrief()
     writeKeyboardBindings(qualityStorage, bindings)
   }
   applyKeyboardBindings(initialKeyboardBindings)
@@ -1394,7 +1409,7 @@ export async function boot(): Promise<void> {
   }
   let prevWarning: string | null = null
   let prevEngineHeat: 'normal' | 'hot' | 'critical' | null = null
-  let controlHintUntilMs = 0
+  let controlHintRemainingSec = 0
   const radarDiscovered = new Set<string>()
   const radarDiscoveryOrder: string[] = []
   let radarDiscoveryCooldownUntil = 0
@@ -1581,7 +1596,7 @@ export async function boot(): Promise<void> {
     overWater = false
     refueling = false
     prevFuelHomeCue = null
-    controlHintUntilMs = briefing ? performance.now() + 16_000 : 0
+    controlHintRemainingSec = briefing ? BRIEFING_DURATION_SECONDS : 0
     time.reset()
     if (briefing) {
       const resetLabel = worldFallback
@@ -1928,6 +1943,7 @@ export async function boot(): Promise<void> {
       const { frameDt, steps, stepDt, alpha } = time.beginFrame(nowMs)
       visualDt = frameDt
       simDt = steps * stepDt
+      controlHintRemainingSec = briefingRemainingSeconds(controlHintRemainingSec, simDt, simLive)
       const dt = stepDt
       const weather = world.atmosphere.weatherSnapshot
       aircraft.setWeatherGust(weather.gust)
@@ -2981,7 +2997,7 @@ export async function boot(): Promise<void> {
       hudFrame.trafficAlertSide = trafficSideCue
       hudFrame.trafficAlertVertical = trafficVerticalCue
       hudFrame.trafficAlertDistance = trafficAlert?.distance ?? null
-      hudFrame.controlHint = nowMs < controlHintUntilMs && aircraft.status !== 'crashed'
+      hudFrame.controlHint = controlHintRemainingSec > 0 && aircraft.status !== 'crashed'
         ? flightBriefingHint({
           onGround: aircraft.onGround,
           speed: aircraft.speed,
@@ -2990,6 +3006,9 @@ export async function boot(): Promise<void> {
           gatesPassed: challenge.gatesPassed,
           gearDown: aircraft.controls.gearDown,
           keyboardScheme: input.keyboardScheme,
+          keyboardPitch: input.keyboardPitch,
+          keyboardBindings: input.bindings,
+          inputSource: input.inputSource ?? (touchDevice ? 'touch' : 'keyboard'),
         })
         : null
       hudFrame.timeMs = nowMs

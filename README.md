@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.837**. Previous roadmap chunk: **10.836**.
-Recent changes from **10.837**. Landing debriefs explain the biggest touchdown error using first-contact telemetry. Flare and go-around guidance now agree with the landing-speed limit, and short screens can scroll the results panel.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.838**. Previous roadmap chunk: **10.837**.
+Recent changes from **10.838**. Takeoff and landing hints follow pitch and gear remapping, with touch/controller instructions for the active input device. The first-flight briefing counts flight time and survives pauses.
 
 ## Run
 

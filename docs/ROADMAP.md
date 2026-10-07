@@ -1,6 +1,6 @@
 # Roadmap
 
-Chunk **10.837** is current. Previous ship: **10.836**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.838** is current. Previous ship: **10.837**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
 
@@ -12,10 +12,12 @@ Chunk 10.836 makes navigation ETA use target-relative velocity, keeps slow appro
 
 Chunk 10.837 captures pre-resolution touchdown speed, adds one targeted landing correction and finite contact telemetry, aligns flare/go-around cues with the collision speed limit, and covers the previous sink-rate gap. Scoring math is shared with coaching without adding allocations to live previews. Debriefs scroll on short screens; `/dev/debrief.html` reuses the real results UI without booting the world or persisting records. Automated behavior and DOM checks pass; visual inspection remains outstanding because the browser tool rejected access under its URL policy.
 
+Chunk 10.838 centralizes takeoff labels, follows inverted pitch and remapped gear keys in the title and live briefing, and uses touch/controller labels after meaningful device input. Idle pads, menu typing, and released touch controls do not steal the active-source cue; controller disconnects clear stale device guidance. The briefing budget now consumes simulated flight time, not pause/loading time. Existing input priorities and 30 Hz controller polling remain unchanged.
+
 ## Current priorities
 
 1. **Landing follow-through.** Verify runway alignment and glide guidance in actual approaches, and inspect the new debrief on desktop and phone-sized screens when browser inspection is available. Preserve the existing one-warning priority and restrained audio cadence.
-2. **Controls and onboarding.** Keep keyboard, touch, and gamepad hints accurate after remapping. Make recovery and first flights easy to understand.
+2. **Controls and onboarding.** Play through the first-flight and recovery flow across devices. Remapped pitch/gear and active-device hints are covered; review discoverability and whether pilots can complete Training Orbit without opening settings.
 3. **Performance and stability.** Profile streaming during fast travel and rendering in dense landmarks and weather. Prioritize measured bottlenecks, bounded memory, and worker fallback coverage.
 4. **Catalog and Ops.** Improve course selection, personal goals, and record retention within the existing modes.
 

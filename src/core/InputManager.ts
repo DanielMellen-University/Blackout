@@ -14,6 +14,13 @@ import {
   type KeyboardYawPreference,
 } from './FlightPreferences'
 import type { TouchInputState } from './TouchControls'
+import type { FlightInputSource } from './FlightBriefing'
+
+const FLIGHT_KEYS = new Set([
+  'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE', 'ShiftLeft', 'ShiftRight',
+  'ControlLeft', 'ControlRight', 'Digit1', 'Digit2', 'KeyC', 'KeyR', 'KeyP',
+  'KeyN', 'KeyM', 'KeyT', 'KeyV', 'KeyX', 'KeyY',
+])
 
 /** Keep controller latency below one frame budget without polling every step. */
 export const GAMEPAD_POLL_INTERVAL = 1 / 30
@@ -75,6 +82,12 @@ export class InputManager {
     gear: 'KeyG',
   }
   private disposed = false
+  private inputSourceValue: FlightInputSource | null = null
+
+  /** Last meaningful control source. Idle devices and menu typing do not steal hints. */
+  get inputSource(): FlightInputSource | null {
+    return this.inputSourceValue
+  }
 
   cameraToggleQueued = false
   resetQueued = false
@@ -235,6 +248,16 @@ export class InputManager {
     thr += this.touchThrottle * thrRate * step
     this.controls.throttle = clamp01(thr)
 
+    // Keyboard wins the same mixed-input frames in which it owns the controls.
+    if (this.flightLive) {
+      for (const code of this.keys) {
+        if (this.isFlightKey(code)) {
+          this.inputSourceValue = 'keyboard'
+          break
+        }
+      }
+    }
+
     return this.controls
   }
 
@@ -270,6 +293,10 @@ export class InputManager {
     const worldSeedCopy = state?.worldSeedCopy === true
     const reset = state?.reset === true
     const pauseToggle = state?.pauseToggle === true
+    if (this.flightLive && (this.touchPitch !== 0 || this.touchYaw !== 0 || this.touchRoll !== 0 ||
+      this.touchThrottle !== 0 || this.touchBoost || this.touchAirbrake || cameraToggle || gearToggle ||
+      stabilityAssistToggle || radarTargetCycle || weatherCycle || audioToggle || ghostToggle ||
+      worldSeedCopy || reset || pauseToggle)) this.inputSourceValue = 'touch'
     if (this.flightLive && cameraToggle && !this.touchCameraToggle) this.cameraToggleQueued = true
     if (this.flightLive && gearToggle && !this.touchGearToggle) this.gearToggleQueued = true
     if (this.flightLive && stabilityAssistToggle && !this.touchStabilityAssistToggle) {
@@ -480,6 +507,11 @@ export class InputManager {
     const ghostHeld = buttons[14]?.pressed === true
     const radarHeld = buttons[15]?.pressed === true
     const pauseHeld = buttons[9]?.pressed === true
+    if (this.gamepadPitch !== 0 || this.gamepadRoll !== 0 || this.gamepadYaw !== 0 ||
+      this.gamepadThrottle !== 0 || this.gamepadBoost || this.gamepadAirbrake || cameraHeld || gearHeld ||
+      stabilityHeld || audioHeld || weatherHeld || resetHeld || ghostHeld || radarHeld || pauseHeld) {
+      this.inputSourceValue = 'gamepad'
+    }
     if (cameraHeld && !this.gamepadCameraHeld) this.cameraToggleQueued = true
     if (gearHeld && !this.gamepadGearHeld) this.gearToggleQueued = true
     if (stabilityHeld && !this.gamepadStabilityHeld) this.stabilityAssistToggleQueued = true
@@ -507,6 +539,7 @@ export class InputManager {
     }
 
     this.keys.add(e.code)
+    if (this.flightLive && this.isFlightKey(e.code)) this.inputSourceValue = 'keyboard'
     if (e.repeat) return
     if (!this.flightLive) return
 
@@ -561,6 +594,11 @@ export class InputManager {
     )
   }
 
+  private isFlightKey(code: string): boolean {
+    return FLIGHT_KEYS.has(code) || code === this.keyboardBindings.boost ||
+      code === this.keyboardBindings.airbrake || code === this.keyboardBindings.gear
+  }
+
   private onKeyUp = (e: KeyboardEvent): void => {
     if (this.disposed) return
     this.keys.delete(e.code)
@@ -601,6 +639,7 @@ export class InputManager {
     if (this.gamepadMissingPolls < 2 || !this.gamepadConnected) return
     this.gamepadConnected = false
     this.gamepadConnectionQueued = 'disconnected'
+    if (this.inputSourceValue === 'gamepad') this.inputSourceValue = null
   }
 
   private clearGamepadEdges(): void {
