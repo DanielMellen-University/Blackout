@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.855** is current. Previous ship: **10.854**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.856** is current. Previous ship: **10.855**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.856 applies the same flight-deck shell and grouped-card treatment to General, Controls, Camera, and Next mission settings. Style the native category/sort and preference dropdown popups with a bounded scrolling surface and blue/pale-orange state cues where supported; older browsers retain their native popup. Open selects own Escape before global pause capture; settings category changes reset content scroll. Both course dropdowns and all four settings pages are visually checked in the browser, including expanded sections and keyboard/pause behavior. All 64 focused tests and the production build pass. Preserve preference nodes, filter/sort persistence, modal focus, physics, and paused-system exclusions; no custom menu framework, dependencies, timers, or per-frame work is added.
 
 Chunk 10.855 rebuilds the Controls and Flight manual pages with the existing launch palette and typography, bounded vector diagrams, live key labels, grouped keyboard/controller reference, a six-chapter index, and independently scrolling content with fixed navigation. Back/Escape returns to the launch opener or paused settings as appropriate; cross-page links preserve pause state and clean up on disposal. Both pages are visually inspected in the existing window and at wide/short desktop sizes, including chapter navigation, expandable sections, and fixed actions. All 82 focused tests and the production build pass. The launch screen, physics, and paused-system exclusions are unchanged.
 

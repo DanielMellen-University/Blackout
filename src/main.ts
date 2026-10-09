@@ -22,6 +22,7 @@ import {
   type FlightPathMarkerPosition,
 } from './camera/FlightPathMarker'
 import { InputManager } from './core/InputManager'
+import { nativeSelectOwnsEscape } from './ui/NativeSelect'
 import { pruneRotatingCourseRecords, touchSeededRandomCourseRecord } from './core/CourseRecordRetention'
 import { CourseSession, launchNeedsNewWorld } from './core/CourseSession'
 import { resetFlightPreferences } from './core/PreferenceReset'
@@ -1788,6 +1789,7 @@ export async function boot(): Promise<void> {
   })
 
   const onGlobalKeyDown = (e: KeyboardEvent): void => {
+    if (nativeSelectOwnsEscape(e)) return
     if (coursePickerOwnsGlobalKey(e)) return
     if (e.code === 'Escape') {
       e.preventDefault()

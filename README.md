@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.855**. Previous roadmap chunk: **10.854**.
-Recent changes from **10.855**. Rebuild Controls and Flight manual in the launch screen's navy, blue, and pale-orange style, with axis diagrams, current key bindings, a controller reference, and six linked flight chapters. Keep navigation fixed while content scrolls. Launch layout and flight physics are unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.856**. Previous roadmap chunk: **10.855**.
+Recent changes from **10.856**. Extend the flight-deck design to course filter/sort dropdowns and every in-game settings category. Native dropdown panels use navy, blue, and pale orange in supporting browsers, retaining keyboard selection and a standard native fallback. Settings use numbered navigation, grouped cards, and fixed flight actions/footer. Preferences, course selection, and flight physics are unchanged.
 
 ## Run
 

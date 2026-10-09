@@ -1,0 +1,110 @@
+/* Shared flight-deck controls. Native selects retain keyboard/type-ahead behavior. */
+:is(.course-picker-browse, .settings-content) select {
+  background: var(--bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font: 500 0.8rem/1.4 var(--font);
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 11px 12px;
+  min-height: 44px;
+  cursor: pointer;
+}
+:is(.course-picker-browse, .settings-content) select:hover { border-color: var(--accent); }
+.course-picker-browse { gap: 8px; margin-bottom: 8px; }
+.course-picker-browse .course-picker-filter { min-height: 40px; text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
+.course-picker-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.course-option { min-width: 0; overflow-wrap: anywhere; }
+
+/* Progressive enhancement: older browsers keep their standard native popup. */
+@supports (appearance: base-select) {
+  :is(.course-picker-browse, .settings-content) select,
+  :is(.course-picker-browse, .settings-content) select::picker(select) { appearance: base-select; }
+  :is(.course-picker-browse, .settings-content) select::picker(select) {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 6px;
+    margin-block: 6px;
+    max-height: min(420px, 60vh);
+    overflow-y: auto;
+    box-shadow: var(--shadow);
+    font: 400 0.82rem/1.5 var(--font);
+  }
+  :is(.course-picker-browse, .settings-content) select::picker-icon { color: var(--accent); margin-left: auto; padding-left: 12px; }
+  :is(.course-picker-browse, .settings-content) select:open { border-color: var(--accent); }
+  :is(.course-picker-browse, .settings-content) option {
+    min-height: 38px;
+    padding: 9px 12px;
+    gap: 12px;
+    border-radius: 5px;
+    color: var(--ink-dim);
+    cursor: pointer;
+  }
+  :is(.course-picker-browse, .settings-content) option:hover,
+  :is(.course-picker-browse, .settings-content) option:focus { background: var(--accent-soft); color: var(--ink); outline: none; }
+  :is(.course-picker-browse, .settings-content) option:checked { background: var(--amber-soft); color: var(--amber); }
+  :is(.course-picker-browse, .settings-content) option::checkmark { color: var(--amber); }
+}
+
+/* Same bounded shell, type hierarchy and sidebar as the pilot reference. */
+#menu-root.settings-shell {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: min(1200px, 100%);
+  margin-inline: auto;
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+.settings-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px 32px; border-bottom: 1px solid var(--panel-border); background: var(--panel); }
+.settings-header h2 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.7rem); }
+.settings-header h2:focus { outline: none; }
+.settings-header .menu-state { margin: 0; color: var(--amber); font: 500 0.7rem/1.5 var(--mono); letter-spacing: 0; text-transform: none; }
+.settings-shell .menu-flight-actions { grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 16px 32px; border-bottom: 1px solid var(--panel-border); }
+.settings-shell .menu-flight-actions .btn-play { font-size: 0.9rem; }
+.settings-workspace { display: grid; grid-template-columns: 210px minmax(0, 1fr); min-height: 0; }
+.settings-navigation { display: flex; flex-direction: column; gap: 8px; padding: 28px 16px; border-right: 1px solid var(--panel-border); overflow-y: auto; }
+.settings-navigation .btn-ghost { display: flex; align-items: center; gap: 14px; padding: 14px 12px; text-align: left; font-size: 0.82rem; font-weight: 500; border-color: transparent; background: transparent; color: var(--ink-dim); }
+.settings-navigation button > span { color: var(--accent); font: 500 0.7rem var(--mono); }
+.settings-navigation [aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); border-left-color: var(--accent); }
+.settings-navigation .btn-ghost:hover { background: var(--surface); color: var(--ink); }
+.settings-content { min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 32px; }
+.settings-content > section { max-width: 880px; margin-inline: auto; }
+.settings-eyebrow { color: var(--accent); font: 600 0.65rem/1.5 var(--mono); letter-spacing: 0.12em; margin-bottom: 8px; }
+.settings-content h3 { font-size: 1.65rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 24px; }
+.settings-card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.settings-card { min-width: 0; padding: 20px; border: 1px solid var(--panel-border); border-radius: var(--radius); background: var(--surface); }
+.settings-card h4 { font-size: 0.9rem; margin-bottom: 12px; }
+.settings-content .menu-setting { min-height: 64px; padding: 12px 0; font-size: 0.82rem; color: var(--ink-dim); }
+.settings-content .menu-setting:last-child { border-bottom: 0; }
+.settings-content .menu-setting select { width: 56%; }
+.settings-content .menu-setting-control { width: 56%; }
+.settings-content .menu-setting output { min-width: 38px; font: 500 0.7rem var(--mono); color: var(--accent); }
+.settings-content .settings-section { margin-top: 20px; background: var(--surface); }
+.settings-content .settings-section summary { padding: 16px 20px; font-size: 0.82rem; }
+.settings-content .settings-section-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; padding: 0 20px 16px; }
+.settings-card .settings-section-body { grid-template-columns: minmax(0, 1fr); padding-inline: 12px; }
+.settings-card .settings-section { background: var(--bg); }
+.settings-content .course-picker { margin: 0; }
+.settings-shell .menu-footer-actions { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); padding: 16px 32px; margin: 0; border-top: 1px solid var(--panel-border); background: var(--panel); }
+
+@media (max-width: 1000px) {
+  .settings-card-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .settings-workspace { grid-template-columns: 170px minmax(0, 1fr); }
+  .settings-header, .settings-shell .menu-flight-actions, .settings-shell .menu-footer-actions { padding-inline: 20px; }
+  .settings-navigation { padding-inline: 8px; }
+  .settings-content { padding: 24px 20px; }
+  .settings-content .settings-section-body { grid-template-columns: minmax(0, 1fr); }
+  .settings-shell .menu-flight-actions .btn-ghost, .settings-shell .menu-footer-actions .btn-ghost { font-size: 0.75rem; padding-inline: 8px; }
+}
+@media (max-height: 650px) {
+  .settings-header { padding-block: 12px; }
+  .settings-header h2 { font-size: 1.8rem; }
+  .settings-shell .menu-flight-actions, .settings-shell .menu-footer-actions { padding-block: 8px; }
+  .settings-content { padding-block: 20px; }
+}

@@ -7,6 +7,7 @@
     <title>Blackout</title>
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="stylesheet" href="/src/ui/pilotGuide.css" />
+    <link rel="stylesheet" href="/src/ui/settingsDeck.css" />
   </head>
   <body oncontextmenu="return false;">
     <div id="app">
@@ -79,7 +80,7 @@
         <div class="menu-sheet">
           <div id="menu-root" class="menu-panel settings-shell">
             <header class="settings-header">
-              <h2 id="menu-heading">Settings</h2>
+              <div><p class="menu-kicker">Blackout / Flight deck</p><h2 id="menu-heading">Settings</h2></div>
               <p id="menu-state" class="menu-state" role="status" aria-live="polite" hidden></p>
             </header>
             <div class="menu-flight-actions">
@@ -90,14 +91,15 @@
             </div>
             <div class="settings-workspace">
               <nav class="settings-navigation" aria-label="Settings categories">
-                <button type="button" class="btn-ghost" data-settings-tab="general" aria-controls="settings-general" aria-pressed="true">General</button>
-                <button type="button" class="btn-ghost" data-settings-tab="controls" aria-controls="settings-controls" aria-pressed="false">Controls</button>
-                <button type="button" class="btn-ghost" data-settings-tab="camera" aria-controls="settings-camera" aria-pressed="false">Camera</button>
-                <button type="button" class="btn-ghost" data-settings-tab="course" aria-controls="settings-course" aria-pressed="false">Next mission</button>
+                <button type="button" class="btn-ghost" data-settings-tab="general" aria-controls="settings-general" aria-pressed="true"><span aria-hidden="true">01</span>General</button>
+                <button type="button" class="btn-ghost" data-settings-tab="controls" aria-controls="settings-controls" aria-pressed="false"><span aria-hidden="true">02</span>Controls</button>
+                <button type="button" class="btn-ghost" data-settings-tab="camera" aria-controls="settings-camera" aria-pressed="false"><span aria-hidden="true">03</span>Camera</button>
+                <button type="button" class="btn-ghost" data-settings-tab="course" aria-controls="settings-course" aria-pressed="false"><span aria-hidden="true">04</span>Next mission</button>
               </nav>
               <div class="settings-content">
                 <section id="settings-general" data-settings-panel="general" aria-labelledby="settings-general-heading">
-                  <h3 id="settings-general-heading">General</h3>
+                  <p class="settings-eyebrow">01 / PREFERENCES</p><h3 id="settings-general-heading">Display &amp; sound</h3>
+                  <div class="settings-card-grid"><div class="settings-card"><h4>Display</h4>
                   <label class="menu-setting" for="menu-quality">
                     <span>Graphics</span>
                     <select id="menu-quality" aria-label="Graphics quality">
@@ -106,13 +108,6 @@
                       <option value="high">High</option>
                     </select>
                   </label>
-                  <label class="menu-setting" for="menu-volume">
-                    <span>Audio</span>
-                    <span class="menu-setting-control">
-                      <input id="menu-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Audio volume" />
-                      <output id="menu-volume-value" for="menu-volume">100%</output>
-                    </span>
-                  </label>
                   <label class="menu-setting" for="menu-hud-display">
                     <span>Minimal HUD</span>
                     <input id="menu-hud-display" type="checkbox" aria-label="Hide secondary flight telemetry" checked />
@@ -120,6 +115,14 @@
                   <label class="menu-setting" for="menu-reduced-motion">
                     <span>Reduce motion</span>
                     <input id="menu-reduced-motion" type="checkbox" aria-label="Reduce camera, weather, and effects motion" />
+                  </label>
+                  </div><div class="settings-card"><h4>Sound</h4>
+                  <label class="menu-setting" for="menu-volume">
+                    <span>Master volume</span>
+                    <span class="menu-setting-control">
+                      <input id="menu-volume" type="range" min="0" max="100" step="5" value="100" aria-label="Audio volume" />
+                      <output id="menu-volume-value" for="menu-volume">100%</output>
+                    </span>
                   </label>
                   <details class="settings-section">
                     <summary>Audio mix</summary>
@@ -147,6 +150,7 @@
                       </label>
                     </div>
                   </details>
+                  </div></div>
                   <details class="settings-section">
                     <summary>Reset settings</summary>
                     <div class="settings-section-body">
@@ -155,7 +159,8 @@
                   </details>
                 </section>
                 <section id="settings-controls" data-settings-panel="controls" aria-labelledby="settings-controls-heading" hidden>
-                  <h3 id="settings-controls-heading">Controls</h3>
+                  <p class="settings-eyebrow">02 / HANDLING</p><h3 id="settings-controls-heading">Flight controls</h3>
+                  <div class="settings-card"><h4>Keyboard &amp; assist</h4>
                   <label class="menu-setting" for="menu-control-scheme">
                     <span>Control layout</span>
                     <select id="menu-control-scheme" aria-label="Keyboard control layout">
@@ -167,6 +172,7 @@
                     <span>Flight assist</span>
                     <input id="menu-stability-assist" type="checkbox" aria-label="Gentle pitch and bank trim assist" />
                   </label>
+                  </div>
                   <details class="settings-section">
                     <summary>Key bindings</summary>
                     <div class="settings-section-body">
@@ -240,7 +246,8 @@
                   </details>
                 </section>
                 <section id="settings-camera" data-settings-panel="camera" aria-labelledby="settings-camera-heading" hidden>
-                  <h3 id="settings-camera-heading">Camera</h3>
+                  <p class="settings-eyebrow">03 / POINT OF VIEW</p><h3 id="settings-camera-heading">Camera</h3>
+                  <div class="settings-card-grid"><div class="settings-card"><h4>External view</h4>
                   <label class="menu-setting" for="menu-camera-sensitivity">
                     <span>Camera look</span>
                     <select id="menu-camera-sensitivity" aria-label="External camera look sensitivity">
@@ -257,6 +264,7 @@
                       <option value="wide">Wide</option>
                     </select>
                   </label>
+                  </div><div class="settings-card"><h4>Motion</h4>
                   <label class="menu-setting" for="menu-camera-auto-return">
                     <span>Camera auto-return</span>
                     <input id="menu-camera-auto-return" type="checkbox" aria-label="Automatically recenter external camera after idle" checked />
@@ -265,9 +273,10 @@
                     <span>Camera effects</span>
                     <input id="menu-camera-effects" type="checkbox" aria-label="Enable cinematic camera motion effects" checked />
                   </label>
+                  </div></div>
                 </section>
                 <section id="settings-course" data-settings-panel="course" aria-labelledby="settings-course-heading" hidden>
-                  <h3 id="settings-course-heading">Next mission</h3>
+                  <p class="settings-eyebrow">04 / FLIGHT PLAN</p><h3 id="settings-course-heading">Next mission</h3>
                   <div id="menu-course-picker" class="course-picker course-picker-compact">
                     <p class="course-picker-kicker" id="menu-course-label">Course</p>
                     <div class="course-picker-list" role="radiogroup" aria-labelledby="menu-course-label"></div>

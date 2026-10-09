@@ -4,6 +4,7 @@ import { GameMenu, pauseReasonLabel } from '../src/ui/GameMenu'
 
 class FakeElement {
   hidden = false
+  scrollTop = 0
   tabIndex = 0
   disabled = false
   textContent = ''
@@ -165,9 +166,13 @@ describe('menu focus flow', () => {
     panels[1]!.set('#preference', savedControl)
     fixture.root.setList('[data-settings-panel]', panels)
     fixture.root.setList('[data-settings-tab]', buttons)
+    const content = new FakeElement()
+    fixture.root.set('.settings-content', content)
     const menu = new GameMenu(fixture.root as unknown as HTMLElement)
     expect(panels.map(panel => panel.hidden)).toEqual([false, true, true, true])
+    content.scrollTop = 300
     buttons[1]!.dispatch('click', {})
+    expect(content.scrollTop).toBe(0)
     expect(panels.map(panel => panel.hidden)).toEqual([true, false, true, true])
     expect(buttons.map(button => button.getAttribute('aria-pressed'))).toEqual(['false', 'true', 'false', 'false'])
     menu.showSettingsCategory('unknown')

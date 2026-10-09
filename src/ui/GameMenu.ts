@@ -101,6 +101,8 @@ export class GameMenu {
     for (const button of this.settingsButtons) {
       button.setAttribute('aria-pressed', String(button.getAttribute('data-settings-tab') === category))
     }
+    const content = this.root.querySelector<HTMLElement>('.settings-content')
+    if (content) content.scrollTop = 0
   }
 
   get open(): boolean {
