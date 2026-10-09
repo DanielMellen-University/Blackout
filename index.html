@@ -18,7 +18,7 @@
         <div class="title-panel">
           <header class="deck-masthead">
             <div>
-              <p class="title-kicker">Independent flight / F-35</p>
+              <p class="title-kicker">Flight Simulator</p>
               <h1 class="title-logo">BLACKOUT<span aria-hidden="true">/</span></h1>
             </div>
             <p id="title-version" class="title-version">v0.12.0 / Systems expansion</p>
@@ -303,13 +303,33 @@
               <div class="guide-intro"><p>Three axes. One aircraft.</p><span>Key labels below follow your current settings. Change the layout, axis direction, or action keys in Settings → Controls.</span></div>
               <div class="axis-grid">
                 <section class="axis-card"><span class="guide-number">01 / PITCH</span>
-                  <svg viewBox="0 0 240 80" aria-hidden="true"><path class="axis-track" d="M20 62 Q120 -18 220 62"/><path d="M50 48 L105 38 L133 17 L143 18 L130 39 L183 47 L133 52 L112 65 L104 63 L108 51 Z"/><path class="axis-arrow" d="M205 35 L220 62 L191 59"/></svg>
+                  <svg viewBox="0 0 240 80" aria-hidden="true">
+                    <path class="axis-track" d="M20 62 Q120 -18 220 62"/>
+                    <g class="axis-aircraft" data-plane-view="side" transform="rotate(-8 120 44)">
+                      <path d="M48 40 L73 39 L66 17 L79 17 L94 38 L137 35 L149 31 L161 32 L181 39 L205 43 L171 48 L104 51 L51 48 Z"/>
+                      <path class="axis-canopy" d="M139 35 Q146 25 158 30 L174 37 Z"/>
+                      <path d="M130 43 L107 59 L83 59 L105 46 Z"/>
+                      <path d="M80 44 L64 51 L98 49 L107 45 Z"/>
+                      <path class="axis-detail" d="M52 40 V48 M57 40 V48 M114 42 L134 42 L129 48 H113 Z M176 42 L194 43 M76 22 L86 37"/>
+                    </g>
+                    <path class="axis-arrow" d="M205 35 L220 62 L191 59"/>
+                  </svg>
                   <h3>Nose up / down</h3><div class="guide-keys"><kbd>W</kbd><kbd>S</kbd></div><p id="controls-pitch-label">Pitch (W up / S down by default)</p></section>
                 <section class="axis-card"><span class="guide-number">02 / YAW</span>
                   <svg viewBox="0 0 240 80" aria-hidden="true"><path class="axis-track" d="M35 56 Q120 -20 205 56"/><path d="M120 8 L129 37 L174 56 L174 63 L129 54 L128 68 L140 73 L100 73 L112 68 L111 54 L66 63 L66 56 L111 37 Z"/><path class="axis-arrow" d="M184 48 L205 56 L203 35"/></svg>
                   <h3>Nose left / right</h3><div class="guide-keys"><kbd id="controls-yaw-keys">A</kbd><kbd id="controls-yaw-keys-secondary">D</kbd></div><p id="controls-yaw-label">Yaw (A left / D right by default)</p></section>
                 <section class="axis-card"><span class="guide-number">03 / ROLL</span>
-                  <svg viewBox="0 0 240 80" aria-hidden="true"><path class="axis-track" d="M58 63 Q48 -9 120 8 Q192 -9 182 63"/><path d="M45 50 L110 43 L116 23 L124 23 L130 43 L195 50 L195 56 L130 53 L126 63 L114 63 L110 53 L45 56 Z"/><path class="axis-arrow" d="M168 46 L182 63 L197 48"/></svg>
+                  <svg viewBox="0 0 240 80" aria-hidden="true">
+                    <path class="axis-track" d="M35 60 Q45 2 120 8 Q195 2 205 60"/>
+                    <g class="axis-aircraft" data-plane-view="front" transform="rotate(-12 120 44)">
+                      <path d="M87 43 L88 18 L95 20 L105 43 Z M153 43 L152 18 L145 20 L135 43 Z"/>
+                      <path d="M109 43 L82 42 L30 49 L30 53 L108 50 Z M131 43 L158 42 L210 49 L210 53 L132 50 Z"/>
+                      <path d="M112 35 L116 31 H124 L128 35 L134 47 L128 59 H112 L106 47 Z"/>
+                      <path class="axis-canopy" d="M114 39 L116 32 Q120 28 124 32 L126 39 Z"/>
+                      <path class="axis-detail" d="M103 40 L111 43 L109 49 L101 48 Z M137 40 L129 43 L131 49 L139 48 Z M120 44 V55 M41 50 L99 46 M199 50 L141 46"/>
+                    </g>
+                    <path class="axis-arrow" d="M189 40 L205 60 L219 42"/>
+                  </svg>
                   <h3>Bank the wings</h3><div class="guide-keys"><kbd id="controls-roll-keys">Q</kbd><kbd id="controls-roll-keys-secondary">E</kbd></div><p id="controls-roll-label">Roll (Q right / E left by default)</p></section>
               </div>
               <div class="guide-columns">

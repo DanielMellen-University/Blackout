@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.856** is current. Previous ship: **10.855**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.857** is current. Previous ship: **10.856**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.857 replaces the pitch/roll icons with bounded, static fighter diagrams in side/front views and renames the launch kicker to “Flight Simulator.” Preserve the layout, palette, live bindings, and physics; no image assets or runtime work are added.
 
 Chunk 10.856 applies the same flight-deck shell and grouped-card treatment to General, Controls, Camera, and Next mission settings. Style the native category/sort and preference dropdown popups with a bounded scrolling surface and blue/pale-orange state cues where supported; older browsers retain their native popup. Open selects own Escape before global pause capture; settings category changes reset content scroll. Both course dropdowns and all four settings pages are visually checked in the browser, including expanded sections and keyboard/pause behavior. All 64 focused tests and the production build pass. Preserve preference nodes, filter/sort persistence, modal focus, physics, and paused-system exclusions; no custom menu framework, dependencies, timers, or per-frame work is added.
 

@@ -7,6 +7,16 @@ const controls = html.split('id="menu-controls"')[1]!.split('id="menu-info"')[0]
 const manual = html.split('id="menu-info"')[1]!.split('id="overlay"')[0]!
 
 describe('pilot reference pages', () => {
+  it('uses distinct fighter views for pitch and roll and the requested launch label', () => {
+    expect(html).toContain('<p class="title-kicker">Flight Simulator</p>')
+    expect(html).not.toContain('Independent flight / F-35')
+    for (const view of ['side', 'front']) {
+      expect(controls.split(`data-plane-view="${view}"`)).toHaveLength(2)
+    }
+    expect(controls.match(/viewBox="0 0 240 80"/g)).toHaveLength(3)
+    expect(controls.match(/class="axis-canopy"/g)).toHaveLength(2)
+    expect(read('src/ui/pilotGuide.css')).toContain('height: 86px')
+  })
   it('preserves unique live binding labels and groups the controls', () => {
     const main = read('src/main.ts')
     for (const id of ['controls-pitch-label', 'controls-yaw-keys', 'controls-yaw-keys-secondary',
