@@ -32,7 +32,7 @@ export const flightConfig = {
   /** Extra deceleration while the lever is closed, m/s². */
   idleBleed: 26,
 
-  /** Extra bleed only — cruise speed is set by ENG%, not this. */
+  /** Extra bleed only - cruise speed is set by ENG%, not this. */
   parasiteDrag: 0.000038,
   maxDecel: 130,
   /** Mild overspeed bleed while the engine is still spooled (below gravity). */

@@ -971,7 +971,7 @@ export class MissionSystem {
   private readonly gates: Gate[] = []
   private next = 0
   private status: MissionStatus = 'idle'
-  private liveLabel = '—'
+  private liveLabel = '-'
   private profile: MissionRouteProfile = 'orbit'
   private modifier: MissionRouteModifier = 'steady'
   private scoringFocusValue: MissionScoringFocus = 'balanced'
@@ -999,7 +999,7 @@ export class MissionSystem {
     dist: 0,
     bearing: null,
     altDelta: 0,
-    label: '—',
+    label: '-',
   }
   private havePrev = false
   private prevX = 0
@@ -1389,7 +1389,7 @@ export class MissionSystem {
       this.hudState.dist = 0
       this.hudState.bearing = null
       this.hudState.altDelta = 0
-      this.hudState.label = '—'
+      this.hudState.label = '-'
       return this.hudState
     }
     const g = this.gates[this.next]!
@@ -1474,7 +1474,7 @@ export class MissionSystem {
     this.gates.length = 0
     this.next = 0
     this.status = 'idle'
-    this.liveLabel = '—'
+    this.liveLabel = '-'
     this.routeFallbackUsedValue = false
     this.havePrev = false
     this.beacon.visible = false

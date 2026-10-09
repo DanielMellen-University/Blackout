@@ -632,7 +632,7 @@ function scoreDeparture(x: number, z: number, yaw: number, h0: number): number {
       if (isWet(s) || s.land < 0.5) return -1e6
       const h = s.height
       const rise = h - h0
-      // Wall in the near departure — reject
+      // Wall in the near departure - reject
       if (d <= 500 && rise > 55) return -1e6
       if (d <= 900 && rise > 110) return -4e5
       if (rise > 180) return -2e5

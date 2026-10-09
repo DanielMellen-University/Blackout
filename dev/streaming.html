@@ -67,7 +67,7 @@ window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camer
 document.addEventListener('visibilitychange',()=>{previous=0})
 window.addEventListener('error',event=>{$('error').textContent=event.message})
 window.addEventListener('unhandledrejection',event=>{$('error').textContent=String(event.reason)})
-function value(n,suffix='',digits=1){return n===null?'—':n.toFixed(digits)+suffix}
+function value(n,suffix='',digits=1){return n===null?'-':n.toFixed(digits)+suffix}
 function paint(){
  const r=report(),s=lastStats,f=r.frames
  $('status').textContent=startupMs===null?'Loading initial coverage…':flying?'Maximum-speed sustained flight':'Initial coverage loaded'

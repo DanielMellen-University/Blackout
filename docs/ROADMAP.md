@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.857** is current. Previous ship: **10.856**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.858** is current. Previous ship: **10.857**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.858 replaces the yaw and launch-screen jet with a shared static top-view fighter, including canopy, intakes, swept wings, twin fins, stabilizers, and nozzle detail. Replace em dashes with hyphens across source, UI copy, tests, and documentation. Existing layout, bindings, flight physics, and paused-system exclusions remain unchanged.
 
 Chunk 10.857 replaces the pitch/roll icons with bounded, static fighter diagrams in side/front views and renames the launch kicker to “Flight Simulator.” Preserve the layout, palette, live bindings, and physics; no image assets or runtime work are added.
 

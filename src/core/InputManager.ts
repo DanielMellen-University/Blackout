@@ -275,7 +275,7 @@ export class InputManager {
     this.keys.delete(code)
   }
 
-  /** Full key wipe — window blur only. */
+  /** Full key wipe - window blur only. */
   clearKeys(): void {
     if (this.disposed) return
     this.keys.clear()

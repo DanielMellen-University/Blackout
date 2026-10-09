@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.857**. Previous roadmap chunk: **10.856**.
-Recent changes from **10.857**. Replace the pitch and roll diagrams with detailed side/front fighter silhouettes, including canopy, swept wings, and tail fins. Rename the launch label to “Flight Simulator.” Controls and flight physics are unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.858**. Previous roadmap chunk: **10.857**.
+Recent changes from **10.858**. Redraw the yaw and launch-screen aircraft using one detailed top-view fighter illustration. Replace em dashes with regular hyphens throughout source, UI copy, and documentation. Controls and flight physics are unchanged.
 
 ## Run
 

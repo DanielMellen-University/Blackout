@@ -1,6 +1,6 @@
 # Repository work rules
 
-## Paused systems — explicit user decision
+## Paused systems - explicit user decision
 
 - Vegetation development is paused. Trees, rocks, bushes, grass props, foliage shaders, and their terrain-streaming infrastructure have been removed. Do not restore, replace, optimize, or develop this system unless the user explicitly asks to resume it. General requests to improve the game or complete the roadmap do not lift this pause.
 - Blackout/redout mechanics, screen veils, transition banners, and associated G-load tones are removed. Do not reintroduce them without an explicit user request. Preserve the aircraft's load-factor telemetry, G readout, scoring, and flight physics.

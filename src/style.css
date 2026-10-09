@@ -202,7 +202,7 @@ body,
   }
 }
 
-/* Shared glass panel — dark enough to read in full daylight */
+/* Shared glass panel - dark enough to read in full daylight */
 .panel,
 #hud,
 #alt-meter,
@@ -311,8 +311,12 @@ body,
 .deck-description { max-width: 30ch; color: var(--ink-dim); line-height: 1.65; font-size: 0.9rem; margin-top: 18px; }
 .deck-blueprint { width: 100%; max-height: 160px; margin: 20px 0; overflow: visible; }
 .blueprint-grid { stroke: #29415e; stroke-width: 0.7; }
-.blueprint-aircraft { fill: #172c47; stroke: var(--accent); stroke-width: 1.2; }
-.blueprint-seam { stroke: #567ca4; stroke-width: 0.7; }
+.airframe-definitions { position: absolute; overflow: hidden; pointer-events: none; }
+.fighter-top-view { fill: var(--surface-raised); stroke: var(--accent); stroke-width: 1.6; stroke-linejoin: round; }
+.fighter-top-view > path { vector-effect: non-scaling-stroke; }
+.fighter-top-view .fighter-canopy { fill: var(--bg); }
+.fighter-top-view .fighter-detail { fill: none; stroke-width: 1; opacity: 0.65; }
+.fighter-top-view .fighter-nozzle { fill: var(--bg); stroke-width: 1.2; }
 .blueprint-route { stroke: var(--amber); stroke-width: 1.2; fill: none; }
 .deck-blueprint text { fill: var(--ink-mute); font: 9px var(--mono); letter-spacing: 1px; }
 .deck-section-heading { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
@@ -2434,7 +2438,7 @@ body,
   backdrop-filter: blur(8px);
 }
 
-/* ---- Attitude indicator (ADI) — top-right under ALT ---- */
+/* ---- Attitude indicator (ADI) - top-right under ALT ---- */
 #attitude {
   position: relative;
   width: 148px;

@@ -48,7 +48,7 @@ export function cloudImmersionBand(value: number): CloudImmersionBand {
 }
 
 /**
- * Cloud streaming envelope — match terrain load radius.
+ * Cloud streaming envelope - match terrain load radius.
  * Spawn near the fog rim; despawn at the same distance chunks unload.
  */
 const CLOUD_DESPAWN = STREAM_RADIUS_M // match terrain stream edge
@@ -69,7 +69,7 @@ export function cloudDistanceFade(distanceSquared: number): number {
 }
 
 /**
- * Cloud decks — altitude is the *base* (underside) of the formation.
+ * Cloud decks - altitude is the *base* (underside) of the formation.
  * Terrain peaks top out ~0.8–1.2 km; only the tallest summits should
  * pierce cumulus. Hills/mesas stay under the cloud floor.
  * - cumulus bases ~1.15–1.55 km (tops grow upward from there)
@@ -138,7 +138,7 @@ function cloudAltitude(layer: CloudLayer, random: RandomSource): number {
  */
 function cloudSizeMul(random: RandomSource): number {
   const u = random()
-  // 0.45× … 10× — small puffs through continental-scale banks
+  // 0.45× … 10× - small puffs through continental-scale banks
   return 0.45 + Math.pow(u, 2.4) * 9.55
 }
 
@@ -816,7 +816,7 @@ export class Atmosphere {
       (0.25 + dayFactor * 1.55) * sunUp * clearMul * w.sunMul
     this.sun.castShadow = elev > 0.1 && totalClouds < 0.85 && sunUp > 0.35
 
-    // Moon opposite the sun — cool fill that actually lights the world at night
+    // Moon opposite the sun - cool fill that actually lights the world at night
     this.moon.position.set(
       ax - _sunDir.x * lightDist,
       ay - _sunDir.y * lightDist,
@@ -895,7 +895,7 @@ export class Atmosphere {
     const puffBonus = size > 3 ? 4 : size > 1.5 ? 2 : 0
 
     if (layer === 'cumulus') {
-      // Heaps grow *up* from the cloud base — never hang below cluster Y
+      // Heaps grow *up* from the cloud base - never hang below cluster Y
       // (big 10× banks used to bury mountains under their undersides)
       const nPuffs = 10 + ((random() * 8) | 0) + puffBonus
       for (let p = 0; p < nPuffs; p++) {
@@ -942,7 +942,7 @@ export class Atmosphere {
         cluster.add(mesh)
       }
     } else {
-      // Cirrus: thin high streaks — also base-aligned (very thin anyway)
+      // Cirrus: thin high streaks - also base-aligned (very thin anyway)
       const nPuffs = 5 + ((random() * 5) | 0) + Math.min(4, puffBonus)
       const streakAng = random() * Math.PI * 2
       const dirX = Math.cos(streakAng)
@@ -1066,7 +1066,7 @@ export class Atmosphere {
         continue
       }
 
-      // Absolute wind (m/s) — high clouds drift faster
+      // Absolute wind (m/s) - high clouds drift faster
       wpos.x += weather.windX * spec.windMul * gust * cloudDt
       wpos.z += weather.windZ * spec.windMul * gust * cloudDt
 

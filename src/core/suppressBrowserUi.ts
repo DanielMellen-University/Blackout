@@ -9,7 +9,7 @@
  * the pause menu instead of leaving fullscreen. lockGameKeyboard() runs on Play.
  */
 
-/** Codes used by flight / menu — always suppress browser default. */
+/** Codes used by flight / menu - always suppress browser default. */
 const GAME_CODES = new Set([
   'KeyW',
   'KeyA',
@@ -45,7 +45,7 @@ const GAME_CODES = new Set([
 
 /** Single letters that form dangerous Ctrl/Cmd combos. */
 const CTRL_BLOCK_KEYS = new Set([
-  'w', // close tab — critical with Ctrl+brake + W pitch
+  'w', // close tab - critical with Ctrl+brake + W pitch
   't', // new tab
   'n', // new window
   'r', // reload (game also uses R alone for reset)
@@ -166,7 +166,7 @@ function shouldBlockKeydown(e: KeyboardEvent): boolean {
 function blockBrowserShortcuts(e: KeyboardEvent): void {
   if (!shouldBlockKeydown(e)) return
   e.preventDefault()
-  // Don't stopPropagation — game InputManager still needs the event
+  // Don't stopPropagation - game InputManager still needs the event
 }
 
 /**
@@ -358,7 +358,7 @@ export function enterGameFullscreenFromGesture(): void {
     const req = el.requestFullscreen()
     if (req !== undefined) {
       void req.then(() => lockKeysOnly()).catch(() => {
-        /* gesture not accepted — arm click fallback */
+        /* gesture not accepted - arm click fallback */
         reenterFullscreenOnClick = true
       })
     } else {

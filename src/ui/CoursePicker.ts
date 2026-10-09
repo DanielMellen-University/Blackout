@@ -1031,7 +1031,7 @@ export class CoursePicker {
       option.tabIndex = option === tabStop ? 0 : -1
       option.classList.toggle('is-selected', on)
     }
-    this.detail.textContent = selected ? `${selected.label} — ${selected.detail}` : ''
+    this.detail.textContent = selected ? `${selected.label} - ${selected.detail}` : ''
     const recordCopy = selected ? [selected.meta, selected.stats].filter(Boolean).join(' · ') : ''
     this.stats.textContent = recordCopy
     this.stats.hidden = !recordCopy

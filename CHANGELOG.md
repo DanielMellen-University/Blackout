@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.858** Redraw yaw and launch-screen aircraft with a shared static SVG top-view fighter, matching the detailed pitch/roll art. Add canopy, intakes, swept wings, twin fins, stabilizers, and nozzle detail without assets or runtime updates. Replace em dashes with regular hyphens in source, UI copy, tests, and documentation. Preserve controls, layout, palette, physics, and paused-system exclusions.
+
 - **10.857** Redraw pitch and roll diagrams as distinct fighter side/front views with canopy, intakes, swept wings, tail fins, and a visible bank angle. Keep existing card dimensions, palette, labels, and static SVG rendering. Rename the launch kicker to “Flight Simulator.” No controls or physics changes.
 
 - **10.856** Unify native course category/sort and preference dropdowns with navy popup panels, blue accents, pale-orange selection, bounded scrolling, and standard browser fallback. Rebuild all four in-game settings categories around the reference-page header, numbered sidebar, grouped cards, and fixed action/footer bars; retain every preference node and binding. Make Escape dismiss an open native picker before global pause handling and cover unsupported selectors. Reset content scroll when switching settings categories. Bound course-card columns to stop narrow-window horizontal overflow. Add preference/label preservation, stylesheet/fallback, key-routing, and scroll regressions; preserve flight physics and paused-system exclusions. Visually check both course dropdowns and all four settings categories, including expanded audio/key bindings, fullscreen/windowed layouts, keyboard selection, and picker Escape preserving pause. All 64 focused tests and the production build pass.

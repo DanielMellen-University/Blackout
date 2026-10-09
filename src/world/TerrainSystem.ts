@@ -183,7 +183,7 @@ interface Chunk {
   targetAlpha: number
   /** Marked for removal after fade-out completes. */
   fadingOut: boolean
-  /** Last applied opacity — skip material walks when unchanged. */
+  /** Last applied opacity - skip material walks when unchanged. */
   appliedAlpha: number
   /** Terrain and water meshes are cached so settled materials can be swapped without tree searches. */
   terrainMesh: Mesh
@@ -1086,7 +1086,7 @@ export class TerrainSystem {
         chunk.targetAlpha = 0
       }
 
-      // Already stable fully opaque — no per-frame material work
+      // Already stable fully opaque - no per-frame material work
       if (
         !chunk.fadingOut &&
         chunk.alpha >= 0.995 &&
@@ -1360,7 +1360,7 @@ export class TerrainSystem {
       if (obj.name === 'TerrainChunk' || obj.name === 'WaterSurface') {
         obj.geometry.dispose()
       }
-      // Materials were cloned per chunk for fade — free them
+      // Materials were cloned per chunk for fade - free them
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
       for (const m of mats) {
         if (m === this.groundMatNear || m === this.groundMatFar || m === this.waterMat) continue

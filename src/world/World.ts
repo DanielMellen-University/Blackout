@@ -127,7 +127,7 @@ export class World {
   readonly settlements: SettlementSystem
   readonly traffic: AirTrafficSystem
   readonly sun: DirectionalLight
-  /** Cool moonlight — no shadows (cheap second key light). */
+  /** Cool moonlight - no shadows (cheap second key light). */
   readonly moon: DirectionalLight
   readonly atmosphere: Atmosphere
   readonly mission: MissionSystem
@@ -736,7 +736,7 @@ export class World {
     return sun
   }
 
-  /** Moon key light — directional only, no shadow map (keeps night cheap). */
+  /** Moon key light - directional only, no shadow map (keeps night cheap). */
   private createMoon(): DirectionalLight {
     const moon = new DirectionalLight(0xc8d4ff, 0)
     moon.name = 'MoonLight'

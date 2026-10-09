@@ -122,7 +122,7 @@ describe('course picker interaction', () => {
   it('uses short scan cards while retaining selected details and native expandable records', () => {
     expect(options()[0].textContent).toBe('TrainingRELAXED · CLEARPB 76,000 · SILVER')
     expect(options()[0].getAttribute('aria-label')).not.toContain('FULL LOG')
-    expect(element('.course-picker-detail').textContent).toBe('Training — Gentle orbit')
+    expect(element('.course-picker-detail').textContent).toBe('Training - Gentle orbit')
     expect(element('.course-picker-goal').textContent).toContain('GOLD · 88,000')
     expect(element('.course-picker-records').hidden).toBe(false)
     expect(element('.course-picker-records').open).toBe(false)

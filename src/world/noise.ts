@@ -43,7 +43,7 @@ export function randomizeWorldSeed(): number {
 }
 
 /**
- * Hash two numbers → 0..1. Integer bit-mix (no Math.sin) — much faster
+ * Hash two numbers → 0..1. Integer bit-mix (no Math.sin) - much faster
  * under heavy fbm sampling.
  */
 export function hash2(x: number, z: number): number {

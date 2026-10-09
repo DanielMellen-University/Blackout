@@ -7,6 +7,13 @@ const controls = html.split('id="menu-controls"')[1]!.split('id="menu-info"')[0]
 const manual = html.split('id="menu-info"')[1]!.split('id="overlay"')[0]!
 
 describe('pilot reference pages', () => {
+  it('shares the top-view fighter between yaw and launch without a runtime dependency', () => {
+    expect(html.match(/id="fighter-top"/g)).toHaveLength(1)
+    expect(html.match(/href="#fighter-top"/g)).toHaveLength(2)
+    expect(controls).toContain('data-plane-view="top"')
+    for (const detail of ['fighter-canopy', 'fighter-detail', 'fighter-nozzle']) expect(html).toContain(`class="${detail}"`)
+    expect(html).not.toContain('class="blueprint-aircraft"')
+  })
   it('uses distinct fighter views for pitch and roll and the requested launch label', () => {
     expect(html).toContain('<p class="title-kicker">Flight Simulator</p>')
     expect(html).not.toContain('Independent flight / F-35')
