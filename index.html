@@ -13,15 +13,15 @@
     <div id="app">
       <canvas id="game" oncontextmenu="return false;"></canvas>
       <svg class="airframe-definitions" width="0" height="0" aria-hidden="true" focusable="false">
-        <defs><symbol id="fighter-top" viewBox="0 0 240 240">
+        <defs><symbol id="fighter-top" viewBox="0 0 240 80">
           <g class="fighter-top-view">
-            <path d="M106 78 L43 136 L41 152 L105 132 Z M134 78 L197 136 L199 152 L135 132 Z"/>
-            <path d="M109 164 L77 188 L73 201 L110 190 Z M131 164 L163 188 L167 201 L130 190 Z"/>
-            <path d="M120 8 L132 56 L135 80 L132 110 L134 145 L131 179 L130 200 H110 L109 179 L106 145 L108 110 L105 80 L108 56 Z"/>
-            <path class="fighter-canopy" d="M120 45 C112 49 111 65 113 80 L120 87 L127 80 C129 65 128 49 120 45 Z"/>
-            <path d="M105 141 L91 166 L94 185 L110 165 Z M135 141 L149 166 L146 185 L130 165 Z"/>
-            <path class="fighter-detail" d="M105 87 L113 99 L111 116 L102 108 Z M135 87 L127 99 L129 116 L138 108 Z M120 100 V189 M51 142 L99 122 M189 142 L141 122 M98 166 L104 151 M142 166 L136 151"/>
-            <path class="fighter-nozzle" d="M111 200 H129 L130 212 H110 Z M115 203 V210 M120 203 V210 M125 203 V210"/>
+            <path d="M145 34 L119 12 H105 L113 38 Z"/>
+            <path d="M48 42 L94 36 L121 33 L153 27 L171 29 L206 35 L174 42 L135 47 L102 51 L65 50 L49 49 Z"/>
+            <path class="fighter-canopy" d="M141 34 Q151 23 161 28 L175 32 L157 37 Z"/>
+            <path d="M148 40 L109 68 L87 70 L107 48 Z"/>
+            <path d="M69 40 L59 26 L69 24 L87 38 Z M78 46 L62 59 L72 58 L97 47 Z"/>
+            <path class="fighter-detail" d="M121 38 L140 36 L132 43 L114 45 Z M70 45 L106 41 M176 35 H198"/>
+            <path class="fighter-nozzle" d="M48 42 L42 43 L43 49 H49 Z M45 44 V48"/>
           </g>
         </symbol></defs>
       </svg>
@@ -45,7 +45,7 @@
                 <path d="M0 42H380M0 85H380M0 128H380M76 0V170M152 0V170M228 0V170M304 0V170" />
                 <ellipse cx="190" cy="85" rx="142" ry="65" /><path d="M20 85H360M190 8V162" />
               </g>
-              <use href="#fighter-top" x="105" y="0" width="170" height="170" />
+              <use href="#fighter-top" x="70" y="45" width="240" height="80" />
               <circle class="blueprint-route" cx="326" cy="31" r="5" /><path class="blueprint-route" d="M272 64 294 43 321 32" fill="none" />
               <text x="18" y="157">AIRFRAME / F-35</text><text x="282" y="157">READY TO FLY</text>
             </svg>
@@ -316,7 +316,7 @@
               <div class="axis-grid">
                 <section class="axis-card"><span class="guide-number">01 / PITCH</span>
                   <svg viewBox="0 0 240 80" aria-hidden="true">
-                    <path class="axis-track" d="M20 62 Q120 -18 220 62"/>
+                    <path class="axis-track" d="M20 62 Q120 -62 230 62"/>
                     <g class="axis-aircraft" data-plane-view="side" transform="rotate(-8 120 44)">
                       <path d="M48 40 L73 39 L66 17 L79 17 L94 38 L137 35 L149 31 L161 32 L181 39 L205 43 L171 48 L104 51 L51 48 Z"/>
                       <path class="axis-canopy" d="M139 35 Q146 25 158 30 L174 37 Z"/>
@@ -324,19 +324,19 @@
                       <path d="M80 44 L64 51 L98 49 L107 45 Z"/>
                       <path class="axis-detail" d="M52 40 V48 M57 40 V48 M114 42 L134 42 L129 48 H113 Z M176 42 L194 43 M76 22 L86 37"/>
                     </g>
-                    <path class="axis-arrow" d="M205 35 L220 62 L191 59"/>
+                    <path class="axis-arrow" d="M176 15 Q220 10 230 62 M223 54 L230 62 L233 52"/>
                   </svg>
                   <h3>Nose up / down</h3><div class="guide-keys"><kbd>W</kbd><kbd>S</kbd></div><p id="controls-pitch-label">Pitch (W up / S down by default)</p></section>
                 <section class="axis-card"><span class="guide-number">02 / YAW</span>
                   <svg viewBox="0 0 240 80" aria-hidden="true">
-                    <path class="axis-track" d="M35 56 Q120 -20 205 56"/>
-                    <g data-plane-view="top" transform="rotate(55 120 40)"><use href="#fighter-top" x="65" y="-15" width="110" height="110" /></g>
-                    <path class="axis-arrow" d="M184 48 L205 56 L203 35"/>
+                    <path class="axis-track" d="M20 62 Q120 -62 230 62"/>
+                    <g data-plane-view="top"><use href="#fighter-top" width="240" height="80" /></g>
+                    <path class="axis-arrow" d="M176 15 Q220 10 230 62 M223 54 L230 62 L233 52"/>
                   </svg>
                   <h3>Nose left / right</h3><div class="guide-keys"><kbd id="controls-yaw-keys">A</kbd><kbd id="controls-yaw-keys-secondary">D</kbd></div><p id="controls-yaw-label">Yaw (A left / D right by default)</p></section>
                 <section class="axis-card"><span class="guide-number">03 / ROLL</span>
                   <svg viewBox="0 0 240 80" aria-hidden="true">
-                    <path class="axis-track" d="M35 60 Q45 2 120 8 Q195 2 205 60"/>
+                    <path class="axis-track" d="M25 64 C24 -12 213 -12 230 64"/>
                     <g class="axis-aircraft" data-plane-view="front" transform="rotate(-12 120 44)">
                       <path d="M87 43 L88 18 L95 20 L105 43 Z M153 43 L152 18 L145 20 L135 43 Z"/>
                       <path d="M109 43 L82 42 L30 49 L30 53 L108 50 Z M131 43 L158 42 L210 49 L210 53 L132 50 Z"/>
@@ -344,7 +344,7 @@
                       <path class="axis-canopy" d="M114 39 L116 32 Q120 28 124 32 L126 39 Z"/>
                       <path class="axis-detail" d="M103 40 L111 43 L109 49 L101 48 Z M137 40 L129 43 L131 49 L139 48 Z M120 44 V55 M41 50 L99 46 M199 50 L141 46"/>
                     </g>
-                    <path class="axis-arrow" d="M189 40 L205 60 L219 42"/>
+                    <path class="axis-arrow" d="M196 16 Q223 32 230 64 M223 56 L230 64 L233 54"/>
                   </svg>
                   <h3>Bank the wings</h3><div class="guide-keys"><kbd id="controls-roll-keys">Q</kbd><kbd id="controls-roll-keys-secondary">E</kbd></div><p id="controls-roll-label">Roll (Q right / E left by default)</p></section>
               </div>

@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.858** is current. Previous ship: **10.857**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.859** is current. Previous ship: **10.858**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.859 corrects the yaw/launch artwork to match the approved pitch/roll style, using wide oblique silhouettes at the same drawing scale. All four share translucent blue fill, outline weight, rounded joins, canopy fill, and subdued detail lines. Motion arrows use curved shafts, compact arrowheads, and rounded strokes. Preserve existing pitch/roll geometry, controls, layout, and physics.
 
 Chunk 10.858 replaces the yaw and launch-screen jet with a shared static top-view fighter, including canopy, intakes, swept wings, twin fins, stabilizers, and nozzle detail. Replace em dashes with hyphens across source, UI copy, tests, and documentation. Existing layout, bindings, flight physics, and paused-system exclusions remain unchanged.
 

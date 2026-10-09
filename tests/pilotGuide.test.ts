@@ -7,12 +7,21 @@ const controls = html.split('id="menu-controls"')[1]!.split('id="menu-info"')[0]
 const manual = html.split('id="menu-info"')[1]!.split('id="overlay"')[0]!
 
 describe('pilot reference pages', () => {
-  it('shares the top-view fighter between yaw and launch without a runtime dependency', () => {
+  it('shares the oblique fighter and the same illustration styling across all four aircraft', () => {
     expect(html.match(/id="fighter-top"/g)).toHaveLength(1)
     expect(html.match(/href="#fighter-top"/g)).toHaveLength(2)
     expect(controls).toContain('data-plane-view="top"')
     for (const detail of ['fighter-canopy', 'fighter-detail', 'fighter-nozzle']) expect(html).toContain(`class="${detail}"`)
     expect(html).not.toContain('class="blueprint-aircraft"')
+    expect(html).toContain('id="fighter-top" viewBox="0 0 240 80"')
+    expect(controls).toContain('<use href="#fighter-top" width="240" height="80" />')
+    const css = read('src/style.css')
+    expect(css).toContain('.axis-aircraft, .fighter-top-view { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5;')
+    expect(css).not.toContain('vector-effect: non-scaling-stroke')
+    const arrows = [...controls.matchAll(/class="axis-arrow" d="([^"]+)"/g)]
+    expect(arrows).toHaveLength(3)
+    for (const [, path] of arrows) expect(path).toMatch(/^M[\d ]+ Q[\d ]+ M[\d ]+ L[\d ]+ L[\d ]+$/)
+    expect(read('src/ui/pilotGuide.css')).toContain('stroke-linecap: round; stroke-linejoin: round;')
   })
   it('uses distinct fighter views for pitch and roll and the requested launch label', () => {
     expect(html).toContain('<p class="title-kicker">Flight Simulator</p>')

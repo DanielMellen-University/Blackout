@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.859** Correct the mismatched yaw/launch aircraft illustration style. Replace the narrow orthographic top view with a wide oblique fighter, sized like the approved pitch/roll diagrams. Share their exact translucent blue fill, outline weight, line joins, canopy fill, and detail opacity across all four drawings. Replace oversized chevrons with curved motion arrows, compact arrowheads, and rounded strokes. Preserve pitch/roll geometry, surrounding layout, bindings, and physics.
+
 - **10.858** Redraw yaw and launch-screen aircraft with a shared static SVG top-view fighter, matching the detailed pitch/roll art. Add canopy, intakes, swept wings, twin fins, stabilizers, and nozzle detail without assets or runtime updates. Replace em dashes with regular hyphens in source, UI copy, tests, and documentation. Preserve controls, layout, palette, physics, and paused-system exclusions.
 
 - **10.857** Redraw pitch and roll diagrams as distinct fighter side/front views with canopy, intakes, swept wings, tail fins, and a visible bank angle. Keep existing card dimensions, palette, labels, and static SVG rendering. Rename the launch kicker to “Flight Simulator.” No controls or physics changes.

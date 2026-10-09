@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.858**. Previous roadmap chunk: **10.857**.
-Recent changes from **10.858**. Redraw the yaw and launch-screen aircraft using one detailed top-view fighter illustration. Replace em dashes with regular hyphens throughout source, UI copy, and documentation. Controls and flight physics are unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.859**. Previous roadmap chunk: **10.858**.
+Recent changes from **10.859**. Match yaw and the launch-screen aircraft to the approved pitch/roll illustration style: wide oblique silhouettes, translucent blue fill, and the same outline and canopy treatment. Clean up the three motion arrows with curved shafts, compact arrowheads, and rounded strokes. Controls, layout, and physics are unchanged.
 
 ## Run
 
