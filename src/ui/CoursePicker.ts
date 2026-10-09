@@ -1103,9 +1103,9 @@ export class CoursePicker {
     const recordCopy = selected ? [selected.meta, selected.stats].filter(Boolean).join(' · ') : ''
     this.stats.textContent = recordCopy
     this.stats.hidden = !recordCopy
-    this.records.hidden = !recordCopy
+    this.records.hidden = !recordCopy || selected?.freeFlight === true
     if (!recordCopy) this.records.open = false
-    this.goal.hidden = !selected
+    this.goal.hidden = !selected || selected.freeFlight === true
     const goal = selected ? courseSortieGoal(selected) : null
     const goalTitle = goal ? `NEXT MISSION · ${goal.title}` : ''
     const goalDetail = goal?.detail ?? ''

@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.863**. Previous roadmap chunk: **10.862**.
-Recent changes from **10.863**. Center the bounded launch panel with equal top/bottom spacing, shorten the mission grid, and move a three-step takeoff brief below pilot rank. Replace the favorites bar with independent navy/orange mission stars. Free flight now says “Explore freely”; Daily challenge says “New mission daily.” Actual EST reset wiring and unique world-generation conditions remain deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.864**. Previous roadmap chunk: **10.863**.
+Recent changes from **10.864**. Free flight is an open sandbox: no objectives, contracts, checkpoints, score, combos, ghosts, mission prompts, or automatic completion on landing. Hide its Flight systems card and replace the BLACKOUT badge with FREE FLIGHT. Keep standalone flight instruments, exploration navigation, physics, and crash cinematics; crashes offer a simple Fly again/New world screen. Existing mission records are preserved. Actual EST reset wiring and unique world-generation conditions remain deferred.
 
 ## Run
 
@@ -41,6 +41,8 @@ Launch and Pause > Next mission share a featured row: **Free flight**, **Trainin
 Regular mission cards have an independent star in the top-right: navy when unsaved, orange when favorited. Clicking a star never selects or launches that mission. Select a regular mission and press F, or Tab to its star and use Enter/Space. Favorites share existing saved data across both pickers. Featured modes and Random world have no stars. The launch panel stays centered and fully bounded; shorter windows scroll its columns internally. The takeoff brief below pilot rank follows your configured controls.
 
 Weekly and Monthly modes are hidden from browsing. Saved selections of these modes fall back to Training orbit; old records and explicit replay links remain supported. A saved Ops filter falls back to All courses.
+
+Free flight has no mission goals or score. Land and take off again without ending the session. Its Flight systems card and mission progress/records are hidden; speed, engine, altitude, attitude, and optional landmark navigation remain available. Crash cinematics still play, followed by a simple restart screen. Other modes keep their mission UI and scoring.
 
 Daily challenge displays a wall-clock countdown to midnight EST (fixed UTC-5, year-round). This countdown is UI-only preparation: challenge seeds, weather, routes, record keys, replays, and the actual UTC rollover are unchanged. Wiring the actual reset to EST and adding unique world-generation conditions per mission are deferred to the next phase.
 

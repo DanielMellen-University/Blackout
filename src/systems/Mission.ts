@@ -1177,7 +1177,7 @@ export class MissionSystem {
     this.summary.maxAltitudeMeters = summary.maxAltitudeMeters
     const routeLabel = resolution.fallbackUsed ? `FALLBACK ${summary.label}` : summary.label
     this.routeBriefingText = this.profile === 'free'
-      ? `FREE FLIGHT / EXPLORE / ${summary.modifierLabel} / ${summary.scoringFocusLabel}`
+      ? 'FREE FLIGHT / EXPLORE FREELY'
       : [
         `ROUTE ${routeLabel}`,
         summary.challengeLabel,

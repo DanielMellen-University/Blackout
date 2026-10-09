@@ -1044,6 +1044,7 @@ export function engineFuelAvailabilityBanner(
 export class HUD {
   private readonly hudRoot: HTMLElement | null
   private readonly overlayRoot: HTMLElement | null
+  private readonly flightModeLabel: HTMLElement | null
   private readonly posEl: HTMLElement | null
   private readonly verticalSpeedEl: HTMLElement | null
   private readonly gEl: HTMLElement | null
@@ -1333,6 +1334,7 @@ export class HUD {
   constructor(root: Document = document) {
     this.hudRoot = root.getElementById('hud')
     this.overlayRoot = root.getElementById('overlay')
+    this.flightModeLabel = root.getElementById('flight-mode-label')
     this.posEl = root.getElementById('hud-pos')
     this.verticalSpeedEl = root.getElementById('hud-vs')
     this.gEl = root.getElementById('hud-g')
@@ -1466,6 +1468,8 @@ export class HUD {
   }
 
   update(opts: {
+    /** Sandbox mode hides goals and scoring while retaining flight instruments. */
+    freeFlight?: boolean
     y: number
     /** Vertical velocity in metres per second, positive while climbing. */
     verticalSpeed?: number
@@ -1608,6 +1612,8 @@ export class HUD {
     flightPathX?: number
     flightPathY?: number
   }): void {
+    if (this.overlayRoot) this.setClass(this.overlayRoot, 'free-flight', opts.freeFlight === true)
+    if (this.flightModeLabel) this.setText(this.flightModeLabel, opts.freeFlight ? 'FREE FLIGHT' : 'BLACKOUT')
     if (this.posEl) {
       const altitude = Number.isFinite(opts.y) ? Math.round(opts.y) : 0
       const altitudeChanged = altitude !== this.altitudeValue

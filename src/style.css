@@ -3,6 +3,14 @@
  * Structural layouts and state cues share one palette and spacing system.
  */
 
+/* Sandbox keeps the standalone instruments, without the Flight systems card.
+ * Override both minimal/full HUD layouts and runtime visibility. */
+#overlay.free-flight :is(#phase-badge, #hud),
+.free-flight-report :is(.result-grid, .report-records, .report-share,
+  #result-summary, #result-conditions) {
+  display: none !important;
+}
+
 :root {
   color-scheme: dark;
   --bg: #080f20;

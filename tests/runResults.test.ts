@@ -725,15 +725,21 @@ describe('run results focus flow', () => {
     vi.unstubAllGlobals()
   })
 
-  it('labels a free-flight result as a scenic mission', () => {
+  it('keeps free-flight crash reports simple and restores normal mission reports', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
     vi.stubGlobal('document', fixture.document)
     const results = new RunResults(fixture.document as unknown as Document)
 
-    results.show({ ...result, freeFlight: true })
-    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('FREE FLIGHT COMPLETE')
-    expect(elementsFor(fixture.document, 'result-summary')?.textContent).toContain('SCENIC MISSION COMPLETE')
+    const states = vi.spyOn(fixture.root.classList, 'toggle')
+    results.show({ ...result, freeFlight: true, endedByCrash: true }, 'Free flight')
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('CRASH')
+    expect(states).toHaveBeenCalledWith('free-flight-report', true)
+    expect(fixture.retry.textContent).toBe('Fly again')
+    expect(fixture.root.getAttribute('aria-describedby')).toBe('result-coaching')
+    results.show(result)
+    expect(states).toHaveBeenCalledWith('free-flight-report', false)
+    expect(fixture.retry.textContent).toBe('Retry same course')
     results.dispose()
     vi.unstubAllGlobals()
   })

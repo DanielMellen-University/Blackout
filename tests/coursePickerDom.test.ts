@@ -222,7 +222,10 @@ describe('course picker interaction', () => {
     expect(element('.course-picker-stats').textContent).toContain('LONG META')
     picker.setValue('free')
     expect(element('.course-picker-goal').textContent).toContain('No checkpoint clock')
+    expect(element('.course-picker-goal').hidden).toBe(true)
     expect(element('.course-picker-records').hidden).toBe(true)
+    picker.setValue('training')
+    expect(element('.course-picker-goal').hidden).toBe(false)
   })
 
   it('keeps a tab stop and identifies the actual selected course when it is filtered out', () => {

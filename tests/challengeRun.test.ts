@@ -275,29 +275,43 @@ describe('ChallengeRun', () => {
     ).toBeNull()
   })
 
-  it('arms a no-gate free-flight sortie on takeoff and completes on landing', () => {
-    const run = new ChallengeRun(null)
-    run.reset('free-flight', 0)
-    expect(run.objectiveLabel).toBe('FREE FLIGHT / TAKE OFF')
+  it('keeps free flight unscored and open after landing without altering saved mission records', () => {
+    const values = new Map([['blackout.history.free-flight', '{"runStreak":3,"runs":4}']])
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+    }
+    const saved = [...values]
+    const run = new ChallengeRun(storage)
+    run.reset('free-flight', 0, 'balanced', 42, true)
+    expect(run.objectiveLabel).toBe('Explore freely')
+    expect(run.contractLabel).toBe('')
     run.update(0.5, 0)
     expect(run.phase).toBe('ready')
     run.update(0.5, 8, 160)
-    expect(run.phase).toBe('returning')
-    expect(run.objectiveLabel).toBe('FREE FLIGHT / RETURN & LAND')
-    run.recordAltitudeMilestone(1_500)
+    expect(run.phase).toBe('running')
+    expect(run.currentScorePreview).toBe(0)
     const result = run.finishLanding({
       verticalSpeed: -1,
       groundSpeed: 20,
       pitchRad: 0,
       rollRad: 0,
     })
-    expect(result).not.toBeNull()
-    expect(result!.gateScore).toBe(0)
-    expect(result!.freeFlight).toBe(true)
-    expect(result!.altitudeMilestoneM).toBe(1_500)
-    expect(result!.altitudeScore).toBe(500)
-    expect(run.phase).toBe('complete')
-    expect(run.objectiveLabel).toBe('FREE FLIGHT COMPLETE')
+    expect(result).toBeNull()
+    expect(run.phase).toBe('running')
+    run.update(1, 100, 1_500)
+    expect(run.currentScorePreview).toBe(0)
+    expect(run.peakAltitudeM).toBe(1_500)
+    const crash = run.crashDebrief(true)
+    expect(crash.freeFlight).toBe(true)
+    expect(crash.endedByCrash).toBe(true)
+    expect(crash.contractLabel).toBeUndefined()
+    expect([...values]).toEqual(saved)
+    run.reset('training-orbit', 1, 'balanced', 42)
+    run.update(0.5, 100)
+    run.recordGate(1)
+    expect(run.phase).toBe('returning')
+    expect(run.finishLanding({ verticalSpeed: -1, groundSpeed: 20, pitchRad: 0, rollRad: 0 })).not.toBeNull()
   })
 
   it('tracks meaningful consecutive precision gate streaks without changing score state', () => {

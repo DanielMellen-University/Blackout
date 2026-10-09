@@ -247,6 +247,9 @@ export class RunResults {
     this.returnFocus = active instanceof HTMLElement ? active : null
     for (const className of MEDAL_CLASSES) this.root.classList.remove(className)
     const crashed = result.endedByCrash === true
+    this.root.classList.toggle('free-flight-report', result.freeFlight === true)
+    const retry = document.getElementById('btn-retry')
+    if (retry) retry.textContent = result.freeFlight ? 'Fly again' : 'Retry same course'
     const ditched = crashed && result.ditched === true
     const label = typeof courseLabel === 'string' ? courseLabel.trim() : ''
     const rawCourse = result.courseId && result.courseId.trim().length > 0 ? result.courseId.trim() : ''
@@ -649,6 +652,12 @@ export class RunResults {
     if (Number.isFinite(result.bestTimeSec)) bestBits.push(`FASTEST ${formatTime(result.bestTimeSec!)}`)
     this.best.textContent = bestBits.join(' · ')
     this.best.classList.toggle('new-best', result.isNewBest)
+    for (const section of this.root.querySelectorAll<HTMLElement>('.result-grid, .report-records, .report-share')) {
+      section.hidden = result.freeFlight === true
+    }
+    this.root.setAttribute('aria-describedby', result.freeFlight
+      ? 'result-coaching'
+      : this.coaching ? 'result-summary result-coaching' : 'result-summary')
     this.root.hidden = false
     document.getElementById('btn-retry')?.focus({ preventScroll: true })
   }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  HUD,
   afterburnerHeatIntensity,
   biomeSurveyAriaLabel,
   biomeSurveyHudLabel,
@@ -130,6 +131,25 @@ import {
 } from '../src/ui/HUD'
 
 describe('HUD value formatting', () => {
+  it('switches the active free-flight badge and card visibility mode back for missions', () => {
+    const classes = new Set<string>()
+    const overlay = { classList: { toggle: (name: string, value: boolean) => {
+      if (value) classes.add(name)
+      else classes.delete(name)
+    } } }
+    const badge = { textContent: 'BLACKOUT' }
+    const root = { getElementById: (id: string) => id === 'overlay' ? overlay
+      : id === 'flight-mode-label' ? badge : null } as unknown as Document
+    const hud = new HUD(root)
+    const frame = { y: 0, speed: 0, cameraMode: 'chase', fps: 60 }
+    hud.update({ ...frame, freeFlight: true })
+    expect(classes.has('free-flight')).toBe(true)
+    expect(badge.textContent).toBe('FREE FLIGHT')
+    hud.update({ ...frame, freeFlight: false })
+    expect(classes.has('free-flight')).toBe(false)
+    expect(badge.textContent).toBe('BLACKOUT')
+  })
+
   it('formats the engine equilibrium speed as a compact knots cue', () => {
     expect(targetSpeedHudLabel(0)).toBe('TGT 0')
     expect(targetSpeedHudLabel(100)).toBe('TGT 194')

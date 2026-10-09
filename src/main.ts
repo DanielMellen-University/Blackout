@@ -1541,8 +1541,8 @@ export async function boot(): Promise<void> {
       activeSortie.course.contractCatalog === true,
     )
     ghost.reset(activeCourseId)
-    ghost.setVisible(playing && ghostVisible)
-    challenge.recordBiome(world.spawn.biome)
+    ghost.setVisible(playing && ghostVisible && activeSortie.course.profile !== 'free')
+    if (activeSortie.course.profile !== 'free') challenge.recordBiome(world.spawn.biome)
     terrainRegion = terrainRegionLabel(world.spawn.biome)
     banner = null
     crashMessage = 'CRASH - press R'
@@ -1580,7 +1580,9 @@ export async function boot(): Promise<void> {
           ? `REPLAY SEED ${formatWorldSeed(world.worldSeed)}`
           : 'NEW WORLD'
           : 'RETRY SAME COURSE'
-      showBanner(`${resetLabel} / ${world.mission.routeBriefing}`, 7000)
+      showBanner(activeSortie.course.profile === 'free'
+        ? 'FREE FLIGHT / EXPLORE FREELY'
+        : `${resetLabel} / ${world.mission.routeBriefing}`, 7000)
     }
   }
 
@@ -1730,7 +1732,7 @@ export async function boot(): Promise<void> {
     cameras.setMode(cameraPreference, aircraft)
     ghostVisible = DEFAULT_GHOST_VISIBLE
     writeGhostVisibilityPreference(qualityStorage, ghostVisible)
-    ghost.setVisible(ghostVisible && playing)
+    ghost.setVisible(ghostVisible && playing && activeSortie.course.profile !== 'free')
     if (playing) showBanner('SETTINGS RESET TO DEFAULTS', 1800, 'info')
   }
 
@@ -1891,6 +1893,7 @@ export async function boot(): Promise<void> {
   const tick = (nowMs: number): void => {
     if (disposed) return
     requestAnimationFrame(tick)
+    const freeFlight = activeSortie.course.profile === 'free'
     const countdownMask = (!playing || menu.open) && !document.hidden
       ? (titleCoursePickerRoot?.closest('[hidden]') ? 0 : 1)
         | (menuCoursePickerRoot?.closest('[hidden]') ? 0 : 2)
@@ -1978,7 +1981,7 @@ export async function boot(): Promise<void> {
         writeCameraModePreference(qualityStorage, mode)
         showBanner(cameraModeCue(mode), 1200, 'info')
       }
-      if (input.consumeGhostToggle()) {
+      if (input.consumeGhostToggle() && !freeFlight) {
         ghostVisible = !ghostVisible
         writeGhostVisibilityPreference(qualityStorage, ghostVisible)
         ghost.setVisible(ghostVisible && playing)
@@ -2061,9 +2064,11 @@ export async function boot(): Promise<void> {
           audio.playCue('sonic-boom')
           if (!banner || bannerUntil <= nowMs) showBanner('MACH 1 / SONIC BOOM', 1500, 'success')
         }
-        const comboExpired = combo.update(dt)
-        if (combo.consumeExpiryWarning()) showBanner('COMBO ENDING / HIT A GATE OR STUNT', 1100, 'info')
-        if (comboExpired) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
+        if (!freeFlight) {
+          const comboExpired = combo.update(dt)
+          if (combo.consumeExpiryWarning()) showBanner('COMBO ENDING / HIT A GATE OR STUNT', 1100, 'info')
+          if (comboExpired) showBanner('COMBO EXPIRED / KEEP FLYING', 1200, 'info')
+        }
 
         const atAirfield = withinAirfieldRefuelRadius(
           aircraft.position.x,
@@ -2218,7 +2223,7 @@ export async function boot(): Promise<void> {
           }
         }
 
-        if (aircraft.status !== 'crashed') {
+        if (aircraft.status !== 'crashed' && !freeFlight) {
           const altitudeMilestone = altitudeMilestones.update(
             aircraft.position.y - world.spawn.y,
             !aircraft.onGround,
@@ -2305,26 +2310,28 @@ export async function boot(): Promise<void> {
           const sampled = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z) ??
             sampleTerrainSurface(aircraft.position.x, aircraft.position.z)
           terrainRegion = terrainRegionLabel(sampled.biome, sampled.waterBody)
-          challenge.recordBiome(sampled.biome)
-          challenge.recordWater(sampled.kind === 'water', 0.65, true)
-          challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
-          challenge.recordRidgeRun(sampled.biome, terrainClearanceM, 0.65, true)
-          challenge.recordWaterBody(sampled.waterBody, true)
-          const biomeCue = challenge.consumeBiomeSurveyCue()
-          const waterCue = challenge.consumeWaterBodySurveyCue()
-          if (waterCue && (!banner || bannerUntil <= nowMs)) {
-            const waterLabel = waterCue === 'sea' ? 'SEA' : waterCue.toUpperCase()
-            showBanner(
-              `WATERWAY DISCOVERED / ${waterLabel} / X${challenge.waterBodyCount}`,
-              1500,
-              'info',
-            )
-          } else if (biomeCue && (!banner || bannerUntil <= nowMs)) {
-            showBanner(
-              `BIOME SURVEY / ${biomeCue.replace('-', ' ').toUpperCase()} / X${challenge.biomeCount}`,
-              1300,
-              'success',
-            )
+          if (!freeFlight) {
+            challenge.recordBiome(sampled.biome)
+            challenge.recordWater(sampled.kind === 'water', 0.65, true)
+            challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
+            challenge.recordRidgeRun(sampled.biome, terrainClearanceM, 0.65, true)
+            challenge.recordWaterBody(sampled.waterBody, true)
+            const biomeCue = challenge.consumeBiomeSurveyCue()
+            const waterCue = challenge.consumeWaterBodySurveyCue()
+            if (waterCue && (!banner || bannerUntil <= nowMs)) {
+              const waterLabel = waterCue === 'sea' ? 'SEA' : waterCue.toUpperCase()
+              showBanner(
+                `WATERWAY DISCOVERED / ${waterLabel} / X${challenge.waterBodyCount}`,
+                1500,
+                'info',
+              )
+            } else if (biomeCue && (!banner || bannerUntil <= nowMs)) {
+              showBanner(
+                `BIOME SURVEY / ${biomeCue.replace('-', ' ').toUpperCase()} / X${challenge.biomeCount}`,
+                1300,
+                'success',
+              )
+            }
           }
           biomeSurveyCooldown = 0.65
         }
@@ -2349,7 +2356,7 @@ export async function boot(): Promise<void> {
           weather.gust,
           aircraft.thermalLift,
         )
-        ghost.record(challenge.elapsedSec, aircraft.position)
+        if (!freeFlight) ghost.record(challenge.elapsedSec, aircraft.position)
       }
 
       world.mission.setRouteTraceVisible(
@@ -2368,7 +2375,7 @@ export async function boot(): Promise<void> {
       aircraft.present(aircraft.status === 'crashed' ? 1 : alpha)
       ghost.update(
         challenge.elapsedSec,
-        playing && !menu.paused && !results.open && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
+        !freeFlight && playing && !menu.paused && !results.open && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
       )
     }
 
@@ -2636,8 +2643,8 @@ export async function boot(): Promise<void> {
         pose.heading,
       )
       const gate = world.mission.activeGatePos()
-      const returning = challenge.phase === 'returning'
-      const emergencyReturn = emergencyReturnActive(engineOut, challenge.phase)
+      const returning = !freeFlight && challenge.phase === 'returning'
+      const emergencyReturn = !freeFlight && emergencyReturnActive(engineOut, challenge.phase)
       let navTarget: 'gate' | 'base' | 'city' | 'village' = returning || emergencyReturn ? 'base' : 'gate'
       let navPosition = gate
       let navTargetId: string | null = null
@@ -2738,7 +2745,7 @@ export async function boot(): Promise<void> {
         const selectedKind = selected?.kind === 'city' || selected?.kind === 'village'
           ? selected.kind
           : undefined
-        challenge.recordRadarLock(selected !== null, selectedKind, selected?.id)
+        if (!freeFlight) challenge.recordRadarLock(selected !== null, selectedKind, selected?.id)
         audio.playCue(selected ? 'radar-lock' : 'radar-lost')
         showBanner(
           selected ? `RADAR LOCK / ${selected.label}` : 'NO SETTLEMENTS IN RANGE',
@@ -2771,7 +2778,7 @@ export async function boot(): Promise<void> {
           arrivalRadius > 0 &&
           navDist <= arrivalRadius
         ) {
-          if (selectedRadarTarget.kind === 'city' || selectedRadarTarget.kind === 'village') {
+          if (!freeFlight && (selectedRadarTarget.kind === 'city' || selectedRadarTarget.kind === 'village')) {
             challenge.recordDestination(selectedRadarTarget.kind, selectedRadarTarget.id)
           }
           showBanner(radarTargetArrivalLabel(selectedRadarTarget.kind), 2000, 'success')
@@ -2803,7 +2810,7 @@ export async function boot(): Promise<void> {
         trafficSideCue = trafficAlertSide(trafficAlert.bearing)
         trafficVerticalCue = trafficAlertVertical(trafficAlert.verticalOffset)
         const newTrafficContact = trafficAlert.id !== prevTrafficAlertId
-        if (newTrafficContact) {
+        if (newTrafficContact && !freeFlight) {
           challenge.recordTrafficPass(trafficAlert.id, trafficAlert.verticalSeparation)
         }
         if (
@@ -2889,7 +2896,8 @@ export async function boot(): Promise<void> {
       hudFrame.roll = pose.roll
       hudFrame.heading = pose.heading
       hudFrame.audioMuted = audioMuted
-      hudFrame.clock = challenge.clockLabel
+      hudFrame.freeFlight = freeFlight
+      hudFrame.clock = freeFlight ? '' : challenge.clockLabel
       hudFrame.weather = world.atmosphere.weatherLabel
       hudFrame.worldSeed = world.worldSeed
       hudFrame.weatherKind = world.atmosphere.weather
@@ -2957,7 +2965,7 @@ export async function boot(): Promise<void> {
       hudFrame.trafficAlertDistance = trafficAlert?.distance ?? null
       flightBriefing.observe(aircraft.onGround, challenge.gatesPassed, challenge.phase,
         navGlide !== null, world.mission.totalGates, emergencyReturn)
-      hudFrame.controlHint = flightBriefing.visible && aircraft.status !== 'crashed'
+      hudFrame.controlHint = !freeFlight && flightBriefing.visible && aircraft.status !== 'crashed'
         ? flightBriefingHint({
           onGround: aircraft.onGround,
           speed: aircraft.speed,

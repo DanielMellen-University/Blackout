@@ -1045,16 +1045,16 @@ export class ChallengeRun {
     this.stuntRollCount = 0
     this.bestCombo = 0
     this.scorePreviewValue = 0
-    this.contract.reset(contractSeed, this.totalGates, catalog)
-    const history = this.readHistory()
+    this.contract.reset(this.freeFlight ? undefined : contractSeed, this.totalGates, !this.freeFlight && catalog)
+    const history = this.freeFlight ? null : this.readHistory()
     this.contractStreakValue = this.contract.enabled
-      ? Math.min(MAX_CONTRACT_STREAK, Math.max(0, Math.floor(history.contractStreak ?? 0)))
+      ? Math.min(MAX_CONTRACT_STREAK, Math.max(0, Math.floor(history?.contractStreak ?? 0)))
       : 0
     this.contractCuePending = false
     this.contractProgressCuePending = ''
     this.contractFailureCuePending = false
     this.gateSplits.length = 0
-    this.bestGateSplits = this.readBestTrace()
+    this.bestGateSplits = this.freeFlight ? [] : this.readBestTrace()
     this.lastPaceDeltaSec = Number.NaN
     this.gatePaceLabelDelta = Number.NaN
     this.gatePaceLabelValue = 'FIRST RUN'
@@ -1123,14 +1123,14 @@ export class ChallengeRun {
     )
     this.contractCuePending ||= !wasContractComplete && this.contract.complete
     if (this.phase === 'ready' && safeSpeed > 5) {
-      this.phase = this.totalGates > 0 ? 'running' : 'returning'
+      this.phase = this.freeFlight || this.totalGates > 0 ? 'running' : 'returning'
     }
     if (this.phase === 'running' || this.phase === 'returning') {
       this.elapsedSec += safeDt
       this.flightDistanceM = Math.min(2_000_000, this.flightDistanceM + safeDistance)
     }
     this.contract.recordPace(this.elapsedSec)
-    this.refreshScorePreview()
+    if (!this.freeFlight) this.refreshScorePreview()
   }
 
   recordGate(quality = 1): void {
@@ -1396,6 +1396,7 @@ export class ChallengeRun {
   }
 
   finishLanding(metrics: LandingMetrics, fuelFraction = 1): ChallengeResult | null {
+    if (this.freeFlight) return null
     if (this.phase !== 'returning') return null
 
     const elapsedSec = Number.isFinite(this.elapsedSec) ? Math.max(0, this.elapsedSec) : 0
@@ -1709,6 +1710,7 @@ export class ChallengeRun {
   fail(): void {
     if (this.phase === 'complete' || this.phase === 'failed') return
     this.phase = 'failed'
+    if (this.freeFlight) return
     const history = this.readHistory()
     if ((history.runStreak ?? 0) > 0 || (history.contractStreak ?? 0) > 0) {
       history.runStreak = 0
@@ -1766,9 +1768,10 @@ export class ChallengeRun {
   }
 
   get objectiveLabel(): string {
-    if (this.phase === 'ready') return this.freeFlight ? 'FREE FLIGHT / TAKE OFF' : 'TAKE OFF'
-    if (this.phase === 'returning') return this.freeFlight ? 'FREE FLIGHT / RETURN & LAND' : 'RETURN & LAND'
-    if (this.phase === 'complete') return this.freeFlight ? 'FREE FLIGHT COMPLETE' : 'RUN COMPLETE'
+    if (this.freeFlight) return 'Explore freely'
+    if (this.phase === 'ready') return 'TAKE OFF'
+    if (this.phase === 'returning') return 'RETURN & LAND'
+    if (this.phase === 'complete') return 'RUN COMPLETE'
     if (this.phase === 'failed') return 'RUN FAILED'
     return `GATE ${Math.min(this.gatesPassed + 1, this.totalGates)}/${this.totalGates}`
   }

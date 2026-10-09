@@ -102,7 +102,7 @@ export const COURSE_LIBRARY = [
   {
     id: 'free-flight',
     label: 'Free flight',
-    detail: 'Explore the terrain with no checkpoint clock',
+    detail: 'Explore freely. Land and take off again whenever you like.',
     seed: null,
     profile: 'free',
   },
