@@ -1,0 +1,51 @@
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+
+const read = (path: string): string => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
+const html = read('index.html')
+const controls = html.split('id="menu-controls"')[1]!.split('id="menu-info"')[0]!
+const manual = html.split('id="menu-info"')[1]!.split('id="overlay"')[0]!
+
+describe('pilot reference pages', () => {
+  it('preserves unique live binding labels and groups the controls', () => {
+    const main = read('src/main.ts')
+    for (const id of ['controls-pitch-label', 'controls-yaw-keys', 'controls-yaw-keys-secondary',
+      'controls-roll-keys', 'controls-roll-keys-secondary', 'controls-yaw-label', 'controls-roll-label',
+      'controls-boost-label', 'controls-airbrake-label', 'controls-gear-label']) {
+      expect(html.split(`id="${id}"`), id).toHaveLength(2)
+      expect(controls, id).toContain(`id="${id}"`)
+      expect(main, id).toContain(`getElementById('${id}')`)
+    }
+    for (const group of ['Power &amp; airframe', 'View &amp; navigation', 'Mission &amp; session', 'Controller reference']) {
+      expect(controls).toContain(group)
+    }
+    expect(controls).toContain('D-pad ↑ · ↓</dt><dd>Weather · new world')
+    expect(controls).toContain('D-pad ← · →</dt><dd>Ghost · radar target')
+    expect(controls).toContain('From results or the crash cinematic')
+    expect(controls).toContain('data-guide-view="info"')
+    expect(manual).toContain('data-guide-view="controls"')
+  })
+
+  it('gives every chapter link a unique keyboard-focusable destination', () => {
+    const links = [...manual.matchAll(/href="#(manual-[^"]+)"/g)]
+    expect(links).toHaveLength(6)
+    for (const [, id] of links) {
+      expect(manual.split(`id="${id}"`)).toHaveLength(2)
+      expect(manual).toContain(`id="${id}" class="manual-chapter" tabindex="-1"`)
+    }
+    expect(manual).toContain('aria-label="Flight manual chapters"')
+    expect(manual).toContain('two white / two red')
+    expect(manual).toContain('Water contact is a crash, not a landing')
+    expect(manual).toContain('no cockpit frame or instruments')
+    expect(manual).not.toMatch(/blackout\/redout|blackout veil|redout|vegetation|stall warning|go-around warning/i)
+  })
+
+  it('keeps desktop actions fixed and long content independently scrollable without animation', () => {
+    const css = read('src/ui/pilotGuide.css')
+    expect(html).toContain('href="/src/ui/pilotGuide.css"')
+    expect(css).toContain('grid-template-rows: auto minmax(0, 1fr) auto')
+    expect(css).toContain('overflow-y: auto')
+    expect(css).toContain('@media (max-height: 650px)')
+    expect(css).not.toMatch(/@keyframes|url\(|#[0-9a-f]{3,8}\b/i)
+  })
+})

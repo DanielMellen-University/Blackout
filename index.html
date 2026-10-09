@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blackout</title>
     <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/ui/pilotGuide.css" />
   </head>
   <body oncontextmenu="return false;">
     <div id="app">
@@ -278,50 +279,110 @@
             </div>
             <footer class="menu-footer-actions">
               <button type="button" id="menu-open-controls" class="btn-ghost">Controls reference</button>
-              <button type="button" id="menu-open-info" class="btn-ghost">Help</button>
+              <button type="button" id="menu-open-info" class="btn-ghost">Flight manual</button>
               <button type="button" id="menu-quit" class="btn-ghost btn-danger" hidden>Quit to title</button>
               <button type="button" id="menu-close" class="btn-ghost" data-menu-close>Back</button>
             </footer>
           </div>
 
-          <div id="menu-controls" class="menu-panel" hidden>
-            <p class="menu-kicker">Settings</p>
-            <h2 id="menu-controls-heading">Controls</h2>
-            <div class="ctrl-table">
-              <div><kbd>W</kbd><kbd>S</kbd></div><div id="controls-pitch-label">Pitch (W up / S down by default)</div>
-              <div><kbd id="controls-yaw-keys">A</kbd><kbd id="controls-yaw-keys-secondary">D</kbd></div><div id="controls-yaw-label">Yaw (A left / D right by default)</div>
-              <div><kbd id="controls-roll-keys">Q</kbd><kbd id="controls-roll-keys-secondary">E</kbd></div><div id="controls-roll-label">Roll (Q right / E left by default)</div>
-              <div><kbd>Shift</kbd> / <kbd>2</kbd></div><div>Engine +</div>
-              <div><kbd>Ctrl</kbd> / <kbd>1</kbd></div><div>Engine − / brake</div>
-              <div><kbd id="controls-boost-label">Space</kbd></div><div>Afterburner</div>
-              <div><kbd id="controls-airbrake-label">B</kbd></div><div>Speed brake / wheel brakes (hold, blocks throttle creep)</div>
-              <div><kbd id="controls-gear-label">G</kbd></div><div>Toggle landing gear (auto safety near ground)</div>
-              <div><kbd>V</kbd></div><div>Toggle gentle pitch and bank trim assist</div>
-              <div><kbd>X</kbd></div><div>Toggle best-run ghost path (external view)</div>
-              <div><kbd>C</kbd></div><div>Camera mode (chase / orbit / cockpit)</div>
-              <div><kbd>N</kbd></div><div>Weather</div>
-              <div><kbd>T</kbd></div><div>Cycle radar target</div>
-              <div><kbd>M</kbd></div><div>Mute audio</div>
-              <div><kbd>Y</kbd></div><div>Copy replay link</div>
-              <div><kbd>Gamepad</kbd></div><div>Left stick pitch/roll, right stick yaw, triggers throttle, A afterburner, LB brake, X gear, Y camera, B assist, View mute, Start pause, D-pad left reset, up weather, down ghost, right radar</div>
-              <div><kbd>MMB</kbd></div><div>Look around (hold)</div>
-              <div><kbd>R</kbd></div><div>New world</div>
-              <div><kbd>P</kbd> / <kbd>Esc</kbd></div><div>Pause menu</div>
+          <div id="menu-controls" class="menu-panel guide-page" hidden>
+            <header class="guide-header">
+              <div><p class="menu-kicker">Blackout / Pilot reference / 01</p><h2 id="menu-controls-heading">Controls</h2></div>
+              <span class="guide-edition">KEYBOARD + CONTROLLER</span>
+            </header>
+            <div class="guide-scroll">
+              <div class="guide-intro"><p>Three axes. One aircraft.</p><span>Key labels below follow your current settings. Change the layout, axis direction, or action keys in Settings → Controls.</span></div>
+              <div class="axis-grid">
+                <section class="axis-card"><span class="guide-number">01 / PITCH</span>
+                  <svg viewBox="0 0 240 80" aria-hidden="true"><path class="axis-track" d="M20 62 Q120 -18 220 62"/><path d="M50 48 L105 38 L133 17 L143 18 L130 39 L183 47 L133 52 L112 65 L104 63 L108 51 Z"/><path class="axis-arrow" d="M205 35 L220 62 L191 59"/></svg>
+                  <h3>Nose up / down</h3><div class="guide-keys"><kbd>W</kbd><kbd>S</kbd></div><p id="controls-pitch-label">Pitch (W up / S down by default)</p></section>
+                <section class="axis-card"><span class="guide-number">02 / YAW</span>
+                  <svg viewBox="0 0 240 80" aria-hidden="true"><path class="axis-track" d="M35 56 Q120 -20 205 56"/><path d="M120 8 L129 37 L174 56 L174 63 L129 54 L128 68 L140 73 L100 73 L112 68 L111 54 L66 63 L66 56 L111 37 Z"/><path class="axis-arrow" d="M184 48 L205 56 L203 35"/></svg>
+                  <h3>Nose left / right</h3><div class="guide-keys"><kbd id="controls-yaw-keys">A</kbd><kbd id="controls-yaw-keys-secondary">D</kbd></div><p id="controls-yaw-label">Yaw (A left / D right by default)</p></section>
+                <section class="axis-card"><span class="guide-number">03 / ROLL</span>
+                  <svg viewBox="0 0 240 80" aria-hidden="true"><path class="axis-track" d="M58 63 Q48 -9 120 8 Q192 -9 182 63"/><path d="M45 50 L110 43 L116 23 L124 23 L130 43 L195 50 L195 56 L130 53 L126 63 L114 63 L110 53 L45 56 Z"/><path class="axis-arrow" d="M168 46 L182 63 L197 48"/></svg>
+                  <h3>Bank the wings</h3><div class="guide-keys"><kbd id="controls-roll-keys">Q</kbd><kbd id="controls-roll-keys-secondary">E</kbd></div><p id="controls-roll-label">Roll (Q right / E left by default)</p></section>
+              </div>
+              <div class="guide-columns">
+                <section class="guide-card"><h3>Power &amp; airframe</h3><dl class="control-list">
+                  <div><dt><kbd>Shift</kbd> / <kbd>2</kbd></dt><dd>Increase throttle <small>Hold to raise power; release to keep it set.</small></dd></div>
+                  <div><dt><kbd>Ctrl</kbd> / <kbd>1</kbd></dt><dd>Decrease throttle</dd></div>
+                  <div><dt><kbd id="controls-boost-label">Space</kbd></dt><dd>Afterburner <small>Hold for extra thrust. Uses more fuel and heat.</small></dd></div>
+                  <div><dt><kbd id="controls-airbrake-label">B</kbd></dt><dd>Brake <small>Hold for speed brake in flight or wheel brakes on the ground.</small></dd></div>
+                  <div><dt><kbd id="controls-gear-label">G</kbd></dt><dd>Toggle landing gear <small>Automatic safety still lowers gear near the ground.</small></dd></div>
+                  <div><dt><kbd>V</kbd></dt><dd>Toggle flight assist <small>Gentle pitch and bank trim when you release an axis.</small></dd></div>
+                </dl></section>
+                <section class="guide-card"><h3>View &amp; navigation</h3><dl class="control-list">
+                  <div><dt><kbd>C</kbd></dt><dd>Cycle camera <small>Chase → orbit → unobstructed first person.</small></dd></div>
+                  <div><dt><kbd>MMB</kbd> + drag</dt><dd>Look around <small>External views only. Scroll to zoom.</small></dd></div>
+                  <div><dt><kbd>T</kbd></dt><dd>Cycle radar target <small>Select a landmark; the gate route stays unchanged.</small></dd></div>
+                  <div><dt><kbd>X</kbd></dt><dd>Toggle best-run ghost <small>Visible in external views when a recording exists.</small></dd></div>
+                  <div><dt><kbd>N</kbd></dt><dd>Cycle weather <small>Authored course conditions can be locked.</small></dd></div>
+                  <div><dt><kbd>M</kbd></dt><dd>Mute / unmute audio</dd></div>
+                </dl></section>
+              </div>
+              <section class="guide-card"><h3>Mission &amp; session</h3><dl class="control-list session-controls">
+                <div><dt><kbd>Esc</kbd> / <kbd>P</kbd></dt><dd>Pause / settings</dd></div>
+                <div><dt><kbd>R</kbd></dt><dd>Start a new world <small>Ends the current flight.</small></dd></div>
+                <div><dt><kbd>Y</kbd></dt><dd>Copy a replay link</dd></div>
+                <div><dt><kbd>Enter</kbd></dt><dd>Retry the same course <small>From results or the crash cinematic. During flight, use Pause → Retry.</small></dd></div>
+              </dl></section>
+              <details class="guide-card controller-guide"><summary>Controller reference <span>Standard Xbox / PlayStation mapping</span></summary>
+                <dl class="control-list session-controls">
+                  <div><dt>Left stick</dt><dd>Pitch / roll <small>Stick up raises the nose.</small></dd></div><div><dt>Right stick ← →</dt><dd>Yaw</dd></div>
+                  <div><dt>RT / R2 · LT / L2</dt><dd>Increase · decrease throttle</dd></div><div><dt>A / Cross</dt><dd>Afterburner</dd></div>
+                  <div><dt>LB / L1</dt><dd>Speed brake / wheel brakes</dd></div><div><dt>X / Square</dt><dd>Landing gear</dd></div>
+                  <div><dt>Y / Triangle</dt><dd>Camera</dd></div><div><dt>B / Circle</dt><dd>Flight assist</dd></div>
+                  <div><dt>View / Share</dt><dd>Mute audio</dd></div><div><dt>Start / Options</dt><dd>Pause</dd></div>
+                  <div><dt>D-pad ↑ · ↓</dt><dd>Weather · new world</dd></div><div><dt>D-pad ← · →</dt><dd>Ghost · radar target</dd></div>
+                </dl>
+              </details>
             </div>
-            <button type="button" class="btn-ghost menu-back">Back</button>
+            <footer class="guide-footer"><button type="button" class="btn-ghost menu-back">Back</button><button type="button" class="btn-play" data-guide-view="info">Flight manual <span aria-hidden="true">→</span></button></footer>
           </div>
 
-          <div id="menu-info" class="menu-panel" hidden>
-            <p class="menu-kicker">Settings</p>
-            <h2 id="menu-info-heading">Help</h2>
-            <ul class="menu-copy">
-              <li>Increase power, build speed, then pitch up to take off.</li>
-              <li>Throttle controls thrust. Climbing costs speed; afterburner is for short bursts.</li>
-              <li>Fly gates in order, then return and land. Follow the navigation arrow.</li>
-              <li>Landings finish the run. Crashes also show your score and flight data.</li>
-              <li><kbd>R</kbd> rolls a new world. Enter a safe integer seed on the launch screen to revisit an exact procedural world.</li>
-            </ul>
-            <button type="button" class="btn-ghost menu-back">Back</button>
+          <div id="menu-info" class="menu-panel guide-page" hidden>
+            <header class="guide-header"><div><p class="menu-kicker">Blackout / Pilot reference / 02</p><h2 id="menu-info-heading">Flight manual</h2></div><span class="guide-edition">F-35 / ARCADE FLIGHT</span></header>
+            <div class="manual-workspace">
+              <nav class="manual-index" aria-label="Flight manual chapters"><span class="guide-number">CONTENTS</span>
+                <a href="#manual-start"><span>01</span> First flight</a><a href="#manual-handling"><span>02</span> Handling &amp; energy</a><a href="#manual-instruments"><span>03</span> Read the instruments</a><a href="#manual-route"><span>04</span> Fly a mission</a><a href="#manual-landing"><span>05</span> Return &amp; land</a><a href="#manual-world"><span>06</span> Explore &amp; retry</a>
+                <p>Your flight stays paused while this manual is open.</p>
+              </nav>
+              <div class="guide-scroll manual-content">
+                <div class="manual-hero"><span class="guide-number">THE SHORT VERSION</span><p>Power. Climb.<br>Find your line.</p><span>This is an arcade jet. Point the nose where you want to fly, manage your speed, and leave room to recover.</span>
+                  <svg viewBox="0 0 520 155" aria-hidden="true"><path class="manual-terrain" d="M0 140 L70 140 L125 122 L175 134 L245 80 L280 97 L335 40 L400 103 L455 71 L520 115"/><path class="manual-route" d="M20 128 C140 128 160 15 290 24 S410 130 505 128"/><path class="manual-runway" d="M425 141 H515 M440 136 H450 M462 136 H472 M484 136 H494"/><circle cx="210" cy="42" r="9"/><circle cx="341" cy="47" r="9"/></svg>
+                </div>
+                <section id="manual-start" class="manual-chapter" tabindex="-1"><span class="guide-number">01 / FIRST FLIGHT</span><h3>Get off the runway.</h3>
+                  <ol class="flight-checklist"><li><strong>Pick Training Orbit.</strong> It is the easiest place to learn the gate-and-return loop.</li><li><strong>Raise power and roll straight.</strong> Hold Shift / 2, or the right trigger. Release it when the engine command is where you want it.</li><li><strong>Pitch up gently once moving.</strong> Use the pitch-up direction shown on the Controls page; avoid a steep climb immediately after liftoff.</li><li><strong>Build a little height.</strong> Gear retracts automatically once clear of the ground unless you have manually overridden it.</li></ol>
+                  <p class="manual-note">Start in chase view. You can see your bank angle and the space around the jet. Use C to change views.</p>
+                </section>
+                <section id="manual-handling" class="manual-chapter" tabindex="-1"><span class="guide-number">02 / HANDLING &amp; ENERGY</span><h3>The nose is your flight path.</h3>
+                  <div class="manual-pair"><div><h4>Turn with intent</h4><p>Roll sets your bank; pitch moves the nose in that banked plane. Combine them for a sweeping turn, then roll back toward level. Yaw nudges the nose left or right for corrections.</p></div><div><h4>Keep some speed in reserve</h4><p>Throttle changes thrust, not instant speed. Climbing spends speed; descending builds it. Ease the climb or add power if the jet starts to sag.</p></div></div>
+                  <p>Afterburner is a burst of extra thrust, not a separate throttle setting. Hold it when you need acceleration, then release it. Heat and fuel can limit it. For a quick slowdown, reduce throttle and hold the brake.</p>
+                  <p class="manual-note">Flight assist trims pitch and bank when those inputs are released. It is not autopilot and will not steer you through gates.</p>
+                </section>
+                <section id="manual-instruments" class="manual-chapter" tabindex="-1"><span class="guide-number">03 / INSTRUMENTS</span><h3>Read what matters.</h3>
+                  <dl class="instrument-guide"><div><dt>IAS / KT</dt><dd>Your current airspeed in knots. The target marker shows the speed associated with the current engine command—not a cruise-control setting.</dd></div><div><dt>ENGINE / FUEL</dt><dd>Commanded engine power, afterburner availability, and remaining fuel. Long boosts spend fuel and build heat.</dd></div><div><dt>ALT / VERTICAL SPEED</dt><dd>Height above the local surface and your climb or descent rate. Rising terrain can reduce clearance even while you are climbing.</dd></div><div><dt>HEADING / ATTITUDE</dt><dd>The compass shows direction. The attitude display shows pitch and bank relative to the horizon.</dd></div><div><dt>NAVIGATION</dt><dd>Target direction and distance. A target behind you needs a turn, not a steeper climb. A selected city or village is not a mission gate.</dd></div></dl>
+                  <p class="manual-note">First person is deliberately unobstructed: no cockpit frame or instruments. Use an external view when you need to check the flight deck.</p>
+                </section>
+                <section id="manual-route" class="manual-chapter" tabindex="-1"><span class="guide-number">04 / THE MISSION</span><h3>Out through the gates. Back to base.</h3>
+                  <p>A mission is one flight attempt. A course defines the route and conditions. Follow the navigation cue and fly through the gates in order; smooth, centred crossings improve gate quality. After the final gate, follow the base cue home and land to finish.</p>
+                  <div class="mission-flow"><span>TAKE OFF</span><span aria-hidden="true">→</span><span>CLEAR GATES</span><span aria-hidden="true">→</span><span>RETURN &amp; LAND</span></div>
+                  <p>Read the selected course’s goal and contract before launch. Medals and personal bests reward repeat attempts. The ghost shows your saved best-run path when available; toggle it with X.</p>
+                </section>
+                <section id="manual-landing" class="manual-chapter" tabindex="-1"><span class="guide-number">05 / RETURN &amp; LAND</span><h3>Give the approach some room.</h3>
+                  <ol class="flight-checklist"><li><strong>Line up early.</strong> Approach along the runway rather than turning sharply over it. Reduce power well before touchdown.</li><li><strong>Lower the gear.</strong> Use your configured gear key and check its state. Gear also lowers automatically near the ground.</li><li><strong>Keep a shallow descent.</strong> Use small corrections. The runway lights show two white / two red when you are on the intended glide path; more white means high, more red means low.</li><li><strong>Level the wings and ease the descent.</strong> Flare gently near the surface. Landing too fast, on a steep slope, or with a hard sink can crash the jet.</li><li><strong>Brake after contact.</strong> Hold your brake key to slow the rollout.</li></ol>
+                  <p class="manual-note">If the approach is rushed, add power, climb clear, and make another circuit. Water contact is a crash, not a landing.</p>
+                  <details class="manual-details"><summary>Refuelling at base</summary><p>After flying, return to the airfield, stop with gear down, and close the throttle. Fuel replenishes while you remain stopped in the base refuelling area.</p></details>
+                </section>
+                <section id="manual-world" class="manual-chapter" tabindex="-1"><span class="guide-number">06 / EXPLORATION &amp; RETRIES</span><h3>Keep the world. Or find another.</h3>
+                  <p>Infinite World is for exploring terrain, waterways, and settlements without a gate circuit. Use radar targets to find landmarks. Authored courses can lock their weather; N changes weather only when the course allows it.</p>
+                  <div class="manual-pair"><div><h4>Same course</h4><p>Pause → Retry restarts the current mission. At results or during the crash cinematic, Enter retries the same course.</p></div><div><h4>New world</h4><p>R ends the flight and generates a new world. To revisit a world, copy its replay link with Y or enter its seed on the launch screen.</p></div></div>
+                  <p>Crashes show a brief cinematic, then your flight report. Water impacts have their own splash. Progress, records, favourites, and best-run ghosts are stored locally in this browser.</p>
+                </section>
+              </div>
+            </div>
+            <footer class="guide-footer"><button type="button" class="btn-ghost menu-back">Back</button><button type="button" class="btn-play" data-guide-view="controls">Controls reference <span aria-hidden="true">→</span></button></footer>
           </div>
         </div>
       </div>

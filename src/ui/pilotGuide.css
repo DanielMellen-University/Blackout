@@ -1,0 +1,110 @@
+/* Static pilot reference: no scene, animation loop, or extra assets. */
+.guide-page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(1200px, 100%);
+  margin-inline: auto;
+  padding: 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+.guide-header, .guide-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 32px;
+  background: var(--panel);
+}
+.guide-header { border-bottom: 1px solid var(--panel-border); }
+.guide-page h2 { margin: 0; font-size: clamp(1.8rem, 3vw, 2.7rem); }
+/* Headings receive modal focus for screen readers, but are not controls. */
+.guide-page h2:focus { outline: none; }
+.guide-edition, .guide-number {
+  color: var(--accent);
+  font: 600 0.65rem/1.5 var(--mono);
+  letter-spacing: 0.12em;
+}
+.guide-edition { color: var(--ink-mute); text-align: right; }
+.guide-scroll { min-height: 0; overflow-y: auto; padding: 28px 32px; overscroll-behavior: contain; }
+.guide-intro { max-width: 720px; margin-bottom: 24px; }
+.guide-intro > p { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; margin-bottom: 8px; }
+.guide-intro > span, .guide-card small, .axis-card p { color: var(--ink-dim); font-size: 0.82rem; line-height: 1.6; }
+.axis-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
+.axis-card { padding: 20px; border: 1px solid var(--panel-border); border-radius: var(--radius); background: var(--surface); }
+.axis-card svg { display: block; width: 100%; height: 86px; margin: 12px 0; color: var(--accent); fill: var(--accent-soft); stroke: currentColor; stroke-width: 1.5; }
+.axis-card .axis-track { stroke: var(--panel-border); stroke-dasharray: 4 5; fill: none; }
+.axis-card .axis-arrow { fill: none; stroke: var(--amber); stroke-width: 2; }
+.axis-card h3 { font-size: 1rem; margin-bottom: 12px; }
+.guide-keys { display: flex; gap: 6px; margin-bottom: 8px; }
+.guide-page kbd { display: inline-block; min-width: 29px; padding: 4px 8px; text-align: center; color: var(--ink); background: var(--bg); border: 1px solid var(--panel-border); border-bottom-width: 3px; border-radius: 5px; font: 600 0.75rem/1.3 var(--mono); }
+.guide-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-bottom: 20px; }
+.guide-card { min-width: 0; padding: 20px; border: 1px solid var(--panel-border); border-radius: var(--radius); background: var(--surface); }
+.guide-card h3 { font-size: 1rem; margin-bottom: 16px; }
+.control-list > div { display: grid; grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.3fr); align-items: start; gap: 16px; padding: 12px 0; border-top: 1px solid var(--panel-border); }
+.control-list dt { color: var(--accent); font: 500 0.75rem/1.7 var(--mono); overflow-wrap: anywhere; }
+.control-list dd { font-size: 0.85rem; line-height: 1.5; }
+.control-list small { display: block; margin-top: 4px; font-size: 0.75rem; }
+.session-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; }
+.controller-guide { margin-top: 20px; }
+.controller-guide summary { font-size: 0.9rem; font-weight: 600; }
+.controller-guide summary > span { margin-left: 16px; color: var(--ink-mute); font-size: 0.75rem; font-weight: 400; }
+.guide-footer { border-top: 1px solid var(--panel-border); padding-top: 16px; padding-bottom: 16px; }
+.guide-footer .menu-back { width: auto; min-width: 100px; }
+.guide-footer .btn-play { font-size: 0.85rem; }
+.guide-footer .btn-play span { margin-left: 20px; }
+
+.manual-workspace { display: grid; grid-template-columns: 210px minmax(0, 1fr); min-height: 0; }
+.manual-index { display: flex; flex-direction: column; gap: 8px; padding: 28px 16px; border-right: 1px solid var(--panel-border); overflow-y: auto; }
+.manual-index > .guide-number { margin: 0 12px 12px; }
+.manual-index a { display: flex; gap: 12px; padding: 12px; color: var(--ink-dim); border-radius: 5px; font-size: 0.8rem; text-decoration: none; }
+.manual-index a span { color: var(--accent); font-family: var(--mono); }
+.manual-index a:hover, .manual-index a:focus-visible { background: var(--accent-soft); color: var(--ink); }
+.manual-index a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.manual-index > p { color: var(--ink-mute); font-size: 0.72rem; line-height: 1.6; padding: 20px 12px; margin-top: auto; }
+.manual-content { padding: 32px clamp(24px, 4vw, 70px); }
+.manual-content > * { max-width: 880px; margin-inline: auto; }
+.manual-hero { position: relative; padding: 28px 32px 0; background: var(--surface); border: 1px solid var(--panel-border); border-radius: var(--radius); overflow: hidden; }
+.manual-hero > p { color: var(--ink); font-size: clamp(2rem, 4vw, 3.4rem); font-weight: 700; line-height: 1.08; letter-spacing: -0.045em; margin: 14px 0; }
+.manual-hero > span:last-of-type { display: block; max-width: 440px; color: var(--ink-dim); font-size: 0.85rem; line-height: 1.7; }
+.manual-hero svg { display: block; width: 100%; max-height: 180px; margin-top: 8px; fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.manual-hero .manual-terrain { stroke: var(--panel-border); }
+.manual-hero .manual-route { stroke: var(--amber); stroke-dasharray: 5 5; }
+.manual-hero .manual-runway { stroke: var(--ink-mute); }
+.manual-chapter { padding-block: 32px; border-bottom: 1px solid var(--panel-border); scroll-margin-top: 24px; }
+.manual-chapter:target { border-bottom-color: var(--accent); }
+.manual-chapter:focus-visible { outline: 1px solid var(--accent); outline-offset: 6px; }
+.manual-chapter h3 { font-size: 1.6rem; font-weight: 600; letter-spacing: -0.03em; margin: 8px 0 20px; }
+.manual-chapter p, .flight-checklist, .instrument-guide dd { color: var(--ink-dim); font-size: 0.88rem; line-height: 1.85; }
+.manual-chapter p + p { margin-top: 14px; }
+.flight-checklist { padding-left: 24px; }
+.flight-checklist li { padding-left: 8px; margin-bottom: 14px; }
+.flight-checklist li::marker { color: var(--accent); font: 600 0.8rem var(--mono); }
+.flight-checklist strong { color: var(--ink); font-weight: 600; }
+.manual-chapter .manual-note { margin-top: 20px; padding: 16px 20px; border-left: 2px solid var(--amber); background: var(--amber-soft); color: var(--ink); font-size: 0.8rem; }
+.manual-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin: 16px 0; }
+.manual-pair h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; }
+.instrument-guide > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 24px; padding: 16px 0; border-bottom: 1px solid var(--panel-border); }
+.instrument-guide dt { color: var(--accent); font: 600 0.7rem/1.8 var(--mono); }
+.mission-flow { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 20px; margin: 20px 0; border: 1px solid var(--panel-border); border-radius: var(--radius); color: var(--accent); font: 600 0.7rem/1.7 var(--mono); letter-spacing: 0.06em; }
+.mission-flow > [aria-hidden] { color: var(--amber); }
+.manual-details { margin-top: 20px; }
+.manual-details summary { color: var(--accent); font-size: 0.85rem; }
+
+/* Short/windowed desktop layouts keep content scrollable and actions visible. */
+@media (max-width: 900px) {
+  .menu-panel.guide-page { padding: 0; }
+  .guide-header, .guide-footer { padding-inline: 20px; }
+  .guide-scroll { padding: 20px; }
+  .manual-workspace { grid-template-columns: 170px minmax(0, 1fr); }
+  .manual-index { padding-inline: 8px; }
+  .guide-columns, .session-controls, .manual-pair { grid-template-columns: minmax(0, 1fr); }
+  .axis-card { padding: 14px; }
+  .axis-card h3 { font-size: 0.85rem; }
+  .instrument-guide > div { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+}
+@media (max-height: 650px) {
+  .guide-header { padding-block: 12px; }
+  .guide-page h2 { font-size: 1.8rem; }
+  .guide-footer { padding-block: 8px; }
+}

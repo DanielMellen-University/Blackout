@@ -101,6 +101,52 @@ function menuFixture(): { root: FakeElement; resume: FakeElement; state: FakeEle
 }
 
 describe('menu focus flow', () => {
+  it('navigates between pilot references, returns to the opener, and preserves pause', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const opener = new FakeElement()
+    vi.stubGlobal('document', { activeElement: opener, fullscreenElement: null })
+    const fixture = menuFixture()
+    const controls = new FakeElement(), manual = new FakeElement()
+    controls.setAttribute('data-guide-view', 'controls')
+    manual.setAttribute('data-guide-view', 'info')
+    fixture.root.setList('[data-guide-view]', [controls, manual])
+    const menu = new GameMenu(fixture.root as unknown as HTMLElement)
+    try {
+      menu.showTitlePage('controls')
+      manual.dispatch('click', {})
+      expect(fixture.root.querySelector('#menu-info')!.hidden).toBe(false)
+      expect(fixture.root.getAttribute('aria-labelledby')).toBe('menu-info-heading')
+      controls.dispatch('click', {})
+      expect(fixture.root.querySelector('#menu-controls')!.hidden).toBe(false)
+      menu.back()
+      expect(menu.open).toBe(false)
+      expect(opener.focus).toHaveBeenCalled()
+
+      menu.openPause()
+      menu.showView('info')
+      expect(menu.paused).toBe(true)
+      controls.dispatch('click', {})
+      expect(menu.paused).toBe(true)
+      menu.back()
+      expect(menu.paused).toBe(true)
+      expect(fixture.root.querySelector('#menu-root')!.hidden).toBe(false)
+      const show = vi.spyOn(menu, 'showView')
+      menu.dispose()
+      manual.dispatch('click', {})
+      expect(show).not.toHaveBeenCalled()
+    } finally { menu.dispose(); vi.unstubAllGlobals() }
+  })
+
+  it('Escape closes a title reference instead of taking the player to settings', () => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    vi.stubGlobal('document', { activeElement: null, fullscreenElement: null })
+    const fixture = menuFixture(), menu = new GameMenu(fixture.root as unknown as HTMLElement)
+    try {
+      menu.showTitlePage('info')
+      menu.handleEscape()
+      expect(menu.open).toBe(false)
+    } finally { menu.dispose(); vi.unstubAllGlobals() }
+  })
   it('shows one category, preserves control nodes, rejects unknown pages, and removes navigation listeners', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = menuFixture()

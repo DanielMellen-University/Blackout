@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.854** is current. Previous ship: **10.853**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.855** is current. Previous ship: **10.854**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.855 rebuilds the Controls and Flight manual pages with the existing launch palette and typography, bounded vector diagrams, live key labels, grouped keyboard/controller reference, a six-chapter index, and independently scrolling content with fixed navigation. Back/Escape returns to the launch opener or paused settings as appropriate; cross-page links preserve pause state and clean up on disposal. Both pages are visually inspected in the existing window and at wide/short desktop sizes, including chapter navigation, expandable sections, and fixed actions. All 82 focused tests and the production build pass. The launch screen, physics, and paused-system exclusions are unchanged.
 
 Chunk 10.854 removes the entire flight-warning strip, dedicated alert sounds, warning evaluator/tracker and obstacle lookahead probes, HUD cue plumbing, and warning-specific styling. Instruments, normal navigation/glide guidance, physical stalls, gear/fuel behavior, and actual terrain/obstacle collision checks are unchanged. Removal is guarded by runtime/UI/audio absence regressions and documented for future agents; no replacement warning system is planned.
 

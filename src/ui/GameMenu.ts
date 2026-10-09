@@ -82,6 +82,14 @@ export class GameMenu {
       button.addEventListener('click', listener)
       this.settingsListeners.push([button, listener])
     }
+    for (const button of root.querySelectorAll<HTMLElement>('[data-guide-view]')) {
+      const listener = (): void => {
+        const view = button.getAttribute('data-guide-view')
+        if (view === 'controls' || view === 'info') this.showView(view)
+      }
+      button.addEventListener('click', listener)
+      this.settingsListeners.push([button, listener])
+    }
     this.showSettingsCategory('general')
     this.root.addEventListener('keydown', this.onKeyDown)
   }
@@ -124,6 +132,7 @@ export class GameMenu {
   handleEscape(): void {
     if (this.disposed || !this.open) return
     if (this.view !== 'root') {
+      if (this.mode === 'title') { this.close(); return }
       this.showView('root')
       this.syncChrome()
       return
@@ -173,14 +182,7 @@ export class GameMenu {
   }
 
   back(): void {
-    if (this.disposed) return
-    if (this.view !== 'root') {
-      this.showView('root')
-      this.syncChrome()
-      return
-    }
-    if (this.mode === 'title') this.close()
-    else this.close()
+    this.handleEscape()
   }
 
   showView(view: MenuView): void {

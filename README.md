@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.854**. Previous roadmap chunk: **10.853**.
-Recent changes from **10.854**. Remove the entire flight-warning strip and its alert sounds, including stall, go-around, flare, gear, obstacle, fuel, and overspeed alerts. Instruments, navigation/glide guidance, collisions, and flight physics are unchanged. First person remains unobstructed.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.855**. Previous roadmap chunk: **10.854**.
+Recent changes from **10.855**. Rebuild Controls and Flight manual in the launch screen's navy, blue, and pale-orange style, with axis diagrams, current key bindings, a controller reference, and six linked flight chapters. Keep navigation fixed while content scrolls. Launch layout and flight physics are unchanged.
 
 ## Run
 
@@ -24,11 +24,13 @@ Default keyboard controls:
 - Shift / Ctrl raise or lower throttle
 - Space afterburner; B speed brake and wheel brake
 - G landing gear; V stability assist
-- C cycles chase, orbit, and cockpit; middle mouse looks around
-- P or Escape pauses; R resets the mission
+- C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
+- P or Escape pauses; R ends the flight and generates a new world
 - N cycles weather; T cycles radar targets; X toggles ghost replay
 
 Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Standard gamepads also support the core flight controls.
+
+Open **Controls** or **Flight manual** from the launch screen or pause menu. Controls follows your configured axis directions and action keys. The manual covers takeoff, handling, instruments, missions, landing, and exploration. Back or Escape returns to launch; when opened during flight, it returns to paused settings. Use **Retry same course** in Pause to restart the current mission, or Enter from results/the crash cinematic.
 
 A mission is one flight attempt, from launch until landing or a crash. Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Infinite World and custom seeds let you revisit procedural worlds; Daily, Weekly, and Monthly Ops share rotating challenges. Records, favorites, and best-run ghosts are saved locally.
 
