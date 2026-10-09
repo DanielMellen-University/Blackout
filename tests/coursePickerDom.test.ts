@@ -80,8 +80,17 @@ const courses: CoursePickerItem[] = [
   { id: 'storm', label: 'Storm', detail: 'Low visibility', meta: '', stats: '', difficulty: 'technical' },
   { id: 'free', label: 'Free flight', detail: 'Explore', meta: '', stats: '', freeFlight: true },
 ]
+const missionItems: CoursePickerItem[] = [
+  { ...courses[0], id: 'training-orbit', label: 'Training orbit' },
+  { ...courses[1], id: 'random', label: 'Random world' },
+  { ...courses[2], id: 'daily-ops', label: 'Daily challenge', category: 'ops' },
+  { ...courses[3], id: 'free-flight' },
+  { ...courses[2], id: 'weekly-ops', label: 'Weekly ops', category: 'ops' },
+  { ...courses[2], id: 'monthly-ops', label: 'Monthly ops', category: 'ops' },
+  courses[1], courses[2],
+]
 const element = (selector: string): TestElement => root.querySelector(selector)!
-const options = (): TestElement[] => element('.course-picker-list').children
+const options = (): TestElement[] => element('.course-picker-list').querySelectorAll('.course-option')
 const key = (name: string, target: TestElement) => {
   const event = { key: name, target, preventDefault: vi.fn() }
   element('.course-picker-list').dispatch('keydown', event)
@@ -94,7 +103,7 @@ beforeEach(() => {
   vi.stubGlobal('HTMLElement', TestElement)
   vi.stubGlobal('Element', TestElement)
   vi.stubGlobal('getComputedStyle', () => ({ gridTemplateColumns: tracks }))
-  vi.stubGlobal('document', { createElement: () => new TestElement() })
+  vi.stubGlobal('document', { createElement: () => new TestElement(), get activeElement() { return documentState.activeElement } })
   root = new TestElement()
   root.className = 'course-picker'
   for (const name of ['course-picker-list', 'course-picker-detail', 'course-picker-stats']) {
@@ -106,6 +115,64 @@ beforeEach(() => {
 afterEach(() => { picker.dispose(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('course picker interaction', () => {
+  it('features modes in fixed order, pins Random world, and filters/counts only ordinary missions', () => {
+    picker.setItems(missionItems, 'training-orbit')
+    expect(element('.course-picker-featured').children.map(node => node.dataset.courseId))
+      .toEqual(['free-flight', 'training-orbit', 'daily-ops'])
+    expect(element('.course-picker-grid').children.map(node => node.dataset.courseId)).toEqual(['random', 'ridge', 'storm'])
+    expect(options().some(node => ['weekly-ops', 'monthly-ops'].includes(node.dataset.courseId!))).toBe(false)
+    expect(element('.course-picker-category').children.some(node => node.value === 'ops')).toBe(false)
+    expect(element('.course-picker-category').children[0].textContent).toBe('All courses (2)')
+    picker.setBrowseState('ops', 'name')
+    expect(element('.course-picker-category').value).toBe('all')
+    expect(element('.course-picker-grid').children[0].dataset.courseId).toBe('random')
+    picker.setFilter('no matches')
+    expect(options().map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'random'])
+    expect(element('.course-picker-empty').hidden).toBe(false)
+    expect(element('.course-picker-filter-status').textContent).toBe('0 MATCHES')
+    expect(options().filter(node => node.getAttribute('aria-checked') === 'true').map(node => node.dataset.courseId))
+      .toEqual(['training-orbit'])
+  })
+
+  it('updates just the countdown text without replacing cards, selection, or focus', () => {
+    picker.setItems(missionItems, 'daily-ops')
+    const timer = element('.course-daily-timer')
+    const daily = options()[2]
+    daily.focus()
+    picker.updateDailyCountdown(Date.parse('2026-10-09T04:59:59Z'))
+    expect(timer.textContent).toBe('Resets in 00:00:01')
+    picker.updateDailyCountdown(Date.parse('2026-10-09T05:00:00Z'))
+    expect(timer.textContent).toBe('Resets in 24:00:00')
+    expect(element('.course-daily-timer')).toBe(timer)
+    expect(options()[2]).toBe(daily)
+    expect(documentState.activeElement).toBe(daily)
+    expect(picker.value).toBe('daily-ops')
+  })
+
+  it('preserves card focus through shared catalog/record refreshes', () => {
+    picker.setItems(missionItems, 'training-orbit')
+    options()[1].focus()
+    picker.setItems(missionItems, 'training-orbit')
+    expect(documentState.activeElement).toBe(options()[1])
+    expect(options()[1].getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('keeps a single selection across featured/grid rows and leaves typing to the filter', () => {
+    picker.setItems(missionItems, 'training-orbit')
+    key('ArrowDown', options()[1])
+    expect(picker.value).toBe('ridge')
+    key('Home', options()[4])
+    expect(picker.value).toBe('free-flight')
+    options()[1].focus()
+    key('Home', options()[1])
+    expect(documentState.activeElement).toBe(options()[0])
+    key('End', options()[0])
+    expect(picker.value).toBe('storm')
+    expect(options().filter(node => node.getAttribute('aria-checked') === 'true')).toHaveLength(1)
+    const event = key('f', element('.course-picker-filter'))
+    expect(event.preventDefault).not.toHaveBeenCalled()
+  })
+
   it('delegates native activation and nonempty search Escape before global launch/pause capture', () => {
     const filter = element('.course-picker-filter')
     for (const code of ['Enter', 'NumpadEnter', 'Space']) {

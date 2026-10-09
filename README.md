@@ -1,9 +1,9 @@
 # Blackout
 
-Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
+Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.861**. Previous roadmap chunk: **10.860**.
-Recent changes from **10.861**. Stop terrain replacement flashes by preserving terrain/water shader hooks and keeping old coverage opaque until replacements are ready. Use continuous aircraft position and bounded quadtree hysteresis to reduce nearby chunk rebuilding at cell boundaries. Preserve render distance, upload budgets, flight behavior, and paused-system exclusions.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.862**. Previous roadmap chunk: **10.861**.
+Recent changes from **10.862**. Feature Free flight, Training orbit, and Daily challenge above both mission catalogs; pin Random world first in the grid. Keep selection borders even, filter only ordinary missions, and hide legacy Weekly/Monthly modes without deleting records or replay support. The fixed-EST countdown is presentation only; actual EST reset wiring and unique world-generation conditions are deferred.
 
 ## Run
 
@@ -32,7 +32,15 @@ Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in
 
 Open **Controls** or **Flight manual** from the launch screen or pause menu. Controls follows your configured axis directions and action keys. The manual covers takeoff, handling, instruments, missions, landing, and exploration. Back or Escape returns to launch; when opened during flight, it returns to paused settings. Use **Retry same course** in Pause to restart the current mission, or Enter from results/the crash cinematic.
 
-A mission is one flight attempt, from launch until landing or a crash. Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Infinite World and custom seeds let you revisit procedural worlds; Daily, Weekly, and Monthly Ops share rotating challenges. Records, favorites, and best-run ghosts are saved locally.
+A mission is one flight attempt, from launch until landing or a crash. Clear the gates, follow the return cue to the airfield, and land to bank your score. After a landing or crash, retry the same course or choose another. Random world and custom seeds let you revisit procedural worlds; Daily challenge offers shared conditions. Records, favorites, and best-run ghosts are saved locally.
+
+## Mission picker
+
+Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a card prepares the mission without launching it. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
+
+Weekly and Monthly modes are hidden from browsing. Saved selections of these modes fall back to Training orbit; old records and explicit replay links remain supported. A saved Ops filter falls back to All courses.
+
+Daily challenge displays a wall-clock countdown to midnight EST (fixed UTC-5, year-round). This countdown is UI-only preparation: challenge seeds, weather, routes, record keys, replays, and the actual UTC rollover are unchanged. Wiring the actual reset to EST and adding unique world-generation conditions per mission are deferred to the next phase.
 
 ## Project
 

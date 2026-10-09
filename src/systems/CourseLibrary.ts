@@ -108,8 +108,8 @@ export const COURSE_LIBRARY = [
   },
   {
     id: DAILY_OPS_COURSE_ID,
-    label: 'Daily ops',
-    detail: 'One shared route, refreshed at UTC midnight',
+    label: 'Daily challenge',
+    detail: 'A shared daily mission',
     seed: null,
     profile: null,
     contractCatalog: true,

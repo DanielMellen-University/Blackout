@@ -91,6 +91,7 @@ import {
   repairMasteryBadges,
 } from './systems/ChallengeRun'
 import { touchdownKinematics } from './systems/LandingAssessment'
+import { browsingMissionId } from './ui/MissionPickerLayout'
 import {
   courseDefinitionForId,
   dailyOpsDayKey,
@@ -413,7 +414,7 @@ export async function boot(): Promise<void> {
   let favoriteCourseIds = readCourseFavoriteIds(qualityStorage)
   // Give a brand-new pilot the clear onboarding route. Existing saved course
   // choices still win, including an explicit Random selection.
-  let selectedCourseId: CourseId = readSelectedCourseId(qualityStorage, 'training-orbit')
+  let selectedCourseId: CourseId = browsingMissionId(readSelectedCourseId(qualityStorage, 'training-orbit'))
   const replayParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
     : null
@@ -1626,7 +1627,7 @@ export async function boot(): Promise<void> {
       refreshCourseUi()
     }
     if (shouldResetSeededRandomWorldForStorageKey(key)) {
-      selectedCourseId = readSelectedCourseId(qualityStorage)
+      selectedCourseId = browsingMissionId(readSelectedCourseId(qualityStorage))
       replaySeed = null
       replaySeedFallback = false
       if (titleSeedInput) titleSeedInput.value = ''
@@ -1885,9 +1886,23 @@ export async function boot(): Promise<void> {
   let lastRenderMs = Number.NaN
   let lastRenderedSimulationLive = false
   let nextCatalogCheckMs = 0
+  let nextCountdownCheckMs = 0
+  let countdownVisible = 0
   const tick = (nowMs: number): void => {
     if (disposed) return
     requestAnimationFrame(tick)
+    const countdownMask = (!playing || menu.open) && !document.hidden
+      ? (titleCoursePickerRoot?.closest('[hidden]') ? 0 : 1)
+        | (menuCoursePickerRoot?.closest('[hidden]') ? 0 : 2)
+      : 0
+    if (countdownMask && (countdownMask !== countdownVisible || nowMs >= nextCountdownCheckMs)) {
+      nextCountdownCheckMs = nowMs + 1000
+      const wallClock = Date.now()
+      for (let index = 0; index < coursePickers.length; index++) {
+        if (countdownMask & (1 << index)) coursePickers[index]!.updateDailyCountdown(wallClock)
+      }
+    }
+    countdownVisible = countdownMask
     // Reuse RAF, with no background timer and no wall-clock reads in flight.
     if ((!playing || menu.open) && !document.hidden && nowMs >= nextCatalogCheckMs) {
       nextCatalogCheckMs = nowMs + 60_000

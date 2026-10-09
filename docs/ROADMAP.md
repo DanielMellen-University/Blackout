@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.861** is current. Previous ship: **10.860**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.862** is current. Previous ship: **10.861**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.862 reorganizes launch and Next mission around three featured modes, pinned Random world, and a separately filtered/sorted catalog. Selection uses an even orange border. Weekly/Monthly disappear only from browsing, with saved browsing selections falling back to Training orbit and explicit historical replays/records preserved. The removed Ops filter falls back to All courses. Daily challenge gets a fixed-UTC-5 midnight countdown updated independently of cards and focus; actual daily generation still rolls over on its existing UTC schedule. No terrain-generation or flight changes.
 
 Chunk 10.861 preserves terrain/water shader hooks on replacement materials and holds old coverage opaque and depth-writing until new coverage completes its transition. Apply fallback depth bias once to private materials, not repeatedly or to shared materials. Use continuous aircraft position plus a two-cell quadtree merge margin, pruning split history outside the visited horizon. Preserve distance, worker/upload budgets, collision sampling, flight behavior, and paused-system exclusions.
 
@@ -47,6 +49,8 @@ Chunk 10.843 extends the existing cooperative iterator into cold catchment sampl
 Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle thresholds with HUD glide advice. Two white/two red and `GS OK` now use the same 2.5–3° window, measured above the resident runway surface rather than the elevated, offset spawn pose. The HUD only shows glide advice inside the near-threshold corridor while airborne with both nose and ground track inbound; distant fly-bys, crossings, opposite-end approaches, departures, and rollout suppress it. PAPI remains neutral outside its corridor, writes materials only on pattern/daylight changes, and skips distance roots outside that corridor. Caller-owned scratch avoids new per-frame allocations. Cached poses invalidate on runway translations and sub-metre threshold crossings. Pure geometry, actual Three.js lens colors, HUD adapters, and the World boundary have regression coverage; browser approach/playability inspection remains outstanding under the existing access limitation. Flight physics, scoring, speed guidance, warning priority, and audio cadence are unchanged.
 
 ## Current priorities
+
+Next phase: wire the actual Daily challenge reset to midnight EST and introduce unique world-generation conditions per mission. Both are explicitly deferred from the UI-only 10.862 change; do not treat the displayed countdown as already controlling challenge generation.
 
 Chunk 10.851 removes Pull up and Low alt alerts, audio cues, predictive terrain-warning sampling, and low-clearance altimeter alarm colors/ARIA descriptions. Altitude readings, terrain collision checks, flight handling, obstacle lookahead, stall, gear, flare/go-around, fuel, and overspeed warnings remain. Regression cases cover fast low descents, rising ridges without warning probes, remaining warning priorities, and neutral low-altitude readouts.
 

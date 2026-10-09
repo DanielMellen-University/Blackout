@@ -13,6 +13,7 @@ import { missionChallengeForProfile, type MissionChallenge, type MissionRoutePro
 import { normalizeSortieStyle, sortieStyleLabel } from '../systems/FlightStyle'
 import { WEATHER_LABELS, timeOfDayForSeed, weatherIdForSeed, type WeatherId, type WindSide } from '../world/WeatherDirector'
 import { courseCardCopy, courseSortieGoal } from './CourseBriefing'
+import { dailyChallengeCountdown, FEATURED_MISSION_IDS, featuredMissionNavigationIndex, HIDDEN_MISSION_IDS } from './MissionPickerLayout'
 
 export interface CoursePickerItem {
   id: string
@@ -269,7 +270,7 @@ export function coursePickerSortLabel(sort: CoursePickerSort): string {
 
 /** Repair persisted catalog browsing state without allowing unknown values into the UI. */
 export function normalizeCoursePickerCategory(value: unknown): CoursePickerCategory {
-  return isCoursePickerCategory(value) ? value : 'all'
+  return value !== 'ops' && isCoursePickerCategory(value) ? value : 'all'
 }
 
 export function normalizeCoursePickerSort(value: unknown): CoursePickerSort {
@@ -774,6 +775,12 @@ export function coursePickerOwnsGlobalKey(event: Pick<KeyboardEvent, 'code' | 't
 
 export class CoursePicker {
   private readonly list: HTMLElement
+  private readonly featured: HTMLElement
+  private readonly grid: HTMLElement
+  private dailyTimer: HTMLElement | null = null
+  private featuredItems: CoursePickerItem[] = []
+  private visibleGridItems: CoursePickerItem[] = []
+  private catalogItems: CoursePickerItem[] = []
   private readonly detail: HTMLElement
   private readonly stats: HTMLElement
   private readonly filter: HTMLInputElement
@@ -802,6 +809,10 @@ export class CoursePicker {
     this.list = must(root, '.course-picker-list')
     this.detail = must(root, '.course-picker-detail')
     this.stats = must(root, '.course-picker-stats')
+    this.featured = document.createElement('div')
+    this.featured.className = 'course-picker-featured'
+    this.grid = document.createElement('div')
+    this.grid.className = 'course-picker-grid'
     this.filter = document.createElement('input')
     this.filter.type = 'search'
     this.filter.className = 'course-picker-filter'
@@ -813,6 +824,7 @@ export class CoursePicker {
     this.categorySelect.className = 'course-picker-category'
     this.categorySelect.setAttribute('aria-label', 'Filter course category')
     for (const value of COURSE_PICKER_CATEGORY_VALUES) {
+      if (value === 'ops') continue
       const option = document.createElement('option')
       option.value = value
       option.textContent = COURSE_PICKER_CATEGORY_LABELS[value]
@@ -860,10 +872,7 @@ export class CoursePicker {
     // Include the native disclosure in the pause menu's explicit focus trap.
     recordSummary.setAttribute('tabindex', '0')
     this.records.append(recordSummary)
-    root.insertBefore(this.browseControls, this.list)
-    root.insertBefore(this.filterStatus, this.list)
-    root.insertBefore(this.favoriteButton, this.list)
-    root.insertBefore(this.empty, this.list)
+    this.list.append(this.featured, this.browseControls, this.filterStatus, this.favoriteButton, this.grid, this.empty)
     root.insertBefore(this.goal, this.detail)
     root.insertBefore(this.records, this.stats)
     this.records.append(this.stats)
@@ -879,6 +888,13 @@ export class CoursePicker {
 
   get value(): string {
     return this.selectedId
+  }
+
+  /** Update only the visible clock, never reconstruct cards or announce every second. */
+  updateDailyCountdown(nowMs: number): void {
+    if (this.disposed || !this.dailyTimer) return
+    const text = `Resets in ${dailyChallengeCountdown(nowMs)}`
+    if (this.dailyTimer.textContent !== text) this.dailyTimer.textContent = text
   }
 
   onChange(handler: ((id: string) => void) | null): void {
@@ -952,46 +968,70 @@ export class CoursePicker {
     this.filterStatus.remove()
     this.favoriteButton.remove()
     this.empty.remove()
+    this.featured.remove()
+    this.grid.remove()
+    this.dailyTimer = null
     this.items = []
   }
 
   private renderList(): void {
+    const active = document.activeElement
+    const focusedId = active instanceof HTMLElement && this.list.contains(active)
+      ? active.closest<HTMLElement>('.course-option')?.dataset.courseId : undefined
+    this.featuredItems = FEATURED_MISSION_IDS.flatMap(id => this.items.filter(item => item.id === id))
+    this.catalogItems = this.items.filter(item => item.id !== 'random'
+      && !FEATURED_MISSION_IDS.some(id => id === item.id) && !HIDDEN_MISSION_IDS.includes(item.id))
     this.syncCategoryOptions()
     const visible = sortCoursePickerItems(
-      filterCoursePickerItems(this.items, this.filter.value, this.category),
+      filterCoursePickerItems(this.catalogItems, this.filter.value, this.category),
       this.sort,
     )
-    this.list.replaceChildren(...visible.map((item) => this.createOption(item)))
+    const random = this.items.find(item => item.id === 'random')
+    this.visibleGridItems = random ? [random, ...visible] : visible
+    this.dailyTimer = null
+    this.featured.replaceChildren(...this.featuredItems.map(item => this.createOption(item)))
+    this.featured.hidden = this.featuredItems.length === 0
+    this.grid.replaceChildren(...this.visibleGridItems.map(item => this.createOption(item)))
+    this.updateDailyCountdown(Date.now())
     this.empty.hidden = visible.length > 0
     if (visible.length === 0) this.empty.textContent = coursePickerEmptyMessage(this.category, this.filter.value)
     this.syncSelection()
+    // Shared record/recent updates can refresh both pickers after a selection.
+    // Restore only a previously focused card, never steal focus from browse controls.
+    if (focusedId) {
+      const options = Array.from(this.list.querySelectorAll<HTMLElement>('.course-option'))
+      const target = options.find(option => option.dataset.courseId === focusedId)
+        ?? options.find(option => option.tabIndex === 0)
+      target?.focus({ preventScroll: true })
+    }
   }
 
   private syncCategoryOptions(): void {
+    const items = this.catalogItems
     const counts: Record<CoursePickerCategory, number> = {
-      all: this.items.length,
-      ops: this.items.filter(item => item.category === 'ops').length,
-      routes: this.items.filter(item => item.category === 'routes').length,
-      contracts: this.items.filter(item => item.category === 'contracts').length,
-      explore: this.items.filter(item => item.category === 'explore').length,
-      recent: this.items.filter(item => item.recent === true).length,
-      favorites: this.items.filter(item => item.favorite === true).length,
-      unplayed: this.items.filter(item => finiteCount(item.runs) === 0).length,
-      mastered: this.items.filter(item => item.mastery === 'legend').length,
-      relaxed: this.items.filter(item => item.difficulty === 'relaxed').length,
-      standard: this.items.filter(item => item.difficulty === 'standard').length,
-      technical: this.items.filter(item => item.difficulty === 'technical').length,
-      approach: this.items.filter(item => item.challenge === 'approach').length,
-      range: this.items.filter(item => item.challenge === 'range').length,
-      precision: this.items.filter(item => item.challenge === 'precision').length,
-      altitude: this.items.filter(item => item.challenge === 'altitude').length,
-      clear: this.items.filter(item => item.weather === 'clear').length,
-      cloudy: this.items.filter(item => item.weather === 'cloudy').length,
-      fog: this.items.filter(item => item.weather === 'fog').length,
-      rain: this.items.filter(item => item.weather === 'rain').length,
-      storm: this.items.filter(item => item.weather === 'storm').length,
-      snow: this.items.filter(item => item.weather === 'snow').length,
-      night: this.items.filter(item => item.night === true).length,
+      all: items.length,
+      ops: 0,
+      routes: items.filter(item => item.category === 'routes').length,
+      contracts: items.filter(item => item.category === 'contracts').length,
+      explore: items.filter(item => item.category === 'explore').length,
+      recent: items.filter(item => item.recent === true).length,
+      favorites: items.filter(item => item.favorite === true).length,
+      unplayed: items.filter(item => finiteCount(item.runs) === 0).length,
+      mastered: items.filter(item => item.mastery === 'legend').length,
+      relaxed: items.filter(item => item.difficulty === 'relaxed').length,
+      standard: items.filter(item => item.difficulty === 'standard').length,
+      technical: items.filter(item => item.difficulty === 'technical').length,
+      approach: items.filter(item => item.challenge === 'approach').length,
+      range: items.filter(item => item.challenge === 'range').length,
+      precision: items.filter(item => item.challenge === 'precision').length,
+      altitude: items.filter(item => item.challenge === 'altitude').length,
+      clear: items.filter(item => item.weather === 'clear').length,
+      cloudy: items.filter(item => item.weather === 'cloudy').length,
+      fog: items.filter(item => item.weather === 'fog').length,
+      rain: items.filter(item => item.weather === 'rain').length,
+      storm: items.filter(item => item.weather === 'storm').length,
+      snow: items.filter(item => item.weather === 'snow').length,
+      night: items.filter(item => item.night === true).length,
     }
     for (const [category, option] of this.categoryOptions) {
       option.textContent = coursePickerCategoryLabel(category, counts[category])
@@ -1010,6 +1050,22 @@ export class CoursePicker {
     const name = document.createElement('span')
     name.className = 'course-option-name'
     name.textContent = item.label
+    if (FEATURED_MISSION_IDS.some(id => id === item.id)) {
+      button.className += ' course-option-featured'
+      const subtitle = document.createElement('span')
+      subtitle.className = 'course-featured-subtitle'
+      subtitle.textContent = item.id === 'free-flight' ? 'Explore without a clock'
+        : item.id === 'training-orbit' ? 'Learn the basics' : 'Midnight EST'
+      button.setAttribute('aria-label', `${item.label}, ${subtitle.textContent}`)
+      button.append(name, subtitle)
+      if (item.id === 'daily-ops') {
+        this.dailyTimer = document.createElement('span')
+        this.dailyTimer.className = 'course-daily-timer'
+        button.append(this.dailyTimer)
+      }
+      return button
+    }
+    if (item.id === 'random') button.className += ' course-option-random'
     const meta = document.createElement('span')
     meta.className = 'course-option-meta'
     meta.textContent = copy.meta
@@ -1047,8 +1103,9 @@ export class CoursePicker {
     const query = this.filter.value.trim()
     const categoryLabel = this.category === 'all' ? '' : this.category.toUpperCase()
     const selectedHidden = !!selected && !options.some(option => option.dataset.courseId === selected.id)
+    const matchingCount = this.visibleGridItems.filter(item => item.id !== 'random').length
     this.filterStatus.textContent = query || categoryLabel || selectedHidden
-      ? [categoryLabel, `${options.length} MATCH${options.length === 1 ? '' : 'ES'}`,
+      ? [categoryLabel, `${matchingCount} MATCH${matchingCount === 1 ? '' : 'ES'}`,
         selectedHidden ? 'SELECTED COURSE OUTSIDE FILTER' : ''].filter(Boolean).join(' · ')
       : ''
     this.filterStatus.hidden = !query && this.category === 'all' && !selectedHidden
@@ -1060,16 +1117,14 @@ export class CoursePicker {
   }
 
   private select(id: string, persist: boolean): void {
-    if (this.disposed || !id || id === this.selectedId) {
-      this.syncSelection()
-      return
-    }
+    if (this.disposed || !id) return
+    const changed = id !== this.selectedId
     this.selectedId = id
     this.syncSelection()
     const option = this.list.querySelector<HTMLElement>(`[data-course-id="${cssEscape(id)}"]`)
     option?.focus({ preventScroll: true })
     option?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-    if (persist) this.changeHandler?.(id)
+    if (persist && changed) this.changeHandler?.(id)
   }
 
   private onClick = (event: Event): void => {
@@ -1083,21 +1138,22 @@ export class CoursePicker {
 
   private onKeyDown = (event: KeyboardEvent): void => {
     if (this.disposed || this.items.length === 0) return
+    const target = event.target instanceof Element ? event.target.closest<HTMLElement>('.course-option') : null
+    if (!target) return
     if (event.key.toLowerCase() === 'f') {
       event.preventDefault()
       this.toggleFavorite()
       return
     }
-    const visible = sortCoursePickerItems(
-      filterCoursePickerItems(this.items, this.filter.value, this.category),
-      this.sort,
-    )
+    const visible = [...this.featuredItems, ...this.visibleGridItems]
     if (visible.length === 0) return
-    const focused = event.target instanceof Element ? event.target.closest<HTMLElement>('.course-option')?.dataset.courseId : undefined
+    const focused = target.dataset.courseId
     const index = Math.max(0, visible.findIndex((item) => item.id === (focused ?? this.selectedId)))
-    const tracks = getComputedStyle(this.list).gridTemplateColumns.trim()
+    const tracks = getComputedStyle(this.grid).gridTemplateColumns.trim()
     const columns = tracks && tracks !== 'none' ? tracks.split(/\s+/).length : 1
-    const next = coursePickerNavigationIndex(event.key, index, visible.length, columns)
+    const next = this.featuredItems.length
+      ? featuredMissionNavigationIndex(event.key, index, this.featuredItems.length, this.visibleGridItems.length, columns)
+      : coursePickerNavigationIndex(event.key, index, visible.length, columns)
     if (next === null) return
     event.preventDefault()
     const item = visible[next]
