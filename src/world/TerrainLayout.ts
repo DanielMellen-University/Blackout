@@ -32,14 +32,21 @@ export function planTerrainTiles(
   z: number,
   radius: number,
   out?: TerrainTile[],
+  previousSplits?: Set<string>,
 ): TerrainTile[] {
   const tiles = out ?? []
+  const nextSplits = previousSplits ? new Set<string>() : null
   let count = 0
   function visit(cx: number, cz: number, size: number): void {
     const edgeDistance = tileDistance(cx, cz, size, x, z)
     if (edgeDistance > radius) return
     const splitAt = size === 32 ? 48 : size === 16 ? 32 : size === 8 ? 20 : size === 4 ? 12 : 8
-    if (size > 1 && edgeDistance < splitAt) {
+    // Refine at the normal boundary, but do not merge again after a tiny
+    // reversal. Keep history only for visited nodes, so flight cannot grow it.
+    const node = size > 1 && previousSplits ? tileKey(cx, cz, size) : ''
+    const mergeMargin = node && previousSplits!.has(node) ? 2 : 0
+    if (size > 1 && edgeDistance < splitAt + mergeMargin) {
+      if (node) nextSplits!.add(node)
       const half = size / 2
       // Keep the recursive planner allocation-free. The old nested array
       // literals created two short-lived arrays at every quadtree split,
@@ -65,5 +72,9 @@ export function planTerrainTiles(
     for (let cz = minZ; cz <= z + radius; cz += rootSize) visit(cx, cz, rootSize)
   }
   tiles.length = count
+  if (previousSplits) {
+    previousSplits.clear()
+    for (const node of nextSplits!) previousSplits.add(node)
+  }
   return tiles.sort((a, b) => a.dist - b.dist)
 }

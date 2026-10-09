@@ -190,6 +190,8 @@ interface Chunk {
   waterMesh: Mesh | null
   /** Settled chunks use shared opaque materials until they need to fade again. */
   settled: boolean
+  /** Private opaque fallback materials already carry the depth bias. */
+  fallbackOffset: boolean
   materials: MeshStandardMaterial[]
 }
 
@@ -249,6 +251,7 @@ export class TerrainSystem {
   private desiredTiles = new Map<string, DesiredTile>()
   /** Reused quadtree output keeps cell-crossing schedules allocation-light. */
   private readonly plannedTiles: TerrainTile[] = []
+  private readonly layoutSplits = new Set<string>()
   /** Desired leaves grouped by their aligned 32-cell quadtree root. */
   private readonly desiredTileBuckets = new Map<string, DesiredTile[]>()
   /** Reuse bucket arrays across stream-cell schedules to avoid churn. */
@@ -530,6 +533,7 @@ export class TerrainSystem {
     this.desiredTileBuckets.clear()
     this.desiredTileBucketPool.length = 0
     this.neededKeys.clear()
+    this.layoutSplits.clear()
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
@@ -768,7 +772,7 @@ export class TerrainSystem {
     this.sampledChunkLookup.clear()
   }
 
-  private scheduleAround(cx: number, cz: number): void {
+  private scheduleAround(_cx: number, _cz: number): void {
     this.fadeTargetsDirty = true
     this.readySorted = false
     const needed = this.neededKeys
@@ -779,7 +783,8 @@ export class TerrainSystem {
       this.desiredTileBucketPool.push(bucket)
     }
     this.desiredTileBuckets.clear()
-    for (const tile of planTerrainTiles(cx + .5, cz + .5, this.viewRadius, this.plannedTiles)) {
+    for (const tile of planTerrainTiles(this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE,
+      this.viewRadius, this.plannedTiles, this.layoutSplits)) {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
         this.desiredTiles.set(key, tile)
@@ -796,6 +801,7 @@ export class TerrainSystem {
         const existing = this.chunks.get(key)
         if (existing) {
           existing.fadingOut = false
+          if (existing.fallbackOffset) this.prepareChunkForFade(existing)
           const lod = lodWithHysteresis(dist, existing.lod)
           const needsRebuild = lod !== existing.lod
           if (needsRebuild && !this.pendingKeys.has(key) && !this.activeKeys.has(key)) {
@@ -817,7 +823,8 @@ export class TerrainSystem {
     }
 
     for (const p of this.pending) {
-      p.dist = Math.hypot(p.cx + p.size / 2 - cx - .5, p.cz + p.size / 2 - cz - .5)
+      p.dist = Math.hypot(p.cx + p.size / 2 - this.focusX / CHUNK_SIZE,
+        p.cz + p.size / 2 - this.focusZ / CHUNK_SIZE)
     }
     this.sortPending()
 
@@ -825,7 +832,6 @@ export class TerrainSystem {
     this.replacementKeys.clear()
     for (const [key, chunk] of this.chunks) {
       if (!needed.has(key)) {
-        if (!chunk.fadingOut) this.prepareChunkForFade(chunk)
         chunk.fadingOut = true
         chunk.targetAlpha = 0
         this.fadeKeys.add(key)
@@ -848,6 +854,8 @@ export class TerrainSystem {
           }
         }
         this.replacementKeys.set(key, replacements)
+        if (replacements.length) this.offsetFallback(chunk)
+        else this.prepareChunkForFade(chunk)
       }
     }
 
@@ -900,7 +908,6 @@ export class TerrainSystem {
     const chunk = this.buildChunk(job, data)
     if (existing) {
       // Keep the previous surface until its replacement has faded fully in.
-      this.prepareChunkForFade(existing)
       this.retiring.push(existing)
       this.offsetFallback(existing)
     }
@@ -1011,15 +1018,21 @@ export class TerrainSystem {
   }
 
   private offsetFallback(chunk: Chunk): void {
-    for (const mesh of chunk.root.children) {
-      if (!(mesh instanceof Mesh)) continue
-      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-      for (const material of materials) {
-        material.polygonOffset = true
-        material.polygonOffsetFactor = 2
-        material.polygonOffsetUnits = 2
-      }
+    if (chunk.fallbackOffset) return
+    // Old coverage must stay opaque and depth-writing until replacement
+    // coverage is ready. Making both surfaces transparent exposes hills and
+    // sky behind them and changes their brightness during every LOD swap.
+    this.prepareChunkForFade(chunk)
+    for (const material of chunk.materials) {
+      material.transparent = false
+      material.depthWrite = true
+      material.opacity = 1
+      material.polygonOffset = true
+      material.polygonOffsetFactor = 2
+      material.polygonOffsetUnits = 2
+      material.needsUpdate = true
     }
+    chunk.fallbackOffset = true
   }
 
   /**
@@ -1073,6 +1086,7 @@ export class TerrainSystem {
           toRemove.push(key)
           continue
         }
+        this.prepareChunkForFade(chunk)
         chunk.alpha *= 1 - fadeK
         this.applyChunkAlpha(chunk)
         if (chunk.alpha <= .01) toRemove.push(key)
@@ -1248,7 +1262,7 @@ export class TerrainSystem {
       key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
       cx, cz, root, lod, segs: data.segs, originX, originZ,
       heights: data.heights, alpha: 0, fadeAge: 0, targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
-      terrainMesh: mesh, waterMesh: water, settled: false,
+      terrainMesh: mesh, waterMesh: water, settled: false, fallbackOffset: false,
       materials: root.children.flatMap(child => child instanceof Mesh
         ? (Array.isArray(child.material) ? child.material : [child.material])
           .filter((material): material is MeshStandardMaterial => material instanceof MeshStandardMaterial)
@@ -1280,6 +1294,7 @@ export class TerrainSystem {
     chunk.materials = [chunk.terrainMesh.material as MeshStandardMaterial]
     if (chunk.waterMesh) chunk.materials.push(this.waterMat)
     chunk.settled = true
+    chunk.fallbackOffset = false
     if (chunk.fadeAge >= FADE_SECONDS && this.desiredTiles.has(chunk.key)) {
       this.fadeKeys.delete(chunk.key)
     }
@@ -1288,9 +1303,27 @@ export class TerrainSystem {
   /** Rehydrate unique fade materials before a settled tile changes opacity or is retired. */
   private prepareChunkForFade(chunk: Chunk): void {
     this.fadeKeys.add(chunk.key)
+    if (chunk.fallbackOffset) {
+      for (const material of chunk.materials) {
+        material.transparent = true
+        material.depthWrite = false
+        material.opacity = MathUtils.clamp(chunk.alpha, 0, 1)
+        const source = chunk.waterMesh?.material === material ? this.waterMat
+          : chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
+        material.polygonOffset = source.polygonOffset
+        material.polygonOffsetFactor = source.polygonOffsetFactor
+        material.polygonOffsetUnits = source.polygonOffsetUnits
+        material.needsUpdate = true
+      }
+      chunk.fallbackOffset = false
+    }
     if (!chunk.settled) return
     const clone = (source: MeshStandardMaterial): MeshStandardMaterial => {
       const material = source.clone()
+      // Material.clone() does not copy shader hooks. Losing them makes a
+      // retiring tile briefly dry/unlit water before the new surface settles.
+      material.onBeforeCompile = source.onBeforeCompile
+      material.customProgramCacheKey = source.customProgramCacheKey
       // Ground and water are broad opaque surfaces. Alpha-hash dithering on
       // them reads as white/black static during every streamed fade, while a
       // short smooth blend is both cleaner and cheaper for the GPU.

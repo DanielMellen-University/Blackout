@@ -3,6 +3,20 @@ import { planTerrainTiles, terrainBuildPriority, tileKey } from '../src/world/Te
 import { CHUNK_SIZE, fogFarForViewRadius, fogNearForViewRadius, FOG_FAR, STREAM_RADIUS_M, terrainFadeTargetAlpha, VIEW_RADIUS } from '../src/world/TerrainSystem'
 
 describe('long-range adaptive terrain coverage', () => {
+  it('holds quadtree detail through boundary reversals and bounds split history', () => {
+    const history = new Set<string>()
+    planTerrainTiles(.1, .1, 80, undefined, history)
+    const initiallySplit = new Set(history)
+    planTerrainTiles(-.1, -.1, 80, undefined, history)
+    for (const node of initiallySplit) expect(history.has(node)).toBe(true)
+    const held = planTerrainTiles(.1, .1, 80, undefined, history)
+    expect(planTerrainTiles(-.1, -.1, 80, undefined, history).map(t => tileKey(t.cx, t.cz, t.size)).sort())
+      .toEqual(held.map(t => tileKey(t.cx, t.cz, t.size)).sort())
+    const distant = planTerrainTiles(1000, 1000, 80, undefined, history)
+    expect(history.size).toBeLessThan(300)
+    expect(distant.length).toBeLessThan(700)
+    for (const node of initiallySplit) expect(history.has(node)).toBe(false)
+  })
   it('prioritizes contact detail and missing coverage over distant LOD rebuilds', () => {
     const contact = { dist: 2, size: 1, rebuild: true }
     const merge = { dist: 70, size: 32, rebuild: false }

@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.860** is current. Previous ship: **10.859**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.861** is current. Previous ship: **10.860**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.861 preserves terrain/water shader hooks on replacement materials and holds old coverage opaque and depth-writing until new coverage completes its transition. Apply fallback depth bias once to private materials, not repeatedly or to shared materials. Use continuous aircraft position plus a two-cell quadtree merge margin, pruning split history outside the visited horizon. Preserve distance, worker/upload budgets, collision sampling, flight behavior, and paused-system exclusions.
 
 Chunk 10.860 separates the flight-report mission, conditions, and seed with explicit spacing, and moves Retry/New world below all report content into a fixed panel footer. Report details scroll independently without hiding either action. Preserve action IDs, handlers, keyboard focus, and flight behavior.
 

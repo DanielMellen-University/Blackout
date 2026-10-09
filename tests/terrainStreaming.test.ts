@@ -35,6 +35,7 @@ interface Internals {
   replacementKeys: Map<string, string[]>
   sampledChunkLookup: Map<string, unknown>
   groundMatFar: MeshStandardMaterial
+  waterMat: MeshStandardMaterial
   ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[]
   fallback: { job: TerrainBuildRequest; key: string; steps: TerrainGeometrySteps } | null
   dispatchWorkers(): void
@@ -173,6 +174,9 @@ describe('terrain streaming integration', () => {
     internal.install(job(5, 1), fixture)
     expect(terrain.root.children).toHaveLength(2)
     expect(material(old)).not.toBe(internal.groundMatFar)
+    expect(material(old).transparent).toBe(false)
+    expect(material(old).depthWrite).toBe(true)
+    expect(material(old).opacity).toBe(1)
     internal.updateFades(0, 0, .3)
     expect(old.root.parent).toBe(terrain.root)
     expect(disposed).not.toHaveBeenCalled()
@@ -180,6 +184,31 @@ describe('terrain streaming integration', () => {
     expect(old.root.parent).toBeNull()
     expect(disposed).toHaveBeenCalledOnce()
     expect(terrain.root.children).toHaveLength(1)
+  })
+
+  it('preserves terrain and water shaders on opaque fallback coverage', () => {
+    desire(5, 12)
+    internal.install(job(5, 2), { ...fixture, water: fixture.ground })
+    internal.updateFades(0, 0, .65)
+    const old = internal.chunks.get(key(5))!
+    desire(5, 4)
+    internal.install(job(5, 1), fixture)
+    const meshes = old.root.children as Mesh[]
+    for (const mesh of meshes) {
+      const source = mesh.name === 'WaterSurface' ? internal.waterMat : internal.groundMatFar
+      const fallback = mesh.material as MeshStandardMaterial
+      expect(fallback).not.toBe(source)
+      expect(fallback.onBeforeCompile).toBe(source.onBeforeCompile)
+      expect(fallback.customProgramCacheKey()).toBe(source.customProgramCacheKey())
+      expect(fallback.transparent).toBe(false)
+      expect(fallback.depthWrite).toBe(true)
+      expect(fallback.opacity).toBe(1)
+      expect(fallback.polygonOffset).toBe(true)
+      expect(source.polygonOffset).toBe(mesh.name === 'WaterSurface')
+      expect(source.polygonOffsetFactor).toBe(mesh.name === 'WaterSurface' ? -2 : 0)
+    }
+    internal.updateFades(0, 0, .3)
+    expect(material(old).opacity).toBe(1)
   })
 
   it('drains disposable retiring tiles beside a still-fading replacement', () => {

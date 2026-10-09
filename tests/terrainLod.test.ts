@@ -146,7 +146,8 @@ describe('TerrainSystem streaming LOD', () => {
       // The doubled horizon and 650 ms replacement fades keep a bounded overlap.
       expect(peakTiles).toBeLessThan(850)
       pump(terrain, x, 210, 400)
-      const expected = planTerrainTiles(Math.floor(x / CHUNK_SIZE) + .5, .5, VIEW_RADIUS)
+      const history = new Set((terrain as unknown as { layoutSplits: Set<string> }).layoutSplits)
+      const expected = planTerrainTiles(x / CHUNK_SIZE, .5, VIEW_RADIUS, undefined, history)
       expect(terrain.root.children.length).toBe(expected.length)
       expect(terrain.chunkStats(Math.floor(x / CHUNK_SIZE), 0)?.lod).toBe(0)
     } finally {

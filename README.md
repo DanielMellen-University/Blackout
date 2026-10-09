@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and rotating Ops.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.860**. Previous roadmap chunk: **10.859**.
-Recent changes from **10.860**. Space the flight-report mission, conditions, and seed labels clearly. Move Retry and New world into a separate bottom action bar that stays visible while the report scrolls. Flight behavior is unchanged.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.861**. Previous roadmap chunk: **10.860**.
+Recent changes from **10.861**. Stop terrain replacement flashes by preserving terrain/water shader hooks and keeping old coverage opaque until replacements are ready. Use continuous aircraft position and bounded quadtree hysteresis to reduce nearby chunk rebuilding at cell boundaries. Preserve render distance, upload budgets, flight behavior, and paused-system exclusions.
 
 ## Run
 

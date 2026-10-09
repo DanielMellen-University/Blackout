@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.861** Fix terrain-streaming brightness flashes: keep terrain/weather and water shader callbacks/cache keys on cloned transition materials, and keep fallback coverage opaque and depth-writing until replacement coverage is ready. Cache fallback depth bias and restore normal fade state when a tile is wanted again. Plan from continuous aircraft position rather than snapped cell centers; add a bounded two-cell quadtree merge margin to reduce boundary churn. Preserve render distance, upload budgets, collision samplers, flight behavior, and paused-system exclusions.
+
 - **10.860** Fix crowded mission/conditions text on crash and completion reports with a spaced metadata group and readable conditions/seed labels. Move Retry and New world into a separate bottom footer outside the scrollable report content and below both disclosure sections. Preserve button IDs, handlers, keyboard focus, and flight behavior. Update the lightweight debrief review to cover the reported metadata.
 
 - **10.859** Correct the mismatched yaw/launch aircraft illustration style. Replace the narrow orthographic top view with a wide oblique fighter, sized like the approved pitch/roll diagrams. Share their exact translucent blue fill, outline weight, line joins, canopy fill, and detail opacity across all four drawings. Replace oversized chevrons with curved motion arrows, compact arrowheads, and rounded strokes. Preserve pitch/roll geometry, surrounding layout, bindings, and physics.

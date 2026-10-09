@@ -44,7 +44,7 @@ const camera=new T.PerspectiveCamera(60,innerWidth/innerHeight,1,CHUNK_SIZE*VIEW
 let terrain,started=0,previous=0,activeMs=0,startupMs=null,seed=1337,x=0,z=0,distance=0,flightRequested=params.get('flight')==='1',flying=false
 let frames=[],updateTimes=[],renderTimes=[],startupFrames=[],startupUpdates=[],flightFrames=[],flightUpdates=[],flightElapsed=0,lastPaint=0,lastStats=null
 const cap=18000
-const initialTiles=planTerrainTiles(.5,.5,VIEW_RADIUS).length
+const initialTiles=planTerrainTiles(0,0,VIEW_RADIUS).length
 function record(target,value){target.push(value);if(target.length>cap)target.shift()}
 function quantile(values,q){if(!values.length)return null;const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.min(sorted.length-1,Math.floor(sorted.length*q))]}
 function summary(values){return{samples:values.length,medianMs:quantile(values,.5),p95Ms:quantile(values,.95),maxMs:values.length?Math.max(...values):null}}
