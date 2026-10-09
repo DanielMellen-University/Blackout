@@ -53,7 +53,7 @@ describe('course briefing goals', () => {
 
   it('keeps browsing copy short and repairs malformed telemetry', () => {
     expect(courseCardCopy({ ...item, favorite: true, difficulty: 'technical', weather: 'storm', night: true, score: 76_000 }))
-      .toEqual({ meta: '★ · TECHNICAL · THUNDERSTORM · NIGHT', record: 'PB 76,000 · SILVER' })
+      .toEqual({ meta: 'TECHNICAL · THUNDERSTORM · NIGHT', record: 'PB 76,000 · SILVER' })
     expect(courseCardCopy({ ...item, score: Number.NaN, runs: Number.POSITIVE_INFINITY }).record).toBe('NEW ROUTE')
     expect(courseCardCopy({ ...item, runs: 1 }).record).toBe('1 RUN')
     expect(courseCardCopy({ ...item, runs: 2, freeFlight: true }).record).toBe('2 RUNS')

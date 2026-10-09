@@ -255,7 +255,7 @@ body,
   inset: 0;
   z-index: 20;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
   background:
@@ -271,8 +271,11 @@ body,
 
 .title-panel {
   width: min(1160px, 100%);
+  max-height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.3fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 0 48px;
   padding: 32px 40px 24px;
   transform: none;
@@ -281,6 +284,7 @@ body,
   border-radius: 14px;
   box-shadow: var(--shadow);
   text-align: left;
+  overflow: hidden;
 }
 
 .deck-masthead {
@@ -289,11 +293,11 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  padding-bottom: 24px;
-  margin-bottom: 32px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
   border-bottom: 1px solid var(--panel-border);
 }
-.deck-hero, .deck-catalog { min-width: 0; }
+.deck-hero, .deck-catalog { min-width: 0; min-height: 0; overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
 .deck-hero { display: flex; flex-direction: column; align-items: stretch; }
 .deck-eyebrow, .deck-section-heading, .instrument-kicker, .report-kicker {
   font: 600 0.65rem/1.4 var(--mono);
@@ -303,13 +307,13 @@ body,
 }
 .deck-eyebrow { color: var(--amber); margin-bottom: 12px; }
 #deck-headline {
-  font-size: clamp(3.2rem, 6.5vw, 5.5rem);
+  font-size: clamp(3.2rem, 5.5vw, 4.8rem);
   font-weight: 800;
   letter-spacing: -0.065em;
   line-height: 0.95;
 }
 .deck-description { max-width: 30ch; color: var(--ink-dim); line-height: 1.65; font-size: 0.9rem; margin-top: 18px; }
-.deck-blueprint { width: 100%; max-height: 160px; margin: 20px 0; overflow: visible; }
+.deck-blueprint { width: 100%; max-height: 110px; margin: 12px 0; overflow: visible; }
 .blueprint-grid { stroke: #29415e; stroke-width: 0.7; }
 .airframe-definitions { position: absolute; overflow: hidden; pointer-events: none; }
 .axis-aircraft, .fighter-top-view { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
@@ -405,13 +409,11 @@ body,
 }
 
 .title-takeoff {
-  grid-column: 1 / -1;
-  margin-top: 26px;
-  padding: 16px 0 0;
+  margin-top: 18px;
+  padding: 12px;
   border-radius: 8px;
-  background: none;
-  border: 0;
-  border-top: 1px solid var(--panel-border);
+  background: var(--accent-soft);
+  border: 1px solid var(--panel-border);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -419,11 +421,28 @@ body,
   color: var(--ink);
 }
 
+.takeoff-steps { list-style: none; display: grid; gap: 8px; margin-top: 8px; }
+.takeoff-steps li { display: grid; grid-template-columns: 80px minmax(0, 1fr); gap: 12px; align-items: start; }
+.takeoff-steps kbd { justify-self: start; white-space: nowrap; }
+.takeoff-steps span { color: var(--ink-dim); font-size: 0.72rem; line-height: 1.5; }
+.takeoff-steps b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 2px; }
+
 .title-takeoff strong {
   font-size: 0.65rem;
   letter-spacing: 0.16em;
   color: var(--accent);
   text-transform: uppercase;
+}
+
+@media (max-height: 950px) and (min-width: 701px) {
+  .deck-masthead { padding-bottom: 12px; margin-bottom: 18px; }
+  #deck-headline { font-size: 3.2rem; }
+  .deck-description { margin-top: 12px; font-size: 0.82rem; }
+  .deck-blueprint { max-height: 80px; margin-block: 8px; }
+  .deck-hero .title-status { margin-top: 10px; }
+  .deck-hero .title-hint { margin-top: 6px; }
+  .deck-career { margin-top: 12px; padding-top: 8px; }
+  .title-takeoff { margin-top: 12px; }
 }
 
 .ctrl-table {
@@ -616,37 +635,18 @@ body,
   text-transform: uppercase;
 }
 
-.course-picker-favorite {
-  width: 100%;
-  margin-bottom: 8px;
-  padding: 6px 10px;
-  border: 1px solid rgba(245, 201, 89, 0.28);
-  border-radius: 7px;
-  background: rgba(11, 20, 38, 0.56);
-  color: var(--ink-dim);
-  cursor: pointer;
-  font: inherit;
-  font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-align: left;
-  text-transform: uppercase;
+.course-card { position: relative; min-width: 0; display: grid; }
+.course-card .course-option-name { padding-right: 25px; }
+.course-star {
+  position: absolute; top: 5px; right: 5px; width: 32px; height: 32px;
+  display: grid; place-items: center; padding: 0; border: 0; border-radius: 6px;
+  background: transparent; color: var(--panel-border); font: 1.25rem/1 var(--font); cursor: pointer;
 }
-
-.course-picker-favorite:hover:not(:disabled),
-.course-picker-favorite[aria-pressed='true'] {
-  border-color: rgba(245, 201, 89, 0.72);
-  background: rgba(245, 201, 89, 0.12);
-  color: #f5d989;
-}
-
-.course-picker-favorite:focus-visible {
+.course-star:hover { background: var(--accent-soft); color: var(--accent); }
+.course-star[aria-pressed='true'] { color: var(--amber); }
+.course-star:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-.course-picker-favorite:disabled {
-  cursor: default;
-  opacity: 0.45;
 }
 
 .course-picker-empty {
@@ -677,6 +677,8 @@ body,
   padding: 2px;
   scrollbar-width: thin;
 }
+
+#title-course-picker .course-picker-grid { max-height: clamp(140px, calc(100dvh - 730px), 260px); }
 
 .course-picker-featured {
   display: grid;
@@ -936,7 +938,7 @@ body,
 /* Keep the launch card fully reachable on short laptop windows. */
 @media (max-height: 560px) {
   .title-screen {
-    padding: 16px 16px 12px;
+    padding: 16px;
   }
 
   .title-panel {
@@ -2785,7 +2787,8 @@ body,
 }
 
 @media (max-width: 700px) {
-  .title-panel { display: flex; flex-direction: column; padding: 22px; gap: 24px; }
+  .title-panel { display: flex; flex-direction: column; padding: 22px; gap: 24px; overflow-y: auto; }
+  .deck-hero, .deck-catalog { overflow: visible; flex-shrink: 0; }
   .deck-masthead { margin-bottom: 0; padding-bottom: 18px; }
   .title-logo { font-size: 1.7rem; }
   .title-version { font-size: 0.55rem; max-width: 18ch; text-align: right; }
@@ -2794,7 +2797,7 @@ body,
   #deck-headline { font-size: 3.2rem; }
   .deck-description { font-size: 0.8rem; margin: 0; }
   .deck-blueprint { grid-column: 2; grid-row: 1 / 4; align-self: center; margin: 0; }
-  .title-actions, .title-status, .title-hint, .deck-career { grid-column: 1 / -1; }
+  .title-actions, .title-status, .title-hint, .deck-career, .title-takeoff { grid-column: 1 / -1; }
   .title-status, .title-progress, .title-commendations, .title-hint { margin: 0; }
   .title-takeoff { margin: 0; font-size: 0.72rem; }
 

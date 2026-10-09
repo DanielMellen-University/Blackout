@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.862**. Previous roadmap chunk: **10.861**.
-Recent changes from **10.862**. Feature Free flight, Training orbit, and Daily challenge above both mission catalogs; pin Random world first in the grid. Keep selection borders even, filter only ordinary missions, and hide legacy Weekly/Monthly modes without deleting records or replay support. The fixed-EST countdown is presentation only; actual EST reset wiring and unique world-generation conditions are deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.863**. Previous roadmap chunk: **10.862**.
+Recent changes from **10.863**. Center the bounded launch panel with equal top/bottom spacing, shorten the mission grid, and move a three-step takeoff brief below pilot rank. Replace the favorites bar with independent navy/orange mission stars. Free flight now says “Explore freely”; Daily challenge says “New mission daily.” Actual EST reset wiring and unique world-generation conditions remain deferred.
 
 ## Run
 
@@ -37,6 +37,8 @@ A mission is one flight attempt, from launch until landing or a crash. Clear the
 ## Mission picker
 
 Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a card prepares the mission without launching it. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
+
+Regular mission cards have an independent star in the top-right: navy when unsaved, orange when favorited. Clicking a star never selects or launches that mission. Select a regular mission and press F, or Tab to its star and use Enter/Space. Favorites share existing saved data across both pickers. Featured modes and Random world have no stars. The launch panel stays centered and fully bounded; shorter windows scroll its columns internally. The takeoff brief below pilot rank follows your configured controls.
 
 Weekly and Monthly modes are hidden from browsing. Saved selections of these modes fall back to Training orbit; old records and explicit replay links remain supported. A saved Ops filter falls back to All courses.
 

@@ -9,7 +9,7 @@ class TestElement {
   open = false
   value = ''
   tabIndex = 0
-  dataset: { courseId?: string } = {}
+  dataset: { courseId?: string; favoriteId?: string } = {}
   parent: TestElement | null = null
   children: TestElement[] = []
   private text = ''
@@ -119,7 +119,7 @@ describe('course picker interaction', () => {
     picker.setItems(missionItems, 'training-orbit')
     expect(element('.course-picker-featured').children.map(node => node.dataset.courseId))
       .toEqual(['free-flight', 'training-orbit', 'daily-ops'])
-    expect(element('.course-picker-grid').children.map(node => node.dataset.courseId)).toEqual(['random', 'ridge', 'storm'])
+    expect(element('.course-picker-grid').querySelectorAll<TestElement>('.course-option').map(node => node.dataset.courseId)).toEqual(['random', 'ridge', 'storm'])
     expect(options().some(node => ['weekly-ops', 'monthly-ops'].includes(node.dataset.courseId!))).toBe(false)
     expect(element('.course-picker-category').children.some(node => node.value === 'ops')).toBe(false)
     expect(element('.course-picker-category').children[0].textContent).toBe('All courses (2)')
@@ -155,6 +155,30 @@ describe('course picker interaction', () => {
     picker.setItems(missionItems, 'training-orbit')
     expect(documentState.activeElement).toBe(options()[1])
     expect(options()[1].getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('toggles independent card stars without selecting or launching, excluding pinned/featured modes', () => {
+    picker.setItems(missionItems, 'training-orbit')
+    const onChange = vi.fn(), onFavorite = vi.fn()
+    picker.onChange(onChange); picker.onFavorite(onFavorite)
+    const stars = root.querySelectorAll<TestElement>('.course-star')
+    expect(stars.map(star => star.dataset.favoriteId)).toEqual(['ridge', 'storm'])
+    expect(root.querySelector('.course-picker-favorite')).toBeNull()
+    expect(stars[0].getAttribute('aria-pressed')).toBe('false')
+    stars[0].focus()
+    element('.course-picker-list').dispatch('click', { target: stars[0] })
+    expect(onFavorite).toHaveBeenCalledExactlyOnceWith('ridge', true)
+    expect(onChange).not.toHaveBeenCalled()
+    expect(picker.value).toBe('training-orbit')
+    const starred = element('.course-star')
+    expect(starred.getAttribute('aria-pressed')).toBe('true')
+    expect(documentState.activeElement).toBe(starred)
+    picker.setBrowseState('favorites', 'catalog')
+    expect(element('.course-picker-grid').querySelectorAll<TestElement>('.course-option').map(node => node.dataset.courseId)).toEqual(['random', 'ridge'])
+    element('.course-picker-list').dispatch('click', { target: element('.course-star') })
+    expect(onFavorite).toHaveBeenLastCalledWith('ridge', false)
+    expect(element('.course-picker-grid').querySelectorAll('.course-option')).toHaveLength(1)
+    expect(element('.course-picker-empty').hidden).toBe(false)
   })
 
   it('keeps a single selection across featured/grid rows and leaves typing to the filter', () => {

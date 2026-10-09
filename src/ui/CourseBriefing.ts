@@ -14,8 +14,7 @@ function scoreFor(item: CoursePickerItem): number {
 
 /** Short catalog scan lines; the selected briefing retains the full flight log. */
 export function courseCardCopy(item: CoursePickerItem): { meta: string; record: string } {
-  const meta = [item.favorite ? '★' : '',
-    item.difficulty?.toUpperCase(), item.weather ? WEATHER_LABELS[item.weather] : '', item.night ? 'NIGHT' : '']
+  const meta = [item.difficulty?.toUpperCase(), item.weather ? WEATHER_LABELS[item.weather] : '', item.night ? 'NIGHT' : '']
     .filter(Boolean).join(' · ')
   const score = scoreFor(item)
   const runs = Number.isFinite(item.runs) ? Math.max(0, Math.floor(item.runs!)) : 0

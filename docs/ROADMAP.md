@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.862** is current. Previous ship: **10.861**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.863** is current. Previous ship: **10.862**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.863 keeps the outer launch panel centered and within the viewport, with a shorter mission grid and internal column scrolling when needed. A three-step, live-binding takeoff brief sits directly below rank/commendations. Regular missions have independent top-right favorite stars in both pickers, navy when unset and orange when saved; stars do not select/launch missions, and Random world/featured modes have none. Existing favorites, records, keyboard focus, and filtering are retained. Featured subtitles are “Explore freely” and “New mission daily.” Actual EST rollover wiring and unique per-mission generation remain deferred.
 
 Chunk 10.862 reorganizes launch and Next mission around three featured modes, pinned Random world, and a separately filtered/sorted catalog. Selection uses an even orange border. Weekly/Monthly disappear only from browsing, with saved browsing selections falling back to Training orbit and explicit historical replays/records preserved. The removed Ops filter falls back to All courses. Daily challenge gets a fixed-UTC-5 midnight countdown updated independently of cards and focus; actual daily generation still rolls over on its existing UTC schedule. No terrain-generation or flight changes.
 

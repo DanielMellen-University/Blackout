@@ -492,7 +492,7 @@ export function coursePickerNavigationIndex(
 /** Keep empty filtered states explicit so a quiet list is never mistaken for a loading failure. */
 export function coursePickerEmptyMessage(category: CoursePickerCategory, query: string): string {
   if (query.trim()) return 'NO MATCHING COURSES'
-  if (category === 'favorites') return 'NO FAVORITES YET · SELECT A COURSE AND PRESS F'
+  if (category === 'favorites') return 'NO FAVORITES YET · USE A MISSION STAR OR PRESS F ON A COURSE'
   if (category === 'recent') return 'NO RECENT COURSES YET'
   if (category === 'unplayed') return 'NO UNPLAYED COURSES · YOU HAVE FLOWN THE CATALOG'
   if (category === 'mastered') return 'NO MASTERED COURSES · REACH LEGEND TIER'
@@ -786,7 +786,6 @@ export class CoursePicker {
   private readonly filter: HTMLInputElement
   private readonly categorySelect: HTMLSelectElement
   private readonly sortSelect: HTMLSelectElement
-  private readonly favoriteButton: HTMLButtonElement
   private readonly browseControls: HTMLElement
   private readonly goal: HTMLElement
   private readonly goalTitle: HTMLElement
@@ -840,12 +839,6 @@ export class CoursePicker {
       option.textContent = coursePickerSortLabel(value)
       this.sortSelect.append(option)
     }
-    this.favoriteButton = document.createElement('button')
-    this.favoriteButton.type = 'button'
-    this.favoriteButton.className = 'course-picker-favorite'
-    this.favoriteButton.setAttribute('aria-label', 'Favorite selected course')
-    this.favoriteButton.setAttribute('aria-keyshortcuts', 'F')
-    this.favoriteButton.disabled = true
     this.empty = document.createElement('p')
     this.empty.className = 'course-picker-empty'
     this.empty.hidden = true
@@ -872,7 +865,7 @@ export class CoursePicker {
     // Include the native disclosure in the pause menu's explicit focus trap.
     recordSummary.setAttribute('tabindex', '0')
     this.records.append(recordSummary)
-    this.list.append(this.featured, this.browseControls, this.filterStatus, this.favoriteButton, this.grid, this.empty)
+    this.list.append(this.featured, this.browseControls, this.filterStatus, this.grid, this.empty)
     root.insertBefore(this.goal, this.detail)
     root.insertBefore(this.records, this.stats)
     this.records.append(this.stats)
@@ -883,7 +876,6 @@ export class CoursePicker {
     this.filter.addEventListener('keydown', this.onFilterKeyDown)
     this.categorySelect.addEventListener('change', this.onCategoryChange)
     this.sortSelect.addEventListener('change', this.onSortChange)
-    this.favoriteButton.addEventListener('click', this.onFavoriteClick)
   }
 
   get value(): string {
@@ -961,12 +953,10 @@ export class CoursePicker {
     this.filter.removeEventListener('keydown', this.onFilterKeyDown)
     this.categorySelect.removeEventListener('change', this.onCategoryChange)
     this.sortSelect.removeEventListener('change', this.onSortChange)
-    this.favoriteButton.removeEventListener('click', this.onFavoriteClick)
     this.browseControls.remove()
     this.goal.remove()
     this.records.replaceWith(this.stats)
     this.filterStatus.remove()
-    this.favoriteButton.remove()
     this.empty.remove()
     this.featured.remove()
     this.grid.remove()
@@ -976,6 +966,8 @@ export class CoursePicker {
 
   private renderList(): void {
     const active = document.activeElement
+    const focusedFavorite = active instanceof HTMLElement && this.list.contains(active)
+      ? active.closest<HTMLElement>('.course-star')?.dataset.favoriteId : undefined
     const focusedId = active instanceof HTMLElement && this.list.contains(active)
       ? active.closest<HTMLElement>('.course-option')?.dataset.courseId : undefined
     this.featuredItems = FEATURED_MISSION_IDS.flatMap(id => this.items.filter(item => item.id === id))
@@ -991,16 +983,19 @@ export class CoursePicker {
     this.dailyTimer = null
     this.featured.replaceChildren(...this.featuredItems.map(item => this.createOption(item)))
     this.featured.hidden = this.featuredItems.length === 0
-    this.grid.replaceChildren(...this.visibleGridItems.map(item => this.createOption(item)))
+    this.grid.replaceChildren(...this.visibleGridItems.map(item => this.createCard(item)))
     this.updateDailyCountdown(Date.now())
     this.empty.hidden = visible.length > 0
     if (visible.length === 0) this.empty.textContent = coursePickerEmptyMessage(this.category, this.filter.value)
     this.syncSelection()
     // Shared record/recent updates can refresh both pickers after a selection.
     // Restore only a previously focused card, never steal focus from browse controls.
-    if (focusedId) {
+    if (focusedId || focusedFavorite) {
       const options = Array.from(this.list.querySelectorAll<HTMLElement>('.course-option'))
-      const target = options.find(option => option.dataset.courseId === focusedId)
+      const target = focusedFavorite
+        ? Array.from(this.list.querySelectorAll<HTMLElement>('.course-star')).find(star => star.dataset.favoriteId === focusedFavorite)
+          ?? options.find(option => option.tabIndex === 0)
+        : options.find(option => option.dataset.courseId === focusedId)
         ?? options.find(option => option.tabIndex === 0)
       target?.focus({ preventScroll: true })
     }
@@ -1054,8 +1049,8 @@ export class CoursePicker {
       button.className += ' course-option-featured'
       const subtitle = document.createElement('span')
       subtitle.className = 'course-featured-subtitle'
-      subtitle.textContent = item.id === 'free-flight' ? 'Explore without a clock'
-        : item.id === 'training-orbit' ? 'Learn the basics' : 'Midnight EST'
+      subtitle.textContent = item.id === 'free-flight' ? 'Explore freely'
+        : item.id === 'training-orbit' ? 'Learn the basics' : 'New mission daily'
       button.setAttribute('aria-label', `${item.label}, ${subtitle.textContent}`)
       button.append(name, subtitle)
       if (item.id === 'daily-ops') {
@@ -1075,6 +1070,23 @@ export class CoursePicker {
     stats.textContent = copy.record
     button.append(name, meta, stats)
     return button
+  }
+
+  private createCard(item: CoursePickerItem): HTMLElement {
+    const option = this.createOption(item)
+    if (item.id === 'random') return option
+    const card = document.createElement('div')
+    card.className = 'course-card'
+    const star = document.createElement('button')
+    star.type = 'button'
+    star.className = 'course-star'
+    star.dataset.favoriteId = item.id
+    star.textContent = '★'
+    star.setAttribute('aria-pressed', String(item.favorite === true))
+    star.setAttribute('aria-label', `${item.favorite ? 'Unfavorite' : 'Favorite'} ${item.label}`)
+    star.setAttribute('aria-keyshortcuts', 'F')
+    card.append(option, star)
+    return card
   }
 
   private syncSelection(): void {
@@ -1109,11 +1121,9 @@ export class CoursePicker {
         selectedHidden ? 'SELECTED COURSE OUTSIDE FILTER' : ''].filter(Boolean).join(' · ')
       : ''
     this.filterStatus.hidden = !query && this.category === 'all' && !selectedHidden
-    const favorite = selected?.favorite === true
-    this.favoriteButton.disabled = !selected
-    this.favoriteButton.textContent = favorite ? '★ Favorite' : '☆ Favorite'
-    this.favoriteButton.setAttribute('aria-pressed', favorite ? 'true' : 'false')
-    this.favoriteButton.setAttribute('aria-label', favorite ? 'Remove selected course from favorites' : 'Favorite selected course')
+    for (const star of this.list.querySelectorAll<HTMLElement>('.course-star')) {
+      star.tabIndex = star.dataset.favoriteId === this.selectedId ? 0 : -1
+    }
   }
 
   private select(id: string, persist: boolean): void {
@@ -1130,6 +1140,11 @@ export class CoursePicker {
   private onClick = (event: Event): void => {
     const target = event.target
     if (!(target instanceof Element)) return
+    const star = target.closest<HTMLElement>('.course-star')
+    if (star && this.list.contains(star)) {
+      this.toggleFavorite(star.dataset.favoriteId)
+      return
+    }
     const option = target.closest('.course-option')
     if (!(option instanceof HTMLElement) || !this.list.contains(option)) return
     const id = option.dataset.courseId
@@ -1182,18 +1197,13 @@ export class CoursePicker {
     this.browseStateHandler?.(this.category, this.sort)
   }
 
-  private onFavoriteClick = (): void => {
-    this.toggleFavorite()
-  }
-
-  private toggleFavorite = (): void => {
+  private toggleFavorite = (id = this.selectedId): void => {
     if (this.disposed) return
-    const selected = this.items.find(item => item.id === this.selectedId)
+    const selected = this.catalogItems.find(item => item.id === id)
     if (!selected) return
     selected.favorite = selected.favorite !== true
     this.favoriteHandler?.(selected.id, selected.favorite)
     this.renderList()
-    this.favoriteButton.focus({ preventScroll: true })
   }
 
   private onFilterKeyDown = (event: KeyboardEvent): void => {
