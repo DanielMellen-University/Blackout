@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.866** Reuse the startup screen for Launch flight and both Retry actions, with a 1.5 second minimum and the same fade into flight. Change the initial load caption to simply “Loading”; preserve its three second minimum and failure recovery.
+
 - **10.865** Add a styled startup loading screen with fighter artwork, a scanning blue indicator, and a minimum three-second display. Fade into the complete launch UI with a subtle panel lift only after runtime/font readiness and a paint; block interaction with partially initialized controls. Expose existing startup recovery immediately on failure and respect reduced motion with a shorter, stationary fade. No gameplay or generation changes.
 
 - **10.864** Make Free flight an open sandbox without mission objectives, bonus contracts, scoring events, combos, survey goals, ghosts, forced return, or completion on landing. Remove its Flight systems card and show FREE FLIGHT in the top-left badge. Hide selected-mode goals/records and scored crash-report sections; retain Fly again/New world, physics, standalone instruments, optional exploration navigation, and crash/water cinematics. Preserve existing saved mission data and normal mission behavior. EST reset wiring and per-mission world generation remain deferred.

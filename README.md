@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.865**. Previous roadmap chunk: **10.864**.
-Recent changes from **10.865**. Add a matching navy/blue/pale-orange startup screen with fighter artwork and an animated loading indicator. Keep the launch UI hidden and non-interactive until initialization, fonts, and a paint are ready, with a minimum three-second display, then fade smoothly into the menu. Startup failures reveal the existing recovery screen immediately; reduced-motion users get a static indicator and shorter fade. Actual EST reset wiring and unique world-generation conditions remain deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.866**. Previous roadmap chunk: **10.865**.
+Recent changes from **10.866**. Reuse the startup loader when launching or retrying a flight, with a 1.5 second minimum and smooth fade into flight. The initial title load displays a simple “Loading” caption and keeps its three second minimum. Actual EST reset wiring and unique world-generation conditions remain deferred.
 
 ## Run
 

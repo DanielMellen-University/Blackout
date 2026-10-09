@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.865** is current. Previous ship: **10.864**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.866** is current. Previous ship: **10.865**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.866 reuses the startup loader for Launch flight and Retry, with a minimum 1.5-second display and the same fade into the aircraft. The initial browser startup says “Loading” and retains its three-second minimum. No gameplay changes.
 
 Chunk 10.865 adds a critical, inline-styled startup screen using the existing navy, blue, and pale-orange palette and fighter artwork. The launch UI stays hidden/inert until runtime initialization, font readiness, two animation frames, and a minimum three seconds, then fades in beneath the lifting loading panel over half a second. Controls stay inert until the fade completes. Startup failures immediately expose existing recovery controls; reduced motion stops the loading animation and uses a short stationary fade. No artificial progress percentage, new assets, dependencies, or gameplay changes. EST reset wiring and unique world-generation conditions remain deferred.
 

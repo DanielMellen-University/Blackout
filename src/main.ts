@@ -157,6 +157,7 @@ import type {
   NavigationSpeedCue,
   NavigationGlideCue,
 } from './ui/HUD'
+import { showStartupScreen } from './ui/StartupScreen'
 import {
   RADAR_RANGE_METERS,
   RADAR_UPDATE_INTERVAL_MS,
@@ -1663,6 +1664,7 @@ export async function boot(): Promise<void> {
 
   const startGame = (): void => {
     if (playing) return
+    void showStartupScreen(1500)
     refreshOpsCatalog()
     rememberRecentCourse(selectedCourseId)
     writeSelectedCourseId(qualityStorage, selectedCourseId)
@@ -1751,6 +1753,7 @@ export async function boot(): Promise<void> {
     syncInputContext()
   })
   uiListeners.add(document.getElementById('menu-retry'), 'click', () => {
+    void showStartupScreen(1500)
     menu.close()
     resetFlight(false, true)
     syncInputContext()
@@ -1762,6 +1765,7 @@ export async function boot(): Promise<void> {
   })
   uiListeners.add(document.getElementById('menu-quit'), 'click', () => quitToTitle())
   uiListeners.add(document.getElementById('btn-retry'), 'click', () => {
+    void showStartupScreen(1500)
     resetFlight(false, true)
     syncInputContext()
   })
