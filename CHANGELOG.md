@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.860** Fix crowded mission/conditions text on crash and completion reports with a spaced metadata group and readable conditions/seed labels. Move Retry and New world into a separate bottom footer outside the scrollable report content and below both disclosure sections. Preserve button IDs, handlers, keyboard focus, and flight behavior. Update the lightweight debrief review to cover the reported metadata.
+
 - **10.859** Correct the mismatched yaw/launch aircraft illustration style. Replace the narrow orthographic top view with a wide oblique fighter, sized like the approved pitch/roll diagrams. Share their exact translucent blue fill, outline weight, line joins, canopy fill, and detail opacity across all four drawings. Replace oversized chevrons with curved motion arrows, compact arrowheads, and rounded strokes. Preserve pitch/roll geometry, surrounding layout, bindings, and physics.
 
 - **10.858** Redraw yaw and launch-screen aircraft with a shared static SVG top-view fighter, matching the detailed pitch/roll art. Add canopy, intakes, swept wings, twin fins, stabilizers, and nozzle detail without assets or runtime updates. Replace em dashes with regular hyphens in source, UI copy, tests, and documentation. Preserve controls, layout, palette, physics, and paused-system exclusions.

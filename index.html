@@ -775,10 +775,13 @@
 
       <div id="run-results" class="run-results" role="dialog" aria-modal="true" aria-labelledby="result-title" hidden>
         <div class="run-results-panel">
+          <div class="report-content">
           <p class="report-kicker">Blackout / Flight report</p>
-          <p id="result-course" class="menu-kicker">MISSION</p>
-          <p id="result-conditions" class="result-conditions" hidden></p>
-          <p id="result-seed" class="result-conditions" aria-label="World seed" hidden></p>
+          <div class="report-mission">
+            <p id="result-course" class="menu-kicker">MISSION</p>
+            <p id="result-conditions" class="result-conditions" hidden></p>
+            <p id="result-seed" class="result-conditions" aria-label="World seed" hidden></p>
+          </div>
           <h2 id="result-title">COMPLETE RUN</h2>
           <p id="result-summary" class="result-summary" role="status" aria-live="polite">ROUTE COMPLETE · ENTER RETRY · R NEW WORLD</p>
           <div class="result-grid">
@@ -819,10 +822,6 @@
             <p id="result-splits" class="result-splits result-ledger" aria-label="Gate split history"></p>
             <p id="result-best" class="result-best result-ledger">BEST · 0</p>
           </details>
-          <div class="report-actions">
-            <button type="button" id="btn-retry" class="btn-play">Retry same course</button>
-            <button type="button" id="btn-new-world" class="btn-ghost">New world</button>
-          </div>
           <details class="report-share">
             <summary>Share or revisit this flight</summary>
             <div class="report-share-actions">
@@ -832,6 +831,11 @@
               <button type="button" id="btn-load-seed" class="btn-ghost">Load seed on title</button>
             </div>
           </details>
+          </div>
+          <footer class="report-actions">
+            <button type="button" id="btn-retry" class="btn-play">Retry same course</button>
+            <button type="button" id="btn-new-world" class="btn-ghost">New world</button>
+          </footer>
         </div>
       </div>
     </div>

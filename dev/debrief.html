@@ -41,7 +41,7 @@ function show(name) {
   const result = typeof scenario === 'string'
     ? run.crashDebrief(scenario === 'WATER CONTACT', scenario)
     : run.finishLanding(scenario)
-  results.show(result, undefined, false, [], 'Landing review', 'CLEAR / DAY')
+  results.show(result, undefined, false, [], 'Monthly ops', 'MONTH 2026-10 / WEATHER LOW FOG', 397184)
 }
 for (const name of Object.keys(scenarios)) {
   const button = document.createElement('button')

@@ -55,7 +55,14 @@ describe('live HUD budget', () => {
   it('keeps debrief coaching visible and results scrollable on short screens', () => {
     const panel = css.match(/\.run-results-panel\s*\{[^}]*max-height:[^}]*\}/)?.[0] ?? ''
     expect(panel).toContain('max-height: calc(100dvh - 48px)')
-    expect(panel).toContain('overflow-y: auto')
+    expect(panel).toContain('grid-template-rows: minmax(0, 1fr) auto')
+    expect(panel).toContain('overflow: hidden')
+    const content = css.match(/\.report-content\s*\{[^}]*\}/)?.[0] ?? ''
+    expect(content).toContain('overflow-y: auto')
+    expect(html).toMatch(/class="report-share"[\s\S]*?<\/details>\s*<\/div>\s*<footer class="report-actions">/)
+    expect(html).toMatch(/<footer class="report-actions">\s*<button[^>]*id="btn-retry"[^>]*>[\s\S]*?id="btn-new-world"[\s\S]*?<\/footer>/)
+    expect(css).toContain('.report-mission { display: grid; gap: 6px; margin-bottom: 20px; }')
+    expect(css).toContain('.report-mission > p { margin: 0; line-height: 1.5; }')
     for (const id of ['result-coaching', 'result-touchdown']) {
       const element = html.match(new RegExp(`<p[^>]*id="${id}"[^>]*>`))?.[0] ?? ''
       expect(element).not.toBe('')

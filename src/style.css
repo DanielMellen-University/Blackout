@@ -2195,15 +2195,26 @@ body,
 .run-results-panel {
   width: min(760px, 100%);
   max-height: calc(100dvh - 48px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 32px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 0;
   background: rgba(10, 18, 33, 0.94);
   border: 1px solid var(--panel-border);
   border-radius: 14px;
   text-align: left;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
 }
+
+.report-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 32px;
+}
+
+.report-mission { display: grid; gap: 6px; margin-bottom: 20px; }
+.report-mission > p { margin: 0; line-height: 1.5; }
 
 .run-results-panel h2 {
   font-size: clamp(1.7rem, 4vw, 2.4rem);
@@ -2221,9 +2232,9 @@ body,
 }
 
 .result-conditions {
-  margin: -10px 0 12px;
+  margin: 0;
   color: var(--ink-dim);
-  font-size: 0.56rem;
+  font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   line-height: 1.5;
@@ -2258,7 +2269,7 @@ body,
 .result-grid #result-score { font-size: 2.2rem; color: var(--amber); }
 .result-grid :is(#result-time, #result-landing, #result-gates, #result-fuel, #result-streak) { font-size: 1.25rem; }
 .report-kicker { margin-bottom: 20px; color: var(--accent); }
-.report-actions { margin-top: 20px; }
+.report-actions { margin: 0; padding: 20px 32px; border-top: 1px solid var(--panel-border); background: var(--panel); }
 
 
 
@@ -2758,7 +2769,8 @@ body,
   .title-status, .title-progress, .title-commendations, .title-hint { margin: 0; }
   .title-takeoff { margin: 0; font-size: 0.72rem; }
 
-  .menu-panel, .run-results-panel { padding: 22px; }
+  .menu-panel, .report-content { padding: 22px; }
+  .report-actions { padding: 16px 22px; }
 }
 
 

@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.859** is current. Previous ship: **10.858**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.860** is current. Previous ship: **10.859**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.860 separates the flight-report mission, conditions, and seed with explicit spacing, and moves Retry/New world below all report content into a fixed panel footer. Report details scroll independently without hiding either action. Preserve action IDs, handlers, keyboard focus, and flight behavior.
 
 Chunk 10.859 corrects the yaw/launch artwork to match the approved pitch/roll style, using wide oblique silhouettes at the same drawing scale. All four share translucent blue fill, outline weight, rounded joins, canopy fill, and subdued detail lines. Motion arrows use curved shafts, compact arrowheads, and rounded strokes. Preserve existing pitch/roll geometry, controls, layout, and physics.
 
