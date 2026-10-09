@@ -1,16 +1,72 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="startup-loading">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Blackout</title>
+    <style>
+      /* Critical startup styling renders before the game styles and runtime. */
+      html.startup-loading, .startup-screen { background: #080f20; color: #edf3ff; }
+      html.startup-loading #app { visibility: hidden; }
+      .startup-screen { position: fixed; inset: 0; z-index: 10000; display: grid;
+        place-items: center; padding: 28px; box-sizing: border-box;
+        font-family: system-ui, sans-serif;
+        background: radial-gradient(ellipse at 50% 35%, #172641 0%, #080f20 70%); }
+      .startup-screen[hidden] { display: none; }
+      .startup-screen { transition: opacity .5s ease; }
+      .startup-screen.startup-leaving { opacity: 0; }
+      .startup-screen.startup-leaving .startup-panel { transform: translateY(-10px); }
+      .startup-panel { width: min(100%, 440px); padding: 40px; box-sizing: border-box;
+        border: 1px solid #304763; border-radius: 16px; background: #0b1424;
+        box-shadow: 0 24px 100px #0005; transition: transform .5s ease; }
+      .startup-kicker { margin: 0 0 20px; color: #83c7ff; font-size: 10px;
+        letter-spacing: .3em; text-transform: uppercase; }
+      .startup-logo { margin: 0; font-size: clamp(32px, 7vw, 48px); line-height: 1;
+        font-weight: 800; letter-spacing: -.045em; }
+      .startup-logo span { color: #ffb765; margin-left: 10px; }
+      .startup-art { display: block; width: 100%; height: 100px; margin: 28px 0;
+        color: #83c7ff; }
+      .startup-track { height: 3px; overflow: hidden; border-radius: 3px; background: #20324b; }
+      .startup-track::after { content: ''; display: block; width: 35%; height: 100%;
+        background: #83c7ff; animation: startup-scan 1.4s ease-in-out infinite alternate; }
+      .startup-caption { display: flex; justify-content: space-between; gap: 12px;
+        margin-top: 18px; color: #a2b3ce; font-size: 12px; }
+      .startup-caption span:last-child { color: #83c7ff; font-size: 10px;
+        letter-spacing: .16em; text-transform: uppercase; }
+      @keyframes startup-scan { to { transform: translateX(185%); } }
+      @media (prefers-reduced-motion: reduce) { .startup-track::after { animation: none; width: 100%; } }
+      @media (prefers-reduced-motion: reduce) { .startup-screen { transition-duration: .12s; }
+        .startup-screen.startup-leaving .startup-panel { transform: none; } }
+      @media (max-height: 420px) { .startup-panel { padding: 24px; } .startup-art { height: 60px; margin: 16px 0; } }
+    </style>
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="stylesheet" href="/src/ui/pilotGuide.css" />
     <link rel="stylesheet" href="/src/ui/settingsDeck.css" />
   </head>
   <body oncontextmenu="return false;">
-    <div id="app">
+    <div id="startup-screen" class="startup-screen" role="status" aria-live="polite" aria-label="Loading Blackout">
+      <div class="startup-panel">
+        <p class="startup-kicker">Flight Simulator</p>
+        <p class="startup-logo">BLACKOUT<span aria-hidden="true">/</span></p>
+        <svg class="startup-art" viewBox="0 0 360 100" aria-hidden="true" fill="none">
+          <path d="M0 50H360M90 8V92M180 0V100M270 8V92" stroke="#20324b"/>
+          <ellipse cx="180" cy="50" rx="140" ry="40" stroke="#20324b"/>
+          <g stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="#172641">
+            <path d="M215 42L189 20H175L183 46Z"/>
+            <path d="M118 50L164 44L191 41L223 35L241 37L276 43L244 50L205 55L172 59L135 58L119 57Z"/>
+            <path d="M211 42Q221 31 231 36L245 40L227 45Z"/>
+            <path d="M218 48L179 76L157 78L177 56Z"/>
+            <path d="M139 48L129 34L139 32L157 46Z M148 54L132 67L142 66L167 55Z"/>
+            <path d="M118 50L112 51L113 57H119Z"/>
+          </g>
+        </svg>
+        <div class="startup-track" aria-hidden="true"></div>
+        <div class="startup-caption"><span>Preparing your flight</span><span>Loading</span></div>
+      </div>
+    </div>
+    <noscript><p style="position:fixed;z-index:10001;background:#080f20;color:#edf3ff;padding:24px">Enable JavaScript to launch Blackout.</p></noscript>
+    <div id="app" inert aria-hidden="true">
       <canvas id="game" oncontextmenu="return false;"></canvas>
       <svg class="airframe-definitions" width="0" height="0" aria-hidden="true" focusable="false">
         <defs><symbol id="fighter-top" viewBox="0 0 240 80">

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.865** Add a styled startup loading screen with fighter artwork, a scanning blue indicator, and a minimum three-second display. Fade into the complete launch UI with a subtle panel lift only after runtime/font readiness and a paint; block interaction with partially initialized controls. Expose existing startup recovery immediately on failure and respect reduced motion with a shorter, stationary fade. No gameplay or generation changes.
+
 - **10.864** Make Free flight an open sandbox without mission objectives, bonus contracts, scoring events, combos, survey goals, ghosts, forced return, or completion on landing. Remove its Flight systems card and show FREE FLIGHT in the top-left badge. Hide selected-mode goals/records and scored crash-report sections; retain Fly again/New world, physics, standalone instruments, optional exploration navigation, and crash/water cinematics. Preserve existing saved mission data and normal mission behavior. EST reset wiring and per-mission world generation remain deferred.
 
 - **10.863** Center and bound the launch panel with equal top/bottom spacing, adaptive mission-grid height, and internally scrolling columns on short windows. Move Takeoff brief below pilot rank and replace the one-line hint with three clear steps using live bindings. Replace the full-width favorites control and duplicate metadata stars with independent top-right navy/orange stars on regular missions in both pickers; preserve saved favorites, filtering, keyboard shortcuts, focus, and selection without nesting buttons. Update featured subtitles to “Explore freely” and “New mission daily.” Preserve challenge generation, rollover, flight behavior, and paused-system exclusions.

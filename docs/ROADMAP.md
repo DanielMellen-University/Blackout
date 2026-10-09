@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.864** is current. Previous ship: **10.863**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.865** is current. Previous ship: **10.864**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.865 adds a critical, inline-styled startup screen using the existing navy, blue, and pale-orange palette and fighter artwork. The launch UI stays hidden/inert until runtime initialization, font readiness, two animation frames, and a minimum three seconds, then fades in beneath the lifting loading panel over half a second. Controls stay inert until the fade completes. Startup failures immediately expose existing recovery controls; reduced motion stops the loading animation and uses a short stationary fade. No artificial progress percentage, new assets, dependencies, or gameplay changes. EST reset wiring and unique world-generation conditions remain deferred.
 
 Chunk 10.864 makes Free flight a pure sandbox. Disable bonus contracts, mission scoring/events, combos, survey goals, best-run ghosts, and automatic completion/return after takeoff or landing. Hide the Flight systems card, mission goals/records in the picker, and scored crash-report sections; label the top-left badge FREE FLIGHT and the crash restart Fly again. Preserve standalone instruments, optional landmark navigation, physics, collisions, crash/water cinematics, and saved mission records. Changing the pending picker selection does not change the active flight's HUD. Other mission modes are unchanged. EST reset wiring and unique world-generation conditions remain deferred.
 
