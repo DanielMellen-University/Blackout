@@ -1,4 +1,16 @@
-# Water surface review - 10.878
+# Water surface review - 10.879
+
+## 10.879: actual lake outlets and bank-aware grades
+
+The initial three-seed/nine-region audit found 59 inland lakes, four outlet labels, but only one source-node river. Three labels pointed at dry parent nodes without an emitted outlet. Outlet metadata now records actual local water connections, not the existence of a lower parent alone. Optional through-lakes follow at most three existing descending edges within 6 km; accepted streams terminate in a compatible lake, sea, or formed river. Failed local routes retain closed basins, never dry-ending channel stubs. Cached plans retain coordinates and scalars, not node object chains, under the existing 16,384-node FIFO cap. No new workers, persistent global index, larger region halo, render-distance reduction, lake-frequency increase, or upload-budget increase is introduced.
+
+Lake tributaries participate in a shared level junction before incident ribbons are cached. If an established river already emerges from a submerged node, reuse it instead of adding a parallel stream that can dip and rise at their first crossing. Existing river routing now tests the full bank influence against nearby lake levels, not only the centerline. This fixes the pre-existing seed-2026 `-6:24:0:6` rise near a lower lake. Carving, visible geometry, and collision consume the same new reaches. Ghost landscape revision 8 rejects incompatible playback without deleting records or traces.
+
+The extended ten-seed/250-region review sampled 401,769 actual water levels with no downstream rise above 0.15 m. All 19 added downstream ends joined an independent lake or a matching next channel. Focused tests pin the seed-73 lake/river junction, seed-42 submerged-node reuse, seed-2026 wide-bank grade, closed-pond metadata, query order, cache eviction, physical wet coverage, and endpoint agreement. Existing sparse-water and width/branching checks remain unchanged. Cooperative deterministic snapshots intentionally advance for changed grades and outlet metadata.
+
+Same-machine seed-73 catchment preparation, eight independent cold preparations per version: baseline median/p95 28.689/55.315 ms, revised 31.831/51.452 ms. Largest measured channel phase increases from 3.541 to 3.882 ms; owned reaches increase from 234 to 240. This is about an 11% median CPU cost in this small sample, not a general speedup or gameplay-FPS result. Loaders close and use a separate dependency cache without another HTTP server. Region/cache ownership and existing rendering budgets are retained.
+
+The new `Lake outlet junction` terrain-review destination uses seed 73. Clear-weather overview and unobstructed low-altitude first-person checks show the lake connected to the receiving river without a doubled water panel; error logs were empty. Shoreline corners remain visibly polygonal. Background browser throttling limits this review to still appearance, not sustained maximum-speed frame times or memory. Broader global depression/spill routing, complete water-artwork review, regional weather delivery, and the controlled foreground travel/memory comparison remain unfinished. Paused vegetation, warnings, and blackout/redout are untouched; actual EST rollover and per-level generation remain deferred.
 
 ## 10.878: one visible river surface
 

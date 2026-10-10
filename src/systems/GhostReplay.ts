@@ -16,7 +16,7 @@ export const MAX_GHOST_SAMPLES = 720
 export const GHOST_SAMPLE_INTERVAL = 0.1
 export const GHOST_STORAGE_PREFIX = 'blackout.ghost.'
 /** Landscape changes invalidate paths, never the player's saved records. */
-export const WORLD_GENERATION_REVISION = 7
+export const WORLD_GENERATION_REVISION = 8
 
 interface GhostStorage {
   getItem(key: string): string | null
