@@ -2,10 +2,10 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.875**. Previous roadmap chunk: **10.874**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.876**. Previous roadmap chunk: **10.875**.
 
 Outward half-caps remove the striped river-mouth overlap seen during first-person review. A shallow-water color transition remains; water artwork is not declared finished.
-Recent changes from **10.875**. Flight assist now uses half-strength pitch/bank trim and waits until yaw and roll have both been released for two seconds. Held input postpones correction; pauses freeze the delay. Pilot rates and ordinary flight handling are unchanged. The preceding water batch levels broad confluences and removes overlapping river-mouth caps and phantom sea sheets. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain in progress. Actual EST reset wiring and per-level generation remain deferred.
+Recent changes from **10.876**. Small ponds and receiving basins have larger footprints, independently varied coves and rounded arms, without increasing spawn frequency or enlarging major lakes. A minimum contour-area guard prevents surrounding relief from shrinking them back into puddles. Invalid island holes no longer bridge dry shoreline. The terrain review includes a Small ponds destination. Saved records remain intact; incompatible old ghosts are skipped. Half-strength delayed flight assist remains shipped. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain in progress. Actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 

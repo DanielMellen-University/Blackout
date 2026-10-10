@@ -168,7 +168,7 @@ function lakeCandidate(n: Node): LakeCandidate | null {
   const riverSink = !p && carriesRiver(n)
   // Every river-fed inland depression receives a compact terminal lake.
   // Optional lakes can be rare; a river's receiving surface cannot disappear.
-  if (riverSink) return (n.lake = { radius: Math.min(1100, 350 + Math.sqrt(runoff(n)) * 120),
+  if (riverSink) return (n.lake = { radius: Math.min(1300, 500 + Math.sqrt(runoff(n)) * 125),
     roll, pond: wet, large: false, riverSink: true })
   if (n.height < 35 || n.coast < .045 || hash2(n.gx - 947, n.gz + 613) >= .125) return null
   // Closed depressions plus occasional low-gradient through-lakes. Wetlands
@@ -177,7 +177,7 @@ function lakeCandidate(n: Node): LakeCandidate | null {
   if (!p && roll < .3) return null
   const large = !p && roll > .82
   const pond = wet && roll < .8
-  const radius = pond ? 330 + roll * 900 : large ? 2400 + roll * 1900 : 550 + roll * 1100
+  const radius = pond ? 600 + roll * 850 : large ? 2400 + roll * 1900 : 750 + roll * 1000
   return (n.lake = { radius, roll, pond, large, riverSink: false })
 }
 
@@ -212,7 +212,10 @@ function basin(n: Node): WaterBasin | null {
     const shoulders = sampleLandforms(n.x + x, n.z + z).height + sampleLandforms(n.x - x, n.z - z).height
     if (shoulders < lowestShoulders) { lowestShoulders = shoulders; valleyAngle = a }
   }
-  const elongation = 1.25 + roll * .3
+  const shape = hash2(n.gx - 113, n.gz + 461)
+  const phase = hash2(n.gx + 827, n.gz - 149) * Math.PI * 2
+  const elongation = large ? 1.25 + roll * .3 : 1.15 + shape * .55
+  const coveCount = 1 + Math.floor(hash2(n.gx - 251, n.gz + 883) * 3)
   for (let i = 0; i < radii.length; i++) {
     const a = i / radii.length * Math.PI * 2
     const along = Math.cos(a - valleyAngle), across = Math.sin(a - valleyAngle)
@@ -223,12 +226,21 @@ function basin(n: Node): WaterBasin | null {
     const relief = smoothstep(-120, 360, probe.height - level)
     // Coherent angular features, not one random radius per spoke. Independent
     // spokes made lakes look like pointed flowers rather than eroded basins.
-    const inletAngle = valleyAngle + .75 + roll * 2.4
-    const inlet = Math.exp((Math.cos(a - inletAngle) - 1) * 9) * .58 +
-      Math.exp((Math.cos(a - inletAngle - 2.3) - 1) * 13) * .38
-    const lobe = 1.02 + Math.sin(a - roll * 11) * .18 + Math.sin(a * 2 + roll * 9) * .2 +
-      Math.sin(a * 3 - roll * 5) * .18 - inlet +
+    let inlet = 0
+    for (let cove = 0; cove < coveCount; cove++) {
+      const angle = valleyAngle + phase + cove * (1.75 + shape * .6)
+      inlet += Math.exp((Math.cos(a - angle) - 1) * (8 + cove * 3)) * (.44 - cove * .08)
+    }
+    let lobe = 1.08 + Math.sin(a - phase) * .18 + Math.sin(a * 2 + phase * 1.3) * .2 +
+      Math.sin(a * 3 - phase * .7) * (.1 + shape * .1) - inlet +
       (valueNoise(Math.cos(a) * 1.7 + n.gx, Math.sin(a) * 1.7 + n.gz) - .5) * .24
+    if (large) {
+      const inletAngle = valleyAngle + .75 + roll * 2.4
+      lobe = 1.02 + Math.sin(a - roll * 11) * .18 + Math.sin(a * 2 + roll * 9) * .2 +
+        Math.sin(a * 3 - roll * 5) * .18 - Math.exp((Math.cos(a - inletAngle) - 1) * 9) * .58 -
+        Math.exp((Math.cos(a - inletAngle - 2.3) - 1) * 13) * .38 +
+        (valueNoise(Math.cos(a) * 1.7 + n.gx, Math.sin(a) * 1.7 + n.gz) - .5) * .24
+    }
     radii[i] = Math.max(radius * .24, Math.min(radius * 1.7,
       radius * valleyShape * lobe * (1.22 - relief * .7)))
   }
@@ -239,10 +251,38 @@ function basin(n: Node): WaterBasin | null {
       smoothRadii[(i + radii.length - 1) % radii.length]! * .25 + smoothRadii[i]! * .5 +
       smoothRadii[(i + 1) % radii.length]! * .25
   }
+  if (!large) {
+    // Relief must not reduce a nominal kilometre-wide pond to a tiny puddle.
+    // Grow the same cached contour, preserving coves and rounded arms, until
+    // it has a useful footprint. The cap keeps existing culling bounds valid.
+    let area = 0
+    const sectorArea = Math.sin(Math.PI * 2 / radii.length) * .5
+    for (let i = 0; i < radii.length; i++) area += radii[i]! * radii[(i + 1) % radii.length]! * sectorArea
+    const scale = Math.max(1, Math.min(1.5, Math.sqrt(Math.PI * Math.pow(radius * .9, 2) / area)))
+    for (let i = 0; i < radii.length; i++) radii[i] = Math.min(radius * 1.7, radii[i]! * scale)
+    // Round the shoulder where the conservative extent caps a long arm.
+    for (let pass = 0; pass < 4; pass++) {
+      smoothRadii.set(radii)
+      for (let i = 0; i < radii.length; i++) radii[i] =
+        smoothRadii[(i + radii.length - 1) % radii.length]! * .25 + smoothRadii[i]! * .5 +
+        smoothRadii[(i + 1) % radii.length]! * .25
+    }
+  }
   const contour: WaterBasin = { x: n.x, z: n.z, radius, aspect: 1, angle: 0, phase: roll * 6.28,
     level, sea: false, pond, shoreRadii: radii, boundsRadius: radius * 1.75,
-    islands: large && roll > .9 ? [{ x: n.x + radius * .28, z: n.z - radius * .13, radius: radius * .12 }] : undefined,
     id: `lake:${n.gx}:${n.gz}`, outletId: p ? `${p.gx}:${p.gz}` : undefined }
+  if (large && roll > .9) {
+    const island = { x: n.x + radius * .28, z: n.z - radius * .13, radius: radius * .12 }
+    let inside = true
+    for (let i = 0; i < 32 && inside; i++) {
+      const angle = i / 32 * Math.PI * 2
+      inside = basinDistance(contour, island.x + Math.cos(angle) * island.radius,
+        island.z + Math.sin(angle) * island.radius) < -island.radius * .05
+    }
+    // An island hole crossing a concave shore makes triangulation bridge dry
+    // land. Keep only enclosed islands; never change the outer lake contour.
+    if (inside) contour.islands = [island]
+  }
   // A wider shoreline may encompass a lower drainage node. Its surface must
   // not sit above that node's channel, otherwise incoming rivers climb at the
   // shore. Include the adjoining bank margin when resolving this spill cap.

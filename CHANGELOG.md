@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.876** Target the small ponds, not the major lakes: enlarge small basin footprints, vary one to three coves independently of basin size, retain rounded valley-aligned arms, and guard against terrain relief collapsing their area. Preserve sparse spawn selection and existing 64-point contours/caches/streaming budgets. Reject island holes that cross concave shores and incorrectly triangulate water over dry ground. Add a Small ponds terrain-review destination and focused footprint, shape, island, collision, and deterministic-generation checks. Advance ghost landscape compatibility without deleting records. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain unfinished; actual EST reset wiring and per-level generation remain deferred.
+
 - **10.875** Halve pitch/bank trim strength and delay correction until yaw and roll have both been released for two simulation seconds. Held inputs keep postponing trim; keyboard remaps and gamepads use the same control-axis gate. Pauses and invalid/no-op steps do not advance the delay; aircraft resets clear it. Update Controls and flight manual copy. Preserve pilot authority, flight handling, bounded weather response, collision, and all paused-system exclusions. Regional weather, broader basin-spill routing, and controlled foreground travel/memory validation remain in progress. Actual EST reset wiring and per-level generation remain deferred.
 
 - Water-mouth correction in 10.874: use outward half-caps rather than full discs overlapping their own ribbons. This removes the striped semicircular flicker seen in first-person review. A shallow-water color transition remains; broader spill routing and foreground travel validation are not complete.

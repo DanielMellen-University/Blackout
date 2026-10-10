@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **10.875** is current. Previous ship: **10.874**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.876** is current. Previous ship: **10.875**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 10.876 targets small ponds and receiving basins with larger footprints, independently seeded coves, rounded arms, and a minimum-area guard after terrain shaping. Major lake outlines and sea generation are unchanged. The three-seed/nine-region sample has 55 small basins versus 56 previously; its smallest equivalent water radius increases from 531 m to 823 m. This measures polygon area, not a global coverage target. Existing 64-point contours, node/cache caps, render distance, and upload budgets remain unchanged. Island holes crossing outer shores are rejected rather than letting triangulation bridge dry ground. A Small ponds review destination, surface-agreement checks, and generation revision 7 protect the shared renderer/collision path and saved records. Regional weather and broader basin-spill routing are still unfinished; actual EST reset wiring and per-level generation remain deferred.
 
 Chunk 10.875 halves pitch/bank trim gains and waits two simulation seconds after yaw/roll release. Holding either control postpones both corrections; remapped keyboard and gamepad axes share the same gate. No-op steps and pauses cannot consume the timer, and reset clears it. Focused physics checks cover exact gains, held inputs, delay expiry, neutral stick noise, disabled assist, and reset. Pilot authority, wind response, collision, and paused-system exclusions remain unchanged. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain unfinished. Actual EST reset wiring and per-level generation remain deferred.
 
