@@ -40,7 +40,7 @@ describe('cooperative terrain geometry', () => {
   })
 
   it('releases both suspended ground and child water geometry exactly once', () => {
-    const steps = generateTerrainGeometrySteps(-41580, -37800, 0)
+    const steps = generateTerrainGeometrySteps(-22050, -28350, 0)
     while (true) {
       const result = steps.next()
       expect(result.done).toBe(false)
@@ -56,26 +56,26 @@ describe('cooperative terrain geometry', () => {
   })
 
   it('keeps suspended analytic water independent of other tiles using the basin collector', () => {
-    const steps = generateTerrainGeometrySteps(-41580, -37800, 0)
+    const steps = generateTerrainGeometrySteps(-22050, -28350, 0)
     while (true) {
       const result = steps.next()
       expect(result.done).toBe(false)
       if (result.value === 'water-grid') break
     }
     generateTerrainGeometry(-6720, -6720, 2, 32)
-    expect(digest(finish(steps))).toBe('a33a074d96c1717a8e379efc8384f55f87597669c5bdff558cc451cb62de55e7')
+    expect(digest(finish(steps))).toBe('516f238ab465f67dc63504a14eb703659e6937a8c7f5c64873ba02acd6e56488')
   })
 
-  // Captured from the unsliced generator at 1065d0b, not from this iterator.
+  // Regional world revision 2, with a current wetland pond fixture.
   // These pin every output buffer and bounds across independent water/detail paths.
   it.each([
-    { name: 'near', input: [0, 0, 0], expected: '409958b7ea25e459bec2d93af3d1f0313bc0f716b5c43ad00077dec646ee00fd' },
-    { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: 'd2ffd2839b5cffae4ef28b8560b00780a5c5f4845c1df9d3d51183db5dcf21d8' },
-    { name: 'pond', input: [-41580, -37800, 0], expected: 'a33a074d96c1717a8e379efc8384f55f87597669c5bdff558cc451cb62de55e7' },
-    { name: 'far water', input: [-6720, -6720, 2, 32], expected: 'ec79f7ccdbe6078d741a88ab14aca2baa99424d00cef78ec5339030746af44d5' },
-    { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: 'ff16fd4621e16cbc5fdd69e0300a081efe4f8e2bf1a153dd37cf466898de5701' },
-    { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'bd49a9ab3d4538903d4b64c31a8070a72b7c19143049dec1627aa523cf368738' },
-  ])('preserves the previous $name payload byte-for-byte', ({ input, expected, pad }) => {
+    { name: 'near', input: [0, 0, 0], expected: 'c98a1777d69273e4b38f9614934ac8503e2c97e956199df8025e9674b765f137' },
+    { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: 'ea99ee2c3420335e099ad6c29c688d437d1148e85e6e10726ae50249a3c1c296' },
+    { name: 'pond', input: [-22050, -28350, 0], expected: '516f238ab465f67dc63504a14eb703659e6937a8c7f5c64873ba02acd6e56488' },
+    { name: 'far water', input: [-6720, -6720, 2, 32], expected: '3d51fe050fc9f537eb32b283a9f62fbe95a7d2b2f0af9da8ed33e8dc226494ad' },
+    { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: '7ae793c49622ca8d92d72d1bf50bd84f63f0f518f340e4d9a3af59a6082022d5' },
+    { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'd2ed58aedb22f745ca9ef8ac0c851cb414e9feea732fa13f0af1e32229279b39' },
+  ])('preserves the regional $name payload byte-for-byte', ({ input, expected, pad }) => {
     if (pad) setOpsPad(0, 0, 42, .4)
     const args = input as Parameters<typeof generateTerrainGeometrySteps>
     expect(digest(finish(generateTerrainGeometrySteps(...args)))).toBe(expected)
@@ -84,9 +84,9 @@ describe('cooperative terrain geometry', () => {
 
   it('keeps suspended grids and river lists independent of interleaved builds', () => {
     const expected = generateTerrainGeometry(-6720, -6720, 2, 32)
-    const expectedPond = generateTerrainGeometry(-41580, -37800, 0)
+    const expectedPond = generateTerrainGeometry(-22050, -28350, 0)
     const broad = generateTerrainGeometrySteps(-6720, -6720, 2, 32)
-    const pond = generateTerrainGeometrySteps(-41580, -37800, 0)
+    const pond = generateTerrainGeometrySteps(-22050, -28350, 0)
     for (let index = 0; index < 30; index++) {
       expect(broad.next().done).toBe(false)
       expect(pond.next().done).toBe(false)
@@ -97,7 +97,7 @@ describe('cooperative terrain geometry', () => {
   })
 
   it.each(['ground', 'water'] as const)('releases partial geometry when cancelled after %s', phase => {
-    const steps = generateTerrainGeometrySteps(-41580, -37800, 0)
+    const steps = generateTerrainGeometrySteps(-22050, -28350, 0)
     const geometryDispose = vi.spyOn(BufferGeometry.prototype, 'dispose')
     const materialDispose = vi.spyOn(Material.prototype, 'dispose')
     while (true) {
@@ -111,6 +111,6 @@ describe('cooperative terrain geometry', () => {
     expect(materialDispose).toHaveBeenCalledTimes(phase === 'water' ? 1 : 0)
     steps.return(undefined as never)
     expect(geometryDispose.mock.calls.length - before).toBe(phase === 'ground' ? 1 : 2)
-    expect(digest(generateTerrainGeometry(-41580, -37800, 0))).toBe('a33a074d96c1717a8e379efc8384f55f87597669c5bdff558cc451cb62de55e7')
+    expect(digest(generateTerrainGeometry(-22050, -28350, 0))).toBe('516f238ab465f67dc63504a14eb703659e6937a8c7f5c64873ba02acd6e56488')
   })
 })

@@ -1,10 +1,12 @@
 import { clamp01, fbm, hash2, smoothstep, valueNoise } from './noise'
+import { coastField, coastalRelief } from './Coastline'
 
 const VOLCANO_CELL = 24000
 
 /** Scalar landform output. Terrain samplers can reuse this record in place. */
 export interface LandformSample {
   height: number
+  coast?: number
   moisture: number
   temperature: number
   highlands: number
@@ -233,7 +235,8 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
     (1 - landmark.mask)
   height += (90 + detail * .1 - height) * salt
 
-  out.height = height
+  out.coast = coastField(x, z)
+  out.height = coastalRelief(height, out.coast)
   out.moisture = moisture
   out.temperature = temperature
   out.highlands = highlands

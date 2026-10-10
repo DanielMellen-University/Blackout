@@ -1,9 +1,34 @@
 import { MeshStandardMaterial } from 'three'
+import type { RiverReach } from '../src/world/Hydrology'
 import { describe, expect, it } from 'vitest'
 import { applyWaterAppearance } from '../src/world/WaterAppearance'
 import { buildWaterMesh } from '../src/world/WaterSystem'
 
 describe('independent water surfaces', () => {
+  it('stitches curved graded ribbons at shared cross-sections without flat overlapping pads', () => {
+    const a: RiverReach = { ax: 50, az: 60, bx: 200, bz: 200, wa: 24, wb: 32, ya: 100, yb: 90,
+      dx: 150, dz: 140, length: Math.hypot(150, 140), lengthSq: 150 ** 2 + 140 ** 2,
+      source: false, terminal: false, tangentAX: 1, tangentAZ: 0, tangentBX: .6, tangentBZ: .8 }
+    const b: RiverReach = { ...a, ax: 200, az: 200, bx: 340, bz: 360, wa: 32, wb: 40, ya: 90, yb: 80,
+      dx: 140, dz: 160, length: Math.hypot(140, 160), lengthSq: 140 ** 2 + 160 ** 2,
+      tangentAX: .6, tangentAZ: .8, tangentBX: 0, tangentBZ: 1 }
+    const sections: string[][] = []
+    for (const reach of [a, b]) {
+      const mesh = buildWaterMesh(new Float32Array(4).fill(200), new Float32Array(4), 1, 420,
+        0, 0, { value: 0 }, undefined, new Float32Array(4), [reach])!
+      const p = mesh.geometry.getAttribute('position'), section = new Set<string>()
+      for (let i = 0; i < p.count; i++) if (Math.abs(p.getY(i) - 90.04) < .001) {
+        const x = p.getX(i) + 210 - 200, z = p.getZ(i) + 210 - 200
+        expect(Math.abs(x * .6 + z * .8)).toBeLessThan(.001)
+        section.add(`${x.toFixed(3)},${z.toFixed(3)}`)
+      }
+      sections.push([...section].sort())
+      mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose()
+    }
+    expect(sections[0]).toHaveLength(3)
+    expect(sections[0]).toEqual(sections[1])
+  })
+
   it('omits dry ground and keeps a constant ocean or elevated lake level', () => {
     const clock = { value: 0 }
     expect(buildWaterMesh(new Float32Array([2, 3, 4, 5]), new Float32Array(4), 1, 100, 0, 0, clock)).toBeNull()
@@ -30,7 +55,7 @@ describe('independent water surfaces', () => {
         expect(positions.getY(i)).toBe(level)
         expect(depths.getX(i)).toBeGreaterThanOrEqual(0)
         expect(flow.getX(i)).toBe(0)
-        expect(kind.getX(i)).toBe(1)
+        expect(kind.getX(i)).toBe(level <= 0 ? 2 : 1)
         expect(normals.getY(i)).toBeCloseTo(1)
         if (depths.getX(i) < .001) shoreline++
       }

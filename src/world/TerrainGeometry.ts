@@ -1,7 +1,7 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, Mesh, PlaneGeometry, Sphere, Vector3 } from 'three'
 import { applySlopeShadingInto, biomeColorInto, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { CATCHMENT_SIZE, prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius, waterLandmarks,
+import { prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius, waterBasinsInBounds,
   type HydrologyBuildPhase, type WaterBasin } from './Hydrology'
 import { buildWaterMeshSteps, type WaterBuildPhase } from './WaterSystem'
 
@@ -111,41 +111,19 @@ function appendUniqueTransferable(buffers: ArrayBuffer[], buffer: ArrayBuffer): 
 /** True when a streamed tile overlaps an analytic pond that coarse vertices can miss. */
 export function pondIntersectsBounds(originX: number, originZ: number, span: number): boolean {
   const minX = originX, minZ = originZ, maxX = originX + span, maxZ = originZ + span
-  const minCx = Math.floor(minX / CATCHMENT_SIZE), maxCx = Math.floor((maxX - 1) / CATCHMENT_SIZE)
-  const minCz = Math.floor(minZ / CATCHMENT_SIZE), maxCz = Math.floor((maxZ - 1) / CATCHMENT_SIZE)
-  for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
-    for (const basin of waterLandmarks(cx, cz)) {
-      if (!basin.pond) continue
-      const nearestX = Math.max(minX, Math.min(maxX, basin.x))
-      const nearestZ = Math.max(minZ, Math.min(maxZ, basin.z))
-      const dx = nearestX - basin.x, dz = nearestZ - basin.z
-      const bound = waterBasinBoundsRadius(basin) + 120
-      if (dx * dx + dz * dz < bound * bound) return true
-    }
+  for (const basin of waterBasinsInBounds(minX, minZ, maxX, maxZ, basinScratch)) {
+    if (!basin.pond) continue
+    const nearestX = Math.max(minX, Math.min(maxX, basin.x))
+    const nearestZ = Math.max(minZ, Math.min(maxZ, basin.z))
+    const dx = nearestX - basin.x, dz = nearestZ - basin.z
+    const bound = waterBasinBoundsRadius(basin) + 120
+    if (dx * dx + dz * dz < bound * bound) return true
   }
   return false
 }
 
 function basinsInBounds(originX: number, originZ: number, span: number): WaterBasin[] {
-  const result = basinScratch
-  result.length = 0
-  // The largest generated sea has radius 4500; warped shorelines remain
-  // inside 1.75 radii. Broad far tiles must not expand queries by their span.
-  const margin = Math.min(span * .8, 8000)
-  const minCx = Math.floor((originX - margin) / CATCHMENT_SIZE)
-  const maxCx = Math.floor((originX + span + margin) / CATCHMENT_SIZE)
-  const minCz = Math.floor((originZ - margin) / CATCHMENT_SIZE)
-  const maxCz = Math.floor((originZ + span + margin) / CATCHMENT_SIZE)
-  for (let cx = minCx; cx <= maxCx; cx++) for (let cz = minCz; cz <= maxCz; cz++) {
-    for (const basin of waterLandmarks(cx, cz)) {
-      const extent = waterBasinBoundsRadius(basin) + span * .5
-      const centerX = originX + span * .5, centerZ = originZ + span * .5
-      if (Math.abs(basin.x - centerX) <= extent && Math.abs(basin.z - centerZ) <= extent) {
-        result.push(basin)
-      }
-    }
-  }
-  return result
+  return waterBasinsInBounds(originX, originZ, originX + span, originZ + span, basinScratch)
 }
 
 export function segsForLod(lod: TerrainLod): number {
@@ -320,7 +298,7 @@ export function* generateTerrainGeometrySteps(
       : size > 1 ? SEGS_MID : segsForLod(lod)
     // Cover analytic basin collection and the normal probes beyond each edge,
     // so neither point sampling nor water setup creates a cold region mid-step.
-    const margin = Math.max(span / baseSegs, reducedFar ? 0 : Math.min(span * .8, 8000))
+    const margin = span / baseSegs
     const hydrologySteps = prepareHydrologyInBoundsSteps(originX - margin, originZ - margin,
       originX + span + margin, originZ + span + margin)
     try {
@@ -364,7 +342,11 @@ export function* generateTerrainGeometrySteps(
     yield* climatesForGrid(segs)
     // The delegated sampler owns the grid until this builder completes/cancels.
     const sampledGrid = (): Climate[] => climates!
-    if (!reducedFar && segs < detailSegs && sampledGrid().some(climate => (climate.waterLevel ?? 0) > climate.height + .01)) {
+    const wet = (climate: Climate) => (climate.waterLevel ?? 0) > climate.height + .01
+    // A fully submerged sea tile has a flat independent surface. Spend extra
+    // terrain samples on shorelines, not invisible seabed across an entire bay.
+    if (!reducedFar && segs < detailSegs && sampledGrid().some(wet) &&
+      sampledGrid().some(climate => !wet(climate))) {
       releaseClimateGrid(sampledGrid())
       climates = null
       segs = detailSegs

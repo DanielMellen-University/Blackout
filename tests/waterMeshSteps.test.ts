@@ -57,16 +57,16 @@ beforeEach(() => setWorldSeed(1337))
 afterEach(() => vi.restoreAllMocks())
 
 describe('cooperative water geometry', () => {
-  // Captured before modifying WaterSystem at c4615ad, including normal buffers.
+  // Authored basins retain their buffers; sea-level raster uses the sea material kind.
   it.each([
-    ['raster', '895394e1bfa29ab16194de011bff8cadc042668d84a118b728ae2c521423ca12'],
+    ['raster', 'edeb0d4688d760b8e5119f4a1ac2cc7b1aeba293141ddf5e7b6321726497c436'],
     ['lake', 'b99072688cd79b31d632d9e436211765afc666fc6e55fe0c39d486a5403102ce'],
     ['pond', 'ff33001ecc43afe76c93fd273989f1d90ae460e20b5864eebd5d0315d420f116'],
     ['sea', '0bc507c61a5827c6a0db58a18fb2c83328170693afe87c3ab9873264cdc729b1'],
     ['river', '56b319baee7d18b19daf9fb881a0604f95862b919c337c7185b1b46e181c26a0'],
     ['mouth', '50edd2ed2766406519c3d822205d6bef37d2f1ac36ab789e57b945327007c3a1'],
     ['junction', '13e085ada102c346e8ee4334cb72d5e74da70cbaf0c7944b2a087e5b40c9c225'],
-  ])('preserves legacy %s bytes and bounds', (name, hash) => {
+  ])('preserves %s bytes and bounds', (name, hash) => {
     const mesh = finish(buildWaterMeshSteps(...argsFor(name)))!
     const sync = buildWaterMesh(...argsFor(name))!
     try { expect(digest(mesh)).toBe(hash); expect(digest(sync)).toBe(hash) }
@@ -111,7 +111,7 @@ describe('cooperative water geometry', () => {
       steps.return(null)
       expect(geometryDispose).toHaveBeenCalledTimes(hasGeometry ? 1 : 0)
       const mesh = buildWaterMesh(...argsFor('raster'))!
-      try { expect(digest(mesh)).toBe('895394e1bfa29ab16194de011bff8cadc042668d84a118b728ae2c521423ca12') }
+      try { expect(digest(mesh)).toBe('edeb0d4688d760b8e5119f4a1ac2cc7b1aeba293141ddf5e7b6321726497c436') }
       finally { dispose(mesh) }
     })
 

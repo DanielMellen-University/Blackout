@@ -39,6 +39,53 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
   during pause or hidden-tab time. Settlement replies must match the outstanding
   key, generation, and request kind; late or duplicate results cannot add meshes.
 
+## Shared water revision (chunk 10.869)
+
+The shared regional coast field, drainage-node graph, and cached lake contours
+feed carving, independent water meshes, and surface/collision samples in every
+mode. The user's latest density request supersedes the earlier 15-25% open-sea
+target. Compared with the denser in-progress prototype immediately before that
+request, seeds 1, 42, and 1337 retain 635.84 km of river length versus 3,345.54 km
+(19.0%). In 49,923 surface probes, water covers 3,735 samples versus 14,804
+(25.2% of the previous wet area; 7.48% of the reviewed land/water area).
+Those probes span +/-64 km at 1 km spacing. River lengths cover the nine
+32 km regions around the origin for each seed. Split arms account for 0.65% of
+retained river length. These are reproducible regional samples, not a guarantee
+that every flight sees the same density. The broader ten-seed coast-only review
+has 5.07% open sea coverage over +/-128 km at 4 km spacing.
+
+Render radius remains 33.6 km, fog horizon 30.24 km, and worker/upload/cache
+caps are unchanged. Fully submerged sea tiles no longer promote invisible ground
+to shoreline detail. Basin queries use the current region's halo instead of
+building extra regions to find off-tile lake centres. Curved river ribbons share
+cross-sections rather than overlapping flat join pads on graded water.
+
+Separate CPU-only three-sample seed-1337 profiles on the same machine:
+
+| Measure | Before revision | Candidate |
+| --- | ---: | ---: |
+| First near tile | 59.21 ms | 97.64 ms |
+| Later near median | 19.06 ms | 16.78 ms |
+| Largest near work step | 5.67 ms | 2.67 ms |
+| Near maximum payload | 39,412 B | 39,412 B |
+
+Cold regional preparation still costs more overall than the old generator.
+Shorter work slices and the worker path matter; this is not a general FPS gain
+or a hard 2 ms deadline guarantee. Browser terrain-only travel and full-world
+visual inspection are separate from this CPU profile. Full-game weather-heavy
+flight and JS-heap growth need further review during the next batches.
+
+Browser terrain-only checks used seed 1337, High quality, six workers, pixel
+ratio 1, 5,000 m altitude, and the same northeast 680 m/s route on the same
+machine. The 10.868 baseline ran 102 seconds / 69.4 km; the final candidate ran
+101 seconds / 68.7 km. Both reported 60 median FPS and 16.8 ms flight frame p95.
+Initial coverage measured 2.85 s before and 1.23 s after. Terrain update p95 was
+2.20 ms before and 2.40 ms after. At the final sample the baseline had 664
+resident tiles and the candidate 623, with no pending jobs. Resident tiles are
+not a JS-heap measurement; this single route/run is not a full-game or universal
+performance guarantee. Full-world river/chase, lake, and coastline screenshots
+were visually inspected separately, including the wide-river join correction.
+
 ## CPU generation profile (chunk 10.839)
 
 Run `npm run perf:terrain -- --seed=42 --samples=16`. The loader does not open an

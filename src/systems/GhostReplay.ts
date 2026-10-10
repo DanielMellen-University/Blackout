@@ -15,6 +15,8 @@ import {
 export const MAX_GHOST_SAMPLES = 720
 export const GHOST_SAMPLE_INTERVAL = 0.1
 export const GHOST_STORAGE_PREFIX = 'blackout.ghost.'
+/** Landscape changes invalidate paths, never the player's saved records. */
+export const WORLD_GENERATION_REVISION = 2
 
 interface GhostStorage {
   getItem(key: string): string | null
@@ -23,6 +25,7 @@ interface GhostStorage {
 
 interface StoredGhost {
   version: 1
+  worldGeneration: number
   score: number
   samples: number[]
 }
@@ -162,6 +165,7 @@ export class GhostReplay {
     }
     const payload: StoredGhost = {
       version: 1,
+      worldGeneration: WORLD_GENERATION_REVISION,
       score: Number.isFinite(score) ? Math.max(0, Math.floor(score)) : 0,
       samples,
     }
@@ -247,7 +251,7 @@ function parseStoredGhost(raw: string | null): StoredGhost | null {
     const value: unknown = JSON.parse(raw)
     if (!value || typeof value !== 'object') return null
     const candidate = value as Partial<StoredGhost>
-    if (candidate.version !== 1 || !Array.isArray(candidate.samples)) return null
+    if (candidate.version !== 1 || candidate.worldGeneration !== WORLD_GENERATION_REVISION || !Array.isArray(candidate.samples)) return null
     if (candidate.samples.length < 8 || candidate.samples.length > MAX_GHOST_SAMPLES * 4 || candidate.samples.length % 4 !== 0) return null
     const samples = candidate.samples.map(Number)
     if (samples.some(value => !Number.isFinite(value))) return null
@@ -256,6 +260,7 @@ function parseStoredGhost(raw: string | null): StoredGhost | null {
     }
     return {
       version: 1,
+      worldGeneration: WORLD_GENERATION_REVISION,
       score: Number.isFinite(candidate.score) ? Math.max(0, Math.floor(candidate.score!)) : 0,
       samples,
     }

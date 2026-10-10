@@ -24,6 +24,19 @@ function storageFixture(): {
 }
 
 describe('GhostReplay', () => {
+  it('rejects old landscape paths without deleting stored progress or traces', () => {
+    const { values, storage } = storageFixture()
+    const key = `${GHOST_STORAGE_PREFIX}seed:9:balanced`
+    const raw = JSON.stringify({ version: 1, score: 700, samples: [0, 0, 10, 0, 1, 5, 10, 5] })
+    values.set(key, raw)
+    values.set('records', 'untouched')
+    const replay = new GhostReplay(new Group(), storage)
+    replay.reset('seed:9:balanced')
+    expect(replay.ghostSampleCount).toBe(0)
+    expect(values.get(key)).toBe(raw)
+    expect(values.get('records')).toBe('untouched')
+    replay.dispose()
+  })
   it('records bounded samples and persists only a new best for seeded courses', () => {
     const { values, storage } = storageFixture()
     const replay = new GhostReplay(new Group(), storage)

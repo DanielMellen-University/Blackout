@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, Vector3 } from 'three'
+import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, ShapeUtils, Vector2, Vector3 } from 'three'
 import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
@@ -7,6 +7,7 @@ interface BasinVertex { x: number; z: number; y: number; depth: number }
 
 /** Cached warped shoreline samples reused by every terrain tile touching a basin. */
 const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
+const basinIslandCache = new WeakMap<WaterBasin, { points: BasinVertex[]; triangles: number[][] }>()
 interface WaterStaging {
   positions: number[]; depths: number[]; flowValues: number[]
   flowDirections: number[]; waterKinds: number[]; waterDrops: number[]
@@ -109,7 +110,7 @@ export function* buildWaterMeshSteps(
       // Fixed-level basins get their own smooth analytic shoreline below. Do not
       // also rasterize these triangles, or the two surfaces recreate the old
       // sawtooth edge and expose a dark bed wedge between cells.
-      if (basins.length > 0 && basinMask &&
+      if (basins.length > 0 && basinMask && levels[a]! > 0 &&
         (basinMask[a]! > .5 || basinMask[b]! > .5 || basinMask[c]! > .5)) return
       if (beds[a]! >= levels[a]! && beds[b]! >= levels[b]! && beds[c]! >= levels[c]!) return
       setVertex(input[0], a)
@@ -152,7 +153,8 @@ export function* buildWaterMeshSteps(
         waterDrops.push(0, 0, 0)
         // Raster water is the compatibility path for a fixed basin. Analytic
         // basins below carry their exact lake, pond, or sea kind.
-        waterKinds.push(1, 1, 1)
+        const kind = first.level <= 0 ? 2 : 1
+        waterKinds.push(kind, kind, kind)
       }
     }
     for (let z = 0; z < segs; z++) for (let x = 0; x < segs; x++) {
@@ -313,23 +315,25 @@ function* appendAnalyticBasins(
   }
 
   for (const basin of basins) {
+    if (basin.regionalSea) continue
     const extent = waterBasinBoundsRadius(basin) + size * .72
     if (Math.abs(basin.x - centerX) > extent || Math.abs(basin.z - centerZ) > extent) continue
     const samples = basin.sea ? 256 : basin.pond ? 96 : 160
     let boundary = basinBoundaryCache.get(basin)
     if (!boundary) {
       boundary = []
+      const outline = basin.islands?.length ? { ...basin, islands: undefined } : basin
       const highScale = basin.sea ? 2.65 : basin.pond ? 2.9 : 2.5
       for (let i = 0; i < samples; i++) {
         const angle = i / samples * Math.PI * 2
         let low = 0, high = basin.radius * highScale
         // The warped outline is broad and single-valued along a ray. Expand the
         // bracket defensively for unusually deep coves before binary searching.
-        for (let expand = 0; expand < 3 && basinDistance(basin, basin.x + Math.cos(angle) * high,
+        for (let expand = 0; expand < 3 && basinDistance(outline, basin.x + Math.cos(angle) * high,
           basin.z + Math.sin(angle) * high) < 0; expand++) high *= 1.35
         for (let pass = 0; pass < 9; pass++) {
           const radius = (low + high) * .5
-          if (basinDistance(basin, basin.x + Math.cos(angle) * radius,
+          if (basinDistance(outline, basin.x + Math.cos(angle) * radius,
             basin.z + Math.sin(angle) * radius) < 0) low = radius
           else high = radius
         }
@@ -345,6 +349,39 @@ function* appendAnalyticBasins(
         if (i % 8 === 7) yield 'shore'
       }
       basinBoundaryCache.set(basin, boundary)
+    }
+    if (basin.islands?.length) {
+      let lake = basinIslandCache.get(basin)
+      if (!lake) {
+        const holes = basin.islands.map(island => Array.from({ length: 32 }, (_, i) => {
+          const a = -i / 32 * Math.PI * 2
+          return new Vector2(island.x - basin.x + Math.cos(a) * island.radius,
+            island.z - basin.z + Math.sin(a) * island.radius)
+        }))
+        const outer = boundary.map(p => new Vector2(p.x, p.z))
+        lake = { points: [...outer, ...holes.flat()].map(p => ({ x: p.x, z: p.y, y: basin.level, depth: .08 })),
+          triangles: ShapeUtils.triangulateShape(outer, holes) }
+        basinIslandCache.set(basin, lake)
+      }
+      for (let i = 0; i < lake.triangles.length; i++) {
+        const triangle = lake.triangles[i]!
+        const a = lake.points[triangle[0]!]!, b = lake.points[triangle[1]!]!, c = lake.points[triangle[2]!]!
+        const midX = (a.x + b.x + c.x) / 3, midZ = (a.z + b.z + c.z) / 3
+        // Hole triangulation has only shoreline vertices. An interior sample
+        // stops the whole lake inheriting the shallow edge's pale colour.
+        for (let side = 0; side < 3; side++) {
+          const points = [lake.points[triangle[side]!]!, lake.points[triangle[(side + 1) % 3]!]!,
+            { x: midX, z: midZ }]
+          for (let k = 0; k < 3; k++) {
+            const p = points[k]!, target = polygonScratch[k]!
+            target.x = basin.x + p.x - centerX; target.z = basin.z + p.z - centerZ
+            target.y = basin.level; target.depth = Math.max(.08, -basinDistance(basin, basin.x + p.x, basin.z + p.z) * .06)
+          }
+          appendPolygon(polygonScratch, 1)
+        }
+        if (i % 8 === 7) yield 'basin'
+      }
+      continue
     }
     // Keep close shorelines smooth, but decimate the cached boundary when a
     // large quadtree tile is already hidden in the fog. The cache remains
@@ -570,6 +607,13 @@ function* appendRiverRibbons(
     const steps = Math.max(4, Math.min(12, Math.ceil(length / 120)))
     for (let step = 0; step <= steps; step++) {
       const t = step / steps
+      let sectionNX = nx, sectionNZ = nz
+      if (reach.tangentAX !== undefined && reach.tangentBX !== undefined) {
+        const tx = reach.tangentAX + (reach.tangentBX - reach.tangentAX) * t
+        const tz = reach.tangentAZ! + (reach.tangentBZ! - reach.tangentAZ!) * t
+        const magnitude = Math.hypot(tx, tz)
+        sectionNX = -tz / magnitude; sectionNZ = tx / magnitude
+      }
       const baseX = reach.ax + dx * t
       const baseZ = reach.az + dz * t
       const baseWidth = reach.wa + (reach.wb - reach.wa) * t
@@ -599,9 +643,9 @@ function* appendRiverRibbons(
       ))
       const centerX = baseX, centerZ = baseZ
       sections.push({
-        left: { x: centerX + nx * channelHalfWidth - originX - half, z: centerZ + nz * channelHalfWidth - originZ - half, y, depth: edgeDepth },
+        left: { x: centerX + sectionNX * channelHalfWidth - originX - half, z: centerZ + sectionNZ * channelHalfWidth - originZ - half, y, depth: edgeDepth },
         center: { x: centerX - originX - half, z: centerZ - originZ - half, y, depth },
-        right: { x: centerX - nx * channelHalfWidth - originX - half, z: centerZ - nz * channelHalfWidth - originZ - half, y, depth: edgeDepth },
+        right: { x: centerX - sectionNX * channelHalfWidth - originX - half, z: centerZ - sectionNZ * channelHalfWidth - originZ - half, y, depth: edgeDepth },
         flow,
       })
     }
@@ -643,7 +687,7 @@ function* appendRiverRibbons(
     if (source) {
       if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ, drop, first.flow)
       else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4), drop, first.flow)
-    } else if (!reach.mouth) {
+    } else if (!reach.mouth && reach.tangentAX === undefined) {
       appendJunctionPad(first, radius, -flowX, -flowZ, drop, first.flow)
     }
     if (terminal) {
@@ -654,7 +698,7 @@ function* appendRiverRibbons(
         // rises faster than the feather cannot expose a square terminal edge.
         appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ, drop, last.flow)
       }
-    } else if (!reach.mouth) {
+    } else if (!reach.mouth && reach.tangentBX === undefined) {
       appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop, last.flow)
     }
     yield 'river'

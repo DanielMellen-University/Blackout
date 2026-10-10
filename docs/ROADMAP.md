@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.868** is current. Previous ship: **10.867**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.869** is current. Previous ship: **10.868**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.869 replaces isolated sea ellipses and catchment-edge channel tapering with a continuous seeded coast field and globally identified descending drainage nodes. Cached lake contours, channels, and levels drive terrain, independent visible water, and collision. Coherent curved routes and smooth lowland width profiles replace angular joins; widths can reach four times their previous runoff-derived size. Once a river forms it stays connected downstream, with compact lakes at river-fed closed depressions and no dry-ending delta arms. Optional lakes are thinned and their shores smoothed; islands are cut out of water geometry. The user's density revision supersedes the initial 15-25% sea target: the fixed review set has about 19% of the earlier prototype's river length and 25% of its wet area, with split channels below 1% of river length. Shared generation affects all modes; records/favorites/settings survive and incompatible old ghosts are skipped without deleting saved data. Terrain distance and worker/upload caps are unchanged. Regional weather integration and further terrain/biome polish are not shipped in this batch.
 
 Chunk 10.868 keeps incoming, retiring, and restored water surfaces opaque and depth-writing to prevent overlapping transparent LODs from exposing the bed or changing brightness on settlement. Fallback water retains its relative bias above terrain and behind replacement water. Water detail distance is evaluated once per fragment, independent of LOD tessellation, with existing Low/far texture-read limits. Live wind changes ripple strength without resetting elapsed texture phase. Water geometry/levels, generation, collision, render distance, and streaming budgets are unchanged. EST reset wiring and unique world-generation conditions remain deferred; paused-system exclusions remain in force.
 
@@ -62,7 +64,7 @@ Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle th
 
 ## Current priorities
 
-Next phase: wire the actual Daily challenge reset to midnight EST and introduce unique world-generation conditions per mission. Both are explicitly deferred from the UI-only 10.862 change; do not treat the displayed countdown as already controlling challenge generation.
+Next phase: regional weather, then terrain/biome polish, developing and reviewing the shared generator through Free flight first. Review connected water at low altitude and maximum speed as this continues. Existing levels may change and will be redesigned later. Actual Daily challenge reset wiring to midnight EST and unique world-generation conditions per mission remain deferred; the displayed countdown does not control challenge generation.
 
 Chunk 10.851 removes Pull up and Low alt alerts, audio cues, predictive terrain-warning sampling, and low-clearance altimeter alarm colors/ARIA descriptions. Altitude readings, terrain collision checks, flight handling, obstacle lookahead, stall, gear, flare/go-around, fuel, and overspeed warnings remain. Regression cases cover fast low descents, rising ridges without warning probes, remaining warning priorities, and neutral low-altitude readouts.
 

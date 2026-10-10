@@ -62,7 +62,7 @@ export function sampleGeographyInto(out: Climate, x: number, z: number): Climate
     })
   }
   const landform = sampleLandformsInto(landformScratch, x, z)
-  const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height)
+  const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height, landform.coast)
   const { height, waterLevel, river, lake, pond, stream, coastal } = hydrology
   const { moisture, temperature, cold, hot, dunes, badlands, karst, volcanic, salt } = landform
   const alpine = smoothstep(650, 1900, height)
@@ -73,7 +73,7 @@ export function sampleGeographyInto(out: Climate, x: number, z: number): Climate
   biomeWeights[1]![1] = smoothstep(200, 450, height) * low * .65
   biomeWeights[2]![1] = smoothstep(.35, .66, moisture) * low * (1 - hot * .55)
   biomeWeights[3]![1] = smoothstep(.48, .76, moisture) * hot * low * 1.8
-  biomeWeights[4]![1] = smoothstep(.55, .8, moisture) * Math.max(lake, river, coastal) * low * 1.6
+  biomeWeights[4]![1] = smoothstep(.55, .8, moisture) * Math.max(lake, pond, river, coastal) * low * 3.2
   biomeWeights[5]![1] = dunes * low * 2
   biomeWeights[6]![1] = badlands * (1 - alpine * .85) * 2
   biomeWeights[7]![1] = hot * (1 - smoothstep(.3, .58, moisture)) * low * 1.4
@@ -120,7 +120,7 @@ export function sampleGeographyInto(out: Climate, x: number, z: number): Climate
 /** Height-only geography path for terrain normal probes that need no climate object. */
 export function sampleGeographyHeight(x: number, z: number): number {
   const landform = sampleLandformsInto(landformScratch, x, z)
-  return sampleHydrologyInto(hydrologyScratch, x, z, landform.height).height
+  return sampleHydrologyInto(hydrologyScratch, x, z, landform.height, landform.coast).height
 }
 
 /**
@@ -142,7 +142,7 @@ export function sampleGeographySurfaceInto(
   z: number,
 ): GeographySurfaceSample {
   const landform = sampleLandformsInto(landformScratch, x, z)
-  const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height)
+  const hydrology = sampleHydrologyInto(hydrologyScratch, x, z, landform.height, landform.coast)
   out.bedHeight = hydrology.height
   out.waterLevel = hydrology.waterLevel
   out.height = Math.max(hydrology.height, hydrology.waterLevel)
