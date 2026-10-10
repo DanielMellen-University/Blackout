@@ -64,9 +64,9 @@ describe('cooperative water geometry', () => {
     ['lake', '47293b26153d002e36a72e1a18c06c2728ed86ae1c1744be5fbc63fd067ed36d'],
     ['pond', '2c3029eec80ba9f3521efa5b88281f8f3c929197b4428c0f0a389a90059afd04'],
     ['sea', 'cea86ecfba3ae6411d4ac629d6132ee64c5f42cb742effea42a75017dd431133'],
-    ['river', '602566ea38701db7d68e8a21180bfcafd22ac1adb8097a7eef86d3b58ffe37e9'],
-    ['mouth', '228d9ac9e6c7fb4cbe4b2efede252b14f268a2caa7c5f45bec4a295cfc395366'],
-    ['junction', 'd4fe1af5461f53e6e6da8b3740e4fad8f93a0c0d92def3a701798a409b51f002'],
+    ['river', '028494605c946750cdc122fb43743717930b6283b55577ec6d7235328ca4c433'],
+    ['mouth', '8e2580297584c08210e6ad82e473585000f4fef4d3dc43e80edda2e791d137f8'],
+    ['junction', 'ba9be3c3ca2e505369eff1fc8d9ea74fdfa187ab41f6afa569bf0eb9d0ea501a'],
   ])('preserves %s bytes and bounds', (name, hash) => {
     const mesh = finish(buildWaterMeshSteps(...argsFor(name)))!
     const sync = buildWaterMesh(...argsFor(name))!

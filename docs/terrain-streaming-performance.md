@@ -5,6 +5,38 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.873 shared water surfaces
+
+Same-machine CPU-only comparison against 10.872, seed 1, unchanged quality,
+16 builds per coordinate, with no test runner active; medians exclude the first:
+
+| Tile | 10.872 warm ms | 10.873 warm ms | 10.872 / 10.873 payload bytes |
+| --- | ---: | ---: | ---: |
+| Receiving pond (-22050, -28350), near | 17.63 | 20.58 | 228612 / 224004 |
+| River mouth (-33600, -18060), near | 20.78 | 21.46 | 212916 / 215940 |
+| Far water (-26880, -26880), 8-cell | 2.02 | 1.93 | 10516 / 10516 |
+
+Cold pond builds were 134.50 / 106.13 ms and mouth builds 63.11 / 81.17 ms.
+Warm p95 was 37.98 / 46.83 ms at the pond and 22.10 / 24.42 ms at the mouth.
+These short JIT-sensitive samples show a real cost for exact surface agreement,
+not a general speedup. The ordinary eight-sample seed-1337 sliced run recorded
+a 7.05 ms warm near median, 12.26 ms p95, 148.10 ms first build, and 6.27 ms
+maximum individual channel-preparation step. The 2 ms budget remains a deadline
+between steps, not a guarantee on any single step.
+
+Shared surfaces are weakly owned by immutable reaches under existing bounded
+node/catchment caches. Clipped mouths use a compact 4x4 triangle index; ordinary
+sections remain compact arrays. There is no new unbounded world cache, worker,
+timer, upload allowance, or reduction in render distance. A sustained foreground
+heap/FPS comparison is still outstanding; these CPU numbers do not replace it.
+
+Rendered seed-42 review covered the river overview, a settled low-altitude chase
+view, and the receiving-lake mouth in unobstructed first person. The hidden
+browser was throttled near one frame per second, so initial missing coverage
+was allowed to settle and its frame statistics are not performance evidence.
+The mouth still has a visible shading transition; further confluence grading,
+shore appearance, and complete basin-spill routing remain unfinished.
+
 ### Chunk 10.872 water correction sample
 
 Same-machine CPU-only comparisons against 10.871 used seed 1, unchanged quality,

@@ -3,6 +3,7 @@ import { basinDistance, CATCHMENT_SIZE, hydrologyIntersectsBounds, riverReaches,
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
 import { terrainSurfaceFromClimate } from '../src/world/terrainSample'
+import { riverSurface, riverSurfaceHeightAt } from '../src/world/RiverSurface'
 
 describe('natural drainage', () => {
   it('reuses caller-owned hydrology storage without changing the sample', () => {
@@ -87,7 +88,13 @@ describe('natural drainage', () => {
       expect(r.length).toBeCloseTo(Math.hypot(r.dx, r.dz), 8)
       const c = sampleGeography((r.ax + r.bx) / 2, (r.az + r.bz) / 2)
       expect(terrainSurfaceFromClimate(c).kind).toBe('water')
-      expect(c.waterLevel).toBeCloseTo((r.ya + r.yb) / 2, 0)
+      // Wide corners and lake mouths use the shared triangle grade, not a
+      // second centreline-only interpolation. Independent renderer agreement
+      // is covered across bends, caps, mouths and seeds in waterSurfaceAgreement.
+      const x = (r.ax + r.bx) / 2, z = (r.az + r.bz) / 2
+      const levels = riverReachesInBounds(x, z, x, z).map(q => riverSurfaceHeightAt(riverSurface(q, []), x, z))
+      for (const b of waterLandmarks(-1, -1)) if (basinDistance(b, x, z) <= 0) levels.push(b.level)
+      expect(c.waterLevel).toBeCloseTo(Math.max(...levels), 6)
     }
   })
 

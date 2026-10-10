@@ -1,6 +1,7 @@
 import { fbm, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { regionalDrainageSteps } from './RegionalDrainage'
 import { coastField } from './Coastline'
+import { riverSurface, riverSurfaceHeightAt } from './RiverSurface'
 
 export const CATCHMENT_SIZE = 32000
 const BIN = 2000
@@ -95,9 +96,19 @@ export function basinDistance(b: Basin, x: number, z: number): number {
     const sector = ((Math.atan2(dz, dx) / (Math.PI * 2) + 1) % 1) * b.shoreRadii.length
     const index = Math.floor(sector), t = sector - index
     const a = b.shoreRadii[index]!, c = b.shoreRadii[(index + 1) % b.shoreRadii.length]!
-    let distance = Math.hypot(dx, dz) - (a + (c - a) * smoothstep(0, 1, t))
-    for (const island of b.islands ?? []) distance = Math.max(distance,
-      island.radius - Math.hypot(x - island.x, z - island.z))
+    // Intersect this ray with the same cached shoreline chord that water
+    // rendering draws. Angular easing described a different curve and left
+    // some small coves with water triangles outside the collision shoreline.
+    const angle = Math.PI * 2 / b.shoreRadii.length
+    const radius = a * c * Math.sin(angle) /
+      (c * Math.sin((1 - t) * angle) + a * Math.sin(t * angle))
+    let distance = Math.hypot(dx, dz) - radius
+    for (const island of b.islands ?? []) {
+      const ix = x - island.x, iz = z - island.z, angle = Math.PI * 2 / 32
+      const theta = ((Math.atan2(iz, ix) % angle) + angle) % angle
+      const radius = island.radius * Math.cos(angle * .5) / Math.cos(theta - angle * .5)
+      distance = Math.max(distance, radius - Math.hypot(ix, iz))
+    }
     return distance
   }
   const scale = b.sea ? 2100 : b.pond ? 260 : 700
@@ -222,6 +233,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   let nearest = Infinity, level = 0, width = 1, coveredRiverLevel = -Infinity
   let nearestReach: Reach | null = null
   for (const r of reaches) {
+    coveredRiverLevel = Math.max(coveredRiverLevel,
+      riverSurfaceHeightAt(riverSurface(r, region.basins), safeX, safeZ))
     const projection = ((safeX - r.ax) * r.dx + (safeZ - r.az) * r.dz) / r.lengthSq
     const t = Math.max(0, Math.min(1, projection))
     const w = r.wa + (r.wb - r.wa) * t
@@ -229,8 +242,6 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     const radius = Math.max(w, nearest + w)
     if (radius < 0 || dx * dx + dz * dz >= radius * radius) continue
     const d = Math.sqrt(dx * dx + dz * dz) - w
-    if (d <= 0 && projection >= 0 && projection <= 1) coveredRiverLevel = Math.max(coveredRiverLevel,
-      r.ya + (r.yb - r.ya) * t)
     if (d < nearest) {
       nearest = d
       nearestReach = r
@@ -283,6 +294,7 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   if (coveredRiverLevel > -Infinity) {
     waterLevel = coveredRiverLevel
     height = Math.min(height, waterLevel - .1)
+    river = Math.max(river, 1)
   }
 
   // A river should not stop at a mathematically exact shoreline and leave a
@@ -312,11 +324,11 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     if (nearest < valleyRange && nearestReach && nearestReach !== reach) continue
     const deltaLevel = reach.yb
     height += (deltaLevel - 1.5 - height) * Math.min(1, blend * 1.25)
-    if (blend > .16) {
-      waterLevel = deltaLevel
+    if (blend > .16 && coveredRiverLevel > -Infinity) {
       river = Math.max(river, blend)
     }
   }
+  let basinWaterLevel = -Infinity
   for (const basin of region.basins) {
     const limit = basin.radius * 1.65 + 2000
     if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
@@ -332,13 +344,20 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     const basinHeight = height + (basin.level + bed - height) * blend
     // Preserve an existing outlet through the bank instead of damming it shut.
     height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river : basinHeight
-    if (d <= 0) waterLevel = basin.level
+    if (d <= 0) basinWaterLevel = Math.max(basinWaterLevel, basin.level)
     if (basin.sea) {
       coastal = Math.max(coastal, 1 - smoothstep(0, 420, Math.max(0, d)))
     }
     else if (basin.pond) pond = 1 - smoothstep(0, 120, Math.max(0, d))
     else lake = 1 - smoothstep(0, 160, Math.max(0, d))
   }
+  // The renderer clips river geometry out of lake-owned surfaces. Overlapping
+  // lakes render their highest surface, regardless of region/list build order.
+  if (basinWaterLevel > -Infinity) {
+    waterLevel = Math.max(basinWaterLevel, coveredRiverLevel)
+  }
+  if (basinWaterLevel > -Infinity || coveredRiverLevel > -Infinity)
+    height = Math.min(height, waterLevel - .1)
   out.height = height
   out.waterLevel = waterLevel
   out.river = river
@@ -466,7 +485,10 @@ function collectRiverReachesInBounds(
     for (let iz = minBinZ; iz <= maxBinZ; iz++) for (let ix = minBinX; ix <= maxBinX; ix++) {
       for (const reach of region.bins[iz * BINS + ix]!) {
         if (result && reach.queryToken === queryToken) continue
-        const width = Math.max(reach.wa, reach.wb)
+        const surface = riverSurface(reach, region.basins)
+        if (surface.maxX < query.expandedMinX || surface.minX > query.expandedMaxX ||
+          surface.maxZ < query.expandedMinZ || surface.minZ > query.expandedMaxZ) continue
+        const width = Math.max(reach.wa, reach.wb) + (reach.source ? 140 : reach.mouth ? 80 : 0)
         if (!lineIntersectsBounds(
           reach.ax, reach.az, reach.bx, reach.bz,
           query.expandedMinX - width, query.expandedMinZ - width,

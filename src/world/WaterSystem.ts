@@ -1,5 +1,6 @@
 import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, ShapeUtils, Vector2 } from 'three'
 import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
+import { riverSurface } from './RiverSurface'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
@@ -319,19 +320,21 @@ function* appendAnalyticBasins(
       boundary = []
       const outline = basin.islands?.length ? { ...basin, islands: undefined } : basin
       const highScale = basin.sea ? 2.65 : basin.pond ? 2.9 : 2.5
-      for (let i = 0; i < samples; i++) {
-        const angle = i / samples * Math.PI * 2
+      const count = basin.shoreRadii?.length ?? samples
+      for (let i = 0; i < count; i++) {
+        const angle = i / count * Math.PI * 2
         let low = 0, high = basin.radius * highScale
         // The warped outline is broad and single-valued along a ray. Expand the
         // bracket defensively for unusually deep coves before binary searching.
         for (let expand = 0; expand < 3 && basinDistance(outline, basin.x + Math.cos(angle) * high,
           basin.z + Math.sin(angle) * high) < 0; expand++) high *= 1.35
-        for (let pass = 0; pass < 9; pass++) {
+        for (let pass = 0; !basin.shoreRadii && pass < 9; pass++) {
           const radius = (low + high) * .5
           if (basinDistance(outline, basin.x + Math.cos(angle) * radius,
             basin.z + Math.sin(angle) * radius) < 0) low = radius
           else high = radius
         }
+        if (basin.shoreRadii) low = basin.shoreRadii[i]!
         // Keep the boundary in basin-local coordinates. Every tile can then
         // reuse the expensive warped shoreline solve and only clip the points
         // that overlap its own rectangle.
@@ -385,7 +388,9 @@ function* appendAnalyticBasins(
     const sampleLimit = basin.sea ? 256 : basin.pond ? 96 : 160
     const tileScale = Math.min(1, 420 / Math.max(420, size))
     const desiredSamples = Math.max(48, Math.round(sampleLimit * (.3 + tileScale * .7)))
-    const boundaryStep = Math.max(1, Math.ceil(boundary.length / desiredSamples))
+    // Generated basins share an exact polygon with collision/carving. Do not
+    // bridge a concave cove with a different chord on distant LOD tiles.
+    const boundaryStep = basin.shoreRadii ? 1 : Math.max(1, Math.ceil(boundary.length / desiredSamples))
     const center: BasinVertex = {
       x: basin.x - centerX, z: basin.z - centerZ, y: basin.level,
       depth: basin.sea ? 180 : basin.pond ? 42 : 96,
@@ -434,8 +439,6 @@ function* appendRiverRibbons(
   type RibbonVertex = { x: number; z: number; y: number; depth: number }
   type Section = { left: RibbonVertex; center: RibbonVertex; right: RibbonVertex }
   const polygonScratch: RibbonVertex[] = new Array(4)
-  const capPoints: RibbonVertex[] = Array.from({ length: 8 }, () => ({ x: 0, z: 0, y: 0, depth: 0 }))
-  let receivingBasins: readonly WaterBasin[] = []
 
   const clip = (polygon: RibbonVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): RibbonVertex[] => {
     if (!polygon.length) return polygon
@@ -476,61 +479,6 @@ function* appendRiverRibbons(
       waterKinds.push(0, 0, 0); waterDrops.push(drop, drop, drop)
     }
   }
-  const midpoint = (a: RibbonVertex, b: RibbonVertex): RibbonVertex => ({
-    x: (a.x + b.x) * .5, z: (a.z + b.z) * .5, y: (a.y + b.y) * .5, depth: (a.depth + b.depth) * .5,
-  })
-  const appendShoreTriangle = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex,
-    flowX: number, flowZ: number, drop: number, flow: number, subdivision = 0): void => {
-    const distance = (basin: WaterBasin, p: RibbonVertex): number =>
-      basinDistance(basin, p.x + originX + half, p.z + originZ + half)
-    for (const basin of receivingBasins) {
-      const da = distance(basin, a), db = distance(basin, b), dc = distance(basin, c)
-      if (Math.max(da, db, dc) < -.2) return
-      const intersects = Math.min(da, db, dc) < 0 || distance(basin, {
-        x: (a.x + b.x + c.x) / 3, z: (a.z + b.z + c.z) / 3, y: 0, depth: 0,
-      }) < 0
-      if (intersects && subdivision < 3 && Math.max(
-        Math.hypot(a.x - b.x, a.z - b.z), Math.hypot(b.x - c.x, b.z - c.z),
-        Math.hypot(c.x - a.x, c.z - a.z)) > 60) {
-        const ab = midpoint(a, b), bc = midpoint(b, c), ca = midpoint(c, a)
-        appendShoreTriangle(a, ab, ca, flowX, flowZ, drop, flow, subdivision + 1)
-        appendShoreTriangle(ab, b, bc, flowX, flowZ, drop, flow, subdivision + 1)
-        appendShoreTriangle(ca, bc, c, flowX, flowZ, drop, flow, subdivision + 1)
-        appendShoreTriangle(ab, bc, ca, flowX, flowZ, drop, flow, subdivision + 1)
-        return
-      }
-    }
-    let polygon = [a, b, c]
-    // A lake owns its whole surface. Clip river mouths to that same shore
-    // rather than drawing nearly coplanar caps/ribbons on top of the lake.
-    for (const basin of receivingBasins) {
-      const outside: RibbonVertex[] = []
-      let previous = polygon[polygon.length - 1]!
-      if (!previous) return
-      let previousDistance = distance(basin, previous)
-      for (const current of polygon) {
-        const currentDistance = distance(basin, current)
-        if ((currentDistance >= 0) !== (previousDistance >= 0)) {
-          let lo = 0, hi = 1
-          for (let pass = 0; pass < 12; pass++) {
-            const t = (lo + hi) * .5
-            const d = distance(basin, { x: previous.x + (current.x - previous.x) * t,
-              z: previous.z + (current.z - previous.z) * t, y: 0, depth: 0 })
-            if ((d >= 0) === (previousDistance >= 0)) lo = t
-            else hi = t
-          }
-          const t = (lo + hi) * .5
-          outside.push({ x: previous.x + (current.x - previous.x) * t,
-            z: previous.z + (current.z - previous.z) * t, y: basin.level + .04,
-            depth: previous.depth + (current.depth - previous.depth) * t })
-        }
-        if (currentDistance >= 0) outside.push(current)
-        previous = current; previousDistance = currentDistance
-      }
-      polygon = outside
-    }
-    writePolygon(polygon, flowX, flowZ, drop, flow)
-  }
 
   const appendPolygon = (
     a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex | undefined,
@@ -546,222 +494,56 @@ function* appendRiverRibbons(
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
     polygon = clip(polygon, 'z', half, false)
-    if (!receivingBasins.length) { writePolygon(polygon, flowX, flowZ, drop, flow); return }
-    for (let i = 1; i < polygon.length - 1; i++)
-      appendShoreTriangle(polygon[0]!, polygon[i]!, polygon[i + 1]!, flowX, flowZ, drop, flow)
+    writePolygon(polygon, flowX, flowZ, drop, flow)
   }
 
   const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
     flowX: number, flowZ: number, drop: number, flow: number): void => {
-    appendPolygon(a, b, c, d, flowX, flowZ, drop, flow)
-  }
-
-  const appendRoundCap = (
-    section: Section, radius: number, flowX: number, flowZ: number, drop: number, flow: number,
-  ): void => {
-    const center = section.center
-    for (let i = 0; i < 8; i++) {
-      const angle = i / 8 * Math.PI * 2
-      const point = capPoints[i]!
-      point.x = center.x + Math.cos(angle) * radius
-      point.z = center.z + Math.sin(angle) * radius
-      point.y = center.y
-      point.depth = Math.max(.08, center.depth * .5)
-    }
-    for (let i = 0; i < capPoints.length; i++) {
-      appendPolygon(center, capPoints[i]!, capPoints[(i + 1) % capPoints.length]!, undefined,
-        flowX, flowZ, drop, flow)
-    }
-  }
-
-  const appendTaperedCap = (
-    section: Section, flowX: number, flowZ: number, distance: number, drop: number, flow: number,
-  ): void => {
-    // Tributaries that end at a streamed catchment boundary should fade into
-    // the terrain instead of exposing a circular hose cap from above. The
-    // route remains continuous because only chain endpoints call this. Three
-    // taper stages keep the silhouette from reading as a hard rectangular
-    // cut when the last section is viewed edge-on or clipped by a neighbour.
-    const halfWidth = Math.hypot(
-      section.left.x - section.center.x,
-      section.left.z - section.center.z,
-    )
-    const nearDistance = distance * .2
-    const nearHalfWidth = Math.max(1.2, halfWidth * .7)
-    const nearCenter: RibbonVertex = {
-      x: section.center.x + flowX * nearDistance,
-      z: section.center.z + flowZ * nearDistance,
-      y: section.center.y + .02,
-      depth: .06,
-    }
-    const nearLeft: RibbonVertex = {
-      x: nearCenter.x - flowZ * nearHalfWidth,
-      z: nearCenter.z + flowX * nearHalfWidth,
-      y: nearCenter.y,
-      depth: nearCenter.depth,
-    }
-    const nearRight: RibbonVertex = {
-      x: nearCenter.x + flowZ * nearHalfWidth,
-      z: nearCenter.z - flowX * nearHalfWidth,
-      y: nearCenter.y,
-      depth: nearCenter.depth,
-    }
-    const midDistance = distance * .5
-    const midHalfWidth = Math.max(.8, halfWidth * .42)
-    const midCenter: RibbonVertex = {
-      x: section.center.x + flowX * midDistance,
-      z: section.center.z + flowZ * midDistance,
-      y: section.center.y + .012,
-      depth: .035,
-    }
-    const midLeft: RibbonVertex = {
-      x: midCenter.x - flowZ * midHalfWidth,
-      z: midCenter.z + flowX * midHalfWidth,
-      y: midCenter.y,
-      depth: midCenter.depth,
-    }
-    const midRight: RibbonVertex = {
-      x: midCenter.x + flowZ * midHalfWidth,
-      z: midCenter.z - flowX * midHalfWidth,
-      y: midCenter.y,
-      depth: midCenter.depth,
-    }
-    const tip: RibbonVertex = {
-      x: section.center.x + flowX * distance,
-      z: section.center.z + flowZ * distance,
-      y: section.center.y - .012,
-      depth: .008,
-    }
-    appendPolygon(section.left, section.right, nearRight, nearLeft, flowX, flowZ, drop, flow)
-    appendPolygon(nearLeft, nearRight, midRight, midLeft, flowX, flowZ, drop, flow)
-    appendPolygon(midLeft, midRight, tip, undefined, flowX, flowZ, drop, flow)
-  }
-
-  const appendJunctionPad = (
-    section: Section, radius: number, flowX: number, flowZ: number, drop: number, flow: number,
-  ): void => {
-    // A chain can begin or end at a confluence without owning a terminal
-    // marker. A small shared pad hides the miter seam where the neighbouring
-    // chain arrives, while keeping the actual endpoint taper for true ends.
-    appendRoundCap(section, radius * 1.06, flowX, flowZ, drop, flow)
+    // Clip the canonical triangles, not the whole non-planar quad. Re-fanning
+    // a tile-clipped quad changes its diagonal and therefore its water height.
+    appendPolygon(a, b, c, undefined, flowX, flowZ, drop, flow)
+    appendPolygon(a, c, d, undefined, flowX, flowZ, drop, flow)
   }
 
   for (const reach of reaches) {
-    const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
-    const length = Math.hypot(dx, dz)
-    if (length < 1) continue
-    const width = Math.max(reach.wa, reach.wb) * 2 + 100
-    receivingBasins = basins.filter(basin => !basin.regionalSea &&
-      basin.x + waterBasinBoundsRadius(basin) >= Math.min(reach.ax, reach.bx) - width &&
-      basin.x - waterBasinBoundsRadius(basin) <= Math.max(reach.ax, reach.bx) + width &&
-      basin.z + waterBasinBoundsRadius(basin) >= Math.min(reach.az, reach.bz) - width &&
-      basin.z - waterBasinBoundsRadius(basin) <= Math.max(reach.az, reach.bz) + width)
-    const nx = -dz / length, nz = dx / length
-    const flowX = dx / length, flowZ = dz / length
-    // A bounded grade signal lets steep reaches read as rapids without
-    // changing their exact water surface or adding a cascade mesh.
+    const length = Math.hypot(reach.bx - reach.ax, reach.bz - reach.az)
+    if (length < .001) continue
+    const surface = riverSurface(reach, basins)
+    const flowX = (reach.bx - reach.ax) / length, flowZ = (reach.bz - reach.az) / length
     const drop = Math.max(0, Math.min(1, (reach.ya - reach.yb) / length * 5.5))
-    // A section roughly every 120 m is enough for visible meanders without
-    // turning a whole catchment into a high-poly water surface.
-    const sections: (Section & { flow: number })[] = []
-    const steps = Math.max(4, Math.min(12, Math.ceil(length / 120)))
-    for (let step = 0; step <= steps; step++) {
-      const t = step / steps
-      let sectionNX = nx, sectionNZ = nz
-      if (reach.tangentAX !== undefined && reach.tangentBX !== undefined) {
-        const tx = reach.tangentAX + (reach.tangentBX - reach.tangentAX) * t
-        const tz = reach.tangentAZ! + (reach.tangentBZ! - reach.tangentAZ!) * t
-        const magnitude = Math.hypot(tx, tz)
-        sectionNX = -tz / magnitude; sectionNZ = tx / magnitude
+    const vertex = (data: Float64Array, index: number): RibbonVertex => ({
+      x: data[index]! - originX - half, y: data[index + 1]! + .04,
+      z: data[index + 2]! - originZ - half, depth: data[index + 3]!,
+    })
+    const strength = (left: RibbonVertex, center: RibbonVertex): number => Math.max(.24, Math.min(1,
+      .24 + Math.pow(Math.min(1, Math.hypot(left.x - center.x, left.z - center.z) / 90), .65) * .66 + drop * .1))
+    if (surface.triangles) {
+      const flow = Math.max(.24, Math.min(1, .24 + Math.pow(Math.min(1,
+        (reach.wa + reach.wb) * .5 / 90), .65) * .66 + drop * .1))
+      for (let i = 0; i < surface.triangles.length; i += 12) {
+        appendPolygon(vertex(surface.triangles, i), vertex(surface.triangles, i + 4),
+          vertex(surface.triangles, i + 8), undefined, flowX, flowZ, drop, flow)
+        if (i % 48 === 36) yield 'river'
       }
-      const baseX = reach.ax + dx * t
-      const baseZ = reach.az + dz * t
-      const baseWidth = reach.wa + (reach.wb - reach.wa) * t
-      // The reach is also the carve path used by sampleHydrology. Do not add
-      // a renderer-only meander here or the water will float off its channel.
-      // Keep a substantial submerged throat at a mouth. Tapering to a
-      // two-metre point exactly at the shore left a visible pinhole between
-      // the analytic river and the clipped basin surface, especially on a
-      // low-detail neighbouring tile. The final section is hidden under the
-      // receiving water, so this overlap is both safer and more natural.
-      // Use the actual carved width all the way into receiving water. A
-      // renderer-only mouth taper exposed the bed and left a triangular
-      // notch between the ribbon and lake, especially on broad rivers.
-      const channelHalfWidth = Math.max(5, baseWidth)
-      const depth = reach.mouth
-        ? Math.max(.22, Math.min(4, channelHalfWidth * .035))
-        : Math.max(.45, Math.min(4, channelHalfWidth * .028))
-      const y = reach.ya + (reach.yb - reach.ya) * t + .04
-      const edgeDepth = Math.max(.08, Math.min(.55, depth * .16))
-      // Flow strength is intentionally tied to the local channel size and
-      // grade. Small tributaries stay calmer, while broad or steep reaches
-      // receive the stronger riffle/highlight treatment in the shared shader.
-      // Clamp the result so a narrow stream never disappears into a dry tint
-      // and a huge channel cannot become an over-bright cyan stripe.
-      const flow = Math.max(.24, Math.min(1,
-        .24 + Math.pow(Math.min(1, channelHalfWidth / 90), .65) * .66 + drop * .1,
-      ))
-      const centerX = baseX, centerZ = baseZ
-      sections.push({
-        left: { x: centerX + sectionNX * channelHalfWidth - originX - half, z: centerZ + sectionNZ * channelHalfWidth - originZ - half, y, depth: edgeDepth },
-        center: { x: centerX - originX - half, z: centerZ - originZ - half, y, depth },
-        right: { x: centerX - sectionNX * channelHalfWidth - originX - half, z: centerZ - sectionNZ * channelHalfWidth - originZ - half, y, depth: edgeDepth },
-        flow,
-      })
+      yield 'river'
+      continue
     }
-
-    for (let step = 0; step < sections.length - 1; step++) {
-      const a = sections[step]!, b = sections[step + 1]!
-      const flow = (a.flow + b.flow) * .5
+    const sections: (Section & { flow: number })[] = []
+    for (let i = 0; i < surface.sections.length; i += 12) {
+      const left = vertex(surface.sections, i), center = vertex(surface.sections, i + 4)
+      sections.push({ left, center, right: vertex(surface.sections, i + 8), flow: strength(left, center) })
+    }
+    for (let i = 0; i < sections.length - 1; i++) {
+      const a = sections[i]!, b = sections[i + 1]!, flow = (a.flow + b.flow) * .5
       appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ, drop, flow)
       appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ, drop, flow)
-      if (step % 4 === 3) yield 'river'
+      if (i % 4 === 3) yield 'river'
     }
-    // Extend a mouth a short distance below the receiving basin. The basin
-    // owns the final water level, while this submerged overlap removes the
-    // one-frame-looking seam that otherwise appears where two clipped
-    // surfaces meet on separate terrain tiles.
-    let last = sections[sections.length - 1]!
-    if (reach.mouth && sections.length > 1) {
-      const previous = sections[sections.length - 2]!
-      const dx = last.center.x - previous.center.x, dz = last.center.z - previous.center.z
-      const length = Math.hypot(dx, dz)
-      if (length > 1) {
-        const overlap = Math.min(80, Math.max(32, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * 2.2))
-        const ox = dx / length * overlap, oz = dz / length * overlap
-        const submerged = (point: RibbonVertex): RibbonVertex => ({
-          x: point.x + ox, z: point.z + oz, y: last.center.y, depth: Math.max(point.depth, .18),
-        })
-        const nextLeft = submerged(last.left), nextCenter = submerged(last.center), nextRight = submerged(last.right)
-        appendQuad(last.left, nextLeft, nextCenter, last.center, flowX, flowZ, drop, last.flow)
-        appendQuad(last.center, nextCenter, nextRight, last.right, flowX, flowZ, drop, last.flow)
-        last = { left: nextLeft, center: nextCenter, right: nextRight, flow: last.flow }
-      }
-    }
-    // Rounded joins/mouths hide tiny miter gaps when adjacent curved reaches
-    // change direction or width. They are clipped with the same tile bounds.
-    const first = sections[0]!
-    const radius = Math.hypot(first.left.x - first.center.x, first.left.z - first.center.z)
-    const source = reach.source ?? true
-    const terminal = reach.terminal ?? true
-    if (source) {
-      if (reach.mouth) appendRoundCap(first, radius, -flowX, -flowZ, drop, first.flow)
-      else appendTaperedCap(first, -flowX, -flowZ, Math.max(140, radius * 3.4), drop, first.flow)
-    } else if (!reach.mouth && reach.tangentAX === undefined) {
-      appendJunctionPad(first, radius, -flowX, -flowZ, drop, first.flow)
-    }
-    if (terminal) {
-      if (reach.mouth) appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop, last.flow)
-      else {
-        appendTaperedCap(last, flowX, flowZ, Math.max(140, radius * 3.4), drop, last.flow)
-        // Keep a shallow rounded shoulder at the live section so a bank that
-        // rises faster than the feather cannot expose a square terminal edge.
-        appendRoundCap(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z) * .82, flowX, flowZ, drop, last.flow)
-      }
-    } else if (!reach.mouth && reach.tangentBX === undefined) {
-      appendJunctionPad(last, Math.hypot(last.left.x - last.center.x, last.left.z - last.center.z), flowX, flowZ, drop, last.flow)
+    for (let i = 0; i < surface.caps.length; i += 12) {
+      const a = vertex(surface.caps, i), b = vertex(surface.caps, i + 4), c = vertex(surface.caps, i + 8)
+      appendPolygon(a, b, c, undefined, flowX, flowZ, drop, sections[0]!.flow)
+      if (i % 48 === 36) yield 'river'
     }
     yield 'river'
   }
-
 }

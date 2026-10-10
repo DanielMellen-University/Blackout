@@ -28,14 +28,14 @@ function digest(cx: number, cz: number): string {
 beforeEach(() => resetSeed(1337))
 
 describe('cooperative cold hydrology', () => {
-  // Regional drainage revision 4: snapshots pin deterministic build/cancel/interleave output.
+  // Regional drainage revision 5: snapshots pin deterministic build/cancel/interleave output.
   it.each([
-    [42, -1, -1, '57644984b8fb6a97c4b93ba3a1bc92f97ff4a25c4c066efca15ebc3ac4a4bb9a'],
-    [42, 0, 0, '7a63068918cb2c7747fdcc1697a2b4c86b32abed55047e3a1491dca785dbcf0a'],
-    [42, 1, -1, '677ad34c42fe39acdd750c76278c0fb9063f18bd15249c1b1c0855ebcebacbc2'],
-    [1337, -1, -1, '6a8e671821896aa9e6c620be247610d33dd2ce6cb40f815f88dfaa162762b778'],
-    [1337, 0, 0, '89226267d26194b7658c659b0b307023b4b0a0a13bbac2faa52dbea823a61665'],
-    [1337, 1, -1, '5fac9dcc2ea0dba137d89e87e752b74aa8172691db0029201eb9e0ebd21bf4df'],
+    [42, -1, -1, 'a279d65e55315a9873e8b331287078cadeaa611bf9612e805a732cb7decf8380'],
+    [42, 0, 0, '7fb086109ff9af7f48018ce76a52826e35e42302677797b674372b2ce3cdddc4'],
+    [42, 1, -1, 'c30ee01ae23f943d36fe13185e1dfbcf8f8b7c4d3c81958f4932965f24753218'],
+    [1337, -1, -1, 'ec0dfffdaf3ddf2ac17ccda2447ccb093bff391a008a14b2ec2b5646bc262238'],
+    [1337, 0, 0, 'dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b'],
+    [1337, 1, -1, '61344add8df1eb63bd3d34633780bb3095adc6ae0badc099926ae2b241716de0'],
   ] as const)('preserves regional seed %s region %s,%s', (seed, cx, cz, hash) => {
     resetSeed(seed)
     const phases = new Set<string>()
@@ -59,7 +59,7 @@ describe('cooperative cold hydrology', () => {
     const restarted = prepare(0, 0)
     expect(restarted.next().value).toBe('samples')
     drain(restarted)
-    expect(digest(0, 0)).toBe('89226267d26194b7658c659b0b307023b4b0a0a13bbac2faa52dbea823a61665')
+    expect(digest(0, 0)).toBe('dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b')
   })
 
   it('keeps drainage order independent when other regions overwrite sort scratch', () => {
@@ -69,8 +69,8 @@ describe('cooperative cold hydrology', () => {
     waterLandmarks(1, -1)
     drain(a)
     drain(b)
-    expect(digest(0, 0)).toBe('89226267d26194b7658c659b0b307023b4b0a0a13bbac2faa52dbea823a61665')
-    expect(digest(-1, -1)).toBe('6a8e671821896aa9e6c620be247610d33dd2ce6cb40f815f88dfaa162762b778')
+    expect(digest(0, 0)).toBe('dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b')
+    expect(digest(-1, -1)).toBe('ec0dfffdaf3ddf2ac17ccda2447ccb093bff391a008a14b2ec2b5646bc262238')
   })
 
   it('retains canonical landmarks when a synchronous query completes a suspended region', () => {
@@ -87,17 +87,17 @@ describe('cooperative cold hydrology', () => {
     setWorldSeed(42)
     expect(() => steps.next()).toThrow('World seed changed')
     drain(prepare(0, 0))
-    expect(digest(0, 0)).toBe('7a63068918cb2c7747fdcc1697a2b4c86b32abed55047e3a1491dca785dbcf0a')
+    expect(digest(0, 0)).toBe('7fb086109ff9af7f48018ce76a52826e35e42302677797b674372b2ce3cdddc4')
   })
 
   it('does not reuse another seed\'s cache when a failed world search restores the original seed', () => {
     const steps = prepare(0, 0)
     advanceToGrade(steps)
     setWorldSeed(42)
-    expect(digest(0, 0)).toBe('7a63068918cb2c7747fdcc1697a2b4c86b32abed55047e3a1491dca785dbcf0a')
+    expect(digest(0, 0)).toBe('7fb086109ff9af7f48018ce76a52826e35e42302677797b674372b2ce3cdddc4')
     setWorldSeed(1337)
     drain(steps)
-    expect(digest(0, 0)).toBe('89226267d26194b7658c659b0b307023b4b0a0a13bbac2faa52dbea823a61665')
+    expect(digest(0, 0)).toBe('dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b')
   })
 
   it('covers exact region boundaries for shared normal probes', () => {

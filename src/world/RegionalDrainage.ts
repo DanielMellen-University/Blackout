@@ -1,6 +1,7 @@
 import { getWorldSeed, hash2, smoothstep, valueNoise } from './noise'
 import { sampleLandforms } from './Landforms'
 import { coastField } from './Coastline'
+import { registerRiverSurface, riverSurface } from './RiverSurface'
 import { basinDistance, type HydrologyBuildPhase, type RiverReach, type WaterBasin } from './Hydrology'
 
 const STEP = 2000
@@ -387,7 +388,7 @@ function reaches(n: Node): RiverReach[] {
       const endLevel = Math.min(startLevel, wetB ?? grade(endT))
       const endWidth = (wa + (wb - wa) * smoothstep(0, 1, endT)) * factor
       const startTangent = tangent(startT, branch, detour), endTangent = tangent(endT, branch, detour)
-      result.push({ ax: start.x, az: start.z, bx: end.x, bz: end.z,
+      const reach: RiverReach = { ax: start.x, az: start.z, bx: end.x, bz: end.z,
         wa: (wa + (wb - wa) * smoothstep(0, 1, startT)) * factor, wb: endWidth,
         ya: startLevel, yb: endLevel,
         dx: rx, dz: rz, length: Math.hypot(rx, rz), lengthSq: rx * rx + rz * rz,
@@ -398,7 +399,11 @@ function reaches(n: Node): RiverReach[] {
         discharge: flow, branch: braided || delta,
         tangentAX: startTangent.x, tangentAZ: startTangent.z,
         tangentBX: endTangent.x, tangentBZ: endTangent.z,
-      })
+      }
+      // Canonical neighborhood, independent of which tile or point asks for
+      // the cached surface first. A later bounds query may contain fewer lakes.
+      registerRiverSurface(reach, nearby)
+      result.push(reach)
       a = b
     }
   }
@@ -430,6 +435,12 @@ export function* regionalDrainageSteps(cx: number, cz: number): Generator<Hydrol
     const b = basin(n)
     if (b) { basins.push(b); if (ownedNode) landmarks.push(b) }
     const r = reaches(n)
+    // Prepare exact shared surfaces in cooperative batches instead of doing
+    // all lake-mouth clipping inside one indivisible node-routing step.
+    for (let i = 0; i < r.length; i++) {
+      riverSurface(r[i]!, basins)
+      if (i % 2 === 1) yield 'channels'
+    }
     queryReaches.push(...r)
     if (ownedNode) owned.push(...r)
     if ((ix + HALO) % 4 === 3) yield 'channels'
