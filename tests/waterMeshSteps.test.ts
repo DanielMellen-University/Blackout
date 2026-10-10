@@ -57,15 +57,16 @@ beforeEach(() => setWorldSeed(1337))
 afterEach(() => vi.restoreAllMocks())
 
 describe('cooperative water geometry', () => {
-  // Authored basins retain their buffers; sea-level raster uses the sea material kind.
+  // Pin synchronous/cooperative output with upright macro water normals;
+  // sea-level raster still uses the sea material kind.
   it.each([
-    ['raster', 'edeb0d4688d760b8e5119f4a1ac2cc7b1aeba293141ddf5e7b6321726497c436'],
-    ['lake', 'b99072688cd79b31d632d9e436211765afc666fc6e55fe0c39d486a5403102ce'],
-    ['pond', 'ff33001ecc43afe76c93fd273989f1d90ae460e20b5864eebd5d0315d420f116'],
-    ['sea', '0bc507c61a5827c6a0db58a18fb2c83328170693afe87c3ab9873264cdc729b1'],
-    ['river', '56b319baee7d18b19daf9fb881a0604f95862b919c337c7185b1b46e181c26a0'],
-    ['mouth', '50edd2ed2766406519c3d822205d6bef37d2f1ac36ab789e57b945327007c3a1'],
-    ['junction', '13e085ada102c346e8ee4334cb72d5e74da70cbaf0c7944b2a087e5b40c9c225'],
+    ['raster', '1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc'],
+    ['lake', '47293b26153d002e36a72e1a18c06c2728ed86ae1c1744be5fbc63fd067ed36d'],
+    ['pond', '2c3029eec80ba9f3521efa5b88281f8f3c929197b4428c0f0a389a90059afd04'],
+    ['sea', 'cea86ecfba3ae6411d4ac629d6132ee64c5f42cb742effea42a75017dd431133'],
+    ['river', '602566ea38701db7d68e8a21180bfcafd22ac1adb8097a7eef86d3b58ffe37e9'],
+    ['mouth', '228d9ac9e6c7fb4cbe4b2efede252b14f268a2caa7c5f45bec4a295cfc395366'],
+    ['junction', 'd4fe1af5461f53e6e6da8b3740e4fad8f93a0c0d92def3a701798a409b51f002'],
   ])('preserves %s bytes and bounds', (name, hash) => {
     const mesh = finish(buildWaterMeshSteps(...argsFor(name)))!
     const sync = buildWaterMesh(...argsFor(name))!
@@ -111,7 +112,7 @@ describe('cooperative water geometry', () => {
       steps.return(null)
       expect(geometryDispose).toHaveBeenCalledTimes(hasGeometry ? 1 : 0)
       const mesh = buildWaterMesh(...argsFor('raster'))!
-      try { expect(digest(mesh)).toBe('edeb0d4688d760b8e5119f4a1ac2cc7b1aeba293141ddf5e7b6321726497c436') }
+      try { expect(digest(mesh)).toBe('1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc') }
       finally { dispose(mesh) }
     })
 
@@ -120,7 +121,7 @@ describe('cooperative water geometry', () => {
     advanceTo(steps, 'river')
     steps.return(null)
     const mesh = buildWaterMesh(...argsFor('lake'))!
-    try { expect(digest(mesh)).toBe('b99072688cd79b31d632d9e436211765afc666fc6e55fe0c39d486a5403102ce') }
+    try { expect(digest(mesh)).toBe('47293b26153d002e36a72e1a18c06c2728ed86ae1c1744be5fbc63fd067ed36d') }
     finally { dispose(mesh) }
   })
 

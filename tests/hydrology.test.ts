@@ -294,12 +294,12 @@ describe('natural drainage', () => {
     expect(Math.max(...seaRadii)).toBeLessThan(4201)
   })
 
-  it('emits small ponds and classifies narrow channels as streams', () => {
+  it('emits larger wetland ponds and classifies narrow channels as streams', () => {
     let ponds = 0, streams = 0
     for (const seed of [1, 73, 1337]) {
       setWorldSeed(seed)
       for (let cx = -2; cx <= 2; cx++) for (let cz = -2; cz <= 2; cz++) {
-        const hasPond = waterLandmarks(cx, cz).some(candidate => !candidate.sea && candidate.radius < 650)
+        const hasPond = waterLandmarks(cx, cz).some(candidate => !candidate.sea && candidate.pond)
         if (hasPond) ponds++
         for (let x = cx * CATCHMENT_SIZE; x < (cx + 1) * CATCHMENT_SIZE; x += 640) {
           for (let z = cz * CATCHMENT_SIZE; z < (cz + 1) * CATCHMENT_SIZE; z += 640) {

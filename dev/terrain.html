@@ -19,6 +19,12 @@
   </select>
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
+  <button id="river-tour">Trace river</button>
+  <select id="review-view" aria-label="River camera">
+    <option value="overview">Overview</option><option value="chase">Chase</option>
+    <option value="first">First person</option>
+  </select>
+  <input id="river-progress" aria-label="River progress" type="range" min="0" max="1000" value="0" style="width:100px">
   <select id="flight-speed" aria-label="Benchmark speed">
     <option value="cruise">Cruise · 400 m/s</option>
     <option value="maximum" selected>Maximum afterburner speed</option>
@@ -64,6 +70,10 @@ let reviewPeak=0
 let reviewPeakX=0
 let reviewPeakZ=0
 let reviewMode=''
+let riverTour=[],riverTourIndex=0,riverTourT=0,tracingRiver=false,riverTourDirty=false
+let riverTourOffsets=[0],riverTourLength=0
+const requestedSeed=Number(new URLSearchParams(location.search).get('seed'))
+const tourPosition=new T.Vector3(),tourAhead=new T.Vector3()
 
 function findLandscapeTarget(startX,startZ,predicate,score=(climate)=>0){
   let best=null
@@ -96,6 +106,7 @@ function frameWorld(destination){
   reviewPeakX=0
   reviewPeakZ=0
   flightView=false;reviewJet.mesh.visible=false;controls.enabled=true
+  tracingRiver=false;document.querySelector('#river-tour').textContent='Trace river'
   document.querySelector('#flight-view').textContent='Flight scale view'
   const {x,y,z}=destination ?? world.spawn
   world.atmosphere.timeOfDay=.48
@@ -189,7 +200,9 @@ function visitDestination(value){
   const target=destinations[value]
   if(!target){frameWorld();return}
   reviewMode=value
+  riverTour=[];riverTourLength=0
   let [seed,x,z]=target
+  if(requestedSeed>0)seed=requestedSeed
   let settlement=null
   world.reseed(seed)
   // Fixed review seeds must remain inspectable even when that seed cannot
@@ -211,6 +224,32 @@ function visitDestination(value){
       !best||Math.max(candidate.wa,candidate.wb)>Math.max(best.wa,best.wb)?candidate:best,null)
     if(!r) throw new Error('Review river no longer has an emitted drainage reach')
     x=(r.ax+r.bx)/2;z=(r.az+r.bz)/2
+    // Review an entire connected waterway, not one flattering join. Follow
+    // the widest incoming branch upstream and exact cross-sections downstream.
+    const local=[]
+    const cx=Math.floor(x/32000),cz=Math.floor(z/32000)
+    for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)local.push(...riverReaches(cx+dx,cz+dz))
+    const key=(x,z)=>`${x.toFixed(2)},${z.toFixed(2)}`
+    const incoming=new Map(),outgoing=new Map()
+    for(const reach of local){
+      const end=key(reach.bx,reach.bz),start=key(reach.ax,reach.az)
+      if(!incoming.has(end)||incoming.get(end).wa<reach.wa)incoming.set(end,reach)
+      if(!outgoing.has(start)||outgoing.get(start).wb<reach.wb)outgoing.set(start,reach)
+    }
+    let first=r
+    const seen=new Set([r.id])
+    while(incoming.has(key(first.ax,first.az))){
+      const next=incoming.get(key(first.ax,first.az));if(seen.has(next.id))break
+      seen.add(next.id);first=next
+    }
+    riverTour=[];seen.clear()
+    while(first&&!seen.has(first.id)){
+      seen.add(first.id);riverTour.push(first);first=outgoing.get(key(first.bx,first.bz))
+    }
+    riverTourOffsets=[0]
+    for(const reach of riverTour)riverTourOffsets.push(riverTourOffsets.at(-1)+reach.length)
+    riverTourLength=riverTourOffsets.at(-1)
+    riverTourIndex=0;riverTourT=0
   } else if(value==='city'||value==='village'){
     settlement=findSettlementNear(x,z,value)
     if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
@@ -259,6 +298,23 @@ function visitDestination(value){
     if(value==='roadlink') camera.position.set(x+2400,y+1800,z-2400)
   }
 }
+document.querySelector('#river-tour').onclick=()=>{
+  if(!riverTour.length){document.querySelector('#destination').value='river';visitDestination('river')}
+  if(riverTourIndex===riverTour.length-1&&riverTourT>=riverTour[riverTourIndex].length){riverTourIndex=0;riverTourT=0}
+  tracingRiver=!tracingRiver;flightView=false;flying=false;controls.enabled=!tracingRiver
+  document.querySelector('#river-tour').textContent=tracingRiver?'Pause river trace':'Trace river'
+  document.querySelector('#flight-view').textContent='Flight scale view'
+}
+document.querySelector('#river-progress').oninput=e=>{
+  if(!riverTour.length)return
+  tracingRiver=false;controls.enabled=true;riverTourDirty=true
+  document.querySelector('#river-tour').textContent='Trace river'
+  let distance=riverTourLength*Number(e.target.value)/1000
+  riverTourIndex=0
+  while(riverTourIndex<riverTour.length-1&&distance>riverTour[riverTourIndex].length){distance-=riverTour[riverTourIndex].length;riverTourIndex++}
+  riverTourT=distance
+}
+document.querySelector('#review-view').onchange=()=>{if(riverTour.length)riverTourDirty=true}
 document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
 document.querySelector('#weather').onchange=e=>world.atmosphere.setWeather(e.target.value,true)
 const requested=new URLSearchParams(location.search).get('destination')
@@ -290,6 +346,31 @@ document.querySelector('#flight-view').onclick=()=>{
 renderer.setAnimationLoop(now=>{
   timings.push(now-previous);if(timings.length>90)timings.shift()
   const dt=Math.min((now-previous)/1000,1/30);previous=now
+  if((tracingRiver||riverTourDirty)&&riverTour.length){
+    riverTourDirty=false
+    const speed=document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400
+    if(tracingRiver)riverTourT+=dt*speed
+    while(riverTourT>riverTour[riverTourIndex].length){
+      riverTourT-=riverTour[riverTourIndex].length
+      if(riverTourIndex===riverTour.length-1){tracingRiver=false;controls.enabled=true;document.querySelector('#river-tour').textContent='Trace river';riverTourT=riverTour[riverTourIndex].length;break}
+      riverTourIndex++
+    }
+    const r=riverTour[riverTourIndex],t=riverTourT/r.length
+    if(tracingRiver)document.querySelector('#river-progress').value=1000*(riverTourOffsets[riverTourIndex]+riverTourT)/riverTourLength
+    const x=r.ax+r.dx*t,z=r.az+r.dz*t,y=r.ya+(r.yb-r.ya)*t
+    tourPosition.set(x,y,z);tourAhead.set(x+r.dx/r.length*500,y,z+r.dz/r.length*500)
+    const view=document.querySelector('#review-view').value
+    if(view==='overview'){
+      camera.position.set(x+1100,y+1800,z-1100);controls.target.copy(tourPosition);camera.lookAt(tourPosition)
+      reviewJet.mesh.visible=false
+    }else{
+      const heading=Math.atan2(r.dx,-r.dz)
+      reviewJet.reset({x,z,y:y+170,yaw:heading});reviewJet.mesh.visible=view==='chase'
+      const dx=r.dx/r.length,dz=r.dz/r.length
+      camera.position.set(x-dx*(view==='chase'?140:0),y+(view==='chase'?215:170),z-dz*(view==='chase'?140:0))
+      tourAhead.y=y+140;camera.lookAt(tourAhead);controls.target.copy(tourPosition)
+    }
+  }
   if(flying&&!flightView){
     const speed=document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400
     const step=dt*speed

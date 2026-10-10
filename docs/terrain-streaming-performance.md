@@ -5,6 +5,34 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.872 water correction sample
+
+Same-machine CPU-only comparisons against 10.871 used seed 1, unchanged quality,
+eight builds per fixed coordinate, and medians of the seven warm builds:
+
+| Tile | 10.871 warm ms | 10.872 warm ms | 10.871 / 10.872 payload bytes |
+| --- | ---: | ---: | ---: |
+| Receiving pond (-22050, -28350), near | 16.83 | 17.94 | 220980 / 228612 |
+| River mouth (-33600, -18060), near | 21.48 | 19.26 | 212916 / 212916 |
+| Far water (-26880, -26880), 8-cell | 2.04 | 1.90 | 10516 / 10516 |
+
+The larger pond contour adds about 3.5% to that tile's payload. Cold first builds
+were 89.94 / 97.96 ms at the pond and 67.13 / 61.83 ms at the mouth. These short
+JIT-sensitive samples are not an FPS, startup-time, or sustained-memory claim.
+The ordinary seed-1337 three-sample sliced profile recorded an 11.33 ms warm
+near-tile median, 2.99 ms maximum individual step, and 39,412-byte maximum payload.
+Render distance, node/catchment cache caps, workers, and upload limits are unchanged.
+River/lake clipping has bounded subdivision; bounds collection allocates a
+short-lived stable-ID set to avoid duplicate geometry after node-cache eviction.
+
+Rendered reviews covered seed-42 river/receiving-water outlines and a seed-1 lake.
+The background browser became throttled and intermittently unresponsive during
+later review, so its frame statistics do not validate performance. A controlled
+foreground full-game travel/memory comparison remains outstanding. Use
+`/dev/terrain.html?destination=river&seed=42` for the fixed route; the river slider
+and Overview/Chase/First person controls are review-camera tools, not flight-physics
+tests. Full hydrology spill routing and regional weather are not complete.
+
 - One to six workers, selected from available CPU concurrency and the active
   quality preset (Low two, Balanced four, High six), generate terrain and water
   buffers. At most one job runs per worker, with a bounded completed queue and

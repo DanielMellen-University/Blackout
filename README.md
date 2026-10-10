@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.871**. Previous roadmap chunk: **10.870**.
-Recent changes from **10.871**. Fix river collision elevations at overlapping bends: use the upper covered channel surface rather than a nearby bank or projected endpoint outside its river span. Keep the bed submerged beneath that surface. Regression checks compare collision samples directly with generated water triangles at the previously failing locations. Preserve connected routes, sparse water coverage, width variation, render distance, and streaming budgets. Regional weather and further biome polish remain next; actual EST reset wiring and per-level generation remain deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.872**. Previous roadmap chunk: **10.871**.
+Recent changes from **10.872**. Enlarge small ponds and receiving lakes, with terrain-aligned arms and deeper asymmetric coves instead of round terminal pools. Select longer river watersheds, retain established tributary flow downstream, and remove renderer-only mouth pinching. Give lakes ownership of their surface at river mouths, remove faceted water shading, and deduplicate regenerated channels after cache eviction. Dry banks no longer receive invisible river water. The terrain review supports fixed seeds and a scrub-able river trace in overview, chase, and unobstructed first person. Render distance and streaming budgets are unchanged. This is a corrective water batch, not completion of the shared world overhaul. Regional weather, full basin-spill routing, and further biome polish remain in progress; actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 

@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, ShapeUtils, Vector2, Vector3 } from 'three'
+import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, ShapeUtils, Vector2 } from 'three'
 import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
@@ -165,7 +165,7 @@ export function* buildWaterMeshSteps(
     }
     yield 'grid'
     yield* appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
-    yield* appendRiverRibbons(reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
+    yield* appendRiverRibbons(reaches, basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
     if (!positions.length) return null
     geometry = new BufferGeometry()
     geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -194,29 +194,24 @@ export function* buildWaterMeshSteps(
   }
 }
 
-/** Preserve Three's non-indexed face-normal and Float32 normalization order. */
+/** Water ripples supply local normals in the shader. Do not shade the graded
+ * ribbon's individual triangles as rigid, faceted panels at every bend. */
 function* computeWaterNormalsSteps(geometry: BufferGeometry): Generator<WaterBuildPhase, void, void> {
   const positions = geometry.getAttribute('position')
   const normals = new BufferAttribute(new Float32Array(positions.count * 3), 3)
   geometry.setAttribute('normal', normals)
-  const a = new Vector3(), b = new Vector3(), c = new Vector3()
-  const cb = new Vector3(), ab = new Vector3()
   for (let i = 0; i < positions.count; i += 3) {
-    a.fromBufferAttribute(positions, i)
-    b.fromBufferAttribute(positions, i + 1)
-    c.fromBufferAttribute(positions, i + 2)
-    cb.subVectors(c, b)
-    ab.subVectors(a, b)
-    cb.cross(ab)
-    normals.setXYZ(i, cb.x, cb.y, cb.z)
-    normals.setXYZ(i + 1, cb.x, cb.y, cb.z)
-    normals.setXYZ(i + 2, cb.x, cb.y, cb.z)
+    // Analytic lake fans and river ribbons can use opposite windings. Keep
+    // that sign for DoubleSide's back-face normal flip, but discard the
+    // accidental triangular tilt of the graded ribbon's broad surface.
+    const ax = positions.getX(i), az = positions.getZ(i)
+    const bx = positions.getX(i + 1), bz = positions.getZ(i + 1)
+    const cx = positions.getX(i + 2), cz = positions.getZ(i + 2)
+    const y = (cz - bz) * (ax - bx) - (cx - bx) * (az - bz) >= 0 ? 1 : -1
+    normals.setXYZ(i, 0, y, 0)
+    normals.setXYZ(i + 1, 0, y, 0)
+    normals.setXYZ(i + 2, 0, y, 0)
     if (i % 96 === 93) yield 'normals'
-  }
-  for (let i = 0; i < normals.count; i++) {
-    cb.fromBufferAttribute(normals, i).normalize()
-    normals.setXYZ(i, cb.x, cb.y, cb.z)
-    if (i % 96 === 95) yield 'normals'
   }
   normals.needsUpdate = true
   yield 'normals'
@@ -424,6 +419,7 @@ function* appendAnalyticBasins(
  */
 function* appendRiverRibbons(
   reaches: readonly RiverReach[],
+  basins: readonly WaterBasin[],
   size: number,
   originX: number,
   originZ: number,
@@ -439,6 +435,7 @@ function* appendRiverRibbons(
   type Section = { left: RibbonVertex; center: RibbonVertex; right: RibbonVertex }
   const polygonScratch: RibbonVertex[] = new Array(4)
   const capPoints: RibbonVertex[] = Array.from({ length: 8 }, () => ({ x: 0, z: 0, y: 0, depth: 0 }))
+  let receivingBasins: readonly WaterBasin[] = []
 
   const clip = (polygon: RibbonVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): RibbonVertex[] => {
     if (!polygon.length) return polygon
@@ -466,6 +463,75 @@ function* appendRiverRibbons(
     return result
   }
 
+  const writePolygon = (
+    polygon: readonly RibbonVertex[], flowX: number, flowZ: number, drop: number, flow: number,
+  ): void => {
+    const first = polygon[0]!
+    for (let i = 1; i < polygon.length - 1; i++) {
+      const second = polygon[i]!, third = polygon[i + 1]!
+      positions.push(first.x, first.y, first.z, second.x, second.y, second.z, third.x, third.y, third.z)
+      depths.push(first.depth, second.depth, third.depth)
+      flowValues.push(flow, flow, flow)
+      flowDirections.push(flowX, flowZ, flowX, flowZ, flowX, flowZ)
+      waterKinds.push(0, 0, 0); waterDrops.push(drop, drop, drop)
+    }
+  }
+  const midpoint = (a: RibbonVertex, b: RibbonVertex): RibbonVertex => ({
+    x: (a.x + b.x) * .5, z: (a.z + b.z) * .5, y: (a.y + b.y) * .5, depth: (a.depth + b.depth) * .5,
+  })
+  const appendShoreTriangle = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex,
+    flowX: number, flowZ: number, drop: number, flow: number, subdivision = 0): void => {
+    const distance = (basin: WaterBasin, p: RibbonVertex): number =>
+      basinDistance(basin, p.x + originX + half, p.z + originZ + half)
+    for (const basin of receivingBasins) {
+      const da = distance(basin, a), db = distance(basin, b), dc = distance(basin, c)
+      if (Math.max(da, db, dc) < -.2) return
+      const intersects = Math.min(da, db, dc) < 0 || distance(basin, {
+        x: (a.x + b.x + c.x) / 3, z: (a.z + b.z + c.z) / 3, y: 0, depth: 0,
+      }) < 0
+      if (intersects && subdivision < 3 && Math.max(
+        Math.hypot(a.x - b.x, a.z - b.z), Math.hypot(b.x - c.x, b.z - c.z),
+        Math.hypot(c.x - a.x, c.z - a.z)) > 60) {
+        const ab = midpoint(a, b), bc = midpoint(b, c), ca = midpoint(c, a)
+        appendShoreTriangle(a, ab, ca, flowX, flowZ, drop, flow, subdivision + 1)
+        appendShoreTriangle(ab, b, bc, flowX, flowZ, drop, flow, subdivision + 1)
+        appendShoreTriangle(ca, bc, c, flowX, flowZ, drop, flow, subdivision + 1)
+        appendShoreTriangle(ab, bc, ca, flowX, flowZ, drop, flow, subdivision + 1)
+        return
+      }
+    }
+    let polygon = [a, b, c]
+    // A lake owns its whole surface. Clip river mouths to that same shore
+    // rather than drawing nearly coplanar caps/ribbons on top of the lake.
+    for (const basin of receivingBasins) {
+      const outside: RibbonVertex[] = []
+      let previous = polygon[polygon.length - 1]!
+      if (!previous) return
+      let previousDistance = distance(basin, previous)
+      for (const current of polygon) {
+        const currentDistance = distance(basin, current)
+        if ((currentDistance >= 0) !== (previousDistance >= 0)) {
+          let lo = 0, hi = 1
+          for (let pass = 0; pass < 12; pass++) {
+            const t = (lo + hi) * .5
+            const d = distance(basin, { x: previous.x + (current.x - previous.x) * t,
+              z: previous.z + (current.z - previous.z) * t, y: 0, depth: 0 })
+            if ((d >= 0) === (previousDistance >= 0)) lo = t
+            else hi = t
+          }
+          const t = (lo + hi) * .5
+          outside.push({ x: previous.x + (current.x - previous.x) * t,
+            z: previous.z + (current.z - previous.z) * t, y: basin.level + .04,
+            depth: previous.depth + (current.depth - previous.depth) * t })
+        }
+        if (currentDistance >= 0) outside.push(current)
+        previous = current; previousDistance = currentDistance
+      }
+      polygon = outside
+    }
+    writePolygon(polygon, flowX, flowZ, drop, flow)
+  }
+
   const appendPolygon = (
     a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex | undefined,
     flowX: number, flowZ: number, drop: number, flow: number,
@@ -480,21 +546,9 @@ function* appendRiverRibbons(
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
     polygon = clip(polygon, 'z', half, false)
-    const first = polygon[0]!
-    for (let i = 1; i < polygon.length - 1; i++) {
-      const second = polygon[i]!
-      const third = polygon[i + 1]!
-      positions.push(
-        first.x, first.y, first.z,
-        second.x, second.y, second.z,
-        third.x, third.y, third.z,
-      )
-      depths.push(first.depth, second.depth, third.depth)
-      flowValues.push(flow, flow, flow)
-      flowDirections.push(flowX, flowZ, flowX, flowZ, flowX, flowZ)
-      waterKinds.push(0, 0, 0)
-      waterDrops.push(drop, drop, drop)
-    }
+    if (!receivingBasins.length) { writePolygon(polygon, flowX, flowZ, drop, flow); return }
+    for (let i = 1; i < polygon.length - 1; i++)
+      appendShoreTriangle(polygon[0]!, polygon[i]!, polygon[i + 1]!, flowX, flowZ, drop, flow)
   }
 
   const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
@@ -596,6 +650,12 @@ function* appendRiverRibbons(
     const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
     const length = Math.hypot(dx, dz)
     if (length < 1) continue
+    const width = Math.max(reach.wa, reach.wb) * 2 + 100
+    receivingBasins = basins.filter(basin => !basin.regionalSea &&
+      basin.x + waterBasinBoundsRadius(basin) >= Math.min(reach.ax, reach.bx) - width &&
+      basin.x - waterBasinBoundsRadius(basin) <= Math.max(reach.ax, reach.bx) + width &&
+      basin.z + waterBasinBoundsRadius(basin) >= Math.min(reach.az, reach.bz) - width &&
+      basin.z - waterBasinBoundsRadius(basin) <= Math.max(reach.az, reach.bz) + width)
     const nx = -dz / length, nz = dx / length
     const flowX = dx / length, flowZ = dz / length
     // A bounded grade signal lets steep reaches read as rapids without
@@ -624,10 +684,10 @@ function* appendRiverRibbons(
       // the analytic river and the clipped basin surface, especially on a
       // low-detail neighbouring tile. The final section is hidden under the
       // receiving water, so this overlap is both safer and more natural.
-      const mouthFade = reach.mouth
-        ? .32 + .68 * (1 - Math.max(0, Math.min(1, (t - .55) / .45)))
-        : 1
-      const channelHalfWidth = Math.max(reach.mouth ? 8 : 5, baseWidth * mouthFade)
+      // Use the actual carved width all the way into receiving water. A
+      // renderer-only mouth taper exposed the bed and left a triangular
+      // notch between the ribbon and lake, especially on broad rivers.
+      const channelHalfWidth = Math.max(5, baseWidth)
       const depth = reach.mouth
         ? Math.max(.22, Math.min(4, channelHalfWidth * .035))
         : Math.max(.45, Math.min(4, channelHalfWidth * .028))

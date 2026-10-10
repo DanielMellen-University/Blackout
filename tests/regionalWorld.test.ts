@@ -57,9 +57,32 @@ describe('regional connected world', () => {
       }
     }
     expect([...edges.values()].some(sources => sources.size >= 2)).toBe(true)
-    expect(splitLength).toBeGreaterThan(0)
     expect(splitLength / length).toBeLessThan(.015)
     expect(outlets).toBeGreaterThan(0); expect(ponds).toBeGreaterThan(0)
+  })
+
+  it('retains rare low-gradient split/rejoin channels in a longer watershed', () => {
+    setWorldSeed(1)
+    const branches = riverReaches(-3, -2).filter(r => r.fromId === '-37:-30' && r.branch)
+    expect(branches.some(r => r.id?.includes(':-1:'))).toBe(true)
+    expect(branches.some(r => r.id?.includes(':1:'))).toBe(true)
+    for (const r of branches) expect(r.ya).toBeGreaterThanOrEqual(r.yb)
+  })
+
+  it('gives the former small receiving pond a larger, concave asymmetric shore', () => {
+    setWorldSeed(42)
+    const pond = waterLandmarks(-1, -1).find(b => b.id === 'lake:-12:-10')!
+    expect(pond.radius).toBeGreaterThan(900)
+    const radii = [...pond.shoreRadii!]
+    expect(radii).toHaveLength(64)
+    expect(Math.max(...radii) / Math.min(...radii)).toBeGreaterThan(2)
+    const points = radii.map((r, i) => ({ x: Math.cos(i / radii.length * Math.PI * 2) * r,
+      z: Math.sin(i / radii.length * Math.PI * 2) * r }))
+    const concave = points.filter((b, i) => {
+      const a = points[(i + points.length - 1) % points.length]!, c = points[(i + 1) % points.length]!
+      return (b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x) < 0
+    })
+    expect(concave.length).toBeGreaterThan(4)
   })
 
   it('retains about one-fifth of river length and one-quarter of previous water coverage', () => {
@@ -123,6 +146,22 @@ describe('regional connected world', () => {
       }
     }
     expect(broad && narrow && widened).toBe(true)
+  })
+
+  it('does not lose established tributary discharge downstream of the rainfall window', () => {
+    setWorldSeed(1)
+    const edges = new Map<string, { from: string; to: string; flow: number }>()
+    for (let cx = -2; cx <= 1; cx++) for (let cz = -1; cz <= 1; cz++) {
+      for (const r of riverReaches(cx, cz)) edges.set(`${r.fromId}:${r.toId}`,
+        { from: r.fromId!, to: r.toId!, flow: r.discharge! })
+    }
+    const outgoing = new Map([...edges.values()].map(r => [r.from, r.flow]))
+    let checked = 0
+    for (const r of edges.values()) if (outgoing.has(r.to)) {
+      expect(outgoing.get(r.to)!, `${r.from} loses river flow at ${r.to}`).toBeGreaterThanOrEqual(r.flow)
+      checked++
+    }
+    expect(checked).toBeGreaterThan(10)
   })
 
   it.each([[1, 2, -1], [42, 0, 2], [42, 1, 3], [2026, -1, 1]])(

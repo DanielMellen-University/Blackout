@@ -1,10 +1,52 @@
 import { MeshStandardMaterial } from 'three'
-import type { RiverReach } from '../src/world/Hydrology'
+import { basinDistance, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
 import { describe, expect, it } from 'vitest'
 import { applyWaterAppearance } from '../src/world/WaterAppearance'
 import { buildWaterMesh } from '../src/world/WaterSystem'
 
 describe('independent water surfaces', () => {
+  it('gives receiving lakes surface ownership instead of overlapping river caps', () => {
+    const lake: WaterBasin = { x: 800, z: 500, radius: 220, aspect: 1, angle: 0, phase: 0,
+      level: 90, sea: false, pond: true, shoreRadii: new Float32Array(32).fill(220) }
+    const reach: RiverReach = { ax: 100, az: 500, bx: 800, bz: 500, wa: 80, wb: 100,
+      ya: 100, yb: 90, dx: 700, dz: 0, length: 700, lengthSq: 490000,
+      source: false, terminal: true, mouth: true,
+      tangentAX: 1, tangentAZ: 0, tangentBX: 1, tangentBZ: 0 }
+    const mesh = buildWaterMesh(new Float32Array(4).fill(200), new Float32Array(4), 1, 1200,
+      0, 0, { value: 0 }, undefined, [reach], [], [lake])!
+    const p = mesh.geometry.getAttribute('position'), kind = mesh.geometry.getAttribute('waterKind')
+    const normals = mesh.geometry.getAttribute('normal')
+    let river = 0, basin = 0
+    for (let i = 0; i < p.count; i += 3) {
+      for (let j = i; j < i + 3; j++) {
+        expect(normals.getX(j)).toBe(0); expect(normals.getZ(j)).toBe(0)
+        expect(Math.abs(normals.getY(j))).toBe(1)
+      }
+      if (kind.getX(i) !== 0) { basin++; continue }
+      river++
+      const x = (p.getX(i) + p.getX(i + 1) + p.getX(i + 2)) / 3 + 600
+      const z = (p.getZ(i) + p.getZ(i + 1) + p.getZ(i + 2)) / 3 + 600
+      expect(basinDistance(lake, x, z)).toBeGreaterThan(-1)
+    }
+    expect(river).toBeGreaterThan(0); expect(basin).toBeGreaterThan(0)
+    mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose()
+  })
+
+  it('keeps a river mouth at its carved width instead of pinching it to one-third', () => {
+    const reach: RiverReach = { ax: 200, az: 300, bx: 600, bz: 300,
+      wa: 60, wb: 120, ya: 100, yb: 90, dx: 400, dz: 0, length: 400, lengthSq: 160000,
+      source: false, terminal: true, mouth: true,
+      tangentAX: 1, tangentAZ: 0, tangentBX: 1, tangentBZ: 0 }
+    const mesh = buildWaterMesh(new Float32Array(4).fill(200), new Float32Array(4),
+      1, 1000, 0, 0, { value: 0 }, undefined, [reach])!
+    const p = mesh.geometry.getAttribute('position')
+    let halfWidth = 0
+    for (let i = 0; i < p.count; i++) if (Math.abs(p.getX(i) + 500 - reach.bx) < .001 &&
+      Math.abs(p.getY(i) - 90.04) < .001) halfWidth = Math.max(halfWidth, Math.abs(p.getZ(i) + 500 - reach.bz))
+    expect(halfWidth).toBeCloseTo(reach.wb, 3)
+    mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose()
+  })
+
   it('stitches curved graded ribbons at shared cross-sections without flat overlapping pads', () => {
     const a: RiverReach = { ax: 50, az: 60, bx: 200, bz: 200, wa: 24, wb: 32, ya: 100, yb: 90,
       dx: 150, dz: 140, length: Math.hypot(150, 140), lengthSq: 150 ** 2 + 140 ** 2,

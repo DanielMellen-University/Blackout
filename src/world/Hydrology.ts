@@ -269,7 +269,10 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     // The broad valley blend shapes banks and floodplain relief, but only the
     // channel itself owns a water surface. Marking the whole valley wet left
     // a dark triangular bed wherever the analytic river ribbon was absent.
-    if (blend > 0 && Math.max(0, d) <= Math.max(42, width * 1.35)) waterLevel = level
+    // A valley shoulder is not water. In low terrain the old 1.35-width
+    // margin marked dry banks as submerged even outside the visible ribbon,
+    // producing blocky brown "water" patches and invisible water collisions.
+    // Actual covered spans resolve their surface below.
     river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
     stream = width < 48 ? river : 0
   }
@@ -447,6 +450,7 @@ function collectRiverReachesInBounds(
 ): boolean {
   let found = false
   const queryToken = result ? nextRiverBoundsQueryToken() : 0
+  const ids = result ? new Set<string>() : null
   for (let cz = query.startCz; cz <= query.endCz; cz++) for (let cx = query.startCx; cx <= query.endCx; cx++) {
     const ox = cx * CATCHMENT_SIZE, oz = cz * CATCHMENT_SIZE
     const region = catchment(cx, cz)
@@ -470,6 +474,11 @@ function collectRiverReachesInBounds(
         )) continue
         if (!result) return true
         reach.queryToken = queryToken
+        // Region entries outlive the bounded node cache. After eviction a
+        // neighbor can recreate the same reach as a different object, so an
+        // object token alone drew it twice and caused water overlap artifacts.
+        if (reach.id && ids!.has(reach.id)) continue
+        if (reach.id) ids!.add(reach.id)
         result.push(reach)
         found = true
       }
