@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.867** Animate menu entry, exit, and page changes with 200ms fades and subtle slides. Esc pause/resume, title/reference navigation, Controls/manual links, and settings categories share the same transitions. Overlap outgoing/incoming pages in one layout slot and disable pointer interaction on outgoing pages. Respect the OS and in-game reduced-motion preferences. Preserve native navigation and keyboard focus.
+
 - **10.866** Reuse the startup screen for Launch flight and both Retry actions, with a 1.5 second minimum and the same fade into flight. Change the initial load caption to simply “Loading”; preserve its three second minimum and failure recovery.
 
 - **10.865** Add a styled startup loading screen with fighter artwork, a scanning blue indicator, and a minimum three-second display. Fade into the complete launch UI with a subtle panel lift only after runtime/font readiness and a paint; block interaction with partially initialized controls. Expose existing startup recovery immediately on failure and respect reduced motion with a shorter, stationary fade. No gameplay or generation changes.

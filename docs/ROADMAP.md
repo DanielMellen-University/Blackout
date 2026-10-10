@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.866** is current. Previous ship: **10.865**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.867** is current. Previous ship: **10.866**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.867 adds 200ms entry/exit fades and subtle slides for pause, title/reference navigation, Controls/manual switches, and settings categories. CSS display transitions keep outgoing content visible through its exit while native hidden state and existing navigation continue to drive focus and pause logic. Pages overlap in a shared grid slot to avoid layout jumps; outgoing pages reject pointer input. OS and in-game reduced motion make transitions immediate without translation. Older browsers retain immediate native visibility changes.
 
 Chunk 10.866 reuses the startup loader for Launch flight and Retry, with a minimum 1.5-second display and the same fade into the aircraft. The initial browser startup says “Loading” and retains its three-second minimum. No gameplay changes.
 

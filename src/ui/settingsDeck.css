@@ -49,6 +49,47 @@
   :is(.course-picker-browse, .settings-content) option::checkmark { color: var(--amber); }
 }
 
+/* Keep outgoing and incoming pages in the same slot during their crossfade. */
+.menu-sheet { display: grid; }
+.menu-sheet > .menu-panel { grid-area: 1 / 1; min-height: 0; }
+.settings-content { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.settings-content > section { grid-area: 1 / 1; width: 100%; }
+
+@supports (transition-behavior: allow-discrete) {
+  .menu, .menu-panel, .settings-content > section {
+    opacity: 1;
+    transition: opacity 200ms ease, transform 200ms cubic-bezier(.2,.7,.2,1),
+      display 200ms allow-discrete;
+  }
+  .menu-sheet { transform: translateY(0); transition: transform 200ms cubic-bezier(.2,.7,.2,1); }
+  .menu[hidden], .menu-panel[hidden], .settings-content > section[hidden] {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .menu-panel[hidden], .settings-content > section[hidden] { transform: translateY(8px); }
+  .menu[hidden] .menu-sheet { transform: translateY(12px); }
+  @starting-style {
+    .menu, .menu-panel, .settings-content > section { opacity: 0; }
+    .menu-panel, .settings-content > section { transform: translateY(8px); }
+    .menu-sheet { transform: translateY(12px); }
+  }
+}
+
+/* Title-to-reference navigation shares the same fade as the pause overlay. */
+.title-screen { opacity: 1; transition: opacity 200ms ease; }
+#app:has(.menu:not([hidden])) .title-screen { opacity: 0; pointer-events: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .menu, .menu-panel, .menu-sheet, .settings-content > section, .title-screen {
+    transition-duration: 1ms;
+    transform: none !important;
+  }
+}
+.reduced-motion :is(.menu, .menu-panel, .menu-sheet, .settings-content > section, .title-screen) {
+  transition-duration: 1ms;
+  transform: none !important;
+}
+
 /* Same bounded shell, type hierarchy and sidebar as the pilot reference. */
 #menu-root.settings-shell {
   display: grid;

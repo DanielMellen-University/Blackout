@@ -844,6 +844,7 @@ export async function boot(): Promise<void> {
     // The in-game preference can opt into reduced motion even when the OS
     // setting is unchanged. An OS-level request remains authoritative.
     reducedMotion = userReducedMotion || !!reducedMotionQuery?.matches
+    document.documentElement.classList.toggle('reduced-motion', reducedMotion)
     if (reducedMotionToggle) reducedMotionToggle.checked = userReducedMotion
     aircraft.setReducedMotion(reducedMotion)
     cameras.setReducedMotion(reducedMotion)
