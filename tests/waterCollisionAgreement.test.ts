@@ -5,6 +5,17 @@ import { sampleGeography } from '../src/world/Geography'
 import { buildWaterMesh } from '../src/world/WaterSystem'
 
 describe('visible river and collision agreement', () => {
+  it('does not turn carved dry inland banks into phantom sea-level water', () => {
+    setWorldSeed(42)
+    for (const [x, z] of [[-24525, -21275], [-23900, -21725]]) {
+      const sample = sampleGeography(x!, z!)
+      expect(sample.features.river).toBeGreaterThan(.9)
+      expect(sample.waterLevel).toBe(0)
+      expect(sample.height).toBeGreaterThan(0)
+      expect(sample.biome).not.toBe('ocean')
+    }
+  })
+
   it('does not draw duplicate river identities after node-cache eviction', () => {
     setWorldSeed(1)
     riverReaches(-1, -1)

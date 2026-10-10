@@ -1,8 +1,12 @@
 # Roadmap
 
-Chunk **10.873** is current. Previous ship: **10.872**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.874** is current. Previous ship: **10.873**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Outward half-caps remove the striped river-mouth overlap seen during first-person review. A shallow-water color transition remains; water artwork is not declared finished.
 
 ## Shipped baseline
+
+Chunk 10.874 fixes actual water-grade jumps at broad confluences with a width-scaled common elevation across the merge zone, while preserving descending dry intervals and compatible lake anchors. Ten-seed/250-region inspection checks 409,878 surface probes without an uphill jump above 0.15 m; the five-seed regression also checks actual overlapping water rather than only reach endpoints. Mouth appearance blends into the receiving water's depth, kind, and stationary flow. Dry inland valley carving no longer creates implicit sea water; mixed shoreline raster triangles cannot add a duplicate sea sheet under a near-sea-level lake. Ghost landscape revision 6 preserves records. Render distance and streaming caps are unchanged. Regional weather, half-strength delayed assist, broader basin-spill routing, and controlled foreground travel/memory validation remain unfinished; actual EST reset wiring and per-level generation remain deferred.
 
 Chunk 10.873 replaces separate river collision/render approximations with shared cached physical triangles, including curved sections, source caps, receiving-shore clipping, and vertex-level lake blending. Tile clipping preserves canonical diagonals rather than re-fanning non-planar quads. Generated lake shores and island holes use the same polygon for visible water and collision at all LODs. Sub-metre shoreline remnants remain visible. Independent Float32 mesh checks cover five seeds, forward surface agreement, reverse wet-point coverage, and tile-edge heights. Preparation yields between reaches; clipped mouths use compact spatial indices, with weak ownership under existing node/catchment lifetimes. Render distance and worker/upload caps remain unchanged. CPU costs and visual-review limits are recorded in the streaming notes. Ghost revision 5 rejects incompatible playback without deleting records. Further confluence grading, complete depression/spill routing, regional weather, and half-strength delayed flight assist remain in progress; terrain polish, actual EST reset wiring, and per-level generation are not completed by this batch.
 

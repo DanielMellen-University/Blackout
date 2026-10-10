@@ -1,6 +1,7 @@
 import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, ShapeUtils, Vector2 } from 'three'
 import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
 import { riverSurface } from './RiverSurface'
+import { smoothstep } from './noise'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
@@ -111,7 +112,7 @@ export function* buildWaterMeshSteps(
       // Fixed-level basins get their own smooth analytic shoreline below. Do not
       // also rasterize these triangles, or the two surfaces recreate the old
       // sawtooth edge and expose a dark bed wedge between cells.
-      if (basins.length > 0 && basinMask && levels[a]! > 0 &&
+      if (basins.length > 0 && basinMask && Math.max(levels[a]!, levels[b]!, levels[c]!) > 0 &&
         (basinMask[a]! > .5 || basinMask[b]! > .5 || basinMask[c]! > .5)) return
       if (beds[a]! >= levels[a]! && beds[b]! >= levels[b]! && beds[c]! >= levels[c]!) return
       setVertex(input[0], a)
@@ -436,7 +437,7 @@ function* appendRiverRibbons(
   waterDrops: number[],
 ): Generator<WaterBuildPhase, void, void> {
   const half = size / 2
-  type RibbonVertex = { x: number; z: number; y: number; depth: number }
+  type RibbonVertex = { x: number; z: number; y: number; depth: number; kind: number; riverBlend: number }
   type Section = { left: RibbonVertex; center: RibbonVertex; right: RibbonVertex }
   const polygonScratch: RibbonVertex[] = new Array(4)
 
@@ -452,6 +453,8 @@ function* appendRiverRibbons(
         z: a.z + (b.z - a.z) * t,
         y: a.y + (b.y - a.y) * t,
         depth: a.depth + (b.depth - a.depth) * t,
+        kind: a.kind + (b.kind - a.kind) * t,
+        riverBlend: a.riverBlend + (b.riverBlend - a.riverBlend) * t,
       }
     }
     let previous = polygon[polygon.length - 1]!
@@ -474,9 +477,10 @@ function* appendRiverRibbons(
       const second = polygon[i]!, third = polygon[i + 1]!
       positions.push(first.x, first.y, first.z, second.x, second.y, second.z, third.x, third.y, third.z)
       depths.push(first.depth, second.depth, third.depth)
-      flowValues.push(flow, flow, flow)
+      flowValues.push(flow * first.riverBlend, flow * second.riverBlend, flow * third.riverBlend)
       flowDirections.push(flowX, flowZ, flowX, flowZ, flowX, flowZ)
-      waterKinds.push(0, 0, 0); waterDrops.push(drop, drop, drop)
+      waterKinds.push(first.kind, second.kind, third.kind)
+      waterDrops.push(drop * first.riverBlend, drop * second.riverBlend, drop * third.riverBlend)
     }
   }
 
@@ -511,10 +515,20 @@ function* appendRiverRibbons(
     const surface = riverSurface(reach, basins)
     const flowX = (reach.bx - reach.ax) / length, flowZ = (reach.bz - reach.az) / length
     const drop = Math.max(0, Math.min(1, (reach.ya - reach.yb) / length * 5.5))
-    const vertex = (data: Float64Array, index: number): RibbonVertex => ({
-      x: data[index]! - originX - half, y: data[index + 1]! + .04,
-      z: data[index + 2]! - originZ - half, depth: data[index + 3]!,
-    })
+    const nearby = basins.filter(b => b.regionalSea ? reach.mouth && reach.yb === 0 :
+      b.x + waterBasinBoundsRadius(b) + 400 >= surface.minX && b.x - waterBasinBoundsRadius(b) - 400 <= surface.maxX &&
+      b.z + waterBasinBoundsRadius(b) + 400 >= surface.minZ && b.z - waterBasinBoundsRadius(b) - 400 <= surface.maxZ)
+    const vertex = (data: Float64Array, index: number): RibbonVertex => {
+      const x = data[index]!, z = data[index + 2]!
+      let blend = 0, kind = 0
+      for (const b of nearby) {
+        const d = basinDistance(b, x, z)
+        const amount = 1 - smoothstep(0, Math.max(100, Math.min(400, reach.wb * 2)), Math.max(0, d))
+        if (amount > blend) { blend = amount; kind = (b.sea ? 2 : b.pond ? .5 : 1) * amount }
+      }
+      return { x: x - originX - half, y: data[index + 1]! + .04,
+        z: z - originZ - half, depth: data[index + 3]!, kind, riverBlend: 1 - blend }
+    }
     const strength = (left: RibbonVertex, center: RibbonVertex): number => Math.max(.24, Math.min(1,
       .24 + Math.pow(Math.min(1, Math.hypot(left.x - center.x, left.z - center.z) / 90), .65) * .66 + drop * .1))
     if (surface.triangles) {

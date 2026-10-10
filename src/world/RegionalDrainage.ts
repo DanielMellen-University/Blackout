@@ -13,6 +13,7 @@ interface Node {
   parent?: readonly [number, number] | null; runoff: Float64Array; basin?: WaterBasin | null; reaches?: RiverReach[]
   channel?: boolean; wetOutlet?: boolean; lake?: LakeCandidate | null; discharge?: number
   longRoute?: boolean; primary?: boolean; dominant?: readonly [number, number] | null
+  mergeRadius?: number
 }
 interface LakeCandidate { radius: number; roll: number; pond: boolean; large: boolean; riverSink: boolean }
 let seed = NaN
@@ -254,6 +255,30 @@ function basin(n: Node): WaterBasin | null {
   return n.basin
 }
 
+function channelWidth(q: Node, amount: number): number {
+  const downstream = parent(q)
+  const gradient = downstream ? (q.height - downstream.height) /
+    Math.hypot(q.x - downstream.x, q.z - downstream.z) : 0
+  const floodplain = (1 - smoothstep(.004, .045, gradient)) *
+    (1 - smoothstep(600, 1800, q.height))
+  const valley = smoothstep(.25, .7, valueNoise(q.x / 12000 + 41, q.z / 12000 - 73))
+  return Math.max(8, Math.min(220, 5 + Math.pow(amount, .62) * 11)) * (1 + 3 * floodplain * valley)
+}
+
+/** Incident channels share a short, level junction before diverging grades.
+ * Without this, wide tributary ribbons meet at different elevations upstream
+ * of their common endpoint, even though their centreline endpoints agree. */
+function mergeRadius(n: Node): number {
+  if (n.mergeRadius !== undefined) return n.mergeRadius
+  let incoming = 0
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dz) continue
+    const q = node(n.gx + dx, n.gz + dz), p = parent(q)
+    if (p?.gx === n.gx && p.gz === n.gz && carriesRiver(q)) incoming++
+  }
+  return (n.mergeRadius = incoming >= 2 ? channelWidth(n, discharge(n)) * 6 : 0)
+}
+
 function reaches(n: Node): RiverReach[] {
   if (n.reaches) return n.reaches
   const result: RiverReach[] = []
@@ -269,21 +294,9 @@ function reaches(n: Node): RiverReach[] {
     const lake = basin(node(n.gx + dx, n.gz + dz))
     if (lake) nearby.push(lake)
   }
-  const width = (q: Node, amount: number): number => {
-    const downstream = parent(q)
-    const gradient = downstream ? (q.height - downstream.height) /
-      Math.hypot(q.x - downstream.x, q.z - downstream.z) : 0
-    // Confined upland channels stay narrow. Low-gradient floodplains can
-    // spread to four times the old width, coherently over kilometres rather
-    // than changing randomly at every span. Runoff still sets their scale.
-    const floodplain = (1 - smoothstep(.004, .045, gradient)) *
-      (1 - smoothstep(600, 1800, q.height))
-    const valley = smoothstep(.25, .7, valueNoise(q.x / 12000 + 41, q.z / 12000 - 73))
-    return Math.max(8, Math.min(220, 5 + Math.pow(amount, .62) * 11)) * (1 + 3 * floodplain * valley)
-  }
   // Interior junctions use the same node width on every incident edge.
   // A receiving water body has no downstream ribbon to match.
-  const wb = width(p, Math.max(flow, discharge(p)))
+  const wb = channelWidth(p, Math.max(flow, discharge(p)))
   const length = Math.hypot(p.x - n.x, p.z - n.z)
   const dx = p.x - n.x, dz = p.z - n.z
   const bend = (hash2(n.gx + 811, n.gz - 337) - .5) * Math.min(760, length * .6)
@@ -307,7 +320,12 @@ function reaches(n: Node): RiverReach[] {
     }
   }
   const headwater = !upstreamIsChannel
-  const wa = headwater && !sourceBasin ? 10 : width(n, flow)
+  const wa = headwater && !sourceBasin ? 10 : channelWidth(n, flow)
+  let startFlat = Math.min(.6, mergeRadius(n) / length), endFlat = Math.min(.85, mergeRadius(p) / length)
+  if (startFlat + endFlat > .9) {
+    const scale = .9 / (startFlat + endFlat)
+    startFlat *= scale; endFlat *= scale
+  }
   const next = parent(p)
   const tx0 = upstream ? (p.x - upstream.x) * .5 : dx
   const tz0 = upstream ? (p.z - upstream.z) * .5 : dz
@@ -362,7 +380,16 @@ function reaches(n: Node): RiverReach[] {
         if (j / REACH_STEPS <= t) { before = j; low = wet[j]! }
         else { after = j; high = wet[j]!; break }
       }
-      return low + (high - low) * Math.max(0, Math.min(1, (t * REACH_STEPS - before) / Math.max(1, after - before)))
+      const span = (after - before) / REACH_STEPS
+      let flatA = before === 0 || low === ya ? Math.min(startFlat, span * .6) : 0
+      let flatB = after === REACH_STEPS || high === yb ? Math.min(endFlat, span * .85) : 0
+      if (flatA + flatB > span * .9) {
+        const scale = span * .9 / (flatA + flatB)
+        flatA *= scale; flatB *= scale
+      }
+      const start = before / REACH_STEPS + flatA
+      const end = after / REACH_STEPS - flatB
+      return low + (high - low) * Math.max(0, Math.min(1, (t - start) / Math.max(.00001, end - start)))
     }
     let a = point(0, branch, detour)
     for (let i = 1; i <= REACH_STEPS; i++) {

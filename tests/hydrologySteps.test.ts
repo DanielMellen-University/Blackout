@@ -28,13 +28,13 @@ function digest(cx: number, cz: number): string {
 beforeEach(() => resetSeed(1337))
 
 describe('cooperative cold hydrology', () => {
-  // Regional drainage revision 5: snapshots pin deterministic build/cancel/interleave output.
+  // Regional drainage revision 6: snapshots pin deterministic build/cancel/interleave output.
   it.each([
     [42, -1, -1, 'a279d65e55315a9873e8b331287078cadeaa611bf9612e805a732cb7decf8380'],
     [42, 0, 0, '7fb086109ff9af7f48018ce76a52826e35e42302677797b674372b2ce3cdddc4'],
     [42, 1, -1, 'c30ee01ae23f943d36fe13185e1dfbcf8f8b7c4d3c81958f4932965f24753218'],
     [1337, -1, -1, 'ec0dfffdaf3ddf2ac17ccda2447ccb093bff391a008a14b2ec2b5646bc262238'],
-    [1337, 0, 0, 'dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b'],
+    [1337, 0, 0, '4ce8df28fa6f82befb0ae942ffd9474a016904dd0e1ff95a0b47e3706533a746'],
     [1337, 1, -1, '61344add8df1eb63bd3d34633780bb3095adc6ae0badc099926ae2b241716de0'],
   ] as const)('preserves regional seed %s region %s,%s', (seed, cx, cz, hash) => {
     resetSeed(seed)
@@ -59,7 +59,7 @@ describe('cooperative cold hydrology', () => {
     const restarted = prepare(0, 0)
     expect(restarted.next().value).toBe('samples')
     drain(restarted)
-    expect(digest(0, 0)).toBe('dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b')
+    expect(digest(0, 0)).toBe('4ce8df28fa6f82befb0ae942ffd9474a016904dd0e1ff95a0b47e3706533a746')
   })
 
   it('keeps drainage order independent when other regions overwrite sort scratch', () => {
@@ -69,7 +69,7 @@ describe('cooperative cold hydrology', () => {
     waterLandmarks(1, -1)
     drain(a)
     drain(b)
-    expect(digest(0, 0)).toBe('dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b')
+    expect(digest(0, 0)).toBe('4ce8df28fa6f82befb0ae942ffd9474a016904dd0e1ff95a0b47e3706533a746')
     expect(digest(-1, -1)).toBe('ec0dfffdaf3ddf2ac17ccda2447ccb093bff391a008a14b2ec2b5646bc262238')
   })
 
@@ -97,7 +97,7 @@ describe('cooperative cold hydrology', () => {
     expect(digest(0, 0)).toBe('7fb086109ff9af7f48018ce76a52826e35e42302677797b674372b2ce3cdddc4')
     setWorldSeed(1337)
     drain(steps)
-    expect(digest(0, 0)).toBe('dfb113774d484f57477a9b464dd22379aa0194ecfce9ae11fe07b6b56c7c018b')
+    expect(digest(0, 0)).toBe('4ce8df28fa6f82befb0ae942ffd9474a016904dd0e1ff95a0b47e3706533a746')
   })
 
   it('covers exact region boundaries for shared normal probes', () => {

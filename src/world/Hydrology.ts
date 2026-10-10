@@ -225,7 +225,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   const localX = safeX - cx * CATCHMENT_SIZE, localZ = safeZ - cz * CATCHMENT_SIZE
   const edgeFade = 1 // Global drainage and halo queries agree across region boundaries.
   let height = safeGround, waterLevel = 0, river = 0, lake = 0, pond = 0, stream = 0
-  let coastal = 1 - smoothstep(0, .025, Math.abs(Number.isFinite(coast) ? coast! : coastField(safeX, safeZ)))
+  const coastValue = Number.isFinite(coast) ? coast! : coastField(safeX, safeZ)
+  let coastal = 1 - smoothstep(0, .025, Math.abs(coastValue))
   // Tiny negative coordinates can round their local remainder up to 32000.
   const binX = Math.max(0, Math.min(BINS - 1, Math.floor(localX / BIN)))
   const binZ = Math.max(0, Math.min(BINS - 1, Math.floor(localZ / BIN)))
@@ -358,6 +359,10 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   }
   if (basinWaterLevel > -Infinity || coveredRiverLevel > -Infinity)
     height = Math.min(height, waterLevel - .1)
+  // Valley carving is not a sea source. Keep dry inland shoulders above the
+  // default datum instead of silently filling every negative carved bank with
+  // raster ocean water beneath an adjacent analytic lake or river.
+  else if (coastValue >= 0) height = Math.max(.1, height)
   out.height = height
   out.waterLevel = waterLevel
   out.river = river

@@ -2,8 +2,10 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.873**. Previous roadmap chunk: **10.872**.
-Recent changes from **10.873**. River carving, collision, and rendering now consume the same cached surface triangles, including source caps and lake mouths. Tile edges preserve the river's actual triangle heights; generated lake shores and island holes share one collision/render polygon at every LOD. Independent mesh checks cover five fixed seeds, including wet collision points with visible water. Render distance and streaming caps remain unchanged; see the CPU comparison and visual-review limits in the streaming notes. This is a surface-agreement correction, not completion of confluence grading or global basin-spill routing. Regional weather and weaker delayed flight assist remain in progress; terrain/biome polish, actual EST reset wiring, and per-level generation remain deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.874**. Previous roadmap chunk: **10.873**.
+
+Outward half-caps remove the striped river-mouth overlap seen during first-person review. A shallow-water color transition remains; water artwork is not declared finished.
+Recent changes from **10.874**. Wide tributaries now share a level merge area instead of climbing across overlapping channels. Actual-water checks cover 409,878 probes across ten seeds and 250 regions. Lake mouths blend flow, depth, and water appearance; carved dry banks and mixed shoreline raster triangles no longer add phantom sea-level sheets. Sparse coverage, varied widths, shared collision surfaces, render distance, and streaming caps remain intact. Regional weather, weaker delayed flight assist, broader basin-spill routing, and the controlled foreground travel/memory review remain in progress. Actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 

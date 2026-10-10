@@ -60,7 +60,7 @@ function clipLakeShore(sections: Float64Array, caps: Float64Array, lakes: readon
           }
           const t = (lo + hi) * .5
           outside.push([previous[0]! + (current[0]! - previous[0]!) * t, lake.level,
-            previous[2]! + (current[2]! - previous[2]!) * t, previous[3]! + (current[3]! - previous[3]!) * t])
+            previous[2]! + (current[2]! - previous[2]!) * t, .08])
         }
         if (currentDistance >= 0) outside.push(current)
         previous = current; previousDistance = currentDistance
@@ -103,7 +103,7 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
       const blend = 1 - smoothstep(0, 100, Math.max(0, d))
       if (blend > weight || (blend === weight && b.level > target)) { weight = blend; target = b.level }
     }
-    return [x, y + (target - y) * weight, z, depth]
+    return [x, y + (target - y) * weight, z, depth + (.08 - depth) * weight]
   }
   for (let step = 0; step <= steps; step++) {
     const t = step / steps, w = Math.max(5, reach.wa + (reach.wb - reach.wa) * t)
@@ -139,9 +139,20 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
     const right = values.slice(index + 8, index + 12)
     const radius = Math.hypot(left[0]! - center[0]!, left[2]! - center[2]!) * scale
     if (round) {
-      const points = Array.from({ length: 8 }, (_, i) => vertex(center[0]! + Math.cos(i / 8 * Math.PI * 2) * radius,
-        center[1]!, center[2]! + Math.sin(i / 8 * Math.PI * 2) * radius, Math.max(.08, center[3]! * .5)))
-      for (let i = 0; i < points.length; i++) triangle(center, points[i]!, points[(i + 1) % points.length]!)
+      // A mouth closes only the outward half of its last cross-section. A
+      // full disc also covered the upstream ribbon, leaving coplanar surfaces
+      // with different depths/flow that flickered as a bright semicircular lip.
+      const half = scale !== 1.06
+      const nx = (left[0]! - center[0]!) / Math.max(.001, radius / scale)
+      const nz = (left[2]! - center[2]!) / Math.max(.001, radius / scale)
+      const points = Array.from({ length: half ? 9 : 8 }, (_, i) => {
+        const angle = half ? -Math.PI * .5 + i / 8 * Math.PI : i / 8 * Math.PI * 2
+        const along = Math.cos(angle) * radius, across = Math.sin(angle) * radius
+        return vertex(center[0]! + (half ? nz * direction * along + nx * across : along), center[1]!,
+          center[2]! + (half ? -nx * direction * along + nz * across : across), Math.max(.08, center[3]! * .5))
+      })
+      for (let i = 0; i < (half ? points.length - 1 : points.length); i++)
+        triangle(center, points[i]!, points[(i + 1) % points.length]!)
       return
     }
     const distance = Math.max(140, radius * 3.4)

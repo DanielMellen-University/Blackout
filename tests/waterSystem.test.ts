@@ -5,6 +5,18 @@ import { applyWaterAppearance } from '../src/world/WaterAppearance'
 import { buildWaterMesh } from '../src/world/WaterSystem'
 
 describe('independent water surfaces', () => {
+  it('does not rasterize a second sea surface under a near-sea-level lake', () => {
+    const lake: WaterBasin = { x: 50, z: 50, radius: 35, aspect: 1, angle: 0, phase: 0,
+      level: .01, sea: false, pond: true, shoreRadii: new Float32Array(32).fill(35) }
+    const mesh = buildWaterMesh(new Float32Array(4).fill(-5), new Float32Array([0, .01, 0, .01]),
+      1, 100, 0, 0, { value: 0 }, undefined, new Float32Array(4).fill(1), [], [lake])!
+    try {
+      const kind = mesh.geometry.getAttribute('waterKind')
+      expect(kind.count).toBeGreaterThan(0)
+      for (let i = 0; i < kind.count; i++) expect(kind.getX(i)).toBe(.5)
+    } finally { mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose() }
+  })
+
   it('gives receiving lakes surface ownership instead of overlapping river caps', () => {
     const lake: WaterBasin = { x: 800, z: 500, radius: 220, aspect: 1, angle: 0, phase: 0,
       level: 90, sea: false, pond: true, shoreRadii: new Float32Array(32).fill(220) }
@@ -16,7 +28,17 @@ describe('independent water surfaces', () => {
       0, 0, { value: 0 }, undefined, [reach], [], [lake])!
     const p = mesh.geometry.getAttribute('position'), kind = mesh.geometry.getAttribute('waterKind')
     const normals = mesh.geometry.getAttribute('normal')
-    let river = 0, basin = 0
+    const flow = mesh.geometry.getAttribute('waterFlow'), depth = mesh.geometry.getAttribute('waterDepth')
+    let river = 0, basin = 0, blended = 0, shore = 0
+    for (let i = 0; i < p.count; i++) {
+      blended += Number(kind.getX(i) > 0 && kind.getX(i) < .49)
+      if (Math.abs(basinDistance(lake, p.getX(i) + 600, p.getZ(i) + 600)) > .05) continue
+      shore++
+      expect(kind.getX(i)).toBeCloseTo(.5, 4)
+      expect(flow.getX(i)).toBeCloseTo(0, 4)
+      expect(depth.getX(i)).toBeCloseTo(.08, 4)
+    }
+    expect(blended).toBeGreaterThan(0); expect(shore).toBeGreaterThan(0)
     for (let i = 0; i < p.count; i += 3) {
       for (let j = i; j < i + 3; j++) {
         expect(normals.getX(j)).toBe(0); expect(normals.getZ(j)).toBe(0)
@@ -44,6 +66,19 @@ describe('independent water surfaces', () => {
     for (let i = 0; i < p.count; i++) if (Math.abs(p.getX(i) + 500 - reach.bx) < .001 &&
       Math.abs(p.getY(i) - 90.04) < .001) halfWidth = Math.max(halfWidth, Math.abs(p.getZ(i) + 500 - reach.bz))
     expect(halfWidth).toBeCloseTo(reach.wb, 3)
+    // The outward mouth cap must not cover the upstream ribbon a second time.
+    let coverage = 0
+    const x = 590 - 500, z = 313 - 500
+    for (let i = 0; i < p.count; i += 3) {
+      const ax = p.getX(i), az = p.getZ(i), bx = p.getX(i + 1), bz = p.getZ(i + 1)
+      const cx = p.getX(i + 2), cz = p.getZ(i + 2)
+      const d = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz)
+      if (Math.abs(d) < 1e-8) continue
+      const a = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / d
+      const b = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / d
+      if (Math.min(a, b, 1 - a - b) > 1e-6) coverage++
+    }
+    expect(coverage).toBe(1)
     mesh.geometry.dispose(); (mesh.material as MeshStandardMaterial).dispose()
   })
 

@@ -63,7 +63,7 @@ describe('cooperative terrain geometry', () => {
       if (result.value === 'water-grid') break
     }
     generateTerrainGeometry(-6720, -6720, 2, 32)
-    expect(digest(finish(steps))).toBe('d07789c28a3d63dbf5134c14f9d6791c8880983572846794998cfcec835a5173')
+    expect(digest(finish(steps))).toBe('3dab4c459c440d234df5392ac54866bea0ede8dda13f030383336ab071104456')
   })
 
   // Regional world revision 2, with a current wetland pond fixture.
@@ -71,7 +71,7 @@ describe('cooperative terrain geometry', () => {
   it.each([
     { name: 'near', input: [0, 0, 0], expected: 'c98a1777d69273e4b38f9614934ac8503e2c97e956199df8025e9674b765f137' },
     { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: 'ea99ee2c3420335e099ad6c29c688d437d1148e85e6e10726ae50249a3c1c296' },
-    { name: 'pond', input: [-22050, -28350, 0], expected: 'd07789c28a3d63dbf5134c14f9d6791c8880983572846794998cfcec835a5173' },
+    { name: 'pond', input: [-22050, -28350, 0], expected: '3dab4c459c440d234df5392ac54866bea0ede8dda13f030383336ab071104456' },
     { name: 'far water', input: [-6720, -6720, 2, 32], expected: '6059327cbcc3afd95290d66a7f10eb0521d1de5ad55a83c738f68a6ae6e1f556' },
     { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: '7ae793c49622ca8d92d72d1bf50bd84f63f0f518f340e4d9a3af59a6082022d5' },
     { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'd2ed58aedb22f745ca9ef8ac0c851cb414e9feea732fa13f0af1e32229279b39' },
@@ -111,6 +111,6 @@ describe('cooperative terrain geometry', () => {
     expect(materialDispose).toHaveBeenCalledTimes(phase === 'water' ? 1 : 0)
     steps.return(undefined as never)
     expect(geometryDispose.mock.calls.length - before).toBe(phase === 'ground' ? 1 : 2)
-    expect(digest(generateTerrainGeometry(-22050, -28350, 0))).toBe('d07789c28a3d63dbf5134c14f9d6791c8880983572846794998cfcec835a5173')
+    expect(digest(generateTerrainGeometry(-22050, -28350, 0))).toBe('3dab4c459c440d234df5392ac54866bea0ede8dda13f030383336ab071104456')
   })
 })

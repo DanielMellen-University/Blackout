@@ -6,6 +6,29 @@ import { sampleGeography } from '../src/world/Geography'
 import { clearOpsPad, findPlayableSpawn, isUsableAirfield, terrainSurfaceFromClimate } from '../src/world/terrainSample'
 
 describe('regional connected world', () => {
+  it('keeps actual water downhill through broad confluences and lake approaches', () => {
+    let checked = 0, rises = 0
+    const failures: object[] = []
+    for (const seed of [1, 42, 73, 1337, 2026]) {
+      setWorldSeed(seed)
+      for (let cx = -1; cx <= 1; cx++) for (let cz = -1; cz <= 1; cz++) {
+        for (const r of riverReaches(cx, cz)) {
+          let previous = Infinity
+          for (let i = 0; i <= 8; i++) {
+            const t = i / 8, level = sampleGeography(r.ax + r.dx * t, r.az + r.dz * t).waterLevel
+            if (level > previous + .15) {
+              rises++
+              if (failures.length < 12) failures.push({ seed, id: r.id, t, previous, level })
+            }
+            previous = level; checked++
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(70000)
+    expect({ rises, failures }).toEqual({ rises: 0, failures: [] })
+  })
+
   it('keeps seas uncommon while preserving usable inland starts', () => {
     let wet = 0, count = 0, coasts = 0
     for (const seed of [1, 42, 73, 1337, 2026, 9, 10, 867, 17, 99]) {

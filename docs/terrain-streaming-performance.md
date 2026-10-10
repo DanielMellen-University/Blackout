@@ -5,6 +5,32 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.874 confluence and mouth correction
+
+Same-machine CPU-only comparison against 10.873, seed 1, unchanged quality,
+16 builds per coordinate, with no test runner active; medians exclude the first:
+
+| Tile | 10.873 warm ms | 10.874 warm ms | 10.873 / 10.874 payload bytes |
+| --- | ---: | ---: | ---: |
+| Receiving pond (-22050, -28350), near | 15.78 | 15.81 | 224004 / 216516 |
+| River mouth (-33600, -18060), near | 25.00 | 21.77 | 215940 / 215940 |
+| Far water (-26880, -26880), 8-cell | 2.67 | 2.58 | 10516 / 10516 |
+
+Cold pond builds were 107.88 / 99.68 ms and mouth builds 82.34 / 72.10 ms.
+Warm p95 was 25.48 / 24.81 ms at the pond and 38.93 / 24.77 ms at the mouth.
+These short, JIT-sensitive CPU samples are not startup, FPS, or sustained-memory
+measurements. The hidden review browser remained throttled near one FPS; its
+frame statistics are not performance evidence. Render distance, worker/upload
+limits, and cache bounds are unchanged. Junction radius is one cached scalar
+per existing drainage node; mouth shading adds bounded local basin queries.
+
+First-person seed-42 mouth inspection confirmed removal of the overlapping
+full-disc cap and its striped semicircular flicker. A remaining shallow-water
+color transition is visible, so this is not a claim of finished water artwork.
+Broader basin-spill routing and controlled foreground travel/heap review remain
+outstanding. Focused regressions cover descending actual confluence surfaces,
+mouth ownership, shading metadata, and duplicate sea sheets at lake edges.
+
 ### Chunk 10.873 shared water surfaces
 
 Same-machine CPU-only comparison against 10.872, seed 1, unchanged quality,
