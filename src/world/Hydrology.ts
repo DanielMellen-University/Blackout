@@ -219,15 +219,18 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
   const binX = Math.max(0, Math.min(BINS - 1, Math.floor(localX / BIN)))
   const binZ = Math.max(0, Math.min(BINS - 1, Math.floor(localZ / BIN)))
   const reaches = region.bins[binZ * BINS + binX]!
-  let nearest = Infinity, level = 0, width = 1
+  let nearest = Infinity, level = 0, width = 1, coveredRiverLevel = -Infinity
   let nearestReach: Reach | null = null
   for (const r of reaches) {
-    const t = Math.max(0, Math.min(1, ((safeX - r.ax) * r.dx + (safeZ - r.az) * r.dz) / r.lengthSq))
+    const projection = ((safeX - r.ax) * r.dx + (safeZ - r.az) * r.dz) / r.lengthSq
+    const t = Math.max(0, Math.min(1, projection))
     const w = r.wa + (r.wb - r.wa) * t
     const dx = safeX - r.ax - r.dx * t, dz = safeZ - r.az - r.dz * t
-    const radius = nearest + w
+    const radius = Math.max(w, nearest + w)
     if (radius < 0 || dx * dx + dz * dz >= radius * radius) continue
     const d = Math.sqrt(dx * dx + dz * dz) - w
+    if (d <= 0 && projection >= 0 && projection <= 1) coveredRiverLevel = Math.max(coveredRiverLevel,
+      r.ya + (r.yb - r.ya) * t)
     if (d < nearest) {
       nearest = d
       nearestReach = r
@@ -269,6 +272,14 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
     if (blend > 0 && Math.max(0, d) <= Math.max(42, width * 1.35)) waterLevel = level
     river = 1 - smoothstep(0, Math.max(90, Math.min(300, width * 1.2)), Math.max(0, d))
     stream = width < 48 ? river : 0
+  }
+
+  // Overlapping ribbons render their upper surface, not the elevation of
+  // whichever bank happens to be closest. Do not let a projected endpoint
+  // outside a span override an actual channel covering this point.
+  if (coveredRiverLevel > -Infinity) {
+    waterLevel = coveredRiverLevel
+    height = Math.min(height, waterLevel - .1)
   }
 
   // A river should not stop at a mathematically exact shoreline and leave a

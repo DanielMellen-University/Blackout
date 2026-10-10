@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.870** is current. Previous ship: **10.869**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.871** is current. Previous ship: **10.870**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.871 fixes collision/surface sampling at overlapping river bends. Covered spans select their upper surface rather than the closest bank; projected endpoints outside the actual span cannot override it. The bed stays submerged under the resolved surface. Tests independently build water geometry and calculate the top drawn triangle height at three previously failing overlap locations, replacing mismatches of roughly 1-4.5 m with agreement within 0.15 m. This does not prove every shoreline sample globally exact. CPU-only seed-1337 profiling gives 16.55 ms warm near-tile median and 39,412-byte maximum payload, close to the earlier 16.78 ms run; no FPS claim. No new allocation, cache, worker, upload budget, or render-distance change. Regional weather and biome polish remain in progress; EST reset wiring and per-level generation remain deferred.
 
 Chunk 10.870 validates shoreline meanders against receiving-water elevations and tries at most six local detours around incompatible higher lakes or sea/lake crossings. Detours keep the same drainage nodes and endpoint directions; terrain carving, collision, and visible water continue to share the resulting route. This fixes rare stepped connections found by extending the fixed review to 10 seeds and 490 regions: all 68,093 inspected downstream ends join another channel at matching elevation or enter actual lake/sea water. Focused regressions preserve the previously failing regions, and a River shoreline joins terrain-review destination makes the lake-side case repeatable. Ghost generation revision advances without deleting records or traces. No additional workers, caches, render-distance reductions, weather integration, or changes to paused systems.
 
