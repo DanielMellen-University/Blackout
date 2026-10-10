@@ -1,8 +1,10 @@
 # Roadmap
 
-Chunk **10.867** is current. Previous ship: **10.866**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.868** is current. Previous ship: **10.867**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 ## Shipped baseline
+
+Chunk 10.868 keeps incoming, retiring, and restored water surfaces opaque and depth-writing to prevent overlapping transparent LODs from exposing the bed or changing brightness on settlement. Fallback water retains its relative bias above terrain and behind replacement water. Water detail distance is evaluated once per fragment, independent of LOD tessellation, with existing Low/far texture-read limits. Live wind changes ripple strength without resetting elapsed texture phase. Water geometry/levels, generation, collision, render distance, and streaming budgets are unchanged. EST reset wiring and unique world-generation conditions remain deferred; paused-system exclusions remain in force.
 
 Chunk 10.867 adds 200ms entry/exit fades and subtle slides for pause, title/reference navigation, Controls/manual switches, and settings categories. CSS display transitions keep outgoing content visible through its exit while native hidden state and existing navigation continue to drive focus and pause logic. Pages overlap in a shared grid slot to avoid layout jumps; outgoing pages reject pointer input. OS and in-game reduced motion make transitions immediate without translation. Older browsers retain immediate native visibility changes.
 

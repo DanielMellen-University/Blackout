@@ -1028,8 +1028,11 @@ export class TerrainSystem {
       material.depthWrite = true
       material.opacity = 1
       material.polygonOffset = true
-      material.polygonOffsetFactor = 2
-      material.polygonOffsetUnits = 2
+      // Keep fallback water above its bed but behind replacement water.
+      const source = chunk.waterMesh?.material === material ? this.waterMat
+        : chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
+      material.polygonOffsetFactor = source.polygonOffsetFactor + 2
+      material.polygonOffsetUnits = source.polygonOffsetUnits + 2
       material.needsUpdate = true
     }
     chunk.fallbackOffset = true
@@ -1188,7 +1191,9 @@ export class TerrainSystem {
     chunk.root.visible = a > 0.005
     if (!chunk.root.visible) return
 
-    for (const material of chunk.materials) material.opacity = a
+    for (const material of chunk.materials) {
+      material.opacity = chunk.waterMesh?.material === material ? 1 : a
+    }
   }
 
 
@@ -1305,9 +1310,10 @@ export class TerrainSystem {
     this.fadeKeys.add(chunk.key)
     if (chunk.fallbackOffset) {
       for (const material of chunk.materials) {
-        material.transparent = true
-        material.depthWrite = false
-        material.opacity = MathUtils.clamp(chunk.alpha, 0, 1)
+        const water = chunk.waterMesh?.material === material
+        material.transparent = !water
+        material.depthWrite = water
+        material.opacity = water ? 1 : MathUtils.clamp(chunk.alpha, 0, 1)
         const source = chunk.waterMesh?.material === material ? this.waterMat
           : chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
         material.polygonOffset = source.polygonOffset
@@ -1318,26 +1324,25 @@ export class TerrainSystem {
       chunk.fallbackOffset = false
     }
     if (!chunk.settled) return
-    const clone = (source: MeshStandardMaterial): MeshStandardMaterial => {
+    const clone = (source: MeshStandardMaterial, water = false): MeshStandardMaterial => {
       const material = source.clone()
       // Material.clone() does not copy shader hooks. Losing them makes a
       // retiring tile briefly dry/unlit water before the new surface settles.
       material.onBeforeCompile = source.onBeforeCompile
       material.customProgramCacheKey = source.customProgramCacheKey
-      // Ground and water are broad opaque surfaces. Alpha-hash dithering on
-      // them reads as white/black static during every streamed fade, while a
-      // short smooth blend is both cleaner and cheaper for the GPU.
-      material.transparent = true
+      // Ground blends over fallback coverage; water stays opaque/depth-writing
+      // so overlapping surfaces cannot double-blend or expose the riverbed.
+      material.transparent = !water
       material.alphaHash = false
-      material.opacity = MathUtils.clamp(chunk.alpha, 0, 1)
-      material.depthWrite = false
+      material.opacity = water ? 1 : MathUtils.clamp(chunk.alpha, 0, 1)
+      material.depthWrite = water
       return material
     }
     const terrainMaterial = clone(chunk.lod === 0 ? this.groundMatNear : this.groundMatFar)
     chunk.terrainMesh.material = terrainMaterial
     const materials: MeshStandardMaterial[] = [terrainMaterial]
     if (chunk.waterMesh) {
-      const waterMaterial = clone(this.waterMat)
+      const waterMaterial = clone(this.waterMat, true)
       chunk.waterMesh.material = waterMaterial
       materials.push(waterMaterial)
     }
@@ -1349,10 +1354,14 @@ export class TerrainSystem {
     root.traverse((obj) => {
       if (!(obj instanceof Mesh)) return
       if (obj.name === 'WaterSurface') {
-        obj.material.opacity = opacity
-        obj.material.transparent = true
+        // Water is an opaque surface, not a transparent terrain overlay.
+        // Blending overlapping LODs without depth writes flashes the bed and
+        // changes brightness when the surface switches to its settled material.
+        // Use depth-tested coverage throughout; distance fog hides the horizon.
+        obj.material.opacity = 1
+        obj.material.transparent = false
         obj.material.alphaHash = false
-        obj.material.depthWrite = false
+        obj.material.depthWrite = true
         obj.matrixAutoUpdate = false
         obj.updateMatrix()
         return

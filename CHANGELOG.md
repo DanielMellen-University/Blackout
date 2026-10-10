@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.868** Stabilize rivers and lakes during streaming: retain opaque, depth-writing water on incoming, retiring, and restored tiles instead of double-blending overlapping transparent surfaces. Keep fallback water above its bed and behind replacement water. Evaluate detail distance once per fragment rather than interpolating nonlinear fades across changing LOD triangles; retain Low/distant texture-read limits. Make live wind affect ripple strength rather than multiplying elapsed texture phase. Preserve water geometry/levels, terrain generation, collision, render distance, and worker/upload budgets.
+
 - **10.867** Animate menu entry, exit, and page changes with 200ms fades and subtle slides. Esc pause/resume, title/reference navigation, Controls/manual links, and settings categories share the same transitions. Overlap outgoing/incoming pages in one layout slot and disable pointer interaction on outgoing pages. Respect the OS and in-game reduced-motion preferences. Preserve native navigation and keyboard focus.
 
 - **10.866** Reuse the startup screen for Launch flight and both Retry actions, with a 1.5 second minimum and the same fade into flight. Change the initial load caption to simply “Loading”; preserve its three second minimum and failure recovery.

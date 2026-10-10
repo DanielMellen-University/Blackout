@@ -42,6 +42,8 @@ interface Internals {
   drainBuildQueue(): void
   install(job: TerrainBuildRequest, data: TerrainGeometryData): void
   updateFades(cx: number, cz: number, dt: number): void
+  prepareChunkForFade(chunk: Chunk): void
+  applyChunkAlpha(chunk: Chunk): void
 }
 let terrain: TerrainSystem
 let internal: Internals
@@ -204,11 +206,55 @@ describe('terrain streaming integration', () => {
       expect(fallback.depthWrite).toBe(true)
       expect(fallback.opacity).toBe(1)
       expect(fallback.polygonOffset).toBe(true)
+      expect(fallback.polygonOffsetFactor).toBe(mesh.name === 'WaterSurface' ? 0 : 2)
       expect(source.polygonOffset).toBe(mesh.name === 'WaterSurface')
       expect(source.polygonOffsetFactor).toBe(mesh.name === 'WaterSurface' ? -2 : 0)
     }
     internal.updateFades(0, 0, .3)
     expect(material(old).opacity).toBe(1)
+  })
+
+  it('keeps water opaque and depth-writing through entry, LOD replacement, and resumed fading', () => {
+    const waterMaterial = (chunk: Chunk) => (chunk.root.children.find(child => child.name === 'WaterSurface') as Mesh)
+      .material as MeshStandardMaterial
+    const expectStableWater = (chunk: Chunk) => {
+      const water = waterMaterial(chunk)
+      expect(water.transparent).toBe(false)
+      expect(water.depthWrite).toBe(true)
+      expect(water.opacity).toBe(1)
+      expect(water.alphaHash).toBe(false)
+      expect(water.customProgramCacheKey()).toBe(internal.waterMat.customProgramCacheKey())
+    }
+    desire(5, 12)
+    internal.install(job(5, 2), { ...fixture, water: fixture.ground })
+    const old = internal.chunks.get(key(5))!
+    expectStableWater(old)
+    internal.updateFades(0, 0, .325)
+    expect(material(old).opacity).toBeCloseTo(.5)
+    expectStableWater(old)
+    internal.updateFades(0, 0, .325)
+    expect(waterMaterial(old)).toBe(internal.waterMat)
+
+    // Rehydrate a settled tile, including the path for restored fallback coverage.
+    internal.prepareChunkForFade(old)
+    old.alpha = .4
+    internal.applyChunkAlpha(old)
+    expectStableWater(old)
+    desire(5, 4)
+    internal.install(job(5, 1), { ...fixture, water: fixture.ground })
+    const replacement = internal.chunks.get(key(5))!
+    internal.updateFades(0, 0, .325)
+    expectStableWater(old)
+    expectStableWater(replacement)
+    expect(waterMaterial(old).polygonOffsetFactor).toBe(0)
+    expect(waterMaterial(replacement).polygonOffsetFactor).toBe(-2)
+    internal.prepareChunkForFade(old)
+    expect(waterMaterial(old).polygonOffsetFactor).toBe(-2)
+    expectStableWater(old)
+    internal.updateFades(0, 0, .325)
+    expect(old.root.parent).toBeNull()
+    expect(waterMaterial(replacement)).toBe(internal.waterMat)
+    expectStableWater(replacement)
   })
 
   it('drains disposable retiring tiles beside a still-fading replacement', () => {

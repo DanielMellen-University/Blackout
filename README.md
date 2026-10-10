@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.867**. Previous roadmap chunk: **10.866**.
-Recent changes from **10.867**. Add short fades and subtle slides when opening/closing pause with Esc, moving between Controls and Flight manual, returning to the title, and switching settings pages. Reduced motion removes the slide and makes transitions immediate. Actual EST reset wiring and unique world-generation conditions remain deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.868**. Previous roadmap chunk: **10.867**.
+Recent changes from **10.868**. Keep rivers and lakes opaque and depth-writing throughout streamed chunk transitions, with correctly layered fallback water. Make water detail fades independent of mesh resolution and stop live wind updates from jumping the ripple texture. Preserve water levels, generation, collision, render distance, and streaming budgets. Actual EST reset wiring and unique world-generation conditions remain deferred.
 
 ## Run
 

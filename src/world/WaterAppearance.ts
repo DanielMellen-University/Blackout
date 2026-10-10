@@ -32,24 +32,27 @@ export function applyWaterAppearance(
     shader.uniforms.waterWindZ = weather.windZ ?? DEFAULT_WEATHER.windZ
     shader.uniforms.waterDetailScale = detailScale
     shader.uniforms.waterNormals = { value: waterNormals }
-    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nattribute float waterDrop;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec3 vWaterWorld;\nvarying float vWaterSpecDistanceFade;\nvarying float vWaterDistanceFade;\nvarying float vWaterNormalDistanceFade;\n' + shader.vertexShader
+    shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nattribute float waterDrop;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
-      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterDrop = waterDrop;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;\nfloat waterVertexDistance = length(vWaterWorld - cameraPosition);\nvWaterSpecDistanceFade = 1.0 - smoothstep(480.0, 3600.0, waterVertexDistance);\nvWaterDistanceFade = 1.0 - smoothstep(520.0, 4200.0, waterVertexDistance);\nvWaterNormalDistanceFade = 1.0 - smoothstep(400.0, 3500.0, waterVertexDistance);',
+      '#include <project_vertex>\nvWaterDepth = waterDepth;\nvWaterFlow = waterFlow;\nvWaterFlowDir = waterFlowDir;\nvWaterKind = waterKind;\nvWaterDrop = waterDrop;\nvWaterWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
     )
-    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform float waterDetailScale;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\nvarying float vWaterSpecDistanceFade;\nvarying float vWaterDistanceFade;\nvarying float vWaterNormalDistanceFade;\n' + shader.fragmentShader
+    shader.fragmentShader = 'uniform float worldWaterTime;\nuniform float waterRain;\nuniform float waterSnow;\nuniform float waterWindX;\nuniform float waterWindZ;\nuniform float waterDetailScale;\nuniform sampler2D waterNormals;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec2 vWaterFlowDir;\nvarying vec3 vWaterWorld;\n' + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <roughnessmap_fragment>',
-      '#include <roughnessmap_fragment>\nfloat waterDetail = clamp(waterDetailScale, 0.0, 1.0);\nfloat waterSpecField = 0.5;\nfloat waterSpecDistanceFade = vWaterSpecDistanceFade;\n// Roughness is the last water path that can still trigger a normal-texture\n// fetch after fine detail has faded. Keep it coherent with the color/normal\n// budget so Low quality and far water stop paying for invisible highlights.\nif (waterDetail > 0.05 && waterSpecDistanceFade > 0.01) {\n  waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\n}\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18) * waterDetail * waterSpecDistanceFade);',
+      '#include <roughnessmap_fragment>\nfloat waterDetail = clamp(waterDetailScale, 0.0, 1.0);\nfloat waterSpecField = 0.5;\nfloat waterSpecDistanceFade = 1.0 - smoothstep(480.0, 3600.0, waterPixelDistance);\n// Keep texture reads off for Low quality and distant water.\nif (waterDetail > 0.05 && waterSpecDistanceFade > 0.01) {\n  waterSpecField = texture2D(waterNormals, vWaterWorld.xz / 170.0 + vec2(worldWaterTime * .0025, -worldWaterTime * .0018)).g;\n}\nfloat waterSpecMask = smoothstep(.36, .78, waterSpecField);\nroughnessFactor = mix(roughnessFactor, .12 + waterRain * .12 + waterSnow * .04, waterSpecMask * (.28 + vWaterFlow * .18) * waterDetail * waterSpecDistanceFade);',
     ).replace(
       '#include <color_fragment>',
       `#include <color_fragment>
+      // Evaluate once per pixel: interpolating nonlinear vertex-distance fades
+      // changes the same water's shading whenever a streamed LOD changes.
+      float waterPixelDistance = length(vWaterWorld - cameraPosition);
       float fineWaterDetail = clamp(waterDetailScale, 0.0, 1.0);
       float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
       // High-frequency foam and riffles alias badly at flight distance. Keep
       // broad water-body breakup visible, but fade fine detail before the
       // terrain fog so distant lakes and rivers read as clean surfaces.
-      float waterDistanceFade = vWaterDistanceFade * fineWaterDetail;
+      float waterDistanceFade = (1.0 - smoothstep(520.0, 4200.0, waterPixelDistance)) * fineWaterDetail;
       // Keep one batched water material, but let geometry carry the body kind
       // so rivers, ponds, lakes, and seas do not collapse into one teal sheet.
       // Kind 0 = river, .5 = pond, 1 = lake, 2 = sea.
@@ -70,13 +73,12 @@ export function applyWaterAppearance(
       // Two broad, moving bands break up the old single-color sheet without
       // turning the surface into noisy pixel glitter. The same field drives
       // every tile, so catchment borders keep a continuous water pattern.
-      vec2 weatherDrift = vec2(waterWindX, waterWindZ) * worldWaterTime * 0.00055;
-      vec2 colorDrift = weatherDrift + vec2(worldWaterTime * 0.0015, -worldWaterTime * 0.0011);
+      vec2 colorDrift = vec2(worldWaterTime * 0.0015, -worldWaterTime * 0.0011);
       float waterPattern = 0.5;
       if (fineWaterDetail > 0.05 && waterDistanceFade > 0.01) {
         float patchA = texture2D(waterNormals, vWaterWorld.xz / 230.0 + colorDrift).r;
         float patchB = texture2D(waterNormals, vec2(vWaterWorld.z, -vWaterWorld.x) / 510.0 - colorDrift * 0.6).g;
-        waterPattern = smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38);
+        waterPattern = mix(0.5, smoothstep(0.22, 0.78, patchA * 0.62 + patchB * 0.38), waterDistanceFade);
       }
       diffuseColor.rgb *= 0.8 + waterPattern * 0.36;
       // Add a slow analytic body field so distant water does not collapse into
@@ -159,20 +161,19 @@ export function applyWaterAppearance(
       '#include <normal_fragment_maps>',
       `#include <normal_fragment_maps>
       float waterNormalDetail = clamp(waterDetailScale, 0.0, 1.0);
-      float distanceFade = vWaterNormalDistanceFade;
+      float distanceFade = 1.0 - smoothstep(400.0, 3500.0, waterPixelDistance);
       vec2 p = vWaterWorld.xz;
-      // Keep the accumulated phase independent of live weather blending. If
-      // rain multiplied worldWaterTime here, a front transition would jump the
-      // entire water pattern after the world had been running for a while.
-      vec2 drift = vec2(worldWaterTime * 0.004, worldWaterTime * 0.002) +
-        vec2(waterWindX, waterWindZ) * worldWaterTime * 0.0011;
+      // Live wind changes ripple strength, never elapsed-time phase. Otherwise
+      // a weather update jumps the whole texture, amplified by session length.
+      vec2 drift = vec2(worldWaterTime * 0.004, worldWaterTime * 0.002);
+      float windRippleStrength = min(length(vec2(waterWindX, waterWindZ)) * .08, .06);
       vec2 rippleA = vec2(0.0);
       vec2 rippleB = vec2(0.0);
       if (waterNormalDetail > 0.05 && distanceFade > 0.01) {
         rippleA = texture2D(waterNormals, p / 380.0 + drift).rg * 2.0 - 1.0;
         rippleB = texture2D(waterNormals, vec2(p.y, -p.x) / 113.0 - drift * 0.7).rg * 2.0 - 1.0;
       }
-      vec2 ripples = rippleA * (0.085 + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035) * waterNormalDetail +
+      vec2 ripples = rippleA * (0.085 + windRippleStrength + waterRain * 0.045 + riverMix * 0.025 + vWaterDrop * .035) * distanceFade * waterNormalDetail +
         rippleB * (0.035 + waterSnow * 0.01) * distanceFade * waterNormalDetail;
       normal = normalize(normal + mat3(viewMatrix) * vec3(ripples.x, 0.0, ripples.y));
       float fresnel = 0.02 + 0.48 * pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 4.0);
@@ -185,5 +186,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v17'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v18'
 }
