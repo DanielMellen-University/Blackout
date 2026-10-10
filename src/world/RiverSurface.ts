@@ -150,7 +150,8 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
         const angle = half ? -Math.PI * .5 + i / 8 * Math.PI : i / 8 * Math.PI * 2
         const along = Math.cos(angle) * radius, across = Math.sin(angle) * radius
         return vertex(center[0]! + (half ? nz * direction * along + nx * across : along), center[1]!,
-          center[2]! + (half ? -nx * direction * along + nz * across : across), Math.max(.08, center[3]! * .5))
+          center[2]! + (half ? -nx * direction * along + nz * across : across),
+          half ? right[3]! + (left[3]! - right[3]!) * i / 8 : Math.max(.08, center[3]! * .5))
       })
       for (let i = 0; i < (half ? points.length - 1 : points.length); i++)
         triangle(center, points[i]!, points[(i + 1) % points.length]!)

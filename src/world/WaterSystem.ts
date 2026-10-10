@@ -1,6 +1,6 @@
 import { BufferAttribute, BufferGeometry, DoubleSide, Float32BufferAttribute, Mesh, MeshStandardMaterial, ShapeUtils, Vector2 } from 'three'
 import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin } from './Hydrology'
-import { riverSurface } from './RiverSurface'
+import { riverUnionSteps } from './RiverUnion'
 import { smoothstep } from './noise'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 import { basinOpticalDepth, basinSurfaceSteps, type BasinVertex } from './BasinSurface'
@@ -405,8 +405,7 @@ function* appendRiverRibbons(
   waterDrops: number[],
 ): Generator<WaterBuildPhase, void, void> {
   const half = size / 2
-  type RibbonVertex = { x: number; z: number; y: number; depth: number; kind: number; riverBlend: number }
-  type Section = { left: RibbonVertex; center: RibbonVertex; right: RibbonVertex }
+  type RibbonVertex = { x: number; z: number; y: number; depth: number; kind: number; riverBlend: number; flow: number }
   const polygonScratch: RibbonVertex[] = new Array(4)
 
   const clip = (polygon: RibbonVertex[], axis: 'x' | 'z', bound: number, keepGreater: boolean): RibbonVertex[] => {
@@ -423,6 +422,7 @@ function* appendRiverRibbons(
         depth: a.depth + (b.depth - a.depth) * t,
         kind: a.kind + (b.kind - a.kind) * t,
         riverBlend: a.riverBlend + (b.riverBlend - a.riverBlend) * t,
+        flow: a.flow + (b.flow - a.flow) * t,
       }
     }
     let previous = polygon[polygon.length - 1]!
@@ -438,14 +438,15 @@ function* appendRiverRibbons(
   }
 
   const writePolygon = (
-    polygon: readonly RibbonVertex[], flowX: number, flowZ: number, drop: number, flow: number,
+    polygon: readonly RibbonVertex[], flowX: number, flowZ: number, drop: number,
   ): void => {
     const first = polygon[0]!
     for (let i = 1; i < polygon.length - 1; i++) {
       const second = polygon[i]!, third = polygon[i + 1]!
       positions.push(first.x, first.y, first.z, second.x, second.y, second.z, third.x, third.y, third.z)
       depths.push(first.depth, second.depth, third.depth)
-      flowValues.push(flow * first.riverBlend, flow * second.riverBlend, flow * third.riverBlend)
+      flowValues.push(first.flow * first.riverBlend, second.flow * second.riverBlend,
+        third.flow * third.riverBlend)
       flowDirections.push(flowX, flowZ, flowX, flowZ, flowX, flowZ)
       waterKinds.push(first.kind, second.kind, third.kind)
       waterDrops.push(drop * first.riverBlend, drop * second.riverBlend, drop * third.riverBlend)
@@ -454,7 +455,7 @@ function* appendRiverRibbons(
 
   const appendPolygon = (
     a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex | undefined,
-    flowX: number, flowZ: number, drop: number, flow: number,
+    flowX: number, flowZ: number, drop: number,
   ): void => {
     polygonScratch[0] = a
     polygonScratch[1] = b
@@ -466,21 +467,13 @@ function* appendRiverRibbons(
     polygon = clip(polygon, 'x', half, false)
     polygon = clip(polygon, 'z', -half, true)
     polygon = clip(polygon, 'z', half, false)
-    writePolygon(polygon, flowX, flowZ, drop, flow)
-  }
-
-  const appendQuad = (a: RibbonVertex, b: RibbonVertex, c: RibbonVertex, d: RibbonVertex,
-    flowX: number, flowZ: number, drop: number, flow: number): void => {
-    // Clip the canonical triangles, not the whole non-planar quad. Re-fanning
-    // a tile-clipped quad changes its diagonal and therefore its water height.
-    appendPolygon(a, b, c, undefined, flowX, flowZ, drop, flow)
-    appendPolygon(a, c, d, undefined, flowX, flowZ, drop, flow)
+    writePolygon(polygon, flowX, flowZ, drop)
   }
 
   for (const reach of reaches) {
     const length = Math.hypot(reach.bx - reach.ax, reach.bz - reach.az)
     if (length < .001) continue
-    const surface = riverSurface(reach, basins)
+    const surface = yield* riverUnionSteps(reach, basins, reaches)
     const flowX = (reach.bx - reach.ax) / length, flowZ = (reach.bz - reach.az) / length
     const drop = Math.max(0, Math.min(1, (reach.ya - reach.yb) / length * 5.5))
     const nearby = basins.filter(b => b.regionalSea ? reach.mouth && reach.yb === 0 :
@@ -494,36 +487,16 @@ function* appendRiverRibbons(
         const amount = 1 - smoothstep(0, Math.max(100, Math.min(400, reach.wb * 2)), Math.max(0, d))
         if (amount > blend) { blend = amount; kind = (b.sea ? 2 : b.pond ? .5 : 1) * amount }
       }
+      const t = Math.max(0, Math.min(1, ((x - reach.ax) * (reach.bx - reach.ax) +
+        (z - reach.az) * (reach.bz - reach.az)) / (length * length)))
+      const width = reach.wa + (reach.wb - reach.wa) * t
+      const flow = Math.max(.24, Math.min(1, .24 + Math.pow(Math.min(1, width / 90), .65) * .66 + drop * .1))
       return { x: x - originX - half, y: data[index + 1]! + .04,
-        z: z - originZ - half, depth: data[index + 3]!, kind, riverBlend: 1 - blend }
+        z: z - originZ - half, depth: data[index + 3]!, kind, riverBlend: 1 - blend, flow }
     }
-    const strength = (left: RibbonVertex, center: RibbonVertex): number => Math.max(.24, Math.min(1,
-      .24 + Math.pow(Math.min(1, Math.hypot(left.x - center.x, left.z - center.z) / 90), .65) * .66 + drop * .1))
-    if (surface.triangles) {
-      const flow = Math.max(.24, Math.min(1, .24 + Math.pow(Math.min(1,
-        (reach.wa + reach.wb) * .5 / 90), .65) * .66 + drop * .1))
-      for (let i = 0; i < surface.triangles.length; i += 12) {
-        appendPolygon(vertex(surface.triangles, i), vertex(surface.triangles, i + 4),
-          vertex(surface.triangles, i + 8), undefined, flowX, flowZ, drop, flow)
-        if (i % 48 === 36) yield 'river'
-      }
-      yield 'river'
-      continue
-    }
-    const sections: (Section & { flow: number })[] = []
-    for (let i = 0; i < surface.sections.length; i += 12) {
-      const left = vertex(surface.sections, i), center = vertex(surface.sections, i + 4)
-      sections.push({ left, center, right: vertex(surface.sections, i + 8), flow: strength(left, center) })
-    }
-    for (let i = 0; i < sections.length - 1; i++) {
-      const a = sections[i]!, b = sections[i + 1]!, flow = (a.flow + b.flow) * .5
-      appendQuad(a.left, b.left, b.center, a.center, flowX, flowZ, drop, flow)
-      appendQuad(a.center, b.center, b.right, a.right, flowX, flowZ, drop, flow)
-      if (i % 4 === 3) yield 'river'
-    }
-    for (let i = 0; i < surface.caps.length; i += 12) {
-      const a = vertex(surface.caps, i), b = vertex(surface.caps, i + 4), c = vertex(surface.caps, i + 8)
-      appendPolygon(a, b, c, undefined, flowX, flowZ, drop, sections[0]!.flow)
+    for (let i = 0; i < surface.triangles.length; i += 12) {
+      appendPolygon(vertex(surface.triangles, i), vertex(surface.triangles, i + 4),
+        vertex(surface.triangles, i + 8), undefined, flowX, flowZ, drop)
       if (i % 48 === 36) yield 'river'
     }
     yield 'river'

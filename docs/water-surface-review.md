@@ -1,4 +1,28 @@
-# Water surface review - 10.877
+# Water surface review - 10.878
+
+## 10.878: one visible river surface
+
+The seed-1337 wide confluence previously had 800 overlapping wet sample points on the fixed 25 m grid, including 557 approximately coplanar points with differing optical depth. River union now clips losing coverage against the higher face, then against the deeper profile on level joins; stable face identities resolve exact ties. The focused regression retains more than 2,500 wet samples, their original upper water heights and deepest level profiles, without duplicate coverage. Separate fixtures cover crossing slopes and folded triangles within a single wide ribbon. Independent existing Float32 rendering/collision checks still cover five fixed seeds.
+
+Complete neighborhood queries, deterministic sorting, cooperative yields, cancellation/seed guards, and a weak per-reach result cache preserve streaming order independence without retaining a neighbor graph. Temporary spatial bins are released after each build. No new worker, persistent strong cache, draw pass, texture lookup, or render-distance reduction is added. Clipping produces more vertices and first-time CPU work; warm reuse does not make that cost disappear.
+
+Mouth half-cap rims now match the depths of their physically shared cross-section banks. Freshwater shares one shallow/deep palette instead of a separate river-flow paint layer. World-space broad coloration no longer changes phase with river/lake kind. Shallow depth/foam detail fades per fragment between 450 m and 1,800 m, retaining close-up shallows while avoiding large vertex-gradient panels at flight distance. This is optical detail fading, not reduced physical water coverage or view distance. Sea water retains its deeper palette; local current ripples remain width-dependent.
+
+Same-machine seed-1337 comparison against 10.877, with 12 builds per tile and the first excluded from warm statistics:
+
+| Tile / origin / size | Baseline median / p95 (ms) | 10.878 median / p95 (ms) | Cold before / after (ms) | Payload before / after (bytes) |
+| --- | --- | --- | --- | --- |
+| Pond near / 9660,19740 / 420 | 30.033 / 52.555 | 27.506 / 51.218 | 183.970 / 149.099 | 230772 / 230772 |
+| Mouth near / 10080,18480 / 420 | 28.230 / 40.172 | 25.939 / 35.931 | 63.688 / 200.966 | 309828 / 340500 |
+| Far shore LOD 2 / 10080,16800 / 3360 | 5.275 / 11.296 | 5.327 / 7.479 | 16.243 / 63.340 | 196660 / 245188 |
+
+The mouth payload grows approximately 10%, and the water-heavy far tile approximately 25%. First-time mouth/far preparation is substantially slower because the union is constructed, rather than reused. These CPU timings do not prove frame-time or startup performance; no general speedup is claimed. The largest sampled cooperative phase after this change is 4.820 ms (climate), and the far tile's largest water-river phase is 1.679 ms. Comparison loaders close after completion and use a separate temporary dependency cache to avoid disturbing the existing review server.
+
+Visual checks used seed 1337 Small ponds in overview and seed 1 River valley at the terminal mouth, unobstructed first person, in Clear weather. After nearby terrain streamed in, the previous broad bright inlet panel was no longer apparent, and the mouth had a continuous rippled surface without doubled stripes. The overview still shows polygonal shoreline corners; this batch is not a claim that all shoreline artwork is finished. Browser error logs were empty.
+
+The browser review remains limited by approximately one-frame-per-second background throttling and intermittent observation delays. It is not evidence of normal gameplay FPS or sustained memory. Full low-altitude/maximum-speed foreground review, complete depression/spill connections, and regional weather delivery remain required before declaring the water/weather goal finished.
+
+## 10.877: river/lake optical joins
 
 ## Change and visual boundary
 

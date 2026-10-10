@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.877**. Previous roadmap chunk: **10.876**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.878**. Previous roadmap chunk: **10.877**.
 
-Recent changes from **10.877**. River mouths and receiving lakes share optical depth instead of drawing an artificial shallow lip. A separate lake shoreline band reduces radial color wedges while preserving existing shores and water levels; submerged channel beds stay open through the join. The larger, varied small ponds and half-strength delayed flight assist remain shipped. A triangular patch remains on a very wide bend; water artwork and broader basin-spill routing are not finished. See the [water surface review](docs/water-surface-review.md) for visual findings and the measured geometry cost. Regional weather and controlled foreground travel/memory review remain in progress. Saved records remain intact. Actual EST reset wiring and per-level generation remain deferred.
+Recent changes from **10.878**. Overlapping river ribbons resolve to one visible surface, preserving the existing upper water level and choosing the deeper optical profile at level confluences. Mouth caps match their bank depths; freshwater shares one palette, with shallow detail fading smoothly at flight distance. This addresses duplicate-face flicker and large color panels without reducing render distance or changing collision. The larger, varied small ponds and half-strength delayed flight assist remain shipped. See the [water surface review](docs/water-surface-review.md) for measured build/geometry costs and the visual verification boundary. Broader basin-spill routing, regional weather, and controlled foreground travel/memory review remain unfinished. Saved records remain intact. Actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 
