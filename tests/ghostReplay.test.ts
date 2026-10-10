@@ -5,6 +5,7 @@ import {
   GHOST_STORAGE_PREFIX,
   GhostReplay,
   MAX_GHOST_SAMPLES,
+  WORLD_GENERATION_REVISION,
 } from '../src/systems/GhostReplay'
 
 function storageFixture(): {
@@ -24,10 +25,10 @@ function storageFixture(): {
 }
 
 describe('GhostReplay', () => {
-  it('rejects old landscape paths without deleting stored progress or traces', () => {
+  it.each([undefined, WORLD_GENERATION_REVISION - 1])('rejects old landscape revision %s without deleting stored progress or traces', worldGeneration => {
     const { values, storage } = storageFixture()
     const key = `${GHOST_STORAGE_PREFIX}seed:9:balanced`
-    const raw = JSON.stringify({ version: 1, score: 700, samples: [0, 0, 10, 0, 1, 5, 10, 5] })
+    const raw = JSON.stringify({ version: 1, worldGeneration, score: 700, samples: [0, 0, 10, 0, 1, 5, 10, 5] })
     values.set(key, raw)
     values.set('records', 'untouched')
     const replay = new GhostReplay(new Group(), storage)

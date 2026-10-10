@@ -2,8 +2,8 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.869**. Previous roadmap chunk: **10.868**.
-Recent changes from **10.869**. Share regional coastlines, drainage channels, and lake contours between terrain carving, independent water meshes, and collision. Keep far fewer waterways: the fixed review set retains about 19% of the previous prototype's river length and 25% of its wet area. Rivers curve through junctions, widen up to fourfold in lowland valleys, and continue to a lake, sea, or downstream channel instead of ending on dry land. Optional lakes have smoother irregular shores and island cutouts. Existing seeds change; incompatible old ghosts are ignored without deleting records. Regional weather and further biome polish remain next; actual EST reset wiring and per-level generation remain deferred.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.870**. Previous roadmap chunk: **10.869**.
+Recent changes from **10.870**. Route rare shoreline meanders around higher lakes and incompatible sea/lake crossings instead of leaving vertical steps between river spans. Preserve connected downstream paths, shared endpoint directions, sparse water coverage, width variation, render distance, and streaming budgets. A fixed review of 68,093 segments across 10 seeds and 490 regions found no disconnected downstream endpoints. Add a repeatable river shoreline review destination. Incompatible old ghosts are ignored without deleting saved records. Regional weather and further biome polish remain next; actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 

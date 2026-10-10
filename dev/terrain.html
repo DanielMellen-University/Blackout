@@ -12,6 +12,7 @@
     <option value="">Airfield</option><option value="alpine">Alpine range</option>
     <option value="lake">Irregular lake</option><option value="ocean">Inland sea</option>
     <option value="green">Green hills</option><option value="river">River valley</option>
+    <option value="riverjoin">River shoreline joins</option>
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
     <option value="city">City</option><option value="village">Village</option>
     <option value="roadlink">Regional road</option>
@@ -137,6 +138,7 @@ frameWorld()
 document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
 const destinations={
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
+  riverjoin:[42,31000,73000],
   mesa:[1,-30000,-27600],volcano:[1,-92800,-13600],
   city:[1337,5,-1],village:[1,-7,-5],
   roadlink:[1,-7,-5],

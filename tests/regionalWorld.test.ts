@@ -125,6 +125,24 @@ describe('regional connected world', () => {
     expect(broad && narrow && widened).toBe(true)
   })
 
+  it.each([[1, 2, -1], [42, 0, 2], [42, 1, 3], [2026, -1, 1]])(
+    'keeps shoreline detours connected at matching elevations for seed %s region %s,%s', (seed, cx, cz) => {
+      setWorldSeed(seed)
+      const reaches = riverReaches(cx, cz)
+      expect(reaches.length).toBeGreaterThan(0)
+      for (const r of reaches) {
+        expect(r.ya).toBeGreaterThanOrEqual(r.yb)
+        const receivingLevels = waterBasinsInBounds(r.bx, r.bz, r.bx, r.bz)
+          .filter(b => basinDistance(b, r.bx, r.bz) < 1).map(b => b.level)
+        if (coastField(r.bx, r.bz) <= .00001) receivingLevels.push(0)
+        const joinsWater = receivingLevels.some(level => Math.abs(level - r.yb) < .05)
+        const joinsRiver = riverReachesInBounds(r.bx - 1, r.bz - 1, r.bx + 1, r.bz + 1)
+          .some(q => q.id !== r.id && Math.hypot(q.ax - r.bx, q.az - r.bz) < .01 && Math.abs(q.ya - r.yb) < .05)
+        expect(joinsWater || joinsRiver, `${r.id} has a disconnected downstream cross-section`).toBe(true)
+      }
+    },
+  )
+
   it('keeps boundary channels identical when regions are generated in reverse order', () => {
     const signature = () => [-1, 0, 1].map(x => riverReaches(x, 0).map(r => [r.id, r.ax, r.bx, r.ya, r.yb, r.wa, r.wb]))
     setWorldSeed(42); const first = signature()

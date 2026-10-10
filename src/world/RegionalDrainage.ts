@@ -217,26 +217,45 @@ function reaches(n: Node): RiverReach[] {
   const tz0 = upstream ? (p.z - upstream.z) * .5 : dz
   const tx1 = next ? (next.x - n.x) * .5 : dx
   const tz1 = next ? (next.z - n.z) * .5 : dz
-  const point = (t: number, branch = 0) => {
+  const point = (t: number, branch = 0, detour = 0) => {
     const t2 = t * t, t3 = t2 * t
     const h0 = 2 * t3 - 3 * t2 + 1, h1 = t3 - 2 * t2 + t
     const h2 = -2 * t3 + 3 * t2, h3 = t3 - t2
     const bow = Math.sin(t * Math.PI) ** 2 *
-      (bend * Math.sin(t * Math.PI * 2) + branch * Math.min(200, wb * 2.5)) +
+      (bend * Math.sin(t * Math.PI * 2) + detour + branch * Math.min(200, wb * 2.5)) +
       (delta ? branch * wb * 3.5 * t * t : 0)
     return { x: h0 * n.x + h1 * tx0 + h2 * p.x + h3 * tx1 - dz / length * bow,
       z: h0 * n.z + h1 * tz0 + h2 * p.z + h3 * tz1 + dx / length * bow }
   }
-  const tangent = (t: number, branch: number) => {
-    const a = point(t - .0001, branch), b = point(t + .0001, branch)
+  const tangent = (t: number, branch: number, detour: number) => {
+    const a = point(t - .0001, branch, detour), b = point(t + .0001, branch, detour)
     const length = Math.hypot(b.x - a.x, b.z - a.z)
     return { x: (b.x - a.x) / length, z: (b.z - a.z) / length }
   }
   // Braid only broad, low-gradient rivers. Both arms share split/rejoin nodes.
   const braided = wb > 75 && (ya - yb) / length < .008 && hash2(n.gx - 83, n.gz + 127) > .985
   for (const branch of delta ? [-1, 0, 1] : braided ? [-1, 1] : [0]) {
-    const points = Array.from({ length: REACH_STEPS + 1 }, (_, i) => point(i / REACH_STEPS, branch))
-    const wet = points.map(q => wetLevel(q.x, q.z))
+    let detour = 0
+    let points = Array.from({ length: REACH_STEPS + 1 }, (_, i) => point(i / REACH_STEPS, branch, detour))
+    let wet = points.map(q => wetLevel(q.x, q.z))
+    const downhill = (): boolean => {
+      let previous = ya
+      for (const level of wet) if (level !== undefined) {
+        if (level > previous + .00001) return false
+        previous = level
+      }
+      return yb <= previous + .00001
+    }
+    // An incidental lake beside the drainage edge must not pull a meander
+    // uphill. Try a bounded set of alternative bows with identical endpoint
+    // tangents before accepting a route through its receiving water.
+    if (!downhill()) for (const alternative of [length * .25, -length * .25,
+      length * .5, -length * .5, length, -length]) {
+      detour = alternative
+      points = Array.from({ length: REACH_STEPS + 1 }, (_, i) => point(i / REACH_STEPS, branch, detour))
+      wet = points.map(q => wetLevel(q.x, q.z))
+      if (downhill()) break
+    }
     // A delta arm must actually enter water, not fan back onto a headland.
     if (delta && wet[REACH_STEPS] === undefined) continue
     // Grade dry spans between lake/sea anchors. This includes lakes owned by
@@ -249,30 +268,30 @@ function reaches(n: Node): RiverReach[] {
       }
       return low + (high - low) * Math.max(0, Math.min(1, (t * REACH_STEPS - before) / Math.max(1, after - before)))
     }
-    let a = point(0, branch)
+    let a = point(0, branch, detour)
     for (let i = 1; i <= REACH_STEPS; i++) {
       const t0 = (i - 1) / REACH_STEPS, t1 = i / REACH_STEPS
-      const b = point(t1, branch)
+      const b = point(t1, branch, detour)
       const wetA = wet[i - 1], wetB = wet[i]
       if (wetA !== undefined && wetB !== undefined) { a = b; continue }
       let startT = t0, endT = t1, start = a, end = b
       if ((wetA !== undefined) !== (wetB !== undefined)) {
         let lo = t0, hi = t1
         for (let pass = 0; pass < 12; pass++) {
-          const mid = (lo + hi) * .5, q = point(mid, branch)
+          const mid = (lo + hi) * .5, q = point(mid, branch, detour)
           if ((wetLevel(q.x, q.z) !== undefined) === (wetA !== undefined)) lo = mid
           else hi = mid
         }
         const shoreT = (lo + hi) * .5
-        if (wetA !== undefined) { startT = shoreT; start = point(shoreT, branch) }
-        else { endT = shoreT; end = point(shoreT, branch) }
+        if (wetA !== undefined) { startT = shoreT; start = point(shoreT, branch, detour) }
+        else { endT = shoreT; end = point(shoreT, branch, detour) }
       }
       const rx = end.x - start.x, rz = end.z - start.z
       const factor = delta ? .52 : braided ? .68 : 1
       const startLevel = wetA ?? grade(startT)
       const endLevel = Math.min(startLevel, wetB ?? grade(endT))
       const endWidth = (wa + (wb - wa) * smoothstep(0, 1, endT)) * factor
-      const startTangent = tangent(startT, branch), endTangent = tangent(endT, branch)
+      const startTangent = tangent(startT, branch, detour), endTangent = tangent(endT, branch, detour)
       result.push({ ax: start.x, az: start.z, bx: end.x, bz: end.z,
         wa: (wa + (wb - wa) * smoothstep(0, 1, startT)) * factor, wb: endWidth,
         ya: startLevel, yb: endLevel,
