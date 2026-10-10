@@ -2,10 +2,10 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.874**. Previous roadmap chunk: **10.873**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.875**. Previous roadmap chunk: **10.874**.
 
 Outward half-caps remove the striped river-mouth overlap seen during first-person review. A shallow-water color transition remains; water artwork is not declared finished.
-Recent changes from **10.874**. Wide tributaries now share a level merge area instead of climbing across overlapping channels. Actual-water checks cover 409,878 probes across ten seeds and 250 regions. Lake mouths blend flow, depth, and water appearance; carved dry banks and mixed shoreline raster triangles no longer add phantom sea-level sheets. Sparse coverage, varied widths, shared collision surfaces, render distance, and streaming caps remain intact. Regional weather, weaker delayed flight assist, broader basin-spill routing, and the controlled foreground travel/memory review remain in progress. Actual EST reset wiring and per-level generation remain deferred.
+Recent changes from **10.875**. Flight assist now uses half-strength pitch/bank trim and waits until yaw and roll have both been released for two seconds. Held input postpones correction; pauses freeze the delay. Pilot rates and ordinary flight handling are unchanged. The preceding water batch levels broad confluences and removes overlapping river-mouth caps and phantom sea sheets. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain in progress. Actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 
@@ -25,7 +25,7 @@ Default keyboard controls:
 - W / S pitch, A / D yaw, Q / E roll
 - Shift / Ctrl raise or lower throttle
 - Space afterburner; B speed brake and wheel brake
-- G landing gear; V stability assist
+- G landing gear; V light stability assist (trim resumes two seconds after releasing yaw/roll)
 - C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
 - P or Escape pauses; R ends the flight and generates a new world
 - N cycles weather; T cycles radar targets; X toggles ghost replay

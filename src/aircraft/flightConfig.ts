@@ -59,10 +59,11 @@ export const flightConfig = {
   angularResponse: 12,
   angularDamping: 4.2,
   airControlFullSpeed: 38,
-  /** Optional trim assist gain. It only engages when its axis is released. */
-  stabilityAssistPitch: 1.15,
-  stabilityAssistRoll: 1.8,
+  /** Half-strength trim, delayed after yaw/roll input so it never fights a turn. */
+  stabilityAssistPitch: 0.575,
+  stabilityAssistRoll: 0.9,
   stabilityAssistDeadzone: 0.08,
+  stabilityAssistDelay: 2,
   /** Subtle airborne weather torque, scaled by the active front's gust value. */
   turbulencePitch: 0.16,
   turbulenceRoll: 0.24,

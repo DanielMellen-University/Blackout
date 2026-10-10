@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **10.874** is current. Previous ship: **10.873**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.875** is current. Previous ship: **10.874**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 10.875 halves pitch/bank trim gains and waits two simulation seconds after yaw/roll release. Holding either control postpones both corrections; remapped keyboard and gamepad axes share the same gate. No-op steps and pauses cannot consume the timer, and reset clears it. Focused physics checks cover exact gains, held inputs, delay expiry, neutral stick noise, disabled assist, and reset. Pilot authority, wind response, collision, and paused-system exclusions remain unchanged. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain unfinished. Actual EST reset wiring and per-level generation remain deferred.
 
 Outward half-caps remove the striped river-mouth overlap seen during first-person review. A shallow-water color transition remains; water artwork is not declared finished.
 

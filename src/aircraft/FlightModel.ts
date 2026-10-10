@@ -71,6 +71,7 @@ const CONTACT_POINTS: ReadonlyArray<readonly [number, number, number]> = [
  */
 export class FlightModel {
   private turbulencePhase = 0
+  private assistDelayRemaining = 0
   /** Reused contact result; each sweep consumes it before the next probe. */
   private readonly hitResult: SurfaceHit = {
     depth: 0,
@@ -89,6 +90,7 @@ export class FlightModel {
 
   reset(): void {
     this.turbulencePhase = 0
+    this.assistDelayRemaining = 0
   }
 
   step(aircraft: Aircraft, dt: number): void {
@@ -129,7 +131,12 @@ export class FlightModel {
     let tOx = -controls.pitch * C.pitchRate * auth * q
     const tOy = controls.yaw * C.yawRate * (onGround ? Math.max(auth, 0.45) : auth)
     let tOz = -controls.roll * C.rollRate * (onGround ? auth * 0.28 : auth)
-    if (controls.stabilityAssist && !onGround) {
+    // Use control axes rather than keys so remapping and gamepads behave alike.
+    // Holding either axis keeps postponing trim; simulation pauses freeze it.
+    if (Math.abs(controls.yaw) >= C.stabilityAssistDeadzone || Math.abs(controls.roll) >= C.stabilityAssistDeadzone)
+      this.assistDelayRemaining = C.stabilityAssistDelay
+    else this.assistDelayRemaining = Math.max(0, this.assistDelayRemaining - dt)
+    if (controls.stabilityAssist && !onGround && this.assistDelayRemaining <= 1e-9) {
       const deadzone = C.stabilityAssistDeadzone
       if (Math.abs(controls.pitch) < deadzone) {
         tOx += MathUtils.clamp(_fwd.y, -0.72, 0.72) * C.stabilityAssistPitch
