@@ -344,7 +344,8 @@ export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, 
       : d * .065 + d * d * .000035
     const basinHeight = height + (basin.level + bed - height) * blend
     // Preserve an existing outlet through the bank instead of damming it shut.
-    height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river : basinHeight
+    height = d > 0 ? basinHeight + (Math.min(height, basinHeight) - basinHeight) * river :
+      nearest < 0 ? Math.min(height, basinHeight) : basinHeight
     if (d <= 0) basinWaterLevel = Math.max(basinWaterLevel, basin.level)
     if (basin.sea) {
       coastal = Math.max(coastal, 1 - smoothstep(0, 420, Math.max(0, d)))

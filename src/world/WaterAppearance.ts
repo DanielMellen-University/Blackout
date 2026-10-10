@@ -48,7 +48,7 @@ export function applyWaterAppearance(
       // changes the same water's shading whenever a streamed LOD changes.
       float waterPixelDistance = length(vWaterWorld - cameraPosition);
       float fineWaterDetail = clamp(waterDetailScale, 0.0, 1.0);
-      float depthMix = 1.0 - exp(-vWaterDepth * 0.085);
+      float depthMix = 1.0 - exp(-vWaterDepth * 0.38);
       // High-frequency foam and riffles alias badly at flight distance. Keep
       // broad water-body breakup visible, but fade fine detail before the
       // terrain fog so distant lakes and rivers read as clean surfaces.
@@ -186,5 +186,5 @@ export function applyWaterAppearance(
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
   }
-  material.customProgramCacheKey = () => 'calm-basin-water-weather-v18'
+  material.customProgramCacheKey = () => 'calm-basin-water-weather-v19'
 }

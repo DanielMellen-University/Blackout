@@ -60,7 +60,8 @@ function clipLakeShore(sections: Float64Array, caps: Float64Array, lakes: readon
           }
           const t = (lo + hi) * .5
           outside.push([previous[0]! + (current[0]! - previous[0]!) * t, lake.level,
-            previous[2]! + (current[2]! - previous[2]!) * t, .08])
+            previous[2]! + (current[2]! - previous[2]!) * t,
+            previous[3]! + (current[3]! - previous[3]!) * t])
         }
         if (currentDistance >= 0) outside.push(current)
         previous = current; previousDistance = currentDistance
@@ -103,7 +104,7 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
       const blend = 1 - smoothstep(0, 100, Math.max(0, d))
       if (blend > weight || (blend === weight && b.level > target)) { weight = blend; target = b.level }
     }
-    return [x, y + (target - y) * weight, z, depth + (.08 - depth) * weight]
+    return [x, y + (target - y) * weight, z, depth]
   }
   for (let step = 0; step <= steps; step++) {
     const t = step / steps, w = Math.max(5, reach.wa + (reach.wb - reach.wa) * t)
@@ -207,7 +208,7 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
   return surface
 }
 
-function triangleHeight(p: Float64Array, a: number, b: number, c: number, x: number, z: number): number {
+function triangleValue(p: Float64Array, a: number, b: number, c: number, x: number, z: number, component: 1 | 3): number {
   const ax = p[a]!, az = p[a + 2]!, bx = p[b]!, bz = p[b + 2]!, cx = p[c]!, cz = p[c + 2]!
   if (x < Math.min(ax, bx, cx) - .00001 || x > Math.max(ax, bx, cx) + .00001 ||
     z < Math.min(az, bz, cz) - .00001 || z > Math.max(az, bz, cz) + .00001) return -Infinity
@@ -216,11 +217,20 @@ function triangleHeight(p: Float64Array, a: number, b: number, c: number, x: num
   const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / determinant
   const v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / determinant
   if (Math.min(u, v, 1 - u - v) < -1e-7) return -Infinity
-  return p[a + 1]! * u + p[b + 1]! * v + p[c + 1]! * (1 - u - v)
+  return p[a + component]! * u + p[b + component]! * v + p[c + component]! * (1 - u - v)
 }
 
 /** Exact shared triangle height. Cached geometry makes the hot query allocation-free. */
 export function riverSurfaceHeightAt(surface: RiverSurface, x: number, z: number): number {
+  return surfaceValueAt(surface, x, z, 1)
+}
+
+/** The same canonical triangles supply optical depth on both sides of a mouth. */
+export function riverSurfaceDepthAt(surface: RiverSurface, x: number, z: number): number {
+  return surfaceValueAt(surface, x, z, 3)
+}
+
+function surfaceValueAt(surface: RiverSurface, x: number, z: number, component: 1 | 3): number {
   if (x < surface.minX || x > surface.maxX || z < surface.minZ || z > surface.maxZ) return -Infinity
   let height = -Infinity
   if (surface.triangles) {
@@ -230,21 +240,21 @@ export function riverSurfaceHeightAt(surface: RiverSurface, x: number, z: number
       const bin = zBin * 4 + xBin, { offsets, indices } = surface.bins
       for (let j = offsets[bin]!; j < offsets[bin + 1]!; j++) {
         const i = indices[j]!
-        height = Math.max(height, triangleHeight(surface.triangles, i, i + 4, i + 8, x, z))
+        height = Math.max(height, triangleValue(surface.triangles, i, i + 4, i + 8, x, z, component))
       }
       return height
     }
     for (let i = 0; i < surface.triangles.length; i += 12)
-      height = Math.max(height, triangleHeight(surface.triangles, i, i + 4, i + 8, x, z))
+      height = Math.max(height, triangleValue(surface.triangles, i, i + 4, i + 8, x, z, component))
     return height
   }
   const p = surface.sections
   for (let i = 0; i < p.length - 12; i += 12) {
-    height = Math.max(height, triangleHeight(p, i, i + 12, i + 16, x, z),
-      triangleHeight(p, i, i + 16, i + 4, x, z), triangleHeight(p, i + 4, i + 16, i + 20, x, z),
-      triangleHeight(p, i + 4, i + 20, i + 8, x, z))
+    height = Math.max(height, triangleValue(p, i, i + 12, i + 16, x, z, component),
+      triangleValue(p, i, i + 16, i + 4, x, z, component), triangleValue(p, i + 4, i + 16, i + 20, x, z, component),
+      triangleValue(p, i + 4, i + 20, i + 8, x, z, component))
   }
   for (let i = 0; i < surface.caps.length; i += 12)
-    height = Math.max(height, triangleHeight(surface.caps, i, i + 4, i + 8, x, z))
+    height = Math.max(height, triangleValue(surface.caps, i, i + 4, i + 8, x, z, component))
   return height
 }

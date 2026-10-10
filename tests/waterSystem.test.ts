@@ -29,16 +29,22 @@ describe('independent water surfaces', () => {
     const p = mesh.geometry.getAttribute('position'), kind = mesh.geometry.getAttribute('waterKind')
     const normals = mesh.geometry.getAttribute('normal')
     const flow = mesh.geometry.getAttribute('waterFlow'), depth = mesh.geometry.getAttribute('waterDepth')
-    let river = 0, basin = 0, blended = 0, shore = 0
+    let river = 0, basin = 0, blended = 0, shore = 0, deepMouth = 0, dryShore = 0
     for (let i = 0; i < p.count; i++) {
       blended += Number(kind.getX(i) > 0 && kind.getX(i) < .49)
       if (Math.abs(basinDistance(lake, p.getX(i) + 600, p.getZ(i) + 600)) > .05) continue
       shore++
       expect(kind.getX(i)).toBeCloseTo(.5, 4)
       expect(flow.getX(i)).toBeCloseTo(0, 4)
-      expect(depth.getX(i)).toBeCloseTo(.08, 4)
+      expect(depth.getX(i)).toBeGreaterThanOrEqual(.0799)
+      if (p.getX(i) + 600 < lake.x && Math.abs(p.getZ(i) + 600 - 500) < 25) {
+        expect(depth.getX(i)).toBeGreaterThan(2)
+        deepMouth++
+      }
+      if (depth.getX(i) < .081) dryShore++
     }
     expect(blended).toBeGreaterThan(0); expect(shore).toBeGreaterThan(0)
+    expect(deepMouth).toBeGreaterThan(0); expect(dryShore).toBeGreaterThan(0)
     for (let i = 0; i < p.count; i += 3) {
       for (let j = i; j < i + 3; j++) {
         expect(normals.getX(j)).toBe(0); expect(normals.getZ(j)).toBe(0)
@@ -193,7 +199,7 @@ describe('independent water surfaces', () => {
       expect(material.polygonOffset).toBe(true)
       expect(material.polygonOffsetFactor).toBe(-2)
       expect(material.polygonOffsetUnits).toBe(-2)
-      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v18')
+      expect(material.customProgramCacheKey()).toBe('calm-basin-water-weather-v19')
     } finally {
       mesh.geometry.dispose()
       material.dispose()
@@ -324,7 +330,7 @@ describe('independent water surfaces', () => {
   it('decimates far basin shorelines while preserving near detail', () => {
     const clock = { value: 0 }
     const basin = {
-      x: 0, z: 0, radius: 720, aspect: .72, angle: .35, phase: .8,
+      x: 0, z: 0, radius: 120, aspect: .72, angle: .35, phase: .8,
       level: 18, sea: false, pond: false,
     }
     const nearBed = new Float32Array(9).fill(-24)

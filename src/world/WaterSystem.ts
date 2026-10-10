@@ -3,12 +3,9 @@ import { basinDistance, waterBasinBoundsRadius, type RiverReach, type WaterBasin
 import { riverSurface } from './RiverSurface'
 import { smoothstep } from './noise'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
+import { basinOpticalDepth, basinSurfaceSteps, type BasinVertex } from './BasinSurface'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
-interface BasinVertex { x: number; z: number; y: number; depth: number }
-
-/** Cached warped shoreline samples reused by every terrain tile touching a basin. */
-const basinBoundaryCache = new WeakMap<WaterBasin, BasinVertex[]>()
 const basinIslandCache = new WeakMap<WaterBasin, { points: BasinVertex[]; triangles: number[][] }>()
 interface WaterStaging {
   positions: number[]; depths: number[]; flowValues: number[]
@@ -166,7 +163,7 @@ export function* buildWaterMeshSteps(
       if ((z * segs + x) % 32 === 31) yield 'grid'
     }
     yield 'grid'
-    yield* appendAnalyticBasins(basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
+    yield* appendAnalyticBasins(basins, reaches, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
     yield* appendRiverRibbons(reaches, basins, size, originX, originZ, positions, depths, flowValues, flowDirections, waterKinds, waterDrops)
     if (!positions.length) return null
     geometry = new BufferGeometry()
@@ -226,6 +223,7 @@ function* computeWaterNormalsSteps(geometry: BufferGeometry): Generator<WaterBui
  */
 function* appendAnalyticBasins(
   basins: readonly WaterBasin[],
+  reaches: readonly RiverReach[],
   size: number,
   originX: number,
   originZ: number,
@@ -315,42 +313,10 @@ function* appendAnalyticBasins(
     if (basin.regionalSea) continue
     const extent = waterBasinBoundsRadius(basin) + size * .72
     if (Math.abs(basin.x - centerX) > extent || Math.abs(basin.z - centerZ) > extent) continue
-    const samples = basin.sea ? 256 : basin.pond ? 96 : 160
-    let boundary = basinBoundaryCache.get(basin)
-    if (!boundary) {
-      boundary = []
-      const outline = basin.islands?.length ? { ...basin, islands: undefined } : basin
-      const highScale = basin.sea ? 2.65 : basin.pond ? 2.9 : 2.5
-      const count = basin.shoreRadii?.length ?? samples
-      for (let i = 0; i < count; i++) {
-        const angle = i / count * Math.PI * 2
-        let low = 0, high = basin.radius * highScale
-        // The warped outline is broad and single-valued along a ray. Expand the
-        // bracket defensively for unusually deep coves before binary searching.
-        for (let expand = 0; expand < 3 && basinDistance(outline, basin.x + Math.cos(angle) * high,
-          basin.z + Math.sin(angle) * high) < 0; expand++) high *= 1.35
-        for (let pass = 0; !basin.shoreRadii && pass < 9; pass++) {
-          const radius = (low + high) * .5
-          if (basinDistance(outline, basin.x + Math.cos(angle) * radius,
-            basin.z + Math.sin(angle) * radius) < 0) low = radius
-          else high = radius
-        }
-        if (basin.shoreRadii) low = basin.shoreRadii[i]!
-        // Keep the boundary in basin-local coordinates. Every tile can then
-        // reuse the expensive warped shoreline solve and only clip the points
-        // that overlap its own rectangle.
-        boundary.push({
-          x: Math.cos(angle) * low,
-          z: Math.sin(angle) * low,
-          y: basin.level,
-          depth: .08,
-        })
-        if (i % 8 === 7) yield 'shore'
-      }
-      basinBoundaryCache.set(basin, boundary)
-    }
+    const surface = yield* basinSurfaceSteps(basin, reaches)
+    const { boundary, inner, inlets } = surface
     if (basin.islands?.length) {
-      let lake = basinIslandCache.get(basin)
+      let lake = basin.id ? basinIslandCache.get(basin) : undefined
       if (!lake) {
         const holes = basin.islands.map(island => Array.from({ length: 32 }, (_, i) => {
           const a = -i / 32 * Math.PI * 2
@@ -360,7 +326,7 @@ function* appendAnalyticBasins(
         const outer = boundary.map(p => new Vector2(p.x, p.z))
         lake = { points: [...outer, ...holes.flat()].map(p => ({ x: p.x, z: p.y, y: basin.level, depth: .08 })),
           triangles: ShapeUtils.triangulateShape(outer, holes) }
-        basinIslandCache.set(basin, lake)
+        if (basin.id) basinIslandCache.set(basin, lake)
       }
       for (let i = 0; i < lake.triangles.length; i++) {
         const triangle = lake.triangles[i]!
@@ -374,7 +340,7 @@ function* appendAnalyticBasins(
           for (let k = 0; k < 3; k++) {
             const p = points[k]!, target = polygonScratch[k]!
             target.x = basin.x + p.x - centerX; target.z = basin.z + p.z - centerZ
-            target.y = basin.level; target.depth = Math.max(.08, -basinDistance(basin, basin.x + p.x, basin.z + p.z) * .06)
+            target.y = basin.level; target.depth = basinOpticalDepth(basin, inlets, basin.x + p.x, basin.z + p.z)
           }
           appendPolygon(polygonScratch, 1)
         }
@@ -393,24 +359,26 @@ function* appendAnalyticBasins(
     // bridge a concave cove with a different chord on distant LOD tiles.
     const boundaryStep = basin.shoreRadii ? 1 : Math.max(1, Math.ceil(boundary.length / desiredSamples))
     const center: BasinVertex = {
-      x: basin.x - centerX, z: basin.z - centerZ, y: basin.level,
+      x: 0, z: 0, y: basin.level,
       depth: basin.sea ? 180 : basin.pond ? 42 : 96,
+    }
+    const append = (first: BasinVertex, second: BasinVertex, third: BasinVertex): void => {
+      for (let index = 0; index < 3; index++) {
+        const p = index === 0 ? first : index === 1 ? second : third
+        const target = polygonScratch[index]!
+        target.x = basin.x + p.x - centerX; target.z = basin.z + p.z - centerZ
+        target.y = p.y; target.depth = p.depth
+      }
+      appendPolygon(polygonScratch, basin.sea ? 2 : basin.pond ? .5 : 1)
     }
     for (let i = 0; i < boundary.length; i += boundaryStep) {
       const edge = boundary[i]!
       const next = boundary[(i + boundaryStep) % boundary.length]!
-      polygonScratch[0] = center
-      const edgeVertex = polygonScratch[1]!
-      edgeVertex.x = basin.x + edge.x - centerX
-      edgeVertex.z = basin.z + edge.z - centerZ
-      edgeVertex.y = edge.y
-      edgeVertex.depth = edge.depth
-      const nextVertex = polygonScratch[2]!
-      nextVertex.x = basin.x + next.x - centerX
-      nextVertex.z = basin.z + next.z - centerZ
-      nextVertex.y = next.y
-      nextVertex.depth = next.depth
-      appendPolygon(polygonScratch, basin.sea ? 2 : basin.pond ? .5 : 1)
+      const a = inner[i]!, b = inner[(i + boundaryStep) % inner.length]!
+      append(edge, next, b); append(edge, b, a)
+      // The interior is dark/deep already; its fan cannot paint radial wedges
+      // across the narrow, separately tessellated shallow shoreline band.
+      append(center, a, b)
       if ((i / boundaryStep) % 8 === 7) yield 'basin'
     }
     yield 'basin'

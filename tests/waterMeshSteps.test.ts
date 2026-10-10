@@ -57,13 +57,13 @@ beforeEach(() => setWorldSeed(1337))
 afterEach(() => vi.restoreAllMocks())
 
 describe('cooperative water geometry', () => {
-  // Pin synchronous/cooperative output with upright macro water normals;
-  // sea-level raster still uses the sea material kind.
+  // Pin synchronous/cooperative output with upright normals and a separate
+  // shallow basin band; sea-level raster still uses the sea material kind.
   it.each([
     ['raster', '1fa7969b58d68f92e4a12e3bbcef89f4fd5c3d0b23f58c91037508a1ab11a2dc'],
-    ['lake', '47293b26153d002e36a72e1a18c06c2728ed86ae1c1744be5fbc63fd067ed36d'],
-    ['pond', '2c3029eec80ba9f3521efa5b88281f8f3c929197b4428c0f0a389a90059afd04'],
-    ['sea', 'cea86ecfba3ae6411d4ac629d6132ee64c5f42cb742effea42a75017dd431133'],
+    ['lake', 'ff8975c6ed0eb826c4c0da3abf09b4cb6a2025d74f9047f7163ba4408269a254'],
+    ['pond', 'a34fad26d5dcabe8c12c945d7bba5c913c592420238d82847c224c5617538c29'],
+    ['sea', 'acad9cb3fcf02c8e1f323ab584bb1713e431dfdaf1fb8d8582828a8ef0d3cd2b'],
     ['river', '028494605c946750cdc122fb43743717930b6283b55577ec6d7235328ca4c433'],
     ['mouth', '8e2580297584c08210e6ad82e473585000f4fef4d3dc43e80edda2e791d137f8'],
     ['junction', 'ba9be3c3ca2e505369eff1fc8d9ea74fdfa187ab41f6afa569bf0eb9d0ea501a'],
@@ -121,7 +121,7 @@ describe('cooperative water geometry', () => {
     advanceTo(steps, 'river')
     steps.return(null)
     const mesh = buildWaterMesh(...argsFor('lake'))!
-    try { expect(digest(mesh)).toBe('47293b26153d002e36a72e1a18c06c2728ed86ae1c1744be5fbc63fd067ed36d') }
+    try { expect(digest(mesh)).toBe('ff8975c6ed0eb826c4c0da3abf09b4cb6a2025d74f9047f7163ba4408269a254') }
     finally { dispose(mesh) }
   })
 

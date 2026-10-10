@@ -2,10 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.876**. Previous roadmap chunk: **10.875**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.877**. Previous roadmap chunk: **10.876**.
 
-Outward half-caps remove the striped river-mouth overlap seen during first-person review. A shallow-water color transition remains; water artwork is not declared finished.
-Recent changes from **10.876**. Small ponds and receiving basins have larger footprints, independently varied coves and rounded arms, without increasing spawn frequency or enlarging major lakes. A minimum contour-area guard prevents surrounding relief from shrinking them back into puddles. Invalid island holes no longer bridge dry shoreline. The terrain review includes a Small ponds destination. Saved records remain intact; incompatible old ghosts are skipped. Half-strength delayed flight assist remains shipped. Regional weather, broader basin-spill routing, and controlled foreground travel/memory review remain in progress. Actual EST reset wiring and per-level generation remain deferred.
+Recent changes from **10.877**. River mouths and receiving lakes share optical depth instead of drawing an artificial shallow lip. A separate lake shoreline band reduces radial color wedges while preserving existing shores and water levels; submerged channel beds stay open through the join. The larger, varied small ponds and half-strength delayed flight assist remain shipped. A triangular patch remains on a very wide bend; water artwork and broader basin-spill routing are not finished. See the [water surface review](docs/water-surface-review.md) for visual findings and the measured geometry cost. Regional weather and controlled foreground travel/memory review remain in progress. Saved records remain intact. Actual EST reset wiring and per-level generation remain deferred.
 
 ## Run
 
