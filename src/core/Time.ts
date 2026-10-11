@@ -113,7 +113,8 @@ export class Time {
     if (frameDt > SUSPEND_AFTER) {
       // Tab hide / long hitch: do not catch up a multi-second stall.
       this.accum = 0
-      this.noteFps(this.stepDt)
+      // Measure the real callback cadence, not the clamped simulation step.
+      this.noteFps(frameDt)
       this.frame.frameDt = this.stepDt
       this.frame.steps = 1
       this.frame.alpha = 1
@@ -151,7 +152,7 @@ export class Time {
       const safeNow = Number.isFinite(nowMs) ? nowMs : this.lastMs
       const monotonicNow = Math.max(this.lastMs, safeNow)
       const frameDt = (monotonicNow - this.lastMs) / 1000
-      if (frameDt > 0 && frameDt <= SUSPEND_AFTER) this.noteFps(frameDt)
+      if (frameDt > 0) this.noteFps(frameDt)
       this.lastMs = monotonicNow
     } else if (Number.isFinite(nowMs)) {
       this.lastMs = nowMs

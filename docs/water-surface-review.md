@@ -1,4 +1,12 @@
-# Water surface review - 10.886
+# Water surface review - 10.887
+
+## 10.887: honest final-review measurements
+
+The source-lake bank correction is unchanged. Final weather review used seed 1, Automatic weather, the Regional weather front destination at progress 1000, and unobstructed first person. The settled storm-layer view retained readable relief. The new Enter nearest cloud control locates the centre of a real, sufficiently opaque drawn cloud instance; the inspected view reported cloud immersion 0.98 and retained distant terrain silhouettes without a hard billboard edge. These are static appearance checks, not a proof of satisfactory motion at maximum speed.
+
+The historical full-game baseline was visibly host-throttled: 1,000 ms median rendered intervals despite a visible document and browser panel. Its partial travel sample and heap numbers are not a valid before/after comparison. Inspection found that Time substituted the protected 1/60 simulation step into its FPS estimate on long hitches, falsely displaying 60. It now measures real callback intervals; simulation stepping is unchanged. Any earlier informal 60 FPS debug-overlay observation is not performance evidence. The separate terrain-review frame recorder measures timestamps directly and is unaffected by this correction.
+
+An opt-in development-only full-game recorder now makes the remaining comparison repeatable. See [performance protocol](terrain-streaming-performance.md#chunk-10887-full-game-review-protocol). It is absent from the production bundle. Controlled foreground baseline/candidate startup, sustained travel frame percentiles and memory remain outstanding until the browser runs unthrottled. Water generation revision 14, render distance and streaming budgets are unchanged. Half-strength delayed assist and regional weather remain shipped; actual EST wiring and per-level generation are deferred. Paused systems remain excluded.
 
 ## 10.886: source lake bank connections
 

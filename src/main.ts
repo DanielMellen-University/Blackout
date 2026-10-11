@@ -147,6 +147,7 @@ import { gateQualityLabel } from './systems/Mission'
 import { sortieContractDetailForSeed, sortieContractLabelForSeed } from './systems/SortieContract'
 import { isDebugEnabled } from './debug/debugFlags'
 import type { DebugOverlay } from './debug/DebugOverlay'
+import type { FlightReview } from './debug/FlightReview'
 import type { CoursePicker as CoursePickerInstance, CoursePickerCategory, CoursePickerSort } from './ui/CoursePicker'
 import type {
   HUD as HudInstance,
@@ -790,6 +791,7 @@ export async function boot(): Promise<void> {
   world.setTrafficVisible(false)
   if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
   if (playBtn) playBtn.disabled = false
+  const airfieldReadyMs = import.meta.env.DEV ? performance.now() : 0
   const aircraft = new Aircraft()
   applyAircraftQuality = (quality): void => aircraft.setRenderQuality(quality)
   applyAircraftQuality(renderQuality)
@@ -1165,6 +1167,11 @@ export async function boot(): Promise<void> {
   applyRadarMotion = (reduced): void => radar.setReducedMotion(reduced)
   applyRadarMotion(reducedMotion)
   let debug: DebugOverlay | null = null
+  let flightReview: FlightReview | null = null
+  if (import.meta.env.DEV && replayParams?.get('review') === 'flight' && selectedCourseId === 'free-flight') {
+    const { FlightReview: Review } = await import('./debug/FlightReview')
+    flightReview = new Review(airfieldReadyMs, () => playBtn?.click())
+  }
   if (isDebugEnabled()) {
     const { DebugOverlay: DebugOverlayClass } = await import('./debug/DebugOverlay')
     debug = new DebugOverlayClass(world.scene)
@@ -1264,6 +1271,7 @@ export async function boot(): Promise<void> {
     waterWakeFx.dispose()
     groundWakeFx.dispose()
     debug?.dispose()
+    flightReview?.dispose()
     aircraft.dispose()
     renderer.dispose()
   }
@@ -1929,6 +1937,7 @@ export async function boot(): Promise<void> {
       simLive = false
     }
     if (!simLive) lastHudUpdateMs = Number.NaN
+    flightReview?.visibility(freeFlight && simLive && !crashCinematic.active && !document.hidden)
     const pixelRatio = resolution.update(nowMs - previousFrame, simLive && !document.hidden)
     previousFrame = nowMs
     if (Math.abs(renderer.getPixelRatio() - pixelRatio) > .001) {
@@ -2049,6 +2058,7 @@ export async function boot(): Promise<void> {
       for (let i = 0; i < steps; i++) {
         aircraft.capturePrevious()
         aircraft.controls = input.sampleWithDt(dt)
+        if (freeFlight) flightReview?.beforeStep(aircraft)
         const thermalLift = thermalLiftIntensity(
           world.worldSeed,
           aircraft.position.x,
@@ -2065,6 +2075,7 @@ export async function boot(): Promise<void> {
         }
         thermalLiftActive = thermalLift >= 0.2
         aircraft.step(dt, nowMs)
+        if (freeFlight) flightReview?.afterStep(aircraft, dt)
         if (supersonic.update(aircraft.speed) === 'boom') {
           audio.playCue('sonic-boom')
           if (!banner || bannerUntil <= nowMs) showBanner('MACH 1 / SONIC BOOM', 1500, 'success')
@@ -2624,14 +2635,16 @@ export async function boot(): Promise<void> {
       cameras.update(aircraft, visualDt)
       const renderStart = debug ? performance.now() : 0
       renderer.render(world.scene, cameras.camera)
-      if (debug) {
+      if (debug || flightReview) {
         world.terrain.streamingStatsInto(debugStreamingStats)
-        debug.update(aircraft, world.spawn, cameras.modeLabel, time.fps, {
+        debug?.update(aircraft, world.spawn, cameras.modeLabel, time.fps, {
           renderMs: performance.now() - renderStart,
           drawCalls: renderer.info.render.calls,
           triangles: renderer.info.render.triangles,
           streaming: debugStreamingStats,
         })
+        flightReview?.frame(nowMs, debugStreamingStats, renderQuality, renderer.getPixelRatio(),
+          renderer.info.memory.geometries, renderer.info.memory.textures)
       }
       lastRenderMs = nowMs
       lastRenderedSimulationLive = simLive

@@ -5,6 +5,39 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.887 full-game review protocol
+
+In development, open `/?course=free-flight&seed=73&review=flight` and use the
+fixed-route review button. The normal launch loader still runs. After initial
+terrain coverage, the real gameplay loop follows a prescribed northeast route
+from (0, 5000, 0), at 680 m/s for 120 simulation seconds (81.6 km). Physics,
+collision, HUD, audio, atmosphere, streaming and rendering execute normally;
+the fixture overrides aircraft pose/controls. This is a rendering workload,
+not a flight-handling or low-altitude collision validation. Production builds
+omit the recorder and its import.
+
+Compare an exact historical baseline and candidate on the same machine, seed,
+quality, viewport and pixel-ratio range, running one at a time with no test
+runner or profiler active. Keep the game visible, focused and unpaused. Record
+airfield-ready navigation time separately from launch-to-coverage wall time
+(which includes the loading screen and any wall-clock interruption). Compare
+startup and flight frame median/p95/max, sample counts, optional JS heap
+start/current/peak, geometry/texture counts and streaming queue counts. Each
+frame window retains at most 18,000 recent rendered intervals; hitches are not
+clamped. Explicit paused/hidden intervals reset the timestamp anchor and do not
+advance the route. Missing browser heap telemetry is reported as zero, not
+proof of zero usage. GC variation and one route do not establish absence of leaks.
+
+The attempted 10.868 historical baseline was host-throttled near one rendered
+frame per second even with document visibility reported as visible. Its
+partial result is invalid for performance comparison, so no improvement or
+regression is claimed. The old debug FPS estimate hid these long gaps by
+substituting the protected simulation step; 10.887 corrects it and labels the
+callback rate `raf/s`. Simulation hitch protection itself is unchanged. The
+separate terrain-review timestamp measurements were not using this estimate.
+Foreground baseline/candidate startup, frame-time and sustained-memory review
+remain open. Do not reduce render distance to make this comparison pass.
+
 ### Chunk 10.880 regional weather CPU and travel sample
 
 Same-machine atmosphere-only comparison against 10.879, seed 1, Balanced cloud

@@ -23,6 +23,7 @@
   </select>
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
+  <button id="cloud-interior">Enter nearest cloud</button>
   <button id="river-tour">Trace river</button>
   <select id="review-view" aria-label="River camera">
     <option value="overview">Overview</option><option value="chase">Chase</option>
@@ -156,6 +157,27 @@ function frameWorld(destination){
 }
 frameWorld()
 document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
+document.querySelector('#cloud-interior').onclick=()=>{
+  // Inspect an actually rendered ellipsoid, not merely a foggy altitude.
+  const matrix=new T.Matrix4(),position=new T.Vector3(),scale=new T.Vector3(),rotation=new T.Quaternion()
+  let nearest=null,best=Infinity
+  world.scene.traverse(object=>{
+    if(!object.isInstancedMesh||!object.name.startsWith('CloudBatch-'))return
+    const alpha=object.geometry.getAttribute('cloudAlpha')
+    for(let i=0;i<object.count;i++){
+      if(alpha.getX(i)<.35)continue
+      object.getMatrixAt(i,matrix);matrix.decompose(position,rotation,scale)
+      if(Math.min(scale.x,scale.y,scale.z)<80)continue
+      const distance=position.distanceToSquared(camera.position)
+      if(distance<best){best=distance;nearest=position.clone()}
+    }
+  })
+  if(!nearest){document.querySelector('#travel-stats').textContent='No dense formation ready. Let the cloud pool settle, then retry.';return}
+  reviewMode='cloud-interior';flightView=tracingRiver=flying=weatherTraceDirty=false
+  reviewJet.reset({x:nearest.x,y:nearest.y,z:nearest.z,yaw:Math.PI/2});reviewJet.mesh.visible=false
+  controls.enabled=false;camera.position.copy(nearest);controls.target.copy(nearest).add(new T.Vector3(1500,0,0));camera.lookAt(controls.target)
+  document.querySelector('#travel-stats').textContent='Inside a rendered cloud. Choose a destination to leave.'
+}
 const destinations={
   pond:[1337,0,0],headwater:[1,0,0],
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
@@ -437,14 +459,14 @@ renderer.setAnimationLoop(now=>{
     controls.target.y+=rise;camera.position.y+=rise;controls.update()
   }
   world.atmosphere.timeOfDay=.48
-  const focus=flightView||reviewMode.startsWith('weather')?reviewJet.position:controls.target
+  const focus=flightView||reviewMode.startsWith('weather')||reviewMode==='cloud-interior'?reviewJet.position:controls.target
   world.update(focus.x,focus.y,focus.z,dt)
   if(flightView) chase.update(reviewJet,dt)
   renderer.render(world.scene,flightView?chase.camera:camera)
   frames++
   if(frames%15===0){
     const sorted=[...timings].sort((a,b)=>a-b)
-    document.querySelector('#stats').textContent=' · '+world.atmosphere.weatherLabel+' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
+    document.querySelector('#stats').textContent=' · '+world.atmosphere.weatherLabel+' · cloud immersion '+world.atmosphere.cloudImmersionLevel.toFixed(2)+' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
     if(travelFrameCount){
       const sample=travelFrames.slice(0,Math.min(travelFrameCount,travelFrames.length)).sort()
       const heap=performance.memory?.usedJSHeapSize??0

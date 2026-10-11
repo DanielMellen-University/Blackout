@@ -139,7 +139,7 @@ export class DebugOverlay {
       `pad   ${pad ? `${pad.x.toFixed(0)},${pad.z.toFixed(0)} y=${pad.y.toFixed(1)}` : 'off'}  d=${padDist.toFixed(0)}  blend=${blend.toFixed(2)}`,
       `spawn ${spawn.biome}  yaw=${((spawn.yaw * 180) / Math.PI).toFixed(0)}  y=${spawn.y.toFixed(1)}`,
       `ias   ${kts.toFixed(0)} kts  tgt ${targetKts.toFixed(0)}  eng ${(engine.lever * 100).toFixed(1)}%${engine.afterburnerActive ? ' BOOST' : engine.afterburnerRequested ? ' BOOST LOCK' : ''}`,
-      `gnd   ${aircraft.onGround ? 'yes' : 'no'}  impactVy ${aircraft.impactVy.toFixed(1)}  cam ${cam}  ${fps.toFixed(0)} fps`,
+      `gnd   ${aircraft.onGround ? 'yes' : 'no'}  impactVy ${aircraft.impactVy.toFixed(1)}  cam ${cam}  ${fps.toFixed(0)} raf/s`,
       debugPerformanceLine(performance),
     ].join('\n')
   }

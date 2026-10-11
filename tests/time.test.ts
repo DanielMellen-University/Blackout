@@ -69,6 +69,28 @@ describe('Time', () => {
     expect(frame.steps).toBeLessThanOrEqual(2)
   })
 
+  it('reports real slow callback cadence without changing hitch protection', () => {
+    const time = new Time()
+    time.beginFrame(0)
+    for (let tick = 1; tick <= 80; tick++) {
+      const frame = time.beginFrame(tick * 1000)
+      expect(frame.steps).toBe(1)
+      expect(frame.frameDt).toBe(SIM_STEP)
+      expect(frame.alpha).toBe(1)
+    }
+    expect(time.fps).toBeGreaterThanOrEqual(1)
+    expect(time.fps).toBeLessThan(1.1)
+  })
+
+  it('measures slow skipped callbacks without accumulating resume time', () => {
+    const time = new Time()
+    time.beginFrame(0)
+    for (let tick = 1; tick <= 80; tick++) time.skipFrame(tick * 1000)
+    expect(time.fps).toBeGreaterThanOrEqual(1)
+    expect(time.fps).toBeLessThan(1.1)
+    expect(time.beginFrame(80016).steps).toBe(0)
+  })
+
   it('exposes leftover time as a render blend factor', () => {
     const time = new Time()
     time.beginFrame(0)

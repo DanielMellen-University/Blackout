@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.886**. Previous roadmap chunk: **10.885**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.887**. Previous roadmap chunk: **10.886**.
+
+Recent changes from **10.887**. Correct debug callback-rate telemetry that incorrectly reported 60 during long hitches; simulation hitch protection is unchanged. Add an opt-in development-only full-game fixed-route recorder, plus an actual-cloud interior probe in terrain review. Frame windows are bounded, pause/hidden gaps excluded, and real hitches retained. Cloud-interior and regional storm stills were inspected. The full-game comparison remains blocked by browser throttling, not validated by the old debug readout. Water generation, half-strength delayed assist, weather budgets and render distance are unchanged. Actual EST reset wiring, per-level generation and paused-system exclusions remain unchanged.
 
 Recent changes from **10.886**. Wide lake outlets now connect both banks to their source shore instead of leaving a pointed dry wedge. One bounded submerged cross-section fits inside the lake, then normal shoreline clipping joins the shared physical water surface. A broad-outlet guard prevents rectangular water behind a narrow cove. The seed-42 pond view was checked; focused water checks pass. Cached geometry grows slightly in two measured regions, with variable CPU times rather than a claimed FPS win. River routes, the 4.1x reviewed mean main-stem length, 8 km taper, render distance and streaming limits remain unchanged. Generation revision 14 preserves records. Controlled full-game startup/travel/memory comparison and final Free flight/weather review remain open; actual EST reset wiring and per-level generation remain deferred.
 
