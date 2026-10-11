@@ -7,6 +7,7 @@ import {
   SphereGeometry,
   Vector2,
   Vector3,
+  Vector4,
 } from 'three'
 
 const _dir = new Vector3()
@@ -161,6 +162,10 @@ export class SkyDome {
         uCloudDetail: { value: 1 },
         uLowDeckVisibility: { value: 1 },
         uHighDeckVisibility: { value: 1 },
+        uRegionalWeather: { value: 0 },
+        uRegionalDecks: { value: Array.from({ length: 9 }, () => new Vector4()) },
+        uRegionalDarkness: { value: new Float32Array(9) },
+        uRegionalOrigin: { value: new Vector2() },
       },
       vertexShader: /* glsl */ `
         varying vec3 vWorldDir;
@@ -198,6 +203,10 @@ export class SkyDome {
         uniform float uHighDeckVisibility;
         uniform vec2 uCloudWind;
         uniform float uCloudDetail;
+        uniform float uRegionalWeather;
+        uniform vec4 uRegionalDecks[9];
+        uniform float uRegionalDarkness[9];
+        uniform vec2 uRegionalOrigin;
 
         // Stable hash for star field
         float hash13(vec3 p) {
@@ -321,8 +330,23 @@ export class SkyDome {
           // form a hard line at the horizon.
           float deckSky = smoothstep(-0.08, 0.17, elev);
           if (deckSky > 0.001) {
+            vec4 deck = vec4(uCloudBroken, uCloudBlanket, uCloudCirrus, uCloudStorm);
+            float darkness = uCloudDarkness;
+            if (uRegionalWeather > 0.5) {
+              float azimuth = mod(atan(dir.z, dir.x) + 6.2831853, 6.2831853) * 1.2732395;
+              int first = int(floor(azimuth));
+              int next = (first + 1) % 8;
+              float blend = fract(azimuth);
+              blend = blend * blend * (3.0 - 2.0 * blend);
+              vec4 farDeck = mix(uRegionalDecks[first + 1], uRegionalDecks[next + 1], blend);
+              float farDarkness = mix(uRegionalDarkness[first + 1], uRegionalDarkness[next + 1], blend);
+              float distanceMix = 1.0 - smoothstep(0.18, 0.78, elev);
+              deck = mix(uRegionalDecks[0], farDeck, distanceMix);
+              darkness = mix(uRegionalDarkness[0], farDarkness, distanceMix);
+            }
             vec2 projected = dir.xz / max(0.24, elev + 0.34);
             vec2 drift = uCloudWind * uTime * 0.018;
+            if (uRegionalWeather > 0.5) { projected += uRegionalOrigin; drift = vec2(0.0); }
             float wisps = cloudField(projected * 0.78 + drift * 0.65);
             float puffs = smoothstep(0.58, 0.83,
               cloudField(projected * 1.16 + drift));
@@ -331,22 +355,22 @@ export class SkyDome {
             float stormCells = smoothstep(0.48, 0.84,
               cloudField(projected * 0.88 + drift * 0.55 + vec2(-16.3, 9.7)));
 
-            float cirrus = smoothstep(0.62, 0.88, wisps) * uCloudCirrus * 0.34 * uHighDeckVisibility;
-            float broken = puffs * uCloudBroken * 0.72 * uLowDeckVisibility;
+            float cirrus = smoothstep(0.62, 0.88, wisps) * deck.z * 0.34 * uHighDeckVisibility;
+            float broken = puffs * deck.x * 0.72 * uLowDeckVisibility;
             // Even the darkest fronts retain soft internal variation rather
             // than reading as an opaque flat ceiling.
-            float blanket = uCloudBlanket * mix(0.7, 1.0, broad) * uLowDeckVisibility;
-            float storm = uCloudStorm * mix(0.5, 1.0, stormCells) * uLowDeckVisibility;
+            float blanket = deck.y * mix(0.7, 1.0, broad) * uLowDeckVisibility;
+            float storm = deck.w * mix(0.5, 1.0, stormCells) * uLowDeckVisibility;
             float cloudAlpha = clamp(cirrus + broken * (1.0 - cirrus) +
               blanket * (1.0 - cirrus) * (1.0 - broken * 0.38), 0.0, 0.96);
             cloudAlpha = max(cloudAlpha, storm * 0.22) * deckSky;
 
             float sunSoft = 0.58 + max(0.0, dot(dir, sunD)) * 0.28;
             vec3 fairCloud = mix(vec3(0.82, 0.89, 0.95), vec3(0.44, 0.54, 0.65),
-              uCloudDarkness) * sunSoft;
+              darkness) * sunSoft;
             vec3 stormCloud = mix(vec3(0.31, 0.39, 0.49), vec3(0.15, 0.22, 0.31),
               stormCells * 0.72);
-            vec3 cloudColor = mix(fairCloud, stormCloud, uCloudStorm * 0.82);
+            vec3 cloudColor = mix(fairCloud, stormCloud, deck.w * 0.82);
             cloudColor *= mix(.09, 1.0, uDayFactor);
             col = mix(col, cloudColor, cloudAlpha);
           }
@@ -388,6 +412,27 @@ export class SkyDome {
     this.mat.uniforms.uCloudDetail!.value = detail
   }
 
+  /** Local plus eight directional samples, uploaded only at the weather cadence. */
+  setRegionalWeather(decks: Float32Array | null, x = 0, z = 0, seconds = 0): void {
+    this.mat.uniforms.uRegionalWeather!.value = decks && decks.length >= 45 ? 1 : 0
+    if (!decks || decks.length < 45) return
+    const values = this.mat.uniforms.uRegionalDecks!.value as Vector4[]
+    const darkness = this.mat.uniforms.uRegionalDarkness!.value as Float32Array
+    for (let i = 0; i < 9; i++) {
+      const j = i * 5
+      values[i]!.set(clamp01(decks[j]!), clamp01(decks[j + 1]!), clamp01(decks[j + 2]!), clamp01(decks[j + 3]!))
+      darkness[i] = clamp01(decks[j + 4]!)
+    }
+    this.setRegionalOrigin(x, z, seconds)
+  }
+
+  /** Follow the aircraft every frame even between slower deck samples. */
+  setRegionalOrigin(x: number, z: number, seconds: number): void {
+    const time = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
+    this.mat.uniforms.uRegionalOrigin!.value.set(((Number.isFinite(x) ? x : 0) - time * 12) / 12000,
+      ((Number.isFinite(z) ? z : 0) - time * 3) / 12000)
+  }
+
   /** Freeze shader-only twinkle and drift for reduced-motion pilots. */
   setReducedMotion(enabled: boolean): void {
     this.reducedMotion = enabled === true
@@ -416,6 +461,7 @@ export class SkyDome {
     haze: number,
     cloudDeck: SkyCloudDeck,
     timeSec: number,
+    cloudBase?: number,
   ): void {
     const safeAx = Number.isFinite(ax) ? ax : this.mesh.position.x
     const safeAy = Number.isFinite(ay) ? ay : this.mesh.position.y
@@ -448,8 +494,10 @@ export class SkyDome {
     this.mat.uniforms.uTopColor!.value.copy(this.top)
     this.mat.uniforms.uHorizonColor!.value.copy(this.horizon)
 
-    const lowDeck = skyLayerVisibility(safeAy, 2500 + safeStorm * 3600, 3350 + safeStorm * 3600)
-    const highDeck = skyLayerVisibility(safeAy, 5400, 6500)
+    const regional = Number.isFinite(cloudBase)
+    const lowDeck = skyLayerVisibility(safeAy, regional ? cloudBase! + 1200 : 2500 + safeStorm * 3600,
+      regional ? cloudBase! + 2200 : 3350 + safeStorm * 3600)
+    const highDeck = skyLayerVisibility(safeAy, regional ? cloudBase! + 4200 : 5400, regional ? cloudBase! + 5300 : 6500)
     this.mat.uniforms.uLowDeckVisibility!.value = lowDeck
     this.mat.uniforms.uHighDeckVisibility!.value = highDeck
     const night = 1 - safeDayFactor

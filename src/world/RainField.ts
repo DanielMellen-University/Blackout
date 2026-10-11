@@ -6,8 +6,9 @@ const WIDTH = 180
 const HEIGHT = 120
 const STREAK_EXPOSURE = .016
 /** Fade precipitation above its source deck instead of raining in the upper sky. */
-export function precipitationAtAltitude(altitude: number, storm: number): number {
+export function precipitationAtAltitude(altitude: number, storm: number, cloudBase?: number): number {
   if (!Number.isFinite(altitude)) return 0
+  if (Number.isFinite(cloudBase)) return 1 - MathUtils.smoothstep(altitude, cloudBase! - 180, cloudBase!)
   const top = 3100 + MathUtils.clamp(Number.isFinite(storm) ? storm : 0, 0, 1) * 3600
   return 1 - MathUtils.smoothstep(altitude, top - 600, top + 250)
 }
@@ -83,7 +84,7 @@ export class RainField {
     this.count = scale <= 0 ? 0 : precipitationParticleCount(COUNT, scale)
     this.mesh.geometry.setDrawRange(0, this.count * 2)
   }
-  update(dt: number, x: number, y: number, z: number, intensity: number, windX: number, windZ: number): void {
+  update(dt: number, x: number, y: number, z: number, intensity: number, windX: number, windZ: number, cloudBase?: number): void {
     if (this.disposed) return
     const rain = MathUtils.clamp(Number.isFinite(intensity) ? intensity : 0, 0, 1)
     this.mesh.visible = rain > .015 && this.count > 0
@@ -101,6 +102,7 @@ export class RainField {
     const wz = Number.isFinite(windZ) ? windZ : 0
     this.material.opacity = rain * .28
     const count = Math.floor(this.count * (.2 + rain * .8))
+    const ceiling = Number.isFinite(cloudBase) ? cloudBase! - safeY : Infinity
     this.mesh.geometry.setDrawRange(0, count * 2)
     for (let i = 0; i < count; i++) {
       const j = i * 3, k = i * 6
@@ -110,10 +112,13 @@ export class RainField {
       const pz = wrap(this.particles[j + 2]! - dz + wz * step + WIDTH / 2, WIDTH) - WIDTH / 2
       this.particles[j] = px; this.particles[j + 1] = py; this.particles[j + 2] = pz
       const exposure = STREAK_EXPOSURE + rain * .018
-      this.positions[k] = px; this.positions[k + 1] = py; this.positions[k + 2] = pz
-      this.positions[k + 3] = px - wx * exposure
-      this.positions[k + 4] = py + speed * exposure
-      this.positions[k + 5] = pz - wz * exposure
+      // Clip crossing streaks, and collapse fully above-deck streaks. Clamping
+      // only Y turned their wind slant into horizontal lines at cloud base.
+      const visible = Math.max(0, Math.min(1, (ceiling - py) / (speed * exposure)))
+      this.positions[k] = px; this.positions[k + 1] = Math.min(py, ceiling); this.positions[k + 2] = pz
+      this.positions[k + 3] = px - wx * exposure * visible
+      this.positions[k + 4] = Math.min(py + speed * exposure, ceiling)
+      this.positions[k + 5] = pz - wz * exposure * visible
     }
     this.mesh.geometry.attributes.position!.needsUpdate = true
   }

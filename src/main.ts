@@ -2594,8 +2594,8 @@ export async function boot(): Promise<void> {
     audioFrame.airbrake = airbrakeOpen
     audioFrame.speed = aircraft.speed
     const precipitation = world.atmosphere.weatherSnapshot
-    audioFrame.rain = precipitation.rain
-    audioFrame.snow = precipitation.snow
+    audioFrame.rain = precipitation.rain * world.atmosphere.precipitationVisibility
+    audioFrame.snow = precipitation.snow * world.atmosphere.precipitationVisibility
     audioFrame.weatherGust = precipitation.gust
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'

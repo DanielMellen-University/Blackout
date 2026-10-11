@@ -317,6 +317,8 @@ export class World {
     const previousPad = getOpsPad()
     const previousSpawn = { ...this.spawn }
     const previousWeather = this.atmosphere.weather
+    const previousAutomaticWeather = this.atmosphere.weatherAutomatic
+    const previousWeatherTime = this.atmosphere.weatherSimulationTime
     const previousWindHeading = this.atmosphere.authoredWindHeading
     const previousTimeOfDay = this.atmosphere.timeOfDay
     const previousWeatherLocked = this.weatherLocked
@@ -372,7 +374,7 @@ export class World {
         // opening frames generating terrain while nearby landmarks waited for
         // the first movement-triggered settlement update.
         this.settlements.update(this.spawn.x, this.spawn.z)
-        this.atmosphere.randomizeWeather(this.seed)
+        this.atmosphere.randomizeWeather(this.seed, this.spawn)
         if (requestedWeather) this.atmosphere.setWeather(requestedWeather, true)
         if (requestedWeatherShift && requestedWeatherShift !== requestedWeather) {
           this.atmosphere.setWeather(requestedWeatherShift)
@@ -416,6 +418,8 @@ export class World {
           previousWeatherLocked,
           previousWeatherCycleLocked,
           previousTimeOfDayLocked,
+          previousAutomaticWeather,
+          previousWeatherTime,
         )
         return this.seed
       }
@@ -439,6 +443,8 @@ export class World {
     weatherLocked: boolean,
     weatherCycleLocked: boolean,
     timeOfDayLocked: boolean,
+    automaticWeather: boolean,
+    weatherTime: number,
   ): void {
     try { setWorldSeed(seed) } catch { /* keep the previous process alive */ }
     try {
@@ -471,12 +477,13 @@ export class World {
       this.settlements.update(spawn.x, spawn.z)
     } catch { /* settlement workers can retry from World.update */ }
     try {
-      this.atmosphere.randomizeWeather(seed)
+      this.atmosphere.randomizeWeather(seed, spawn)
       this.atmosphere.timeOfDay = Number.isFinite(timeOfDay) ? timeOfDay : this.atmosphere.timeOfDay
       this.atmosphere.setWeather(weather, true)
       this.atmosphere.setWindHeading(windHeading)
       this.atmosphere.setWeatherLocked(weatherLocked)
       this.atmosphere.setTimeOfDayLocked(timeOfDayLocked)
+      this.atmosphere.setAutomaticWeather(automaticWeather, weatherTime)
       const restoredWeather = this.atmosphere.weatherSnapshot
       this.applyWeatherEffects(restoredWeather, this.atmosphere.daylight)
       setAirfieldWind(this.runway, restoredWeather.windX, restoredWeather.windZ)

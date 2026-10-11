@@ -7,12 +7,15 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
     shader.uniforms.cloudSun = sun
     shader.uniforms.cloudStorm = storm
     shader.vertexShader = `attribute float cloudAlpha;
+      attribute float cloudTone;
+      varying float vCloudTone;
       varying float vCloudAlpha;
       varying vec3 vCloudNormal;
       varying vec3 vCloudLocal;
       varying vec3 vCloudView;\n` + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
       vCloudAlpha = cloudAlpha;
+      vCloudTone = cloudTone;
       vCloudLocal = position;
       mat3 cloudTransform = mat3(instanceMatrix);
       vec3 cloudNormal = normal / max(vec3(dot(cloudTransform[0], cloudTransform[0]), dot(cloudTransform[1], cloudTransform[1]), dot(cloudTransform[2], cloudTransform[2])), vec3(.000001));
@@ -20,6 +23,7 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       vCloudView = normalize(cameraPosition - (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz);`)
     shader.fragmentShader = `uniform vec3 cloudSun;
       uniform float cloudStorm;
+      varying float vCloudTone;
       varying float vCloudAlpha;
       varying vec3 vCloudNormal;
       varying vec3 vCloudLocal;
@@ -27,15 +31,18 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
       vec3 n = normalize(vCloudNormal);
       float facing = max(0.0, dot(n, normalize(vCloudView)));
-      float billow = .91 + .09 * sin(vCloudLocal.x * 13.0 + sin(vCloudLocal.z * 9.0)) * sin(vCloudLocal.y * 11.0);
+      float billow = .88 + .12 * sin(vCloudLocal.x * 5.7 + sin(vCloudLocal.z * 4.1)) * sin(vCloudLocal.y * 3.9 + vCloudLocal.z * 2.7);
       float underside = smoothstep(-.8, .65, vCloudLocal.y);
       float sunlit = .5 + .5 * dot(n, cloudSun);
       float silver = pow(max(0.0, dot(normalize(vCloudView), -cloudSun)), 6.0) * pow(1.0 - facing, 2.0);
-      diffuseColor.rgb *= mix(.46 - cloudStorm * .12, 1.03, underside) * (.78 + sunlit * .24) * billow;
-      diffuseColor.rgb += vec3(1.0, .94, .82) * silver * .28;
-      diffuseColor.a *= vCloudAlpha * smoothstep(0.0, .36, facing) * billow;`)
+      diffuseColor.rgb *= mix(.68 - cloudStorm * .1, 1.0, underside) * (.86 + sunlit * .14) * billow;
+      diffuseColor.rgb *= 1.0 - vCloudTone;
+      diffuseColor.rgb += vec3(1.0, .94, .82) * silver * .08;
+      // A broad optical edge lets overlapping billows form one bank, rather
+      // than exposing the rim of each stretched sphere as a metallic disc.
+      diffuseColor.a *= vCloudAlpha * pow(facing, 1.65) * billow;`)
   }
-  material.customProgramCacheKey = () => 'cloud-optical-v1'
+  material.customProgramCacheKey = () => 'cloud-optical-regional-v3'
   return material
 }
 

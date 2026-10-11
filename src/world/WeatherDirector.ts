@@ -140,7 +140,7 @@ export const WEATHER_NEIGHBORS: Record<WeatherId, readonly WeatherId[]> = {
   blizzard: ['snow', 'snow', 'overcast'],
 }
 
-const PROFILE_KEYS: readonly (keyof WeatherProfile)[] = [
+export const PROFILE_KEYS: readonly (keyof WeatherProfile)[] = [
   'fogNearMul', 'fogFarMul', 'sunMul', 'hemiMul', 'ambientMul', 'rain', 'snow',
   'haze', 'lowClouds', 'midClouds', 'highClouds', 'windMps', 'gust', 'lightning',
 ]
@@ -249,12 +249,12 @@ export class WeatherDirector {
     this.holdSec = this.nextHold()
   }
 
-  setWeather(id: WeatherId, instant = false): void {
+  setWeather(id: WeatherId, instant = false, initial?: WeatherSnapshot): void {
     id = normalizeWeatherId(id)
     // Reapplying a moving target is common when route/UI state is reconciled.
     // Keep the current progress instead of restarting the front from zero;
     // explicit instant requests still snap the active transition immediately.
-    if (id === this.targetId && !instant) return
+    if (id === this.targetId && !instant && !initial) return
     if (instant) {
       this.currentId = id
       this.targetId = id
@@ -267,7 +267,7 @@ export class WeatherDirector {
       this.holdSec = this.nextHold()
       return
     }
-    const current = this.snapshot()
+    const current = initial ?? this.snapshot()
     this.from = this.profileFromSnapshot(current)
     this.windFrom = { x: current.windX, z: current.windZ }
     this.to = copyProfile(WEATHER_PROFILES[id])
@@ -304,7 +304,7 @@ export class WeatherDirector {
     return next
   }
 
-  update(dt: number): void {
+  update(dt: number, advanceFront = true): void {
     if (!Number.isFinite(dt) || dt <= 0 || this.locked) return
     if (this.transitionT < 1) {
       this.transitionT = Math.min(1, this.transitionT + dt / this.transitionSec)
@@ -317,6 +317,9 @@ export class WeatherDirector {
       return
     }
 
+    // Atmosphere owns spatial automatic weather. Manual presets can finish
+    // their transition without later shuffling to another global preset.
+    if (!advanceFront) return
     this.holdSec -= dt
     if (this.holdSec <= 0) {
       const choices = WEATHER_NEIGHBORS[this.targetId]

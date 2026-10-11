@@ -5,6 +5,50 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.880 regional weather CPU and travel sample
+
+Same-machine atmosphere-only comparison against 10.879, seed 1, Balanced cloud
+and precipitation budgets, 7,400 updates at 60 Hz. Each step moves 12 m on both
+world axes; the measured 7,200-step portion covers 122.2 km.
+The first 200 updates are warm-up; the reported distribution covers 7,200.
+No test runner was active. This does not generate terrain or submit GPU draws.
+
+| Measure | 10.879 | 10.880 |
+| --- | ---: | ---: |
+| Atmosphere construction / seed | 27.80 ms | 32.40 ms |
+| Update median | 0.145 ms | 0.072 ms |
+| Update p95 | 0.246 ms | 0.177 ms |
+| Update p99 | 0.328 ms | 0.317 ms |
+| Largest update | 0.864 ms | 3.390 ms |
+| Fixed cloud instance capacity | 720 | 694 |
+
+Different regional coverage changes visible-cloud work, so the lower median is
+not a general speedup claim. The higher tail includes bounded regional sampling
+and JIT/GC variability. One local sample updates each active simulation frame;
+46 formation samples run at most five times a simulation second and nine sky
+samples at most four times a second, except explicit reseeds/large relocations.
+There are still three instanced cloud draws, one analytic sky draw, and the
+existing pooled precipitation. No extra workers, terrain uploads, unbounded
+world caches, render-distance cuts, or volumetric ray marching were added.
+
+The background terrain review at 1280 x 720, seed 1, Automatic weather and maximum
+afterburner speed completed 299.2 simulation seconds / 203.4 km in unobstructed
+first person, with 16.7 ms frame median / 16.8 ms p95. Its bounded 7,200-frame
+window covers the latest portion, not all five minutes. Reported JS heap was
+62 MB initially and 79 MB at stop, with a 230 MB peak; final GPU resource counts
+were 401 geometries / three textures. Garbage collection and stream churn make
+the peak meaningful, but this is not a leak proof. The review includes terrain,
+water, settlements, and atmosphere, not the complete gameplay/HUD workload.
+No test runner or CPU profiler was active during this travel run. Earlier
+background observations were host-throttled and are excluded from these frame
+results. Clear-to-snow travel, a separate chase-view storm review, and low/high
+altitude regional snow views retained readable terrain; the browser error log
+was empty. These appearance checks do not prove every cloud interior or front
+transition satisfactory; targeted full-game inspection remains required.
+The tool reports travel, frame distributions, optional heap, and GPU resources,
+excluding document-hidden frames. A same-route full-game baseline/candidate
+startup, sustained-memory, and frame-time comparison remains outstanding.
+
 ### Chunk 10.874 confluence and mouth correction
 
 Same-machine CPU-only comparison against 10.873, seed 1, unchanged quality,

@@ -1,4 +1,4 @@
-import { Color, Scene, Vector3 } from 'three'
+import { Color, Scene, ShaderMaterial, Vector3 } from 'three'
 import { describe, expect, it } from 'vitest'
 import {
   auroraIntensity,
@@ -20,6 +20,28 @@ function deckFor(id: keyof typeof WEATHER_PROFILES) {
 }
 
 describe('analytic sky cloud deck', () => {
+  it('reuses directional deck uniforms and falls back to manual weather safely', () => {
+    const scene = new Scene(), sky = new SkyDome(scene)
+    try {
+      const uniforms = (sky.mesh.material as ShaderMaterial).uniforms
+      const decks = uniforms.uRegionalDecks!.value
+      const data = new Float32Array(45).fill(.5)
+      data[0] = NaN; data[6] = 4
+      sky.setRegionalWeather(data, 12000, 24000, 1000)
+      expect(uniforms.uRegionalWeather!.value).toBe(1)
+      expect(decks[0].x).toBe(0); expect(decks[1].y).toBe(1)
+      expect(uniforms.uRegionalOrigin!.value.x).toBe(0)
+      expect(uniforms.uRegionalOrigin!.value.y).toBe(1.75)
+      sky.setRegionalWeather(data, NaN, Infinity, NaN)
+      expect(uniforms.uRegionalDecks!.value).toBe(decks)
+      expect(scene.children).toHaveLength(1)
+      sky.setRegionalWeather(null)
+      expect(uniforms.uRegionalWeather!.value).toBe(0)
+      sky.setRegionalWeather(new Float32Array(1))
+      expect(uniforms.uRegionalWeather!.value).toBe(0)
+    } finally { sky.dispose() }
+  })
+
   it('keeps aurora envelopes deterministic, bounded, and night-only', () => {
     const clearNight = auroraIntensity(4200, -7100, 0, 0, 0)
     const repeated = auroraIntensity(4200, -7100, 0, 0, 0)

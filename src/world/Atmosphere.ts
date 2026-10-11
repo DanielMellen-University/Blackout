@@ -24,8 +24,11 @@ import { createCloudMaterial, cloudInteriorDensity } from './CloudMaterial'
 import { disposeObjectTree } from '../core/dispose'
 import { nightWeatherReadability } from '../core/SceneExposure'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
+import { createRegionalWeatherSample, RegionalWeather } from './RegionalWeather'
 import {
   WEATHER_LABELS,
+  WEATHER_ORDER,
+  PROFILE_KEYS,
   WeatherDirector,
   normalizeWeatherId,
   timeOfDayForSeed,
@@ -300,10 +303,24 @@ export class Atmosphere {
 
   weather: WeatherId = 'clear'
   private readonly weatherDirector = new WeatherDirector()
-  private readonly weatherState = {} as WeatherSnapshot
+  private readonly weatherState = createRegionalWeatherSample()
+  private readonly regionalWeather = new RegionalWeather()
+  private readonly cloudWeather = createRegionalWeatherSample()
+  private readonly regionalBlendFrom = createRegionalWeatherSample()
+  private regionalBlendRemaining = 0
+  private readonly cloudSamples = Array.from({ length: 46 }, createRegionalWeatherSample)
+  private readonly cloudSampleTimes = new Float64Array(46).fill(-Infinity)
+  private readonly distantDecks = new Float32Array(45)
+  private distantSampleTime = -Infinity
+  private distantSampleX = Infinity
+  private distantSampleZ = Infinity
+  private automaticWeather = false
+  private weatherLocked = false
+  private regionalElapsed = 0
   /** Rebuild the pooled snapshot only after a weather mutation or update. */
   private weatherSnapshotDirty = true
   private readonly skyCloudDeck = {} as SkyCloudDeck
+  private readonly distantCloudDeck = {} as SkyCloudDeck
   private elapsed = 0
   private lightningCharge = 0
   private lightningFlash = 0
@@ -315,6 +332,7 @@ export class Atmosphere {
   private clockLabelValue = '00:00'
   private weatherLabelTarget: WeatherId | null = null
   private weatherLabelShifting = false
+  private weatherLabelAutomatic = false
   private weatherLabelValue = ''
   private readonly lastAnchor: AtmosphereAnchor = { x: 0, y: 0, z: 0 }
   private hasLastAnchor = false
@@ -413,6 +431,15 @@ export class Atmosphere {
     // without multiplying draw calls. The old 20-face blob read as a stack
     // of flat discs when viewed from below.
     const puffGeo = new IcosahedronGeometry(1, 2)
+    const cloudVertices = puffGeo.getAttribute('position')
+    for (let i = 0; i < cloudVertices.count; i++) {
+      const x = cloudVertices.getX(i), y = cloudVertices.getY(i), z = cloudVertices.getZ(i)
+      const radius = 1 + Math.sin(x * 4.1 + z * 2.7) * Math.sin(y * 3.3 - z * 1.9) * .09 +
+        Math.cos(z * 5.3 + x * 1.7) * .035
+      cloudVertices.setXYZ(i, x * radius, y * radius, z * radius)
+    }
+    // Retain the smooth radial normals. This geometry is non-indexed, so
+    // computeVertexNormals would give every triangle a hard faceted edge.
     const puffMat = new MeshBasicMaterial({
       color: 0xe8f0f8,
       transparent: true,
@@ -453,6 +480,7 @@ export class Atmosphere {
       mat.name = `Cloud-${layer}`
       const geometry = puffGeo.clone()
       geometry.setAttribute('cloudAlpha', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
+      geometry.setAttribute('cloudTone', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
       const instances = new InstancedMesh(geometry, mat, this.cloudPuffCounts[layer])
       instances.name = `CloudBatch-${layer}`
       instances.frustumCulled = false
@@ -532,16 +560,46 @@ export class Atmosphere {
   /** Cycle weather type (N key). */
   cycleWeather(): WeatherId {
     if (this.disposed) return this.weather
-    const next = this.weatherDirector.cycle()
-    this.weather = next
+    if (this.weatherLocked) return this.weather
+    if (!this.automaticWeather && this.weatherDirector.targetId === 'blizzard') {
+      this.setAutomaticWeather(true)
+    } else {
+      const index = this.automaticWeather ? -1 : WEATHER_ORDER.indexOf(this.weatherDirector.targetId)
+      this.setWeather(WEATHER_ORDER[index + 1]!)
+    }
+    return this.weather
+  }
+
+  get weatherAutomatic(): boolean { return this.automaticWeather }
+  get weatherSimulationTime(): number { return this.regionalElapsed }
+  /** The same source-layer attenuation used by the rendered precipitation. */
+  get precipitationVisibility(): number {
+    const state = this.weatherSnapshot
+    return precipitationAtAltitude(this.lastAnchor.y, state.lightning,
+      this.automaticWeather ? this.weatherState.cloudBase : undefined)
+  }
+
+  /** Resume regional conditions without changing seed, clock, or flight state. */
+  setAutomaticWeather(enabled: boolean, simulationTime?: number): void {
+    if (this.disposed || (enabled && this.weatherLocked)) return
+    if (enabled && !this.automaticWeather) Object.assign(this.regionalBlendFrom, this.weatherSnapshot)
+    this.regionalBlendRemaining = enabled && !this.automaticWeather && !Number.isFinite(simulationTime) ? 5 : 0
+    this.automaticWeather = enabled === true
+    if (Number.isFinite(simulationTime)) this.regionalElapsed = Math.max(0, simulationTime!)
+    if (this.automaticWeather) this.weatherDirector.setWindHeading(null)
+    this.cloudSampleTimes.fill(-Infinity)
+    this.distantSampleTime = -Infinity
     this.weatherSnapshotDirty = true
     this.dirty = true
-    return next
+    this.weatherSnapshot
   }
 
   setWeatherLocked(locked: boolean): void {
     if (this.disposed) return
+    this.weatherLocked = locked === true
+    if (this.weatherLocked) this.automaticWeather = false
     this.weatherDirector.setLocked(locked)
+    this.weatherSnapshotDirty = true
     this.dirty = true
   }
 
@@ -553,7 +611,9 @@ export class Atmosphere {
   setWeather(id: WeatherId, instant = false): void {
     if (this.disposed) return
     const safeId = normalizeWeatherId(id)
-    this.weatherDirector.setWeather(safeId, instant)
+    const initial = this.automaticWeather ? this.weatherSnapshot : undefined
+    this.automaticWeather = false
+    this.weatherDirector.setWeather(safeId, instant, initial)
     this.weather = safeId
     this.weatherSnapshotDirty = true
     this.dirty = true
@@ -571,14 +631,24 @@ export class Atmosphere {
     return this.weatherDirector.authoredWindHeading
   }
 
-  /** Fully random time of day + weighted weather (on world reseed). */
-  randomizeWeather(seed: number): void {
+  /** Seed the day clock, preset fallback, and position-based Automatic weather. */
+  randomizeWeather(seed: number, anchor?: AtmosphereAnchor): void {
     if (this.disposed) return
     this.timeOfDayLocked = false
     this.timeOfDay = timeOfDayForSeed(seed)
     const w = weatherIdForSeed(seed, this.timeOfDay)
 
     this.weatherDirector.randomize(seed, w)
+    this.automaticWeather = true
+    this.weatherLocked = false
+    this.regionalElapsed = 0
+    this.regionalBlendRemaining = 0
+    this.cloudSampleTimes.fill(-Infinity)
+    this.distantSampleTime = -Infinity
+    this.lastAnchor.x = Number.isFinite(anchor?.x) ? anchor!.x : 0
+    this.lastAnchor.y = Number.isFinite(anchor?.y) ? anchor!.y : 0
+    this.lastAnchor.z = Number.isFinite(anchor?.z) ? anchor!.z : 0
+    this.hasLastAnchor = true
     this.rainField.setSeed(seed)
     this.snowField.setSeed(seed)
     this.weather = w
@@ -604,12 +674,14 @@ export class Atmosphere {
   }
 
   get weatherLabel(): string {
-    const target = this.weatherDirector.targetId
-    const shifting = this.weatherDirector.transitioning
-    if (target !== this.weatherLabelTarget || shifting !== this.weatherLabelShifting) {
+    const target = this.automaticWeather ? this.weather : this.weatherDirector.targetId
+    const shifting = !this.automaticWeather && this.weatherDirector.transitioning
+    if (target !== this.weatherLabelTarget || shifting !== this.weatherLabelShifting ||
+      this.automaticWeather !== this.weatherLabelAutomatic) {
       this.weatherLabelTarget = target
       this.weatherLabelShifting = shifting
-      this.weatherLabelValue = `${WEATHER_LABELS[target]}${shifting ? ' / SHIFTING' : ''}`
+      this.weatherLabelAutomatic = this.automaticWeather
+      this.weatherLabelValue = `${this.automaticWeather ? 'AUTOMATIC / ' : ''}${WEATHER_LABELS[target]}${shifting ? ' / SHIFTING' : ''}`
     }
     return this.weatherLabelValue
   }
@@ -617,7 +689,18 @@ export class Atmosphere {
   /** Continuous precipitation values for terrain surface shading. */
   get weatherSnapshot(): WeatherSnapshot {
     if (this.weatherSnapshotDirty) {
-      this.weatherDirector.snapshotInto(this.weatherState)
+      if (this.automaticWeather) {
+        this.regionalWeather.sampleInto(this.weatherState, this.lastAnchor.x, this.lastAnchor.y,
+          this.lastAnchor.z, this.regionalElapsed)
+        if (this.regionalBlendRemaining > 0) {
+          const blend = MathUtils.smoothstep(1 - this.regionalBlendRemaining / 5, 0, 1)
+          for (const key of PROFILE_KEYS)
+            this.weatherState[key] = MathUtils.lerp(this.regionalBlendFrom[key], this.weatherState[key], blend)
+          this.weatherState.windX = MathUtils.lerp(this.regionalBlendFrom.windX, this.weatherState.windX, blend)
+          this.weatherState.windZ = MathUtils.lerp(this.regionalBlendFrom.windZ, this.weatherState.windZ, blend)
+        }
+        this.weather = this.weatherState.id
+      } else this.weatherDirector.snapshotInto(this.weatherState)
       this.weatherSnapshotDirty = false
     }
     return this.weatherState
@@ -625,7 +708,7 @@ export class Atmosphere {
 
   /** True while the current weather front is blending toward its target. */
   get weatherTransitioning(): boolean {
-    return this.weatherDirector.transitioning
+    return !this.automaticWeather && this.weatherDirector.transitioning
   }
 
   /** True while the current storm flash envelope is active. */
@@ -705,8 +788,12 @@ export class Atmosphere {
       this.timeOfDay = (this.timeOfDay + safeDt / this.dayLengthSec) % 1
     }
     this.elapsed += safeDt
-    this.weatherDirector.update(safeDt)
-    this.weather = this.weatherDirector.targetId
+    this.regionalElapsed += safeDt
+    this.regionalBlendRemaining = Math.max(0, this.regionalBlendRemaining - safeDt)
+    if (!this.automaticWeather) {
+      this.weatherDirector.update(safeDt, false)
+      this.weather = this.weatherDirector.targetId
+    }
     this.weatherSnapshotDirty = true
     this.weatherSnapshot
 
@@ -772,7 +859,8 @@ export class Atmosphere {
       _horizon.lerp(_c2, this.lightningFlash * 0.22)
     }
 
-    const source = precipitationAtAltitude(ay, w.lightning)
+    const ceiling = this.automaticWeather ? this.weatherState.cloudBase : undefined
+    const source = precipitationAtAltitude(ay, w.lightning, ceiling)
     const aboveDeck = 1 - source
     this.cloudImmersion = MathUtils.lerp(this.cloudImmersion, this.cloudImmersionTarget, 1 - Math.exp(-Math.max(0, visualDt) * 3))
     const fogNear = MathUtils.lerp(this.baseFogNear * MathUtils.lerp(w.fogNearMul, 1.1, aboveDeck), 25, this.cloudImmersion)
@@ -791,7 +879,7 @@ export class Atmosphere {
     _sunDir.set(Math.cos(azim), elev, Math.sin(azim) * 0.85).normalize()
 
     this.cloudSun.value.copy(_sunDir)
-    this.cloudStorm.value = w.lightning
+    this.cloudStorm.value = this.automaticWeather ? 0 : w.lightning
 
     // --- Sun + moon key lights (terrain MeshStandardMaterials receive both) ---
     // Cheap: one extra directional, moon never casts shadows.
@@ -857,6 +945,8 @@ export class Atmosphere {
     this.fill.target.position.set(ax, ay * 0.15, az)
     this.fill.target.updateMatrixWorld()
 
+    this.updateDistantWeather(ax, ay, az)
+    if (this.automaticWeather) this.sky.setRegionalOrigin(ax, az, this.regionalElapsed)
     // Shader sky dome: sun, moon, stars, scatter gradient, and a far weather deck.
     this.sky.update(
       ax,
@@ -870,12 +960,33 @@ export class Atmosphere {
       w.haze,
       this.skyCloudDeck,
       this.elapsed,
+      ceiling,
     )
 
     // World-space clouds (fly past them) + local precip FX
     this.updateClouds(ax, ay, az, dt, w, dayFactor)
-    this.rainField.update(visualDt, ax, ay, az, w.rain * source, w.windX, w.windZ)
-    this.snowField.update(visualDt, ax, ay, az, w.snow * source, w.windX, w.windZ)
+    this.rainField.update(visualDt, ax, ay, az, w.rain * source, w.windX, w.windZ, ceiling)
+    this.snowField.update(visualDt, ax, ay, az, w.snow * source, w.windX, w.windZ, ceiling)
+  }
+
+  /** Nine reusable samples drive one existing sky draw, not extra cloud meshes. */
+  private updateDistantWeather(ax: number, ay: number, az: number): void {
+    if (!this.automaticWeather) { this.sky.setRegionalWeather(null); return }
+    if (this.regionalElapsed - this.distantSampleTime < .25 &&
+      Math.hypot(ax - this.distantSampleX, az - this.distantSampleZ) < 500) return
+    this.distantSampleTime = this.regionalElapsed
+    this.distantSampleX = ax; this.distantSampleZ = az
+    for (let i = 0; i < 9; i++) {
+      const angle = (i - 1) * Math.PI / 4
+      const w = i === 0 ? this.weatherState : this.regionalWeather.sampleInto(this.cloudWeather,
+        ax + Math.cos(angle) * 28000, ay, az + Math.sin(angle) * 28000, this.regionalElapsed)
+      const deck = deriveSkyCloudDeckInto(this.distantCloudDeck, w)
+      const offset = i * 5
+      this.distantDecks[offset] = deck.broken; this.distantDecks[offset + 1] = deck.blanket
+      this.distantDecks[offset + 2] = deck.cirrus; this.distantDecks[offset + 3] = deck.storm
+      this.distantDecks[offset + 4] = deck.darkness
+    }
+    this.sky.setRegionalWeather(this.distantDecks, ax, az, this.regionalElapsed)
   }
 
   /**
@@ -920,24 +1031,23 @@ export class Atmosphere {
         cluster.add(mesh)
       }
     } else if (layer === 'stratus') {
-      // Flat deck sitting on its base; thickness grows upward only
+      // Long overlapping rows form a bank, not a stack of flattened discs.
       const nPuffs = 14 + ((random() * 10) | 0) + puffBonus
-      const span = 700 * size
+      const span = 1500 * size
+      const angle = random() * Math.PI * 2
       for (let p = 0; p < nPuffs; p++) {
         const mesh = new Mesh(puffGeo, baseMat)
         const s = (140 + random() * 160) * size
-      const sy =
-        s * (0.26 + random() * 0.2) * Math.min(1.2, 0.78 + size * 0.08)
-        mesh.scale.set(
-          s * (1.1 + random() * 0.7),
-          sy,
-          s * (1.1 + random() * 0.7),
-        )
+        const sy = s * (.55 + random() * .25)
+        mesh.scale.set(s * (1.3 + random() * .6), sy, s * (1 + random() * .3))
+        mesh.rotation.y = -angle
         const bulkY = random() * 40 * Math.min(size, 2.5)
+        const along = (p / Math.max(1, nPuffs - 1) - .5) * span
+        const across = ((p % 3) - 1) * 100 * size + (random() - .5) * 80 * size
         mesh.position.set(
-          (random() - 0.5) * span,
+          Math.cos(angle) * along - Math.sin(angle) * across,
           bulkY + sy,
-          (random() - 0.5) * span,
+          Math.sin(angle) * along + Math.cos(angle) * across,
         )
         cluster.add(mesh)
       }
@@ -1026,7 +1136,7 @@ export class Atmosphere {
     const fadeK = 1 - Math.exp(-cloudDt * 1.4)
     let anyVisible = false
     this.cloudImmersionTarget = 0
-    this.cloudBaseOffset = -weather.haze * 400 - weather.rain * 120
+    this.cloudBaseOffset = this.automaticWeather ? 0 : -weather.haze * 400 - weather.rain * 120
     this.gustPhase += cloudDt * (0.35 + weather.gust * 1.4)
     const gust = 1 + Math.sin(this.gustPhase) * weather.gust * 0.32
 
@@ -1038,12 +1148,12 @@ export class Atmosphere {
           : layer === 'stratus'
             ? weather.midClouds
             : weather.highClouds
-      mat.opacity = MathUtils.clamp(0.2 + cover * 0.58, 0.15, 0.8) *
+      mat.opacity = (this.automaticWeather ? 1 : MathUtils.clamp(0.2 + cover * 0.58, 0.15, 0.8)) *
         CLOUD_LAYER[layer].opacityMul
       let br = brightness
       if (layer === 'cirrus') br = Math.min(1, br + 0.11)
       else if (layer === 'cumulus' && dayFactor > 0.4) br = Math.min(1, br + 0.04)
-      const layerShade = cloudShade * (layer === 'cirrus' ? 0.48 : layer === 'cumulus' ? 0.86 : 1)
+      const layerShade = this.automaticWeather ? 0 : cloudShade * (layer === 'cirrus' ? 0.48 : layer === 'cumulus' ? 0.86 : 1)
       br *= 1 - layerShade
       mat.color.setRGB(
         br * (0.96 - layerShade * 0.14),
@@ -1066,9 +1176,23 @@ export class Atmosphere {
         continue
       }
 
+      const sample = this.cloudSamples[i]!
+      const fresh = !Number.isFinite(this.cloudSampleTimes[i])
+      if (this.automaticWeather && this.regionalElapsed - this.cloudSampleTimes[i]! >= .2) {
+        this.regionalWeather.sampleInto(sample, wpos.x, wpos.y, wpos.z, this.regionalElapsed)
+        this.cloudSampleTimes[i] = this.regionalElapsed
+      }
+      const local = this.automaticWeather ? sample : weather
+      if (this.automaticWeather) {
+        const offset = layer === 'cirrus' ? 2600 : layer === 'stratus' ? 350 : 0
+        const targetBase = sample.cloudBase + offset + this.cloudPulse(i, 113) * 240
+        wpos.y = fresh && this.regionalBlendRemaining <= 0 ? targetBase :
+          MathUtils.lerp(wpos.y, targetBase, 1 - Math.exp(-cloudDt * .18))
+      }
+
       // Absolute wind (m/s) - high clouds drift faster
-      wpos.x += weather.windX * spec.windMul * gust * cloudDt
-      wpos.z += weather.windZ * spec.windMul * gust * cloudDt
+      wpos.x += local.windX * spec.windMul * gust * cloudDt
+      wpos.z += local.windZ * spec.windMul * gust * cloudDt
 
       let dx = wpos.x - ax
       let dz = wpos.z - az
@@ -1083,6 +1207,11 @@ export class Atmosphere {
         wpos.x = ax + Math.cos(ang) * r
         wpos.z = az + Math.sin(ang) * r
         wpos.y = this.seededCloudAltitude(layer, i, recycle + 23)
+        if (this.automaticWeather) {
+          this.regionalWeather.sampleInto(sample, wpos.x, wpos.y, wpos.z, this.regionalElapsed)
+          this.cloudSampleTimes[i] = this.regionalElapsed
+          wpos.y = sample.cloudBase + (layer === 'cirrus' ? 2600 : layer === 'stratus' ? 350 : 0)
+        }
         this.cloudAlpha[i] = 0 // start invisible, fade in
         dx = wpos.x - ax
         dz = wpos.z - az
@@ -1095,10 +1224,10 @@ export class Atmosphere {
 
       const layerCover =
         layer === 'cumulus'
-          ? weather.lowClouds
+          ? local.lowClouds
           : layer === 'stratus'
-            ? weather.midClouds
-            : weather.highClouds
+            ? local.midClouds
+            : local.highClouds
       // Irrational stride distributes active clusters without obvious ordering.
       const densityRoll = (i * 0.61803398875 + (layer === 'cirrus' ? 0.17 : 0)) % 1
       const target = MathUtils.smoothstep(layerCover - densityRoll, -.06, .09) * distFade
@@ -1111,13 +1240,16 @@ export class Atmosphere {
       }
       anyVisible = true
       const opacityScale = MathUtils.smoothstep(a, 0, 1) *
-        (0.9 + (i % 7) * 0.015) * MathUtils.lerp(0.8, 1, baseOpacity)
-      this.setCloudClusterMatrices(cluster, layer, wpos, opacityScale)
+        (0.9 + (i % 7) * 0.015) * (this.automaticWeather ? .2 + layerCover * .58 : MathUtils.lerp(0.8, 1, baseOpacity))
+      this.setCloudClusterMatrices(cluster, layer, wpos, opacityScale,
+        this.automaticWeather ? Math.min(.65, local.rain * .22 + local.lightning * .38 + local.snow * .08) : 0,
+        this.automaticWeather ? local : undefined)
     }
 
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       this.cloudInstances[layer].instanceMatrix.needsUpdate = true
       this.cloudInstances[layer].geometry.getAttribute('cloudAlpha').needsUpdate = true
+      this.cloudInstances[layer].geometry.getAttribute('cloudTone').needsUpdate = true
     }
     this.cloudRoot.visible = anyVisible
   }
@@ -1127,31 +1259,38 @@ export class Atmosphere {
     layer: CloudLayer,
     worldPosition: Vector3,
     opacity: number,
+    shade = 0,
+    regional?: WeatherSnapshot,
   ): void {
     const instances = this.cloudInstances[layer]
     const offset = cluster.instanceOffset
     const alpha = instances.geometry.getAttribute('cloudAlpha') as InstancedBufferAttribute
+    const tone = instances.geometry.getAttribute('cloudTone') as InstancedBufferAttribute
     for (let i = 0; i < cluster.puffs.length; i++) {
       alpha.setX(offset + i, opacity)
+      tone.setX(offset + i, shade)
       if (opacity <= 0) {
         instances.setMatrixAt(offset + i, _hiddenCloudMatrix)
         continue
       }
       const puff = cluster.puffs[i]!
+      const bank = regional && layer === 'stratus' ? Math.max(regional.midClouds, regional.rain) : 0
+      const horizontal = 1 + bank * 1.2
+      const vertical = regional && layer === 'cumulus' ? 1 + regional.lightning * .7 : 1
       _cloudObject.position.set(
-        worldPosition.x + puff.x,
-        worldPosition.y + puff.y + this.cloudBaseOffset,
-        worldPosition.z + puff.z,
+        worldPosition.x + puff.x * horizontal,
+        worldPosition.y + puff.y * vertical + this.cloudBaseOffset,
+        worldPosition.z + puff.z * horizontal,
       )
       _cloudObject.rotation.set(0, puff.rotationY, 0)
-      _cloudObject.scale.set(puff.sx, puff.sy, puff.sz)
+      _cloudObject.scale.set(puff.sx * horizontal, puff.sy * vertical, puff.sz * horizontal)
       const dx = this.lastAnchor.x - _cloudObject.position.x
       const dz = this.lastAnchor.z - _cloudObject.position.z
       const cosine = Math.cos(puff.rotationY), sine = Math.sin(puff.rotationY)
       this.cloudImmersionTarget = Math.min(1, this.cloudImmersionTarget + cloudInteriorDensity(
-        (dx * cosine - dz * sine) / puff.sx,
-        (this.lastAnchor.y - _cloudObject.position.y) / puff.sy,
-        (dx * sine + dz * cosine) / puff.sz,
+        (dx * cosine - dz * sine) / (puff.sx * horizontal),
+        (this.lastAnchor.y - _cloudObject.position.y) / (puff.sy * vertical),
+        (dx * sine + dz * cosine) / (puff.sz * horizontal),
       ) * opacity)
       _cloudObject.updateMatrix()
       instances.setMatrixAt(offset + i, _cloudObject.matrix)
@@ -1207,8 +1346,8 @@ export class Atmosphere {
       const angle = this.cloudPulse(i, 101) * Math.PI * 2
       const radius = Math.sqrt(this.cloudPulse(i, 107)) * CLOUD_DESPAWN * .92
       const position = this.cloudWorld[i]!
-      position.x = Math.cos(angle) * radius
-      position.z = Math.sin(angle) * radius
+      position.x = this.lastAnchor.x + Math.cos(angle) * radius
+      position.z = this.lastAnchor.z + Math.sin(angle) * radius
       position.y = this.seededCloudAltitude(this.cloudLayers[i]!, i, 113)
       this.cloudAlpha[i] = 0
     }

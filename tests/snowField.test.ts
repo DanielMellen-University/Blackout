@@ -2,6 +2,19 @@ import { describe, expect, it, vi } from 'vitest'
 import { precipitationParticleCount, SnowField, snowWave, wrap } from '../src/world/SnowField'
 
 describe('snow wrap', () => {
+  it('surrounds airborne viewpoints so snow is visible straight ahead', () => {
+    const field = new SnowField()
+    field.update(1 / 60, 0, 1000, 0, 1, 0, 0, 1600)
+    const position = field.points.geometry.getAttribute('position')
+    let below = 0, above = 0
+    for (let i = 0; i < position.count; i++) {
+      below += Number(position.getY(i) < 1000)
+      above += Number(position.getY(i) > 1000)
+    }
+    expect(below).toBeGreaterThan(1000); expect(above).toBeGreaterThan(1000)
+    field.dispose()
+  })
+
   it('maps a point onto the opposite side of the follow volume', () => {
     expect(wrap(110, 0)).toBeCloseTo(-110, 5)
     expect(wrap(-110, 0)).toBeCloseTo(-110, 5)

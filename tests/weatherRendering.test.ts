@@ -17,6 +17,24 @@ function atmosphere() {
 }
 
 describe('weather rendering', () => {
+  it('clips wind-slanted rain at its regional source without making a horizontal ceiling', () => {
+    const rain = new RainField()
+    rain.setSeed(731)
+    rain.update(0, 0, 1000, 0, 1, 20, -10, 1010)
+    const p = rain.mesh.geometry.getAttribute('position')
+    let collapsed = 0, below = 0
+    for (let i = 0; i < rain.mesh.geometry.drawRange.count; i += 2) {
+      expect(p.getY(i) + 1000).toBeLessThanOrEqual(1010.0001)
+      expect(p.getY(i + 1) + 1000).toBeLessThanOrEqual(1010.0001)
+      if (p.getY(i) === p.getY(i + 1)) {
+        collapsed++
+        expect(p.getX(i)).toBe(p.getX(i + 1)); expect(p.getZ(i)).toBe(p.getZ(i + 1))
+      } else below++
+    }
+    expect(collapsed).toBeGreaterThan(0); expect(below).toBeGreaterThan(0)
+    rain.dispose()
+  })
+
   it('fades cloud opacity without shrinking the formation and budgets whole instances', () => {
     const { scene, weather } = atmosphere()
     weather.update(.1, 0, 1000, 0)

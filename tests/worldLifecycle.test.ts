@@ -313,6 +313,24 @@ describe('world lifecycle boundary', () => {
     world.dispose()
   }, 60_000)
 
+  it('restores the regional front clock and mode when a replacement world fails', () => {
+    const world = new World('low')
+    try {
+      world.reseed(1)
+      const spawn = { ...world.spawn }
+      world.atmosphere.update(15, spawn.x, spawn.y, spawn.z, 0)
+      const before = { ...world.atmosphere.weatherSnapshot }
+      const randomize = vi.spyOn(world.atmosphere, 'randomizeWeather').mockImplementationOnce(() => {
+        throw new Error('replacement weather failed')
+      })
+      expect(world.reseed(42)).toBe(1)
+      expect(randomize).toHaveBeenCalledTimes(2)
+      expect(world.atmosphere.weatherAutomatic).toBe(true)
+      expect(world.atmosphere.weatherSimulationTime).toBe(15)
+      expect(world.atmosphere.weatherSnapshot).toEqual(before)
+    } finally { world.dispose() }
+  }, 60_000)
+
   it('can start a curated run with deterministic night conditions', () => {
     const world = new World()
     world.reseed(11, 'night', 'fog', 0.84)

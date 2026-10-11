@@ -67,6 +67,7 @@ export class SnowField {
   private activeCountValue = FLAKE_COUNT
   private seedValue = 0
   private disposed = false
+  private readonly sourceCeiling = { value: 1000000 }
 
   constructor() {
     this.pos = new Float32Array(FLAKE_COUNT * 3)
@@ -92,15 +93,21 @@ export class SnowField {
       alphaTest: 0.08,
     })
     this.mat.onBeforeCompile = (shader) => {
+      shader.uniforms.snowSourceCeiling = this.sourceCeiling
+      shader.vertexShader = 'varying float vSnowWorldY;\n' + shader.vertexShader
+      shader.fragmentShader = 'uniform float snowSourceCeiling;\nvarying float vSnowWorldY;\n' + shader.fragmentShader
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
         '#include <common>\n\tattribute float snowSize;',
       )
       shader.vertexShader = shader.vertexShader.replace(
         '#include <fog_vertex>',
-        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 15.0);',
+        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 15.0);\n vSnowWorldY = (modelMatrix * vec4(transformed, 1.0)).y;',
       )
+      shader.fragmentShader = shader.fragmentShader.replace('void main() {',
+        'void main() {\n if (vSnowWorldY > snowSourceCeiling) discard;')
     }
+    this.mat.customProgramCacheKey = () => 'snow-source-ceiling-v2'
 
     this.points = new Points(geo, this.mat)
     this.points.name = 'SnowField'
@@ -145,6 +152,7 @@ export class SnowField {
     intensity: number,
     windX = 0,
     windZ = 0,
+    cloudBase?: number,
   ): void {
     if (this.disposed) return
     const safeDt = Number.isFinite(dt) ? Math.max(0, dt) : 0
@@ -152,6 +160,7 @@ export class SnowField {
     const safeCy = Number.isFinite(cy) ? cy : 0
     const safeCz = Number.isFinite(cz) ? cz : 0
     const safeIntensity = Number.isFinite(intensity) ? Math.max(0, Math.min(1, intensity)) : 0
+    this.sourceCeiling.value = Number.isFinite(cloudBase) ? cloudBase! : 1000000
     const safeWindX = Number.isFinite(windX) ? windX : 0
     const safeWindZ = Number.isFinite(windZ) ? windZ : 0
     const on = safeIntensity > 0.02 && safeDt > 0
@@ -163,9 +172,10 @@ export class SnowField {
     }
 
     if (!this.scattered) {
-      // Keep the pooled volume above the aircraft anchor. At runway height,
-      // flakes below y=0 render through transparent terrain and read as static.
-      this.scatter(safeCx, safeCy + HALF + GROUND_CLEARANCE, safeCz)
+      // Surround an airborne observer instead of keeping every flake above
+      // their head. Retain the clear ground band at sea-level runway height;
+      // ordinary terrain depth testing occludes flakes below higher runways.
+      this.scatter(safeCx, Math.max(HALF + GROUND_CLEARANCE, safeCy), safeCz)
       this.scattered = true
     }
 
@@ -181,7 +191,7 @@ export class SnowField {
     const driftX = safeWindX * (.22 + safeIntensity * .16)
     const driftZ = safeWindZ * (.22 + safeIntensity * .16)
     const t = this.clock
-    const yCenter = safeCy + HALF + GROUND_CLEARANCE
+    const yCenter = Math.max(HALF + GROUND_CLEARANCE, safeCy)
 
     for (let i = 0; i < this.activeCountValue; i++) {
       const ix = i * 3
