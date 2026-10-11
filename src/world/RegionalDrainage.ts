@@ -2,6 +2,7 @@ import { getWorldSeed, hash2, smoothstep, valueNoise } from './noise'
 import { sampleLandforms } from './Landforms'
 import { coastField } from './Coastline'
 import { registerRiverSurface, riverSurface } from './RiverSurface'
+import { refineLakeShore } from './LakeShore'
 import { basinDistance, type HydrologyBuildPhase, type RiverReach, type WaterBasin } from './Hydrology'
 import { drainageRouter, type DrainageNode } from './DrainageRouting'
 
@@ -245,13 +246,16 @@ function basin(n: Node): WaterBasin | null {
         smoothRadii[(i + 1) % radii.length]! * .25
     }
   }
-  // A lake cannot flood across another, lower channel. Preserve the basin
-  // plane and trim its arms before those independently descending valleys.
+  // Keep independently graded junctions clear of the lake's bank blend too.
+  // A higher junction touched by one bank would otherwise force an incoming
+  // ribbon down to the lake, then back uphill to its outgoing ribbon.
   const limits = new Float32Array(radii.length).fill(radius * 1.7)
   for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
     if (!dx && !dz) continue
     const q = node(n.gx + dx, n.gz + dz)
-    if (!carriesRiver(q) || routing.grade(q) >= level - .05) continue
+    if (!carriesRiver(q)) continue
+    const grade = routing.grade(q)
+    if (Math.abs(grade - level) < .05) continue
     const vx = q.x - n.x, vz = q.z - n.z
     const margin = channelWidth(q, discharge(q)) + 600
     if (Math.hypot(vx, vz) <= margin) return null
@@ -301,7 +305,7 @@ function basin(n: Node): WaterBasin | null {
     if (!riverSink && area() < Math.PI * Math.pow(Math.max(775, radius * .86), 2)) return null
   }
   const contour: WaterBasin = { x: n.x, z: n.z, radius, aspect: 1, angle: 0, phase: roll * 6.28,
-    level, sea: false, pond, shoreRadii: radii, boundsRadius: radius * 1.75,
+    level, sea: false, pond, shoreRadii: refineLakeShore(radii), boundsRadius: radius * 1.75,
     id: `lake:${n.gx}:${n.gz}` }
   if (large && roll > .9) {
     const island = { x: n.x + radius * .28, z: n.z - radius * .13, radius: radius * .12 }

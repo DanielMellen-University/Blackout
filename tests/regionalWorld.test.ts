@@ -97,7 +97,7 @@ describe('regional connected world', () => {
     const pond = waterLandmarks(-2, 0).find(b => b.id === 'lake:-24:7')!
     expect(pond.radius).toBeGreaterThan(900)
     const radii = [...pond.shoreRadii!]
-    expect(radii).toHaveLength(64)
+    expect(radii).toHaveLength(128)
     expect(Math.max(...radii) / Math.min(...radii)).toBeGreaterThan(2)
     const points = radii.map((r, i) => ({ x: Math.cos(i / radii.length * Math.PI * 2) * r,
       z: Math.sin(i / radii.length * Math.PI * 2) * r }))

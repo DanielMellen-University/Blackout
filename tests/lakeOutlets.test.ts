@@ -3,12 +3,34 @@ import { basinDistance, riverReaches, riverReachesInBounds, waterBasinsInBounds,
 import { coastField } from '../src/world/Coastline'
 import { sampleGeography } from '../src/world/Geography'
 import { setWorldSeed } from '../src/world/noise'
+import { riverSurface } from '../src/world/RiverSurface'
 
 function sourceLake() { return waterLandmarks(-2, -1).find(b => b.id === 'lake:-29:-5')! }
 function outletReaches() { return riverReaches(-2, -1).filter(r => r.fromId === '-29:-5' || r.fromId === '-29:-4') }
 function outletSignature() { return outletReaches().map(r => [r.id, r.ax, r.az, r.bx, r.bz, r.ya, r.yb, r.wa, r.wb]) }
 
 describe('canonical lake outlets', () => {
+  it('keeps higher junction banks clear of a lower lake without an uphill reconnection', () => {
+    setWorldSeed(42)
+    const lake = waterLandmarks(-2, 2).find(b => b.id === 'lake:-19:41')!
+    expect(lake).toBeDefined()
+    for (const from of ['-18:40', '-20:41']) {
+      const reaches = riverReaches(-2, 2).filter(r => r.fromId === from)
+      expect(reaches.length).toBeGreaterThan(8)
+      let previous = Infinity
+      for (const r of reaches) {
+        const sections = riverSurface(r, []).sections
+        for (let i = 0; i < sections.length; i += 12) {
+          const c = sampleGeography(sections[i + 4]!, sections[i + 6]!)
+          expect(c.waterLevel).toBeGreaterThan(0)
+          expect(c.height).toBeLessThan(c.waterLevel)
+          expect(c.waterLevel).toBeLessThanOrEqual(previous + .15)
+          previous = c.waterLevel
+        }
+      }
+    }
+  })
+
   it('carves a descending stream from the lake shore into a matching river junction', () => {
     setWorldSeed(73)
     const lake = sourceLake(), outlet = outletReaches()

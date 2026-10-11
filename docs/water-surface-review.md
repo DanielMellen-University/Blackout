@@ -1,4 +1,25 @@
-# Water surface review - 10.884
+# Water surface review - 10.885
+
+## 10.885: shared refined lake shores
+
+The constrained 64-point basin contour receives one periodic Hermite midpoint per sector. Monotone slopes preserve the original anchors and keep each new radius between its neighbours. The resulting 128-point polygon is used unchanged by carving, water triangulation, lake-shore clipping and collision, including distant LOD tiles. No new terrain probes, workers, persistent cache or raised streaming/upload budgets are introduced. Each cached basin adds 256 contour bytes; geometry payload increases rather than being hidden by shorter render distance.
+
+Refinement exposed a seed-42 higher river junction touching a lower lake with its bank. Detours cannot fix an unsafe fixed endpoint. Lake constraints now reserve the existing width-plus-600 m clearance around independently graded higher junctions too, not only lower ones. This also protects the adjacent broad confluence from being pulled down before its incoming level surfaces finish joining. Focused regressions query actual wet cross-sections and submerged beds, rather than just endpoint metadata. Existing five-seed/125-region actual-water grade checks, native outlets, independent Float32 surface agreement, sparse coverage, union, cancellation, partial eviction and query-order checks remain required. Snapshot migration records the intentional contour changes; generation revision 13 preserves records while skipping incompatible ghosts.
+
+The repeated three-seed/256 km-square drainage review retains 38 systems, 52.484 km mean main stems, 50.191 km median, 76.674 km maximum and zero sampled dry terminals. This remains 4.112x the 10.881 mean, with 67.5% of its total formed channel length. It does not prove every river in the infinite world has that length or globally exclude every bad outlet.
+
+Same-machine CPU tile builds with the exact 10.884 RegionalDrainage source and current shared geometry code, 12 builds per case. The first build is excluded from warm median/p95. Each tile is centred on the original east-shore anchor of the named seed-42 lake; near size is 420 m, LOD-2 size is 3,360 m. No browser review or other test process ran during this measurement.
+
+| Basin / LOD | Before median / p95 (ms) | After median / p95 (ms) | Water bytes before / after |
+| --- | --- | --- | --- |
+| lake:-24:7 / 0 | 20.777 / 31.810 | 19.254 / 35.484 | 4,464 / 8,208 |
+| lake:-24:7 / 2 | 3.639 / 5.322 | 3.831 / 5.074 | 27,648 / 55,296 |
+| lake:-29:13 / 0 | 22.017 / 33.477 | 19.732 / 27.849 | 1,296 / 1,872 |
+| lake:-29:13 / 2 | 4.038 / 6.024 | 3.097 / 4.579 | 4,032 / 14,400 |
+
+The pond near-tile cold first build rises from 92.669 to 133.307 ms, while the large-lake near first build falls from 147.536 to 130.247 ms. Warm times and cold starts remain variable, and extra geometry is a real cost. Temporary middleware loaders close after each version and use isolated dependency caches; no additional HTTP server is left running. These are CPU/payload measurements, not gameplay startup, GPU frame-time, FPS or sustained-memory evidence.
+
+Clear-weather seed-42 Small ponds and seed-73 Lake outlet junction overview stills were inspected. Covelike outlines are smoother and the outlet remains connected. A sharp broad river-mouth corner is still visible on the pond review; this batch does not declare complete water artwork. Review frame readings vary with browser visibility and are not a controlled full-game baseline comparison. Foreground startup, sustained maximum-speed frame percentiles/memory and final Free flight review remain open. Actual EST reset wiring and per-level generation remain deferred; vegetation, warning-strip and blackout/redout exclusions remain paused.
 
 ## 10.884: smooth physical river spans
 
