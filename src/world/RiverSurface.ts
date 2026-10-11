@@ -133,6 +133,35 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
     values.push(...vertex(x + nx * w, y, z + nz * w, edge), ...vertex(x, y, z, depth),
       ...vertex(x - nx * w, y, z - nz * w, edge))
   }
+  const sourceLake = !reach.source ? lakes.find(lake => Math.abs(lake.level - reach.ya) < .00001 &&
+    Math.abs(basinDistance(lake, reach.ax, reach.az)) < .2) : undefined
+  if (sourceLake) {
+    // An outlet starting at its centreline's shore leaves both wide banks
+    // stranded on land. Carry the first section back into the source lake;
+    // normal shore clipping then joins each bank, not just the centre point.
+    let overlap = Math.min(620, Math.max(32, reach.wa * 1.5))
+    const tx = reach.tangentAX ?? fx, tz = reach.tangentAZ ?? fz
+    const first = values.slice(0, 12), row: number[] = []
+    let x = reach.ax - tx * overlap, z = reach.az - tz * overlap
+    for (let pass = 0; pass < 7 && basinDistance(sourceLake, x, z) >= 0; pass++) {
+      overlap *= .5; x = reach.ax - tx * overlap; z = reach.az - tz * overlap
+    }
+    if (basinDistance(sourceLake, x, z) < 0) {
+      // The submerged row must fit inside the lake, even when a trunk is
+      // wider than its source cove. Never stamp a rectangle behind the lake.
+      let scale = 1
+      const bankDistance = (index: number) => basinDistance(sourceLake,
+        x + (first[index]! - first[4]!) * scale, z + (first[index + 2]! - first[6]!) * scale)
+      for (let pass = 0; pass < 8 && Math.max(bankDistance(0), bankDistance(8)) >= 0; pass++) scale *= .5
+      if (Math.max(bankDistance(0), bankDistance(8)) >= 0) scale = 0
+      for (let side = 0; side < 3; side++) {
+        const index = side * 4
+        row.push(...vertex(x + (first[index]! - first[4]!) * scale, reach.ya,
+          z + (first[index + 2]! - first[6]!) * scale, first[index + 3]!))
+      }
+      values.unshift(...row)
+    }
+  }
   if (reach.mouth) {
     const last = values.length - 12
     const radius = Math.hypot(values[last]! - values[last + 4]!, values[last + 2]! - values[last + 6]!)

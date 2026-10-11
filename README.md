@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.885**. Previous roadmap chunk: **10.884**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.886**. Previous roadmap chunk: **10.885**.
+
+Recent changes from **10.886**. Wide lake outlets now connect both banks to their source shore instead of leaving a pointed dry wedge. One bounded submerged cross-section fits inside the lake, then normal shoreline clipping joins the shared physical water surface. A broad-outlet guard prevents rectangular water behind a narrow cove. The seed-42 pond view was checked; focused water checks pass. Cached geometry grows slightly in two measured regions, with variable CPU times rather than a claimed FPS win. River routes, the 4.1x reviewed mean main-stem length, 8 km taper, render distance and streaming limits remain unchanged. Generation revision 14 preserves records. Controlled full-game startup/travel/memory comparison and final Free flight/weather review remain open; actual EST reset wiring and per-level generation remain deferred.
 
 Recent changes from **10.885**. Lake and pond shores share a smoother 128-point contour across terrain, visible water and collision. Refinement preserves existing cove/extent anchors without more terrain probes. Lake shaping now protects higher river junctions as well as lower ones, avoiding a drop-and-rise at the bank. The repeated river review still averages 52.484 km versus 12.764 km before the extension, about 4.1x, with zero dry terminals in that sample. Clear-weather pond and lake-outlet views were inspected. Finer shores increase water payload; broad mouth corners and controlled full-game performance review remain open. Generation revision 13 preserves records; actual EST reset wiring and per-level generation remain deferred.
 

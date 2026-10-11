@@ -1,4 +1,20 @@
-# Water surface review - 10.885
+# Water surface review - 10.886
+
+## 10.886: source lake bank connections
+
+An outlet beginning at its centreline's lake-shore crossing leaves its wide banks on dry land. Add at most one cross-section behind that start, bounded to 620 m. Halve the backward offset if it misses the lake; shrink the row until its banks fit inside the source cove. Normal lake clipping then connects the visible banks without duplicate lake panels or a rectangular footprint behind the lake. Only matching lake-level, near-shore starts qualify. Terrain carving, collision and visible geometry retain one cached physical surface.
+
+Focused checks cover the previously uncovered dry wedge, bounded broad outlets, the outside-cove rectangle guard and unrelated/differently graded spans. Generated downhill/outlet, independent water surface, river union and optical regressions pass. The clear-weather seed-42 Small ponds overview was inspected after the containment guard: the pointed gap is gone, though broader artwork review remains open. No route, channel-width profile, source taper, render-distance, cache ownership or worker/upload budget changes.
+
+Same-machine cold catchment preparation, 12 samples per case, exact 10.885 RiverSurface versus this implementation. No other tests or browser review ran during measurement; middleware loaders close with isolated dependency caches and no HTTP listener.
+
+| Seed / region | Before median / p95 (ms) | After median / p95 (ms) | Cached surface bytes before / after |
+| --- | --- | --- | --- |
+| 1 / -2,-2 | 32.730 / 56.573 | 30.338 / 53.073 | 255,840 / 255,840 |
+| 73 / -2,-1 | 36.249 / 74.195 | 37.944 / 82.556 | 228,672 / 229,344 |
+| 1337 / -2,0 | 36.177 / 53.868 | 35.361 / 52.293 | 245,376 / 247,392 |
+
+The added geometry is a real cost; seed 73 is slower. These are CPU and geometry measurements, not controlled full-game startup, GPU frame percentiles or sustained memory. Generation revision 14 skips incompatible ghost playback without deleting records. The full-game comparison and final Free flight/weather review remain open. Actual EST wiring and per-level generation remain deferred; paused systems remain excluded.
 
 ## 10.885: shared refined lake shores
 
