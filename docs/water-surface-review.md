@@ -1,4 +1,18 @@
-# Water surface review - 10.882
+# Water surface review - 10.883
+
+## 10.883: connected-basin search cost
+
+Spill discovery now walks raw upstream branches connected to the basin floor. It stops at the existing eight-node search envelope and 400 m breach ceiling instead of resolving every unrelated root in a 17x17 square. Candidate ties use the same geographic ordering, not discovery order. Temporary visitation storage is 289 bytes; the bounded queue is released with the cooperative generator. An impassable-shoulder fixture now samples exactly five nodes, rather than the surrounding square. Cancellation still cannot publish a partial route.
+
+Same-machine, same-seed cold catchment preparation, 12 samples per case, exact 10.882 core versus optimized core:
+
+| Seed / region | Before median / p95 (ms) | After median / p95 (ms) | Before / after work slices | Owned reaches |
+| --- | --- | --- | --- | --- |
+| 73 / 0,0 | 44.991 / 55.027 | 21.148 / 33.690 | 5,919 / 941 | 0 / 0 |
+| 1 / -2,-2 | 51.263 / 60.913 | 31.297 / 37.016 | 6,892 / 1,270 | 528 / 528 |
+| 1337 / -2,0 | 56.601 / 82.589 | 34.174 / 65.022 | 7,089 / 1,166 | 470 / 470 |
+
+`node scripts/profile-drainage.mjs --baseline=9654364` now loads both historical RegionalDrainage and DrainageRouting. The three-seed/256 km-square review retains exactly 38 systems, 52.484 km mean stems, 1,817 formed edges, 3,630.771 km total formed length and zero dry terminals. CPU time is 1,023 ms before versus 557 ms after in that run. Existing fixed-seed water snapshot hashes remain identical. These are CPU-only measurements, not startup, GPU frame-time or sustained-memory evidence. The optimized search admits connected reverse paths within the envelope; generation revision 11 conservatively rejects old ghosts without deleting records. No terrain, water geometry, render-distance or streaming-budget reduction is used. The previously inspected stills remain representative of the unchanged review fixtures. Angular shoreline polish, controlled foreground performance comparison and final Free flight review remain open.
 
 ## 10.882: longer connected river systems
 

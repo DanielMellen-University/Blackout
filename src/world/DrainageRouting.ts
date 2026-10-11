@@ -43,18 +43,35 @@ export function drainageRouter<T extends DrainageNode>(get: (gx: number, gz: num
     if (sink.spill !== undefined) return sink.spill
     if (sink.height <= 0) return (sink.spill = null)
     let edge: T | null = null, outlet: T | null = null, cost = Infinity
-    let work = 0
-    for (let dz = -SEARCH_RADIUS; dz <= SEARCH_RADIUS; dz++) for (let dx = -SEARCH_RADIUS; dx <= SEARCH_RADIUS; dx++) {
-      if (++work % 8 === 0) yield
-      const a = get(sink.gx + dx, sink.gz + dz)
-      if (!sameRoot(root(a), sink)) continue
+    // Explore the connected raw basin, not every unrelated catchment in the
+    // surrounding square. Every admitted reverse path stays in the existing
+    // search envelope and below the same breach ceiling.
+    const span = SEARCH_RADIUS * 2 + 1, visited = new Uint8Array(span * span)
+    const queue: T[] = [sink]
+    visited[SEARCH_RADIUS * span + SEARCH_RADIUS] = 1
+    yield
+    for (let index = 0; index < queue.length; index++) {
+      if (index && index % 8 === 0) yield
+      const a = queue[index]!
       for (const [x, z] of DIRECTIONS) {
-        const b = get(a.gx + x, a.gz + z), target = root(b)
-        if (target.height >= sink.height - .5) continue
+        const b = get(a.gx + x, a.gz + z)
         const barrier = Math.max(a.height, b.height) - sink.height
         if (barrier > MAX_BREACH) continue
+        const p = rawParent(b)
+        if (p?.gx === a.gx && p.gz === a.gz) {
+          const dx = b.gx - sink.gx + SEARCH_RADIUS, dz = b.gz - sink.gz + SEARCH_RADIUS
+          if (dx >= 0 && dz >= 0 && dx < span && dz < span && !visited[dz * span + dx]) {
+            visited[dz * span + dx] = 1; queue.push(b)
+          }
+          continue
+        }
+        const target = root(b)
+        if (target.height >= sink.height - .5) continue
         const score = barrier + Math.hypot(a.x - sink.x, a.z - sink.z) * .001
-        if (score < cost) { edge = a; outlet = b; cost = score }
+        // Preserve a stable geographic tie-break regardless of traversal order.
+        if (score < cost || (score === cost && edge && (a.gz < edge.gz || (a.gz === edge.gz && a.gx < edge.gx)))) {
+          edge = a; outlet = b; cost = score
+        }
       }
     }
     if (!edge || !outlet) return (sink.spill = null)

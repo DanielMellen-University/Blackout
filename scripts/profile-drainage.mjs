@@ -10,6 +10,8 @@ import { createServer } from 'vite'
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const baselineRef = process.argv.find(a => a.startsWith('--baseline='))?.slice(11) ?? 'e4c122a'
 const baseline = execFileSync('git', ['show', `${baselineRef}:src/world/RegionalDrainage.ts`], { cwd: root, encoding: 'utf8' })
+const baselineRouting = baseline.includes("'./DrainageRouting'")
+  ? execFileSync('git', ['show', `${baselineRef}:src/world/DrainageRouting.ts`], { cwd: root, encoding: 'utf8' }) : null
 const cacheDir = await mkdtemp(join(tmpdir(), 'blackout-drainage-review-'))
 const results = []
 try {
@@ -17,6 +19,7 @@ try {
     const loader = await createServer({ root, cacheDir: join(cacheDir, before ? 'before' : 'after'),
       optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom',
       plugins: [{ name: 'drainage-review', enforce: 'pre', transform(code, id) {
+        if (before && baselineRouting && id.endsWith('/src/world/DrainageRouting.ts')) return baselineRouting
         if (id.endsWith('/src/world/RegionalDrainage.ts')) return (before ? baseline : code) +
           '\nexport {node as reviewNode, parent as reviewParent, dominantUpstream as reviewUpstream, carriesRiver as reviewChannel, hasLongRoute as reviewLongRoute, basin as reviewBasin}\n'
       } }],

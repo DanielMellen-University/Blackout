@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.882**. Previous roadmap chunk: **10.881**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.883**. Previous roadmap chunk: **10.882**.
+
+Recent changes from **10.883**. Basin spill searches now follow the connected depression instead of scanning unrelated terrain across a large square. The fixed review retains identical river lengths, reach counts and water snapshots, while measured cold catchment medians drop from 45–57 ms to 21–34 ms. Search limits, cancellation safety, render distance and streaming budgets remain intact. The comparison tool loads the exact historical routing core as well as the generator. Generation revision 11 preserves records. These CPU measurements do not establish gameplay FPS; angular shoreline polish and controlled foreground performance review remain open.
 
 Recent changes from **10.882**. Connected basin drainage now supports substantially longer river systems: the fixed three-seed review measures 52.5 km average main stems versus 12.8 km in 10.881, about 4.1x longer. Shared four-neighbour spill paths retain runoff and compatible downstream grades; lake outlets use those same edges instead of separate ribbons. Optional lakes occupy depressions, keep substantial asymmetric shores, and stay clear of lower rivers. Braids and deltas are rarer; the 8 km source taper remains. Saved records are preserved while generation revision 10 skips incompatible ghosts. Render distance, cache caps, and worker/upload budgets remain unchanged. Cold generation is more expensive, not an FPS improvement; shoreline polish and controlled full-game startup/travel/memory comparison remain unfinished. Regional weather and delayed half-strength assist remain shipped. Actual EST reset wiring and per-level generation remain deferred.
 

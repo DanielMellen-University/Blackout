@@ -20,6 +20,22 @@ function fixture(capacity = 16384) {
 }
 
 describe('canonical depression drainage', () => {
+  it('does not sample unrelated terrain behind an impassable basin shoulder', () => {
+    const nodes = new Map<string, DrainageNode>()
+    const get = (gx: number, gz: number): DrainageNode => {
+      const key = `${gx},${gz}`
+      let n = nodes.get(key)
+      if (!n) {
+        n = { gx, gz, x: gx * 2000, z: gz * 2000, height: gx === 0 && gz === 0 ? 10 : 1000 }
+        nodes.set(key, n)
+      }
+      return n
+    }
+    const r = drainageRouter(get, () => 1)
+    expect(r.parent(get(0, 0))).toBeNull()
+    expect(nodes.size).toBe(5) // Basin floor and four adjacent shoulders, not a 17x17 square.
+  })
+
   it('warms a recreated upstream node even when its terminal caches survive eviction', () => {
     const r = fixture(), first = r.get(0, 0)
     for (const _ of r.prepareSteps(first)) { /* complete preparation */ }

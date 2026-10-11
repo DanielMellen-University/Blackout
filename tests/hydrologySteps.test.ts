@@ -28,7 +28,7 @@ function digest(cx: number, cz: number): string {
 beforeEach(() => resetSeed(1337))
 
 describe('cooperative cold hydrology', () => {
-  // Regional drainage revision 10: snapshots pin deterministic build/cancel/interleave output.
+  // Regional drainage revision 11: snapshots pin deterministic build/cancel/interleave output.
   it.each([
     [42, -1, -1, 'a20f95968f7c1e974045ee2cca966f2768da217a46895f348c927fa5635ba8b2'],
     [42, 0, 0, 'b7b445c2921c6468fb7f9d22915335cd4f40558fdc8321a212761e50b3bf7b0f'],
