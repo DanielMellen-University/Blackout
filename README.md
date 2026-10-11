@@ -53,6 +53,8 @@ Daily challenge displays a wall-clock countdown to midnight EST (fixed UTC-5, ye
 
 ## Project
 
+Connected-drainage integration is in progress. The tested basin-routing core joins local depressions through canonical shared edges, preserves accumulated runoff, and prepares cooperatively. It is not enabled in the committed game yet; the 4x river-length prototype still needs fixture migration, cold-generation optimization, and visual/streaming review. The shipped gameplay remains the 10.881 taper batch.
+
 Vegetation (trees, rocks, and other natural props) is removed and development is paused. Do not restore or develop it unless explicitly requested; see [repository rules](AGENTS.md) and [roadmap exclusions](docs/ROADMAP.md#paused-systems).
 
 Built with TypeScript, Three.js, and Vite. Graphics presets and adaptive resolution scale visual detail. Terrain and settlements stream through bounded worker queues, with synchronous fallback when workers are unavailable.
