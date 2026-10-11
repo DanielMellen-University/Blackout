@@ -1,4 +1,20 @@
-# Water surface review - 10.883
+# Water surface review - 10.884
+
+## 10.884: smooth physical river spans
+
+River centrelines now use cubic Hermite interpolation through their existing endpoint positions and unit directions. Bank normals follow the derivative instead of rotating around a straight chord. Existing section counts, endpoint widths/grades, lake clipping, river union and shared physical surface queries remain in use. Local-coordinate evaluation avoids cancellation between large world coordinates. Focused fixtures cover exact bank seams, non-rising centre grades, legacy straight spans and a 100,000 km translation; existing generated-water grade and independent Float32 mesh/collision checks remain required. Generation revision 12 rejects incompatible ghosts without deleting records.
+
+Same-machine cold catchment preparation, 12 samples per case, exact 10.883 RiverSurface versus the curved implementation with the same current drainage core:
+
+| Seed / region | Before median / p95 (ms) | After median / p95 (ms) | Cached surface bytes before / after |
+| --- | --- | --- | --- |
+| 1 / -2,-2 | 31.906 / 54.415 | 30.686 / 57.824 | 255,840 / 255,840 |
+| 73 / -2,-1 | 48.666 / 99.506 | 37.857 / 63.064 | 228,672 / 228,672 |
+| 1337 / -2,0 | 36.644 / 50.300 | 42.952 / 68.652 | 245,664 / 245,568 |
+
+The cached surface count does not grow in these cases, but seed 1337 is slower. These small CPU samples include cold routing and JIT/GC variability, not a controlled GPU/startup/heap comparison or proof of an FPS improvement. No render-distance, worker, upload or persistent-cache budget is changed.
+
+Seed-73 Lake outlet junction was inspected in Clear weather, overview and low-altitude unobstructed first person, with chase inspection recorded separately. The curved bank is cleaner at close range; larger lake shores remain visibly polygonal. The initial overview exposed incomplete streaming before coverage settled. Background throttling near one frame per second prevents a meaningful normal-game performance conclusion. Full shoreline polish, controlled foreground maximum-speed startup/travel/memory comparison and the final Free flight review remain open. The longer connected stems and 8 km taper remain intact; actual EST reset wiring and per-level generation remain deferred. Paused vegetation, warning-strip and blackout/redout exclusions remain in force.
 
 ## 10.883: connected-basin search cost
 

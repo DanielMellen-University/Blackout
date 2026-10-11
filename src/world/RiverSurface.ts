@@ -87,6 +87,7 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
   const dx = reach.bx - reach.ax, dz = reach.bz - reach.az
   const length = Math.max(.001, Math.hypot(dx, dz)), fx = dx / length, fz = dz / length
   const steps = Math.max(4, Math.min(12, Math.ceil(length / 120)))
+  const curved = [reach.tangentAX, reach.tangentAZ, reach.tangentBX, reach.tangentBZ].every(Number.isFinite)
   const values: number[] = [], caps: number[] = []
   const width = Math.max(reach.wa, reach.wb) * 2 + 100
   const lakes = basins.filter(b => !b.regionalSea &&
@@ -108,14 +109,25 @@ export function riverSurface(reach: RiverReach, basins: readonly WaterBasin[]): 
   }
   for (let step = 0; step <= steps; step++) {
     const t = step / steps, w = Math.max(5, reach.wa + (reach.wb - reach.wa) * t)
-    let nx = -fz, nz = fx
-    if (reach.tangentAX !== undefined && reach.tangentBX !== undefined) {
-      const tx = reach.tangentAX + (reach.tangentBX - reach.tangentAX) * t
-      const tz = reach.tangentAZ! + (reach.tangentBZ! - reach.tangentAZ!) * t
+    let nx = -fz, nz = fx, x = reach.ax + dx * t, z = reach.az + dz * t
+    if (curved) {
+      // Shared endpoint directions already describe the meander. Follow them
+      // with the centreline too: rotating banks around a straight chord left
+      // a visible elbow at every span. Reuse the existing section count.
+      const t2 = t * t, t3 = t2 * t
+      const b = t3 - 2 * t2 + t
+      const c = -2 * t3 + 3 * t2, d = t3 - t2
+      // Work in span-local coordinates to avoid subtracting large world positions.
+      x = reach.ax + c * dx + (b * reach.tangentAX! + d * reach.tangentBX!) * length
+      z = reach.az + c * dz + (b * reach.tangentAZ! + d * reach.tangentBZ!) * length
+      const tx = (-6 * t2 + 6 * t) * dx + ((3 * t2 - 4 * t + 1) * reach.tangentAX! +
+        (3 * t2 - 2 * t) * reach.tangentBX!) * length
+      const tz = (-6 * t2 + 6 * t) * dz + ((3 * t2 - 4 * t + 1) * reach.tangentAZ! +
+        (3 * t2 - 2 * t) * reach.tangentBZ!) * length
       const m = Math.hypot(tx, tz)
       if (m > .00001) { nx = -tz / m; nz = tx / m }
     }
-    const x = reach.ax + dx * t, z = reach.az + dz * t, y = reach.ya + (reach.yb - reach.ya) * t
+    const y = reach.ya + (reach.yb - reach.ya) * t
     const depth = reach.mouth ? Math.max(.22, Math.min(4, w * .035)) : Math.max(.45, Math.min(4, w * .028))
     const edge = Math.max(.08, Math.min(.55, depth * .16))
     values.push(...vertex(x + nx * w, y, z + nz * w, edge), ...vertex(x, y, z, depth),
