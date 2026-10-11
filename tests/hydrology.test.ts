@@ -45,7 +45,7 @@ describe('natural drainage', () => {
 
   it('caches a conservative warped-shoreline bound with a legacy fallback', () => {
     setWorldSeed(1)
-    const basins = waterLandmarks(-1, -1)
+    const basins = waterLandmarks(-2, -1)
     expect(basins.length).toBeGreaterThan(0)
     for (const basin of basins) {
       expect(basin.boundsRadius).toBeCloseTo(basin.radius * 1.75, 8)
@@ -57,7 +57,7 @@ describe('natural drainage', () => {
 
   it('treats malformed basin geometry as outside water', () => {
     setWorldSeed(1)
-    const valid = waterLandmarks(-1, -1)[0]!
+    const valid = waterLandmarks(-2, -1)[0]!
     expect(basinDistance(valid, valid.x, valid.z)).toBeLessThan(0)
     const malformed = [
       null,
@@ -74,9 +74,9 @@ describe('natural drainage', () => {
 
   it('keeps rivers connected and descending, with varying widths', () => {
     setWorldSeed(1)
-    const reaches = riverReaches(-1, -1)
+    const reaches = riverReaches(-2, -2)
     expect(reaches.length).toBeGreaterThan(50)
-    expect(riverReaches(-1, -1)).toBe(reaches)
+    expect(riverReaches(-2, -2)).toBe(reaches)
     expect(new Set(reaches).size).toBe(reaches.length)
     const widths = reaches.map(r => r.wa)
     expect(Math.max(...widths) / Math.min(...widths)).toBeGreaterThan(2)
@@ -93,14 +93,14 @@ describe('natural drainage', () => {
       // is covered across bends, caps, mouths and seeds in waterSurfaceAgreement.
       const x = (r.ax + r.bx) / 2, z = (r.az + r.bz) / 2
       const levels = riverReachesInBounds(x, z, x, z).map(q => riverSurfaceHeightAt(riverSurface(q, []), x, z))
-      for (const b of waterLandmarks(-1, -1)) if (basinDistance(b, x, z) <= 0) levels.push(b.level)
+      for (const b of waterLandmarks(-2, -1)) if (basinDistance(b, x, z) <= 0) levels.push(b.level)
       expect(c.waterLevel).toBeCloseTo(Math.max(...levels), 6)
     }
   })
 
   it('keeps terrain-flow channels deterministic and tightly bounded', () => {
     setWorldSeed(1)
-    const first = riverReaches(-1, -1)
+    const first = riverReaches(-1, 2)
     expect(first.length).toBeGreaterThan(50)
     // Sixteen by sixteen owned nodes, sixteen spans, at most three delta arms.
     expect(first.length).toBeLessThanOrEqual(16 * 16 * 16 * 3)
@@ -112,22 +112,20 @@ describe('natural drainage', () => {
     expect(first.some(reach => reach.mouth)).toBe(true)
     const signature = first.map(reach => [reach.ax, reach.az, reach.bx, reach.bz, reach.wa, reach.wb])
     setWorldSeed(73)
-    riverReaches(-1, -1)
+    riverReaches(-1, 2)
     setWorldSeed(1)
-    const replay = riverReaches(-1, -1)
+    const replay = riverReaches(-1, 2)
     expect(replay.map(reach => [reach.ax, reach.az, reach.bx, reach.bz, reach.wa, reach.wb])).toEqual(signature)
   })
 
   it('grades a river outlet into its receiving water without a vertical surface', () => {
     setWorldSeed(1)
-    const outlet = riverReaches(-1, -1).reduce((best, candidate) =>
-      !best || Math.max(candidate.wa, candidate.wb) > Math.max(best.wa, best.wb) ? candidate : best,
-    )
+    const outlet = riverReaches(-1, 2).find(reach => reach.mouth)
     expect(outlet).toBeDefined()
     let previousLevel: number | null = null
     let wetPairs = 0
-    // This reaches the seed-one trunk's sea outlet. Consecutive wet samples
-    // must not jump from the river grade straight to sea level in one mesh cell.
+    // Consecutive wet samples must not jump from the river grade straight to
+    // its receiving lake plane in one mesh cell.
     for (let t = 0; t <= 1.25; t += .0625) {
       const c = sampleGeography(
         outlet!.ax + (outlet!.bx - outlet!.ax) * t,
@@ -149,7 +147,7 @@ describe('natural drainage', () => {
 
   it('fills a short delta corridor past each shoreline mouth', () => {
     setWorldSeed(1)
-    const outlet = riverReaches(-1, -1).find(reach => reach.mouth)
+    const outlet = riverReaches(-1, 2).find(reach => reach.mouth)
     expect(outlet).toBeDefined()
     const dx = outlet!.bx - outlet!.ax, dz = outlet!.bz - outlet!.az
     const length = Math.hypot(dx, dz)
@@ -165,7 +163,7 @@ describe('natural drainage', () => {
 
   it('finds narrow drainage before a coarse tile can miss its banks', () => {
     setWorldSeed(1)
-    const reach = riverReaches(-1, -1).find(candidate => Math.max(candidate.wa, candidate.wb) < 40)
+    const reach = riverReaches(-2, -2).find(candidate => Math.max(candidate.wa, candidate.wb) < 40)
     expect(reach).toBeDefined()
     const midX = (reach!.ax + reach!.bx) / 2
     const midZ = (reach!.az + reach!.bz) / 2
@@ -190,7 +188,7 @@ describe('natural drainage', () => {
   it('fills a caller-owned river reach buffer without changing detailed results', () => {
     setWorldSeed(1)
     const out: RiverReach[] = []
-    const reach = riverReaches(-1, -1)[0]!
+    const reach = riverReaches(-2, -2)[0]!
     const x = (reach.ax + reach.bx) * .5, z = (reach.az + reach.bz) * .5
     const first = riverReachesInBounds(x - 200, z - 200, x + 200, z + 200, 0, out)
     expect(first).toBe(out)
@@ -209,7 +207,7 @@ describe('natural drainage', () => {
     setWorldSeed(1)
     // Stay away from headwaters and junctions: another channel can legitimately
     // cross the bank probe there even when this ribbon's own bank is dry.
-    const reach = riverReaches(-1, -1).find(candidate => {
+    const reach = riverReaches(-2, -2).find(candidate => {
       if (candidate.mouth || candidate.branch || candidate.id?.split(':').at(-1) !== '8') return false
       const width = Math.max(candidate.wa, candidate.wb)
       const x = (candidate.ax + candidate.bx) * .5 - candidate.dz / candidate.length * width * 3
@@ -229,7 +227,7 @@ describe('natural drainage', () => {
 
   it('has enclosed, irregular inland lakes, separate from regional seas', () => {
     setWorldSeed(1)
-    for (const b of waterLandmarks(-1, -1)) {
+    for (const b of waterLandmarks(-2, -1)) {
       if (b.regionalSea) continue
       const radii: number[] = []
       for (let j = 0; j < 24; j++) {

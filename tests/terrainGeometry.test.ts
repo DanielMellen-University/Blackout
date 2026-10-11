@@ -106,7 +106,7 @@ describe('worker terrain geometry', () => {
   })
 
   it('retains water appearance attributes through transfer for an analytic pond', () => {
-    const pond = waterLandmarks(-2, -2).find(basin => basin.pond)!
+    const pond = waterLandmarks(-1, 2).find(basin => basin.pond)!
     const originX = Math.floor(pond.x / CHUNK_SIZE) * CHUNK_SIZE
     const originZ = Math.floor(pond.z / CHUNK_SIZE) * CHUNK_SIZE
     const payload = generateTerrainGeometry(originX, originZ, 0)

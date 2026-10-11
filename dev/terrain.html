@@ -159,8 +159,8 @@ document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
 const destinations={
   pond:[1337,0,0],headwater:[1,0,0],
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
-  riverjoin:[42,31000,73000],
-  lakeoutlet:[73,39500,51200],
+  riverjoin:[1337,-37939,17344],
+  lakeoutlet:[73,-57928,-10085],
   mesa:[1,-30000,-27600],volcano:[1,-92800,-13600],
   city:[1337,5,-1],village:[1,-7,-5],
   roadlink:[1,-7,-5],
@@ -241,7 +241,7 @@ function visitDestination(value){
   } else if(value==='river'||value==='headwater'||value==='lakeoutlet'){
     // Terrain-derived drainage can start at any altitude. Frame the widest
     // available trunk instead of assuming the old fixed lake-to-sea range.
-    const candidates=value==='lakeoutlet'?riverReaches(1,1).filter(r=>r.id?.startsWith('lake-outlet:19:25:')):riverReaches(-1,-1)
+    const candidates=value==='lakeoutlet'?riverReaches(-2,-1).filter(r=>r.fromId==='-29:-5'||r.fromId==='-29:-4'):riverReaches(-2,-2)
     const r=value==='headwater'?candidates.find(r=>r.source):candidates.reduce((best,candidate)=>
       !best||Math.max(candidate.wa,candidate.wb)>Math.max(best.wa,best.wb)?candidate:best,null)
     if(!r) throw new Error('Review river no longer has an emitted drainage reach')

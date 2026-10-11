@@ -46,7 +46,7 @@ describe('shared water surface', () => {
 
   it('uses the exact generated shoreline chord at vertices and coves', () => {
     setWorldSeed(42)
-    const basin = waterLandmarks(-1, -1).find(b => b.shoreRadii && !b.islands)!
+    const basin = waterLandmarks(-2, 0).find(b => b.shoreRadii && !b.islands)!
     const radii = basin.shoreRadii!
     for (let i = 0; i < radii.length; i++) {
       const next = (i + 1) % radii.length, a = i / radii.length * Math.PI * 2, b = next / radii.length * Math.PI * 2

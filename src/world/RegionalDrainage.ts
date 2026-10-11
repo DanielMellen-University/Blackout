@@ -3,19 +3,21 @@ import { sampleLandforms } from './Landforms'
 import { coastField } from './Coastline'
 import { registerRiverSurface, riverSurface } from './RiverSurface'
 import { basinDistance, type HydrologyBuildPhase, type RiverReach, type WaterBasin } from './Hydrology'
+import { drainageRouter, type DrainageNode } from './DrainageRouting'
 
 const STEP = 2000
 const CELLS = 16
 const HALO = 4
 const REACH_STEPS = 16
-interface Node {
+const UPSTREAM_NEIGHBOURS = [[0, -1], [-1, 0], [1, 0], [0, 1]] as const
+interface Node extends DrainageNode {
   gx: number; gz: number; x: number; z: number; height: number; moisture: number; coast: number
-  parent?: readonly [number, number] | null; runoff: Float64Array; basin?: WaterBasin | null; reaches?: RiverReach[]
-  channel?: boolean; wetOutlet?: boolean; lake?: LakeCandidate | null; discharge?: number
+  parent?: readonly [number, number] | null; basin?: WaterBasin | null; reaches?: RiverReach[]
+  channel?: boolean; wetOutlet?: boolean; lake?: LakeCandidate | null
   longRoute?: boolean; primary?: boolean; dominant?: readonly [number, number] | null
   mergeRadius?: number
   sourceDistance?: number
-  lakeOutlets?: RiverReach[]
+  outletChannel?: boolean
   lakeRoute?: { coordinates: readonly (readonly [number, number])[]; level: number } | null
 }
 interface LakeCandidate { radius: number; roll: number; pond: boolean; large: boolean; riverSink: boolean }
@@ -29,46 +31,28 @@ function node(gx: number, gz: number): Node {
   const x = gx * STEP + (hash2(gx + 117, gz - 61) - .5) * 380
   const z = gz * STEP + (hash2(gx - 73, gz + 217) - .5) * 380
   const land = sampleLandforms(x, z)
-  n = { gx, gz, x, z, height: land.height, moisture: land.moisture, coast: land.coast!, runoff: new Float64Array(6).fill(-1) }
+  n = { gx, gz, x, z, height: land.height, moisture: land.moisture, coast: land.coast! }
   if (nodes.size >= 16384) nodes.delete(nodes.keys().next().value!)
   nodes.set(key, n)
   return n
 }
 function parent(n: Node): Node | null {
   if (n.parent !== undefined) return n.parent ? node(n.parent[0], n.parent[1]) : null
-  let best: Node | null = null
-  let slope = 0
-  if (n.height > 0) for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
-    const next = node(n.gx + dx, n.gz + dz)
-    const gradient = (n.height - next.height) / Math.hypot(n.x - next.x, n.z - next.z)
-    if (gradient > slope + .00001) { best = next; slope = gradient }
-  }
+  const best = routing.parent(n)
   // Cache coordinates, not object chains: FIFO eviction must release nodes.
   n.parent = best ? [best.gx, best.gz] : null
   return best
 }
-/** Bounded upstream accumulation; world-node identity, never tile build order. */
-function runoff(n: Node, depth = 5): number {
-  if (n.runoff[depth]! >= 0) return n.runoff[depth]!
-  let flow = .18 + n.moisture * .82
-  if (depth > 0) for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
-    const upstream = node(n.gx + dx, n.gz + dz)
-    const p = parent(upstream)
-    if (p?.gx === n.gx && p.gz === n.gz) flow += runoff(upstream, depth - 1)
-  }
-  n.runoff[depth] = flow
-  return flow
-}
+const routing = drainageRouter(node, n => .18 + n.moisture * .82)
+/** Canonical upstream rainfall, retained across connected basin spills. */
+function runoff(n: Node): number { return routing.flow(n) }
 
 function channelThreshold(n: Node): number { return n.moisture > .59 ? 7.5 : 8.5 }
 
 function dominantUpstream(n: Node): Node | null {
   if (n.dominant !== undefined) return n.dominant ? node(n.dominant[0], n.dominant[1]) : null
   let best: Node | null = null, amount = 0
-  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
+  for (const [dx, dz] of UPSTREAM_NEIGHBOURS) {
     const candidate = node(n.gx + dx, n.gz + dz), target = parent(candidate)
     if (target?.gx !== n.gx || target.gz !== n.gz) continue
     const flow = runoff(candidate)
@@ -91,13 +75,13 @@ function hasLongRoute(n: Node): boolean {
     const next = parent(current)
     if (!next) {
       let length = 0, source: Node | null = current
-      for (let j = 0; source && j < 128 && length < 8000; j++) {
+      for (let j = 0; source && j < 128 && length < 40000; j++) {
         const upstream = dominantUpstream(source)
         if (!upstream || runoff(upstream) < 1.6) break
         length += Math.hypot(source.x - upstream.x, source.z - upstream.z)
         source = upstream
       }
-      current.longRoute = length >= 8000 && runoff(current) >= channelThreshold(current) &&
+      current.longRoute = length >= 40000 && runoff(current) >= channelThreshold(current) &&
         hash2(current.gx + 519, current.gz - 823) < .65
       break
     }
@@ -117,34 +101,22 @@ function isPrimary(n: Node): boolean {
 }
 
 /** Once runoff forms a river, keep it downstream even beyond the bounded
- * runoff window. Strictly descending parent heights make this an acyclic DAG. */
+ * local basins. Spill roots descend strictly, keeping the routing acyclic. */
 function carriesRiver(n: Node): boolean {
   if (n.channel !== undefined) return n.channel
   if (n.height <= 0) return (n.channel = false)
   if (!hasLongRoute(n)) return (n.channel = false)
   if (isPrimary(n) && runoff(n) >= 1.6) return (n.channel = true)
   if (runoff(n) >= channelThreshold(n)) return (n.channel = true)
-  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
+  for (const [dx, dz] of UPSTREAM_NEIGHBOURS) {
     const upstream = node(n.gx + dx, n.gz + dz), target = parent(upstream)
     if (target?.gx === n.gx && target.gz === n.gz && carriesRiver(upstream)) return (n.channel = true)
   }
   return (n.channel = false)
 }
 
-/** Preserve established tributary flow beyond the local rainfall window.
- * Parent heights strictly descend; coordinates and cached scalars stay bounded
- * by the existing node cache rather than retaining upstream object trees. */
-function discharge(n: Node): number {
-  if (n.discharge !== undefined) return n.discharge
-  let incoming = .18 + n.moisture * .82
-  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
-    const upstream = node(n.gx + dx, n.gz + dz), target = parent(upstream)
-    if (target?.gx === n.gx && target.gz === n.gz && carriesRiver(upstream)) incoming += discharge(upstream)
-  }
-  return (n.discharge = Math.max(runoff(n), incoming))
-}
+/** Full accumulated runoff is independent of which tributaries are visible. */
+function discharge(n: Node): number { return runoff(n) }
 
 /** A dry closed depression is not a valid river destination. Prune its whole
  * upstream network instead of drawing a channel that ends on bare ground. */
@@ -165,6 +137,10 @@ function lakeCandidate(n: Node): LakeCandidate | null {
   if (n.lake !== undefined) return n.lake
   n.lake = null
   if (n.height <= 0) return null
+  const raw = routing.rawParent(n)
+  // A raw through-node always retains an outgoing edge, including when a
+  // depression spill reverses its original path. It cannot host a basin.
+  if (raw) return null
   const p = parent(n)
   const wet = n.moisture > .59 && n.height < 800
   const roll = hash2(n.gx + 371, n.gz - 719)
@@ -174,11 +150,10 @@ function lakeCandidate(n: Node): LakeCandidate | null {
   if (riverSink) return (n.lake = { radius: Math.min(1300, 500 + Math.sqrt(runoff(n)) * 125),
     roll, pond: wet, large: false, riverSink: true })
   if (n.height < 35 || n.coast < .045 || hash2(n.gx - 947, n.gz + 613) >= .125) return null
-  // Closed depressions plus occasional low-gradient through-lakes. Wetlands
-  // have a much denser pond distribution than dry or alpine watersheds.
-  if (p && !(wet && roll > .58 && (n.height - p.height) < 50)) return null
-  if (!p && roll < .3) return null
-  const large = !p && roll > .82
+  // Optional lakes occupy raw depressions, never arbitrary through-nodes.
+  // Wetland depressions favour shallow ponds over deep alpine lakes.
+  if (roll < .3) return null
+  const large = roll > .82
   const pond = wet && roll < .8
   const radius = pond ? 600 + roll * 850 : large ? 2400 + roll * 1900 : 750 + roll * 1000
   return (n.lake = { radius, roll, pond, large, riverSink: false })
@@ -202,7 +177,7 @@ function basin(n: Node): WaterBasin | null {
       (other.gx < n.gx || (other.gx === n.gx && other.gz < n.gz)))
     if (higherPriority && Math.hypot(n.x - other.x, n.z - other.z) < (radius + otherRadius) * 1.5) return null
   }
-  const level = Math.max(.01, n.height - 8)
+  const level = routing.grade(n)
   const radii = new Float32Array(64)
   // Follow the surrounding valley instead of putting a nearly circular pit
   // at every receiving node. Preserve approximately the same area while
@@ -270,6 +245,61 @@ function basin(n: Node): WaterBasin | null {
         smoothRadii[(i + 1) % radii.length]! * .25
     }
   }
+  // A lake cannot flood across another, lower channel. Preserve the basin
+  // plane and trim its arms before those independently descending valleys.
+  const limits = new Float32Array(radii.length).fill(radius * 1.7)
+  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
+    if (!dx && !dz) continue
+    const q = node(n.gx + dx, n.gz + dz)
+    if (!carriesRiver(q) || routing.grade(q) >= level - .05) continue
+    const vx = q.x - n.x, vz = q.z - n.z
+    const margin = channelWidth(q, discharge(q)) + 600
+    if (Math.hypot(vx, vz) <= margin) return null
+    for (let i = 0; i < limits.length; i++) {
+      const angle = i / limits.length * Math.PI * 2
+      const along = vx * Math.cos(angle) + vz * Math.sin(angle)
+      const acrossSq = vx * vx + vz * vz - along * along
+      if (along <= 0 || acrossSq >= margin * margin) continue
+      limits[i] = Math.min(limits[i]!, Math.max(0, along - Math.sqrt(margin * margin - acrossSq) - 50))
+    }
+  }
+  // Spread a restricted shore into a broad cove, not a one-spoke notch.
+  // A lower envelope of bounded-curvature shoulders never expands a limit.
+  const originalLimits = limits.slice()
+  for (let i = 0; i < limits.length; i++) for (let j = 0; j < limits.length; j++) {
+    const distance = Math.min(Math.abs(i - j), limits.length - Math.abs(i - j))
+    limits[i] = Math.min(limits[i]!, originalLimits[j]! + radius * .04 * distance * distance)
+  }
+  for (let i = 0; i < radii.length; i++) radii[i] = Math.min(radii[i]!, limits[i]!)
+  for (let pass = 0; pass < 4; pass++) {
+    smoothRadii.set(radii)
+    for (let i = 0; i < radii.length; i++) radii[i] = Math.min(limits[i]!,
+      smoothRadii[(i + radii.length - 1) % radii.length]! * .25 + smoothRadii[i]! * .5 +
+      smoothRadii[(i + 1) % radii.length]! * .25)
+  }
+  if (!large) {
+    // Clipping a lower neighbouring valley must not leave another tiny pool.
+    // Expand only the safe arms, retaining the cove and its clearance. Reject
+    // optional depressions whose available footprint cannot hold a real pond.
+    const sectorArea = Math.sin(Math.PI * 2 / radii.length) * .5
+    const area = () => {
+      let sum = 0
+      for (let i = 0; i < radii.length; i++) sum += radii[i]! * radii[(i + 1) % radii.length]! * sectorArea
+      return sum
+    }
+    const target = Math.PI * Math.pow(Math.max(800, radius * .9), 2)
+    for (let pass = 0; pass < 12 && area() < target; pass++) {
+      const scale = Math.min(1.12, Math.sqrt(target / area()) * 1.01)
+      for (let i = 0; i < radii.length; i++) radii[i] = Math.min(limits[i]!, radii[i]! * scale)
+      for (let round = 0; round < 4; round++) {
+        smoothRadii.set(radii)
+        for (let i = 0; i < radii.length; i++) radii[i] = Math.min(limits[i]!,
+          smoothRadii[(i + radii.length - 1) % radii.length]! * .25 + smoothRadii[i]! * .5 +
+          smoothRadii[(i + 1) % radii.length]! * .25)
+      }
+    }
+    if (!riverSink && area() < Math.PI * Math.pow(Math.max(775, radius * .86), 2)) return null
+  }
   const contour: WaterBasin = { x: n.x, z: n.z, radius, aspect: 1, angle: 0, phase: roll * 6.28,
     level, sea: false, pond, shoreRadii: radii, boundsRadius: radius * 1.75,
     id: `lake:${n.gx}:${n.gz}` }
@@ -285,14 +315,6 @@ function basin(n: Node): WaterBasin | null {
     // land. Keep only enclosed islands; never change the outer lake contour.
     if (inside) contour.islands = [island]
   }
-  // A wider shoreline may encompass a lower drainage node. Its surface must
-  // not sit above that node's channel, otherwise incoming rivers climb at the
-  // shore. Include the adjoining bank margin when resolving this spill cap.
-  for (let dz = -4; dz <= 4; dz++) for (let dx = -4; dx <= 4; dx++) {
-    const q = node(n.gx + dx, n.gz + dz)
-    if (basinDistance(contour, q.x, q.z) < 300) contour.level =
-      Math.max(.01, Math.min(contour.level, q.height - 8))
-  }
   n.basin = contour
   return n.basin
 }
@@ -303,12 +325,11 @@ export function riverSourceWidth(fullWidth: number, distance: number): number {
 }
 
 /** Longest formed upstream stem, cached as one scalar under the node FIFO.
- * Strictly descending parent heights make the upstream recursion acyclic. */
+ * Strictly descending spill roots make the upstream recursion acyclic. */
 function distanceFromSource(n: Node): number {
   if (n.sourceDistance !== undefined) return n.sourceDistance
   let distance = 0
-  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
+  for (const [dx, dz] of UPSTREAM_NEIGHBOURS) {
     const upstream = node(n.gx + dx, n.gz + dz), p = parent(upstream)
     if (p?.gx === n.gx && p.gz === n.gz && carriesRiver(upstream)) distance = Math.max(distance,
       Math.hypot(n.x - upstream.x, n.z - upstream.z) + distanceFromSource(upstream))
@@ -318,7 +339,7 @@ function distanceFromSource(n: Node): number {
 
 function channelWidth(q: Node, amount: number): number {
   const downstream = parent(q)
-  const gradient = downstream ? (q.height - downstream.height) /
+  const gradient = downstream ? (routing.grade(q) - routing.grade(downstream)) /
     Math.hypot(q.x - downstream.x, q.z - downstream.z) : 0
   const floodplain = (1 - smoothstep(.004, .045, gradient)) *
     (1 - smoothstep(600, 1800, q.height))
@@ -333,20 +354,14 @@ function channelWidth(q: Node, amount: number): number {
 function mergeRadius(n: Node): number {
   if (n.mergeRadius !== undefined) return n.mergeRadius
   let incoming = 0
-  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
+  for (const [dx, dz] of UPSTREAM_NEIGHBOURS) {
     const q = node(n.gx + dx, n.gz + dz), p = parent(q)
-    if (p?.gx === n.gx && p.gz === n.gz && carriesRiver(q)) incoming++
+    if (p?.gx === n.gx && p.gz === n.gz && (carriesRiver(q) || hasLakeOutlet(q))) incoming++
   }
-  // A lake outlet is another tributary. Its shared junction must be level
-  // before either incident ribbon is cached, regardless of query order.
-  for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
-    const source = node(n.gx + dx, n.gz + dz)
-    if (!parent(source) || !lakeCandidate(source) || carriesRiver(source)) continue
-    const route = lakeRoute(source), end = route?.coordinates.at(-1)
-    if (end?.[0] === n.gx && end[1] === n.gz) incoming++
-  }
-  return (n.mergeRadius = incoming >= 2 ? channelWidth(n, discharge(n)) * 6 : 0)
+  const width = channelWidth(n, discharge(n))
+  // A broad single trunk can fold over itself at a corner too. Give its bend
+  // the same shared level area as a confluence, not two overlapping grades.
+  return (n.mergeRadius = incoming >= 2 || (incoming > 0 && width > 150) ? width * 6 : 0)
 }
 
 function nodeWaterLevel(n: Node): number {
@@ -356,7 +371,7 @@ function nodeWaterLevel(n: Node): number {
     const lake = basin(node(n.gx + dx, n.gz + dz))
     if (lake && basinDistance(lake, n.x, n.z) < 0) level = Math.max(level, lake.level)
   }
-  return Math.max(.01, level === -Infinity ? n.height - 8 : level)
+  return Math.max(.01, level === -Infinity ? routing.grade(n) : level)
 }
 
 function lakeRoute(n: Node): NonNullable<Node['lakeRoute']> | null {
@@ -378,13 +393,28 @@ function lakeRoute(n: Node): NonNullable<Node['lakeRoute']> | null {
   return null
 }
 
+function hasLakeOutlet(n: Node): boolean {
+  if (n.outletChannel !== undefined) return n.outletChannel
+  for (let dz = -3; dz <= 3; dz++) for (let dx = -3; dx <= 3; dx++) {
+    const source = node(n.gx + dx, n.gz + dz)
+    if (!lakeCandidate(source) || carriesRiver(source)) continue
+    const route = lakeRoute(source)
+    if (route) for (let i = 0; i < route.coordinates.length - 1; i++) {
+      const [x, z] = route.coordinates[i]!
+      if (x === n.gx && z === n.gz) return (n.outletChannel = true)
+    }
+  }
+  return (n.outletChannel = false)
+}
+
 function reaches(n: Node): RiverReach[] {
   if (n.reaches) return n.reaches
   const result: RiverReach[] = []
   n.reaches = result
   const p = parent(n)
+  const outlet = !carriesRiver(n) && hasLakeOutlet(n)
   // Retain only connected routes to actual water, never random deleted spans.
-  if (!p || !carriesRiver(n) || !drainsToWater(p)) return result
+  if (!p || (!carriesRiver(n) && !outlet) || !drainsToWater(p)) return result
   const flow = discharge(n)
   const receiving = basin(p)
   const sourceBasin = basin(n)
@@ -414,21 +444,20 @@ function reaches(n: Node): RiverReach[] {
     }
     return level
   }
-  const ya = Math.max(.01, wetLevel(n.x, n.z) ?? sourceBasin?.level ?? n.height - 8)
-  const yb = Math.max(0, Math.min(ya, wetLevel(p.x, p.z) ?? receiving?.level ?? p.height - 8))
-  const delta = p.height < 0 && flow > 12 && hash2(n.gx + 293, n.gz - 467) > .92
+  const ya = Math.max(.01, wetLevel(n.x, n.z) ?? sourceBasin?.level ?? routing.grade(n))
+  const yb = Math.max(0, Math.min(ya, wetLevel(p.x, p.z) ?? receiving?.level ?? routing.grade(p)))
+  const delta = p.height < 0 && flow > 12 && hash2(n.gx + 293, n.gz - 467) > .98
   let upstream: Node | null = null, upstreamFlow = 0, upstreamIsChannel = false
-  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-    if (!dx && !dz) continue
+  for (const [dx, dz] of UPSTREAM_NEIGHBOURS) {
     const candidate = node(n.gx + dx, n.gz + dz), target = parent(candidate)
     if (target?.gx !== n.gx || target.gz !== n.gz) continue
-    const channel = carriesRiver(candidate)
+    const channel = carriesRiver(candidate) || hasLakeOutlet(candidate)
     const amount = channel ? discharge(candidate) : runoff(candidate)
     if ((channel && !upstreamIsChannel) || (channel === upstreamIsChannel && amount > upstreamFlow)) {
       upstream = candidate; upstreamFlow = amount; upstreamIsChannel = channel
     }
   }
-  const headwater = !upstreamIsChannel
+  const headwater = !upstreamIsChannel && !outlet
   const wa = headwater && !sourceBasin ? 10 : channelWidth(n, flow)
   let startFlat = Math.min(.6, mergeRadius(n) / length), endFlat = Math.min(.85, mergeRadius(p) / length)
   if (startFlat + endFlat > .9) {
@@ -456,7 +485,7 @@ function reaches(n: Node): RiverReach[] {
     return { x: (b.x - a.x) / length, z: (b.z - a.z) / length }
   }
   // Braid only broad, low-gradient rivers. Both arms share split/rejoin nodes.
-  const braided = wb > 75 && (ya - yb) / length < .008 && hash2(n.gx - 83, n.gz + 127) > .985
+  const braided = wb > 75 && (ya - yb) / length < .008 && hash2(n.gx - 83, n.gz + 127) > .996
   for (const branch of delta ? [-1, 0, 1] : braided ? [-1, 1] : [0]) {
     let detour = 0
     let points = Array.from({ length: REACH_STEPS + 1 }, (_, i) => point(i / REACH_STEPS, branch, detour))
@@ -552,109 +581,15 @@ function reaches(n: Node): RiverReach[] {
  * label. Follow at most three existing downhill edges to established water.
  * The six-kilometre extent fits the existing region halo; no new watershed,
  * unbounded search, or disconnected terminal stream is introduced. */
-function lakeOutlets(n: Node): RiverReach[] {
-  if (n.lakeOutlets) return n.lakeOutlets
-  const result: RiverReach[] = []
-  n.lakeOutlets = result
+function assignLakeOutlet(n: Node): void {
   const source = basin(n), first = parent(n)
-  if (!source || !first) return result
+  if (!source || !first) return
   if (carriesRiver(n)) {
-    if (reaches(n).length) source.outletId = `${first.gx}:${first.gz}`
-    return result
+    source.outletId = `${first.gx}:${first.gz}`
+    return
   }
-  const route = lakeRoute(n)
-  if (!route) return result
-  const path = route.coordinates.map(([x, z]) => node(x, z)), target = path.at(-1)!, targetLevel = route.level
-  const targetReach = carriesRiver(target) ? reaches(target).find(r =>
-    Math.hypot(r.ax - target.x, r.az - target.z) < .01) : undefined
-  const nearby: WaterBasin[] = []
-  for (let dz = -6; dz <= 6; dz++) for (let dx = -6; dx <= 6; dx++) {
-    const lake = basin(node(n.gx + dx, n.gz + dz))
-    if (lake) nearby.push(lake)
-  }
-  const wetLevel = (x: number, z: number): number | undefined => {
-    let level: number | undefined = coastField(x, z) <= 0 ? 0 : undefined
-    for (const lake of nearby) if (basinDistance(lake, x, z) < 0) level = Math.max(level ?? -Infinity, lake.level)
-    return level
-  }
-  const tangent = (index: number): readonly [number, number] => {
-    if (index === path.length - 1 && targetReach) return [targetReach.tangentAX ?? targetReach.dx / targetReach.length,
-      targetReach.tangentAZ ?? targetReach.dz / targetReach.length]
-    const before = path[Math.max(0, index - 1)]!, after = path[Math.min(path.length - 1, index + 1)]!
-    const length = Math.hypot(after.x - before.x, after.z - before.z)
-    return [(after.x - before.x) / length, (after.z - before.z) / length]
-  }
-  const point = (index: number, t: number): { x: number; z: number } => {
-    const a = path[index]!, b = path[index + 1]!, length = Math.hypot(b.x - a.x, b.z - a.z)
-    const ta = tangent(index), tb = tangent(index + 1), t2 = t * t, t3 = t2 * t
-    const h0 = 2 * t3 - 3 * t2 + 1, h1 = t3 - 2 * t2 + t, h2 = -2 * t3 + 3 * t2, h3 = t3 - t2
-    return { x: h0 * a.x + h1 * ta[0] * length + h2 * b.x + h3 * tb[0] * length,
-      z: h0 * a.z + h1 * ta[1] * length + h2 * b.z + h3 * tb[1] * length }
-  }
-  const count = (path.length - 1) * REACH_STEPS
-  const points = Array.from({ length: count + 1 }, (_, i) => point(Math.min(path.length - 2,
-    Math.floor(i / REACH_STEPS)), i === count ? 1 : i % REACH_STEPS / REACH_STEPS))
-  const wet = points.map(p => wetLevel(p.x, p.z))
-  const anchors = [...wet]
-  anchors[0] = source.level; anchors[count] = targetLevel
-  let previous = source.level
-  for (const level of anchors) if (level !== undefined) {
-    // Do not cut through a higher neighboring lake or leave a lower lake
-    // uphill. A rejected local route leaves a genuine closed basin.
-    if (level > previous + .00001) return result
-    previous = level
-  }
-  const flow = runoff(n), startWidth = channelWidth(n, flow), endWidth = targetReach?.wa ?? startWidth
-  const endFlat = targetReach ? Math.min(count * .85, mergeRadius(target) / Math.hypot(
-    points[count]!.x - points[count - 1]!.x, points[count]!.z - points[count - 1]!.z)) : 0
-  const grade = (t: number): number => {
-    let a = 0, b = count
-    for (let j = 0; j <= count; j++) if (anchors[j] !== undefined) {
-      if (j <= t) a = j
-      else { b = j; break }
-    }
-    const end = b === count ? Math.max(a + (b - a) * .1, b - endFlat) : b
-    return anchors[a]! + (anchors[b]! - anchors[a]!) * Math.max(0, Math.min(1, (t - a) / Math.max(1e-8, end - a)))
-  }
-  for (let i = 1; i <= count; i++) {
-    const wetA = wet[i - 1], wetB = wet[i]
-    if (wetA !== undefined && wetB !== undefined) continue
-    let a = points[i - 1]!, b = points[i]!, startT = i - 1, endT = i
-    const edge = Math.floor((i - 1) / REACH_STEPS), t0 = (i - 1) % REACH_STEPS / REACH_STEPS
-    if ((wetA !== undefined) !== (wetB !== undefined)) {
-      let lo = t0, hi = t0 + 1 / REACH_STEPS
-      for (let pass = 0; pass < 12; pass++) {
-        const mid = (lo + hi) * .5, q = point(edge, mid)
-        if ((wetLevel(q.x, q.z) !== undefined) === (wetA !== undefined)) lo = mid
-        else hi = mid
-      }
-      const t = (lo + hi) * .5
-      if (wetA !== undefined) { a = point(edge, t); startT = edge * REACH_STEPS + t * REACH_STEPS }
-      else { b = point(edge, t); endT = edge * REACH_STEPS + t * REACH_STEPS }
-    }
-    const direction = (t: number): readonly [number, number] => {
-      const edge = Math.min(path.length - 2, Math.floor(t / REACH_STEPS)), local = t / REACH_STEPS - edge
-      const a = point(edge, local - .0001), b = point(edge, local + .0001), length = Math.hypot(b.x - a.x, b.z - a.z)
-      return [(b.x - a.x) / length, (b.z - a.z) / length]
-    }
-    const ta = direction(startT), tb = direction(endT), dx = b.x - a.x, dz = b.z - a.z
-    const width = (t: number) => startWidth + (endWidth - startWidth) * smoothstep(0, count, t)
-    const reach: RiverReach = { ax: a.x, az: a.z, bx: b.x, bz: b.z, dx, dz,
-      length: Math.hypot(dx, dz), lengthSq: dx * dx + dz * dz, wa: width(startT), wb: width(endT),
-      ya: wetA ?? grade(startT), yb: wetB ?? grade(endT),
-      id: `lake-outlet:${n.gx}:${n.gz}:${i}`, fromId: `${n.gx}:${n.gz}`, toId: `${target.gx}:${target.gz}`,
-      discharge: flow, source: false, terminal: wetB !== undefined && !(targetReach && i === count),
-      mouth: wetB !== undefined && !(targetReach && i === count),
-      tangentAX: ta[0], tangentAZ: ta[1], tangentBX: tb[0], tangentBZ: tb[1] }
-    if (reach.mouth) { reach.mouthX = b.x; reach.mouthZ = b.z; reach.mouthWidth = reach.wb }
-    registerRiverSurface(reach, nearby)
-    result.push(reach)
-  }
-  // A formed river can already emerge from this lake even when its drainage
-  // node is submerged. Reuse that outlet rather than laying a second graded
-  // stream beside it and creating a dip before their first intersection.
-  if (result.length || carriesRiver(target)) source.outletId = `${target.gx}:${target.gz}`
-  return result
+  const end = lakeRoute(n)?.coordinates.at(-1)
+  if (end) source.outletId = `${end[0]}:${end[1]}`
 }
 
 export function* regionalDrainageSteps(cx: number, cz: number): Generator<HydrologyBuildPhase, {
@@ -666,9 +601,14 @@ export function* regionalDrainageSteps(cx: number, cz: number): Generator<Hydrol
     local.push(node(cx * CELLS + ix, cz * CELLS + iz))
     if (local.length % 8 === 0) yield 'samples'
   }
-  for (let i = 0; i < local.length; i++) {
-    parent(local[i]!)
-    if (i % 8 === 7) yield 'routing'
+  for (let iz = -HALO * 2; iz < CELLS + HALO * 2; iz++) for (let ix = -HALO * 2; ix < CELLS + HALO * 2; ix++) {
+    const q = node(cx * CELLS + ix, cz * CELLS + iz)
+    // The extra ring is for lake ownership/shore clearance, not another full
+    // set of river builds. Raw through-nodes cannot host lakes; their runoff
+    // is already included whenever a local watershed needs it.
+    const localNode = ix >= -HALO && iz >= -HALO && ix < CELLS + HALO && iz < CELLS + HALO
+    if (localNode || !routing.rawParent(q)) for (const _ of routing.prepareSteps(q)) yield 'routing'
+    if ((ix + HALO * 2) % 8 === 7) yield 'routing'
   }
   for (let i = 0; i < local.length; i++) {
     basin(local[i]!)
@@ -681,7 +621,8 @@ export function* regionalDrainageSteps(cx: number, cz: number): Generator<Hydrol
     const ownedNode = ix >= 0 && iz >= 0 && ix < CELLS && iz < CELLS
     const b = basin(n)
     if (b) { basins.push(b); if (ownedNode) landmarks.push(b) }
-    const r = [...reaches(n), ...lakeOutlets(n)]
+    const r = reaches(n)
+    assignLakeOutlet(n)
     // Prepare exact shared surfaces in cooperative batches instead of doing
     // all lake-mouth clipping inside one indivisible node-routing step.
     for (let i = 0; i < r.length; i++) {

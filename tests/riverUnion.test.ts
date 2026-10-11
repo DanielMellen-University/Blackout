@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { riverReachesInBounds, waterLandmarks, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
+import { riverReachesInBounds, waterBasinsInBounds, waterLandmarks, type RiverReach, type WaterBasin } from '../src/world/Hydrology'
 import { riverSurface, type RiverSurface } from '../src/world/RiverSurface'
 import { riverUnionSteps } from '../src/world/RiverUnion'
 import { setWorldSeed } from '../src/world/noise'
@@ -98,11 +98,12 @@ describe('unified river surface', () => {
     expect(counts.overlapsBefore).toBeGreaterThan(0)
   })
 
-  it('joins the previously striped seed-1337 broad confluence without duplicate wet coverage', () => {
+  it('joins a generated broad turning trunk without duplicate wet coverage', () => {
     setWorldSeed(1338); waterLandmarks(0, 0); setWorldSeed(1337)
-    const lake = waterLandmarks(0, 0).find(b => b.id === 'lake:5:10')!
-    const reaches = [...riverReachesInBounds(lake.x - 2500, lake.z - 3500, lake.x + 2500, lake.z + 2500)]
-    const counts = review(reaches, [lake], lake.x - 1200, lake.z - 2300, lake.x + 1500, lake.z + 1000, 25)
+    const x = -37939.150, z = 17344.774
+    const reaches = [...riverReachesInBounds(x - 2500, z - 2500, x + 2500, z + 2500)]
+    const basins = waterBasinsInBounds(x - 2500, z - 2500, x + 2500, z + 2500)
+    const counts = review(reaches, basins, x - 1500, z - 1500, x + 1500, z + 1500, 20)
     expect(counts.wet).toBeGreaterThan(2500)
     expect(counts.overlapsBefore).toBeGreaterThan(700)
   })

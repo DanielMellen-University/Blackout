@@ -1,4 +1,18 @@
-# Water surface review - 10.881
+# Water surface review - 10.882
+
+## 10.882: longer connected river systems
+
+Shared four-neighbour drainage edges breach bounded local depressions into lower basin roots. The same graph carries accumulated rainfall, non-rising water grades, river widths, native lake outlets, carving and visible/collision surfaces. The existing 16,384-node FIFO owns coordinate/scalar caches; no second persistent graph is added. Spill preparation publishes only complete plans and yields cooperatively. Recreated upstream nodes are prepared even when their terminal's cached totals survive eviction.
+
+`node scripts/profile-drainage.mjs` compares seeds 1, 42 and 1337 over the same 256 km-square node review per seed against commit e4c122a (10.881). Baseline: 364 selected systems, 12.764 km mean, 11.627 km median, 30.313 km maximum. New: 38 systems, 52.484 km mean, 50.191 km median, 76.674 km maximum. Mean main-stem length is 4.112x baseline; total formed channel length is 67.5% of baseline, not a density increase. Both have zero selected terminals lacking receiving water. These are whole-system graph lengths, including connected lakes, not a claim that every individual rendered span is four times longer.
+
+Optional lakes now occupy actual raw depressions. Their contours stop before lower channels; safe arms grow to retain substantial pond area, and optional footprints too constrained to hold a useful pond are rejected. Broad single-trunk corners receive the shared level bend zone previously reserved for confluences. Independent lake-outlet ribbons are removed in favour of ordinary node-owned river edges. Rarer braids and deltas retain split/rejoin geometry; the 8 km source taper remains.
+
+Affected tests cover actual downhill surfaces across five seeds and 125 regions, native lake-shore exits, closed basins, broad turning trunks, generation order, cancellation, eviction, independent Float32 mesh/collision agreement, substantial concave ponds, sparse coverage, river widths and maximum-speed fallback retirement. The retirement fixture now compares resident keys with the last scheduled layout and requires empty pending/fallback work, rather than replanning a few metres beyond its half-cell refresh position. No render distance or budget is reduced to pass it. Generation revision 10 rejects incompatible ghost playback without deleting records.
+
+Same-machine seed-73 catchment 0,0, ten cold preparations: baseline median/p95 24.982/54.443 ms, connected routing 50.236/98.355 ms. Largest sampled connected phase is 3.006 ms, versus approximately 14 ms before cooperative preparation. This is an increased cold CPU cost, even though this region has zero new owned reaches versus 87 old ones. Neither warm reuse nor smaller work slices establish an FPS improvement. The graph-only review takes approximately 619 ms baseline versus 992 ms new across all three seeds; it is not a browser startup benchmark.
+
+Clear-weather first-person river and overview/chase lake-outlet stills show continuous water connections. Angular shores and temporarily incomplete terrain during streaming remain apparent; complete water artwork is unfinished. Browser review is throttled near one frame per second, so its frame timings cannot establish normal gameplay performance. Controlled foreground startup, sustained maximum-speed frame-time/memory comparison, water polish and the final Free flight review remain required. Regional weather and half-strength delayed assist are already shipped; actual EST reset wiring, per-level generation and paused exclusions remain unchanged.
 
 ## 10.881: slower source taper, not longer river routes
 

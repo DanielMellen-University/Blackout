@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.881**. Previous roadmap chunk: **10.880**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.882**. Previous roadmap chunk: **10.881**.
+
+Recent changes from **10.882**. Connected basin drainage now supports substantially longer river systems: the fixed three-seed review measures 52.5 km average main stems versus 12.8 km in 10.881, about 4.1x longer. Shared four-neighbour spill paths retain runoff and compatible downstream grades; lake outlets use those same edges instead of separate ribbons. Optional lakes occupy depressions, keep substantial asymmetric shores, and stay clear of lower rivers. Braids and deltas are rarer; the 8 km source taper remains. Saved records are preserved while generation revision 10 skips incompatible ghosts. Render distance, cache caps, and worker/upload budgets remain unchanged. Cold generation is more expensive, not an FPS improvement; shoreline polish and controlled full-game startup/travel/memory comparison remain unfinished. Regional weather and delayed half-strength assist remain shipped. Actual EST reset wiring and per-level generation remain deferred.
 
 Recent changes from **10.881**. Rivers now widen gradually across an 8 km source transition rather than reaching full width over one roughly 2 km drainage edge. Tributaries retain their shared junction widths, and tiny triangle-edge rounding no longer drops water sampling to a lower overlapping surface. Routes, lakes, coastlines, river frequency, render distance, and streaming caps are unchanged. Generation revision 9 skips incompatible ghosts without deleting records. This is the slower-taper batch, not the requested 4x average river-length increase: longer connected drainage remains unfinished. Regional weather and delayed half-strength flight assist remain shipped. Actual EST reset wiring and per-level generation remain deferred.
 
@@ -53,7 +55,7 @@ Daily challenge displays a wall-clock countdown to midnight EST (fixed UTC-5, ye
 
 ## Project
 
-Connected-drainage integration is in progress. The tested basin-routing core joins local depressions through canonical shared edges, preserves accumulated runoff, and prepares cooperatively. It is not enabled in the committed game yet; the 4x river-length prototype still needs fixture migration, cold-generation optimization, and visual/streaming review. The shipped gameplay remains the 10.881 taper batch.
+The connected basin router is enabled in the shared world generator. Run `node scripts/profile-drainage.mjs` for the reproducible CPU-only three-seed length comparison against 10.881. The full water overhaul is still in progress: angular shoreline details, cold-generation cost, and controlled foreground performance review remain open. See [water surface review](docs/water-surface-review.md).
 
 Vegetation (trees, rocks, and other natural props) is removed and development is paused. Do not restore or develop it unless explicitly requested; see [repository rules](AGENTS.md) and [roadmap exclusions](docs/ROADMAP.md#paused-systems).
 

@@ -67,8 +67,8 @@ describe('joined water optics', () => {
   it('keeps generated shallow-band data canonical across cancellation, order and region query history', () => {
     const build = (reverse: boolean) => {
       setWorldSeed(1338); waterLandmarks(0, 0); setWorldSeed(1337)
-      if (reverse) waterLandmarks(1, 1)
-      const lake = waterLandmarks(0, 0).find(b => b.id === 'lake:5:10')!
+      if (reverse) waterLandmarks(-1, 0)
+      const lake = waterLandmarks(-2, 0).find(b => b.id === 'lake:-22:7')!
       const partial = basinSurfaceSteps(lake, [])
       expect(partial.next().done).toBe(false)
       partial.return(undefined as never)
@@ -84,7 +84,7 @@ describe('joined water optics', () => {
 
   it('preserves interpolated optical values when a lake triangle is clipped by different tiles', () => {
     setWorldSeed(1337)
-    const lake = waterLandmarks(0, 0).find(b => b.id === 'lake:5:10')!
+    const lake = waterLandmarks(-2, 0).find(b => b.id === 'lake:-22:7')!
     const make = (size: number, x: number, z: number) => buildWaterMesh(new Float32Array(4).fill(1e5),
       new Float32Array(4), 1, size, x - size / 2, z - size / 2, { value: 0 }, undefined, [], [], [lake])!
     const whole = make(5000, lake.x, lake.z), tile = make(420, lake.x - 400, lake.z)
@@ -100,7 +100,7 @@ describe('joined water optics', () => {
 
   it('rejects a seed change during suspended basin preparation', () => {
     setWorldSeed(1338); waterLandmarks(0, 0); setWorldSeed(1337)
-    const lake = waterLandmarks(0, 0).find(b => b.id === 'lake:5:10')!
+    const lake = waterLandmarks(-2, 0).find(b => b.id === 'lake:-22:7')!
     const steps = basinSurfaceSteps(lake, [])
     expect(steps.next().done).toBe(false)
     setWorldSeed(42)

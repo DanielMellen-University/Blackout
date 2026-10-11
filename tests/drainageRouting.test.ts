@@ -15,10 +15,23 @@ function fixture(capacity = 16384) {
     }
     return n
   }
-  return { get, ...drainageRouter(get, n => n.height > 0 ? 1 : 0) }
+  return { get, evict: (gx: number, gz: number) => nodes.delete(`${gx},${gz}`),
+    ...drainageRouter(get, n => n.height > 0 ? 1 : 0) }
 }
 
 describe('canonical depression drainage', () => {
+  it('warms a recreated upstream node even when its terminal caches survive eviction', () => {
+    const r = fixture(), first = r.get(0, 0)
+    for (const _ of r.prepareSteps(first)) { /* complete preparation */ }
+    const expectedGrade = first.waterGrade, expectedFlow = first.drainageFlow
+    r.evict(0, 0)
+    const replacement = r.get(0, 0)
+    expect(replacement).not.toBe(first)
+    for (const _ of r.prepareSteps(replacement)) { /* retain the cached terminal */ }
+    expect(replacement.waterGrade).toBe(expectedGrade)
+    expect(replacement.drainageFlow).toBe(expectedFlow)
+  })
+
   it('prepares cooperatively without publishing a partial route when cancelled', () => {
     const r = fixture(), sink = r.get(0, 0)
     const cancelled = r.prepareSteps(sink)

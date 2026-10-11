@@ -136,6 +136,9 @@ export function drainageRouter<T extends DrainageNode>(get: (gx: number, gz: num
       if (++work % 8 === 0) yield
     }
     yield* accumulate(current)
+    // A terminal scalar can survive FIFO eviction of an upstream node. Warm
+    // that recreated start too instead of returning with its caches absent.
+    yield* accumulate(start)
   }
   return { parent, rawParent, root, grade, flow, prepareSteps }
 }

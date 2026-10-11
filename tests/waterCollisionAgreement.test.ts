@@ -7,7 +7,7 @@ import { buildWaterMesh } from '../src/world/WaterSystem'
 describe('visible river and collision agreement', () => {
   it('does not turn carved dry inland banks into phantom sea-level water', () => {
     setWorldSeed(42)
-    for (const [x, z] of [[-24525, -21275], [-23900, -21725]]) {
+    for (const [x, z] of [[-43946.246576454316, 43855.14797103481], [-43851.32430885375, 43901.92253473024]]) {
       const sample = sampleGeography(x!, z!)
       expect(sample.features.river).toBeGreaterThan(.9)
       expect(sample.waterLevel).toBe(0)
@@ -17,13 +17,13 @@ describe('visible river and collision agreement', () => {
   })
 
   it('does not draw duplicate river identities after node-cache eviction', () => {
-    setWorldSeed(1)
+    setWorldSeed(73)
     riverReaches(-1, -1)
     // Retain this region while evicting its node objects, then build the
     // neighboring region with newly-created copies of shared halo reaches.
     for (let i = 0; i < 65; i++) riverReaches(20 + i * 2, 20)
     riverReaches(-2, -1)
-    const reaches = riverReachesInBounds(-34000, -20000, -30000, -16000)
+    const reaches = riverReachesInBounds(-34000, -24000, -30000, -20000)
     expect(reaches.length).toBeGreaterThan(10)
     expect(new Set(reaches.map(r => r.id)).size).toBe(reaches.length)
   })

@@ -11,7 +11,7 @@ describe('regional connected world', () => {
     const failures: object[] = []
     for (const seed of [1, 42, 73, 1337, 2026]) {
       setWorldSeed(seed)
-      for (let cx = -1; cx <= 1; cx++) for (let cz = -1; cz <= 1; cz++) {
+      for (let cx = -2; cx <= 2; cx++) for (let cz = -2; cz <= 2; cz++) {
         for (const r of riverReaches(cx, cz)) {
           let previous = Infinity
           for (let i = 0; i <= 8; i++) {
@@ -27,7 +27,7 @@ describe('regional connected world', () => {
     }
     expect(checked).toBeGreaterThan(70000)
     expect({ rises, failures }).toEqual({ rises: 0, failures: [] })
-  })
+  }, 20_000)
 
   it('keeps seas uncommon while preserving usable inland starts', () => {
     let wet = 0, count = 0, coasts = 0
@@ -85,16 +85,16 @@ describe('regional connected world', () => {
   })
 
   it('retains rare low-gradient split/rejoin channels in a longer watershed', () => {
-    setWorldSeed(1)
-    const branches = riverReaches(-3, -2).filter(r => r.fromId === '-37:-30' && r.branch)
+    setWorldSeed(1337)
+    const branches = riverReaches(2, 2).filter(r => r.fromId === '40:34' && r.branch)
     expect(branches.some(r => r.id?.includes(':-1:'))).toBe(true)
     expect(branches.some(r => r.id?.includes(':1:'))).toBe(true)
     for (const r of branches) expect(r.ya).toBeGreaterThanOrEqual(r.yb)
   })
 
-  it('gives the former small receiving pond a larger, concave asymmetric shore', () => {
+  it('gives a wetland depression a substantial, concave asymmetric shore', () => {
     setWorldSeed(42)
-    const pond = waterLandmarks(-1, -1).find(b => b.id === 'lake:-12:-10')!
+    const pond = waterLandmarks(-2, 0).find(b => b.id === 'lake:-24:7')!
     expect(pond.radius).toBeGreaterThan(900)
     const radii = [...pond.shoreRadii!]
     expect(radii).toHaveLength(64)
@@ -187,7 +187,7 @@ describe('regional connected world', () => {
     expect(checked).toBeGreaterThan(10)
   })
 
-  it.each([[1, 2, -1], [42, 0, 2], [42, 1, 3], [2026, -1, 1]])(
+  it.each([[1, -1, 2], [42, 0, 2], [42, -2, 2], [2026, -1, 1]])(
     'keeps shoreline detours connected at matching elevations for seed %s region %s,%s', (seed, cx, cz) => {
       setWorldSeed(seed)
       const reaches = riverReaches(cx, cz)

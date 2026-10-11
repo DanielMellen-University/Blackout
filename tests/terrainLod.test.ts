@@ -49,7 +49,7 @@ describe('terrain LOD bands', () => {
 
   it('detects ponds that fall between coarse far-tile vertices', () => {
     setWorldSeed(1)
-    const pond = waterLandmarks(-2, -2).find(basin => basin.pond)
+    const pond = waterLandmarks(-1, 2).find(basin => basin.pond)
     expect(pond).toBeDefined()
     const originX = Math.floor(pond!.x / CHUNK_SIZE) * CHUNK_SIZE
     const originZ = Math.floor(pond!.z / CHUNK_SIZE) * CHUNK_SIZE
@@ -146,8 +146,18 @@ describe('TerrainSystem streaming LOD', () => {
       // The doubled horizon and 650 ms replacement fades keep a bounded overlap.
       expect(peakTiles).toBeLessThan(850)
       pump(terrain, x, 210, 400)
-      const history = new Set((terrain as unknown as { layoutSplits: Set<string> }).layoutSplits)
-      const expected = planTerrainTiles(x / CHUNK_SIZE, .5, VIEW_RADIUS, undefined, history)
+      const internal = terrain as unknown as { layoutSplits: Set<string>; lastLodFocusX: number; lastLodFocusZ: number;
+        chunks: Map<string, unknown>; pending: unknown[]; fallback: unknown }
+      const history = new Set(internal.layoutSplits)
+      // The planner deliberately updates only every half-cell, not at every
+      // position sample. Compare against the last scheduled layout, not a
+      // hypothetical replan a few metres ahead of its refresh threshold.
+      const expected = planTerrainTiles(internal.lastLodFocusX / CHUNK_SIZE,
+        internal.lastLodFocusZ / CHUNK_SIZE, VIEW_RADIUS, undefined, history)
+      expect(internal.pending).toHaveLength(0)
+      expect(internal.fallback).toBeNull()
+      expect([...internal.chunks.keys()].sort()).toEqual(expected.map(t =>
+        t.size === 1 ? `${t.cx},${t.cz}` : `${t.cx},${t.cz}:${t.size}`).sort())
       expect(terrain.root.children.length).toBe(expected.length)
       expect(terrain.chunkStats(Math.floor(x / CHUNK_SIZE), 0)?.lod).toBe(0)
     } finally {

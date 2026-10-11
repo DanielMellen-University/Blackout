@@ -8,7 +8,7 @@ describe('small pond contours', () => {
     const proportions = new Set<number>()
     for (const seed of [1, 42, 1337]) {
       setWorldSeed(seed)
-      for (let cx = -1; cx <= 1; cx++) for (let cz = -1; cz <= 1; cz++) {
+      for (let cx = -2; cx <= 2; cx++) for (let cz = -2; cz <= 2; cz++) {
         for (const basin of waterLandmarks(cx, cz)) {
           if (basin.sea || basin.radius >= 1800) continue
           const radii = basin.shoreRadii!
@@ -35,8 +35,10 @@ describe('small pond contours', () => {
         }
       }
     }
-    expect(count).toBeGreaterThan(40)
-    expect(count).toBeLessThan(65) // Larger ponds must not restore dense spawning.
+    // Only actual depressions host optional lakes now. Review more regions so
+    // the shape checks remain substantial without restoring through-node pools.
+    expect(count).toBeGreaterThan(50)
+    expect(count).toBeLessThan(115)
     expect(concave).toBeGreaterThan(count * .7)
     expect(proportions.size).toBeGreaterThan(8)
   })
