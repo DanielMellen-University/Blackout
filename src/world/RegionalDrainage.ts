@@ -14,6 +14,7 @@ interface Node {
   channel?: boolean; wetOutlet?: boolean; lake?: LakeCandidate | null; discharge?: number
   longRoute?: boolean; primary?: boolean; dominant?: readonly [number, number] | null
   mergeRadius?: number
+  sourceDistance?: number
   lakeOutlets?: RiverReach[]
   lakeRoute?: { coordinates: readonly (readonly [number, number])[]; level: number } | null
 }
@@ -296,6 +297,25 @@ function basin(n: Node): WaterBasin | null {
   return n.basin
 }
 
+/** Established channels grow gradually across four ordinary drainage edges. */
+export function riverSourceWidth(fullWidth: number, distance: number): number {
+  return 10 + (fullWidth - 10) * smoothstep(0, 8000, distance)
+}
+
+/** Longest formed upstream stem, cached as one scalar under the node FIFO.
+ * Strictly descending parent heights make the upstream recursion acyclic. */
+function distanceFromSource(n: Node): number {
+  if (n.sourceDistance !== undefined) return n.sourceDistance
+  let distance = 0
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    if (!dx && !dz) continue
+    const upstream = node(n.gx + dx, n.gz + dz), p = parent(upstream)
+    if (p?.gx === n.gx && p.gz === n.gz && carriesRiver(upstream)) distance = Math.max(distance,
+      Math.hypot(n.x - upstream.x, n.z - upstream.z) + distanceFromSource(upstream))
+  }
+  return (n.sourceDistance = distance)
+}
+
 function channelWidth(q: Node, amount: number): number {
   const downstream = parent(q)
   const gradient = downstream ? (q.height - downstream.height) /
@@ -303,7 +323,8 @@ function channelWidth(q: Node, amount: number): number {
   const floodplain = (1 - smoothstep(.004, .045, gradient)) *
     (1 - smoothstep(600, 1800, q.height))
   const valley = smoothstep(.25, .7, valueNoise(q.x / 12000 + 41, q.z / 12000 - 73))
-  return Math.max(8, Math.min(220, 5 + Math.pow(amount, .62) * 11)) * (1 + 3 * floodplain * valley)
+  const width = Math.max(8, Math.min(220, 5 + Math.pow(amount, .62) * 11)) * (1 + 3 * floodplain * valley)
+  return carriesRiver(q) ? riverSourceWidth(width, distanceFromSource(q)) : width
 }
 
 /** Incident channels share a short, level junction before diverging grades.

@@ -217,7 +217,9 @@ function triangleValue(p: Float64Array, a: number, b: number, c: number, x: numb
   if (Math.abs(determinant) < 1e-8) return -Infinity
   const u = ((bz - cz) * (x - cx) + (cx - bx) * (z - cz)) / determinant
   const v = ((cz - az) * (x - cx) + (ax - cx) * (z - cz)) / determinant
-  if (Math.min(u, v, 1 - u - v) < -1e-7) return -Infinity
+  // Match the tolerance of the rendered Float32 triangles. At a broad bank,
+  // sub-millimetre rounding must not select a much lower overlapping surface.
+  if (Math.min(u, v, 1 - u - v) < -1e-6) return -Infinity
   return p[a + component]! * u + p[b + component]! * v + p[c + component]! * (1 - u - v)
 }
 

@@ -1,4 +1,16 @@
-# Water surface review - 10.879
+# Water surface review - 10.881
+
+## 10.881: slower source taper, not longer river routes
+
+Formed rivers blend from a 10 m half-width toward their existing runoff/gradient-derived width across 8 km of upstream channel distance, rather than reaching that width over one roughly 2 km edge. Distance follows the longest formed upstream stem, so a short tributary cannot restart an established trunk's taper. The same node width feeds every incident channel. One scalar is cached per existing node; the 16,384-node FIFO, catchment ownership, halos, worker/upload budgets, render distance, and graph routes remain unchanged. This narrows young channels without adding river frequency, ponds, or water coverage. Generation revision 9 skips incompatible ghosts without deleting saved records.
+
+The water triangle containment tolerance now matches independent rendered Float32 checks. A synthetic regression covers sub-millimetre rounding beside an upper triangle over lower water, and rejects genuinely outside points. Source-profile tests pin the 8 km curve, monotonic transition, and more than 1,000 matching generated cross-sections. Existing order/cancellation/eviction, actual downhill water, lake outlet, and visible-surface/collision tests remain required.
+
+Same-machine seed-73 catchment 0,0 preparation, ten cold preparations per version: 10.880 median/p95 29.963/57.766 ms; taper median/p95 22.431/52.610 ms. Owned reach counts stay 87 in both runs; the largest sampled channel phase rises from 2.717 to 3.574 ms. Separate closed middleware loaders use temporary dependency caches and no additional HTTP server. These small CPU samples include JIT/GC variability and do not establish an FPS, startup, or sustained-memory improvement.
+
+The River headwaters review destination frames an actual source instead of the broadest trunk. Clear-weather low-altitude first-person inspection shows a narrow channel carved into rounded terrain; the route and a receiving lake remain visible downstream. Initial overview stills exposed partially streamed terrain, and shoreline segmentation remains visible. Browser error logs were empty. Background throttling around one frame per second prevents a useful maximum-speed performance judgment; full foreground travel comparison and complete water artwork remain unfinished.
+
+The requested roughly 4x average river length is NOT implemented in this batch. Baseline terminal-system main-stem length averages 12.370 km across 261 selected systems in seeds 1, 42, and 1337 over a 256 km-square node sample per seed. A coarse-routing prototype reached longer stems but removed too many local waterways. Independent basin-spill links averaged only 14.096 km in the comparable sample and later routed variants crossed existing water at incompatible heights. Those prototypes were backed out rather than shipped. Longer rivers require canonical connected drainage/junctions and valid depression spills, not stretching ribbons or stopping them on land. Regional weather and delayed half-strength flight assist remain shipped; actual EST reset wiring, per-level generation, and all paused-system exclusions remain unchanged.
 
 ## 10.879: actual lake outlets and bank-aware grades
 
