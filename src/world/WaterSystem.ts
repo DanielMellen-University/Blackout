@@ -4,6 +4,7 @@ import { riverUnionSteps } from './RiverUnion'
 import { smoothstep } from './noise'
 import { applyWaterAppearance, type WaterWeatherUniforms } from './WaterAppearance'
 import { basinOpticalDepth, basinSurfaceSteps, type BasinVertex } from './BasinSurface'
+import { coastField } from './Coastline'
 
 interface WaterVertex { x: number; z: number; bed: number; level: number; basin: number }
 const basinIslandCache = new WeakMap<WaterBasin, { points: BasinVertex[]; triangles: number[][] }>()
@@ -481,7 +482,16 @@ function* appendRiverRibbons(
       b.z + waterBasinBoundsRadius(b) + 400 >= surface.minZ && b.z - waterBasinBoundsRadius(b) - 400 <= surface.maxZ)
     const vertex = (data: Float64Array, index: number): RibbonVertex => {
       const x = data[index]!, z = data[index + 2]!
-      let blend = 0, kind = 0
+      let blend = 0, kind = 0, depth = data[index + 3]!
+      if (reach.yb === 0) {
+        // Regional seas are a coast field, not a basin in this tile's list.
+        // Carry their seabed/palette through the mouth cap too; otherwise its
+        // shallow river profile paints a conspicuous semicircle over the sea.
+        const coast = coastField(x, z)
+        blend = 1 - smoothstep(0, 400, Math.max(0, coast * 18000))
+        kind = 2 * blend
+        depth = Math.max(depth, -coast * 1800)
+      }
       for (const b of nearby) {
         const d = basinDistance(b, x, z)
         const amount = 1 - smoothstep(0, Math.max(100, Math.min(400, reach.wb * 2)), Math.max(0, d))
@@ -492,7 +502,7 @@ function* appendRiverRibbons(
       const width = reach.wa + (reach.wb - reach.wa) * t
       const flow = Math.max(.24, Math.min(1, .24 + Math.pow(Math.min(1, width / 90), .65) * .66 + drop * .1))
       return { x: x - originX - half, y: data[index + 1]! + .04,
-        z: z - originZ - half, depth: data[index + 3]!, kind, riverBlend: 1 - blend, flow }
+        z: z - originZ - half, depth, kind, riverBlend: 1 - blend, flow }
     }
     for (let i = 0; i < surface.triangles.length; i += 12) {
       appendPolygon(vertex(surface.triangles, i), vertex(surface.triangles, i + 4),

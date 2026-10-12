@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.888**. Previous roadmap chunk: **10.887**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.889**. Previous roadmap chunk: **10.888**.
+
+Recent changes from **10.889**. Fix the hard teal ring at river-to-sea mouths: regional seas now supply depth, sea color and current blending even without a basin object. The exact seed-73 endpoint was checked in unobstructed first person and chase. Channel geometry, collision, 4.1x reviewed mean main-stem length, 8 km taper, generation revision 14 and streaming budgets are unchanged. This adds coastal sampling during affected water builds, not per-frame work or geometry. Broader low-altitude water/weather review remains open; actual EST reset wiring and per-level generation remain deferred. Paused systems remain excluded.
 
 Recent changes from **10.888**. Keep the development-only full-game recorder windowed and fix its launch/reset camera to chase without changing saved preferences. Record the actual camera label. Complete matching 81.6 km maximum-speed runs against 10.868: frame median/p95 are 17.4/24.1 ms now versus 17.5/24.0 ms before. Startup and peak heap are higher, and long hitches remain; this is not a general performance win. See the streaming performance notes for exact measurements and limits. Low-altitude review exposed a remaining curved color boundary at a river/lake mouth, so the water/weather goal is not declared complete. Generation revision 14, flight handling, half-strength delayed assist, render distance, streaming budgets and paused exclusions are unchanged. Actual EST wiring and per-level generation remain deferred.
 

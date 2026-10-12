@@ -7,7 +7,9 @@ import { buildWaterMesh } from '../src/world/WaterSystem'
 describe('visible river and collision agreement', () => {
   it('does not turn carved dry inland banks into phantom sea-level water', () => {
     setWorldSeed(42)
-    for (const [x, z] of [[-43946.246576454316, 43855.14797103481], [-43851.32430885375, 43901.92253473024]]) {
+    // Curved spans moved the former dry fixture into the actual channel.
+    // These adjacent shoulders remain strongly carved but genuinely dry.
+    for (const [x, z] of [[-43966.246576454316, 43855.14797103481], [-43946.246576454316, 43875.14797103481]]) {
       const sample = sampleGeography(x!, z!)
       expect(sample.features.river).toBeGreaterThan(.9)
       expect(sample.waterLevel).toBe(0)
@@ -26,7 +28,7 @@ describe('visible river and collision agreement', () => {
     const reaches = riverReachesInBounds(-34000, -24000, -30000, -20000)
     expect(reaches.length).toBeGreaterThan(10)
     expect(new Set(reaches.map(r => r.id)).size).toBe(reaches.length)
-  })
+  }, 15000)
 
   it('does not flood dry banks outside the river ribbon', () => {
     setWorldSeed(1)

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { type BufferAttribute, type Mesh } from 'three'
-import { basinDistance, type RiverReach, type WaterBasin, waterLandmarks } from '../src/world/Hydrology'
+import { basinDistance, type RiverReach, type WaterBasin, waterLandmarks, riverReachesInBounds } from '../src/world/Hydrology'
+import { coastField, coastalRelief } from '../src/world/Coastline'
 import { basinSurfaceSteps } from '../src/world/BasinSurface'
 import { buildWaterMesh } from '../src/world/WaterSystem'
 import { setWorldSeed } from '../src/world/noise'
@@ -38,6 +39,33 @@ function dispose(mesh: Mesh): void {
 }
 
 describe('joined water optics', () => {
+  it('carries regional sea shading through the seed 73 terminal cap without needing a basin object', () => {
+    setWorldSeed(73)
+    const reach = riverReachesInBounds(-65000, 8000, -63000, 10000).find(r => r.id === '-32:4:0:7')!
+    expect(reach?.mouth).toBe(true)
+    const size = 2400, segs = 16
+    const originX = reach.bx - size / 2, originZ = reach.bz - size / 2
+    const beds = new Float32Array((segs + 1) ** 2)
+    for (let z = 0; z <= segs; z++) for (let x = 0; x <= segs; x++)
+      beds[z * (segs + 1) + x] = coastalRelief(0, coastField(originX + x * size / segs, originZ + z * size / segs))
+    const mesh = buildWaterMesh(beds, new Float32Array(beds.length), segs, size,
+      originX, originZ, { value: 0 }, undefined, [reach], [], [])!
+    try {
+      const dx = reach.dx / reach.length, dz = reach.dz / reach.length
+      // The old low-depth half-cap ended here with an abrupt teal ring. Probe
+      // both sides, including sea pixels that no longer belong to the ribbon.
+      const radius = reach.wb + 80
+      for (const offset of [-8, 8]) {
+        const x = reach.bx + dx * (radius + offset), z = reach.bz + dz * (radius + offset)
+        expect(coastField(x, z)).toBeLessThan(0)
+        const [depth, flow, kind] = drawnOptics(mesh, x, z)
+        expect(depth).toBeGreaterThan(10)
+        expect(flow).toBeCloseTo(0, 4)
+        expect(kind).toBeCloseTo(2, 4)
+      }
+    } finally { dispose(mesh) }
+  })
+
   it.each([12, 100])('matches depth, flow and kind across a %s m inlet without a false shallow lip', width => {
     const lake: WaterBasin = { x: 800, z: 500, radius: 220, aspect: 1, angle: 0, phase: 0,
       level: 90, sea: false, pond: true, shoreRadii: new Float32Array(32).fill(220) }

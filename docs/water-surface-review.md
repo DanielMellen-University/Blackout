@@ -1,4 +1,16 @@
-# Water surface review - 10.888
+# Water surface review - 10.889
+
+## 10.889: regional sea-mouth optical continuity
+
+The failing downstream endpoint in 10.888 is reach `-32:4:0:7`, seed 73, at approximately (-64248, 8820), elevation zero. It meets a regional sea rather than an analytic lake. The river cap retained shallow freshwater depth/current/color because the tile's analytic basin list was empty. It therefore painted a bright semicircle over the deeper raster sea.
+
+For zero-level reaches, sample the existing global coast field during mesh construction. Blend sea kind and calm current over the same 400 m coastal margin; carry the sea's optical seabed depth through the cap. Physical geometry, collision and terrain carving are unchanged. No new vertices, attributes, persistent caches or per-frame sampling are introduced; affected build vertices do add coast-field work. Generation revision 14, render distance and streaming budgets remain unchanged.
+
+The exact endpoint was reinspected in Clear weather, unobstructed first person and chase. The visible ring is removed. A regression builds the actual generated terminal reach with regional sea water and no basin object, then probes both sides of its former cap edge for deep water, sea kind and zero river flow. Existing lake, union and independent collision/surface checks remain required. Broader moving low-altitude water/weather review remains open; this is not a claim that every waterway is finished. Actual EST wiring and per-level generation remain deferred, and paused exclusions are unchanged.
+
+![Corrected river-to-sea mouth](reviews/river-sea-mouth-10.889.png)
+
+Verification: six affected water test files pass (54 checks), and the production build passes. The 80%-to-sea review trace reaches the corrected mouth at maximum afterburner speed. A previously stale seed-42 dry-bank fixture also fails on the unmodified 10.888 commit: its old point is now inside the curved channel. Move it to two adjacent dry shoulders without changing the dryness assertions. Allow the bounded 65-region eviction test 15 seconds; its normal run remains a few seconds. The only build warning is the existing large Three.js bundle.
 
 ## 10.888: unthrottled review and remaining mouth appearance
 
