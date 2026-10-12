@@ -150,7 +150,11 @@ function lakeCandidate(n: Node): LakeCandidate | null {
   // Optional lakes can be rare; a river's receiving surface cannot disappear.
   if (riverSink) return (n.lake = { radius: Math.min(1300, 500 + Math.sqrt(runoff(n)) * 125),
     roll, pond: wet, large: false, riverSink: true })
-  if (n.height < 35 || n.coast < .045 || hash2(n.gx - 947, n.gz + 613) >= .125) return null
+  // Moist lowland depressions should form wetland districts, not isolated
+  // ornamental ponds. Keep the same terrain-derived sinks and overlap owner;
+  // reserve more in wet country while retaining rarity in drier provinces.
+  const lakeChance = wet && roll < .8 ? .52 : .125
+  if (n.height < 35 || n.coast < .045 || hash2(n.gx - 947, n.gz + 613) >= lakeChance) return null
   // Optional lakes occupy raw depressions, never arbitrary through-nodes.
   // Wetland depressions favour shallow ponds over deep alpine lakes.
   if (roll < .3) return null
@@ -209,9 +213,11 @@ function basin(n: Node): WaterBasin | null {
       const angle = valleyAngle + phase + cove * (1.75 + shape * .6)
       inlet += Math.exp((Math.cos(a - angle) - 1) * (8 + cove * 3)) * (.44 - cove * .08)
     }
-    let lobe = 1.08 + Math.sin(a - phase) * .18 + Math.sin(a * 2 + phase * 1.3) * .2 +
-      Math.sin(a * 3 - phase * .7) * (.1 + shape * .1) - inlet +
-      (valueNoise(Math.cos(a) * 1.7 + n.gx, Math.sin(a) * 1.7 + n.gz) - .5) * .24
+    // Spatial shore fields break up coves without the old dominant two/three
+    // angular harmonics, which repeatedly produced paired round lobes.
+    let lobe = 1.08 + Math.sin(a - phase) * .12 - inlet * .7 +
+      (valueNoise(Math.cos(a) * 2.7 + n.gx + 31, Math.sin(a) * 2.7 + n.gz - 97) - .5) * .65 +
+      (valueNoise(Math.cos(a) * 5.1 + n.gx - 61, Math.sin(a) * 5.1 + n.gz + 17) - .5) * .18
     if (large) {
       const inletAngle = valleyAngle + .75 + roll * 2.4
       lobe = 1.02 + Math.sin(a - roll * 11) * .18 + Math.sin(a * 2 + roll * 9) * .2 +
@@ -357,15 +363,24 @@ function channelWidth(q: Node, amount: number): number {
  * of their common endpoint, even though their centreline endpoints agree. */
 function mergeRadius(n: Node): number {
   if (n.mergeRadius !== undefined) return n.mergeRadius
-  let incoming = 0
+  let incoming = 0, flatSection = 0
   for (const [dx, dz] of UPSTREAM_NEIGHBOURS) {
     const q = node(n.gx + dx, n.gz + dz), p = parent(q)
-    if (p?.gx === n.gx && p.gz === n.gz && (carriesRiver(q) || hasLakeOutlet(q))) incoming++
+    if (p?.gx === n.gx && p.gz === n.gz && (carriesRiver(q) || hasLakeOutlet(q))) {
+      incoming++
+      flatSection = Math.max(flatSection, Math.hypot(q.x - n.x, q.z - n.z) / REACH_STEPS * 2)
+    }
   }
   const width = channelWidth(n, discharge(n))
   // A broad single trunk can fold over itself at a corner too. Give its bend
   // the same shared level area as a confluence, not two overlapping grades.
-  return (n.mergeRadius = incoming >= 2 || (incoming > 0 && width > 150) ? width * 6 : 0)
+  // A narrow lake outlet still needs at least one completely level generated
+  // span at its confluence. A sub-section plateau disappears when endpoints
+  // are sampled, leaving the final sloping triangle across the other stream.
+  const downstream = parent(n)
+  if (downstream) flatSection = Math.max(flatSection,
+    Math.hypot(downstream.x - n.x, downstream.z - n.z) / REACH_STEPS * 2)
+  return (n.mergeRadius = incoming >= 2 || (incoming > 0 && width > 150) ? Math.max(width * 6, flatSection) : 0)
 }
 
 function nodeWaterLevel(n: Node): number {

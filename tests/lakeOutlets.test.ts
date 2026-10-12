@@ -10,6 +10,20 @@ function outletReaches() { return riverReaches(-2, -1).filter(r => r.fromId === 
 function outletSignature() { return outletReaches().map(r => [r.id, r.ax, r.az, r.bx, r.bz, r.ya, r.yb, r.wa, r.wb]) }
 
 describe('canonical lake outlets', () => {
+  it('retains a generated level span where a narrow wetland outlet meets another stream', () => {
+    setWorldSeed(1)
+    const incoming = riverReaches(-2, 2).filter(r => r.toId === '-23:46' && r.id?.endsWith(':0:16'))
+    expect(incoming.map(r => r.fromId)).toEqual(expect.arrayContaining(['-22:46', '-23:45']))
+    for (const r of incoming) {
+      expect(r.ya).toBeCloseTo(r.yb, 6)
+      for (let i = 0; i <= 8; i++) {
+        const c = sampleGeography(r.ax + r.dx * i / 8, r.az + r.dz * i / 8)
+        expect(c.waterLevel).toBeCloseTo(r.yb, 6)
+        expect(c.height).toBeLessThan(c.waterLevel)
+      }
+    }
+  })
+
   it('keeps higher junction banks clear of a lower lake without an uphill reconnection', () => {
     setWorldSeed(42)
     const lake = waterLandmarks(-2, 2).find(b => b.id === 'lake:-19:41')!

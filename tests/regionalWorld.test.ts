@@ -48,7 +48,25 @@ describe('regional connected world', () => {
     }
     expect(wet / count).toBeGreaterThanOrEqual(.04)
     expect(wet / count).toBeLessThanOrEqual(.065)
-    expect(coasts).toBeGreaterThan(0)
+    expect(coasts).toBeGreaterThanOrEqual(9)
+  })
+
+  it('concentrates nearby ponds in wetland districts without making them ubiquitous', () => {
+    let clusteredSeeds = 0, clusteredPonds = 0, pondCount = 0
+    for (const seed of [1, 42, 73, 1337, 2026]) {
+      setWorldSeed(seed)
+      const ponds = []
+      for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++)
+        ponds.push(...waterLandmarks(x, z).filter(b => b.pond))
+      const clustered = ponds.filter(b => ponds.some(c => b.id !== c.id &&
+        Math.hypot(b.x - c.x, b.z - c.z) < 8000))
+      clusteredSeeds += Number(clustered.length > 0)
+      clusteredPonds += clustered.length; pondCount += ponds.length
+    }
+    expect(clusteredSeeds).toBeGreaterThanOrEqual(3)
+    expect(clusteredPonds).toBeGreaterThanOrEqual(15)
+    // 125 regions cover 128,000 km². Clustering is local, not blanket flooding.
+    expect(pondCount).toBeLessThan(110)
   })
 
   it('has stable confluence identities, downhill grades, braids and lake outlets', () => {

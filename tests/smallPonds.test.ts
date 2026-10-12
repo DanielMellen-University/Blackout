@@ -35,10 +35,11 @@ describe('small pond contours', () => {
         }
       }
     }
-    // Only actual depressions host optional lakes now. Review more regions so
-    // the shape checks remain substantial without restoring through-node pools.
+    // Only actual depressions host optional lakes. Wetland districts retain
+    // more neighbouring ponds, but this remains under two small basins per
+    // 32 km catchment; regionalWorld separately bounds actual water coverage.
     expect(count).toBeGreaterThan(50)
-    expect(count).toBeLessThan(115)
+    expect(count).toBeLessThan(150)
     expect(concave).toBeGreaterThan(count * .7)
     expect(proportions.size).toBeGreaterThan(8)
   })

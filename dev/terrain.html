@@ -12,6 +12,7 @@
     <option value="">Airfield</option><option value="alpine">Alpine range</option>
     <option value="lake">Irregular lake</option><option value="ocean">Inland sea</option>
     <option value="pond">Small ponds</option>
+    <option value="wetland">Wetland lake chain</option>
     <option value="green">Green hills</option><option value="river">River valley</option>
     <option value="headwater">River headwaters</option>
     <option value="riverjoin">River shoreline joins</option>
@@ -183,6 +184,7 @@ const destinations={
   alpine:[1337,-9600,8400],lake:[1,0,0],ocean:[1,0,0],river:[1,0,0],green:[1,-30000,-17400],
   riverjoin:[1337,-37939,17344],
   lakeoutlet:[73,-57928,-10085],
+  wetland:[73,-5016,-18905],
   mesa:[1,-30000,-27600],volcano:[1,-92800,-13600],
   city:[1337,5,-1],village:[1,-7,-5],
   roadlink:[1,-7,-5],
@@ -316,6 +318,11 @@ function visitDestination(value){
     x=found.x;z=found.z
   }
   frameWorld({x,z,y:sampleTerrainHeight(x,z)})
+  if(value==='wetland'){
+    const y=sampleTerrainHeight(x,z)
+    camera.position.set(x+4000,y+3000,z-4000)
+    controls.target.set(x,y,z);controls.update()
+  }
   if(value==='city'||value==='village'||value==='roadlink'){
     const y=sampleTerrainHeight(x,z)
     settlementRadius=settlement.radius

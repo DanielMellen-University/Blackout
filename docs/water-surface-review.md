@@ -1,4 +1,29 @@
-# Water surface review - 10.889
+# Water surface review - 10.890
+
+## 10.890: wetland grouping and narrow confluences
+
+The completion audit found no pond neighbours within 8 km in any of five sampled 160 km-square worlds. Moist lowland depressions now receive a higher pond-retention probability; dry-province and large-lake probability stay unchanged. Raw depression eligibility, stable overlap ownership, spill routing, bounds, minimum footprint and shared terrain/render/collision data remain in use. Spatial shore fields replace the dominant small-basin two/three-lobe harmonics. This is not a new independent water generator.
+
+Five seeds (1, 42, 73, 1337, 2026), 25 regions each: 103 ponds, with 24 having a neighbour within 8 km across four seeds; the fifth remains sparse. The seed-73 pair `lake:-3:-10` and `lake:-2:-9` has native outlets into the same downstream junction. `/dev/terrain.html?destination=wetland&seed=73` frames this district. Ten sampled usable starts retain a sea within 40 km (4-34 km in the radial review); the regression now requires at least nine rather than merely one.
+
+The existing three-seed density grid records 4,219 wet points, 28.499% of the original high-density prototype's 14,804. Formed length across its 27 catchments is 536.880 km, 16.048% of that prototype. These are regional samples, not guarantees over the infinite world. Source taper and long-route selection are unchanged.
+
+Additional outlets exposed a narrow confluence at seed 1, node `-23:46`: a nominal short level plateau fell inside one generated span, whose endpoint interpolation remained sloped. Reserve two section lengths at qualifying shared junctions, so at least one full span stays level. The actual seed-1 overlap and broad five-seed water-grade review pass. Generation revision 15 rejects incompatible ghosts without deleting saved progress or recordings.
+
+The wetland overview was inspected before and after the contour adjustment. Shapes are less repetitively paired, but tiny pale wedges remain near some joins; investigate actual drawn ground and water together, not only collision agreement. Do not treat this overview as finished artwork or a low-altitude motion check. The earlier regional weather review covered 20.2 km at maximum speed, 220 m above sampled ground, unobstructed first person, clear-to-overcast conditions; storm chase, actual cloud interior (immersion 1.00) and blizzard stills were also inspected. Those weather sources are unchanged in this batch. Final moving storm/snow, delta/junction and Free flight checks remain open.
+
+![Wetland lake-chain review](reviews/wetland-chain-10.890.png)
+
+CPU tile builds on the same machine, exact 10.889 RegionalDrainage versus candidate, twelve repeated same-seed builds per case. Exclude the first build from warm median/p95. Clear the airfield pad before each build; hydrology caches remain warm after their initial preparation (toggling a seed away and immediately back without querying does not clear them). Separate module loaders isolate baseline/candidate state. Browser scenes and test processes were stopped for measurement. Geometry and generation work really increase, and no render-distance or streaming-budget cuts hide it. These are not repeated cold-start or gameplay frame-time/heap results.
+
+| Seed / location / LOD | Before median / p95 (ms) | After median / p95 (ms) | Water bytes before / after |
+| --- | --- | --- | --- |
+| 73 / -4200,-18600 / 0 | 7.685 / 12.938 | 36.437 / 55.070 | 0 / 62,064 |
+| 73 / -4200,-18600 / 2 | 5.960 / 28.189 | 7.606 / 22.757 | 61,920 / 380,160 |
+| 1 / -46072,91807 / 0 | 23.491 / 33.895 | 27.059 / 32.498 | 12,960 / 18,576 |
+| 1 / -46072,91807 / 2 | 4.473 / 10.844 | 4.689 / 6.457 | 80,784 / 135,792 |
+
+Seed-73 near first-build time rises from 159.145 to 234.735 ms. The 10.888 full-game comparison remains valid for that revision, not proof of unchanged performance for this added water. Review current gameplay startup/travel/memory before completion. Actual EST wiring and per-level generation remain deferred; paused exclusions remain unchanged.
 
 ## 10.889: regional sea-mouth optical continuity
 

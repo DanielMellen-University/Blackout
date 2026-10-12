@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.889**. Previous roadmap chunk: **10.888**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.890**. Previous roadmap chunk: **10.889**.
+
+Recent changes from **10.890**. Concentrate neighbouring ponds in wet lowland depressions without increasing dry-province lake probability. Replace repetitive small-basin angular lobes with spatial shore fields, and preserve fully level generated spans at narrow outlet confluences. The five-seed review finds nearby pond groups in four worlds instead of none; sampled water remains 28.5% of the former high-density prototype. Ten sampled starts retain a coast within 40 km. Add a Wetland lake chain review destination and strengthen clustering, coastal-access and junction checks. Generation revision 15 preserves records while skipping incompatible ghosts. The new wetlands increase build cost and water payload; further join-artwork and current-revision gameplay performance review remain open. Half-strength delayed assist, regional weather, render distance and streaming budgets are unchanged. Actual EST wiring and per-level generation remain deferred; paused systems remain excluded.
 
 Recent changes from **10.889**. Fix the hard teal ring at river-to-sea mouths: regional seas now supply depth, sea color and current blending even without a basin object. The exact seed-73 endpoint was checked in unobstructed first person and chase. Channel geometry, collision, 4.1x reviewed mean main-stem length, 8 km taper, generation revision 14 and streaming budgets are unchanged. This adds coastal sampling during affected water builds, not per-frame work or geometry. Broader low-altitude water/weather review remains open; actual EST reset wiring and per-level generation remain deferred. Paused systems remain excluded.
 
