@@ -5,6 +5,49 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.891 coarse shoreline bed correction
+
+The seed-73 wetland overview exposed a pale triangular bank sliver. Independent
+barycentric probes against the actual generated ground and water attributes
+confirmed coarse ground penetrating water, by up to roughly 8.3 m at the
+five retained regression points. Water triangles were present and matched
+the analytic collision level. Five-point actual-mesh checks now pass at near,
+mid and far detail. The corrected fixed view is saved as
+[wetland banks](reviews/wetland-banks-10.891.png); the aircraft-scale view was
+also inspected. This is not proof that every shoreline worldwide is perfect.
+
+The correction runs only on eligible coarse water/shore tiles with cells
+larger than 15 m. It samples mixed/at-risk cells, preserves a two-cell halo
+for matching heights/normals, and protects the graded runway core. An exact
+water-only query avoids repeated landform, biome and valley-carving work.
+No ground or water vertices/attributes are added, and no render distance,
+worker count or upload budget is reduced. Temporary arrays are tile-owned and
+released after completion/cancellation. Revision 16 invalidates incompatible
+ghost playback, not saved records.
+
+Same-machine CPU comparison on October 12: 16 builds per case, first build
+excluded from warm median/p95. The baseline uses the exact 10.890 terrain
+builder with the same current drainage implementation in isolated module
+loaders. The archived 10.888 TerrainGeometry source was verified identical
+to 10.890 before use. No game tab/tests ran during this comparison. These are
+warm builds, not repeated cold startups or a gameplay FPS benchmark.
+
+| Seed / centre / LOD | 10.890 warm median / p95 | 10.891 warm median / p95 | Ground / water bytes, unchanged |
+| --- | ---: | ---: | ---: |
+| 73 / -4200, -18600 / near | 39.20 / 71.18 ms | 34.79 / 44.36 ms | 180,588 / 62,064 |
+| 73 / -4200, -18600 / far | 7.76 / 23.27 ms | 11.91 / 24.39 ms | 15,788 / 380,160 |
+| 73 / -7830, -20250 / near | 34.27 / 35.88 ms | 31.84 / 35.69 ms | 180,588 / 25,776 |
+| 73 / -7830, -20250 / far | 8.64 / 11.56 ms | 12.33 / 14.00 ms | 15,788 / 582,912 |
+| 1 / -46072, 91807 / near | 25.81 / 31.12 ms | 26.75 / 33.91 ms | 180,588 / 18,576 |
+| 1 / -46072, 91807 / far | 4.67 / 5.94 ms | 6.19 / 8.53 ms | 15,788 / 135,792 |
+
+Near-detail correction is bypassed; its timing differences are run variance,
+not an optimization claim. Affected far tiles cost about 1.5-4.2 ms more to
+build. The earlier unoptimized experiment roughly doubled affected build
+times, so it was not retained. Repeat the full-game startup/travel/memory
+comparison on this revision before claiming performance completion. The
+10.888 comparison below does not measure this revision's extra work.
+
 ### Chunk 10.888 completed full-game comparison
 
 The browser is no longer continuously host-throttled. Both accepted runs use

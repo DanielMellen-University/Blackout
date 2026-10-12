@@ -1,9 +1,10 @@
 import { BufferAttribute, BufferGeometry, Float32BufferAttribute, Mesh, PlaneGeometry, Sphere, Vector3 } from 'three'
-import { applySlopeShadingInto, biomeColorInto, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
+import { applySlopeShadingInto, biomeColorInto, getOpsPad, OPS_PAD_INNER, OPS_PAD_OUTER, sampleClimateInto, sampleTerrainHeightFast, type Climate } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius, waterBasinsInBounds,
+import { hydrologyIntersectsBounds, hydrologyWaterLevelAt, prepareHydrologyInBoundsSteps, riverReachesInBounds, waterBasinBoundsRadius, waterBasinsInBounds,
   type HydrologyBuildPhase, type WaterBasin } from './Hydrology'
 import { buildWaterMeshSteps, type WaterBuildPhase } from './WaterSystem'
+import { shoreBedSteps, type ShoreBed } from './TerrainWaterBed'
 
 export const CHUNK_SIZE = 420
 export type TerrainLod = 0 | 1 | 2
@@ -298,7 +299,7 @@ export function* generateTerrainGeometrySteps(
       : size > 1 ? SEGS_MID : segsForLod(lod)
     // Cover analytic basin collection and the normal probes beyond each edge,
     // so neither point sampling nor water setup creates a cold region mid-step.
-    const margin = span / baseSegs
+    const margin = span / baseSegs * (lod === 0 || reducedFar ? 1 : 2)
     const hydrologySteps = prepareHydrologyInBoundsSteps(originX - margin, originZ - margin,
       originX + span + margin, originZ + span + margin)
     try {
@@ -380,18 +381,45 @@ export function* generateTerrainGeometrySteps(
       colors[i * 3 + 2] = vertexColor[2]
       if (i % 8 === 7 || i === pos.count - 1) yield 'ground'
     }
+    let shoreBed: ShoreBed | null = null
+    if (!reducedFar && cell > 15 && (reaches.length || sampledGrid().some(c => wet(c) || c.coastal > 0) ||
+      hydrologyIntersectsBounds(originX, originZ, originX + span, originZ + span, cell * 2) ||
+      basinsInBounds(originX - cell * 2, originZ - cell * 2, span + cell * 4).length)) {
+      const probe = createClimateSample()
+      const pad = getOpsPad()
+      const steps = shoreBedSteps(heights, waterLevels, segs, span, originX, originZ, (out, x, z) => {
+        sampleClimateInto(probe, x, z)
+        out.height = probe.height; out.waterLevel = probe.waterLevel ?? 0
+      }, (x, z) => {
+        if (pad && (x - pad.x) ** 2 + (z - pad.z) ** 2 < OPS_PAD_OUTER ** 2) {
+          sampleClimateInto(probe, x, z)
+          return probe.height < (probe.waterLevel ?? 0) - .01 ? probe.waterLevel! : -Infinity
+        }
+        return hydrologyWaterLevelAt(x, z)
+      }, pad ? (x, z) => (x - pad.x) ** 2 + (z - pad.z) ** 2 <= OPS_PAD_INNER ** 2 : undefined)
+      try {
+        let result = steps.next()
+        while (!result.done) { yield 'ground'; result = steps.next() }
+        shoreBed = result.value
+      } finally { steps.return({ heights, stride: 0 }) }
+      for (let iz = 0; iz <= segs; iz++) for (let ix = 0; ix <= segs; ix++) {
+        const i = iz * stride + ix, h = shoreBed.heights[(iz + 2) * shoreBed.stride + ix + 2]!
+        heights[i] = h; pos.setY(i, h)
+      }
+    }
     // Neighbour samples outside the tile give shared edges the same normal.
     // Clamping to an edge vertex used to halve the slope along every seam.
     const gradientX = new Float32Array(heights.length)
     const gradientZ = new Float32Array(heights.length)
+    const edgeHeight = (ix: number, iz: number): number => shoreBed
+      ? shoreBed.heights[(iz + 2) * shoreBed.stride + ix + 2]!
+      : Math.fround(sampleTerrainHeightFast(originX + ix * cell, originZ + iz * cell))
     for (let iz = 0; iz < stride; iz++) for (let ix = 0; ix < stride; ix++) {
       const i = iz * stride + ix
-      const wx = originX + ix * cell
-      const wz = originZ + iz * cell
-      const hl = ix > 0 ? heights[i - 1]! : Math.fround(sampleTerrainHeightFast(wx - cell, wz))
-      const hr = ix < segs ? heights[i + 1]! : Math.fround(sampleTerrainHeightFast(wx + cell, wz))
-      const hd = iz > 0 ? heights[i - stride]! : Math.fround(sampleTerrainHeightFast(wx, wz - cell))
-      const hu = iz < segs ? heights[i + stride]! : Math.fround(sampleTerrainHeightFast(wx, wz + cell))
+      const hl = ix > 0 ? heights[i - 1]! : edgeHeight(ix - 1, iz)
+      const hr = ix < segs ? heights[i + 1]! : edgeHeight(ix + 1, iz)
+      const hd = iz > 0 ? heights[i - stride]! : edgeHeight(ix, iz - 1)
+      const hu = iz < segs ? heights[i + stride]! : edgeHeight(ix, iz + 1)
       gradientX[i] = (hr - hl) / (2 * cell)
       gradientZ[i] = (hu - hd) / (2 * cell)
       if (i % 8 === 7 || i === heights.length - 1) yield 'normals'

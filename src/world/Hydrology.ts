@@ -215,6 +215,25 @@ export function sampleHydrology(x: number, z: number, ground: number): Hydrology
   }, x, z, ground)
 }
 
+/** Exact water footprint/upper surface without landform, climate or valley
+ * carving work. -Infinity denotes dry land, not the zero sea datum. */
+export function hydrologyWaterLevelAt(x: number, z: number): number {
+  const safeX = Number.isFinite(x) ? x : 0, safeZ = Number.isFinite(z) ? z : 0
+  const cx = Math.floor(safeX / CATCHMENT_SIZE), cz = Math.floor(safeZ / CATCHMENT_SIZE)
+  const region = catchment(cx, cz)
+  const binX = Math.max(0, Math.min(BINS - 1, Math.floor((safeX - cx * CATCHMENT_SIZE) / BIN)))
+  const binZ = Math.max(0, Math.min(BINS - 1, Math.floor((safeZ - cz * CATCHMENT_SIZE) / BIN)))
+  let level = -Infinity
+  for (const reach of region.bins[binZ * BINS + binX]!)
+    level = Math.max(level, riverSurfaceHeightAt(riverSurface(reach, region.basins), safeX, safeZ))
+  for (const basin of region.basins) {
+    const limit = basin.radius * 1.65 + 2000
+    if (Math.abs(safeX - basin.x) > limit || Math.abs(safeZ - basin.z) > limit) continue
+    if (basinDistance(basin, safeX, safeZ) <= 0) level = Math.max(level, basin.level)
+  }
+  return level > -Infinity ? level : coastField(safeX, safeZ) < 0 ? 0 : -Infinity
+}
+
 /** Write one hydrology sample into caller-owned storage to avoid hot-path churn. */
 export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, ground: number, coast?: number): HydrologySample {
   const safeX = Number.isFinite(x) ? x : 0
