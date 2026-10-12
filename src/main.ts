@@ -1529,7 +1529,7 @@ export async function boot(): Promise<void> {
     aircraft.reset(world.spawn)
     _stableHeading = world.spawn.yaw
     supersonic.reset(aircraft.speed)
-    cameras.setMode(cameraPreference, aircraft)
+    cameras.setMode(flightReview ? 'chase' : cameraPreference, aircraft)
     crashFx.reset()
     waterImpactFx.reset()
     crashCinematic.reset()
@@ -1678,7 +1678,8 @@ export async function boot(): Promise<void> {
     rememberRecentCourse(selectedCourseId)
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     playing = true
-    cameras.setMode(cameraPreference, aircraft)
+    // Review workload must not depend on a previously saved camera mode.
+    cameras.setMode(flightReview ? 'chase' : cameraPreference, aircraft)
     world.setSettlementsVisible(true)
     world.setTrafficVisible(true)
     menu.close()
@@ -1693,7 +1694,9 @@ export async function boot(): Promise<void> {
     input.release('Space')
     input.release('Enter')
     input.release('NumpadEnter')
-    void lockGameKeyboard()
+    // The development review uses a fixed window; fullscreen exit would pause
+    // its measured startup. Normal flight still requests fullscreen and lock.
+    if (!flightReview) void lockGameKeyboard()
     canvas.focus({ preventScroll: true })
     void audio.resume()
     syncInputContext()
@@ -2644,7 +2647,7 @@ export async function boot(): Promise<void> {
           streaming: debugStreamingStats,
         })
         flightReview?.frame(nowMs, debugStreamingStats, renderQuality, renderer.getPixelRatio(),
-          renderer.info.memory.geometries, renderer.info.memory.textures)
+          renderer.info.memory.geometries, renderer.info.memory.textures, cameras.modeLabel)
       }
       lastRenderMs = nowMs
       lastRenderedSimulationLive = simLive

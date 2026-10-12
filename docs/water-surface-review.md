@@ -1,4 +1,12 @@
-# Water surface review - 10.887
+# Water surface review - 10.888
+
+## 10.888: unthrottled review and remaining mouth appearance
+
+The full-game comparison now completes instead of running at one frame per second. See [the accepted comparison](terrain-streaming-performance.md#chunk-10888-completed-full-game-comparison) for matching route/settings, raw results, higher startup/heap costs and retained long hitches. The opt-in recorder stays windowed and fixes both launch/reset to chase without writing saved preferences; normal launch behavior is unchanged.
+
+Clear-weather seed-73 Lake outlet junction review used the downstream 80% position, unobstructed first person and maximum-speed river tracing to its receiving water. The connection remains wet, but a conspicuous curved teal/blue boundary remains at the mouth. This is a failing appearance check, not finished artwork. Preserve the shared physical surface while locating and correcting its optical/material cause, then repeat the low-altitude views. The goal remains active. Generation revision 14, longer main stems, slower taper, half-strength delayed assist, regional weather, render distance, streaming budgets and paused exclusions remain unchanged. Actual EST wiring and per-level generation remain deferred.
+
+![Remaining river-mouth optical boundary](reviews/river-mouth-10.888.png)
 
 ## 10.887: honest final-review measurements
 

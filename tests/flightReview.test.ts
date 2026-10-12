@@ -26,7 +26,7 @@ describe('fixed-route frame measurement', () => {
   })
 
   it('waits for coverage, freezes hidden travel, and stops at the same fixed endpoint', () => {
-    const elements: { onclick?: (() => void) | null; style: object; append: () => void; remove: () => void }[] = []
+    const elements: { textContent?: string; onclick?: (() => void) | null; style: object; append: () => void; remove: () => void }[] = []
     vi.stubGlobal('document', { createElement: () => {
       const el = { style: {}, append: vi.fn(), remove: vi.fn() }; elements.push(el); return el
     }, body: { append: vi.fn() } })
@@ -49,7 +49,8 @@ describe('fixed-route frame measurement', () => {
       expect(aircraft.position).toEqual(position)
       expect(aircraft.controls.boost).toBe(false)
       review.visibility(true); review.afterStep(aircraft, 119)
-      review.frame(200, stream, 'balanced', 1, 500, 3)
+      review.frame(200, stream, 'balanced', 1, 500, 3, 'external')
+      expect(JSON.parse(elements[2]!.textContent!)).toMatchObject({ phase: 'finished', camera: 'external', quality: 'balanced' })
       expect(Math.hypot(aircraft.position.x, aircraft.position.z)).toBeCloseTo(81600)
       review.afterStep(aircraft, 10)
       expect(aircraft.velocity.length()).toBe(0)

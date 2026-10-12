@@ -1,0 +1,38 @@
+{
+  "method": {
+    "seed": 73,
+    "quality": "balanced",
+    "viewport": [1280, 720],
+    "pixelRatioRange": [1, 1],
+    "camera": "chase (external label)",
+    "hud": "minimal",
+    "speedMps": 680,
+    "simulationSeconds": 120,
+    "distanceM": 81600,
+    "scope": "Prescribed route through full gameplay/render loop; not handling or low-altitude collision validation",
+    "baseline": "876a890 with development-only recorder hooks and windowed adapter",
+    "candidate": "10.888, world generation revision 14",
+    "limitations": "One warm-navigation run each, sequential; generated geography/weather differ; no universal speedup or leak-proof claim"
+  },
+  "baseline": {
+    "airfieldReadyMs": 1696.1,
+    "launchToCoverageWallMs": 1152.3,
+    "startupFrames": { "samples": 56, "median": 16.8, "p95": 38.6, "max": 88.5 },
+    "flightFrames": { "samples": 6501, "median": 17.5, "p95": 24, "max": 781.6 },
+    "heapBytes": { "start": 62289663, "current": 88944115, "peak": 110559000 },
+    "geometries": 403,
+    "textures": 4,
+    "streaming": { "loaded": 637, "pending": 23, "inFlight": 4, "ready": 0, "workers": 4 }
+  },
+  "candidate": {
+    "camera": "external",
+    "airfieldReadyMs": 3688.6,
+    "launchToCoverageWallMs": 2098.5,
+    "startupFrames": { "samples": 114, "median": 16.7, "p95": 35.6, "max": 65.9 },
+    "flightFrames": { "samples": 6532, "median": 17.4, "p95": 24.1, "max": 1041.5 },
+    "heapBytes": { "start": 70511099, "current": 96581118, "peak": 224836106 },
+    "geometries": 378,
+    "textures": 4,
+    "streaming": { "loaded": 646, "pending": 1, "inFlight": 4, "ready": 2, "workers": 4 }
+  }
+}

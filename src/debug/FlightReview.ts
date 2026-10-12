@@ -65,7 +65,7 @@ export class FlightReview {
       launch()
     }
     this.output.style.margin = '8px 0 0'
-    this.output.textContent = 'Development only: Free flight, (0, 5000, 0), northeast, maximum speed.\nKeep this tab visible. Paused/hidden time is excluded.'
+    this.output.textContent = 'Development only: Free flight, chase camera, (0, 5000, 0), northeast, maximum speed.\nWindowed review. Keep this tab visible. Paused/hidden time is excluded.'
     this.panel.append(this.button, this.output)
     document.body.append(this.panel)
   }
@@ -100,7 +100,7 @@ export class FlightReview {
   }
 
   frame(now: number, stream: TerrainStreamingStats, quality: string, ratio: number,
-    geometries: number, textures: number): void {
+    geometries: number, textures: number, camera = 'unreported'): void {
     if (!this.active || this.phase === 'ready' || this.phase === 'finished') return
     const heap = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize ?? 0
     this.heapPeak = Math.max(this.heapPeak, heap)
@@ -117,7 +117,7 @@ export class FlightReview {
     }
     if (now < this.nextPaint && this.phase !== 'finished') return
     this.nextPaint = now + 1000
-    this.output.textContent = JSON.stringify({ phase: this.phase, quality,
+    this.output.textContent = JSON.stringify({ phase: this.phase, quality, camera,
       viewport: [innerWidth, innerHeight], pixelRatio: ratio, ratioRange: [this.ratioMin, this.ratioMax],
       airfieldReadyMs: this.airfieldReadyMs, launchToCoverageWallMs: this.coverageMs,
       seconds: this.seconds, distanceM: this.seconds * flightConfig.maxSpeedBoost,

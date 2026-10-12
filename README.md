@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.887**. Previous roadmap chunk: **10.886**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.888**. Previous roadmap chunk: **10.887**.
+
+Recent changes from **10.888**. Keep the development-only full-game recorder windowed and fix its launch/reset camera to chase without changing saved preferences. Record the actual camera label. Complete matching 81.6 km maximum-speed runs against 10.868: frame median/p95 are 17.4/24.1 ms now versus 17.5/24.0 ms before. Startup and peak heap are higher, and long hitches remain; this is not a general performance win. See the streaming performance notes for exact measurements and limits. Low-altitude review exposed a remaining curved color boundary at a river/lake mouth, so the water/weather goal is not declared complete. Generation revision 14, flight handling, half-strength delayed assist, render distance, streaming budgets and paused exclusions are unchanged. Actual EST wiring and per-level generation remain deferred.
 
 Recent changes from **10.887**. Correct debug callback-rate telemetry that incorrectly reported 60 during long hitches; simulation hitch protection is unchanged. Add an opt-in development-only full-game fixed-route recorder, plus an actual-cloud interior probe in terrain review. Frame windows are bounded, pause/hidden gaps excluded, and real hitches retained. Cloud-interior and regional storm stills were inspected. The full-game comparison remains blocked by browser throttling, not validated by the old debug readout. Water generation, half-strength delayed assist, weather budgets and render distance are unchanged. Actual EST reset wiring, per-level generation and paused-system exclusions remain unchanged.
 

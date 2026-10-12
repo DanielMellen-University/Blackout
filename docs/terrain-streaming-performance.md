@@ -5,6 +5,51 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.888 completed full-game comparison
+
+The browser is no longer continuously host-throttled. Both accepted runs use
+seed 73, Balanced, 1280 x 720, pixel ratio fixed at 1, minimal HUD and chase,
+with a prescribed 680 m/s trajectory for 120 simulation seconds (81.6 km).
+The baseline is exact commit `876a890` (10.868), with only the same development
+recorder/hooks and windowed-review adapter added. The candidate retains world
+generation revision 14. Only one game tab and one server ran at a time, with
+no tests or profiler during either accepted run. Navigation modules were warm;
+these single startup readings are not cold-install measurements. Landscapes
+and weather intentionally differ because the shared generator changed.
+
+| Measure | 10.868 baseline | 10.888 candidate |
+| --- | ---: | ---: |
+| Airfield ready after navigation | 1,696.1 ms | 3,688.6 ms |
+| Launch to terrain coverage | 1,152.3 ms | 2,098.5 ms |
+| Startup rendered intervals | 56 | 114 |
+| Startup median / p95 / max | 16.8 / 38.6 / 88.5 ms | 16.7 / 35.6 / 65.9 ms |
+| Flight rendered intervals | 6,501 | 6,532 |
+| Flight median / p95 / max | 17.5 / 24.0 / 781.6 ms | 17.4 / 24.1 / 1,041.5 ms |
+| JS heap start / endpoint / peak | 62.3 / 88.9 / 110.6 MB | 70.5 / 96.6 / 224.8 MB |
+| Endpoint geometries / textures | 403 / 4 | 378 / 4 |
+| Endpoint loaded tiles | 637 | 646 |
+| Endpoint pending / workers active / ready | 23 / 4 / 0 | 1 / 4 / 2 |
+
+Frame median/p95 are comparable on this route, not universally improved.
+Startup is slower and peak heap is substantially higher. The candidate heap
+returns below its earlier 137 MB reading by the endpoint, but this is not a
+leak proof or a long-session memory guarantee. The long hitches are real
+timestamp samples and are not discarded or explained away without a trace.
+No render distance, worker count or streaming/upload cap was reduced.
+Raw results are in [the comparison record](reviews/fullgame-10.888.json).
+
+Discarded diagnostics include continuously throttled runs, a fullscreen-exit
+pause, unmatched viewport sizes and two runs where reset restored a saved
+orbit camera. The recorder now avoids automatic fullscreen, fixes launch and
+reset to chase, and reports `external` (the chase label). It does not overwrite
+the saved camera preference. Normal game launch still requests fullscreen.
+
+The accepted endpoint was visually checked in the actual Free flight game.
+A separate clear-weather, low-altitude seed-73 lake-outlet trace reached its
+receiving water without a dry cutoff, but exposed a curved optical color
+boundary. Water appearance and final low-altitude/weather field review remain
+open; these measurements do not declare the full objective complete.
+
 ### Chunk 10.887 full-game review protocol
 
 In development, open `/?course=free-flight&seed=73&review=flight` and use the
