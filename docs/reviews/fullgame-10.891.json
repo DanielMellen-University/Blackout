@@ -1,0 +1,41 @@
+{
+  "sourceCommit": "b0c6cbdbcdc5b14ddfdf8a4fe4c268cd3d2ff7d6",
+  "worldGeneration": 16,
+  "method": {
+    "seed": 73,
+    "hud": "minimal",
+    "route": "Full gameplay loop, (0, 5000, 0) northeast, prescribed pose/controls",
+    "scope": "Startup, rendering, streaming, weather, HUD, audio and collision workload; not handling validation",
+    "limitations": "One warm-navigation run; geography/weather differ from baseline; temporary stage instrumentation was added only after this capture",
+    "baselineRecord": "fullgame-10.888.json: baseline, exact 10.868 plus the same recorder/windowed adapter"
+  },
+  "result": {
+    "phase": "finished",
+    "quality": "balanced",
+    "camera": "external",
+    "viewport": [1280, 720],
+    "pixelRatio": 1,
+    "ratioRange": [1, 1],
+    "airfieldReadyMs": 3061.5,
+    "launchToCoverageWallMs": 2110.500000000371,
+    "seconds": 120,
+    "distanceM": 81600,
+    "speedMps": 680,
+    "startupFrames": {
+      "samples": 111,
+      "median": 16.700000000000728,
+      "p95": 34.599999999998545,
+      "max": 124.59999999999854
+    },
+    "flightFrames": {
+      "samples": 6525,
+      "median": 18.10000000000582,
+      "p95": 23.60000000000582,
+      "max": 1084.1000000000058
+    },
+    "heapBytes": { "start": 78649986, "current": 95635591, "peak": 218542831 },
+    "geometries": 377,
+    "textures": 4,
+    "streaming": { "loaded": 638, "pending": 18, "inFlight": 4, "ready": 0, "workers": 4 }
+  }
+}

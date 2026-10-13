@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.891**. Previous roadmap chunk: **10.890**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.892**. Previous roadmap chunk: **10.891**.
+
+Recent changes from **10.892**. Save the final revision-16 water build's 81.6 km full-game performance comparison. Frame median/p95 are 18.1/23.6 ms versus 17.5/24.0 ms in the historical baseline; startup and peak heap are higher, and a 1.08-second hitch remains. Raw results and limitations are retained in the streaming performance notes. This evidence-only batch does not change generation, water, flight handling or weather. Reviewed main stems remain about 4.1x longer with an 8 km source taper. Water fixes through 10.891 are shipped; broader field review is not claimed complete. Weather is the next work phase at the user's request. Actual EST wiring, per-level generation and paused systems remain excluded.
 
 Recent changes from **10.891**. Correct coarse shoreline ground triangles poking through continuous water at the reviewed wetland bend. Shared halo sampling keeps matching tile edges and normals aligned; runway cores are protected. An allocation-free water-only query avoids repeated climate generation during this build-time correction. Near detail, water geometry/payload, render distance and streaming limits stay unchanged. Five actual-mesh regression points pass at all three detail levels, and the fixed wetland view was inspected. Affected far-tile builds still cost roughly 1-5 ms more in the measured fixtures; this is not a gameplay speedup claim. Ghost landscape revision 16 preserves records and skips incompatible playback. Current-revision full-game performance and final water/weather travel review remain open. Half-strength delayed assist remains shipped. Actual EST wiring, per-level generation and paused systems remain out of scope.
 

@@ -5,6 +5,62 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.892 current-revision full-game comparison
+
+The accepted candidate is exact commit `b0c6cbd` (10.891), landscape revision
+16. The historical baseline and method are recorded below under 10.888.
+Both runs used seed 73, Balanced, 1280 x 720, pixel ratio 1, minimal HUD and
+chase, with the same prescribed 680 m/s trajectory for 120 simulation seconds
+(81.6 km). One tab/server ran at a time with no tests or profiler during the
+accepted runs. Real gameplay rendering, streaming, weather, HUD, audio and
+collision execute; prescribed aircraft pose/controls make this a workload
+comparison, not a handling test. Navigation modules were warm. These are
+single runs on the same machine, not repeated cold-start distributions, and
+the intentionally changed generator produces different terrain/weather.
+
+| Measure | 10.868 baseline | 10.891 candidate |
+| --- | ---: | ---: |
+| Airfield ready after navigation | 1,696.1 ms | 3,061.5 ms |
+| Launch to terrain coverage | 1,152.3 ms | 2,110.5 ms |
+| Startup rendered intervals | 56 | 111 |
+| Startup median / p95 / max | 16.8 / 38.6 / 88.5 ms | 16.7 / 34.6 / 124.6 ms |
+| Flight rendered intervals | 6,501 | 6,525 |
+| Flight median / p95 / max | 17.5 / 24.0 / 781.6 ms | 18.1 / 23.6 / 1,084.1 ms |
+| JS heap start / endpoint / peak | 62.3 / 88.9 / 110.6 MB | 78.6 / 95.6 / 218.5 MB |
+| Endpoint geometries / textures | 403 / 4 | 377 / 4 |
+| Endpoint loaded tiles | 637 | 638 |
+| Endpoint pending / workers active / ready | 23 / 4 / 0 | 18 / 4 / 0 |
+
+Raw candidate results are in [the revision-16 record](reviews/fullgame-10.891.json).
+Frame median/p95 are comparable on this route; startup and peak heap are
+higher. Endpoint heap is below its peak but one route does not prove absence
+of a leak. The real long hitch is retained, not filtered or declared fixed.
+No render distance, worker count, cache cap or upload budget was reduced.
+
+A separate temporary diagnostic run reproduced a 1,057 ms RAF interval.
+The preceding measured game work totalled 4.4 ms: simulation 0.2, world 1.1,
+presentation 0, render 3.0 and HUD 0.1 ms. No slow world sub-stage was logged
+at that gap. This narrows the measured CPU explanation but does not establish
+a browser, GPU or host cause, nor exclude work outside those checkpoints.
+Instrumentation was removed after the diagnostic; its run is not substituted
+for the uninstrumented accepted result above.
+
+The actual Free flight endpoint was visually inspected. A separate automatic
+weather review covered 63.2 km at 680 m/s and 220 m above sampled terrain,
+using first person then chase; observed samples included clear, snow showers
+and overcast, with readable terrain. A later 170 km automatic travel pass
+ended in blizzard conditions (18.0/23.3 ms median/p95; heap 62 to 80 MB,
+peak 210 MB), but its intervening conditions were not continuously observed.
+Neither pass certifies continuous storm/blizzard review. Browser approval
+became unavailable before that focused check. At the user's request this
+commit finishes the current water batch and weather is next; broader field
+coverage remains explicitly unverified rather than inferred from stills.
+
+Delivery checks: all 31 checks in `terrainWaterBed`, `regionalWorld`,
+`lakeOutlets` and `smallPonds` passed. The production build and synchronized
+release-metadata check passed; the existing Three.js bundle-size warning
+remains. This delivery changes only release metadata and review evidence.
+
 ### Chunk 10.891 coarse shoreline bed correction
 
 The seed-73 wetland overview exposed a pale triangular bank sliver. Independent
@@ -44,9 +100,9 @@ warm builds, not repeated cold startups or a gameplay FPS benchmark.
 Near-detail correction is bypassed; its timing differences are run variance,
 not an optimization claim. Affected far tiles cost about 1.5-4.2 ms more to
 build. The earlier unoptimized experiment roughly doubled affected build
-times, so it was not retained. Repeat the full-game startup/travel/memory
-comparison on this revision before claiming performance completion. The
-10.888 comparison below does not measure this revision's extra work.
+times, so it was not retained. The current-revision full-game comparison is
+recorded above under 10.892, including startup/heap costs and remaining hitches.
+The historical 10.888 comparison below does not measure this extra work.
 
 ### Chunk 10.888 completed full-game comparison
 
