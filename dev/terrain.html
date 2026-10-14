@@ -24,7 +24,10 @@
   </select>
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
-  <button id="cloud-interior">Enter nearest cloud</button>
+  <button id="cloud-interior">Inspect nearest cloud</button>
+  <select id="cloud-view" aria-label="Cloud review view">
+    <option value="below">Below cloud</option><option value="inside" selected>Inside cloud</option><option value="above">Above cloud</option>
+  </select>
   <button id="river-tour">Trace river</button>
   <select id="review-view" aria-label="River camera">
     <option value="overview">Overview</option><option value="chase">Chase</option>
@@ -47,6 +50,16 @@
   <span id="seed"></span> · drag to orbit · scroll to zoom
   <span id="stats"></span>
   <div id="travel-stats"></div>
+  <details id="weather-fixture" hidden>
+    <summary>Reproducible weather review</summary>
+    <label>Seed <input id="fixture-seed" aria-label="Review seed" type="number" value="1" style="width:75px"></label>
+    <label>X <input id="fixture-x" aria-label="Review world X" type="number" value="8000" style="width:85px"></label>
+    <label>Z <input id="fixture-z" aria-label="Review world Z" type="number" value="-56000" style="width:85px"></label>
+    <label>Seconds <input id="fixture-time" aria-label="Review simulation seconds" type="number" min="0" value="180" style="width:75px"></label>
+    <label>Day <input id="fixture-day" aria-label="Review time of day" type="number" min="0" max="1" step=".01" value=".48" style="width:60px"></label>
+    <label><input id="fixture-hold" aria-label="Hold weather clock" type="checkbox">Hold weather clock</label>
+    <button id="fixture-apply">Apply review pose</button><span id="fixture-status"></span>
+  </details>
 </nav>
 <script type="module">
 import * as T from 'three'
@@ -170,14 +183,25 @@ document.querySelector('#cloud-interior').onclick=()=>{
       object.getMatrixAt(i,matrix);matrix.decompose(position,rotation,scale)
       if(Math.min(scale.x,scale.y,scale.z)<80)continue
       const distance=position.distanceToSquared(camera.position)
-      if(distance<best){best=distance;nearest=position.clone()}
+      if(distance<best){best=distance;nearest={position:position.clone(),scale:scale.clone()}}
     }
   })
   if(!nearest){document.querySelector('#travel-stats').textContent='No dense formation ready. Let the cloud pool settle, then retry.';return}
+  const center=nearest.position,view=document.querySelector('#cloud-view').value
+  const viewpoint=center.clone()
+  if(view!=='inside')viewpoint.add(new T.Vector3(-Math.max(1600,nearest.scale.x*2),
+    Math.max(800,nearest.scale.y*3)*(view==='above'?1:-1),-Math.max(1600,nearest.scale.z*2)))
+  viewpoint.y=Math.max(viewpoint.y,sampleTerrainHeight(viewpoint.x,viewpoint.z)+120)
+  if(view==='below'&&viewpoint.y>=center.y-50){
+    document.querySelector('#travel-stats').textContent='No below-cloud viewpoint clear of terrain here. Inspect above or choose another destination.';return
+  }
   reviewMode='cloud-interior';flightView=tracingRiver=flying=weatherTraceDirty=false
-  reviewJet.reset({x:nearest.x,y:nearest.y,z:nearest.z,yaw:Math.PI/2});reviewJet.mesh.visible=false
-  controls.enabled=false;camera.position.copy(nearest);controls.target.copy(nearest).add(new T.Vector3(1500,0,0));camera.lookAt(controls.target)
-  document.querySelector('#travel-stats').textContent='Inside a rendered cloud. Choose a destination to leave.'
+  camera.position.copy(viewpoint)
+  controls.target.copy(center)
+  if(view==='inside')controls.target.x+=1500
+  camera.lookAt(controls.target);controls.enabled=false
+  reviewJet.reset({x:camera.position.x,y:camera.position.y,z:camera.position.z,yaw:Math.PI/2});reviewJet.mesh.visible=false
+  document.querySelector('#travel-stats').textContent=`${view} rendered cloud at ${center.x.toFixed(1)}, ${center.y.toFixed(1)}, ${center.z.toFixed(1)}. Choose a destination to leave.`
 }
 const destinations={
   pond:[1337,0,0],headwater:[1,0,0],
@@ -191,6 +215,8 @@ const destinations={
   weatherfront:[1,8000,-56000],weathersnow:[1,-200000,168000],
 }
 let weatherTraceDirty=false
+let weatherOrigin=null
+let reviewDay=.48
 let weatherTravelT=0,travelSeconds=0,travelDistance=0,travelStartHeap=0,travelPeakHeap=0
 const travelFrames=new Float32Array(7200)
 let travelFrameCount=0
@@ -240,6 +266,8 @@ function visitDestination(value){
   const target=destinations[value]
   if(!target){frameWorld();return}
   reviewMode=value
+  weatherOrigin=null
+  document.querySelector('#weather-fixture').hidden=!value.startsWith('weather')
   document.querySelector('#weather-progress').hidden=!value.startsWith('weather')
   document.querySelector('#weather-height').hidden=!value.startsWith('weather')
   document.querySelector('#weather-progress').value='0'
@@ -248,6 +276,11 @@ function visitDestination(value){
   riverTour=[];riverTourLength=0
   let [seed,x,z]=target
   if(requestedSeed>0)seed=requestedSeed
+  if(value.startsWith('weather')){
+    document.querySelector('#fixture-seed').value=seed
+    document.querySelector('#fixture-x').value=x
+    document.querySelector('#fixture-z').value=z
+  }
   let settlement=null
   world.reseed(seed)
   // Fixed review seeds must remain inspectable even when that seed cannot
@@ -375,6 +408,26 @@ function applyReviewWeather(){
   else world.atmosphere.setWeather(value,true)
 }
 document.querySelector('#weather').onchange=applyReviewWeather
+document.querySelector('#fixture-apply').onclick=()=>{
+  const read=id=>Number(document.querySelector(id).value)
+  const seed=read('#fixture-seed'),x=read('#fixture-x'),z=read('#fixture-z'),time=read('#fixture-time'),day=read('#fixture-day')
+  if(![seed,x,z,time,day].every(Number.isFinite)||time<0||day<0||day>1){
+    document.querySelector('#fixture-status').textContent='Enter finite coordinates, a nonnegative time and day 0-1.';return
+  }
+  if(getWorldSeed()!==seed){
+    world.reseed(seed)
+    if(getWorldSeed()!==seed){setWorldSeed(seed);clearOpsPad()}
+    world.terrain.clearAll();world.settlements.clearAll()
+  }
+  weatherOrigin=[seed,x,z];weatherTravelT=0;weatherTraceDirty=true
+  document.querySelector('#weather-progress').value='0'
+  flying=false;document.querySelector('#fly').textContent='Flight benchmark'
+  world.atmosphere.randomizeWeather(getWorldSeed(),{x,y:sampleTerrainHeight(x,z)+Number(document.querySelector('#weather-height').value),z})
+  applyReviewWeather()
+  world.atmosphere.setAutomaticWeather(document.querySelector('#weather').value==='automatic',time)
+  reviewDay=day;world.atmosphere.timeOfDay=day;world.atmosphere.setTimeOfDayLocked(true)
+  document.querySelector('#fixture-status').textContent=`Seed ${getWorldSeed()} / X ${x} / Z ${z} / time ${time} / day ${day}`
+}
 const requested=new URLSearchParams(location.search).get('destination')
 if(requested){document.querySelector('#destination').value=requested;visitDestination(requested)}
 let previous=performance.now()
@@ -419,7 +472,7 @@ renderer.setAnimationLoop(now=>{
     weatherTraceDirty=false;flightView=false;tracingRiver=false
     const t=flying?weatherTravelT:Number(document.querySelector('#weather-progress').value)/1000
     const dx=reviewMode==='weatherfront'?-Math.SQRT1_2:1,dz=reviewMode==='weatherfront'?-Math.SQRT1_2:0
-    const start=destinations[reviewMode],x=start[1]+dx*t*28000,z=start[2]+dz*t*28000
+    const start=weatherOrigin??destinations[reviewMode],x=start[1]+dx*t*28000,z=start[2]+dz*t*28000
     const y=sampleTerrainHeight(x,z)+Number(document.querySelector('#weather-height').value),view=document.querySelector('#review-view').value
     reviewJet.reset({x,z,y,yaw:Math.atan2(dx,-dz)})
     reviewJet.mesh.visible=view==='chase';controls.enabled=view==='overview'
@@ -465,15 +518,16 @@ renderer.setAnimationLoop(now=>{
     const rise=Math.max(0,floor-controls.target.y)
     controls.target.y+=rise;camera.position.y+=rise;controls.update()
   }
-  world.atmosphere.timeOfDay=.48
+  world.atmosphere.timeOfDay=reviewDay
   const focus=flightView||reviewMode.startsWith('weather')||reviewMode==='cloud-interior'?reviewJet.position:controls.target
-  world.update(focus.x,focus.y,focus.z,dt)
+  const holdWeather=(reviewMode.startsWith('weather')||reviewMode==='cloud-interior')&&document.querySelector('#fixture-hold').checked
+  world.update(focus.x,focus.y,focus.z,dt,holdWeather?0:dt,dt)
   if(flightView) chase.update(reviewJet,dt)
   renderer.render(world.scene,flightView?chase.camera:camera)
   frames++
   if(frames%15===0){
     const sorted=[...timings].sort((a,b)=>a-b)
-    document.querySelector('#stats').textContent=' · '+world.atmosphere.weatherLabel+' · cloud immersion '+world.atmosphere.cloudImmersionLevel.toFixed(2)+' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
+    document.querySelector('#stats').textContent=' · '+world.atmosphere.weatherLabel+' · time '+world.atmosphere.weatherSimulationTime.toFixed(1)+' · cloud immersion '+world.atmosphere.cloudImmersionLevel.toFixed(2)+' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
     if(travelFrameCount){
       const sample=travelFrames.slice(0,Math.min(travelFrameCount,travelFrames.length)).sort()
       const heap=performance.memory?.usedJSHeapSize??0

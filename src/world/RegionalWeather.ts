@@ -1,20 +1,45 @@
-import { fbm, smoothstep, valueNoise } from './noise'
+import { clamp01, fbm, smoothstep, valueNoise } from './noise'
 import { sampleLandformsInto, type LandformSample } from './Landforms'
 import { PROFILE_KEYS, WEATHER_PROFILES, type WeatherId, type WeatherSnapshot } from './WeatherDirector'
-const SEQUENCE: readonly WeatherId[] = ['clear', 'cloudy', 'overcast', 'rain', 'storm']
 
 export interface RegionalWeatherSample extends WeatherSnapshot {
   id: WeatherId
   cloudBase: number
+  cloudTop: number
+  precipitationBase: number
+  visibilityM: number
+  convection: number
 }
+export const WEATHER_STRUCTURE_KEYS = ['cloudBase', 'cloudTop', 'precipitationBase', 'visibilityM', 'convection'] as const
 export function createRegionalWeatherSample(): RegionalWeatherSample {
-  return { ...WEATHER_PROFILES.clear, windX: 0, windZ: 0, id: 'clear', cloudBase: 1400 }
+  return { ...WEATHER_PROFILES.clear, windX: 0, windZ: 0, id: 'clear', cloudBase: 1400,
+    cloudTop: 2400, precipitationBase: 1400, visibilityM: 30240, convection: 0 }
+}
+
+/** Manual and regional weather share a physical vertical envelope. No observer
+ * altitude enters the cloud or precipitation source heights. */
+export function populateWeatherStructure(out: RegionalWeatherSample, base = 1400,
+  convection = out.lightning): void {
+  out.convection = clamp01(convection)
+  out.cloudBase = Math.max(300, base)
+  out.cloudTop = out.cloudBase + 650 + out.midClouds * 850 + out.convection * 3900
+  out.precipitationBase = out.cloudBase
+  out.visibilityM = Math.max(1800, 30240 * out.fogFarMul)
 }
 
 /** Spatial fronts, independent of visitation order. No arrays, objects, cache
  * growth, wall-clock timers, or terrain/hydrology generation in the hot path. */
 export class RegionalWeather {
   private readonly land = {} as LandformSample
+
+  /** Keep a manual profile intact while fitting its cloud envelope to the
+   * regional ground. This is landform sampling, never hydrology generation. */
+  structureInto(out: RegionalWeatherSample, x: number, z: number): RegionalWeatherSample {
+    const land = sampleLandformsInto(this.land, Number.isFinite(x) ? x : 0, Number.isFinite(z) ? z : 0)
+    populateWeatherStructure(out, Math.max(950, land.height + 650) +
+      (1 - land.moisture) * 350 - out.haze * 220)
+    return out
+  }
 
   sampleInto(out: RegionalWeatherSample, x: number, y: number, z: number, simulationSeconds: number): RegionalWeatherSample {
     x = Number.isFinite(x) ? x : 0; y = Number.isFinite(y) ? y : 0
@@ -28,25 +53,41 @@ export class RegionalWeather {
     const warp = valueNoise(wx / 17000 - 41, wz / 17000 + 63) * 1.8
     const band = .5 + .5 * Math.sin(wx / 6300 + wz / 24000 + warp)
     const exposure = 1 - smoothstep(.01, .17, Math.abs(land.coast!))
-    const severity = Math.max(0, Math.min(4, (air - .38) * 8 +
-      smoothstep(.55, .9, band) * 1.35 + (land.moisture - .5) * 1.2 + exposure * .15))
-    const index = Math.min(3, Math.floor(severity)), blend = smoothstep(0, 1, severity - index)
-    const a = WEATHER_PROFILES[SEQUENCE[index]!], b = WEATHER_PROFILES[SEQUENCE[index + 1]!]
-    for (const field of PROFILE_KEYS) out[field] = a[field] + (b[field] - a[field]) * blend
-    out.id = SEQUENCE[Math.min(4, Math.round(severity))]!
+    // Coverage, available moisture and lift are different fields. Dry overcast
+    // and warm showers without thunder must remain possible.
+    const cover = clamp01((air - .30) * 1.65 + band * .29 +
+      (land.moisture - .5) * .16 + exposure * .04)
+    const moisture = fbm(wx / 34000 - 173, wz / 34000 + 587, 2) +
+      (land.moisture - .5) * .18 + exposure * .06 + land.highlands * .04
+    const broken = smoothstep(.13, .56, cover)
+    const overcast = smoothstep(.54, .80, cover)
+    const precip = smoothstep(.48, .70, moisture) * smoothstep(.40, .70, cover) *
+      (.3 + smoothstep(.35, .85, band) * .7)
+    const lift = fbm(wx / 7800 + 337, wz / 7800 - 719, 2)
+    const convection = smoothstep(.57, .82, lift) * smoothstep(.48, .70, moisture) *
+      smoothstep(.50, .76, cover)
+    const storm = smoothstep(.20, .65, convection)
+    for (const field of PROFILE_KEYS) {
+      let value = WEATHER_PROFILES.clear[field] +
+        (WEATHER_PROFILES.cloudy[field] - WEATHER_PROFILES.clear[field]) * broken
+      value += (WEATHER_PROFILES.overcast[field] - value) * overcast
+      value += (WEATHER_PROFILES.rain[field] - value) * precip
+      out[field] = value + (WEATHER_PROFILES.storm[field] - value) * storm
+    }
+    out.id = cover < .27 ? 'clear' : cover < .65 ? 'cloudy' : 'overcast'
     // Precipitation belongs to the regional air mass, not the observer's
     // altitude. Flying above the source layer must not turn rain into snow.
     const cold = 1 - smoothstep(.21, .39, land.temperature - Math.max(0, land.height) / 10500)
-    const precip = out.rain
-    out.rain *= 1 - cold
+    out.rain = precip * (1 - cold)
     out.snow = precip * cold
     const blizzard = smoothstep(.65, 1, out.snow)
     out.haze = Math.max(out.haze, blizzard * .78)
     out.fogNearMul *= 1 - blizzard * .35
     out.fogFarMul *= 1 - blizzard * .28
-    if (out.snow > .25) out.id = out.snow > .82 ? 'blizzard' : 'snow'
-    out.lightning *= 1 - cold
-    out.cloudBase = Math.max(900, land.height + 550) - out.haze * 220
+    if (out.rain > .22) out.id = storm > .30 ? 'storm' : 'rain'
+    if (out.snow > .22) out.id = out.snow > .72 ? 'blizzard' : 'snow'
+    out.lightning = storm * (1 - cold)
+    const airHaze = out.haze
     const valley = 1 - smoothstep(100, 600, y - Math.max(0, land.height))
     const fog = smoothstep(.6, .82, land.moisture) * valley * (1 - smoothstep(.35, .65, air))
     out.haze = Math.max(out.haze, fog * .65)
@@ -57,6 +98,8 @@ export class RegionalWeather {
     const heading = valueNoise(wx / 48000 + 411, wz / 48000 - 73) * Math.PI * 2
     out.windX = Math.cos(heading) * out.windMps
     out.windZ = Math.sin(heading) * out.windMps
+    populateWeatherStructure(out, Math.max(950, land.height + 650) +
+      (1 - land.moisture) * 350 - airHaze * 220, convection)
     return out
   }
 }

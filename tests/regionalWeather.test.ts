@@ -1,13 +1,14 @@
 import { AmbientLight, DirectionalLight, HemisphereLight, InstancedMesh, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Atmosphere } from '../src/world/Atmosphere'
-import { RegionalWeather, createRegionalWeatherSample } from '../src/world/RegionalWeather'
-import { PROFILE_KEYS, WEATHER_ORDER } from '../src/world/WeatherDirector'
+import { RegionalWeather, createRegionalWeatherSample, populateWeatherStructure, WEATHER_STRUCTURE_KEYS } from '../src/world/RegionalWeather'
+import { PROFILE_KEYS, WEATHER_ORDER, WEATHER_PROFILES } from '../src/world/WeatherDirector'
 import { getWorldSeed, setWorldSeed } from '../src/world/noise'
+import { sampleLandforms } from '../src/world/Landforms'
 
 const originalSeed = getWorldSeed()
 afterEach(() => setWorldSeed(originalSeed))
-const numericKeys = [...PROFILE_KEYS, 'windX', 'windZ', 'cloudBase'] as const
+const numericKeys = [...PROFILE_KEYS, 'windX', 'windZ', ...WEATHER_STRUCTURE_KEYS] as const
 
 function atmosphere() {
   return new Atmosphere(new Scene(), {
@@ -17,6 +18,80 @@ function atmosphere() {
 }
 
 describe('regional weather', () => {
+  it('fits manual cloud sources above mountain terrain without changing the authored profile', () => {
+    setWorldSeed(1337)
+    const sampler = new RegionalWeather(), out = createRegionalWeatherSample()
+    Object.assign(out, WEATHER_PROFILES.storm)
+    const before = PROFILE_KEYS.map(key => out[key])
+    let mountains = 0
+    for (let x = -9600; x <= 14400; x += 3000) for (let z = 8400; z <= 32400; z += 3000) {
+      const land = sampleLandforms(x, z)
+      sampler.structureInto(out, x, z)
+      expect(PROFILE_KEYS.map(key => out[key])).toEqual(before)
+      expect(out.precipitationBase).toBeGreaterThan(land.height + 400)
+      expect(out.cloudTop).toBeGreaterThan(out.cloudBase)
+      if (land.height > 1400) mountains++
+    }
+    expect(mountains).toBeGreaterThan(0)
+  })
+
+  it('samples local conditions at 5 Hz, interpolates presentation and preserves fixed cloud budgets', () => {
+    setWorldSeed(73)
+    const weather = atmosphere(), samples = vi.spyOn(RegionalWeather.prototype, 'sampleInto')
+    try {
+      weather.randomizeWeather(73, { x: 100, y: 200, z: 300 })
+      for (let i = 0; i < 120; i++) weather.update(1 / 60, 100, 200, 300)
+      const local = samples.mock.calls.filter(([, x, y, z]) => x === 100 && y === 200 && z === 300)
+      expect(local.length).toBeGreaterThanOrEqual(9)
+      expect(local.length).toBeLessThanOrEqual(11)
+      const internals = weather as unknown as { cloudInstances: Record<string, InstancedMesh>;
+        cloudDrift: { value: { x: number; z: number } } }
+      expect(Object.values(internals.cloudInstances).reduce((sum, mesh) => sum + mesh.instanceMatrix.count, 0)).toBe(688)
+      weather.setAutomaticWeather(true, 180)
+      weather.update(0, 100, 200, 300, .2)
+      const before = { ...weather.weatherSnapshot }
+      weather.update(0, 100, 200, 300, .1)
+      expect(weather.weatherSnapshot).toEqual(before)
+      expect(internals.cloudDrift.value.x).toBe(0)
+      expect(internals.cloudDrift.value.z).toBe(0)
+    } finally { samples.mockRestore(); weather.dispose() }
+  })
+
+  it('keeps fair weather dominant while separating dry overcast, showers and convection', () => {
+    const sampler = new RegionalWeather(), out = createRegionalWeatherSample()
+    let dryOvercast = 0, quietRain = 0
+    for (const seed of [1, 42, 73, 1337, 2026]) {
+      setWorldSeed(seed)
+      let total = 0, fair = 0, severe = 0
+      for (let x = -200000; x <= 200000; x += 8000) for (let z = -200000; z <= 200000; z += 8000) {
+        sampler.sampleInto(out, x, 200, z, 180); total++
+        if (out.id === 'clear' || out.id === 'cloudy') fair++
+        if (out.id === 'storm' || out.id === 'blizzard') severe++
+        if (out.midClouds > .8 && out.rain + out.snow < .05) dryOvercast++
+        if (out.rain > .3 && out.lightning < .01) quietRain++
+        expect(out.cloudTop).toBeGreaterThan(out.cloudBase)
+        expect(out.precipitationBase).toBe(out.cloudBase)
+        expect(out.visibilityM).toBeGreaterThanOrEqual(1800)
+        expect(out.convection).toBeGreaterThanOrEqual(0)
+        expect(out.convection).toBeLessThanOrEqual(1)
+      }
+      expect(fair / total).toBeGreaterThanOrEqual(.55)
+      expect(fair / total).toBeLessThanOrEqual(.70)
+      expect(severe / total).toBeLessThanOrEqual(.10)
+    }
+    expect(dryOvercast).toBeGreaterThan(20)
+    expect(quietRain).toBeGreaterThan(20)
+  })
+
+  it('populates the same vertical fields for every manual preset', () => {
+    const out = createRegionalWeatherSample()
+    for (const id of WEATHER_ORDER) {
+      Object.assign(out, WEATHER_PROFILES[id]); populateWeatherStructure(out)
+      for (const key of WEATHER_STRUCTURE_KEYS) expect(Number.isFinite(out[key])).toBe(true)
+      expect(out.cloudTop).toBeGreaterThan(out.precipitationBase)
+      expect(out.precipitationBase).toBe(out.cloudBase)
+    }
+  })
   it('fills caller-owned samples deterministically regardless of query order', () => {
     setWorldSeed(42)
     const sampler = new RegionalWeather(), out = createRegionalWeatherSample()
@@ -59,7 +134,8 @@ describe('regional weather', () => {
       const x = i * 32000, z = (i + 1) * 24000
       sampler.sampleInto(a, x - .01, 300, z, 90)
       sampler.sampleInto(b, x + .01, 300, z, 90)
-      for (const key of numericKeys) expect(Math.abs(a[key] - b[key])).toBeLessThan(.03)
+      for (const key of numericKeys) expect(Math.abs(a[key] - b[key]), key)
+        .toBeLessThan(key === 'visibilityM' ? .3 : .03)
       sampler.sampleInto(a, x, 300, z, 90)
       sampler.sampleInto(b, x, 300, z, 90 + 1 / 60)
       for (const key of PROFILE_KEYS) expect(Math.abs(a[key] - b[key])).toBeLessThan(.002)
@@ -116,7 +192,13 @@ describe('regional weather', () => {
       weather.setAutomaticWeather(true)
       weather.cycleWeather(); weather.update(600, 30000, 300, -50000, 0)
       expect(weather.weatherAutomatic).toBe(false)
-      expect(weather.weatherSnapshot).toEqual(locked)
+      // The authored conditions stay locked; their physical cloud envelope
+      // still fits the terrain at the moved position, rather than going underground.
+      for (const key of [...PROFILE_KEYS, 'windX', 'windZ'] as const)
+        expect(weather.weatherSnapshot[key]).toBe(locked[key])
+      expect((weather.weatherSnapshot as typeof locked).id).toBe(locked.id)
+      expect((weather.weatherSnapshot as typeof locked).cloudBase)
+        .toBeGreaterThan(sampleLandforms(30000, -50000).height + 400)
       weather.setReducedMotion(true); weather.update(.1, 30000, 300, -50000)
       expect(weather.lightningActive).toBe(false)
     } finally { weather.dispose() }

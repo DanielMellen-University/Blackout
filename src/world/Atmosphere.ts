@@ -11,7 +11,6 @@ import {
   InstancedBufferAttribute,
   MathUtils,
   Matrix4,
-  Mesh,
   MeshBasicMaterial,
   Object3D,
   Scene,
@@ -24,7 +23,10 @@ import { createCloudMaterial, cloudInteriorDensity } from './CloudMaterial'
 import { disposeObjectTree } from '../core/dispose'
 import { nightWeatherReadability } from '../core/SceneExposure'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
-import { createRegionalWeatherSample, RegionalWeather } from './RegionalWeather'
+import { createRegionalWeatherSample, populateWeatherStructure, RegionalWeather,
+  WEATHER_STRUCTURE_KEYS, type RegionalWeatherSample } from './RegionalWeather'
+import { CloudCells, CLOUD_CELL_SIZE, cloudCellRandom, shapeCloudFormation,
+  type CloudLayer } from './CloudFormations'
 import {
   WEATHER_LABELS,
   WEATHER_ORDER,
@@ -52,11 +54,9 @@ export function cloudImmersionBand(value: number): CloudImmersionBand {
 
 /**
  * Cloud streaming envelope - match terrain load radius.
- * Spawn near the fog rim; despawn at the same distance chunks unload.
+ * Deterministic cells fade at the same distance chunks unload.
  */
 const CLOUD_DESPAWN = STREAM_RADIUS_M // match terrain stream edge
-const CLOUD_SPAWN_MIN = FOG_FAR * 0.82 // appear inside fog wall
-const CLOUD_SPAWN_MAX = FOG_FAR * 0.98
 /** Full opacity inside this range; fade 1→0 from here to despawn. */
 const CLOUD_FADE_FULL = FOG_FAR * 0.5
 const CLOUD_FADE_OUT = CLOUD_DESPAWN
@@ -70,16 +70,6 @@ export function cloudDistanceFade(distanceSquared: number): number {
   if (distanceSquared >= CLOUD_FADE_OUT_SQUARED) return 0
   return 1 - MathUtils.smoothstep(Math.sqrt(distanceSquared), CLOUD_FADE_FULL, CLOUD_FADE_OUT)
 }
-
-/**
- * Cloud decks - altitude is the *base* (underside) of the formation.
- * Terrain peaks top out ~0.8–1.2 km; only the tallest summits should
- * pierce cumulus. Hills/mesas stay under the cloud floor.
- * - cumulus bases ~1.15–1.55 km (tops grow upward from there)
- * - stratus bases ~1.7–2.5 km
- * - cirrus bases ~3.6–5.6 km
- */
-type CloudLayer = 'cumulus' | 'stratus' | 'cirrus'
 
 type RandomSource = () => number
 
@@ -96,6 +86,7 @@ interface CloudPuffLayout {
 interface CloudClusterLayout {
   puffs: CloudPuffLayout[]
   instanceOffset: number
+  height: number
 }
 
 /**
@@ -114,42 +105,8 @@ export function createCloudLayoutRandom(seed: number): RandomSource {
   }
 }
 
-interface CloudLayerSpec {
-  yMin: number
-  yMax: number
-  /** Relative opacity vs base weather opacity. */
-  opacityMul: number
-  /** Wind speed multiplier (high clouds faster). */
-  windMul: number
-}
-
-const CLOUD_LAYER: Record<CloudLayer, CloudLayerSpec> = {
-  // Cluster Y = cloud base (underside). Only alpine peaks poke through.
-  cumulus: { yMin: 1150, yMax: 1550, opacityMul: 0.95, windMul: 0.85 },
-  stratus: { yMin: 1700, yMax: 2500, opacityMul: 0.75, windMul: 1.1 },
-  cirrus: { yMin: 3600, yMax: 5600, opacityMul: 0.42, windMul: 1.8 },
-}
-
-function cloudAltitude(layer: CloudLayer, random: RandomSource): number {
-  const s = CLOUD_LAYER[layer]
-  return s.yMin + random() * (s.yMax - s.yMin)
-}
-
-/**
- * Formation size multiplier. Most clouds are modest; a long tail hits ~10×.
- * Power curve: u^2.4 keeps giants rare (~5% above 5×, ~1% near 10×).
- */
-function cloudSizeMul(random: RandomSource): number {
-  const u = random()
-  // 0.45× … 10× - small puffs through continental-scale banks
-  return 0.45 + Math.pow(u, 2.4) * 9.55
-}
-
-/** Horizontal spawn in stream disk around (0,0) or offset later. */
-function cloudSpawnXZ(random: RandomSource, radiusScale = 0.92): { x: number; z: number } {
-  const ang = random() * Math.PI * 2
-  const r = Math.sqrt(random()) * CLOUD_DESPAWN * radiusScale
-  return { x: Math.cos(ang) * r, z: Math.sin(ang) * r }
+const CLOUD_LAYER: Record<CloudLayer, { opacityMul: number }> = {
+  cumulus: { opacityMul: .95 }, stratus: { opacityMul: .75 }, cirrus: { opacityMul: .42 },
 }
 
 const _c = new Color()
@@ -305,6 +262,12 @@ export class Atmosphere {
   private readonly weatherDirector = new WeatherDirector()
   private readonly weatherState = createRegionalWeatherSample()
   private readonly regionalWeather = new RegionalWeather()
+  private readonly regionalTarget = createRegionalWeatherSample()
+  private readonly regionalFrom = createRegionalWeatherSample()
+  private regionalSampleTime = -Infinity
+  private regionalSampleX = Infinity
+  private regionalSampleY = Infinity
+  private regionalSampleZ = Infinity
   private readonly cloudWeather = createRegionalWeatherSample()
   private readonly regionalBlendFrom = createRegionalWeatherSample()
   private regionalBlendRemaining = 0
@@ -352,6 +315,8 @@ export class Atmosphere {
   private precipitationScale = 1
   private readonly cloudSun = { value: new Vector3(0, 1, 0) }
   private readonly cloudStorm = { value: 0 }
+  private readonly cloudDrift = { value: new Vector3() }
+  private readonly cloudFrameBlend = { value: 1 }
   private cloudImmersion = 0
   private cloudImmersionTarget = 0
   private cloudBaseOffset = 0
@@ -380,12 +345,11 @@ export class Atmosphere {
   /** Soft opacity 0–1 per cluster (fade in/out, not hard pop). */
   private readonly cloudAlpha: number[] = []
   private readonly cloudLayers: CloudLayer[] = []
-  /** Base material used while authoring puff layouts; batches own the clones. */
-  private cloudBaseMaterial: MeshBasicMaterial | null = null
+  private readonly cloudCells: CloudCells
   /** Seeded cloud placement keeps a world reviewable after a reseed. */
   private cloudSeed = 1337
-  private cloudRecycle = 0
   private cloudUpdateAccumulator = 0
+  private cloudMatrixTime = 0
 
   private baseFogNear = 1200
   private baseFogFar = 4000
@@ -440,14 +404,6 @@ export class Atmosphere {
     }
     // Retain the smooth radial normals. This geometry is non-indexed, so
     // computeVertexNormals would give every triangle a hard faceted edge.
-    const puffMat = new MeshBasicMaterial({
-      color: 0xe8f0f8,
-      transparent: true,
-      opacity: 0.6,
-      depthWrite: false,
-    })
-    this.cloudBaseMaterial = puffMat
-
     // Mix: mostly mid/low heaps + broad decks + sparse high cirrus
     const layerPlan: CloudLayer[] = [
       ...Array(20).fill('cumulus' as CloudLayer),
@@ -463,23 +419,26 @@ export class Atmosphere {
     }
 
     for (const layer of layerPlan) {
-      const authoredCluster = this.buildCloudCluster(layer, puffGeo, puffMat, cloudRandom)
-      const cluster = this.flattenCloudCluster(authoredCluster)
-      authoredCluster.clear()
-      const xz = cloudSpawnXZ(cloudRandom)
-      this.cloudWorld.push(new Vector3(xz.x, cloudAltitude(layer, cloudRandom), xz.z))
+      // Equal family capacities make a cell's silhouette independent of which
+      // pool slot receives it. 320 + 288 + 80 = 688, below the 694 hard cap.
+      const count = layer === 'cumulus' ? 16 : layer === 'stratus' ? 18 : 8
+      const cluster: CloudClusterLayout = { puffs: Array.from({ length: count }, () =>
+        ({ x: 0, y: 0, z: 0, sx: 1, sy: 1, sz: 1, rotationY: 0 })), instanceOffset: 0, height: 1 }
+      this.cloudWorld.push(new Vector3())
       this.cloudAlpha.push(0)
       this.cloudLayers.push(layer)
       this.cloudClusters.push(cluster)
       this.cloudPuffCounts[layer] += cluster.puffs.length
     }
+    this.cloudCells = new CloudCells(this.cloudLayers)
 
     // Three deck-wide batches replace hundreds of individual cloud draw calls.
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
-      const mat = createCloudMaterial(this.cloudSun, this.cloudStorm)
+      const mat = createCloudMaterial(this.cloudSun, this.cloudStorm, this.cloudDrift, this.cloudFrameBlend)
       mat.name = `Cloud-${layer}`
       const geometry = puffGeo.clone()
       geometry.setAttribute('cloudAlpha', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
+      geometry.setAttribute('cloudAlphaFrom', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
       geometry.setAttribute('cloudTone', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
       const instances = new InstancedMesh(geometry, mat, this.cloudPuffCounts[layer])
       instances.name = `CloudBatch-${layer}`
@@ -509,6 +468,7 @@ export class Atmosphere {
     scene.add(this.cloudRoot)
 
     this.weatherDirector.snapshotInto(this.weatherState)
+    populateWeatherStructure(this.weatherState)
     this.weatherSnapshotDirty = false
     this.apply(0, 0, 0, 0, 0, this.weatherState)
   }
@@ -576,7 +536,7 @@ export class Atmosphere {
   get precipitationVisibility(): number {
     const state = this.weatherSnapshot
     return precipitationAtAltitude(this.lastAnchor.y, state.lightning,
-      this.automaticWeather ? this.weatherState.cloudBase : undefined)
+      this.weatherState.precipitationBase)
   }
 
   /** Resume regional conditions without changing seed, clock, or flight state. */
@@ -586,6 +546,8 @@ export class Atmosphere {
     this.regionalBlendRemaining = enabled && !this.automaticWeather && !Number.isFinite(simulationTime) ? 5 : 0
     this.automaticWeather = enabled === true
     if (Number.isFinite(simulationTime)) this.regionalElapsed = Math.max(0, simulationTime!)
+    this.regionalSampleTime = -Infinity
+    this.cloudUpdateAccumulator = CLOUD_UPDATE_STEP_SEC
     if (this.automaticWeather) this.weatherDirector.setWindHeading(null)
     this.cloudSampleTimes.fill(-Infinity)
     this.distantSampleTime = -Infinity
@@ -615,6 +577,7 @@ export class Atmosphere {
     this.automaticWeather = false
     this.weatherDirector.setWeather(safeId, instant, initial)
     this.weather = safeId
+    this.cloudSampleTimes.fill(-Infinity)
     this.weatherSnapshotDirty = true
     this.dirty = true
   }
@@ -642,6 +605,9 @@ export class Atmosphere {
     this.automaticWeather = true
     this.weatherLocked = false
     this.regionalElapsed = 0
+    this.regionalSampleTime = -Infinity
+    this.cloudUpdateAccumulator = CLOUD_UPDATE_STEP_SEC
+    this.cloudDrift.value.set(0, 0, 0)
     this.regionalBlendRemaining = 0
     this.cloudSampleTimes.fill(-Infinity)
     this.distantSampleTime = -Infinity
@@ -690,17 +656,44 @@ export class Atmosphere {
   get weatherSnapshot(): WeatherSnapshot {
     if (this.weatherSnapshotDirty) {
       if (this.automaticWeather) {
-        this.regionalWeather.sampleInto(this.weatherState, this.lastAnchor.x, this.lastAnchor.y,
-          this.lastAnchor.z, this.regionalElapsed)
+        const gap = this.regionalElapsed - this.regionalSampleTime
+        const moved = Math.hypot(this.lastAnchor.x - this.regionalSampleX, this.lastAnchor.z - this.regionalSampleZ) >= 500 ||
+          Math.abs(this.lastAnchor.y - this.regionalSampleY) >= 100
+        if (gap >= .2 || moved) {
+          Object.assign(this.regionalFrom, this.weatherState)
+          this.regionalWeather.sampleInto(this.regionalTarget, this.lastAnchor.x, this.lastAnchor.y,
+            this.lastAnchor.z, this.regionalElapsed)
+          // First seed, explicit clock seek, teleport or large simulation jump
+          // must resolve the requested position immediately, even while paused.
+          if (!Number.isFinite(this.regionalSampleTime) || gap >= 1 || moved)
+            Object.assign(this.regionalFrom, this.regionalTarget)
+          this.regionalSampleTime = this.regionalElapsed
+          this.regionalSampleX = this.lastAnchor.x; this.regionalSampleY = this.lastAnchor.y
+          this.regionalSampleZ = this.lastAnchor.z
+        }
+        const presentation = MathUtils.clamp((this.regionalElapsed - this.regionalSampleTime) / .2, 0, 1)
+        for (const key of PROFILE_KEYS)
+          this.weatherState[key] = MathUtils.lerp(this.regionalFrom[key], this.regionalTarget[key], presentation)
+        for (const key of WEATHER_STRUCTURE_KEYS)
+          this.weatherState[key] = MathUtils.lerp(this.regionalFrom[key], this.regionalTarget[key], presentation)
+        this.weatherState.windX = MathUtils.lerp(this.regionalFrom.windX, this.regionalTarget.windX, presentation)
+        this.weatherState.windZ = MathUtils.lerp(this.regionalFrom.windZ, this.regionalTarget.windZ, presentation)
+        this.weatherState.id = this.regionalTarget.id
         if (this.regionalBlendRemaining > 0) {
           const blend = MathUtils.smoothstep(1 - this.regionalBlendRemaining / 5, 0, 1)
           for (const key of PROFILE_KEYS)
             this.weatherState[key] = MathUtils.lerp(this.regionalBlendFrom[key], this.weatherState[key], blend)
           this.weatherState.windX = MathUtils.lerp(this.regionalBlendFrom.windX, this.weatherState.windX, blend)
           this.weatherState.windZ = MathUtils.lerp(this.regionalBlendFrom.windZ, this.weatherState.windZ, blend)
+          for (const key of WEATHER_STRUCTURE_KEYS)
+            this.weatherState[key] = MathUtils.lerp(this.regionalBlendFrom[key], this.weatherState[key], blend)
         }
         this.weather = this.weatherState.id
-      } else this.weatherDirector.snapshotInto(this.weatherState)
+      } else {
+        this.weatherDirector.snapshotInto(this.weatherState)
+        this.weatherState.id = this.weatherDirector.targetId
+        this.regionalWeather.structureInto(this.weatherState, this.lastAnchor.x, this.lastAnchor.z)
+      }
       this.weatherSnapshotDirty = false
     }
     return this.weatherState
@@ -763,8 +756,6 @@ export class Atmosphere {
     this.sky.dispose()
 
     disposeObjectTree(this.cloudRoot)
-    this.cloudBaseMaterial?.dispose()
-    this.cloudBaseMaterial = null
     this.cloudClusters.length = 0
     this.cloudWorld.length = 0
     this.cloudAlpha.length = 0
@@ -859,7 +850,7 @@ export class Atmosphere {
       _horizon.lerp(_c2, this.lightningFlash * 0.22)
     }
 
-    const ceiling = this.automaticWeather ? this.weatherState.cloudBase : undefined
+    const ceiling = this.weatherState.precipitationBase
     const source = precipitationAtAltitude(ay, w.lightning, ceiling)
     const aboveDeck = 1 - source
     this.cloudImmersion = MathUtils.lerp(this.cloudImmersion, this.cloudImmersionTarget, 1 - Math.exp(-Math.max(0, visualDt) * 3))
@@ -961,10 +952,11 @@ export class Atmosphere {
       this.skyCloudDeck,
       this.elapsed,
       ceiling,
+      this.weatherState.cloudTop,
     )
 
     // World-space clouds (fly past them) + local precip FX
-    this.updateClouds(ax, ay, az, dt, w, dayFactor)
+    this.updateClouds(ax, ay, az, visualDt, w, dayFactor)
     this.rainField.update(visualDt, ax, ay, az, w.rain * source, w.windX, w.windZ, ceiling)
     this.snowField.update(visualDt, ax, ay, az, w.snow * source, w.windX, w.windZ, ceiling)
   }
@@ -989,117 +981,12 @@ export class Atmosphere {
     this.sky.setRegionalWeather(this.distantDecks, ax, az, this.regionalElapsed)
   }
 
-  /**
-   * Build one formation for the given deck.
-   * Size mul ~0.45–10× so you get small puffs and rare giant banks.
-   */
-  private buildCloudCluster(
-    layer: CloudLayer,
-    puffGeo: IcosahedronGeometry,
-    baseMat: MeshBasicMaterial,
-    random: RandomSource,
-  ): Group {
-    const cluster = new Group()
-    const size = cloudSizeMul(random)
-
-    // Larger formations get a few more puffs so they read as banks, not one blob
-    const puffBonus = size > 3 ? 4 : size > 1.5 ? 2 : 0
-
-    if (layer === 'cumulus') {
-      // Heaps grow *up* from the cloud base - never hang below cluster Y
-      // (big 10× banks used to bury mountains under their undersides)
-      const nPuffs = 10 + ((random() * 8) | 0) + puffBonus
-      for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, baseMat)
-        const edge = p / nPuffs
-        const radial =
-          (0.15 + edge * 0.85) * (180 + random() * 220) * size
-        const ang = random() * Math.PI * 2
-        const elev = random() * Math.PI * 0.5 // upper hemisphere only
-        const sx = ((edge < 0.35 ? 110 : 70) + random() * 90) * size
-        const sy = sx * (0.5 + random() * 0.4)
-        const sz = sx * (0.85 + random() * 0.55)
-        mesh.scale.set(sx * (0.85 + random() * 0.55), sy, sz)
-        // Icosahedron ±scale from center → put center so underside ≈ bulkY
-        const bulkY =
-          Math.sin(elev) * radial * 0.65 + random() * 50 * size
-        mesh.position.set(
-          Math.cos(ang) * Math.cos(elev) * radial,
-          bulkY + sy,
-          Math.sin(ang) * Math.cos(elev) * radial,
-        )
-        cluster.add(mesh)
-      }
-    } else if (layer === 'stratus') {
-      // Long overlapping rows form a bank, not a stack of flattened discs.
-      const nPuffs = 14 + ((random() * 10) | 0) + puffBonus
-      const span = 1500 * size
-      const angle = random() * Math.PI * 2
-      for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, baseMat)
-        const s = (140 + random() * 160) * size
-        const sy = s * (.55 + random() * .25)
-        mesh.scale.set(s * (1.3 + random() * .6), sy, s * (1 + random() * .3))
-        mesh.rotation.y = -angle
-        const bulkY = random() * 40 * Math.min(size, 2.5)
-        const along = (p / Math.max(1, nPuffs - 1) - .5) * span
-        const across = ((p % 3) - 1) * 100 * size + (random() - .5) * 80 * size
-        mesh.position.set(
-          Math.cos(angle) * along - Math.sin(angle) * across,
-          bulkY + sy,
-          Math.sin(angle) * along + Math.cos(angle) * across,
-        )
-        cluster.add(mesh)
-      }
-    } else {
-      // Cirrus: thin high streaks - also base-aligned (very thin anyway)
-      const nPuffs = 5 + ((random() * 5) | 0) + Math.min(4, puffBonus)
-      const streakAng = random() * Math.PI * 2
-      const dirX = Math.cos(streakAng)
-      const dirZ = Math.sin(streakAng)
-      const length = 900 * size
-      for (let p = 0; p < nPuffs; p++) {
-        const mesh = new Mesh(puffGeo, baseMat)
-        const along = (p / Math.max(1, nPuffs - 1) - 0.5) * length
-        const side = (random() - 0.5) * 80 * Math.sqrt(size)
-        const s = (90 + random() * 120) * size
-        const sy = s * 0.12
-        mesh.scale.set(s * 2.4, sy, s * 0.55)
-        mesh.rotation.y = -streakAng
-        mesh.position.set(
-          dirX * along - dirZ * side,
-          sy + random() * 30,
-          dirZ * along + dirX * side,
-        )
-        cluster.add(mesh)
-      }
-    }
-
-    return cluster
-  }
-
-  /** Copy static authoring transforms into a compact layout and drop the hidden puff meshes. */
-  private flattenCloudCluster(cluster: Group): CloudClusterLayout {
-    const puffs = cluster.children.map((object): CloudPuffLayout => {
-      const mesh = object as Mesh
-      return {
-        x: mesh.position.x,
-        y: mesh.position.y,
-        z: mesh.position.z,
-        sx: mesh.scale.x,
-        sy: mesh.scale.y,
-        sz: mesh.scale.z,
-        rotationY: mesh.rotation.y,
-      }
-    })
-    return { puffs, instanceOffset: 0 }
-  }
 
   /**
    * World-space layered clouds, streamed like terrain:
-   * - High realistic altitudes (cumulus / stratus / cirrus decks)
-   * - Spawn near fog rim, despawn at STREAM_RADIUS
-   * - Soft distance fade; never parented to the jet
+   * Fixed world cells, shared source heights and three instanced batches.
+   * Selection/sampling/matrices run at 5 Hz; shader drift and opacity blend
+   * between those updates. Retirement fades old cells before replacement.
    */
   private updateClouds(
     ax: number,
@@ -1111,9 +998,17 @@ export class Atmosphere {
   ): void {
     if (dt <= 0) return
     this.cloudUpdateAccumulator += dt
-    if (this.cloudUpdateAccumulator < CLOUD_UPDATE_STEP_SEC) return
+    if (this.cloudUpdateAccumulator < CLOUD_UPDATE_STEP_SEC) {
+      const driftTime = Math.max(0, this.regionalElapsed - this.cloudMatrixTime)
+      this.cloudDrift.value.set(driftTime * 12, 0, driftTime * 3)
+      this.cloudFrameBlend.value = this.cloudUpdateAccumulator / CLOUD_UPDATE_STEP_SEC
+      return
+    }
     const cloudDt = this.cloudUpdateAccumulator
     this.cloudUpdateAccumulator = 0
+    this.cloudMatrixTime = this.regionalElapsed
+    this.cloudDrift.value.set(0, 0, 0)
+    this.cloudFrameBlend.value = 0
     const maxCover = Math.max(
       weather.lowClouds,
       weather.midClouds,
@@ -1131,14 +1026,13 @@ export class Atmosphere {
       0,
       0.6,
     )
-    const despawnSq = CLOUD_DESPAWN * CLOUD_DESPAWN
     // ~0.8s ease for opacity (smooth appear / disappear)
     const fadeK = 1 - Math.exp(-cloudDt * 1.4)
     let anyVisible = false
     this.cloudImmersionTarget = 0
-    this.cloudBaseOffset = this.automaticWeather ? 0 : -weather.haze * 400 - weather.rain * 120
+    this.cloudBaseOffset = 0
     this.gustPhase += cloudDt * (0.35 + weather.gust * 1.4)
-    const gust = 1 + Math.sin(this.gustPhase) * weather.gust * 0.32
+    this.cloudCells.select(this.cloudSeed, ax, az, this.regionalElapsed)
 
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       const mat = this.cloudInstances[layer].material as MeshBasicMaterial
@@ -1169,7 +1063,6 @@ export class Atmosphere {
       const cluster = this.cloudClusters[i]!
       const wpos = this.cloudWorld[i]!
       const layer = this.cloudLayers[i]!
-      const spec = CLOUD_LAYER[layer]
       const instanceOffset = cluster.instanceOffset
       if (instanceOffset >= this.cloudDrawCounts[layer]) {
         this.cloudAlpha[i] = 0
@@ -1177,46 +1070,39 @@ export class Atmosphere {
       }
 
       const sample = this.cloudSamples[i]!
-      const fresh = !Number.isFinite(this.cloudSampleTimes[i])
-      if (this.automaticWeather && this.regionalElapsed - this.cloudSampleTimes[i]! >= .2) {
-        this.regionalWeather.sampleInto(sample, wpos.x, wpos.y, wpos.z, this.regionalElapsed)
+      if (!this.cloudCells.hasTarget(i)) {
+        this.cloudAlpha[i] = 0
+        this.setCloudClusterMatrices(cluster, layer, wpos, 0)
+        continue
+      }
+      const replacing = this.cloudCells.moving(i)
+      if (this.cloudCells.unassigned(i) || (replacing && this.cloudAlpha[i]! < .01)) {
+        this.cloudCells.adopt(i)
+        const cx = this.cloudCells.cellX[i]!, cz = this.cloudCells.cellZ[i]!
+        shapeCloudFormation(cluster.puffs, layer, this.cloudSeed, cx, cz)
+        cluster.height = 1
+        for (const puff of cluster.puffs) cluster.height = Math.max(cluster.height, puff.y + puff.sy)
+        this.cloudSampleTimes[i] = -Infinity
+        this.cloudAlpha[i] = 0
+      }
+      const cx = this.cloudCells.cellX[i]!, cz = this.cloudCells.cellZ[i]!
+      // Exact advection, not integrated drift: pause, revisit and frame cadence
+      // cannot move a cloud into a different identity or change its shape.
+      wpos.x = (cx + .5 + (cloudCellRandom(this.cloudSeed, cx, cz, 17) - .5) * .55) * CLOUD_CELL_SIZE + this.regionalElapsed * 12
+      wpos.z = (cz + .5 + (cloudCellRandom(this.cloudSeed, cx, cz, 19) - .5) * .55) * CLOUD_CELL_SIZE + this.regionalElapsed * 3
+      if (this.regionalElapsed - this.cloudSampleTimes[i]! >= .2) {
+        if (this.automaticWeather)
+          this.regionalWeather.sampleInto(sample, wpos.x, wpos.y, wpos.z, this.regionalElapsed)
+        else {
+          Object.assign(sample, this.weatherState)
+          this.regionalWeather.structureInto(sample, wpos.x, wpos.z)
+        }
         this.cloudSampleTimes[i] = this.regionalElapsed
       }
-      const local = this.automaticWeather ? sample : weather
-      if (this.automaticWeather) {
-        const offset = layer === 'cirrus' ? 2600 : layer === 'stratus' ? 350 : 0
-        const targetBase = sample.cloudBase + offset + this.cloudPulse(i, 113) * 240
-        wpos.y = fresh && this.regionalBlendRemaining <= 0 ? targetBase :
-          MathUtils.lerp(wpos.y, targetBase, 1 - Math.exp(-cloudDt * .18))
-      }
-
-      // Absolute wind (m/s) - high clouds drift faster
-      wpos.x += local.windX * spec.windMul * gust * cloudDt
-      wpos.z += local.windZ * spec.windMul * gust * cloudDt
-
-      let dx = wpos.x - ax
-      let dz = wpos.z - az
-      let distSq = dx * dx + dz * dz
-
-      // Past terrain unload range → recycle onto far spawn ring (in the fog)
-      if (distSq > despawnSq) {
-        const recycle = this.cloudRecycle++
-        const ang = this.cloudPulse(i, recycle * 2 + 11) * Math.PI * 2
-        const r =
-          CLOUD_SPAWN_MIN + this.cloudPulse(i, recycle * 2 + 17) * (CLOUD_SPAWN_MAX - CLOUD_SPAWN_MIN)
-        wpos.x = ax + Math.cos(ang) * r
-        wpos.z = az + Math.sin(ang) * r
-        wpos.y = this.seededCloudAltitude(layer, i, recycle + 23)
-        if (this.automaticWeather) {
-          this.regionalWeather.sampleInto(sample, wpos.x, wpos.y, wpos.z, this.regionalElapsed)
-          this.cloudSampleTimes[i] = this.regionalElapsed
-          wpos.y = sample.cloudBase + (layer === 'cirrus' ? 2600 : layer === 'stratus' ? 350 : 0)
-        }
-        this.cloudAlpha[i] = 0 // start invisible, fade in
-        dx = wpos.x - ax
-        dz = wpos.z - az
-        distSq = dx * dx + dz * dz
-      }
+      const local = sample
+      wpos.y = layer === 'cirrus' ? local.cloudTop + 1800 : local.cloudBase + (layer === 'stratus' ? 160 : 0)
+      const dx = wpos.x - ax, dz = wpos.z - az
+      const distSq = dx * dx + dz * dz
 
       // 3D distance for high decks so they don't pop when you're under them
       const dy = wpos.y - _ay
@@ -1229,8 +1115,8 @@ export class Atmosphere {
             ? local.midClouds
             : local.highClouds
       // Irrational stride distributes active clusters without obvious ordering.
-      const densityRoll = (i * 0.61803398875 + (layer === 'cirrus' ? 0.17 : 0)) % 1
-      const target = MathUtils.smoothstep(layerCover - densityRoll, -.06, .09) * distFade
+      const densityRoll = cloudCellRandom(this.cloudSeed, cx, cz, 23)
+      const target = this.cloudCells.moving(i) ? 0 : MathUtils.smoothstep(layerCover - densityRoll, -.06, .09) * distFade
       this.cloudAlpha[i] = MathUtils.lerp(this.cloudAlpha[i]!, target, fadeK)
       const a = this.cloudAlpha[i]!
 
@@ -1243,12 +1129,13 @@ export class Atmosphere {
         (0.9 + (i % 7) * 0.015) * (this.automaticWeather ? .2 + layerCover * .58 : MathUtils.lerp(0.8, 1, baseOpacity))
       this.setCloudClusterMatrices(cluster, layer, wpos, opacityScale,
         this.automaticWeather ? Math.min(.65, local.rain * .22 + local.lightning * .38 + local.snow * .08) : 0,
-        this.automaticWeather ? local : undefined)
+        local)
     }
 
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       this.cloudInstances[layer].instanceMatrix.needsUpdate = true
       this.cloudInstances[layer].geometry.getAttribute('cloudAlpha').needsUpdate = true
+      this.cloudInstances[layer].geometry.getAttribute('cloudAlphaFrom').needsUpdate = true
       this.cloudInstances[layer].geometry.getAttribute('cloudTone').needsUpdate = true
     }
     this.cloudRoot.visible = anyVisible
@@ -1260,13 +1147,15 @@ export class Atmosphere {
     worldPosition: Vector3,
     opacity: number,
     shade = 0,
-    regional?: WeatherSnapshot,
+    regional?: RegionalWeatherSample,
   ): void {
     const instances = this.cloudInstances[layer]
     const offset = cluster.instanceOffset
     const alpha = instances.geometry.getAttribute('cloudAlpha') as InstancedBufferAttribute
+    const from = instances.geometry.getAttribute('cloudAlphaFrom') as InstancedBufferAttribute
     const tone = instances.geometry.getAttribute('cloudTone') as InstancedBufferAttribute
     for (let i = 0; i < cluster.puffs.length; i++) {
+      from.setX(offset + i, alpha.getX(offset + i))
       alpha.setX(offset + i, opacity)
       tone.setX(offset + i, shade)
       if (opacity <= 0) {
@@ -1274,12 +1163,16 @@ export class Atmosphere {
         continue
       }
       const puff = cluster.puffs[i]!
-      const bank = regional && layer === 'stratus' ? Math.max(regional.midClouds, regional.rain) : 0
-      const horizontal = 1 + bank * 1.2
-      const vertical = regional && layer === 'cumulus' ? 1 + regional.lightning * .7 : 1
+      const bank = regional && layer === 'stratus' ? Math.max(regional.midClouds, regional.rain, regional.snow) : 0
+      const convection = layer === 'cumulus' && regional ? regional.convection * (1 - regional.snow * .7) : 0
+      const anvil = layer === 'cumulus' && i / Math.max(1, cluster.puffs.length - 1) > .79
+      const horizontal = 1 + bank * .75 + (anvil ? convection * 2.2 : convection * .3)
+      const depth = regional ? regional.cloudTop - regional.cloudBase : 1500
+      const heightScale = layer === 'cirrus' ? 1 : depth / cluster.height * (layer === 'stratus' ? .75 : 1)
+      const vertical = heightScale * (anvil ? 1 - convection * .6 : 1)
       _cloudObject.position.set(
         worldPosition.x + puff.x * horizontal,
-        worldPosition.y + puff.y * vertical + this.cloudBaseOffset,
+        worldPosition.y + puff.y * heightScale + this.cloudBaseOffset,
         worldPosition.z + puff.z * horizontal,
       )
       _cloudObject.rotation.set(0, puff.rotationY, 0)
@@ -1341,25 +1234,12 @@ export class Atmosphere {
   /** Place the existing pooled clusters deterministically for the new world. */
   private reseedCloudField(seed: number): void {
     this.cloudSeed = seed
-    this.cloudRecycle = 0
+    this.cloudCells.reset()
     for (let i = 0; i < this.cloudWorld.length; i++) {
-      const angle = this.cloudPulse(i, 101) * Math.PI * 2
-      const radius = Math.sqrt(this.cloudPulse(i, 107)) * CLOUD_DESPAWN * .92
       const position = this.cloudWorld[i]!
-      position.x = this.lastAnchor.x + Math.cos(angle) * radius
-      position.z = this.lastAnchor.z + Math.sin(angle) * radius
-      position.y = this.seededCloudAltitude(this.cloudLayers[i]!, i, 113)
+      position.set(this.lastAnchor.x, 1400, this.lastAnchor.z)
       this.cloudAlpha[i] = 0
     }
   }
 
-  private seededCloudAltitude(layer: CloudLayer, index: number, salt: number): number {
-    const spec = CLOUD_LAYER[layer]
-    return spec.yMin + this.cloudPulse(index, salt) * (spec.yMax - spec.yMin)
-  }
-
-  private cloudPulse(index: number, salt: number): number {
-    const n = Math.sin(this.cloudSeed * .000173 + index * 12.9898 + salt * 78.233) * 43758.5453
-    return n - Math.floor(n)
-  }
 }

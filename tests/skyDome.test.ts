@@ -20,6 +20,24 @@ function deckFor(id: keyof typeof WEATHER_PROFILES) {
 }
 
 describe('analytic sky cloud deck', () => {
+  it('fades distant decks at the shared actual cloud top, including tall storm towers', () => {
+    const sky = new SkyDome(new Scene()), deck = deckFor('storm')
+    const uniforms = (sky.mesh.material as ShaderMaterial).uniforms
+    const update = (height: number, top: number) => sky.update(0, height, 0,
+      new Vector3(0, 1, 0), 1, 0, new Color(0x6eb4d8), new Color(0xb8d4e8), .5, deck, 180, 1400, top)
+    try {
+      update(4200, 6500)
+      expect(uniforms.uLowDeckVisibility!.value).toBe(1)
+      update(7000, 6500)
+      expect(uniforms.uLowDeckVisibility!.value).toBe(0)
+      expect(uniforms.uHighDeckVisibility!.value).toBe(1)
+      update(9000, 6500)
+      expect(uniforms.uHighDeckVisibility!.value).toBe(0)
+      update(4200, NaN)
+      expect(Number.isFinite(uniforms.uLowDeckVisibility!.value)).toBe(true)
+    } finally { sky.dispose() }
+  })
+
   it('reuses directional deck uniforms and falls back to manual weather safely', () => {
     const scene = new Scene(), sky = new SkyDome(scene)
     try {

@@ -462,6 +462,7 @@ export class SkyDome {
     cloudDeck: SkyCloudDeck,
     timeSec: number,
     cloudBase?: number,
+    cloudTop?: number,
   ): void {
     const safeAx = Number.isFinite(ax) ? ax : this.mesh.position.x
     const safeAy = Number.isFinite(ay) ? ay : this.mesh.position.y
@@ -495,9 +496,11 @@ export class SkyDome {
     this.mat.uniforms.uHorizonColor!.value.copy(this.horizon)
 
     const regional = Number.isFinite(cloudBase)
-    const lowDeck = skyLayerVisibility(safeAy, regional ? cloudBase! + 1200 : 2500 + safeStorm * 3600,
-      regional ? cloudBase! + 2200 : 3350 + safeStorm * 3600)
-    const highDeck = skyLayerVisibility(safeAy, regional ? cloudBase! + 4200 : 5400, regional ? cloudBase! + 5300 : 6500)
+    const structured = regional && Number.isFinite(cloudTop) && cloudTop! > cloudBase!
+    const lowDeck = skyLayerVisibility(safeAy, structured ? cloudTop! - 250 : regional ? cloudBase! + 1200 : 2500 + safeStorm * 3600,
+      structured ? cloudTop! + 400 : regional ? cloudBase! + 2200 : 3350 + safeStorm * 3600)
+    const highDeck = skyLayerVisibility(safeAy, structured ? cloudTop! + 1800 : regional ? cloudBase! + 4200 : 5400,
+      structured ? cloudTop! + 2400 : regional ? cloudBase! + 5300 : 6500)
     this.mat.uniforms.uLowDeckVisibility!.value = lowDeck
     this.mat.uniforms.uHighDeckVisibility!.value = highDeck
     const night = 1 - safeDayFactor

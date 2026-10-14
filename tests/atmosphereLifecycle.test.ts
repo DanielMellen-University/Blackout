@@ -46,6 +46,7 @@ describe('atmosphere lifecycle boundary', () => {
     ;(atmosphere as unknown as { disposed: boolean }).disposed = false
     ;(atmosphere as unknown as { weather: string }).weather = 'clear'
     ;(atmosphere as unknown as { dirty: boolean }).dirty = false
+    Object.assign(atmosphere, { cloudSampleTimes: new Float64Array(46) })
     ;(atmosphere as unknown as { weatherDirector: { setWeather(id: string, instant: boolean): void } }).weatherDirector = {
       setWeather(id, instant) {
         calls.push(`${id}:${instant}`)
@@ -74,6 +75,8 @@ describe('atmosphere lifecycle boundary', () => {
     ;(atmosphere as unknown as { weatherSnapshotDirty: boolean }).weatherSnapshotDirty = true
     ;(atmosphere as unknown as { weatherState: typeof state }).weatherState = state
     ;(atmosphere as unknown as { weatherDirector: typeof director }).weatherDirector = director
+    Object.assign(atmosphere, { regionalWeather: { structureInto: (out: typeof state) => out },
+      lastAnchor: { x: 0, y: 0, z: 0 } })
 
     const first = atmosphere.weatherSnapshot
     const second = atmosphere.weatherSnapshot
