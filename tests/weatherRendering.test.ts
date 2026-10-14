@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { AmbientLight, BufferAttribute, DirectionalLight, HemisphereLight, InstancedMesh, LineBasicMaterial, Matrix4, PointsMaterial, Scene, Vector3 } from 'three'
+import { AmbientLight, BufferAttribute, DirectionalLight, Fog, HemisphereLight, InstancedMesh, LineBasicMaterial, Matrix4, PointsMaterial, Scene, Vector3 } from 'three'
 import { Atmosphere } from '../src/world/Atmosphere'
 import { cloudInteriorDensity } from '../src/world/CloudMaterial'
 import { precipitationAtAltitude, RainField } from '../src/world/RainField'
@@ -17,6 +17,61 @@ function atmosphere() {
 }
 
 describe('weather rendering', () => {
+  it('uses physical blizzard visibility without changing the streaming envelope, and clears it above the source', () => {
+    const { scene, weather } = atmosphere()
+    try {
+      weather.setWeather('blizzard', true); weather.update(.2, 0, -100, 0)
+      expect((scene.fog as Fog).far).toBe(2600)
+      weather.update(.2, 0, 20000, 0)
+      expect((scene.fog as Fog).far).toBe(18000)
+    } finally { weather.dispose() }
+  })
+
+  it('keeps storm illumination localized without changing ambient or fill lights', () => {
+    const { scene, weather } = atmosphere()
+    const lights = weather as unknown as { ambient: { intensity: number }; fill: { intensity: number };
+      cloudFlash: { value: number }; cloudInstances: Record<string, InstancedMesh> }
+    weather.timeOfDay = .5; weather.setTimeOfDayLocked(true)
+    weather.update(.1, 0, 1400, 0)
+    const ambient = lights.ambient.intensity, fill = lights.fill.intensity
+    const matrixVersion = lights.cloudInstances.cumulus!.instanceMatrix.version
+    let flashed = false, thunder = 0
+    try {
+      for (let i = 0; i < 1500; i++) {
+        weather.update(.1, 0, 1400, 0)
+        flashed ||= lights.cloudFlash.value > 0
+        if (weather.consumeThunder() > 0) thunder++
+        expect(lights.ambient.intensity).toBe(ambient)
+        expect(lights.fill.intensity).toBe(fill)
+      }
+      expect(flashed).toBe(true); expect(thunder).toBeGreaterThan(0)
+      expect(lights.cloudInstances.cumulus!.instanceMatrix.version - matrixVersion).toBe(750)
+      expect(scene.getObjectByName('RainShafts')).toBeTruthy()
+      weather.setReducedMotion(true); expect(lights.cloudFlash.value).toBe(0)
+      weather.setReducedMotion(false); weather.setWeather('clear', true)
+      expect(weather.lightningActive).toBe(false)
+      expect(lights.cloudFlash.value).toBe(0)
+    } finally { weather.dispose() }
+  })
+
+  it('varies rain opacity and lengths without changing its particle capacity', () => {
+    const rain = new RainField(), different = new RainField()
+    try {
+      rain.setSeed(1.1); different.setSeed(1.2)
+      rain.update(0, 0, 1000, 0, 1, 0, 0)
+      const alpha = rain.mesh.geometry.getAttribute('rainAlpha')
+      const other = different.mesh.geometry.getAttribute('rainAlpha')
+      expect(alpha.count).toBe(3600)
+      expect(Array.from(alpha.array)).not.toEqual(Array.from(other.array))
+      const lengths = new Set<number>(), p = rain.mesh.geometry.getAttribute('position')
+      for (let i = 0; i < p.count; i += 2) {
+        expect(alpha.getX(i)).toBeGreaterThan(alpha.getX(i + 1))
+        lengths.add(Math.round((p.getY(i + 1) - p.getY(i)) * 100))
+      }
+      expect(lengths.size).toBeGreaterThan(100)
+    } finally { rain.dispose(); different.dispose() }
+  })
+
   it('clips wind-slanted rain at its regional source without making a horizontal ceiling', () => {
     const rain = new RainField()
     rain.setSeed(731)

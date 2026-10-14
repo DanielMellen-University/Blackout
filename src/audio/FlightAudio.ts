@@ -310,6 +310,7 @@ export class FlightAudio {
       | 'radar-lock'
       | 'radar-lost'
       | 'sonic-boom',
+    intensity = 1,
   ): void {
     if (this.disposed) return
     const ctx = this.ctx
@@ -389,9 +390,11 @@ export class FlightAudio {
       this.tone(96, now, 0.38, 'triangle', 0.1, 42)
       this.tone(180, now + 0.018, 0.2, 'sine', 0.06, 72)
     } else if (kind === 'thunder') {
-      // Low, delayed-feeling roll: the sky flash stays readable without a sharp click.
-      this.noiseBurst(now, 0.52, 'brown', 0.14, 150, 42)
-      this.tone(74, now + 0.04, 0.7, 'triangle', 0.1, 32)
+      // Arrival timing is owned by simulation; distance only scales this roll.
+      const gain = clamp01(intensity)
+      if (gain <= 0) return
+      this.noiseBurst(now, 0.52, 'brown', 0.14 * gain, 150, 42)
+      this.tone(74, now + 0.04, 0.7, 'triangle', 0.1 * gain, 32)
     } else if (kind === 'gear-up' || kind === 'gear-down') {
       // Keep the automatic gear state legible with a quiet mechanical double-click.
       const lowering = kind === 'gear-down'

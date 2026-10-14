@@ -2,13 +2,16 @@ import { MeshBasicMaterial, Vector3 } from 'three'
 
 /** Three instanced draws, with optical shading and independent formation opacity. */
 export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: number },
-  drift = { value: new Vector3() }, blend = { value: 1 }): MeshBasicMaterial {
+  drift = { value: new Vector3() }, blend = { value: 1 },
+  flashPosition = { value: new Vector3() }, flash = { value: 0 }): MeshBasicMaterial {
   const material = new MeshBasicMaterial({ color: 0xe8f0f8, transparent: true, opacity: .72, depthWrite: false })
   material.onBeforeCompile = shader => {
     shader.uniforms.cloudSun = sun
     shader.uniforms.cloudStorm = storm
     shader.uniforms.cloudDrift = drift
     shader.uniforms.cloudFrameBlend = blend
+    shader.uniforms.cloudFlashPosition = flashPosition
+    shader.uniforms.cloudFlash = flash
     shader.vertexShader = `attribute float cloudAlpha;
       attribute float cloudAlphaFrom;
       attribute float cloudTone;
@@ -19,17 +22,22 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       varying vec3 vCloudNormal;
       varying vec3 vCloudLocal;
       varying vec3 vCloudView;\n` + shader.vertexShader
+    shader.vertexShader = 'varying vec3 vCloudWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
       mvPosition.xyz += (viewMatrix * vec4(cloudDrift, 0.0)).xyz;
       gl_Position = projectionMatrix * mvPosition;
       vCloudAlpha = mix(cloudAlphaFrom, cloudAlpha, clamp(cloudFrameBlend, 0.0, 1.0));
       vCloudTone = cloudTone;
       vCloudLocal = position;
+      vCloudWorld = (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz + cloudDrift;
       mat3 cloudTransform = mat3(instanceMatrix);
       vec3 cloudNormal = normal / max(vec3(dot(cloudTransform[0], cloudTransform[0]), dot(cloudTransform[1], cloudTransform[1]), dot(cloudTransform[2], cloudTransform[2])), vec3(.000001));
       vCloudNormal = normalize(mat3(modelMatrix) * cloudTransform * cloudNormal);
       vCloudView = normalize(cameraPosition - (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz - cloudDrift);`)
-    shader.fragmentShader = `uniform vec3 cloudSun;
+    shader.fragmentShader = `uniform vec3 cloudFlashPosition;
+      uniform float cloudFlash;
+      varying vec3 vCloudWorld;
+      uniform vec3 cloudSun;
       uniform float cloudStorm;
       varying float vCloudTone;
       varying float vCloudAlpha;
@@ -44,6 +52,11 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       float sunlit = .5 + .5 * dot(n, cloudSun);
       diffuseColor.rgb *= mix(.70 - cloudStorm * .08, 1.0, underside) * (.86 + sunlit * .14) * (.94 + billow * .06);
       diffuseColor.rgb *= 1.0 - vCloudTone;
+      if (cloudFlash > .001) {
+        vec3 delta = (vCloudWorld - cloudFlashPosition) / vec3(2200.0, 1400.0, 2200.0);
+        float glow = exp(-dot(delta, delta) * 2.0) * cloudFlash;
+        diffuseColor.rgb += vec3(.72, .84, 1.0) * glow;
+      }
       // A broad optical edge lets overlapping billows form one bank, rather
       // than exposing the rim of each stretched sphere as a metallic disc.
       // Broad optical falloff, without a bright per-ellipsoid rim. Thick
@@ -51,7 +64,7 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       float edge = pow(facing, 2.2) * smoothstep(.15, .8, billow - (1.0 - facing) * .35);
       diffuseColor.a *= vCloudAlpha * edge * (.8 + billow * .2);`)
   }
-  material.customProgramCacheKey = () => 'cloud-cell-bank-v4'
+  material.customProgramCacheKey = () => 'cloud-spatial-storm-v5'
   return material
 }
 

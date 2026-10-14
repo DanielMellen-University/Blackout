@@ -28,6 +28,10 @@
   <select id="cloud-view" aria-label="Cloud review view">
     <option value="below">Below cloud</option><option value="inside" selected>Inside cloud</option><option value="above">Above cloud</option>
   </select>
+  <select id="cloud-family" aria-label="Cloud review family">
+    <option value="all">Any cloud</option><option value="cumulus">Cumulus</option>
+    <option value="stratus">Stratus</option><option value="cirrus">Cirrus</option>
+  </select>
   <button id="river-tour">Trace river</button>
   <select id="review-view" aria-label="River camera">
     <option value="overview">Overview</option><option value="chase">Chase</option>
@@ -58,7 +62,8 @@
     <label>Seconds <input id="fixture-time" aria-label="Review simulation seconds" type="number" min="0" value="180" style="width:75px"></label>
     <label>Day <input id="fixture-day" aria-label="Review time of day" type="number" min="0" max="1" step=".01" value=".48" style="width:60px"></label>
     <label><input id="fixture-hold" aria-label="Hold weather clock" type="checkbox">Hold weather clock</label>
-    <button id="fixture-apply">Apply review pose</button><span id="fixture-status"></span>
+    <button id="fixture-apply">Apply review pose</button>
+    <button id="fixture-advance">Advance weather 30s</button><span id="fixture-status"></span>
   </details>
 </nav>
 <script type="module">
@@ -177,6 +182,8 @@ document.querySelector('#cloud-interior').onclick=()=>{
   let nearest=null,best=Infinity
   world.scene.traverse(object=>{
     if(!object.isInstancedMesh||!object.name.startsWith('CloudBatch-'))return
+    const family=document.querySelector('#cloud-family').value
+    if(family!=='all'&&object.name!==`CloudBatch-${family}`)return
     const alpha=object.geometry.getAttribute('cloudAlpha')
     for(let i=0;i<object.count;i++){
       if(alpha.getX(i)<.35)continue
@@ -192,6 +199,9 @@ document.querySelector('#cloud-interior').onclick=()=>{
   if(view!=='inside')viewpoint.add(new T.Vector3(-Math.max(1600,nearest.scale.x*2),
     Math.max(800,nearest.scale.y*3)*(view==='above'?1:-1),-Math.max(1600,nearest.scale.z*2)))
   viewpoint.y=Math.max(viewpoint.y,sampleTerrainHeight(viewpoint.x,viewpoint.z)+120)
+  if(view==='inside'&&viewpoint.y>center.y+1){
+    document.querySelector('#travel-stats').textContent='This cloud point intersects terrain. Choose another family or destination.';return
+  }
   if(view==='below'&&viewpoint.y>=center.y-50){
     document.querySelector('#travel-stats').textContent='No below-cloud viewpoint clear of terrain here. Inspect above or choose another destination.';return
   }
@@ -408,6 +418,13 @@ function applyReviewWeather(){
   else world.atmosphere.setWeather(value,true)
 }
 document.querySelector('#weather').onchange=applyReviewWeather
+document.querySelector('#fixture-advance').onclick=()=>{
+  const focus=reviewMode.startsWith('weather')||reviewMode==='cloud-interior'?reviewJet.position:controls.target
+  world.atmosphere.update(30,focus.x,focus.y,focus.z,0)
+  world.atmosphere.update(.1,focus.x,focus.y,focus.z,0)
+  document.querySelector('#fixture-time').value=world.atmosphere.weatherSimulationTime.toFixed(1)
+  document.querySelector('#fixture-status').textContent=`Time ${world.atmosphere.weatherSimulationTime.toFixed(1)} / ${world.atmosphere.lightningActive?'localized lightning active':'no eligible storm event'}`
+}
 document.querySelector('#fixture-apply').onclick=()=>{
   const read=id=>Number(document.querySelector(id).value)
   const seed=read('#fixture-seed'),x=read('#fixture-x'),z=read('#fixture-z'),time=read('#fixture-time'),day=read('#fixture-day')
@@ -527,7 +544,11 @@ renderer.setAnimationLoop(now=>{
   frames++
   if(frames%15===0){
     const sorted=[...timings].sort((a,b)=>a-b)
+    const shafts=world.scene.getObjectByName('RainShafts'),shaftAlpha=shafts?.geometry.getAttribute('shaftAlpha')
+    let shaftCount=0
+    if(shafts?.visible&&shaftAlpha)for(let i=0;i<shaftAlpha.count;i++)if(shaftAlpha.getX(i)>.01)shaftCount++
     document.querySelector('#stats').textContent=' · '+world.atmosphere.weatherLabel+' · time '+world.atmosphere.weatherSimulationTime.toFixed(1)+' · cloud immersion '+world.atmosphere.cloudImmersionLevel.toFixed(2)+' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
+    document.querySelector('#stats').textContent+=` · rain shafts ${shaftCount}/16 · lightning ${world.atmosphere.lightningActive?'local':'quiet'}`
     if(travelFrameCount){
       const sample=travelFrames.slice(0,Math.min(travelFrameCount,travelFrames.length)).sort()
       const heap=performance.memory?.usedJSHeapSize??0

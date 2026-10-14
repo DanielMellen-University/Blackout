@@ -20,6 +20,8 @@ import { deriveSkyCloudDeckInto, SkyDome, type SkyCloudDeck } from './SkyDome'
 import { SnowField } from './SnowField'
 import { RainField, precipitationAtAltitude } from './RainField'
 import { createCloudMaterial, cloudInteriorDensity } from './CloudMaterial'
+import { RainShafts } from './RainShafts'
+import { StormEvents, type StormSource } from './StormEvents'
 import { disposeObjectTree } from '../core/dispose'
 import { nightWeatherReadability } from '../core/SceneExposure'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
@@ -40,6 +42,7 @@ import {
 } from './WeatherDirector'
 
 export { WEATHER_LABELS, WEATHER_ORDER, type WeatherId } from './WeatherDirector'
+export { lightningCooldown, lightningFlashEnvelope } from './StormEvents'
 
 export type CloudImmersionBand = 'clear' | 'edge' | 'inside'
 
@@ -134,15 +137,8 @@ const COL_HEMI_DAY = new Color(0xd8ecff)
 const COL_HEMI_NIGHT = new Color(0x1a2848)
 const COL_GROUND_DAY = new Color(0x3a4a38)
 const COL_GROUND_NIGHT = new Color(0x0c1018)
-const LIGHTNING_ATTACK_SEC = 0.1
-const LIGHTNING_DURATION_SEC = 0.6
-const LIGHTNING_MIN_PEAK = 0.3
-const LIGHTNING_MAX_PEAK = 0.44
-const LIGHTNING_MIN_CHARGE = 9
-const LIGHTNING_CHARGE_RANGE = 9
-const LIGHTNING_MIN_STRENGTH = 0.35
-/** Cloud matrices are large instanced batches; update them at a stable 30 Hz. */
-const CLOUD_UPDATE_STEP_SEC = 1 / 30
+/** Sample/select/rebuild at 5 Hz; the shader interpolates between updates. */
+const CLOUD_UPDATE_STEP_SEC = .2
 /** Stable pre-reseed clock used while the world is still booting. */
 export const DEFAULT_ATMOSPHERE_TIME = 0.5
 
@@ -171,27 +167,6 @@ export function cloudPuffBudget(
   return Math.min(Math.floor(total), budget)
 }
 
-/**
- * A single broad glow is readable as distant lightning without a hard white-frame cut.
- * The scalar is deliberately capped so all consumers can stay within a comfortable range.
- */
-export function lightningFlashEnvelope(age: number, peak: number): number {
-  if (age <= 0 || age >= LIGHTNING_DURATION_SEC) return 0
-  const rise = MathUtils.smoothstep(age, 0, LIGHTNING_ATTACK_SEC)
-  const release = 1 - MathUtils.smoothstep(age, LIGHTNING_ATTACK_SEC, LIGHTNING_DURATION_SEC)
-  return MathUtils.clamp(peak, 0, LIGHTNING_MAX_PEAK) * rise * release
-}
-
-/**
- * Full storms receive a visible flash roughly every 8-16 seconds.
- * Developing fronts naturally wait longer, which avoids clustered strobing.
- */
-export function lightningCooldown(weatherStrength: number, pulse: number): number {
-  const strength = MathUtils.clamp(weatherStrength, LIGHTNING_MIN_STRENGTH, 1)
-  const variation = MathUtils.clamp(pulse, 0, 1)
-  return (LIGHTNING_MIN_CHARGE + variation * LIGHTNING_CHARGE_RANGE) /
-    (0.25 + strength * 0.85)
-}
 
 export interface AtmosphereAnchor {
   x: number
@@ -285,12 +260,9 @@ export class Atmosphere {
   private readonly skyCloudDeck = {} as SkyCloudDeck
   private readonly distantCloudDeck = {} as SkyCloudDeck
   private elapsed = 0
-  private lightningCharge = 0
-  private lightningFlash = 0
-  private lightningFlashAge = Infinity
-  private lightningFlashPeak = 0
+  private readonly stormEvents = new StormEvents()
+  private readonly stormSource: StormSource = { x: 0, y: 0, z: 0, strength: 0 }
   private reducedMotion = false
-  private gustPhase = 0
   private clockLabelMinute = -1
   private clockLabelValue = '00:00'
   private weatherLabelTarget: WeatherId | null = null
@@ -317,6 +289,10 @@ export class Atmosphere {
   private readonly cloudStorm = { value: 0 }
   private readonly cloudDrift = { value: new Vector3() }
   private readonly cloudFrameBlend = { value: 1 }
+  private readonly cloudFlashPosition = { value: new Vector3() }
+  private readonly cloudFlash = { value: 0 }
+  private readonly weatherClock = { value: 0 }
+  private readonly rainShafts = new RainShafts(this.cloudDrift, this.cloudFrameBlend, this.weatherClock)
   private cloudImmersion = 0
   private cloudImmersionTarget = 0
   private cloudBaseOffset = 0
@@ -385,6 +361,7 @@ export class Atmosphere {
 
     // World-space pooled streaks preserve parallax through fast flight.
     scene.add(this.rainField.mesh)
+    scene.add(this.rainShafts.mesh)
 
     this.snowField = new SnowField()
     scene.add(this.snowField.points)
@@ -434,7 +411,8 @@ export class Atmosphere {
 
     // Three deck-wide batches replace hundreds of individual cloud draw calls.
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
-      const mat = createCloudMaterial(this.cloudSun, this.cloudStorm, this.cloudDrift, this.cloudFrameBlend)
+      const mat = createCloudMaterial(this.cloudSun, this.cloudStorm, this.cloudDrift, this.cloudFrameBlend,
+        this.cloudFlashPosition, this.cloudFlash)
       mat.name = `Cloud-${layer}`
       const geometry = puffGeo.clone()
       geometry.setAttribute('cloudAlpha', new InstancedBufferAttribute(new Float32Array(this.cloudPuffCounts[layer]), 1).setUsage(DynamicDrawUsage))
@@ -480,6 +458,7 @@ export class Atmosphere {
     if (safe === this.precipitationScale) return
     this.precipitationScale = safe
     this.rainField.setDensityScale(safe)
+    this.rainShafts.setDensityScale(safe)
     this.snowField.setDensityScale(safe)
   }
 
@@ -545,6 +524,7 @@ export class Atmosphere {
     if (enabled && !this.automaticWeather) Object.assign(this.regionalBlendFrom, this.weatherSnapshot)
     this.regionalBlendRemaining = enabled && !this.automaticWeather && !Number.isFinite(simulationTime) ? 5 : 0
     this.automaticWeather = enabled === true
+    this.stormEvents.clearFlash(); this.cloudFlash.value = 0; this.stormSource.strength = 0
     if (Number.isFinite(simulationTime)) this.regionalElapsed = Math.max(0, simulationTime!)
     this.regionalSampleTime = -Infinity
     this.cloudUpdateAccumulator = CLOUD_UPDATE_STEP_SEC
@@ -577,7 +557,9 @@ export class Atmosphere {
     this.automaticWeather = false
     this.weatherDirector.setWeather(safeId, instant, initial)
     this.weather = safeId
+    this.stormEvents.clearFlash(); this.cloudFlash.value = 0; this.stormSource.strength = 0
     this.cloudSampleTimes.fill(-Infinity)
+    this.cloudUpdateAccumulator = CLOUD_UPDATE_STEP_SEC
     this.weatherSnapshotDirty = true
     this.dirty = true
   }
@@ -621,10 +603,10 @@ export class Atmosphere {
     this.reseedCloudField(seed)
     this.weatherSnapshotDirty = true
     this.cloudImmersion = this.cloudImmersionTarget = 0
-    this.lightningCharge = LIGHTNING_MIN_CHARGE + this.seededPulse(seed) * LIGHTNING_CHARGE_RANGE
-    this.lightningFlash = 0
-    this.lightningFlashAge = Infinity
-    this.lightningFlashPeak = 0
+    this.stormEvents.reset(seed)
+    this.stormSource.strength = 0
+    this.cloudFlash.value = 0
+    this.rainShafts.reset()
     this.dirty = true
   }
 
@@ -706,8 +688,11 @@ export class Atmosphere {
 
   /** True while the current storm flash envelope is active. */
   get lightningActive(): boolean {
-    return !this.reducedMotion && this.lightningFlashAge < LIGHTNING_DURATION_SEC
+    return !this.disposed && this.stormEvents.active
   }
+
+  /** Consume the sole arrived thunder event once. Zero means no audible event. */
+  consumeThunder(): number { return this.disposed ? 0 : this.stormEvents.consumeThunder() }
 
   /** Respect the browser's reduced-motion preference for storm flashes. */
   setReducedMotion(enabled: boolean): void {
@@ -715,10 +700,8 @@ export class Atmosphere {
     const reduced = enabled === true
     this.reducedMotion = reduced
     this.sky?.setReducedMotion(reduced)
-    if (reduced) {
-      this.lightningFlash = 0
-      this.lightningFlashAge = Infinity
-    }
+    this.stormEvents.setReducedMotion(reduced)
+    if (reduced) this.cloudFlash.value = 0
   }
 
   get prefersReducedMotion(): boolean {
@@ -751,6 +734,8 @@ export class Atmosphere {
     if (this.disposed) return
     this.disposed = true
     this.rainField.dispose()
+    this.rainShafts.dispose()
+    this.stormEvents.reset(0)
     this.snowField.points.removeFromParent()
     this.snowField.dispose()
     this.sky.dispose()
@@ -810,7 +795,10 @@ export class Atmosphere {
       MathUtils.smoothstep(t, 0.18, 0.28) * (1 - MathUtils.smoothstep(t, 0.28, 0.38)) +
       MathUtils.smoothstep(t, 0.68, 0.78) * (1 - MathUtils.smoothstep(t, 0.78, 0.88))
 
-    this.updateLightning(dt, w)
+    this.stormEvents.update(dt, this.stormSource, this.lastAnchor)
+    this.cloudFlashPosition.value.set(this.stormEvents.position.x, this.stormEvents.position.y, this.stormEvents.position.z)
+    this.cloudFlash.value = this.stormEvents.flash
+    this.weatherClock.value = this.regionalElapsed
     deriveSkyCloudDeckInto(this.skyCloudDeck, w)
     const totalClouds = Math.max(w.lowClouds, w.midClouds * 0.9, w.highClouds * 0.55)
 
@@ -844,18 +832,14 @@ export class Atmosphere {
     }
     const fogReadability = fogHorizonReadability(dayFactor, Math.max(w.rain, w.snow), totalClouds)
     if (fogReadability > 0) _horizon.multiplyScalar(1 + fogReadability * .12)
-    if (this.lightningFlash > 0.01) {
-      _c2.setHex(0xcfe3ff)
-      _c.lerp(_c2, this.lightningFlash * 0.28)
-      _horizon.lerp(_c2, this.lightningFlash * 0.22)
-    }
 
     const ceiling = this.weatherState.precipitationBase
     const source = precipitationAtAltitude(ay, w.lightning, ceiling)
     const aboveDeck = 1 - source
     this.cloudImmersion = MathUtils.lerp(this.cloudImmersion, this.cloudImmersionTarget, 1 - Math.exp(-Math.max(0, visualDt) * 3))
     const fogNear = MathUtils.lerp(this.baseFogNear * MathUtils.lerp(w.fogNearMul, 1.1, aboveDeck), 25, this.cloudImmersion)
-    const fogFar = MathUtils.lerp(Math.min(this.baseFogFar * MathUtils.lerp(w.fogFarMul, 1, aboveDeck), STREAM_RADIUS_M * .9), 420, this.cloudImmersion)
+    const weatherFar = Math.min(this.baseFogFar * w.fogFarMul, this.weatherState.visibilityM)
+    const fogFar = MathUtils.lerp(Math.min(MathUtils.lerp(weatherFar, this.baseFogFar, aboveDeck), STREAM_RADIUS_M * .9), 420, this.cloudImmersion)
     // Fog matches horizon so the stream edge blends into the sky
     if (this.scene.fog instanceof Fog) {
       this.scene.fog.color.copy(_horizon)
@@ -920,14 +904,12 @@ export class Atmosphere {
       MathUtils.lerp(0.62, 1, dayFactor),
     )
     this.ambient.intensity =
-      (0.1 + dayFactor * 0.28 + nightFactor * 0.06) * w.ambientMul +
-      this.lightningFlash * 0.55
+      (0.1 + dayFactor * 0.28 + nightFactor * 0.06) * w.ambientMul
 
     // Soft bounce opposite the stronger key
     this.fill.color.setHex(dayFactor > 0.35 ? 0xc8e0ff : 0x6a7aaa)
     this.fill.intensity =
-      (0.1 + dayFactor * 0.22 + moonUp * nightFactor * 0.12) * w.sunMul +
-      this.lightningFlash * 0.85
+      (0.1 + dayFactor * 0.22 + moonUp * nightFactor * 0.12) * w.sunMul
     this.fill.position.set(
       ax - _sunDir.x * lightDist * 0.35,
       ay + 90,
@@ -998,7 +980,7 @@ export class Atmosphere {
   ): void {
     if (dt <= 0) return
     this.cloudUpdateAccumulator += dt
-    if (this.cloudUpdateAccumulator < CLOUD_UPDATE_STEP_SEC) {
+    if (this.cloudUpdateAccumulator + 1e-8 < CLOUD_UPDATE_STEP_SEC) {
       const driftTime = Math.max(0, this.regionalElapsed - this.cloudMatrixTime)
       this.cloudDrift.value.set(driftTime * 12, 0, driftTime * 3)
       this.cloudFrameBlend.value = this.cloudUpdateAccumulator / CLOUD_UPDATE_STEP_SEC
@@ -1015,7 +997,7 @@ export class Atmosphere {
       weather.highClouds,
     )
     const brightness =
-      0.5 + dayFactor * 0.48 - weather.snow * 0.08 + this.lightningFlash * 0.16
+      0.5 + dayFactor * 0.48 - weather.snow * 0.08
     const baseOpacity = MathUtils.clamp(0.28 + maxCover * 0.5, 0.18, 0.82)
     // MeshBasic clouds do not receive the scene lights. Tint the three shared
     // batches from the same continuous front values so rain and storms become
@@ -1031,8 +1013,10 @@ export class Atmosphere {
     let anyVisible = false
     this.cloudImmersionTarget = 0
     this.cloudBaseOffset = 0
-    this.gustPhase += cloudDt * (0.35 + weather.gust * 1.4)
     this.cloudCells.select(this.cloudSeed, ax, az, this.regionalElapsed)
+    this.rainShafts.begin()
+    this.stormSource.strength = 0
+    let stormScore = 0
 
     for (const layer of ['cumulus', 'stratus', 'cirrus'] as const) {
       const mat = this.cloudInstances[layer].material as MeshBasicMaterial
@@ -1119,6 +1103,20 @@ export class Atmosphere {
       const target = this.cloudCells.moving(i) ? 0 : MathUtils.smoothstep(layerCover - densityRoll, -.06, .09) * distFade
       this.cloudAlpha[i] = MathUtils.lerp(this.cloudAlpha[i]!, target, fadeK)
       const a = this.cloudAlpha[i]!
+      if (layer !== 'cirrus' && a > .05) {
+        const phase = cloudCellRandom(this.cloudSeed, cx, cz, 41)
+        this.rainShafts.offer(i, wpos.x, local.precipitationBase, wpos.z,
+          2000 + local.midClouds * 1800 + local.convection * 800,
+          local.rain * a, phase, ax, az)
+        const sourceY = local.cloudBase + (local.cloudTop - local.cloudBase) * .4
+        const distanceSquared = distSq + (sourceY - _ay) ** 2
+        const score = local.lightning * a / (1 + distanceSquared / 36000000)
+        if (a > .2 && local.lightning >= .35 && distanceSquared <= 400000000 && score > stormScore) {
+          stormScore = score
+          this.stormSource.x = wpos.x; this.stormSource.y = sourceY; this.stormSource.z = wpos.z
+          this.stormSource.strength = local.lightning
+        }
+      }
 
       if (a < 0.01) {
         this.setCloudClusterMatrices(cluster, layer, wpos, 0)
@@ -1139,6 +1137,7 @@ export class Atmosphere {
       this.cloudInstances[layer].geometry.getAttribute('cloudTone').needsUpdate = true
     }
     this.cloudRoot.visible = anyVisible
+    this.rainShafts.commit(cloudDt, ax, az, dayFactor)
   }
 
   private setCloudClusterMatrices(
@@ -1190,46 +1189,6 @@ export class Atmosphere {
     }
   }
 
-  private updateLightning(dt: number, weather: WeatherSnapshot): void {
-    if (dt <= 0 || this.reducedMotion) {
-      this.lightningFlash = 0
-      this.lightningFlashAge = Infinity
-      return
-    }
-
-    if (this.lightningFlashAge < LIGHTNING_DURATION_SEC) {
-      this.lightningFlashAge += dt
-      this.lightningFlash = lightningFlashEnvelope(
-        this.lightningFlashAge,
-        this.lightningFlashPeak,
-      )
-      if (this.lightningFlashAge >= LIGHTNING_DURATION_SEC) {
-        this.lightningFlash = 0
-        this.lightningFlashAge = Infinity
-      }
-    } else {
-      this.lightningFlash = 0
-    }
-
-    if (weather.lightning < LIGHTNING_MIN_STRENGTH) return
-
-    this.lightningCharge -= dt * (0.25 + weather.lightning * 0.85)
-    if (this.lightningCharge > 0) return
-
-    const pulse = this.seededPulse(this.elapsed * 7.31 + this.gustPhase)
-    this.lightningFlashPeak = LIGHTNING_MIN_PEAK + pulse *
-      (LIGHTNING_MAX_PEAK - LIGHTNING_MIN_PEAK)
-    this.lightningFlashAge = 0
-    this.lightningCharge = lightningCooldown(
-      weather.lightning,
-      this.seededPulse(this.elapsed * 2.17),
-    ) * (0.25 + weather.lightning * 0.85)
-  }
-
-  private seededPulse(value: number): number {
-    const n = Math.sin(value * 12.9898 + 78.233) * 43758.5453
-    return n - Math.floor(n)
-  }
 
   /** Place the existing pooled clusters deterministically for the new world. */
   private reseedCloudField(seed: number): void {

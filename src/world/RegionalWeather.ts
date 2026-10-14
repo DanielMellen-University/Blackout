@@ -24,7 +24,10 @@ export function populateWeatherStructure(out: RegionalWeatherSample, base = 1400
   out.cloudBase = Math.max(300, base)
   out.cloudTop = out.cloudBase + 650 + out.midClouds * 850 + out.convection * 3900
   out.precipitationBase = out.cloudBase
-  out.visibilityM = Math.max(1800, 30240 * out.fogFarMul)
+  const fog = smoothstep(.55, .85, out.haze) * (1 - Math.max(out.rain, out.snow))
+  // Severe snow/fog should read through depth, not giant bright particles.
+  // Keep a playable ground-visibility floor outside actual cloud interiors.
+  out.visibilityM = Math.max(2600, 30240 * out.fogFarMul * (1 - out.snow * .72) * (1 - fog * .65))
 }
 
 /** Spatial fronts, independent of visitation order. No arrays, objects, cache

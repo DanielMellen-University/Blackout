@@ -60,6 +60,7 @@ export class SnowField {
   private readonly fall: Float32Array
   private readonly phase: Float32Array
   private readonly size: Float32Array
+  private readonly opacity: Float32Array
   private readonly mat: PointsMaterial
   private readonly tex: DataTexture
   private clock = 0
@@ -74,11 +75,13 @@ export class SnowField {
     this.fall = new Float32Array(FLAKE_COUNT)
     this.phase = new Float32Array(FLAKE_COUNT)
     this.size = new Float32Array(FLAKE_COUNT)
+    this.opacity = new Float32Array(FLAKE_COUNT)
     this.setSeed(0)
 
     const geo = new BufferGeometry()
     geo.setAttribute('position', new BufferAttribute(this.pos, 3))
     geo.setAttribute('snowSize', new BufferAttribute(this.size, 1))
+    geo.setAttribute('snowOpacity', new BufferAttribute(this.opacity, 1))
 
     this.tex = makeSoftDiscTexture(64)
     this.mat = new PointsMaterial({
@@ -90,24 +93,26 @@ export class SnowField {
       depthWrite: false,
       sizeAttenuation: true,
       fog: true,
-      alphaTest: 0.08,
+      alphaTest: 0.045,
     })
     this.mat.onBeforeCompile = (shader) => {
       shader.uniforms.snowSourceCeiling = this.sourceCeiling
-      shader.vertexShader = 'varying float vSnowWorldY;\n' + shader.vertexShader
-      shader.fragmentShader = 'uniform float snowSourceCeiling;\nvarying float vSnowWorldY;\n' + shader.fragmentShader
+      shader.vertexShader = 'varying float vSnowWorldY;\nvarying float vSnowOpacity;\nvarying float vSnowDistance;\n' + shader.vertexShader
+      shader.fragmentShader = 'uniform float snowSourceCeiling;\nvarying float vSnowWorldY;\nvarying float vSnowOpacity;\nvarying float vSnowDistance;\n' + shader.fragmentShader
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
-        '#include <common>\n\tattribute float snowSize;',
+        '#include <common>\n\tattribute float snowSize;\nattribute float snowOpacity;',
       )
       shader.vertexShader = shader.vertexShader.replace(
         '#include <fog_vertex>',
-        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 15.0);\n vSnowWorldY = (modelMatrix * vec4(transformed, 1.0)).y;',
+        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 8.0);\n vSnowWorldY = (modelMatrix * vec4(transformed, 1.0)).y;\nvSnowOpacity = snowOpacity;\nvSnowDistance = length(mvPosition.xyz);',
       )
       shader.fragmentShader = shader.fragmentShader.replace('void main() {',
         'void main() {\n if (vSnowWorldY > snowSourceCeiling) discard;')
+      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>',
+        '#include <color_fragment>\n diffuseColor.a *= vSnowOpacity * smoothstep(1.5, 8.0, vSnowDistance);')
     }
-    this.mat.customProgramCacheKey = () => 'snow-source-ceiling-v2'
+    this.mat.customProgramCacheKey = () => 'snow-varied-soft-v3'
 
     this.points = new Points(geo, this.mat)
     this.points.name = 'SnowField'
@@ -122,14 +127,19 @@ export class SnowField {
   /** Re-key the pooled field when a new deterministic world is committed. */
   setSeed(seed: number): void {
     if (this.disposed) return
-    this.seedValue = Number.isFinite(seed) ? Math.trunc(seed) : 0
+    this.seedValue = Number.isFinite(seed) ? Math.round(seed * 1000000) : 0
     for (let i = 0; i < FLAKE_COUNT; i++) {
       this.fall[i] = 3.8 + snowRandom(this.seedValue, i, 11) * 8.4
       this.phase[i] = snowRandom(this.seedValue, i, 23) * Math.PI * 2
-      this.size[i] = .46 + snowRandom(this.seedValue, i, 37) * .42
+      this.size[i] = .35 + Math.pow(snowRandom(this.seedValue, i, 37), 1.6) * .65
+      this.opacity[i] = .45 + Math.pow(snowRandom(this.seedValue, i, 39), 1.2) * .55
     }
     this.clock = 0
     this.scattered = false
+    if (this.points) {
+      this.points.geometry.attributes.snowSize!.needsUpdate = true
+      this.points.geometry.attributes.snowOpacity!.needsUpdate = true
+    }
   }
 
   /** Apply the selected graphics preset to the pooled snow budget. */
@@ -181,7 +191,10 @@ export class SnowField {
 
     this.clock += safeDt
     this.points.visible = true
-    this.mat.opacity = Math.min(0.36, 0.12 + safeIntensity * 0.24)
+    this.mat.opacity = Math.min(0.32, 0.10 + safeIntensity * 0.22)
+    // Heavy snow needs readable fine flakes, not a few almost invisible
+    // sub-pixel specks. Near fade and the 8 px cap still reject giant cards.
+    this.mat.size = .36 + safeIntensity * .16
 
     const fallMul = 0.5 + safeIntensity * 1.15
     const wind = 1.8 + safeIntensity * 8.5

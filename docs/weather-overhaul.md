@@ -48,6 +48,72 @@ Below/Inside/Above cloud inspection targets a currently rendered dense cloud;
 it reports the target centre. Choose a destination to leave that inspection.
 Inspection cameras stay above actual terrain; an impossible below-cloud view
 is reported without moving the camera into the ground.
+Choose a cloud family to inspect a specific formation type. Inside-cloud
+inspection also rejects terrain-intersecting viewpoints rather than falsely
+reporting immersion from an underground camera. Advance weather 30s advances
+only the review atmosphere by 30.1 simulation seconds, including a short flash
+attack step; with Hold weather clock enabled this can preserve an actual
+eligible event for inspection. It does not force an event into dry weather.
+
+## Batch 2: precipitation and storms (10.894)
+
+- One additional instanced draw, 16 shaft slots and 46 bounded candidate records
+  share positions, rain intensity, source height and identity with cloud banks.
+  Existing ground/water depth occludes the planes below their surfaces. No
+  terrain queries, framebuffer passes, textures or per-frame meshes are added.
+  Old identities fade before their occupied slots move. Balanced shows at most
+  12 shafts; quality settings scale visibility without enlarging the pool.
+- Rain retains 1,800 particles, with individually seeded exposure/opacity and
+  soft tails. Snow retains 4,200 flakes, with seeded opacity/size, an 8 px cap
+  and restrained heavy-snow size gain. Both fade close to the camera and remain
+  clipped to the same physical precipitation source. Fractional world seeds
+  now remain distinct in their appearance buffers.
+- Wire the physical visibility field into existing scene fog. Heavy snow and
+  low fog now reduce depth visibility rather than relying on large bright
+  particles; outside cloud interiors the physical floor is 2.6 km. Above the
+  source layer the existing clear envelope returns. Terrain streaming radius,
+  camera range, worker/upload budgets and generated/drawn tile ownership are
+  unchanged: this is weather visibility, not a performance-distance reduction.
+- A seeded event controller owns one cloud-positioned flash and one pending
+  thunder. Illumination peaks at no more than .18, lasts .6 seconds and applies
+  only inside the cloud shader around its source, not to sky/fog, ambient/fill
+  lights or global exposure. Mature-storm cooldown is 18-36 seconds; pending
+  sound can postpone the next event further. No new camera shake or banners.
+- Thunder delay uses source/listener distance at 343 m/s; event sources beyond
+  20 km are skipped. Arrival gain uses the listener's current distance and is
+  silent beyond 30 km. The gameplay loop consumes the sole ready event once,
+  reusing the existing procedural audio cue and its preferences/limiter. Pause
+  freezes the controller; reseed clears it. Reduced motion cancels illumination
+  but not sound. Preset switches also cancel illumination while retaining sound
+  already travelling from an earlier event.
+- Correct matrix rebuild cadence to .2 seconds. Batch 1 sampled regions at
+  5 Hz but inadvertently retained the old 30 Hz matrix constant; its notes
+  overstated this part. A direct 150-second matrix-version regression now
+  requires exactly 750 updates, while shader drift/opacity interpolate frames.
+
+The actual storm review used seed 1, X 8000/Z -56000, 220 m above sampled
+ground, day .48, manual Storm. At held time 210.1 the event preview was active
+and Balanced reported 12 shafts. Chase and below-stratus stills rendered
+without reported shader errors; the latter targeted (10360.0, 3171.3, -53177.8).
+These are static rendering checks, not proof of transition quality, audible
+thunder timing or acceptable frame times. Render intervals remained near
+1,000 ms. The initial first-person Blizzard still at held time 180 exposed
+overly faint sub-pixel flakes; opacity/size were adjusted within the existing
+count and 8 px cap, with final readability review still required.
+
+Retained stills: [storm chase](reviews/weather-storm-chase-10.894.png),
+[below stratus](reviews/weather-storm-bank-10.894.png) and
+[snow before depth-visibility tuning](reviews/weather-snow-before-depth-tuning-10.894.png).
+The storm stills were captured before the final preset-switch guard, which
+does not change their steady profile/shader appearance. The snow still
+predates the final physical-visibility wiring and is not final snow acceptance.
+The browser capability and DOM both reported visible while the approximately
+one-second render intervals persisted; the underlying cause is not established.
+
+Batch 2 passed 102 checks in the 11 affected weather/sky/audio files and the
+production build/release-metadata check. The existing Three.js bundle-size
+warning remains. Those results prove the scoped data/lifecycle/budget checks,
+not the missing continuous visual, gameplay or performance/memory acceptance.
 
 ## Baseline and acceptance limits
 
@@ -83,11 +149,12 @@ that final tuning still needs reliable rendered inspection, including interiors.
 
 1. Review/tune cloud families below, inside and above them, in chase and first
    person, with saved fixed-pose screenshots.
-2. Add one pooled, depth-tested distant-rain batch capped at 16 shafts; refine
-   rain/snow variation and synchronize their transitions with local conditions.
-3. Replace broad lightning brightness with localized cloud illumination and
-   distance-delayed thunder, retaining one pending event and reduced-motion
-   suppression. No new camera shake or warnings.
+2. Finish rain/snow appearance and transition review, including above/below
+   source layers; tune the implemented shafts/particles if the rendered result
+   needs it, without increasing the fixed budgets.
+3. Review actual gameplay thunder arrival/volume and local illumination with
+   reduced motion and preset changes. The implementation/unit checks are not
+   a substitute for hearing/seeing it during flight.
 4. Verify continuous maximum-speed clear/rain/storm and mountain-snow routes,
    including preset/Automatic, authored locks, reseeding and pause behavior.
 5. Complete three matching baseline/candidate full-game runs, targeting median

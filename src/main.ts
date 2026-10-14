@@ -1293,7 +1293,6 @@ export async function boot(): Promise<void> {
   let prevFuelAvailable = true
   let engineOut = false
   let prevGearDown = true
-  let prevLightning = false
   let previousCloudBand: CloudImmersionBand = 'clear'
   let cloudBandPrimed = false
   let thermalLiftActive = false
@@ -1564,7 +1563,6 @@ export async function boot(): Promise<void> {
     prevFuelAvailable = true
     engineOut = false
     prevGearDown = aircraft.controls.gearDown
-    prevLightning = false
     thermalLiftActive = false
     prevEngineHeat = null
     radarDiscovered.clear()
@@ -2479,19 +2477,16 @@ export async function boot(): Promise<void> {
       playing && simLive && aircraft.status !== 'crashed' && cameras.mode !== 'cockpit',
     )
 
-    const lightningActive = world.atmosphere.lightningActive
     if (
       simLive &&
       playing &&
       !menu.paused &&
       !results.open &&
-      aircraft.status !== 'crashed' &&
-      lightningActive &&
-      !prevLightning
+      aircraft.status !== 'crashed'
     ) {
-      audio.playCue('thunder')
+      const thunderGain = world.atmosphere.consumeThunder()
+      if (thunderGain > 0) audio.playCue('thunder', thunderGain)
     }
-    prevLightning = lightningActive
 
     const gearDown = aircraft.controls.gearDown
     if (

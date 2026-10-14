@@ -58,7 +58,7 @@ describe('lightning comfort', () => {
   })
 
   it('uses a capped, eased single-flash envelope', () => {
-    const peak = 0.44
+    const peak = 0.18
 
     expect(lightningFlashEnvelope(0, peak)).toBe(0)
     expect(lightningFlashEnvelope(0.03, peak)).toBeGreaterThan(0)
@@ -71,8 +71,8 @@ describe('lightning comfort', () => {
   })
 
   it('keeps mature-storm lightning infrequent', () => {
-    expect(lightningCooldown(1, 0)).toBeGreaterThanOrEqual(8)
-    expect(lightningCooldown(1, 1)).toBeLessThanOrEqual(17)
+    expect(lightningCooldown(1, 0)).toBeGreaterThanOrEqual(18)
+    expect(lightningCooldown(1, 1)).toBeLessThanOrEqual(36)
     expect(lightningCooldown(0.35, 0.5)).toBeGreaterThan(lightningCooldown(1, 0.5))
   })
 

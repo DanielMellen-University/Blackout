@@ -2,6 +2,25 @@ import { describe, expect, it, vi } from 'vitest'
 import { precipitationParticleCount, SnowField, snowWave, wrap } from '../src/world/SnowField'
 
 describe('snow wrap', () => {
+  it('varies opacity and size in existing buffers, retaining fractional seed identity', () => {
+    const field = new SnowField()
+    try {
+      field.setSeed(1.1)
+      const sizes = field.points.geometry.getAttribute('snowSize'), opacity = field.points.geometry.getAttribute('snowOpacity')
+      expect(sizes.count).toBe(4200); expect(opacity.count).toBe(4200)
+      const before = Array.from(opacity.array)
+      expect(new Set(before).size).toBeGreaterThan(100)
+      for (let i = 0; i < 4200; i++) {
+        expect(opacity.getX(i)).toBeGreaterThanOrEqual(.25)
+        expect(opacity.getX(i)).toBeLessThanOrEqual(1)
+      }
+      field.setSeed(1.2)
+      expect(field.points.geometry.getAttribute('snowSize')).toBe(sizes)
+      expect(field.points.geometry.getAttribute('snowOpacity')).toBe(opacity)
+      expect(Array.from(opacity.array)).not.toEqual(before)
+    } finally { field.dispose() }
+  })
+
   it('surrounds airborne viewpoints so snow is visible straight ahead', () => {
     const field = new SnowField()
     field.update(1 / 60, 0, 1000, 0, 1, 0, 0, 1600)

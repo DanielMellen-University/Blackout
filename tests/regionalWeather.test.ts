@@ -91,6 +91,10 @@ describe('regional weather', () => {
       expect(out.cloudTop).toBeGreaterThan(out.precipitationBase)
       expect(out.precipitationBase).toBe(out.cloudBase)
     }
+    Object.assign(out, WEATHER_PROFILES.blizzard); populateWeatherStructure(out)
+    expect(out.visibilityM).toBe(2600)
+    Object.assign(out, WEATHER_PROFILES.clear); populateWeatherStructure(out)
+    expect(out.visibilityM).toBeCloseTo(30240 * WEATHER_PROFILES.clear.fogFarMul)
   })
   it('fills caller-owned samples deterministically regardless of query order', () => {
     setWorldSeed(42)

@@ -32,6 +32,8 @@ export class RainField {
   private readonly particles = new Float32Array(COUNT * 3)
   private readonly speeds = new Float32Array(COUNT)
   private readonly positions = new Float32Array(COUNT * 6)
+  private readonly exposures = new Float32Array(COUNT)
+  private readonly alphas = new Float32Array(COUNT * 2)
   // Keep storm streaks present without turning every pass through a cloud into
   // a wall of white cards. The pooled line draw stays unchanged.
   private readonly material = new LineBasicMaterial({ color: 0x9eb9c7, transparent: true, opacity: .24, depthWrite: false })
@@ -47,6 +49,16 @@ export class RainField {
     this.setSeed(0)
     const geometry = new BufferGeometry()
     geometry.setAttribute('position', new BufferAttribute(this.positions, 3).setUsage(DynamicDrawUsage))
+    geometry.setAttribute('rainAlpha', new BufferAttribute(this.alphas, 1))
+    this.material.onBeforeCompile = shader => {
+      shader.vertexShader = 'attribute float rainAlpha;\nvarying float vRainAlpha;\nvarying float vRainDistance;\n' + shader.vertexShader
+      shader.fragmentShader = 'varying float vRainAlpha;\nvarying float vRainDistance;\n' + shader.fragmentShader
+      shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+        vRainAlpha = rainAlpha; vRainDistance = length(mvPosition.xyz);`)
+      shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+        diffuseColor.a *= vRainAlpha * smoothstep(1.5, 8.0, vRainDistance);`)
+    }
+    this.material.customProgramCacheKey = () => 'rain-varied-soft-v2'
     this.mesh = new LineSegments(geometry, this.material)
     this.mesh.name = 'RainStreaks'
     this.mesh.frustumCulled = false
@@ -56,7 +68,7 @@ export class RainField {
   /** Re-key the pooled streaks when a deterministic world is committed. */
   setSeed(seed: number): void {
     if (this.disposed) return
-    this.seedValue = Number.isFinite(seed) ? Math.trunc(seed) : 0
+    this.seedValue = Number.isFinite(seed) ? Math.round(seed * 1000000) : 0
     for (let i = 0; i < COUNT; i++) {
       const j = i * 3
       const k = i * 6
@@ -64,6 +76,9 @@ export class RainField {
       this.particles[j + 1] = (rainRandom(this.seedValue, i, 23) - .5) * HEIGHT
       this.particles[j + 2] = (rainRandom(this.seedValue, i, 37) - .5) * WIDTH
       const speed = this.speeds[i] = 34 + rainRandom(this.seedValue, i, 53) * 48
+      this.exposures[i] = .008 + rainRandom(this.seedValue, i, 67) * .022
+      this.alphas[i * 2] = .3 + rainRandom(this.seedValue, i, 71) * .6
+      this.alphas[i * 2 + 1] = this.alphas[i * 2]! * .2
       // Refresh the visible line buffer too. A world reseed can happen while
       // rain is on screen; hiding the pool until the next update prevents one
       // stale frame without allocating or rebuilding geometry.
@@ -77,6 +92,7 @@ export class RainField {
     this.anchored = false
     if (this.geometryReady) {
       this.mesh.geometry.attributes.position!.needsUpdate = true
+      this.mesh.geometry.attributes.rainAlpha!.needsUpdate = true
       this.mesh.visible = false
     }
   }
@@ -100,7 +116,7 @@ export class RainField {
     const step = Number.isFinite(dt) ? MathUtils.clamp(dt, 0, .1) : 0
     const wx = Number.isFinite(windX) ? windX : 0
     const wz = Number.isFinite(windZ) ? windZ : 0
-    this.material.opacity = rain * .28
+    this.material.opacity = rain * .26
     const count = Math.floor(this.count * (.2 + rain * .8))
     const ceiling = Number.isFinite(cloudBase) ? cloudBase! - safeY : Infinity
     this.mesh.geometry.setDrawRange(0, count * 2)
@@ -111,7 +127,7 @@ export class RainField {
       const py = wrap(this.particles[j + 1]! - dy - speed * step + HEIGHT / 2, HEIGHT) - HEIGHT / 2
       const pz = wrap(this.particles[j + 2]! - dz + wz * step + WIDTH / 2, WIDTH) - WIDTH / 2
       this.particles[j] = px; this.particles[j + 1] = py; this.particles[j + 2] = pz
-      const exposure = STREAK_EXPOSURE + rain * .018
+      const exposure = this.exposures[i]! + rain * .012
       // Clip crossing streaks, and collapse fully above-deck streaks. Clamping
       // only Y turned their wind slant into horizontal lines at cloud base.
       const visible = Math.max(0, Math.min(1, (ceiling - py) / (speed * exposure)))

@@ -18,6 +18,20 @@ import {
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('scales arrived thunder by distance gain without scheduling silent events', () => {
+    const audio = new FlightAudio(), noiseBurst = vi.fn(), tone = vi.fn()
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, effectsGain: {},
+      volume: 1, muted: false, noiseBurst, tone })
+    try {
+      audio.playCue('thunder', .25)
+      expect(noiseBurst.mock.calls[0]![3]).toBeCloseTo(.035)
+      expect(tone.mock.calls[0]![4]).toBeCloseTo(.025)
+      noiseBurst.mockClear(); tone.mockClear()
+      audio.playCue('thunder', NaN); audio.playCue('thunder', -1)
+      expect(noiseBurst).not.toHaveBeenCalled(); expect(tone).not.toHaveBeenCalled()
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+
   it('keeps impact audio audible while silencing continuous flight beds', () => {
     const audio = new FlightAudio()
     const param = () => ({ setTargetAtTime: vi.fn() })

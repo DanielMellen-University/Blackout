@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { Atmosphere, DEFAULT_ATMOSPHERE_TIME } from '../src/world/Atmosphere'
 import type { WeatherSnapshot } from '../src/world/WeatherDirector'
+import { StormEvents } from '../src/world/StormEvents'
 
 describe('atmosphere lifecycle boundary', () => {
   it('uses a stable pre-reseed clock', () => {
@@ -27,8 +28,10 @@ describe('atmosphere lifecycle boundary', () => {
     const atmosphere = Object.create(Atmosphere.prototype) as Atmosphere
     ;(atmosphere as unknown as { disposed: boolean }).disposed = false
     ;(atmosphere as unknown as { reducedMotion: boolean }).reducedMotion = false
-    ;(atmosphere as unknown as { lightningFlash: number }).lightningFlash = 0.4
-    ;(atmosphere as unknown as { lightningFlashAge: number }).lightningFlashAge = 0.2
+    const events = new StormEvents()
+    events.update(60, { x: 0, y: 0, z: 0, strength: 1 }, { x: 0, y: 0, z: 3430 })
+    events.update(.2, { x: 0, y: 0, z: 0, strength: 1 }, { x: 0, y: 0, z: 3430 })
+    Object.assign(atmosphere, { stormEvents: events, cloudFlash: { value: events.flash } })
 
     expect(atmosphere.prefersReducedMotion).toBe(false)
     expect(atmosphere.lightningActive).toBe(true)
@@ -37,7 +40,7 @@ describe('atmosphere lifecycle boundary', () => {
     atmosphere.setReducedMotion(true)
     expect(atmosphere.prefersReducedMotion).toBe(true)
     expect(atmosphere.lightningActive).toBe(false)
-    expect((atmosphere as unknown as { lightningFlash: number }).lightningFlash).toBe(0)
+    expect(events.flash).toBe(0)
   })
 
   it('keeps the public weather state valid when an external ID is malformed', () => {
@@ -46,7 +49,8 @@ describe('atmosphere lifecycle boundary', () => {
     ;(atmosphere as unknown as { disposed: boolean }).disposed = false
     ;(atmosphere as unknown as { weather: string }).weather = 'clear'
     ;(atmosphere as unknown as { dirty: boolean }).dirty = false
-    Object.assign(atmosphere, { cloudSampleTimes: new Float64Array(46) })
+    Object.assign(atmosphere, { cloudSampleTimes: new Float64Array(46), stormEvents: new StormEvents(),
+      cloudFlash: { value: 0 }, stormSource: { x: 0, y: 0, z: 0, strength: 0 } })
     ;(atmosphere as unknown as { weatherDirector: { setWeather(id: string, instant: boolean): void } }).weatherDirector = {
       setWeather(id, instant) {
         calls.push(`${id}:${instant}`)
