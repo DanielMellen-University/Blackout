@@ -233,6 +233,39 @@ that final tuning still needs reliable rendered inspection, including interiors.
 
 ## Remaining delivery
 
+### Review-camera correction (10.896)
+
+The previous weather fixture labelled a custom camera 140 m behind the aircraft
+as Chase, and a custom 55-degree forward camera as First person. Those are not
+the production rigs. In particular, the distant custom chase camera sat outside
+the 180 m-wide local rain pool, making precipitation appear misleadingly faint.
+All earlier stills above remain useful tuning evidence, but do not certify the
+requested chase/cockpit modes. This qualification supersedes their mode labels.
+
+Weather-route and cloud-inspection views now use `CameraSystem` Chase or
+unobstructed Cockpit, including actual FOV, aircraft visibility and the +Z body
+forward direction. Fixed inspections snap; continuous travel uses the normal
+camera interpolation and speed framing. The HUD reports rendered mode/FOV.
+This changes only the developer fixture, not production cameras or particles.
+
+The corrected [chase rain view](reviews/weather-real-chase-10.896.png) reports
+Chase/FOV 60 with visible near streaks. The corrected
+[cockpit rain view](reviews/weather-real-cockpit-10.896.png) reports Cockpit/FOV 74
+with an unobstructed lens and visible rain. Both use seed 1, manual Rain, held
+time 180/day .48 and below-stratus inspection, starting from X 8000/Z -56000.
+The chase inspection targets centre (-244.1, 1653.0, -68839.6), bounds Y 1058-2248;
+the later cockpit inspection targets (-18545.5, 2095.4, -65532.4), bounds Y
+1500-2691 after the nearby pool moved. They are not matched-pose comparisons.
+These prove the fixture now renders actual modes, not final cloud artwork or
+smooth travel. The distant terrain also contains visible streaming artifacts;
+this narrow camera correction does not certify or alter that separate system.
+
+All 43 affected camera/cockpit/route checks and the production/release build
+pass. The existing Three.js bundle-size warning remains. Full real-time
+acceptance below remains required. The review browser still reports approximately
+1,000 ms frame intervals, so static views must not replace transition/performance
+verification.
+
 1. Review/tune cloud families below, inside and above them, in chase and first
    person, with saved fixed-pose screenshots.
 2. Finish rain/snow appearance and transition review, including above/below

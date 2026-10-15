@@ -104,6 +104,7 @@ let riverTour=[],riverTourIndex=0,riverTourT=0,tracingRiver=false,riverTourDirty
 let riverTourOffsets=[0],riverTourLength=0
 const requestedSeed=Number(new URLSearchParams(location.search).get('seed'))
 const tourPosition=new T.Vector3(),tourAhead=new T.Vector3()
+const weatherOrientation=new T.Euler(0,0,0,'YXZ')
 
 function findLandscapeTarget(startX,startZ,predicate,score=(climate)=>0){
   let best=null
@@ -223,14 +224,16 @@ document.querySelector('#cloud-interior').onclick=()=>{
   controls.target.copy(center)
   if(view==='inside')controls.target.x+=1500
   camera.lookAt(controls.target);controls.enabled=false
-  const dx=center.x-viewpoint.x,dz=center.z-viewpoint.z
-  const chaseView=document.querySelector('#review-view').value==='chase'
-  reviewJet.reset({x:viewpoint.x,y:viewpoint.y,z:viewpoint.z,yaw:Math.atan2(dx,-dz)})
-  reviewJet.mesh.visible=chaseView
-  if(chaseView){
-    const direction=center.clone().sub(viewpoint).normalize()
-    camera.position.addScaledVector(direction,-140);camera.position.y+=45;camera.lookAt(controls.target)
-  }
+  const direction=controls.target.clone().sub(viewpoint).normalize()
+  const viewMode=document.querySelector('#review-view').value
+  const yaw=Math.atan2(direction.x,direction.z) // Airframe nose is +Z.
+  reviewJet.reset({x:viewpoint.x,y:viewpoint.y,z:viewpoint.z,yaw})
+  reviewJet.orientation.setFromEuler(weatherOrientation.set(
+    -Math.atan2(direction.y,Math.hypot(direction.x,direction.z)),yaw,0,'YXZ'))
+  reviewJet.snapDisplay()
+  flightView=viewMode==='chase'||viewMode==='first'
+  if(flightView)chase.setMode(viewMode==='first'?'cockpit':'chase',reviewJet)
+  else reviewJet.mesh.visible=false
   // Fixed inspection still: resolve density first, then its fog fade, with
   // the requested front/day time unchanged. Continuous review never uses this.
   world.atmosphere.update(0,viewpoint.x,viewpoint.y,viewpoint.z,2)
@@ -525,19 +528,28 @@ renderer.setAnimationLoop(now=>{
     if(reviewMode.startsWith('weather')){weatherTravelT+=dt*speed/WEATHER_REVIEW_DISTANCE_M;weatherTraceDirty=true}
   }
   if(weatherTraceDirty&&reviewMode.startsWith('weather')){
+    const hadFlightView=flightView
     weatherTraceDirty=false;flightView=false;tracingRiver=false
     const t=flying?weatherTravelT:Number(document.querySelector('#weather-progress').value)/1000
     const {dx,dz}=WEATHER_REVIEW_ROUTES[reviewMode]
     const start=weatherOrigin??destinations[reviewMode],x=start[1]+dx*t*WEATHER_REVIEW_DISTANCE_M,z=start[2]+dz*t*WEATHER_REVIEW_DISTANCE_M
     const y=sampleTerrainHeight(x,z)+Number(document.querySelector('#weather-height').value),view=document.querySelector('#review-view').value
-    reviewJet.reset({x,z,y,yaw:Math.atan2(dx,-dz)})
-    reviewJet.mesh.visible=view==='chase';controls.enabled=view==='overview'
+    reviewJet.reset({x,z,y,yaw:Math.atan2(dx,dz)})
+    if(flying){
+      const speed=document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400
+      reviewJet.velocity.set(dx*speed,0,dz*speed);reviewJet.snapDisplay()
+    }
+    flightView=view==='chase'||view==='first';controls.enabled=view==='overview'
+    if(flightView){
+      const mode=view==='first'?'cockpit':'chase'
+      // Snap fixed poses/mode changes, but retain normal camera interpolation
+      // during continuous travel instead of resetting its rig every frame.
+      if(!flying||!hadFlightView||chase.mode!==mode)chase.setMode(mode,reviewJet)
+    }
+    else reviewJet.mesh.visible=false
     if(view==='overview'){
       camera.position.set(x-dx*1800,y+1000,z-dz*1800)
       controls.target.set(x+dx*2200,y,z+dz*2200)
-    }else{
-      camera.position.set(x-dx*(view==='chase'?140:0),y+(view==='chase'?45:0),z-dz*(view==='chase'?140:0))
-      controls.target.set(x+dx*1500,y-25,z+dz*1500)
     }
     camera.lookAt(controls.target)
   }
@@ -588,6 +600,7 @@ renderer.setAnimationLoop(now=>{
     if(shafts?.visible&&shaftAlpha)for(let i=0;i<shaftAlpha.count;i++)if(shaftAlpha.getX(i)>.01)shaftCount++
     document.querySelector('#stats').textContent=' · '+world.atmosphere.weatherLabel+' · time '+world.atmosphere.weatherSimulationTime.toFixed(1)+' · cloud immersion '+world.atmosphere.cloudImmersionLevel.toFixed(2)+' · '+world.terrain.root.children.length+' tiles · '+renderer.info.render.calls+' draws · '+Math.round(renderer.info.render.triangles/1000)+'k tris · '+sorted[Math.floor(sorted.length*.5)].toFixed(1)+'ms median / '+sorted[Math.floor(sorted.length*.95)].toFixed(1)+'ms p95 · '+world.settlements.count+' settlements / '+world.settlements.buildingCount+' buildings · '+world.settlements.roadCount+' regional roads · '+world.settlements.pendingCount+' pending'
     document.querySelector('#stats').textContent+=` · rain shafts ${shaftCount}/16 · lightning ${world.atmosphere.lightningActive?'local':'quiet'}`
+    document.querySelector('#stats').textContent+=` · camera ${flightView?chase.mode:'overview'} / FOV ${(flightView?chase.camera:camera).fov.toFixed(0)}`
     if(travelFrameCount){
       const sample=travelFrames.slice(0,Math.min(travelFrameCount,travelFrames.length)).sort()
       const heap=performance.memory?.usedJSHeapSize??0
