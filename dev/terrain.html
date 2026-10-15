@@ -20,7 +20,7 @@
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
     <option value="city">City</option><option value="village">Village</option>
     <option value="roadlink">Regional road</option>
-    <option value="weatherfront">Regional weather front</option><option value="weathersnow">Regional blizzard</option>
+    <option value="weatherfront">Regional weather front</option><option value="weatherstorm">Regional storm front</option><option value="weathersnow">Regional blizzard</option>
   </select>
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
@@ -78,6 +78,8 @@ import { settlementForCell } from '/src/world/SettlementPlan.ts'
 import { shouldConnectSettlements } from '/src/world/RegionalRoads.ts'
 import { Aircraft } from '/src/aircraft/Aircraft.ts'
 import { CameraSystem } from '/src/camera/CameraSystem.ts'
+import { CLOUD_PUFFS_PER_FORMATION } from '/src/world/CloudFormations.ts'
+import { WEATHER_REVIEW_DISTANCE_M, WEATHER_REVIEW_ROUTES, WEATHER_REVIEW_START_SECONDS } from '/src/debug/WeatherReviewRoutes.ts'
 const renderer=new T.WebGLRenderer({antialias:true})
 renderer.setSize(innerWidth,innerHeight)
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))
@@ -177,41 +179,63 @@ function frameWorld(destination){
 frameWorld()
 document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
 document.querySelector('#cloud-interior').onclick=()=>{
-  // Inspect an actually rendered ellipsoid, not merely a foggy altitude.
+  // Exterior views must clear the whole rendered formation, not just one puff.
+  // Inside views still use an actual dense puff, never an empty bounding-box gap.
   const matrix=new T.Matrix4(),position=new T.Vector3(),scale=new T.Vector3(),rotation=new T.Quaternion()
+  const bounds=new T.Box3(),puffBounds=new T.Box3()
+  const family=document.querySelector('#cloud-family').value,view=document.querySelector('#cloud-view').value
   let nearest=null,best=Infinity
   world.scene.traverse(object=>{
     if(!object.isInstancedMesh||!object.name.startsWith('CloudBatch-'))return
-    const family=document.querySelector('#cloud-family').value
     if(family!=='all'&&object.name!==`CloudBatch-${family}`)return
+    const layer=object.name.slice('CloudBatch-'.length),count=CLOUD_PUFFS_PER_FORMATION[layer]
+    if(!count)return
+    // Use Hold weather clock for exact matrix/shader agreement in fixed poses.
     const alpha=object.geometry.getAttribute('cloudAlpha')
-    for(let i=0;i<object.count;i++){
-      if(alpha.getX(i)<.35)continue
-      object.getMatrixAt(i,matrix);matrix.decompose(position,rotation,scale)
-      if(Math.min(scale.x,scale.y,scale.z)<80)continue
-      const distance=position.distanceToSquared(camera.position)
-      if(distance<best){best=distance;nearest={position:position.clone(),scale:scale.clone()}}
+    for(let start=0;start<object.count;start+=count){
+      bounds.makeEmpty()
+      let inside=null,insideDistance=Infinity
+      for(let i=start;i<Math.min(start+count,object.count);i++){
+        if(alpha.getX(i)<(layer==='cirrus'?.12:.2))continue
+        object.getMatrixAt(i,matrix);matrix.decompose(position,rotation,scale)
+        if(Math.min(scale.x,scale.y,scale.z)<(layer==='cirrus'?20:80))continue
+        puffBounds.set(new T.Vector3(-1,-1,-1),new T.Vector3(1,1,1)).applyMatrix4(matrix)
+        bounds.union(puffBounds)
+        const distance=position.distanceToSquared(camera.position)
+        if(distance<insideDistance&&position.y>sampleTerrainHeight(position.x,position.z)+120){
+          insideDistance=distance;inside=position.clone()
+        }
+      }
+      if(bounds.isEmpty()||(view==='inside'&&!inside))continue
+      const center=bounds.getCenter(new T.Vector3()),size=bounds.getSize(new T.Vector3())
+      const viewpoint=view==='inside'?inside:center.clone().add(new T.Vector3(-Math.max(1800,size.x*1.2),0,-Math.max(1800,size.z*1.2)))
+      if(view!=='inside')viewpoint.y=view==='above'?bounds.max.y+Math.max(800,size.y*.5):bounds.min.y-Math.max(600,size.y*.3)
+      viewpoint.y=Math.max(viewpoint.y,sampleTerrainHeight(viewpoint.x,viewpoint.z)+120)
+      if(view==='below'&&viewpoint.y>=bounds.min.y-50)continue
+      const distance=center.distanceToSquared(camera.position)
+      if(distance<best){best=distance;nearest={center,viewpoint,min:bounds.min.clone(),max:bounds.max.clone()}}
     }
   })
-  if(!nearest){document.querySelector('#travel-stats').textContent='No dense formation ready. Let the cloud pool settle, then retry.';return}
-  const center=nearest.position,view=document.querySelector('#cloud-view').value
-  const viewpoint=center.clone()
-  if(view!=='inside')viewpoint.add(new T.Vector3(-Math.max(1600,nearest.scale.x*2),
-    Math.max(800,nearest.scale.y*3)*(view==='above'?1:-1),-Math.max(1600,nearest.scale.z*2)))
-  viewpoint.y=Math.max(viewpoint.y,sampleTerrainHeight(viewpoint.x,viewpoint.z)+120)
-  if(view==='inside'&&viewpoint.y>center.y+1){
-    document.querySelector('#travel-stats').textContent='This cloud point intersects terrain. Choose another family or destination.';return
-  }
-  if(view==='below'&&viewpoint.y>=center.y-50){
-    document.querySelector('#travel-stats').textContent='No below-cloud viewpoint clear of terrain here. Inspect above or choose another destination.';return
-  }
+  if(!nearest){document.querySelector('#travel-stats').textContent='No rendered formation with a terrain-clear viewpoint. Let the pool settle or choose another family/destination.';return}
+  const {center,viewpoint}=nearest
   reviewMode='cloud-interior';flightView=tracingRiver=flying=weatherTraceDirty=false
   camera.position.copy(viewpoint)
   controls.target.copy(center)
   if(view==='inside')controls.target.x+=1500
   camera.lookAt(controls.target);controls.enabled=false
-  reviewJet.reset({x:camera.position.x,y:camera.position.y,z:camera.position.z,yaw:Math.PI/2});reviewJet.mesh.visible=false
-  document.querySelector('#travel-stats').textContent=`${view} rendered cloud at ${center.x.toFixed(1)}, ${center.y.toFixed(1)}, ${center.z.toFixed(1)}. Choose a destination to leave.`
+  const dx=center.x-viewpoint.x,dz=center.z-viewpoint.z
+  const chaseView=document.querySelector('#review-view').value==='chase'
+  reviewJet.reset({x:viewpoint.x,y:viewpoint.y,z:viewpoint.z,yaw:Math.atan2(dx,-dz)})
+  reviewJet.mesh.visible=chaseView
+  if(chaseView){
+    const direction=center.clone().sub(viewpoint).normalize()
+    camera.position.addScaledVector(direction,-140);camera.position.y+=45;camera.lookAt(controls.target)
+  }
+  // Fixed inspection still: resolve density first, then its fog fade, with
+  // the requested front/day time unchanged. Continuous review never uses this.
+  world.atmosphere.update(0,viewpoint.x,viewpoint.y,viewpoint.z,2)
+  world.atmosphere.update(0,viewpoint.x,viewpoint.y,viewpoint.z,2)
+  document.querySelector('#travel-stats').textContent=`${view} formation at ${center.x.toFixed(1)}, ${center.y.toFixed(1)}, ${center.z.toFixed(1)} / bounds Y ${nearest.min.y.toFixed(0)}-${nearest.max.y.toFixed(0)}. Choose a destination to leave.`
 }
 const destinations={
   pond:[1337,0,0],headwater:[1,0,0],
@@ -222,7 +246,9 @@ const destinations={
   mesa:[1,-30000,-27600],volcano:[1,-92800,-13600],
   city:[1337,5,-1],village:[1,-7,-5],
   roadlink:[1,-7,-5],
-  weatherfront:[1,8000,-56000],weathersnow:[1,-200000,168000],
+  weatherfront:[1,WEATHER_REVIEW_ROUTES.weatherfront.x,WEATHER_REVIEW_ROUTES.weatherfront.z],
+  weatherstorm:[1,WEATHER_REVIEW_ROUTES.weatherstorm.x,WEATHER_REVIEW_ROUTES.weatherstorm.z],
+  weathersnow:[1,WEATHER_REVIEW_ROUTES.weathersnow.x,WEATHER_REVIEW_ROUTES.weathersnow.z],
 }
 let weatherTraceDirty=false
 let weatherOrigin=null
@@ -361,6 +387,10 @@ function visitDestination(value){
     x=found.x;z=found.z
   }
   frameWorld({x,z,y:sampleTerrainHeight(x,z)})
+  if(value.startsWith('weather')){
+    document.querySelector('#fixture-time').value=WEATHER_REVIEW_START_SECONDS
+    world.atmosphere.setAutomaticWeather(document.querySelector('#weather').value==='automatic',WEATHER_REVIEW_START_SECONDS)
+  }
   if(value==='wetland'){
     const y=sampleTerrainHeight(x,z)
     camera.position.set(x+4000,y+3000,z-4000)
@@ -436,13 +466,20 @@ document.querySelector('#fixture-apply').onclick=()=>{
     if(getWorldSeed()!==seed){setWorldSeed(seed);clearOpsPad()}
     world.terrain.clearAll();world.settlements.clearAll()
   }
+  const destination=document.querySelector('#destination')
+  reviewMode=destination.value.startsWith('weather')?destination.value:'weatherfront'
+  destination.value=reviewMode
   weatherOrigin=[seed,x,z];weatherTravelT=0;weatherTraceDirty=true
   document.querySelector('#weather-progress').value='0'
   flying=false;document.querySelector('#fly').textContent='Flight benchmark'
+  document.querySelector('#travel-stats').textContent=''
   world.atmosphere.randomizeWeather(getWorldSeed(),{x,y:sampleTerrainHeight(x,z)+Number(document.querySelector('#weather-height').value),z})
   applyReviewWeather()
   world.atmosphere.setAutomaticWeather(document.querySelector('#weather').value==='automatic',time)
   reviewDay=day;world.atmosphere.timeOfDay=day;world.atmosphere.setTimeOfDayLocked(true)
+  // Resolve presentation fades for a reproducible still without moving the
+  // requested front/day clock. Never used by the gameplay performance recorder.
+  world.atmosphere.update(0,x,sampleTerrainHeight(x,z)+Number(document.querySelector('#weather-height').value),z,5)
   document.querySelector('#fixture-status').textContent=`Seed ${getWorldSeed()} / X ${x} / Z ${z} / time ${time} / day ${day}`
 }
 const requested=new URLSearchParams(location.search).get('destination')
@@ -453,6 +490,8 @@ let timings=[]
 let flying=false
 document.querySelector('#fly').onclick=()=>{
   flying=!flying;document.querySelector('#fly').textContent=flying?'Stop benchmark':'Flight benchmark'
+  if(flying&&reviewMode.startsWith('weather'))world.atmosphere.setAutomaticWeather(
+    document.querySelector('#weather').value==='automatic',Number(document.querySelector('#fixture-time').value))
   if(flying){travelSeconds=travelDistance=travelFrameCount=0;travelStartHeap=performance.memory?.usedJSHeapSize??0;travelPeakHeap=travelStartHeap}
 }
 document.querySelector('#flight-view').onclick=()=>{
@@ -483,13 +522,13 @@ renderer.setAnimationLoop(now=>{
     travelSeconds+=dt;travelDistance+=dt*speed
     travelFrames[travelFrameCount%travelFrames.length]=timings.at(-1);travelFrameCount++
     travelPeakHeap=Math.max(travelPeakHeap,performance.memory?.usedJSHeapSize??0)
-    if(reviewMode.startsWith('weather')){weatherTravelT+=dt*speed/28000;weatherTraceDirty=true}
+    if(reviewMode.startsWith('weather')){weatherTravelT+=dt*speed/WEATHER_REVIEW_DISTANCE_M;weatherTraceDirty=true}
   }
   if(weatherTraceDirty&&reviewMode.startsWith('weather')){
     weatherTraceDirty=false;flightView=false;tracingRiver=false
     const t=flying?weatherTravelT:Number(document.querySelector('#weather-progress').value)/1000
-    const dx=reviewMode==='weatherfront'?-Math.SQRT1_2:1,dz=reviewMode==='weatherfront'?-Math.SQRT1_2:0
-    const start=weatherOrigin??destinations[reviewMode],x=start[1]+dx*t*28000,z=start[2]+dz*t*28000
+    const {dx,dz}=WEATHER_REVIEW_ROUTES[reviewMode]
+    const start=weatherOrigin??destinations[reviewMode],x=start[1]+dx*t*WEATHER_REVIEW_DISTANCE_M,z=start[2]+dz*t*WEATHER_REVIEW_DISTANCE_M
     const y=sampleTerrainHeight(x,z)+Number(document.querySelector('#weather-height').value),view=document.querySelector('#review-view').value
     reviewJet.reset({x,z,y,yaw:Math.atan2(dx,-dz)})
     reviewJet.mesh.visible=view==='chase';controls.enabled=view==='overview'

@@ -105,14 +105,14 @@ export class SnowField {
       )
       shader.vertexShader = shader.vertexShader.replace(
         '#include <fog_vertex>',
-        '#include <fog_vertex>\n\tgl_PointSize = min(gl_PointSize * snowSize, 8.0);\n vSnowWorldY = (modelMatrix * vec4(transformed, 1.0)).y;\nvSnowOpacity = snowOpacity;\nvSnowDistance = length(mvPosition.xyz);',
+        '#include <fog_vertex>\n\tgl_PointSize = clamp(gl_PointSize * snowSize, 1.25, 8.0);\n vSnowWorldY = (modelMatrix * vec4(transformed, 1.0)).y;\nvSnowOpacity = snowOpacity;\nvSnowDistance = length(mvPosition.xyz);',
       )
       shader.fragmentShader = shader.fragmentShader.replace('void main() {',
         'void main() {\n if (vSnowWorldY > snowSourceCeiling) discard;')
       shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>',
         '#include <color_fragment>\n diffuseColor.a *= vSnowOpacity * smoothstep(1.5, 8.0, vSnowDistance);')
     }
-    this.mat.customProgramCacheKey = () => 'snow-varied-soft-v3'
+    this.mat.customProgramCacheKey = () => 'snow-varied-soft-v4'
 
     this.points = new Points(geo, this.mat)
     this.points.name = 'SnowField'
@@ -191,10 +191,10 @@ export class SnowField {
 
     this.clock += safeDt
     this.points.visible = true
-    this.mat.opacity = Math.min(0.32, 0.10 + safeIntensity * 0.22)
+    this.mat.opacity = 0.12 + safeIntensity * 0.32
     // Heavy snow needs readable fine flakes, not a few almost invisible
     // sub-pixel specks. Near fade and the 8 px cap still reject giant cards.
-    this.mat.size = .36 + safeIntensity * .16
+    this.mat.size = .6 + safeIntensity * .3
 
     const fallMul = 0.5 + safeIntensity * 1.15
     const wind = 1.8 + safeIntensity * 8.5

@@ -38,10 +38,15 @@ export class RegionalWeather {
   /** Keep a manual profile intact while fitting its cloud envelope to the
    * regional ground. This is landform sampling, never hydrology generation. */
   structureInto(out: RegionalWeatherSample, x: number, z: number): RegionalWeatherSample {
-    const land = sampleLandformsInto(this.land, Number.isFinite(x) ? x : 0, Number.isFinite(z) ? z : 0)
-    populateWeatherStructure(out, Math.max(950, land.height + 650) +
-      (1 - land.moisture) * 350 - out.haze * 220)
+    populateWeatherStructure(out, this.cloudBaseAt(x, z) - out.haze * 220)
     return out
+  }
+
+  /** Climate-dependent part of a manual envelope; cache at the weather cadence
+   * while its cheap profile/haze adaptation continues to interpolate per frame. */
+  cloudBaseAt(x: number, z: number): number {
+    const land = sampleLandformsInto(this.land, Number.isFinite(x) ? x : 0, Number.isFinite(z) ? z : 0)
+    return Math.max(950, land.height + 650) + (1 - land.moisture) * 350
   }
 
   sampleInto(out: RegionalWeatherSample, x: number, y: number, z: number, simulationSeconds: number): RegionalWeatherSample {

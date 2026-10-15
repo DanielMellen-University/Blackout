@@ -160,6 +160,15 @@ the fixture overrides aircraft pose/controls. This is a rendering workload,
 not a flight-handling or low-altitude collision validation. Production builds
 omit the recorder and its import.
 
+Chunk 10.895 adds an optional `reviewSeconds=900` query for the planned
+15-minute sustained-travel review. The default stays 120 seconds/81.6 km.
+The extended route reaches 612 km and retains at most 31 reusable resource
+samples around 30 simulation seconds apart, including the endpoint. Compare
+heap and geometry/texture/streaming counts across that timeline, not just the
+peak. The existing 18,000-interval ring is a recent frame window during the
+long run, not percentiles for its entire 15 minutes. No completed long-run
+memory acceptance is claimed yet; see [weather delivery](weather-overhaul.md).
+
 Compare an exact historical baseline and candidate on the same machine, seed,
 quality, viewport and pixel-ratio range, running one at a time with no test
 runner or profiler active. Keep the game visible, focused and unpaused. Record

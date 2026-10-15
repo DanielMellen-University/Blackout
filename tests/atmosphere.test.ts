@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   atmosphereNeedsUpdate,
-  cloudImmersionBand,
   cloudDistanceFade,
   cloudPuffBudget,
   cloudPuffCount,
@@ -14,14 +13,6 @@ import { FOG_FAR, STREAM_RADIUS_M } from '../src/world/TerrainSystem'
 import { nightWeatherReadability, sceneExposure } from '../src/core/SceneExposure'
 
 describe('lightning comfort', () => {
-  it('turns cloud density into calm, bounded immersion bands', () => {
-    expect(cloudImmersionBand(Number.NaN)).toBe('clear')
-    expect(cloudImmersionBand(0)).toBe('clear')
-    expect(cloudImmersionBand(0.3)).toBe('edge')
-    expect(cloudImmersionBand(1)).toBe('inside')
-    expect(cloudImmersionBand(-4)).toBe('clear')
-  })
-
   it('skips cloud fade roots at full and out-of-range bounds', () => {
     const full = (FOG_FAR * 0.5) ** 2
     const out = STREAM_RADIUS_M ** 2

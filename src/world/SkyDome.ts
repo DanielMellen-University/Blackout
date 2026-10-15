@@ -150,6 +150,7 @@ export class SkyDome {
         uStarIntensity: { value: 0 },
         uAurora: { value: 0 },
         uHaze: { value: 0 },
+        uCloudImmersion: { value: 0 },
         uTime: { value: 0 },
         // The far cloud deck is analytic inside this one existing draw. The
         // instanced meshes still supply close parallax and volume.
@@ -193,6 +194,7 @@ export class SkyDome {
         uniform float uStarIntensity;
         uniform float uAurora;
         uniform float uHaze;
+        uniform float uCloudImmersion;
         uniform float uTime;
         uniform float uCloudBroken;
         uniform float uCloudBlanket;
@@ -377,6 +379,9 @@ export class SkyDome {
 
           // Haze / overcast: flatten sky + mute celestial bodies a bit
           col = mix(col, uHorizonColor * 0.85, uHaze * 0.45);
+          // The same local cloud density that fogs geometry also scatters
+          // the far sky. Otherwise an opaque interior contains blue holes.
+          col = mix(col, uHorizonColor, uCloudImmersion);
 
           gl_FragColor = vec4(col, 1.0);
           // Keep the analytic dome on the same output path as the rest of
@@ -386,6 +391,17 @@ export class SkyDome {
           // framebuffer.
           #include <tonemapping_fragment>
           #include <colorspace_fragment>
+          // Built-in Three fog is mixed after tone mapping. Match that output
+          // colour near the horizon and inside clouds, without erasing the
+          // sun/moon contribution or changing any terrain drawing distance.
+          vec3 mappedHorizon = uHorizonColor;
+          #ifdef TONE_MAPPING
+            mappedHorizon = toneMapping(mappedHorizon);
+          #endif
+          mappedHorizon = linearToOutputTexel(vec4(mappedHorizon, 1.0)).rgb;
+          vec3 fogHorizon = linearToOutputTexel(vec4(uHorizonColor, 1.0)).rgb;
+          float fogMatch = max(uCloudImmersion, 1.0 - smoothstep(.02, .32, elev));
+          gl_FragColor.rgb = clamp(gl_FragColor.rgb + (fogHorizon - mappedHorizon) * fogMatch, 0.0, 1.0);
         }
       `,
     })
@@ -463,6 +479,7 @@ export class SkyDome {
     timeSec: number,
     cloudBase?: number,
     cloudTop?: number,
+    cloudImmersion = 0,
   ): void {
     const safeAx = Number.isFinite(ax) ? ax : this.mesh.position.x
     const safeAy = Number.isFinite(ay) ? ay : this.mesh.position.y
@@ -516,6 +533,7 @@ export class SkyDome {
     this.mat.uniforms.uNightFactor!.value = night
     this.mat.uniforms.uDusk!.value = safeDusk
     this.mat.uniforms.uHaze!.value = safeHaze * lowDeck
+    this.mat.uniforms.uCloudImmersion!.value = clamp01(cloudImmersion)
     this.mat.uniforms.uTime!.value = this.reducedMotion ? 0 : safeTime
     this.mat.uniforms.uCloudBroken!.value = safeBroken
     this.mat.uniforms.uCloudBlanket!.value = safeBlanket

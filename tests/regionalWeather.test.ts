@@ -18,6 +18,22 @@ function atmosphere() {
 }
 
 describe('regional weather', () => {
+  it('samples manual climate envelopes at 5 Hz while adapting the profile without new buffers', () => {
+    const weather = atmosphere(), bases = vi.spyOn(RegionalWeather.prototype, 'cloudBaseAt')
+    try {
+      weather.setWeather('rain', true)
+      for (let i = 0; i < 120; i++) weather.update(1 / 60, 100, 200, 300)
+      const local = () => bases.mock.calls.filter(([x, z]) => x === 100 && z === 300).length
+      expect(local()).toBe(10)
+      weather.update(0, 100, 15000, 300, 0)
+      expect(local()).toBe(10)
+      expect(weather.precipitationVisibility).toBe(0)
+      weather.setWeather('storm', true); weather.update(0, 100, 200, 300, 0)
+      expect(local()).toBe(11)
+      expect(weather.precipitationVisibility).toBe(1)
+    } finally { bases.mockRestore(); weather.dispose() }
+  })
+
   it('fits manual cloud sources above mountain terrain without changing the authored profile', () => {
     setWorldSeed(1337)
     const sampler = new RegionalWeather(), out = createRegionalWeatherSample()

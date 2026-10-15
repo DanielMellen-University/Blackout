@@ -6,6 +6,7 @@ export interface CloudPuff {
 }
 
 export const CLOUD_CELL_SIZE = 8000
+export const CLOUD_PUFFS_PER_FORMATION = { cumulus: 16, stratus: 18, cirrus: 8 } as const
 const UNASSIGNED = 0x7fffffff
 
 /** Cell identity, not pool slot or visitation order, determines appearance. */
@@ -38,15 +39,17 @@ export function shapeCloudFormation(puffs: readonly CloudPuff[], layer: CloudLay
     const c = cloudCellRandom(seed, cx, cz, 33 + i * 5)
     let along: number, across: number
     if (layer === 'cumulus') {
-      const crown = t < .43, upper = t > .79
-      const radial = crown ? 600 : upper ? 250 : 330
+      const crown = t < .32
+      const radial = crown ? 350 : 150 + (1 - t) * 100
       const phase = i * 2.399963 + a
       along = Math.cos(phase) * radial * (.4 + a * .6)
       across = Math.sin(phase) * radial * (.4 + b * .6)
-      p.sx = (crown ? 350 + a * 260 : upper ? 270 + a * 180 : 230 + a * 150) * size
-      p.sy = (crown ? 240 + b * 120 : 280 + b * 180) * size
+      p.sx = (crown ? 320 + a * 180 : 280 + a * 180) * size
+      p.sy = (crown ? 320 + b * 140 : 430 + b * 250) * size
       p.sz = p.sx * (.85 + c * .3)
-      p.y = p.sy + (crown ? b * 70 : upper ? 1100 + b * 150 : (t - .43) * 2400) * size
+      // Overlap a continuous irregular tower instead of three horizontal
+      // tiers. Convection spreads the upper puffs into an anvil at rendering.
+      p.y = p.sy + (crown ? b * 50 : (t - .32) / .68 * 1000 + (c - .5) * 180) * size
     } else if (layer === 'stratus') {
       const row = i % 3
       along = (Math.floor(i / 3) / Math.max(1, Math.ceil(puffs.length / 3) - 1) - .5) * 3600

@@ -176,7 +176,6 @@ import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
 import { fuelEnduranceSeconds, refuelFuel, withinAirfieldRefuelRadius } from './aircraft/FuelSystem'
 import { World } from './world/World'
-import { cloudImmersionBand, type CloudImmersionBand } from './world/Atmosphere'
 import { AdaptiveResolution } from './core/AdaptiveResolution'
 import { nightWeatherReadability, sceneExposure } from './core/SceneExposure'
 import { ListenerBag } from './core/ListenerBag'
@@ -1170,7 +1169,8 @@ export async function boot(): Promise<void> {
   let flightReview: FlightReview | null = null
   if (import.meta.env.DEV && replayParams?.get('review') === 'flight' && selectedCourseId === 'free-flight') {
     const { FlightReview: Review } = await import('./debug/FlightReview')
-    flightReview = new Review(airfieldReadyMs, () => playBtn?.click())
+    flightReview = new Review(airfieldReadyMs, () => playBtn?.click(),
+      Number(new URLSearchParams(location.search).get('reviewSeconds')) || undefined)
   }
   if (isDebugEnabled()) {
     const { DebugOverlay: DebugOverlayClass } = await import('./debug/DebugOverlay')
@@ -1293,8 +1293,6 @@ export async function boot(): Promise<void> {
   let prevFuelAvailable = true
   let engineOut = false
   let prevGearDown = true
-  let previousCloudBand: CloudImmersionBand = 'clear'
-  let cloudBandPrimed = false
   let thermalLiftActive = false
   let audioMuted = false
   const onVisibilityChange = (): void => {
@@ -2406,27 +2404,6 @@ export async function boot(): Promise<void> {
         visualDt,
       )
     }
-    const cloudBand = cloudImmersionBand(world.atmosphere.cloudImmersionLevel)
-    if (!cloudBandPrimed) {
-      previousCloudBand = cloudBand
-      cloudBandPrimed = true
-    } else if (
-      cloudBand !== previousCloudBand &&
-      simLive &&
-      playing &&
-      !menu.paused &&
-      !results.open &&
-      aircraft.status !== 'crashed' &&
-      (!banner || bannerUntil <= nowMs)
-    ) {
-      const cue = cloudBand === 'inside'
-        ? 'CLOUD ENTRY / VISIBILITY REDUCED'
-        : cloudBand === 'edge'
-          ? 'CLOUD EDGE / VISIBILITY SHIFTING'
-          : 'CLOUD BREAK / VISIBILITY RESTORING'
-      showBanner(cue, 1600, 'info')
-    }
-    previousCloudBand = cloudBand
     const weatherForExposure = world.atmosphere.weatherSnapshot
     const nightReadability = nightWeatherReadability(
       world.atmosphere.daylight,

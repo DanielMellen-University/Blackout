@@ -31,6 +31,7 @@ export class ReviewFrames {
 
 type ReviewPhase = 'ready' | 'loading' | 'flight' | 'finished'
 const DURATION = 120
+const MAX_DURATION = 900
 const YAW = Math.PI * .75
 
 /** Opt-in development fixture. The real loop still runs physics, collision, HUD,
@@ -53,12 +54,18 @@ export class FlightReview {
   private ratioMax = 0
   private active = false
   private readonly airfieldReadyMs: number
+  private readonly duration: number
+  private resourceCount = 0
+  private nextResourceSecond = 0
+  private readonly resourceSamples = Array.from({ length: 31 }, () => ({ seconds: 0,
+    heapBytes: 0, geometries: 0, textures: 0, loaded: 0, pending: 0, inFlight: 0, ready: 0 }))
 
-  constructor(airfieldReadyMs: number, launch: () => void) {
+  constructor(airfieldReadyMs: number, launch: () => void, duration = DURATION) {
     this.airfieldReadyMs = airfieldReadyMs
+    this.duration = Number.isFinite(duration) ? Math.max(DURATION, Math.min(MAX_DURATION, duration)) : DURATION
     this.panel.id = 'flight-review'
     this.panel.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:10000;padding:12px;background:#091321ed;color:#daeaff;border:1px solid #83c7ff;border-radius:8px;font:11px/1.4 monospace;max-width:calc(100vw - 24px);max-height:45vh;overflow:auto'
-    this.button.textContent = 'Run 120-second fixed-route review'
+    this.button.textContent = `Run ${this.duration}-second fixed-route review`
     this.button.onclick = () => {
       this.phase = 'loading'; this.started = performance.now()
       this.button.disabled = true
@@ -90,7 +97,7 @@ export class FlightReview {
 
   afterStep(aircraft: Aircraft, dt: number): void {
     if (this.phase === 'ready') return
-    if (this.phase === 'flight' && this.active) this.seconds = Math.min(DURATION, this.seconds + dt)
+    if (this.phase === 'flight' && this.active) this.seconds = Math.min(this.duration, this.seconds + dt)
     const distance = this.seconds * flightConfig.maxSpeedBoost
     aircraft.position.set(distance * Math.SQRT1_2, 5000, -distance * Math.SQRT1_2)
     const speed = this.phase === 'flight' ? flightConfig.maxSpeedBoost : 0
@@ -113,17 +120,27 @@ export class FlightReview {
       }
     } else {
       this.flightFrames.record(now, true)
-      if (this.seconds >= DURATION) this.phase = 'finished'
+      if (this.seconds >= this.duration) this.phase = 'finished'
+    }
+    if ((this.phase === 'flight' || this.phase === 'finished') &&
+      (this.seconds >= this.nextResourceSecond || this.phase === 'finished') && this.resourceCount < this.resourceSamples.length) {
+      const sample = this.resourceSamples[this.resourceCount++]!
+      sample.seconds = this.seconds; sample.heapBytes = heap
+      sample.geometries = geometries; sample.textures = textures
+      sample.loaded = stream.loaded; sample.pending = stream.pending
+      sample.inFlight = stream.inFlight; sample.ready = stream.ready
+      this.nextResourceSecond = this.seconds + 30
     }
     if (now < this.nextPaint && this.phase !== 'finished') return
     this.nextPaint = now + 1000
     this.output.textContent = JSON.stringify({ phase: this.phase, quality, camera,
       viewport: [innerWidth, innerHeight], pixelRatio: ratio, ratioRange: [this.ratioMin, this.ratioMax],
       airfieldReadyMs: this.airfieldReadyMs, launchToCoverageWallMs: this.coverageMs,
-      seconds: this.seconds, distanceM: this.seconds * flightConfig.maxSpeedBoost,
+      seconds: this.seconds, durationSeconds: this.duration, distanceM: this.seconds * flightConfig.maxSpeedBoost,
       speedMps: flightConfig.maxSpeedBoost, startupFrames: this.startupFrames.summary(),
       flightFrames: this.flightFrames.summary(), heapBytes: { start: this.heapStart, current: heap, peak: this.heapPeak },
-      geometries, textures, streaming: stream }, null, 2)
+      geometries, textures, streaming: stream,
+      resourceSamples: this.resourceSamples.slice(0, this.resourceCount) }, null, 2)
   }
 
   dispose(): void { this.button.onclick = null; this.panel.remove() }

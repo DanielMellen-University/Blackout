@@ -20,6 +20,19 @@ function deckFor(id: keyof typeof WEATHER_PROFILES) {
 }
 
 describe('analytic sky cloud deck', () => {
+  it('scatters the far sky with the same bounded cloud-interior density', () => {
+    const sky = new SkyDome(new Scene()), deck = deckFor('cloudy')
+    const uniforms = (sky.mesh.material as ShaderMaterial).uniforms
+    const update = (density: number) => sky.update(0, 1800, 0, new Vector3(0, 1, 0),
+      1, 0, new Color(0x6eb4d8), new Color(0xb8d4e8), .2, deck, 180, 1400, 2600, density)
+    try {
+      update(.8); expect(uniforms.uCloudImmersion!.value).toBe(.8)
+      update(2); expect(uniforms.uCloudImmersion!.value).toBe(1)
+      update(NaN); expect(uniforms.uCloudImmersion!.value).toBe(0)
+      update(0); expect(uniforms.uCloudImmersion!.value).toBe(0)
+    } finally { sky.dispose() }
+  })
+
   it('fades distant decks at the shared actual cloud top, including tall storm towers', () => {
     const sky = new SkyDome(new Scene()), deck = deckFor('storm')
     const uniforms = (sky.mesh.material as ShaderMaterial).uniforms

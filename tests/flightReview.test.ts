@@ -56,6 +56,18 @@ describe('fixed-route frame measurement', () => {
       expect(aircraft.velocity.length()).toBe(0)
       expect(Math.hypot(aircraft.position.x, aircraft.position.z)).toBeCloseTo(81600)
       review.dispose(); expect(elements[0]!.remove).toHaveBeenCalledOnce()
+      const long = new FlightReview(20, launch, 900)
+      expect(elements[4]!.textContent).toContain('900-second')
+      elements[4]!.onclick!(); long.visibility(true)
+      long.frame(100, stream, 'balanced', 1, 500, 3)
+      long.afterStep(aircraft, 900); long.frame(200, stream, 'balanced', 1, 510, 3)
+      const result = JSON.parse(elements[5]!.textContent!)
+      expect(result).toMatchObject({ phase: 'finished', durationSeconds: 900, distanceM: 612000 })
+      expect(result.resourceSamples).toEqual([
+        { seconds: 0, heapBytes: 0, geometries: 500, textures: 3, loaded: 500, pending: 0, inFlight: 0, ready: 0 },
+        { seconds: 900, heapBytes: 0, geometries: 510, textures: 3, loaded: 500, pending: 0, inFlight: 0, ready: 0 },
+      ])
+      long.dispose()
     } finally { vi.unstubAllGlobals() }
   })
 })

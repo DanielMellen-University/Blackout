@@ -44,8 +44,13 @@ weather review, enter seed, world X/Z, simulation seconds and day fraction
 (0-1), choose a preset/Automatic and height above ground, then Apply review
 pose. Hold weather clock freezes the sampled front while rendering/streaming
 and particle presentation continue. This is a review fixture, not game pause.
-Below/Inside/Above cloud inspection targets a currently rendered dense cloud;
-it reports the target centre. Choose a destination to leave that inspection.
+Applying a fixed pose resolves five seconds of presentation fades at unchanged
+front/day time. That settling step is not used by the gameplay recorder. Applying
+a pose after cloud inspection restores the selected weather route and camera.
+Below/Inside/Above cloud inspection targets a currently rendered formation;
+it reports its centre and full vertical bounds. Exterior views clear the whole
+formation, not just one puff. Inside views use an actual dense puff, not an
+empty gap in its bounding box. Choose a destination to leave that inspection.
 Inspection cameras stay above actual terrain; an impossible below-cloud view
 is reported without moving the camera into the ground.
 Choose a cloud family to inspect a specific formation type. Inside-cloud
@@ -116,6 +121,87 @@ warning remains. Those results prove the scoped data/lifecycle/budget checks,
 not the missing continuous visual, gameplay or performance/memory acceptance.
 
 ## Baseline and acceptance limits
+
+The later resumed session briefly recovered normal rendering in a fresh review
+tab (Balanced, 1280 x 720, pixel ratio 1). One full-game run completed against
+the exact unchanged `753f04f` checkout before throttling returned. The rejected
+earlier attempt and subsequent failed retries remain below for provenance,
+not as a completed comparison or evidence of a candidate speedup.
+
+## Batch 3: integration/tuning in progress (10.895)
+
+- Coverage selects formations without also washing out their material opacity.
+  Dense-core optical falloff and a continuous, overlapping cumulus tower replace
+  the faint tiered discs. Storm centres rise through the deep envelope without
+  stretching each billow into a long droplet; upper billows spread into anvils.
+- Cloud interiors now scatter the far sky using the same smoothed local density
+  as terrain fog, instead of exposing blue holes through the background. The
+  existing sky draw accounts for Three's post-tone-mapping fog colour path near
+  the horizon and inside clouds. No overlay or additional draw is introduced.
+  Thin cirrus has much weaker interior density than thick low banks.
+- Fine snow uses a 1.25 px minimum and the existing 8 px cap, with restrained
+  opacity and the same 4,200-particle pool. The latest first-person still shows
+  visible flakes without large cards obscuring the terrain.
+- Manual climate/source envelopes now sample at 5 Hz too, while cheap authored
+  profile adaptation still interpolates every frame. Explicit preset/lock
+  changes invalidate the envelope immediately. Floating-point cadence guards
+  prevent a nominal .2/.25-second boundary from accidentally skipping a sample.
+- Remove the old cloud-entry/edge/break advisories and their unused band
+  evaluator. Weather density still drives visibility and audio; no warning
+  banner is needed when flying through a cloud.
+- Fixed inspection cameras clear full formation bounds; inside views use real
+  puffs, not bounding-box gaps. Chase shows the aircraft and first person remains
+  unobstructed. Still inspection resolves presentation density/fog at unchanged
+  weather/day time; continuous routes never use this settling step.
+- Seed-1 continuous review paths now cross verified clear-to-rain,
+  rain-to-storm and dry-to-mountain-blizzard conditions over 28 km. Choose
+  Regional weather front, Regional storm front or Regional blizzard, use
+  Automatic at time 180, uncheck Hold weather clock and start Flight benchmark.
+  The fixture starts its chosen clock on launch; it is not a per-level generator.
+- The development-only full-game recorder retains its default 120-second,
+  81.6 km route. `reviewSeconds=900` extends that same trajectory to 612 km and
+  records at most 31 reusable resource samples, roughly 30 simulation seconds
+  apart, including the endpoint. Its 18,000-frame ring remains a recent window
+  during the long run, not a full 15-minute percentile history.
+- Actual transformed-cloud entry/exit, true game pause and accelerated
+  900-second weather-only travel/preset/quality changes preserve object,
+  geometry, material and typed-array identities. The latter is explicitly not
+  the required real-time game memory measurement. Authored weather, night,
+  crosswind and front-lock checks also pass.
+
+The 14 affected weather/sky/audio/recorder files pass 115 tests. Five focused
+authored-world lifecycle checks pass separately, and the production/release
+build passes. The existing Three.js chunk-size warning remains. These checks
+do not replace the remaining real-time acceptance.
+
+Partial tuning views are recorded in [the pose log](reviews/weather-partial-visual-10.895.json).
+The current [storm exterior](reviews/weather-storm-tuned-10.895.png) and
+[settled first-person interior](reviews/weather-interior-tuned-10.895.png)
+render without reported shader errors. The interior reports density 1.00 at
+time 180 and no longer exposes blue background holes. The
+[snow readability view](reviews/weather-snow-readability-10.895.png) predates
+the final sky/fog output matching; it validates flakes, not final atmosphere
+acceptance. Earlier cumulus/snow images are tuning-stage evidence, not final
+views of every family. Full continuous-route, gameplay/audio, performance and
+sustained-memory review remains open. The full overhaul is not yet accepted.
+
+### Completed single baseline and rejected retries
+
+[One baseline run](reviews/weather-baseline-complete-10.895.json) completed
+81.6 km at 680 m/s, Balanced, 1280 x 720, pixel ratio 1, against `753f04f`.
+Its 7,179 flight intervals have median 16.7 ms, p95 16.8 ms and max 1,750 ms.
+Airfield readiness was 3,125.5 ms; launch-to-coverage was 4,123.4 ms. The raw
+record retains startup hitches, heap and unsettled streaming queues. This is
+one historical sample, not the required three matched comparisons.
+
+[The next attempt](reviews/weather-baseline-throttled-10.895.json) slowed to
+less than one simulation second during a 30-second wall wait. A
+[visible retry](reviews/weather-baseline-visible-rejected-10.895.json) retained
+approximately 1,000 ms intervals and changed viewport to 765 x 932. Both are
+rejected. Browser visibility alone did not resolve the problem; its cause is
+not established. No candidate performance or 15-minute memory pass is claimed.
+
+### Earlier rejected baseline attempt
 
 The unchanged 10.892 baseline was attempted before source edits at Balanced,
 1280 x 720, pixel ratio 1, seed 73, using the existing 81.6 km recorder. It

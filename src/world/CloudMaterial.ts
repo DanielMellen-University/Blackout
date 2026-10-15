@@ -57,14 +57,13 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
         float glow = exp(-dot(delta, delta) * 2.0) * cloudFlash;
         diffuseColor.rgb += vec3(.72, .84, 1.0) * glow;
       }
-      // A broad optical edge lets overlapping billows form one bank, rather
-      // than exposing the rim of each stretched sphere as a metallic disc.
-      // Broad optical falloff, without a bright per-ellipsoid rim. Thick
-      // overlapping elements should read as one bank, not stacked saucers.
-      float edge = pow(facing, 2.2) * smoothstep(.15, .8, billow - (1.0 - facing) * .35);
+      // Approximate optical depth through a billow: dense core, soft boundary.
+      // A steep facing-power erased most of each sphere and exposed separate
+      // translucent discs; no ray marching or extra draw is needed here.
+      float edge = (1.0 - exp(-facing * 3.6)) * smoothstep(.08, .55, billow - (1.0 - facing) * .35);
       diffuseColor.a *= vCloudAlpha * edge * (.8 + billow * .2);`)
   }
-  material.customProgramCacheKey = () => 'cloud-spatial-storm-v5'
+  material.customProgramCacheKey = () => 'cloud-optical-depth-v6'
   return material
 }
 
