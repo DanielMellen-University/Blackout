@@ -17,6 +17,24 @@ function atmosphere() {
 }
 
 describe('weather rendering', () => {
+  it('keeps fair-weather cumulus billows rounded when fitting a shallow cloud envelope', () => {
+    const { scene, weather } = atmosphere()
+    try {
+      weather.randomizeWeather(1); weather.setWeather('cloudy', true)
+      weather.update(0, 8000, 1400, -56000, 10)
+      const clouds = scene.getObjectByName('CloudBatch-cumulus') as InstancedMesh
+      const matrix = new Matrix4(), scale = new Vector3(), alpha = clouds.geometry.getAttribute('cloudAlpha')
+      let visible = 0
+      for (let i = 0; i < clouds.count; i++) if (alpha.getX(i) > .5) {
+        clouds.getMatrixAt(i, matrix); scale.setFromMatrixScale(matrix); visible++
+        // Low convection should make a smaller rounded billow, not flatten a
+        // storm-sized horizontal radius into a thin ellipsoid.
+        expect(scale.y / Math.max(scale.x, scale.z)).toBeGreaterThan(.5)
+      }
+      expect(visible).toBeGreaterThan(0)
+    } finally { weather.dispose() }
+  })
+
   it('raises storm towers without stretching individual billows into needle-like droplets', () => {
     const { scene, weather } = atmosphere()
     try {

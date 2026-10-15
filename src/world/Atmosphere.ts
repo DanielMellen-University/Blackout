@@ -1163,20 +1163,24 @@ export class Atmosphere {
       // puffs spread laterally into the anvil rather than becoming needles.
       const billowHeight = layer === 'cumulus' ? Math.min(heightScale, 1 + convection * .35) : heightScale
       const vertical = billowHeight * (anvil ? 1 - convection * .45 : 1)
+      // A shallow fair-weather envelope scales a cumulus billow uniformly.
+      // Compressing only Y made small clouds into wide, stacked pancakes.
+      // Deep storm towers retain the bounded billow/anvil treatment above.
+      const billowWidth = layer === 'cumulus' ? Math.min(1, heightScale) : 1
       _cloudObject.position.set(
         worldPosition.x + puff.x * horizontal,
         worldPosition.y + puff.y * heightScale + this.cloudBaseOffset,
         worldPosition.z + puff.z * horizontal,
       )
       _cloudObject.rotation.set(0, puff.rotationY, 0)
-      _cloudObject.scale.set(puff.sx * horizontal, puff.sy * vertical, puff.sz * horizontal)
+      _cloudObject.scale.set(puff.sx * horizontal * billowWidth, puff.sy * vertical, puff.sz * horizontal * billowWidth)
       const dx = this.lastAnchor.x - _cloudObject.position.x
       const dz = this.lastAnchor.z - _cloudObject.position.z
       const cosine = Math.cos(puff.rotationY), sine = Math.sin(puff.rotationY)
       this.cloudImmersionTarget = Math.min(1, this.cloudImmersionTarget + cloudInteriorDensity(
-        (dx * cosine - dz * sine) / (puff.sx * horizontal),
+        (dx * cosine - dz * sine) / (puff.sx * horizontal * billowWidth),
         (this.lastAnchor.y - _cloudObject.position.y) / (puff.sy * vertical),
-        (dx * sine + dz * cosine) / (puff.sz * horizontal),
+        (dx * sine + dz * cosine) / (puff.sz * horizontal * billowWidth),
       ) * opacity * (layer === 'cirrus' ? .15 : 1))
       _cloudObject.updateMatrix()
       instances.setMatrixAt(offset + i, _cloudObject.matrix)

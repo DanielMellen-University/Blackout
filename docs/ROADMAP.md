@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **10.896** is current. Previous ship: **10.895**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.897** is current. Previous ship: **10.896**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 10.897 fixes shallow-envelope cumulus flattening: scale billow widths with their compressed height, and use the same dimensions for immersion. Deep storm billows/anvils, formation identities, capacities and update cadence remain unchanged. Add a reproducing aspect-ratio regression and fair-weather actual-cloud entry/exit coverage. Inspect a corrected first-person exterior. Retain another completed historical 81.6 km baseline (16.7/16.8 ms median/p95, 1.15-second maximum hitch), rejecting a subsequently throttled matching attempt. Full weather-family, continuous travel/audio, three matching comparisons and the 15-minute sustained-memory run remain required. No terrain, river, physics, render-distance, saved-data or paused-system changes; EST/per-level work remains deferred.
 
 Chunk 10.896 corrects the weather review's camera fidelity, not the production flight camera. Fixed cloud inspections and regional travel now use the real chase/cockpit rig, aircraft +Z heading and cockpit visibility rules. Continuous travel retains camera interpolation rather than resetting its rig every frame; fixed poses snap deliberately. Active camera/FOV telemetry identifies the rendered mode. Earlier 140 m custom chase and 55-degree custom first-person stills are not valid game-camera acceptance evidence. Full family/continuous-flight/audio review, three matched performance comparisons and the 15-minute sustained-memory run remain open. No weather pool, terrain distance, generator, physics, saved-data or paused-system changes; EST/per-level work remains deferred.
 

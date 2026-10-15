@@ -40,12 +40,12 @@ function expectSameResources(before: ReturnType<typeof resources>, after: Return
 }
 
 describe('weather presentation integration', () => {
-  it('enters an actual transformed cloud and restores depth visibility after leaving', () => {
+  it.each(['cloudy', 'storm'] as const)('enters an actual transformed %s cloud and restores depth visibility after leaving', preset => {
     setWorldSeed(1)
     const { scene, weather } = fixture()
     try {
       weather.randomizeWeather(1)
-      weather.setWeather('storm', true)
+      weather.setWeather(preset, true)
       weather.setAutomaticWeather(false, 180)
       weather.update(0, 8000, 1400, -56000, 10)
       const cloud = scene.getObjectByName('CloudBatch-cumulus') as InstancedMesh

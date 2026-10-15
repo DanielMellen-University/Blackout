@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.896**. Previous roadmap chunk: **10.895**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.897**. Previous roadmap chunk: **10.896**.
+
+Recent changes from **10.897**. Keep fair-weather cumulus billows rounded when fitting shallow cloud envelopes, with matching interior-density bounds and unchanged storm treatment/pools. Inspect the corrected first-person exterior and retain another completed historical 81.6 km baseline, including its 1.15-second hitch. A later matching attempt again throttled and is rejected. Full weather-family, continuous-flight/audio, three-run performance and sustained-memory acceptance remain open. See [weather delivery notes](docs/weather-overhaul.md). No terrain, rivers, flight physics, render-distance or paused-system changes.
 
 Recent changes from **10.896**. Correct the developer weather review to use the game's real chase/cockpit cameras, body-forward orientation and normal travel interpolation. Display the active camera/FOV. Earlier custom-camera weather stills are tuning evidence only, not game-mode acceptance. Full weather-family, continuous-flight, audio, matched performance and sustained-memory review remain open. Production flight cameras, weather budgets, terrain distance and physics are unchanged. See [weather delivery notes](docs/weather-overhaul.md).
 

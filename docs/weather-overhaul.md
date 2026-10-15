@@ -231,6 +231,43 @@ rendered above ground, but individual flat rims remained apparent. Optical
 falloff was broadened, per-element bright rims removed and banks thickened;
 that final tuning still needs reliable rendered inspection, including interiors.
 
+## Fair-weather billow proportions (10.897)
+
+Rendered fair-weather cumulus exposed another shallow-envelope problem:
+vertical fitting compressed each billow while retaining its full horizontal
+radius. A targeted regression reproduced a visible height/width ratio of .433
+where rounded non-convective billows require more than .5. Shallow cumulus now
+scales its horizontal radius with that vertical fit. Deep storm billows/anvils,
+cell positions/identities, resource pools, weather cadence and terrain distance
+are unchanged. Interior sampling uses those same corrected dimensions.
+
+The fixed [below-cloud view](reviews/weather-rounded-cumulus-below-10.897.png)
+and [inside view](reviews/weather-rounded-cumulus-inside-10.897.png) use seed 1,
+manual Cloudy, held time 180/day .48 and actual Cockpit/FOV 74, starting at
+X 8000/Z -56000. Both target cumulus centre (-11330.4, 1780.2, -45146.2),
+bounds Y 1184-2377. The exterior shows rounded billows; the interior reports
+density .94, with no reported browser errors. These are narrow still checks,
+not approval of all cloud shapes, soft interiors or continuous transitions.
+The broad stratus layers visible beside the cumulus still need their own review.
+
+The built-in browser briefly recovered normal rendering. Another exact
+`753f04f` [historical baseline](reviews/weather-baseline-complete-10.897.json)
+completed the unchanged 81.6 km route at Balanced, 1280 x 720, pixel ratio 1:
+7,188 intervals, median 16.7 ms, p95 16.8 ms and maximum 1,149.9 ms. Airfield
+readiness was 2,830.9 ms, launch-to-coverage 4,102.7 ms; heap start/current/peak
+were 137,188,326 / 137,460,195 / 237,863,826 bytes. Endpoint streaming queues
+were not settled. This is baseline evidence, not a candidate performance pass.
+The [next matching attempt](reviews/weather-baseline-rejected-10.897.json)
+again dropped to approximately 1,000 ms intervals and is rejected. The browser's
+underlying slowdown remains unestablished. No three-pair or 15-minute memory
+acceptance is claimed.
+
+All 39 affected rendering, integration, formation and regional-weather checks
+pass, including actual fair-weather and storm cloud entry/exit, fixed resources,
+the new aspect-ratio regression and existing storm-height bounds. The production
+build passes with the existing Three.js bundle-size warning. Terrain, rivers,
+physics, records, UI layout and paused systems are untouched.
+
 ## Remaining delivery
 
 ### Review-camera correction (10.896)
