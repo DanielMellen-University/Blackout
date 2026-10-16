@@ -163,3 +163,32 @@ not complete maximum-speed/chase/first-person or every-crossing acceptance.
 The final affected run passes 116 rendering, road, collision, draping, worker,
 streaming, lifecycle and ghost checks; the 17 settlement placement/distribution
 checks also pass. The production build passes with the existing bundle warning.
+
+## Batch 4: city review correction (10.901)
+
+The standard seed-1337 preview loaded all 1,196 buildings but exposed too many
+independent highways meeting at one central point. The revision brings three
+central districts and nearby neighbourhoods into a stronger urban core, uses
+parent/secondary-loop connections for the outskirts, and replaces that central
+junction with a small civic ring. Fewer branches in outer districts retain the
+existing sub-128 road-proposal bound. City extent and population ranges remain.
+Tests require substantial central frontage density with no road converging on
+the exact origin, plus surviving outskirts and all district uses.
+
+The old protected-landmark cones floated 120 m above the highest roof and were
+260/520 m tall. They are now modest 18/45 m rooftop antennas at actual building
+coordinates, using blue/orange rather than turquoise. Their indexed collision
+matches the new rooftop placement. One shared low-poly draw per anchor remains;
+radar identity and protected landmark generation are unchanged. Ghost revision
+20 preserves records. Continuous chase/first-person travel, controlled startup/
+frame-time comparison and sustained memory acceptance still remain open.
+
+The [revised seed-1337 city](reviews/settlement-city-10.901.png) renders all 1,196
+buildings with a stronger central skyline and linked outer neighbourhoods.
+Clear is selected while the prior cloud banks fade; this is layout evidence,
+not weather acceptance. No browser rendering errors are reported. The final
+45 focused layout/scale/rendering/collision/draping/ghost checks and production
+build pass, as do six targeted generated-terrain rarity, rough-anchor, scale,
+skyline and foundation checks. Shared buffers use a dynamic update hint; worker
+ground payloads are length-checked before traversing their numbers. No measured
+frame-rate improvement is claimed.

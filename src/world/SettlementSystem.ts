@@ -51,6 +51,7 @@ function isSettlementPlan(value: unknown): value is SettlementPlan {
     for (const patch of value.ground) {
       if (!isRecord(patch) || !['park', 'plaza', 'field', 'forecourt', 'path'].includes(String(patch.use)) ||
         !isFiniteNumber(patch.color) || !Array.isArray(patch.positions) || patch.positions.length % 9 ||
+        patch.positions.length / 3 > MAX_SETTLEMENT_GROUND_VERTICES ||
         !patch.positions.every(isFiniteNumber)) return false
       vertices += patch.positions.length / 3
       if (vertices > MAX_SETTLEMENT_GROUND_VERTICES) return false
@@ -298,6 +299,14 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
     }
   }
   for (const building of roadObstacleBuildings(plan.roads)) collisionParts.push({ building, boxOnly: true })
+  if (plan.anchor && plan.buildings.length) {
+    let roof = plan.buildings[0]!
+    for (const building of plan.buildings) if (building.y + building.height > roof.y + roof.height) roof = building
+    const height = plan.kind === 'city' ? 45 : 18, width = plan.kind === 'city' ? 1.8 : 1
+    const roofHeight = roof.roof === 'pitched' ? Math.min(roof.width, roof.depth) * .3 : 1.2
+    collisionParts.push({ boxOnly: true, building: { ...roof, service: undefined, shape: 'block', roof: 'flat',
+      y: roof.y + roof.height + roofHeight, width, depth: width, height } })
+  }
   for (const { building, boxOnly } of collisionParts) {
     const extent = Math.hypot(building.width, building.depth) / 2 + COLLISION_INDEX_MARGIN
     radius = Math.max(radius, Math.hypot(building.x - plan.x, building.z - plan.z) + extent)
@@ -722,7 +731,7 @@ export class SettlementSystem {
   private readonly walls = new MeshStandardMaterial({ roughness: .82, metalness: .06 })
   private readonly roofs = new MeshStandardMaterial({ roughness: .95 })
   private readonly cityBeacon = new MeshBasicMaterial({ color: 0xffbd68, transparent: true, opacity: .86, depthWrite: false, fog: false })
-  private readonly villageBeacon = new MeshBasicMaterial({ color: 0x67e4d0, transparent: true, opacity: .82, depthWrite: false, fog: false })
+  private readonly villageBeacon = new MeshBasicMaterial({ color: 0x7cc4ff, transparent: true, opacity: .82, depthWrite: false, fog: false })
   private readonly streetLampPoleMaterial = new MeshStandardMaterial({ color: 0x292824, roughness: .76, metalness: .35 })
   private readonly streetLampGlow = new MeshBasicMaterial({ color: 0xffb45c, transparent: true, opacity: .06, depthWrite: false })
   private readonly dockDeckMaterial = new MeshStandardMaterial({ color: 0x72563e, roughness: .92 })
@@ -1743,6 +1752,7 @@ export class SettlementSystem {
     const services: SettlementBuilding[] = []
     const barns: SettlementBuilding[] = []
     let highestRoof = plan.y
+    let landmarkRoof: SettlementBuilding | undefined
     for (let i = 0; i < plan.buildings.length; i++) {
       const building = plan.buildings[i]!
       const shape = building.shape ?? 'block'
@@ -1755,7 +1765,9 @@ export class SettlementSystem {
         if (shape === 'hangar') flatHangars.push(building)
         if (plan.kind === 'city' && building.height > 250) crowns.push(building)
       }
-      highestRoof = Math.max(highestRoof, building.y + building.height)
+      if (!landmarkRoof || building.y + building.height > highestRoof) {
+        highestRoof = building.y + building.height; landmarkRoof = building
+      }
       if (building.service) services.push(building)
       if (building.use === 'barn') barns.push(building)
       if (plan.kind === 'city') {
@@ -1846,15 +1858,16 @@ export class SettlementSystem {
       // Roof silhouettes stay visible at distance too; only ground detail is culled.
       root.add(mesh)
     }
-    if (plan.anchor) {
-      // The marker is only present on the two protected spawn landmarks. It
-      // sits above the tallest roof, stays visible through the flight fog,
-      // and costs one shared low-poly draw per loaded anchor at most.
-      const height = plan.kind === 'city' ? 520 : 260
-      const radius = plan.kind === 'city' ? 24 : 16
+    if (plan.anchor && landmarkRoof) {
+      // One modest rooftop antenna identifies a protected landmark. Never
+      // suspend a hundreds-of-metres cone above an unrelated origin point.
+      const height = plan.kind === 'city' ? 45 : 18
+      const radius = plan.kind === 'city' ? 1.8 : 1
+      const roofHeight = landmarkRoof.roof === 'pitched' ? Math.min(landmarkRoof.width, landmarkRoof.depth) * .3 : 1.2
       const beacon = new Mesh(this.anchorBeacon, plan.kind === 'city' ? this.cityBeacon : this.villageBeacon)
       beacon.name = 'SettlementAnchorBeacon'
-      beacon.position.set(0, highestRoof - plan.y + height * .5 + 120, 0)
+      beacon.position.set(landmarkRoof.x - plan.x, highestRoof + roofHeight - plan.y + height * .5,
+        landmarkRoof.z - plan.z)
       beacon.scale.set(radius, height, radius)
       beacon.renderOrder = 2
       detail.add(beacon)

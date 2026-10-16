@@ -33,6 +33,9 @@ describe('road-led settlement places', () => {
     expect(layout.roads.length).toBeLessThan(128)
     expect(layout.lots.length).toBeLessThan(24_000)
     expect(layout.target).toBeGreaterThanOrEqual(660)
+    expect(layout.roads.filter(road => road.points.some(point => point.x === 0 && point.z === 0))).toHaveLength(0)
+    const central = layout.lots.filter(lot => Math.hypot(lot.x, lot.z) < 2500)
+    expect(central.length / layout.lots.length).toBeGreaterThan(.22)
   })
 
   it('drapes every park vertex over relief and rejects submerged and steep surfaces', () => {
@@ -61,6 +64,23 @@ describe('road-led settlement places', () => {
       const internal = system as unknown as { build(plan: SettlementPlan): unknown }
       internal.build(servicePlan)
       expect(scene.getObjectByName('SettlementFuelStations')).toBeDefined()
+    } finally { system.dispose() }
+  })
+
+  it('attaches modest landmark antennas to actual rooftops instead of floating over the origin', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    try {
+      const b = { x: 80, y: 100, z: 60, width: 20, depth: 20, height: 15, yaw: 0,
+        shape: 'block' as const, roof: 'flat' as const, wallColor: 0xffffff, roofColor: 0x555555 }
+      const landmark = { ...plan, anchor: 'village' as const, buildings: [b] }
+      ;(system as unknown as { build(plan: SettlementPlan): unknown }).build(landmark)
+      const beacon = scene.getObjectByName('SettlementAnchorBeacon')!
+      expect(beacon.position.x).toBe(80)
+      expect(beacon.position.z).toBe(60)
+      expect(beacon.position.y - beacon.scale.y / 2).toBeCloseTo(16.2)
+      expect(beacon.scale.y).toBe(18)
+      expect(hitsSettlement(landmark, 80, 125, 60)).toBe(true)
+      expect(hitsSettlement(landmark, 90, 125, 60)).toBe(false)
     } finally { system.dispose() }
   })
 })

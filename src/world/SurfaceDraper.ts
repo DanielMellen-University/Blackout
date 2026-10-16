@@ -1,4 +1,4 @@
-import { BufferAttribute, BufferGeometry } from 'three'
+import { BufferAttribute, BufferGeometry, DynamicDrawUsage } from 'three'
 
 export const MAX_DRAPE_VERTICES_PER_FRAME = 1024
 const DRAPE_BUDGET_MS = .8
@@ -20,6 +20,7 @@ export class SurfaceDraper {
   add(geometry: BufferGeometry, x: number, y: number, z: number): void {
     const positions = geometry.getAttribute('position')
     if (!(positions instanceof BufferAttribute) || !geometry.getAttribute('groundOffset')) return
+    positions.setUsage(DynamicDrawUsage)
     this.surfaces.push({ geometry, x, y, z, revision: -1, cursor: 0, targetRevision: -1,
       staged: new Float32Array(positions.array) })
   }

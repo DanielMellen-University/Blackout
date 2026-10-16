@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.900**. Previous roadmap chunk: **10.899**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.901**. Previous roadmap chunk: **10.900**.
+
+Recent changes from **10.901**. Tighten the urban core and replace the city preview's spider-like highway convergence with linked neighbourhoods, a few secondary loops and a small civic ring. Keep broad city extent, mixed-use buildings, parks, farms, country stations and bounded road proposals. Generation revision 20 preserves records. Continuous-flight, controlled performance and memory acceptance remain open; see [the settlement review](docs/settlement-overhaul.md). No terrain/water, weather, flight or paused-system changes.
 
 Recent changes from **10.900**. Keep marked road/ground surfaces in contact with the actually streamed terrain using bounded, revision-driven atomic updates. Give local crossings the same supported decks as regional links, with indexed deck/pier/soil-approach collision and open space below bridges. Match shared supports/embedded footings, preserve bridge markings and reject fragmented/wet park/field patches. Keep existing streaming and structure budgets; ghost revision 19 preserves records. Complete bridge artwork and controlled travel/memory acceptance remain open under the slow review browser. See [the settlement plan](docs/settlement-overhaul.md). No water/terrain generation, flight, weather or paused-system changes.
 

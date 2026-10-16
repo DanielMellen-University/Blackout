@@ -29,8 +29,8 @@ export function settlementLayout(plan: SettlementPlan, rand: (n: number) => numb
     ({ x: ox + Math.cos(yaw) * x + Math.sin(yaw) * z,
       z: oz - Math.sin(yaw) * x + Math.cos(yaw) * z })
   const addRoad = (points: Point[], width: number) => layout.roads.push({ points, width })
-  const green: LocalSpace = { x: 0, z: city ? 95 : 48, width: city ? 120 : 72,
-    depth: city ? 95 : 48, yaw: 0, use: city ? 'plaza' : 'park', color: city ? 0x9b9688 : 0x65754e }
+  const green: LocalSpace = { x: 0, z: city ? 0 : 48, width: city ? 110 : 72,
+    depth: city ? 110 : 48, yaw: 0, use: city ? 'plaza' : 'park', color: city ? 0x9b9688 : 0x65754e }
   layout.spaces.push(green)
 
   function lot(x: number, z: number, yaw: number, use: BuildingUse, district: District, n: number) {
@@ -87,33 +87,53 @@ export function settlementLayout(plan: SettlementPlan, rand: (n: number) => numb
   }
 
   const districtCount = city ? 13 + Math.floor(rand(42) * 4) : 1
+  const centres: Point[] = []
+  if (city) {
+    const centreLoop: Point[] = []
+    for (let i = 0; i <= 16; i++) centreLoop.push(point(110, 0, phase + i / 16 * Math.PI * 2))
+    addRoad(centreLoop, 13)
+  }
   const paths: { a: Point; b: Point; width: number; district: District; core: boolean }[] = []
   for (let d = 0; d < districtCount; d++) {
-    const a = phase + d / Math.max(1, districtCount - 1) * Math.PI * 2 + (rand(500 + d) - .5) * .35
-    const distance = d === 0 ? 0 : plan.radius * (.27 + .58 * ((d - 1) / Math.max(1, districtCount - 2)))
+    const a = phase + d * 2.399963 + (rand(500 + d) - .5) * .3
+    const distance = d === 0 ? 0 : plan.radius * (d < 4 ? .08 + (d - 1) * .045
+      : d < 10 ? .2 + (d - 4) * .045 : .58 + .27 * (d - 10) / Math.max(1, districtCount - 11))
     const centre = city ? point(distance, 0, a) : { x: 0, z: 0 }
+    centres.push(centre)
     const heading = city ? a + rand(540 + d) * .5 : phase
-    const district: District = !city ? 'residential' : d === 0 ? 'centre'
+    const district: District = !city ? 'residential' : d < 3 ? 'centre'
       : d % 5 === 1 ? 'industrial' : d % 4 === 2 ? 'commercial' : 'residential'
-    const reach = city ? 430 + rand(560 + d) * 260 : Math.max(200, Math.min(520, plan.radius * .15))
-    if (d > 0) addRoad([{ x: 0, z: 0 },
-      point(centre.x * .5 + Math.sin(a) * distance * .08, centre.z * .5, 0), centre], 15)
+    const reach = city ? (d < 4 ? 650 : 430) + rand(560 + d) * 260 : Math.max(200, Math.min(520, plan.radius * .15))
+    if (d > 0) {
+      const parent = centres[Math.floor((d - 1) / 3)]!
+      const direction = Math.atan2(-(centre.z - parent.z), centre.x - parent.x)
+      const start = parent === centres[0] ? point(110, 0, direction) : parent
+      addRoad([start, { x: (start.x + centre.x) / 2 + Math.sin(a) * 80,
+        z: (start.z + centre.z) / 2 }, centre], d < 4 ? 15 : 12)
+      // A few neighbour ties form loops instead of a star with every district
+      // running an independent highway to one impossible central junction.
+      const previous = centres[d - 1]!
+      if (d > 3 && d % 3 === 0 && Math.hypot(centre.x - previous.x, centre.z - previous.z) < plan.radius * .55) {
+        addRoad([previous, { x: (previous.x + centre.x) / 2, z: (previous.z + centre.z) / 2 + 70 }, centre], 10)
+      }
+    }
     // Short, bent streets around each centre, rather than scattering individual
     // houses over a multi-kilometre disk. Unequal branches avoid repeated grids.
-    const branches = city ? 5 : 3 + Math.floor(rand(600) * 3)
+    const branches = city ? d < 4 ? 5 : 4 : 3 + Math.floor(rand(600) * 3)
     for (let branch = 0; branch < branches; branch++) {
       const direction = heading + branch / branches * Math.PI * 2 + (rand(620 + d * 13 + branch) - .5) * .35
+      const start = city && d === 0 ? point(110, 0, direction) : centre
       const end = point(reach * (.75 + rand(850 + d * 13 + branch) * .4), 0, direction, centre.x, centre.z)
-      const mid = { x: (centre.x + end.x) / 2 + Math.sin(direction) * reach * .08,
-        z: (centre.z + end.z) / 2 + Math.cos(direction) * reach * .08 }
+      const mid = { x: (start.x + end.x) / 2 + Math.sin(direction) * reach * .08,
+        z: (start.z + end.z) / 2 + Math.cos(direction) * reach * .08 }
       const width = city ? district === 'industrial' ? 11 : 9 : 6.5
-      addRoad([centre, mid, end], width)
-      paths.push({ a: centre, b: mid, width, district, core: d === 0 },
-        { a: mid, b: end, width, district, core: d === 0 })
+      addRoad([start, mid, end], width)
+      paths.push({ a: start, b: mid, width, district, core: d < 3 },
+        { a: mid, b: end, width, district, core: d < 3 })
       if (city && branch % 3 === 0) {
         const spur = point(0, reach * .5, direction, mid.x, mid.z)
         addRoad([mid, spur], 8)
-        paths.push({ a: mid, b: spur, width: 8, district, core: d === 0 })
+        paths.push({ a: mid, b: spur, width: 8, district, core: d < 3 })
       }
     }
     if (city && d > 0 && d % 3 === 0) {
