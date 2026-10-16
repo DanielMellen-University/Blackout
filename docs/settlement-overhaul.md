@@ -258,3 +258,42 @@ ready-plan admission when a large city cannot fit but a nearby village can.
 These are source-review targets, not asserted runtime failures until reproduced.
 Keep the full city/road goal active rather than treating this checkpoint as the
 end of the generation and sustained-performance review.
+
+## Batch 6: admission and bridge ownership (10.903)
+
+Four focused checks fail on 10.902: a city that cannot fit beside protected
+anchors evicts an ordinary village before rejecting itself; that same blocked
+city repeatedly wins ready selection over a village that would fit; a nearer
+village prevents replacing a farther city because eviction tier is ranked
+before eligibility; and regional bridge piers never dispose their instance
+buffers when the road unloads.
+
+Admission now previews the irreducible resident set (protected anchors and,
+for ordinary candidates, equally close or nearer settlements). Reject before
+evicting anything if that set and the new plan exceed either cap. Ready selection
+skips blocked plans without discarding them, and the retained city can load when
+capacity becomes available. Eviction filters eligibility before ranking tier
+and distance. The preview scans at most four roots, uses squared distances,
+allocates no arrays and performs no terrain sampling. It does not increase the
+four-settlement/1,500-building/six-link budgets or change generated blueprints.
+Ghost revision 21 and saved records remain unchanged.
+
+Regional road removal now disposes bridge support instances, matching local
+settlement ownership. Dynamic road geometry still leaves the draper and is
+disposed; shared pier geometry/materials survive until system disposal.
+The lifecycle check also verifies collision removal and no repeated instance
+disposal after clear/reseed cleanup. This fixes a verified resource-release
+omission, not a measured FPS or sustained-memory improvement.
+
+All 68 affected admission, collision, junction, rendering, draping and regional
+road checks pass, as does the production build (existing Three bundle warning).
+The [seed-1337 city checkpoint](reviews/settlement-streaming-10.903.png) shows
+1,196 buildings and four streamed regional links with no browser error logs.
+This still verifies normal rendering, not a controlled travel/memory benchmark
+or visual proof of the synthetic admission-pressure cases above.
+
+Protected fallback-plan consistency across neighbour discovery remains an
+unverified audit target. Network/terrain routing, rough/coastal junction views,
+continuous gameplay-camera travel and controlled startup/frame-time/memory
+comparison remain required. No terrain/water generation, weather, flight,
+vegetation or removed warning/blackout work is included.

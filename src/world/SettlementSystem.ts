@@ -1499,6 +1499,10 @@ export class SettlementSystem {
     let readyDistanceSquared = Infinity
     for (let index = 0; index < this.ready.length; index++) {
       const candidate = this.ready[index]!
+      // An oversized city may need to wait for an anchor to leave. Keep its
+      // reply, but do not let it monopolize admission ahead of a village that
+      // fits. Previewing admission must never evict any existing roots.
+      if (!this.canAdmit(candidate.plan, x, z)) continue
       const priority = settlementLoadPriority(candidate.plan)
       const dx = candidate.plan.x - x, dz = candidate.plan.z - z
       const distanceSquared = dx * dx + dz * dz
@@ -1770,14 +1774,11 @@ export class SettlementSystem {
     return false
   }
 
-  private canLoad(plan: SettlementPlan, x: number, z: number): boolean {
+  /** Check the irreducible resident set before making destructive evictions.
+   * At most four roots are inspected, without allocations or terrain probes. */
+  private canAdmit(plan: SettlementPlan, x: number, z: number): boolean {
     if (this.loaded.has(plan.id)) return false
     if (plan.buildings.length > MAX_LOADED_BUILDINGS) return false
-
-    // Keep the fixed GPU budget, but let an anchor landmark evict a random
-    // settlement when either cap is reached. The old nearest-only policy let
-    // four ordinary villages crowd out the guaranteed city and village, so
-    // the landmarks existed in the worker but never appeared in the scene.
     const candidateDx = plan.x - x, candidateDz = plan.z - z
     const candidateDistanceSquared = candidateDx * candidateDx + candidateDz * candidateDz
     // Cell centres are only a coarse streaming index. An anchored city can
@@ -1787,6 +1788,20 @@ export class SettlementSystem {
     // selected village or city behind a stale anchor.
     const loadReach = LOAD_RADIUS + plan.radius + 3000
     if (loadReach < 0 || candidateDistanceSquared > loadReach * loadReach) return false
+    let requiredCount = 1, requiredBuildings = plan.buildings.length
+    for (const { plan: resident } of this.loaded.values()) {
+      const dx = resident.x - x, dz = resident.z - z
+      if (!resident.anchor && (plan.anchor || dx * dx + dz * dz > candidateDistanceSquared)) continue
+      requiredCount++
+      requiredBuildings += resident.buildings.length
+    }
+    return requiredCount <= MAX_LOADED_SETTLEMENTS && requiredBuildings <= MAX_LOADED_BUILDINGS
+  }
+
+  private canLoad(plan: SettlementPlan, x: number, z: number): boolean {
+    if (!this.canAdmit(plan, x, z)) return false
+    const candidateDx = plan.x - x, candidateDz = plan.z - z
+    const candidateDistanceSquared = candidateDx * candidateDx + candidateDz * candidateDz
     while (this.loaded.size >= MAX_LOADED_SETTLEMENTS ||
       this.buildingCount + plan.buildings.length > MAX_LOADED_BUILDINGS) {
       let farthestKey = ''
@@ -1798,6 +1813,9 @@ export class SettlementSystem {
         if (loaded.plan.anchor) continue
         const dx = loaded.plan.x - x, dz = loaded.plan.z - z
         const distanceSquared = dx * dx + dz * dz
+        // Rank only roots we may actually evict. A closer village must not
+        // prevent replacing a farther city simply because its tier is lower.
+        if (!plan.anchor && candidateDistanceSquared >= distanceSquared) continue
         const priority = settlementLoadPriority(loaded.plan)
         if (priority > farthestPriority || (priority === farthestPriority && distanceSquared > farthestDistanceSquared)) {
           farthestPriority = priority
@@ -1806,10 +1824,6 @@ export class SettlementSystem {
         }
       }
       if (!farthestKey) return false
-      // Anchors are allowed to displace a random plan from anywhere in the
-      // envelope. Ordinary plans still need to be nearer than the eviction
-      // candidate, preserving the normal streaming budget behavior.
-      if (!plan.anchor && candidateDistanceSquared >= farthestDistanceSquared) return false
       const farthest = this.loaded.get(farthestKey)
       if (!farthest) return false
       this.remove(farthest)
@@ -2328,7 +2342,8 @@ export class SettlementSystem {
     if (index >= 0) this.roadCollisionPlans.splice(index, 1)
     road.root.removeFromParent()
     road.root.traverse(object => {
-      if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
+      if (object instanceof InstancedMesh) object.dispose()
+      else if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
         this.draper?.remove(object.geometry); object.geometry.dispose()
       }
     })

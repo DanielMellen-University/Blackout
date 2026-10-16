@@ -53,7 +53,73 @@ function planFor(cx: number, cz: number): SettlementPlan {
   }
 }
 
+type Resident = { plan: SettlementPlan; root: Object3D; detail: Object3D }
+type AdmissionView = {
+  loaded: Map<string, Resident>
+  ready: { key: string; plan: SettlementPlan }[]
+  checked: Set<string>
+  lastCellX: number; lastCellZ: number
+  setLoaded(key: string, resident: Resident): void
+  canLoad(plan: SettlementPlan, x: number, z: number): boolean
+}
+
+function admissionPlan(id: string, x: number, count: number, kind: 'city' | 'village' = 'village', anchor = false): SettlementPlan {
+  const plan = { ...planFor(0, 0), id, x, z: 0, kind }
+  plan.buildings = Array.from({ length: count }, () => plan.buildings[0]!)
+  if (anchor) plan.anchor = kind
+  return plan
+}
+
+function addResident(view: AdmissionView, plan: SettlementPlan): void {
+  view.setLoaded(plan.id, { plan, root: new Object3D(), detail: new Object3D() })
+}
+
 describe('settlement streaming budgets', () => {
+  it('does not evict any residents for a city that cannot fit beside protected anchors', () => {
+    const system = new SettlementSystem(new Scene()), view = system as unknown as AdmissionView
+    try {
+      addResident(view, admissionPlan('anchor', 3000, 1400, 'city', true))
+      addResident(view, admissionPlan('village', 5000, 60))
+      expect(view.canLoad(admissionPlan('city', 1000, 1000, 'city'), 0, 0)).toBe(false)
+      expect([...view.loaded.keys()]).toEqual(['anchor', 'village'])
+      expect(system.buildingCount).toBe(1460)
+    } finally { system.dispose() }
+  })
+
+  it('loads an admissible ready village without discarding a temporarily blocked city', () => {
+    const system = new SettlementSystem(new Scene()), view = system as unknown as AdmissionView
+    try {
+      addResident(view, admissionPlan('anchor', 3000, 1400, 'city', true))
+      const city = admissionPlan('city', 1000, 1000, 'city')
+      const village = admissionPlan('village', 2000, 10)
+      view.ready.push({ key: city.id, plan: city }, { key: village.id, plan: village })
+      view.checked.add(city.id); view.checked.add(village.id)
+      // Hold the stream focus steady so this check isolates worker-ready admission.
+      view.lastCellX = 0; view.lastCellZ = 0
+      system.update(0, 0)
+      expect([...view.loaded.keys()]).toEqual(['anchor', 'village'])
+      expect(view.ready.map(entry => entry.key)).toEqual(['city'])
+      // Once the existing anchor leaves, the retained city gets its turn.
+      view.loaded.get('anchor')!.plan.buildings.length = 1
+      system.update(0, 0)
+      expect(view.loaded.has('city')).toBe(true)
+      expect(view.ready).toHaveLength(0)
+      expect(system.buildingCount).toBeLessThanOrEqual(MAX_LOADED_BUILDINGS)
+    } finally { system.dispose() }
+  })
+
+  it('skips nearer eviction candidates before ranking their settlement tier', () => {
+    const system = new SettlementSystem(new Scene()), view = system as unknown as AdmissionView
+    try {
+      addResident(view, admissionPlan('far-city', 5000, 700, 'city'))
+      addResident(view, admissionPlan('near-village', 100, 10))
+      addResident(view, admissionPlan('anchor', 3000, 65, 'village', true))
+      expect(view.canLoad(admissionPlan('new-city', 1000, 900, 'city'), 0, 0)).toBe(true)
+      expect([...view.loaded.keys()]).toEqual(['near-village', 'anchor'])
+      expect(system.buildingCount + 900).toBeLessThanOrEqual(MAX_LOADED_BUILDINGS)
+    } finally { system.dispose() }
+  })
+
   it('dispatches road jobs by the closest endpoint with deterministic ties', () => {
     const system = new SettlementSystem(new Scene())
     type Job = { key: string; from: SettlementPlan; to: SettlementPlan }

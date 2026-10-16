@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.902**. Previous roadmap chunk: **10.901**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.903**. Previous roadmap chunk: **10.902**.
+
+Recent changes from **10.903**. Prevent blocked city requests from starving ready villages or removing residents without loading. Preview the protected/nearer resident budget before eviction, then rank only eligible replacements. Release regional bridge support-instance buffers on unload while retaining shared geometry. Four reproducing checks cover the failures. Keep the existing four-settlement, 1,500-building and six-link limits; no world-blueprint or ghost revision change. Broader city/network and sustained travel/performance review remain active; see [the settlement review](docs/settlement-overhaul.md). Terrain/water, weather, flight and paused systems are unchanged.
 
 Recent changes from **10.902**. Fix highway/street attachments that could select raised bridge points and silently lose valid links. Probe a bounded shortlist of actual dry street points at the full connector/shoulder width; direct reverse discovery now generates the same road. Keep buildings outside elevated road/fill footprints without treating bridges as frontage. Add on-demand junction inspection and ghost revision 21 without removing records. City/network refinement and sustained performance acceptance remain active; see [the settlement review](docs/settlement-overhaul.md). No terrain/water, weather, flight or paused-system changes. Close angled joins with terrain-checked aprons in existing meshes and retain sampled centres in wide ground-road sections; shared indexed road vertices prevent split refits and reduce steady vertex/probe counts without added draw calls. Controlled performance validation remains open.
 
