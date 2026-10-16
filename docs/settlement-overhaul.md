@@ -88,3 +88,36 @@ travel or FPS claim is made. Full real river-crossing, near/far terrain-contact,
 bridge-collision and sustained performance acceptance remain open. The next
 batch must deliver road-led building clusters and grounded, planned open spaces
 before calling the settlement design finished.
+
+## Batch 2: districts and places (10.899)
+
+Replace broad disk scattering with compact village branches and road-frontage
+lots. Large city footprints contain linked, unequal centre, residential,
+commercial and industrial neighbourhoods. Houses, apartments, offices, shops,
+workshops, warehouses, civic buildings, barns and country service stations have
+distinct physical dimensions, height bands, roof choices and colours. Country
+farms and stations get early lot proposals, but still fail closed on wet/steep
+ground. Generated flat-terrain tests require actual surviving barns, service
+canopies, fields, parks and all city district types, not just proposal metadata.
+
+Reserve open-space parcels before building placement. Parks/plazas, crossing
+paths, fields and forecourts use sampled terrain triangles; submerged or steep
+triangles are omitted. One vertex-colour mesh batches the ground surfaces.
+Canopies, columns and pumps share a box batch; barn silos share a cylinder batch.
+Canopies/columns/pumps use matching indexed collision boxes with open space below
+the canopy. These are scenery, not traffic, interiors or vegetation.
+
+Bound ground to 24 patches/30,000 vertices and local streets to 20,000 profile
+points per settlement. Temporary street buckets avoid scanning every dense road
+segment for every lot. Keep four settlements, 1,500 buildings and six regional
+links. Ghost revision 18 preserves saved data. The main remaining integration
+work is road/ground contact against the actual streamed terrain LOD, local water
+crossings, and regional bridge collision. Browser still throttles near 1 FPS;
+this batch makes no frame-rate or sustained-memory improvement claim.
+
+The [seed-73 layout checkpoint](reviews/settlement-layout-checkpoint-10.899.png)
+shows the tighter 13-building cluster and removal of the old oversized green.
+Some road/ground sections still disappear into the coarser rendered terrain.
+This is evidence for the next actual-LOD contact correction, not final artwork
+acceptance. The 17 placement/distribution/anchor checks pass, along with 54
+focused layout/scale/rendering/budget/ghost checks and the production build.

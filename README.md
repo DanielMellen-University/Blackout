@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.898**. Previous roadmap chunk: **10.897**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.899**. Previous roadmap chunk: **10.898**.
+
+Recent changes from **10.899**. Give villages compact street-frontage clusters and cities residential, commercial, industrial and taller central districts. Add house, apartment, office, shop, workshop, warehouse, civic, barn and country gas-station types, including batched canopies/pumps/columns and barn silos. Planned parks, paths, plazas, fields and forecourts follow sampled ground instead of floating flat discs. Validate service pads/collision, bound added geometry and preserve streaming limits. Ghost revision 18 preserves saved records. Actual-LOD road contact, bridge collision and sustained visual/performance acceptance remain required. See [the settlement plan](docs/settlement-overhaul.md). No terrain/water generation, weather, flight or paused-system changes.
 
 Recent changes from **10.898**. Begin the approved roads/settlements overhaul with physical-scale buildings and narrower roads. Regional dry roads and shoulders follow their own sampled ground; river decks receive graded approaches, soil fills or supported viaducts, deck sides and rails. Preserve dash spacing across shorter road segments and bound profile/support budgets. Generation revision 17 skips incompatible ghosts without deleting records. Focused checks/build pass; the seed-73 village overview exposes sparse old layouts and an oversized flat green that the next batch must replace. Districts, parks, farms, gas stations, additional building types, full bridge/LOD/collision review and performance acceptance remain unfinished. See [the approved settlement plan](docs/settlement-overhaul.md).
 

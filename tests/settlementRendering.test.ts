@@ -6,12 +6,14 @@ import { WORKER_STALL_SECONDS } from '../src/core/WorkerWatchdog'
 
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
+  MAX_LOCAL_ROAD_POINTS: 20_000,
   settlementForCell: (x: number, z: number) => x === 0 && z === 0 ? example() : null,
 }))
 
 function example(): SettlementPlan {
   return {
     id: '0,0', kind: 'village', biome: 'plains', x: 3000, y: 100, z: 3000, radius: 150,
+    ground: [{ use: 'park', color: 0x65754e, positions: [2990, 100.12, 3010, 2990, 101.12, 3030, 3010, 100.62, 3010] }],
     roads: [{ width: 24, points: [
       { x: 2940, y: 100, z: 3000 }, { x: 3060, y: 100, z: 3000 },
     ] }], buildings: [{ x: 3000, y: 100, z: 3000, width: 12, depth: 24, height: 15,
@@ -242,11 +244,15 @@ describe('settlement rendering and lifecycle', () => {
     }
   })
 
-  it('leaves a central green for village road approaches', () => {
+  it('renders worker-sampled ground relief rather than a floating flat green', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     try {
       system.update(3000, 3000)
-      expect(scene.getObjectByName('SettlementGreen')).toBeDefined()
+      const ground = scene.getObjectByName('SettlementGround') as Mesh
+      expect(ground).toBeDefined()
+      expect(ground.geometry.getAttribute('position').count).toBe(3)
+      expect(ground.geometry.getAttribute('position').getY(1)).toBeCloseTo(1.12)
+      expect(scene.getObjectByName('SettlementGreen')).toBeUndefined()
     } finally {
       system.dispose()
     }

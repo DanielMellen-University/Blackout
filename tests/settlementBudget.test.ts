@@ -8,6 +8,7 @@ const settlementCallCount = { value: 0 }
 
 vi.mock('../src/world/SettlementPlan', () => ({
   SETTLEMENT_CELL_SIZE: 24000,
+  MAX_LOCAL_ROAD_POINTS: 20_000,
   settlementForCell: (cx: number, cz: number, forcedAnchor?: 'city' | 'village') => {
     settlementCallCount.value++
     if (Math.abs(cx) > 1 || Math.abs(cz) > 1) return null

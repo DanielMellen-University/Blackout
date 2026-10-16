@@ -29,4 +29,10 @@ it('uses smaller physical buildings without shrinking city extent or erasing eit
     expect(building.height).toBeLessThan(350)
   }
   expect(village.roads.every(road => road.width < 16)).toBe(true)
+  expect(village.buildings.some(b => b.use === 'barn')).toBe(true)
+  expect(village.buildings.some(b => b.use === 'gas-station' && b.service)).toBe(true)
+  expect(village.ground?.some(patch => patch.use === 'field')).toBe(true)
+  expect(city.ground?.some(patch => patch.use === 'park')).toBe(true)
+  expect(new Set(city.buildings.map(b => b.district)))
+    .toEqual(new Set(['centre', 'residential', 'commercial', 'industrial']))
 })

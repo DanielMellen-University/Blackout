@@ -1,5 +1,5 @@
 import {
-  BoxGeometry, BufferGeometry, CircleGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
+  BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
   InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
   MeshBasicMaterial,
 } from 'three'
@@ -8,12 +8,13 @@ import { getOpsPad, getOpsPadInto, sampleClimate, type OpsPadSnapshot } from './
 import { createClimateSample } from './Geography'
 import { getWorldSeed, hash2 } from './noise'
 import {
-  settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE,
+  settlementAnchorForCell, settlementForCell, SETTLEMENT_CELL_SIZE, MAX_LOCAL_ROAD_POINTS,
   type SettlementBuilding, type SettlementPlan, type SettlementRoad,
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, ROAD_SUPPORT_SPACING } from './RoadSurface'
+import { MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES } from './SettlementGround'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
@@ -36,7 +37,23 @@ function isSettlementPlan(value: unknown): value is SettlementPlan {
     !isFiniteNumber(value.z) || !isFiniteNumber(value.radius) ||
     !Array.isArray(value.buildings) || !Array.isArray(value.roads)) return false
   for (const building of value.buildings) if (!isSettlementBuilding(building)) return false
-  for (const road of value.roads) if (!isSettlementRoad(road)) return false
+  let roadPoints = 0
+  for (const road of value.roads) {
+    if (!isSettlementRoad(road)) return false
+    roadPoints += road.points.length
+    if (roadPoints > MAX_LOCAL_ROAD_POINTS) return false
+  }
+  if (value.ground !== undefined) {
+    if (!Array.isArray(value.ground) || value.ground.length > MAX_SETTLEMENT_GROUND_PATCHES) return false
+    let vertices = 0
+    for (const patch of value.ground) {
+      if (!isRecord(patch) || !['park', 'plaza', 'field', 'forecourt', 'path'].includes(String(patch.use)) ||
+        !isFiniteNumber(patch.color) || !Array.isArray(patch.positions) || patch.positions.length % 9 ||
+        !patch.positions.every(isFiniteNumber)) return false
+      vertices += patch.positions.length / 3
+      if (vertices > MAX_SETTLEMENT_GROUND_VERTICES) return false
+    }
+  }
   return true
 }
 
@@ -45,6 +62,10 @@ function isSettlementBuilding(value: unknown): value is SettlementBuilding {
     !isFiniteNumber(value.z) || !isFiniteNumber(value.width) || !isFiniteNumber(value.depth) ||
     !isFiniteNumber(value.height) || !isFiniteNumber(value.yaw) ||
     !isFiniteNumber(value.wallColor) || !isFiniteNumber(value.roofColor)) return false
+  if (value.service !== undefined) {
+    const service = value.service
+    if (!isRecord(service) || !['x', 'y', 'z', 'yaw'].every(key => isFiniteNumber(service[key]))) return false
+  }
   return (value.shape === 'block' || value.shape === 'slab' || value.shape === 'tower' ||
     value.shape === 'stepped' || value.shape === 'hangar') &&
     (value.roof === 'pitched' || value.roof === 'flat')
@@ -161,6 +182,7 @@ interface CollisionBuilding {
   halfDepth: number
   /** Last multi-bucket query that visited this building. */
   seenToken: number
+  boxOnly?: boolean
 }
 const collisionIndexes = new WeakMap<SettlementPlan, CollisionIndex>()
 let collisionQueryToken = 0
@@ -225,6 +247,10 @@ export function hitsSettlement(
         const localPaddingDepth = Math.abs(candidate.sinYaw) * paddingX + Math.abs(candidate.cosYaw) * paddingZ
         const halfWidth = candidate.halfWidth + localPaddingWidth
         const halfDepth = candidate.halfDepth + localPaddingDepth
+        if (candidate.boxOnly) {
+          if (lx <= halfWidth && lz <= halfDepth && y >= b.y - paddingY && y <= b.y + b.height + paddingY) return true
+          continue
+        }
         if (y < b.y - 2 - paddingY || lx > halfWidth || lz > halfDepth) continue
         const top = b.y + b.height
         const shape = b.shape ?? 'block'
@@ -253,7 +279,22 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
 
   const buckets = new Map<number, Map<number, CollisionBuilding[]>>()
   let radius = 0
+  const collisionParts: { building: SettlementBuilding; boxOnly?: boolean }[] = []
   for (const building of plan.buildings) {
+    collisionParts.push({ building })
+    if (building.service) {
+      const s = building.service, c = Math.cos(s.yaw), sn = Math.sin(s.yaw)
+      const part = (dx: number, dz: number, y: number, width: number, height: number, depth: number) =>
+        collisionParts.push({ boxOnly: true, building: { ...building, x: s.x + c * dx + sn * dz,
+          z: s.z - sn * dx + c * dz, y: s.y + y, width, height, depth, yaw: s.yaw, roof: 'flat', shape: 'block', service: undefined } })
+      part(0, 0, 6.275, 25, .85, 17)
+      for (let j = 0; j < 4; j++) {
+        part(j % 2 ? 10 : -10, j < 2 ? -6 : 6, 0, .6, 6.4, .6)
+        part(j % 2 ? 5 : -5, j < 2 ? -3 : 3, 0, 1.3, 2, .9)
+      }
+    }
+  }
+  for (const { building, boxOnly } of collisionParts) {
     const extent = Math.hypot(building.width, building.depth) / 2 + COLLISION_INDEX_MARGIN
     radius = Math.max(radius, Math.hypot(building.x - plan.x, building.z - plan.z) + extent)
     const minX = Math.floor((building.x - extent) / COLLISION_BUCKET_SIZE)
@@ -264,8 +305,9 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
       building,
       cosYaw: Math.cos(building.yaw),
       sinYaw: Math.sin(building.yaw),
-      halfWidth: building.width / 2 + 2.6,
-      halfDepth: building.depth / 2 + 2.6,
+      halfWidth: building.width / 2 + (boxOnly ? 0 : 2.6),
+      halfDepth: building.depth / 2 + (boxOnly ? 0 : 2.6),
+      boxOnly,
       seenToken: 0,
     }
     for (let bx = minX; bx <= maxX; bx++) {
@@ -596,6 +638,27 @@ export interface SettlementSweepPoint {
   readonly z: number
 }
 
+/** One bounded vertex-colour draw for parks, paths, fields and forecourts. */
+export function settlementGroundGeometry(plan: SettlementPlan): BufferGeometry | null {
+  const positions: number[] = [], colors: number[] = []
+  const tint = new Color()
+  for (const patch of plan.ground ?? []) {
+    tint.setHex(patch.color)
+    for (let i = 0; i < patch.positions.length; i += 3) {
+      const x = patch.positions[i]!, y = patch.positions[i + 1]!, z = patch.positions[i + 2]!
+      positions.push(x - plan.x, y - plan.y, z - plan.z)
+      const row = patch.use === 'field' ? Math.floor((x - plan.x + (z - plan.z) * .3) / 12) % 2 ? .92 : 1.04 : 1
+      colors.push(tint.r * row, tint.g * row, tint.b * row)
+    }
+  }
+  if (!positions.length) return null
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+  geometry.computeVertexNormals(); geometry.computeBoundingSphere()
+  return geometry
+}
+
 /** Independent scenery stream: shared geometry, instanced buildings, no shadow passes. */
 export class SettlementSystem {
   readonly root = new Group()
@@ -619,8 +682,8 @@ export class SettlementSystem {
   private readonly streetLampGlow = new MeshBasicMaterial({ color: 0xffb45c, transparent: true, opacity: .06, depthWrite: false })
   private readonly dockDeckMaterial = new MeshStandardMaterial({ color: 0x72563e, roughness: .92 })
   private readonly dockPostMaterial = new MeshStandardMaterial({ color: 0x45392d, roughness: .98 })
-  private readonly cityPlaza = new MeshStandardMaterial({ color: 0x76766c, roughness: .96, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
-  private readonly villageGreen = new MeshStandardMaterial({ color: 0x4f794c, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
+  private readonly groundMaterial = new MeshStandardMaterial({ vertexColors: true, roughness: 1,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly asphalt = new MeshStandardMaterial({ color: 0x4b4c48, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })
   private readonly gravelShoulder = new MeshStandardMaterial({ color: 0x887d66, emissive: 0x17140f, emissiveIntensity: .12,
     roughness: 1, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
@@ -1156,7 +1219,7 @@ export class SettlementSystem {
     this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
     this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
     this.dockDeckMaterial.dispose(); this.dockPostMaterial.dispose()
-    this.cityPlaza.dispose(); this.villageGreen.dispose()
+    this.groundMaterial.dispose()
   }
 
   /** Remove one protected cell without allocating a replacement queue. */
@@ -1492,8 +1555,8 @@ export class SettlementSystem {
               const segmentMaxY = Math.max(yEnter, yExit)
               const roofHeight = Math.min(b.width, b.depth) * .3 + 3.2
               const civicCap = plan.kind === 'city' && b.height > 250 ? b.height * .1 + 2 : 0
-              const top = b.y + b.height + Math.max(roofHeight, civicCap) + paddingY
-              if (segmentMaxY < b.y - 2 - paddingY || segmentMinY > top) continue
+              const top = b.y + b.height + (candidate.boxOnly ? 0 : Math.max(roofHeight, civicCap)) + paddingY
+              if (segmentMaxY < b.y - (candidate.boxOnly ? 0 : 2) - paddingY || segmentMinY > top) continue
             }
             return true
           }
@@ -1598,6 +1661,8 @@ export class SettlementSystem {
     const flat: SettlementBuilding[] = []
     const flatHangars: SettlementBuilding[] = []
     const crowns: SettlementBuilding[] = []
+    const services: SettlementBuilding[] = []
+    const barns: SettlementBuilding[] = []
     let highestRoof = plan.y
     for (let i = 0; i < plan.buildings.length; i++) {
       const building = plan.buildings[i]!
@@ -1612,12 +1677,13 @@ export class SettlementSystem {
         if (plan.kind === 'city' && building.height > 250) crowns.push(building)
       }
       highestRoof = Math.max(highestRoof, building.y + building.height)
+      if (building.service) services.push(building)
+      if (building.use === 'barn') barns.push(building)
       if (plan.kind === 'city') {
-        if (building.height > 620 && i % 17 === 4 && spireBuildings.length < 12) spireBuildings.push(building)
-        if ((shape === 'hangar' || shape === 'slab') && i % 23 === 9 && domeBuildings.length < 12) domeBuildings.push(building)
+        if (building.height > 140 && i % 17 === 4 && spireBuildings.length < 12) spireBuildings.push(building)
+        if (building.use === 'civic' && domeBuildings.length < 12) domeBuildings.push(building)
       } else {
-        if ((shape === 'tower' || shape === 'stepped') && i % 7 === 2 && spireBuildings.length < 3) spireBuildings.push(building)
-        if ((shape === 'hangar' || shape === 'slab' || shape === 'block') && i % 11 === 3 && domeBuildings.length < 2) domeBuildings.push(building)
+        if (building.use === 'civic' && spireBuildings.length < 3) spireBuildings.push(building)
       }
     }
     // A few high-rise and hall lots become deterministic civic landmarks. The
@@ -1666,6 +1732,31 @@ export class SettlementSystem {
     })
     crowns.forEach((b, i) => put(caps, flat.length + i, b.x, b.y + b.height + b.height * .05, b.z,
       b.width * .48, b.height * .1, b.depth * .55, b.yaw, b.roofColor))
+    // Service canopies, pillars and pumps share one box batch. Barn silos use
+    // one cylinder batch. No per-building meshes or lights are introduced.
+    if (services.length) {
+      const accessories = new InstancedMesh(this.box, this.roofs, services.length * 9)
+      services.forEach((b, i) => {
+        const s = b.service!, c = Math.cos(s.yaw), sn = Math.sin(s.yaw)
+        put(accessories, i * 9, s.x, s.y + 6.7, s.z, 25, .85, 17, s.yaw, 0xd2c8ac)
+        for (let j = 0; j < 4; j++) {
+          const dx = j % 2 ? 10 : -10, dz = j < 2 ? -6 : 6
+          put(accessories, i * 9 + 1 + j, s.x + c * dx + sn * dz, s.y + 3.2,
+            s.z - sn * dx + c * dz, .6, 6.4, .6, s.yaw, 0x59636b)
+          const pumpX = j % 2 ? 5 : -5, pumpZ = j < 2 ? -3 : 3
+          put(accessories, i * 9 + 5 + j, s.x + c * pumpX + sn * pumpZ, s.y + 1,
+            s.z - sn * pumpX + c * pumpZ, 1.3, 2, .9, s.yaw, 0xc46e49)
+        }
+      })
+      accessories.name = 'SettlementFuelStations'; accessories.computeBoundingSphere(); root.add(accessories)
+    }
+    if (barns.length) {
+      const silos = new InstancedMesh(this.tower, this.roofs, barns.length)
+      barns.forEach((b, i) => put(silos, i,
+        b.x + Math.cos(b.yaw) * b.width * .27, b.y + b.height + 3,
+        b.z - Math.sin(b.yaw) * b.width * .27, 5, 8, 5, b.yaw, 0xaaa998))
+      silos.name = 'SettlementBarnSilos'; silos.computeBoundingSphere(); root.add(silos)
+    }
     // Flat-roof hangars still get a broad shared canopy so their silhouette
     // reads as a civic or industrial hall instead of another plain box.
     flatHangars.forEach((b, i) => put(hangarCaps, i, b.x, b.y + b.height + .55, b.z,
@@ -1689,24 +1780,12 @@ export class SettlementSystem {
       beacon.renderOrder = 2
       detail.add(beacon)
     }
-    const plazaRadius = plan.kind === 'city' ? 620 : Math.min(420, plan.radius * .13)
-    const plazaGeometry = new CircleGeometry(plazaRadius, plan.kind === 'city' ? 20 : 14)
-    plazaGeometry.computeBoundingSphere()
-    const plaza = new Mesh(plazaGeometry, plan.kind === 'city' ? this.cityPlaza : this.villageGreen)
-    plaza.name = plan.kind === 'city' ? 'SettlementPlaza' : 'SettlementGreen'
-    plaza.rotation.x = -Math.PI / 2
-    let centralRoadPoint: SettlementRoad['points'][number] | undefined
-    let centralRoadDistance = Infinity
-    for (const road of plan.roads) for (const point of road.points) {
-      const dx = point.x - plan.x, dz = point.z - plan.z
-      const distance = dx * dx + dz * dz
-      if (distance < centralRoadDistance) {
-        centralRoadDistance = distance
-        centralRoadPoint = point
-      }
+    const groundGeometry = settlementGroundGeometry(plan)
+    if (groundGeometry) {
+      const ground = new Mesh(groundGeometry, this.groundMaterial)
+      ground.name = 'SettlementGround'
+      detail.add(ground)
     }
-    plaza.position.set(0, (centralRoadPoint?.y ?? plan.y) - plan.y + .22, 0)
-    detail.add(plaza)
     const lightPoints = settlementStreetLightPoints(plan)
     if (lightPoints.length) {
       const poles = new InstancedMesh(this.streetLampPole, this.streetLampPoleMaterial, lightPoints.length)

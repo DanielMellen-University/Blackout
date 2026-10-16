@@ -2,8 +2,12 @@ import { getWorldSeed, hash2 } from './noise'
 import { getOpsPad, sampleClimate } from './terrainSample'
 import { createClimateSample } from './Geography'
 import type { Biome, Climate } from './terrainSample'
+import { settlementLayout, type BuildingUse, type District } from './SettlementLayout'
+import { settlementGroundPatch, MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES,
+  type SettlementGroundPatch } from './SettlementGround'
 
 export const SETTLEMENT_CELL_SIZE = 24000
+export const MAX_LOCAL_ROAD_POINTS = 20_000
 
 // Cells are deliberately large, so the candidate chance has to be generous
 // enough that a player encounters villages inside the visible flight envelope.
@@ -32,6 +36,9 @@ export interface SettlementBuilding {
   width: number; depth: number; height: number; yaw: number
   shape: 'block' | 'slab' | 'tower' | 'stepped' | 'hangar'
   roof: 'pitched' | 'flat'; wallColor: number; roofColor: number
+  use?: BuildingUse; district?: District
+  /** Dry, slope-validated canopy pad; optional on service buildings. */
+  service?: { x: number; y: number; z: number; yaw: number }
 }
 export interface SettlementRoad { points: { x: number; y: number; z: number; bridge?: boolean;
   structure?: 'ground' | 'bridge' | 'embankment' | 'viaduct';
@@ -46,6 +53,7 @@ export interface SettlementPlan {
   /** Spawn-priority landmark selected around the active airfield, when any. */
   anchor?: 'city' | 'village'
   buildings: SettlementBuilding[]; roads: SettlementRoad[]
+  ground?: SettlementGroundPatch[]
 }
 
 const SETTLEMENT_NAME_ROOTS = [
@@ -390,17 +398,6 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
 function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   const angle = rand(30) * Math.PI * 2, cos = Math.cos(angle), sin = Math.sin(angle)
   const style = palette(plan.biome)
-  const drySettlementBiome = plan.biome === 'desert' || plan.biome === 'mesa' ||
-    plan.biome === 'savanna' || plan.biome === 'saltflat'
-  const wetSettlementBiome = plan.biome === 'rainforest' || plan.biome === 'swamp'
-  const coldSettlementBiome = plan.biome === 'tundra' || plan.biome === 'snow' ||
-    plan.biome === 'mountain' || plan.biome === 'volcanic'
-  const cityFootprintScale = drySettlementBiome ? 1.1
-    : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.04 : 1
-  const villageFootprintScale = drySettlementBiome ? 1.08
-    : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.02 : 1
-  const localRoadScale = (drySettlementBiome ? 1.1
-    : wetSettlementBiome ? .88 : coldSettlementBiome ? 1.02 : 1) * .32
   const world = (x: number, z: number) => ({ x: plan.x + cos * x + sin * z, z: plan.z - sin * x + cos * z })
   const occupied = new Map<string, {
     x: number
@@ -414,26 +411,39 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     depth: number
   }[]>()
   const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number }[] = []
+  const streetBuckets = new Map<string, typeof streets>()
   let serial = 100
-  const building = (lx: number, lz: number, width: number, depth: number, height: number, yaw = angle) => {
-    // Metres, not the old hundreds-of-metres rural props. Validate and store
-    // the actual smaller footprint so foundations/collision agree with art.
-    const footprintScale = plan.kind === 'city' ? .22 : .075
-    width *= footprintScale; depth *= footprintScale
-    height = Math.min(plan.kind === 'city' ? 320 : 28, height * (plan.kind === 'city' ? .14 : .06))
+  const layout = settlementLayout(plan, rand)
+  const building = (lx: number, lz: number, width: number, depth: number, height: number,
+    yaw = angle, use: BuildingUse = 'house', district: District = 'residential', forcedShape?: SettlementBuilding['shape']) => {
     const { x, z } = world(lx, lz)
     const localRadius = Math.hypot(lx, lz)
     const halfDiagonal = Math.hypot(width, depth) / 2
-    const districtCore = Math.max(0, 1 - localRadius / (plan.radius * .65))
     const bc = Math.cos(yaw), bs = Math.sin(yaw)
     const hx = (Math.abs(bc) * width + Math.abs(bs) * depth) / 2 + 5
     const hz = (Math.abs(bs) * width + Math.abs(bc) * depth) / 2 + 5
     if (localRadius + halfDiagonal > plan.radius * .97) return
-    // Keep a small central breathing space for a civic square or village
-    // green. Roads still converge through it, but buildings no longer fill
-    // the exact origin and turn every settlement into a solid block.
-    const plazaBuffer = plan.kind === 'city' ? 620 : Math.min(420, plan.radius * .13)
-    if (localRadius < plazaBuffer && rand(serial + 701) < .78) return
+    // Reserve planned parks, farm fields and service forecourts before lots.
+    for (const space of layout.spaces) {
+      const dx = lx - space.x, dz = lz - space.z
+      const c = Math.cos(space.yaw), s = Math.sin(space.yaw)
+      const relative = yaw - angle - space.yaw
+      const hx = Math.abs(Math.cos(relative)) * width / 2 + Math.abs(Math.sin(relative)) * depth / 2
+      const hz = Math.abs(Math.sin(relative)) * width / 2 + Math.abs(Math.cos(relative)) * depth / 2
+      if (Math.abs(dx * c - dz * s) < space.width / 2 + hx + 2 &&
+        Math.abs(dx * s + dz * c) < space.depth / 2 + hz + 2) return
+    }
+    // Reject road intersections, including another street crossing this lot's
+    // frontage. The test uses the rendered (dry/grade-accepted) street runs.
+    let roadDistance = Infinity
+    for (const street of streetBuckets.get(`${Math.floor(lx / 128)},${Math.floor(lz / 128)}`) ?? []) {
+      const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
+      const t = Math.max(0, Math.min(1, ((lx - street.a.x) * dx + (lz - street.a.z) * dz) / (dx * dx + dz * dz)))
+      const distance = Math.hypot(lx - street.a.x - dx * t, lz - street.a.z - dz * t)
+      if (distance < halfDiagonal + street.width / 2 + 4) return
+      roadDistance = Math.min(roadDistance, distance)
+    }
+    if (roadDistance > Math.max(width, depth) + 65) return
     const keys: string[] = []
     for (let bx = Math.floor((x - hx) / 400); bx <= Math.floor((x + hx) / 400); bx++) {
       for (let bz = Math.floor((z - hz) / 400); bz <= Math.floor((z + hz) / 400); bz++) {
@@ -494,53 +504,52 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       bucket.push({ x, z, hx, hz, yaw, cosYaw: bc, sinYaw: bs, width, depth }); occupied.set(key, bucket)
     }
     const n = serial++
-    const shapeRoll = rand(n + 2000)
-    // High-rise forms are a small inner-district accent. The old height-first
-    // test made most city lots cylinders whenever the relief generator raised
-    // the skyline, erasing the slab, hall, and block silhouettes around them.
-    // Keep a few towers and stepped landmarks in the core, then let the outer
-    // districts carry the broader low-rise forms.
-    const shape: SettlementBuilding['shape'] = plan.kind === 'city'
-      ? shapeRoll < (coldSettlementBiome ? .15 : .11) && districtCore > .42 ? 'stepped'
-        : shapeRoll < (coldSettlementBiome ? .3 : .25) && districtCore > .24 ? 'tower'
-          : shapeRoll < (wetSettlementBiome ? .5 : .48) ? 'slab'
-            : shapeRoll < (drySettlementBiome ? .67 : .61) ? 'hangar' : 'block'
-      : drySettlementBiome
-        ? shapeRoll < .38 ? 'hangar' : shapeRoll < .62 ? 'block' : shapeRoll < .9 ? 'slab' : 'tower'
-        : wetSettlementBiome
-          ? shapeRoll < .2 ? 'hangar' : shapeRoll < .55 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
-          : coldSettlementBiome
-            ? shapeRoll < .2 ? 'hangar' : shapeRoll < .48 ? 'slab' : shapeRoll < .86 ? 'block'
-              : shapeRoll < .96 ? 'tower' : 'stepped'
-            : shapeRoll < .28 ? 'hangar' : shapeRoll < .5 ? 'slab' : shapeRoll < .94 ? 'block' : 'tower'
-    const finalHeight = plan.kind === 'city'
-      ? shape === 'hangar'
-        ? Math.min(height, 150 + rand(n + 3000) * 180 + districtCore * 260)
-        : shape === 'block' || shape === 'slab'
-          // Cities get a readable low-rise fringe instead of one continuous
-          // wall. Height rises smoothly toward the inner districts, while
-          // each lot keeps deterministic variation inside its band.
-          ? Math.min(height, 120 + rand(n + 3000) * 170 + districtCore * (420 + rand(n + 3001) * 760))
-          : height
-      : height
-    const flatRoof = shape === 'tower' || shape === 'stepped'
-      || (plan.kind === 'city' && shapeRoll < .58)
+    const shape = forcedShape ?? 'block'
+    const finalHeight = height
+    const flatRoof = use !== 'house' && use !== 'barn' && use !== 'civic'
+      || shape === 'tower' || shape === 'stepped'
+    let service: SettlementBuilding['service']
+    if (use === 'gas-station') {
+      const sx = x - Math.sin(yaw) * (depth / 2 + 15), sz = z - Math.cos(yaw) * (depth / 2 + 15)
+      let low = Infinity, high = -Infinity, valid = true
+      for (const dx of [-12, 12]) for (const dz of [-8, 8]) {
+        const ground = sampleSettlementClimate(sx + bc * dx + bs * dz, sz - bs * dx + bc * dz)
+        if (!dry(ground)) valid = false
+        low = Math.min(low, ground.height); high = Math.max(high, ground.height)
+      }
+      if (valid && high - low < 2) service = { x: sx, z: sz, y: high + .2, yaw }
+    }
     plan.buildings.push({ x, z, y: min - 1, width, depth, height: finalHeight + max - min + 1,
-      shape,
+      shape, use, district, service,
       yaw, roof: flatRoof ? 'flat' : style.roof,
-      wallColor: style.walls[Math.floor(rand(n) * style.walls.length)]!,
+      wallColor: use === 'barn' ? 0x8d5141 : use === 'gas-station' ? 0xd6cbb3
+        : use === 'office' ? [0x70838a, 0x566d80, 0x8a999b][n % 3]!
+          : use === 'warehouse' ? [0x95998f, 0x89958e, 0xa3a095][n % 3]!
+        : style.walls[Math.floor(rand(n) * style.walls.length)]!,
       roofColor: style.roofs[Math.floor(rand(n + 1000) * style.roofs.length)]! })
   }
+  let roadPoints = 0
   const road = (local: { x: number; z: number }[], width: number) => {
     let points: SettlementRoad['points'] = []
-    const flush = () => { if (points.length > 1) plan.roads.push({ points, width }); points = [] }
+    const flush = () => {
+      if (points.length > 1) {
+        if (roadPoints + points.length > MAX_LOCAL_ROAD_POINTS) { points = []; return }
+        roadPoints += points.length
+        plan.roads.push({ points, width })
+        for (let i = 1; i < points.length; i++) {
+          const a = points[i - 1]!, b = points[i]!
+          streets.push({ a: { x: cos * (a.x - plan.x) - sin * (a.z - plan.z),
+            z: sin * (a.x - plan.x) + cos * (a.z - plan.z) },
+          b: { x: cos * (b.x - plan.x) - sin * (b.z - plan.z),
+            z: sin * (b.x - plan.x) + cos * (b.z - plan.z) }, width })
+        }
+      }
+      points = []
+    }
     for (let segment = 1; segment < local.length; segment++) {
       const a = local[segment - 1]!, b = local[segment]!
-      streets.push({ a, b, width })
       const length = Math.hypot(b.x - a.x, b.z - a.z)
-      // The terrain's broad forms are smooth at this scale. Sampling arterial
-      // shoulders every 72 m keeps kilometre-wide cities cheap to plan while
-      // retaining enough points for curved, terrain-following road ribbons.
+      // Bounded worker-side terrain sampling, not runtime vertex probes.
       const steps = Math.ceil(length / (plan.kind === 'city' ? 32 : 20))
       for (let j = segment === 1 ? 0 : 1; j <= steps; j++) {
         const p = world(a.x + (b.x - a.x) * j / steps, a.z + (b.z - a.z) * j / steps)
@@ -562,176 +571,41 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     }
     flush()
   }
-  const city = plan.kind === 'city'
-  // Village morphology is chosen independently from footprint size. This
-  // keeps settlements from reading as repeated radial templates or a grid.
-  // Climate families gently bias the footprint without removing seed variety:
-  // dry villages stretch toward roads, wet villages gather around a basin,
-  // and cold/highland villages favor compact crossroads.
-  const profileRoll = rand(43), profileRollB = rand(44), profileRollC = rand(45)
-  const villageProfile = city ? 'basin' : plan.anchor === 'village'
-    ? drySettlementBiome
-      ? (profileRoll < .52 ? 'ribbon' : profileRollB < .8 ? 'crossroads' : 'basin')
-      : wetSettlementBiome
-        ? (profileRoll < .4 ? 'basin' : profileRollB < .73 ? 'ribbon' : 'crossroads')
-        : coldSettlementBiome
-          ? (profileRoll < .5 ? 'crossroads' : profileRollB < .78 ? 'basin' : 'ribbon')
-          : (profileRoll < .42 ? 'crossroads' : profileRollB < .72 ? 'basin' : 'ribbon')
-    : profileRoll < (drySettlementBiome ? .16 : .24) ? 'hamlet'
-      : profileRollB < (wetSettlementBiome ? .58 : .5) ? 'ribbon'
-        : profileRollC < (coldSettlementBiome ? .86 : .78) ? 'crossroads' : 'basin'
-  const phase = rand(40) * Math.PI * 2
-  const aspectBias = drySettlementBiome ? -.08 : wetSettlementBiome ? .08 : coldSettlementBiome ? -.04 : 0
-  const aspect = city ? .78 + rand(41) * .2
-    : villageProfile === 'hamlet' ? .55 + rand(41) * .25
-      : villageProfile === 'ribbon' ? Math.max(.22, .28 + rand(41) * .28 + aspectBias)
-        : villageProfile === 'crossroads' ? Math.max(.5, .64 + rand(41) * .3 + aspectBias)
-          : Math.max(.7, .82 + rand(41) * .4 + aspectBias)
-  // Unequal lobes, asymmetric stretches and branched streets replace grids.
-  const boundary = (a: number) => .77 + .11 * Math.sin(a * 3 + phase) + .065 * Math.sin(a * 5 - phase)
-  const polar = (a: number, distance: number) => ({ x: Math.cos(a) * distance, z: Math.sin(a) * distance * aspect })
-  const arms = city ? 4 + Math.floor(rand(42) * 3)
-    : villageProfile === 'hamlet' ? 2
-      : villageProfile === 'ribbon' ? 2 + Math.floor(rand(42) * 2)
-        : villageProfile === 'crossroads' ? 3 + Math.floor(rand(42) * 2)
-          : 4 + Math.floor(rand(42) * 2)
-  for (let arm = 0; arm < arms; arm++) {
-    const direction = arm / arms * Math.PI * 2 + (rand(50 + arm) - .5) * .65
-    const reach = plan.radius * boundary(direction)
-    const spine: { x: number; z: number }[] = [{ x: 0, z: 0 }]
-    for (let step = 1; step <= 6; step++) {
-      const t = step / 6
-      spine.push(polar(direction + Math.sin(t * 4 + phase + arm) * .19, reach * t))
-    }
-    road(spine, (city ? 42 + rand(70 + arm) * 25 : 25 + rand(70 + arm) * 20) * localRoadScale)
-    // Dead-end neighborhoods branch irregularly off the main approaches.
-    for (let step = 2; step < 6; step += 2) {
-      const base = spine[step]!
-      const side = rand(90 + arm * 8 + step) < .5 ? -1 : 1
-      const heading = direction + side * (1 + rand(140 + arm * 8 + step) * .5)
-      const length = reach * (city ? .22 : .18)
-      const end = { x: base.x + Math.cos(heading) * length, z: base.z + Math.sin(heading) * length }
-      road([base, { x: (base.x + end.x) / 2 + Math.sin(heading) * length * .12,
-        z: (base.z + end.z) / 2 - Math.cos(heading) * length * .12 }, end], (city ? 30 : 22) * localRoadScale)
-    }
-  }
-  if (!city && villageProfile !== 'hamlet') {
-    // A bent neighborhood loop gives larger villages a memorable spine while
-    // preserving gaps and cul-de-sacs between the buildings.
-    const loopPoints: { x: number; z: number }[] = []
-    const loopRadius = plan.radius * (villageProfile === 'ribbon' ? .34 : .48)
-    const loopCount = villageProfile === 'ribbon' ? 5 : 7
-    for (let i = 0; i <= loopCount; i++) {
-      const a = phase + i / loopCount * Math.PI * 1.65
-      loopPoints.push(polar(a, loopRadius * (1 + .15 * Math.sin(a * 2 + phase))))
-    }
-    road(loopPoints, (18 + rand(180) * 12) * localRoadScale)
-  }
-  if (city) {
-    // Broken, warped district connectors have neither circular nor square outlines.
-    for (let ring = 0; ring < 1; ring++) {
-      const points: { x: number; z: number }[] = []
-      for (let i = 0; i <= 18; i++) {
-        const a = phase + i / 18 * Math.PI * (1.35 + rand(180 + ring) * .5)
-        points.push(polar(a, plan.radius * .52 * (1 + .16 * Math.sin(a * 3 + ring))))
-      }
-      road(points, 32 * localRoadScale)
-    }
-  }
-  const anchorVillageLots = plan.anchor === 'village' ? 12 : 0
-  const target = city ? 660 + Math.floor(rand(200) * 620) : Math.min(70,
-    villageProfile === 'hamlet' ? 8 + Math.floor(rand(201) * 8) + anchorVillageLots
-      : villageProfile === 'ribbon' ? 12 + Math.floor(rand(201) * 20) + anchorVillageLots
-        : villageProfile === 'crossroads' ? 18 + Math.floor(rand(201) * 28) + anchorVillageLots
-          : 28 + Math.floor(rand(201) * 38) + anchorVillageLots)
-  if (!city) {
-    // Seed a few lots directly from the street frontage before stochastic
-    // scatter. Random-only placement left long village approaches empty even
-    // when the road network was healthy, especially on rough terrain where
-    // most of the disk samples were rejected. Frontage stays sparse and
-    // asymmetric, while the normal building collision and foundation checks
-    // still decide whether each lot survives.
-    const villageScale = villageProfile === 'hamlet' ? .78
-      : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
-    let frontageSerial = 0
-    for (const street of streets) {
-      if (plan.buildings.length >= target) break
-      const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
-      const length = Math.hypot(dx, dz)
-      if (length < 180) continue
-      const lots = Math.min(3, Math.max(1, Math.floor(length / (plan.anchor === 'village' ? 430 : 520))))
-      const heading = Math.atan2(dz, dx)
-      const nx = -dz / length, nz = dx / length
-      for (let lot = 0; lot < lots && plan.buildings.length < target; lot++) {
-        const n = 7000 + frontageSerial++ * 17
-        const t = (lot + 1) / (lots + 1)
-        const along = length * t + (rand(n) - .5) * Math.min(110, length * .12)
-        const side = rand(n + 1) < .5 ? -1 : 1
-        const width = Math.max(180, (220 + rand(n + 3) * 220) * villageScale * villageFootprintScale)
-        const depth = Math.max(180, (210 + rand(n + 4) * 230) * villageScale * villageFootprintScale)
-        const frontage = street.width * .5 + Math.max(width, depth) * .075 * .5 + 8 + rand(n + 2) * 16
-        const localX = street.a.x + dx / length * along + nx * frontage * side
-        const localZ = street.a.z + dz / length * along + nz * frontage * side
-        const height = 145 + rand(n + 5) * 235
-        building(localX, localZ, width, depth, height,
-          angle + heading + (rand(n + 6) - .5) * .24)
+  for (const proposed of layout.roads) road(proposed.points, proposed.width)
+  for (const street of streets) {
+    for (let x = Math.floor((Math.min(street.a.x, street.b.x) - 150) / 128);
+      x <= Math.floor((Math.max(street.a.x, street.b.x) + 150) / 128); x++) {
+      for (let z = Math.floor((Math.min(street.a.z, street.b.z) - 150) / 128);
+        z <= Math.floor((Math.max(street.a.z, street.b.z) + 150) / 128); z++) {
+        const key = `${x},${z}`, bucket = streetBuckets.get(key) ?? []
+        bucket.push(street); streetBuckets.set(key, bucket)
       }
     }
   }
-  if (city) {
-    // Keep a readable mixed-use core around the civic plaza. Uniform
-    // area-scattering makes a huge city look empty from its own centre, while
-    // a deterministic ring gives the skyline an intentional downtown before
-    // the broader low-rise districts fill the outer footprint.
-    const coreLots = 34 + Math.floor(rand(203) * 18)
-    const coreRings = 4
-    const lotsPerRing = Math.ceil(coreLots / coreRings)
-    for (let attempt = 0; attempt < coreLots * 5 && plan.buildings.length < target; attempt++) {
-      const ring = attempt % coreRings
-      const sector = Math.floor(attempt / coreRings)
-      const angle = phase + sector / lotsPerRing * Math.PI * 2 + (rand(2200 + attempt) - .5) * .24
-      const distance = 860 + ring * 470 + rand(2300 + attempt) * 190
-      const p = polar(angle, distance)
-      const width = (190 + rand(2400 + attempt) * 170) * cityFootprintScale
-      const depth = (190 + rand(2500 + attempt) * 170) * cityFootprintScale
-      const height = 360 + rand(2600 + attempt) * 760 + (coreRings - ring) * 90
-      building(p.x, p.z, width, depth, height, angle + (rand(2700 + attempt) - .5) * .35)
-    }
+  for (const lot of layout.lots) {
+    if (plan.buildings.length >= layout.target) break
+    building(lot.x, lot.z, lot.width, lot.depth, lot.height, angle + lot.yaw,
+      lot.use, lot.district, lot.shape)
   }
-  for (let attempt = 0; attempt < target * (city ? 80 : 32) && plan.buildings.length < target; attempt++) {
-    const n = 10000 + attempt * 9
-    const a = rand(n) * Math.PI * 2
-    const distance = Math.sqrt(rand(n + 1)) * plan.radius * boundary(a)
-    const p = polar(a, distance)
-    // District/profile dimensions are scaled to physical building sizes by
-    // the shared lot validator. Larger rural lots become barns/workshops,
-    // not enormous skyscraper-sized houses.
-    const villageScale = villageProfile === 'hamlet' ? .78
-      : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
-    const landmarkScale = !city && rand(n + 8) < .08 ? 1.8 : 1
-    const width = city ? (160 + rand(n + 2) * 180) * cityFootprintScale
-      : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * villageFootprintScale * landmarkScale)
-    const depth = city ? (160 + rand(n + 3) * 180) * cityFootprintScale
-      : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * villageFootprintScale * landmarkScale)
-    const halfDiagonal = Math.hypot(width, depth) / 2 * (city ? .22 : .075)
-    let nearestDistanceSquared = Infinity, yaw = angle + a, clear = true
-    for (const street of streets) {
-      const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
-      const t = Math.max(0, Math.min(1, ((p.x - street.a.x) * dx + (p.z - street.a.z) * dz) / (dx * dx + dz * dz)))
-      const distanceX = p.x - street.a.x - dx * t
-      const distanceZ = p.z - street.a.z - dz * t
-      const distanceSquared = distanceX * distanceX + distanceZ * distanceZ
-      const clearance = halfDiagonal + street.width / 2 + 8
-      if (distanceSquared < clearance * clearance) { clear = false; break }
-      if (distanceSquared < nearestDistanceSquared) {
-        nearestDistanceSquared = distanceSquared
-        yaw = angle + Math.atan2(dx, dz)
+  // Ground patches are generated only after building placement. They share
+  // terrain/water probes with roads and contain no foliage or gameplay objects.
+  plan.ground = []
+  let groundVertices = 0
+  for (const space of layout.spaces.slice(0, MAX_SETTLEMENT_GROUND_PATCHES)) {
+    const patch = settlementGroundPatch(space, plan.x, plan.z, angle, sampleSettlementClimate)
+    if (!patch || groundVertices + patch.positions.length / 3 > MAX_SETTLEMENT_GROUND_VERTICES) continue
+    plan.ground.push(patch); groundVertices += patch.positions.length / 3
+    if (space.use === 'park') {
+      for (const cross of [false, true]) {
+        const path = settlementGroundPatch({ ...space, use: 'path', color: 0xb2a083,
+          width: cross ? space.width : 2.5, depth: cross ? 2.5 : space.depth },
+          plan.x, plan.z, angle, sampleSettlementClimate)
+        if (!path || groundVertices + path.positions.length / 3 > MAX_SETTLEMENT_GROUND_VERTICES ||
+          plan.ground.length >= MAX_SETTLEMENT_GROUND_PATCHES) continue
+        // A small independent lift separates paths from the park's own mesh.
+        for (let i = 1; i < path.positions.length; i += 3) path.positions[i]! += .04
+        plan.ground.push(path); groundVertices += path.positions.length / 3
       }
     }
-    const villageRoadReach = plan.anchor === 'village' ? 720 : 420
-    if (!clear || (!city && nearestDistanceSquared > villageRoadReach * villageRoadReach)) continue
-    const core = Math.max(0, 1 - distance / (plan.radius * .65))
-    const height = city ? 180 + rand(n + 4) * 260 + core ** 2 * (760 + rand(n + 5) * 1250) : 150 + rand(n + 4) * 240
-    building(p.x, p.z, width, depth, height, yaw + (rand(n + 6) - .5) * .35)
   }
 }
