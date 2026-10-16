@@ -411,7 +411,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     width: number
     depth: number
   }[]>()
-  const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number }[] = []
+  const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number; frontage: boolean }[] = []
   const streetBuckets = new Map<string, typeof streets>()
   let serial = 100
   const layout = settlementLayout(plan, rand)
@@ -441,8 +441,9 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
       const t = Math.max(0, Math.min(1, ((lx - street.a.x) * dx + (lz - street.a.z) * dz) / (dx * dx + dz * dz)))
       const distance = Math.hypot(lx - street.a.x - dx * t, lz - street.a.z - dz * t)
-      if (distance < halfDiagonal + street.width / 2 + 4) return
-      roadDistance = Math.min(roadDistance, distance)
+      // Include the actual gravel/fill shoulder, not just the asphalt ribbon.
+      if (distance < halfDiagonal + street.width * .775 + 2) return
+      if (street.frontage) roadDistance = Math.min(roadDistance, distance)
     }
     if (roadDistance > Math.max(width, depth) + 65) return
     const keys: string[] = []
@@ -541,12 +542,13 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     plan.roads.push(profile)
     for (let i = 1; i < profile.points.length; i++) {
       const a = profile.points[i - 1]!, b = profile.points[i]!
-      // Frontage buildings attach only to ground-level streets, not decks.
-      if (a.structure !== 'ground' || b.structure !== 'ground') continue
+      // Elevated roads still reserve their footprint. Otherwise a nearby
+      // ground street can admit a building through a viaduct or its supports.
+      const frontage = a.structure === 'ground' && b.structure === 'ground'
       streets.push({ a: { x: cos * (a.x - plan.x) - sin * (a.z - plan.z),
         z: sin * (a.x - plan.x) + cos * (a.z - plan.z) },
       b: { x: cos * (b.x - plan.x) - sin * (b.z - plan.z),
-        z: sin * (b.x - plan.x) + cos * (b.z - plan.z) }, width })
+        z: sin * (b.x - plan.x) + cos * (b.z - plan.z) }, width, frontage })
     }
   }
   for (const proposed of layout.roads) road(proposed.points, proposed.width)

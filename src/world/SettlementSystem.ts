@@ -13,7 +13,7 @@ import {
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
-import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, bridgeSupportPoints } from './RoadSurface'
+import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, bridgeSupportPoints, groundRoadJunction } from './RoadSurface'
 import { MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES } from './SettlementGround'
 import { SurfaceDraper } from './SurfaceDraper'
 import { groundSamplerRevision } from './ground'
@@ -378,38 +378,97 @@ function roadDistanceSquared(px: number, pz: number, road: SettlementRoad): numb
   return nearest
 }
 
+/** Developer-only on-demand sampling of the actual road triangles. */
+function inspectRoadHeight(root: Group | undefined, material: MeshStandardMaterial, x: number, z: number): number | null {
+  if (!root) return null
+  let height = -Infinity
+  root.traverse(object => {
+    if (!(object instanceof Mesh) || object.material !== material) return
+    const positions = object.geometry.getAttribute('position')
+    const indices = object.geometry.getIndex()
+    const px = x - root.position.x, pz = z - root.position.z
+    for (let i = 0; i + 2 < (indices?.count ?? positions.count); i += 3) {
+      const ia = indices?.getX(i) ?? i, ib = indices?.getX(i + 1) ?? i + 1, ic = indices?.getX(i + 2) ?? i + 2
+      const ax = positions.getX(ia), az = positions.getZ(ia), bx = positions.getX(ib), bz = positions.getZ(ib)
+      const cx = positions.getX(ic), cz = positions.getZ(ic)
+      if (px < Math.min(ax, bx, cx) - .01 || px > Math.max(ax, bx, cx) + .01 ||
+        pz < Math.min(az, bz, cz) - .01 || pz > Math.max(az, bz, cz) + .01) continue
+      const denominator = (bz - cz) * (ax - cx) + (cx - bx) * (az - cz)
+      if (Math.abs(denominator) < 1e-8) continue
+      const a = ((bz - cz) * (px - cx) + (cx - bx) * (pz - cz)) / denominator
+      const b = ((cz - az) * (px - cx) + (ax - cx) * (pz - cz)) / denominator
+      if (a < -.001 || b < -.001 || a + b > 1.001) continue
+      height = Math.max(height, root.position.y + a * positions.getY(ia) + b * positions.getY(ib) + (1 - a - b) * positions.getY(ic))
+    }
+  })
+  return Number.isFinite(height) ? height : null
+}
+
 function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number,
-  groundOffset?: number): BufferGeometry | null {
-  const positions: number[] = [], offsets: number[] = []
-  for (const road of roads) for (let i = 1; i < road.points.length; i++) {
-    const a = road.points[i - 1]!, b = road.points[i]!
-    const length = Math.hypot(b.x - a.x, b.z - a.z)
-    if (!length) continue
-    const nx = -(b.z - a.z) / length * road.width / 2
-    const nz = (b.x - a.x) / length * road.width / 2
-    const aLeftX = a.leftX ?? a.x + nx, aLeftY = a.leftY ?? a.y, aLeftZ = a.leftZ ?? a.z + nz
-    const aRightX = a.rightX ?? a.x - nx, aRightY = a.rightY ?? a.y, aRightZ = a.rightZ ?? a.z - nz
-    const bLeftX = b.leftX ?? b.x + nx, bLeftY = b.leftY ?? b.y, bLeftZ = b.leftZ ?? b.z + nz
-    const bRightX = b.rightX ?? b.x - nx, bRightY = b.rightY ?? b.y, bRightZ = b.rightZ ?? b.z - nz
-    positions.push(
-      aLeftX - originX, aLeftY - originY, aLeftZ - originZ,
-      bLeftX - originX, bLeftY - originY, bLeftZ - originZ,
-      aRightX - originX, aRightY - originY, aRightZ - originZ,
-      aRightX - originX, aRightY - originY, aRightZ - originZ,
-      bLeftX - originX, bLeftY - originY, bLeftZ - originZ,
-      bRightX - originX, bRightY - originY, bRightZ - originZ,
-    )
-    const ground = !a.bridge && !b.bridge &&
-      (a.structure === undefined || a.structure === 'ground') &&
-      (b.structure === undefined || b.structure === 'ground')
-    for (let j = 0; j < 6; j++) offsets.push(ground && groundOffset !== undefined ? groundOffset : -1)
+  groundOffset?: number, junctionRoad?: SettlementRoad): BufferGeometry | null {
+  const positions: number[] = [], offsets: number[] = [], indices: number[] = []
+  const centres = new Map<string, number>()
+  const add = (x: number, y: number, z: number, offset: number): number => {
+    const index = positions.length / 3
+    positions.push(x - originX, y - originY, z - originZ); offsets.push(offset)
+    return index
   }
-  if (!positions.length) return null
+  const centre = (x: number, y: number, z: number): number => {
+    // Weld in the same Float32 coordinate space the renderer/draper consumes.
+    const key = `${Math.fround(x - originX)},${Math.fround(z - originZ)}`
+    const existing = centres.get(key)
+    if (existing !== undefined) return existing
+    const index = add(x, y, z, groundOffset!)
+    centres.set(key, index); return index
+  }
+  const isGround = (point: SettlementRoad['points'][number]) =>
+    !point.bridge && (point.structure === undefined || point.structure === 'ground')
+  for (const road of roads) {
+    if (road.points.length < 2) continue
+    const wide = groundOffset !== undefined && road.width >= 4
+    const rows: number[][] = []
+    for (let i = 0; i < road.points.length; i++) {
+      const point = road.points[i]!, previous = road.points[Math.max(0, i - 1)]!
+      const next = road.points[Math.min(road.points.length - 1, i + 1)]!
+      const length = Math.hypot(next.x - previous.x, next.z - previous.z) || 1
+      const nx = -(next.z - previous.z) / length * road.width / 2
+      const nz = (next.x - previous.x) / length * road.width / 2
+      // Keep engineered transition anchors fixed, matching their deck/fill.
+      const fit = groundOffset !== undefined && isGround(point) && isGround(previous) && isGround(next)
+      const offset = fit ? groundOffset! : -1
+      const row = [add(point.leftX ?? point.x + nx, point.leftY ?? point.y, point.leftZ ?? point.z + nz, offset)]
+      if (wide) row.push(fit ? centre(point.x, point.y, point.z) : add(point.x, point.y, point.z, -1))
+      row.push(add(point.rightX ?? point.x - nx, point.rightY ?? point.y, point.rightZ ?? point.z - nz, offset))
+      rows.push(row)
+    }
+    for (let i = 1; i < rows.length; i++) {
+      const a = rows[i - 1]!, b = rows[i]!
+      if (wide) indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!,
+        a[1]!, b[1]!, a[2]!, a[2]!, b[1]!, b[2]!)
+      else indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!)
+    }
+  }
+  if (junctionRoad && groundOffset !== undefined) for (const point of [junctionRoad.points[0], junctionRoad.points.at(-1)]) {
+    if (!point || point.bridge || point.structure !== 'ground') continue
+    const patch = groundRoadJunction(point, junctionRoad.width,
+      (x, z) => sampleClimate(x, z, settlementRuntimeClimateScratch), groundOffset)
+    if (!patch) continue
+    const ring = new Map<string, number>()
+    for (let i = 0; i < patch.length; i += 3) {
+      const x = patch[i]!, y = patch[i + 1]!, z = patch[i + 2]!
+      if (i % 9 === 0) { indices.push(centre(x, y, z)); continue }
+      const key = `${Math.fround(x - originX)},${Math.fround(z - originZ)}`
+      let index = ring.get(key)
+      if (index === undefined) { index = add(x, y, z, groundOffset); ring.set(key, index) }
+      indices.push(index)
+    }
+  }
+  if (!indices.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   if (groundOffset !== undefined) geometry.setAttribute('groundOffset', new Float32BufferAttribute(offsets, 1))
-  geometry.computeVertexNormals()
-  geometry.computeBoundingSphere()
+  geometry.setIndex(indices)
+  geometry.computeVertexNormals(); geometry.computeBoundingSphere()
   return geometry
 }
 
@@ -1075,6 +1134,31 @@ export class SettlementSystem {
     return this.queue.length + this.ready.length + this.linkQueue.length + this.readyRoads.length + (this.inFlight ? 1 : 0)
   }
   get roadCount(): number { return this.connections.size }
+
+  /** Inspect a real connector endpoint only when its local street is loaded. */
+  nearestRoadJoinView(x: number, z: number): { x: number; y: number; z: number; dx: number; dz: number; id: string;
+    localY: number | null; roadY: number | null; shoulderY: number | null } | null {
+    let result: ReturnType<SettlementSystem['nearestRoadJoinView']> = null, nearest = Infinity
+    for (const connection of this.connections.values()) for (const end of [false, true]) {
+      const plan = end ? connection.to : connection.from
+      if (!this.loadedCollisionPlans.some(loaded => loaded.id === plan.id && loaded.kind === plan.kind &&
+        loaded.x === plan.x && loaded.z === plan.z)) continue
+      const points = connection.road.points
+      const point = end ? points.at(-1) : points[0], ahead = end ? points.at(-2) : points[1]
+      if (!point || !ahead || point.structure !== 'ground') continue
+      const distance = Math.hypot(point.x - x, point.z - z)
+      if (distance >= nearest) continue
+      const length = Math.hypot(ahead.x - point.x, ahead.z - point.z)
+      if (!length) continue
+      nearest = distance; result = { x: point.x, y: point.y, z: point.z,
+        dx: (ahead.x - point.x) / length, dz: (ahead.z - point.z) / length,
+        id: `${connection.from.id}|${connection.to.id}`,
+        localY: inspectRoadHeight(this.loaded.get(plan.id)?.root, this.asphalt, point.x, point.z),
+        roadY: inspectRoadHeight(connection.root, this.highway, point.x, point.z),
+        shoulderY: inspectRoadHeight(connection.root, this.gravelShoulder, point.x, point.z) }
+    }
+    return result
+  }
 
   /** Read-only pose for inspecting an actually streamed bridge, not a fixture
    * placed over unrelated water. Invoked on demand by the developer review. */
@@ -1941,7 +2025,8 @@ export class SettlementSystem {
     }
     const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
       width: road.width * 1.55,
-      points: road.points.map(point => ({ ...point, y: point.y - .08,
+      points: road.points.map(point => ({ ...point,
+        y: point.structure === 'ground' ? (point.groundY ?? point.y - .45) + .3 : point.y - .08,
         leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
         leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
         rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
@@ -2152,7 +2237,8 @@ export class SettlementSystem {
     // fog and separates it from pale grass or sand without another road pass.
     const shoulderRoad: SettlementRoad = {
       width: road.width * 1.55,
-      points: road.points.map(point => ({ ...point, y: point.y - .08,
+      points: road.points.map(point => ({ ...point,
+        y: point.structure === 'ground' ? (point.groundY ?? point.y - .45) + .3 : point.y - .08,
         leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
         leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
         rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
@@ -2160,14 +2246,20 @@ export class SettlementSystem {
         leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
         rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
     }
+    // Do not spread a full gravel cap across the incoming asphalt lane. Its
+    // different terrain triangulation can occlude that lane even when lower
+    // at the shared centre. The existing road shoulders already frame the join.
     const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z, .3)
     if (shoulderGeometry) {
       const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
       shoulder.name = 'RegionalRoadShoulder'
       root.add(shoulder)
     }
-    const geometry = createRoadGeometry(groundedRoadSpans(road), x, 0, z, .45)
-    if (geometry) root.add(new Mesh(geometry, this.highway))
+    const geometry = createRoadGeometry(groundedRoadSpans(road), x, 0, z, .45, road)
+    if (geometry) {
+      const asphalt = new Mesh(geometry, this.highway)
+      asphalt.name = 'RegionalRoadAsphalt'; root.add(asphalt)
+    }
     const bridgeGeometry = createRoadGeometry(bridgeSpans(road), x, 0, z)
     if (bridgeGeometry) {
       const bridge = new Mesh(bridgeGeometry, this.bridgeDeck)

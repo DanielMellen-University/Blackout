@@ -1,17 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { regionalRoadKey, roadBetweenSettlements, selectRegionalRoadLinks, shouldConnectSettlements } from '../src/world/RegionalRoads'
+import { regionalRoadKey, roadBetweenSettlements, selectRegionalRoadLinks, shouldConnectSettlements,
+  settlementRoadAttachment, MAX_ROAD_ATTACHMENT_CANDIDATES } from '../src/world/RegionalRoads'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import * as terrain from '../src/world/terrainSample'
 import { createClimateSample } from '../src/world/Geography'
 
 afterEach(() => vi.restoreAllMocks())
 
-function ruralTerrain() {
+function ruralTerrain(extraWet: (x: number, z: number) => boolean = () => false) {
   const base = terrain.sampleClimateInto(createClimateSample(), 0, 0)
   vi.spyOn(terrain, 'sampleClimateInto').mockImplementation((out, x, z) => {
     Object.assign(out, base)
-    out.height = Math.abs(x) < 120 ? 90 : 120 + Math.sin(x / 3000) * 15 + Math.cos(z / 5000) * 8
+    out.height = Math.abs(x) < 120 || extraWet(x, z) ? 90 : 120 + Math.sin(x / 3000) * 15 + Math.cos(z / 5000) * 8
     out.waterLevel = 97
     return out
   })
@@ -85,6 +86,61 @@ describe('regional settlement roads', () => {
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
     expect(road!.width).toBe(18)
+  })
+
+  it('attaches to an actual ground street instead of the furthest bridge or ramp', () => {
+    setWorldSeed(1)
+    const [a, b] = connectedPair()
+    ruralTerrain(x => Math.abs(x - (a.x + 1200)) < 70)
+    a.roads[0]!.points.push({ x: a.x + 1200, y: 145, z: a.z, bridge: true, structure: 'bridge' },
+      { x: a.x + 900, y: 140, z: a.z, structure: 'viaduct' })
+    const road = roadBetweenSettlements(a, b)
+    expect(road).not.toBeNull()
+    expect(road!.points[0]!.x).toBe(a.x + 500)
+    expect(road!.points[0]!.z).toBe(a.z)
+    expect(road!.points[0]!.structure).toBe('ground')
+    expect(road!.points.at(-1)!.structure).toBe('ground')
+  })
+
+  it('reconstructs the same canonical road when discovered from either endpoint', () => {
+    setWorldSeed(1); ruralTerrain()
+    const [a, b] = connectedPair()
+    const forward = roadBetweenSettlements(a, b), reverse = roadBetweenSettlements(b, a)
+    expect(forward).not.toBeNull()
+    expect(JSON.stringify(forward) === JSON.stringify(reverse), 'both discoveries must generate identical full profiles').toBe(true)
+  })
+
+  it('steps inland when the highway shoulder would extend into water and bounds endpoint probes', () => {
+    const base = terrain.sampleClimateInto(createClimateSample(), 0, 0)
+    const sample = vi.spyOn(terrain, 'sampleClimateInto').mockImplementation((out, x, z) => {
+      Object.assign(out, base); out.height = x > 110 && z > 4 ? -3 : 6; out.waterLevel = 0
+      return out
+    })
+    const a = plan('0,0', 0, 0), b = plan('1,0', 1000, 0)
+    a.roads = [{ width: 6, points: [
+      { x: 100, y: 6.45, z: 0, structure: 'ground' }, { x: 120, y: 6.45, z: 0, structure: 'ground' },
+    ] }]
+    expect(settlementRoadAttachment(a, b, 18)).toBe(a.roads[0]!.points[0])
+    expect(sample.mock.calls.length).toBeLessThanOrEqual(MAX_ROAD_ATTACHMENT_CANDIDATES * 5)
+    a.roads = []
+    expect(settlementRoadAttachment(a, b, 18)).toBeNull()
+    a.roads = [{ width: 6, points: [{ x: 100, y: 30, z: 0, bridge: true }] }]
+    expect(settlementRoadAttachment(a, b, 18)).toBeNull()
+  })
+
+  it('does not turn a large failed shoreline into an unbounded endpoint search', () => {
+    const base = terrain.sampleClimateInto(createClimateSample(), 0, 0)
+    const sample = vi.spyOn(terrain, 'sampleClimateInto').mockImplementation((out, _x, z) => {
+      Object.assign(out, base); out.height = z > 13 ? -3 : 6; out.waterLevel = 0
+      return out
+    })
+    const a = plan('0,0', 0, 0), b = plan('1,0', 30000, 0)
+    a.roads = [{ width: 6, points: Array.from({ length: 10_000 }, (_, x) => ({ x, y: 6.45, z: 0 })) }]
+    expect(settlementRoadAttachment(a, b, 18)).toBeNull()
+    expect(sample).toHaveBeenCalledTimes(MAX_ROAD_ATTACHMENT_CANDIDATES * 5)
+    sample.mockClear()
+    expect(settlementRoadAttachment(a, b, NaN)).toBeNull()
+    expect(sample).not.toHaveBeenCalled()
   })
 
   it('ranks regional candidates with squared distances', () => {

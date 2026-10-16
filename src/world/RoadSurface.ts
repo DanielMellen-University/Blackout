@@ -14,6 +14,29 @@ type Position = { x: number; z: number }
 type Point = SettlementRoad['points'][number]
 export type RoadGroundSampler = (x: number, z: number) => { height: number; waterLevel?: number }
 
+/** A small terrain-checked apron closes angled ribbon ends at a street join.
+ * Thirteen probes and twelve triangles, never a new road or a floating disc. */
+export function groundRoadJunction(point: Position, width: number, sample: RoadGroundSampler,
+  offset = ROAD_GROUND_OFFSET): number[] | null {
+  if (!Number.isFinite(width) || width <= 0 || width > 64 || !Number.isFinite(offset)) return null
+  const center = sample(point.x, point.z), y = center.height + offset
+  if (!Number.isFinite(y) || center.height <= (center.waterLevel ?? 0) + 1) return null
+  const ring: { x: number; y: number; z: number }[] = []
+  for (let i = 0; i < 12; i++) {
+    const angle = i / 12 * Math.PI * 2
+    const x = point.x + Math.cos(angle) * width * .6, z = point.z + Math.sin(angle) * width * .6
+    const ground = sample(x, z)
+    if (!Number.isFinite(ground.height) || ground.height <= (ground.waterLevel ?? 0) + 1) return null
+    ring.push({ x, y: ground.height + offset, z })
+  }
+  const positions: number[] = []
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!, b = ring[(i + 1) % ring.length]!
+    positions.push(point.x, y, point.z, b.x, b.y, b.z, a.x, a.y, a.z)
+  }
+  return positions
+}
+
 /** Select a few deterministic supports so long wet crossings read as bridges. */
 export function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['points'] {
   const supports: SettlementRoad['points'] = []

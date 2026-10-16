@@ -192,3 +192,69 @@ build pass, as do six targeted generated-terrain rarity, rough-anchor, scale,
 skyline and foundation checks. Shared buffers use a dynamic update hint; worker
 ground payloads are length-checked before traversing their numbers. No measured
 frame-rate improvement is claimed.
+
+## Batch 5: street joins and clearance (10.902)
+
+Three new reproducing checks failed on 10.901: a furthest bridge point prevented
+a valid regional link, reverse direct discovery produced a different road, and
+a lot on a nearby ground street could overlap a dry viaduct. Rank only actual
+ground-street points, deduplicate the eight-point shortlist and test five
+positions across the full connector/shoulder width per candidate. No valid
+attachment means no fabricated centre road. Canonical endpoint ordering now
+applies even to direct/review callers, not just graph requests.
+
+Elevated local segments reserve their footprint, including gravel/fill shoulders,
+but never count as building frontage. Keep the same temporary street buckets,
+graph density, four settlement/1,500 building/six link limits, four route bends,
+20,000 local points and structure/support caps. Ghost revision 21 preserves data.
+
+An on-demand developer pose inspects an actually loaded connector/street join.
+Its close-up exposed a wedge at angled ribbon ends and a second geometry issue:
+wide ground strips discarded the already-sampled centre height. Add dry-checked,
+12-triangle junction aprons to existing asphalt meshes, not separate draw calls.
+Each apron uses 13 attachment-time probes and is omitted if wet. Do not cap
+gravel across the incoming lane: its differently triangulated surface can cover
+asphalt between samples even when lower at the shared centre. Existing side
+shoulders remain. Their initial centre heights now use the same .3 m offset as
+their refitted surface, instead of retaining a .07 m centre bump.
+Wide ground strips now include their centreline; thin markings and engineered
+decks retain two-column sections. Road ribbons and apron fans use shared indexed
+vertices, including welded ground centres across separate street strips. This
+prevents duplicated triangle corners being refitted at different times and
+tearing apart during streaming. Long wide strips now use about three physical
+vertices per point rather than six per segment in 10.901; added indices retain
+the centreline triangles. A crossing-street fixture draws 48 triangle indices
+from 17 physical vertices and refits those 17 once. Point counts, draw calls and
+the draper's 1,024-vertex/.8 ms sampling budget remain fixed. Steady vertex/probe
+counts are reduced, but no controlled FPS/startup/heap improvement is claimed.
+
+The junction review can report an on-demand barycentric height snapshot from
+the actual local/connector/shoulder mesh triangles. It does not substitute plan
+metadata for rendered contact or run these scans in the gameplay update loop.
+
+The goal remains city/road improvement, not just these fixes. Further network
+connectivity and rough/coastal-route review, consistent protected-anchor plans
+across neighbour discovery, continuous chase/first-person travel and controlled
+startup/frame-time/memory comparison remain required. The protected-anchor item
+is an audit target from differing normal/forced plan ownership, not a verified
+failure yet. Vegetation, removed warnings, blackout/redout, weather, terrain/water
+generation and flight handling remain excluded from this batch.
+
+The [settled seed-1337 junction](reviews/road-junction-10.902.png) for link
+`-1,2|1,1` shows a continuous asphalt join without the overlapping gravel cap.
+The actual mesh snapshot reports local/connector Y 1810.39 m and shoulder Y
+1810.24 m. No browser rendering errors were reported. Recent rolling-frame HUD
+times are visible in the image, but are not a controlled travel/performance run.
+
+The final 77 focused road, join, clearance, rendering, lifecycle, budget, ghost
+and draping checks pass, along with the production build (existing bundle-size
+warning). All 17 generated settlement placement/distribution/anchor checks also
+pass. A 24 km fixture uses 3,027 asphalt refit vertices versus the former 6,000
+edge-only vertices, including both new aprons; 12,072 indices retain the richer
+surface topology. This is a verified buffer/probe reduction, not an FPS claim.
+
+Next audit stream-eviction ownership of instanced regional bridge supports and
+ready-plan admission when a large city cannot fit but a nearby village can.
+These are source-review targets, not asserted runtime failures until reproduced.
+Keep the full city/road goal active rather than treating this checkpoint as the
+end of the generation and sustained-performance review.

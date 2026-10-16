@@ -25,6 +25,7 @@
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
   <button id="bridge-view">Inspect loaded bridge</button>
+  <button id="road-join-view">Inspect road junction</button>
   <button id="cloud-interior">Inspect nearest cloud</button>
   <select id="cloud-view" aria-label="Cloud review view">
     <option value="below">Below cloud</option><option value="inside" selected>Inside cloud</option><option value="above">Above cloud</option>
@@ -180,6 +181,17 @@ function frameWorld(destination){
 }
 frameWorld()
 document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
+document.querySelector('#road-join-view').onclick=()=>{
+  const join=world.settlements.nearestRoadJoinView(controls.target.x,controls.target.z)
+  if(!join){document.querySelector('#travel-stats').textContent='No loaded street/connector junction here yet. Let the road stream finish.';return}
+  flightView=false;flying=false;tracingRiver=false;controls.enabled=true;reviewJet.mesh.visible=false
+  const x=join.x-join.dz*90-join.dx*55,z=join.z+join.dx*90-join.dz*55
+  camera.position.set(x,Math.max(join.y+70,sampleTerrainHeight(x,z)+35),z)
+  controls.target.set(join.x,join.y,join.z);controls.update()
+  document.querySelector('#travel-stats').textContent=`Loaded road junction ${join.id} at ${join.x.toFixed(1)}, ${join.z.toFixed(1)}.`
+  const height=value=>value===null?'missing':value.toFixed(2)
+  document.querySelector('#travel-stats').textContent+=` Surface Y: local ${height(join.localY)} / connector ${height(join.roadY)} / shoulder ${height(join.shoulderY)}.`
+}
 document.querySelector('#bridge-view').onclick=()=>{
   const bridge=world.settlements.nearestBridgeView(controls.target.x,controls.target.z)
   if(!bridge){document.querySelector('#travel-stats').textContent='No loaded bridge here. Try Regional road or a river destination and let the road stream finish.';return}

@@ -24,6 +24,9 @@ export interface RegionalRoadLink {
 export const REGIONAL_GRAPH_CELL_RING = 2
 export const MAX_CITY_REGIONAL_LINKS = 2
 export const MAX_VILLAGE_REGIONAL_LINKS = 1
+/** Only these ranked street points may trigger extra endpoint terrain probes. */
+export const MAX_ROAD_ATTACHMENT_CANDIDATES = 8
+const ATTACHMENT_CROSS_SECTION = [0, -1, 1, -1.55, 1.55] as const
 
 /** Candidate road probes are sequential; one climate record serves all bends. */
 const roadClimateScratch = createClimateSample()
@@ -113,15 +116,41 @@ export function shouldConnectSettlements(a: SettlementAnchor, b: SettlementAncho
   return roll < (a.kind === 'city' || b.kind === 'city' ? .72 : .25)
 }
 
-function outwardRoadPoint(plan: SettlementAnchor, target: SettlementAnchor): { x: number; y: number; z: number } {
+/** Join an actual dry ground street, never a bridge, raised ramp or invented
+ * centre point. Check the full new road/shoulder width at a bounded shortlist
+ * so a narrow coastal street can still accept a wider highway safely. */
+export function settlementRoadAttachment(plan: SettlementAnchor, target: SettlementAnchor, width: number): SettlementRoad['points'][number] | null {
+  if (!Number.isFinite(width) || width <= 0) return null
   const dx = target.x - plan.x, dz = target.z - plan.z
   const length = Math.hypot(dx, dz) || 1
-  let best = { x: plan.x, y: plan.y, z: plan.z }, score = -Infinity
+  const candidates: SettlementRoad['points'] = []
+  const scores = new Float64Array(MAX_ROAD_ATTACHMENT_CANDIDATES).fill(-Infinity)
   for (const road of plan.roads) for (const point of road.points) {
+    if (point.bridge || point.structure !== undefined && point.structure !== 'ground') continue
     const projection = ((point.x - plan.x) * dx + (point.z - plan.z) * dz) / length
-    if (projection > score) { score = projection; best = point }
+    if (!Number.isFinite(projection) || projection <= scores[MAX_ROAD_ATTACHMENT_CANDIDATES - 1]!) continue
+    let duplicate = false
+    for (const candidate of candidates) if (candidate.x === point.x && candidate.z === point.z) { duplicate = true; break }
+    if (duplicate) continue
+    let index = Math.min(candidates.length, MAX_ROAD_ATTACHMENT_CANDIDATES - 1)
+    while (index > 0 && projection > scores[index - 1]!) {
+      if (index < MAX_ROAD_ATTACHMENT_CANDIDATES) {
+        candidates[index] = candidates[index - 1]!; scores[index] = scores[index - 1]!
+      }
+      index--
+    }
+    candidates[index] = point; scores[index] = projection
   }
-  return best
+  const nx = -dz / length * width / 2, nz = dx / length * width / 2
+  for (const point of candidates) {
+    let dry = true
+    for (const scale of ATTACHMENT_CROSS_SECTION) {
+      const climate = sampleClimateInto(roadClimateScratch, point.x + nx * scale, point.z + nz * scale)
+      if (!Number.isFinite(climate.height) || climate.height <= (climate.waterLevel ?? 0) + 1) { dry = false; break }
+    }
+    if (dry) return point
+  }
+  return null
 }
 
 interface RoutePoint { x: number; z: number; surface: number; wet: boolean }
@@ -178,7 +207,12 @@ function candidateRoute(
 /** Terrain-following road with grade-limited bridge and viaduct approaches. */
 export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): SettlementRoad | null {
   if (!shouldConnectSettlements(a, b)) return null
-  const start = outwardRoadPoint(a, b), end = outwardRoadPoint(b, a)
+  // The graph already orders its requests, but direct/review callers must get
+  // the same route too. Query order cannot choose different river crossings.
+  if (a.id > b.id) [a, b] = [b, a]
+  const width = a.kind === 'city' || b.kind === 'city' ? 18 : 10
+  const start = settlementRoadAttachment(a, b, width), end = settlementRoadAttachment(b, a, width)
+  if (!start || !end) return null
   const distance = Math.hypot(end.x - start.x, end.z - start.z)
   if (distance < 500) return null
   const [ax, az] = idNumbers(a.id), [bx, bz] = idNumbers(b.id)
@@ -187,7 +221,6 @@ export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): Se
     -direction * distance * .14, direction * distance * .2]
   const candidates = bends.map(bend => candidateRoute(start, end, bend))
   candidates.sort((a, b) => a.score - b.score)
-  const width = a.kind === 'city' || b.kind === 'city' ? 18 : 10
   for (const candidate of candidates) {
     const road = groundRoad(candidate.points, width, (x, z) => sampleClimateInto(roadClimateScratch, x, z))
     if (road) return road

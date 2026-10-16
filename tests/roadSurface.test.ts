@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { groundRoad, ROAD_APPROACH_GRADE, ROAD_BRIDGE_CLEARANCE, ROAD_GROUND_OFFSET,
-  MAX_ROAD_PROFILE_POINTS, ROAD_SURFACE_STEP } from '../src/world/RoadSurface'
+  MAX_ROAD_PROFILE_POINTS, ROAD_SURFACE_STEP, groundRoadJunction } from '../src/world/RoadSurface'
 import { roadStructureGeometry } from '../src/world/SettlementSystem'
 
 describe('grounded roads and explicit river crossings', () => {
+  it('closes road joins with a bounded ground-following apron, never across water', () => {
+    let probes = 0
+    const height = (x: number, z: number) => 100 + x * .08 + z * .04
+    const patch = groundRoadJunction({ x: 80, z: -45 }, 18, (x, z) => {
+      probes++; return { height: height(x, z), waterLevel: 0 }
+    })!
+    expect(probes).toBe(13); expect(patch.length).toBe(12 * 9)
+    for (let i = 0; i < patch.length; i += 3) {
+      expect(patch[i + 1]).toBeCloseTo(height(patch[i]!, patch[i + 2]!) + ROAD_GROUND_OFFSET)
+      expect(Math.hypot(patch[i]! - 80, patch[i + 2]! + 45)).toBeLessThanOrEqual(10.800001)
+    }
+    expect(groundRoadJunction({ x: 0, z: 0 }, 18,
+      (_x, z) => ({ height: z > 5 ? -3 : 6, waterLevel: 0 }))).toBeNull()
+    expect(groundRoadJunction({ x: 0, z: 0 }, Infinity, () => ({ height: 100 }))).toBeNull()
+  })
   it('follows hilly ground and independent shoulders without lifting dry valleys', () => {
     const sample = (x: number, z: number) => ({ height: 100 + Math.sin(x / 120) * 55 + z * .1, waterLevel: 0 })
     const road = groundRoad([{ x: 0, z: 0 }, { x: 1200, z: 0 }], 10, sample)!
