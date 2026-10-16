@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.903**. Previous roadmap chunk: **10.902**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.904**. Previous roadmap chunk: **10.903**.
+
+Recent changes from **10.904**. Keep roads and settlement reloads tied to the actual protected landmark sites, including fallback cells whose ordinary plans differ. Choose both sites before graph discovery and retain at most two blueprints independently of visible mesh admission. Worker replies and synchronous retries use the same selected sites. Three focused checks cover fallback links, late ordinary replies and order/admission independence. Ghost revision 22 preserves records while skipping incompatible road playback. Streaming limits and normal world geography are unchanged; wider network and travel/performance review remain active.
 
 Recent changes from **10.903**. Prevent blocked city requests from starving ready villages or removing residents without loading. Preview the protected/nearer resident budget before eviction, then rank only eligible replacements. Release regional bridge support-instance buffers on unload while retaining shared geometry. Four reproducing checks cover the failures. Keep the existing four-settlement, 1,500-building and six-link limits; no world-blueprint or ghost revision change. Broader city/network and sustained travel/performance review remain active; see [the settlement review](docs/settlement-overhaul.md). Terrain/water, weather, flight and paused systems are unchanged.
 

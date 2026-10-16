@@ -83,15 +83,17 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
 /**
  * Discover links from the deterministic world plan, not from whichever
  * settlements happened to fit the current building-instance budget. Planning
- * runs in the settlement worker, and the two-cell ring bounds it to 24 probes.
+ * cross-sections run in the settlement worker. The two-cell neighbour ring
+ * bounds discovery to 24 lookups, with caller-owned protected-site overrides.
  */
-export function regionalLinksForSettlement(plan: SettlementPlan): RegionalRoadLink[] {
+export function regionalLinksForSettlement(plan: SettlementPlan,
+  resolve: (cx: number, cz: number) => SettlementPlan | null = settlementForCell): RegionalRoadLink[] {
   const [cx, cz] = idNumbers(plan.id)
   const candidates: SettlementPlan[] = []
   for (let dx = -REGIONAL_GRAPH_CELL_RING; dx <= REGIONAL_GRAPH_CELL_RING; dx++) {
     for (let dz = -REGIONAL_GRAPH_CELL_RING; dz <= REGIONAL_GRAPH_CELL_RING; dz++) {
       if (!dx && !dz) continue
-      const other = settlementForCell(cx + dx, cz + dz)
+      const other = resolve(cx + dx, cz + dz)
       if (other) candidates.push(other)
     }
   }

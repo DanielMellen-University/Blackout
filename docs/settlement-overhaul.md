@@ -297,3 +297,39 @@ unverified audit target. Network/terrain routing, rough/coastal junction views,
 continuous gameplay-camera travel and controlled startup/frame-time/memory
 comparison remain required. No terrain/water generation, weather, flight,
 vegetation or removed warning/blackout work is included.
+
+## Batch 7: protected landmark road plans (10.904)
+
+The previously unverified audit target now has two failing regressions on
+10.903. A forced fallback city has a different kind, location and street layout
+from the ordinary plan for its cell. Priming the village before choosing the
+city locks its neighbour graph to that obsolete ordinary plan. An ordinary
+worker reply for an unloaded fallback cell can also restore the wrong site.
+
+Select both protected blueprints before any protected graph discovery. Retain
+at most two chosen plan references separately from loaded roots, use them for
+source and neighbour discovery, and reuse them for worker completion and
+synchronous retries. These are seed/pad-selected plans, not whatever happens
+to fit the graphics budget. Clear ownership on world reset/disposal; do not
+mutate the global generator or add loading-order-dependent cache overrides.
+The neighbour ring stays at 24 lookups, and no new terrain probes or per-frame
+graph discovery are added. Retaining two references does keep those blueprints
+alive while their meshes are unloaded; no measured heap reduction is claimed.
+
+Three focused checks cover the reproduced fallback graph/reply failures and
+compare complete edge blueprints after reversed source discovery with blocked
+versus successful mesh admission. Their pressure/fallback fixtures are synthetic,
+not a broad real-world coast/rough-terrain acceptance run. Ghost revision 22
+rejects old road playback without deleting records, settings or favourites.
+All rendering/profile/support caps remain fixed. Terrain-aware routing, broader
+visuals, sustained gameplay-camera travel and controlled performance/memory
+comparison remain required before calling the city/road overhaul complete.
+
+The 74 affected ownership, admission, road, collision, junction, rendering and
+ghost checks pass, plus seven existing generated-terrain anchor/cache checks.
+The production build passes with the existing bundle warning. The [settled
+seed-1337 normal junction](reviews/road-junction-10.904.png) remains continuous:
+the on-demand actual mesh snapshot reports local/connector Y 1810.39 m and
+shoulder Y 1810.24 m. Browser error logs are empty. This normal-site visual
+guards against regression; it does not visually prove the synthetic fallback
+cases or constitute a controlled performance/memory benchmark.

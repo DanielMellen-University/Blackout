@@ -833,6 +833,12 @@ export class SettlementSystem {
   private readonly protectedAnchors = new Map<'city' | 'village', string>()
   /** Remembers whether a protected cell came from the deterministic fallback. */
   private readonly protectedAnchorKinds = new Map<'city' | 'village', 'city' | 'village'>()
+  /** At most two chosen blueprints, retained independently of mesh admission.
+   * Fallback cells have different ordinary plans; every graph discovery and
+   * worker completion must refer to the selected site, even while unloaded. */
+  private readonly protectedPlans = new Map<string, SettlementPlan>()
+  private readonly resolveRoadNeighbour = (cx: number, cz: number): SettlementPlan | null =>
+    this.protectedPlans.get(`${cx},${cz}`) ?? settlementForCell(cx, cz)
   /** One canonical job per graph edge, retained while one nearby cell owns it. */
   private readonly roadJobs = new Map<string, RoadJob>()
   private readonly roadSources = new Map<string, Set<string>>()
@@ -897,9 +903,10 @@ export class SettlementSystem {
           }
           if (!matchesCurrent || result.generation !== this.generation) return
           if (result.type === 'settlement') {
-            if (this.checked.has(result.key) && result.plan) {
-              this.scheduleLinks(result.plan, result.key)
-              this.ready.push({ key: result.key, plan: result.plan })
+            const plan = this.protectedPlans.get(result.key) ?? result.plan
+            if (this.checked.has(result.key) && plan) {
+              this.scheduleLinks(plan, result.key)
+              this.ready.push({ key: result.key, plan })
             }
           } else if (this.checkedLinks.has(result.key) && result.road) {
             const job = this.roadJobs.get(result.key)
@@ -1225,6 +1232,7 @@ export class SettlementSystem {
     this.checkedLinks.clear()
     this.protectedAnchors.clear()
     this.protectedAnchorKinds.clear()
+    this.protectedPlans.clear()
     this.roadJobs.clear()
     this.roadSources.clear()
     this.queue = []
@@ -1292,10 +1300,10 @@ export class SettlementSystem {
       if (anchor) {
         this.protectedAnchors.set(anchor, key)
         this.protectedAnchorKinds.set(anchor, anchor)
+        this.protectedPlans.set(key, plan)
         this.protectedRetryPending = true
         this.protectedRetryCooldown = 0
       }
-      this.scheduleLinks(plan, key)
       if (this.canLoad(plan, x, z)) {
         this.checked.add(key)
         this.setLoaded(key, this.build(plan))
@@ -1327,9 +1335,9 @@ export class SettlementSystem {
         anchorKinds.set(key, kind)
         this.protectedAnchors.set(kind, key)
         this.protectedAnchorKinds.set(kind, kind)
+        this.protectedPlans.set(key, plan)
         this.protectedRetryPending = true
         this.protectedRetryCooldown = 0
-        this.scheduleLinks(plan, key)
         if (this.canLoad(plan, x, z)) {
           this.checked.add(key)
           this.setLoaded(key, this.build(plan))
@@ -1339,6 +1347,10 @@ export class SettlementSystem {
         break
       }
     }
+    // Resolve both protected sites before discovering any edges. Otherwise
+    // the first landmark can permanently queue a link to the second cell's
+    // ordinary blueprint before its fallback promotion has been selected.
+    for (const [key, plan] of this.protectedPlans) this.scheduleLinks(plan, key)
   }
 
   /**
@@ -1360,7 +1372,7 @@ export class SettlementSystem {
       // Fallback cells are not returned by settlementAnchorForCell, so the
       // ordinary call would rebuild them as a random settlement after a
       // stream reset and the protected landmark would lose its priority.
-      const plan = settlementForCell(cx!, cz!, this.protectedAnchorKinds.get(kind) ?? kind)
+      const plan = this.protectedPlans.get(key) ?? settlementForCell(cx!, cz!, this.protectedAnchorKinds.get(kind) ?? kind)
       if (!plan) continue
       this.scheduleLinks(plan, key)
       if (!this.canLoad(plan, x, z)) {
@@ -1549,7 +1561,7 @@ export class SettlementSystem {
           this.handleWorkerFailure()
         }
       } else {
-        const plan = settlementForCell(job.cx, job.cz)
+        const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
         if (plan) {
           this.scheduleLinks(plan, job.key)
           if (this.canLoad(plan, x, z)) this.setLoaded(job.key, this.build(plan))
@@ -2127,7 +2139,8 @@ export class SettlementSystem {
    * can discover the same canonical edge without creating another job.
    */
   private scheduleLinks(plan: SettlementPlan, sourceKey: string): void {
-    for (const link of regionalLinksForSettlement(plan)) {
+    const source = this.protectedPlans.get(sourceKey) ?? plan
+    for (const link of regionalLinksForSettlement(source, this.resolveRoadNeighbour)) {
       const sources = this.roadSources.get(link.key) ?? new Set<string>()
       sources.add(sourceKey)
       this.roadSources.set(link.key, sources)
