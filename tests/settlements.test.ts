@@ -257,7 +257,8 @@ describe('procedural settlements', () => {
       if (plan.kind === 'village') {
         expect(plan.radius).toBeGreaterThanOrEqual(900)
         expect(plan.buildings.length).toBeGreaterThanOrEqual(8)
-        expect(plan.buildings.every(b => b.width >= 180 && b.depth >= 180 && b.height >= 95)).toBe(true)
+        expect(plan.buildings.every(b => b.width >= 13 && b.width < 100 &&
+          b.depth >= 13 && b.depth < 100 && b.height >= 8 && b.height < 48)).toBe(true)
       } else {
         expect(plan.radius).toBeGreaterThanOrEqual(8500)
         expect(plan.buildings.length).toBeGreaterThanOrEqual(650)

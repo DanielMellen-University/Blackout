@@ -403,7 +403,7 @@ function visitDestination(value){
     const y=sampleTerrainHeight(x,z)
     settlementRadius=settlement.radius
     settlementKind=value
-    settlementTop=Math.max(700,...settlement.buildings.map(building=>building.y+building.height))
+    settlementTop=Math.max(y,...settlement.buildings.map(building=>building.y+building.height))
     // Frame from above the nearest terrain shoulder so the city/village is
     // not hidden behind a local ridge in orbit mode.
     const offset=Math.max(1300,Math.min(settlementRadius*.26,2800))
@@ -508,11 +508,12 @@ document.querySelector('#flight-view').onclick=()=>{
     const edge=Math.max(900,settlementRadius*.78)
     const x=controls.target.x+edge,z=controls.target.z-edge
     const terrainY=sampleTerrainHeight(x,z)
-    const skyline=settlementKind==='city' ? 2400 : settlementKind==='village' ? 1100 : 700
+    const skyline=settlementKind==='city' ? 650 : settlementKind==='village' ? 160 : 700
+    const roofClearance=settlementKind==='city'?250:settlementKind==='village'?90:450
     const spawnY=settlementKind
-      ? Math.max(terrainY+skyline,settlementTop+450)
+      ? Math.max(terrainY+skyline,settlementTop+roofClearance)
       : Math.max(terrainY+skyline,reviewPeak+550)
-    reviewJet.reset({x,z,y:spawnY,yaw:0})
+    reviewJet.reset({x,z,y:spawnY,yaw:Math.atan2(controls.target.x-x,controls.target.z-z)})
     chase.setMode('chase',reviewJet)
   }
 }

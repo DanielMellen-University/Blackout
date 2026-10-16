@@ -2,6 +2,7 @@ import { hash2 } from './noise'
 import { sampleClimateInto } from './terrainSample'
 import { createClimateSample } from './Geography'
 import { settlementForCell, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
+import { groundRoad } from './RoadSurface'
 
 export interface SettlementAnchor {
   id: string
@@ -184,40 +185,12 @@ export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): Se
   const direction = hash2(ax * 433 + bx * 811, az * 659 + bz * 977) < .5 ? -1 : 1
   const bends = [direction * distance * .045, direction * distance * .09,
     -direction * distance * .14, direction * distance * .2]
-  let best = candidateRoute(start, end, bends[0]!)
-  for (let i = 1; i < bends.length; i++) {
-    const candidate = candidateRoute(start, end, bends[i]!)
-    if (candidate.score < best.score) best = candidate
+  const candidates = bends.map(bend => candidateRoute(start, end, bend))
+  candidates.sort((a, b) => a.score - b.score)
+  const width = a.kind === 'city' || b.kind === 'city' ? 18 : 10
+  for (const candidate of candidates) {
+    const road = groundRoad(candidate.points, width, (x, z) => sampleClimateInto(roadClimateScratch, x, z))
+    if (road) return road
   }
-
-  // Raise neighbouring samples into gentle approaches instead of producing
-  // vertical kinks at rivers or deep terrain folds.
-  const maxGrade = .12
-  const elevations = best.points.map(point => point.surface)
-  for (let pass = 0; pass < 2; pass++) {
-    for (let i = 1; i < elevations.length; i++) {
-      const distance = Math.hypot(best.points[i]!.x - best.points[i - 1]!.x, best.points[i]!.z - best.points[i - 1]!.z)
-      elevations[i] = Math.max(elevations[i]!, elevations[i - 1]! - distance * maxGrade)
-    }
-    for (let i = elevations.length - 2; i >= 0; i--) {
-      const distance = Math.hypot(best.points[i + 1]!.x - best.points[i]!.x, best.points[i + 1]!.z - best.points[i]!.z)
-      elevations[i] = Math.max(elevations[i]!, elevations[i + 1]! - distance * maxGrade)
-    }
-  }
-
-  // These links are viewed from the chase camera, not a top-down map. A
-  // village-to-village road narrower than 30 m collapses into a one-pixel
-  // thread once the fog blends it into the terrain. Give regional highways a
-  // readable shoulder while keeping them as one batched ribbon per link.
-  const width = a.kind === 'city' || b.kind === 'city' ? 54 : 36
-  const points: SettlementRoad['points'] = best.points.map((point, i) => {
-    const before = best.points[Math.max(0, i - 1)]!, after = best.points[Math.min(best.points.length - 1, i + 1)]!
-    const dx = after.x - before.x, dz = after.z - before.z
-    const length = Math.hypot(dx, dz) || 1
-    const nx = -dz / length * width / 2, nz = dx / length * width / 2
-    const y = elevations[i]!
-    return { x: point.x, y, z: point.z, bridge: point.wet, leftX: point.x + nx, leftY: y, leftZ: point.z + nz,
-      rightX: point.x - nx, rightY: y, rightZ: point.z - nz }
-  })
-  return { width, points }
+  return null
 }

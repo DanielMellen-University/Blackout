@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.897**. Previous roadmap chunk: **10.896**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.898**. Previous roadmap chunk: **10.897**.
+
+Recent changes from **10.898**. Begin the approved roads/settlements overhaul with physical-scale buildings and narrower roads. Regional dry roads and shoulders follow their own sampled ground; river decks receive graded approaches, soil fills or supported viaducts, deck sides and rails. Preserve dash spacing across shorter road segments and bound profile/support budgets. Generation revision 17 skips incompatible ghosts without deleting records. Focused checks/build pass; the seed-73 village overview exposes sparse old layouts and an oversized flat green that the next batch must replace. Districts, parks, farms, gas stations, additional building types, full bridge/LOD/collision review and performance acceptance remain unfinished. See [the approved settlement plan](docs/settlement-overhaul.md).
 
 Recent changes from **10.897**. Keep fair-weather cumulus billows rounded when fitting shallow cloud envelopes, with matching interior-density bounds and unchanged storm treatment/pools. Inspect the corrected first-person exterior and retain another completed historical 81.6 km baseline, including its 1.15-second hitch. A later matching attempt again throttled and is rejected. Full weather-family, continuous-flight/audio, three-run performance and sustained-memory acceptance remain open. See [weather delivery notes](docs/weather-overhaul.md). No terrain, rivers, flight physics, render-distance or paused-system changes.
 

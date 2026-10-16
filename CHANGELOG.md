@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.898** Start the approved road/settlement overhaul: smaller physical buildings, narrower roads, independently grounded regional cross-sections/shoulders, explicit river decks and supported approaches, soil fills, deck sides/rails and continuous marking phase. Bound profile/support counts and validate worker metadata. Advance ghost compatibility to revision 17 without deleting records. Save a seed-73 village checkpoint; sparse layouts/flat greens, districts, parks, farms, gas stations, building types and full bridge/LOD/collision/performance acceptance remain required. Preserve streaming limits, terrain/water, physics, weather and paused exclusions.
+
 - **10.897** Prevent fair-weather cumulus billows flattening into wide discs when fitting shallow envelopes; keep interior-density bounds aligned and deep-storm treatment unchanged. Add a reproducing shape regression and actual fair-weather cloud entry/exit coverage. Inspect a corrected exterior and retain a completed historical baseline with its 1.15-second hitch; reject the next throttled run. Full visual/continuous-flight/audio/performance/memory acceptance remains open. Fixed weather pools, terrain distance, physics, records and paused exclusions remain unchanged.
 
 - **10.896** Use actual chase/cockpit cameras in developer weather inspection and travel, correct aircraft +Z orientation, retain continuous-travel camera interpolation and report actual mode/FOV. Downgrade previous custom-camera screenshots to tuning-only evidence. Production flight cameras/physics, weather pools, terrain distance, records and paused systems stay unchanged. Full weather acceptance remains open under the slow review browser.

@@ -13,6 +13,7 @@ import {
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
+import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, ROAD_SUPPORT_SPACING } from './RoadSurface'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
@@ -50,7 +51,8 @@ function isSettlementBuilding(value: unknown): value is SettlementBuilding {
 }
 
 function isSettlementRoad(value: unknown): value is SettlementRoad {
-  if (!isRecord(value) || !isFiniteNumber(value.width) || !Array.isArray(value.points)) return false
+  if (!isRecord(value) || !isFiniteNumber(value.width) || value.width <= 0 ||
+    !Array.isArray(value.points) || value.points.length > MAX_ROAD_PROFILE_POINTS) return false
   for (const point of value.points) {
     if (!isRecord(point)) return false
     if (!isFiniteNumber(point.x) || !isFiniteNumber(point.y) || !isFiniteNumber(point.z) ||
@@ -59,7 +61,14 @@ function isSettlementRoad(value: unknown): value is SettlementRoad {
       point.leftZ !== undefined && !isFiniteNumber(point.leftZ) ||
       point.rightX !== undefined && !isFiniteNumber(point.rightX) ||
       point.rightY !== undefined && !isFiniteNumber(point.rightY) ||
-      point.rightZ !== undefined && !isFiniteNumber(point.rightZ)) return false
+      point.rightZ !== undefined && !isFiniteNumber(point.rightZ) ||
+      point.groundY !== undefined && !isFiniteNumber(point.groundY) ||
+      point.leftGroundY !== undefined && !isFiniteNumber(point.leftGroundY) ||
+      point.rightGroundY !== undefined && !isFiniteNumber(point.rightGroundY) ||
+      point.shoulderLeftY !== undefined && !isFiniteNumber(point.shoulderLeftY) ||
+      point.shoulderRightY !== undefined && !isFiniteNumber(point.shoulderRightY) ||
+      point.bridge !== undefined && typeof point.bridge !== 'boolean' ||
+      point.structure !== undefined && !['ground', 'bridge', 'embankment', 'viaduct'].includes(String(point.structure))) return false
   }
   return true
 }
@@ -348,18 +357,20 @@ function dashedRoads(roads: SettlementRoad[], dashLength: number, gapLength: num
   const dashed: SettlementRoad[] = []
   const cycle = Math.max(1, dashLength + gapLength)
   for (const road of roads) {
+    let travelled = 0
     for (let i = 1; i < road.points.length; i++) {
       const a = road.points[i - 1]!, b = road.points[i]!
       const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
       const length = Math.hypot(dx, dz)
       if (length < 1) continue
-      // Start every segment at a stable phase. Curved route points are close
-      // enough that the tiny reset at a join is less visible than a global
-      // phase accumulator that can drift across a clipped road span.
-      for (let cursor = 0; cursor < length; cursor += cycle) {
+      for (let cursor = 0; cursor < length;) {
+        const phase = (travelled + cursor) % cycle
+        if (phase >= dashLength) { cursor += Math.min(length - cursor, cycle - phase); continue }
         const start = cursor / length
-        const end = Math.min(1, (cursor + dashLength) / length)
-        if (end - start < .08) continue
+        const distance = Math.min(length - cursor, dashLength - phase)
+        const end = (cursor + distance) / length
+        cursor += Math.max(distance, 1e-6)
+        if (distance < .05) continue
         dashed.push({
           width: road.width,
           points: [
@@ -368,6 +379,7 @@ function dashedRoads(roads: SettlementRoad[], dashLength: number, gapLength: num
           ],
         })
       }
+      travelled += length
     }
   }
   return dashed
@@ -379,7 +391,7 @@ function bridgeSpans(road: SettlementRoad): SettlementRoad[] {
   let points: SettlementRoad['points'] = []
   for (let i = 0; i < road.points.length; i++) {
     const point = road.points[i]!
-    if (point.bridge) {
+    if (point.bridge || point.structure === 'viaduct') {
       if (!points.length && i > 0) points.push(road.points[i - 1]!)
       points.push(point)
     } else if (points.length) {
@@ -397,17 +409,80 @@ function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['points'] {
   const supports: SettlementRoad['points'] = []
   let last: SettlementRoad['points'][number] | null = null
   for (const point of road.points) {
-    if (!point.bridge) {
+    if (!point.bridge && point.structure !== 'viaduct') {
       last = null
       continue
     }
-    if (!last || Math.hypot(point.x - last.x, point.z - last.z) >= 540) {
+    if (!last || Math.hypot(point.x - last.x, point.z - last.z) >= ROAD_SUPPORT_SPACING) {
       supports.push(point)
       last = point
     }
-    if (supports.length >= 8) break
+    if (supports.length >= MAX_ROAD_SUPPORTS) break
   }
   return supports
+}
+
+/** Exclude deck spans from asphalt/soil so two coplanar materials never fight. */
+function groundedRoadSpans(road: SettlementRoad): SettlementRoad[] {
+  const spans: SettlementRoad[] = []
+  let points: SettlementRoad['points'] = []
+  for (let i = 1; i < road.points.length; i++) {
+    const a = road.points[i - 1]!, b = road.points[i]!
+    if (a.bridge || b.bridge || a.structure === 'viaduct' || b.structure === 'viaduct') {
+      if (points.length > 1) spans.push({ width: road.width, points })
+      points = []; continue
+    }
+    if (!points.length) points.push(a)
+    points.push(b)
+  }
+  if (points.length > 1) spans.push({ width: road.width, points })
+  return spans
+}
+
+/** One bounded mesh per link for deck thickness/rails or soil approach fills. */
+export function roadStructureGeometry(road: SettlementRoad, originX: number, originZ: number,
+  bridge: boolean): BufferGeometry | null {
+  const positions: number[] = []
+  const wall = (ax: number, az: number, ay: number, floorA: number,
+    bx: number, bz: number, by: number, floorB: number) => positions.push(
+    ax - originX, ay, az - originZ, bx - originX, by, bz - originZ, ax - originX, floorA, az - originZ,
+    ax - originX, floorA, az - originZ, bx - originX, by, bz - originZ, bx - originX, floorB, bz - originZ)
+  for (let i = 1; i < road.points.length; i++) {
+    const a = road.points[i - 1]!, b = road.points[i]!
+    const elevated = a.bridge || b.bridge || a.structure === 'viaduct' || b.structure === 'viaduct'
+    if (bridge ? !elevated : elevated || (a.structure !== 'embankment' && b.structure !== 'embankment')) continue
+    const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz)
+    if (!length) continue
+    const nx = -dz / length * road.width / 2, nz = dx / length * road.width / 2
+    const factor = bridge ? 1 : 1.55
+    const ax = a.x + (a.leftX !== undefined ? a.leftX - a.x : nx) * factor
+    const az = a.z + (a.leftZ !== undefined ? a.leftZ - a.z : nz) * factor
+    const bx = b.x + (b.leftX !== undefined ? b.leftX - b.x : nx) * factor
+    const bz = b.z + (b.leftZ !== undefined ? b.leftZ - b.z : nz) * factor
+    const arx = a.x + (a.rightX !== undefined ? a.rightX - a.x : -nx) * factor
+    const arz = a.z + (a.rightZ !== undefined ? a.rightZ - a.z : -nz) * factor
+    const brx = b.x + (b.rightX !== undefined ? b.rightX - b.x : -nx) * factor
+    const brz = b.z + (b.rightZ !== undefined ? b.rightZ - b.z : -nz) * factor
+    if (bridge) {
+      wall(ax, az, a.y, a.y - 1.4, bx, bz, b.y, b.y - 1.4)
+      wall(brx, brz, b.y, b.y - 1.4, arx, arz, a.y, a.y - 1.4)
+      positions.push(
+        ax - originX, a.y - 1.4, az - originZ, arx - originX, a.y - 1.4, arz - originZ, bx - originX, b.y - 1.4, bz - originZ,
+        arx - originX, a.y - 1.4, arz - originZ, brx - originX, b.y - 1.4, brz - originZ, bx - originX, b.y - 1.4, bz - originZ)
+      wall(ax, az, a.y + 1.1, a.y + .15, bx, bz, b.y + 1.1, b.y + .15)
+      wall(brx, brz, b.y + 1.1, b.y + .15, arx, arz, a.y + 1.1, a.y + .15)
+    } else {
+      wall(ax, az, a.y - .08, (a.shoulderLeftY ?? a.leftGroundY ?? a.y) - .3,
+        bx, bz, b.y - .08, (b.shoulderLeftY ?? b.leftGroundY ?? b.y) - .3)
+      wall(brx, brz, b.y - .08, (b.shoulderRightY ?? b.rightGroundY ?? b.y) - .3,
+        arx, arz, a.y - .08, (a.shoulderRightY ?? a.rightGroundY ?? a.y) - .3)
+    }
+  }
+  if (!positions.length) return null
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.computeVertexNormals(); geometry.computeBoundingSphere()
+  return geometry
 }
 
 export interface SettlementStreetLightPoint {
@@ -1572,14 +1647,14 @@ export class SettlementSystem {
     })
     spireBuildings.forEach((b, i) => {
       const height = plan.kind === 'city' ? Math.min(b.height * .08, 110) : Math.min(b.height * .12, 70)
-      const radius = Math.max(18, Math.min(b.width, b.depth) * .2)
+      const radius = Math.max(1.4, Math.min(b.width, b.depth) * .2)
       put(spires, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
     })
     domeBuildings.forEach((b, i) => {
       const height = plan.kind === 'city'
-        ? Math.max(18, Math.min(72, Math.min(b.width, b.depth) * .2))
-        : Math.max(16, Math.min(46, Math.min(b.width, b.depth) * .18))
-      const radius = Math.max(26, Math.min(b.width, b.depth) * .42)
+        ? Math.max(2.5, Math.min(24, Math.min(b.width, b.depth) * .2))
+        : Math.max(1.5, Math.min(8, Math.min(b.width, b.depth) * .18))
+      const radius = Math.max(3, Math.min(b.width, b.depth) * .42)
       put(domes, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
     })
     pitched.forEach((b, i) => put(gables, i, b.x, b.y + b.height, b.z, b.width + 1.2, Math.min(b.width, b.depth) * .3, b.depth + 1.2, b.yaw, b.roofColor))
@@ -1873,15 +1948,21 @@ export class SettlementSystem {
     // fog and separates it from pale grass or sand without another road pass.
     const shoulderRoad: SettlementRoad = {
       width: road.width * 1.55,
-      points: road.points.map(point => ({ x: point.x, y: point.y - .08, z: point.z })),
+      points: road.points.map(point => ({ ...point, y: point.y - .08,
+        leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
+        leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
+        rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
+        rightZ: point.rightZ === undefined ? undefined : point.z + (point.rightZ - point.z) * 1.55,
+        leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
+        rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
     }
-    const shoulderGeometry = createRoadGeometry([shoulderRoad], x, 0, z)
+    const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z)
     if (shoulderGeometry) {
       const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
       shoulder.name = 'RegionalRoadShoulder'
       root.add(shoulder)
     }
-    const geometry = createRoadGeometry([road], x, 0, z)
+    const geometry = createRoadGeometry(groundedRoadSpans(road), x, 0, z)
     if (geometry) root.add(new Mesh(geometry, this.highway))
     const bridgeGeometry = createRoadGeometry(bridgeSpans(road), x, 0, z)
     if (bridgeGeometry) {
@@ -1889,15 +1970,25 @@ export class SettlementSystem {
       bridge.name = 'RegionalBridgeDeck'
       root.add(bridge)
     }
+    const bridgeSides = roadStructureGeometry(road, x, z, true)
+    if (bridgeSides) {
+      const sides = new Mesh(bridgeSides, this.bridgeDeck)
+      sides.name = 'RegionalBridgeSides'; root.add(sides)
+    }
+    const embankmentGeometry = roadStructureGeometry(road, x, z, false)
+    if (embankmentGeometry) {
+      const embankment = new Mesh(embankmentGeometry, this.gravelShoulder)
+      embankment.name = 'RegionalRoadEmbankment'; root.add(embankment)
+    }
     const pierPoints = bridgeSupportPoints(road)
     if (pierPoints.length) {
       const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
       const transform = new Object3D()
       pierPoints.forEach((point, i) => {
-        const bed = Math.min(point.y - 6, sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height)
-        const height = Math.max(12, point.y - bed + 4)
+        const bed = point.groundY ?? sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height
+        const height = Math.max(1, point.y - bed)
         transform.position.set(point.x - x, bed + height * .5, point.z - z)
-        transform.scale.set(Math.max(3.2, road.width * .1), height, Math.max(3.2, road.width * .1))
+        transform.scale.set(Math.max(1.2, road.width * .1), height, Math.max(1.2, road.width * .1))
         transform.rotation.set(0, 0, 0)
         transform.updateMatrix()
         piers.setMatrixAt(i, transform.matrix)
@@ -1907,14 +1998,14 @@ export class SettlementSystem {
       piers.name = 'RegionalBridgePiers'
       root.add(piers)
     }
-    const centerline: SettlementRoad = { width: 4.2, points: road.points.map(point => ({ x: point.x, y: point.y + .18, z: point.z })) }
-    const marking = createRoadGeometry(dashedRoads([centerline], 32, 30), x, 0, z)
+    const centerline: SettlementRoad = { width: .35, points: road.points.map(point => ({ x: point.x, y: point.y + .12, z: point.z })) }
+    const marking = createRoadGeometry(dashedRoads([centerline], 6, 7), x, 0, z)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
     // Edge strips give long links a readable silhouette through haze while
     // staying as one batched mesh per connector.
     const edges: SettlementRoad[] = [
-      { width: 3.6, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .2, z: point.leftZ ?? point.z })) },
-      { width: 3.6, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .2, z: point.rightZ ?? point.z })) },
+      { width: .3, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .12, z: point.leftZ ?? point.z })) },
+      { width: .3, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .12, z: point.rightZ ?? point.z })) },
     ]
     const edgeGeometry = createRoadGeometry(edges, x, 0, z)
     if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))

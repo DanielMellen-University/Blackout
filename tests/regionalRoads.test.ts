@@ -36,13 +36,13 @@ describe('regional settlement roads', () => {
     expect(regionalRoadKey(a, plan('2,0', 20000, 0))).toBe(regionalRoadKey(plan('2,0', 20000, 0), a))
   })
 
-  it('builds a curved terrain-following route with bounded grades', () => {
+  it('builds a curved ground-following route with explicit supported crossings', () => {
     setWorldSeed(1)
     const [a, b] = connectedPair()
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
     expect(road!.points.length).toBeGreaterThan(100)
-    expect(road!.width).toBe(36)
+    expect(road!.width).toBe(10)
     const start = road!.points[0]!, end = road!.points.at(-1)!
     expect(start.x).toBeGreaterThan(a.x)
     expect(end.x).toBeLessThan(b.x)
@@ -51,7 +51,9 @@ describe('regional settlement roads', () => {
     for (let i = 1; i < road!.points.length; i++) {
       const previous = road!.points[i - 1]!, point = road!.points[i]!
       const step = Math.hypot(point.x - previous.x, point.z - previous.z)
-      expect(Math.abs(point.y - previous.y) / step).toBeLessThanOrEqual(.120001)
+      expect(step).toBeLessThanOrEqual(24.000001)
+      if (point.structure === 'ground') expect(point.y - point.groundY!).toBeCloseTo(.45)
+      else expect(['bridge', 'embankment', 'viaduct']).toContain(point.structure)
       bend = Math.max(bend, Math.abs((point.x - start.x) * dz - (point.z - start.z) * dx) / length)
       expect(point.leftX).toBeTypeOf('number')
       expect(point.rightX).toBeTypeOf('number')
@@ -66,7 +68,7 @@ describe('regional settlement roads', () => {
     a.kind = 'city'; a.radius = 9000
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
-    expect(road!.width).toBe(54)
+    expect(road!.width).toBe(18)
   })
 
   it('ranks regional candidates with squared distances', () => {

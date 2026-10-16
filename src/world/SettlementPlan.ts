@@ -9,7 +9,7 @@ export const SETTLEMENT_CELL_SIZE = 24000
 // enough that a player encounters villages inside the visible flight envelope.
 // Site validation still rejects water, steep ground, and the active airfield.
 const CITY_CHANCE = .04
-const VILLAGE_CHANCE = .48
+const VILLAGE_CHANCE = .42
 /** Guaranteed landmarks keep a smaller minimum than organic cities so rough
  * worlds still get a readable destination instead of an empty anchor cell. */
 const ANCHOR_CITY_MIN_BUILDINGS = 420
@@ -33,7 +33,10 @@ export interface SettlementBuilding {
   shape: 'block' | 'slab' | 'tower' | 'stepped' | 'hangar'
   roof: 'pitched' | 'flat'; wallColor: number; roofColor: number
 }
-export interface SettlementRoad { points: { x: number; y: number; z: number; bridge?: boolean; leftY?: number; rightY?: number;
+export interface SettlementRoad { points: { x: number; y: number; z: number; bridge?: boolean;
+  structure?: 'ground' | 'bridge' | 'embankment' | 'viaduct';
+  groundY?: number; leftGroundY?: number; rightGroundY?: number; shoulderLeftY?: number; shoulderRightY?: number;
+  leftY?: number; rightY?: number;
   leftX?: number; leftZ?: number; rightX?: number; rightZ?: number }[]; width: number }
 export interface SettlementPlan {
   id: string; x: number; y: number; z: number; radius: number
@@ -396,8 +399,8 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.04 : 1
   const villageFootprintScale = drySettlementBiome ? 1.08
     : wetSettlementBiome ? .94 : coldSettlementBiome ? 1.02 : 1
-  const localRoadScale = drySettlementBiome ? 1.1
-    : wetSettlementBiome ? .88 : coldSettlementBiome ? 1.02 : 1
+  const localRoadScale = (drySettlementBiome ? 1.1
+    : wetSettlementBiome ? .88 : coldSettlementBiome ? 1.02 : 1) * .32
   const world = (x: number, z: number) => ({ x: plan.x + cos * x + sin * z, z: plan.z - sin * x + cos * z })
   const occupied = new Map<string, {
     x: number
@@ -413,6 +416,11 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number }[] = []
   let serial = 100
   const building = (lx: number, lz: number, width: number, depth: number, height: number, yaw = angle) => {
+    // Metres, not the old hundreds-of-metres rural props. Validate and store
+    // the actual smaller footprint so foundations/collision agree with art.
+    const footprintScale = plan.kind === 'city' ? .22 : .075
+    width *= footprintScale; depth *= footprintScale
+    height = Math.min(plan.kind === 'city' ? 320 : 28, height * (plan.kind === 'city' ? .14 : .06))
     const { x, z } = world(lx, lz)
     const localRadius = Math.hypot(lx, lz)
     const halfDiagonal = Math.hypot(width, depth) / 2
@@ -533,7 +541,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       // The terrain's broad forms are smooth at this scale. Sampling arterial
       // shoulders every 72 m keeps kilometre-wide cities cheap to plan while
       // retaining enough points for curved, terrain-following road ribbons.
-      const steps = Math.ceil(length / (plan.kind === 'city' ? 72 : 40))
+      const steps = Math.ceil(length / (plan.kind === 'city' ? 32 : 20))
       for (let j = segment === 1 ? 0 : 1; j <= steps; j++) {
         const p = world(a.x + (b.x - a.x) * j / steps, a.z + (b.z - a.z) * j / steps)
         const c = sampleSettlementClimate(p.x, p.z, 0)
@@ -659,11 +667,11 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         const t = (lot + 1) / (lots + 1)
         const along = length * t + (rand(n) - .5) * Math.min(110, length * .12)
         const side = rand(n + 1) < .5 ? -1 : 1
-        const frontage = street.width * .5 + 115 + rand(n + 2) * 90
-        const localX = street.a.x + dx / length * along + nx * frontage * side
-        const localZ = street.a.z + dz / length * along + nz * frontage * side
         const width = Math.max(180, (220 + rand(n + 3) * 220) * villageScale * villageFootprintScale)
         const depth = Math.max(180, (210 + rand(n + 4) * 230) * villageScale * villageFootprintScale)
+        const frontage = street.width * .5 + Math.max(width, depth) * .075 * .5 + 8 + rand(n + 2) * 16
+        const localX = street.a.x + dx / length * along + nx * frontage * side
+        const localZ = street.a.z + dz / length * along + nz * frontage * side
         const height = 145 + rand(n + 5) * 235
         building(localX, localZ, width, depth, height,
           angle + heading + (rand(n + 6) - .5) * .24)
@@ -695,9 +703,9 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
     const a = rand(n) * Math.PI * 2
     const distance = Math.sqrt(rand(n + 1)) * plan.radius * boundary(a)
     const p = polar(a, distance)
-    // Buildings are intentionally oversized relative to the aircraft, but
-    // each village profile gets its own scale band. A few landmark lots are
-    // much larger again, preventing a uniform settlement silhouette.
+    // District/profile dimensions are scaled to physical building sizes by
+    // the shared lot validator. Larger rural lots become barns/workshops,
+    // not enormous skyscraper-sized houses.
     const villageScale = villageProfile === 'hamlet' ? .78
       : villageProfile === 'ribbon' ? .92 : villageProfile === 'crossroads' ? 1.12 : 1.3
     const landmarkScale = !city && rand(n + 8) < .08 ? 1.8 : 1
@@ -705,7 +713,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       : Math.max(180, (220 + rand(n + 2) * 240) * villageScale * villageFootprintScale * landmarkScale)
     const depth = city ? (160 + rand(n + 3) * 180) * cityFootprintScale
       : Math.max(180, (220 + rand(n + 3) * 240) * villageScale * villageFootprintScale * landmarkScale)
-    const halfDiagonal = Math.hypot(width, depth) / 2
+    const halfDiagonal = Math.hypot(width, depth) / 2 * (city ? .22 : .075)
     let nearestDistanceSquared = Infinity, yaw = angle + a, clear = true
     for (const street of streets) {
       const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z
