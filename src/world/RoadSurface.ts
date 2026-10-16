@@ -14,6 +14,24 @@ type Position = { x: number; z: number }
 type Point = SettlementRoad['points'][number]
 export type RoadGroundSampler = (x: number, z: number) => { height: number; waterLevel?: number }
 
+/** Select a few deterministic supports so long wet crossings read as bridges. */
+export function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['points'] {
+  const supports: SettlementRoad['points'] = []
+  let last: SettlementRoad['points'][number] | null = null
+  for (const point of road.points) {
+    if (!point.bridge && point.structure !== 'viaduct') {
+      last = null
+      continue
+    }
+    if (!last || Math.hypot(point.x - last.x, point.z - last.z) >= ROAD_SUPPORT_SPACING) {
+      supports.push(point)
+      last = point
+    }
+    if (supports.length >= MAX_ROAD_SUPPORTS) break
+  }
+  return supports
+}
+
 /** Worker-side cross-sections. Dry roads follow their own ground, never a
  * global raise-only grade envelope. Only explicit crossings get raised decks;
  * their dry approaches carry soil fills or supported viaducts. */
@@ -49,6 +67,9 @@ export function groundRoad(points: readonly Position[], width: number, sample: R
     }
   }
   if (profile.length < 2) return null
+  // A bridge must connect dry banks. Never leave a local street terminating
+  // on an unsupported deck in the middle of a river/lake.
+  if (profile[0]!.bridge || profile.at(-1)!.bridge) return null
 
   const crossings: { start: number; end: number; deck: number }[] = []
   for (let i = 0; i < profile.length; i++) {
@@ -94,6 +115,7 @@ export function groundRoad(points: readonly Position[], width: number, sample: R
   // Reject an impossible crossing rather than inventing a sky-high road.
   for (const point of profile) if (point.structure !== 'ground' &&
     point.y - Math.min(point.groundY!, point.leftGroundY!, point.rightGroundY!) > MAX_ROAD_STRUCTURE_HEIGHT) return null
+  if (profile[0]!.structure !== 'ground' || profile.at(-1)!.structure !== 'ground') return null
   let supports = 0, lastSupport: Point | null = null
   for (const point of profile) {
     if (!point.bridge && point.structure !== 'viaduct') { lastSupport = null; continue }

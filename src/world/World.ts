@@ -202,7 +202,7 @@ export class World {
     this.scene.add(this.fill.target)
 
     this.terrain = new TerrainSystem(this.scene, qualityProfile.terrainWorkers)
-    this.settlements = new SettlementSystem(this.scene)
+    this.settlements = new SettlementSystem(this.scene, (x, z) => this.terrain.sampleMeshHeight(x, z))
     this.traffic = new AirTrafficSystem(this.scene)
     this.atmosphere = new Atmosphere(
       this.scene,

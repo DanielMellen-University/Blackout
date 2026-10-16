@@ -1166,7 +1166,7 @@ export class TerrainSystem {
       if (last && i < this.retiring.length) this.retiring[i] = last
       if (i >= this.retiring.length) retiringIndex--
     }
-    if (retiredAny) this.invalidateSampleChunk()
+    if (retiredAny) { this.invalidateSampleChunk(); invalidateGroundSamplerCaches() }
 
     // The removal batch shares one sampler invalidation for the same reason
     // as the retiring batch above.
@@ -1182,7 +1182,7 @@ export class TerrainSystem {
       this.fadeKeys.delete(key)
       removedAny = true
     }
-    if (removedAny) this.invalidateSampleChunk()
+    if (removedAny) { this.invalidateSampleChunk(); invalidateGroundSamplerCaches() }
   }
 
   private applyChunkAlpha(chunk: Chunk): void {

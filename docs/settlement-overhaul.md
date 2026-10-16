@@ -121,3 +121,45 @@ Some road/ground sections still disappear into the coarser rendered terrain.
 This is evidence for the next actual-LOD contact correction, not final artwork
 acceptance. The 17 placement/distribution/anchor checks pass, along with 54
 focused layout/scale/rendering/budget/ghost checks and the production build.
+
+## Batch 3: streamed contact and bridge integration (10.900)
+
+Ground road/park/field/forecourt vertices now refit to the actual rendered
+terrain heightfield after its sampler revision changes. A caller-owned draper
+processes at most 1,024 vertices per update with a .8 ms sampling deadline,
+stages the changes, then publishes a complete mesh. Unchanged revisions do no
+height sampling. Normal/bounds recomputation and the final buffer upload happen
+once per completed mesh, not per sampled vertex; the sampling deadline is not
+a claimed hard bound on total publication/upload cost. Remove registrations on
+stream eviction and clear them on reseed/disposal. Decks, viaducts and engineered
+fills do not collapse onto terrain. Marking metadata preserves that distinction.
+
+Local streets now share the regional profiler, independent shoulders, level
+water decks, supported ramps, embedded footings, rails and soil fills. Reject
+crossings without dry end banks or enough approach length to return to ground.
+Retain 20,000 local points and at most 192 supports per settlement. Ground patches
+check cell centres for water and reject heavily fragmented remnants instead of
+leaving isolated field/park triangles. Terrain/water generation itself is unchanged.
+
+Bridge decks, piers and soil approaches reuse the existing spatial collision
+index for both point and high-speed swept probes. Under-deck space remains open;
+support placement is shared with rendering. Regional obstacle plans have separate
+bounded ownership and do not inflate the building budget. The developer review
+can inspect an actually loaded bridge rather than synthesizing a flattering
+crossing. Ghost revision 19 keeps saved records and skips incompatible playback.
+
+The [seed-73 terrain-contact view](reviews/settlement-contact-10.900.png) shows
+previously buried village road sections joining visibly across the shelf.
+Full real river-bridge artwork, near/far travel, gameplay frame-time percentiles,
+startup comparison and sustained memory acceptance remain open under the review
+browser's roughly one-frame-per-second throttling. No smoothness/performance win
+is claimed. Weather acceptance remains a separate unfinished task.
+
+The [actually streamed 652 m crossing](reviews/settlement-bridge-10.900.png) near
+(-13688.9, -13034.1), seed 73, shows the deck, markings, rails, piers and both
+bank approaches over receiving water with a connected channel behind it. This
+is a real streamed link, not synthetic road geometry. It is one inspected still,
+not complete maximum-speed/chase/first-person or every-crossing acceptance.
+The final affected run passes 116 rendering, road, collision, draping, worker,
+streaming, lifecycle and ghost checks; the 17 settlement placement/distribution
+checks also pass. The production build passes with the existing bundle warning.

@@ -5,6 +5,7 @@ import type { Biome, Climate } from './terrainSample'
 import { settlementLayout, type BuildingUse, type District } from './SettlementLayout'
 import { settlementGroundPatch, MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES,
   type SettlementGroundPatch } from './SettlementGround'
+import { groundRoad, bridgeSupportPoints, MAX_ROAD_SUPPORTS } from './RoadSurface'
 
 export const SETTLEMENT_CELL_SIZE = 24000
 export const MAX_LOCAL_ROAD_POINTS = 20_000
@@ -529,47 +530,24 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       roofColor: style.roofs[Math.floor(rand(n + 1000) * style.roofs.length)]! })
   }
   let roadPoints = 0
+  let roadSupports = 0
   const road = (local: { x: number; z: number }[], width: number) => {
-    let points: SettlementRoad['points'] = []
-    const flush = () => {
-      if (points.length > 1) {
-        if (roadPoints + points.length > MAX_LOCAL_ROAD_POINTS) { points = []; return }
-        roadPoints += points.length
-        plan.roads.push({ points, width })
-        for (let i = 1; i < points.length; i++) {
-          const a = points[i - 1]!, b = points[i]!
-          streets.push({ a: { x: cos * (a.x - plan.x) - sin * (a.z - plan.z),
-            z: sin * (a.x - plan.x) + cos * (a.z - plan.z) },
-          b: { x: cos * (b.x - plan.x) - sin * (b.z - plan.z),
-            z: sin * (b.x - plan.x) + cos * (b.z - plan.z) }, width })
-        }
-      }
-      points = []
+    const profile = groundRoad(local.map(p => world(p.x, p.z)), width, sampleSettlementClimate)
+    if (!profile || roadPoints + profile.points.length > MAX_LOCAL_ROAD_POINTS) return
+    const supports = bridgeSupportPoints(profile).length
+    if (roadSupports + supports > MAX_ROAD_SUPPORTS) return
+    roadSupports += supports
+    roadPoints += profile.points.length
+    plan.roads.push(profile)
+    for (let i = 1; i < profile.points.length; i++) {
+      const a = profile.points[i - 1]!, b = profile.points[i]!
+      // Frontage buildings attach only to ground-level streets, not decks.
+      if (a.structure !== 'ground' || b.structure !== 'ground') continue
+      streets.push({ a: { x: cos * (a.x - plan.x) - sin * (a.z - plan.z),
+        z: sin * (a.x - plan.x) + cos * (a.z - plan.z) },
+      b: { x: cos * (b.x - plan.x) - sin * (b.z - plan.z),
+        z: sin * (b.x - plan.x) + cos * (b.z - plan.z) }, width })
     }
-    for (let segment = 1; segment < local.length; segment++) {
-      const a = local[segment - 1]!, b = local[segment]!
-      const length = Math.hypot(b.x - a.x, b.z - a.z)
-      // Bounded worker-side terrain sampling, not runtime vertex probes.
-      const steps = Math.ceil(length / (plan.kind === 'city' ? 32 : 20))
-      for (let j = segment === 1 ? 0 : 1; j <= steps; j++) {
-        const p = world(a.x + (b.x - a.x) * j / steps, a.z + (b.z - a.z) * j / steps)
-        const c = sampleSettlementClimate(p.x, p.z, 0)
-        // Shoulder samples keep the entire ribbon on dry land, not just its center.
-        const sx = -(b.z - a.z) / length * width / 2, sz = (b.x - a.x) / length * width / 2
-        const left = world(a.x + (b.x - a.x) * j / steps + sx, a.z + (b.z - a.z) * j / steps + sz)
-        const right = world(a.x + (b.x - a.x) * j / steps - sx, a.z + (b.z - a.z) * j / steps - sz)
-        const leftClimate = sampleSettlementClimate(left.x, left.z, 1), rightClimate = sampleSettlementClimate(right.x, right.z, 2)
-        const previous = points.at(-1)
-        const gradeLimit = plan.anchor ? .3 : .22
-        if (!dry(c) || !dry(leftClimate) || !dry(rightClimate) ||
-          (previous && Math.abs(c.height + .25 - previous.y) > Math.hypot(p.x - previous.x, p.z - previous.z) * gradeLimit)) {
-          flush(); continue
-        }
-        points.push({ ...p, y: c.height + .25, leftY: leftClimate.height + .35, rightY: rightClimate.height + .35,
-          leftX: left.x, leftZ: left.z, rightX: right.x, rightZ: right.z })
-      }
-    }
-    flush()
   }
   for (const proposed of layout.roads) road(proposed.points, proposed.width)
   for (const street of streets) {

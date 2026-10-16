@@ -1,7 +1,21 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
 import { regionalRoadKey, roadBetweenSettlements, selectRegionalRoadLinks, shouldConnectSettlements } from '../src/world/RegionalRoads'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
+import * as terrain from '../src/world/terrainSample'
+import { createClimateSample } from '../src/world/Geography'
+
+afterEach(() => vi.restoreAllMocks())
+
+function ruralTerrain() {
+  const base = terrain.sampleClimateInto(createClimateSample(), 0, 0)
+  vi.spyOn(terrain, 'sampleClimateInto').mockImplementation((out, x, z) => {
+    Object.assign(out, base)
+    out.height = Math.abs(x) < 120 ? 90 : 120 + Math.sin(x / 3000) * 15 + Math.cos(z / 5000) * 8
+    out.waterLevel = 97
+    return out
+  })
+}
 
 function plan(id: string, x: number, z: number, kind: 'city' | 'village' = 'village'): SettlementPlan {
   return {
@@ -38,6 +52,7 @@ describe('regional settlement roads', () => {
 
   it('builds a curved ground-following route with explicit supported crossings', () => {
     setWorldSeed(1)
+    ruralTerrain()
     const [a, b] = connectedPair()
     const road = roadBetweenSettlements(a, b)
     expect(road).not.toBeNull()
@@ -64,6 +79,7 @@ describe('regional settlement roads', () => {
 
   it('uses wider highways whenever a city is an endpoint', () => {
     setWorldSeed(1)
+    ruralTerrain()
     const [a, b] = connectedPair()
     a.kind = 'city'; a.radius = 9000
     const road = roadBetweenSettlements(a, b)

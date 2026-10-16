@@ -250,7 +250,7 @@ describe('procedural settlements', () => {
     expect(Math.min(...outer.map(building => building.height))).toBeLessThan(360)
   })
 
-  it('fits dry foundations, caps geometry and keeps roads on dry gentle ground', () => {
+  it('fits dry foundations and caps ground-following roads with explicit water crossings', () => {
     setWorldSeed(1)
     for (const plan of region(5)) {
       expect(plan.buildings.length).toBeLessThanOrEqual(plan.kind === 'city' ? 1600 : 70)
@@ -285,10 +285,16 @@ describe('procedural settlements', () => {
       }
       for (const road of plan.roads) for (let i = 0; i < road.points.length; i++) {
         const p = road.points[i]!, c = sampleClimate(p.x, p.z)
-        expect(c.height).toBeGreaterThan((c.waterLevel ?? 0) + 2)
-        expect(p.y).toBeCloseTo(c.height + .25, 8)
+        if (p.structure === 'ground') {
+          expect(c.height).toBeGreaterThan((c.waterLevel ?? 0) + 1)
+          expect(p.y).toBeCloseTo(c.height + .45, 8)
+        } else {
+          expect(['bridge', 'embankment', 'viaduct']).toContain(p.structure)
+          expect(p.y).toBeGreaterThan(c.height)
+          if (p.bridge && c.height < (c.waterLevel ?? 0) + 1) expect(p.y).toBeGreaterThanOrEqual((c.waterLevel ?? 0) + 7)
+        }
         const prev = road.points[i - 1]
-        if (prev) expect(Math.abs(p.y - prev.y) / Math.hypot(p.x - prev.x, p.z - prev.z)).toBeLessThanOrEqual(.220001)
+        if (prev) expect(Math.hypot(p.x - prev.x, p.z - prev.z)).toBeLessThanOrEqual(24.000001)
       }
     }
   })

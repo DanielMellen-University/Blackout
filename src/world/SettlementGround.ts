@@ -33,6 +33,8 @@ export function settlementGroundPatch(
   for (let z = 0; z < nz; z++) for (let x = 0; x < nx; x++) {
     const a = points[z * (nx + 1) + x]!, b = points[z * (nx + 1) + x + 1]!
     const c = points[(z + 1) * (nx + 1) + x]!, d = points[(z + 1) * (nx + 1) + x + 1]!
+    const centre = sample((a.x + d.x) / 2, (a.z + d.z) / 2)
+    if (centre.height <= (centre.waterLevel ?? 0) + 2) continue
     for (const triangle of [[a, c, b], [b, c, d]]) {
       if (triangle.some(p => !p.dry)) continue
       const high = Math.max(...triangle.map(p => p.y)), low = Math.min(...triangle.map(p => p.y))
@@ -40,5 +42,5 @@ export function settlementGroundPatch(
       for (const p of triangle) positions.push(p.x, p.y, p.z)
     }
   }
-  return positions.length ? { use: space.use, color: space.color, positions } : null
+  return positions.length >= nx * nz * 18 * .65 ? { use: space.use, color: space.color, positions } : null
 }

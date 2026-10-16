@@ -50,10 +50,12 @@ describe('grounded roads and explicit river crossings', () => {
   })
 
   it('detects water touching a shoulder even when the centreline remains on land', () => {
-    const sample = (_x: number, z: number) => ({ height: z > 4 ? -3 : 3, waterLevel: 0 })
-    const road = groundRoad([{ x: 0, z: 0 }, { x: 200, z: 0 }], 12, sample)!
-    expect(road.points.every(point => point.bridge)).toBe(true)
-    expect(road.points.every(point => point.leftY === point.y && point.rightY === point.y)).toBe(true)
+    const sample = (x: number, z: number) => ({ height: z > 4 && x > 100 && x < 160 ? -3 : 3, waterLevel: 0 })
+    const road = groundRoad([{ x: 0, z: 0 }, { x: 300, z: 0 }], 12, sample)!
+    expect(road.points.some(point => point.bridge)).toBe(true)
+    expect(road.points.filter(point => point.bridge).every(point => point.leftY === point.y && point.rightY === point.y)).toBe(true)
+    expect(road.points[0]!.structure).toBe('ground')
+    expect(road.points.at(-1)!.structure).toBe('ground')
   })
 
   it('rejects unbounded crossings, over-budget profiles and malformed surfaces', () => {
@@ -63,5 +65,7 @@ describe('grounded roads and explicit river crossings', () => {
       () => ({ height: 100, waterLevel: 0 }))).toBeNull()
     expect(groundRoad([{ x: 0, z: 0 }, { x: 100, z: 0 }], 10,
       () => ({ height: NaN }))).toBeNull()
+    expect(groundRoad([{ x: 0, z: 0 }, { x: 200, z: 0 }], 10,
+      x => ({ height: x > 100 ? -10 : 2, waterLevel: 0 }))).toBeNull()
   })
 })

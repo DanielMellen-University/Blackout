@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.899**. Previous roadmap chunk: **10.898**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.900**. Previous roadmap chunk: **10.899**.
+
+Recent changes from **10.900**. Keep marked road/ground surfaces in contact with the actually streamed terrain using bounded, revision-driven atomic updates. Give local crossings the same supported decks as regional links, with indexed deck/pier/soil-approach collision and open space below bridges. Match shared supports/embedded footings, preserve bridge markings and reject fragmented/wet park/field patches. Keep existing streaming and structure budgets; ghost revision 19 preserves records. Complete bridge artwork and controlled travel/memory acceptance remain open under the slow review browser. See [the settlement plan](docs/settlement-overhaul.md). No water/terrain generation, flight, weather or paused-system changes.
 
 Recent changes from **10.899**. Give villages compact street-frontage clusters and cities residential, commercial, industrial and taller central districts. Add house, apartment, office, shop, workshop, warehouse, civic, barn and country gas-station types, including batched canopies/pumps/columns and barn silos. Planned parks, paths, plazas, fields and forecourts follow sampled ground instead of floating flat discs. Validate service pads/collision, bound added geometry and preserve streaming limits. Ghost revision 18 preserves saved records. Actual-LOD road contact, bridge collision and sustained visual/performance acceptance remain required. See [the settlement plan](docs/settlement-overhaul.md). No terrain/water generation, weather, flight or paused-system changes.
 

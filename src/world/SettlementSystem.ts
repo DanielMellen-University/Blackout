@@ -13,8 +13,10 @@ import {
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
-import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, ROAD_SUPPORT_SPACING } from './RoadSurface'
+import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, bridgeSupportPoints } from './RoadSurface'
 import { MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES } from './SettlementGround'
+import { SurfaceDraper } from './SurfaceDraper'
+import { groundSamplerRevision } from './ground'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
@@ -185,6 +187,7 @@ interface CollisionBuilding {
   boxOnly?: boolean
 }
 const collisionIndexes = new WeakMap<SettlementPlan, CollisionIndex>()
+const exactCollisionBoxes = new WeakSet<SettlementBuilding>()
 let collisionQueryToken = 0
 
 export interface SettlementCollisionPadding {
@@ -281,7 +284,7 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
   let radius = 0
   const collisionParts: { building: SettlementBuilding; boxOnly?: boolean }[] = []
   for (const building of plan.buildings) {
-    collisionParts.push({ building })
+    collisionParts.push({ building, boxOnly: exactCollisionBoxes.has(building) })
     if (building.service) {
       const s = building.service, c = Math.cos(s.yaw), sn = Math.sin(s.yaw)
       const part = (dx: number, dz: number, y: number, width: number, height: number, depth: number) =>
@@ -294,6 +297,7 @@ function getCollisionIndex(plan: SettlementPlan): CollisionIndex {
       }
     }
   }
+  for (const building of roadObstacleBuildings(plan.roads)) collisionParts.push({ building, boxOnly: true })
   for (const { building, boxOnly } of collisionParts) {
     const extent = Math.hypot(building.width, building.depth) / 2 + COLLISION_INDEX_MARGIN
     radius = Math.max(radius, Math.hypot(building.x - plan.x, building.z - plan.z) + extent)
@@ -365,8 +369,9 @@ function roadDistanceSquared(px: number, pz: number, road: SettlementRoad): numb
   return nearest
 }
 
-function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number): BufferGeometry | null {
-  const positions: number[] = []
+function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number,
+  groundOffset?: number): BufferGeometry | null {
+  const positions: number[] = [], offsets: number[] = []
   for (const road of roads) for (let i = 1; i < road.points.length; i++) {
     const a = road.points[i - 1]!, b = road.points[i]!
     const length = Math.hypot(b.x - a.x, b.z - a.z)
@@ -385,10 +390,15 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
       bLeftX - originX, bLeftY - originY, bLeftZ - originZ,
       bRightX - originX, bRightY - originY, bRightZ - originZ,
     )
+    const ground = !a.bridge && !b.bridge &&
+      (a.structure === undefined || a.structure === 'ground') &&
+      (b.structure === undefined || b.structure === 'ground')
+    for (let j = 0; j < 6; j++) offsets.push(ground && groundOffset !== undefined ? groundOffset : -1)
   }
   if (!positions.length) return null
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  if (groundOffset !== undefined) geometry.setAttribute('groundOffset', new Float32BufferAttribute(offsets, 1))
   geometry.computeVertexNormals()
   geometry.computeBoundingSphere()
   return geometry
@@ -416,8 +426,12 @@ function dashedRoads(roads: SettlementRoad[], dashLength: number, gapLength: num
         dashed.push({
           width: road.width,
           points: [
-            { x: a.x + dx * start, y: a.y + dy * start, z: a.z + dz * start },
-            { x: a.x + dx * end, y: a.y + dy * end, z: a.z + dz * end },
+            { x: a.x + dx * start, y: a.y + dy * start, z: a.z + dz * start,
+              structure: a.structure === 'ground' ? b.structure : a.structure ?? b.structure,
+              bridge: a.bridge || b.bridge },
+            { x: a.x + dx * end, y: a.y + dy * end, z: a.z + dz * end,
+              structure: a.structure === 'ground' ? b.structure : a.structure ?? b.structure,
+              bridge: a.bridge || b.bridge },
           ],
         })
       }
@@ -446,22 +460,34 @@ function bridgeSpans(road: SettlementRoad): SettlementRoad[] {
   return spans
 }
 
-/** Select a few deterministic supports so long wet crossings read as bridges. */
-function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['points'] {
-  const supports: SettlementRoad['points'] = []
-  let last: SettlementRoad['points'][number] | null = null
-  for (const point of road.points) {
-    if (!point.bridge && point.structure !== 'viaduct') {
-      last = null
-      continue
-    }
-    if (!last || Math.hypot(point.x - last.x, point.z - last.z) >= ROAD_SUPPORT_SPACING) {
-      supports.push(point)
-      last = point
-    }
-    if (supports.length >= MAX_ROAD_SUPPORTS) break
+
+/** Bounded bridge deck/support boxes reuse the existing spatial collision
+ * index. Geometry below a deck remains open, rather than one solid tall box. */
+export function roadObstacleBuildings(roads: readonly SettlementRoad[]): SettlementBuilding[] {
+  const parts: SettlementBuilding[] = []
+  const box = (x: number, y: number, z: number, width: number, height: number, depth: number, yaw = 0) => {
+    const part: SettlementBuilding = { x, y, z, width, height, depth, yaw,
+      roof: 'flat', shape: 'block', wallColor: 0, roofColor: 0 }
+    exactCollisionBoxes.add(part); parts.push(part)
   }
-  return supports
+  for (const road of roads) {
+    for (let i = 1; i < road.points.length; i++) {
+      const a = road.points[i - 1]!, b = road.points[i]!
+      if (!a.bridge && !b.bridge && a.structure !== 'viaduct' && b.structure !== 'viaduct' &&
+        a.structure !== 'embankment' && b.structure !== 'embankment') continue
+      const dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz)
+      if (!length) continue
+      const fill = !a.bridge && !b.bridge && a.structure !== 'viaduct' && b.structure !== 'viaduct'
+      const low = fill ? Math.min(a.groundY ?? a.y, b.groundY ?? b.y) - 1 : Math.min(a.y, b.y) - 1.4
+      box((a.x + b.x) / 2, low, (a.z + b.z) / 2, length + road.width * .25,
+        Math.max(a.y, b.y) + 1.1 - low, road.width * (fill ? 1.55 : 1.15), -Math.atan2(dz, dx))
+    }
+    for (const point of bridgeSupportPoints(road)) {
+      const bed = (point.groundY ?? point.y - 6) - 3
+      box(point.x, bed, point.z, Math.max(1.2, road.width * .1), Math.max(1, point.y - bed), Math.max(1.2, road.width * .1))
+    }
+  }
+  return parts
 }
 
 /** Exclude deck spans from asphalt/soil so two coplanar materials never fight. */
@@ -519,6 +545,23 @@ export function roadStructureGeometry(road: SettlementRoad, originX: number, ori
       wall(brx, brz, b.y - .08, (b.shoulderRightY ?? b.rightGroundY ?? b.y) - .3,
         arx, arz, a.y - .08, (a.shoulderRightY ?? a.rightGroundY ?? a.y) - .3)
     }
+  }
+  if (!positions.length) return null
+  const geometry = new BufferGeometry()
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.computeVertexNormals(); geometry.computeBoundingSphere()
+  return geometry
+}
+
+function localRoadStructureGeometry(roads: SettlementRoad[], x: number, y: number, z: number,
+  bridge: boolean): BufferGeometry | null {
+  const positions: number[] = []
+  for (const road of roads) {
+    const geometry = roadStructureGeometry(road, x, z, bridge)
+    if (!geometry) continue
+    const attribute = geometry.getAttribute('position')
+    for (let i = 0; i < attribute.count; i++) positions.push(attribute.getX(i), attribute.getY(i) - y, attribute.getZ(i))
+    geometry.dispose()
   }
   if (!positions.length) return null
   const geometry = new BufferGeometry()
@@ -628,7 +671,7 @@ export function settlementWaterfrontPoints(
 }
 
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
-interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; road: SettlementRoad }
+interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; road: SettlementRoad; collisionPlan: SettlementPlan }
 interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
 interface ReadyRoad extends RoadJob { road: SettlementRoad }
 
@@ -640,13 +683,14 @@ export interface SettlementSweepPoint {
 
 /** One bounded vertex-colour draw for parks, paths, fields and forecourts. */
 export function settlementGroundGeometry(plan: SettlementPlan): BufferGeometry | null {
-  const positions: number[] = [], colors: number[] = []
+  const positions: number[] = [], colors: number[] = [], offsets: number[] = []
   const tint = new Color()
   for (const patch of plan.ground ?? []) {
     tint.setHex(patch.color)
     for (let i = 0; i < patch.positions.length; i += 3) {
       const x = patch.positions[i]!, y = patch.positions[i + 1]!, z = patch.positions[i + 2]!
       positions.push(x - plan.x, y - plan.y, z - plan.z)
+      offsets.push(patch.use === 'path' ? .16 : .12)
       const row = patch.use === 'field' ? Math.floor((x - plan.x + (z - plan.z) * .3) / 12) % 2 ? .92 : 1.04 : 1
       colors.push(tint.r * row, tint.g * row, tint.b * row)
     }
@@ -655,6 +699,7 @@ export function settlementGroundGeometry(plan: SettlementPlan): BufferGeometry |
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+  geometry.setAttribute('groundOffset', new Float32BufferAttribute(offsets, 1))
   geometry.computeVertexNormals(); geometry.computeBoundingSphere()
   return geometry
 }
@@ -711,6 +756,7 @@ export class SettlementSystem {
   private readonly loaded = new Map<string, LoadedSettlement>()
   /** Bounded collision plan view avoids a Map iterator on every physics sweep. */
   private readonly loadedCollisionPlans: SettlementPlan[] = []
+  private readonly roadCollisionPlans: SettlementPlan[] = []
   private readonly radarLandmarkCache: RadarLandmark[] = []
   private readonly connections = new Map<string, LoadedRoad>()
   private readonly checked = new Set<string>()
@@ -748,8 +794,10 @@ export class SettlementSystem {
   private roadDetailRadius = ROAD_LOAD_RADIUS
   /** Structured-clone staging record for settlement worker requests. */
   private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
+  private readonly draper: SurfaceDraper | null
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, renderedHeight?: (x: number, z: number) => number | null) {
+    this.draper = renderedHeight ? new SurfaceDraper(renderedHeight, groundSamplerRevision) : null
     this.root.name = 'Settlements'
     scene.add(this.root)
     if (typeof Worker !== 'undefined') {
@@ -1019,6 +1067,29 @@ export class SettlementSystem {
   }
   get roadCount(): number { return this.connections.size }
 
+  /** Read-only pose for inspecting an actually streamed bridge, not a fixture
+   * placed over unrelated water. Invoked on demand by the developer review. */
+  nearestBridgeView(x: number, z: number): { x: number; y: number; z: number; dx: number; dz: number; span: number } | null {
+    let result: ReturnType<SettlementSystem['nearestBridgeView']> = null, nearest = Infinity
+    const inspect = (road: SettlementRoad) => {
+      for (let i = 0; i < road.points.length; i++) {
+        if (!road.points[i]!.bridge) continue
+        const start = i
+        while (i + 1 < road.points.length && road.points[i + 1]!.bridge) i++
+        const a = road.points[Math.max(0, start - 1)]!, b = road.points[Math.min(road.points.length - 1, i + 1)]!
+        const mid = road.points[Math.floor((start + i) / 2)]!
+        const distance = Math.hypot(mid.x - x, mid.z - z)
+        if (distance >= nearest) continue
+        const length = Math.hypot(b.x - a.x, b.z - a.z)
+        nearest = distance; result = { x: mid.x, y: mid.y, z: mid.z,
+          dx: (b.x - a.x) / Math.max(1, length), dz: (b.z - a.z) / Math.max(1, length), span: length }
+      }
+    }
+    for (const plan of this.loadedCollisionPlans) for (const road of plan.roads) inspect(road)
+    for (const connection of this.connections.values()) inspect(connection.road)
+    return result
+  }
+
   /** Return nearby loaded landmarks through a fixed-size reusable snapshot. */
   getRadarLandmarks(x: number, z: number, maxRange: number): readonly RadarLandmark[] {
     if (this.disposed) return this.radarLandmarkCache
@@ -1050,6 +1121,8 @@ export class SettlementSystem {
   }
 
   clearAll(): void {
+    this.draper?.clear()
+    this.roadCollisionPlans.length = 0
     for (const settlement of this.loaded.values()) this.remove(settlement)
     for (const connection of this.connections.values()) this.removeRoad(connection)
     this.loaded.clear()
@@ -1231,6 +1304,7 @@ export class SettlementSystem {
 
   update(x: number, z: number, dt = 1 / 60): void {
     if (this.disposed) return
+    this.draper?.update()
     const safeX = Number.isFinite(x) ? x : this.focusX
     const safeZ = Number.isFinite(z) ? z : this.focusZ
     this.focusX = safeX
@@ -1456,6 +1530,7 @@ export class SettlementSystem {
 
   hitObstacle(x: number, y: number, z: number, padding?: SettlementCollisionPadding): boolean {
     for (const plan of this.loadedCollisionPlans) if (hitsSettlement(plan, x, y, z, padding)) return true
+    for (const plan of this.roadCollisionPlans) if (hitsSettlement(plan, x, y, z, padding)) return true
     return false
   }
 
@@ -1489,7 +1564,9 @@ export class SettlementSystem {
     const cy = yKnown ? current.y! : py
     const dy = cy - py
 
-    for (const plan of this.loadedCollisionPlans) {
+    for (let planIndex = 0; planIndex < this.loadedCollisionPlans.length + this.roadCollisionPlans.length; planIndex++) {
+      const plan = planIndex < this.loadedCollisionPlans.length ? this.loadedCollisionPlans[planIndex]!
+        : this.roadCollisionPlans[planIndex - this.loadedCollisionPlans.length]!
       const index = getCollisionIndex(plan)
       const planRadius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : index.radius) +
         Math.hypot(paddingX, paddingZ) + COLLISION_INDEX_MARGIN
@@ -1589,7 +1666,9 @@ export class SettlementSystem {
     const maxX = Math.max(px, cx)
     const minZ = Math.min(pz, cz)
     const maxZ = Math.max(pz, cz)
-    for (const plan of this.loadedCollisionPlans) {
+    for (let planIndex = 0; planIndex < this.loadedCollisionPlans.length + this.roadCollisionPlans.length; planIndex++) {
+      const plan = planIndex < this.loadedCollisionPlans.length ? this.loadedCollisionPlans[planIndex]!
+        : this.roadCollisionPlans[planIndex - this.loadedCollisionPlans.length]!
       const radius = Math.max(0, Number.isFinite(plan.radius) ? plan.radius : 0) + margin
       if (plan.x < minX - radius || plan.x > maxX + radius ||
         plan.z < minZ - radius || plan.z > maxZ + radius) continue
@@ -1848,20 +1927,48 @@ export class SettlementSystem {
       detail.add(decks, posts)
     }
     const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
-      width: road.width * 1.35,
-      points: road.points.map(point => ({ ...point, y: point.y - .08 })),
+      width: road.width * 1.55,
+      points: road.points.map(point => ({ ...point, y: point.y - .08,
+        leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
+        leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
+        rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
+        rightZ: point.rightZ === undefined ? undefined : point.z + (point.rightZ - point.z) * 1.55,
+        leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
+        rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
     }))
-    const shoulderGeometry = createRoadGeometry(localShoulders, plan.x, plan.y, plan.z)
+    const shoulderGeometry = createRoadGeometry(localShoulders.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .3)
     if (shoulderGeometry) {
       const mesh = new Mesh(shoulderGeometry, this.gravelShoulder)
       mesh.name = 'SettlementRoadShoulders'
       detail.add(mesh)
     }
-    const geometry = createRoadGeometry(plan.roads, plan.x, plan.y, plan.z)
+    const geometry = createRoadGeometry(plan.roads.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .45)
     if (geometry) {
       const mesh = new Mesh(geometry, this.asphalt)
       mesh.name = 'SettlementRoads'
       detail.add(mesh)
+    }
+    const deckGeometry = createRoadGeometry(plan.roads.flatMap(bridgeSpans), plan.x, plan.y, plan.z)
+    if (deckGeometry) {
+      const decks = new Mesh(deckGeometry, this.bridgeDeck)
+      decks.name = 'SettlementBridgeDecks'; detail.add(decks)
+    }
+    for (const bridge of [true, false]) {
+      const structure = localRoadStructureGeometry(plan.roads, plan.x, plan.y, plan.z, bridge)
+      if (!structure) continue
+      const mesh = new Mesh(structure, bridge ? this.bridgeDeck : this.gravelShoulder)
+      mesh.name = bridge ? 'SettlementBridgeSides' : 'SettlementRoadEmbankments'; detail.add(mesh)
+    }
+    const supports = plan.roads.flatMap(road => bridgeSupportPoints(road).map(point => ({ point, width: road.width })))
+      .slice(0, MAX_ROAD_SUPPORTS)
+    if (supports.length) {
+      const piers = new InstancedMesh(this.tower, this.bridgeDeck, supports.length)
+      supports.forEach(({ point, width }, i) => {
+        const bed = (point.groundY ?? point.y - 6) - 3, height = Math.max(1, point.y - bed)
+        put(piers, i, point.x, bed + height / 2, point.z,
+          Math.max(1.2, width * .1), height, Math.max(1.2, width * .1), 0, 0x777a76)
+      })
+      piers.name = 'SettlementBridgePiers'; piers.computeBoundingSphere(); detail.add(piers)
     }
     // One batched centerline mesh keeps local streets readable from the chase
     // camera without creating a draw call per street segment.
@@ -1872,13 +1979,18 @@ export class SettlementSystem {
     const markingGeometry = createRoadGeometry(
       dashedRoads(centerlines, plan.kind === 'city' ? 28 : 18, plan.kind === 'city' ? 24 : 20),
       plan.x, plan.y, plan.z,
+      .61,
     )
     if (markingGeometry) {
       const mesh = new Mesh(markingGeometry, this.streetMark)
       mesh.name = 'SettlementRoadMarkings'
       detail.add(mesh)
     }
+    root.traverse(object => {
+      if (object instanceof Mesh) this.draper?.add(object.geometry, plan.x, plan.y, plan.z)
+    })
     this.applyDetailQuality(detail)
+    getCollisionIndex(plan)
     this.root.add(root)
     return { root, detail, plan }
   }
@@ -2035,13 +2147,13 @@ export class SettlementSystem {
         leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
         rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
     }
-    const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z)
+    const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z, .3)
     if (shoulderGeometry) {
       const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
       shoulder.name = 'RegionalRoadShoulder'
       root.add(shoulder)
     }
-    const geometry = createRoadGeometry(groundedRoadSpans(road), x, 0, z)
+    const geometry = createRoadGeometry(groundedRoadSpans(road), x, 0, z, .45)
     if (geometry) root.add(new Mesh(geometry, this.highway))
     const bridgeGeometry = createRoadGeometry(bridgeSpans(road), x, 0, z)
     if (bridgeGeometry) {
@@ -2064,7 +2176,7 @@ export class SettlementSystem {
       const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
       const transform = new Object3D()
       pierPoints.forEach((point, i) => {
-        const bed = point.groundY ?? sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height
+        const bed = (point.groundY ?? sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height) - 3
         const height = Math.max(1, point.y - bed)
         transform.position.set(point.x - x, bed + height * .5, point.z - z)
         transform.scale.set(Math.max(1.2, road.width * .1), height, Math.max(1.2, road.width * .1))
@@ -2077,25 +2189,43 @@ export class SettlementSystem {
       piers.name = 'RegionalBridgePiers'
       root.add(piers)
     }
-    const centerline: SettlementRoad = { width: .35, points: road.points.map(point => ({ x: point.x, y: point.y + .12, z: point.z })) }
-    const marking = createRoadGeometry(dashedRoads([centerline], 6, 7), x, 0, z)
+    const centerline: SettlementRoad = { width: .35, points: road.points.map(point => ({ x: point.x, y: point.y + .12,
+      z: point.z, bridge: point.bridge, structure: point.structure })) }
+    const marking = createRoadGeometry(dashedRoads([centerline], 6, 7), x, 0, z, .57)
     if (marking) root.add(new Mesh(marking, this.highwayMark))
     // Edge strips give long links a readable silhouette through haze while
     // staying as one batched mesh per connector.
     const edges: SettlementRoad[] = [
-      { width: .3, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .12, z: point.leftZ ?? point.z })) },
-      { width: .3, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .12, z: point.rightZ ?? point.z })) },
+      { width: .3, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .12,
+        z: point.leftZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
+      { width: .3, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .12,
+        z: point.rightZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
     ]
-    const edgeGeometry = createRoadGeometry(edges, x, 0, z)
+    const edgeGeometry = createRoadGeometry(edges, x, 0, z, .57)
     if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
+    root.traverse(object => {
+      if (object instanceof Mesh) this.draper?.add(object.geometry, x, 0, z)
+    })
     this.root.add(root)
-    return { root, from, to, road }
+    const buildings = roadObstacleBuildings([road])
+    const collisionPlan: SettlementPlan = { id: root.name, x, y: 0, z, kind: 'village', biome: from.biome,
+      radius: buildings.reduce((radius, b) => Math.max(radius, Math.hypot(b.x - x, b.z - z) + Math.hypot(b.width, b.depth)), 0),
+      buildings, roads: [] }
+    if (buildings.length) {
+      getCollisionIndex(collisionPlan)
+      this.roadCollisionPlans.push(collisionPlan)
+    }
+    return { root, from, to, road, collisionPlan }
   }
 
   private removeRoad(road: LoadedRoad): void {
+    const index = this.roadCollisionPlans.indexOf(road.collisionPlan)
+    if (index >= 0) this.roadCollisionPlans.splice(index, 1)
     road.root.removeFromParent()
     road.root.traverse(object => {
-      if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) object.geometry.dispose()
+      if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
+        this.draper?.remove(object.geometry); object.geometry.dispose()
+      }
     })
   }
 
@@ -2107,7 +2237,9 @@ export class SettlementSystem {
     settlement.root.removeFromParent()
     settlement.root.traverse(object => {
       if (object instanceof InstancedMesh) object.dispose()
-      else if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) object.geometry.dispose()
+      else if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
+        this.draper?.remove(object.geometry); object.geometry.dispose()
+      }
     })
   }
 }
