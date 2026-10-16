@@ -2,7 +2,8 @@ import { hash2 } from './noise'
 import { sampleClimateInto } from './terrainSample'
 import { createClimateSample } from './Geography'
 import { settlementForCell, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
-import { groundRoad } from './RoadSurface'
+import { groundRoad, engineerRoadGrades } from './RoadSurface'
+import { terrainRoadRoute, roundRoadRoute, refineRoadRoute, roadGradeValid, MAX_REGIONAL_ROAD_GRADE } from './RoadRouting'
 
 export interface SettlementAnchor {
   id: string
@@ -219,12 +220,29 @@ export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): Se
   if (distance < 500) return null
   const [ax, az] = idNumbers(a.id), [bx, bz] = idNumbers(b.id)
   const direction = hash2(ax * 433 + bx * 811, az * 659 + bz * 977) < .5 ? -1 : 1
-  const bends = [direction * distance * .045, direction * distance * .09,
-    -direction * distance * .14, direction * distance * .2]
+  const sample = (x: number, z: number) => sampleClimateInto(roadClimateScratch, x, z)
+  const corridor = terrainRoadRoute(start, end, sample, direction * distance * .025)
+  // Leave a numerical margin below the public ceiling after profile arithmetic.
+  const engineeringGrade = MAX_REGIONAL_ROAD_GRADE * .98
+  const validate = (points: readonly { x: number; z: number }[]): SettlementRoad | null => {
+    const road = groundRoad(points, width, sample)
+    return road && (roadGradeValid(road) || engineerRoadGrades(road, engineeringGrade)) ? road : null
+  }
+  // At most four full profiles, as before. The corridor can change direction
+  // locally; two broad alternatives remain a bounded fallback at coastlines.
+  if (corridor) {
+    const rounded = groundRoad(roundRoadRoute(corridor), width, sample)
+    if (rounded && roadGradeValid(rounded)) return rounded
+    if (rounded && engineerRoadGrades(rounded, engineeringGrade)) return rounded
+    const refinement = rounded && refineRoadRoute(rounded, sample)
+    const refined = refinement && validate(refinement)
+    if (refined) return refined
+  }
+  const bends = [direction * distance * .09, -direction * distance * .14]
   const candidates = bends.map(bend => candidateRoute(start, end, bend))
   candidates.sort((a, b) => a.score - b.score)
   for (const candidate of candidates) {
-    const road = groundRoad(candidate.points, width, (x, z) => sampleClimateInto(roadClimateScratch, x, z))
+    const road = validate(candidate.points)
     if (road) return road
   }
   return null

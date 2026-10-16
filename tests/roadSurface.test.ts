@@ -1,9 +1,61 @@
 import { describe, expect, it } from 'vitest'
 import { groundRoad, ROAD_APPROACH_GRADE, ROAD_BRIDGE_CLEARANCE, ROAD_GROUND_OFFSET,
-  MAX_ROAD_PROFILE_POINTS, ROAD_SURFACE_STEP, groundRoadJunction } from '../src/world/RoadSurface'
+  MAX_ROAD_PROFILE_POINTS, ROAD_SURFACE_STEP, groundRoadJunction, engineerRoadGrades,
+  bridgeSupportPoints, MAX_ROAD_SUPPORTS } from '../src/world/RoadSurface'
 import { roadStructureGeometry } from '../src/world/SettlementSystem'
 
 describe('grounded roads and explicit river crossings', () => {
+  it('supports short dry gullies without lifting the surrounding ground road', () => {
+    const road = groundRoad([{ x: -800, z: 0 }, { x: 800, z: 0 }], 10,
+      x => ({ height: 100 - Math.max(0, 1 - Math.abs(x) / 160) * 45, waterLevel: 0 }))!
+    const ends = [road.points[0]!.y, road.points.at(-1)!.y]
+    expect(engineerRoadGrades(road, .2)).toBe(road)
+    expect([road.points[0]!.y, road.points.at(-1)!.y]).toEqual(ends)
+    expect(road.points.some(point => point.structure === 'viaduct')).toBe(true)
+    expect(road.points.some(point => point.structure === 'embankment')).toBe(true)
+    expect(bridgeSupportPoints(road).length).toBeLessThanOrEqual(MAX_ROAD_SUPPORTS)
+    for (let i = 1; i < road.points.length; i++) {
+      const a = road.points[i - 1]!, b = road.points[i]!
+      expect(Math.abs(b.y - a.y) / Math.hypot(b.x - a.x, b.z - a.z)).toBeLessThanOrEqual(.2 + 1e-8)
+      if (Math.abs(b.x) > 500) expect(b.structure).toBe('ground')
+    }
+  })
+
+  it('retains level, water-clear decks when adjacent short dry grades need engineering', () => {
+    const road = groundRoad([{ x: -800, z: 0 }, { x: 800, z: 0 }], 10,
+      x => ({ height: Math.abs(x) < 70 ? 90 : x > 100 && x < 180 ? 125 : 100, waterLevel: 97 }))!
+    expect(engineerRoadGrades(road, .2)).toBe(road)
+    const deck = road.points.filter(point => point.bridge)
+    expect(deck.length).toBeGreaterThan(0)
+    expect(new Set(deck.map(point => point.y)).size).toBe(1)
+    expect(deck.every(point => point.structure === 'bridge' && point.y >= 97 + ROAD_BRIDGE_CLEARANCE)).toBe(true)
+  })
+
+  it('rejects tall/long engineering and changed street joins without partially mutating the road', () => {
+    const fixtures = [
+      groundRoad([{ x: -800, z: 0 }, { x: 800, z: 0 }], 10,
+        x => ({ height: Math.abs(x) < 80 ? -300 : 100, waterLevel: -1000 }))!,
+      groundRoad([{ x: 0, z: 0 }, { x: 10_000, z: 0 }], 10,
+        x => ({ height: 1400 - Math.min(x, 6000) * .24, waterLevel: -1000 }))!,
+      groundRoad([{ x: 0, z: 0 }, { x: 300, z: 0 }], 10,
+        x => ({ height: x > 200 ? 200 : 100, waterLevel: 0 }))!,
+    ]
+    for (const road of fixtures) {
+      const before = JSON.stringify(road)
+      expect(engineerRoadGrades(road, .235)).toBeNull()
+      expect(JSON.stringify(road)).toBe(before)
+    }
+  })
+
+  it('does not exceed the shared support budget across many short dry spans', () => {
+    const road = groundRoad([{ x: 0, z: 0 }, { x: 128_000, z: 0 }], 10,
+      x => ({ height: 100 - Math.max(0, 1 - Math.abs(x % 320 - 160) / 160) * 45, waterLevel: 0 }))!
+    expect(road).not.toBeNull()
+    const before = JSON.stringify(road)
+    expect(engineerRoadGrades(road, .2)).toBeNull()
+    expect(JSON.stringify(road)).toBe(before)
+  })
+
   it('closes road joins with a bounded ground-following apron, never across water', () => {
     let probes = 0
     const height = (x: number, z: number) => 100 + x * .08 + z * .04

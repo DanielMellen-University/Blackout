@@ -9,6 +9,7 @@ export const MAX_ROAD_BRIDGE_SPAN = 1800
 export const MAX_ROAD_STRUCTURE_HEIGHT = 96
 export const ROAD_SUPPORT_SPACING = 120
 export const MAX_ROAD_SUPPORTS = 192
+export const MAX_DRY_ROAD_STRUCTURE_SPAN = 1200
 
 type Position = { x: number; z: number }
 type Point = SettlementRoad['points'][number]
@@ -53,6 +54,57 @@ export function bridgeSupportPoints(road: SettlementRoad): SettlementRoad['point
     if (supports.length >= MAX_ROAD_SUPPORTS) break
   }
   return supports
+}
+
+/** Bridge short dry gullies with actual fills/piers instead of either following
+ * a cliff face or lifting an entire regional road. Reject tall/long structures,
+ * changed street joins before mutating the profile. Water decks remain level. */
+export function engineerRoadGrades(road: SettlementRoad, grade: number): SettlementRoad | null {
+  if (!Number.isFinite(grade) || grade <= 0 || road.points.length > MAX_ROAD_PROFILE_POINTS) return null
+  const points = road.points, heights = Float64Array.from(points, point => point.y)
+  if (points.length < 2) return null
+  const step = (i: number, j: number) => Math.hypot(points[i]!.x - points[j]!.x, points[i]!.z - points[j]!.z)
+  for (let pass = 0; pass < 4; pass++) {
+    for (let i = 1; i < points.length; i++) heights[i] = Math.max(heights[i]!, heights[i - 1]! - step(i, i - 1) * grade)
+    for (let i = points.length - 2; i >= 0; i--) heights[i] = Math.max(heights[i]!, heights[i + 1]! - step(i, i + 1) * grade)
+    for (let i = 0; i < points.length; i++) if (heights[i]! > points[i]!.y + 1e-5) {
+      heights[i] = Math.max(heights[i]!, points[i]!.leftY ?? points[i]!.y, points[i]!.rightY ?? points[i]!.y)
+    }
+    for (let i = 0; i < points.length; i++) {
+      if (!points[i]!.bridge) continue
+      const start = i
+      let deck = heights[i]!
+      while (i + 1 < points.length && points[i + 1]!.bridge) { i++; deck = Math.max(deck, heights[i]!) }
+      for (let j = start; j <= i; j++) heights[j] = deck
+    }
+  }
+  if (heights[0]! > points[0]!.y + 1e-5 || heights.at(-1)! > points.at(-1)!.y + 1e-5) return null
+  let span = 0, supports = 0, lastSupport: Point | null = null
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i]!, raised = heights[i]! > point.y + 1e-5
+    if (!Number.isFinite(heights[i])) return null
+    if (raised && !point.bridge) {
+      span += i ? step(i, i - 1) : 0
+      if (span > MAX_DRY_ROAD_STRUCTURE_SPAN) return null
+    } else span = 0
+    const clearance = heights[i]! - Math.min(point.groundY ?? point.y, point.leftGroundY ?? point.y, point.rightGroundY ?? point.y)
+    if (clearance > MAX_ROAD_STRUCTURE_HEIGHT) return null
+    if (point.bridge || point.structure === 'viaduct' || (raised && clearance > 8)) {
+      if (!lastSupport || Math.hypot(point.x - lastSupport.x, point.z - lastSupport.z) >= ROAD_SUPPORT_SPACING) {
+        if (++supports > MAX_ROAD_SUPPORTS) return null
+        lastSupport = point
+      }
+    } else lastSupport = null
+    if (i && Math.abs(heights[i]! - heights[i - 1]!) > step(i, i - 1) * grade + 1e-6) return null
+  }
+  for (let i = 0; i < points.length; i++) {
+    const point = points[i]!
+    if (heights[i]! <= point.y + 1e-5) continue
+    point.y = point.leftY = point.rightY = heights[i]!
+    const clearance = point.y - Math.min(point.groundY ?? point.y, point.leftGroundY ?? point.y, point.rightGroundY ?? point.y)
+    point.structure = point.bridge ? 'bridge' : clearance <= 8 ? 'embankment' : 'viaduct'
+  }
+  return road
 }
 
 /** Worker-side cross-sections. Dry roads follow their own ground, never a

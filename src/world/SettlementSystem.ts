@@ -1169,13 +1169,14 @@ export class SettlementSystem {
 
   /** Read-only pose for inspecting an actually streamed bridge, not a fixture
    * placed over unrelated water. Invoked on demand by the developer review. */
-  nearestBridgeView(x: number, z: number): { x: number; y: number; z: number; dx: number; dz: number; span: number } | null {
+  nearestBridgeView(x: number, z: number, kind: 'bridge' | 'viaduct' = 'bridge'): { x: number; y: number; z: number; dx: number; dz: number; span: number } | null {
     let result: ReturnType<SettlementSystem['nearestBridgeView']> = null, nearest = Infinity
+    const matches = (point: SettlementRoad['points'][number]) => kind === 'bridge' ? point.bridge : point.structure === 'viaduct'
     const inspect = (road: SettlementRoad) => {
       for (let i = 0; i < road.points.length; i++) {
-        if (!road.points[i]!.bridge) continue
+        if (!matches(road.points[i]!)) continue
         const start = i
-        while (i + 1 < road.points.length && road.points[i + 1]!.bridge) i++
+        while (i + 1 < road.points.length && matches(road.points[i + 1]!)) i++
         const a = road.points[Math.max(0, start - 1)]!, b = road.points[Math.min(road.points.length - 1, i + 1)]!
         const mid = road.points[Math.floor((start + i) / 2)]!
         const distance = Math.hypot(mid.x - x, mid.z - z)

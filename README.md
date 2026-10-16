@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.904**. Previous roadmap chunk: **10.903**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.905**. Previous roadmap chunk: **10.904**.
+
+Recent changes from **10.905**. Regional roads search a bounded terrain corridor, finding local valley bends and shoreline routes instead of choosing only one broad arc. Round corners, validate complete profiles against a 24% grade ceiling, and support short dry gullies with bounded fills/viaducts rather than unsupported raised roads. Keep bridge decks level and street joins fixed; reject impossible structures. Search, refinement, profiles and supports have fixed limits; this spends more worker planning work, not a claimed FPS improvement. Ghost revision 23 retains records. Wider network, rough/coastal and sustained gameplay/performance review remain active.
 
 Recent changes from **10.904**. Keep roads and settlement reloads tied to the actual protected landmark sites, including fallback cells whose ordinary plans differ. Choose both sites before graph discovery and retain at most two blueprints independently of visible mesh admission. Worker replies and synchronous retries use the same selected sites. Three focused checks cover fallback links, late ordinary replies and order/admission independence. Ghost revision 22 preserves records while skipping incompatible road playback. Streaming limits and normal world geography are unchanged; wider network and travel/performance review remain active.
 

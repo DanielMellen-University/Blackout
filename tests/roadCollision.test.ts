@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { InstancedMesh, Mesh, Scene, type Group } from 'three'
 import { SurfaceDraper } from '../src/world/SurfaceDraper'
-import { groundRoad } from '../src/world/RoadSurface'
+import { groundRoad, engineerRoadGrades } from '../src/world/RoadSurface'
 import { hitsSettlement, roadObstacleBuildings, SettlementSystem } from '../src/world/SettlementSystem'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 
@@ -11,6 +11,30 @@ const plan: SettlementPlan = { id: 'bridge', kind: 'village', biome: 'plains', x
   radius: 1000, buildings: [], roads: [road] }
 
 describe('shared bridge obstacles', () => {
+  it('renders and collides with engineered dry viaducts while preserving open space below', () => {
+    const dry = engineerRoadGrades(groundRoad([{ x: -800, z: 0 }, { x: 800, z: 0 }], 10,
+      x => ({ height: 100 - Math.max(0, 1 - Math.abs(x) / 160) * 45, waterLevel: 0 }))!, .2)!
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    const internal = system as unknown as {
+      connections: Map<string, unknown>
+      buildRegionalRoad(road: typeof dry, a: SettlementPlan, b: SettlementPlan): unknown
+    }
+    try {
+      internal.connections.set('a|b', internal.buildRegionalRoad(dry, { ...plan, id: 'a', x: -800 }, { ...plan, id: 'b', x: 800 }))
+      expect(scene.getObjectByName('RegionalBridgeDeck')).toBeDefined()
+      expect(scene.getObjectByName('RegionalBridgePiers')).toBeDefined()
+      const view = system.nearestBridgeView(0, 0, 'viaduct')!
+      expect(view).not.toBeNull()
+      expect(system.nearestBridgeView(0, 0)).toBeNull()
+      expect(system.hitObstacle(view.x, view.y - .5, view.z)).toBe(true)
+      expect(system.hitObstacle(view.x, view.y - 5, view.z + 3)).toBe(false)
+      expect(system.segmentHitsObstacle({ x: view.x, y: view.y - .5, z: -100 },
+        { x: view.x, y: view.y - .5, z: 100 })).toBe(true)
+      system.clearAll()
+      expect(system.nearestBridgeView(0, 0, 'viaduct')).toBeNull()
+    } finally { system.dispose() }
+  })
+
   it('releases regional support instances on unload without disposing shared geometry', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     type Road = { root: Group; collisionPlan: SettlementPlan }

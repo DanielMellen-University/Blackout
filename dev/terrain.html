@@ -25,6 +25,7 @@
   <button id="fly">Flight benchmark</button>
   <button id="flight-view">Flight scale view</button>
   <button id="bridge-view">Inspect loaded bridge</button>
+  <button id="viaduct-view">Inspect loaded viaduct</button>
   <button id="road-join-view">Inspect road junction</button>
   <button id="cloud-interior">Inspect nearest cloud</button>
   <select id="cloud-view" aria-label="Cloud review view">
@@ -192,15 +193,18 @@ document.querySelector('#road-join-view').onclick=()=>{
   const height=value=>value===null?'missing':value.toFixed(2)
   document.querySelector('#travel-stats').textContent+=` Surface Y: local ${height(join.localY)} / connector ${height(join.roadY)} / shoulder ${height(join.shoulderY)}.`
 }
-document.querySelector('#bridge-view').onclick=()=>{
-  const bridge=world.settlements.nearestBridgeView(controls.target.x,controls.target.z)
-  if(!bridge){document.querySelector('#travel-stats').textContent='No loaded bridge here. Try Regional road or a river destination and let the road stream finish.';return}
+function inspectStructure(kind){
+  const bridge=world.settlements.nearestBridgeView(controls.target.x,controls.target.z,kind)
+  if(!bridge){document.querySelector('#travel-stats').textContent=`No loaded ${kind} here. Try Regional road or a river destination and let the road stream finish.`;return}
   const offset=Math.max(100,Math.min(500,bridge.span*.45))
   flightView=false;flying=false;tracingRiver=false;controls.enabled=true;reviewJet.mesh.visible=false
-  camera.position.set(bridge.x-bridge.dz*offset,bridge.y+Math.min(220,offset*.55),bridge.z+bridge.dx*offset)
+  const x=bridge.x-bridge.dz*offset,z=bridge.z+bridge.dx*offset
+  camera.position.set(x,Math.max(bridge.y+Math.min(220,offset*.55),sampleTerrainHeight(x,z)+40),z)
   controls.target.set(bridge.x,bridge.y-3,bridge.z);controls.update()
-  document.querySelector('#travel-stats').textContent=`Loaded bridge at ${bridge.x.toFixed(1)}, ${bridge.z.toFixed(1)} / span ${bridge.span.toFixed(0)} m.`
+  document.querySelector('#travel-stats').textContent=`Loaded ${kind} at ${bridge.x.toFixed(1)}, ${bridge.z.toFixed(1)} / span ${bridge.span.toFixed(0)} m.`
 }
+document.querySelector('#bridge-view').onclick=()=>inspectStructure('bridge')
+document.querySelector('#viaduct-view').onclick=()=>inspectStructure('viaduct')
 document.querySelector('#cloud-interior').onclick=()=>{
   // Exterior views must clear the whole rendered formation, not just one puff.
   // Inside views still use an actual dense puff, never an empty bounding-box gap.

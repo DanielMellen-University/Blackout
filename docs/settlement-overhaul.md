@@ -333,3 +333,63 @@ the on-demand actual mesh snapshot reports local/connector Y 1810.39 m and
 shoulder Y 1810.24 m. Browser error logs are empty. This normal-site visual
 guards against regression; it does not visually prove the synthetic fallback
 cases or constitute a controlled performance/memory benchmark.
+
+## Batch 8: terrain-aware regional routing (10.905)
+
+The old four broad arcs cannot follow a winding valley. A new S-valley check
+fails on 10.904: the route stays on one side, climbs to 1,436 m on 120 m valley
+terrain and reaches a 37.8% grade. The new corridor can change direction locally,
+with slope, wetness, ridge/valley and turn costs. It is monotone along the
+endpoint axis, not an unbounded map-wide search. Two rounding passes preserve
+exact street joins; complete 24 m profiles validate the rounded geometry.
+
+Fixed search bounds are 64 stations, 11 lanes and 3,000 sampler calls. A failed
+profile can trigger at most four local searches with a shared 5,000-probe cap.
+Two broad alternatives remain for constrained coasts; at most four full profiles
+are attempted. Existing 8,192-point, 1.8 km wet-span, 96 m structure-height and
+192-support limits stay in force. Worker planning does more work than before;
+no startup, FPS or heap improvement is claimed.
+
+The real seed-1 village exposed short steep gullies even along its best corridor.
+Support them with soil fills below 8 m or explicit decks/piers above that,
+capped at 1.2 km for any newly raised dry run. Do not globally lift a road across
+valleys or change terrain. Engineering uses bounded profile scans with no new
+terrain sampling; reject changed street joins, excessive clearance, long raised
+runs and support overflow before mutating any points. Keep contiguous water
+decks level. Regional profiles stay below a 24% centre grade ceiling. Existing
+mesh, draper and collision consumers use the same structure metadata.
+
+Focused checks cover winding valleys, broad lakes, reversed discovery,
+unavoidable cliffs/seas, large-coordinate endpoints, mutable sampler reuse,
+probe/rounding/refinement bounds, short dry structures, level wet decks and
+atomic rejection of invalid engineering. Actual seed-1337 city and seed-1
+village neighbours retain usable routes under the grade ceiling. Dry-viaduct
+point/swept collision keeps airspace below the deck open and clears on unload.
+A development-only control inspects actually streamed viaducts. Ghost revision
+23 preserves records while rejecting incompatible road playback.
+
+Settlement/building/link/profile/support/render-distance budgets are unchanged.
+Broader network connectivity, rough/coastal views, maximum-speed chase and
+unobstructed first-person travel, and controlled startup/frame-time/memory
+comparison remain required. Terrain/water generation, weather, flight handling
+and all paused exclusions stay outside this batch.
+
+The 97 affected routing, generated-world, structure, collision, ownership,
+admission, junction, rendering, ghost and draping checks pass, along with the
+production build (existing Three bundle warning). The winding-valley route now
+stays below 300 m rather than climbing to 1,436 m; that is synthetic geometry
+evidence, not a gameplay benchmark. Two actual generated-neighbour fixtures
+retain a usable link under the grade ceiling.
+
+The [seed-1 streamed 45 m viaduct](reviews/road-viaduct-10.905.png) near
+(-156411, -106248) shows an actual supported dry-bank transition. The adjacent
+[134 m water bridge](reviews/road-bridge-10.905.png) has a level deck and joined
+bank approaches; it is the same generated regional road, not a synthetic fixture.
+Browser error logs are empty. These are inspected stills, not complete
+maximum-speed/LOD-transition, coastal-network or performance/memory acceptance.
+
+Next measure regional graph discovery on the main thread as well as worker
+routing: neighbour lookups can still generate complete settlement plans, so
+bounded counts alone do not prove smooth streaming. Also verify alternative
+network connectivity when a candidate route is genuinely unbuildable, and
+regional road/building clearance beyond the existing local-street reservations.
