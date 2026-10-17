@@ -16,6 +16,7 @@ import { buildableRegionalLinksForSettlement, regionalRoadKey, roadBetweenSettle
 import type { RegionalRoadEndpoint, RegionalRoadLink } from './RegionalRoads'
 import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, bridgeSupportPoints, groundRoadJunction } from './RoadSurface'
 import { MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES } from './SettlementGround'
+import { fitRoadTerrainSteps } from './RoadTerrainFit'
 import { SurfaceDraper } from './SurfaceDraper'
 import { groundSamplerRevision } from './ground'
 import type { SettlementWorkerReply, SettlementWorkerRequest, ProtectedSettlementSpec } from './settlement.worker'
@@ -428,8 +429,9 @@ function inspectRoadHeight(root: Group | undefined, material: MeshStandardMateri
 }
 
 function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, originY: number, originZ: number,
-  groundOffset?: number, junctionRoad?: SettlementRoad, innerScale?: number): Generator<void, BufferGeometry | null> {
-  const positions: number[] = [], offsets: number[] = [], indices: number[] = []
+  groundOffset?: number, junctionRoad?: SettlementRoad, innerScale?: number, terrainFit = false): Generator<void, BufferGeometry | null> {
+  const positions: number[] = [], offsets: number[] = []
+  let indices: number[] = []
   const centres = new Map<string, number>()
   const add = (x: number, y: number, z: number, offset: number): number => {
     const index = positions.length / 3
@@ -453,6 +455,7 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
     const hollow = innerScale !== undefined
     const wide = !hollow && groundOffset !== undefined && road.width >= 4
     let previousLeft = 0, previousMiddle = 0, previousInnerRight = 0, previousRight = 0
+    let previousBottomLeft = 0, previousBottomRight = 0, previousFit = false
     for (let i = 0; i < road.points.length; i++) {
       if (i && i % 128 === 0) yield
       const point = road.points[i]!, previous = road.points[Math.max(0, i - 1)]!
@@ -474,9 +477,9 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
         // Leave the asphalt lane open. A full gravel cap can cut through it
         // between draped vertices even when lower at every sampled centre.
         middle = add(point.x + (leftX - point.x) * innerScale!, point.y + (leftY - point.y) * innerScale!,
-          point.z + (leftZ - point.z) * innerScale!, offset)
+          point.z + (leftZ - point.z) * innerScale!, terrainFit && fit ? .43 : offset)
         innerRight = add(point.x + (rightX - point.x) * innerScale!, point.y + (rightY - point.y) * innerScale!,
-          point.z + (rightZ - point.z) * innerScale!, offset)
+          point.z + (rightZ - point.z) * innerScale!, terrainFit && fit ? .43 : offset)
       } else if (wide) middle = fit ? centre(point.x, point.y, point.z) : add(point.x, point.y, point.z, -1)
       const right = add(rightX, rightY, rightZ, offset)
       if (i) {
@@ -486,6 +489,17 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
           previousMiddle, middle, previousRight, previousRight, middle, right)
         else indices.push(previousLeft, left, previousRight, previousRight, left, right)
       }
+      if (terrainFit && hollow && fit) {
+        // Close the exposed soil edge against the terrain, using the same
+        // shoulder mesh and drape budget. The inner lip meets the asphalt.
+        const bottomLeft = add(leftX, leftY - .3, leftZ, 0)
+        const bottomRight = add(rightX, rightY - .3, rightZ, 0)
+        if (i && previousFit) indices.push(previousLeft, previousBottomLeft, left,
+          left, previousBottomLeft, bottomLeft, previousRight, right, previousBottomRight,
+          right, bottomRight, previousBottomRight)
+        previousBottomLeft = bottomLeft; previousBottomRight = bottomRight
+      }
+      previousFit = fit
       previousLeft = left; previousMiddle = middle; previousInnerRight = innerRight; previousRight = right
     }
   }
@@ -505,6 +519,7 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
     }
   }
   if (!indices.length) return null
+  if (terrainFit) indices = yield* fitRoadTerrainSteps(positions, offsets, indices, originX, originZ)
   yield
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
@@ -2559,16 +2574,16 @@ export class SettlementSystem {
           rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
       }
       // Two outer bands frame the lane without a gravel cap over its asphalt.
-      // Keep the existing profile, triangle count and shared shoulder material.
+      // Retain the profile and shared material; fit faces to terrain triangles.
       yield
-      const shoulderGeometry = yield* createRoadGeometrySteps(groundedRoadSpans(shoulderRoad), x, 0, z, .3, undefined, 1 / 1.55)
+      const shoulderGeometry = yield* createRoadGeometrySteps(groundedRoadSpans(shoulderRoad), x, 0, z, .3, undefined, 1 / 1.55, true)
       if (shoulderGeometry) {
         const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
         shoulder.name = 'RegionalRoadShoulder'
         root.add(shoulder)
       }
       yield
-      const geometry = yield* createRoadGeometrySteps(groundedRoadSpans(road), x, 0, z, .45, road)
+      const geometry = yield* createRoadGeometrySteps(groundedRoadSpans(road), x, 0, z, .45, road, undefined, true)
       if (geometry) {
         const asphalt = new Mesh(geometry, this.highway)
         asphalt.name = 'RegionalRoadAsphalt'; root.add(asphalt)
@@ -2614,7 +2629,7 @@ export class SettlementSystem {
       yield
       const centerline: SettlementRoad = { width: .35, points: road.points.map(point => ({ x: point.x, y: point.y + .12,
         z: point.z, bridge: point.bridge, structure: point.structure })) }
-      const marking = yield* createRoadGeometrySteps((yield* dashedRoadSteps([centerline], 6, 7)), x, 0, z, .57)
+      const marking = yield* createRoadGeometrySteps((yield* dashedRoadSteps([centerline], 6, 7)), x, 0, z, .57, undefined, undefined, true)
       if (marking) root.add(new Mesh(marking, this.highwayMark))
       // Edge strips give long links a readable silhouette through haze while
       // staying as one batched mesh per connector.
@@ -2626,7 +2641,7 @@ export class SettlementSystem {
           z: point.rightZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
       ]
       yield
-      const edgeGeometry = yield* createRoadGeometrySteps(edges, x, 0, z, .57)
+      const edgeGeometry = yield* createRoadGeometrySteps(edges, x, 0, z, .57, undefined, undefined, true)
       if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
       yield
       root.traverse(object => {

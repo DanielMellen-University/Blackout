@@ -4,7 +4,7 @@ import { setWorldSeed } from '../src/world/noise'
 import { createClimateSample } from '../src/world/Geography'
 import * as terrain from '../src/world/terrainSample'
 import type { SettlementPlan, SettlementRoad } from '../src/world/SettlementPlan'
-import { terrainRoadRoute, roundRoadRoute, MAX_REGIONAL_ROUTE_PROBES,
+import { coastalRoadRoute, terrainRoadRoute, roundRoadRoute, MAX_REGIONAL_ROUTE_PROBES,
   MAX_REGIONAL_ROUTE_STATIONS, refineRoadRoute, MAX_ROUTE_REFINEMENT_PROBES } from '../src/world/RoadRouting'
 import { groundRoad } from '../src/world/RoadSurface'
 import * as surfaces from '../src/world/RoadSurface'
@@ -120,5 +120,39 @@ describe('terrain-aware regional routing', () => {
     const profiles = vi.spyOn(surfaces, 'groundRoad')
     expect(roadBetweenSettlements(site('0,0', -12000), site('1,0', 12000))).toBeNull()
     expect(profiles.mock.calls.length).toBeLessThanOrEqual(4)
+  })
+})
+
+describe('bounded coastal detours', () => {
+  it('can leave a blocked shore join sideways while the tapered route cannot', () => {
+    const start = { x: 0, z: 0 }, end = { x: 12000, z: 0 }
+    const allows = (a: { x: number; z: number }, b: { x: number; z: number }) =>
+      !((a.x === 0 && a.z === 0 && b.x > 0) || (b.x === 0 && b.z === 0 && a.x > 0))
+    const sample = vi.fn(() => ({ height: 20, waterLevel: 0 }))
+    expect(terrainRoadRoute(start, end, sample, 0, false, allows)).toBeNull()
+    sample.mockClear()
+    const route = coastalRoadRoute(start, end, sample, allows)!
+    expect(route).not.toBeNull()
+    expect(route[0]).toEqual(start); expect(route.at(-1)).toEqual(end)
+    expect(route[1]!.x).toBe(0); expect(Math.abs(route[1]!.z)).toBeGreaterThan(0)
+    expect(route.length).toBeLessThanOrEqual((MAX_REGIONAL_ROUTE_STATIONS + 1) * 11)
+    expect(sample.mock.calls.length).toBeLessThanOrEqual(MAX_ROUTE_REFINEMENT_PROBES)
+    for (let i = 1; i < route.length; i++) expect(allows(route[i - 1]!, route[i]!)).toBe(true)
+  })
+
+  it('copies mutable samples, bounds exhausted searches and rejects invalid data', () => {
+    const start = { x: 10000000, z: -10000000 }, end = { x: start.x + 62000, z: start.z + 10000 }
+    const fresh = (x: number, z: number) => ({ height: 120 + Math.sin(x / 4000) * 30 + Math.cos(z / 3000) * 10 })
+    const scratch = { height: 0 }
+    expect(coastalRoadRoute(start, end, (x, z) => Object.assign(scratch, fresh(x, z))))
+      .toEqual(coastalRoadRoute(start, end, fresh))
+    const sample = vi.fn(fresh)
+    // Isolate the goal while permitting exhaustive travel around it.
+    const allows = (_a: { x: number; z: number }, b: { x: number; z: number }) =>
+      Math.hypot(b.x - end.x, b.z - end.z) > 1000
+    expect(coastalRoadRoute(start, end, sample, allows)).toBeNull()
+    expect(sample.mock.calls.length).toBeLessThanOrEqual(MAX_ROUTE_REFINEMENT_PROBES)
+    expect(coastalRoadRoute(start, end, () => ({ height: NaN }))).toBeNull()
+    expect(coastalRoadRoute(start, { x: Infinity, z: 0 }, sample)).toBeNull()
   })
 })

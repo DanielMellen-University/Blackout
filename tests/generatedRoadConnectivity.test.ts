@@ -1,9 +1,10 @@
 import { afterEach, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad, findPlayableSpawn, setOpsPad } from '../src/world/terrainSample'
+import { clearOpsPad, findPlayableSpawn, sampleClimate, setOpsPad } from '../src/world/terrainSample'
 import { settlementForCell } from '../src/world/SettlementPlan'
 import { buildableRegionalLinksForSettlement, regionalLinksForSettlement, roadBetweenSettlements } from '../src/world/RegionalRoads'
 import { RoadProfileCache } from '../src/world/RoadProfileCache'
+import { MAX_ROAD_BRIDGE_SPAN, MAX_ROAD_STRUCTURE_HEIGHT, MAX_ROAD_SUPPORTS, bridgeSupportPoints } from '../src/world/RoadSurface'
 import { roadGradeValid } from '../src/world/RoadRouting'
 
 afterEach(() => clearOpsPad())
@@ -82,4 +83,35 @@ it('connects an actual seed-73 rural fuel stop to the regional road approach', (
   expect(roadGradeValid(road)).toBe(true)
   expect(road.points[0]!.structure).toBe('ground')
   expect(road.points.at(-1)!.structure).toBe('ground')
+}, 60000)
+
+
+it('connects the actual seed-73 coastal village to an inland neighbour without a wet ground road', () => {
+  clearOpsPad(); setWorldSeed(73)
+  const source = settlementForCell(-5, -3)!
+  expect(source.y).toBeLessThan(5)
+  const links = buildableRegionalLinksForSettlement(source)
+  expect(links.map(link => link.key)).toEqual(['-5,-2|-5,-3'])
+  const link = links[0]!, road = roadBetweenSettlements(link.from, link.to, settlementForCell)!
+  expect(road).not.toBeNull(); expect(roadGradeValid(road)).toBe(true)
+  expect(roadBetweenSettlements(link.to, link.from, settlementForCell)).toEqual(road)
+  expect(road.points[0]!.structure).toBe('ground'); expect(road.points.at(-1)!.structure).toBe('ground')
+  expect(road.points[0]!.x).toBe(link.from.roads[0]!.points[0]!.x)
+  expect(road.points.at(-1)!.z).toBe(link.to.roads[0]!.points[0]!.z)
+  let wetSpan = 0, wetPoints = 0
+  for (let i = 0; i < road.points.length; i++) {
+    const point = road.points[i]!
+    const ground = sampleClimate(point.x, point.z)
+    if (ground.height <= (ground.waterLevel ?? 0) + 1) {
+      expect(point.bridge).toBe(true); expect(point.y).toBeGreaterThanOrEqual((ground.waterLevel ?? 0) + 7)
+      wetPoints++
+    }
+    if (point.bridge && i) wetSpan += Math.hypot(point.x - road.points[i - 1]!.x, point.z - road.points[i - 1]!.z)
+    else wetSpan = 0
+    expect(wetSpan).toBeLessThanOrEqual(MAX_ROAD_BRIDGE_SPAN)
+    if (point.structure !== 'ground') expect(point.y - Math.min(point.groundY!, point.leftGroundY!, point.rightGroundY!))
+      .toBeLessThanOrEqual(MAX_ROAD_STRUCTURE_HEIGHT)
+  }
+  expect(wetPoints).toBeGreaterThan(0)
+  expect(bridgeSupportPoints(road).length).toBeLessThanOrEqual(MAX_ROAD_SUPPORTS)
 }, 60000)

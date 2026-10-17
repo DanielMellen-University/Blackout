@@ -36,7 +36,15 @@ it.each(['local', 'regional'] as const)('keeps %s gravel triangles outside the a
       left ||= zs.every(z => z > 0); right ||= zs.every(z => z < 0)
     }
     expect(left && right).toBe(true)
-    expect(indices.count).toBeLessThanOrEqual((road.points.length - 1) * 12)
-    expect(positions.count).toBeLessThanOrEqual(road.points.length * 4)
+    if (kind === 'local') {
+      expect(indices.count).toBeLessThanOrEqual((road.points.length - 1) * 12)
+      expect(positions.count).toBeLessThanOrEqual(road.points.length * 4)
+    } else {
+      // Regional faces now follow the terrain lattice and have closed soil edges.
+      expect(indices.count).toBeGreaterThan((road.points.length - 1) * 12)
+      const offsets = mesh.geometry.getAttribute('groundOffset')
+      expect(Array.from(offsets.array).some(offset => offset === 0)).toBe(true)
+      expect(Array.from(offsets.array).some(offset => Math.abs(offset - .43) < 1e-6)).toBe(true)
+    }
   } finally { system.dispose() }
 })

@@ -10,6 +10,8 @@ export const CHUNK_SIZE = 420
 export type TerrainLod = 0 | 1 | 2
 export type TerrainGeometryQuality = 'full' | 'fallback'
 const SEGS_NEAR = 24
+/** Shared by terrain-fitting artwork; all coarser grid edges lie on this lattice. */
+export const TERRAIN_CONTACT_GRID = CHUNK_SIZE / SEGS_NEAR
 const SEGS_MID = 12
 // Far tiles still shape the visible mountain horizon. Six samples made the
 // otherwise rounded landforms collapse into triangular needle silhouettes;

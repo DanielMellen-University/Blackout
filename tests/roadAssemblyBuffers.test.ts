@@ -6,7 +6,7 @@ import { SettlementSystem } from '../src/world/SettlementSystem'
 import type { SettlementRoad } from '../src/world/SettlementPlan'
 import type { RegionalRoadEndpoint } from '../src/world/RegionalRoads'
 
-it('preserves every regional road buffer through streamed row preparation', () => {
+it('preserves fixed regional structure buffers while fitting ground artwork', () => {
   const system = new SettlementSystem(new Scene())
   const road: SettlementRoad = { width: 18, points: Array.from({ length: 180 }, (_, i) => ({
     x: 100000 + i * 20, z: -120000 + Math.sin(i / 30) * 100,
@@ -34,6 +34,12 @@ it('preserves every regional road buffer through streamed row preparation', () =
       hashes[`${meshIndex++}:${object.name}`] = hash.digest('hex')
     })
     const fixture = new URL('./fixtures/road-assembly-10.916.json', import.meta.url)
-    expect(hashes).toEqual(JSON.parse(readFileSync(fixture, 'utf8')))
+    const baseline = JSON.parse(readFileSync(fixture, 'utf8')) as Record<string, string>
+    for (const key of ['2:RegionalBridgeDeck', '3:RegionalBridgeSides', '4:RegionalRoadEmbankment', '5:RegionalBridgePiers']) {
+      expect(hashes[key]).toBe(baseline[key])
+    }
+    expect(Object.keys(hashes)).toEqual(Object.keys(baseline))
+    expect(hashes['0:RegionalRoadShoulder']).not.toBe(baseline['0:RegionalRoadShoulder'])
+    expect(hashes['1:RegionalRoadAsphalt']).not.toBe(baseline['1:RegionalRoadAsphalt'])
   } finally { system.dispose() }
 })

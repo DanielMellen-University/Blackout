@@ -4,7 +4,7 @@ import { createClimateSample } from './Geography'
 import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
 import type { Biome } from './terrainSample'
 import { groundRoad, engineerRoadGrades } from './RoadSurface'
-import { terrainRoadRoute, roundRoadRoute, refineRoadRoute, roadGradeValid, MAX_REGIONAL_ROAD_GRADE } from './RoadRouting'
+import { coastalRoadRoute, terrainRoadRoute, roundRoadRoute, refineRoadRoute, roadGradeValid, MAX_REGIONAL_ROAD_GRADE } from './RoadRouting'
 import { RoadClearance } from './RoadClearance'
 
 export interface SettlementAnchor {
@@ -301,6 +301,7 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
   const corridor = terrainRoadRoute(start, end, sample, direction * distance * .025, false, clearance.allows)
   // Leave a numerical margin below the public ceiling after profile arithmetic.
   const engineeringGrade = MAX_REGIONAL_ROAD_GRADE * .98
+  const coastal = Math.min(start.y, end.y) < 25
   const validate = (points: readonly { x: number; z: number }[]): SettlementRoad | null => {
     if (!clearance.routeAllows(points)) return null
     const road = groundRoad(points, width, sample)
@@ -315,9 +316,19 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
     const rounded = groundRoad(clearance.routeAllows(smooth) ? smooth : corridor, width, sample)
     if (rounded && roadGradeValid(rounded)) return rounded
     if (rounded && engineerRoadGrades(rounded, engineeringGrade)) return rounded
-    const refinement = rounded && refineRoadRoute(rounded, sample, clearance.allows)
+    const refinement = !coastal && rounded && refineRoadRoute(rounded, sample, clearance.allows)
     const refined = refinement && validate(refinement)
     if (refined) return refined
+  }
+  if (coastal) {
+    // Spend the existing refinement allowance on a two-way coastal detour.
+    // Keep the same four full-profile attempts and every physical rejection.
+    const detour = coastalRoadRoute(start, end, sample, clearance.allows)
+    if (detour) {
+      const smooth = roundRoadRoute(detour)
+      const road = validate(clearance.routeAllows(smooth) ? smooth : detour)
+      if (road) return road
+    }
   }
   const bends = [direction * distance * .09, -direction * distance * .14]
   const candidates = bends.map(bend => candidateRoute(start, end, bend))

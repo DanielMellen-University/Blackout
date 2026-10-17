@@ -1,0 +1,285 @@
+{
+  "seed": 73,
+  "id": "-5,-3",
+  "x": -113644.11213390242,
+  "z": -55704.22178563972,
+  "attempts": [
+    {
+      "key": "-5,-2|-5,-3",
+      "from": {
+        "x": -107500.423630353,
+        "y": 424.21006652441525,
+        "z": -41254.25507126778,
+        "structure": "ground"
+      },
+      "to": {
+        "x": -113644.11213390242,
+        "y": 5.291669770500201,
+        "z": -55704.22178563972,
+        "structure": "ground"
+      },
+      "accepted": false,
+      "diagnostics": [
+        {
+          "firstBlockedStation": 23,
+          "a": {
+            "x": -107500.423630353,
+            "y": 424.21006652441525,
+            "z": -41254.25507126778,
+            "structure": "ground"
+          },
+          "b": {
+            "x": -113644.11213390242,
+            "y": 5.291669770500201,
+            "z": -55704.22178563972,
+            "structure": "ground"
+          },
+          "startAllowed": true,
+          "endAllowed": true
+        },
+        {
+          "file": "RoadRouting.ts",
+          "line": 81,
+          "context": "nes))).findIndex(row=>row.every(v=>!Number.isFinite(v))),a,b,startAllowed:allows?.(a,a),endAllowed:allows?.(b,b)});",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:337:61)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 305,
+          "context": "(points: readonly { x: number; z: number }[]): SettlementRoad | null => {\n    if (!clearance.routeAllows(points))",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 305,
+          "context": "(points: readonly { x: number; z: number }[]): SettlementRoad | null => {\n    if (!clearance.routeAllows(points))",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 329,
+          "context": "for (const candidate of candidates) {\n    const road = validate(candidate.points)\n    if (road) return road\n  }",
+          "stack": [
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)",
+            "    at selectRegionalRoadLinks (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:116:19)"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "-5,-3|-6,-3",
+      "from": {
+        "x": -114120.52413213514,
+        "y": 33.810705264175844,
+        "z": -56074.71918483094,
+        "structure": "ground"
+      },
+      "to": {
+        "x": -136308.40981791308,
+        "y": 777.0036152322795,
+        "z": -61283.649625229875,
+        "structure": "ground"
+      },
+      "accepted": false,
+      "diagnostics": [
+        {
+          "file": "RoadSurface.ts",
+          "line": 91,
+          "context": "int.y, point.leftGroundY ?? point.y, point.rightGroundY ?? point.y)\n    if (clearance > MAX_ROAD_STRUCTURE_HEIGHT)",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:358:62)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RoadSurface.ts",
+          "line": 88,
+          "context": "if (raised && !point.bridge) {\n      span += i ? step(i, i - 1) : 0\n      if (span > MAX_DRY_ROAD_STRUCTURE_SPAN)",
+          "stack": [
+            "    at validate (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:348:113)",
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:360:33)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126"
+          ]
+        },
+        {
+          "file": "RoadSurface.ts",
+          "line": 91,
+          "context": "int.y, point.leftGroundY ?? point.y, point.rightGroundY ?? point.y)\n    if (clearance > MAX_ROAD_STRUCTURE_HEIGHT)",
+          "stack": [
+            "    at validate (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:348:113)",
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126"
+          ]
+        },
+        {
+          "file": "RoadSurface.ts",
+          "line": 81,
+          "context": "heights[j] = deck\n    }\n  }\n  if (heights[0]! > points[0]!.y + 1e-5 || heights.at(-1)! > points.at(-1)!.y + 1e-5)",
+          "stack": [
+            "    at validate (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:348:113)",
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 329,
+          "context": "for (const candidate of candidates) {\n    const road = validate(candidate.points)\n    if (road) return road\n  }",
+          "stack": [
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)",
+            "    at selectRegionalRoadLinks (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:116:19)"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "-4,-3|-5,-3",
+      "from": {
+        "x": -81831.1169489041,
+        "y": 1795.5267560126279,
+        "z": -54140.253604255486,
+        "structure": "ground"
+      },
+      "to": {
+        "x": -113644.11213390242,
+        "y": 5.291669770500201,
+        "z": -55704.22178563972,
+        "structure": "ground"
+      },
+      "accepted": false,
+      "diagnostics": [
+        {
+          "file": "RoadSurface.ts",
+          "line": 160,
+          "context": "t(profile[j]!.x - profile[j - 1]!.x, profile[j]!.z - profile[j - 1]!.z)\n    if (spanLength > MAX_ROAD_BRIDGE_SPAN)",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:356:55)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 305,
+          "context": "(points: readonly { x: number; z: number }[]): SettlementRoad | null => {\n    if (!clearance.routeAllows(points))",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 305,
+          "context": "(points: readonly { x: number; z: number }[]): SettlementRoad | null => {\n    if (!clearance.routeAllows(points))",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 329,
+          "context": "for (const candidate of candidates) {\n    const road = validate(candidate.points)\n    if (road) return road\n  }",
+          "stack": [
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)",
+            "    at selectRegionalRoadLinks (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:116:19)"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "-4,-2|-5,-3",
+      "from": {
+        "x": -81957.81172265921,
+        "y": 1189.3772891576398,
+        "z": -35186.965896819995,
+        "structure": "ground"
+      },
+      "to": {
+        "x": -113644.11213390242,
+        "y": 5.291669770500201,
+        "z": -55704.22178563972,
+        "structure": "ground"
+      },
+      "accepted": false,
+      "diagnostics": [
+        {
+          "firstBlockedStation": 54,
+          "a": {
+            "x": -81957.81172265921,
+            "y": 1189.3772891576398,
+            "z": -35186.965896819995,
+            "structure": "ground"
+          },
+          "b": {
+            "x": -113644.11213390242,
+            "y": 5.291669770500201,
+            "z": -55704.22178563972,
+            "structure": "ground"
+          },
+          "startAllowed": true,
+          "endAllowed": true
+        },
+        {
+          "file": "RoadRouting.ts",
+          "line": 81,
+          "context": "nes))).findIndex(row=>row.every(v=>!Number.isFinite(v))),a,b,startAllowed:allows?.(a,a),endAllowed:allows?.(b,b)});",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:337:61)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 305,
+          "context": "(points: readonly { x: number; z: number }[]): SettlementRoad | null => {\n    if (!clearance.routeAllows(points))",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 305,
+          "context": "(points: readonly { x: number; z: number }[]): SettlementRoad | null => {\n    if (!clearance.routeAllows(points))",
+          "stack": [
+            "    at roadBetweenSettlements (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:367:16)",
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)"
+          ]
+        },
+        {
+          "file": "RegionalRoads.ts",
+          "line": 329,
+          "context": "for (const candidate of candidates) {\n    const road = validate(candidate.points)\n    if (road) return road\n  }",
+          "stack": [
+            "    at file:///tmp/blackout-coast-departure-diagnostic.mjs:11:126",
+            "    at eval (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:148:17)",
+            "    at selectRegionalRoadLinks (/home/daniel/Documents/GitHub/Blackout/src/world/RegionalRoads.ts:116:19)"
+          ]
+        }
+      ]
+    }
+  ],
+  "links": []
+}

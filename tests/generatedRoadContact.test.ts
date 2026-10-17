@@ -76,7 +76,7 @@ it.each([
       const offsets = mesh.geometry.getAttribute('groundOffset')
       const originalY = Float32Array.from({ length: positions.count }, (_, i) => positions.getY(i))
       draper.add(mesh.geometry, root.position.x, root.position.y, root.position.z)
-      return { root, positions, offsets, originalY }
+      return { mesh, root, positions, offsets, originalY }
     })
     const vertices = surfaces.reduce((sum, s) => sum + s.positions.count, 0)
     // Remove clock variance without relaxing the shared per-update vertex/probe cap.
@@ -88,7 +88,7 @@ it.each([
       for (let i = 0; i <= Math.ceil(vertices / MAX_DRAPE_VERTICES_PER_FRAME); i++) {
         expect(draper.update()).toBeLessThanOrEqual(MAX_DRAPE_VERTICES_PER_FRAME)
       }
-      for (const { root, positions, offsets, originalY } of surfaces) {
+      for (const { mesh, root, positions, offsets, originalY } of surfaces) {
         let checked = 0
         for (let i = 0; i < positions.count; i++) {
           if (offsets.getX(i) < 0) { expect(positions.getY(i)).toBe(originalY[i]); continue }
@@ -98,6 +98,27 @@ it.each([
           checked++
         }
         expect(checked).toBeGreaterThan(2)
+        if (!local) {
+          let interiorChecks = 0
+          const index = mesh.geometry.index!
+          for (let t = 0; t < index.count; t += 3) {
+            const ids = [index.getX(t), index.getX(t + 1), index.getX(t + 2)]
+            if (ids.some(i => offsets.getX(i) < 0 || sample(positions.getX(i) + root.position.x,
+              positions.getZ(i) + root.position.z) === null)) continue
+            for (const weights of [[1/3, 1/3, 1/3], [.5, .5, 0], [0, .5, .5], [.5, 0, .5]]) {
+              const x = ids.reduce((s, i, k) => s + positions.getX(i) * weights[k]!, 0) + root.position.x
+              const z = ids.reduce((s, i, k) => s + positions.getZ(i) * weights[k]!, 0) + root.position.z
+              const height = sample(x, z)
+              if (height === null) continue
+              const y = ids.reduce((s, i, k) => s + positions.getY(i) * weights[k]!, 0) + root.position.y
+              const offset = ids.reduce((s, i, k) => s + offsets.getX(i) * weights[k]!, 0)
+              // Probe face interiors and edges, not just their draped vertices.
+              expect(Math.abs(y - height - offset)).toBeLessThan(.002)
+              interiorChecks++
+            }
+          }
+          expect(interiorChecks).toBeGreaterThan(30)
+        }
       }
     }
     draper.clear()
