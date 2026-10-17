@@ -99,11 +99,9 @@ export class FlightAudio {
   private disposed = false
   private readonly scheduledTargets = new WeakMap<AudioParam, number>()
 
-  /**
-   * Resume (or create) the AudioContext from a user gesture such as Play.
-   * Safe to call repeatedly.
-   */
-  async resume(): Promise<void> {
+  /** Build the silent graph during boot, outside the Play gesture/frame.
+   * Browsers may keep the context suspended until resume receives a gesture. */
+  prepare(): void {
     if (this.disposed) return
     try {
       if (this.ctx?.state === 'closed') {
@@ -111,15 +109,23 @@ export class FlightAudio {
         this.built = false
       }
       if (!this.ctx) {
-        const AC =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext?: typeof AudioContext })
-            .webkitAudioContext
+        const AC = window.AudioContext ||
+          (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
         if (!AC) return
         this.ctx = new AC()
       }
       if (!this.built) this.buildGraph(this.ctx)
-      if (this.ctx.state === 'suspended') await this.ctx.resume()
+    } catch {
+      /* Audio unavailable: stay silent and allow the next gesture to retry. */
+    }
+  }
+
+  /** Resume from a user gesture such as Play. Safe to call repeatedly. */
+  async resume(): Promise<void> {
+    if (this.disposed) return
+    this.prepare()
+    try {
+      if (this.ctx?.state === 'suspended') await this.ctx.resume()
     } catch {
       /* Audio unavailable: stay silent */
     }

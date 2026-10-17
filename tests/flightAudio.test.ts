@@ -18,6 +18,24 @@ import {
 } from '../src/audio/FlightAudio'
 
 describe('flight audio automation', () => {
+  it('prepares one silent graph before Play and resumes it only on the gesture', async () => {
+    const resume = vi.fn(async () => {}), context = { state: 'suspended', resume }
+    const construct = vi.fn(function () { return context })
+    vi.stubGlobal('window', { AudioContext: construct })
+    const audio = new FlightAudio()
+    const graph = vi.fn(() => Object.assign(audio, { built: true }))
+    Object.assign(audio, { buildGraph: graph })
+    try {
+      audio.prepare(); audio.prepare()
+      expect(construct).toHaveBeenCalledOnce(); expect(graph).toHaveBeenCalledOnce()
+      expect(resume).not.toHaveBeenCalled()
+      await audio.resume()
+      expect(resume).toHaveBeenCalledOnce(); expect(graph).toHaveBeenCalledOnce()
+      Object.assign(audio, { ctx: null }); audio.dispose(); audio.prepare()
+      expect(construct).toHaveBeenCalledOnce()
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose(); vi.unstubAllGlobals() }
+  })
+
   it('scales arrived thunder by distance gain without scheduling silent events', () => {
     const audio = new FlightAudio(), noiseBurst = vi.fn(), tone = vi.fn()
     Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, effectsGain: {},

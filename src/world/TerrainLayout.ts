@@ -33,9 +33,11 @@ export function planTerrainTiles(
   radius: number,
   out?: TerrainTile[],
   previousSplits?: Set<string>,
+  scratchSplits?: Set<string>,
 ): TerrainTile[] {
   const tiles = out ?? []
-  const nextSplits = previousSplits ? new Set<string>() : null
+  const nextSplits = previousSplits ? scratchSplits ?? new Set<string>() : null
+  nextSplits?.clear()
   let count = 0
   function visit(cx: number, cz: number, size: number): void {
     const edgeDistance = tileDistance(cx, cz, size, x, z)

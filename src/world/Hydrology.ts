@@ -173,11 +173,13 @@ function* buildCatchmentSteps(cx: number, cz: number): Generator<HydrologyBuildP
   return result
 }
 
-/**
- * Prepare only the regions needed by one tile before climate/edge/water
- * sampling. Partial drainage is private until complete; return() abandons it.
- * No worker, timer, or additional persistent cache is created.
- */
+/** Read the existing cache without allocating a preparation iterator. */
+export function hydrologyPreparedAt(x: number, z: number): boolean {
+  return seed === getWorldSeed() && cache.has(`${Math.floor(x / CATCHMENT_SIZE)},${Math.floor(z / CATCHMENT_SIZE)}`)
+}
+
+/** Prepare only queried regions. Partial drainage stays private until complete;
+ * cancellation releases it. No worker or additional persistent cache is created. */
 export function* prepareHydrologyInBoundsSteps(minX: number, minZ: number, maxX: number, maxZ: number):
   Generator<HydrologyBuildPhase, void, void> {
   if (!Number.isFinite(minX) || !Number.isFinite(minZ) || !Number.isFinite(maxX) || !Number.isFinite(maxZ) ||

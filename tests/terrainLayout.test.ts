@@ -91,4 +91,15 @@ describe('long-range adaptive terrain coverage', () => {
     expect(reused).toContain(firstRecord)
     expect(reused).toEqual(planTerrainTiles(8.5, 3.5, 40))
   })
+  it('reuses split scratch without losing hysteresis history across cell crossings', () => {
+    const history = new Set<string>(), scratch = new Set<string>(), expectedHistory = new Set<string>()
+    for (const x of [.5, 8.5, 7.5, 40.5, -30.5]) {
+      const expected = planTerrainTiles(x, 3.5, 80, undefined, expectedHistory)
+      const actual = planTerrainTiles(x, 3.5, 80, undefined, history, scratch)
+      expect(actual).toEqual(expected)
+      expect(history).toEqual(expectedHistory)
+      expect(scratch.size).toBe(history.size)
+    }
+  })
+
 })

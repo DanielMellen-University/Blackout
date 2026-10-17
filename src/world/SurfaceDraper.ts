@@ -21,8 +21,11 @@ export class SurfaceDraper {
     const positions = geometry.getAttribute('position')
     if (!(positions instanceof BufferAttribute) || !geometry.getAttribute('groundOffset')) return
     positions.setUsage(DynamicDrawUsage)
+    // X/Z never change during a refit. Stage only Y and publish it atomically.
+    const staged = new Float32Array(positions.count)
+    for (let i = 0; i < positions.count; i++) staged[i] = positions.getY(i)
     this.surfaces.push({ geometry, x, y, z, revision: -1, cursor: 0, targetRevision: -1, changed: false,
-      staged: new Float32Array(positions.array) })
+      staged })
   }
 
   remove(geometry: BufferGeometry): void {
@@ -54,8 +57,8 @@ export class SurfaceDraper {
             // Compare in the attribute's actual precision. Distant tile changes
             // must not republish identical roads and rebuild all their normals.
             const y = Math.fround(height + offset - surface.y)
-            if (surface.staged[i * 3 + 1] !== y) {
-              surface.staged[i * 3 + 1] = y; surface.changed = true
+            if (surface.staged[i] !== y) {
+              surface.staged[i] = y; surface.changed = true
             }
           }
           probes++
@@ -64,7 +67,8 @@ export class SurfaceDraper {
       }
       if (surface.cursor === positions.count) {
         if (surface.changed) {
-          positions.array.set(surface.staged); positions.needsUpdate = true
+          for (let i = 0; i < positions.count; i++) positions.setY(i, surface.staged[i]!)
+          positions.needsUpdate = true
           surface.geometry.computeVertexNormals(); surface.geometry.computeBoundingSphere()
         }
         surface.revision = surface.targetRevision; surface.cursor = 0

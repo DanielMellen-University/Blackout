@@ -69,7 +69,10 @@ for (const file of await readdir(directory)) {
       .map(e => [Math.max(start, e.ts), Math.min(end, e.ts + (e.dur || 0))]).sort((a,b) => a[0]-b[0])
     let gcMs = 0, gcEnd = -Infinity
     for (const [a,b] of gcSpans) { gcMs += Math.max(0, b - Math.max(a, gcEnd)) / 1000; gcEnd = Math.max(gcEnd, b) }
+    const readbackMs = Math.max(0, ...events.filter(e => e.name === 'GLES2::ReadPixels').map(eventTime))
+    const gpuWaitMs = Math.max(0, ...events.filter(e => e.name === 'ImplementationBase::WaitForCmd').map(eventTime))
     const categories = [
+      ['compositor canvas readback/GPU wait', readbackMs],
       ['settlement attachment', Math.max(...methods.filter(e => e.name === 'settlement.build').map(e => e.overlapMs), 0)],
       ['road attachment', Math.max(...methods.filter(e => e.name === 'settlement.buildRegionalRoad').map(e => e.overlapMs), 0)],
       ['staged attachment', Math.max(...methods.filter(e => e.name === 'settlement.advanceAssembly').map(e => e.overlapMs), 0)],
@@ -91,7 +94,7 @@ for (const file of await readdir(directory)) {
     if (phase === 'startup' && sampled('reseed') > 20) causes.push('cold launch world rebuild')
     if (!causes.length) causes.push('unresolved browser/driver/scheduling gap; no dominant captured main-thread phase')
     const traceCoverage = spans.some(e => e.ts <= start) && spans.some(e => e.ts + (e.dur || 0) >= end)
-    hitches.push({ phase, ...frame, causes, traceCoverage, gcMs: round(gcMs), dominantMeasuredPhase: { name: categories[0][0], ms: round(categories[0][1]) },
+    hitches.push({ phase, ...frame, causes, traceCoverage, gcMs: round(gcMs), readbackMs: round(readbackMs), gpuWaitMs: round(gpuWaitMs), dominantMeasuredPhase: { name: categories[0][0], ms: round(categories[0][1]) },
       methods, sampledSelf: rank(self), sampledInclusive: rank(inclusive),
       longestMainEvents: events.sort((a,b) => eventTime(b) - eventTime(a)).slice(0, 12)
         .map(e => ({ name: e.name, startMs: round((e.ts - nav.ts) / 1000), ms: round(e.dur / 1000), overlapMs: round(eventTime(e)), args: e.args })) })

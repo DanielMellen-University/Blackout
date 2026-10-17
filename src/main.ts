@@ -802,6 +802,8 @@ export async function boot(): Promise<void> {
   // the hero camera stays at the origin until Play is pressed.
   cameras.setMode('chase', aircraft)
   cameras.setTitleFraming(aircraft)
+  const audio = new FlightAudio()
+  audio.prepare()
   if (titleStatus) titleStatus.textContent = 'PREPARING FLIGHT'
   await warmupShadowVariants(world.sun, async () => {
     renderer.shadowMap.needsUpdate = true
@@ -932,7 +934,6 @@ export async function boot(): Promise<void> {
   }
   applyEffectsQuality(renderQuality)
   syncReducedMotion()
-  const audio = new FlightAudio()
   const syncKeyboardAxisLabels = (): void => {
     const conventional = input.keyboardScheme === 'conventional'
     const yawPrimary = conventional ? 'Q' : 'A'

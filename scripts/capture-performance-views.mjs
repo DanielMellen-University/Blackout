@@ -1,7 +1,7 @@
 // Separate visual verification, run after all timing measurements.
 import { mkdir, writeFile } from 'node:fs/promises'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
-const directory = 'docs/reviews/performance-10.914/views'
+const directory = `${process.env.REVIEW_DIRECTORY || 'docs/reviews/performance-10.914'}/views`
 await mkdir(directory, { recursive: true })
 const browser = await chromium.launch({ headless: true,
   ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),

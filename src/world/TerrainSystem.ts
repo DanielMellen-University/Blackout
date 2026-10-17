@@ -23,7 +23,7 @@ import {
   type TerrainSurface,
 } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { CATCHMENT_SIZE, prepareHydrologyInBoundsSteps } from './Hydrology'
+import { CATCHMENT_SIZE, hydrologyPreparedAt, prepareHydrologyInBoundsSteps } from './Hydrology'
 import {
   clearTerrainSamplers,
   invalidateGroundSamplerCaches,
@@ -258,6 +258,7 @@ export class TerrainSystem {
   /** Reused quadtree output keeps cell-crossing schedules allocation-light. */
   private readonly plannedTiles: TerrainTile[] = []
   private readonly layoutSplits = new Set<string>()
+  private readonly layoutNextSplits = new Set<string>()
   /** Desired leaves grouped by their aligned 32-cell quadtree root. */
   private readonly desiredTileBuckets = new Map<string, DesiredTile[]>()
   /** Reuse bucket arrays across stream-cell schedules to avoid churn. */
@@ -566,6 +567,7 @@ export class TerrainSystem {
     this.desiredTileBucketPool.length = 0
     this.neededKeys.clear()
     this.layoutSplits.clear()
+    this.layoutNextSplits.clear()
     this.replacementKeys.clear()
     this.lastCx = Number.NaN
     this.lastCz = Number.NaN
@@ -698,6 +700,11 @@ export class TerrainSystem {
    * retries on the next frame after one cooperative hydrology slice. */
   sampleSurveySurface(x: number, z: number): TerrainSurface | null {
     if (this.disposed || !Number.isFinite(x) || !Number.isFinite(z)) return null
+    if (hydrologyPreparedAt(x, z)) {
+      this.surveyPreparation?.return()
+      this.surveyPreparation = null
+      return this.sampleMeshSurface(x, z) ?? sampleTerrainSurface(x, z)
+    }
     if (!this.surveyPreparation || x < this.surveyMinX || x >= this.surveyMaxX ||
       z < this.surveyMinZ || z >= this.surveyMaxZ) {
       this.surveyPreparation?.return()
@@ -842,7 +849,7 @@ export class TerrainSystem {
     }
     this.desiredTileBuckets.clear()
     for (const tile of planTerrainTiles(this.focusX / CHUNK_SIZE, this.focusZ / CHUNK_SIZE,
-      this.viewRadius, this.plannedTiles, this.layoutSplits)) {
+      this.viewRadius, this.plannedTiles, this.layoutSplits, this.layoutNextSplits)) {
         const { cx: kx, cz: kz, size, dist } = tile
         const key = tileKey(kx, kz, size)
         this.desiredTiles.set(key, tile)
@@ -887,7 +894,9 @@ export class TerrainSystem {
     this.sortPending()
 
     // Soft unload: mark out-of-range chunks to fade, don't hard-delete
-    this.replacementKeys.clear()
+    for (const key of this.replacementKeys.keys()) {
+      if (needed.has(key) || !this.chunks.has(key)) this.replacementKeys.delete(key)
+    }
     for (const [key, chunk] of this.chunks) {
       if (!needed.has(key)) {
         chunk.fadingOut = true
@@ -895,7 +904,8 @@ export class TerrainSystem {
         this.fadeKeys.add(key)
         // The layout only changes on cell crossings. Cache dependencies here
         // instead of scanning every desired tile for every fallback each frame.
-        const replacements: string[] = []
+        const replacements = this.replacementKeys.get(key) ?? []
+        replacements.length = 0
         const minRootCx = Math.floor(chunk.cx / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
         const maxRootCx = Math.floor((chunk.cx + chunk.size - 1) / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE
         const minRootCz = Math.floor(chunk.cz / TERRAIN_ROOT_SIZE) * TERRAIN_ROOT_SIZE

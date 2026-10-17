@@ -452,7 +452,7 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
     if (road.points.length < 2) continue
     const hollow = innerScale !== undefined
     const wide = !hollow && groundOffset !== undefined && road.width >= 4
-    const rows: number[][] = []
+    let previousLeft = 0, previousMiddle = 0, previousInnerRight = 0, previousRight = 0
     for (let i = 0; i < road.points.length; i++) {
       if (i && i % 128 === 0) yield
       const point = road.points[i]!, previous = road.points[Math.max(0, i - 1)]!
@@ -466,25 +466,27 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
       const leftX = point.leftX ?? point.x + nx, leftZ = point.leftZ ?? point.z + nz
       const rightX = point.rightX ?? point.x - nx, rightZ = point.rightZ ?? point.z - nz
       const leftY = point.leftY ?? point.y, rightY = point.rightY ?? point.y
-      const row = [add(leftX, leftY, leftZ, offset)]
+      const left = add(leftX, leftY, leftZ, offset)
+      let middle = 0, innerRight = 0
       if (hollow) {
+        // Keep only the preceding row. A suspended preparation must not retain
+        // one JavaScript array per cross-section in addition to its buffers.
         // Leave the asphalt lane open. A full gravel cap can cut through it
         // between draped vertices even when lower at every sampled centre.
-        row.push(add(point.x + (leftX - point.x) * innerScale!, point.y + (leftY - point.y) * innerScale!,
-          point.z + (leftZ - point.z) * innerScale!, offset),
-        add(point.x + (rightX - point.x) * innerScale!, point.y + (rightY - point.y) * innerScale!,
-          point.z + (rightZ - point.z) * innerScale!, offset))
-      } else if (wide) row.push(fit ? centre(point.x, point.y, point.z) : add(point.x, point.y, point.z, -1))
-      row.push(add(rightX, rightY, rightZ, offset))
-      rows.push(row)
-    }
-    for (let i = 1; i < rows.length; i++) {
-      const a = rows[i - 1]!, b = rows[i]!
-      if (hollow) indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!,
-        a[2]!, b[2]!, a[3]!, a[3]!, b[2]!, b[3]!)
-      else if (wide) indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!,
-        a[1]!, b[1]!, a[2]!, a[2]!, b[1]!, b[2]!)
-      else indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!)
+        middle = add(point.x + (leftX - point.x) * innerScale!, point.y + (leftY - point.y) * innerScale!,
+          point.z + (leftZ - point.z) * innerScale!, offset)
+        innerRight = add(point.x + (rightX - point.x) * innerScale!, point.y + (rightY - point.y) * innerScale!,
+          point.z + (rightZ - point.z) * innerScale!, offset)
+      } else if (wide) middle = fit ? centre(point.x, point.y, point.z) : add(point.x, point.y, point.z, -1)
+      const right = add(rightX, rightY, rightZ, offset)
+      if (i) {
+        if (hollow) indices.push(previousLeft, left, previousMiddle, previousMiddle, left, middle,
+          previousInnerRight, innerRight, previousRight, previousRight, innerRight, right)
+        else if (wide) indices.push(previousLeft, left, previousMiddle, previousMiddle, left, middle,
+          previousMiddle, middle, previousRight, previousRight, middle, right)
+        else indices.push(previousLeft, left, previousRight, previousRight, left, right)
+      }
+      previousLeft = left; previousMiddle = middle; previousInnerRight = innerRight; previousRight = right
     }
   }
   if (junctionRoad && groundOffset !== undefined) for (const point of [junctionRoad.points[0], junctionRoad.points.at(-1)]) {
@@ -851,6 +853,11 @@ export class SettlementSystem {
     roughness: .92, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
   private readonly bridgeDeck = new MeshStandardMaterial({ color: 0x777a76, roughness: .9, metalness: .02,
     polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 })
+  // Three.js caches the current instancing/colour variant per material. Give
+  // each existing bridge draw type its own material so switching decks/piers
+  // does not rebuild shader parameters and uniform lists on every frame.
+  private readonly localPierMaterial = this.bridgeDeck.clone()
+  private readonly regionalPierMaterial = this.bridgeDeck.clone()
   private readonly highwayMark = new MeshStandardMaterial({ color: 0xe6cf6a, emissive: 0x806825, emissiveIntensity: .38,
     roughness: .8, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })
   private readonly highwayEdge = new MeshStandardMaterial({ color: 0xd9cf9f, emissive: 0x65582c, emissiveIntensity: .2,
@@ -985,7 +992,7 @@ export class SettlementSystem {
         this.worker = null
       }
     }
-    for (const material of [this.asphalt, this.gravelShoulder, this.highway, this.bridgeDeck, this.highwayEdge]) {
+    for (const material of [this.asphalt, this.gravelShoulder, this.highway, this.bridgeDeck, this.localPierMaterial, this.regionalPierMaterial, this.highwayEdge]) {
       this.configureWeatherRoadMaterial(material)
     }
     this.configureWeatherRoofMaterial()
@@ -1153,9 +1160,9 @@ export class SettlementSystem {
       if (tint) mesh.setColorAt(0, new Color(0xffffff))
       fixtures.add(mesh)
     }
-    instance(this.walls, true); instance(this.roofs, true); instance(this.bridgeDeck, true)
+    instance(this.walls, true); instance(this.roofs, true); instance(this.localPierMaterial, true)
     for (const material of [this.streetLampPoleMaterial, this.streetLampGlow, this.dockDeckMaterial,
-      this.dockPostMaterial, this.bridgeDeck]) instance(material)
+      this.dockPostMaterial, this.regionalPierMaterial]) instance(material)
     for (const material of [this.asphalt, this.gravelShoulder, this.streetMark, this.highway,
       this.bridgeDeck, this.highwayMark, this.highwayEdge, this.cityBeacon, this.villageBeacon]) {
       fixtures.add(new Mesh(this.box, material))
@@ -1531,7 +1538,7 @@ export class SettlementSystem {
     this.root.removeFromParent()
     this.box.dispose(); this.tower.dispose(); this.spire.dispose(); this.anchorBeacon.dispose(); this.dome.dispose()
     this.streetLampPole.dispose(); this.streetLampGlowGeometry.dispose(); this.dockDeck.dispose(); this.dockPost.dispose(); this.roof.dispose()
-    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
+    this.walls.dispose(); this.roofs.dispose(); this.asphalt.dispose(); this.gravelShoulder.dispose(); this.highway.dispose(); this.bridgeDeck.dispose(); this.localPierMaterial.dispose(); this.regionalPierMaterial.dispose(); this.highwayMark.dispose(); this.highwayEdge.dispose()
     this.cityBeacon.dispose(); this.villageBeacon.dispose(); this.streetLampPoleMaterial.dispose(); this.streetLampGlow.dispose()
     this.dockDeckMaterial.dispose(); this.dockPostMaterial.dispose()
     this.groundMaterial.dispose()
@@ -2312,7 +2319,7 @@ export class SettlementSystem {
       const supports = plan.roads.flatMap(road => bridgeSupportPoints(road).map(point => ({ point, width: road.width })))
         .slice(0, MAX_ROAD_SUPPORTS)
       if (supports.length) {
-        const piers = new InstancedMesh(this.tower, this.bridgeDeck, supports.length)
+        const piers = new InstancedMesh(this.tower, this.localPierMaterial, supports.length)
         supports.forEach(({ point, width }, i) => {
           const bed = (point.groundY ?? point.y - 6) - 3, height = Math.max(1, point.y - bed)
           put(piers, i, point.x, bed + height / 2, point.z,
@@ -2446,7 +2453,9 @@ export class SettlementSystem {
 
   /** Keep cached road plans but release GPU meshes as the player flies away. */
   private pruneDistantRoads(x: number, z: number): void {
-    for (const [key, connection] of this.connections) {
+    // Avoid allocating a Map entry pair per road on every flight frame.
+    for (const key of this.connections.keys()) {
+      const connection = this.connections.get(key)!
       if (roadDistanceSquared(x, z, connection.road) <= ROAD_KEEP_RADIUS * ROAD_KEEP_RADIUS) continue
       this.connections.delete(key)
       this.removeRoad(connection)
@@ -2586,7 +2595,7 @@ export class SettlementSystem {
       yield
       const pierPoints = bridgeSupportPoints(road)
       if (pierPoints.length) {
-        const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
+        const piers = new InstancedMesh(this.tower, this.regionalPierMaterial, pierPoints.length)
         const transform = new Object3D()
         pierPoints.forEach((point, i) => {
           const bed = (point.groundY ?? sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height) - 3
