@@ -56,8 +56,9 @@ export class FlightBriefingSession {
   /** Call once per simulation frame, independently of HUD/render cadence. */
   advance(elapsed: number, live: boolean): void {
     // Reading the takeoff brief while stationary cannot make it disappear.
-    // Training keeps gate-one coaching until that actual milestone is reached.
-    if (this.current === 'takeoff' || (this.guided && this.current === 'first-gate')) return
+    // Training keeps each instruction through the actual milestone, including
+    // a slow return or another circuit to line up. Terminal states still clear it.
+    if (this.current === 'takeoff' || this.guided) return
     this.remaining = briefingRemainingSeconds(this.remaining, elapsed, live)
   }
 

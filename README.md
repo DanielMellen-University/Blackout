@@ -2,13 +2,13 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.910**. Previous roadmap chunk: **10.909**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.911**. Previous roadmap chunk: **10.910**.
+
+Recent changes from **10.911**. Keep final glide guidance within 30 degrees of inbound nose and ground track, allowing modest crosswind crabs. Keep Training Orbit hints visible through gates, return and repeated approach setup until completion or a crash; ordinary missions retain timed hints. The pushed 10.910 thermal selection and CI repairs take precedence over the saved duplicate edits. Ghost revision 26 and saved records remain. Focused checks and rendered review fixtures cover the change; complete generated-world approaches and physical-device onboarding remain open.
 
 Recent changes from **10.910**. Restore CI with independently reproduced historical terrain/hydrology hashes, corrected UI checks and a real thermal-route anchor fix. Cities favor a second buildable spoke at least 60 degrees from the first, within the existing four attempts and one village/two city success limits. Pin the real seed-32 replacement of a usable near-parallel road. Add loaded-road chase/first-person trace controls and seed-73/seed-1337 far-near-far vertex checks. Ghost revision 26 preserves saved records. Keep four settlements, 1,500 buildings, six regional links and all worker/profile/support caps. Rough/coastal artwork, actual low-altitude visual review and controlled performance/memory acceptance remain open; no browser is connected for saved review stills. See [CI evidence](docs/reviews/ci-baseline-10.910.md) and [settlement review](docs/settlement-overhaul.md).
 
 Recent changes from **10.909**. Add development-only city-corridor review routes and bounded settlement/building/road resource timelines, retaining the original route. Record historical/current 81.6 km full-game runs with identical instrumentation. The current run exercises more buildings, but adaptive pixel ratio differs, so the pair is inconclusive as a controlled performance comparison. Preserve raw records and limitations; low-altitude and long-run memory acceptance remain open. Production gameplay and generation revision 25 are unchanged.
-
-Recent changes from **10.908**. Settlements try bounded alternative neighbours when their preferred roads cannot be built. Select up to one usable village link or two city links from at most four ranked candidates, retaining all terrain, clearance and structure checks. Keep graph replies compact and reuse profiles in a worker-only cache capped at eight entries/8,192 total points. A real seed-73 village now connects through its fourth candidate after three failures. Ghost revision 25 preserves saved records. Sustained-flight, wider network artwork and controlled performance/memory acceptance remain open.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

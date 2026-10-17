@@ -64,9 +64,15 @@ export function landingGlideCue(
 ): RunwayGlideCue | null {
   if (onGround || !approach.inApproach || !Number.isFinite(heading) ||
     !Number.isFinite(velocityX) || !Number.isFinite(velocityZ) || !Number.isFinite(runwayYaw)) return null
-  // Both the nose and ground track must point toward the landing threshold.
-  // A small cosine margin excludes perpendicular headings despite trig rounding.
-  const forwardSpeed = velocityX * Math.sin(runwayYaw) + velocityZ * Math.cos(runwayYaw)
-  if (!(Math.cos(heading - runwayYaw) > 1e-6) || !Number.isFinite(forwardSpeed) || forwardSpeed <= 1e-6) return null
+  // Final-approach advice needs both nose and track within 30 degrees of inbound.
+  // A positive forward component alone also admits almost perpendicular fly-bys.
+  // Compare local components to avoid a speed root, retaining crosswind crabs.
+  const s = Math.sin(runwayYaw)
+  const c = Math.cos(runwayYaw)
+  const forwardSpeed = velocityX * s + velocityZ * c
+  const lateralSpeed = velocityX * c - velocityZ * s
+  if (!(Math.cos(heading - runwayYaw) >= Math.sqrt(3) / 2) ||
+    !Number.isFinite(forwardSpeed) || !Number.isFinite(lateralSpeed) || forwardSpeed <= 1e-6 ||
+    Math.abs(lateralSpeed) > forwardSpeed / Math.sqrt(3)) return null
   return runwayGlideCue(approach.height, approach.distance)
 }

@@ -72,6 +72,25 @@ describe('shared runway guidance', () => {
     expect(landingGlideCue({ ...out, inApproach: false }, 0, 0, 50, 0, false)).toBeNull()
   })
 
+  it('requires the nose and ground track to be within 30 degrees of inbound', () => {
+    const out = { height: 25, distance: 500, inApproach: true }
+    for (const yaw of [0, Math.PI / 2, -Math.PI / 3]) {
+      const cue = (nose: number, track: number) => landingGlideCue(out, yaw + nose,
+        Math.sin(yaw + track) * 50, Math.cos(yaw + track) * 50, yaw, false)
+      // A crossing with a small inbound component used to trigger final approach.
+      for (const degrees of [-80, -31, 31, 80]) {
+        const angle = degrees * Math.PI / 180
+        expect(cue(angle, 0)).toBeNull()
+        expect(cue(0, angle)).toBeNull()
+        expect(cue(angle, angle)).toBeNull()
+      }
+      // Allow a modest crosswind crab while the track follows the runway.
+      expect(cue(.2, 0)).toBe('on-slope')
+      expect(cue(-.2, .2)).toBe('on-slope')
+      expect(cue(.5, .5)).toBe('on-slope')
+    }
+  })
+
   it('fails closed for invalid coordinates, overflow, angles and velocities', () => {
     const out = { height: 25, distance: 500, inApproach: true }
     for (const invalid of [NaN, Infinity, -Infinity]) {

@@ -67,7 +67,7 @@ describe('flight briefing', () => {
     expect(session.visible).toBe(false)
   })
 
-  it('preserves training gate-one coaching but does not renew it on a bounce', () => {
+  it('keeps training coaching through gates, return and approach until completion', () => {
     const session = new FlightBriefingSession()
     session.reset(true, true)
     session.observe(false, 0, 'running', false, 5)
@@ -78,6 +78,38 @@ describe('flight briefing', () => {
     session.observe(true, 1, 'running', false, 5)
     session.observe(false, 1, 'running', false, 5)
     expect(session.stage).toBe('route')
+    expect(session.visible).toBe(true)
+    expect(session.remainingSeconds).toBe(BRIEFING_DURATION_SECONDS)
+    session.observe(false, 5, 'returning', false, 5)
+    session.advance(300, true)
+    expect(session.stage).toBe('return')
+    expect(session.visible).toBe(true)
+    session.observe(false, 5, 'returning', true, 5)
+    session.advance(300, true)
+    expect(session.stage).toBe('approach')
+    expect(session.visible).toBe(true)
+    // Leaving final to set up again does not need a new countdown or milestone.
+    session.observe(false, 5, 'returning', false, 5)
+    session.advance(300, true)
+    expect(session.visible).toBe(true)
+    session.observe(true, 5, 'complete', false, 5)
+    expect(session.visible).toBe(false)
+  })
+
+  it('ends persistent training coaching on a crash and restores it on retry', () => {
+    const session = new FlightBriefingSession()
+    session.reset(true, true)
+    session.observe(false, 1, 'running', false, 5)
+    session.observe(false, 1, 'failed', false, 5)
+    session.advance(300, true)
+    expect(session.visible).toBe(false)
+    session.reset(true, true)
+    expect(session.stage).toBe('takeoff')
+    expect(session.visible).toBe(true)
+    // A later ordinary mission uses the existing quiet timed hints again.
+    session.reset(true, false)
+    session.observe(false, 1, 'running', false, 5)
+    session.advance(BRIEFING_DURATION_SECONDS, true)
     expect(session.visible).toBe(false)
   })
 
