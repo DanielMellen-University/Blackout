@@ -28,14 +28,14 @@ function digest(cx: number, cz: number): string {
 beforeEach(() => resetSeed(1337))
 
 describe('cooperative cold hydrology', () => {
-  // Regional drainage revision 13: refined shared shores and junction clearance.
+  // Reproduced on clean 10.891 (b0c6cbd), including the 10.890 wetland changes.
   it.each([
-    [42, -1, -1, 'a20f95968f7c1e974045ee2cca966f2768da217a46895f348c927fa5635ba8b2'],
-    [42, 0, 0, '60061533f493836b960119838d1ca050a5bdf1388ee7974c0e9ce76f89baf24c'],
-    [42, 1, -1, 'dbbc26fe198f6ca10897998366e589b708ac697f60ce46b6e3fb54deb0984242'],
+    [42, -1, -1, '5a0303d96158af7eafbb74a2c0f4c6ffbfe33bc720f4e7084d5fd6bc3f4f06bf'],
+    [42, 0, 0, 'e0323ffb8b05478947b280a63b218f56eef2f7ad84427939a9b56b8b67315b40'],
+    [42, 1, -1, '11c47f9b81a756411437f5152d6146abad5b5a64fb58caa093cca5f9c49e8726'],
     [1337, -1, -1, 'a20f95968f7c1e974045ee2cca966f2768da217a46895f348c927fa5635ba8b2'],
     [1337, 0, 0, 'f9d5f8c88c85e054d80bf248583beb02b3f46d4abcc199df8323c793c02a7eed'],
-    [1337, 1, -1, 'ba1c0b4426b70faa5172761583e0274cb1cd49cb9248ad237ca955265896664c'],
+    [1337, 1, -1, 'f498ce3da5409f88de5862823419c11ae542607bd8d3f62ff0b4433ee44c5fbb'],
   ] as const)('preserves regional seed %s region %s,%s', (seed, cx, cz, hash) => {
     resetSeed(seed)
     const phases = new Set<string>()
@@ -87,14 +87,14 @@ describe('cooperative cold hydrology', () => {
     setWorldSeed(42)
     expect(() => steps.next()).toThrow('World seed changed')
     drain(prepare(0, 0))
-    expect(digest(0, 0)).toBe('60061533f493836b960119838d1ca050a5bdf1388ee7974c0e9ce76f89baf24c')
+    expect(digest(0, 0)).toBe('e0323ffb8b05478947b280a63b218f56eef2f7ad84427939a9b56b8b67315b40')
   })
 
   it('does not reuse another seed\'s cache when a failed world search restores the original seed', () => {
     const steps = prepare(0, 0)
     advanceToGrade(steps)
     setWorldSeed(42)
-    expect(digest(0, 0)).toBe('60061533f493836b960119838d1ca050a5bdf1388ee7974c0e9ce76f89baf24c')
+    expect(digest(0, 0)).toBe('e0323ffb8b05478947b280a63b218f56eef2f7ad84427939a9b56b8b67315b40')
     setWorldSeed(1337)
     drain(steps)
     expect(digest(0, 0)).toBe('f9d5f8c88c85e054d80bf248583beb02b3f46d4abcc199df8323c793c02a7eed')

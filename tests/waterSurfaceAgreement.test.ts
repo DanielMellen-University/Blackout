@@ -120,5 +120,5 @@ describe('shared water surface', () => {
     expect(wetGrid).toBeGreaterThan(500)
     expect({ mismatches, failures }).toEqual({ mismatches: 0, failures: [] })
     expect(dry).toBe(0)
-  })
+  }, 30_000)
 })

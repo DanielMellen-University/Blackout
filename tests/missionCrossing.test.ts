@@ -564,6 +564,7 @@ describe('MissionSystem gate crossing', () => {
     const pad = findPlayableSpawn()
     expect(pad).not.toBeNull()
     if (!pad) return
+    setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
     const thermal = buildMissionRoute(pad.x, pad.y, pad.z, pad.yaw, 'thermal', 'steady')
     const liftSamples = thermal.slice(1, 4).map((point) =>
       thermalLiftIntensity(27, point.x, point.y - pad.y, point.z, 1, 0, 0),
@@ -572,6 +573,8 @@ describe('MissionSystem gate crossing', () => {
     const forwardDistance = (thermal[2]!.x - pad.x) * Math.sin(pad.yaw) +
       (thermal[2]!.z - pad.z) * Math.cos(pad.yaw)
     expect(forwardDistance).toBeGreaterThan(700)
+    const clearance = routeCorridorMinClearance(pad.x, pad.y, pad.z, thermal, pad.yaw)
+    expect(validateMissionRoute(thermal, clearance).valid).toBe(true)
     setWorldSeed(1337.9182)
     clearOpsPad()
   })

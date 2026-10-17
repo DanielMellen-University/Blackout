@@ -42,6 +42,7 @@ export function nearestThermalPocket(
   seed: number,
   x: number,
   z: number,
+  accept?: (pocket: ThermalPocket) => boolean,
 ): ThermalPocket | null {
   if (!Number.isFinite(seed) || !Number.isFinite(x) || !Number.isFinite(z)) return null
   const cellX = Math.floor(x / THERMAL_CELL_SIZE_M)
@@ -51,7 +52,7 @@ export function nearestThermalPocket(
   for (let offsetX = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetX += 1) {
     for (let offsetZ = -THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ <= THERMAL_NEIGHBOUR_RADIUS_CELLS; offsetZ += 1) {
       const pocket = thermalPocketForCell(seed, cellX + offsetX, cellZ + offsetZ)
-      if (!pocket) continue
+      if (!pocket || (accept && !accept(pocket))) continue
       const dx = x - pocket.x
       const dz = z - pocket.z
       const distanceSquared = dx * dx + dz * dz

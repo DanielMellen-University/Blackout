@@ -33,15 +33,15 @@ describe('current mission documentation', () => {
   })
 })
 
-describe('game info', () => {
+describe('flight manual', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
   const info = html.slice(html.indexOf('id="menu-info"'), html.indexOf('id="overlay"'))
 
   it('describes thrust and the short task list, not the old speed target or timer tasks', () => {
-    expect(info).toContain('Throttle controls thrust')
-    expect(info).toContain('Fly gates in order')
-    expect(info).toContain('return and land')
-    expect(info).toContain('Crashes also show your score')
+    expect(info).toContain('Throttle changes thrust, not instant speed')
+    expect(info).toContain('fly through the gates in order')
+    expect(info).toContain('follow the base cue home and land to finish')
+    expect(info).toContain('Crashes show a brief cinematic, then your flight report')
     expect(info).not.toContain('1500 kts')
     expect(info).not.toContain('speed target')
     expect(info).not.toContain('CROSSWIND')

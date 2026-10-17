@@ -35,6 +35,20 @@ describe('deterministic thermal lift', () => {
     }
   })
 
+  it('ranks only eligible pockets within the same nine-candidate budget', () => {
+    const nearest = thermalPocketForCell(27, 0, 0)!
+    const visited: string[] = []
+    const next = nearestThermalPocket(27, nearest.x, nearest.z, candidate => {
+      visited.push(`${candidate.cellX},${candidate.cellZ}`)
+      return candidate.x > nearest.x
+    })
+    expect(visited).toHaveLength(9)
+    expect(new Set(visited).size).toBe(9)
+    expect(next).not.toBeNull()
+    expect(next!.x).toBeGreaterThan(nearest.x)
+    expect(nearestThermalPocket(27, nearest.x, nearest.z, () => false)).toBeNull()
+  })
+
   it('is repeatable and finite for the same seeded world sample', () => {
     const first = thermalLiftIntensity(42, 270, 420, -330, 0.9, 0.1, 0.02)
     const second = thermalLiftIntensity(42, 270, 420, -330, 0.9, 0.1, 0.02)

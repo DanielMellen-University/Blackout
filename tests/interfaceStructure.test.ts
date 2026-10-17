@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
-const css = readFileSync(new URL('../src/style.css', import.meta.url), 'utf8')
+const css = ['../src/style.css', '../src/ui/settingsDeck.css']
+  .map(path => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n')
 
 describe('unified flight deck contracts', () => {
   it('uses mission terminology in launch, settings, and results', () => {
@@ -42,7 +43,7 @@ describe('unified flight deck contracts', () => {
       expect(section, name).toContain(`id="${id}"`)
     }
     expect(css).toContain('grid-template-rows: auto auto minmax(0, 1fr) auto')
-    expect(css).toContain('.settings-content { overflow-y: auto; min-height: 0;')
+    expect(css).toMatch(/\.settings-content\s*\{[^}]*min-height:\s*0;[^}]*overflow-y:\s*auto;/)
   })
 
   it('rebuilds both instruments as matching rails with only blue and pale orange accents', () => {

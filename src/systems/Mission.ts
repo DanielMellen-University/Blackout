@@ -387,26 +387,28 @@ export function buildMissionRoute(
 
   if (safeProfile === 'thermal') {
     const anchor = points[2]!
-    const pocket = nearestThermalPocket(getWorldSeed(), anchor.x, anchor.z)
+    // Filter before ranking: the nearest pocket can be behind the usable climb
+    // corridor while another of the same nine candidates is reachable ahead.
+    const pocket = nearestThermalPocket(getWorldSeed(), anchor.x, anchor.z, candidate => {
+      const forward = (candidate.x - safeSpawnX) * forwardX + (candidate.z - safeSpawnZ) * forwardZ
+      return forward >= 1_000 && forward <= 4_000
+    })
     if (pocket) {
-      const pocketForward = (pocket.x - safeSpawnX) * forwardX + (pocket.z - safeSpawnZ) * forwardZ
-      if (pocketForward >= 1_000 && pocketForward <= 4_000) {
-        const thermalOffsets = [
-          { forward: -620, right: -120 },
-          { forward: -300, right: 250 },
-          { forward: 0, right: 0 },
-          { forward: 420, right: -250 },
-          { forward: 760, right: -40 },
-        ]
-        points = points.map((point, index) => {
-          const offset = thermalOffsets[index]!
-          return {
-            ...point,
-            x: pocket.x + forwardX * offset.forward + rightX * offset.right,
-            z: pocket.z + forwardZ * offset.forward + rightZ * offset.right,
-          }
-        })
-      }
+      const thermalOffsets = [
+        { forward: -620, right: -120 },
+        { forward: -300, right: 250 },
+        { forward: 0, right: 0 },
+        { forward: 420, right: -250 },
+        { forward: 760, right: -40 },
+      ]
+      points = points.map((point, index) => {
+        const offset = thermalOffsets[index]!
+        return {
+          ...point,
+          x: pocket.x + forwardX * offset.forward + rightX * offset.right,
+          z: pocket.z + forwardZ * offset.forward + rightZ * offset.right,
+        }
+      })
     }
   }
 

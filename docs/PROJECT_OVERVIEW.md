@@ -15,8 +15,8 @@ ignored without deleting saved records, favorites, or settings.
 
 Regional weather integration and further terrain/biome polish remain in progress,
 not shipped features. Daily EST reset wiring and per-level world conditions
-remain deferred. Vegetation, blackout/redout effects, and the flight-warning
-strip remain removed and paused under the repository rules.
+remain deferred. User-paused systems remain excluded under the
+[repository rules](../AGENTS.md).
 
 ## Aircraft and weather
 

@@ -24,6 +24,13 @@ vi.mock('../src/world/SettlementPlan', () => ({
     ? [[1, 0], [0, -1]] : [[0, 1], [-1, 0]],
 }))
 
+// Admission fixtures use synthetic plans. Route geography has separate generated-world
+// coverage; do not spend real terrain/profile work in these budget-only checks.
+vi.mock('../src/world/RegionalRoads', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/world/RegionalRoads')>(),
+  buildableRegionalLinksForSettlement: () => [],
+}))
+
 import { MAX_LOADED_BUILDINGS, MAX_LOADED_SETTLEMENTS, SettlementSystem } from '../src/world/SettlementSystem'
 
 function planFor(cx: number, cz: number): SettlementPlan {
@@ -402,7 +409,8 @@ describe('settlement streaming budgets', () => {
       primeAnchors: (x: number, z: number) => void
     }
     const originalCanLoad = internals.canLoad.bind(system)
-    internals.canLoad = () => false
+    const canLoad = vi.fn(() => false)
+    internals.canLoad = canLoad
     try {
       setOpsPad(0, 0, 100)
       internals.primeAnchors(0, 0)
@@ -428,20 +436,23 @@ describe('settlement streaming budgets', () => {
       retryProtectedAnchors: (x: number, z: number) => void
       protectedRetryCooldown: number
     }
-    internals.canLoad = () => false
+    const canLoad = vi.fn(() => false)
+    internals.canLoad = canLoad
     try {
       setOpsPad(0, 0, 100)
       internals.primeAnchors(0, 0)
-      settlementCallCount.value = 0
+      settlementCallCount.value = 0; canLoad.mockClear()
       internals.retryProtectedAnchors(0, 0)
-      const callsAfterRetry = settlementCallCount.value
+      const callsAfterRetry = canLoad.mock.calls.length
       expect(callsAfterRetry).toBeGreaterThan(0)
+      expect(settlementCallCount.value).toBe(0) // Reuse the canonical protected plans.
       expect(internals.protectedRetryCooldown).toBeGreaterThan(0)
 
       // A second retry in the same window should be a no-op instead of
-      // rebuilding both deterministic plans and filtering the queue again.
+      // repeating admission checks against the canonical protected plans.
       internals.retryProtectedAnchors(0, 0)
-      expect(settlementCallCount.value).toBe(callsAfterRetry)
+      expect(canLoad).toHaveBeenCalledTimes(callsAfterRetry)
+      expect(settlementCallCount.value).toBe(0)
     } finally {
       system.dispose()
       clearOpsPad()
