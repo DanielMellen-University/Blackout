@@ -6,11 +6,11 @@ import { generateTerrainGeometry, generateTerrainGeometrySteps,
 import { setWorldSeed } from '../src/world/noise'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
-function digest(data: TerrainGeometryData): string {
+function digest(data: TerrainGeometryData, omitGroundColor = false): string {
   const hash = createHash('sha256')
   hash.update(JSON.stringify({ segs: data.segs, groundBounds: data.ground.bounds, waterBounds: data.water?.bounds }))
   for (const array of [data.heights, data.waterLevels,
-    ...Object.values(data.ground.attributes).map(attribute => attribute.array), data.ground.index,
+    ...Object.entries(data.ground.attributes).filter(([key]) => !omitGroundColor || key !== 'color').map(([, attribute]) => attribute.array), data.ground.index,
     ...Object.values(data.water?.attributes ?? {}).map(attribute => attribute.array), data.water?.index]) {
     if (array) hash.update(new Uint8Array(array.buffer, array.byteOffset, array.byteLength))
   }
@@ -66,21 +66,24 @@ describe('cooperative terrain geometry', () => {
     expect(digest(finish(steps))).toBe('a8035efe576eef94178dabce16ac856b9cac2927ca6b358d46f5bccd6e4212e4')
   })
 
-  // Reproduced on clean 10.891 (b0c6cbd), before the road overhaul.
-  // Includes documented wetland/shoreline and coarse-bed changes in 10.890/10.891.
-  // These pin every output buffer and bounds across independent water/detail paths.
+  // Reproduced independently on 10.919, retaining the 10.891 topology/water.
+  // Only land colors change in 10.920. Keep heights, indices, normals, water
+  // attributes (including water colors), bounds and detail byte-for-byte.
+  // Original full payload hashes remain in fixtures/terrain-payload-10.891.txt.
   it.each([
-    { name: 'near', input: [0, 0, 0], expected: 'c98a1777d69273e4b38f9614934ac8503e2c97e956199df8025e9674b765f137' },
-    { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: 'ea99ee2c3420335e099ad6c29c688d437d1148e85e6e10726ae50249a3c1c296' },
-    { name: 'pond', input: [-22050, -28350, 0], expected: 'a8035efe576eef94178dabce16ac856b9cac2927ca6b358d46f5bccd6e4212e4' },
-    { name: 'far water', input: [-6720, -6720, 2, 32], expected: '4de4bd5328eac688319cefe190d1113e2605ea3319172f33b01ce208ff8fb462' },
-    { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: '7ae793c49622ca8d92d72d1bf50bd84f63f0f518f340e4d9a3af59a6082022d5' },
-    { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'd2ed58aedb22f745ca9ef8ac0c851cb414e9feea732fa13f0af1e32229279b39' },
-  ])('preserves the regional $name payload byte-for-byte', ({ input, expected, pad }) => {
+    { name: 'near', input: [0, 0, 0], expected: '9c74cf58927051f854677f64b6369bec443be8f64929bb3c493242d2a6865fa4' },
+    { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: '65fef889caca5be1553bf55a48592c87dde1a4f602529b51c4ba2f7d8af6b583' },
+    { name: 'pond', input: [-22050, -28350, 0], expected: '8de9f18c347abbdf0ec24d112b23f74f28babc28124d01a6a6ee4159e7610930' },
+    { name: 'far water', input: [-6720, -6720, 2, 32], expected: 'a119804031046dfaf5387a232db2eafb902c33134ff569e7f6ee4753d5b734f7' },
+    { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: '6799ca9ad47e443e81bb2e5d38e726f1ff8963705e1d346a5acee151564fc3f9' },
+    { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'abe42f102ec0178412549e71fdfb6e69083b541b226c51b5a8c08d8cc3b388db' },
+  ])('preserves the regional $name non-color payload byte-for-byte', ({ input, expected, pad }) => {
     if (pad) setOpsPad(0, 0, 42, .4)
     const args = input as Parameters<typeof generateTerrainGeometrySteps>
-    expect(digest(finish(generateTerrainGeometrySteps(...args)))).toBe(expected)
-    expect(digest(generateTerrainGeometry(...args))).toBe(expected)
+    const stepped = finish(generateTerrainGeometrySteps(...args)), direct = generateTerrainGeometry(...args)
+    expect(digest(stepped, true)).toBe(expected)
+    expect(digest(direct, true)).toBe(expected)
+    expect(digest(stepped)).toBe(digest(direct))
   })
 
   it('keeps suspended grids and river lists independent of interleaved builds', () => {

@@ -15,6 +15,8 @@ try {
    await page.locator('#road-progress').evaluate((el,value)=>{el.value=String(value);el.dispatchEvent(new Event('input',{bubbles:true}))},position)
    for(const mode of ['chase','first']) {
     await page.selectOption('#review-view',mode);await page.waitForTimeout(8000)
+    const pose=await page.locator('#road-status').textContent()
+    if(!pose?.includes('km')) throw new Error('Road pose was lost during capture')
     const filename=`${label}-${destination}-${position}-${mode}.png`;await page.screenshot({path:`${directory}/${filename}`})
     results.push({seed,destination,position,mode,filename,pose:await page.locator('#road-status').textContent(),stats:await page.locator('#stats').textContent()});console.log(filename,results.at(-1).pose)
    }
