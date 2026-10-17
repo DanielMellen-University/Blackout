@@ -7,7 +7,8 @@ const wrap = (prototype, method, label) => {
     const start = performance.now();
     try { return original.apply(this, args); }
     finally {
-      const ms = performance.now()-start;
+      const end = performance.now(), ms = end-start;
+      if (window.__hitchTrace && ms > 2) performance.measure(label, {start, end});
       record.calls++; record.totalMs+=ms; record.maxMs=Math.max(record.maxMs,ms);
       if(ms>2)record.over2++; if(ms>8)record.over8++; if(ms>16)record.over16++;
       if(ms>2){record.slowest.push({atMs:start,ms});record.slowest.sort((a,b)=>b.ms-a.ms);record.slowest.length=Math.min(20,record.slowest.length)}
@@ -17,12 +18,15 @@ const wrap = (prototype, method, label) => {
 window.__installStreamTimings = (kind, prototype) => {
   const methods = {
     TerrainSystem: ['buildChunk','install','scheduleAround','updateFades','drainBuildQueue'],
-    SettlementSystem: ['build','buildRegionalRoad','update','dispatchNearbyJob'],
+    SettlementSystem: ['build','buildRegionalRoad','update','dispatchNearbyJob', 'advanceAssembly'],
     SurfaceDraper: ['update'],
   };
   const prefix = { TerrainSystem: 'terrain', SettlementSystem: 'settlement', SurfaceDraper: 'drape' }[kind];
-  for (const method of methods[kind]) wrap(prototype, method, prefix+'.'+method);
-  if (kind !== 'SurfaceDraper') return;
+  for (const method of methods[kind]) {
+    if (method === 'advanceAssembly' && !prototype[method]) continue;
+    wrap(prototype, method, prefix+'.'+method);
+  }
+  if (kind !== 'SurfaceDraper' || window.__hitchTrace) return;
 // Diagnostic-only publication audit. Copies live behind the geometry's weak
 // lifetime and are excluded from the uninstrumented acceptance runs.
 const publications = timings.drapePublications ??= { total: 0, unchanged: 0, positionBytes: 0 };

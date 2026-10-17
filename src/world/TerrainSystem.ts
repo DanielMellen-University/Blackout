@@ -1,5 +1,8 @@
 import {
+  BufferGeometry,
+  Float32BufferAttribute,
   Color,
+  type Camera,
   DoubleSide,
   Fog,
   FrontSide,
@@ -13,12 +16,14 @@ import {
 import { getWorldSeed } from './noise'
 import {
   sampleClimate,
+  sampleTerrainSurface,
   waterBodyFromClimate,
   getOpsPadInto,
   type OpsPadSnapshot,
   type TerrainSurface,
 } from './terrainSample'
 import { createClimateSample } from './Geography'
+import { CATCHMENT_SIZE, prepareHydrologyInBoundsSteps } from './Hydrology'
 import {
   clearTerrainSamplers,
   invalidateGroundSamplerCaches,
@@ -36,6 +41,7 @@ export { CHUNK_SIZE, segsForLod, waterSegsForLod, pondIntersectsBounds,
 import { planTerrainTiles, terrainBuildPriority, tileKey, tileDistance, TERRAIN_ROOT_SIZE,
   type TerrainTile } from './TerrainLayout'
 import { disposeObjectTree } from '../core/dispose'
+import { warmupMaterials, type WarmupRenderer } from '../core/RendererWarmup'
 
 /**
  * Streaming envelope.
@@ -284,6 +290,11 @@ export class TerrainSystem {
   private readonly terrainDetailScale = { value: 1 }
   /** Reused rich climate record for the occasional rendered-surface query. */
   private readonly surfaceClimate = createClimateSample()
+  private surveyPreparation: Generator<unknown, void> | null = null
+  private surveyMinX = 0
+  private surveyMinZ = 0
+  private surveyMaxX = 0
+  private surveyMaxZ = 0
   /** Structured-clone staging record for worker requests. */
   private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
 
@@ -353,6 +364,24 @@ export class TerrainSystem {
       (x, z) => this.sampleMeshHeight(x, z),
       (x, z, out) => this.sampleMeshSurfaceInto(x, z, out),
     )
+  }
+
+  /** Workers need not finish a water tile before its existing shader can be
+   * prepared. One private triangle covers near/far ground and physical water
+   * attributes, including the near-ground shadow-receiving variant. */
+  async warmupMaterials(renderer: WarmupRenderer, camera: Camera, scene: Scene): Promise<void> {
+    const geometry = new BufferGeometry()
+    geometry.setAttribute('position', new Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 0, 1], 3))
+    geometry.setAttribute('normal', new Float32BufferAttribute([0, 1, 0, 0, 1, 0, 0, 1, 0], 3))
+    geometry.setAttribute('color', new Float32BufferAttribute(new Float32Array(9).fill(1), 3))
+    for (const name of ['waterDepth', 'waterFlow', 'waterKind', 'waterDrop'])
+      geometry.setAttribute(name, new Float32BufferAttribute([1, 1, 1], 1))
+    geometry.setAttribute('waterFlowDir', new Float32BufferAttribute([1, 0, 1, 0, 1, 0], 2))
+    const fixtures = new Group(), near = new Mesh(geometry, this.groundMatNear)
+    near.receiveShadow = true
+    fixtures.add(near, new Mesh(geometry, this.groundMatFar), new Mesh(geometry, this.waterMat))
+    try { await warmupMaterials(renderer, fixtures, camera, scene) }
+    finally { geometry.dispose() }
   }
 
   /** Update visual weather response without rebuilding streamed terrain. */
@@ -509,6 +538,8 @@ export class TerrainSystem {
     // jobs before rebuilding so the new world's near-field tiles do not wait
     // behind geometry that can no longer be installed.
     if (!this.disposed) this.workers.cancelJobs()
+    this.surveyPreparation?.return()
+    this.surveyPreparation = null
     this.cancelFallback()
     this.generation++
     invalidateGroundSamplerCaches()
@@ -660,6 +691,32 @@ export class TerrainSystem {
       CHUNK_SIZE * chunk.size,
     )
     return Math.max(bed, level)
+  }
+
+  /** Survey labels must not synchronously construct a cold watershed. Contact
+   * still uses the unchanged resident/analytic surface paths. A pending label
+   * retries on the next frame after one cooperative hydrology slice. */
+  sampleSurveySurface(x: number, z: number): TerrainSurface | null {
+    if (this.disposed || !Number.isFinite(x) || !Number.isFinite(z)) return null
+    if (!this.surveyPreparation || x < this.surveyMinX || x >= this.surveyMaxX ||
+      z < this.surveyMinZ || z >= this.surveyMaxZ) {
+      this.surveyPreparation?.return()
+      this.surveyMinX = Math.floor(x / CATCHMENT_SIZE) * CATCHMENT_SIZE
+      this.surveyMinZ = Math.floor(z / CATCHMENT_SIZE) * CATCHMENT_SIZE
+      this.surveyMaxX = this.surveyMinX + CATCHMENT_SIZE
+      this.surveyMaxZ = this.surveyMinZ + CATCHMENT_SIZE
+      // Prepare only the queried catchment. A surrounding box warms unused
+      // neighbours at seams and retains substantial unrelated drainage data.
+      this.surveyPreparation = prepareHydrologyInBoundsSteps(x, z, x, z)
+    }
+    const deadline = performance.now() + 1
+    do {
+      if (this.surveyPreparation.next().done) {
+        this.surveyPreparation = null
+        return this.sampleMeshSurface(x, z) ?? sampleTerrainSurface(x, z)
+      }
+    } while (performance.now() < deadline)
+    return null
   }
 
   sampleMeshSurface(x: number, z: number): TerrainSurface | null {

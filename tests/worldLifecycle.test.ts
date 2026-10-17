@@ -1,6 +1,7 @@
 import { Group } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { obstacleSweepDistance, World } from '../src/world/World'
+import { TerrainSystem } from '../src/world/TerrainSystem'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
 describe('world lifecycle boundary', () => {
@@ -28,6 +29,38 @@ describe('world lifecycle boundary', () => {
     expect(obstacleSweepDistance(500 ** 2, 500, 0, 0)).toBe(256)
     expect(obstacleSweepDistance(Number.NaN, Number.NaN, 0, 0)).toBeNaN()
   })
+
+  it('constructs a replay seed directly without a discarded random world', () => {
+    const reseed = vi.spyOn(World.prototype, 'reseed')
+    const world = new World('low', { seed: 73, profile: 'night', weather: 'fog', timeOfDay: .84 })
+    try {
+      expect(reseed).toHaveBeenCalledTimes(1)
+      expect(reseed).toHaveBeenCalledWith(73, 'night', 'fog', .84, undefined, undefined)
+      expect(world.worldSeed).toBe(73)
+      expect(world.atmosphere.weather).toBe('fog')
+      expect(world.atmosphere.timeOfDay).toBeCloseTo(.84)
+      expect(world.lastReseedUsedFallback).toBe(false)
+      expect(world.weatherCycleLocked).toBe(true)
+    } finally { world.dispose(); reseed.mockRestore() }
+  }, 60_000)
+
+  it('constructs a playable fallback only after a requested initial world fails', () => {
+    const originalClear = TerrainSystem.prototype.clearAll
+    const clear = vi.spyOn(TerrainSystem.prototype, 'clearAll').mockImplementationOnce(function(this: TerrainSystem) {
+      originalClear.call(this)
+      throw new Error('synthetic initial rebuild failure')
+    })
+    const random = vi.spyOn(Math, 'random').mockReturnValue(.25)
+    let world: World | undefined
+    try {
+      world = new World('low', { seed: 73 })
+      expect(world.lastReseedUsedFallback).toBe(true)
+      expect(world.worldSeed).not.toBe(73)
+      expect(Number.isFinite(world.spawn.x)).toBe(true)
+      expect(Number.isFinite(world.spawn.z)).toBe(true)
+      expect(world.terrain.streamingStats.pending + world.terrain.streamingStats.loaded).toBeGreaterThan(0)
+    } finally { world?.dispose(); clear.mockRestore(); random.mockRestore() }
+  }, 60_000)
 
   it('applies the complete quality envelope during construction', () => {
     const world = new World('low')

@@ -21,6 +21,13 @@ function example(): SettlementPlan {
   }
 }
 
+/** Attachment is cooperative; completion must not depend on host load. */
+function finishAssembly(system: SettlementSystem): void {
+  const state = system as unknown as { assembly: unknown; focusX: number; focusZ: number }
+  for (let i = 0; state.assembly && i < 500; i++) system.update(state.focusX, state.focusZ, 0)
+  expect(state.assembly).toBeNull()
+}
+
 describe('settlement rendering and lifecycle', () => {
   it('keeps placed building transforms static while accepting explicit root invalidation', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
@@ -61,6 +68,7 @@ describe('settlement rendering and lifecycle', () => {
       system.update(3000, 3000, .1)
       system.update(3000, 3000, .1)
       expect(worker.terminate).toHaveBeenCalledOnce()
+      finishAssembly(system)
       expect(system.count).toBe(1)
       queuedReply({ data: { ...worker.request, plan: example() } })
       const ready = (system as unknown as { ready: unknown[] }).ready
@@ -87,6 +95,7 @@ describe('settlement rendering and lifecycle', () => {
       CloneErrorWorker.instance.onmessageerror!()
       expect(CloneErrorWorker.instance.terminate).toHaveBeenCalledOnce()
       system.update(3000, 3000, 0)
+      finishAssembly(system)
       expect(system.count).toBe(1)
     } finally {
       system.dispose()
@@ -119,6 +128,7 @@ describe('settlement rendering and lifecycle', () => {
       TestWorker.instance.onmessage!({ data: { type: 'settlement', ...requests[1], plan: example() } })
       expect((system as unknown as { ready: unknown[] }).ready).toHaveLength(1)
       system.update(3000, 3000)
+      finishAssembly(system)
       expect(system.count).toBe(1)
     } finally {
       system.dispose()
@@ -143,6 +153,7 @@ describe('settlement rendering and lifecycle', () => {
       expect(FailingWorker.instance.terminate).toHaveBeenCalledOnce()
       expect(system.pendingCount).toBeGreaterThan(0)
       expect(() => system.update(3000, 3000)).not.toThrow()
+      finishAssembly(system)
       expect(system.count).toBe(1)
     } finally {
       system.dispose()
@@ -167,6 +178,7 @@ describe('settlement rendering and lifecycle', () => {
       expect(MalformedWorker.instance.terminate).toHaveBeenCalledOnce()
       expect(system.pendingCount).toBeGreaterThan(0)
       expect(() => system.update(3000, 3000)).not.toThrow()
+      finishAssembly(system)
       expect(system.count).toBe(1)
     } finally {
       system.dispose()
@@ -193,6 +205,7 @@ describe('settlement rendering and lifecycle', () => {
   it('batches buildings and roofs into instanced draws and cleans up unloaded instances', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     system.update(3000, 3000)
+    finishAssembly(system)
     expect(system.count).toBe(1)
     const instances: InstancedMesh[] = []
     system.root.traverse(object => { if (object instanceof InstancedMesh) instances.push(object) })
@@ -204,6 +217,7 @@ describe('settlement rendering and lifecycle', () => {
     expect(system.root.children).toHaveLength(0)
     expect(disposed.every(spy => spy.mock.calls.length === 1)).toBe(true)
     system.update(3000, 3000)
+    finishAssembly(system)
     expect(system.count).toBe(1)
     system.dispose()
     expect(scene.children).toHaveLength(0)
@@ -213,9 +227,11 @@ describe('settlement rendering and lifecycle', () => {
     const scene = new Scene(), system = new SettlementSystem(scene)
     try {
       system.update(3000, 3000)
+      finishAssembly(system)
       expect(system.count).toBe(1)
       system.setVisible(false)
       expect(system.root.visible).toBe(false)
+      finishAssembly(system)
       expect(system.count).toBe(1)
       system.setVisible('false' as never)
       expect(system.root.visible).toBe(false)
@@ -453,6 +469,7 @@ describe('settlement rendering and lifecycle', () => {
     system.clearAll()
     expect(system.count).toBe(0)
     system.update(3000, 3000)
+    finishAssembly(system)
     expect(system.count).toBe(1)
     system.root.traverse(object => {
       if (object instanceof Mesh) expect(object.geometry.boundingSphere?.radius).toBeGreaterThan(0)

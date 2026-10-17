@@ -9,6 +9,7 @@ describe('fixed-route frame measurement', () => {
   it('reports real frame intervals including hitches', () => {
     const frames = new ReviewFrames()
     for (const now of [100, 116, 132, 148, 164, 1164]) frames.record(now, true)
+    expect(frames.longFrames()).toEqual([{ startMs: 164, endMs: 1164, ms: 1000 }])
     expect(frames.summary()).toEqual({ samples: 5, median: 16, p95: 1000, p99: 1000, max: 1000, over50: 1, over100: 1 })
   })
   it('excludes explicit hidden and paused gaps, not slow visible frames', () => {

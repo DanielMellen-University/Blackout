@@ -1,0 +1,857 @@
+{
+  "navigationClockUs": 32351830628,
+  "mainThread": {
+    "pid": 1587788,
+    "tid": 1587788
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 1858.5,
+      "endMs": 2058.5,
+      "ms": 200,
+      "causes": [
+        "first-use shader compilation/link/introspection",
+        "settlement attachment",
+        "layout",
+        "cold launch world rebuild"
+      ],
+      "traceCoverage": true,
+      "gcMs": 1.65,
+      "dominantMeasuredPhase": {
+        "name": "settlement attachment",
+        "ms": 30.9
+      },
+      "methods": [
+        {
+          "name": "terrain.scheduleAround",
+          "startMs": 1863,
+          "ms": 2.4,
+          "overlapMs": 2.4
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 1865.7,
+          "ms": 10.8,
+          "overlapMs": 10.8
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 1876.6,
+          "ms": 30.9,
+          "overlapMs": 30.9
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "onFirstUse (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:45512)",
+          "sampledMs": 48.58
+        },
+        {
+          "name": "startGame (src/main.ts:1303)",
+          "sampledMs": 31.17
+        },
+        {
+          "name": "resume (src/audio/FlightAudio.ts:85)",
+          "sampledMs": 30.17
+        },
+        {
+          "name": "createRoadGeometry (src/world/SettlementSystem.ts:401)",
+          "sampledMs": 8.59
+        },
+        {
+          "name": "makeNoiseBuffer (src/audio/FlightAudio.ts:550)",
+          "sampledMs": 5.75
+        },
+        {
+          "name": "fromBufferAttribute (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:4894)",
+          "sampledMs": 4.71
+        },
+        {
+          "name": "build (src/world/SettlementSystem.ts:2045)",
+          "sampledMs": 4.25
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 3.23
+        },
+        {
+          "name": "centre (src/world/SettlementSystem.ts:410)",
+          "sampledMs": 3.22
+        },
+        {
+          "name": "nextProceduralNoiseState (src/audio/FlightAudio.ts:7)",
+          "sampledMs": 3.2
+        },
+        {
+          "name": "distanceToSquared (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:4715)",
+          "sampledMs": 2.68
+        },
+        {
+          "name": "(garbage collector) (:0)",
+          "sampledMs": 2.6
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 200.64
+        },
+        {
+          "name": "(anonymous)",
+          "sampledMs": 128.17
+        },
+        {
+          "name": "startGame",
+          "sampledMs": 127.1
+        },
+        {
+          "name": "FlightReview.button.onclick",
+          "sampledMs": 127.1
+        },
+        {
+          "name": "tick",
+          "sampledMs": 69.35
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 60.72
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 60.72
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 60.72
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 60.72
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 59.66
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 56.46
+        },
+        {
+          "name": "resetFlight",
+          "sampledMs": 50.95
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "EventDispatch",
+          "startMs": 1854.38,
+          "ms": 131.81,
+          "overlapMs": 127.69,
+          "args": {
+            "data": {
+              "type": "click"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 1854.4,
+          "ms": 131.78,
+          "overlapMs": 127.68,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 1854.4,
+          "ms": 131.69,
+          "overlapMs": 127.59,
+          "args": {
+            "data": {
+              "columnNumber": 25,
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "functionName": "FlightReview.button.onclick",
+              "isolate": "7824020282765076455",
+              "lineNumber": 136,
+              "sampleTraceId": 1056286308271235,
+              "scriptId": "139",
+              "url": "http://127.0.0.1:5173/src/debug/FlightReview.ts"
+            }
+          }
+        },
+        {
+          "name": "EventDispatch",
+          "startMs": 1854.51,
+          "ms": 131.58,
+          "overlapMs": 127.59,
+          "args": {
+            "data": {
+              "type": "click"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 1854.52,
+          "ms": 131.55,
+          "overlapMs": 127.57,
+          "args": {}
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 1986.9,
+          "ms": 71.99,
+          "overlapMs": 71.6,
+          "args": {
+            "data": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "id": 9
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 1986.91,
+          "ms": 71.97,
+          "overlapMs": 71.59,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 1986.91,
+          "ms": 71.97,
+          "overlapMs": 71.59,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "functionName": "tick",
+              "isolate": "7824020282765076455",
+              "lineNumber": 1518,
+              "sampleTraceId": 1056286308272021,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 1876.6,
+          "ms": 30.9,
+          "overlapMs": 30.9,
+          "args": {
+            "callTime": 32353738172,
+            "startTime": 1876.599999997765,
+            "traceId": 1281444510
+          }
+        },
+        {
+          "name": "Layout",
+          "startMs": 1921.89,
+          "ms": 21.68,
+          "overlapMs": 21.68,
+          "args": {
+            "beginData": {
+              "dirtyObjects": 426,
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "partialLayout": false,
+              "totalObjects": 463
+            },
+            "endData": {
+              "layoutRoots": [
+                {
+                  "depth": 1,
+                  "nodeId": 2,
+                  "nodeName": "#document",
+                  "quads": [
+                    [
+                      0,
+                      0,
+                      1280,
+                      0,
+                      1280,
+                      720,
+                      0,
+                      720
+                    ]
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 1865.7,
+          "ms": 10.8,
+          "overlapMs": 10.8,
+          "args": {
+            "callTime": 32353707111,
+            "startTime": 1865.699999999255,
+            "traceId": 163769886
+          }
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 1913.39,
+          "ms": 8.48,
+          "overlapMs": 8.48,
+          "args": {
+            "beginData": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D"
+            },
+            "elementCount": 327
+          }
+        }
+      ]
+    },
+    {
+      "phase": "startup",
+      "startMs": 3775.1,
+      "endMs": 4075.1,
+      "ms": 300,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "worker reply handling",
+        "ms": 0.17
+      },
+      "methods": [],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 290.32
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:51294)",
+          "sampledMs": 3.36
+        },
+        {
+          "name": "requestAnimationFrame (:0)",
+          "sampledMs": 2.35
+        },
+        {
+          "name": "WebGLRenderer.clear (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:51161)",
+          "sampledMs": 1.29
+        },
+        {
+          "name": "getMaxScaleOnAxis (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:8311)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "(idle) (:0)",
+          "sampledMs": 1.03
+        },
+        {
+          "name": "sampledChunkAt (src/world/TerrainSystem.ts:530)",
+          "sampledMs": 0.86
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 300.28
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 290.32
+        },
+        {
+          "name": "tick",
+          "sampledMs": 8.93
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 5.72
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 3.36
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 3.36
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 3.36
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 3.36
+        },
+        {
+          "name": "requestAnimationFrame",
+          "sampledMs": 2.35
+        },
+        {
+          "name": "WebGLRenderer.clear",
+          "sampledMs": 1.29
+        },
+        {
+          "name": "render",
+          "sampledMs": 1.29
+        },
+        {
+          "name": "getMaxScaleOnAxis",
+          "sampledMs": 1.07
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3778.72,
+          "ms": 9.33,
+          "overlapMs": 9.33,
+          "args": {
+            "data": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "id": 116
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3778.74,
+          "ms": 9.3,
+          "overlapMs": 9.3,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3778.74,
+          "ms": 9.25,
+          "overlapMs": 9.25,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "functionName": "tick",
+              "isolate": "7824020282765076455",
+              "lineNumber": 1518,
+              "sampleTraceId": 1056286308282383,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3788.1,
+          "ms": 3.53,
+          "overlapMs": 3.53,
+          "args": {
+            "beginData": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D"
+            },
+            "elementCount": 216
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3792.48,
+          "ms": 3.03,
+          "overlapMs": 3.03,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "layerId": 0,
+              "nodeId": 2,
+              "nodeName": "#document"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3792.51,
+          "ms": 2.99,
+          "overlapMs": 2.99,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "layerId": 0,
+              "nodeId": 34,
+              "nodeName": "HTML"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3792.9,
+          "ms": 0.75,
+          "overlapMs": 0.75,
+          "args": {
+            "data": {
+              "clip": [
+                -2175,
+                -4000,
+                6263,
+                -4000,
+                6263,
+                4040,
+                -2175,
+                4040
+              ],
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "layerId": 0,
+              "nodeId": 44,
+              "nodeName": "DIV id='heading-tape-track'"
+            }
+          }
+        },
+        {
+          "name": "Layerize",
+          "startMs": 3795.56,
+          "ms": 0.73,
+          "overlapMs": 0.73,
+          "args": {
+            "data": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "3DA738BA4E8FC04602ADB3A8DCEC5E0D"
+            }
+          }
+        },
+        {
+          "name": "PrePaint",
+          "startMs": 3791.75,
+          "ms": 0.71,
+          "overlapMs": 0.71,
+          "args": {
+            "data": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "3DA738BA4E8FC04602ADB3A8DCEC5E0D"
+            }
+          }
+        },
+        {
+          "name": "HandlePostMessage",
+          "startMs": 3776.34,
+          "ms": 0.17,
+          "overlapMs": 0.17,
+          "args": {
+            "data": {
+              "traceId": "9710817082919071745"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3794.02,
+          "ms": 0.16,
+          "overlapMs": 0.16,
+          "args": {
+            "data": {
+              "clip": [
+                -3923,
+                -3923,
+                4205,
+                -3923,
+                4205,
+                4205,
+                -3923,
+                4205
+              ],
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "layerId": 0,
+              "nodeId": 45,
+              "nodeName": "DIV id='adi-ball'"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3776.36,
+          "ms": 0.15,
+          "overlapMs": 0.15,
+          "args": {}
+        }
+      ]
+    },
+    {
+      "phase": "startup",
+      "startMs": 4108.4,
+      "endMs": 4225.1,
+      "ms": 116.70000000000073,
+      "causes": [
+        "road attachment"
+      ],
+      "traceCoverage": true,
+      "gcMs": 1.87,
+      "dominantMeasuredPhase": {
+        "name": "road attachment",
+        "ms": 63.5
+      },
+      "methods": [
+        {
+          "name": "settlement.buildRegionalRoad",
+          "startMs": 4120,
+          "ms": 63.5,
+          "overlapMs": 63.5
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 4118,
+          "ms": 65.8,
+          "overlapMs": 65.8
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 18.95
+        },
+        {
+          "name": "onFirstUse (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:45512)",
+          "sampledMs": 18.19
+        },
+        {
+          "name": "createRoadGeometry (src/world/SettlementSystem.ts:401)",
+          "sampledMs": 17.56
+        },
+        {
+          "name": "getX (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:12867)",
+          "sampledMs": 6.39
+        },
+        {
+          "name": "dashedRoads (src/world/SettlementSystem.ts:483)",
+          "sampledMs": 6.28
+        },
+        {
+          "name": "computeVertexNormals (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:14216)",
+          "sampledMs": 5.35
+        },
+        {
+          "name": "(garbage collector) (:0)",
+          "sampledMs": 4.36
+        },
+        {
+          "name": "buildRegionalRoad (src/world/SettlementSystem.ts:2494)",
+          "sampledMs": 4.31
+        },
+        {
+          "name": "fromBufferAttribute (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:4894)",
+          "sampledMs": 4.29
+        },
+        {
+          "name": "add (src/world/SettlementSystem.ts:404)",
+          "sampledMs": 4.24
+        },
+        {
+          "name": "centre (src/world/SettlementSystem.ts:410)",
+          "sampledMs": 3.69
+        },
+        {
+          "name": "normalizeNormals (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:14267)",
+          "sampledMs": 3.15
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 117.41
+        },
+        {
+          "name": "tick",
+          "sampledMs": 91.46
+        },
+        {
+          "name": "update",
+          "sampledMs": 66.54
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 65.25
+        },
+        {
+          "name": "buildRegionalRoad",
+          "sampledMs": 61.27
+        },
+        {
+          "name": "createRoadGeometry",
+          "sampledMs": 48.27
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 24.91
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 23.53
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 23.53
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 23.53
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 23.53
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 22.46
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 4117.1,
+          "ms": 95.34,
+          "overlapMs": 95.34,
+          "args": {
+            "data": {
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "id": 118
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 4117.1,
+          "ms": 95.32,
+          "overlapMs": 95.32,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 4117.11,
+          "ms": 95.32,
+          "overlapMs": 95.32,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "functionName": "tick",
+              "isolate": "7824020282765076455",
+              "lineNumber": 1518,
+              "sampleTraceId": 1056286308282561,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 4118,
+          "ms": 65.8,
+          "overlapMs": 65.8,
+          "args": {
+            "callTime": 32356014427,
+            "startTime": 4118,
+            "traceId": 1535331131
+          }
+        },
+        {
+          "name": "settlement.buildRegionalRoad",
+          "startMs": 4120,
+          "ms": 63.5,
+          "overlapMs": 63.5,
+          "args": {
+            "callTime": 32356014073,
+            "startTime": 4120,
+            "traceId": 3982285747
+          }
+        },
+        {
+          "name": "HandlePostMessage",
+          "startMs": 4112.69,
+          "ms": 3.79,
+          "overlapMs": 3.79,
+          "args": {
+            "data": {
+              "traceId": "9710817082919071997"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 4112.7,
+          "ms": 3.78,
+          "overlapMs": 3.78,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 4112.7,
+          "ms": 3.78,
+          "overlapMs": 3.78,
+          "args": {
+            "data": {
+              "columnNumber": 29,
+              "frame": "3DA738BA4E8FC04602ADB3A8DCEC5E0D",
+              "functionName": "SettlementSystem.worker.onmessage",
+              "isolate": "7824020282765076455",
+              "lineNumber": 973,
+              "sampleTraceId": 1056286308282584,
+              "scriptId": "90",
+              "url": "http://127.0.0.1:5173/src/world/SettlementSystem.ts"
+            }
+          }
+        },
+        {
+          "name": "V8.FinalizeMaglevConcurrentCompilation",
+          "startMs": 4162.8,
+          "ms": 2.47,
+          "overlapMs": 2.47,
+          "args": {}
+        },
+        {
+          "name": "V8.MaglevConcurrentFinalize",
+          "startMs": 4162.8,
+          "ms": 2.47,
+          "overlapMs": 2.47,
+          "args": {}
+        },
+        {
+          "name": "MinorGC",
+          "startMs": 4187.28,
+          "ms": 1.86,
+          "overlapMs": 1.86,
+          "args": {
+            "type": "allocation failure",
+            "usedHeapSizeAfter": 32971876,
+            "usedHeapSizeBefore": 64726716
+          }
+        },
+        {
+          "name": "V8.GCScavenger",
+          "startMs": 4187.29,
+          "ms": 1.82,
+          "overlapMs": 1.82,
+          "args": {}
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 // Run with PLAYWRIGHT_MODULE pointing to an installed Playwright index.mjs.
 // Example: PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node scripts/profile-flight.mjs before
-import { mkdir, writeFile, readFile } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, access } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
@@ -8,13 +8,15 @@ import { gzipSync } from 'node:zlib'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const stage = process.argv[2] || 'before'
 if (!/^[a-z0-9-]+$/.test(stage)) throw new Error('Invalid output label')
-const directory = `docs/reviews/performance-10.914/${stage}`
+const directory = `${process.env.REVIEW_DIRECTORY || 'docs/reviews/performance-10.914'}/${stage}`
 await mkdir(directory, { recursive: true })
 const args = ['--no-sandbox', '--ignore-gpu-blocklist', '--enable-gpu', '--use-gl=angle',
   '--use-angle=vulkan', '--enable-features=Vulkan', '--disable-vulkan-surface', '--enable-precise-memory-info']
 const routes = (process.env.REVIEW_ROUTES || 'city,world').split(',')
 const repetitions = Number(process.env.REVIEW_RUNS || 3)
 const profile = process.env.REVIEW_PROFILE === '1'
+const trace = process.env.REVIEW_TRACE === '1'
+const gpuTrace = process.env.REVIEW_GPU_TRACE === '1'
 const instrumentation = Object.fromEntries(['src/debug/FlightReview.ts', 'src/core/AdaptiveResolution.ts'].map(path =>
   [path, createHash('sha256').update(readFileSync(path)).digest('hex')]))
 for (let run = 1; run <= repetitions; run++) for (const route of routes) {
@@ -22,7 +24,11 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
   const seed = route === 'world' ? 73 : 1337
   try {
     const existing = JSON.parse(await readFile(`${directory}/${name}.json`, 'utf8'))
-    if (existing.matched && existing.seed === seed && existing.profile === profile) { console.log('SKIP', name); continue }
+    if (existing.matched && existing.seed === seed && existing.profile === profile && !!existing.trace === trace && !!existing.gpuTrace === gpuTrace) {
+      if (profile) await access(`${directory}/${name}.cpuprofile.gz`)
+      if (trace) await access(`${directory}/${name}.trace.json.gz`)
+      console.log('SKIP', name); continue
+    }
   } catch { /* Missing or incomplete runs must be measured. */ }
   const browser = await chromium.launch({ headless: true, args,
     ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}) })
@@ -33,7 +39,19 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
     page.on('pageerror', error => errors.push(String(error)))
     const session = await context.newCDPSession(page)
     if (profile) { await session.send('Profiler.enable'); await session.send('Profiler.setSamplingInterval', { interval: 1000 }); await session.send('Profiler.start') }
+    let traceCategories = 'devtools.timeline,v8,disabled-by-default-v8.compile,blink.user_timing'
+    if (gpuTrace) {
+      const available = await session.send('Tracing.getCategories')
+      const graphics = available.categories.filter(name => /^(gpu|viz|cc|benchmark|renderer.scheduler|disabled-by-default-(gpu|viz))/.test(name))
+      traceCategories += ',' + graphics.join(',')
+    }
+    let tracing = false, traceSaved = false
+    if (trace && !gpuTrace) {
+      await session.send('Tracing.start', { categories: traceCategories, transferMode: 'ReturnAsStream' })
+      tracing = true
+    }
     if (profile) {
+      if (trace) await page.addInitScript(() => { window.__hitchTrace = true })
       const snippet = readFileSync(new URL('./browser-stream-timings.js', import.meta.url), 'utf8')
       await page.addInitScript(snippet)
       for (const name of ['TerrainSystem', 'SettlementSystem', 'SurfaceDraper']) {
@@ -42,6 +60,22 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
           await route.fulfill({ response, body: `${await response.text()}\nwindow.__installStreamTimings('${name}', ${name}.prototype);` })
         })
       }
+    }
+    const sources = Object.fromEntries(execFileSync('rg', ['--files', 'src'], { encoding: 'utf8' }).trim().split('\n')
+      .map(path => [path, createHash('sha256').update(readFileSync(path)).digest('hex')]))
+    await writeFile(`${directory}/source-sha256.json`, JSON.stringify(sources, null, 2) + '\n')
+    const saveTrace = async () => {
+      const complete = new Promise(resolve => session.once('Tracing.tracingComplete', resolve))
+      await session.send('Tracing.end')
+      const { stream } = await complete
+      let data = ''
+      while (true) {
+        const chunk = await session.send('IO.read', { handle: stream })
+        data += chunk.base64Encoded ? Buffer.from(chunk.data, 'base64').toString() : chunk.data
+        if (chunk.eof) break
+      }
+      await session.send('IO.close', { handle: stream })
+      await writeFile(`${directory}/${name}.trace.json.gz`, gzipSync(data))
     }
     const started = Date.now()
     await page.goto(`${process.env.REVIEW_URL || 'http://127.0.0.1:5173'}/?course=free-flight&seed=${seed}&review=flight&reviewFixedRatio=1&reviewRoute=${route}`)
@@ -64,6 +98,14 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
       const raw = await page.locator('#flight-review pre').innerText()
       try { result = JSON.parse(raw) } catch { continue }
       console.log(stage, name, result.phase, result.seconds.toFixed(1), 's', result.streaming)
+      if (gpuTrace && trace && result.seconds >= 30 && !tracing && !traceSaved) {
+        await session.send('Tracing.start', { categories: traceCategories, transferMode: 'ReturnAsStream' })
+        tracing = true
+        await page.evaluate(() => performance.measure('review-clock-origin', { start: 0, end: performance.now() }))
+      }
+      if (gpuTrace && tracing && result.seconds >= 50) {
+        await saveTrace(); tracing = false; traceSaved = true
+      }
       if (result.phase === 'finished') break
       stalled = result.seconds === previousSeconds ? stalled + 1 : 0
       previousSeconds = result.seconds
@@ -81,11 +123,15 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
     const output = { stage, run, sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       productionDiff: execFileSync('git', ['diff', '--stat'], { encoding: 'utf8' }).trim(),
       streamTimings: profile ? await page.evaluate(() => window.__streamTimings) : undefined,
-      instrumentation, browserVersion: browser.version(), args, gpu, profile, matched, errors, ...result }
+      instrumentation, browserVersion: browser.version(), args, gpu, profile, trace, gpuTrace, traceCategories, matched, errors, ...result }
     await writeFile(`${directory}/${name}.json`, JSON.stringify(output, null, 2) + '\n')
     if (profile) {
       const { profile: cpu } = await session.send('Profiler.stop')
       await writeFile(`${directory}/${name}.cpuprofile.gz`, gzipSync(JSON.stringify(cpu)))
+    }
+    if (trace && !traceSaved) {
+      if (!tracing) throw new Error('Trace window did not start')
+      await saveTrace()
     }
     if (!matched) throw new Error(`Unmatched result saved: ${name}`)
     console.log('SAVED', name, result.flightFrames, result.heapBytes)

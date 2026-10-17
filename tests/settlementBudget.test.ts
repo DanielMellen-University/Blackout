@@ -81,6 +81,12 @@ function addResident(view: AdmissionView, plan: SettlementPlan): void {
   view.setLoaded(plan.id, { plan, root: new Object3D(), detail: new Object3D() })
 }
 
+function finishAssembly(system: SettlementSystem): void {
+  const staged = system as unknown as { assembly: unknown }
+  for (let i = 0; staged.assembly && i < 500; i++) system.update(0, 0, 0)
+  expect(staged.assembly).toBeNull()
+}
+
 describe('settlement streaming budgets', () => {
   it('defers protected graph discovery instead of generating neighbours during priming', () => {
     class HoldingWorker {
@@ -147,11 +153,13 @@ describe('settlement streaming budgets', () => {
       // Hold the stream focus steady so this check isolates worker-ready admission.
       view.lastCellX = 0; view.lastCellZ = 0
       system.update(0, 0)
+      finishAssembly(system)
       expect([...view.loaded.keys()]).toEqual(['anchor', 'village'])
       expect(view.ready.map(entry => entry.key)).toEqual(['city'])
       // Once the existing anchor leaves, the retained city gets its turn.
       view.loaded.get('anchor')!.plan.buildings.length = 1
       system.update(0, 0)
+      finishAssembly(system)
       expect(view.loaded.has('city')).toBe(true)
       expect(view.ready).toHaveLength(0)
       expect(system.buildingCount).toBeLessThanOrEqual(MAX_LOADED_BUILDINGS)
@@ -431,6 +439,7 @@ describe('settlement streaming budgets', () => {
   it('throttles protected retries while the instance budget stays full', () => {
     const system = new SettlementSystem(new Scene())
     const internals = system as unknown as {
+      canAdmit: (plan: SettlementPlan, x: number, z: number) => boolean
       canLoad: (plan: SettlementPlan, x: number, z: number) => boolean
       primeAnchors: (x: number, z: number) => void
       retryProtectedAnchors: (x: number, z: number) => void
@@ -438,6 +447,7 @@ describe('settlement streaming budgets', () => {
     }
     const canLoad = vi.fn(() => false)
     internals.canLoad = canLoad
+    internals.canAdmit = canLoad
     try {
       setOpsPad(0, 0, 100)
       internals.primeAnchors(0, 0)
@@ -485,6 +495,8 @@ describe('settlement streaming budgets', () => {
       ;(system as unknown as { update(x: number, z: number): void }).update(100000, 100000)
       ;(system as unknown as { update(x: number, z: number): void }).update(0, 0)
       const loaded = (system as unknown as { loaded: Map<string, { plan: SettlementPlan }> }).loaded
+      for (let i = 0; i < 200 && !(['city', 'village'] as const).every(kind =>
+        [...loaded.values()].some(({ plan }) => plan.anchor === kind)); i++) system.update(0, 0, 0)
       expect([...loaded.values()].map(({ plan }) => plan.anchor)).toEqual(expect.arrayContaining(['city', 'village']))
     } finally {
       mockAnchorState.rejectPrimary = false

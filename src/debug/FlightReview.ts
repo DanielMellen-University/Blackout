@@ -15,6 +15,7 @@ const ROUTES: Record<string, ReviewRoute> = {
 /** Bounded RAF intervals, including hitches. Paused/hidden gaps are excluded explicitly. */
 export class ReviewFrames {
   private readonly values: Float64Array
+  private readonly hitches: { startMs: number; endMs: number; ms: number }[] = []
   private previous = 0
   private count = 0
   private cursor = 0
@@ -25,6 +26,7 @@ export class ReviewFrames {
     if (!active || !Number.isFinite(now)) { this.previous = 0; return }
     const delta = now - this.previous
     if (this.previous && delta > 0) {
+      if (delta > 100 && this.hitches.length < 1000) this.hitches.push({ startMs: this.previous, endMs: now, ms: delta })
       this.values[this.cursor] = delta
       this.cursor = (this.cursor + 1) % this.values.length
       this.count = Math.min(this.values.length, this.count + 1)
@@ -35,6 +37,8 @@ export class ReviewFrames {
   raw(): number[] {
     return Array.from({ length: this.count }, (_, i) => this.values[(this.cursor - this.count + i + this.values.length) % this.values.length]!)
   }
+
+  longFrames() { return this.hitches }
 
   summary() {
     const sorted = this.values.slice(0, this.count).sort()
@@ -175,6 +179,7 @@ export class FlightReview {
       viewport: [innerWidth, innerHeight], pixelRatio: ratio, ratioRange: [this.ratioMin, this.ratioMax],
       airfieldReadyMs: this.airfieldReadyMs, launchToCoverageWallMs: this.coverageMs,
       flightWallMs: this.flightStarted ? now - this.flightStarted : null,
+      longFrames: this.phase === 'finished' ? { startup: this.startupFrames.longFrames(), flight: this.flightFrames.longFrames() } : undefined,
       rawFrames: this.phase === 'finished' ? { startup: this.startupFrames.raw(), flight: this.flightFrames.raw() } : undefined,
       seconds: this.seconds, durationSeconds: this.duration, distanceM: this.seconds * flightConfig.maxSpeedBoost,
       speedMps: flightConfig.maxSpeedBoost, startupFrames: this.startupFrames.summary(),

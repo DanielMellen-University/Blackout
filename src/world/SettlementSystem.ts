@@ -1,7 +1,7 @@
 import {
   BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
   InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
-  MeshBasicMaterial,
+  MeshBasicMaterial, type Camera,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
 import { getOpsPad, getOpsPadInto, sampleClimate, type OpsPadSnapshot } from './terrainSample'
@@ -22,6 +22,7 @@ import type { SettlementWorkerReply, SettlementWorkerRequest, ProtectedSettlemen
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 import { WorkerWatchdog } from '../core/WorkerWatchdog'
+import { warmupMaterials, type WarmupRenderer } from '../core/RendererWarmup'
 
 function isSettlementWorkerReply(value: unknown): value is SettlementWorkerReply {
   if (!isRecord(value) || !['settlement', 'road', 'links'].includes(String(value.type)) ||
@@ -426,8 +427,8 @@ function inspectRoadHeight(root: Group | undefined, material: MeshStandardMateri
   return Number.isFinite(height) ? height : null
 }
 
-function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number,
-  groundOffset?: number, junctionRoad?: SettlementRoad, innerScale?: number): BufferGeometry | null {
+function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, originY: number, originZ: number,
+  groundOffset?: number, junctionRoad?: SettlementRoad, innerScale?: number): Generator<void, BufferGeometry | null> {
   const positions: number[] = [], offsets: number[] = [], indices: number[] = []
   const centres = new Map<string, number>()
   const add = (x: number, y: number, z: number, offset: number): number => {
@@ -445,12 +446,15 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
   }
   const isGround = (point: SettlementRoad['points'][number]) =>
     !point.bridge && (point.structure === undefined || point.structure === 'ground')
+  let processed = 0
   for (const road of roads) {
+    if (++processed % 64 === 0) yield
     if (road.points.length < 2) continue
     const hollow = innerScale !== undefined
     const wide = !hollow && groundOffset !== undefined && road.width >= 4
     const rows: number[][] = []
     for (let i = 0; i < road.points.length; i++) {
+      if (i && i % 128 === 0) yield
       const point = road.points[i]!, previous = road.points[Math.max(0, i - 1)]!
       const next = road.points[Math.min(road.points.length - 1, i + 1)]!
       const length = Math.hypot(next.x - previous.x, next.z - previous.z) || 1
@@ -499,6 +503,7 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
     }
   }
   if (!indices.length) return null
+  yield
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
   if (groundOffset !== undefined) geometry.setAttribute('groundOffset', new Float32BufferAttribute(offsets, 1))
@@ -508,12 +513,13 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
 }
 
 /** Split long centerlines into readable dashes without adding draw calls. */
-function dashedRoads(roads: SettlementRoad[], dashLength: number, gapLength: number): SettlementRoad[] {
+function *dashedRoadSteps(roads: SettlementRoad[], dashLength: number, gapLength: number): Generator<void, SettlementRoad[]> {
   const dashed: SettlementRoad[] = []
   const cycle = Math.max(1, dashLength + gapLength)
   for (const road of roads) {
     let travelled = 0
     for (let i = 1; i < road.points.length; i++) {
+      if (i % 64 === 0) yield
       const a = road.points[i - 1]!, b = road.points[i]!
       const dx = b.x - a.x, dy = b.y - a.y, dz = b.z - a.z
       const length = Math.hypot(dx, dz)
@@ -902,6 +908,9 @@ export class SettlementSystem {
   private readonly workerWatchdog = new WorkerWatchdog()
   private ready: { key: string; plan: SettlementPlan }[] = []
   private readyRoads: ReadyRoad[] = []
+  /** One private assembly keeps the resident limits intact while work yields. */
+  private assembly: { key: string; road: boolean;
+    steps: Generator<void, LoadedSettlement | LoadedRoad> } | null = null
   private generation = 0
   private disposed = false
   private renderQuality: RenderQuality = 'balanced'
@@ -1131,6 +1140,34 @@ export class SettlementSystem {
     this.roofs.customProgramCacheKey = () => 'settlement-roofs-weather-v1'
   }
 
+  /** Compile the existing material variants even when the initial protected
+   * roots have no waterfront, bridge or regional road. The private fixtures
+   * are attached only during boot warmup and own no shared asset lifetime. */
+  async warmupMaterials(renderer: WarmupRenderer, camera: Camera, scene: Scene): Promise<void> {
+    const fixtures = new Group()
+    const colored = this.box.clone()
+    colored.setAttribute('color', new Float32BufferAttribute(new Float32Array(
+      colored.getAttribute('position').count * 3).fill(1), 3))
+    const instance = (material: Mesh['material'], tint = false) => {
+      const mesh = new InstancedMesh(this.box, material, 1)
+      if (tint) mesh.setColorAt(0, new Color(0xffffff))
+      fixtures.add(mesh)
+    }
+    instance(this.walls, true); instance(this.roofs, true); instance(this.bridgeDeck, true)
+    for (const material of [this.streetLampPoleMaterial, this.streetLampGlow, this.dockDeckMaterial,
+      this.dockPostMaterial, this.bridgeDeck]) instance(material)
+    for (const material of [this.asphalt, this.gravelShoulder, this.streetMark, this.highway,
+      this.bridgeDeck, this.highwayMark, this.highwayEdge, this.cityBeacon, this.villageBeacon]) {
+      fixtures.add(new Mesh(this.box, material))
+    }
+    fixtures.add(new Mesh(colored, this.groundMaterial))
+    try { await warmupMaterials(renderer, fixtures, camera, scene) }
+    finally {
+      fixtures.traverse(object => { if (object instanceof InstancedMesh) object.dispose() })
+      colored.dispose()
+    }
+  }
+
   get count(): number { return this.loaded.size }
 
   private setLoaded(key: string, settlement: LoadedSettlement): void {
@@ -1195,7 +1232,7 @@ export class SettlementSystem {
     return count
   }
   get pendingCount(): number {
-    return this.queue.length + this.ready.length + this.linkQueue.length + this.graphQueue.size + this.readyRoads.length + (this.inFlight ? 1 : 0)
+    return (this.assembly ? 1 : 0) + this.queue.length + this.ready.length + this.linkQueue.length + this.graphQueue.size + this.readyRoads.length + (this.inFlight ? 1 : 0)
   }
   get roadCount(): number { return this.connections.size }
 
@@ -1310,6 +1347,8 @@ export class SettlementSystem {
   }
 
   clearAll(): void {
+    this.assembly?.steps.return(undefined as never)
+    this.assembly = null
     this.draper?.clear()
     this.roadCollisionPlans.length = 0
     for (const settlement of this.loaded.values()) this.remove(settlement)
@@ -1473,12 +1512,12 @@ export class SettlementSystem {
       const plan = this.protectedPlans.get(key) ?? settlementForCell(cx!, cz!, this.protectedAnchorKinds.get(kind) ?? kind)
       if (!plan) continue
       this.scheduleLinks(plan, key)
-      if (!this.canLoad(plan, x, z)) {
+      if (!this.canAdmit(plan, x, z)) {
         retryPending = true
         continue
       }
       this.checked.add(key)
-      this.setLoaded(key, this.build(plan))
+      this.ready.push({ key, plan })
     }
     this.protectedRetryPending = retryPending
     if (retryPending) this.protectedRetryCooldown = PROTECTED_RETRY_INTERVAL_FRAMES
@@ -1590,7 +1629,7 @@ export class SettlementSystem {
         return b.score - a.score || b.distance - a.distance
       })
     }
-    this.retryProtectedAnchors(x, z)
+    if (!this.assembly) this.retryProtectedAnchors(x, z)
     this.pruneDistantRoads(x, z)
     // Worker completion order is nondeterministic. Prune stale replies and
     // select the nearest protected plan without sorting the whole ready list
@@ -1623,26 +1662,33 @@ export class SettlementSystem {
       }
     }
     let ready: { key: string; plan: SettlementPlan } | undefined
-    if (readyIndex >= 0) {
+    if (!this.assembly && readyIndex >= 0) {
       ready = this.ready[readyIndex]!
       const last = this.ready.pop()!
       if (readyIndex < this.ready.length) this.ready[readyIndex] = last
     }
     if (ready && this.checked.has(ready.key)) {
-      if (this.canLoad(ready.plan, x, z)) this.setLoaded(ready.key, this.build(ready.plan))
+      if (this.canAdmit(ready.plan, x, z)) this.assembly = { key: ready.key, road: false,
+        steps: this.buildSteps(ready.plan) }
       else this.ready.push(ready)
     }
     const readyRoadIndex = this.nearestReadyRoad(x, z)
-    if (readyRoadIndex >= 0) {
+    if (!this.assembly && !ready && readyRoadIndex >= 0) {
       const readyRoad = this.readyRoads[readyRoadIndex]!
-      if (this.canLoadRoad(readyRoad, x, z)) {
+      if (this.canLoadRoad(readyRoad, x, z, false)) {
         const lastRoad = this.readyRoads.pop()!
         if (readyRoadIndex < this.readyRoads.length) this.readyRoads[readyRoadIndex] = lastRoad
         if (!this.connections.has(readyRoad.key)) {
-          this.connections.set(readyRoad.key, this.buildRegionalRoad(readyRoad.road, readyRoad.from, readyRoad.to))
+          if (!this.worker) {
+            this.canLoadRoad(readyRoad, x, z)
+            this.connections.set(readyRoad.key, this.buildRegionalRoad(readyRoad.road, readyRoad.from, readyRoad.to))
+          }
+          else this.assembly = { key: readyRoad.key, road: true,
+            steps: this.buildRegionalRoadSteps(readyRoad.road, readyRoad.from, readyRoad.to) }
         }
       }
     }
+    this.advanceAssembly()
     this.dispatchNearbyJob(x, z)
     for (const { plan, root, detail } of this.loaded.values()) {
       const dx = plan.x - x
@@ -1656,6 +1702,35 @@ export class SettlementSystem {
     for (const connection of this.connections.values()) {
       connection.root.visible = roadDistanceSquared(x, z, connection.road) < this.roadDetailRadius * this.roadDetailRadius
     }
+  }
+
+  /** Preparation has its own cooperative slice. This does not change worker,
+   * terrain upload, resident, instance, distance or draw limits. A mesh phase
+   * may finish past the deadline; never start a second phase after it. */
+  private advanceAssembly(): void {
+    const assembly = this.assembly
+    if (!assembly) return
+    if (!(assembly.road ? this.checkedLinks : this.checked).has(assembly.key)) {
+      assembly.steps.return(undefined as never); this.assembly = null; return
+    }
+    const deadline = performance.now() + 2
+    do {
+      const result = assembly.steps.next()
+      if (result.done) {
+        if (assembly.road) {
+          const built = result.value as LoadedRoad
+          const candidate = { key: assembly.key, from: built.from, to: built.to, road: built.road }
+          if (this.canLoadRoad(candidate, this.focusX, this.focusZ)) this.connections.set(assembly.key, built)
+          else { this.removeRoad(built); this.deferRoad(candidate) }
+        } else {
+          const built = result.value as LoadedSettlement
+          if (this.canLoad(built.plan, this.focusX, this.focusZ)) this.setLoaded(assembly.key, built)
+          else { this.remove(built); this.ready.push({ key: assembly.key, plan: built.plan }) }
+        }
+        this.assembly = null
+        return
+      }
+    } while (performance.now() < deadline)
   }
 
   /** Fairly share one worker slot between roots, graph discovery and profiles.
@@ -1970,285 +2045,330 @@ export class SettlementSystem {
   }
 
   private build(plan: SettlementPlan): LoadedSettlement {
+    const steps = this.buildSteps(plan)
+    let result = steps.next()
+    while (!result.done) result = steps.next()
+    return result.value
+  }
+
+  private *buildSteps(plan: SettlementPlan): Generator<void, LoadedSettlement> {
     const root = new Group(), detail = new Group()
-    root.name = `${plan.kind}_${plan.id}`
-    root.position.set(plan.x, plan.y, plan.z)
-    root.add(detail)
-    const transform = new Object3D(), color = new Color()
-    const regular: SettlementBuilding[] = []
-    const towers: SettlementBuilding[] = []
-    const stepped: SettlementBuilding[] = []
-    const spireBuildings: SettlementBuilding[] = []
-    const domeBuildings: SettlementBuilding[] = []
-    const pitched: SettlementBuilding[] = []
-    const flat: SettlementBuilding[] = []
-    const flatHangars: SettlementBuilding[] = []
-    const crowns: SettlementBuilding[] = []
-    const services: SettlementBuilding[] = []
-    const barns: SettlementBuilding[] = []
-    let highestRoof = plan.y
-    let landmarkRoof: SettlementBuilding | undefined
-    for (let i = 0; i < plan.buildings.length; i++) {
-      const building = plan.buildings[i]!
-      const shape = building.shape ?? 'block'
-      if (shape === 'tower') towers.push(building)
-      else if (shape === 'stepped') stepped.push(building)
-      else regular.push(building)
-      if (building.roof === 'pitched') pitched.push(building)
-      else {
-        flat.push(building)
-        if (shape === 'hangar') flatHangars.push(building)
-        if (plan.kind === 'city' && building.height > 250) crowns.push(building)
-      }
-      if (!landmarkRoof || building.y + building.height > highestRoof) {
-        highestRoof = building.y + building.height; landmarkRoof = building
-      }
-      if (building.service) services.push(building)
-      if (building.use === 'barn') barns.push(building)
-      if (plan.kind === 'city') {
-        if (building.height > 140 && i % 17 === 4 && spireBuildings.length < 12) spireBuildings.push(building)
-        if (building.use === 'civic' && domeBuildings.length < 12) domeBuildings.push(building)
-      } else {
-        if (building.use === 'civic' && spireBuildings.length < 3) spireBuildings.push(building)
-      }
-    }
-    // A few high-rise and hall lots become deterministic civic landmarks. The
-    // accents are instanced and capped, so a 1,000-building city adds at most
-    // twenty-four transforms while breaking the repeated-box skyline. Larger
-    // villages borrow the same shared accents at a much smaller cap, giving
-    // each rural profile a readable civic center without new draw families.
-    const body = new InstancedMesh(this.box, this.walls, regular.length)
-    const towerBodies = new InstancedMesh(this.tower, this.walls, towers.length)
-    const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
-    const spires = new InstancedMesh(this.spire, this.roofs, spireBuildings.length)
-    const domes = new InstancedMesh(this.dome, this.roofs, domeBuildings.length)
-    const gables = new InstancedMesh(this.roof, this.roofs, pitched.length)
-    const caps = new InstancedMesh(this.box, this.roofs, flat.length + crowns.length)
-    const hangarCaps = new InstancedMesh(this.roof, this.roofs, flatHangars.length)
-    const put = (mesh: InstancedMesh, index: number, x: number, y: number, z: number, w: number, h: number, d: number, yaw: number, tint: number) => {
-      transform.position.set(x - plan.x, y - plan.y, z - plan.z)
-      transform.scale.set(w, h, d); transform.rotation.set(0, yaw, 0); transform.updateMatrix()
-      mesh.setMatrixAt(index, transform.matrix)
-      mesh.setColorAt(index, color.setHex(tint))
-    }
-    regular.forEach((b, i) => put(body, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
-    towers.forEach((b, i) => put(towerBodies, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
-    stepped.forEach((b, i) => {
-      put(stepBodies, i * 2, b.x, b.y + b.height * .34, b.z, b.width, b.height * .68, b.depth, b.yaw, b.wallColor)
-      put(stepBodies, i * 2 + 1, b.x, b.y + b.height * .84, b.z, b.width * .68, b.height * .32, b.depth * .72, b.yaw, b.wallColor)
-    })
-    spireBuildings.forEach((b, i) => {
-      const height = plan.kind === 'city' ? Math.min(b.height * .08, 110) : Math.min(b.height * .12, 70)
-      const radius = Math.max(1.4, Math.min(b.width, b.depth) * .2)
-      put(spires, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
-    })
-    domeBuildings.forEach((b, i) => {
-      const height = plan.kind === 'city'
-        ? Math.max(2.5, Math.min(24, Math.min(b.width, b.depth) * .2))
-        : Math.max(1.5, Math.min(8, Math.min(b.width, b.depth) * .18))
-      const radius = Math.max(3, Math.min(b.width, b.depth) * .42)
-      put(domes, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
-    })
-    pitched.forEach((b, i) => put(gables, i, b.x, b.y + b.height, b.z, b.width + 1.2, Math.min(b.width, b.depth) * .3, b.depth + 1.2, b.yaw, b.roofColor))
-    flat.forEach((b, i) => {
-      const topScaleX = b.shape === 'stepped' ? .68 : b.shape === 'tower' ? .72 : 1
-      const topScaleZ = b.shape === 'stepped' ? .72 : b.shape === 'tower' ? .72 : 1
-      put(caps, i, b.x, b.y + b.height + .6, b.z, b.width * topScaleX + .5, 1.2,
-        b.depth * topScaleZ + .5, b.yaw, b.roofColor)
-    })
-    crowns.forEach((b, i) => put(caps, flat.length + i, b.x, b.y + b.height + b.height * .05, b.z,
-      b.width * .48, b.height * .1, b.depth * .55, b.yaw, b.roofColor))
-    // Service canopies, pillars and pumps share one box batch. Barn silos use
-    // one cylinder batch. No per-building meshes or lights are introduced.
-    if (services.length) {
-      const accessories = new InstancedMesh(this.box, this.roofs, services.length * 9)
-      services.forEach((b, i) => {
-        const s = b.service!, c = Math.cos(s.yaw), sn = Math.sin(s.yaw)
-        put(accessories, i * 9, s.x, s.y + 6.7, s.z, 25, .85, 17, s.yaw, 0xd2c8ac)
-        for (let j = 0; j < 4; j++) {
-          const dx = j % 2 ? 10 : -10, dz = j < 2 ? -6 : 6
-          put(accessories, i * 9 + 1 + j, s.x + c * dx + sn * dz, s.y + 3.2,
-            s.z - sn * dx + c * dz, .6, 6.4, .6, s.yaw, 0x59636b)
-          const pumpX = j % 2 ? 5 : -5, pumpZ = j < 2 ? -3 : 3
-          put(accessories, i * 9 + 5 + j, s.x + c * pumpX + sn * pumpZ, s.y + 1,
-            s.z - sn * pumpX + c * pumpZ, 1.3, 2, .9, s.yaw, 0xc46e49)
+    let committed = false
+    try {
+      root.name = `${plan.kind}_${plan.id}`
+      root.position.set(plan.x, plan.y, plan.z)
+      root.add(detail)
+      const transform = new Object3D(), color = new Color()
+      const regular: SettlementBuilding[] = []
+      const towers: SettlementBuilding[] = []
+      const stepped: SettlementBuilding[] = []
+      const spireBuildings: SettlementBuilding[] = []
+      const domeBuildings: SettlementBuilding[] = []
+      const pitched: SettlementBuilding[] = []
+      const flat: SettlementBuilding[] = []
+      const flatHangars: SettlementBuilding[] = []
+      const crowns: SettlementBuilding[] = []
+      const services: SettlementBuilding[] = []
+      const barns: SettlementBuilding[] = []
+      let highestRoof = plan.y
+      let landmarkRoof: SettlementBuilding | undefined
+      for (let i = 0; i < plan.buildings.length; i++) {
+        const building = plan.buildings[i]!
+        const shape = building.shape ?? 'block'
+        if (shape === 'tower') towers.push(building)
+        else if (shape === 'stepped') stepped.push(building)
+        else regular.push(building)
+        if (building.roof === 'pitched') pitched.push(building)
+        else {
+          flat.push(building)
+          if (shape === 'hangar') flatHangars.push(building)
+          if (plan.kind === 'city' && building.height > 250) crowns.push(building)
         }
+        if (!landmarkRoof || building.y + building.height > highestRoof) {
+          highestRoof = building.y + building.height; landmarkRoof = building
+        }
+        if (building.service) services.push(building)
+        if (building.use === 'barn') barns.push(building)
+        if (plan.kind === 'city') {
+          if (building.height > 140 && i % 17 === 4 && spireBuildings.length < 12) spireBuildings.push(building)
+          if (building.use === 'civic' && domeBuildings.length < 12) domeBuildings.push(building)
+        } else {
+          if (building.use === 'civic' && spireBuildings.length < 3) spireBuildings.push(building)
+        }
+      }
+      // A few high-rise and hall lots become deterministic civic landmarks. The
+      // accents are instanced and capped, so a 1,000-building city adds at most
+      // twenty-four transforms while breaking the repeated-box skyline. Larger
+      // villages borrow the same shared accents at a much smaller cap, giving
+      // each rural profile a readable civic center without new draw families.
+      const body = new InstancedMesh(this.box, this.walls, regular.length)
+      const towerBodies = new InstancedMesh(this.tower, this.walls, towers.length)
+      const stepBodies = new InstancedMesh(this.box, this.walls, stepped.length * 2)
+      const spires = new InstancedMesh(this.spire, this.roofs, spireBuildings.length)
+      const domes = new InstancedMesh(this.dome, this.roofs, domeBuildings.length)
+      const gables = new InstancedMesh(this.roof, this.roofs, pitched.length)
+      const caps = new InstancedMesh(this.box, this.roofs, flat.length + crowns.length)
+      const hangarCaps = new InstancedMesh(this.roof, this.roofs, flatHangars.length)
+      const put = (mesh: InstancedMesh, index: number, x: number, y: number, z: number, w: number, h: number, d: number, yaw: number, tint: number) => {
+        transform.position.set(x - plan.x, y - plan.y, z - plan.z)
+        transform.scale.set(w, h, d); transform.rotation.set(0, yaw, 0); transform.updateMatrix()
+        mesh.setMatrixAt(index, transform.matrix)
+        mesh.setColorAt(index, color.setHex(tint))
+      }
+      yield
+      regular.forEach((b, i) => put(body, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
+      yield
+      towers.forEach((b, i) => put(towerBodies, i, b.x, b.y + b.height / 2, b.z, b.width, b.height, b.depth, b.yaw, b.wallColor))
+      yield
+      stepped.forEach((b, i) => {
+        put(stepBodies, i * 2, b.x, b.y + b.height * .34, b.z, b.width, b.height * .68, b.depth, b.yaw, b.wallColor)
+        put(stepBodies, i * 2 + 1, b.x, b.y + b.height * .84, b.z, b.width * .68, b.height * .32, b.depth * .72, b.yaw, b.wallColor)
       })
-      accessories.name = 'SettlementFuelStations'; accessories.computeBoundingSphere(); root.add(accessories)
-    }
-    if (barns.length) {
-      const silos = new InstancedMesh(this.tower, this.roofs, barns.length)
-      barns.forEach((b, i) => put(silos, i,
-        b.x + Math.cos(b.yaw) * b.width * .27, b.y + b.height + 3,
-        b.z - Math.sin(b.yaw) * b.width * .27, 5, 8, 5, b.yaw, 0xaaa998))
-      silos.name = 'SettlementBarnSilos'; silos.computeBoundingSphere(); root.add(silos)
-    }
-    // Flat-roof hangars still get a broad shared canopy so their silhouette
-    // reads as a civic or industrial hall instead of another plain box.
-    flatHangars.forEach((b, i) => put(hangarCaps, i, b.x, b.y + b.height + .55, b.z,
-      b.width * 1.12, Math.min(b.width, b.depth) * .22, b.depth * 1.08, b.yaw, b.roofColor))
-    for (const mesh of [body, towerBodies, stepBodies, spires, domes, gables, caps, hangarCaps]) {
-      if (!mesh.count) { mesh.dispose(); continue }
-      mesh.computeBoundingSphere()
-      // Roof silhouettes stay visible at distance too; only ground detail is culled.
-      root.add(mesh)
-    }
-    if (plan.anchor && landmarkRoof) {
-      // One modest rooftop antenna identifies a protected landmark. Never
-      // suspend a hundreds-of-metres cone above an unrelated origin point.
-      const height = plan.kind === 'city' ? 45 : 18
-      const radius = plan.kind === 'city' ? 1.8 : 1
-      const roofHeight = landmarkRoof.roof === 'pitched' ? Math.min(landmarkRoof.width, landmarkRoof.depth) * .3 : 1.2
-      const beacon = new Mesh(this.anchorBeacon, plan.kind === 'city' ? this.cityBeacon : this.villageBeacon)
-      beacon.name = 'SettlementAnchorBeacon'
-      beacon.position.set(landmarkRoof.x - plan.x, highestRoof + roofHeight - plan.y + height * .5,
-        landmarkRoof.z - plan.z)
-      beacon.scale.set(radius, height, radius)
-      beacon.renderOrder = 2
-      detail.add(beacon)
-    }
-    const groundGeometry = settlementGroundGeometry(plan)
-    if (groundGeometry) {
-      const ground = new Mesh(groundGeometry, this.groundMaterial)
-      ground.name = 'SettlementGround'
-      detail.add(ground)
-    }
-    const lightPoints = settlementStreetLightPoints(plan)
-    if (lightPoints.length) {
-      const poles = new InstancedMesh(this.streetLampPole, this.streetLampPoleMaterial, lightPoints.length)
-      const glows = new InstancedMesh(this.streetLampGlowGeometry, this.streetLampGlow, lightPoints.length)
-      const lampTransform = new Object3D()
-      lightPoints.forEach((point, i) => {
-        lampTransform.position.set(point.x - plan.x, point.y - plan.y + 9, point.z - plan.z)
-        lampTransform.scale.set(.8, 18, .8)
-        lampTransform.rotation.set(0, point.yaw, 0)
-        lampTransform.updateMatrix()
-        poles.setMatrixAt(i, lampTransform.matrix)
-        lampTransform.position.set(point.x - plan.x, point.y - plan.y + 18.2, point.z - plan.z)
-        lampTransform.scale.set(2.8, 1.8, 2.8)
-        lampTransform.updateMatrix()
-        glows.setMatrixAt(i, lampTransform.matrix)
+      yield
+      spireBuildings.forEach((b, i) => {
+        const height = plan.kind === 'city' ? Math.min(b.height * .08, 110) : Math.min(b.height * .12, 70)
+        const radius = Math.max(1.4, Math.min(b.width, b.depth) * .2)
+        put(spires, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
       })
-      poles.instanceMatrix.needsUpdate = true
-      glows.instanceMatrix.needsUpdate = true
-      poles.computeBoundingSphere()
-      glows.computeBoundingSphere()
-      poles.name = 'SettlementStreetLightPoles'
-      glows.name = 'SettlementStreetLightGlow'
-      detail.add(poles, glows)
-    }
-    const waterfrontPoints = settlementWaterfrontPoints(plan)
-    if (waterfrontPoints.length) {
-      const decks = new InstancedMesh(this.dockDeck, this.dockDeckMaterial, waterfrontPoints.length)
-      const posts = new InstancedMesh(this.dockPost, this.dockPostMaterial, waterfrontPoints.length * 2)
-      const dockTransform = new Object3D()
-      waterfrontPoints.forEach((point, i) => {
-        dockTransform.position.set(point.x - plan.x, point.y - plan.y, point.z - plan.z)
-        dockTransform.scale.set(point.width, 2.2, point.length)
-        dockTransform.rotation.set(0, point.yaw, 0)
-        dockTransform.updateMatrix()
-        decks.setMatrixAt(i, dockTransform.matrix)
-        const forwardX = Math.cos(Math.PI * .5 - point.yaw)
-        const forwardZ = Math.sin(Math.PI * .5 - point.yaw)
-        const sideX = -forwardZ, sideZ = forwardX
-        const endX = point.x + forwardX * point.length * .28
-        const endZ = point.z + forwardZ * point.length * .28
-        for (const side of [-1, 1]) {
-          const postIndex = i * 2 + (side > 0 ? 1 : 0)
-          dockTransform.position.set(
-            endX + sideX * point.width * .34 - plan.x,
-            point.y - plan.y - 5.2,
-            endZ + sideZ * point.width * .34 - plan.z,
-          )
-          dockTransform.scale.set(.7, 11, .7)
-          dockTransform.rotation.set(0, 0, 0)
+      yield
+      domeBuildings.forEach((b, i) => {
+        const height = plan.kind === 'city'
+          ? Math.max(2.5, Math.min(24, Math.min(b.width, b.depth) * .2))
+          : Math.max(1.5, Math.min(8, Math.min(b.width, b.depth) * .18))
+        const radius = Math.max(3, Math.min(b.width, b.depth) * .42)
+        put(domes, i, b.x, b.y + b.height + height * .5, b.z, radius, height, radius, b.yaw, b.roofColor)
+      })
+      yield
+      pitched.forEach((b, i) => put(gables, i, b.x, b.y + b.height, b.z, b.width + 1.2, Math.min(b.width, b.depth) * .3, b.depth + 1.2, b.yaw, b.roofColor))
+      yield
+      flat.forEach((b, i) => {
+        const topScaleX = b.shape === 'stepped' ? .68 : b.shape === 'tower' ? .72 : 1
+        const topScaleZ = b.shape === 'stepped' ? .72 : b.shape === 'tower' ? .72 : 1
+        put(caps, i, b.x, b.y + b.height + .6, b.z, b.width * topScaleX + .5, 1.2,
+          b.depth * topScaleZ + .5, b.yaw, b.roofColor)
+      })
+      yield
+      crowns.forEach((b, i) => put(caps, flat.length + i, b.x, b.y + b.height + b.height * .05, b.z,
+        b.width * .48, b.height * .1, b.depth * .55, b.yaw, b.roofColor))
+      // Service canopies, pillars and pumps share one box batch. Barn silos use
+      // one cylinder batch. No per-building meshes or lights are introduced.
+      if (services.length) {
+        const accessories = new InstancedMesh(this.box, this.roofs, services.length * 9)
+        services.forEach((b, i) => {
+          const s = b.service!, c = Math.cos(s.yaw), sn = Math.sin(s.yaw)
+          put(accessories, i * 9, s.x, s.y + 6.7, s.z, 25, .85, 17, s.yaw, 0xd2c8ac)
+          for (let j = 0; j < 4; j++) {
+            const dx = j % 2 ? 10 : -10, dz = j < 2 ? -6 : 6
+            put(accessories, i * 9 + 1 + j, s.x + c * dx + sn * dz, s.y + 3.2,
+              s.z - sn * dx + c * dz, .6, 6.4, .6, s.yaw, 0x59636b)
+            const pumpX = j % 2 ? 5 : -5, pumpZ = j < 2 ? -3 : 3
+            put(accessories, i * 9 + 5 + j, s.x + c * pumpX + sn * pumpZ, s.y + 1,
+              s.z - sn * pumpX + c * pumpZ, 1.3, 2, .9, s.yaw, 0xc46e49)
+          }
+        })
+        accessories.name = 'SettlementFuelStations'; accessories.computeBoundingSphere(); root.add(accessories)
+      }
+      if (barns.length) {
+        const silos = new InstancedMesh(this.tower, this.roofs, barns.length)
+        barns.forEach((b, i) => put(silos, i,
+          b.x + Math.cos(b.yaw) * b.width * .27, b.y + b.height + 3,
+          b.z - Math.sin(b.yaw) * b.width * .27, 5, 8, 5, b.yaw, 0xaaa998))
+        silos.name = 'SettlementBarnSilos'; silos.computeBoundingSphere(); root.add(silos)
+      }
+      // Flat-roof hangars still get a broad shared canopy so their silhouette
+      // reads as a civic or industrial hall instead of another plain box.
+      yield
+      flatHangars.forEach((b, i) => put(hangarCaps, i, b.x, b.y + b.height + .55, b.z,
+        b.width * 1.12, Math.min(b.width, b.depth) * .22, b.depth * 1.08, b.yaw, b.roofColor))
+      for (const mesh of [body, towerBodies, stepBodies, spires, domes, gables, caps, hangarCaps]) {
+        if (!mesh.count) { mesh.dispose(); continue }
+        mesh.computeBoundingSphere()
+        // Roof silhouettes stay visible at distance too; only ground detail is culled.
+        root.add(mesh)
+      }
+      if (plan.anchor && landmarkRoof) {
+        // One modest rooftop antenna identifies a protected landmark. Never
+        // suspend a hundreds-of-metres cone above an unrelated origin point.
+        const height = plan.kind === 'city' ? 45 : 18
+        const radius = plan.kind === 'city' ? 1.8 : 1
+        const roofHeight = landmarkRoof.roof === 'pitched' ? Math.min(landmarkRoof.width, landmarkRoof.depth) * .3 : 1.2
+        const beacon = new Mesh(this.anchorBeacon, plan.kind === 'city' ? this.cityBeacon : this.villageBeacon)
+        beacon.name = 'SettlementAnchorBeacon'
+        beacon.position.set(landmarkRoof.x - plan.x, highestRoof + roofHeight - plan.y + height * .5,
+          landmarkRoof.z - plan.z)
+        beacon.scale.set(radius, height, radius)
+        beacon.renderOrder = 2
+        detail.add(beacon)
+      }
+      yield
+      const groundGeometry = settlementGroundGeometry(plan)
+      if (groundGeometry) {
+        const ground = new Mesh(groundGeometry, this.groundMaterial)
+        ground.name = 'SettlementGround'
+        detail.add(ground)
+      }
+      yield
+      const lightPoints = settlementStreetLightPoints(plan)
+      if (lightPoints.length) {
+        const poles = new InstancedMesh(this.streetLampPole, this.streetLampPoleMaterial, lightPoints.length)
+        const glows = new InstancedMesh(this.streetLampGlowGeometry, this.streetLampGlow, lightPoints.length)
+        const lampTransform = new Object3D()
+        lightPoints.forEach((point, i) => {
+          lampTransform.position.set(point.x - plan.x, point.y - plan.y + 9, point.z - plan.z)
+          lampTransform.scale.set(.8, 18, .8)
+          lampTransform.rotation.set(0, point.yaw, 0)
+          lampTransform.updateMatrix()
+          poles.setMatrixAt(i, lampTransform.matrix)
+          lampTransform.position.set(point.x - plan.x, point.y - plan.y + 18.2, point.z - plan.z)
+          lampTransform.scale.set(2.8, 1.8, 2.8)
+          lampTransform.updateMatrix()
+          glows.setMatrixAt(i, lampTransform.matrix)
+        })
+        poles.instanceMatrix.needsUpdate = true
+        glows.instanceMatrix.needsUpdate = true
+        poles.computeBoundingSphere()
+        glows.computeBoundingSphere()
+        poles.name = 'SettlementStreetLightPoles'
+        glows.name = 'SettlementStreetLightGlow'
+        detail.add(poles, glows)
+      }
+      yield
+      const waterfrontPoints = settlementWaterfrontPoints(plan)
+      if (waterfrontPoints.length) {
+        const decks = new InstancedMesh(this.dockDeck, this.dockDeckMaterial, waterfrontPoints.length)
+        const posts = new InstancedMesh(this.dockPost, this.dockPostMaterial, waterfrontPoints.length * 2)
+        const dockTransform = new Object3D()
+        waterfrontPoints.forEach((point, i) => {
+          dockTransform.position.set(point.x - plan.x, point.y - plan.y, point.z - plan.z)
+          dockTransform.scale.set(point.width, 2.2, point.length)
+          dockTransform.rotation.set(0, point.yaw, 0)
           dockTransform.updateMatrix()
-          posts.setMatrixAt(postIndex, dockTransform.matrix)
-        }
+          decks.setMatrixAt(i, dockTransform.matrix)
+          const forwardX = Math.cos(Math.PI * .5 - point.yaw)
+          const forwardZ = Math.sin(Math.PI * .5 - point.yaw)
+          const sideX = -forwardZ, sideZ = forwardX
+          const endX = point.x + forwardX * point.length * .28
+          const endZ = point.z + forwardZ * point.length * .28
+          for (const side of [-1, 1]) {
+            const postIndex = i * 2 + (side > 0 ? 1 : 0)
+            dockTransform.position.set(
+              endX + sideX * point.width * .34 - plan.x,
+              point.y - plan.y - 5.2,
+              endZ + sideZ * point.width * .34 - plan.z,
+            )
+            dockTransform.scale.set(.7, 11, .7)
+            dockTransform.rotation.set(0, 0, 0)
+            dockTransform.updateMatrix()
+            posts.setMatrixAt(postIndex, dockTransform.matrix)
+          }
+        })
+        decks.instanceMatrix.needsUpdate = true
+        posts.instanceMatrix.needsUpdate = true
+        decks.computeBoundingSphere()
+        posts.computeBoundingSphere()
+        decks.name = 'SettlementWaterfrontDecks'
+        posts.name = 'SettlementWaterfrontPosts'
+        detail.add(decks, posts)
+      }
+      yield
+      const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
+        width: road.width * 1.55,
+        points: road.points.map(point => ({ ...point,
+          y: point.structure === 'ground' ? (point.groundY ?? point.y - .45) + .3 : point.y - .08,
+          leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
+          leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
+          rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
+          rightZ: point.rightZ === undefined ? undefined : point.z + (point.rightZ - point.z) * 1.55,
+          leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
+          rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
+      }))
+      yield
+      const shoulderGeometry = yield* createRoadGeometrySteps(localShoulders.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .3, undefined, 1 / 1.55)
+      if (shoulderGeometry) {
+        const mesh = new Mesh(shoulderGeometry, this.gravelShoulder)
+        mesh.name = 'SettlementRoadShoulders'
+        detail.add(mesh)
+      }
+      yield
+      const geometry = yield* createRoadGeometrySteps(plan.roads.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .45)
+      if (geometry) {
+        const mesh = new Mesh(geometry, this.asphalt)
+        mesh.name = 'SettlementRoads'
+        detail.add(mesh)
+      }
+      yield
+      const deckGeometry = yield* createRoadGeometrySteps(plan.roads.flatMap(bridgeSpans), plan.x, plan.y, plan.z)
+      if (deckGeometry) {
+        const decks = new Mesh(deckGeometry, this.bridgeDeck)
+        decks.name = 'SettlementBridgeDecks'; detail.add(decks)
+      }
+      for (const bridge of [true, false]) {
+        const structure = localRoadStructureGeometry(plan.roads, plan.x, plan.y, plan.z, bridge)
+        if (!structure) continue
+        const mesh = new Mesh(structure, bridge ? this.bridgeDeck : this.gravelShoulder)
+        mesh.name = bridge ? 'SettlementBridgeSides' : 'SettlementRoadEmbankments'; detail.add(mesh)
+      }
+      yield
+      const supports = plan.roads.flatMap(road => bridgeSupportPoints(road).map(point => ({ point, width: road.width })))
+        .slice(0, MAX_ROAD_SUPPORTS)
+      if (supports.length) {
+        const piers = new InstancedMesh(this.tower, this.bridgeDeck, supports.length)
+        supports.forEach(({ point, width }, i) => {
+          const bed = (point.groundY ?? point.y - 6) - 3, height = Math.max(1, point.y - bed)
+          put(piers, i, point.x, bed + height / 2, point.z,
+            Math.max(1.2, width * .1), height, Math.max(1.2, width * .1), 0, 0x777a76)
+        })
+        piers.name = 'SettlementBridgePiers'; piers.computeBoundingSphere(); detail.add(piers)
+      }
+      // One batched centerline mesh keeps local streets readable from the chase
+      // camera without creating a draw call per street segment.
+      yield
+      const centerlines: SettlementRoad[] = plan.roads.map(road => ({
+        width: Math.min(1.35, road.width * .045),
+        points: road.points.map(point => ({ ...point, y: point.y + .16 })),
+      }))
+      yield
+      const markingGeometry = yield* createRoadGeometrySteps(
+        (yield* dashedRoadSteps(centerlines, plan.kind === 'city' ? 28 : 18, plan.kind === 'city' ? 24 : 20)),
+        plan.x, plan.y, plan.z,
+        .61,
+      )
+      if (markingGeometry) {
+        const mesh = new Mesh(markingGeometry, this.streetMark)
+        mesh.name = 'SettlementRoadMarkings'
+        detail.add(mesh)
+      }
+      yield
+      root.traverse(object => {
+        if (object instanceof Mesh) this.draper?.add(object.geometry, plan.x, plan.y, plan.z)
       })
-      decks.instanceMatrix.needsUpdate = true
-      posts.instanceMatrix.needsUpdate = true
-      decks.computeBoundingSphere()
-      posts.computeBoundingSphere()
-      decks.name = 'SettlementWaterfrontDecks'
-      posts.name = 'SettlementWaterfrontPosts'
-      detail.add(decks, posts)
+      this.applyDetailQuality(detail)
+      getCollisionIndex(plan)
+      this.attachStatic(root)
+      committed = true
+      return { root, detail, plan }
+    } finally {
+      if (!committed) this.disposeAssemblyRoot(root)
     }
-    const localShoulders: SettlementRoad[] = plan.roads.map(road => ({
-      width: road.width * 1.55,
-      points: road.points.map(point => ({ ...point,
-        y: point.structure === 'ground' ? (point.groundY ?? point.y - .45) + .3 : point.y - .08,
-        leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
-        leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
-        rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
-        rightZ: point.rightZ === undefined ? undefined : point.z + (point.rightZ - point.z) * 1.55,
-        leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
-        rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
-    }))
-    const shoulderGeometry = createRoadGeometry(localShoulders.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .3, undefined, 1 / 1.55)
-    if (shoulderGeometry) {
-      const mesh = new Mesh(shoulderGeometry, this.gravelShoulder)
-      mesh.name = 'SettlementRoadShoulders'
-      detail.add(mesh)
-    }
-    const geometry = createRoadGeometry(plan.roads.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .45)
-    if (geometry) {
-      const mesh = new Mesh(geometry, this.asphalt)
-      mesh.name = 'SettlementRoads'
-      detail.add(mesh)
-    }
-    const deckGeometry = createRoadGeometry(plan.roads.flatMap(bridgeSpans), plan.x, plan.y, plan.z)
-    if (deckGeometry) {
-      const decks = new Mesh(deckGeometry, this.bridgeDeck)
-      decks.name = 'SettlementBridgeDecks'; detail.add(decks)
-    }
-    for (const bridge of [true, false]) {
-      const structure = localRoadStructureGeometry(plan.roads, plan.x, plan.y, plan.z, bridge)
-      if (!structure) continue
-      const mesh = new Mesh(structure, bridge ? this.bridgeDeck : this.gravelShoulder)
-      mesh.name = bridge ? 'SettlementBridgeSides' : 'SettlementRoadEmbankments'; detail.add(mesh)
-    }
-    const supports = plan.roads.flatMap(road => bridgeSupportPoints(road).map(point => ({ point, width: road.width })))
-      .slice(0, MAX_ROAD_SUPPORTS)
-    if (supports.length) {
-      const piers = new InstancedMesh(this.tower, this.bridgeDeck, supports.length)
-      supports.forEach(({ point, width }, i) => {
-        const bed = (point.groundY ?? point.y - 6) - 3, height = Math.max(1, point.y - bed)
-        put(piers, i, point.x, bed + height / 2, point.z,
-          Math.max(1.2, width * .1), height, Math.max(1.2, width * .1), 0, 0x777a76)
-      })
-      piers.name = 'SettlementBridgePiers'; piers.computeBoundingSphere(); detail.add(piers)
-    }
-    // One batched centerline mesh keeps local streets readable from the chase
-    // camera without creating a draw call per street segment.
-    const centerlines: SettlementRoad[] = plan.roads.map(road => ({
-      width: Math.min(1.35, road.width * .045),
-      points: road.points.map(point => ({ ...point, y: point.y + .16 })),
-    }))
-    const markingGeometry = createRoadGeometry(
-      dashedRoads(centerlines, plan.kind === 'city' ? 28 : 18, plan.kind === 'city' ? 24 : 20),
-      plan.x, plan.y, plan.z,
-      .61,
-    )
-    if (markingGeometry) {
-      const mesh = new Mesh(markingGeometry, this.streetMark)
-      mesh.name = 'SettlementRoadMarkings'
-      detail.add(mesh)
-    }
-    root.traverse(object => {
-      if (object instanceof Mesh) this.draper?.add(object.geometry, plan.x, plan.y, plan.z)
-    })
-    this.applyDetailQuality(detail)
-    getCollisionIndex(plan)
-    this.attachStatic(root)
-    return { root, detail, plan }
   }
 
   /** Loaded transforms stay fixed; draping changes vertex attributes only.
    * Keep world-matrix invalidation enabled so explicit parent moves still work. */
+
   private attachStatic(root: Group): void {
     root.traverse(object => { object.updateMatrix(); object.matrixAutoUpdate = false })
     this.root.add(root)
+  }
+
+  /** Cancellation must release private geometry without touching shared assets. */
+  private disposeAssemblyRoot(root: Group): void {
+    root.removeFromParent()
+    root.traverse(object => {
+      if (object instanceof InstancedMesh) object.dispose()
+      if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
+        this.draper?.remove(object.geometry); object.geometry.dispose()
+      }
+    })
   }
 
   /** Shared settlement geometry stays owned by this system until dispose(). */
@@ -2382,7 +2502,7 @@ export class SettlementSystem {
   }
 
   /** A fixed mesh budget prevents a dense road graph from growing frame cost. */
-  private canLoadRoad(candidate: ReadyRoad, x: number, z: number): boolean {
+  private canLoadRoad(candidate: ReadyRoad, x: number, z: number, commit = true): boolean {
     if (this.connections.size < MAX_LOADED_REGIONAL_ROADS) return true
     const candidateDistanceSquared = roadDistanceSquared(x, z, candidate.road)
     let farthestKey = '', farthest: LoadedRoad | undefined, farthestDistanceSquared = -Infinity
@@ -2395,6 +2515,7 @@ export class SettlementSystem {
       }
     }
     if (!farthest || candidateDistanceSquared >= farthestDistanceSquared) return false
+    if (!commit) return true
     this.connections.delete(farthestKey)
     this.removeRoad(farthest)
     this.deferRoad({ key: farthestKey, from: farthest.from, to: farthest.to, road: farthest.road })
@@ -2402,97 +2523,120 @@ export class SettlementSystem {
   }
 
   private buildRegionalRoad(road: SettlementRoad, from: RegionalRoadEndpoint, to: RegionalRoadEndpoint): LoadedRoad {
+    const steps = this.buildRegionalRoadSteps(road, from, to)
+    let result = steps.next()
+    while (!result.done) result = steps.next()
+    return result.value
+  }
+
+  private *buildRegionalRoadSteps(road: SettlementRoad, from: RegionalRoadEndpoint, to: RegionalRoadEndpoint): Generator<void, LoadedRoad> {
     const root = new Group()
-    root.name = `regional_road_${regionalRoadKey(from, to)}`
-    const x = (from.x + to.x) / 2, z = (from.z + to.z) / 2
-    root.position.set(x, 0, z)
-    // A broad gravel shoulder keeps the connector legible through the flight
-    // fog and separates it from pale grass or sand without another road pass.
-    const shoulderRoad: SettlementRoad = {
-      width: road.width * 1.55,
-      points: road.points.map(point => ({ ...point,
-        y: point.structure === 'ground' ? (point.groundY ?? point.y - .45) + .3 : point.y - .08,
-        leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
-        leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
-        rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
-        rightZ: point.rightZ === undefined ? undefined : point.z + (point.rightZ - point.z) * 1.55,
-        leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
-        rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
-    }
-    // Two outer bands frame the lane without a gravel cap over its asphalt.
-    // Keep the existing profile, triangle count and shared shoulder material.
-    const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z, .3, undefined, 1 / 1.55)
-    if (shoulderGeometry) {
-      const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
-      shoulder.name = 'RegionalRoadShoulder'
-      root.add(shoulder)
-    }
-    const geometry = createRoadGeometry(groundedRoadSpans(road), x, 0, z, .45, road)
-    if (geometry) {
-      const asphalt = new Mesh(geometry, this.highway)
-      asphalt.name = 'RegionalRoadAsphalt'; root.add(asphalt)
-    }
-    const bridgeGeometry = createRoadGeometry(bridgeSpans(road), x, 0, z)
-    if (bridgeGeometry) {
-      const bridge = new Mesh(bridgeGeometry, this.bridgeDeck)
-      bridge.name = 'RegionalBridgeDeck'
-      root.add(bridge)
-    }
-    const bridgeSides = roadStructureGeometry(road, x, z, true)
-    if (bridgeSides) {
-      const sides = new Mesh(bridgeSides, this.bridgeDeck)
-      sides.name = 'RegionalBridgeSides'; root.add(sides)
-    }
-    const embankmentGeometry = roadStructureGeometry(road, x, z, false)
-    if (embankmentGeometry) {
-      const embankment = new Mesh(embankmentGeometry, this.gravelShoulder)
-      embankment.name = 'RegionalRoadEmbankment'; root.add(embankment)
-    }
-    const pierPoints = bridgeSupportPoints(road)
-    if (pierPoints.length) {
-      const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
-      const transform = new Object3D()
-      pierPoints.forEach((point, i) => {
-        const bed = (point.groundY ?? sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height) - 3
-        const height = Math.max(1, point.y - bed)
-        transform.position.set(point.x - x, bed + height * .5, point.z - z)
-        transform.scale.set(Math.max(1.2, road.width * .1), height, Math.max(1.2, road.width * .1))
-        transform.rotation.set(0, 0, 0)
-        transform.updateMatrix()
-        piers.setMatrixAt(i, transform.matrix)
+    let committed = false
+    try {
+      root.name = `regional_road_${regionalRoadKey(from, to)}`
+      const x = (from.x + to.x) / 2, z = (from.z + to.z) / 2
+      root.position.set(x, 0, z)
+      // A broad gravel shoulder keeps the connector legible through the flight
+      // fog and separates it from pale grass or sand without another road pass.
+      const shoulderRoad: SettlementRoad = {
+        width: road.width * 1.55,
+        points: road.points.map(point => ({ ...point,
+          y: point.structure === 'ground' ? (point.groundY ?? point.y - .45) + .3 : point.y - .08,
+          leftX: point.leftX === undefined ? undefined : point.x + (point.leftX - point.x) * 1.55,
+          leftZ: point.leftZ === undefined ? undefined : point.z + (point.leftZ - point.z) * 1.55,
+          rightX: point.rightX === undefined ? undefined : point.x + (point.rightX - point.x) * 1.55,
+          rightZ: point.rightZ === undefined ? undefined : point.z + (point.rightZ - point.z) * 1.55,
+          leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
+          rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
+      }
+      // Two outer bands frame the lane without a gravel cap over its asphalt.
+      // Keep the existing profile, triangle count and shared shoulder material.
+      yield
+      const shoulderGeometry = yield* createRoadGeometrySteps(groundedRoadSpans(shoulderRoad), x, 0, z, .3, undefined, 1 / 1.55)
+      if (shoulderGeometry) {
+        const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
+        shoulder.name = 'RegionalRoadShoulder'
+        root.add(shoulder)
+      }
+      yield
+      const geometry = yield* createRoadGeometrySteps(groundedRoadSpans(road), x, 0, z, .45, road)
+      if (geometry) {
+        const asphalt = new Mesh(geometry, this.highway)
+        asphalt.name = 'RegionalRoadAsphalt'; root.add(asphalt)
+      }
+      yield
+      const bridgeGeometry = yield* createRoadGeometrySteps(bridgeSpans(road), x, 0, z)
+      if (bridgeGeometry) {
+        const bridge = new Mesh(bridgeGeometry, this.bridgeDeck)
+        bridge.name = 'RegionalBridgeDeck'
+        root.add(bridge)
+      }
+      yield
+      const bridgeSides = roadStructureGeometry(road, x, z, true)
+      if (bridgeSides) {
+        const sides = new Mesh(bridgeSides, this.bridgeDeck)
+        sides.name = 'RegionalBridgeSides'; root.add(sides)
+      }
+      yield
+      const embankmentGeometry = roadStructureGeometry(road, x, z, false)
+      if (embankmentGeometry) {
+        const embankment = new Mesh(embankmentGeometry, this.gravelShoulder)
+        embankment.name = 'RegionalRoadEmbankment'; root.add(embankment)
+      }
+      yield
+      const pierPoints = bridgeSupportPoints(road)
+      if (pierPoints.length) {
+        const piers = new InstancedMesh(this.tower, this.bridgeDeck, pierPoints.length)
+        const transform = new Object3D()
+        pierPoints.forEach((point, i) => {
+          const bed = (point.groundY ?? sampleClimate(point.x, point.z, settlementRuntimeClimateScratch).height) - 3
+          const height = Math.max(1, point.y - bed)
+          transform.position.set(point.x - x, bed + height * .5, point.z - z)
+          transform.scale.set(Math.max(1.2, road.width * .1), height, Math.max(1.2, road.width * .1))
+          transform.rotation.set(0, 0, 0)
+          transform.updateMatrix()
+          piers.setMatrixAt(i, transform.matrix)
+        })
+        piers.instanceMatrix.needsUpdate = true
+        piers.computeBoundingSphere()
+        piers.name = 'RegionalBridgePiers'
+        root.add(piers)
+      }
+      yield
+      const centerline: SettlementRoad = { width: .35, points: road.points.map(point => ({ x: point.x, y: point.y + .12,
+        z: point.z, bridge: point.bridge, structure: point.structure })) }
+      const marking = yield* createRoadGeometrySteps((yield* dashedRoadSteps([centerline], 6, 7)), x, 0, z, .57)
+      if (marking) root.add(new Mesh(marking, this.highwayMark))
+      // Edge strips give long links a readable silhouette through haze while
+      // staying as one batched mesh per connector.
+      yield
+      const edges: SettlementRoad[] = [
+        { width: .3, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .12,
+          z: point.leftZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
+        { width: .3, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .12,
+          z: point.rightZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
+      ]
+      yield
+      const edgeGeometry = yield* createRoadGeometrySteps(edges, x, 0, z, .57)
+      if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
+      yield
+      root.traverse(object => {
+        if (object instanceof Mesh) this.draper?.add(object.geometry, x, 0, z)
       })
-      piers.instanceMatrix.needsUpdate = true
-      piers.computeBoundingSphere()
-      piers.name = 'RegionalBridgePiers'
-      root.add(piers)
+      this.attachStatic(root)
+      const buildings = roadObstacleBuildings([road])
+      const collisionPlan: SettlementPlan = { id: root.name, x, y: 0, z, kind: 'village', biome: from.biome,
+        radius: buildings.reduce((radius, b) => Math.max(radius, Math.hypot(b.x - x, b.z - z) + Math.hypot(b.width, b.depth)), 0),
+        buildings, roads: [] }
+      if (buildings.length) {
+        getCollisionIndex(collisionPlan)
+        this.roadCollisionPlans.push(collisionPlan)
+      }
+      committed = true
+      return { root, from, to, road, collisionPlan }
+    } finally {
+      if (!committed) this.disposeAssemblyRoot(root)
     }
-    const centerline: SettlementRoad = { width: .35, points: road.points.map(point => ({ x: point.x, y: point.y + .12,
-      z: point.z, bridge: point.bridge, structure: point.structure })) }
-    const marking = createRoadGeometry(dashedRoads([centerline], 6, 7), x, 0, z, .57)
-    if (marking) root.add(new Mesh(marking, this.highwayMark))
-    // Edge strips give long links a readable silhouette through haze while
-    // staying as one batched mesh per connector.
-    const edges: SettlementRoad[] = [
-      { width: .3, points: road.points.map(point => ({ x: point.leftX ?? point.x, y: (point.leftY ?? point.y) + .12,
-        z: point.leftZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
-      { width: .3, points: road.points.map(point => ({ x: point.rightX ?? point.x, y: (point.rightY ?? point.y) + .12,
-        z: point.rightZ ?? point.z, bridge: point.bridge, structure: point.structure })) },
-    ]
-    const edgeGeometry = createRoadGeometry(edges, x, 0, z, .57)
-    if (edgeGeometry) root.add(new Mesh(edgeGeometry, this.highwayEdge))
-    root.traverse(object => {
-      if (object instanceof Mesh) this.draper?.add(object.geometry, x, 0, z)
-    })
-    this.attachStatic(root)
-    const buildings = roadObstacleBuildings([road])
-    const collisionPlan: SettlementPlan = { id: root.name, x, y: 0, z, kind: 'village', biome: from.biome,
-      radius: buildings.reduce((radius, b) => Math.max(radius, Math.hypot(b.x - x, b.z - z) + Math.hypot(b.width, b.depth)), 0),
-      buildings, roads: [] }
-    if (buildings.length) {
-      getCollisionIndex(collisionPlan)
-      this.roadCollisionPlans.push(collisionPlan)
-    }
-    return { root, from, to, road, collisionPlan }
   }
 
   private removeRoad(road: LoadedRoad): void {

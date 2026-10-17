@@ -1,0 +1,579 @@
+{
+  "navigationClockUs": 32917763684,
+  "mainThread": {
+    "pid": 1590248,
+    "tid": 1590248
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 2486.1,
+      "endMs": 2869.4,
+      "ms": 383.3000000000002,
+      "causes": [
+        "first-use shader compilation/link/introspection",
+        "settlement attachment",
+        "layout",
+        "cold launch world rebuild"
+      ],
+      "traceCoverage": true,
+      "gcMs": 7.62,
+      "dominantMeasuredPhase": {
+        "name": "settlement attachment",
+        "ms": 75.7
+      },
+      "methods": [
+        {
+          "name": "terrain.scheduleAround",
+          "startMs": 2501.3,
+          "ms": 7.4,
+          "overlapMs": 7.4
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 2509.5,
+          "ms": 25,
+          "overlapMs": 25
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 2535.7,
+          "ms": 75.7,
+          "overlapMs": 75.7
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "onFirstUse (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:45512)",
+          "sampledMs": 80.21
+        },
+        {
+          "name": "startGame (src/main.ts:1303)",
+          "sampledMs": 53.32
+        },
+        {
+          "name": "resume (src/audio/FlightAudio.ts:85)",
+          "sampledMs": 45.23
+        },
+        {
+          "name": "distanceToSquared (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:4715)",
+          "sampledMs": 9.91
+        },
+        {
+          "name": "getX (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:12867)",
+          "sampledMs": 9.13
+        },
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 8.86
+        },
+        {
+          "name": "(garbage collector) (:0)",
+          "sampledMs": 8.33
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 8.09
+        },
+        {
+          "name": "createRoadGeometry (src/world/SettlementSystem.ts:401)",
+          "sampledMs": 7.73
+        },
+        {
+          "name": "makeNoiseBuffer (src/audio/FlightAudio.ts:550)",
+          "sampledMs": 7.61
+        },
+        {
+          "name": "WebGLShader (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:45021)",
+          "sampledMs": 7.49
+        },
+        {
+          "name": "setXYZ (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:12980)",
+          "sampledMs": 7.29
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 385.35
+        },
+        {
+          "name": "(anonymous)",
+          "sampledMs": 244.13
+        },
+        {
+          "name": "startGame",
+          "sampledMs": 243.07
+        },
+        {
+          "name": "FlightReview.button.onclick",
+          "sampledMs": 243.07
+        },
+        {
+          "name": "tick",
+          "sampledMs": 125.09
+        },
+        {
+          "name": "resetFlight",
+          "sampledMs": 120.8
+        },
+        {
+          "name": "reseed",
+          "sampledMs": 113.92
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 107.03
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 106.88
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 105.81
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 105.81
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 105.81
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "EventDispatch",
+          "startMs": 2486.86,
+          "ms": 248.86,
+          "overlapMs": 248.86,
+          "args": {
+            "data": {
+              "type": "click"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2486.89,
+          "ms": 248.82,
+          "overlapMs": 248.82,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 2486.89,
+          "ms": 248.66,
+          "overlapMs": 248.66,
+          "args": {
+            "data": {
+              "columnNumber": 25,
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "functionName": "FlightReview.button.onclick",
+              "isolate": "18259713776066205770",
+              "lineNumber": 136,
+              "sampleTraceId": 5611387139172950,
+              "scriptId": "139",
+              "url": "http://127.0.0.1:5173/src/debug/FlightReview.ts"
+            }
+          }
+        },
+        {
+          "name": "EventDispatch",
+          "startMs": 2487.03,
+          "ms": 248.51,
+          "overlapMs": 248.51,
+          "args": {
+            "data": {
+              "type": "click"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2487.05,
+          "ms": 248.47,
+          "overlapMs": 248.47,
+          "args": {}
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 2736.77,
+          "ms": 126.78,
+          "overlapMs": 126.78,
+          "args": {
+            "data": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "id": 27
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2736.79,
+          "ms": 126.76,
+          "overlapMs": 126.76,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 2736.79,
+          "ms": 126.76,
+          "overlapMs": 126.76,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "functionName": "tick",
+              "isolate": "18259713776066205770",
+              "lineNumber": 1518,
+              "sampleTraceId": 5611387139173070,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 2535.7,
+          "ms": 75.7,
+          "overlapMs": 75.7,
+          "args": {
+            "callTime": 32920375015,
+            "startTime": 2535.699999999255,
+            "traceId": 2430524818
+          }
+        },
+        {
+          "name": "Layout",
+          "startMs": 2632.8,
+          "ms": 40.58,
+          "overlapMs": 40.58,
+          "args": {
+            "beginData": {
+              "dirtyObjects": 426,
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "partialLayout": false,
+              "totalObjects": 463
+            },
+            "endData": {
+              "layoutRoots": [
+                {
+                  "depth": 1,
+                  "nodeId": 2,
+                  "nodeName": "#document",
+                  "quads": [
+                    [
+                      0,
+                      0,
+                      1280,
+                      0,
+                      1280,
+                      720,
+                      0,
+                      720
+                    ]
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "settlement.build",
+          "startMs": 2509.5,
+          "ms": 25,
+          "overlapMs": 25,
+          "args": {
+            "callTime": 32920298117,
+            "startTime": 2509.5,
+            "traceId": 1022520556
+          }
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 2622.66,
+          "ms": 10.13,
+          "overlapMs": 10.13,
+          "args": {
+            "beginData": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200"
+            },
+            "elementCount": 327
+          }
+        }
+      ]
+    },
+    {
+      "phase": "startup",
+      "startMs": 3836.1,
+      "endMs": 4086,
+      "ms": 249.9000000000001,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "layout",
+        "ms": 0.13
+      },
+      "methods": [],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 240.57
+        },
+        {
+          "name": "setValueM3 (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:44581)",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "(idle) (:0)",
+          "sampledMs": 3.39
+        },
+        {
+          "name": "update (src/ui/HUD.ts:1146)",
+          "sampledMs": 1.22
+        },
+        {
+          "name": "finishStartupScreen (src/ui/StartupScreen.ts:39)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "multiplyMatrices (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=310b6768:8108)",
+          "sampledMs": 0.98
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 250.9
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 240.57
+        },
+        {
+          "name": "tick",
+          "sampledMs": 5.86
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 4.64
+        },
+        {
+          "name": "setValueM3",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "setValue",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 3.66
+        },
+        {
+          "name": "(idle)",
+          "sampledMs": 3.39
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3843.43,
+          "ms": 6.15,
+          "overlapMs": 6.15,
+          "args": {
+            "data": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "id": 84
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3843.44,
+          "ms": 6.12,
+          "overlapMs": 6.12,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3843.45,
+          "ms": 6.11,
+          "overlapMs": 6.11,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "functionName": "tick",
+              "isolate": "18259713776066205770",
+              "lineNumber": 1518,
+              "sampleTraceId": 5611387139169892,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3849.64,
+          "ms": 5.54,
+          "overlapMs": 5.54,
+          "args": {
+            "beginData": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200"
+            },
+            "elementCount": 216
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3856.61,
+          "ms": 2.66,
+          "overlapMs": 2.66,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "layerId": 0,
+              "nodeId": 2,
+              "nodeName": "#document"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3856.66,
+          "ms": 2.61,
+          "overlapMs": 2.61,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "layerId": 0,
+              "nodeId": 34,
+              "nodeName": "HTML"
+            }
+          }
+        },
+        {
+          "name": "PrePaint",
+          "startMs": 3855.35,
+          "ms": 1.23,
+          "overlapMs": 1.23,
+          "args": {
+            "data": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "61203B77EE6A8FD835DB6D75F3C3F200"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3857.15,
+          "ms": 1.02,
+          "overlapMs": 1.02,
+          "args": {
+            "data": {
+              "clip": [
+                -2175,
+                -4000,
+                6263,
+                -4000,
+                6263,
+                4040,
+                -2175,
+                4040
+              ],
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "layerId": 0,
+              "nodeId": 44,
+              "nodeName": "DIV id='heading-tape-track'"
+            }
+          }
+        },
+        {
+          "name": "Layerize",
+          "startMs": 3859.33,
+          "ms": 0.61,
+          "overlapMs": 0.61,
+          "args": {
+            "data": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "61203B77EE6A8FD835DB6D75F3C3F200"
+            }
+          }
+        },
+        {
+          "name": "TimerFire",
+          "startMs": 3841.51,
+          "ms": 0.19,
+          "overlapMs": 0.19,
+          "args": {
+            "data": {
+              "frame": "61203B77EE6A8FD835DB6D75F3C3F200",
+              "timerId": 5
+            }
+          }
+        },
+        {
+          "name": "V8.FinalizeMaglevConcurrentCompilation",
+          "startMs": 3848.42,
+          "ms": 0.17,
+          "overlapMs": 0.17,
+          "args": {}
+        },
+        {
+          "name": "V8.MaglevConcurrentFinalize",
+          "startMs": 3848.42,
+          "ms": 0.16,
+          "overlapMs": 0.16,
+          "args": {}
+        }
+      ]
+    }
+  ]
+}

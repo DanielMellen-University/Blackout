@@ -62,6 +62,17 @@ export interface SpawnPose {
   biome: string
 }
 
+/** A replay can construct its requested world directly instead of generating
+ * and disposing an unrelated random world during boot. */
+export interface InitialWorld {
+  seed: number
+  profile?: MissionRouteProfile
+  weather?: WeatherId
+  timeOfDay?: number
+  windSide?: WindSide
+  weatherShift?: WeatherId
+}
+
 export interface WeatherEffectState {
   rain: number
   snow: number
@@ -180,7 +191,7 @@ export class World {
     daylight: 0,
   }
 
-  constructor(quality: RenderQuality = 'balanced') {
+  constructor(quality: RenderQuality = 'balanced', initial?: InitialWorld) {
     // The scene frame stays at identity. Let dynamic children invalidate their
     // own matrices instead of forcing every static streamed tile each render.
     this.scene.matrixAutoUpdate = false
@@ -224,7 +235,16 @@ export class World {
     this.scene.add(this.runway)
     this.mission = new MissionSystem(this.scene)
     this.setRenderQuality(quality)
-    this.reseed()
+    if (initial) {
+      try {
+        this.reseed(initial.seed, initial.profile, initial.weather, initial.timeOfDay, initial.windSide, initial.weatherShift)
+      } catch {
+        // Retain a playable random fallback when the requested seed has no
+        // valid runway, without paying for that fallback on successful boots.
+        this.reseed()
+        this.reseedFallback = true
+      }
+    } else this.reseed()
   }
 
   get worldSeed(): number {
@@ -354,7 +374,7 @@ export class World {
         // A first-ever boot must remain recoverable even if a future terrain
         // change makes every natural-pad probe reject. Re-seeds after a world
         // is committed still use the normal rollback path below.
-        const pad = findPlayableSpawn() ?? (!this.committed ? emergencySpawn() : null)
+        const pad = findPlayableSpawn() ?? (!this.committed && requestedSeed === undefined ? emergencySpawn() : null)
         if (!pad) continue
         setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
         this.seed = nextSeed

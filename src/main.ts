@@ -1,3 +1,4 @@
+import { warmupShadowVariants } from './core/RendererWarmup'
 import {
   ACESFilmicToneMapping,
   MathUtils,
@@ -172,7 +173,6 @@ import {
 import { sampleGroundSurfaceInto, type GroundSurfaceSample } from './world/ground'
 import { CrashCinematic } from './systems/CrashCinematic'
 import { WaterImpactFx } from './systems/WaterImpactFx'
-import { sampleTerrainSurface } from './world/terrainSample'
 import { trafficAlertSide, trafficAlertVertical } from './world/AirTrafficSystem'
 import { fuelEnduranceSeconds, refuelFuel, withinAirfieldRefuelRadius } from './aircraft/FuelSystem'
 import { World } from './world/World'
@@ -744,7 +744,12 @@ export async function boot(): Promise<void> {
   }
   uiListeners.add(qualitySelect, 'change', onQualityChange)
 
-  const world = new World(renderQuality)
+  const previewCourse = replaySeed !== null ? selectedCourse() : null
+  const world = new World(renderQuality, previewCourse && replaySeed !== null ? {
+    seed: replaySeed, profile: previewCourse.profile ?? undefined, weather: previewCourse.weather,
+    timeOfDay: previewCourse.timeOfDay, windSide: previewCourse.windSide, weatherShift: previewCourse.weatherShift,
+  } : undefined)
+  let initialReplayPending = replaySeed !== null && !world.lastReseedUsedFallback
   applyWorldQuality = (quality): void => world.setRenderQuality(quality)
   applyWorldQuality(renderQuality)
   applyAdaptiveDetailScale = (): void => {
@@ -754,15 +759,6 @@ export async function boot(): Promise<void> {
   applyAdaptiveDetailScale()
   if (replaySeed !== null) {
     const requestedReplaySeed = replaySeed
-    const replayCourse = selectedCourse()
-    world.reseed(
-      replaySeed,
-      replayCourse.profile ?? undefined,
-      replayCourse.weather,
-      replayCourse.timeOfDay,
-      replayCourse.windSide,
-      replayCourse.weatherShift,
-    )
     replaySeedFallback = world.lastReseedUsedFallback
     if (titleSeedStatus) titleSeedStatus.textContent = worldSeedLaunchStatus(requestedReplaySeed, replaySeedFallback)
   }
@@ -791,9 +787,6 @@ export async function boot(): Promise<void> {
   // cities remain generated and become visible as soon as flight starts.
   world.setSettlementsVisible(false)
   world.setTrafficVisible(false)
-  if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
-  if (playBtn) playBtn.disabled = false
-  const airfieldReadyMs = import.meta.env.DEV ? performance.now() : 0
   const aircraft = new Aircraft()
   applyAircraftQuality = (quality): void => aircraft.setRenderQuality(quality)
   applyAircraftQuality(renderQuality)
@@ -809,6 +802,17 @@ export async function boot(): Promise<void> {
   // the hero camera stays at the origin until Play is pressed.
   cameras.setMode('chase', aircraft)
   cameras.setTitleFraming(aircraft)
+  if (titleStatus) titleStatus.textContent = 'PREPARING FLIGHT'
+  await warmupShadowVariants(world.sun, async () => {
+    renderer.shadowMap.needsUpdate = true
+    await renderer.compileAsync(world.scene, cameras.camera)
+    await world.terrain.warmupMaterials(renderer, cameras.camera, world.scene)
+    await world.settlements.warmupMaterials(renderer, cameras.camera, world.scene)
+  })
+  renderer.shadowMap.needsUpdate = true
+  if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
+  if (playBtn) playBtn.disabled = false
+  const airfieldReadyMs = import.meta.env.DEV ? performance.now() : 0
   const applyCameraSensitivity = (next: CameraSensitivity): void => {
     const preference = normalizeCameraSensitivity(next)
     cameras.setLookSensitivity(cameraSensitivityMultiplier(preference) * 0.005)
@@ -1494,14 +1498,21 @@ export async function boot(): Promise<void> {
     let worldFallback = false
     if (newWorld) {
       const course = selectedCourse()
-      world.reseed(
-        replaying ? replaySeed! : course.seed ?? undefined,
-        course.profile ?? undefined,
-        course.weather,
-        course.timeOfDay,
-        course.windSide,
-        course.weatherShift,
-      )
+      const reusePreview = initialReplayPending && replaying && world.worldSeed === replaySeed &&
+        previewCourse?.id === course.id && previewCourse?.profile === course.profile &&
+        previewCourse?.weather === course.weather && previewCourse?.timeOfDay === course.timeOfDay &&
+        previewCourse?.windSide === course.windSide && previewCourse?.weatherShift === course.weatherShift
+      initialReplayPending = false
+      if (!reusePreview) {
+        world.reseed(
+          replaying ? replaySeed! : course.seed ?? undefined,
+          course.profile ?? undefined,
+          course.weather,
+          course.timeOfDay,
+          course.windSide,
+          course.weatherShift,
+        )
+      }
       worldFallback = world.lastReseedUsedFallback
       replaySeedFallback = worldFallback
       if (!worldFallback) {
@@ -2326,33 +2337,34 @@ export async function boot(): Promise<void> {
 
         biomeSurveyCooldown = Math.max(0, biomeSurveyCooldown - dt)
         if (biomeSurveyCooldown <= 0 && aircraft.status === 'ok' && !aircraft.onGround) {
-          const sampled = world.terrain.sampleMeshSurface(aircraft.position.x, aircraft.position.z) ??
-            sampleTerrainSurface(aircraft.position.x, aircraft.position.z)
-          terrainRegion = terrainRegionLabel(sampled.biome, sampled.waterBody)
-          if (!freeFlight) {
-            challenge.recordBiome(sampled.biome)
-            challenge.recordWater(sampled.kind === 'water', 0.65, true)
-            challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
-            challenge.recordRidgeRun(sampled.biome, terrainClearanceM, 0.65, true)
-            challenge.recordWaterBody(sampled.waterBody, true)
-            const biomeCue = challenge.consumeBiomeSurveyCue()
-            const waterCue = challenge.consumeWaterBodySurveyCue()
-            if (waterCue && (!banner || bannerUntil <= nowMs)) {
-              const waterLabel = waterCue === 'sea' ? 'SEA' : waterCue.toUpperCase()
-              showBanner(
-                `WATERWAY DISCOVERED / ${waterLabel} / X${challenge.waterBodyCount}`,
-                1500,
-                'info',
-              )
-            } else if (biomeCue && (!banner || bannerUntil <= nowMs)) {
-              showBanner(
-                `BIOME SURVEY / ${biomeCue.replace('-', ' ').toUpperCase()} / X${challenge.biomeCount}`,
-                1300,
-                'success',
-              )
+          const sampled = world.terrain.sampleSurveySurface(aircraft.position.x, aircraft.position.z)
+          if (sampled) {
+            terrainRegion = terrainRegionLabel(sampled.biome, sampled.waterBody)
+            if (!freeFlight) {
+              challenge.recordBiome(sampled.biome)
+              challenge.recordWater(sampled.kind === 'water', 0.65, true)
+              challenge.recordWaterSkim(sampled.kind === 'water', terrainClearanceM, 0.65, true)
+              challenge.recordRidgeRun(sampled.biome, terrainClearanceM, 0.65, true)
+              challenge.recordWaterBody(sampled.waterBody, true)
+              const biomeCue = challenge.consumeBiomeSurveyCue()
+              const waterCue = challenge.consumeWaterBodySurveyCue()
+              if (waterCue && (!banner || bannerUntil <= nowMs)) {
+                const waterLabel = waterCue === 'sea' ? 'SEA' : waterCue.toUpperCase()
+                showBanner(
+                  `WATERWAY DISCOVERED / ${waterLabel} / X${challenge.waterBodyCount}`,
+                  1500,
+                  'info',
+                )
+              } else if (biomeCue && (!banner || bannerUntil <= nowMs)) {
+                showBanner(
+                  `BIOME SURVEY / ${biomeCue.replace('-', ' ').toUpperCase()} / X${challenge.biomeCount}`,
+                  1300,
+                  'success',
+                )
+              }
             }
+            biomeSurveyCooldown = 0.65
           }
-          biomeSurveyCooldown = 0.65
         }
 
         challenge.update(
