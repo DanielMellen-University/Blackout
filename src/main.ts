@@ -1170,7 +1170,7 @@ export async function boot(): Promise<void> {
   if (import.meta.env.DEV && replayParams?.get('review') === 'flight' && selectedCourseId === 'free-flight') {
     const { FlightReview: Review } = await import('./debug/FlightReview')
     flightReview = new Review(airfieldReadyMs, () => playBtn?.click(),
-      Number(new URLSearchParams(location.search).get('reviewSeconds')) || undefined)
+      Number(replayParams.get('reviewSeconds')) || undefined, replayParams.get('reviewRoute') ?? undefined)
   }
   if (isDebugEnabled()) {
     const { DebugOverlay: DebugOverlayClass } = await import('./debug/DebugOverlay')
@@ -1186,6 +1186,7 @@ export async function boot(): Promise<void> {
     ready: 0,
     workers: 0,
   }
+  const reviewSettlementStats = { loaded: 0, buildings: 0, roads: 0, pending: 0 }
 
   let disposed = false
   let contextLost = false
@@ -2618,8 +2619,14 @@ export async function boot(): Promise<void> {
           triangles: renderer.info.render.triangles,
           streaming: debugStreamingStats,
         })
-        flightReview?.frame(nowMs, debugStreamingStats, renderQuality, renderer.getPixelRatio(),
-          renderer.info.memory.geometries, renderer.info.memory.textures, cameras.modeLabel)
+        if (flightReview) {
+          reviewSettlementStats.loaded = world.settlements.count
+          reviewSettlementStats.buildings = world.settlements.buildingCount
+          reviewSettlementStats.roads = world.settlements.roadCount
+          reviewSettlementStats.pending = world.settlements.pendingCount
+          flightReview.frame(nowMs, debugStreamingStats, renderQuality, renderer.getPixelRatio(),
+            renderer.info.memory.geometries, renderer.info.memory.textures, cameras.modeLabel, reviewSettlementStats)
+        }
       }
       lastRenderMs = nowMs
       lastRenderedSimulationLive = simLive

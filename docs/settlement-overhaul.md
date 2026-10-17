@@ -568,3 +568,27 @@ continuous low-altitude/high-speed gameplay and controlled startup/frame-time/
 memory acceptance remain open. Weather acceptance remains separate unfinished
 work. Terrain/water generation, flight, EST/per-level and paused exclusions are
 unchanged.
+
+## Batch 12: city-corridor workload evidence (10.909)
+
+Extend the existing development-only recorder with repeatable city corridors and
+actual current/peak settlement, building, road and queue counts. Preserve the
+original route, pause/hidden handling, real frame hitches, fixed resource/frame
+caps and actual camera reporting. Opt-in terrain following has focused tests,
+not completed low-altitude visual acceptance. Production gameplay is unchanged.
+
+Complete historical 10.897 and current 10.908 81.6 km city-corridor runs with
+identical instrumentation. The current run exercises up to 1,247 buildings,
+including 1,196 in the reviewed city, and retires those roots later in travel.
+However, its adaptive pixel ratio ranges from .85 to 1 while the baseline stays
+at 1. Mark the pair inconclusive for controlled performance rather than claim
+an FPS/startup/memory win. Preserve both raw records, endpoint stills and all
+limitations in [the diagnostic comparison](terrain-streaming-performance.md#chunk-10909-settlement-workload-diagnostics-comparison-inconclusive).
+
+The two-minute route does not prove sustained-memory stability, worker-heap
+usage, near/far road contact or complete artwork. Six recorder checks and the
+production build pass. The user requested pausing after this checkpoint; do not
+claim the full road/settlement overhaul accepted. Resume with matching-resolution
+repeated measurements and actual low-altitude chase/first-person travel when
+requested. Terrain/water, weather, flight handling, ghost revision 25, saved
+records, budgets and paused-system exclusions remain unchanged.

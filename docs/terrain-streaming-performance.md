@@ -5,6 +5,70 @@ The streaming radius is 33,600 m, up from 16,800 m. Clear-weather fog ends at
 
 ## Implementation
 
+### Chunk 10.909 settlement workload diagnostics, comparison inconclusive
+
+The development-only recorder keeps the original northeast route and adds
+`reviewRoute=city` and `reviewRoute=city-low`. Both city fixtures use seed 1337,
+start at X 18,000 / Z 35,000 and travel east at 680 m/s. The comparison route
+stays at Y 5,000; the low fixture follows sampled terrain at 500 m AGL. These
+are prescribed rendering workloads, not handling or collision acceptance.
+The low fixture has focused data tests but has not yet been visually accepted.
+
+Use `/?course=free-flight&seed=1337&review=flight&reviewRoute=city` and the review
+button. The default remains 120 seconds/81.6 km; `reviewSeconds=900` retains the
+existing bounded long-run option. Current/peak loaded settlements, buildings,
+roads and pending work join the actual seed, route identity, camera and existing
+frame/heap/GPU-resource telemetry. Reuse the main snapshot and 31 preallocated
+resource records; no production import or gameplay behavior is added.
+
+Historical commit `39150ec1c221ae552a0668ad5b61765ce46be12d` (10.897) was
+exported to a temporary directory. Only the development recorder and its main
+hooks were patched; their hashes match the current instrumented source exactly
+and are stored in the records. Both versions used the same machine/browser,
+Balanced, 1280 x 720, chase camera, seed, fixed trajectory and warm-reload method.
+Run one tab/server at a time with no tests/build/profiler competing. Production
+physics, weather, audio, HUD, collision, rendering and streaming still execute.
+
+**This is not an accepted controlled comparison.** The baseline kept pixel ratio
+1; the current run dipped to .85 before recovering to 1. The recorder does not
+identify how long or which phase used the lower ratio, so equal flight frame
+percentiles cannot prove equal-cost rendering or an optimization. Retain both
+complete diagnostic records, not a speedup/regression claim. A future matching-
+resolution repeated comparison is still required; no render distance was reduced.
+
+| Diagnostic measure | 10.897 | 10.908 |
+| --- | ---: | ---: |
+| Pixel-ratio range | 1-1 | .85-1 |
+| Airfield ready after navigation | 2,526.0 ms | 1,023.2 ms |
+| Launch to terrain coverage | 2,700.2 ms | 2,921.4 ms |
+| Startup median / p95 / max | 16.7 / 33.3 / 133.3 ms | 16.7 / 33.4 / 83.4 ms |
+| Flight intervals | 7,153 | 7,184 |
+| Flight median / p95 / max | 16.7 / 16.8 / 150.0 ms | 16.7 / 16.8 / 83.3 ms |
+| Main JS heap start / endpoint / peak | 98.9 / 109.4 / 175.6 MB | 97.0 / 108.4 / 140.3 MB |
+| Peak settlements / buildings / roads | 2 / 822 / 4 | 2 / 1,247 / 1 |
+| Endpoint geometries / textures | 332 / 4 | 329 / 4 |
+| Endpoint terrain loaded / pending / active / ready | 655 / 0 / 0 / 0 | 655 / 0 / 0 / 0 |
+
+The current scene carries 1,196 city buildings through the first resource
+samples, versus 800 in the historical city. By 90 simulation seconds both have
+left those settlement roots, and both end with zero loaded buildings/roads.
+This supports actual exercised/retired resources on this route, not absence of
+leaks. Main `performance.memory` excludes worker heaps and is affected by GC;
+geometry/texture counts do not measure VRAM. Neither two-minute run substitutes
+for the required sustained-memory pass. Road counts differ with stricter safe
+route generation; this does not certify broad network connectivity or artwork.
+
+Raw records: [historical](reviews/road-baseline-city-10.909.json) and
+[current, marked inconclusive](reviews/road-current-city-10.909.json).
+Endpoint stills: [historical](reviews/road-baseline-city-10.909.png) and
+[current](reviews/road-current-city-10.909.png). Browser error logs are empty.
+Six affected recorder checks and the production build pass. Low-altitude chase/
+first-person, road contact through terrain LOD changes, coastal network artwork,
+repeated fixed-resolution runs and long-run memory acceptance remain open.
+At the user's request, finish this checkpoint and pause rather than start more
+runs. Generation revision 25, records, production budgets and paused exclusions
+remain unchanged.
+
 ### Chunk 10.892 current-revision full-game comparison
 
 The accepted candidate is exact commit `b0c6cbd` (10.891), landscape revision

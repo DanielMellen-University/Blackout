@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.908**. Previous roadmap chunk: **10.907**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.909**. Previous roadmap chunk: **10.908**.
+
+Recent changes from **10.909**. Add development-only city-corridor review routes and bounded settlement/building/road resource timelines, retaining the original route. Record historical/current 81.6 km full-game runs with identical instrumentation. The current run exercises more buildings, but adaptive pixel ratio differs, so the pair is inconclusive as a controlled performance comparison. Preserve raw records and limitations; low-altitude and long-run memory acceptance remain open. Production gameplay and generation revision 25 are unchanged.
 
 Recent changes from **10.908**. Settlements try bounded alternative neighbours when their preferred roads cannot be built. Select up to one usable village link or two city links from at most four ranked candidates, retaining all terrain, clearance and structure checks. Keep graph replies compact and reuse profiles in a worker-only cache capped at eight entries/8,192 total points. A real seed-73 village now connects through its fourth candidate after three failures. Ghost revision 25 preserves saved records. Sustained-flight, wider network artwork and controlled performance/memory acceptance remain open.
 
