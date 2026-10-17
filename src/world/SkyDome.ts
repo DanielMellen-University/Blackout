@@ -125,6 +125,8 @@ export function deriveSkyCloudDeckInto(
 export class SkyDome {
   readonly mesh: Mesh
   private readonly mat: ShaderMaterial
+  private transportX = 12
+  private transportZ = 3
   private readonly top = new Color()
   private readonly horizon = new Color()
   private reducedMotion = false
@@ -442,11 +444,17 @@ export class SkyDome {
     this.setRegionalOrigin(x, z, seconds)
   }
 
+  /** Share the regional sampler/cloud pool's seeded prevailing wind. */
+  setRegionalTransport(x: number, z: number): void {
+    this.transportX = Number.isFinite(x) ? x : 12
+    this.transportZ = Number.isFinite(z) ? z : 3
+  }
+
   /** Follow the aircraft every frame even between slower deck samples. */
   setRegionalOrigin(x: number, z: number, seconds: number): void {
     const time = Number.isFinite(seconds) ? Math.max(0, seconds) : 0
-    this.mat.uniforms.uRegionalOrigin!.value.set(((Number.isFinite(x) ? x : 0) - time * 12) / 12000,
-      ((Number.isFinite(z) ? z : 0) - time * 3) / 12000)
+    this.mat.uniforms.uRegionalOrigin!.value.set(((Number.isFinite(x) ? x : 0) - time * this.transportX) / 12000,
+      ((Number.isFinite(z) ? z : 0) - time * this.transportZ) / 12000)
   }
 
   /** Freeze shader-only twinkle and drift for reduced-motion pilots. */

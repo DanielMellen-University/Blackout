@@ -1,3 +1,5 @@
+import { writeWeatherTransport } from './WeatherTransport'
+
 export type CloudLayer = 'cumulus' | 'stratus' | 'cirrus'
 export interface CloudPuff {
   x: number; y: number; z: number
@@ -87,6 +89,7 @@ export class CloudCells {
   private readonly candidateLayer = new Uint8Array(81)
   private readonly selected = new Uint8Array(81)
   private readonly retained: Uint8Array
+  private readonly transport = { x: 0, z: 0 }
 
   constructor(layers: readonly CloudLayer[]) {
     if (layers.length > 46) throw new Error('Cloud formation capacity exceeded')
@@ -110,7 +113,8 @@ export class CloudCells {
   }
 
   select(seed: number, x: number, z: number, time: number): void {
-    const wx = x - time * 12, wz = z - time * 3
+    const transport = writeWeatherTransport(this.transport, seed)
+    const wx = x - time * transport.x, wz = z - time * transport.z
     const cx = Math.floor(wx / CLOUD_CELL_SIZE), cz = Math.floor(wz / CLOUD_CELL_SIZE)
     this.selected.fill(0); this.retained.fill(0)
     let count = 0

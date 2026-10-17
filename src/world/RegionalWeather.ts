@@ -1,5 +1,6 @@
-import { clamp01, fbm, smoothstep, valueNoise } from './noise'
+import { clamp01, fbm, getWorldSeed, smoothstep, valueNoise } from './noise'
 import { sampleLandformsInto, type LandformSample } from './Landforms'
+import { writeWeatherTransport } from './WeatherTransport'
 import { PROFILE_KEYS, WEATHER_PROFILES, type WeatherId, type WeatherSnapshot } from './WeatherDirector'
 
 export interface RegionalWeatherSample extends WeatherSnapshot {
@@ -34,6 +35,7 @@ export function populateWeatherStructure(out: RegionalWeatherSample, base = 1400
  * growth, wall-clock timers, or terrain/hydrology generation in the hot path. */
 export class RegionalWeather {
   private readonly land = {} as LandformSample
+  private readonly transport = { x: 0, z: 0 }
 
   /** Keep a manual profile intact while fitting its cloud envelope to the
    * regional ground. This is landform sampling, never hydrology generation. */
@@ -54,9 +56,10 @@ export class RegionalWeather {
     z = Number.isFinite(z) ? z : 0
     const time = Number.isFinite(simulationSeconds) ? Math.max(0, simulationSeconds) : 0
     const land = sampleLandformsInto(this.land, x, z)
-    // A broad air mass carries narrower, warped rain bands eastwards. The
-    // 12 m/s advection is simulation-time based and stops completely on pause.
-    const wx = x - time * 12, wz = z - time * 3
+    // The same seeded prevailing wind transports fronts, cloud identities,
+    // interpolated cloud vertices and distant sky structure. Pause is exact.
+    const transport = writeWeatherTransport(this.transport, getWorldSeed())
+    const wx = x - time * transport.x, wz = z - time * transport.z
     const air = fbm(wx / 26000 + 919, wz / 26000 - 227, 3, 2, .5)
     const warp = valueNoise(wx / 17000 - 41, wz / 17000 + 63) * 1.8
     const band = .5 + .5 * Math.sin(wx / 6300 + wz / 24000 + warp)
@@ -103,7 +106,8 @@ export class RegionalWeather {
     if (fog > .6 && precip < .2) out.id = 'fog'
     out.windMps = Math.min(27, out.windMps)
     out.gust = Math.min(.85, out.gust)
-    const heading = valueNoise(wx / 48000 + 411, wz / 48000 - 73) * Math.PI * 2
+    const heading = Math.atan2(transport.z, transport.x) +
+      (valueNoise(wx / 48000 + 411, wz / 48000 - 73) - .5) * .6
     out.windX = Math.cos(heading) * out.windMps
     out.windZ = Math.sin(heading) * out.windMps
     populateWeatherStructure(out, Math.max(950, land.height + 650) +

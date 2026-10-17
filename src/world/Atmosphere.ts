@@ -1,3 +1,4 @@
+import { writeWeatherTransport } from './WeatherTransport'
 import {
   AmbientLight,
   Color,
@@ -314,6 +315,7 @@ export class Atmosphere {
   private readonly cloudCells: CloudCells
   /** Seeded cloud placement keeps a world reviewable after a reseed. */
   private cloudSeed = 1337
+  private readonly cloudTransport = writeWeatherTransport({ x: 0, z: 0 }, 1337)
   private cloudUpdateAccumulator = 0
   private cloudMatrixTime = 0
 
@@ -346,6 +348,7 @@ export class Atmosphere {
 
     // Shader sky: gradient + sun/moon discs + stars
     this.sky = new SkyDome(scene)
+    this.sky.setRegionalTransport(this.cloudTransport.x, this.cloudTransport.z)
     // Let the dome paint the backdrop (clear color stays dark night base)
     this.scene.background = new Color(0x02040a)
 
@@ -981,10 +984,12 @@ export class Atmosphere {
     dayFactor: number,
   ): void {
     if (dt <= 0) return
+    const transportX = this.cloudTransport.x
+    const transportZ = this.cloudTransport.z
     this.cloudUpdateAccumulator += dt
     if (this.cloudUpdateAccumulator + 1e-8 < CLOUD_UPDATE_STEP_SEC) {
       const driftTime = Math.max(0, this.regionalElapsed - this.cloudMatrixTime)
-      this.cloudDrift.value.set(driftTime * 12, 0, driftTime * 3)
+      this.cloudDrift.value.set(driftTime ? driftTime * transportX : 0, 0, driftTime ? driftTime * transportZ : 0)
       this.cloudFrameBlend.value = this.cloudUpdateAccumulator / CLOUD_UPDATE_STEP_SEC
       return
     }
@@ -1063,8 +1068,8 @@ export class Atmosphere {
       const cx = this.cloudCells.cellX[i]!, cz = this.cloudCells.cellZ[i]!
       // Exact advection, not integrated drift: pause, revisit and frame cadence
       // cannot move a cloud into a different identity or change its shape.
-      wpos.x = (cx + .5 + (cloudCellRandom(this.cloudSeed, cx, cz, 17) - .5) * .55) * CLOUD_CELL_SIZE + this.regionalElapsed * 12
-      wpos.z = (cz + .5 + (cloudCellRandom(this.cloudSeed, cx, cz, 19) - .5) * .55) * CLOUD_CELL_SIZE + this.regionalElapsed * 3
+      wpos.x = (cx + .5 + (cloudCellRandom(this.cloudSeed, cx, cz, 17) - .5) * .55) * CLOUD_CELL_SIZE + this.regionalElapsed * transportX
+      wpos.z = (cz + .5 + (cloudCellRandom(this.cloudSeed, cx, cz, 19) - .5) * .55) * CLOUD_CELL_SIZE + this.regionalElapsed * transportZ
       if (this.regionalElapsed - this.cloudSampleTimes[i]! + 1e-8 >= .2) {
         if (this.automaticWeather)
           this.regionalWeather.sampleInto(sample, wpos.x, wpos.y, wpos.z, this.regionalElapsed)
@@ -1191,6 +1196,8 @@ export class Atmosphere {
   /** Place the existing pooled clusters deterministically for the new world. */
   private reseedCloudField(seed: number): void {
     this.cloudSeed = seed
+    writeWeatherTransport(this.cloudTransport, seed)
+    this.sky.setRegionalTransport(this.cloudTransport.x, this.cloudTransport.z)
     this.cloudCells.reset()
     for (let i = 0; i < this.cloudWorld.length; i++) {
       const position = this.cloudWorld[i]!
