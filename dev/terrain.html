@@ -28,6 +28,10 @@
   <button id="bridge-view">Inspect loaded bridge</button>
   <button id="viaduct-view">Inspect loaded viaduct</button>
   <button id="road-join-view">Inspect road junction</button>
+  <button id="road-tour">Trace loaded road</button>
+  <input id="road-progress" aria-label="Road progress" type="range" min="0" max="1000" value="0" style="width:100px">
+  <input id="road-height" aria-label="Road review clearance" type="number" min="30" max="500" value="90" style="width:60px"> m road clearance
+  <span id="road-status"></span>
   <button id="cloud-interior">Inspect nearest cloud</button>
   <select id="cloud-view" aria-label="Cloud review view">
     <option value="below">Below cloud</option><option value="inside" selected>Inside cloud</option><option value="above">Above cloud</option>
@@ -81,6 +85,8 @@ import { flightConfig } from '/src/aircraft/flightConfig.ts'
 import { settlementForCell } from '/src/world/SettlementPlan.ts'
 import { shouldConnectSettlements } from '/src/world/RegionalRoads.ts'
 import { Aircraft } from '/src/aircraft/Aircraft.ts'
+import { RoadReviewPath } from '/src/debug/RoadReview.ts'
+import { sampleGroundHeight } from '/src/world/ground.ts'
 import { CameraSystem } from '/src/camera/CameraSystem.ts'
 import { CLOUD_PUFFS_PER_FORMATION } from '/src/world/CloudFormations.ts'
 import { WEATHER_REVIEW_DISTANCE_M, WEATHER_REVIEW_ROUTES, WEATHER_REVIEW_START_SECONDS } from '/src/debug/WeatherReviewRoutes.ts'
@@ -104,12 +110,19 @@ let reviewPeak=0
 let reviewPeakX=0
 let reviewPeakZ=0
 let reviewMode=''
+let roadTrace=null,roadTraceKey='',roadDistance=0,tracingRoad=false,roadTraceDirty=false
+const roadPose={x:0,y:0,z:0,yaw:0}
 let riverTour=[],riverTourIndex=0,riverTourT=0,tracingRiver=false,riverTourDirty=false
 let riverTourOffsets=[0],riverTourLength=0
 const requestedSeed=Number(new URLSearchParams(location.search).get('seed'))
 const tourPosition=new T.Vector3(),tourAhead=new T.Vector3()
 const weatherOrientation=new T.Euler(0,0,0,'YXZ')
 
+function clearRoadTrace(){
+  roadTrace=null;tracingRoad=false;roadTraceDirty=false
+  document.querySelector('#road-tour').textContent='Trace loaded road'
+  document.querySelector('#road-status').textContent=''
+}
 function findLandscapeTarget(startX,startZ,predicate,score=(climate)=>0){
   let best=null
   // Search a deterministic spiral so fixed review seeds keep finding the
@@ -182,8 +195,12 @@ function frameWorld(destination){
   document.querySelector('#seed').textContent=' Seed '+Math.round(getWorldSeed())
 }
 frameWorld()
-document.querySelector('#reseed').onclick=()=>{world.reseed();frameWorld()}
+document.querySelector('#reseed').onclick=()=>{
+  clearRoadTrace()
+  world.reseed();frameWorld()
+}
 document.querySelector('#road-join-view').onclick=()=>{
+  clearRoadTrace()
   const join=world.settlements.nearestRoadJoinView(controls.target.x,controls.target.z)
   if(!join){document.querySelector('#travel-stats').textContent='No loaded street/connector junction here yet. Let the road stream finish.';return}
   flightView=false;flying=false;tracingRiver=false;controls.enabled=true;reviewJet.mesh.visible=false
@@ -195,6 +212,7 @@ document.querySelector('#road-join-view').onclick=()=>{
   document.querySelector('#travel-stats').textContent+=` Surface Y: local ${height(join.localY)} / connector ${height(join.roadY)} / shoulder ${height(join.shoulderY)}.`
 }
 function inspectStructure(kind){
+  clearRoadTrace()
   const bridge=world.settlements.nearestBridgeView(controls.target.x,controls.target.z,kind)
   if(!bridge){document.querySelector('#travel-stats').textContent=`No loaded ${kind} here. Try Regional road or a river destination and let the road stream finish.`;return}
   const offset=Math.max(100,Math.min(500,bridge.span*.45))
@@ -207,6 +225,7 @@ function inspectStructure(kind){
 document.querySelector('#bridge-view').onclick=()=>inspectStructure('bridge')
 document.querySelector('#viaduct-view').onclick=()=>inspectStructure('viaduct')
 document.querySelector('#cloud-interior').onclick=()=>{
+  clearRoadTrace()
   // Exterior views must clear the whole rendered formation, not just one puff.
   // Inside views still use an actual dense puff, never an empty bounding-box gap.
   const matrix=new T.Matrix4(),position=new T.Vector3(),scale=new T.Vector3(),rotation=new T.Quaternion()
@@ -331,13 +350,14 @@ function findRoadPair(cx,cz){
 }
 function visitDestination(value){
   const target=destinations[value]
-  if(!target){frameWorld();return}
+  if(!target){clearRoadTrace();frameWorld();return}
   reviewMode=value
   weatherOrigin=null
   document.querySelector('#weather-fixture').hidden=!value.startsWith('weather')
   document.querySelector('#weather-progress').hidden=!value.startsWith('weather')
   document.querySelector('#weather-height').hidden=!value.startsWith('weather')
   document.querySelector('#weather-progress').value='0'
+  clearRoadTrace()
   weatherTraceDirty=value.startsWith('weather')
   weatherTravelT=0
   riverTour=[];riverTourLength=0
@@ -456,13 +476,14 @@ function visitDestination(value){
   }
 }
 document.querySelector('#river-tour').onclick=()=>{
+  clearRoadTrace()
   if(!riverTour.length){document.querySelector('#destination').value='river';visitDestination('river')}
   if(riverTourIndex===riverTour.length-1&&riverTourT>=riverTour[riverTourIndex].length){riverTourIndex=0;riverTourT=0}
   tracingRiver=!tracingRiver;flightView=false;flying=false;controls.enabled=!tracingRiver
   document.querySelector('#river-tour').textContent=tracingRiver?'Pause river trace':'Trace river'
   document.querySelector('#flight-view').textContent='Flight scale view'
 }
-document.querySelector('#river-progress').oninput=e=>{
+document.querySelector('#river-progress').oninput=e=>{clearRoadTrace();
   if(!riverTour.length)return
   tracingRiver=false;controls.enabled=true;riverTourDirty=true
   document.querySelector('#river-tour').textContent='Trace river'
@@ -471,9 +492,29 @@ document.querySelector('#river-progress').oninput=e=>{
   while(riverTourIndex<riverTour.length-1&&distance>riverTour[riverTourIndex].length){distance-=riverTour[riverTourIndex].length;riverTourIndex++}
   riverTourT=distance
 }
-document.querySelector('#review-view').onchange=()=>{if(riverTour.length)riverTourDirty=true;weatherTraceDirty=true}
-document.querySelector('#weather-progress').oninput=()=>{weatherTraceDirty=true;flying=false;weatherTravelT=Number(document.querySelector('#weather-progress').value)/1000}
-document.querySelector('#weather-height').oninput=()=>{weatherTraceDirty=true;flying=false;document.querySelector('#fly').textContent='Flight benchmark'}
+document.querySelector('#review-view').onchange=()=>{if(roadTrace){roadTraceDirty=true;return}if(riverTour.length)riverTourDirty=true;weatherTraceDirty=true}
+document.querySelector('#road-tour').onclick=()=>{
+  if(tracingRoad){tracingRoad=false;document.querySelector('#road-tour').textContent='Resume road trace';return}
+  if(!roadTrace){
+    const route=world.settlements.nearestRoadReview(controls.target.x,controls.target.z)
+    if(!route){document.querySelector('#road-status').textContent='Wait for an actual regional road to stream.';return}
+    roadTrace=new RoadReviewPath(route.road);roadTraceKey=route.key;roadDistance=0
+  }
+  if(roadDistance===roadTrace.length)roadDistance=0
+  reviewMode='road-trace'
+  tracingRoad=true;roadTraceDirty=true;tracingRiver=false;riverTourDirty=false;weatherTraceDirty=false;flying=false
+  document.querySelector('#fly').textContent='Flight benchmark'
+  if(document.querySelector('#review-view').value==='overview')document.querySelector('#review-view').value='chase'
+  document.querySelector('#road-tour').textContent='Pause road trace'
+}
+document.querySelector('#road-progress').oninput=e=>{
+  if(!roadTrace)return
+  roadDistance=roadTrace.length*Number(e.target.value)/1000;tracingRoad=false;roadTraceDirty=true
+  document.querySelector('#road-tour').textContent='Resume road trace'
+}
+document.querySelector('#road-height').oninput=()=>{if(roadTrace)roadTraceDirty=true}
+document.querySelector('#weather-progress').oninput=()=>{clearRoadTrace();weatherTraceDirty=true;flying=false;weatherTravelT=Number(document.querySelector('#weather-progress').value)/1000}
+document.querySelector('#weather-height').oninput=()=>{clearRoadTrace();weatherTraceDirty=true;flying=false;document.querySelector('#fly').textContent='Flight benchmark'}
 document.querySelector('#destination').onchange=e=>visitDestination(e.target.value)
 function applyReviewWeather(){
   const value=document.querySelector('#weather').value
@@ -489,6 +530,7 @@ document.querySelector('#fixture-advance').onclick=()=>{
   document.querySelector('#fixture-status').textContent=`Time ${world.atmosphere.weatherSimulationTime.toFixed(1)} / ${world.atmosphere.lightningActive?'localized lightning active':'no eligible storm event'}`
 }
 document.querySelector('#fixture-apply').onclick=()=>{
+  clearRoadTrace()
   const read=id=>Number(document.querySelector(id).value)
   const seed=read('#fixture-seed'),x=read('#fixture-x'),z=read('#fixture-z'),time=read('#fixture-time'),day=read('#fixture-day')
   if(![seed,x,z,time,day].every(Number.isFinite)||time<0||day<0||day>1){
@@ -522,12 +564,14 @@ let frames=0
 let timings=[]
 let flying=false
 document.querySelector('#fly').onclick=()=>{
+  clearRoadTrace()
   flying=!flying;document.querySelector('#fly').textContent=flying?'Stop benchmark':'Flight benchmark'
   if(flying&&reviewMode.startsWith('weather'))world.atmosphere.setAutomaticWeather(
     document.querySelector('#weather').value==='automatic',Number(document.querySelector('#fixture-time').value))
   if(flying){travelSeconds=travelDistance=travelFrameCount=0;travelStartHeap=performance.memory?.usedJSHeapSize??0;travelPeakHeap=travelStartHeap}
 }
 document.querySelector('#flight-view').onclick=()=>{
+  clearRoadTrace()
   flightView=!flightView;controls.enabled=!flightView;reviewJet.mesh.visible=flightView
   flying=false;document.querySelector('#fly').textContent='Flight benchmark'
   document.querySelector('#flight-view').textContent=flightView?'Orbit view':'Flight scale view'
@@ -584,6 +628,28 @@ renderer.setAnimationLoop(now=>{
     }
     camera.lookAt(controls.target)
   }
+  if(roadTrace){
+    const snap=roadTraceDirty
+    roadTraceDirty=false
+    if(tracingRoad)roadDistance=Math.min(roadTrace.length,roadDistance+dt*(document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400))
+    roadTrace.sampleInto(roadPose,roadDistance,Number(document.querySelector('#road-height').value),sampleGroundHeight)
+    const hadFlightView=flightView,view=document.querySelector('#review-view').value
+    reviewJet.reset(roadPose)
+    const speed=tracingRoad?(document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400):0
+    reviewJet.velocity.set(Math.sin(roadPose.yaw)*speed,0,Math.cos(roadPose.yaw)*speed);reviewJet.snapDisplay()
+    flightView=view!=='overview';controls.enabled=!flightView
+    if(flightView){
+      const mode=view==='first'?'cockpit':'chase'
+      if(snap||!hadFlightView||chase.mode!==mode)chase.setMode(mode,reviewJet)
+    }else{
+      reviewJet.mesh.visible=false
+      camera.position.set(roadPose.x+700,roadPose.y+650,roadPose.z-700)
+      controls.target.set(roadPose.x,roadPose.y-90,roadPose.z);camera.lookAt(controls.target)
+    }
+    document.querySelector('#road-progress').value=1000*roadDistance/roadTrace.length
+    document.querySelector('#road-status').textContent=`${roadTraceKey} / ${(roadDistance/1000).toFixed(2)} of ${(roadTrace.length/1000).toFixed(2)} km / ${view}`
+    if(roadDistance===roadTrace.length){tracingRoad=false;document.querySelector('#road-tour').textContent='Road trace complete'}
+  }
   if((tracingRiver||riverTourDirty)&&riverTour.length){
     riverTourDirty=false
     const speed=document.querySelector('#flight-speed').value==='maximum'?flightConfig.maxSpeedBoost:400
@@ -618,7 +684,7 @@ renderer.setAnimationLoop(now=>{
     controls.target.y+=rise;camera.position.y+=rise;controls.update()
   }
   world.atmosphere.timeOfDay=reviewDay
-  const focus=flightView||reviewMode.startsWith('weather')||reviewMode==='cloud-interior'?reviewJet.position:controls.target
+  const focus=flightView||roadTrace||reviewMode.startsWith('weather')||reviewMode==='cloud-interior'?reviewJet.position:controls.target
   const holdWeather=(reviewMode.startsWith('weather')||reviewMode==='cloud-interior')&&document.querySelector('#fixture-hold').checked
   world.update(focus.x,focus.y,focus.z,dt,holdWeather?0:dt,dt)
   if(flightView) chase.update(reviewJet,dt)

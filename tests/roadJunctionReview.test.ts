@@ -29,6 +29,7 @@ it('inspects only junctions whose exact source street plan is loaded and clears 
   try {
     internal.connections.set('a|b', internal.buildRegionalRoad(road, a, b))
     expect(system.nearestRoadJoinView(0, 0)).toBeNull()
+    expect(system.nearestRoadReview(0, 0)).toEqual({ key: 'a|b', road })
     internal.loadedCollisionPlans.push({ ...a, x: -500 })
     expect(system.nearestRoadJoinView(0, 0)).toBeNull()
     internal.loadedCollisionPlans.push(a)
@@ -46,6 +47,7 @@ it('inspects only junctions whose exact source street plan is loaded and clears 
     expect(system.nearestRoadJoinView(0, 0)!.roadY).toBeCloseTo(22.45)
     system.clearAll()
     expect(system.nearestRoadJoinView(0, 0)).toBeNull()
+    expect(system.nearestRoadReview(0, 0)).toBeNull()
   } finally { system.dispose() }
 })
 

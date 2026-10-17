@@ -592,3 +592,75 @@ claim the full road/settlement overhaul accepted. Resume with matching-resolutio
 repeated measurements and actual low-altitude chase/first-person travel when
 requested. Terrain/water, weather, flight handling, ghost revision 25, saved
 records, budgets and paused-system exclusions remain unchanged.
+
+
+## Batch 13: wider city spokes and road travel fixtures (10.910)
+
+Repair CI first. Eleven stale terrain/hydrology expectations reproduce on clean
+10.891, before this overhaul. Keep all cancellation, interleave and independent
+buffer comparisons. Other failures include stale UI/documentation contracts,
+synthetic admission fixtures accidentally doing real road searches, and a real
+seed-27 thermal anchor selection failure. The latter filters the existing nine
+pockets by forward eligibility before ranking, with no lift-force change. See
+[the CI audit](reviews/ci-baseline-10.910.md) for provenance and repair scope.
+
+A city can previously spend both successful spokes on one narrow direction.
+After its first accepted route, prefer candidates at least 60 degrees away,
+then retain cross-tier preference, squared distance and stable ID ties. Rejected
+routes never establish the direction. Keep at most four total candidates,
+including missing attachments, and fall back to parallel roads if wider ones
+fail. Villages still choose one spoke. The 24-neighbour ring, compact graph
+messages, one worker slot, eight-entry/8,192-point profile cache and all routing,
+clearance, grade, engineering and support checks remain.
+
+A new generated regression fails on clean 10.909: seed 32 city `0,0` accepts
+`-2,-1|0,0`, then the usable but near-parallel `-1,0|0,0`. It now accepts
+`-2,2|0,0` second. Both new profiles pass complete grade and ground-end checks;
+the former second road remains buildable. This is an intentional graph change,
+not a relaxation of sea or building clearance. See [the CPU fixture record](reviews/road-network-10.910.json).
+Ghost revision 26 skips incompatible playback without deleting records,
+favourites or settings. Four settlements/1,500 buildings/six links remain.
+The seed-73 fourth-choice village and the seed-1337 protected city retain usable
+routes. This does not guarantee globally connected islands or every city.
+
+The development terrain page can now trace an actually resident regional road,
+seek along it and switch between the real chase and unobstructed first-person
+camera modes. Clearance defaults to 90 m above the higher of road deck or
+streamed ground, bounded to 30-500 m. Cruise and maximum speed use existing
+values. A single retained profile and bounded distance array are released on
+destination/reset or another inspection; no road generation occurs in the
+review getter. View changes and pause/seek retain the same path. Hidden time
+uses the existing review pause behavior. This is prescribed review travel,
+not evidence of a completed flight-physics/collision/HUD playthrough.
+
+Reproduce the requested views using `/dev/terrain.html?seed=73&destination=roadfallback`
+and `/dev/terrain.html?seed=1337&destination=city`. Wait for a regional road,
+select Clear if needed, choose **Trace loaded road**, and use Chase / First
+person plus road progress and clearance. Preserve low-altitude approaches,
+junctions, engineered transitions and near/far return views as review stills.
+
+Automated contact checks use actual generated seed-73 and seed-1337 road meshes,
+including the 1,196-building protected city. Refit their marked asphalt vertices
+against generated far (32-cell), near and far terrain heightfields using the
+production triangle interpolator. Require ground plus .45 m at every covered
+marked vertex, fixed engineered anchors, and no more than 1,024 probes/update.
+This verifies vertex contact and refit budgets, not triangle-interior coverage,
+every coastal junction or continuous LOD transitions.
+
+No browser is connected to the available visual-review tool. Both Chrome and
+the in-app browser return unavailable. Actual chase/first-person travel and
+saved stills therefore remain blocked. Rough/coastal artwork remains open;
+this batch changes road selection and review tools without an artwork redesign.
+Full low-altitude/high-speed gameplay, matching-resolution repeated performance
+comparisons and sustained memory acceptance remain open. Terrain/water
+generation, weather, flight handling, EST/per-level work and paused exclusions
+remain outside the road slice.
+
+
+Validation: all 1,444 tests in 141 files pass with the ordinary `npm test`
+command. The final affected road run passes 86 checks in 16 files, including
+resolved ground/water contact sampling. Production build, release metadata,
+TypeScript and a separate build of `dev/terrain.html` pass. Both builds retain
+the existing Three bundle-size warning. The available browser inventory is
+still empty at delivery, so no new visual still or gameplay acceptance claim
+is attached to this batch.

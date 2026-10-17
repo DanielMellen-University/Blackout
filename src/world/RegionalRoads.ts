@@ -58,13 +58,15 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
   const limit = plan.kind === 'city' ? MAX_CITY_REGIONAL_LINKS : MAX_VILLAGE_REGIONAL_LINKS
   const links: RegionalRoadLink[] = []
   const seen = new Set<string>()
+  let firstNeighbour: SettlementPlan | null = null
   // Pick one winner per bounded slot instead of materializing and sorting the
-  // entire candidate list. The comparison is identical to the former sort:
-  // cross-tier hubs first, then distance, then stable ID order.
+  // entire candidate list. After the first accepted city spoke, prefer a
+  // direction at least 60 degrees away before hub/distance/ID ranking. A
+  // rejected route never defines the direction, and the attempt cap is fixed.
   const attempts = accepts ? MAX_REGIONAL_LINK_ATTEMPTS : limit
   for (let slot = 0; slot < attempts && links.length < limit; slot++) {
     let best: SettlementPlan | null = null
-    let bestHub = Infinity
+    let bestDirection = Infinity, bestHub = Infinity
     // Ranking only compares distances, so squared range keeps the same winner
     // without a square root per candidate probe.
     let bestDistanceSquared = Infinity
@@ -75,9 +77,19 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
       const hub = other.kind !== plan.kind ? 0 : 1
       const dx = plan.x - other.x, dz = plan.z - other.z
       const distanceSquared = dx * dx + dz * dz
-      if (hub < bestHub || (hub === bestHub &&
-        (distanceSquared < bestDistanceSquared || (distanceSquared === bestDistanceSquared && (best === null || other.id.localeCompare(best.id) < 0))))) {
+      let direction = 0
+      if (firstNeighbour) {
+        const fx = firstNeighbour.x - plan.x, fz = firstNeighbour.z - plan.z
+        const dot = fx * -dx + fz * -dz
+        // cos(angle) > .5, without square roots or per-candidate angles.
+        if (dot > 0 && dot * dot > .25 * (fx * fx + fz * fz) * distanceSquared) direction = 1
+      }
+      const nearer = distanceSquared < bestDistanceSquared || (distanceSquared === bestDistanceSquared &&
+        (best === null || other.id.localeCompare(best.id) < 0))
+      const betterHub = hub < bestHub || (hub === bestHub && nearer)
+      if (direction < bestDirection || (direction === bestDirection && betterHub)) {
         best = other
+        bestDirection = direction
         bestHub = hub
         bestDistanceSquared = distanceSquared
       }
@@ -86,7 +98,10 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
     const key = regionalRoadKey(plan, best)
     seen.add(key)
     const link = plan.id < best.id ? { key, from: plan, to: best } : { key, from: best, to: plan }
-    if (!accepts || accepts(link)) links.push(link)
+    if (!accepts || accepts(link)) {
+      links.push(link)
+      if (plan.kind === 'city' && !firstNeighbour) firstNeighbour = best
+    }
   }
   return links
 }

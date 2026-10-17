@@ -63,3 +63,28 @@ it('counts missing street attachments against the same fixed attempt cap', () =>
   expect(profile).not.toHaveBeenCalled()
   expect(sample).toHaveBeenCalledTimes(MAX_REGIONAL_LINK_ATTEMPTS * 5)
 })
+
+it('spreads a city second spoke beyond a near-parallel neighbour without adding attempts', () => {
+  const city = site('0,0', 12000, 12000, 'city')
+  const east = site('1,0', 20000), parallel = site('2,0', 24000), west = site('-1,0', -4000)
+  const candidates = [east, parallel, west]
+  const accept = vi.fn(() => true)
+  const links = selectRegionalRoadLinks(city, candidates, accept)
+  expect(links.map(link => link.key)).toEqual(['0,0|1,0', '-1,0|0,0'])
+  expect(accept).toHaveBeenCalledTimes(2)
+  expect(selectRegionalRoadLinks(city, [...candidates].reverse(), () => true)).toEqual(links)
+  expect(selectRegionalRoadLinks({ ...city, kind: 'village' }, candidates, () => true)).toHaveLength(1)
+})
+
+it('falls back to a near-parallel spoke when wider city candidates fail within the same cap', () => {
+  const city = site('0,0', 12000, 12000, 'city')
+  const candidates = [site('1,0', 20000), site('2,0', 24000), site('-1,0', -4000), site('0,1', 12000, 30000)]
+  const attempted: string[] = []
+  const links = selectRegionalRoadLinks(city, candidates, link => {
+    attempted.push(link.key)
+    return link.key === '0,0|1,0' || link.key === '0,0|2,0'
+  })
+  expect(attempted).toEqual(['0,0|1,0', '-1,0|0,0', '0,0|0,1', '0,0|2,0'])
+  expect(attempted).toHaveLength(MAX_REGIONAL_LINK_ATTEMPTS)
+  expect(links).toHaveLength(2)
+})

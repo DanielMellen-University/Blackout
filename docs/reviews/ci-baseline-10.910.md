@@ -42,4 +42,12 @@ The other failures need separate repairs:
 - Give the existing five-seed exact water agreement test 30 s for its CPU-heavy
   generated-world scan. Keep all coverage and zero-mismatch assertions.
 
-Obstacle geometry and ghost revision 25 remain unchanged; saved records stay.
+The CI repair alone changes no obstacle geometry. The subsequent road-selection
+slice advances ghost compatibility to revision 26 for its changed road placements;
+saved records stay.
+
+
+Validation after the combined batch: ordinary `npm test` passes 1,444 tests in
+141 files; the production build and release metadata gate pass. No test is
+skipped or removed by this repair. The five-seed agreement scan retains exact
+zero-mismatch assertions.

@@ -1184,6 +1184,16 @@ export class SettlementSystem {
   }
   get roadCount(): number { return this.connections.size }
 
+  /** Developer-only inspection of a resident route, without generation or cloning. */
+  nearestRoadReview(x: number, z: number): { key: string; road: SettlementRoad } | null {
+    let result: ReturnType<SettlementSystem['nearestRoadReview']> = null, nearest = Infinity
+    for (const [key, connection] of this.connections) {
+      const distance = roadDistanceSquared(x, z, connection.road)
+      if (distance < nearest) { nearest = distance; result = { key, road: connection.road } }
+    }
+    return result
+  }
+
   /** Inspect a real connector endpoint only when its local street is loaded. */
   nearestRoadJoinView(x: number, z: number): { x: number; y: number; z: number; dx: number; dz: number; id: string;
     localY: number | null; roadY: number | null; shoulderY: number | null } | null {

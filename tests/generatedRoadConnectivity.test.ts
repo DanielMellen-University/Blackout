@@ -1,6 +1,6 @@
 import { afterEach, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
-import { clearOpsPad } from '../src/world/terrainSample'
+import { clearOpsPad, findPlayableSpawn, setOpsPad } from '../src/world/terrainSample'
 import { settlementForCell } from '../src/world/SettlementPlan'
 import { buildableRegionalLinksForSettlement, regionalLinksForSettlement, roadBetweenSettlements } from '../src/world/RegionalRoads'
 import { RoadProfileCache } from '../src/world/RoadProfileCache'
@@ -28,3 +28,35 @@ it('replaces three impassable proposals with a usable fourth link in actual seed
   expect(road.points.length).toBeGreaterThan(500)
   expect(road.points[0]!.structure).toBe('ground'); expect(road.points.at(-1)!.structure).toBe('ground')
 }, 60000)
+
+it('replaces a usable near-parallel city spoke with a usable wider route in actual seed 32', () => {
+  clearOpsPad(); setWorldSeed(32)
+  const spawn = findPlayableSpawn()!
+  setOpsPad(spawn.x, spawn.z, spawn.y, spawn.yaw)
+  const source = settlementForCell(0, 0)!, first = settlementForCell(-2, -1)!
+  const formerSecond = settlementForCell(-1, 0)!, wider = settlementForCell(-2, 2)!
+  expect(source.kind).toBe('city')
+  // This was the second buildable choice on 10.909, not a failed-road replacement.
+  expect(roadBetweenSettlements(source, formerSecond, settlementForCell)).not.toBeNull()
+  const cosine = (other: typeof source) => {
+    const ax = first.x - source.x, az = first.z - source.z
+    const bx = other.x - source.x, bz = other.z - source.z
+    return (ax * bx + az * bz) / (Math.hypot(ax, az) * Math.hypot(bx, bz))
+  }
+  expect(cosine(formerSecond)).toBeGreaterThan(.5)
+  expect(cosine(wider)).toBeLessThan(.5)
+  const attempts: string[] = []
+  const links = buildableRegionalLinksForSettlement(source, settlementForCell, [], link => {
+    attempts.push(link.key)
+    const road = roadBetweenSettlements(link.from, link.to, settlementForCell)
+    if (road) {
+      expect(roadGradeValid(road)).toBe(true)
+      expect(road.points[0]!.structure).toBe('ground')
+      expect(road.points.at(-1)!.structure).toBe('ground')
+    }
+    return road
+  })
+  expect(attempts).toEqual(['-2,-1|0,0', '-2,2|0,0'])
+  expect(links.map(link => link.key)).toEqual(attempts)
+  expect(JSON.stringify(links).length).toBeLessThan(4000)
+}, 60_000)
