@@ -69,6 +69,7 @@ describe('off-thread settlement graphs', () => {
       expect(request.type).toBe('road')
       expect(JSON.stringify(request).length).toBeLessThan(2000)
       if (request.type === 'road') {
+        expect(request.protected).toEqual([])
         expect(request.from).not.toHaveProperty('buildings')
         expect(request.to).not.toHaveProperty('ground')
       }

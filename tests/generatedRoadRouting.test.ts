@@ -15,12 +15,12 @@ it.each([[1337, 1, 1], [1, -7, -5]])('retains usable regional routes around seed
   expect(links.length).toBeGreaterThan(0)
   let connected = 0
   for (const link of links) {
-    const road = roadBetweenSettlements(link.from, link.to)
+    const road = roadBetweenSettlements(link.from, link.to, settlementForCell)
     if (!road) continue
     const compact = compactRegionalRoadLink(link)!
     expect(compact).not.toBeNull()
     expect(JSON.stringify(compact).length).toBeLessThan(2000)
-    expect(JSON.stringify(roadBetweenSettlements(compact.from, compact.to))).toBe(JSON.stringify(road))
+    expect(JSON.stringify(roadBetweenSettlements(compact.from, compact.to, settlementForCell))).toBe(JSON.stringify(road))
     connected++
     for (let i = 1; i < road.points.length; i++) {
       const a = road.points[i - 1]!, b = road.points[i]!

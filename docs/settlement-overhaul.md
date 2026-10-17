@@ -448,3 +448,61 @@ network connectivity or a controlled performance/travel benchmark.
 All 111 affected graph, worker, routing, geometry, ownership, admission,
 collision, rendering, ghost and draping checks pass. The production build and
 release metadata checks pass with the existing Three bundle-size warning.
+
+## Batch 10: regional building clearance (10.907)
+
+Local roads reserve building lots before population; regional connectors were
+planned later without any building footprints. A flat-ground reproducer places
+a rotated building on a formerly accepted connector near its street endpoint.
+The old compact-endpoint route intersects it. The full-plan route now finds a
+clear alternative without changing the building or endpoint, and reversed
+discovery produces the same profile.
+
+Road jobs recover full blueprints inside the existing worker. Resolve endpoint
+ownership by ID, tier, position and radius, and reject stale compact endpoints.
+Discover intermediate settlements in a bounded route envelope, independent of
+loaded roots and instance admission. The envelope includes the 6.5 km coarse
+corridor, seeded guide, both broad alternatives, 600 m local refinement and the
+maximum 10 km settlement radius/service-pad extension. At most 49 corridor cells
+are queried; endpoint/protected resolution is additional. Always include the
+two selected protected landmarks, which can relocate outside their nominal
+cells. Existing worker plan-cache ownership and caps are unchanged. Unsupported
+worker fallback uses the same resolver and may still stall the main thread.
+
+A temporary 512 m spatial index holds rotated building footprints and actual
+25 x 17 m fuel-station canopies. Inflate each by the full shoulder half-width
+plus 2 m setback. Segment/rectangle tests catch intersections between samples,
+not just road-centre probes. Traverse crossed bins rather than a long diagonal's
+whole bounding rectangle, with a 1,024-bin per-query ceiling. No index survives
+the job, no new persistent cache or worker is added, and no building payload is
+cloned through compact road messages. This adds worker CPU/memory, not a claimed
+gameplay speedup. Raised roads conservatively avoid the same footprints; tunnels
+and roads over buildings are not introduced.
+
+Use clearance during corridor search and check complete rounded/refined/fallback
+paths. If corner rounding clips a footprint, retain the clear unrounded corridor
+before profiling. Engineering cannot waive clearance. Reject a blocked street
+attachment or impossible path rather than delete buildings or return a partial
+road. Keep the existing full-profile, grade, support, graphics and render-distance
+limits. Ghost generation revision 24 rejects incompatible old playback while
+preserving saved records, favourites and settings.
+
+Focused checks cover rotated/negative-grid/zero-length/reversed/distant segments,
+shoulder setback, canopies, near-endpoint rerouting, intermediate and relocated
+protected obstacles, bounded/deduplicated lookup, stale ownership and blocked
+joins. Both real generated-route fixtures retain usable links and have complete
+segment clearance against every resolved corridor plan. Full/compact requests
+with the same resolver produce identical profiles. Worker tests verify recovery
+of protected full blueprints and rejection without the correct descriptor.
+
+The [seed-1337 rendered junction](reviews/road-clearance-10.907.png) retains all
+1,196 city buildings and its usable regional link. Street/connector Y remains
+680.32 m, shoulder 680.17 m; the rotated inspection shows clear building spacing
+and joined road geometry. Browser error logs are empty. This view is not proof
+of every regional route or sustained gameplay performance. All 119 affected
+checks and the production build pass, with the existing Three bundle warning.
+
+Alternative connectivity when chosen links fail, wider rough/coastal travel and
+controlled gameplay/startup/frame-time/memory acceptance remain required. Weather
+acceptance is separate unfinished work. Terrain/water generation, flight handling,
+EST/per-level work and all paused systems are unchanged.

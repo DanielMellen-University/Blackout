@@ -1655,9 +1655,9 @@ export class SettlementSystem {
         const link = this.takeNearestRoadJob(x, z)!
         this.dispatchTurn = 0
         if (this.worker) this.postWorker({ type: 'road', ...link, generation: this.generation,
-          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) })
+          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
         else {
-          const road = roadBetweenSettlements(link.from, link.to)
+          const road = roadBetweenSettlements(link.from, link.to, this.resolveRoadNeighbour, [...this.protectedPlans.values()])
           if (road && this.checkedLinks.has(link.key)) this.readyRoads.push({ ...link, road })
         }
         return

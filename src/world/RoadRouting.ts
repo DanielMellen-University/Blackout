@@ -3,6 +3,7 @@ import type { SettlementRoad } from './SettlementPlan'
 type Position = { x: number; z: number }
 type Ground = { height: number; waterLevel?: number; landform?: { ridge?: number; alpineValley?: number } }
 export type RouteSampler = (x: number, z: number) => Ground
+export type RouteClearance = (a: Position, b: Position) => boolean
 
 export const MAX_REGIONAL_ROUTE_STATIONS = 64
 export const REGIONAL_ROUTE_LANES = 11
@@ -14,7 +15,8 @@ export const MAX_ROUTE_REFINEMENT_PATCHES = 4
 /** Worker-side, monotone corridor search. Fixed station/lane/probe bounds keep
  * it independent of terrain render distance. Store sampled values immediately:
  * the caller may reuse one mutable climate record for every probe. */
-export function terrainRoadRoute(a: Position, b: Position, sample: RouteSampler, guideBend = 0, fine = false): Position[] | null {
+export function terrainRoadRoute(a: Position, b: Position, sample: RouteSampler, guideBend = 0, fine = false,
+  allows?: RouteClearance): Position[] | null {
   const dx = b.x - a.x, dz = b.z - a.z, distance = Math.hypot(dx, dz)
   if (!Number.isFinite(distance) || distance < 500 || !Number.isFinite(guideBend)) return null
   const nx = -dz / distance, nz = dx / distance
@@ -56,6 +58,7 @@ export function terrainRoadRoute(a: Position, b: Position, sample: RouteSampler,
     for (let parentLane = lo; parentLane <= hi; parentLane++) {
       const parent = (station - 1) * lanes + parentLane
       if (!Number.isFinite(cost[parent])) continue
+      if (allows && !allows({ x: x[parent]!, z: z[parent]! }, { x: x[index]!, z: z[index]! })) continue
       const ex = x[index]! - x[parent]!, ez = z[index]! - z[parent]!, length = Math.hypot(ex, ez)
       if (++probes > MAX_REGIONAL_ROUTE_PROBES) return null
       const middle = sample((x[index]! + x[parent]!) / 2, (z[index]! + z[parent]!) / 2)
@@ -93,7 +96,7 @@ export function roadGradeValid(road: SettlementRoad): boolean {
 /** Coarse routes can miss a small ridge or eroded river bank. Refine only
  * clustered bad sections found by the complete surface profile, not the whole
  * regional corridor. At most four local searches and 5,000 further probes. */
-export function refineRoadRoute(road: SettlementRoad, sample: RouteSampler): Position[] | null {
+export function refineRoadRoute(road: SettlementRoad, sample: RouteSampler, allows?: RouteClearance): Position[] | null {
   const points = road.points
   const bad = (i: number): boolean => {
     const a = points[i - 1]!, b = points[i]!
@@ -114,7 +117,7 @@ export function refineRoadRoute(road: SettlementRoad, sample: RouteSampler): Pos
       if (bad(j)) lastBad = j
     }
     const end = Math.min(points.length - 1, lastBad + 20)
-    const local = terrainRoadRoute(points[start]!, points[end]!, boundedSample, 0, true)
+    const local = terrainRoadRoute(points[start]!, points[end]!, boundedSample, 0, true, allows)
     if (!local) return null
     for (; copied < start; copied++) route.push(points[copied]!)
     route.push(...roundRoadRoute(local)); copied = end + 1; i = end

@@ -1,10 +1,11 @@
 import { hash2 } from './noise'
 import { sampleClimateInto } from './terrainSample'
 import { createClimateSample } from './Geography'
-import { settlementForCell, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
+import { settlementForCell, SETTLEMENT_CELL_SIZE, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
 import type { Biome } from './terrainSample'
 import { groundRoad, engineerRoadGrades } from './RoadSurface'
 import { terrainRoadRoute, roundRoadRoute, refineRoadRoute, roadGradeValid, MAX_REGIONAL_ROAD_GRADE } from './RoadRouting'
+import { RoadClearance } from './RoadClearance'
 
 export interface SettlementAnchor {
   id: string
@@ -30,6 +31,7 @@ export const MAX_CITY_REGIONAL_LINKS = 2
 export const MAX_VILLAGE_REGIONAL_LINKS = 1
 /** Only these ranked street points may trigger extra endpoint terrain probes. */
 export const MAX_ROAD_ATTACHMENT_CANDIDATES = 8
+export const MAX_ROAD_CLEARANCE_CELLS = 49
 const ATTACHMENT_CROSS_SECTION = [0, -1, 1, -1.55, 1.55] as const
 
 /** Candidate road probes are sequential; one climate record serves all bends. */
@@ -211,7 +213,9 @@ function candidateRoute(
 }
 
 /** Terrain-following road with grade-limited bridge and viaduct approaches. */
-export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor): SettlementRoad | null {
+export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
+  resolve?: (cx: number, cz: number) => SettlementPlan | null,
+  protectedPlans: readonly SettlementPlan[] = []): SettlementRoad | null {
   if (!shouldConnectSettlements(a, b)) return null
   // The graph already orders its requests, but direct/review callers must get
   // the same route too. Query order cannot choose different river crossings.
@@ -221,23 +225,55 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor)
   if (!start || !end) return null
   const distance = Math.hypot(end.x - start.x, end.z - start.z)
   if (distance < 500) return null
+  const plans = new Map<string, SettlementPlan>()
+  // A protected fallback may have moved outside its nominal stream cell.
+  // Include both selected landmarks even when that cell is outside the corridor.
+  for (const plan of protectedPlans) plans.set(plan.id, plan)
+  for (const endpoint of [a, b]) {
+    const [cx, cz] = idNumbers(endpoint.id)
+    const plan = resolve ? resolve(cx, cz) : 'buildings' in endpoint ? endpoint as SettlementPlan : null
+    if (resolve && (!plan || plan.kind !== endpoint.kind || plan.x !== endpoint.x || plan.y !== endpoint.y ||
+      plan.z !== endpoint.z || plan.radius !== endpoint.radius)) return null
+    if (plan) plans.set(plan.id, plan)
+  }
+  if (resolve) {
+    // Every supported route lies in this corridor: coarse lanes/guide, broad
+    // fallbacks, local refinement, plus maximum settlement radius and service
+    // pads. Resolve blueprints independently of streamed/admitted meshes.
+    const margin = 10080 + 600 + Math.max(6500 + distance * .025, distance * .14 * 1.16)
+    const minX = Math.floor((Math.min(start.x, end.x) - margin) / SETTLEMENT_CELL_SIZE)
+    const maxX = Math.floor((Math.max(start.x, end.x) + margin) / SETTLEMENT_CELL_SIZE)
+    const minZ = Math.floor((Math.min(start.z, end.z) - margin) / SETTLEMENT_CELL_SIZE)
+    const maxZ = Math.floor((Math.max(start.z, end.z) + margin) / SETTLEMENT_CELL_SIZE)
+    if ((maxX - minX + 1) * (maxZ - minZ + 1) > MAX_ROAD_CLEARANCE_CELLS) return null
+    for (let cx = minX; cx <= maxX; cx++) for (let cz = minZ; cz <= maxZ; cz++) {
+      if (plans.has(`${cx},${cz}`)) continue
+      const plan = resolve(cx, cz)
+      if (plan) plans.set(plan.id, plan)
+    }
+  }
+  const clearance = new RoadClearance([...plans.values()], width)
   const [ax, az] = idNumbers(a.id), [bx, bz] = idNumbers(b.id)
   const direction = hash2(ax * 433 + bx * 811, az * 659 + bz * 977) < .5 ? -1 : 1
   const sample = (x: number, z: number) => sampleClimateInto(roadClimateScratch, x, z)
-  const corridor = terrainRoadRoute(start, end, sample, direction * distance * .025)
+  const corridor = terrainRoadRoute(start, end, sample, direction * distance * .025, false, clearance.allows)
   // Leave a numerical margin below the public ceiling after profile arithmetic.
   const engineeringGrade = MAX_REGIONAL_ROAD_GRADE * .98
   const validate = (points: readonly { x: number; z: number }[]): SettlementRoad | null => {
+    if (!clearance.routeAllows(points)) return null
     const road = groundRoad(points, width, sample)
     return road && (roadGradeValid(road) || engineerRoadGrades(road, engineeringGrade)) ? road : null
   }
   // At most four full profiles, as before. The corridor can change direction
   // locally; two broad alternatives remain a bounded fallback at coastlines.
   if (corridor) {
-    const rounded = groundRoad(roundRoadRoute(corridor), width, sample)
+    const smooth = roundRoadRoute(corridor)
+    // Rounding may cut a corner beside a building. Keep the safe corridor in
+    // that case; neither smoothing nor engineering can waive clearance.
+    const rounded = groundRoad(clearance.routeAllows(smooth) ? smooth : corridor, width, sample)
     if (rounded && roadGradeValid(rounded)) return rounded
     if (rounded && engineerRoadGrades(rounded, engineeringGrade)) return rounded
-    const refinement = rounded && refineRoadRoute(rounded, sample)
+    const refinement = rounded && refineRoadRoute(rounded, sample, clearance.allows)
     const refined = refinement && validate(refinement)
     if (refined) return refined
   }

@@ -2,7 +2,8 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from '../src/world/settlement.worker'
 
-vi.mock('../src/world/SettlementPlan', () => ({ settlementForCell: (x: number, z: number, kind?: 'city' | 'village') => site(x, z, kind) }))
+vi.mock('../src/world/SettlementPlan', () => ({ SETTLEMENT_CELL_SIZE: 24000,
+  settlementForCell: (x: number, z: number, kind?: 'city' | 'village') => site(x, z, kind) }))
 vi.mock('../src/world/terrainSample', async importOriginal => ({
   ...await importOriginal<object>(),
   sampleClimateInto: (out: { height: number; waterLevel: number }) => { out.height = 100; out.waterLevel = 0; return out },
@@ -57,4 +58,21 @@ it('resolves a forced source blueprint before choosing its two city links', () =
     const source = link.from.id === '1,0' ? link.from : link.to
     expect(source.kind).toBe('city'); expect(source.x).toBe(18000)
   }
+})
+
+it('recovers protected full plans for compact road jobs and rejects mismatched ownership', () => {
+  const protectedSpecs = [{ cx: 1, cz: 0, kind: 'city' as const }]
+  scope.onmessage!({ data: { type: 'links', key: '0,0', cx: 0, cz: 0, x: 0, z: 0,
+    kind: 'village', seed: 1, generation: 10, pad: null, protected: protectedSpecs } })
+  const graph = scope.postMessage.mock.calls[0]![0]
+  if (graph.type !== 'links') throw new Error('Expected graph')
+  const link = graph.links[0]!
+  scope.onmessage!({ data: { type: 'road', ...link, seed: 1, generation: 10, pad: null, protected: protectedSpecs } })
+  const result = scope.postMessage.mock.calls[1]![0]
+  if (result.type !== 'road') throw new Error('Expected road')
+  expect(result.road).not.toBeNull()
+  expect(result.fromId).toBe(link.from.id); expect(result.toId).toBe(link.to.id)
+  scope.onmessage!({ data: { type: 'road', ...link, seed: 1, generation: 10, pad: null, protected: [] } })
+  const rejected = scope.postMessage.mock.calls[2]![0]
+  expect(rejected.type === 'road' && rejected.road).toBeNull()
 })

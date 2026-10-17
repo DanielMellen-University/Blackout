@@ -15,6 +15,7 @@ export interface SettlementRequest extends BaseRequest {
 }
 export interface RegionalRoadRequest extends BaseRequest {
   type: 'road'; key: string; from: RegionalRoadEndpoint; to: RegionalRoadEndpoint
+  protected: readonly ProtectedSettlementSpec[]
 }
 export interface ProtectedSettlementSpec { cx: number; cz: number; kind: 'city' | 'village' }
 export interface SettlementLinksRequest extends BaseRequest {
@@ -46,7 +47,14 @@ self.onmessage = (event: MessageEvent<SettlementWorkerRequest>) => {
     }
     self.postMessage({ type: 'links', key: request.key, generation: request.generation, links } satisfies SettlementWorkerReply)
   } else {
-    const road = roadBetweenSettlements(request.from, request.to)
+    const resolve = (cx: number, cz: number) => settlementForCell(cx, cz,
+      request.protected.find(spec => spec.cx === cx && spec.cz === cz)?.kind)
+    const protectedPlans: SettlementPlan[] = []
+    for (const spec of request.protected) {
+      const plan = resolve(spec.cx, spec.cz)
+      if (plan) protectedPlans.push(plan)
+    }
+    const road = roadBetweenSettlements(request.from, request.to, resolve, protectedPlans)
     self.postMessage({ type: 'road', key: request.key, generation: request.generation, road,
       fromId: request.from.id, toId: request.to.id } satisfies SettlementWorkerReply)
   }
