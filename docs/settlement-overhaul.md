@@ -506,3 +506,65 @@ Alternative connectivity when chosen links fail, wider rough/coastal travel and
 controlled gameplay/startup/frame-time/memory acceptance remain required. Weather
 acceptance is separate unfinished work. Terrain/water generation, flight handling,
 EST/per-level work and all paused systems are unchanged.
+
+## Batch 11: buildable alternative neighbours (10.908)
+
+The graph formerly committed to its nearest ranked proposals before a road
+profile was attempted. An impassable preferred hub could therefore consume the
+village's only outgoing slot despite another reachable settlement. The flat
+sea-barrier regression reproduces this without bypassing bridge rejection.
+
+Select from the same seeded 24-neighbour discovery ring and range gates, retaining
+cross-tier preference, distance and stable ID ties. Check at most four ranked
+candidates per source, including missing attachments and rejected profiles. Stop
+when a village has one successful spoke or a city has two. Each accepted route
+still satisfies terrain routing, dry street attachment, building/shoulder
+clearance, complete-profile grade and bridge/viaduct limits. Failed roads do not
+become bridges across impossible seas, and no collision checks are waived.
+
+Graph selection runs in the existing worker and returns only compact endpoints.
+The unsupported-worker path uses the same selection and remains potentially
+expensive. No load-order-driven retry state, extra worker or render-thread
+planning is introduced. Both endpoints may still discover the same canonical
+edge; existing source ownership deduplicates it independently of mesh admission.
+The one-slot root/graph/profile dispatch remains fair, though a graph job can now
+spend time profiling up to four candidates. A four-attempt cap deliberately does
+not guarantee global connectivity or connect every island.
+
+Reuse worker profiles between graph acceptance and road delivery in a small LRU.
+Cap it at eight entries, including failed attempts, and 8,192 total retained
+profile points. Evict before retaining a profile that exceeds the combined point
+budget; oversized entries are not cached. Key exact compact endpoint ownership
+and attachment data, not just an edge ID. Reset for seed, airfield position/yaw,
+generation and protected descriptors, normalized independently of descriptor
+order. Root jobs preserve same-world cached roads but invalidate old-world work.
+An evicted profile may be rebuilt; cache contents never change route selection.
+This trades bounded worker memory for reduced duplicate planning, not a measured
+startup/FPS/memory improvement. All graphics, profile and support caps remain.
+
+Actual seed 73, village `-3,-2`, previously selected `-3,-2|-4,-2`. Its first three
+ranked profiles fail; the fourth, `-2,-2|-3,-2`, succeeds. Neither endpoint's old
+proposal selected that edge. Pin this generated case, its exact failure sequence,
+complete grade validity, ground joins, compact payload and cached handoff in a
+regression. The existing seed-1337 city and seed-1 village retain their usable
+links. Candidate order/rejection/attempt limits, missing streets, service/ground
+clearance, compact worker handoff, protected ownership, cache size/point/context
+eviction and error recovery have focused coverage. Ghost revision 25 rejects
+incompatible playback while preserving records, favourites and settings.
+
+The developer terrain review now has **Alternative road connection**, a fixed
+seed-73 fixture with no airfield deformation. The [streamed replacement junction](reviews/road-connectivity-10.908.png)
+is visible at `-64192.9, -32769.2`; local and
+regional surface Y both read 578.77 m, shoulder 578.62 m. Two settlements/77
+buildings and one regional road are resident, with clear building spacing and
+empty browser error logs. This verifies an actual new graph edge through the
+worker, profile cache and renderer, not the entire network or travel performance.
+
+All 129 affected checks and the production build pass with the existing Three
+bundle-size warning. The final worker-context change also passes its eight
+focused worker/cache checks and a new build; the real fixture passes again with
+the old-opposite-endpoint assertion. Wider rough/coastal network artwork,
+continuous low-altitude/high-speed gameplay and controlled startup/frame-time/
+memory acceptance remain open. Weather acceptance remains separate unfinished
+work. Terrain/water generation, flight, EST/per-level and paused exclusions are
+unchanged.

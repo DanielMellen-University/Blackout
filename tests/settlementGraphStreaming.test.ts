@@ -10,6 +10,10 @@ vi.mock('../src/world/SettlementPlan', () => ({
   settlementForCell: (x: number, z: number) => { calls.plans++; return z === 0 && (x === 0 || x === 1) ? site(x) : null },
   settlementAnchorForCell: () => null,
 }))
+vi.mock('../src/world/terrainSample', async importOriginal => ({
+  ...await importOriginal<object>(),
+  sampleClimateInto: (out: { height: number; waterLevel: number }) => { out.height = 100; out.waterLevel = 0; return out },
+}))
 import { SettlementSystem } from '../src/world/SettlementSystem'
 
 function site(cx = 0): SettlementPlan {

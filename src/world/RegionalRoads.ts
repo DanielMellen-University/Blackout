@@ -29,6 +29,8 @@ export interface RegionalRoadEndpoint extends SettlementAnchor { biome: Biome }
 export const REGIONAL_GRAPH_CELL_RING = 2
 export const MAX_CITY_REGIONAL_LINKS = 2
 export const MAX_VILLAGE_REGIONAL_LINKS = 1
+/** Includes failed attachment/profile candidates, not only successful links. */
+export const MAX_REGIONAL_LINK_ATTEMPTS = 4
 /** Only these ranked street points may trigger extra endpoint terrain probes. */
 export const MAX_ROAD_ATTACHMENT_CANDIDATES = 8
 export const MAX_ROAD_CLEARANCE_CELLS = 49
@@ -51,14 +53,16 @@ export function regionalRoadKey(a: SettlementAnchor, b: SettlementAnchor): strin
  * The caller may discover the same edge from either endpoint; the canonical
  * key and ordered plans make that harmless without relying on load order.
  */
-export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readonly SettlementPlan[]): RegionalRoadLink[] {
+export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readonly SettlementPlan[],
+  accepts?: (link: RegionalRoadLink) => boolean): RegionalRoadLink[] {
   const limit = plan.kind === 'city' ? MAX_CITY_REGIONAL_LINKS : MAX_VILLAGE_REGIONAL_LINKS
   const links: RegionalRoadLink[] = []
   const seen = new Set<string>()
   // Pick one winner per bounded slot instead of materializing and sorting the
   // entire candidate list. The comparison is identical to the former sort:
   // cross-tier hubs first, then distance, then stable ID order.
-  for (let slot = 0; slot < limit; slot++) {
+  const attempts = accepts ? MAX_REGIONAL_LINK_ATTEMPTS : limit
+  for (let slot = 0; slot < attempts && links.length < limit; slot++) {
     let best: SettlementPlan | null = null
     let bestHub = Infinity
     // Ranking only compares distances, so squared range keeps the same winner
@@ -81,7 +85,8 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
     if (!best) break
     const key = regionalRoadKey(plan, best)
     seen.add(key)
-    links.push(plan.id < best.id ? { key, from: plan, to: best } : { key, from: best, to: plan })
+    const link = plan.id < best.id ? { key, from: plan, to: best } : { key, from: best, to: plan }
+    if (!accepts || accepts(link)) links.push(link)
   }
   return links
 }
@@ -93,7 +98,8 @@ export function selectRegionalRoadLinks(plan: SettlementPlan, candidates: readon
  * bounds discovery to 24 lookups, with caller-owned protected-site overrides.
  */
 export function regionalLinksForSettlement(plan: SettlementPlan,
-  resolve: (cx: number, cz: number) => SettlementPlan | null = settlementForCell): RegionalRoadLink[] {
+  resolve: (cx: number, cz: number) => SettlementPlan | null = settlementForCell,
+  accepts?: (link: RegionalRoadLink) => boolean): RegionalRoadLink[] {
   const [cx, cz] = idNumbers(plan.id)
   const candidates: SettlementPlan[] = []
   for (let dx = -REGIONAL_GRAPH_CELL_RING; dx <= REGIONAL_GRAPH_CELL_RING; dx++) {
@@ -103,7 +109,25 @@ export function regionalLinksForSettlement(plan: SettlementPlan,
       if (other) candidates.push(other)
     }
   }
-  return selectRegionalRoadLinks(plan, candidates)
+  return selectRegionalRoadLinks(plan, candidates, accepts)
+}
+
+/** Select the first buildable spokes, not merely the nearest proposals. Both
+ * worker and unsupported-worker fallback use this deterministic bounded choice.
+ * A caller may reuse profiles without exposing them in the compact graph reply. */
+export function buildableRegionalLinksForSettlement(plan: SettlementPlan,
+  resolve: (cx: number, cz: number) => SettlementPlan | null = settlementForCell,
+  protectedPlans: readonly SettlementPlan[] = [],
+  profile: (link: RegionalRoadLink) => SettlementRoad | null = link =>
+    roadBetweenSettlements(link.from, link.to, resolve, protectedPlans)): RegionalRoadLink[] {
+  const compact = new Map<string, RegionalRoadLink>()
+  const links = regionalLinksForSettlement(plan, resolve, candidate => {
+    const link = compactRegionalRoadLink(candidate)
+    if (!link || !profile(link)) return false
+    compact.set(link.key, link)
+    return true
+  })
+  return links.map(link => compact.get(link.key)!)
 }
 
 /** Sparse seeded graph: cities are strong hubs, villages form occasional links. */

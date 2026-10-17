@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, beforeEach, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import type { SettlementWorkerReply, SettlementWorkerRequest } from '../src/world/settlement.worker'
+import * as roads from '../src/world/RegionalRoads'
 
 vi.mock('../src/world/SettlementPlan', () => ({ SETTLEMENT_CELL_SIZE: 24000,
   settlementForCell: (x: number, z: number, kind?: 'city' | 'village') => site(x, z, kind) }))
@@ -22,6 +23,7 @@ const scope = { onmessage: null as ((event: { data: SettlementWorkerRequest }) =
 beforeAll(async () => { vi.stubGlobal('self', scope); await import('../src/world/settlement.worker') })
 beforeEach(() => scope.postMessage.mockClear())
 afterAll(() => vi.unstubAllGlobals())
+afterEach(() => vi.restoreAllMocks())
 
 it('resolves protected neighbours in the worker and transfers only the selected ground attachments', () => {
   scope.onmessage!({ data: { type: 'links', key: '0,0', cx: 0, cz: 0, x: 0, z: 0,
@@ -75,4 +77,32 @@ it('recovers protected full plans for compact road jobs and rejects mismatched o
   scope.onmessage!({ data: { type: 'road', ...link, seed: 1, generation: 10, pad: null, protected: [] } })
   const rejected = scope.postMessage.mock.calls[2]![0]
   expect(rejected.type === 'road' && rejected.road).toBeNull()
+})
+
+it('skips an unbuildable hub and reuses the successful profile in a compact road request', () => {
+  const original = roads.roadBetweenSettlements
+  const build = vi.spyOn(roads, 'roadBetweenSettlements').mockImplementation((a, b, resolve, protectedPlans) =>
+    a.kind === 'city' || b.kind === 'city' ? null : original(a, b, resolve, protectedPlans))
+  const protectedSpecs = [{ cx: 1, cz: 0, kind: 'city' as const }]
+  scope.onmessage!({ data: { type: 'links', key: '0,0', cx: 0, cz: 0, x: 0, z: 0,
+    kind: 'village', seed: 1, generation: 42, pad: null, protected: protectedSpecs } })
+  const graph = scope.postMessage.mock.calls[0]![0]
+  if (graph.type !== 'links') throw new Error('Expected graph')
+  expect(graph.links.map(link => link.key)).toEqual(['0,0|0,1'])
+  expect(JSON.stringify(graph).length).toBeLessThan(2000)
+  expect(build).toHaveBeenCalledTimes(2)
+  const link = graph.links[0]!
+  const request = { type: 'road' as const, ...link, seed: 1, generation: 42, pad: null, protected: protectedSpecs }
+  scope.onmessage!({ data: request })
+  expect(build).toHaveBeenCalledTimes(2)
+  const result = scope.postMessage.mock.calls[1]![0]
+  expect(result.type === 'road' && result.road).not.toBeNull()
+  scope.onmessage!({ data: { type: 'settlement', key: '0,0', cx: 0, cz: 0, seed: 1, generation: 42, pad: null } })
+  scope.onmessage!({ data: request })
+  expect(build).toHaveBeenCalledTimes(2)
+  scope.onmessage!({ data: { type: 'settlement', key: '0,0', cx: 0, cz: 0, seed: 1, generation: 43, pad: null } })
+  scope.onmessage!({ data: { ...request, generation: 43 } })
+  expect(build).toHaveBeenCalledTimes(3)
+  scope.onmessage!({ data: { ...request, generation: 43, pad: { x: 0, y: 100, z: 0, yaw: .3 } } })
+  expect(build).toHaveBeenCalledTimes(4)
 })

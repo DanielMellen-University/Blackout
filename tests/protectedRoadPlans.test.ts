@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Scene } from 'three'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
+import type { RegionalRoadEndpoint } from '../src/world/RegionalRoads'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
 
 vi.mock('../src/world/SettlementPlan', () => ({
@@ -8,6 +9,10 @@ vi.mock('../src/world/SettlementPlan', () => ({
   settlementAnchorForCell: (x: number, z: number) => x === 1 && z === 0 ? 'city' : x === 0 && z === 1 ? 'village' : null,
   settlementAnchorCells: (kind: string) => kind === 'city' ? [[0, -1]] : [[-1, 0]],
   settlementForCell: (x: number, z: number, forced?: 'city' | 'village') => fixture(x, z, forced),
+}))
+vi.mock('../src/world/terrainSample', async importOriginal => ({
+  ...await importOriginal<object>(),
+  sampleClimateInto: (out: { height: number; waterLevel: number }) => { out.height = 100; out.waterLevel = 0; return out },
 }))
 
 import { SettlementSystem } from '../src/world/SettlementSystem'
@@ -23,7 +28,7 @@ function fixture(cx: number, cz: number, forced?: 'city' | 'village'): Settlemen
     roads: [{ width: 10, points: [{ x: x - 100, y: 100, z }, { x: x + 100, y: 100, z }] }] }
 }
 
-type Job = { key: string; from: SettlementPlan; to: SettlementPlan }
+type Job = { key: string; from: RegionalRoadEndpoint; to: RegionalRoadEndpoint }
 type Internal = {
   roadJobs: Map<string, Job>; roadSources: Map<string, Set<string>>
   checkedLinks: Set<string>; linkQueue: Job[]
@@ -50,11 +55,14 @@ describe('protected settlement road ownership', () => {
       // First priming the village must not lock in that obsolete neighbour.
       expect(internal.roadSources.get('-1,0|0,-1')).toContain(village.id)
       const job = internal.roadJobs.get('-1,0|0,-1')!
-      expect(job.from).toBe(village); expect(job.to).toBe(city)
+      expect(job.from).toMatchObject({ id: village.id, kind: village.kind, x: village.x, y: village.y, z: village.z, radius: village.radius })
+      expect(job.to).toMatchObject({ id: city.id, kind: city.kind, x: city.x, y: city.y, z: city.z, radius: city.radius })
+      expect(job.from).not.toHaveProperty('buildings'); expect(job.to).not.toHaveProperty('buildings')
       internal.scheduleLinks(fixture(0, 0)!, '0,0')
       for (const edge of internal.roadJobs.values()) for (const endpoint of [edge.from, edge.to]) {
         const actual = internal.loaded.get(endpoint.id)?.plan
-        if (actual) expect(endpoint).toBe(actual)
+        if (actual) expect(endpoint).toMatchObject({ id: actual.id, kind: actual.kind,
+          x: actual.x, y: actual.y, z: actual.z, radius: actual.radius })
       }
       system.clearAll()
       expect(internal.protectedPlans.size).toBe(0)

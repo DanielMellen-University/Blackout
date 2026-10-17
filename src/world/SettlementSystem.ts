@@ -12,7 +12,7 @@ import {
   type SettlementBuilding, type SettlementPlan, type SettlementRoad,
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
-import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
+import { buildableRegionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
 import type { RegionalRoadEndpoint, RegionalRoadLink } from './RegionalRoads'
 import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, bridgeSupportPoints, groundRoadJunction } from './RoadSurface'
 import { MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES } from './SettlementGround'
@@ -1647,7 +1647,8 @@ export class SettlementSystem {
           seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
         else {
           const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
-          if (plan) this.queueRoadLinks(regionalLinksForSettlement(plan, this.resolveRoadNeighbour), job.key)
+          if (plan) this.queueRoadLinks(buildableRegionalLinksForSettlement(plan, this.resolveRoadNeighbour,
+            [...this.protectedPlans.values()]), job.key)
         }
         return
       }
@@ -2225,7 +2226,8 @@ export class SettlementSystem {
       this.graphQueue.set(sourceKey, { key: sourceKey, cx: cx!, cz: cz!, x: source.x, z: source.z, kind: source.kind })
       return
     }
-    this.queueRoadLinks(regionalLinksForSettlement(source, this.resolveRoadNeighbour), sourceKey)
+    this.queueRoadLinks(buildableRegionalLinksForSettlement(source, this.resolveRoadNeighbour,
+      [...this.protectedPlans.values()]), sourceKey)
   }
 
   private queueRoadLinks(links: readonly RegionalRoadLink[], sourceKey: string): void {
