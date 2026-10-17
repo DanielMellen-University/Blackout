@@ -8,6 +8,8 @@ import {
   airbrakeWindEnvelope,
   cloudAudioAttenuation,
   windGustAudioEnvelope,
+  weatherWindAudioEnvelope,
+  stormAudioEnvelope,
   enginePlaybackRate,
   enginePowerLevel,
   engineWhineLevel,
@@ -34,6 +36,47 @@ describe('flight audio automation', () => {
       Object.assign(audio, { ctx: null }); audio.dispose(); audio.prepare()
       expect(construct).toHaveBeenCalledOnce()
     } finally { Object.assign(audio, { ctx: null }); audio.dispose(); vi.unstubAllGlobals() }
+  })
+
+  it('fades local wind and storm beds independently at full airspeed and obeys environment mute', () => {
+    const audio = new FlightAudio(), param = () => ({ setTargetAtTime: vi.fn() })
+    const master = { gain: param() }, engine = { gain: param() }, wind = { gain: param() }
+    const rain = { gain: param() }, storm = { gain: param() }, whine = { gain: param() }
+    Object.assign(audio, { ctx: { state: 'running', currentTime: 0 }, built: true, muted: false,
+      master, engineGain: engine, windGain: wind, precipGain: rain, stormGain: storm,
+      engineWhineGain: whine, engineWhine: { frequency: param() } })
+    const frame = { throttle: 1, boost: true, speed: 680, rain: 0, snow: 0,
+      weatherWindMps: 5, weatherStorm: 0, mute: false, dt: 1 / 60 }
+    const level = (bed: typeof wind) => bed.gain.setTargetAtTime.mock.calls.at(-1)![0]
+    try {
+      audio.update(frame)
+      const calm = level(wind)
+      expect(level(storm)).toBe(0)
+      audio.update({ ...frame, rain: 1, weatherWindMps: 27, weatherStorm: 1 })
+      expect(level(wind)).toBeGreaterThan(calm)
+      expect(level(storm)).toBeCloseTo(.065)
+      expect(level(rain)).toBeGreaterThan(0)
+      const calls = storm.gain.setTargetAtTime.mock.calls.length
+      audio.update({ ...frame, rain: 1, weatherWindMps: 27, weatherStorm: 1 })
+      expect(storm.gain.setTargetAtTime).toHaveBeenCalledTimes(calls)
+      audio.update({ ...frame, weatherStorm: 1, impactOnly: true })
+      expect(level(storm)).toBe(0)
+      audio.setChannelVolume('environment', 0)
+      audio.update({ ...frame, rain: 1, weatherWindMps: 27, weatherStorm: 1 })
+      for (const bed of [wind, rain, storm]) expect(level(bed)).toBe(0)
+      expect(level(engine)).toBeGreaterThan(0)
+    } finally { Object.assign(audio, { ctx: null }); audio.dispose() }
+  })
+
+  it('bounds local weather envelopes without discrete weather-label switches', () => {
+    expect(weatherWindAudioEnvelope(0)).toBe(0)
+    expect(weatherWindAudioEnvelope(13.5)).toBeCloseTo(.5)
+    expect(weatherWindAudioEnvelope(100)).toBe(1)
+    expect(weatherWindAudioEnvelope(NaN)).toBe(0)
+    expect(stormAudioEnvelope(0)).toBe(0)
+    expect(stormAudioEnvelope(.25)).toBeLessThan(stormAudioEnvelope(.5))
+    expect(stormAudioEnvelope(2)).toBe(1)
+    expect(stormAudioEnvelope(NaN)).toBe(0)
   })
 
   it('scales arrived thunder by distance gain without scheduling silent events', () => {

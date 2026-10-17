@@ -12,6 +12,12 @@ export interface RegionalWeatherSample extends WeatherSnapshot {
   convection: number
 }
 export const WEATHER_STRUCTURE_KEYS = ['cloudBase', 'cloudTop', 'precipitationBase', 'visibilityM', 'convection'] as const
+/** Rain ends at its source base; cloud haze and convective motion continue
+ * through the deck and fade smoothly above its actual top. */
+export function weatherLayerExposure(altitude: number, cloudTop: number): number {
+  if (!Number.isFinite(altitude) || !Number.isFinite(cloudTop)) return 0
+  return 1 - smoothstep(cloudTop - 150, cloudTop + 350, altitude)
+}
 export function createRegionalWeatherSample(): RegionalWeatherSample {
   return { ...WEATHER_PROFILES.clear, windX: 0, windZ: 0, id: 'clear', cloudBase: 1400,
     cloudTop: 2400, precipitationBase: 1400, visibilityM: 30240, convection: 0 }

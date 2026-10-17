@@ -6,6 +6,31 @@ import { FlightReview, ReviewFrames } from '../src/debug/FlightReview'
 import * as terrain from '../src/world/terrainSample'
 
 describe('fixed-route frame measurement', () => {
+  it('repeats a bounded weather corridor with real travel distance and resident contact height', () => {
+    const elements: { textContent?: string; onclick?: (() => void) | null; style: object; append: () => void; remove: () => void }[] = []
+    vi.stubGlobal('document', { createElement: () => {
+      const el = { style: {}, append: vi.fn(), remove: vi.fn() }; elements.push(el); return el
+    }, body: { append: vi.fn() } })
+    vi.stubGlobal('innerWidth', 1280); vi.stubGlobal('innerHeight', 720)
+    const height = vi.fn(() => 100)
+    try {
+      const review = new FlightReview(20, vi.fn(), 900, 'weather-loop', height)
+      const aircraft = { controls: createDefaultControls(), position: new Vector3(), velocity: new Vector3(),
+        angularVelocity: new Vector3(), orientation: new Quaternion(), reset: vi.fn() } as unknown as Aircraft
+      expect(review.weatherRoute).toBe(true)
+      elements[1]!.onclick!(); review.visibility(true); review.beforeStep(aircraft)
+      review.frame(100, { loaded: 500, pending: 0, inFlight: 0, ready: 0, workers: 4 }, 'balanced', 1, 500, 3)
+      review.afterStep(aircraft, 120)
+      expect(aircraft.position.y).toBe(250)
+      expect(Math.hypot(aircraft.position.x + 240000, aircraft.position.z + 192000)).toBeCloseTo(81600)
+      expect(aircraft.velocity.x).toBeGreaterThan(0)
+      review.afterStep(aircraft, 120)
+      expect(aircraft.position.x).toBe(-240000); expect(aircraft.position.z).toBe(-192000)
+      expect(aircraft.velocity.x).toBeLessThan(0)
+      review.dispose()
+    } finally { vi.unstubAllGlobals() }
+  })
+
   it('reports real frame intervals including hitches', () => {
     const frames = new ReviewFrames()
     for (const now of [100, 116, 132, 148, 164, 1164]) frames.record(now, true)

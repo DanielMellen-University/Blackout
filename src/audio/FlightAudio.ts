@@ -72,12 +72,23 @@ export function windGustAudioEnvelope(gust: number): number {
   return clamp01(gust) * 0.18
 }
 
+export function weatherWindAudioEnvelope(windMps: number): number {
+  return clamp01(windMps / 27)
+}
+
+export function stormAudioEnvelope(storm: number): number {
+  return Math.pow(clamp01(storm), .65)
+}
+
 export class FlightAudio {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private engineGain: GainNode | null = null
   private windGain: GainNode | null = null
   private precipGain: GainNode | null = null
+  private stormGain: GainNode | null = null
+  private stormFilter: BiquadFilterNode | null = null
+  private stormSrc: AudioBufferSourceNode | null = null
   private effectsGain: GainNode | null = null
   private limiter: DynamicsCompressorNode | null = null
   private engineFilter: BiquadFilterNode | null = null
@@ -155,6 +166,9 @@ export class FlightAudio {
     snow: number
     /** Bounded weather gust intensity used to lift the wind bed. */
     weatherGust?: number
+    /** Local cell wind; convection is attenuated above its cloud deck. */
+    weatherWindMps?: number
+    weatherStorm?: number
     /** Smoothed local cloud density, 0 clear to 1 inside a formation. */
     cloudImmersion?: number
     mute: boolean
@@ -197,6 +211,8 @@ export class FlightAudio {
       windGustAudioEnvelope(opts.weatherGust ?? 0),
     )
     const precip = precipitationAudioLevel(opts.rain, opts.snow)
+    const weatherWind = weatherWindAudioEnvelope(opts.weatherWindMps ?? 0)
+    const storm = stormAudioEnvelope(opts.weatherStorm ?? 0)
     const whine = engineWhineLevel(opts.throttle, boost, opts.effectivePower)
     const cloudImmersion = Number.isFinite(opts.cloudImmersion) ? opts.cloudImmersion! : 0
     const cloudEngine = cloudAudioAttenuation(cloudImmersion, 0.06, 0.9)
@@ -208,8 +224,9 @@ export class FlightAudio {
     const bedsMuted = opts.mute || opts.impactOnly === true
     const masterTarget = opts.mute ? 0 : this.volume
     const engTarget = bedsMuted ? 0 : eng * 0.42 * view.engine * cloudEngine * this.engineVolume
-    const windTarget = bedsMuted ? 0 : wind * 0.28 * view.wind * cloudWind * this.environmentVolume
+    const windTarget = bedsMuted ? 0 : (wind * 0.28 + weatherWind * .07) * view.wind * cloudWind * this.environmentVolume
     const precipTarget = bedsMuted ? 0 : precip * 0.18 * view.precipitation * cloudPrecip * this.environmentVolume
+    const stormTarget = bedsMuted ? 0 : storm * .065 * view.precipitation * cloudPrecip * this.environmentVolume
     const whineTarget = bedsMuted ? 0 : whine * 0.065 * view.whine * cloudWhine * this.engineVolume
 
     const now = ctx.currentTime
@@ -220,6 +237,8 @@ export class FlightAudio {
     this.scheduleTarget(this.engineGain.gain, engTarget, now, tau)
     this.scheduleTarget(this.windGain.gain, windTarget, now, tau)
     this.scheduleTarget(this.precipGain.gain, precipTarget, now, tau)
+    if (this.stormGain) this.scheduleTarget(this.stormGain.gain, stormTarget, now, tau)
+    if (this.stormFilter) this.scheduleTarget(this.stormFilter.frequency, 130 + storm * 200, now, tau, 2)
     this.scheduleTarget(this.engineWhineGain.gain, whineTarget, now, tau, 0.0005)
     if (this.engineSrc) {
       this.scheduleTarget(
@@ -241,7 +260,7 @@ export class FlightAudio {
       this.scheduleTarget(this.engineFilter.frequency, cut, now, tau, 0.5)
     }
     if (this.windFilter) {
-      const cut = (900 + wind * 2200) * view.windFilter * cloudWind
+      const cut = (900 + wind * 2200 + weatherWind * 500) * view.windFilter * cloudWind
       this.scheduleTarget(this.windFilter.frequency, cut, now, tau, 2)
     }
     if (this.precipFilter) {
@@ -434,6 +453,7 @@ export class FlightAudio {
       this.engineSrc?.stop()
       this.windSrc?.stop()
       this.precipSrc?.stop()
+      this.stormSrc?.stop()
       this.engineWhine?.stop()
     } catch {
       /* already stopped */
@@ -441,6 +461,9 @@ export class FlightAudio {
     this.engineSrc = null
     this.windSrc = null
     this.precipSrc = null
+    this.stormSrc = null
+    this.stormGain = null
+    this.stormFilter = null
     this.engineWhine = null
     this.engineWhineGain = null
     this.eventWhiteBuffer = null
@@ -540,6 +563,12 @@ export class FlightAudio {
     const engBuf = makeNoiseBuffer(ctx, 2.5, 'brown')
     const windBuf = makeNoiseBuffer(ctx, 2.0, 'white')
     const precipBuf = makeNoiseBuffer(ctx, 2.2, 'white')
+    const stormGain = ctx.createGain(), stormFilter = ctx.createBiquadFilter()
+    stormGain.gain.value = 0
+    stormFilter.type = 'lowpass'; stormFilter.frequency.value = 130; stormFilter.Q.value = .45
+    stormGain.connect(stormFilter); stormFilter.connect(master)
+    const stormSrc = ctx.createBufferSource()
+    stormSrc.buffer = engBuf; stormSrc.loop = true; stormSrc.connect(stormGain); stormSrc.start()
     // One-shot cues reuse these fixed buffers. BufferSource nodes are still
     // short-lived, but repeated crashes and weather cues stop rebuilding PCM.
     this.eventWhiteBuffer = makeNoiseBuffer(ctx, EVENT_NOISE_BUFFER_SECONDS, 'white')
@@ -577,6 +606,9 @@ export class FlightAudio {
     this.engineSrc = engineSrc
     this.windSrc = windSrc
     this.precipSrc = precipSrc
+    this.stormGain = stormGain
+    this.stormFilter = stormFilter
+    this.stormSrc = stormSrc
     this.built = true
   }
 

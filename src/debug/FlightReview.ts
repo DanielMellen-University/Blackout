@@ -1,3 +1,4 @@
+import { WEATHER_REVIEW_ROUTES } from './WeatherReviewRoutes'
 import type { Aircraft } from '../aircraft/Aircraft'
 import { flightConfig } from '../aircraft/flightConfig'
 import type { TerrainStreamingStats } from '../world/TerrainSystem'
@@ -5,12 +6,20 @@ import { sampleTerrainHeight } from '../world/terrainSample'
 import { getWorldSeed } from '../world/noise'
 
 export interface SettlementReviewStats { loaded: number; buildings: number; roads: number; pending: number }
-interface ReviewRoute { x: number; z: number; y: number; dx: number; dz: number; label: string; agl?: number }
+interface ReviewRoute { x: number; z: number; y: number; dx: number; dz: number; label: string; agl?: number; weather?: boolean; loopM?: number }
 const ROUTES: Record<string, ReviewRoute> = {
   world: { x: 0, z: 0, y: 5000, dx: Math.SQRT1_2, dz: -Math.SQRT1_2, label: 'Original northeast corridor' },
   city: { x: 18000, z: 35000, y: 5000, dx: 1, dz: 0, label: 'Seed-1337 city corridor' },
   'city-low': { x: 18000, z: 35000, y: 5000, dx: 1, dz: 0, agl: 500, label: 'Seed-1337 city corridor, 500 m AGL' },
 }
+
+for (const [family, route] of Object.entries(WEATHER_REVIEW_ROUTES)) {
+  for (const [level, agl] of [['low', 150], ['high', 7000]] as const)
+    ROUTES[`${family}-${level}`] = { ...route, y: 5000, agl, weather: true,
+      label: `${family}, ${agl} m AGL` }
+}
+ROUTES['weather-loop'] = { ...ROUTES['weatherfront-low']!, loopM: 81600,
+  label: 'Repeated 81.6 km regional front corridor, 150 m AGL' }
 
 /** Bounded RAF intervals, including hitches. Paused/hidden gaps are excluded explicitly. */
 export class ReviewFrames {
@@ -78,6 +87,8 @@ export class FlightReview {
   private readonly routeId: string
   private readonly route: ReviewRoute
   private readonly yaw: number
+  private readonly coverageReady: (() => void) | undefined
+  private readonly renderedHeight: ((x: number, z: number) => number | null) | undefined
   private readonly settlementPeak: SettlementReviewStats = { loaded: 0, buildings: 0, roads: 0, pending: 0 }
   private resourceCount = 0
   private nextResourceSecond = 0
@@ -85,7 +96,9 @@ export class FlightReview {
     heapBytes: 0, geometries: 0, textures: 0, loaded: 0, pending: 0, inFlight: 0, ready: 0,
     settlements: 0, buildings: 0, roads: 0, settlementPending: 0 }))
 
-  constructor(airfieldReadyMs: number, launch: () => void, duration = DURATION, route = 'world') {
+  constructor(airfieldReadyMs: number, launch: () => void, duration = DURATION, route = 'world', renderedHeight?: (x: number, z: number) => number | null, coverageReady?: () => void) {
+    this.renderedHeight = renderedHeight
+    this.coverageReady = coverageReady
     this.airfieldReadyMs = airfieldReadyMs
     this.duration = Number.isFinite(duration) ? Math.max(DURATION, Math.min(MAX_DURATION, duration)) : DURATION
     this.routeId = Object.hasOwn(ROUTES, route) ? route : 'world'
@@ -127,16 +140,23 @@ export class FlightReview {
     if (this.phase === 'ready') return
     if (this.phase === 'flight' && this.active) this.seconds = Math.min(this.duration, this.seconds + dt)
     const distance = this.seconds * flightConfig.maxSpeedBoost
-    const x = this.route.x + distance * this.route.dx, z = this.route.z + distance * this.route.dz
+    const period = this.route.loopM ? distance % (this.route.loopM * 2) : distance
+    const reverse = this.route.loopM !== undefined && period >= this.route.loopM
+    const along = reverse ? this.route.loopM! * 2 - period : period
+    const direction = reverse ? -1 : 1
+    const yaw = reverse ? this.yaw + Math.PI : this.yaw
+    const x = this.route.x + along * this.route.dx, z = this.route.z + along * this.route.dz
     aircraft.position.set(x, this.height(x, z), z)
     const speed = this.phase === 'flight' ? flightConfig.maxSpeedBoost : 0
-    aircraft.velocity.set(speed * this.route.dx, 0, speed * this.route.dz)
+    aircraft.velocity.set(speed * this.route.dx * direction, 0, speed * this.route.dz * direction)
     aircraft.angularVelocity.set(0, 0, 0)
-    aircraft.orientation.set(0, Math.sin(this.yaw / 2), 0, Math.cos(this.yaw / 2))
+    aircraft.orientation.set(0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2))
   }
 
+  get weatherRoute(): boolean { return this.route.weather === true }
+
   private height(x: number, z: number): number {
-    return this.route.agl === undefined ? this.route.y : sampleTerrainHeight(x, z) + this.route.agl
+    return this.route.agl === undefined ? this.route.y : (this.renderedHeight?.(x, z) ?? sampleTerrainHeight(x, z)) + this.route.agl
   }
 
   frame(now: number, stream: TerrainStreamingStats, quality: string, ratio: number,
@@ -156,6 +176,7 @@ export class FlightReview {
       if (stream.loaded > 0 && stream.pending === 0 && stream.inFlight === 0 && stream.ready === 0) {
         this.coverageMs = now - this.started
         this.phase = 'flight'; this.flightStarted = now; this.heapStart = heap; this.heapPeak = heap
+        this.coverageReady?.()
       }
     } else {
       this.flightFrames.record(now, true)

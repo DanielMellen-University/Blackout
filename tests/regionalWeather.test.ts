@@ -1,7 +1,7 @@
 import { AmbientLight, DirectionalLight, HemisphereLight, InstancedMesh, Scene } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Atmosphere } from '../src/world/Atmosphere'
-import { RegionalWeather, createRegionalWeatherSample, populateWeatherStructure, WEATHER_STRUCTURE_KEYS } from '../src/world/RegionalWeather'
+import { RegionalWeather, createRegionalWeatherSample, populateWeatherStructure, weatherLayerExposure, WEATHER_STRUCTURE_KEYS, type RegionalWeatherSample } from '../src/world/RegionalWeather'
 import { PROFILE_KEYS, WEATHER_ORDER, WEATHER_PROFILES } from '../src/world/WeatherDirector'
 import { getWorldSeed, setWorldSeed } from '../src/world/noise'
 import { sampleLandforms } from '../src/world/Landforms'
@@ -10,14 +10,36 @@ const originalSeed = getWorldSeed()
 afterEach(() => setWorldSeed(originalSeed))
 const numericKeys = [...PROFILE_KEYS, 'windX', 'windZ', ...WEATHER_STRUCTURE_KEYS] as const
 
-function atmosphere() {
-  return new Atmosphere(new Scene(), {
+function atmosphere(scene = new Scene()) {
+  return new Atmosphere(scene, {
     sun: new DirectionalLight(), moon: new DirectionalLight(), fill: new DirectionalLight(),
     hemi: new HemisphereLight(), ambient: new AmbientLight(),
   }, 1200, 30240)
 }
 
 describe('regional weather', () => {
+  it('keeps fog and convection through the cloud deck, then clears them above its top', () => {
+    const scene = new Scene(), weather = atmosphere(scene)
+    try {
+      weather.setWeather('storm', true)
+      weather.update(0, 100, 200, 300, 0)
+      const state = weather.weatherSnapshot as RegionalWeatherSample
+      const base = state.precipitationBase, top = state.cloudTop
+      weather.update(0, 100, base + 100, 300, 0)
+      expect(weather.precipitationVisibility).toBe(0)
+      expect(weather.stormExposure).toBe(1)
+      const fogWithinDeck = (scene.fog as { far: number }).far
+      weather.update(0, 100, top + 400, 300, 0)
+      expect(weather.precipitationVisibility).toBe(0)
+      expect(weather.stormExposure).toBe(0)
+      expect((scene.fog as { far: number }).far).toBeGreaterThan(fogWithinDeck)
+      expect(weatherLayerExposure(top - 150, top)).toBe(1)
+      expect(weatherLayerExposure(top + 100, top)).toBeGreaterThan(0)
+      expect(weatherLayerExposure(top + 350, top)).toBe(0)
+      expect(weatherLayerExposure(NaN, top)).toBe(0)
+    } finally { weather.dispose() }
+  })
+
   it('samples manual climate envelopes at 5 Hz while adapting the profile without new buffers', () => {
     const weather = atmosphere(), bases = vi.spyOn(RegionalWeather.prototype, 'cloudBaseAt')
     try {

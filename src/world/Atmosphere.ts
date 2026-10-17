@@ -26,7 +26,7 @@ import { StormEvents, type StormSource } from './StormEvents'
 import { disposeObjectTree } from '../core/dispose'
 import { nightWeatherReadability } from '../core/SceneExposure'
 import { FOG_FAR, STREAM_RADIUS_M } from './TerrainSystem'
-import { createRegionalWeatherSample, populateWeatherStructure, RegionalWeather,
+import { createRegionalWeatherSample, populateWeatherStructure, weatherLayerExposure, RegionalWeather,
   WEATHER_STRUCTURE_KEYS, type RegionalWeatherSample } from './RegionalWeather'
 import { CloudCells, CLOUD_CELL_SIZE, CLOUD_PUFFS_PER_FORMATION, cloudCellRandom, shapeCloudFormation,
   type CloudLayer } from './CloudFormations'
@@ -511,6 +511,12 @@ export class Atmosphere {
       this.weatherState.precipitationBase)
   }
 
+  /** Local convective exposure shared by fog, buffet and weather audio. */
+  get stormExposure(): number {
+    this.weatherSnapshot
+    return weatherLayerExposure(this.lastAnchor.y, this.weatherState.cloudTop)
+  }
+
   /** Resume regional conditions without changing seed, clock, or flight state. */
   setAutomaticWeather(enabled: boolean, simulationTime?: number): void {
     if (this.disposed || (enabled && this.weatherLocked)) return
@@ -836,7 +842,7 @@ export class Atmosphere {
 
     const ceiling = this.weatherState.precipitationBase
     const source = precipitationAtAltitude(ay, w.lightning, ceiling)
-    const aboveDeck = 1 - source
+    const aboveDeck = 1 - weatherLayerExposure(ay, this.weatherState.cloudTop)
     this.cloudImmersion = MathUtils.lerp(this.cloudImmersion, this.cloudImmersionTarget, 1 - Math.exp(-Math.max(0, visualDt) * 3))
     const cloudLight = (.46 + dayFactor * .36) * (1 - w.lightning * .22 - w.rain * .10)
     _c2.setRGB(cloudLight * .96, cloudLight, cloudLight * 1.03)

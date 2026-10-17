@@ -1177,8 +1177,18 @@ export async function boot(): Promise<void> {
   let flightReview: FlightReview | null = null
   if (import.meta.env.DEV && replayParams?.get('review') === 'flight' && selectedCourseId === 'free-flight') {
     const { FlightReview: Review } = await import('./debug/FlightReview')
-    flightReview = new Review(airfieldReadyMs, () => playBtn?.click(),
-      Number(replayParams.get('reviewSeconds')) || undefined, replayParams.get('reviewRoute') ?? undefined)
+    const prepareWeatherReview = (): void => {
+      if (!flightReview?.weatherRoute) return
+      world.atmosphere.setAutomaticWeather(true, 180)
+      world.atmosphere.timeOfDay = .48
+      world.atmosphere.setTimeOfDayLocked(true)
+      cameras.setMode(replayParams.get('reviewCamera') === 'cockpit' ? 'cockpit' : 'chase', aircraft)
+    }
+    flightReview = new Review(airfieldReadyMs, () => {
+      playBtn?.click()
+      prepareWeatherReview()
+    }, Number(replayParams.get('reviewSeconds')) || undefined, replayParams.get('reviewRoute') ?? undefined,
+    (x, z) => world.terrain.sampleMeshHeight(x, z), prepareWeatherReview)
   }
   if (isDebugEnabled()) {
     const { DebugOverlay: DebugOverlayClass } = await import('./debug/DebugOverlay')
@@ -1987,7 +1997,10 @@ export async function boot(): Promise<void> {
       aircraft.setWeatherWind(weather.windX, weather.windZ)
       aircraft.setWeatherSurface(weather.rain, weather.snow)
       // Weather drive feeds the HUD cue; gear scale only damps camera / airframe.
-      stormHudDrive = stormBuffetDrive(weather.rain, weather.snow, weather.gust, {
+      const precipitationExposure = world.atmosphere.precipitationVisibility
+      const layerExposure = world.atmosphere.stormExposure
+      stormHudDrive = stormBuffetDrive(weather.rain * precipitationExposure,
+        weather.snow * precipitationExposure, weather.gust * layerExposure, {
         reducedMotion,
         paused: menu.paused,
         playing,
@@ -2599,7 +2612,10 @@ export async function boot(): Promise<void> {
     const precipitation = world.atmosphere.weatherSnapshot
     audioFrame.rain = precipitation.rain * world.atmosphere.precipitationVisibility
     audioFrame.snow = precipitation.snow * world.atmosphere.precipitationVisibility
-    audioFrame.weatherGust = precipitation.gust
+    const audioWeatherExposure = world.atmosphere.stormExposure
+    audioFrame.weatherGust = precipitation.gust * audioWeatherExposure
+    audioFrame.weatherWindMps = precipitation.windMps
+    audioFrame.weatherStorm = Math.max(precipitation.lightning, precipitation.snow * .6) * audioWeatherExposure
     audioFrame.cloudImmersion = world.atmosphere.cloudImmersionLevel
     audioFrame.cockpit = cameras.mode === 'cockpit'
     audioFrame.impactOnly = crashCinematic.active
