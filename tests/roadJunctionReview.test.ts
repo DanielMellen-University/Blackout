@@ -91,7 +91,7 @@ it('fills the asphalt join without laying a gravel cap across the incoming lane'
     const shoulder = scene.getObjectByName('RegionalRoadShoulder') as Mesh
     const asphalt = scene.getObjectByName('RegionalRoadAsphalt') as Mesh
     const ribbonVertices = road.points.length * 3
-    expect(shoulder.geometry.getAttribute('position').count).toBe(ribbonVertices)
+    expect(shoulder.geometry.getAttribute('position').count).toBe(road.points.length * 4)
     expect(asphalt.geometry.getAttribute('position').count).toBe(ribbonVertices + 24)
     expect(asphalt.geometry.getIndex()!.count).toBe((road.points.length - 1) * 12 + 72)
   } finally { system.dispose() }

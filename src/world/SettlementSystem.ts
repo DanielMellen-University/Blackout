@@ -427,7 +427,7 @@ function inspectRoadHeight(root: Group | undefined, material: MeshStandardMateri
 }
 
 function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: number, originZ: number,
-  groundOffset?: number, junctionRoad?: SettlementRoad): BufferGeometry | null {
+  groundOffset?: number, junctionRoad?: SettlementRoad, innerScale?: number): BufferGeometry | null {
   const positions: number[] = [], offsets: number[] = [], indices: number[] = []
   const centres = new Map<string, number>()
   const add = (x: number, y: number, z: number, offset: number): number => {
@@ -447,7 +447,8 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
     !point.bridge && (point.structure === undefined || point.structure === 'ground')
   for (const road of roads) {
     if (road.points.length < 2) continue
-    const wide = groundOffset !== undefined && road.width >= 4
+    const hollow = innerScale !== undefined
+    const wide = !hollow && groundOffset !== undefined && road.width >= 4
     const rows: number[][] = []
     for (let i = 0; i < road.points.length; i++) {
       const point = road.points[i]!, previous = road.points[Math.max(0, i - 1)]!
@@ -458,14 +459,26 @@ function createRoadGeometry(roads: SettlementRoad[], originX: number, originY: n
       // Keep engineered transition anchors fixed, matching their deck/fill.
       const fit = groundOffset !== undefined && isGround(point) && isGround(previous) && isGround(next)
       const offset = fit ? groundOffset! : -1
-      const row = [add(point.leftX ?? point.x + nx, point.leftY ?? point.y, point.leftZ ?? point.z + nz, offset)]
-      if (wide) row.push(fit ? centre(point.x, point.y, point.z) : add(point.x, point.y, point.z, -1))
-      row.push(add(point.rightX ?? point.x - nx, point.rightY ?? point.y, point.rightZ ?? point.z - nz, offset))
+      const leftX = point.leftX ?? point.x + nx, leftZ = point.leftZ ?? point.z + nz
+      const rightX = point.rightX ?? point.x - nx, rightZ = point.rightZ ?? point.z - nz
+      const leftY = point.leftY ?? point.y, rightY = point.rightY ?? point.y
+      const row = [add(leftX, leftY, leftZ, offset)]
+      if (hollow) {
+        // Leave the asphalt lane open. A full gravel cap can cut through it
+        // between draped vertices even when lower at every sampled centre.
+        row.push(add(point.x + (leftX - point.x) * innerScale!, point.y + (leftY - point.y) * innerScale!,
+          point.z + (leftZ - point.z) * innerScale!, offset),
+        add(point.x + (rightX - point.x) * innerScale!, point.y + (rightY - point.y) * innerScale!,
+          point.z + (rightZ - point.z) * innerScale!, offset))
+      } else if (wide) row.push(fit ? centre(point.x, point.y, point.z) : add(point.x, point.y, point.z, -1))
+      row.push(add(rightX, rightY, rightZ, offset))
       rows.push(row)
     }
     for (let i = 1; i < rows.length; i++) {
       const a = rows[i - 1]!, b = rows[i]!
-      if (wide) indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!,
+      if (hollow) indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!,
+        a[2]!, b[2]!, a[3]!, a[3]!, b[2]!, b[3]!)
+      else if (wide) indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!,
         a[1]!, b[1]!, a[2]!, a[2]!, b[1]!, b[2]!)
       else indices.push(a[0]!, b[0]!, a[1]!, a[1]!, b[0]!, b[1]!)
     }
@@ -1215,7 +1228,9 @@ export class SettlementSystem {
         id: `${connection.from.id}|${connection.to.id}`,
         localY: inspectRoadHeight(this.loaded.get(plan.id)?.root, this.asphalt, point.x, point.z),
         roadY: inspectRoadHeight(connection.root, this.highway, point.x, point.z),
-        shoulderY: inspectRoadHeight(connection.root, this.gravelShoulder, point.x, point.z) }
+        shoulderY: inspectRoadHeight(connection.root, this.gravelShoulder,
+          point.x - (ahead.z - point.z) / length * connection.road.width * .65,
+          point.z + (ahead.x - point.x) / length * connection.road.width * .65) }
     }
     return result
   }
@@ -2169,7 +2184,7 @@ export class SettlementSystem {
         leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
         rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
     }))
-    const shoulderGeometry = createRoadGeometry(localShoulders.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .3)
+    const shoulderGeometry = createRoadGeometry(localShoulders.flatMap(groundedRoadSpans), plan.x, plan.y, plan.z, .3, undefined, 1 / 1.55)
     if (shoulderGeometry) {
       const mesh = new Mesh(shoulderGeometry, this.gravelShoulder)
       mesh.name = 'SettlementRoadShoulders'
@@ -2396,10 +2411,9 @@ export class SettlementSystem {
         leftY: point.structure === 'embankment' ? point.y - .08 : point.shoulderLeftY ?? (point.leftY ?? point.y) - .08,
         rightY: point.structure === 'embankment' ? point.y - .08 : point.shoulderRightY ?? (point.rightY ?? point.y) - .08 })),
     }
-    // Do not spread a full gravel cap across the incoming asphalt lane. Its
-    // different terrain triangulation can occlude that lane even when lower
-    // at the shared centre. The existing road shoulders already frame the join.
-    const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z, .3)
+    // Two outer bands frame the lane without a gravel cap over its asphalt.
+    // Keep the existing profile, triangle count and shared shoulder material.
+    const shoulderGeometry = createRoadGeometry(groundedRoadSpans(shoulderRoad), x, 0, z, .3, undefined, 1 / 1.55)
     if (shoulderGeometry) {
       const shoulder = new Mesh(shoulderGeometry, this.gravelShoulder)
       shoulder.name = 'RegionalRoadShoulder'

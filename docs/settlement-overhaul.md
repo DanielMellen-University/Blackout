@@ -750,3 +750,65 @@ normal worker/render path. The multi-destination Chromium session closed while
 loading the last destination; a fresh browser completed that view. Page error
 logs are empty. This retry is recorded in the visual log and is not evidence
 of sustained browser stability.
+
+## Batch 15: open-centre road shoulders and wider contact checks (10.913)
+
+The shoulder mesh previously covered the entire road, including its asphalt
+lane. Two new straight-road regressions fail on 10.912 because gravel triangles
+span that lane. Different gravel/asphalt tessellation can therefore expose
+patches of gravel between otherwise correctly draped vertices. This is separate
+from terrain penetrating the interior of an asphalt triangle.
+
+Build two outer gravel bands for local and regional roads using the existing
+shoulder cross-sections and inner asphalt edges. Keep the asphalt centre samples,
+engineered anchors, junction aprons, profiles, collisions and road selection.
+The bands still use four triangles per profile segment and one shared shoulder
+draw/material. Four vertices per shoulder row replace three, increasing bounded
+vertex storage/refit work; this is not an FPS or memory improvement claim.
+The 20,000 local/8,192 regional profile-point ceilings and shared 1,024-vertex
+per-update drape cap remain. Sample developer shoulder-height telemetry beside
+the lane because its centre now correctly contains no gravel triangle.
+
+Extend actual generated far-near-far contact checks to both asphalt and gravel.
+Retain the original seed-73 replacement junction and 1,196-building seed-1337
+city. Add the steepest dry ground segment of seed-1 route `-7,-5|-8,-5`, about
+23.3%, and actual seed-73 coastal village `-5,-3`: its low road sample is 5.29 m
+above sea level with a .968 coastal factor. Use real generated terrain payloads
+and the production triangle interpolator at every covered marked vertex, with
+fixed engineered points and one shared probe ceiling across both surfaces.
+These remain vertex checks, not complete triangle-interior contact proof.
+
+The coastal village's four bounded regional attempts still fail. Its local
+roads remain valid review targets; this slice does not force a connection or
+relax routing/building/sea rejection. A new **Coastal village** developer
+destination makes that limitation and the low coastal road artwork inspectable.
+All settlement/building/link, worker, routing, profile, support and draw-call
+limits remain. Ghost revision 27, saved records, terrain/water generation,
+weather, flight handling and paused exclusions are unchanged.
+
+All 107 affected rendering, road, junction, draping, collision, streaming,
+admission and metadata checks pass, plus the production and
+review builds with the existing Three bundle-size warning. The full suite and
+unchanged 17-test settlement distribution scan were not repeated in this slice.
+Full triangle-interior and live near/far contact, connected coastal networks,
+continuous flight-physics gameplay and controlled startup/frame-time/sustained
+memory acceptance remain open.
+
+Matched 85 m AGL views show the changed artwork: [village before](reviews/road-10.913-village-before.png)
+and [after](reviews/road-10.913-village-after.png), plus the actual
+[coastal village before](reviews/road-10.913-coastal-before.png) and
+[after](reviews/road-10.913-coastal-after.png). The previous tan lane caps and
+isolated dark asphalt patches become continuous dark lanes with outer gravel
+edges. These comparisons use the same planner, review camera and compiled
+review page; only the shoulder geometry/inspection implementation differs.
+A fresh Chromium process per destination avoids retaining previous review
+scenes. The [visual log](reviews/road-10.913-visual.json) records the poses,
+resident counts, render statistics and limitations. Those statistics are
+software-renderer diagnostics and do not establish a performance result.
+
+The [seed-1 chase](reviews/road-10.913-steep-road-chase.png) and
+[unobstructed first-person](reviews/road-10.913-steep-road-first.png) views inspect
+the actual streamed `-7,-5|-8,-5` road at 18.03 km of its 27.73 km profile,
+90 m prescribed clearance. Browser error logs are empty. The road is visible
+across the rolling terrain in both views; these paused poses do not certify
+continuous maximum-speed travel, every engineered transition or all LODs.
