@@ -39,3 +39,12 @@ it('refreshes the display-density cap without jumping recovered quality upward',
   quality.setDeviceRatio(Number.NaN)
   expect(quality.maximum).toBeCloseTo(1.5)
 })
+
+
+it('holds controlled review density through slow frames, ceilings and display changes', () => {
+  const resolution = new AdaptiveResolution(2, 1.15, 1)
+  for (let i = 0; i < 1000; i++) resolution.update(34, true)
+  expect(resolution.ratio).toBe(1)
+  expect(resolution.setCeiling(.85)).toBe(1)
+  expect(resolution.setDeviceRatio(3)).toBe(1)
+})

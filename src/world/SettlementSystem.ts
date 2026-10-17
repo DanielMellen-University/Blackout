@@ -914,6 +914,7 @@ export class SettlementSystem {
   constructor(scene: Scene, renderedHeight?: (x: number, z: number) => number | null) {
     this.draper = renderedHeight ? new SurfaceDraper(renderedHeight, groundSamplerRevision) : null
     this.root.name = 'Settlements'
+    this.root.matrixAutoUpdate = false
     scene.add(this.root)
     if (typeof Worker !== 'undefined') {
       try {
@@ -2239,8 +2240,15 @@ export class SettlementSystem {
     })
     this.applyDetailQuality(detail)
     getCollisionIndex(plan)
-    this.root.add(root)
+    this.attachStatic(root)
     return { root, detail, plan }
+  }
+
+  /** Loaded transforms stay fixed; draping changes vertex attributes only.
+   * Keep world-matrix invalidation enabled so explicit parent moves still work. */
+  private attachStatic(root: Group): void {
+    root.traverse(object => { object.updateMatrix(); object.matrixAutoUpdate = false })
+    this.root.add(root)
   }
 
   /** Shared settlement geometry stays owned by this system until dispose(). */
@@ -2475,7 +2483,7 @@ export class SettlementSystem {
     root.traverse(object => {
       if (object instanceof Mesh) this.draper?.add(object.geometry, x, 0, z)
     })
-    this.root.add(root)
+    this.attachStatic(root)
     const buildings = roadObstacleBuildings([road])
     const collisionPlan: SettlementPlan = { id: root.name, x, y: 0, z, kind: 'village', biome: from.biome,
       radius: buildings.reduce((radius, b) => Math.max(radius, Math.hypot(b.x - x, b.z - z) + Math.hypot(b.width, b.depth)), 0),

@@ -1,3 +1,4 @@
+import { Group } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { obstacleSweepDistance, World } from '../src/world/World'
 import { clearOpsPad, setOpsPad } from '../src/world/terrainSample'
@@ -51,6 +52,13 @@ describe('world lifecycle boundary', () => {
       expect(atmosphere.precipitationScale).toBe(.42)
       expect(atmosphere.cloudDensityScale).toBe(.5)
       expect(world.traffic.count).toBe(3)
+      const stationary = new Group(), moving = new Group()
+      stationary.matrixAutoUpdate = false
+      world.scene.add(stationary, moving); world.scene.updateMatrixWorld()
+      const multiply = vi.spyOn(stationary.matrixWorld, 'multiplyMatrices')
+      moving.position.set(12, 34, 56); world.scene.updateMatrixWorld()
+      expect(multiply).not.toHaveBeenCalled()
+      expect(moving.matrixWorld.elements.slice(12, 15)).toEqual([12, 34, 56])
     } finally {
       world.dispose()
     }

@@ -1,5 +1,6 @@
 /** Slow, bounded resolution changes keep sustained GPU load near a 60 Hz budget. */
 export class AdaptiveResolution {
+  private readonly fixedRatio?: number
   maximum: number
   ratio: number
   private elapsed = 0
@@ -7,18 +8,19 @@ export class AdaptiveResolution {
   private frames = 0
   private deviceRatio: number
   private ceiling: number
-  constructor(deviceRatio: number, ceiling = 1.5) {
+  constructor(deviceRatio: number, ceiling = 1.5, fixedRatio?: number) {
+    this.fixedRatio = fixedRatio
     this.deviceRatio = Math.max(.75, Number.isFinite(deviceRatio) ? deviceRatio : 1)
     this.ceiling = Math.max(.75, Number.isFinite(ceiling) ? ceiling : 1.5)
     this.maximum = Math.min(this.deviceRatio, this.ceiling)
-    this.ratio = this.maximum
+    this.ratio = this.fixedRatio ?? this.maximum
   }
 
   /** Change the user-selected ceiling without jumping above device limits. */
   setCeiling(ceiling: number): number {
     this.ceiling = Math.max(.75, Number.isFinite(ceiling) ? ceiling : 1.5)
     this.maximum = Math.min(this.deviceRatio, this.ceiling)
-    this.ratio = Math.min(this.ratio, this.maximum)
+    this.ratio = this.fixedRatio ?? Math.min(this.ratio, this.maximum)
     this.resetWindow()
     return this.ratio
   }
@@ -29,12 +31,13 @@ export class AdaptiveResolution {
       this.deviceRatio = Math.max(.75, deviceRatio)
     }
     this.maximum = Math.min(this.deviceRatio, this.ceiling)
-    this.ratio = Math.min(this.ratio, this.maximum)
+    this.ratio = this.fixedRatio ?? Math.min(this.ratio, this.maximum)
     this.resetWindow()
     return this.ratio
   }
 
   update(frameMs: number, active: boolean): number {
+    if (this.fixedRatio !== undefined) return this.ratio = this.fixedRatio
     if (!active || !Number.isFinite(frameMs) || frameMs <= 0 || frameMs > 150) {
       this.resetWindow()
       return this.ratio

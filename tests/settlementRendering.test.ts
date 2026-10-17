@@ -22,6 +22,22 @@ function example(): SettlementPlan {
 }
 
 describe('settlement rendering and lifecycle', () => {
+  it('keeps placed building transforms static while accepting explicit root invalidation', () => {
+    const scene = new Scene(), system = new SettlementSystem(scene)
+    scene.matrixAutoUpdate = false
+    try {
+      const { root } = (system as unknown as { build(plan: SettlementPlan): { root: Group } }).build(example())
+      scene.updateMatrixWorld()
+      const body = root.children.find(child => child instanceof InstancedMesh)!
+      const placed = body.matrixWorld.clone(), multiply = vi.spyOn(body.matrixWorld, 'multiplyMatrices')
+      expect(placed.elements.slice(12, 15)).toEqual([3000, 100, 3000])
+      scene.updateMatrixWorld()
+      expect(multiply).not.toHaveBeenCalled()
+      root.position.x += 20; root.updateMatrix(); scene.updateMatrixWorld()
+      expect(body.matrixWorld.elements[12]).toBe(3020)
+    } finally { system.dispose() }
+  })
+
   it('recovers a silent settlement worker without accepting its late duplicate reply', () => {
     class SilentWorker {
       static instance: SilentWorker

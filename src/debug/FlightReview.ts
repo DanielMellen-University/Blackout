@@ -19,7 +19,7 @@ export class ReviewFrames {
   private count = 0
   private cursor = 0
 
-  constructor(capacity = 18000) { this.values = new Float64Array(capacity) }
+  constructor(capacity = 60000) { this.values = new Float64Array(capacity) }
 
   record(now: number, active: boolean): void {
     if (!active || !Number.isFinite(now)) { this.previous = 0; return }
@@ -32,10 +32,16 @@ export class ReviewFrames {
     this.previous = now
   }
 
-  summary(): { samples: number; median: number | null; p95: number | null; max: number | null } {
+  raw(): number[] {
+    return Array.from({ length: this.count }, (_, i) => this.values[(this.cursor - this.count + i + this.values.length) % this.values.length]!)
+  }
+
+  summary() {
     const sorted = this.values.slice(0, this.count).sort()
     return { samples: this.count, median: sorted[Math.floor(this.count * .5)] ?? null,
-      p95: sorted[Math.floor(this.count * .95)] ?? null, max: sorted[this.count - 1] ?? null }
+      p95: sorted[Math.floor(this.count * .95)] ?? null, p99: sorted[Math.floor(this.count * .99)] ?? null,
+      max: sorted[this.count - 1] ?? null,
+      over50: sorted.filter(ms => ms > 50).length, over100: sorted.filter(ms => ms > 100).length }
   }
 }
 
@@ -55,6 +61,7 @@ export class FlightReview {
   private initialized = false
   private seconds = 0
   private started = 0
+  private flightStarted = 0
   private coverageMs: number | null = null
   private nextPaint = 0
   private heapStart = 0
@@ -144,7 +151,7 @@ export class FlightReview {
       this.startupFrames.record(now, true)
       if (stream.loaded > 0 && stream.pending === 0 && stream.inFlight === 0 && stream.ready === 0) {
         this.coverageMs = now - this.started
-        this.phase = 'flight'; this.heapStart = heap; this.heapPeak = heap
+        this.phase = 'flight'; this.flightStarted = now; this.heapStart = heap; this.heapPeak = heap
       }
     } else {
       this.flightFrames.record(now, true)
@@ -167,6 +174,8 @@ export class FlightReview {
       route: { id: this.routeId, ...this.route },
       viewport: [innerWidth, innerHeight], pixelRatio: ratio, ratioRange: [this.ratioMin, this.ratioMax],
       airfieldReadyMs: this.airfieldReadyMs, launchToCoverageWallMs: this.coverageMs,
+      flightWallMs: this.flightStarted ? now - this.flightStarted : null,
+      rawFrames: this.phase === 'finished' ? { startup: this.startupFrames.raw(), flight: this.flightFrames.raw() } : undefined,
       seconds: this.seconds, durationSeconds: this.duration, distanceM: this.seconds * flightConfig.maxSpeedBoost,
       speedMps: flightConfig.maxSpeedBoost, startupFrames: this.startupFrames.summary(),
       flightFrames: this.flightFrames.summary(), heapBytes: { start: this.heapStart, current: heap, peak: this.heapPeak },

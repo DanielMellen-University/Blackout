@@ -321,6 +321,7 @@ export class TerrainSystem {
       }
     }, workerLimit)
     this.root.name = 'TerrainSystem'
+    this.root.matrixAutoUpdate = false
     scene.add(this.root)
 
     const matBase = {
@@ -1261,8 +1262,8 @@ export class TerrainSystem {
     this.stampChunkMeshes(root, 0)
     root.matrixAutoUpdate = false
     root.updateMatrix()
-    root.updateMatrixWorld(true)
     this.root.add(root)
+    root.updateMatrixWorld(true)
     const chunk: Chunk = {
       key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
       cx, cz, root, lod, segs: data.segs, originX, originZ,

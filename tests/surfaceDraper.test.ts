@@ -41,6 +41,46 @@ describe('bounded streamed surface contact', () => {
     draper.clear(); sample.mockClear(); draper.update(); expect(sample).not.toHaveBeenCalled()
   })
 
+  it('does not upload or rebuild unchanged Float32 contact, but publishes actual changes', () => {
+    let revision = 1, height = 100
+    const geometry = surface()
+    geometry.getAttribute('position').setX(1, 1)
+    geometry.getAttribute('position').setZ(2, 1)
+    for (let i = 0; i < 3; i++) geometry.getAttribute('position').setY(i,
+      height + geometry.getAttribute('groundOffset').getX(i))
+    geometry.computeVertexNormals(); geometry.computeBoundingSphere()
+    const normals = vi.spyOn(geometry, 'computeVertexNormals'), bounds = vi.spyOn(geometry, 'computeBoundingSphere')
+    const positions = geometry.getAttribute('position'), version = positions.version
+    const draper = new SurfaceDraper(() => height, () => revision)
+    draper.add(geometry, 0, 0, 0)
+    expect(draper.update()).toBe(3)
+    height += 1e-7; revision++
+    expect(draper.update()).toBe(3)
+    expect(positions.version).toBe(version)
+    expect(normals).not.toHaveBeenCalled(); expect(bounds).not.toHaveBeenCalled()
+    height = 105; revision++; draper.update()
+    expect(positions.getY(0)).toBeCloseTo(105.45)
+    expect(positions.version).toBe(version + 1)
+    expect(normals).toHaveBeenCalledOnce(); expect(bounds).toHaveBeenCalledOnce()
+  })
+
+  it('retains an early dirty vertex until the final unchanged batch completes', () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(0)
+    try {
+      const geometry = surface(MAX_DRAPE_VERTICES_PER_FRAME * 3), positions = geometry.getAttribute('position')
+      for (let i = 0; i < positions.count; i++) {
+        positions.setX(i, i); positions.setY(i, 100 + geometry.getAttribute('groundOffset').getX(i))
+      }
+      const draper = new SurfaceDraper(x => x === 0 ? 200 : 100, () => 1)
+      draper.add(geometry, 0, 0, 0)
+      draper.update(); draper.update()
+      expect(positions.getY(0)).toBeCloseTo(100.45)
+      draper.update()
+      expect(positions.getY(0)).toBeCloseTo(200.45)
+      expect(positions.getY(positions.count - 1)).toBeCloseTo(100.45)
+    } finally { now.mockRestore() }
+  })
+
   it('keeps the analytic fallback when no streamed tile is ready', () => {
     const geometry = surface(), draper = new SurfaceDraper(() => null, () => 1)
     geometry.getAttribute('position').setY(0, 42)

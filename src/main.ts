@@ -687,7 +687,10 @@ export async function boot(): Promise<void> {
     antialias: initialQualityProfile.antialias,
     powerPreference: 'high-performance',
   })
-  const resolution = new AdaptiveResolution(window.devicePixelRatio, initialQualityProfile.maxPixelRatio)
+  // Controlled development reviews hold resolution and shader detail constant.
+  const fixedReviewRatio = import.meta.env.DEV && replayParams?.get('review') === 'flight'
+    && selectedCourseId === 'free-flight' && replayParams.get('reviewFixedRatio') === '1' ? 1 : undefined
+  const resolution = new AdaptiveResolution(window.devicePixelRatio, initialQualityProfile.maxPixelRatio, fixedReviewRatio)
   renderer.setPixelRatio(resolution.ratio)
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping

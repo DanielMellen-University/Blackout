@@ -112,6 +112,27 @@ describe('terrain streaming integration', () => {
     expect(stats).toEqual(terrain.streamingStats)
   })
 
+  it('retains placed tile matrices without forced recomputation and honors explicit parent moves', () => {
+    const scene = terrain.root.parent as Scene
+    scene.matrixAutoUpdate = false
+    desire(5, 5); internal.install(job(5), fixture)
+    scene.updateMatrixWorld()
+    const mesh = internal.chunks.get(key(5))!.root.children[0] as Mesh
+    const placed = mesh.matrixWorld.clone()
+    const multiply = vi.spyOn(mesh.matrixWorld, 'multiplyMatrices')
+    scene.updateMatrixWorld()
+    expect(multiply).not.toHaveBeenCalled()
+    expect(mesh.matrixWorld.equals(placed)).toBe(true)
+    terrain.root.position.x = 100; terrain.root.updateMatrix()
+    scene.updateMatrixWorld()
+    expect(multiply).toHaveBeenCalledOnce()
+    expect(mesh.matrixWorld.elements[12]).toBe(placed.elements[12]! + 100)
+    desire(6, 5); internal.install(job(6), fixture)
+    scene.updateMatrixWorld()
+    const arriving = internal.chunks.get(key(6))!.root.children[0] as Mesh
+    expect(arriving.matrixWorld.elements[12]).toBe(6 * CHUNK_SIZE + CHUNK_SIZE / 2 + 100)
+  })
+
   it('uploads closer completed chunks first even when the farther worker finishes first', () => {
     queue(5, 5)
     queue(9, 9)

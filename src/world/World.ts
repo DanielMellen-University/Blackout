@@ -181,6 +181,9 @@ export class World {
   }
 
   constructor(quality: RenderQuality = 'balanced') {
+    // The scene frame stays at identity. Let dynamic children invalidate their
+    // own matrices instead of forcing every static streamed tile each render.
+    this.scene.matrixAutoUpdate = false
     const qualityProfile = renderQualityProfile(quality)
     this.sun = this.createSun()
     this.scene.add(this.sun)
