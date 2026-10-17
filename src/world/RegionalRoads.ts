@@ -2,6 +2,7 @@ import { hash2 } from './noise'
 import { sampleClimateInto } from './terrainSample'
 import { createClimateSample } from './Geography'
 import { settlementForCell, type SettlementPlan, type SettlementRoad } from './SettlementPlan'
+import type { Biome } from './terrainSample'
 import { groundRoad, engineerRoadGrades } from './RoadSurface'
 import { terrainRoadRoute, roundRoadRoute, refineRoadRoute, roadGradeValid, MAX_REGIONAL_ROAD_GRADE } from './RoadRouting'
 
@@ -14,9 +15,11 @@ export interface SettlementAnchor {
 
 export interface RegionalRoadLink {
   key: string
-  from: SettlementPlan
-  to: SettlementPlan
+  from: RegionalRoadEndpoint
+  to: RegionalRoadEndpoint
 }
+
+export interface RegionalRoadEndpoint extends SettlementAnchor { biome: Biome }
 
 /**
  * Settlement cells are deliberately wide, so this stays a small fixed search
@@ -208,7 +211,7 @@ function candidateRoute(
 }
 
 /** Terrain-following road with grade-limited bridge and viaduct approaches. */
-export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): SettlementRoad | null {
+export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor): SettlementRoad | null {
   if (!shouldConnectSettlements(a, b)) return null
   // The graph already orders its requests, but direct/review callers must get
   // the same route too. Query order cannot choose different river crossings.
@@ -246,4 +249,18 @@ export function roadBetweenSettlements(a: SettlementPlan, b: SettlementPlan): Se
     if (road) return road
   }
   return null
+}
+
+/** Resolve attachment points in the worker and transfer only those points.
+ * Buildings, parks and full street profiles are not needed by a road job. */
+export function compactRegionalRoadLink(link: RegionalRoadLink): RegionalRoadLink | null {
+  const width = link.from.kind === 'city' || link.to.kind === 'city' ? 18 : 10
+  const a = settlementRoadAttachment(link.from, link.to, width)
+  const b = settlementRoadAttachment(link.to, link.from, width)
+  if (!a || !b) return null
+  const endpoint = (plan: RegionalRoadEndpoint, point: SettlementRoad['points'][number]): RegionalRoadEndpoint => ({
+    id: plan.id, kind: plan.kind, biome: plan.biome, x: plan.x, y: plan.y, z: plan.z, radius: plan.radius,
+    roads: [{ width, points: [{ x: point.x, y: point.y, z: point.z, structure: 'ground' }] }],
+  })
+  return { key: link.key, from: endpoint(link.from, a), to: endpoint(link.to, b) }
 }

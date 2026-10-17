@@ -393,3 +393,58 @@ routing: neighbour lookups can still generate complete settlement plans, so
 bounded counts alone do not prove smooth streaming. Also verify alternative
 network connectivity when a candidate route is genuinely unbuildable, and
 regional road/building clearance beyond the existing local-street reservations.
+
+## Batch 9: off-thread graph discovery (10.906)
+
+A reproducing callback check on 10.905 finds 24 synchronous neighbour-plan
+generations when a settlement worker result arrives. Cold neighbour discovery
+in the two existing generated-road fixtures takes 749.8 ms (seed 1337 city) and
+392.6 ms (seed 1 village) in one Node test run. These are cold, JIT-sensitive
+planning timings, not measured browser frames or a controlled gameplay baseline.
+Nevertheless, running that work directly in the render-thread callback is a
+verified source of potential long stalls, not just an unproven count concern.
+
+Discovery now runs as a graph job in the existing worker. Roots, graph discovery
+and road profiles fairly share its one in-flight slot; continued settlement
+traffic cannot monopolize it ahead of roads. The graph queue is deduplicated by
+nearby source cell, plus the two protected landmarks, and follows source release
+and world reset. No second worker or extra background process is introduced.
+Protected priming still builds its two immediate landmarks, but no longer scans
+their neighbouring settlements synchronously. Healthy completion and priming
+checks verify zero neighbour-generation calls and only two source-plan calls,
+respectively. Unsupported/broken-worker recovery remains synchronous and may
+still stall; it is deferred to dispatch rather than run in an error callback.
+
+Send only the chosen protected cell/tier descriptors to graph jobs. Worker-side
+discovery resolves those same forced sites, independently of mesh admission.
+Resolve the existing bounded dry-street attachment shortlist there too. Replies
+carry at most two canonical links with one ground attachment per endpoint;
+neighbour buildings, parks and full street profiles are not cloned back into
+road requests. Both real fixed-seed fixtures produce byte-for-byte identical
+complete road profiles from full versus compact endpoints; their compact link
+JSON is below 2 KB. This changes scheduling/payload ownership, not geography or
+road obstacle geometry. Ghost generation revision 23 and saved records remain.
+
+Validate payload shape, link degree/key ordering, source location/tier and
+protected ownership. Tests cover one-slot fairness, departed-source cleanup,
+old-world replies retaining a new slot, oversized/full-profile/wrong-source
+payloads and deferred fallback recovery. Worker checks cover forced source and
+neighbour plans and empty cells. Existing terrain distance, settlement/building/
+link counts, route/profile/structure/support caps remain unchanged.
+
+Total worker planning is not eliminated, and the single cold measurements do
+not establish an FPS, startup or sustained-memory improvement. Alternative
+network connectivity, regional road/building clearance, broader rough/coastal
+travel and controlled gameplay/startup/frame-time/heap acceptance remain open.
+No terrain/water generation, weather, flight or paused-system work is included.
+
+The [actual worker-streamed seed-1337 junction](reviews/road-stream-worker-10.906.png)
+for `0,0|1,1` retains joined asphalt and matching street/connector surface Y
+680.32 m (shoulder 680.17 m) in the on-demand mesh snapshot. The review has 1,196
+city buildings and a streamed regional link, with empty browser error logs.
+This verifies the real graph/profile message path and a visible join, not broad
+network connectivity or a controlled performance/travel benchmark.
+
+All 111 affected graph, worker, routing, geometry, ownership, admission,
+collision, rendering, ghost and draping checks pass. The production build and
+release metadata checks pass with the existing Three bundle-size warning.

@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.905**. Previous roadmap chunk: **10.904**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.906**. Previous roadmap chunk: **10.905**.
+
+Recent changes from **10.906**. Move regional neighbour discovery off the render thread into the existing settlement worker. Share its single slot fairly between buildings, graph discovery and road profiles. Transfer only selected ground attachment points, not complete neighbouring cities; preserve protected fallback sites, stale-result guards and synchronous recovery. Fixed-seed checks reproduce identical road geometry from the compact data. Rendering limits and generation revision 23 remain unchanged. This removes verified main-thread planning work; full gameplay/startup/memory performance comparison and wider network review remain open.
 
 Recent changes from **10.905**. Regional roads search a bounded terrain corridor, finding local valley bends and shoreline routes instead of choosing only one broad arc. Round corners, validate complete profiles against a 24% grade ceiling, and support short dry gullies with bounded fills/viaducts rather than unsupported raised roads. Keep bridge decks level and street joins fixed; reject impossible structures. Search, refinement, profiles and supports have fixed limits; this spends more worker planning work, not a claimed FPS improvement. Ghost revision 23 retains records. Wider network, rough/coastal and sustained gameplay/performance review remain active.
 

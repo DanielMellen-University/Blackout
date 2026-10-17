@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest'
 import { setWorldSeed } from '../src/world/noise'
 import { clearOpsPad } from '../src/world/terrainSample'
 import { settlementForCell } from '../src/world/SettlementPlan'
-import { regionalLinksForSettlement, roadBetweenSettlements } from '../src/world/RegionalRoads'
+import { regionalLinksForSettlement, roadBetweenSettlements, compactRegionalRoadLink } from '../src/world/RegionalRoads'
 import { MAX_REGIONAL_ROAD_GRADE } from '../src/world/RoadRouting'
 
 afterEach(() => clearOpsPad())
@@ -17,6 +17,10 @@ it.each([[1337, 1, 1], [1, -7, -5]])('retains usable regional routes around seed
   for (const link of links) {
     const road = roadBetweenSettlements(link.from, link.to)
     if (!road) continue
+    const compact = compactRegionalRoadLink(link)!
+    expect(compact).not.toBeNull()
+    expect(JSON.stringify(compact).length).toBeLessThan(2000)
+    expect(JSON.stringify(roadBetweenSettlements(compact.from, compact.to))).toBe(JSON.stringify(road))
     connected++
     for (let i = 1; i < road.points.length; i++) {
       const a = road.points[i - 1]!, b = road.points[i]!

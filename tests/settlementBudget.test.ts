@@ -75,6 +75,49 @@ function addResident(view: AdmissionView, plan: SettlementPlan): void {
 }
 
 describe('settlement streaming budgets', () => {
+  it('defers protected graph discovery instead of generating neighbours during priming', () => {
+    class HoldingWorker {
+      onmessage = null
+      onerror = null
+      postMessage() {}
+      terminate() {}
+    }
+    vi.stubGlobal('Worker', HoldingWorker)
+    const system = new SettlementSystem(new Scene())
+    const view = system as unknown as { graphQueue: Map<string, unknown>; protectedSpecs: unknown[] }
+    try {
+      setOpsPad(0, 0, 100); settlementCallCount.value = 0
+      system.primeAnchors(0, 0)
+      expect(system.count).toBe(2)
+      expect(view.graphQueue.size).toBe(2); expect(view.protectedSpecs).toHaveLength(2)
+      expect(settlementCallCount.value).toBe(2)
+    } finally { system.dispose(); clearOpsPad(); vi.unstubAllGlobals() }
+  })
+
+  it('does not generate neighbour settlements in a healthy worker-completion callback', () => {
+    class HoldingWorker {
+      onmessage = null
+      onerror = null
+      postMessage() {}
+      terminate() {}
+    }
+    vi.stubGlobal('Worker', HoldingWorker)
+    const system = new SettlementSystem(new Scene())
+    const view = system as unknown as {
+      worker: Worker; checked: Set<string>; generation: number; inFlight: unknown
+      ready: { key: string; plan: SettlementPlan }[]
+    }
+    try {
+      const plan = planFor(0, 0)
+      view.checked.add(plan.id)
+      view.inFlight = { type: 'settlement', key: plan.id, generation: view.generation }
+      settlementCallCount.value = 0
+      view.worker.onmessage!({ data: { type: 'settlement', key: plan.id, generation: view.generation, plan } } as MessageEvent)
+      expect(view.ready).toHaveLength(1)
+      expect(settlementCallCount.value).toBe(0)
+    } finally { system.dispose(); vi.unstubAllGlobals() }
+  })
+
   it('does not evict any residents for a city that cannot fit beside protected anchors', () => {
     const system = new SettlementSystem(new Scene()), view = system as unknown as AdmissionView
     try {

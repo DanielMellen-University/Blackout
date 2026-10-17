@@ -13,23 +13,44 @@ import {
 } from './SettlementPlan'
 import * as settlementPlanApi from './SettlementPlan'
 import { regionalLinksForSettlement, regionalRoadKey, roadBetweenSettlements } from './RegionalRoads'
+import type { RegionalRoadEndpoint, RegionalRoadLink } from './RegionalRoads'
 import { MAX_ROAD_PROFILE_POINTS, MAX_ROAD_SUPPORTS, bridgeSupportPoints, groundRoadJunction } from './RoadSurface'
 import { MAX_SETTLEMENT_GROUND_PATCHES, MAX_SETTLEMENT_GROUND_VERTICES } from './SettlementGround'
 import { SurfaceDraper } from './SurfaceDraper'
 import { groundSamplerRevision } from './ground'
-import type { SettlementWorkerReply, SettlementWorkerRequest } from './settlement.worker'
+import type { SettlementWorkerReply, SettlementWorkerRequest, ProtectedSettlementSpec } from './settlement.worker'
 import type { RadarLandmark } from '../systems/RadarSystem'
 import { normalizeRenderQuality, type RenderQuality } from '../core/RenderQuality'
 import { WorkerWatchdog } from '../core/WorkerWatchdog'
 
 function isSettlementWorkerReply(value: unknown): value is SettlementWorkerReply {
-  if (!isRecord(value) || (value.type !== 'settlement' && value.type !== 'road') ||
+  if (!isRecord(value) || !['settlement', 'road', 'links'].includes(String(value.type)) ||
     typeof value.key !== 'string' || !Number.isFinite(value.generation)) return false
   if (value.type === 'settlement') {
     return value.plan === null || isSettlementPlan(value.plan)
   }
+  if (value.type === 'links') {
+    if (!Array.isArray(value.links) || value.links.length > 2) return false
+    if (value.links.length === 2 && isRecord(value.links[0]) && isRecord(value.links[1]) && value.links[0].key === value.links[1].key) return false
+    for (const link of value.links) {
+      if (!isRecord(link) || !isRoadEndpoint(link.from) || !isRoadEndpoint(link.to) ||
+        link.from.id >= link.to.id || link.key !== regionalRoadKey(link.from, link.to)) return false
+      const source = link.from.id === value.key ? link.from : link.to.id === value.key ? link.to : null
+      if (!source || (source.kind === 'village' && value.links.length > 1)) return false
+    }
+    return true
+  }
   return (value.road === null || isSettlementRoad(value.road)) &&
     typeof value.fromId === 'string' && typeof value.toId === 'string'
+}
+
+function isRoadEndpoint(value: unknown): value is RegionalRoadEndpoint {
+  return isRecord(value) && typeof value.id === 'string' && typeof value.biome === 'string'
+    && (value.kind === 'city' || value.kind === 'village')
+    && ['x', 'y', 'z', 'radius'].every(key => isFiniteNumber(value[key]))
+    && Array.isArray(value.roads) && value.roads.length === 1
+    && isSettlementRoad(value.roads[0]) && value.roads[0].points.length === 1
+    && value.roads[0].points[0]!.structure === 'ground' && !value.roads[0].points[0]!.bridge
 }
 
 function isSettlementPlan(value: unknown): value is SettlementPlan {
@@ -739,8 +760,9 @@ export function settlementWaterfrontPoints(
 }
 
 interface LoadedSettlement { plan: SettlementPlan; root: Group; detail: Group }
-interface LoadedRoad { root: Group; from: SettlementPlan; to: SettlementPlan; road: SettlementRoad; collisionPlan: SettlementPlan }
-interface RoadJob { key: string; from: SettlementPlan; to: SettlementPlan }
+interface LoadedRoad { root: Group; from: RegionalRoadEndpoint; to: RegionalRoadEndpoint; road: SettlementRoad; collisionPlan: SettlementPlan }
+interface RoadJob { key: string; from: RegionalRoadEndpoint; to: RegionalRoadEndpoint }
+interface GraphJob { key: string; cx: number; cz: number; x: number; z: number; kind: 'city' | 'village' }
 interface ReadyRoad extends RoadJob { road: SettlementRoad }
 
 export interface SettlementSweepPoint {
@@ -837,11 +859,16 @@ export class SettlementSystem {
    * Fallback cells have different ordinary plans; every graph discovery and
    * worker completion must refer to the selected site, even while unloaded. */
   private readonly protectedPlans = new Map<string, SettlementPlan>()
+  private readonly protectedSpecs: ProtectedSettlementSpec[] = []
   private readonly resolveRoadNeighbour = (cx: number, cz: number): SettlementPlan | null =>
     this.protectedPlans.get(`${cx},${cz}`) ?? settlementForCell(cx, cz)
   /** One canonical job per graph edge, retained while one nearby cell owns it. */
   private readonly roadJobs = new Map<string, RoadJob>()
   private readonly roadSources = new Map<string, Set<string>>()
+  /** One graph job per nearby cell, sharing the single existing worker slot. */
+  private readonly graphQueue = new Map<string, GraphJob>()
+  private readonly checkedGraphs = new Set<string>()
+  private dispatchTurn = 0
   private queue: SettlementQueueJob[] = []
   /** Reused stream-cell staging containers; crossings are event-driven but can happen frequently at top speed. */
   private readonly wantedCells = new Set<string>()
@@ -897,6 +924,19 @@ export class SettlementSystem {
             && current.generation === result.generation
             && current.key === result.key
             && current.type === result.type
+          if (matchesCurrent && current.type === 'links' && result.type === 'links' &&
+            !result.links.every(link => {
+              const source = link.from.id === result.key ? link.from : link.to
+              if (source.x !== current.x || source.z !== current.z || source.kind !== current.kind) return false
+              return [link.from, link.to].every(endpoint => {
+                const protectedPlan = this.protectedPlans.get(endpoint.id)
+                return !protectedPlan || (protectedPlan.kind === endpoint.kind && protectedPlan.x === endpoint.x &&
+                  protectedPlan.y === endpoint.y && protectedPlan.z === endpoint.z && protectedPlan.radius === endpoint.radius)
+              })
+            })) {
+            this.handleWorkerFailure()
+            return
+          }
           if (matchesCurrent) {
             this.inFlight = null
             this.workerWatchdog.clear()
@@ -908,6 +948,8 @@ export class SettlementSystem {
               this.scheduleLinks(plan, result.key)
               this.ready.push({ key: result.key, plan })
             }
+          } else if (result.type === 'links') {
+            if (this.checkedGraphs.has(result.key)) this.queueRoadLinks(result.links, result.key)
           } else if (this.checkedLinks.has(result.key) && result.road) {
             const job = this.roadJobs.get(result.key)
             if (job) this.readyRoads.push({ ...job, road: result.road })
@@ -1138,7 +1180,7 @@ export class SettlementSystem {
     return count
   }
   get pendingCount(): number {
-    return this.queue.length + this.ready.length + this.linkQueue.length + this.readyRoads.length + (this.inFlight ? 1 : 0)
+    return this.queue.length + this.ready.length + this.linkQueue.length + this.graphQueue.size + this.readyRoads.length + (this.inFlight ? 1 : 0)
   }
   get roadCount(): number { return this.connections.size }
 
@@ -1234,6 +1276,10 @@ export class SettlementSystem {
     this.protectedAnchors.clear()
     this.protectedAnchorKinds.clear()
     this.protectedPlans.clear()
+    this.protectedSpecs.length = 0
+    this.graphQueue.clear()
+    this.checkedGraphs.clear()
+    this.dispatchTurn = 0
     this.roadJobs.clear()
     this.roadSources.clear()
     this.queue = []
@@ -1351,6 +1397,11 @@ export class SettlementSystem {
     // Resolve both protected sites before discovering any edges. Otherwise
     // the first landmark can permanently queue a link to the second cell's
     // ordinary blueprint before its fallback promotion has been selected.
+    this.protectedSpecs.length = 0
+    for (const [key, plan] of this.protectedPlans) {
+      const [cx, cz] = key.split(',').map(Number)
+      this.protectedSpecs.push({ cx: cx!, cz: cz!, kind: plan.kind })
+    }
     for (const [key, plan] of this.protectedPlans) this.scheduleLinks(plan, key)
   }
 
@@ -1546,43 +1597,7 @@ export class SettlementSystem {
         }
       }
     }
-    // Terrain suitability runs off the render thread. One in-flight request
-    // bounds worker traffic; stale replies after reseeds are discarded.
-    const job = this.inFlight ? undefined : this.queue.pop()
-    if (job) {
-      this.checked.add(job.key)
-      if (this.worker) {
-        // postMessage clones the pad synchronously, so the staging record can
-        // be reused without allocating for every streamed settlement job.
-        this.inFlight = { type: 'settlement', ...job, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
-        this.workerWatchdog.begin()
-        try {
-          this.worker.postMessage(this.inFlight)
-        } catch {
-          this.handleWorkerFailure()
-        }
-      } else {
-        const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
-        if (plan) {
-          this.scheduleLinks(plan, job.key)
-          if (this.canLoad(plan, x, z)) this.setLoaded(job.key, this.build(plan))
-        }
-      }
-    } else if (!this.inFlight) {
-      const link = this.takeNearestRoadJob(x, z)
-      if (link && this.worker) {
-        this.inFlight = { type: 'road', ...link, generation: this.generation, seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) }
-        this.workerWatchdog.begin()
-        try {
-          this.worker.postMessage(this.inFlight)
-        } catch {
-          this.handleWorkerFailure()
-        }
-      } else if (link) {
-        const road = roadBetweenSettlements(link.from, link.to)
-        if (road && this.checkedLinks.has(link.key)) this.readyRoads.push({ ...link, road })
-      }
-    }
+    this.dispatchNearbyJob(x, z)
     for (const { plan, root, detail } of this.loaded.values()) {
       const dx = plan.x - x
       const dz = plan.z - z
@@ -1595,6 +1610,65 @@ export class SettlementSystem {
     for (const connection of this.connections.values()) {
       connection.root.visible = roadDistanceSquared(x, z, connection.road) < this.roadDetailRadius * this.roadDetailRadius
     }
+  }
+
+  /** Fairly share one worker slot between roots, graph discovery and profiles.
+   * Continuous settlement traffic must not starve already discovered roads. */
+  private dispatchNearbyJob(x: number, z: number): void {
+    if (this.inFlight) return
+    for (let offset = 0; offset < 3; offset++) {
+      const lane = (this.dispatchTurn + offset) % 3
+      if (lane === 0 && this.queue.length) {
+        const job = this.queue.pop()!
+        this.dispatchTurn = 1
+        this.checked.add(job.key)
+        if (this.worker) this.postWorker({ type: 'settlement', ...job, generation: this.generation,
+          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) })
+        else {
+          const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
+          if (plan) {
+            this.scheduleLinks(plan, job.key)
+            if (this.canLoad(plan, x, z)) this.setLoaded(job.key, this.build(plan))
+          }
+        }
+        return
+      }
+      if (lane === 1 && this.graphQueue.size) {
+        let job: GraphJob | undefined, distance = Infinity
+        for (const candidate of this.graphQueue.values()) {
+          const dx = candidate.x - x, dz = candidate.z - z, squared = dx * dx + dz * dz
+          if (squared < distance || (squared === distance && (!job || candidate.key < job.key))) {
+            job = candidate; distance = squared
+          }
+        }
+        if (!job) continue
+        this.graphQueue.delete(job.key); this.dispatchTurn = 2
+        if (this.worker) this.postWorker({ type: 'links', ...job, generation: this.generation,
+          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot), protected: this.protectedSpecs })
+        else {
+          const plan = this.protectedPlans.get(job.key) ?? settlementForCell(job.cx, job.cz)
+          if (plan) this.queueRoadLinks(regionalLinksForSettlement(plan, this.resolveRoadNeighbour), job.key)
+        }
+        return
+      }
+      if (lane === 2 && this.linkQueue.length) {
+        const link = this.takeNearestRoadJob(x, z)!
+        this.dispatchTurn = 0
+        if (this.worker) this.postWorker({ type: 'road', ...link, generation: this.generation,
+          seed: getWorldSeed(), pad: getOpsPadInto(this.streamPadSnapshot) })
+        else {
+          const road = roadBetweenSettlements(link.from, link.to)
+          if (road && this.checkedLinks.has(link.key)) this.readyRoads.push({ ...link, road })
+        }
+        return
+      }
+    }
+  }
+
+  private postWorker(request: SettlementWorkerRequest): void {
+    this.inFlight = request
+    this.workerWatchdog.begin()
+    try { this.worker!.postMessage(request) } catch { this.handleWorkerFailure() }
   }
 
   /** Stop a broken worker and put its current job back through safe fallback. */
@@ -1627,6 +1701,9 @@ export class SettlementSystem {
         this.queue.sort((a, b) => {
           return b.score - a.score || b.distance - a.distance
         })
+      } else if (failed.type === 'links') {
+        if (this.checkedGraphs.has(failed.key)) this.graphQueue.set(failed.key,
+          { key: failed.key, cx: failed.cx, cz: failed.cz, x: failed.x, z: failed.z, kind: failed.kind })
       } else {
         // Keep the canonical edge marked while the synchronous fallback
         // consumes it. Otherwise a second endpoint can enqueue a duplicate.
@@ -2141,7 +2218,18 @@ export class SettlementSystem {
    */
   private scheduleLinks(plan: SettlementPlan, sourceKey: string): void {
     const source = this.protectedPlans.get(sourceKey) ?? plan
-    for (const link of regionalLinksForSettlement(source, this.resolveRoadNeighbour)) {
+    if (this.worker) {
+      if (this.checkedGraphs.has(sourceKey)) return
+      const [cx, cz] = sourceKey.split(',').map(Number)
+      this.checkedGraphs.add(sourceKey)
+      this.graphQueue.set(sourceKey, { key: sourceKey, cx: cx!, cz: cz!, x: source.x, z: source.z, kind: source.kind })
+      return
+    }
+    this.queueRoadLinks(regionalLinksForSettlement(source, this.resolveRoadNeighbour), sourceKey)
+  }
+
+  private queueRoadLinks(links: readonly RegionalRoadLink[], sourceKey: string): void {
+    for (const link of links) {
       const sources = this.roadSources.get(link.key) ?? new Set<string>()
       sources.add(sourceKey)
       this.roadSources.set(link.key, sources)
@@ -2155,6 +2243,8 @@ export class SettlementSystem {
 
   /** Drop an edge only after every nearby source cell that discovered it leaves. */
   private releaseLinksForCell(sourceKey: string): void {
+    this.graphQueue.delete(sourceKey)
+    this.checkedGraphs.delete(sourceKey)
     for (const [key, sources] of this.roadSources) {
       if (!sources.delete(sourceKey) || sources.size) continue
       this.roadSources.delete(key)
@@ -2256,7 +2346,7 @@ export class SettlementSystem {
     return true
   }
 
-  private buildRegionalRoad(road: SettlementRoad, from: SettlementPlan, to: SettlementPlan): LoadedRoad {
+  private buildRegionalRoad(road: SettlementRoad, from: RegionalRoadEndpoint, to: RegionalRoadEndpoint): LoadedRoad {
     const root = new Group()
     root.name = `regional_road_${regionalRoadKey(from, to)}`
     const x = (from.x + to.x) / 2, z = (from.z + to.z) / 2
