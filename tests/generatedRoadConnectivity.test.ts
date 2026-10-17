@@ -60,3 +60,26 @@ it('replaces a usable near-parallel city spoke with a usable wider route in actu
   expect(links.map(link => link.key)).toEqual(attempts)
   expect(JSON.stringify(links).length).toBeLessThan(4000)
 }, 60_000)
+
+it('connects an actual seed-73 rural fuel stop to the regional road approach', () => {
+  clearOpsPad(); setWorldSeed(73)
+  const source = settlementForCell(-4, -7)!
+  const station = source.buildings.find(b => b.use === 'gas-station' && b.service)!
+  expect(station).toBeDefined()
+  const attempts: string[] = []
+  const links = buildableRegionalLinksForSettlement(source, settlementForCell, [], link => {
+    attempts.push(link.key)
+    return roadBetweenSettlements(link.from, link.to, settlementForCell)
+  })
+  expect(attempts.length).toBeLessThanOrEqual(4)
+  expect(links).toHaveLength(1)
+  const endpoint = links[0]!.from.id === source.id ? links[0]!.from : links[0]!.to
+  const join = endpoint.roads[0]!.points[0]!
+  expect(Math.hypot(join.x - station.x, join.z - station.z)).toBeLessThan(120)
+  expect(source.roads.some(r => r.gateway && r.points.some(p => p.x === join.x && p.z === join.z))).toBe(true)
+  const road = roadBetweenSettlements(links[0]!.from, links[0]!.to, settlementForCell)!
+  expect(road).not.toBeNull()
+  expect(roadGradeValid(road)).toBe(true)
+  expect(road.points[0]!.structure).toBe('ground')
+  expect(road.points.at(-1)!.structure).toBe('ground')
+}, 60000)

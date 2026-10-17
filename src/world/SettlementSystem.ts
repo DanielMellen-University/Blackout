@@ -97,7 +97,8 @@ function isSettlementBuilding(value: unknown): value is SettlementBuilding {
 
 function isSettlementRoad(value: unknown): value is SettlementRoad {
   if (!isRecord(value) || !isFiniteNumber(value.width) || value.width <= 0 ||
-    !Array.isArray(value.points) || value.points.length > MAX_ROAD_PROFILE_POINTS) return false
+    !Array.isArray(value.points) || value.points.length > MAX_ROAD_PROFILE_POINTS ||
+    value.gateway !== undefined && typeof value.gateway !== 'boolean') return false
   for (const point of value.points) {
     if (!isRecord(point)) return false
     if (!isFiniteNumber(point.x) || !isFiniteNumber(point.y) || !isFiniteNumber(point.z) ||
@@ -1215,6 +1216,25 @@ export class SettlementSystem {
         localY: inspectRoadHeight(this.loaded.get(plan.id)?.root, this.asphalt, point.x, point.z),
         roadY: inspectRoadHeight(connection.root, this.highway, point.x, point.z),
         shoulderY: inspectRoadHeight(connection.root, this.gravelShoulder, point.x, point.z) }
+    }
+    return result
+  }
+
+  /** On-demand low-altitude artwork target from loaded blueprints only. */
+  nearestPlaceView(x: number, z: number, place: 'centre' | 'farm' | 'service' | 'industrial' | 'residential'):
+    { x: number; y: number; z: number; yaw: number; kind: SettlementPlan['kind']; id: string; use: string } | null {
+    let result: ReturnType<SettlementSystem['nearestPlaceView']> = null, nearest = Infinity
+    for (const plan of this.loadedCollisionPlans) for (const building of plan.buildings) {
+      const match = place === 'farm' ? building.use === 'barn'
+        : place === 'service' ? !!building.service
+          : place === 'centre' ? building.district === 'centre' && building.use !== 'office'
+            : building.district === place
+      if (!match) continue
+      const distance = (building.x - x) ** 2 + (building.z - z) ** 2
+      if (distance >= nearest) continue
+      nearest = distance
+      result = { x: building.x, y: building.y + building.height, z: building.z, yaw: building.yaw,
+        kind: plan.kind, id: plan.id, use: building.use ?? 'building' }
     }
     return result
   }

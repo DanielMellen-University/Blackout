@@ -664,3 +664,89 @@ TypeScript and a separate build of `dev/terrain.html` pass. Both builds retain
 the existing Three bundle-size warning. The available browser inventory is
 still empty at delivery, so no new visual still or gameplay acceptance claim
 is attached to this batch.
+
+## Batch 14: village neighbourhoods and surviving rural places (10.912)
+
+The 10.899 layout already supplies city districts and terrain-following spaces.
+This slice fills specific remaining gaps: every village street previously used
+one residential tag, proposed fields could survive without a barn or dwelling,
+and country services had no role in regional attachment selection.
+
+Village frontage now separates inner shops/inns from outer housing and a
+workshop/depot edge. Raise the village target floor from 12 to 22 while retaining
+the 65-building maximum. Existing road-frontage and physical collision checks
+still reject unsuitable lots; this is not a guaranteed minimum on rugged land.
+Cities retain the connected district network, dense central skyline and broad
+footprint. Farmhouses, long shallow rowhouses, stepped inns and broad low depots
+reuse existing building/roof instance families and collision shapes.
+
+Replace the village's single green with a 44 x 32 m paved square, a 3 m access
+path and a 56 x 38 m common with crossing paths. Reserve these before building
+placement, then tessellate/refit them against terrain through the existing
+worker and surface draper. No vegetation or other natural props are involved.
+City plazas and neighbourhood parks remain in the same bounded ground batch.
+
+Survey at most four deterministic sites for each of at most three farms.
+Nine probes per yard/field give a ceiling of 324 additional climate samples per
+village. Require dry gentle yards and whole field parcels before reserving them;
+final buildings and ground triangles still pass their independent validators.
+Publish fields only when both barn and farmhouse survive. Keep the original
+rural lane skeleton where cultivation fails: removing one such lane initially
+broke the existing seed-1 regional route. Surveyed alternative farms receive
+radial access so their lane does not cut through the farm buildings.
+
+Validate a complete fuel canopy pad before occupying the store footprint.
+Suppress its forecourt and gateway if validation fails. A surviving station's
+10 m arterial receives a modest 300 m outward-ranking preference for regional
+attachments. Inward, wet and engineered candidates retain existing rejection;
+the eight-candidate/five-cross-section probe cap is unchanged. A station need
+not serve every neighbour or force a route through impossible terrain. Actual
+seed 73 village `-4,-7` has a buildable regional join 91.4 m from its store;
+a generated regression requires that join to remain on the fuel-stop arterial.
+
+All planning stays in the existing serial settlement worker, with the existing
+synchronous recovery path. No new worker, persistent planner cache, render
+family or per-frame survey is added. Retain four settlements, 1,500 buildings,
+six regional links, 20,000 local profile points, 24 ground patches/30,000 ground
+vertices, 1,024 drape vertices/update, and all regional profile/search/support
+limits. Ghost revision 27 rejects incompatible paths and preserves records,
+settings and favourites. Terrain/water generation, weather, flight handling
+and every paused system remain outside this slice.
+
+The production-compiled developer review now inspects actual loaded core,
+housing, industrial, farm and service buildings at low altitude without
+regenerating plans. The fixed seed-73 farm and regional fuel-stop destinations
+provide reproducible surviving rural places rather than forcing them onto the
+ordinary village's unsuitable terrain. These are fixed artwork poses, not a
+completed physical flight or controlled performance/memory benchmark.
+
+Verification: all 17 settlement placement/distribution/foundation checks pass.
+After correcting the new fuel-pad test fixture's own reserved-space overlap,
+all 155 other affected planning, worker, ownership, routing, contact, collision,
+rendering, draping, replay and README checks pass. The full suite was not run.
+The production build and separately compiled review page retain only the
+existing Three bundle-size warning.
+
+Saved views: [seed-73 village core](reviews/settlement-10.912-73-village-centre.png),
+[its industrial edge](reviews/settlement-10.912-73-village-industrial.png),
+[seed-1337 core](reviews/settlement-10.912-1337-city-centre.png),
+[housing](reviews/settlement-10.912-1337-city-residential.png), and
+[industrial district](reviews/settlement-10.912-1337-city-industrial.png).
+The ordinary village has 23 buildings and the city retains all 1,196. These
+poses sit about 85-214 m above ground. Rural views and per-pose observations are
+recorded in [the review log](reviews/settlement-10.912-visual.json).
+
+Broader rough/coastal network artwork, triangle-interior contact through live
+near/far transitions, continuous chase/first-person gameplay and controlled
+startup/frame-time/sustained-memory acceptance remain open. The CPU contact
+checks still cover refitted vertices rather than every point inside a triangle.
+Software-rendered review timings are not gameplay performance evidence.
+
+The [farm cluster](reviews/settlement-10.912-73-farmstead-farm.png),
+[local service pad](reviews/settlement-10.912-73-farmstead-service.png) and
+[regional fuel stop](reviews/settlement-10.912-73-fuelstop-service.png) are reviewed
+at 85 m AGL. Their fields, dwellings, canopies and road approaches survive the
+normal worker/render path. The multi-destination Chromium session closed while
+loading the last destination; a fresh browser completed that view. Page error
+logs are empty. This retry is recorded in the visual log and is not evidence
+of sustained browser stability.

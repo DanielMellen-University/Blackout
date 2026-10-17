@@ -223,3 +223,27 @@ describe('regional settlement roads', () => {
     expect(links[0]!.from.kind === 'village' || links[0]!.to.kind === 'village').toBe(true)
   })
 })
+
+
+it('joins an outward fuel-stop arterial without accepting wet shoulders or inward gateways', () => {
+  setWorldSeed(10912)
+  const base = terrain.sampleClimateInto(createClimateSample(), 0, 0)
+  let wet = false
+  const sample = vi.spyOn(terrain, 'sampleClimateInto').mockImplementation((out, x, z) => {
+    Object.assign(out, base); out.height = wet && x === 400 && z !== 0 ? -10 : 100; out.waterLevel = 0
+    return out
+  })
+  const source = plan('0,0', 0, 0), target = plan('1,0', 24000, 0)
+  source.roads = [
+    { width: 6, points: [{ x: 550, y: 100.45, z: 80, structure: 'ground' }] },
+    { width: 10, gateway: true, points: [{ x: 400, y: 100.45, z: 0, structure: 'ground' }] },
+    { width: 10, gateway: true, points: [{ x: -100, y: 100.45, z: 0, structure: 'ground' }] },
+  ]
+  expect(settlementRoadAttachment(source, target, 10)?.x).toBe(400)
+  expect(sample.mock.calls.length).toBeLessThanOrEqual(MAX_ROAD_ATTACHMENT_CANDIDATES * 5)
+  wet = true; sample.mockClear()
+  expect(settlementRoadAttachment(source, target, 10)?.x).toBe(550)
+  expect(sample.mock.calls.length).toBeLessThanOrEqual(MAX_ROAD_ATTACHMENT_CANDIDATES * 5)
+  source.roads[1]!.points[0]!.structure = 'viaduct'; wet = false
+  expect(settlementRoadAttachment(source, target, 10)?.x).toBe(550)
+})

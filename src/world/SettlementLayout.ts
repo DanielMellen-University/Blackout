@@ -1,18 +1,22 @@
 import type { SettlementPlan, SettlementBuilding } from './SettlementPlan'
+import type { RoadGroundSampler } from './RoadSurface'
 
-export type BuildingUse = 'house' | 'apartment' | 'office' | 'shop' | 'warehouse' | 'workshop' | 'civic' | 'barn' | 'gas-station'
+export type BuildingUse = 'house' | 'apartment' | 'office' | 'shop' | 'warehouse' | 'workshop' | 'civic' | 'barn' | 'gas-station' | 'farmhouse' | 'rowhouse' | 'inn' | 'depot'
 export type District = 'centre' | 'residential' | 'commercial' | 'industrial' | 'rural'
 export type GroundUse = 'park' | 'plaza' | 'field' | 'forecourt' | 'path'
 type Point = { x: number; z: number }
 export interface LocalLot extends Point {
   width: number; depth: number; height: number; yaw: number
   use: BuildingUse; district: District; shape: SettlementBuilding['shape']
+  farm?: number
 }
 export interface LocalSpace extends Point {
   width: number; depth: number; yaw: number; use: GroundUse; color: number
+  farm?: number
+  service?: boolean
 }
 export interface SettlementLayout {
-  roads: { points: Point[]; width: number }[]
+  roads: { points: Point[]; width: number; gateway?: boolean }[]
   lots: LocalLot[]
   spaces: LocalSpace[]
   target: number
@@ -20,24 +24,30 @@ export interface SettlementLayout {
 
 /** Metre-scale, road-led neighbourhoods. All proposals still pass the shared
  * water, slope, foundation and overlap validator before entering the world. */
-export function settlementLayout(plan: SettlementPlan, rand: (n: number) => number): SettlementLayout {
+export function settlementLayout(plan: SettlementPlan, rand: (n: number) => number, sample?: RoadGroundSampler): SettlementLayout {
   const city = plan.kind === 'city'
   const phase = rand(40) * Math.PI * 2
   const layout: SettlementLayout = { roads: [], lots: [], spaces: [],
-    target: city ? 660 + Math.floor(rand(200) * 620) : 12 + Math.floor(rand(201) ** 1.3 * 53) }
+    target: city ? 660 + Math.floor(rand(200) * 620) : 22 + Math.floor(rand(201) ** 1.3 * 43) }
   const point = (x: number, z: number, yaw: number, ox = 0, oz = 0): Point =>
     ({ x: ox + Math.cos(yaw) * x + Math.sin(yaw) * z,
       z: oz - Math.sin(yaw) * x + Math.cos(yaw) * z })
-  const addRoad = (points: Point[], width: number) => layout.roads.push({ points, width })
-  const green: LocalSpace = { x: 0, z: city ? 0 : 48, width: city ? 110 : 72,
-    depth: city ? 110 : 48, yaw: 0, use: city ? 'plaza' : 'park', color: city ? 0x9b9688 : 0x65754e }
+  const addRoad = (points: Point[], width: number, gateway?: boolean) => layout.roads.push({ points, width, gateway })
+  const green: LocalSpace = { ...point(0, city ? 0 : 55, phase), width: city ? 110 : 44,
+    depth: city ? 110 : 32, yaw: phase, use: 'plaza', color: 0x9b9688 }
   layout.spaces.push(green)
+  if (!city) layout.spaces.push({ ...point(0, 20, phase), width: 3, depth: 40,
+    yaw: phase, use: 'path', color: 0xb2a083 })
 
   function lot(x: number, z: number, yaw: number, use: BuildingUse, district: District, n: number) {
     const r = rand(n), s = rand(n + 1)
     const h = rand(n + 2)
     let width: number, depth: number, height: number
     switch (use) {
+      case 'farmhouse': width = 16 + r * 9; depth = 18 + s * 10; height = 9 + h * 5; break
+      case 'rowhouse': width = 29 + r * 13; depth = 13 + s * 5; height = 9 + h * 5; break
+      case 'inn': width = 25 + r * 12; depth = 22 + s * 10; height = 15 + h * 9; break
+      case 'depot': width = 34 + r * 20; depth = 20 + s * 12; height = 10 + h * 7; break
       case 'house': width = 13 + r * 12; depth = 14 + s * 14; height = 8 + h * 7; break
       case 'apartment': width = 25 + r * 26; depth = 23 + s * 24; height = 22 + h * 44; break
       case 'office': width = 32 + r * 42; depth = 28 + s * 42; height = 75 + h ** 1.5 * 220; break
@@ -49,8 +59,8 @@ export function settlementLayout(plan: SettlementPlan, rand: (n: number) => numb
       case 'gas-station': width = 26 + r * 8; depth = 18 + s * 8; height = 8; break
     }
     const shape: SettlementBuilding['shape'] = use === 'office' ? r < .22 ? 'tower' : r < .43 ? 'stepped' : 'slab'
-      : use === 'warehouse' || use === 'barn' || use === 'workshop' ? 'hangar'
-        : use === 'civic' ? 'stepped' : use === 'apartment' ? 'slab' : 'block'
+      : use === 'warehouse' || use === 'barn' || use === 'workshop' || use === 'depot' ? 'hangar'
+        : use === 'civic' || use === 'inn' ? 'stepped' : use === 'apartment' ? 'slab' : 'block'
     layout.lots.push({ x, z, yaw, use, district, width, depth, height, shape })
   }
 
@@ -59,31 +69,61 @@ export function settlementLayout(plan: SettlementPlan, rand: (n: number) => numb
   if (!city) {
     const farmCount = 1 + Math.floor(rand(250) * 3)
     const core = Math.max(200, Math.min(520, plan.radius * .15))
+    const agricultural = !['snow', 'mountain', 'volcanic', 'swamp', 'saltflat'].includes(plan.biome)
+    // Four sites per farm, nine terrain probes per parcel. Whole fields must
+    // fit gentle dry land before they reserve lots or spend tessellation work.
+    const gentle = (space: LocalSpace, slope: number): boolean => {
+      if (!sample) return true
+      let low = Infinity, high = -Infinity
+      for (const x of [-.5, 0, .5]) for (const z of [-.5, 0, .5]) {
+        const p = point(x * space.width, z * space.depth, space.yaw, space.x, space.z)
+        const ground = sample(p.x, p.z)
+        if (!Number.isFinite(ground.height) || ground.height <= (ground.waterLevel ?? 0) + 2) return false
+        low = Math.min(low, ground.height); high = Math.max(high, ground.height)
+      }
+      return high - low <= Math.min(space.width, space.depth) * slope
+    }
     for (let i = 0; i < farmCount; i++) {
-      const a = phase + i / farmCount * Math.PI * 2 + .45
-      const farm = point(core * (1.8 + rand(251 + i) * .8), 0, a)
-      addRoad([{ x: 0, z: 0 }, point(farm.x * .55, farm.z * .55, 0), farm], 6)
-      const barn = point(0, 55, a, farm.x, farm.z), house = point(0, -45, a, farm.x, farm.z)
-      lot(barn.x, barn.z, a, 'barn', 'rural', 300 + i * 20)
-      lot(house.x, house.z, a, 'house', 'rural', 310 + i * 20)
-      if (!['snow', 'mountain', 'volcanic', 'swamp', 'saltflat'].includes(plan.biome)) {
-        for (let j = 0; j < 2; j++) {
-          const field = point(j ? 150 : -150, 145, a, farm.x, farm.z)
-          layout.spaces.push({ ...field, width: 135 + rand(360 + i * 4 + j) * 70,
-            depth: 100 + rand(380 + i * 4 + j) * 65, yaw: a, use: 'field',
-            color: j ? 0x98875a : 0x75704a })
+      const laneHeading = phase + i / farmCount * Math.PI * 2 + .45
+      const laneEnd = point(core * (1.8 + rand(251 + i) * .8), 0, laneHeading)
+      // Retain the rural road skeleton even where cultivation is unsuitable.
+      // These lanes also provide terrain-tested outward regional attachments.
+      addRoad([{ x: 0, z: 0 }, point(laneEnd.x * .55, laneEnd.z * .55, 0), laneEnd], 6)
+      if (!agricultural) continue
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const a = phase + i / farmCount * Math.PI * 2 + .45 + attempt * .38
+        const farm = point(core * (1.8 + rand(251 + i) * .8), 0, a)
+        const fields: LocalSpace[] = [0, 1].map(j => ({
+          ...point(j ? 150 : -150, 145, a, farm.x, farm.z),
+          width: 135 + rand(360 + i * 4 + j) * 40, depth: 100 + rand(380 + i * 4 + j) * 40,
+          yaw: a, use: 'field', color: j ? 0x98875a : 0x75704a, farm: i,
+        }))
+        const yard: LocalSpace = { ...farm, width: 85, depth: 170, yaw: a, use: 'path', color: 0xa59273 }
+        if (!gentle(yard, .06) || fields.some(field => !gentle(field, .1))) continue
+        if (attempt > 0) addRoad([{ x: 0, z: 0 }, point(farm.x * .55, farm.z * .55, 0), farm], 6)
+        for (const [offset, use, salt] of [[55, 'barn', 300], [-45, 'farmhouse', 310]] as const) {
+          const site = point(0, offset, a, farm.x, farm.z)
+          lot(site.x, site.z, a, use, 'rural', salt + i * 20)
+          layout.lots.at(-1)!.farm = i
         }
+        layout.spaces.push(...fields)
+        break
       }
     }
     if (rand(400) < .72 || plan.anchor) {
       const heading = phase + Math.PI
       const service = point(core * 1.3, 0, heading)
-      addRoad([{ x: 0, z: 0 }, service, point(core * 1.7, 0, heading)], 9)
+      // This arterial is a preferred regional gateway. The station stands
+      // beside its dry approach, not on a disconnected decorative spur.
+      addRoad([{ x: 0, z: 0 }, service, point(core * 1.5, 0, heading)], 10, true)
       const store = point(0, 60, heading, service.x, service.z)
       lot(store.x, store.z, heading, 'gas-station', 'rural', 410)
       const forecourt = point(0, 24, heading, service.x, service.z)
-      layout.spaces.push({ ...forecourt, width: 52, depth: 36, yaw: heading, use: 'forecourt', color: 0x85867f })
+      layout.spaces.push({ ...forecourt, width: 52, depth: 36, yaw: heading, use: 'forecourt', color: 0x85867f, service: true })
     }
+    // A small street-facing common complements the paved centre square.
+    const common = point(core * .55, 65, phase)
+    layout.spaces.push({ ...common, width: 56, depth: 38, yaw: phase, use: 'park', color: 0x65754e })
   }
 
   const districtCount = city ? 13 + Math.floor(rand(42) * 4) : 1
@@ -128,8 +168,8 @@ export function settlementLayout(plan: SettlementPlan, rand: (n: number) => numb
         z: (start.z + end.z) / 2 + Math.cos(direction) * reach * .08 }
       const width = city ? district === 'industrial' ? 11 : 9 : 6.5
       addRoad([start, mid, end], width)
-      paths.push({ a: start, b: mid, width, district, core: d < 3 },
-        { a: mid, b: end, width, district, core: d < 3 })
+      paths.push({ a: start, b: mid, width, district: city ? district : 'centre', core: d < 3 },
+        { a: mid, b: end, width, district: city ? district : branch === branches - 1 ? 'industrial' : 'residential', core: d < 3 })
       if (city && branch % 3 === 0) {
         const spur = point(0, reach * .5, direction, mid.x, mid.z)
         addRoad([mid, spur], 8)
@@ -151,11 +191,14 @@ export function settlementLayout(plan: SettlementPlan, rand: (n: number) => numb
     const dx = street.b.x - street.a.x, dz = street.b.z - street.a.z, length = Math.hypot(dx, dz)
     const yaw = -Math.atan2(dz, dx)
     const t = rand(n)
-    let use: BuildingUse = !city ? rand(n + 1) < .11 ? 'workshop' : rand(n + 2) < .12 ? 'shop' : 'house'
+    let use: BuildingUse = !city ? street.district === 'centre'
+      ? rand(n + 1) < .38 ? 'shop' : rand(n + 2) < .25 ? 'inn' : 'house'
+      : street.district === 'industrial' ? rand(n + 1) < .45 ? 'depot' : 'workshop'
+        : rand(n + 1) < .28 ? 'rowhouse' : 'house'
       : street.district === 'centre' ? rand(n + 1) < .68 ? 'office' : 'apartment'
-        : street.district === 'industrial' ? rand(n + 1) < .64 ? 'warehouse' : 'workshop'
+        : street.district === 'industrial' ? rand(n + 1) < .5 ? 'warehouse' : rand(n + 2) < .4 ? 'depot' : 'workshop'
           : street.district === 'commercial' ? rand(n + 1) < .75 ? 'shop' : 'apartment'
-            : rand(n + 1) < .23 ? 'apartment' : 'house'
+            : rand(n + 1) < .23 ? 'apartment' : rand(n + 2) < .3 ? 'rowhouse' : 'house'
     if (pass === 0 && s === 0 || rand(n + 8) < .018) use = 'civic'
     const count = layout.lots.length
     lot(street.a.x + dx * t, street.a.z + dz * t, yaw, use, street.district, n + 3)

@@ -174,7 +174,10 @@ export function settlementRoadAttachment(plan: SettlementAnchor, target: Settlem
   const scores = new Float64Array(MAX_ROAD_ATTACHMENT_CANDIDATES).fill(-Infinity)
   for (const road of plan.roads) for (const point of road.points) {
     if (point.bridge || point.structure !== undefined && point.structure !== 'ground') continue
-    const projection = ((point.x - plan.x) * dx + (point.z - plan.z) * dz) / length
+    const outward = ((point.x - plan.x) * dx + (point.z - plan.z) * dz) / length
+    // A modest preference joins the village fuel-stop arterial when it faces
+    // this neighbour. Keep the same eight candidates and dry cross-section probes.
+    const projection = outward + (road.gateway && outward > 0 ? 300 : 0)
     if (!Number.isFinite(projection) || projection <= scores[MAX_ROAD_ATTACHMENT_CANDIDATES - 1]!) continue
     let duplicate = false
     for (const candidate of candidates) if (candidate.x === point.x && candidate.z === point.z) { duplicate = true; break }

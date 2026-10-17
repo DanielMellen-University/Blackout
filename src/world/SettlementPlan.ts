@@ -45,7 +45,7 @@ export interface SettlementRoad { points: { x: number; y: number; z: number; bri
   structure?: 'ground' | 'bridge' | 'embankment' | 'viaduct';
   groundY?: number; leftGroundY?: number; rightGroundY?: number; shoulderLeftY?: number; shoulderRightY?: number;
   leftY?: number; rightY?: number;
-  leftX?: number; leftZ?: number; rightX?: number; rightZ?: number }[]; width: number }
+  leftX?: number; leftZ?: number; rightX?: number; rightZ?: number }[]; width: number; gateway?: boolean }
 export interface SettlementPlan {
   id: string; x: number; y: number; z: number; radius: number
   kind: 'city' | 'village'; biome: Biome
@@ -414,7 +414,10 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   const streets: { a: { x: number; z: number }; b: { x: number; z: number }; width: number; frontage: boolean }[] = []
   const streetBuckets = new Map<string, typeof streets>()
   let serial = 100
-  const layout = settlementLayout(plan, rand)
+  const layout = settlementLayout(plan, rand, (x, z) => {
+    const p = world(x, z)
+    return sampleSettlementClimate(p.x, p.z)
+  })
   const building = (lx: number, lz: number, width: number, depth: number, height: number,
     yaw = angle, use: BuildingUse = 'house', district: District = 'residential', forcedShape?: SettlementBuilding['shape']) => {
     const { x, z } = world(lx, lz)
@@ -501,15 +504,6 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       ? Math.min(anchorCity ? 260 : 60, Math.min(width, depth) * (anchorCity ? .98 : .22))
       : Math.min(anchorVillage ? 78 : 35, Math.min(width, depth) * (anchorVillage ? .32 : .15))
     if (max - min > reliefLimit) return
-    for (const key of keys) {
-      const bucket = occupied.get(key) ?? []
-      bucket.push({ x, z, hx, hz, yaw, cosYaw: bc, sinYaw: bs, width, depth }); occupied.set(key, bucket)
-    }
-    const n = serial++
-    const shape = forcedShape ?? 'block'
-    const finalHeight = height
-    const flatRoof = use !== 'house' && use !== 'barn' && use !== 'civic'
-      || shape === 'tower' || shape === 'stepped'
     let service: SettlementBuilding['service']
     if (use === 'gas-station') {
       const sx = x - Math.sin(yaw) * (depth / 2 + 15), sz = z - Math.cos(yaw) * (depth / 2 + 15)
@@ -519,8 +513,18 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         if (!dry(ground)) valid = false
         low = Math.min(low, ground.height); high = Math.max(high, ground.height)
       }
-      if (valid && high - low < 2) service = { x: sx, z: sz, y: high + .2, yaw }
+      if (!valid || high - low >= 2) return
+      service = { x: sx, z: sz, y: high + .2, yaw }
     }
+    for (const key of keys) {
+      const bucket = occupied.get(key) ?? []
+      bucket.push({ x, z, hx, hz, yaw, cosYaw: bc, sinYaw: bs, width, depth }); occupied.set(key, bucket)
+    }
+    const n = serial++
+    const shape = forcedShape ?? 'block'
+    const finalHeight = height
+    const flatRoof = use !== 'house' && use !== 'farmhouse' && use !== 'rowhouse' && use !== 'barn' && use !== 'civic'
+      || shape === 'tower' || shape === 'stepped'
     plan.buildings.push({ x, z, y: min - 1, width, depth, height: finalHeight + max - min + 1,
       shape, use, district, service,
       yaw, roof: flatRoof ? 'flat' : style.roof,
@@ -532,13 +536,14 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
   }
   let roadPoints = 0
   let roadSupports = 0
-  const road = (local: { x: number; z: number }[], width: number) => {
+  const road = (local: { x: number; z: number }[], width: number, gateway?: boolean) => {
     const profile = groundRoad(local.map(p => world(p.x, p.z)), width, sampleSettlementClimate)
     if (!profile || roadPoints + profile.points.length > MAX_LOCAL_ROAD_POINTS) return
     const supports = bridgeSupportPoints(profile).length
     if (roadSupports + supports > MAX_ROAD_SUPPORTS) return
     roadSupports += supports
     roadPoints += profile.points.length
+    if (gateway) profile.gateway = true
     plan.roads.push(profile)
     for (let i = 1; i < profile.points.length; i++) {
       const a = profile.points[i - 1]!, b = profile.points[i]!
@@ -551,7 +556,7 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
         z: sin * (b.x - plan.x) + cos * (b.z - plan.z) }, width, frontage })
     }
   }
-  for (const proposed of layout.roads) road(proposed.points, proposed.width)
+  for (const proposed of layout.roads) road(proposed.points, proposed.width, proposed.gateway)
   for (const street of streets) {
     for (let x = Math.floor((Math.min(street.a.x, street.b.x) - 150) / 128);
       x <= Math.floor((Math.max(street.a.x, street.b.x) + 150) / 128); x++) {
@@ -562,16 +567,26 @@ function populate(plan: SettlementPlan, rand: (n: number) => number): void {
       }
     }
   }
+  const farmMembers = new Map<number, number>()
+  let serviceAccepted = false
   for (const lot of layout.lots) {
     if (plan.buildings.length >= layout.target) break
+    const before = plan.buildings.length
     building(lot.x, lot.z, lot.width, lot.depth, lot.height, angle + lot.yaw,
       lot.use, lot.district, lot.shape)
+    if (lot.use === 'gas-station' && plan.buildings.length > before) serviceAccepted = true
+    if (lot.farm !== undefined && plan.buildings.length > before) {
+      farmMembers.set(lot.farm, (farmMembers.get(lot.farm) ?? 0) + 1)
+    }
   }
+  // Only accepted complete service pads influence regional attachment ranking.
+  if (!serviceAccepted) for (const road of plan.roads) delete road.gateway
   // Ground patches are generated only after building placement. They share
   // terrain/water probes with roads and contain no foliage or gameplay objects.
   plan.ground = []
   let groundVertices = 0
   for (const space of layout.spaces.slice(0, MAX_SETTLEMENT_GROUND_PATCHES)) {
+    if (space.farm !== undefined && farmMembers.get(space.farm) !== 2 || space.service && !serviceAccepted) continue
     const patch = settlementGroundPatch(space, plan.x, plan.z, angle, sampleSettlementClimate)
     if (!patch || groundVertices + patch.positions.length / 3 > MAX_SETTLEMENT_GROUND_VERTICES) continue
     plan.ground.push(patch); groundVertices += patch.positions.length / 3

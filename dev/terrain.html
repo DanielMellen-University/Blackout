@@ -18,7 +18,7 @@
     <option value="riverjoin">River shoreline joins</option>
     <option value="lakeoutlet">Lake outlet junction</option>
     <option value="mesa">Badlands</option><option value="volcano">Volcanic country</option>
-    <option value="city">City</option><option value="village">Village</option>
+    <option value="city">City</option><option value="village">Village</option><option value="farmstead">Farm and fuel stop</option><option value="fuelstop">Regional fuel stop</option>
     <option value="roadlink">Regional road</option>
     <option value="roadfallback">Alternative road connection</option>
     <option value="weatherfront">Regional weather front</option><option value="weatherstorm">Regional storm front</option><option value="weathersnow">Regional blizzard</option>
@@ -28,6 +28,11 @@
   <button id="bridge-view">Inspect loaded bridge</button>
   <button id="viaduct-view">Inspect loaded viaduct</button>
   <button id="road-join-view">Inspect road junction</button>
+  <button id="place-view">Inspect neighbourhood</button>
+  <select id="place-kind" aria-label="Settlement place">
+    <option value="centre">Core</option><option value="residential">Residential</option>
+    <option value="industrial">Industrial edge</option><option value="farm">Farm</option><option value="service">Fuel stop</option>
+  </select><span id="place-status"></span>
   <button id="road-tour">Trace loaded road</button>
   <input id="road-progress" aria-label="Road progress" type="range" min="0" max="1000" value="0" style="width:100px">
   <input id="road-height" aria-label="Road review clearance" type="number" min="30" max="500" value="90" style="width:60px"> m road clearance
@@ -293,7 +298,7 @@ const destinations={
   lakeoutlet:[73,-57928,-10085],
   wetland:[73,-5016,-18905],
   mesa:[1,-30000,-27600],volcano:[1,-92800,-13600],
-  city:[1337,5,-1],village:[1,-7,-5],
+  city:[1337,5,-1],village:[1,-7,-5],farmstead:[73,-6,-3],fuelstop:[73,-4,-7],
   roadlink:[1,-7,-5],
   roadfallback:[73,-3,-2],
   weatherfront:[1,WEATHER_REVIEW_ROUTES.weatherfront.x,WEATHER_REVIEW_ROUTES.weatherfront.z],
@@ -417,8 +422,8 @@ function visitDestination(value){
     for(const reach of riverTour)riverTourOffsets.push(riverTourOffsets.at(-1)+reach.length)
     riverTourLength=riverTourOffsets.at(-1)
     riverTourIndex=0;riverTourT=0
-  } else if(value==='city'||value==='village'||value==='roadfallback'){
-    settlement=value==='roadfallback'?settlementForCell(x,z):findSettlementNear(x,z,value)
+  } else if(value==='city'||value==='village'||value==='roadfallback'||value==='farmstead'||value==='fuelstop'){
+    settlement=value==='roadfallback'||value==='farmstead'||value==='fuelstop'?settlementForCell(x,z):findSettlementNear(x,z,value)
     if(!settlement) throw new Error('Review settlement no longer meets terrain suitability')
     x=settlement.x;z=settlement.z
   } else if(value==='roadlink'){
@@ -448,8 +453,8 @@ function visitDestination(value){
     camera.position.set(x+4000,y+3000,z-4000)
     controls.target.set(x,y,z);controls.update()
   }
-  if(value==='city'||value==='village'||value==='roadlink'||value==='roadfallback'){
-    const rural=value==='village'||value==='roadfallback'
+  if(value==='city'||value==='village'||value==='roadlink'||value==='roadfallback'||value==='farmstead'||value==='fuelstop'){
+    const rural=value==='village'||value==='roadfallback'||value==='farmstead'||value==='fuelstop'
     const y=sampleTerrainHeight(x,z)
     settlementRadius=settlement.radius
     settlementKind=rural?'village':value
@@ -569,6 +574,24 @@ document.querySelector('#fly').onclick=()=>{
   if(flying&&reviewMode.startsWith('weather'))world.atmosphere.setAutomaticWeather(
     document.querySelector('#weather').value==='automatic',Number(document.querySelector('#fixture-time').value))
   if(flying){travelSeconds=travelDistance=travelFrameCount=0;travelStartHeap=performance.memory?.usedJSHeapSize??0;travelPeakHeap=travelStartHeap}
+}
+document.querySelector('#place-view').onclick=()=>{
+  const place=world.settlements.nearestPlaceView(controls.target.x,controls.target.z,document.querySelector('#place-kind').value)
+  const status=document.querySelector('#place-status')
+  if(!place){status.textContent='No matching loaded place';return}
+  clearRoadTrace();flightView=flying=tracingRiver=false;controls.enabled=true;reviewJet.mesh.visible=false
+  document.querySelector('#flight-view').textContent='Flight scale view'
+  document.querySelector('#fly').textContent='Flight benchmark'
+  const offset=place.kind==='city'?420:190,yaw=place.yaw+.6
+  const x=place.x+Math.sin(yaw)*offset,z=place.z+Math.cos(yaw)*offset
+  let height=Math.max(place.y+65,sampleTerrainHeight(x,z)+85)
+  // Keep the sight line clear of intervening terrain without flattening it.
+  for(let i=1;i<8;i++){
+    const t=i/8,ground=sampleTerrainHeight(place.x+(x-place.x)*t,place.z+(z-place.z)*t)
+    height=Math.max(height,(ground+12-(place.y+3)*(1-t))/t)
+  }
+  camera.position.set(x,height,z);controls.target.set(place.x,place.y+3,place.z);controls.update()
+  status.textContent=`${place.id} ${place.use} · ${(height-sampleTerrainHeight(x,z)).toFixed(0)} m AGL`
 }
 document.querySelector('#flight-view').onclick=()=>{
   clearRoadTrace()
