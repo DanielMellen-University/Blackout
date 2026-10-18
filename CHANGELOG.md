@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.934** Verify live Catalog and Ops behavior in the browser: a long-open UTC daily rollover, paused course selection, resume, same-mission retry, next-selection launch, historical Daily/Weekly/Monthly replay release and custom-seed release. Retain immutable active mission identity and exact protected record families. No production behavior change is needed in these exercised paths. See docs/reviews/catalog-10.934/README.md for browser states, screenshots, focused checks and remaining limits. Preserve route revision 30, physics, all budgets and paused exclusions.
+
 - **10.933** Fix first-gate inflation by ramping departure clearance to the full 120 m gate corridor over at most 800 m, with the same fixed probes and a small departure reserve. Verify Training Orbit from launch through takeoff, five real-physics gate crossings, return, final approach and landing without opening settings. Keep gate-to-gate clearance, flight physics, water, collision and budgets unchanged. Route revision 30 skips incompatible ghosts while preserving saved records. See docs/reviews/training-10.933/README.md for controls-only evidence and manual-handling limits. Paused systems remain excluded.
 
 - **10.932** Extend the common 17.5 m color and normal derivative to shoreline, lake and river-bank boundaries. Retain the 10.929 exposed-bank connectors and preserve contact heights, water surfaces, collision, landscape revision 29 and all budgets. Measure identical tile pairs and review four seeds in low-altitude chase/cockpit views. See docs/reviews/wet-edges-10.932/README.md for measurements, city-route FPS/stutter and verification limits. The active heap budget remains about 200 MB; no memory optimization is attempted. Paused systems remain excluded.
