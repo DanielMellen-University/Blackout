@@ -17,11 +17,11 @@ The fix deliberately leaves collision/contact heights and terrain core positions
 | Seed | Tile pairs | Largest edge height delta m, unchanged | Largest shared normal delta before / after | Uncovered dry gap m before / after | Maximum added connector vertices per pair |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | 42 | 10 | 5.0018 | 0.106003 / 0 | 5.0018 / 0 | 96 |
-| 2026 | 4 | 161.2786 | 1.154958 / 0 | 101.2786 / 0 | 416 |
+| 2026 | 5 | 161.2786 | 1.154958 / 0 | 101.2786 / 0 | 416 |
 | 9001 | 8 | 14.7646 | 0.173051 / 0 | 14.7646 / 0 | 96 |
 | 808 | 12 | 64.4717 | 0.693055 / 0 | 64.4717 / 0 | 96 |
 
-These are physical edge-profile differences, not new terrain displacements. The original broad browser scan finds shared normal maxima of 0.1421, 1.1550, 0.1731 and 0.6931 respectively; every final dry shared-vertex normal maximum is zero. Physical-buffer and terrain-core hashes match in all 34 CPU fixture pairs, including every water attribute and index. The six historical physical-payload fixtures are independently reproduced from frozen 10.923. Old normal-inclusive hashes remain archived; only ground normals are excluded from the physical invariant, with dedicated seam regressions replacing that assertion.
+These are physical edge-profile differences, not new terrain displacements. The original broad browser scan finds shared normal maxima of 0.1421, 1.1550, 0.1731 and 0.6931 respectively; every final dry shared-vertex normal maximum is zero. Physical-buffer and terrain-core hashes match in all 35 CPU fixture pairs, including every water attribute and index. The six historical physical-payload fixtures are independently reproduced from frozen 10.923. Old normal-inclusive hashes remain archived; only ground normals are excluded from the physical invariant, with dedicated seam regressions replacing that assertion.
 
 This adds connector vertices and attachment work. It is not an FPS or heap improvement claim. The largest fixture adds 416 vertices within one existing terrain draw; no triangle-merging or detail reduction is hidden in the result.
 
@@ -40,3 +40,5 @@ Wet-edge surface stitching and universal shoreline/cliff appearance are not cert
 Set `PLAYWRIGHT_MODULE`, `CHROMIUM_PATH`, optional `REVIEW_URL`, `POLISH_STAGE=seam` and `POLISH_POSES=docs/reviews/terrain-10.923/before.json`. Run `node scripts/review-terrain-seams.mjs docs/reviews/terrain-10.924 LABEL`. Before captures require frozen 10.923 production source; preserve the final candidate while taking after captures.
 
 Run `node scripts/review-terrain-edge-geometry.mjs docs/reviews/terrain-10.924/after.json OUTPUT.json`. Set `TERRAIN_GEOMETRY_BASELINE_SOURCE` to frozen 10.923 TerrainGeometry for before. Timings and screenshots are separate from performance acceptance. Sensible scope calls: retain collision samples, use actual resident neighbor profiles, cover dry gaps in the existing draw, leave independent water clipping and all paused systems untouched.
+
+The final scan selected 35 rather than 34 diagnostic pairs after worker completion order changed the tied zero-normal selection. Before and after CPU records are regenerated together from the final frozen manifest. The initial audit failure was a fixture-set mismatch, not a physical-buffer mismatch. The initial ship and immediate evidence correction are both retained in history.
