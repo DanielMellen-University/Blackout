@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.922**. Previous roadmap chunk: **10.921**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.923**. Previous roadmap chunk: **10.922**.
+
+Recent changes from **10.923**. Use a common 17.5 m slope-tint basis at dry tile boundaries to remove mixed-LOD rock-color seams. Four actual shared-vertex jumps of 0.019-0.114 RGB fall to zero while heights, normals, indices, water and collision stay byte-identical. Review alpine, badlands, green and volcanic terrain plus roads and sea contact on four additional seeds. Preserve detail, distances, all budgets, revision 28 and paused exclusions. Additional boundary probes add measured CPU cost; the 155.4 MB northeast heap target, large hitches, remaining geometric/normal seams and actual landing approaches remain open. The 96 focused checks, production build and 32 paired low-altitude chase/cockpit views pass. See [the terrain review](docs/reviews/terrain-10.923/README.md) for measured CPU cost and remaining geometry/normal seams.
 
 Recent changes from **10.922**. Retain verified road fitter/refit, biome blend and shader/material allocation improvements. Cached 1,200-color CPU falls from 1.911 to 1.101 ms and rough road fitting from 62.759 to 12.967 ms, with identical payloads. Drop shared fallback materials, quad merging and unproven scheduler/sort experiments. Final matched six-flight results reduce >50 ms intervals from 92 to 38, but retain a 400 ms hitch and northeast peak heap of 214.7 MB against the 155.4 MB target; memory and overall performance acceptance remain open. City peak heap falls from 204.1 to 184.4 MB. Preserve detail, distances, all budgets, revision 28 and paused exclusions. See [the performance review](docs/reviews/performance-10.922/README.md) for evidence and limits.
 

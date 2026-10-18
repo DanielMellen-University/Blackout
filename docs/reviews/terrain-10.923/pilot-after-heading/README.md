@@ -1,0 +1,1 @@
+Excluded after pilots: selecting the current worst color mismatch changed the seam camera heading after the fix. Final seam recaptures use the saved before headings. No game source changed between these after captures.

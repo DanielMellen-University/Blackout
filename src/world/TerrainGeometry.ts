@@ -431,8 +431,17 @@ export function* generateTerrainGeometrySteps(
       for (let iz = 0; iz < stride; iz++) {
         for (let ix = 0; ix < stride; ix++) {
           const i = iz * stride + ix
-          const dx = gradientX[i]!
-          const dz = gradientZ[i]!
+          let dx = gradientX[i]!, dz = gradientZ[i]!
+          const climate = sampledGrid()[i]!
+          // Rock tint is material detail. A shared dry edge must not change
+          // color when its neighbour samples the same slope at another LOD.
+          // Keep mesh normals and all physical heights on their original grid.
+          if ((ix === 0 || iz === 0 || ix === segs || iz === segs) &&
+            climate.height > (climate.waterLevel ?? 0) + 2 && (cell !== TERRAIN_CONTACT_GRID || shoreBed)) {
+            const x = originX + ix * cell, z = originZ + iz * cell, d = TERRAIN_CONTACT_GRID
+            dx = (Math.fround(sampleTerrainHeightFast(x + d, z)) - Math.fround(sampleTerrainHeightFast(x - d, z))) / (2 * d)
+            dz = (Math.fround(sampleTerrainHeightFast(x, z + d)) - Math.fround(sampleTerrainHeightFast(x, z - d))) / (2 * d)
+          }
           const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
           applySlopeShadingInto(shaded, colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!, slope)
           colors[i * 3] = shaded[0]
