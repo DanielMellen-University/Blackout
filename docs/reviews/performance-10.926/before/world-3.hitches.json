@@ -1,0 +1,226 @@
+{
+  "navigationClockUs": 117605358127,
+  "mainThread": {
+    "pid": 1891323,
+    "tid": 1891323
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3837.3,
+      "endMs": 4037.3,
+      "ms": 200,
+      "causes": [
+        "compositor canvas readback/GPU wait"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 173.81,
+      "gpuWaitMs": 173.45,
+      "dominantMeasuredPhase": {
+        "name": "compositor canvas readback/GPU wait",
+        "ms": 173.81
+      },
+      "methods": [],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 189.93
+        },
+        {
+          "name": "setValueV1f (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:44509)",
+          "sampledMs": 7.03
+        },
+        {
+          "name": "findLightProbeGrid (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:51808)",
+          "sampledMs": 3.22
+        },
+        {
+          "name": "multiplyMatrices (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:8108)",
+          "sampledMs": 1.08
+        },
+        {
+          "name": "getProgramCacheKey (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:45891)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "copyArray (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:44497)",
+          "sampledMs": 1.07
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 203.4
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 189.93
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 13.47
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 13.47
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 13.47
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 13.47
+        },
+        {
+          "name": "tick",
+          "sampledMs": 13.47
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 12.39
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 12.39
+        },
+        {
+          "name": "setValueV1f",
+          "sampledMs": 7.03
+        },
+        {
+          "name": "upload",
+          "sampledMs": 7.03
+        },
+        {
+          "name": "findLightProbeGrid",
+          "sampledMs": 3.22
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3841.17,
+          "ms": 208.44,
+          "overlapMs": 196.13,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3841.18,
+          "ms": 208.43,
+          "overlapMs": 196.12,
+          "args": {
+            "begin_frame_id": 236,
+            "main_frame_pipeline": {
+              "main_frame_id": 1519776992129693200,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "LayerTreeHost::DoUpdateLayers",
+          "startMs": 3862.49,
+          "ms": 187.01,
+          "overlapMs": 174.81,
+          "args": {
+            "source_frame_number": 87
+          }
+        },
+        {
+          "name": "GLES2::ReadPixels",
+          "startMs": 3863.49,
+          "ms": 184.55,
+          "overlapMs": 173.81,
+          "args": {}
+        },
+        {
+          "name": "ImplementationBase::WaitForCmd",
+          "startMs": 3863.85,
+          "ms": 179.89,
+          "overlapMs": 173.45,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferHelper::Finish",
+          "startMs": 3863.86,
+          "ms": 179.89,
+          "overlapMs": 173.44,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferProxyImpl::WaitForGetOffset",
+          "startMs": 3863.91,
+          "ms": 179.83,
+          "overlapMs": 173.39,
+          "args": {
+            "end": 230038,
+            "start": 230038
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3841.26,
+          "ms": 10.66,
+          "overlapMs": 10.66,
+          "args": {
+            "data": {
+              "frame": "8A6107D94A51B898D82CFC7530EDE340",
+              "id": 75
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3841.28,
+          "ms": 10.64,
+          "overlapMs": 10.64,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3841.28,
+          "ms": 10.63,
+          "overlapMs": 10.63,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "8A6107D94A51B898D82CFC7530EDE340",
+              "functionName": "tick",
+              "isolate": "5133668084840969662",
+              "lineNumber": 1548,
+              "sampleTraceId": 6567517333206522,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5174/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "LocalFrameView::RunStyleAndLayoutLifecyclePhases",
+          "startMs": 3852,
+          "ms": 6.03,
+          "overlapMs": 6.03,
+          "args": {}
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3852.01,
+          "ms": 5.8,
+          "overlapMs": 5.8,
+          "args": {
+            "beginData": {
+              "frame": "8A6107D94A51B898D82CFC7530EDE340"
+            },
+            "elementCount": 216
+          }
+        }
+      ]
+    }
+  ]
+}

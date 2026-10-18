@@ -145,3 +145,36 @@ it('clips a partially wet interval instead of leaving its dry portion uncovered'
   expect(Math.max(...zs)).toBe(420)
   a.geometry.dispose(); b.geometry.dispose(); joined.dispose()
 })
+
+it('owns its published buffers across larger and smaller subsequent seam builds', () => {
+  const a = tile(0, 2, false), b = tile(420, 3, true)
+  const first = joinTerrainEdges(a, a.heights.length, [terrainEdgeJoin(a, b)!])
+  const saved = Object.fromEntries(Object.entries(first.attributes).map(([name, attr]) => [name, [...attr.array]]))
+  const savedIndices = [...first.index!.array]
+  const large = tile(0, 12, false), fine = tile(420, 24, true)
+  const second = joinTerrainEdges(large, large.heights.length, [terrainEdgeJoin(large, fine)!])
+  const small = joinTerrainEdges(a, a.heights.length, [])
+  for (const [name, values] of Object.entries(saved)) expect([...first.getAttribute(name).array]).toEqual(values)
+  expect([...first.index!.array]).toEqual(savedIndices)
+  expect(small.getAttribute('position').count).toBe(a.heights.length)
+  expect(small.index!.count).toBe(a.geometry.index!.count)
+  expect(second.getAttribute('position').array.buffer).not.toBe(first.getAttribute('position').array.buffer)
+  for (const g of [a.geometry, b.geometry, large.geometry, fine.geometry, first, second, small]) g.dispose()
+})
+
+it('checks distant neighbor bounds without reading their geometry or contact payload', async () => {
+  const { Scene } = await import('three')
+  const { TerrainSystem } = await import('../src/world/TerrainSystem')
+  const system = new TerrainSystem(new Scene())
+  const internal = system as unknown as { chunks: Map<string, unknown>; seamKeys: Set<string>; queueEdgeJoins(chunk: unknown): void }
+  const owner = { originX: 0, originZ: 0, size: 1, segs: 24, key: 'owner' }
+  try {
+    for (let i = 0; i < 100; i++) internal.chunks.set(String(i), {
+      originX: 10000 + i * 420, originZ: 10000, size: 1, segs: 12,
+      get terrainMesh() { throw Error('Unrelated geometry was inspected') },
+      get heights() { throw Error('Unrelated contact data was inspected') },
+    })
+    internal.queueEdgeJoins(owner)
+    expect(internal.seamKeys.size).toBe(0)
+  } finally { internal.chunks.clear(); system.dispose() }
+})

@@ -1087,10 +1087,10 @@ export class TerrainSystem {
   }
 
   private queueEdgeJoins(chunk: Chunk): void {
-    const tile = this.edgeTile(chunk), step = CHUNK_SIZE * chunk.size / chunk.segs
+    const step = CHUNK_SIZE * chunk.size / chunk.segs
     for (const neighbor of this.chunks.values()) {
       if (neighbor === chunk || neighbor.fadingOut) continue
-      if (!terrainEdgeJoin(tile, this.edgeTile(neighbor))) continue
+      if (!terrainEdgeJoin(chunk, neighbor)) continue
       const otherStep = CHUNK_SIZE * neighbor.size / neighbor.segs
       if (step > otherStep) this.seamKeys.add(chunk.key)
       else if (otherStep > step) this.seamKeys.add(neighbor.key)
@@ -1102,8 +1102,8 @@ export class TerrainSystem {
     const joins: TerrainEdgeJoin[] = []
     for (const neighbor of this.chunks.values()) {
       if (neighbor === chunk || neighbor.fadingOut || CHUNK_SIZE * neighbor.size / neighbor.segs >= step) continue
-      const join = terrainEdgeJoin(tile, this.edgeTile(neighbor))
-      if (join) joins.push(join)
+      const join = terrainEdgeJoin(chunk, neighbor)
+      if (join) joins.push({ ...join, neighbor: this.edgeTile(neighbor) })
     }
     const geometry = joinTerrainEdges(tile, chunk.seamBaseVertices, joins)
     chunk.terrainMesh.geometry = geometry

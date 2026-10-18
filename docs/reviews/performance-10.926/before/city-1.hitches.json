@@ -1,0 +1,272 @@
+{
+  "navigationClockUs": 116278765600,
+  "mainThread": {
+    "pid": 1887248,
+    "tid": 1887248
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3782.9,
+      "endMs": 3999.6,
+      "ms": 216.69999999999982,
+      "causes": [
+        "compositor canvas readback/GPU wait"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 193.43,
+      "gpuWaitMs": 185.58,
+      "dominantMeasuredPhase": {
+        "name": "compositor canvas readback/GPU wait",
+        "ms": 193.43
+      },
+      "methods": [
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3788,
+          "ms": 3.2,
+          "overlapMs": 3.2
+        },
+        {
+          "name": "settlement.advanceAssembly",
+          "startMs": 3792.9,
+          "ms": 2.1,
+          "overlapMs": 2.1
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3791.3,
+          "ms": 3.8,
+          "overlapMs": 3.8
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 203.63
+        },
+        {
+          "name": "SettlementSystem.worker.onmessage (src/world/SettlementSystem.ts:1010)",
+          "sampledMs": 1.86
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 1.57
+        },
+        {
+          "name": "createRoadGeometrySteps (src/world/SettlementSystem.ts:403)",
+          "sampledMs": 1.17
+        },
+        {
+          "name": "roadDistanceSquared (src/world/SettlementSystem.ts:371)",
+          "sampledMs": 1.08
+        },
+        {
+          "name": "isSettlementRoad (src/world/SettlementSystem.ts:85)",
+          "sampledMs": 1.08
+        },
+        {
+          "name": "publishEdgeJoins (src/world/TerrainSystem.ts:937)",
+          "sampledMs": 1.08
+        },
+        {
+          "name": "(anonymous) (src/world/SettlementSystem.ts:2704)",
+          "sampledMs": 1.08
+        },
+        {
+          "name": "isSettlementWorkerReply (src/world/SettlementSystem.ts:17)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "terrainEdgeJoin (src/world/TerrainSeams.ts:3)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "disable (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:47203)",
+          "sampledMs": 1.06
+        },
+        {
+          "name": "updateMatrix (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:9874)",
+          "sampledMs": 0.51
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 216.7
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 203.63
+        },
+        {
+          "name": "tick",
+          "sampledMs": 9.06
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 7.48
+        },
+        {
+          "name": "update",
+          "sampledMs": 7.48
+        },
+        {
+          "name": "SettlementSystem.worker.onmessage",
+          "sampledMs": 4.01
+        },
+        {
+          "name": "drainBuildQueue",
+          "sampledMs": 2.52
+        },
+        {
+          "name": "buildRegionalRoadSteps",
+          "sampledMs": 2.25
+        },
+        {
+          "name": "advanceAssembly",
+          "sampledMs": 2.25
+        },
+        {
+          "name": "isSettlementWorkerReply",
+          "sampledMs": 2.15
+        },
+        {
+          "name": "publishEdgeJoins",
+          "sampledMs": 2.15
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 1.58
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3787.53,
+          "ms": 213.56,
+          "overlapMs": 212.07,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3787.53,
+          "ms": 213.56,
+          "overlapMs": 212.07,
+          "args": {
+            "begin_frame_id": 231,
+            "main_frame_pipeline": {
+              "main_frame_id": 357992956415824700,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "LayerTreeHost::DoUpdateLayers",
+          "startMs": 3804.58,
+          "ms": 196.37,
+          "overlapMs": 195.02,
+          "args": {
+            "source_frame_number": 115
+          }
+        },
+        {
+          "name": "GLES2::ReadPixels",
+          "startMs": 3805.34,
+          "ms": 193.43,
+          "overlapMs": 193.43,
+          "args": {}
+        },
+        {
+          "name": "ImplementationBase::WaitForCmd",
+          "startMs": 3807.15,
+          "ms": 185.58,
+          "overlapMs": 185.58,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferHelper::Finish",
+          "startMs": 3807.15,
+          "ms": 185.58,
+          "overlapMs": 185.58,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferProxyImpl::WaitForGetOffset",
+          "startMs": 3807.17,
+          "ms": 185.55,
+          "overlapMs": 185.55,
+          "args": {
+            "end": 244462,
+            "start": 244462
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3787.59,
+          "ms": 10.11,
+          "overlapMs": 10.11,
+          "args": {
+            "data": {
+              "frame": "0B4C74A78AC98B5DBCEAE9F5D4598D55",
+              "id": 104
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3787.6,
+          "ms": 10.09,
+          "overlapMs": 10.09,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3787.6,
+          "ms": 10.09,
+          "overlapMs": 10.09,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "0B4C74A78AC98B5DBCEAE9F5D4598D55",
+              "functionName": "tick",
+              "isolate": "8748429815379713633",
+              "lineNumber": 1548,
+              "sampleTraceId": 6712185480925997,
+              "scriptId": "14",
+              "url": "http://127.0.0.1:5174/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3782.17,
+          "ms": 4.93,
+          "overlapMs": 4.2,
+          "args": {
+            "src_file": "third_party/blink/renderer/core/workers/dedicated_worker_object_proxy.cc",
+            "src_func": "PostMessageToWorkerObject",
+            "src_line": 68
+          }
+        },
+        {
+          "name": "HandlePostMessage",
+          "startMs": 3782.18,
+          "ms": 4.92,
+          "overlapMs": 4.2,
+          "args": {
+            "data": {
+              "traceId": "357992956415824654"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

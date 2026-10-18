@@ -19,6 +19,8 @@ const repetitions = Number(process.env.REVIEW_RUNS || 3)
 const profile = process.env.REVIEW_PROFILE === '1'
 const trace = process.env.REVIEW_TRACE === '1'
 const gpuTrace = process.env.REVIEW_GPU_TRACE === '1'
+// Full-flight graphics/scheduler attribution without heap sampling or forced GC.
+const graphicsTrace = process.env.REVIEW_GRAPHICS_TRACE === '1'
 const nativeTrace = process.env.REVIEW_NATIVE_TRACE === '1'
 const nativeContinuous = process.env.REVIEW_NATIVE_CONTINUOUS === '1'
 const traceStart = Number(process.env.REVIEW_TRACE_START || 85)
@@ -30,7 +32,7 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
   const seed = route === 'world' ? 73 : 1337
   try {
     const existing = JSON.parse(await readFile(`${directory}/${name}.json`, 'utf8'))
-    if (existing.matched && existing.seed === seed && existing.profile === profile && !!existing.trace === trace && !!existing.gpuTrace === gpuTrace && !!existing.nativeTrace === nativeTrace && !!existing.nativeContinuous === nativeContinuous) {
+    if (existing.matched && existing.seed === seed && existing.profile === profile && !!existing.trace === trace && !!existing.gpuTrace === gpuTrace && !!existing.graphicsTrace === graphicsTrace && !!existing.nativeTrace === nativeTrace && !!existing.nativeContinuous === nativeContinuous) {
       if (profile) await access(`${directory}/${name}.cpuprofile.gz`)
       if (trace) await access(`${directory}/${name}.trace.json.gz`)
       console.log('SKIP', name); continue
@@ -51,9 +53,9 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
         includeObjectsCollectedByMajorGC: true, includeObjectsCollectedByMinorGC: true })
     }
     let traceCategories = 'devtools.timeline,v8,disabled-by-default-v8.compile,blink.user_timing'
-    if (gpuTrace || nativeTrace) {
+    if (gpuTrace || nativeTrace || graphicsTrace) {
       const available = await session.send('Tracing.getCategories')
-      const graphics = available.categories.filter(name => nativeTrace
+      const graphics = available.categories.filter(name => nativeTrace || graphicsTrace
         ? /^(gpu|viz|cc|benchmark|renderer.scheduler)$/.test(name)
         : /^(gpu|viz|cc|benchmark|renderer.scheduler|disabled-by-default-(gpu|viz))/.test(name))
       traceCategories += ',toplevel,' + graphics.join(',')
@@ -144,7 +146,7 @@ for (let run = 1; run <= repetitions; run++) for (const route of routes) {
     const output = { stage, run, sourceCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       productionDiff: execFileSync('git', ['diff', '--stat'], { encoding: 'utf8' }).trim(),
       streamTimings: profile ? await page.evaluate(() => window.__streamTimings) : undefined,
-      instrumentation, browserVersion: browser.version(), args, gpu, profile, trace, gpuTrace, nativeTrace, nativeContinuous, traceCategories, matched, errors, ...result }
+      instrumentation, browserVersion: browser.version(), args, gpu, profile, trace, gpuTrace, graphicsTrace, nativeTrace, nativeContinuous, traceCategories, matched, errors, ...result }
     await writeFile(`${directory}/${name}.json`, JSON.stringify(output, null, 2) + '\n')
     if (profile) {
       const { profile: cpu } = await session.send('Profiler.stop')

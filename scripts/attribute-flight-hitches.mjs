@@ -101,7 +101,8 @@ for (const file of await readdir(directory)) {
   }
   const windows = hitches.map(h => [nav.ts + h.startMs * 1000 - 10000, nav.ts + h.endMs * 1000 + 10000])
   const excerpt = trace.filter(e => e.ph === 'M' || e.name === 'navigationStart' ||
-    (e.pid === nav.pid && e.tid === nav.tid && (e.dur > 100000 || windows.some(([a,b]) => e.ts < b && e.ts + (e.dur || 0) >= a))))
+    ((e.pid === nav.pid && e.tid === nav.tid && e.dur > 100000) ||
+      windows.some(([a,b]) => e.ts < b && e.ts + (e.dur || 0) >= a)))
   await writeFile(`${stem}.hitches.json`, JSON.stringify({ navigationClockUs: nav.ts, mainThread: { pid: nav.pid, tid: nav.tid },
     note: 'CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.', hitches }, null, 2) + '\n')
   await writeFile(`${stem}.hitch-trace.json.gz`, gzipSync(JSON.stringify({ traceEvents: excerpt })))

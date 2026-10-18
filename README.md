@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.925**. Previous roadmap chunk: **10.924**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.926**. Previous roadmap chunk: **10.925**.
+
+Recent changes from **10.926**. Remove measured mixed-LOD seam allocation churn without changing rendered buffers. Sampled diagnostic allocation falls from 14.414 to 1.516 GB; all 35 tile-pair attribute/index and restored-skirt hashes match 10.925. Fresh matched six-flight sets reduce intervals over 50 ms from 496 to 313, while pooled p95 and the 83.4 ms maximum stay unchanged. Northeast peak heap falls from 201.6 to 190.8 MB and still misses 155.4 MB; city peak is 222.7 versus 223.2 MB. The historical 400 ms gap is not reproduced and its cause remains unverified. Preserve contact/water, detail, all budgets, revision 28 and paused exclusions. The 123 focused checks, production build and paired low-altitude chase/cockpit review pass. See docs/reviews/performance-10.926/README.md for raw evidence and limits; memory and overall performance acceptance remain open.
 
 Recent changes from **10.925**. Show Free flight final glide guidance and give its valid approach cone navigation priority. Include the exact 30 degree nose and ground-track boundary despite floating-point rotation error, while rejecting measurable excess. Review three generated runways in Free flight and Training Orbit through real physics contact and desktop debrief, with paired low-altitude production chase/cockpit views. Preserve flight physics, collision, terrain, water, budgets, revision 28 and paused exclusions. Scripted approaches prescribe the trajectory and pre-complete Training gates; manual handling and full gate flights remain unverified. See docs/reviews/landing-10.925/README.md for evidence and limits. Northeast memory/hitch acceptance and broader coastal coverage remain open.
 

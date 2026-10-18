@@ -1,0 +1,585 @@
+{
+  "navigationClockUs": 117819530368,
+  "mainThread": {
+    "pid": 1891578,
+    "tid": 1891578
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 2607.9,
+      "endMs": 2724.6,
+      "ms": 116.69999999999982,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": false,
+      "gcMs": 0,
+      "readbackMs": 0,
+      "gpuWaitMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "worker reply handling",
+        "ms": 0.67
+      },
+      "methods": [],
+      "sampledSelf": [
+        {
+          "name": "(idle) (:0)",
+          "sampledMs": 57.08
+        },
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 40
+        },
+        {
+          "name": "setValueV1f (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44509)",
+          "sampledMs": 6.29
+        },
+        {
+          "name": "getProgram (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:51721)",
+          "sampledMs": 3.93
+        },
+        {
+          "name": "setValueM4 (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44595)",
+          "sampledMs": 3.89
+        },
+        {
+          "name": "copyArray (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44497)",
+          "sampledMs": 1.55
+        },
+        {
+          "name": "compose (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:8423)",
+          "sampledMs": 1.25
+        },
+        {
+          "name": "setValueV3f (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44529)",
+          "sampledMs": 1.18
+        },
+        {
+          "name": "getProgramCacheKeyBooleans (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:45960)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "getBindingState (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:42431)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "(anonymous) (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:31429)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "setMaterial (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:47355)",
+          "sampledMs": 1.07
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 121.42
+        },
+        {
+          "name": "(idle)",
+          "sampledMs": 57.08
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 40
+        },
+        {
+          "name": "tick",
+          "sampledMs": 23.28
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 22.91
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 21.66
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 21.66
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 21.66
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 21.66
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 19.53
+        },
+        {
+          "name": "setValueV1f",
+          "sampledMs": 6.29
+        },
+        {
+          "name": "upload",
+          "sampledMs": 6.29
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 2611.23,
+          "ms": 16.24,
+          "overlapMs": 16.24,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 2611.24,
+          "ms": 16.22,
+          "overlapMs": 16.22,
+          "args": {
+            "begin_frame_id": 161,
+            "main_frame_pipeline": {
+              "main_frame_id": 1940162051447068000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 2611.32,
+          "ms": 15.35,
+          "overlapMs": 15.35,
+          "args": {
+            "data": {
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "id": 5
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2611.34,
+          "ms": 15.31,
+          "overlapMs": 15.31,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 2611.34,
+          "ms": 15.3,
+          "overlapMs": 15.3,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "functionName": "tick",
+              "isolate": "6836648091854356429",
+              "lineNumber": 1548,
+              "sampleTraceId": 3614211677754746,
+              "scriptId": "13",
+              "url": "http://127.0.0.1:5173/src/main.ts?t=1792334143152"
+            }
+          }
+        },
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 2657.67,
+          "ms": 13.25,
+          "overlapMs": 13.25,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 2657.68,
+          "ms": 13.24,
+          "overlapMs": 13.24,
+          "args": {
+            "begin_frame_id": 164,
+            "main_frame_pipeline": {
+              "main_frame_id": 1940162051447068000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 2657.78,
+          "ms": 11.97,
+          "overlapMs": 11.97,
+          "args": {
+            "data": {
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "id": 8
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2657.82,
+          "ms": 11.92,
+          "overlapMs": 11.92,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 2657.83,
+          "ms": 11.91,
+          "overlapMs": 11.91,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "functionName": "tick",
+              "isolate": "6836648091854356429",
+              "lineNumber": 1548,
+              "sampleTraceId": 3614211677754671,
+              "scriptId": "13",
+              "url": "http://127.0.0.1:5173/src/main.ts?t=1792334143152"
+            }
+          }
+        },
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 2695.68,
+          "ms": 6.47,
+          "overlapMs": 6.47,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 2695.69,
+          "ms": 6.46,
+          "overlapMs": 6.46,
+          "args": {
+            "begin_frame_id": 166,
+            "main_frame_pipeline": {
+              "main_frame_id": 1940162051447068000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "phase": "startup",
+      "startMs": 3674.5,
+      "endMs": 3907.9,
+      "ms": 233.4000000000001,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 10.36,
+      "readbackMs": 0,
+      "gpuWaitMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "GC",
+        "ms": 10.36
+      },
+      "methods": [
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3672.19,
+          "ms": 3.1,
+          "overlapMs": 0.79
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3685.79,
+          "ms": 2.8,
+          "overlapMs": 2.8
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3696.89,
+          "ms": 5.9,
+          "overlapMs": 5.9
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3735.59,
+          "ms": 4.1,
+          "overlapMs": 4.1
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3837.69,
+          "ms": 2.4,
+          "overlapMs": 2.4
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3870.89,
+          "ms": 2.6,
+          "overlapMs": 2.6
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3907.89,
+          "ms": 2.8,
+          "overlapMs": 0.01
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 56.96
+        },
+        {
+          "name": "(idle) (:0)",
+          "sampledMs": 32.83
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 12.64
+        },
+        {
+          "name": "frame (src/debug/FlightReview.ts:212)",
+          "sampledMs": 11.66
+        },
+        {
+          "name": "setValueV3f (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44529)",
+          "sampledMs": 8.92
+        },
+        {
+          "name": "(garbage collector) (:0)",
+          "sampledMs": 8.44
+        },
+        {
+          "name": "updateBuffer (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:41601)",
+          "sampledMs": 8.29
+        },
+        {
+          "name": "updateMatrixWorld (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:9897)",
+          "sampledMs": 7.92
+        },
+        {
+          "name": "setValueM4 (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44595)",
+          "sampledMs": 7.61
+        },
+        {
+          "name": "upload (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:45006)",
+          "sampledMs": 5.25
+        },
+        {
+          "name": "syncMesh (src/aircraft/Aircraft.ts:469)",
+          "sampledMs": 4.8
+        },
+        {
+          "name": "setValueM3 (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44581)",
+          "sampledMs": 4.55
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 245.74
+        },
+        {
+          "name": "tick",
+          "sampledMs": 145.4
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 84.84
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 56.96
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 56.46
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 52.53
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 52.53
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 52.53
+        },
+        {
+          "name": "update",
+          "sampledMs": 44.95
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 42.18
+        },
+        {
+          "name": "(idle)",
+          "sampledMs": 32.83
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 27.49
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3870.15,
+          "ms": 25.52,
+          "overlapMs": 25.52,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3870.15,
+          "ms": 25.51,
+          "overlapMs": 25.51,
+          "args": {
+            "begin_frame_id": 236,
+            "main_frame_pipeline": {
+              "main_frame_id": 1940162051447067100,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3870.24,
+          "ms": 24.4,
+          "overlapMs": 24.4,
+          "args": {
+            "data": {
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "id": 71
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3870.26,
+          "ms": 24.37,
+          "overlapMs": 24.37,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3870.26,
+          "ms": 24.36,
+          "overlapMs": 24.36,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "functionName": "tick",
+              "isolate": "6836648091854356429",
+              "lineNumber": 1548,
+              "sampleTraceId": 3614211677753935,
+              "scriptId": "13",
+              "url": "http://127.0.0.1:5173/src/main.ts?t=1792334143152"
+            }
+          }
+        },
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3696.4,
+          "ms": 22.91,
+          "overlapMs": 22.91,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3696.41,
+          "ms": 22.9,
+          "overlapMs": 22.9,
+          "args": {
+            "begin_frame_id": 226,
+            "main_frame_pipeline": {
+              "main_frame_id": 1940162051447067000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3696.49,
+          "ms": 21.02,
+          "overlapMs": 21.02,
+          "args": {
+            "data": {
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "id": 61
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3696.51,
+          "ms": 20.99,
+          "overlapMs": 20.99,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3696.51,
+          "ms": 20.98,
+          "overlapMs": 20.98,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "EADA578C038D1DA68B777617CE928892",
+              "functionName": "tick",
+              "isolate": "6836648091854356429",
+              "lineNumber": 1548,
+              "sampleTraceId": 3614211677753632,
+              "scriptId": "13",
+              "url": "http://127.0.0.1:5173/src/main.ts?t=1792334143152"
+            }
+          }
+        },
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3719.39,
+          "ms": 14.64,
+          "overlapMs": 14.64,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3719.39,
+          "ms": 14.64,
+          "overlapMs": 14.64,
+          "args": {
+            "begin_frame_id": 227,
+            "main_frame_pipeline": {
+              "main_frame_id": 1940162051447067000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

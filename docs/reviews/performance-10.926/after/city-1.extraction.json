@@ -1,0 +1,28 @@
+{
+  "source": "docs/reviews/performance-10.926/after/city-1.trace.json.gz",
+  "totalEvents": 4031310,
+  "retainedEvents": 16527,
+  "mainRafCount": 3999,
+  "extentMs": [
+    -26.67,
+    126988.71699999999
+  ],
+  "mainExtentMs": [
+    -22.698,
+    126845.563
+  ],
+  "completeFlightCoverage": true,
+  "longIntervals": [
+    {
+      "startMs": 2607.9,
+      "endMs": 2724.6,
+      "ms": 116.69999999999982
+    },
+    {
+      "startMs": 3674.5,
+      "endMs": 3907.9,
+      "ms": 233.4000000000001
+    }
+  ],
+  "note": "Events within 10 ms of recorded >100 ms intervals. Check completeFlightCoverage: a filled buffer cannot establish attribution for the omitted tail. Worker spans are not main-thread costs."
+}

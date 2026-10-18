@@ -8,13 +8,14 @@ import gzip
 import json
 import shutil
 import sys
+import re
 from pathlib import Path
 
 source = Path(sys.argv[1])
 target = Path(sys.argv[2])
 target.mkdir(parents=True, exist_ok=True)
-for record in source.glob('world-*.json'):
-    if record.name.endswith('-post-gc.json'):
+for record in source.glob('*.json'):
+    if not re.fullmatch(r'(city|world)-\d+\.json', record.name):
         continue
     stem = record.stem
     data = json.loads(record.read_text())
@@ -24,6 +25,21 @@ for record in source.glob('world-*.json'):
     frames = [frame for group in data['longFrames'].values() for frame in group]
     metadata = []
     navigation = None
+    # Trace chunks from different processes need not be in timestamp order.
+    # Find the clock first so early-serialized GPU events are not discarded.
+    with gzip.open(trace, 'rt') as stream:
+        for line in stream:
+            if 'navigationStart' not in line:
+                continue
+            value = line.strip().removesuffix(',')
+            if not value.startswith('{'):
+                continue
+            event, _ = json.JSONDecoder().raw_decode(value)
+            if event.get('name') == 'navigationStart' and f"seed={data['seed']}&" in event.get('args', {}).get('data', {}).get('documentLoaderURL', ''):
+                navigation = event
+                break
+    if navigation is None:
+        raise RuntimeError('Navigation clock absent from native capture')
     events = []
     event_count = 0
     raf_count = 0
@@ -41,10 +57,6 @@ for record in source.glob('world-*.json'):
             event_count += 1
             if event['ph'] == 'M':
                 metadata.append(event)
-                continue
-            if event['name'] == 'navigationStart' and f"seed={data['seed']}&" in event.get('args', {}).get('data', {}).get('documentLoaderURL', ''):
-                navigation = event
-            if navigation is None:
                 continue
             if event.get('pid') == navigation['pid'] and event.get('tid') == navigation['tid'] and event['name'] == 'FireAnimationFrame' and event['ph'] == 'X':
                 raf_count += 1

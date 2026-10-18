@@ -1,0 +1,257 @@
+{
+  "navigationClockUs": 116973490721,
+  "mainThread": {
+    "pid": 1890499,
+    "tid": 1890499
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3780,
+      "endMs": 4080,
+      "ms": 300,
+      "causes": [
+        "compositor canvas readback/GPU wait"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 277.22,
+      "gpuWaitMs": 271.57,
+      "dominantMeasuredPhase": {
+        "name": "compositor canvas readback/GPU wait",
+        "ms": 277.22
+      },
+      "methods": [
+        {
+          "name": "settlement.advanceAssembly",
+          "startMs": 3782.8,
+          "ms": 2.9,
+          "overlapMs": 2.9
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3782,
+          "ms": 3.8,
+          "overlapMs": 3.8
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 289.24
+        },
+        {
+          "name": "setValue (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:44949)",
+          "sampledMs": 3.28
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 2.5
+        },
+        {
+          "name": "WebGLShadowMap.render (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:46698)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "emit (src/world/RoadTerrainFit.ts:154)",
+          "sampledMs": 1.06
+        },
+        {
+          "name": "updateMatrixWorld (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:9897)",
+          "sampledMs": 1.06
+        },
+        {
+          "name": "(garbage collector) (:0)",
+          "sampledMs": 1.05
+        },
+        {
+          "name": "setProgram (http://127.0.0.1:5174/@fs/tmp/blackout-926-before-vite/deps/three.module-BEvS_7fE.js?v=3794f76b:51818)",
+          "sampledMs": 0.98
+        },
+        {
+          "name": "present (src/aircraft/Aircraft.ts:291)",
+          "sampledMs": 0.28
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 300.51
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 289.24
+        },
+        {
+          "name": "tick",
+          "sampledMs": 10.22
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 6.38
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 4.26
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 4.26
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 4.26
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 4.26
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 4.26
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 3.56
+        },
+        {
+          "name": "update",
+          "sampledMs": 3.56
+        },
+        {
+          "name": "setValue",
+          "sampledMs": 3.28
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3780.87,
+          "ms": 302.28,
+          "overlapMs": 299.13,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3780.88,
+          "ms": 302.27,
+          "overlapMs": 299.12,
+          "args": {
+            "begin_frame_id": 232,
+            "main_frame_pipeline": {
+              "main_frame_id": 5953100030114830000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "LayerTreeHost::DoUpdateLayers",
+          "startMs": 3802.12,
+          "ms": 280.91,
+          "overlapMs": 277.88,
+          "args": {
+            "source_frame_number": 127
+          }
+        },
+        {
+          "name": "GLES2::ReadPixels",
+          "startMs": 3802.78,
+          "ms": 278.22,
+          "overlapMs": 277.22,
+          "args": {}
+        },
+        {
+          "name": "ImplementationBase::WaitForCmd",
+          "startMs": 3803.22,
+          "ms": 271.57,
+          "overlapMs": 271.57,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferHelper::Finish",
+          "startMs": 3803.23,
+          "ms": 271.56,
+          "overlapMs": 271.56,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferProxyImpl::WaitForGetOffset",
+          "startMs": 3806.31,
+          "ms": 268.4,
+          "overlapMs": 268.4,
+          "args": {
+            "end": 170453,
+            "start": 170453
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3780.96,
+          "ms": 11.29,
+          "overlapMs": 11.29,
+          "args": {
+            "data": {
+              "frame": "22D016FC6825D0DD57F3E0FC27723386",
+              "id": 119
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3780.97,
+          "ms": 11.27,
+          "overlapMs": 11.27,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3780.97,
+          "ms": 11.26,
+          "overlapMs": 11.26,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "22D016FC6825D0DD57F3E0FC27723386",
+              "functionName": "tick",
+              "isolate": "14241505798359465635",
+              "lineNumber": 1548,
+              "sampleTraceId": 8348521985775207,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5174/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3782,
+          "ms": 3.8,
+          "overlapMs": 3.8,
+          "args": {
+            "callTime": 116977276461,
+            "startTime": 3782,
+            "traceId": 962645685
+          }
+        },
+        {
+          "name": "PrePaint",
+          "startMs": 3796.01,
+          "ms": 3.7,
+          "overlapMs": 3.7,
+          "args": {
+            "data": {
+              "frame": "22D016FC6825D0DD57F3E0FC27723386",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "22D016FC6825D0DD57F3E0FC27723386"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

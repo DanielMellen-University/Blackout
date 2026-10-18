@@ -1,0 +1,257 @@
+{
+  "navigationClockUs": 118034456689,
+  "mainThread": {
+    "pid": 1891823,
+    "tid": 1891823
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3854.9,
+      "endMs": 4088.3,
+      "ms": 233.4000000000001,
+      "causes": [
+        "compositor canvas readback/GPU wait"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 203.46,
+      "gpuWaitMs": 203.09,
+      "dominantMeasuredPhase": {
+        "name": "compositor canvas readback/GPU wait",
+        "ms": 203.46
+      },
+      "methods": [
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3862,
+          "ms": 2.1,
+          "overlapMs": 2.1
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 218.11
+        },
+        {
+          "name": "applyChunkAlpha (src/world/TerrainSystem.ts?t=1792333950499:1159)",
+          "sampledMs": 3.59
+        },
+        {
+          "name": "onFirstUse (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:45512)",
+          "sampledMs": 2.72
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 2.61
+        },
+        {
+          "name": "contractDetailLabel (src/ui/HUD.ts:649)",
+          "sampledMs": 1.18
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:51294)",
+          "sampledMs": 1.13
+        },
+        {
+          "name": "cloneUniforms (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:26320)",
+          "sampledMs": 1.1
+        },
+        {
+          "name": "setProgram (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:51818)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "lookAt (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:9608)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "update (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44202)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "setValue (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:44998)",
+          "sampledMs": 1.06
+        },
+        {
+          "name": "lerp (src/world/noise.ts:52)",
+          "sampledMs": 0.96
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 236.69
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 218.11
+        },
+        {
+          "name": "tick",
+          "sampledMs": 18.58
+        },
+        {
+          "name": "update",
+          "sampledMs": 9.37
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 8.45
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 7.38
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 7.38
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 7.38
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 7.38
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 6.2
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 6.06
+        },
+        {
+          "name": "applyChunkAlpha",
+          "sampledMs": 3.59
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3861.44,
+          "ms": 240.53,
+          "overlapMs": 226.86,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3861.44,
+          "ms": 240.52,
+          "overlapMs": 226.86,
+          "args": {
+            "begin_frame_id": 236,
+            "main_frame_pipeline": {
+              "main_frame_id": 9213985510524898000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "LayerTreeHost::DoUpdateLayers",
+          "startMs": 3884.04,
+          "ms": 217.84,
+          "overlapMs": 204.26,
+          "args": {
+            "source_frame_number": 100
+          }
+        },
+        {
+          "name": "GLES2::ReadPixels",
+          "startMs": 3884.84,
+          "ms": 215.75,
+          "overlapMs": 203.46,
+          "args": {}
+        },
+        {
+          "name": "ImplementationBase::WaitForCmd",
+          "startMs": 3885.21,
+          "ms": 211.4,
+          "overlapMs": 203.09,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferHelper::Finish",
+          "startMs": 3885.22,
+          "ms": 211.4,
+          "overlapMs": 203.09,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferProxyImpl::WaitForGetOffset",
+          "startMs": 3885.25,
+          "ms": 211.3,
+          "overlapMs": 203.05,
+          "args": {
+            "end": 61968,
+            "start": 61968
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3861.51,
+          "ms": 10.61,
+          "overlapMs": 10.61,
+          "args": {
+            "data": {
+              "frame": "F6EADB604D9E226E448F2FF023DB8DD6",
+              "id": 90
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3861.53,
+          "ms": 10.6,
+          "overlapMs": 10.6,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3861.53,
+          "ms": 10.59,
+          "overlapMs": 10.59,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "F6EADB604D9E226E448F2FF023DB8DD6",
+              "functionName": "tick",
+              "isolate": "1582651889436344606",
+              "lineNumber": 1548,
+              "sampleTraceId": 8627872179604207,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts?t=1792334143152"
+            }
+          }
+        },
+        {
+          "name": "LocalFrameView::RunStyleAndLayoutLifecyclePhases",
+          "startMs": 3872.2,
+          "ms": 7.43,
+          "overlapMs": 7.43,
+          "args": {}
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3872.21,
+          "ms": 7.17,
+          "overlapMs": 7.17,
+          "args": {
+            "beginData": {
+              "frame": "F6EADB604D9E226E448F2FF023DB8DD6"
+            },
+            "elementCount": 216
+          }
+        }
+      ]
+    }
+  ]
+}

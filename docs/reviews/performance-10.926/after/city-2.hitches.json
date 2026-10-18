@@ -1,0 +1,532 @@
+{
+  "navigationClockUs": 118248084078,
+  "mainThread": {
+    "pid": 1892134,
+    "tid": 1892134
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 2752.3,
+      "endMs": 2885.7,
+      "ms": 133.39999999999964,
+      "causes": [
+        "layout"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 0,
+      "gpuWaitMs": 7.27,
+      "dominantMeasuredPhase": {
+        "name": "layout",
+        "ms": 47.99
+      },
+      "methods": [
+        {
+          "name": "terrain.install",
+          "startMs": 2846.3,
+          "ms": 2.1,
+          "overlapMs": 2.1
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 2846.1,
+          "ms": 2.3,
+          "overlapMs": 2.3
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "startGame (src/main.ts?t=1792334143152:1333)",
+          "sampledMs": 61.36
+        },
+        {
+          "name": "tick (src/main.ts?t=1792334143152:1548)",
+          "sampledMs": 9.64
+        },
+        {
+          "name": "onFirstUse (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:45512)",
+          "sampledMs": 9.61
+        },
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 9.48
+        },
+        {
+          "name": "update (src/ui/HUD.ts:1146)",
+          "sampledMs": 5.21
+        },
+        {
+          "name": "renderObject (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:51705)",
+          "sampledMs": 2.43
+        },
+        {
+          "name": "update (src/world/World.ts?t=1792333950499:502)",
+          "sampledMs": 2.15
+        },
+        {
+          "name": "createCard (src/ui/CoursePicker.ts:865)",
+          "sampledMs": 2.15
+        },
+        {
+          "name": "resetFlight (src/main.ts?t=1792334143152:1180)",
+          "sampledMs": 2.14
+        },
+        {
+          "name": "createOption (src/ui/CoursePicker.ts:824)",
+          "sampledMs": 2.12
+        },
+        {
+          "name": "(idle) (:0)",
+          "sampledMs": 1.97
+        },
+        {
+          "name": "buildChunk (src/world/TerrainSystem.ts?t=1792333950499:1207)",
+          "sampledMs": 1.95
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 134.43
+        },
+        {
+          "name": "(anonymous)",
+          "sampledMs": 81.35
+        },
+        {
+          "name": "startGame",
+          "sampledMs": 79.69
+        },
+        {
+          "name": "FlightReview.button.onclick",
+          "sampledMs": 79.69
+        },
+        {
+          "name": "tick",
+          "sampledMs": 42.21
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 16.44
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 15.37
+        },
+        {
+          "name": "update",
+          "sampledMs": 14.82
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 14.29
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 14.29
+        },
+        {
+          "name": "rememberRecentCourse",
+          "sampledMs": 13.93
+        },
+        {
+          "name": "refreshCourseSelectorLabels",
+          "sampledMs": 12.8
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 2755.29,
+          "ms": 87.37,
+          "overlapMs": 87.37,
+          "args": {
+            "src_file": "third_party/blink/renderer/platform/widget/input/main_thread_event_queue.cc",
+            "src_func": "PostTaskToMainThread",
+            "src_line": 763
+          }
+        },
+        {
+          "name": "WidgetBaseInputHandler::OnHandleInputEvent",
+          "startMs": 2757.91,
+          "ms": 84.75,
+          "overlapMs": 84.75,
+          "args": {
+            "event": "MouseUp"
+          }
+        },
+        {
+          "name": "LatencyInfo.Flow",
+          "startMs": 2757.91,
+          "ms": 84.74,
+          "overlapMs": 84.74,
+          "args": {
+            "chrome_latency_info": {
+              "step": "STEP_HANDLE_INPUT_EVENT_MAIN",
+              "trace_id": -2595121802370786000
+            },
+            "current_task": {
+              "event_offset_from_task_start_time_us": 2623,
+              "task_queued_time_us": 118250839030,
+              "task_queueing_time_us": 2965,
+              "task_start_time_us": 118250839372
+            }
+          }
+        },
+        {
+          "name": "EventDispatch",
+          "startMs": 2760.54,
+          "ms": 80.69,
+          "overlapMs": 80.69,
+          "args": {
+            "data": {
+              "type": "click"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2760.56,
+          "ms": 80.65,
+          "overlapMs": 80.65,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 2760.56,
+          "ms": 80.38,
+          "overlapMs": 80.38,
+          "args": {
+            "data": {
+              "columnNumber": 25,
+              "frame": "4F90BE1415C596B537686D53833DC2AD",
+              "functionName": "FlightReview.button.onclick",
+              "isolate": "4433978873539564787",
+              "lineNumber": 155,
+              "sampleTraceId": 4946858848962608,
+              "scriptId": "148",
+              "url": "http://127.0.0.1:5173/src/debug/FlightReview.ts"
+            }
+          }
+        },
+        {
+          "name": "EventDispatch",
+          "startMs": 2760.69,
+          "ms": 80.09,
+          "overlapMs": 80.09,
+          "args": {
+            "data": {
+              "type": "click"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 2760.7,
+          "ms": 80.05,
+          "overlapMs": 80.05,
+          "args": {}
+        },
+        {
+          "name": "LocalFrameView::layout",
+          "startMs": 2792.21,
+          "ms": 48,
+          "overlapMs": 48,
+          "args": {
+            "endData": {
+              "layoutRoots": [
+                {
+                  "depth": 1,
+                  "nodeId": 2,
+                  "nodeName": "#document",
+                  "quads": [
+                    [
+                      0,
+                      0,
+                      1280,
+                      0,
+                      1280,
+                      720,
+                      0,
+                      720
+                    ]
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Layout",
+          "startMs": 2792.21,
+          "ms": 47.99,
+          "overlapMs": 47.99,
+          "args": {
+            "beginData": {
+              "dirtyObjects": 426,
+              "frame": "4F90BE1415C596B537686D53833DC2AD",
+              "partialLayout": false,
+              "totalObjects": 463
+            }
+          }
+        },
+        {
+          "name": "LocalFrameView::performLayout",
+          "startMs": 2792.24,
+          "ms": 47.96,
+          "overlapMs": 47.96,
+          "args": {
+            "contentsHeightBeforeLayout": 720
+          }
+        },
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 2842.75,
+          "ms": 53.07,
+          "overlapMs": 42.95,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        }
+      ]
+    },
+    {
+      "phase": "startup",
+      "startMs": 3819,
+      "endMs": 4035.7,
+      "ms": 216.69999999999982,
+      "causes": [
+        "compositor canvas readback/GPU wait"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 187.62,
+      "gpuWaitMs": 187.16,
+      "dominantMeasuredPhase": {
+        "name": "compositor canvas readback/GPU wait",
+        "ms": 187.62
+      },
+      "methods": [
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3821,
+          "ms": 6.6,
+          "overlapMs": 6.6
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 201.89
+        },
+        {
+          "name": "edgeSample (src/world/TerrainSeams.ts?t=1792333950499:22)",
+          "sampledMs": 4.47
+        },
+        {
+          "name": "updateBuffer (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:41601)",
+          "sampledMs": 4.03
+        },
+        {
+          "name": "joinTerrainEdges (src/world/TerrainSeams.ts?t=1792333950499:49)",
+          "sampledMs": 2.03
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:51294)",
+          "sampledMs": 1.16
+        },
+        {
+          "name": "setText (src/ui/HUD.ts:2071)",
+          "sampledMs": 1.08
+        },
+        {
+          "name": "apply (src/world/Atmosphere.ts?t=1792333950499:676)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 0.9
+        },
+        {
+          "name": "projectObject (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-BEvS_7fE.js?v=6f53b336:51577)",
+          "sampledMs": 0.22
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 216.84
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 201.89
+        },
+        {
+          "name": "tick",
+          "sampledMs": 14.94
+        },
+        {
+          "name": "update",
+          "sampledMs": 13.57
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 7.39
+        },
+        {
+          "name": "joinTerrainEdges",
+          "sampledMs": 6.49
+        },
+        {
+          "name": "publishEdgeJoins",
+          "sampledMs": 6.49
+        },
+        {
+          "name": "drainBuildQueue",
+          "sampledMs": 6.49
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 5.4
+        },
+        {
+          "name": "edgeSample",
+          "sampledMs": 4.47
+        },
+        {
+          "name": "projectObject",
+          "sampledMs": 4.25
+        },
+        {
+          "name": "updateBuffer",
+          "sampledMs": 4.03
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "ThreadControllerImpl::RunTask",
+          "startMs": 3820.47,
+          "ms": 227.56,
+          "overlapMs": 215.23,
+          "args": {
+            "src_file": "cc/trees/proxy_impl.cc",
+            "src_func": "ScheduledActionSendBeginMainFrame",
+            "src_line": 844
+          }
+        },
+        {
+          "name": "ProxyMain::BeginMainFrame",
+          "startMs": 3820.48,
+          "ms": 227.55,
+          "overlapMs": 215.22,
+          "args": {
+            "begin_frame_id": 234,
+            "main_frame_pipeline": {
+              "main_frame_id": 14452494463453512000,
+              "step": "BEGIN_MAIN_FRAME"
+            }
+          }
+        },
+        {
+          "name": "LayerTreeHost::DoUpdateLayers",
+          "startMs": 3846.95,
+          "ms": 200.95,
+          "overlapMs": 188.75,
+          "args": {
+            "source_frame_number": 84
+          }
+        },
+        {
+          "name": "GLES2::ReadPixels",
+          "startMs": 3848.08,
+          "ms": 197.68,
+          "overlapMs": 187.62,
+          "args": {}
+        },
+        {
+          "name": "ImplementationBase::WaitForCmd",
+          "startMs": 3848.55,
+          "ms": 190.1,
+          "overlapMs": 187.16,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferHelper::Finish",
+          "startMs": 3848.55,
+          "ms": 190.09,
+          "overlapMs": 187.15,
+          "args": {}
+        },
+        {
+          "name": "CommandBufferProxyImpl::WaitForGetOffset",
+          "startMs": 3848.59,
+          "ms": 189.99,
+          "overlapMs": 187.11,
+          "args": {
+            "end": 112068,
+            "start": 112068
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3820.56,
+          "ms": 15.18,
+          "overlapMs": 15.18,
+          "args": {
+            "data": {
+              "frame": "4F90BE1415C596B537686D53833DC2AD",
+              "id": 73
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3820.58,
+          "ms": 15.15,
+          "overlapMs": 15.15,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3820.58,
+          "ms": 15.14,
+          "overlapMs": 15.14,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "4F90BE1415C596B537686D53833DC2AD",
+              "functionName": "tick",
+              "isolate": "4433978873539564787",
+              "lineNumber": 1548,
+              "sampleTraceId": 4946858848961439,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts?t=1792334143152"
+            }
+          }
+        },
+        {
+          "name": "terrain.drainBuildQueue",
+          "startMs": 3821,
+          "ms": 6.6,
+          "overlapMs": 6.6,
+          "args": {
+            "callTime": 118251911762,
+            "startTime": 3821,
+            "traceId": 2667867416
+          }
+        },
+        {
+          "name": "LocalFrameView::RunStyleAndLayoutLifecyclePhases",
+          "startMs": 3835.82,
+          "ms": 5.91,
+          "overlapMs": 5.91,
+          "args": {}
+        }
+      ]
+    }
+  ]
+}

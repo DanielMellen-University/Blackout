@@ -1,0 +1,23 @@
+{
+  "source": "docs/reviews/performance-10.926/before/world-3.trace.json.gz",
+  "totalEvents": 4055803,
+  "retainedEvents": 4462,
+  "mainRafCount": 3974,
+  "extentMs": [
+    -29.195,
+    126982.473
+  ],
+  "mainExtentMs": [
+    -20.851,
+    126664.212
+  ],
+  "completeFlightCoverage": true,
+  "longIntervals": [
+    {
+      "startMs": 3837.3,
+      "endMs": 4037.3,
+      "ms": 200
+    }
+  ],
+  "note": "Events within 10 ms of recorded >100 ms intervals. Check completeFlightCoverage: a filled buffer cannot establish attribution for the omitted tail. Worker spans are not main-thread costs."
+}
