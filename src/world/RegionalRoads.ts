@@ -301,7 +301,9 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
   const corridor = terrainRoadRoute(start, end, sample, direction * distance * .025, false, clearance.allows)
   // Leave a numerical margin below the public ceiling after profile arithmetic.
   const engineeringGrade = MAX_REGIONAL_ROAD_GRADE * .98
-  const coastal = Math.min(start.y, end.y) < 25
+  // A coastal village can attach on an uphill street above the shoreline band.
+  // Keep its bounded two-way detour even when both chosen joins exceed 25 m.
+  const coastal = Math.min(start.y, end.y) < 25 || Math.min(a.y, b.y) < 25
   const validate = (points: readonly { x: number; z: number }[]): SettlementRoad | null => {
     if (!clearance.routeAllows(points)) return null
     const road = groundRoad(points, width, sample)

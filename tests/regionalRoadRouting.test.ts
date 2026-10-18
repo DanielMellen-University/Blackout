@@ -156,3 +156,19 @@ describe('bounded coastal detours', () => {
     expect(coastalRoadRoute(start, { x: Infinity, z: 0 }, sample)).toBeNull()
   })
 })
+
+it('fits a narrow inland departure into the existing coastal lanes and probe budget', () => {
+  const start = { x: 0, z: 0 }, end = { x: 12000, z: 0 }
+  const allows = (a: { x: number; z: number }, b: { x: number; z: number }) =>
+    Math.abs(a.z) <= 100 && Math.abs(b.z) <= 100 &&
+    !((a.x === 0 && a.z === 0 && b.x > 0) || (b.x === 0 && b.z === 0 && a.x > 0))
+  const sample = vi.fn(() => ({ height: 20, waterLevel: 0 }))
+  const route = coastalRoadRoute(start, end, sample, allows)!
+  expect(route).not.toBeNull()
+  expect(route[0]).toEqual(start); expect(route.at(-1)).toEqual(end)
+  expect(route[1]!.x).toBe(0)
+  expect(Math.abs(route[1]!.z)).toBeGreaterThan(0)
+  expect(Math.abs(route[1]!.z)).toBeLessThanOrEqual(100)
+  expect(sample.mock.calls.length).toBeLessThanOrEqual(MAX_ROUTE_REFINEMENT_PROBES)
+  for (let i = 1; i < route.length; i++) expect(allows(route[i - 1]!, route[i]!)).toBe(true)
+})

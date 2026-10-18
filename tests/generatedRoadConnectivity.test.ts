@@ -115,3 +115,33 @@ it('connects the actual seed-73 coastal village to an inland neighbour without a
   expect(wetPoints).toBeGreaterThan(0)
   expect(bridgeSupportPoints(road).length).toBeLessThanOrEqual(MAX_ROAD_SUPPORTS)
 }, 60000)
+
+it.each([
+  [42, 4, -4, '4,-3|4,-4'],
+  [808, -7, -3, '-7,-3|-8,-3'],
+] as const)('connects the previously isolated seed-%s coastal village with dry elevated joins', (seed, cx, cz, key) => {
+  clearOpsPad(); setWorldSeed(seed)
+  const source = settlementForCell(cx, cz)!
+  expect(source.y).toBeLessThan(25)
+  const links = buildableRegionalLinksForSettlement(source)
+  expect(links.map(link => link.key)).toEqual([key])
+  const link = links[0]!, road = roadBetweenSettlements(link.from, link.to, settlementForCell)!
+  expect(Math.min(link.from.roads[0]!.points[0]!.y, link.to.roads[0]!.points[0]!.y)).toBeGreaterThan(25)
+  expect(road).not.toBeNull(); expect(roadGradeValid(road)).toBe(true)
+  expect(roadBetweenSettlements(link.to, link.from, settlementForCell)).toEqual(road)
+  expect(road.points.length).toBeLessThanOrEqual(8192)
+  expect(bridgeSupportPoints(road).length).toBeLessThanOrEqual(MAX_ROAD_SUPPORTS)
+  expect(road.points[0]!.structure).toBe('ground'); expect(road.points.at(-1)!.structure).toBe('ground')
+  let drySpan = 0
+  for (let i = 0; i < road.points.length; i++) {
+    const point = road.points[i]!, ground = sampleClimate(point.x, point.z)
+    if (ground.height <= (ground.waterLevel ?? 0) + 1) {
+      expect(point.bridge).toBe(true); expect(point.y).toBeGreaterThanOrEqual((ground.waterLevel ?? 0) + 7)
+    }
+    const step = i ? Math.hypot(point.x - road.points[i - 1]!.x, point.z - road.points[i - 1]!.z) : 0
+    drySpan = !point.bridge && point.structure !== 'ground' ? drySpan + step : 0
+    expect(drySpan).toBeLessThanOrEqual(1200)
+    if (point.structure !== 'ground') expect(point.y - Math.min(point.groundY!, point.leftGroundY!, point.rightGroundY!))
+      .toBeLessThanOrEqual(MAX_ROAD_STRUCTURE_HEIGHT)
+  }
+}, 60000)

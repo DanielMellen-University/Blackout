@@ -33,7 +33,9 @@ export function coastalRoadRoute(a: Position, b: Position, sample: RouteSampler,
   const terrainPenalty = (g: Ground) => (wet(g) ? 9 : 0) +
     Math.max(0, (g.landform?.ridge ?? 0) * 1.6 - (g.landform?.alpineValley ?? 0) * .5)
   for (let station = 0; station <= stations; station++) for (let lane = 0; lane < lanes; lane++) {
-    const index = station * lanes + lane, lateral = (lane - center) / center * span
+    const fraction = (lane - center) / center
+    // Resolve shore departures with the same eleven lanes and outer reach.
+    const index = station * lanes + lane, lateral = fraction * Math.abs(fraction) ** 1.5 * span
     x[index] = a.x + dx * station / stations + nx * lateral
     z[index] = a.z + dz * station / stations + nz * lateral
     const ground = sample(x[index]!, z[index]!); probes++
