@@ -1,0 +1,121 @@
+{
+  "targetBytes": 200000000,
+  "sourceCommit": "2baa61e",
+  "note": "One diagnostic snapshot per route, different capture times. City peak capture and absolute northeast route peak are unverified. No optimization or memory improvement claimed.",
+  "rows": [
+    {
+      "route": "northeast",
+      "capture": "200 MB trigger",
+      "simulationSeconds": 14.150000000000283,
+      "triggerHeap": 200141132,
+      "preSnapshotHeap": 200835138,
+      "postSnapshotHeap": 76831745,
+      "observedFinishedPeak": null,
+      "strongSnapshotSelfBytes": 87281972,
+      "largestSelfType": {
+        "name": "native",
+        "bytes": 56602224
+      },
+      "moduleCaches": [
+        {
+          "module": "RegionalDrainage",
+          "field": "nodes",
+          "node": 327766,
+          "id": 655797,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 2256304
+        },
+        {
+          "module": "Hydrology",
+          "field": "cache",
+          "node": 327769,
+          "id": 655803,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 111000
+        },
+        {
+          "module": "SettlementPlan",
+          "field": "cache",
+          "node": 47472,
+          "id": 95025,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 140
+        },
+        {
+          "module": "SettlementPlan",
+          "field": "anchorCache",
+          "node": 47476,
+          "id": 95033,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 272
+        }
+      ],
+      "errors": []
+    },
+    {
+      "route": "city",
+      "capture": "route end, trigger not reached",
+      "simulationSeconds": 120,
+      "triggerHeap": null,
+      "preSnapshotHeap": 129397529,
+      "postSnapshotHeap": 74392593,
+      "observedFinishedPeak": 148182147,
+      "strongSnapshotSelfBytes": 87299702,
+      "largestSelfType": {
+        "name": "native",
+        "bytes": 53112446
+      },
+      "moduleCaches": [
+        {
+          "module": "RegionalDrainage",
+          "field": "nodes",
+          "node": 285090,
+          "id": 570491,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 2977016
+        },
+        {
+          "module": "Hydrology",
+          "field": "cache",
+          "node": 285123,
+          "id": 570557,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 195136
+        },
+        {
+          "module": "SettlementPlan",
+          "field": "cache",
+          "node": 307357,
+          "id": 615019,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 136
+        },
+        {
+          "module": "SettlementPlan",
+          "field": "anchorCache",
+          "node": 307359,
+          "id": 615023,
+          "type": "object",
+          "name": "Map",
+          "selfBytes": 16,
+          "retainedBytes": 272
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "note": "Paused diagnostic snapshots force GC. A threshold capture is a high-water trigger, not proof of the absolute route maximum. A missing trigger captures route end instead. Excluded from acceptance flights.",
+  "routeId": "world",
+  "seed": 73,
+  "heapTargetBytes": 200000000,
+  "allocationSampling": false,
+  "errors": [],
+  "samples": [
+    {
+      "seconds": 5,
+      "peak": {
+        "heap": 200141132,
+        "seconds": 14.150000000000283,
+        "at": 18791.90000000596
+      },
+      "result": {
+        "phase": "flight",
+        "seed": 73,
+        "quality": "balanced",
+        "camera": "external",
+        "route": {
+          "id": "world",
+          "x": 0,
+          "z": 0,
+          "y": 5000,
+          "dx": 0.7071067811865476,
+          "dz": -0.7071067811865476,
+          "label": "Original northeast corridor"
+        },
+        "viewport": [
+          1280,
+          720
+        ],
+        "pixelRatio": 1,
+        "ratioRange": [
+          1,
+          1
+        ],
+        "airfieldReadyMs": 1533.0999999940395,
+        "launchToCoverageWallMs": 2493.499999994039,
+        "flightWallMs": 13716.199999999999,
+        "seconds": 13.716666666666928,
+        "durationSeconds": 120,
+        "distanceM": 9327.33333333351,
+        "speedMps": 680,
+        "startupFrames": {
+          "samples": 118,
+          "median": 16.699999999999818,
+          "p95": 33.40000000000009,
+          "p99": 50,
+          "max": 266.6999999999998,
+          "over50": 1,
+          "over100": 1
+        },
+        "flightFrames": {
+          "samples": 596,
+          "median": 16.700000000000728,
+          "p95": 33.399999999999636,
+          "p99": 33.400000000001455,
+          "max": 50,
+          "over50": 0,
+          "over100": 0
+        },
+        "heapBytes": {
+          "start": 91019182,
+          "current": 187074575,
+          "peak": 199758531
+        },
+        "geometries": 250,
+        "textures": 4,
+        "streaming": {
+          "loaded": 616,
+          "pending": 0,
+          "inFlight": 1,
+          "ready": 0,
+          "workers": 4
+        },
+        "settlements": {
+          "current": {
+            "loaded": 3,
+            "buildings": 848,
+            "roads": 1,
+            "pending": 0
+          },
+          "peak": {
+            "loaded": 3,
+            "buildings": 848,
+            "roads": 1,
+            "pending": 11
+          }
+        },
+        "resourceSamples": [
+          {
+            "seconds": 0,
+            "heapBytes": 91019182,
+            "geometries": 241,
+            "textures": 4,
+            "loaded": 521,
+            "pending": 0,
+            "inFlight": 0,
+            "ready": 0,
+            "settlements": 2,
+            "buildings": 826,
+            "roads": 0,
+            "settlementPending": 9
+          }
+        ]
+      },
+      "before": {
+        "heap": 200835138,
+        "groups": {
+          "terrain geometry": 8832760,
+          "water geometry": 5894496,
+          "other geometry": 9094982,
+          "contact grids": 1066064,
+          "drape staging": 793444,
+          "drape owners": 1586888
+        },
+        "geometryCount": 926,
+        "maps": {
+          "RiverSurface": {},
+          "RegionalDrainage": {
+            "nodes": 7646
+          },
+          "Hydrology": {
+            "cache": 9
+          },
+          "SettlementPlan": {
+            "cache": 2,
+            "anchorCache": 2
+          }
+        },
+        "terrain": {
+          "loaded": 658,
+          "pending": 20,
+          "inFlight": 4,
+          "ready": 5,
+          "workers": 4
+        },
+        "settlements": {
+          "loaded": 3,
+          "connections": 1
+        },
+        "position": [
+          6803.781448577097,
+          5000,
+          -6803.781448577097
+        ]
+      },
+      "after": {
+        "heap": 76831745,
+        "groups": {
+          "terrain geometry": 8832760,
+          "water geometry": 5894496,
+          "other geometry": 9094982,
+          "contact grids": 1066064,
+          "drape staging": 793444,
+          "drape owners": 1586888
+        },
+        "geometryCount": 926,
+        "maps": {
+          "RiverSurface": {},
+          "RegionalDrainage": {
+            "nodes": 7646
+          },
+          "Hydrology": {
+            "cache": 9
+          },
+          "SettlementPlan": {
+            "cache": 2,
+            "anchorCache": 2
+          }
+        },
+        "terrain": {
+          "loaded": 658,
+          "pending": 10,
+          "inFlight": 0,
+          "ready": 19,
+          "workers": 4
+        },
+        "settlements": {
+          "loaded": 3,
+          "connections": 1
+        },
+        "position": [
+          6803.781448577097,
+          5000,
+          -6803.781448577097
+        ]
+      }
+    }
+  ]
+}
