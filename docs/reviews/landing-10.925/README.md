@@ -20,4 +20,4 @@ Runway centerline and inbound nose/track agree in the reviewed poses. The PAPI p
 
 The inspected desktop debrief fits its screen, exposes the landing assessment and coaching, and keeps retry/new-world actions visible. Free flight remains unscored exploration and does not open a mission-completion debrief. Landing physics, altitude/load telemetry, collision, terrain/water, budgets, landscape revision 28 and saved records are unchanged. Vegetation, blackout/redout effects and the flight-warning strip remain removed and paused.
 
-The seven focused files pass 167 checks and the production build passes. Physical-device controls, manual flare/handling, full Training gate flights, crosswind handling and universal airfield clearance remain outside this verification.
+The eight focused files pass 170 checks, including the compact README contract and the production build passes. Physical-device controls, manual flare/handling, full Training gate flights, crosswind handling and universal airfield clearance remain outside this verification.
