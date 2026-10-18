@@ -1,6 +1,7 @@
 import { Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import {
+  missionLegClearance,
   gateProximityEmphasis,
   gateProximityEmphasisSquared,
   gateBeaconDistanceOpacity,
@@ -317,12 +318,13 @@ describe('MissionSystem gate crossing', () => {
       [routeC, { x: 0, y: 20, z: 0 }],
     ] as const) {
       let previous = start
-      for (const point of route) {
+      for (const [leg, point] of route.entries()) {
         for (const t of [0.2, 0.4, 0.6, 0.8]) {
           const x = previous.x + (point.x - previous.x) * t
           const y = previous.y + (point.y - previous.y) * t
           const z = previous.z + (point.z - previous.z) * t
-          expect(y - sampleTerrainHeight(x, z)).toBeGreaterThanOrEqual(119.9)
+          const length = Math.hypot(point.x - previous.x, point.z - previous.z)
+          expect(y - sampleTerrainHeight(x, z)).toBeGreaterThanOrEqual(missionLegClearance(leg, length * t, length) - .1)
         }
         previous = point
       }
@@ -405,7 +407,7 @@ describe('MissionSystem gate crossing', () => {
             profile,
           )
           let previous = start
-          for (const point of route) {
+          for (const [leg, point] of route.entries()) {
             const dx = point.x - previous.x
             const dz = point.z - previous.z
             const samples = Math.max(12, Math.ceil(Math.hypot(dx, dz) / 80))
@@ -421,7 +423,7 @@ describe('MissionSystem gate crossing', () => {
                 expect(
                   clearance,
                   `${profile} corridor ${lateral}m from ${start.x},${start.z} leg ${point.x.toFixed(0)},${point.z.toFixed(0)} sample ${sample}/${samples}`,
-                ).toBeGreaterThanOrEqual(119.5)
+                ).toBeGreaterThanOrEqual(missionLegClearance(leg, Math.hypot(dx, dz) * t, Math.hypot(dx, dz)) - .5)
               }
             }
             previous = point
@@ -726,4 +728,32 @@ describe('MissionSystem gate crossing', () => {
     expect(mission.update(0, 0, 0)).toBe('none')
     expect(() => mission.tick()).not.toThrow()
   })
+})
+
+
+it('keeps Training Orbit gate one within an ordinary departure climb', () => {
+  setWorldSeed(1); clearOpsPad()
+  const pad = findPlayableSpawn()!
+  setOpsPad(pad.x, pad.z, pad.y, pad.yaw)
+  try {
+    const x = pad.x - Math.sin(pad.yaw) * 45, z = pad.z - Math.cos(pad.yaw) * 45, y = pad.y + 1.4
+    const route = buildMissionRoute(x, y, z, pad.yaw, 'orbit', 'steady')
+    const first = route[0]!, distance = Math.hypot(first.x - x, first.z - z)
+    expect(first.y - y).toBeLessThan(240)
+    expect(Math.atan2(first.y - y, distance) * 180 / Math.PI).toBeLessThan(12)
+    const summary = summarizeMissionRoute(x, y, z, route, 'orbit', 'steady', pad.yaw)
+    expect(validateMissionRoute(route, summary.minClearanceMeters).valid).toBe(true)
+    expect(summary.maxSlopeDegrees).toBeLessThan(18)
+  } finally { clearOpsPad() }
+})
+
+it('ramps only departure clearance and still rejects terrain in its envelope', () => {
+  expect([0, 200, 400, 800, 1200].map(d => missionLegClearance(0, d, 1200))).toEqual([0, 30, 60, 120, 120])
+  expect(missionLegClearance(0, 400, 400)).toBe(120)
+  expect(missionLegClearance(1, 0, 1200)).toBe(120)
+  const route = [{ x: 0, y: 120, z: 800, fwdX: 0, fwdZ: 1 }]
+  const clear = routeCorridorMinClearance(0, 0, 0, route, 0, () => 0)
+  expect(clear).toBeCloseTo(120, 10)
+  const obstructed = routeCorridorMinClearance(0, 0, 0, route, 0, (_x, z) => z < 200 ? 20 : 0)
+  expect(validateMissionRoute(route, obstructed).valid).toBe(false)
 })

@@ -100,6 +100,7 @@ export interface MissionRouteSummary {
   maxTurnDegrees: number
   /** Steepest absolute climb/descent angle between route gates. */
   maxSlopeDegrees: number
+  /** Gate-corridor metres; departure is normalized against its climb ramp. */
   minClearanceMeters: number
   maxAltitudeMeters: number
 }
@@ -354,6 +355,15 @@ export function scoringFocusLabel(focus: MissionScoringFocus): string {
   return SCORING_FOCUS_LABELS[focus] ?? SCORING_FOCUS_LABELS.balanced
 }
 
+/** Ramp departure clearance from the ground spawn to the full gate corridor.
+ * Requiring 120 m at the first sample inflated a flat-field first gate by
+ * roughly the sample count. Gate-to-gate legs retain their full clearance. */
+export function missionLegClearance(leg: number, distance: number, length: number): number {
+  return leg === 0
+    ? ROUTE_CLEARANCE * MathUtils.clamp(distance / Math.max(1, Math.min(800, length)), 0, 1)
+    : ROUTE_CLEARANCE
+}
+
 /**
  * Build a varied route whose first leg follows the runway heading and whose
  * sampled straight segments stay above the generated terrain.
@@ -424,6 +434,7 @@ export function buildMissionRoute(
     const dx = point.x - previousX
     const dz = point.z - previousZ
     const samples = routeSegmentSampleCount(dx, dz)
+    const legLength = Math.hypot(dx, dz)
     for (let sample = 1; sample <= samples; sample++) {
       const t = sample / samples
       const x = previousX + (point.x - previousX) * t
@@ -437,7 +448,9 @@ export function buildMissionRoute(
         // full climate object out of this bounded launch-time hot path.
         const ground = sampleTerrainSurfaceHeightFast(corridorX, corridorZ)
         if (Number.isFinite(ground)) {
-          const needed = ground + ROUTE_CLEARANCE
+          // A small departure reserve covers interpolation between the
+          // existing fixed probes without changing their count or width.
+          const needed = ground + missionLegClearance(i, t * legLength, legLength) + (i === 0 ? 2 : 0)
           const endpointY = (needed - previousY * (1 - t)) / t
           requiredY = Math.max(requiredY, endpointY)
         }
@@ -914,7 +927,9 @@ function routeSegmentSampleCount(dx: number, dz: number): number {
 
 /**
  * Measure the minimum terrain clearance across the same fixed-width corridor
- * that route generation raises around each gate leg. The sampler is injectable
+ * that route generation raises around each gate leg. Departure samples use
+ * equivalent clearance against their ramp; subsequent legs use actual metres.
+ * The sampler is injectable
  * for deterministic contract tests; production uses the fast terrain query.
  */
 export function routeCorridorMinClearance(
@@ -936,11 +951,12 @@ export function routeCorridorMinClearance(
   let previousZ = safeSpawnZ
   let minClearanceMeters = Number.POSITIVE_INFINITY
 
-  for (const point of route) {
+  for (const [leg, point] of route.entries()) {
     const dx = point.x - previousX
     const dy = point.y - previousY
     const dz = point.z - previousZ
     const samples = routeSegmentSampleCount(dx, dz)
+    const legLength = Math.hypot(dx, dz)
     for (let sample = 1; sample <= samples; sample++) {
       const t = sample / samples
       const x = previousX + dx * t
@@ -953,7 +969,12 @@ export function routeCorridorMinClearance(
           x + corridorRightX * lateral,
           z + corridorRightZ * lateral,
         )
-        if (Number.isFinite(ground)) minClearanceMeters = Math.min(minClearanceMeters, y - ground)
+        if (Number.isFinite(ground)) {
+          // Before full departure clearance, report the margin against that
+          // envelope on the same 120 m validation scale. Never skip a probe.
+          const required = missionLegClearance(leg, t * legLength, legLength)
+          minClearanceMeters = Math.min(minClearanceMeters, y - ground + ROUTE_CLEARANCE - required)
+        }
       }
     }
     previousX = point.x
