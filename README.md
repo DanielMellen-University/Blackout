@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.924**. Previous roadmap chunk: **10.923**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.925**. Previous roadmap chunk: **10.924**.
+
+Recent changes from **10.925**. Show Free flight final glide guidance and give its valid approach cone navigation priority. Include the exact 30 degree nose and ground-track boundary despite floating-point rotation error, while rejecting measurable excess. Review three generated runways in Free flight and Training Orbit through real physics contact and desktop debrief, with paired low-altitude production chase/cockpit views. Preserve flight physics, collision, terrain, water, budgets, revision 28 and paused exclusions. Scripted approaches prescribe the trajectory and pre-complete Training gates; manual handling and full gate flights remain unverified. See docs/reviews/landing-10.925/README.md for evidence and limits. Northeast memory/hitch acceptance and broader coastal coverage remain open.
 
 Recent changes from **10.924**. Match dry shared-edge lighting normals on the 17.5 m world basis and join resident mixed-LOD edge profiles with render-only connector skirts, including non-nested grids. Preserve contact heights, core terrain positions and indices, water, distances, all configured budgets, revision 28 and paused exclusions. Edge publication shares the existing upload deadline and cap, with no additional draw. Final evidence matches 35 identical before/after tile pairs with zero tested uncovered dry gaps. See docs/reviews/terrain-10.924/README.md for measured edge deltas, geometry cost, paired four-seed views and limitations. Landing follow-through and northeast memory/hitch acceptance remain open.
 

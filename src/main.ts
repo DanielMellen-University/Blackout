@@ -2677,7 +2677,12 @@ export async function boot(): Promise<void> {
       const gate = world.mission.activeGatePos()
       const returning = !freeFlight && challenge.phase === 'returning'
       const emergencyReturn = !freeFlight && emergencyReturnActive(engineOut, challenge.phase)
-      let navTarget: 'gate' | 'base' | 'city' | 'village' = returning || emergencyReturn ? 'base' : 'gate'
+      // A valid Free flight final shares the runway cue and navigation target.
+      const finalApproachGlide = freeFlight || returning || emergencyReturn
+        ? world.landingGlideCue(aircraft.position, pose.heading, aircraft.velocity, aircraft.onGround)
+        : null
+      const landingNavigation = returning || emergencyReturn || finalApproachGlide !== null
+      let navTarget: 'gate' | 'base' | 'city' | 'village' = landingNavigation ? 'base' : 'gate'
       let navPosition = gate
       let navTargetId: string | null = null
       let navBearing = gateScreenBearing(cameras.camera, gate)
@@ -2688,9 +2693,9 @@ export async function boot(): Promise<void> {
       let navCrosswindSide: CrosswindSide = 'calm'
       let navLateral: NavigationLateralCue | null = null
       let navSpeed: NavigationSpeedCue | null = null
-      let navGlide: NavigationGlideCue | null = null
+      const navGlide: NavigationGlideCue | null = finalApproachGlide
       let approachPreviewScore = Number.NaN
-      if (returning || emergencyReturn) {
+      if (landingNavigation) {
         returnTarget.set(world.spawn.x, world.spawn.y, world.spawn.z)
         navPosition = returnTarget
         navDist = Math.hypot(
@@ -2715,7 +2720,6 @@ export async function boot(): Promise<void> {
         })
         navLateral = navigationLateralCue(lateralOffset, 'base')
         navSpeed = navigationSpeedCue(aircraft.speed, 'base')
-        navGlide = world.landingGlideCue(aircraft.position, pose.heading, aircraft.velocity, aircraft.onGround)
         navCrosswind = crosswindSpeedMps(
           precipitation.windX,
           precipitation.windZ,
@@ -2786,7 +2790,7 @@ export async function boot(): Promise<void> {
         )
       }
       const selectedRadarTarget = radar.selectedTarget()
-      if (!returning && !emergencyReturn && selectedRadarTarget) {
+      if (!landingNavigation && selectedRadarTarget) {
         const targetX = Number.isFinite(selectedRadarTarget.x) ? selectedRadarTarget.x! : aircraft.position.x
         const targetY = Number.isFinite(selectedRadarTarget.y) ? selectedRadarTarget.y! : aircraft.position.y
         const targetZ = Number.isFinite(selectedRadarTarget.z) ? selectedRadarTarget.z! : aircraft.position.z

@@ -71,8 +71,11 @@ export function landingGlideCue(
   const c = Math.cos(runwayYaw)
   const forwardSpeed = velocityX * s + velocityZ * c
   const lateralSpeed = velocityX * c - velocityZ * s
-  if (!(Math.cos(heading - runwayYaw) >= Math.sqrt(3) / 2) ||
+  // Trig and rotated components can round either way at the inclusive boundary.
+  // Scale the track allowance with speed; it is far below a measurable angle.
+  const rounding = 8 * Number.EPSILON
+  if (!(Math.cos(heading - runwayYaw) >= Math.sqrt(3) / 2 - rounding) ||
     !Number.isFinite(forwardSpeed) || !Number.isFinite(lateralSpeed) || forwardSpeed <= 1e-6 ||
-    Math.abs(lateralSpeed) > forwardSpeed / Math.sqrt(3)) return null
+    Math.abs(lateralSpeed) > forwardSpeed * (1 / Math.sqrt(3) + rounding)) return null
   return runwayGlideCue(approach.height, approach.distance)
 }

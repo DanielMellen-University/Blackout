@@ -91,6 +91,19 @@ describe('shared runway guidance', () => {
     }
   })
 
+  it('includes the exact 30 degree cone at arbitrary headings while rejecting a measurable excess', () => {
+    const out = { height: 25, distance: 500, inApproach: true }
+    for (const yaw of [-Math.PI, -1.2345, -.123, 0, .123, 1.2345, Math.PI]) {
+      for (const sign of [-1, 1]) {
+        const a = sign * Math.PI / 6, outside = sign * (30.000001 * Math.PI / 180)
+        expect(landingGlideCue(out, yaw + a, Math.sin(yaw) * 42, Math.cos(yaw) * 42, yaw, false)).toBe('on-slope')
+        expect(landingGlideCue(out, yaw, Math.sin(yaw + a) * 42, Math.cos(yaw + a) * 42, yaw, false)).toBe('on-slope')
+        expect(landingGlideCue(out, yaw + outside, Math.sin(yaw) * 42, Math.cos(yaw) * 42, yaw, false)).toBeNull()
+        expect(landingGlideCue(out, yaw, Math.sin(yaw + outside) * 42, Math.cos(yaw + outside) * 42, yaw, false)).toBeNull()
+      }
+    }
+  })
+
   it('fails closed for invalid coordinates, overflow, angles and velocities', () => {
     const out = { height: 25, distance: 500, inApproach: true }
     for (const invalid of [NaN, Infinity, -Infinity]) {
