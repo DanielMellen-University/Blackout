@@ -46,3 +46,27 @@ it('keeps vertical soil faces, fits their bottom edges and does not duplicate di
   expect(result.indices).toHaveLength(3)
   expect(result.indices.map(i => offsets[i])).toEqual(offsets)
 })
+
+
+it('retains flat and sloping source triangles only after checking every LOD envelope', () => {
+  for (const slope of [0, .03]) {
+    const positions = [0, 100.45, 0, 24, 100.45 + 24 * slope, 0, 0, 100.45, 5]
+    const original = [...positions], offsets = [.45, .45, .45]
+    const steps = fitRoadTerrainSteps(positions, offsets, [0, 1, 2], 0, 0, x => 100 + slope * x)
+    let result = steps.next()
+    while (!result.done) result = steps.next()
+    expect(result.value).toEqual([0, 1, 2]); expect(positions).toEqual(original)
+  }
+})
+
+it.each(['near', 'coarse', 'wet'])('keeps fitting a %s bend hidden between flat profile rows', kind => {
+  const positions = [0, 100.45, 0, 24, 100.45, 0, 0, 100.45, 5], offsets = [.45, .45, .45]
+  const steps = fitRoadTerrainSteps(positions, offsets, [0, 1, 2], 0, 0, (x, z) => {
+    if (kind === 'wet') return null
+    const bend = kind === 'near' ? x === 17.5 : x === 1120 && z === 1120
+    return 100 + (bend ? 2 : 0)
+  })
+  let result = steps.next()
+  while (!result.done) result = steps.next()
+  expect(result.value.length).toBeGreaterThan(3)
+})

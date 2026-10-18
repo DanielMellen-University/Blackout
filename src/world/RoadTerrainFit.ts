@@ -6,8 +6,37 @@ type Vertex = { x: number; y: number; z: number; offset: number }
  * terrain edge is on this lattice too, so draping vertices also fits triangle
  * interiors. Fixed bridge/fill anchors retain their original triangles. */
 export function *fitRoadTerrainSteps(positions: number[], offsets: number[], indices: number[],
-  originX: number, originZ: number): Generator<void, number[]> {
+  originX: number, originZ: number, height?: (x: number, z: number) => number | null): Generator<void, number[]> {
   const fitted: number[] = [], vertices = new Map<string, number>(), cell = TERRAIN_CONTACT_GRID
+  // A flat source profile alone is insufficient: a crest can lie between its
+  // rows, and a coarser LOD can bend where the near surface does not. Certify
+  // every enclosing lattice vertex at every dry terrain spacing before keeping
+  // a source triangle. The cache belongs to this bounded build, never the world.
+  const heights = new Map<string, number | null>()
+  const planar = (triangle: Vertex[]): boolean => {
+    if (!height) return false
+    const [a, b, c] = triangle as [Vertex, Vertex, Vertex]
+    const dx = b.x - a.x, dz = b.z - a.z, ex = c.x - a.x, ez = c.z - a.z
+    const determinant = dx * ez - ex * dz
+    if (Math.abs(determinant) < 1e-8) return false
+    const ay = a.y - a.offset, by = b.y - b.offset - ay, cy = c.y - c.offset - ay
+    const sx = (by * ez - cy * dz) / determinant, sz = (dx * cy - ex * by) / determinant
+    const minX = Math.min(a.x, b.x, c.x) + originX, maxX = Math.max(a.x, b.x, c.x) + originX
+    const minZ = Math.min(a.z, b.z, c.z) + originZ, maxZ = Math.max(a.z, b.z, c.z) + originZ
+    // Near, mid, single far, horizon sizes 2..32, and reduced far fallback.
+    for (const spacing of [cell, 35, 52.5, 70, 105, 140, 210, 280, 420, 560, 840, 1120, 1680]) {
+      for (let x = Math.floor(minX / spacing); x <= Math.ceil(maxX / spacing); x++) {
+        for (let z = Math.floor(minZ / spacing); z <= Math.ceil(maxZ / spacing); z++) {
+          const wx = x * spacing, wz = z * spacing, id = `${wx},${wz}`
+          let actual = heights.get(id)
+          if (actual === undefined) { actual = height(wx, wz); heights.set(id, actual) }
+          const expected = ay + sx * (wx - originX - a.x) + sz * (wz - originZ - a.z)
+          if (actual === null || Math.abs(actual - expected) > 1e-5) return false
+        }
+      }
+    }
+    return true
+  }
   const key = (v: Vertex) => `${Math.fround(v.x)},${Math.fround(v.z)},${Math.fround(v.offset)}`
   for (let i = 0; i < offsets.length; i++) if (offsets[i]! >= 0) {
     vertices.set(key({ x: positions[i * 3]!, y: positions[i * 3 + 1]!, z: positions[i * 3 + 2]!, offset: offsets[i]! }), i)
@@ -49,6 +78,7 @@ export function *fitRoadTerrainSteps(positions: number[], offsets: number[], ind
     if (ids.some(id => offsets[id]! < 0)) { fitted.push(...ids); continue }
     const triangle = ids.map(id => ({ x: positions[id * 3]!, y: positions[id * 3 + 1]!,
       z: positions[id * 3 + 2]!, offset: offsets[id]! }))
+    if (planar(triangle)) { fitted.push(...ids); continue }
     const minX = Math.floor((Math.min(...triangle.map(v => v.x)) + originX) / cell)
     const maxX = Math.floor((Math.max(...triangle.map(v => v.x)) + originX) / cell)
     const minZ = Math.floor((Math.min(...triangle.map(v => v.z)) + originZ) / cell)

@@ -519,7 +519,11 @@ function *createRoadGeometrySteps(roads: SettlementRoad[], originX: number, orig
     }
   }
   if (!indices.length) return null
-  if (terrainFit) indices = yield* fitRoadTerrainSteps(positions, offsets, indices, originX, originZ)
+  if (terrainFit) indices = yield* fitRoadTerrainSteps(positions, offsets, indices, originX, originZ, (x, z) => {
+    const climate = sampleClimate(x, z, settlementRuntimeClimateScratch)
+    // Wet grids may promote to non-lattice water detail. Keep their full fit.
+    return climate.height > (climate.waterLevel ?? 0) ? climate.height - originY : null
+  })
   yield
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))

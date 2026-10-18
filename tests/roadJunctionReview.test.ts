@@ -91,7 +91,14 @@ it('fills the asphalt join without laying a gravel cap across the incoming lane'
     const shoulder = scene.getObjectByName('RegionalRoadShoulder') as Mesh
     const asphalt = scene.getObjectByName('RegionalRoadAsphalt') as Mesh
     const ribbonVertices = road.points.length * 3
-    expect(shoulder.geometry.getAttribute('position').count).toBe(road.points.length * 4)
+    const gravel = shoulder.geometry.getAttribute('position'), gravelIndex = shoulder.geometry.getIndex()!
+    // Check coverage, not the old four-vertex row count. Closed soil edges add
+    // two vertices per row and must remain outside the incoming asphalt too.
+    for (let t = 0; t < gravelIndex.count; t += 3) {
+      const zs = [0, 1, 2].map(j => gravel.getZ(gravelIndex.getX(t + j)))
+      expect(zs.every(z => z >= road.width / 2 - .001) ||
+        zs.every(z => z <= -road.width / 2 + .001)).toBe(true)
+    }
     expect(asphalt.geometry.getAttribute('position').count).toBe(ribbonVertices + 24)
     expect(asphalt.geometry.getIndex()!.count).toBe((road.points.length - 1) * 12 + 72)
   } finally { system.dispose() }
