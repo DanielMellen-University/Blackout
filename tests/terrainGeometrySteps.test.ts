@@ -10,7 +10,7 @@ function digest(data: TerrainGeometryData, omitGroundColor = false): string {
   const hash = createHash('sha256')
   hash.update(JSON.stringify({ segs: data.segs, groundBounds: data.ground.bounds, waterBounds: data.water?.bounds }))
   for (const array of [data.heights, data.waterLevels,
-    ...Object.entries(data.ground.attributes).filter(([key]) => !omitGroundColor || key !== 'color').map(([, attribute]) => attribute.array), data.ground.index,
+    ...Object.entries(data.ground.attributes).filter(([key]) => !omitGroundColor || (key !== 'color' && key !== 'normal')).map(([, attribute]) => attribute.array), data.ground.index,
     ...Object.values(data.water?.attributes ?? {}).map(attribute => attribute.array), data.water?.index]) {
     if (array) hash.update(new Uint8Array(array.buffer, array.byteOffset, array.byteLength))
   }
@@ -66,18 +66,19 @@ describe('cooperative terrain geometry', () => {
     expect(digest(finish(steps))).toBe('a8035efe576eef94178dabce16ac856b9cac2927ca6b358d46f5bccd6e4212e4')
   })
 
-  // Reproduced independently on 10.919, retaining the 10.891 topology/water.
-  // Only land colors change in 10.920. Keep heights, indices, normals, water
-  // attributes (including water colors), bounds and detail byte-for-byte.
-  // Original full payload hashes remain in fixtures/terrain-payload-10.891.txt.
+  // Physical hashes independently reproduced on frozen 10.923 before the
+  // render-normal fix. Heights, positions, indices, water (including its normals
+  // and colors), bounds and detail remain byte-identical. Old normal-inclusive
+  // hashes are archived in fixtures/terrain-non-color-10.923.txt; original full
+  // payload hashes remain in fixtures/terrain-payload-10.891.txt.
   it.each([
-    { name: 'near', input: [0, 0, 0], expected: '9c74cf58927051f854677f64b6369bec443be8f64929bb3c493242d2a6865fa4' },
-    { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: '65fef889caca5be1553bf55a48592c87dde1a4f602529b51c4ba2f7d8af6b583' },
-    { name: 'pond', input: [-22050, -28350, 0], expected: '8de9f18c347abbdf0ec24d112b23f74f28babc28124d01a6a6ee4159e7610930' },
-    { name: 'far water', input: [-6720, -6720, 2, 32], expected: 'a119804031046dfaf5387a232db2eafb902c33134ff569e7f6ee4753d5b734f7' },
-    { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: '6799ca9ad47e443e81bb2e5d38e726f1ff8963705e1d346a5acee151564fc3f9' },
-    { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'abe42f102ec0178412549e71fdfb6e69083b541b226c51b5a8c08d8cc3b388db' },
-  ])('preserves the regional $name non-color payload byte-for-byte', ({ input, expected, pad }) => {
+    { name: 'near', input: [0, 0, 0], expected: 'ed4cbd7c6c804a8968a9204cef20753f620e43667ad083b13aba7d8bb0c819a3' },
+    { name: 'skirt', input: [0, 0, 1, 2, [true, true, true, true]], expected: '00b65dc00a2908a437ebe055bdf2a8155a0e006c572938b8f40eab4b29d2fd2b' },
+    { name: 'pond', input: [-22050, -28350, 0], expected: 'f01d189eb51041b302310822c8ff09de940179ba2eec9fa1dee7e77ff566a92f' },
+    { name: 'far water', input: [-6720, -6720, 2, 32], expected: 'fbeda54e03f8635e1c287dcf19257b239c401060fa3354280c57e6c5afa670fd' },
+    { name: 'far fallback', input: [-420, 420, 2, 8, [true, false, true, false], 'fallback'], expected: 'f12aa4e1ea1b80faac6a907eb2ef73515dda58a00028cf936204d8d1083538bb' },
+    { name: 'runway pad', input: [0, 0, 0], pad: true, expected: 'f844a610580fc158a1eca7dc9583cc13325780ede9f76cf4d14e97ad7f75aebe' },
+  ])('preserves the regional $name physical payload byte-for-byte', ({ input, expected, pad }) => {
     if (pad) setOpsPad(0, 0, 42, .4)
     const args = input as Parameters<typeof generateTerrainGeometrySteps>
     const stepped = finish(generateTerrainGeometrySteps(...args)), direct = generateTerrainGeometry(...args)

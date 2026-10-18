@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.923**. Previous roadmap chunk: **10.922**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.924**. Previous roadmap chunk: **10.923**.
+
+Recent changes from **10.924**. Match dry shared-edge lighting normals on the 17.5 m world basis and join resident mixed-LOD edge profiles with render-only connector skirts, including non-nested grids. Preserve contact heights, core terrain positions and indices, water, distances, all configured budgets, revision 28 and paused exclusions. Edge publication shares the existing upload deadline and cap, with no additional draw. See docs/reviews/terrain-10.924/README.md for measured edge deltas, geometry cost, paired four-seed views and limitations. Landing follow-through and northeast memory/hitch acceptance remain open.
 
 Recent changes from **10.923**. Use a common 17.5 m slope-tint basis at dry tile boundaries to remove mixed-LOD rock-color seams. Four actual shared-vertex jumps of 0.019-0.114 RGB fall to zero while heights, normals, indices, water and collision stay byte-identical. Review alpine, badlands, green and volcanic terrain plus roads and sea contact on four additional seeds. Preserve detail, distances, all budgets, revision 28 and paused exclusions. Additional boundary probes add measured CPU cost; the 155.4 MB northeast heap target, large hitches, remaining geometric/normal seams and actual landing approaches remain open. The 96 focused checks, production build and 32 paired low-altitude chase/cockpit views pass. See [the terrain review](docs/reviews/terrain-10.923/README.md) for measured CPU cost and remaining geometry/normal seams.
 

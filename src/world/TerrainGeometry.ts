@@ -435,12 +435,18 @@ export function* generateTerrainGeometrySteps(
           const climate = sampledGrid()[i]!
           // Rock tint is material detail. A shared dry edge must not change
           // color when its neighbour samples the same slope at another LOD.
-          // Keep mesh normals and all physical heights on their original grid.
+          // Physical heights stay on their original grid; lighting shares this derivative.
           if ((ix === 0 || iz === 0 || ix === segs || iz === segs) &&
             climate.height > (climate.waterLevel ?? 0) + 2 && (cell !== TERRAIN_CONTACT_GRID || shoreBed)) {
             const x = originX + ix * cell, z = originZ + iz * cell, d = TERRAIN_CONTACT_GRID
             dx = (Math.fround(sampleTerrainHeightFast(x + d, z)) - Math.fround(sampleTerrainHeightFast(x - d, z))) / (2 * d)
             dz = (Math.fround(sampleTerrainHeightFast(x, z + d)) - Math.fround(sampleTerrainHeightFast(x, z - d))) / (2 * d)
+          }
+          // Lighting uses the same world-space dry-edge derivative as tint.
+          // Store through Float32 just like the existing near gradient arrays.
+          if ((ix === 0 || iz === 0 || ix === segs || iz === segs) &&
+            climate.height > (climate.waterLevel ?? 0) + 2) {
+            gradientX[i] = dx; gradientZ[i] = dz
           }
           const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)
           applySlopeShadingInto(shaded, colors[i * 3]!, colors[i * 3 + 1]!, colors[i * 3 + 2]!, slope)

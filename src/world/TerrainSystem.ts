@@ -1,3 +1,4 @@
+import { joinTerrainEdges, terrainEdgeJoin, type TerrainEdgeTile, type TerrainEdgeJoin } from './TerrainSeams'
 import { ShaderSourceCache } from '../core/ShaderSourceCache'
 import {
   BufferGeometry,
@@ -183,6 +184,8 @@ interface Chunk {
   originX: number
   originZ: number
   heights: Float32Array
+  /** Original worker payload prefix, excluding subsequent render-only joins. */
+  seamBaseVertices: number
   /** Current opacity 0–1 (lerped each frame). */
   alpha: number
   fadeAge: number
@@ -245,7 +248,9 @@ export class TerrainSystem {
   private readonly activeKeys = new Set<string>()
   /** Only one suspended CPU tile is retained, never an iterator per queued tile. */
   private fallback: { job: TerrainBuildRequest; key: string; steps: TerrainGeometrySteps } | null = null
-  /** Chunks that still need per-frame opacity or prop-distance work. */
+  /** Render joins waiting inside the existing attachment budget. */
+  private readonly seamKeys = new Set<string>()
+  /** Chunks that still need per-frame opacity updates. */
   private readonly fadeKeys = new Set<string>()
   /** Reused schedule membership set avoids churn during rapid focus changes. */
   private readonly neededKeys = new Set<string>()
@@ -558,6 +563,7 @@ export class TerrainSystem {
     this.readySorted = false
     this.activeKeys.clear()
     this.fadeKeys.clear()
+    this.seamKeys.clear()
     for (const chunk of this.retiring) {
       chunk.root.removeFromParent()
       this.disposeChunk(chunk)
@@ -881,6 +887,7 @@ export class TerrainSystem {
         const existing = this.chunks.get(key)
         if (existing) {
           existing.fadingOut = false
+          this.queueEdgeJoins(existing)
           if (existing.fallbackOffset) this.prepareChunkForFade(existing)
           const lod = lodWithHysteresis(dist, existing.lod)
           const needsRebuild = lod !== existing.lod
@@ -995,6 +1002,7 @@ export class TerrainSystem {
       this.offsetFallback(existing)
     }
     this.chunks.set(key, chunk)
+    this.queueEdgeJoins(chunk)
     this.fadeKeys.add(key)
     this.invalidateSampleChunk()
     invalidateGroundSamplerCaches()
@@ -1020,6 +1028,14 @@ export class TerrainSystem {
       const result = this.ready.pop()!
       this.install(result.job, result.data)
       uploads++
+    }
+    // Edge publication shares the existing attachment deadline and upload cap.
+    while (this.seamKeys.size && uploads < this.maxUploadsPerFrame &&
+      (uploads === 0 || performance.now() < deadline)) {
+      const key = this.seamKeys.values().next().value!
+      this.seamKeys.delete(key)
+      const chunk = this.chunks.get(key)
+      if (chunk && !chunk.fadingOut) { this.publishEdgeJoins(chunk); uploads++ }
     }
     this.dispatchWorkers()
     if (this.workers.size > 0) return
@@ -1063,6 +1079,36 @@ export class TerrainSystem {
         uploads++
       }
     }
+  }
+
+  private edgeTile(chunk: Chunk): TerrainEdgeTile {
+    return { originX: chunk.originX, originZ: chunk.originZ, size: chunk.size, segs: chunk.segs,
+      heights: chunk.heights, waterLevels: chunk.waterLevels, geometry: chunk.terrainMesh.geometry }
+  }
+
+  private queueEdgeJoins(chunk: Chunk): void {
+    const tile = this.edgeTile(chunk), step = CHUNK_SIZE * chunk.size / chunk.segs
+    for (const neighbor of this.chunks.values()) {
+      if (neighbor === chunk || neighbor.fadingOut) continue
+      if (!terrainEdgeJoin(tile, this.edgeTile(neighbor))) continue
+      const otherStep = CHUNK_SIZE * neighbor.size / neighbor.segs
+      if (step > otherStep) this.seamKeys.add(chunk.key)
+      else if (otherStep > step) this.seamKeys.add(neighbor.key)
+    }
+  }
+
+  private publishEdgeJoins(chunk: Chunk): void {
+    const tile = this.edgeTile(chunk), step = CHUNK_SIZE * chunk.size / chunk.segs
+    const joins: TerrainEdgeJoin[] = []
+    for (const neighbor of this.chunks.values()) {
+      if (neighbor === chunk || neighbor.fadingOut || CHUNK_SIZE * neighbor.size / neighbor.segs >= step) continue
+      const join = terrainEdgeJoin(tile, this.edgeTile(neighbor))
+      if (join) joins.push(join)
+    }
+    const geometry = joinTerrainEdges(tile, chunk.seamBaseVertices, joins)
+    chunk.terrainMesh.geometry = geometry
+    if (chunk.backMesh) chunk.backMesh.geometry = geometry
+    tile.geometry.dispose()
   }
 
   private cancelFallback(): void {
@@ -1276,6 +1322,7 @@ export class TerrainSystem {
       this.root.remove(chunk.root)
       this.disposeChunk(chunk)
       this.chunks.delete(key)
+      this.queueEdgeJoins(chunk)
       this.replacementKeys.delete(key)
       this.fadeKeys.delete(key)
       removedAny = true
@@ -1371,6 +1418,7 @@ export class TerrainSystem {
     const chunk: Chunk = {
       key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
       cx, cz, root, lod, segs: data.segs, originX, originZ,
+      seamBaseVertices: geometry.getAttribute('position').count,
       heights: data.heights, alpha: 0, fadeAge: 0, targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
       surfaceRevision: this.nextSurfaceRevision++, terrainMesh: mesh, backMesh, waterMesh: water, settled: false, fallbackOffset: false,
       materials: root.children.flatMap(child => child instanceof Mesh
