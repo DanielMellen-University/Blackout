@@ -259,13 +259,20 @@ export class SkyDome {
 
           // --- Stars (night, upper sky) ---
           if (uStarIntensity > 0.01 && elev > -0.05) {
-            // Dense layer
-            vec3 cell = floor(dir * 220.0);
-            float n = hash13(cell);
-            float star = step(0.992, n);
-            // Sparse bright stars
-            float n2 = hash13(cell + 19.7);
-            float bright = step(0.9975, n2);
+            // Round, antialiased points within a stable angular grid. A whole
+            // hashed 3D cell used to light up as a large square or triangle.
+            vec2 starUv = vec2(atan(dir.z, dir.x) / 6.2831853 + 0.5,
+              asin(clamp(dir.y, -1.0, 1.0)) / 3.1415927 + 0.5) * vec2(420.0, 210.0);
+            vec2 cell = floor(starUv);
+            float n = hash13(vec3(cell, 0.0));
+            float n2 = hash13(vec3(cell, 19.7));
+            vec2 offset = fract(starUv) - vec2(0.5);
+            offset.x *= max(0.12, length(dir.xz));
+            float radius = length(offset);
+            float aa = max(0.01, fwidth(radius) * .35);
+            float pointMask = 1.0 - smoothstep(0.065 - aa, 0.065 + aa, radius);
+            float star = step(0.994, n) * pointMask;
+            float bright = step(0.9995, n2) * pointMask;
             // Gentle twinkle
             float tw = 0.75 + 0.25 * sin(uTime * (2.0 + n * 4.0) + n2 * 40.0);
             float skyMask = smoothstep(-0.02, 0.25, elev);

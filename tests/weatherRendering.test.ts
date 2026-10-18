@@ -298,3 +298,45 @@ describe('weather rendering', () => {
     expect(cloudInteriorDensity(NaN, 0, 0)).toBe(0)
   })
 })
+
+it('dims all pooled cloud layers at night without reducing daylight cloud readability', () => {
+  const { scene, weather } = atmosphere()
+  try {
+    weather.setWeather('cloudy', true); weather.setTimeOfDayLocked(true)
+    for (const time of [0, .5]) {
+      weather.timeOfDay = time; weather.update(.2, 0, 200, 0)
+      for (const layer of ['cumulus', 'stratus', 'cirrus']) {
+        const cloud = scene.getObjectByName('CloudBatch-' + layer) as InstancedMesh
+        const color = (cloud.material as { color: { r: number; g: number; b: number } }).color
+        const brightness = Math.max(color.r, color.g, color.b)
+        if (time === 0) expect(brightness).toBeLessThan(.1)
+        else expect(brightness).toBeGreaterThan(.85)
+      }
+    }
+  } finally { weather.dispose() }
+})
+
+it('keeps ordinary cumulus formations broad while retaining rounded individual billows', () => {
+  const { scene, weather } = atmosphere()
+  try {
+    weather.randomizeWeather(1); weather.setWeather('cloudy', true)
+    weather.update(0, 8000, 1400, -56000, 10)
+    const clouds = scene.getObjectByName('CloudBatch-cumulus') as InstancedMesh
+    const matrix = new Matrix4(), scale = new Vector3(), position = new Vector3()
+    const alpha = clouds.geometry.getAttribute('cloudAlpha')
+    let checked = 0
+    for (let start = 0; start < clouds.count; start += 16) {
+      if (alpha.getX(start) < .5) continue
+      const lo = new Vector3(Infinity, Infinity, Infinity), hi = new Vector3(-Infinity, -Infinity, -Infinity)
+      for (let i = start; i < start + 16; i++) {
+        clouds.getMatrixAt(i, matrix); scale.setFromMatrixScale(matrix); position.setFromMatrixPosition(matrix)
+        lo.min(position.clone().sub(scale)); hi.max(position.clone().add(scale))
+        expect(scale.y / Math.max(scale.x, scale.z)).toBeGreaterThan(.5)
+      }
+      const extent = hi.sub(lo)
+      expect(extent.y / Math.max(extent.x, extent.z)).toBeLessThan(1)
+      checked++
+    }
+    expect(checked).toBeGreaterThan(0)
+  } finally { weather.dispose() }
+})

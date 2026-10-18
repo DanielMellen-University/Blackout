@@ -701,9 +701,9 @@ export class Aircraft {
     const pulse =
       pulseAnimated ? 1 + Math.sin(now * 0.028) * 0.08 : 1
     const len = (
-      0.12 + plumeResponse * (boost ? 2.8 : 1.25)
+      0.12 + plumeResponse * (boost ? 2.8 : .35)
     ) * pulse
-    const fat = 0.68 + plumeResponse * (boost ? 0.62 : 0.32)
+    const fat = boost ? .68 + plumeResponse * .62 : .5 + plumeResponse * .16
     if (pulseAnimated || pulseModeChanged || responseChanged ||
       Math.abs(fat - this.plumeFatValue) > 0.001 ||
       Math.abs(len - this.plumeLengthValue) > 0.001) {

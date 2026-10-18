@@ -1005,7 +1005,7 @@ export class Atmosphere {
     this.cloudDrift.value.set(0, 0, 0)
     this.cloudFrameBlend.value = 0
     const brightness =
-      0.5 + dayFactor * 0.48 - weather.snow * 0.08
+      0.075 + dayFactor * 0.905 - weather.snow * (0.015 + dayFactor * .065)
     // MeshBasic clouds do not receive the scene lights. Tint the three shared
     // batches from the same continuous front values so rain and storms become
     // layered undercast rather than bright clear-weather puffs behind fog.
@@ -1031,7 +1031,7 @@ export class Atmosphere {
       // made fair-weather cumulus transparent discs instead of solid billows.
       mat.opacity = CLOUD_LAYER[layer].opacityMul
       let br = brightness
-      if (layer === 'cirrus') br = Math.min(1, br + 0.11)
+      if (layer === 'cirrus') br = Math.min(1, br + 0.11 * dayFactor)
       else if (layer === 'cumulus' && dayFactor > 0.4) br = Math.min(1, br + 0.04)
       const layerShade = this.automaticWeather ? 0 : cloudShade * (layer === 'cirrus' ? 0.48 : layer === 'cumulus' ? 0.86 : 1)
       br *= 1 - layerShade
@@ -1168,6 +1168,9 @@ export class Atmosphere {
       const anvil = layer === 'cumulus' && i / Math.max(1, cluster.puffs.length - 1) > .79
       const horizontal = 1 + bank * .75 + (anvil ? convection * 2.2 : convection * .3)
       const depth = regional ? regional.cloudTop - regional.cloudBase : 1500
+      // Fair cumulus spreads into a low, broad crown. Only convection grows
+      // the full tower; ordinary cloudy fronts formerly made narrow columns.
+      const fairCrown = layer === 'cumulus' ? .3 + convection * .7 : 1
       const heightScale = layer === 'cirrus' ? 1 : depth / cluster.height * (layer === 'stratus' ? .75 : 1)
       // Lift the tower centres through the deeper storm envelope without
       // stretching every billow into a kilometre-tall droplet. The upper
@@ -1178,10 +1181,13 @@ export class Atmosphere {
       // Compressing only Y made small clouds into wide, stacked pancakes.
       // Deep storm towers retain the bounded billow/anvil treatment above.
       const billowWidth = layer === 'cumulus' ? Math.min(1, heightScale) : 1
+      const centreWidth = layer === 'cumulus' ? (1.8 - convection * .8) * billowWidth : 1
       _cloudObject.position.set(
-        worldPosition.x + puff.x * horizontal,
-        worldPosition.y + puff.y * heightScale + this.cloudBaseOffset,
-        worldPosition.z + puff.z * horizontal,
+        worldPosition.x + puff.x * horizontal * centreWidth,
+        worldPosition.y + (layer === 'cumulus'
+          ? (puff.sy + (puff.y - puff.sy) * fairCrown) * heightScale
+          : puff.y * heightScale) + this.cloudBaseOffset,
+        worldPosition.z + puff.z * horizontal * centreWidth,
       )
       _cloudObject.rotation.set(0, puff.rotationY, 0)
       _cloudObject.scale.set(puff.sx * horizontal * billowWidth, puff.sy * vertical, puff.sz * horizontal * billowWidth)

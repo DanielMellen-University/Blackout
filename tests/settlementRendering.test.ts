@@ -532,3 +532,30 @@ describe('settlement rendering and lifecycle', () => {
     expect(hitsSettlement(plan, 3300, 110, 3000)).toBe(true)
   })
 })
+
+it('waits for terrain across the settlement footprint while retaining collision and stream ownership', () => {
+  const p = example(), scene = new Scene()
+  let ready = false, absent = false
+  const height = vi.fn((x: number, z: number) => absent || (!ready && x > p.x && z > p.z) ? null : 100)
+  const system = new SettlementSystem(scene, height)
+  const internal = system as unknown as {
+    build(plan: SettlementPlan): { root: Group; detail: Group; plan: SettlementPlan }
+    setLoaded(key: string, loaded: unknown): void
+  }
+  try {
+    const loaded = internal.build(p), original = JSON.stringify(p)
+    internal.setLoaded(p.id, loaded)
+    system.update(p.x, p.z)
+    expect(loaded.root.visible).toBe(false)
+    expect(system.count).toBeGreaterThanOrEqual(1)
+    expect(system.hitObstacle(p.buildings[0]!.x, p.buildings[0]!.y + 2, p.buildings[0]!.z)).toBe(true)
+    ready = true; system.update(p.x, p.z)
+    expect(loaded.root.visible).toBe(true)
+    // A covered LOD change may change height, but must not hide a ready root.
+    height.mockImplementation(() => 99); system.update(p.x, p.z)
+    expect(loaded.root.visible).toBe(true)
+    height.mockImplementation(() => null); system.update(p.x, p.z)
+    expect(loaded.root.visible).toBe(false)
+    expect(JSON.stringify(p)).toBe(original)
+  } finally { system.dispose() }
+})

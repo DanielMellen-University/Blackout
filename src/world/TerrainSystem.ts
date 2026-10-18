@@ -716,6 +716,35 @@ export class TerrainSystem {
     return Math.max(bed, level)
   }
 
+  /** Read resident ownership only. No terrain sampling, generation or buffers.
+   * A parent still drawing during LOD replacement covers all its descendants. */
+  hasMeshCoverage(minX: number, minZ: number, maxX: number, maxZ: number): boolean {
+    if (!Number.isFinite(minX) || !Number.isFinite(minZ) || !Number.isFinite(maxX) ||
+      !Number.isFinite(maxZ) || maxX <= minX || maxZ <= minZ ||
+      maxX - minX > STREAM_RADIUS_M * 2 || maxZ - minZ > STREAM_RADIUS_M * 2 ||
+      Math.abs(minX / CHUNK_SIZE) > Number.MAX_SAFE_INTEGER / 2 ||
+      Math.abs(minZ / CHUNK_SIZE) > Number.MAX_SAFE_INTEGER / 2) return false
+    const rootSpan = CHUNK_SIZE * 32
+    for (let z = Math.floor(minZ / rootSpan) * 32; z * CHUNK_SIZE < maxZ; z += 32)
+      for (let x = Math.floor(minX / rootSpan) * 32; x * CHUNK_SIZE < maxX; x += 32)
+        if (!this.meshTileCovered(x, z, 32, minX, minZ, maxX, maxZ)) return false
+    return true
+  }
+
+  private meshTileCovered(cx: number, cz: number, size: number,
+    minX: number, minZ: number, maxX: number, maxZ: number): boolean {
+    if ((cx + size) * CHUNK_SIZE <= minX || cx * CHUNK_SIZE >= maxX ||
+      (cz + size) * CHUNK_SIZE <= minZ || cz * CHUNK_SIZE >= maxZ) return true
+    const tile = this.chunks.get(tileKey(cx, cz, size))
+    if (tile && tile.alpha > .01 && tile.terrainMesh.visible) return true
+    if (size === 1) return false
+    const half = size / 2
+    return this.meshTileCovered(cx, cz, half, minX, minZ, maxX, maxZ) &&
+      this.meshTileCovered(cx + half, cz, half, minX, minZ, maxX, maxZ) &&
+      this.meshTileCovered(cx, cz + half, half, minX, minZ, maxX, maxZ) &&
+      this.meshTileCovered(cx + half, cz + half, half, minX, minZ, maxX, maxZ)
+  }
+
   /** Survey labels must not synchronously construct a cold watershed. Contact
    * still uses the unchanged resident/analytic surface paths. A pending label
    * retries on the next frame after one cooperative hydrology slice. */

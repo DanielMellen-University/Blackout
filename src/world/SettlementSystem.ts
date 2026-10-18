@@ -945,9 +945,14 @@ export class SettlementSystem {
   /** Structured-clone staging record for settlement worker requests. */
   private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
   private readonly draper: SurfaceDraper | null
+  private readonly renderedHeight: ((x: number, z: number) => number | null) | undefined
+  private readonly terrainCoverage: ((minX: number, minZ: number, maxX: number, maxZ: number) => boolean) | undefined
 
   constructor(scene: Scene, renderedHeight?: (x: number, z: number) => number | null,
-    heightRevision?: (x: number, z: number) => number) {
+    heightRevision?: (x: number, z: number) => number,
+    terrainCoverage?: (minX: number, minZ: number, maxX: number, maxZ: number) => boolean) {
+    this.renderedHeight = renderedHeight
+    this.terrainCoverage = terrainCoverage
     this.draper = renderedHeight ? new SurfaceDraper(renderedHeight, groundSamplerRevision, heightRevision) : null
     this.root.name = 'Settlements'
     this.root.matrixAutoUpdate = false
@@ -1723,12 +1728,28 @@ export class SettlementSystem {
       const distanceSquared = dx * dx + dz * dz
       const loadRadius = LOAD_RADIUS + plan.radius
       const detailRadius = this.detailRadius + plan.radius
-      root.visible = distanceSquared < loadRadius * loadRadius
+      root.visible = distanceSquared < loadRadius * loadRadius && this.hasTerrainSupport(plan)
       detail.visible = distanceSquared < detailRadius * detailRadius
     }
     for (const connection of this.connections.values()) {
       connection.root.visible = roadDistanceSquared(x, z, connection.road) < this.roadDetailRadius * this.roadDetailRadius
     }
+  }
+
+  /** A newly reached city must not appear over an empty terrain stream.
+   * The world uses an exact resident-quadtree coverage query. Keep
+   * admission, collision, distances and the geometry budgets independent of
+   * this presentation readiness check. Covered LOD replacements stay visible. */
+  private hasTerrainSupport(plan: SettlementPlan): boolean {
+    if (this.terrainCoverage) return this.terrainCoverage(plan.x - plan.radius, plan.z - plan.radius,
+      plan.x + plan.radius, plan.z + plan.radius)
+    // Standalone hosts without a terrain tree retain a bounded support check.
+    if (!this.renderedHeight) return true
+    for (let iz = -1; iz <= 1; iz++) for (let ix = -1; ix <= 1; ix++) {
+      const height = this.renderedHeight(plan.x + ix * plan.radius, plan.z + iz * plan.radius)
+      if (height === null || !Number.isFinite(height)) return false
+    }
+    return true
   }
 
   /** Preparation has its own cooperative slice. This does not change worker,

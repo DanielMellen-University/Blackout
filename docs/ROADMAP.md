@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **10.929** is current. Previous ship: **10.928**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.930** is current. Previous ship: **10.929**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 10.930. Review three controls-only real-physics Free flights longer than ten minutes on seeds 73, 1337 and 2026, retaining 33 minute stills and the shorter failed pilots. Fix floating settlements before terrain coverage, block-like stars, bright night clouds, narrow fair-weather cloud columns and oversized cruise exhaust. Preserve flight physics, collision, landscape revision 29, all resource budgets and paused exclusions. The 199 affected checks, star pixel regression and paired production-pose review pass. Seed 73 crashes after 616.5 seconds; the city and coast retries finish beyond 620 seconds. Coarse-LOD foundation gaps, universal road/coast acceptance and manual handling remain open. See docs/reviews/flights-10.930/README.md for evidence, reproduction and limits.
 
 Chunk 10.929. Extend terrain/biome polish with shoreline bank stitching at resident mixed-LOD edges. Clip exposed connectors to the higher water surface instead of dropping intervals with one submerged edge or within the old two metre exclusion band. Keep submerged beds open, split crossing water grades, and preserve core terrain/contact/water buffers, landscape revision 29 and all draw/publication budgets. All 120 independent probes across 24 measured gaps pass, versus zero before, with byte-identical core hashes. Added seam geometry is recorded without a performance claim. See docs/reviews/shores-10.929/README.md for paired low-altitude coast views and limits. Broader shoreline coverage and continuous-flight polish remain open; paused systems stay excluded.
 
