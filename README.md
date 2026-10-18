@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.921**. Previous roadmap chunk: **10.920**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.922**. Previous roadmap chunk: **10.921**.
+
+Recent changes from **10.922**. Retain verified road fitter/refit, biome blend and shader/material allocation improvements. Cached 1,200-color CPU falls from 1.911 to 1.101 ms and rough road fitting from 62.759 to 12.967 ms, with identical payloads. Drop shared fallback materials, quad merging and unproven scheduler/sort experiments. Final matched six-flight results reduce >50 ms intervals from 92 to 38, but retain a 400 ms hitch and northeast peak heap of 214.7 MB against the 155.4 MB target; memory and overall performance acceptance remain open. City peak heap falls from 204.1 to 184.4 MB. Preserve detail, distances, all budgets, revision 28 and paused exclusions. See [the performance review](docs/reviews/performance-10.922/README.md) for evidence and limits.
 
 Recent changes from **10.921**. Retain planar regional road triangles only after checking the enclosing near, mid, far and horizon terrain lattices. The flat 24 km asphalt fixture returns from 16,207 to 3,027 vertices and retains its original index/refit assertions. Replace the obsolete shoulder row-count assertion with direct triangle coverage checks: raised gravel lips and outer soil edges stay outside the asphalt lane. Hidden near/coarse bends still tessellate, and real far-near-far road contact remains verified. Preserve all distances, budgets, engineered anchors, revision 28 and paused exclusions. See [the road CI review](docs/reviews/roads-10.921/README.md) for evidence and limits.
 

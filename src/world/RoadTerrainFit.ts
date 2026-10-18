@@ -1,5 +1,7 @@
 import { TERRAIN_CONTACT_GRID } from './TerrainGeometry'
 
+const TERRAIN_SPACINGS = [TERRAIN_CONTACT_GRID, 35, 52.5, 70, 105, 140, 210, 280, 420, 560, 840, 1120, 1680]
+
 type Vertex = { x: number; y: number; z: number; offset: number }
 
 /** Clip ground ribbons at the terrain lattice and its diagonals. Every coarser
@@ -7,7 +9,7 @@ type Vertex = { x: number; y: number; z: number; offset: number }
  * interiors. Fixed bridge/fill anchors retain their original triangles. */
 export function *fitRoadTerrainSteps(positions: number[], offsets: number[], indices: number[],
   originX: number, originZ: number, height?: (x: number, z: number) => number | null): Generator<void, number[]> {
-  const fitted: number[] = [], vertices = new Map<string, number>(), cell = TERRAIN_CONTACT_GRID
+  const fitted: number[] = [], cell = TERRAIN_CONTACT_GRID
   // A flat source profile alone is insufficient: a crest can lie between its
   // rows, and a coarser LOD can bend where the near surface does not. Certify
   // every enclosing lattice vertex at every dry terrain spacing before keeping
@@ -24,7 +26,7 @@ export function *fitRoadTerrainSteps(positions: number[], offsets: number[], ind
     const minX = Math.min(a.x, b.x, c.x) + originX, maxX = Math.max(a.x, b.x, c.x) + originX
     const minZ = Math.min(a.z, b.z, c.z) + originZ, maxZ = Math.max(a.z, b.z, c.z) + originZ
     // Near, mid, single far, horizon sizes 2..32, and reduced far fallback.
-    for (const spacing of [cell, 35, 52.5, 70, 105, 140, 210, 280, 420, 560, 840, 1120, 1680]) {
+    for (const spacing of TERRAIN_SPACINGS) {
       for (let x = Math.floor(minX / spacing); x <= Math.ceil(maxX / spacing); x++) {
         for (let z = Math.floor(minZ / spacing); z <= Math.ceil(maxZ / spacing); z++) {
           const wx = x * spacing, wz = z * spacing, id = `${wx},${wz}`
@@ -37,67 +39,135 @@ export function *fitRoadTerrainSteps(positions: number[], offsets: number[], ind
     }
     return true
   }
-  const key = (v: Vertex) => `${Math.fround(v.x)},${Math.fround(v.z)},${Math.fround(v.offset)}`
+  // Open addressing stores vertex indices rather than allocating coordinate
+  // strings and Map entries for every emitted corner. Compare the exact same
+  // Float32 X/Z/offset identity used by the renderer and the previous weld.
+  let table = new Uint32Array(2 ** Math.ceil(Math.log2(Math.max(16, offsets.length * 2)))), used = 0
+  const floats = new Float32Array(3), bits = new Uint32Array(floats.buffer)
+  const hash = (x: number, z: number, offset: number): number => {
+    floats[0] = Math.fround(x) || 0; floats[1] = Math.fround(z) || 0; floats[2] = Math.fround(offset) || 0
+    return (Math.imul(bits[0]! ^ (bits[0]! >>> 16), 0x45d9f3b) ^
+      Math.imul(bits[1]! ^ (bits[1]! >>> 16), 0x119de1f3) ^ bits[2]!) >>> 0
+  }
+  const grow = () => {
+    const old = table
+    table = new Uint32Array(old.length * 2)
+    for (const entry of old) if (entry) {
+      const i = entry - 1
+      let slot = hash(positions[i * 3]!, positions[i * 3 + 2]!, offsets[i]!) & (table.length - 1)
+      while (table[slot]) slot = (slot + 1) & (table.length - 1)
+      table[slot] = entry
+    }
+  }
+  const slotFor = (v: Vertex): number => {
+    let slot = hash(v.x, v.z, v.offset) & (table.length - 1)
+    while (table[slot]) {
+      const i = table[slot]! - 1
+      if (Math.fround(positions[i * 3]!) === Math.fround(v.x) &&
+        Math.fround(positions[i * 3 + 2]!) === Math.fround(v.z) &&
+        Math.fround(offsets[i]!) === Math.fround(v.offset)) break
+      slot = (slot + 1) & (table.length - 1)
+    }
+    return slot
+  }
+  const vertex = (): Vertex => ({ x: 0, y: 0, z: 0, offset: 0 })
+  const original = vertex()
   for (let i = 0; i < offsets.length; i++) if (offsets[i]! >= 0) {
-    vertices.set(key({ x: positions[i * 3]!, y: positions[i * 3 + 1]!, z: positions[i * 3 + 2]!, offset: offsets[i]! }), i)
+    original.x = positions[i * 3]!; original.y = positions[i * 3 + 1]!
+    original.z = positions[i * 3 + 2]!; original.offset = offsets[i]!
+    const slot = slotFor(original)
+    if (!table[slot]) used++
+    table[slot] = i + 1
   }
   const add = (v: Vertex): number => {
-    const id = key(v), found = vertices.get(id)
-    if (found !== undefined) return found
+    if ((used + 1) * 2 >= table.length) grow()
+    const slot = slotFor(v), found = table[slot]!
+    if (found) return found - 1
     const index = offsets.length
-    positions.push(v.x, v.y, v.z); offsets.push(v.offset); vertices.set(id, index)
+    positions.push(v.x, v.y, v.z); offsets.push(v.offset)
+    table[slot] = index + 1; used++
     return index
   }
-  const clip = (polygon: Vertex[], signed: (v: Vertex) => number): Vertex[] => {
-    const result: Vertex[] = []
-    let a = polygon.at(-1)!, da = signed(a)
-    for (const b of polygon) {
-      const db = signed(b)
-      if ((da < 0) !== (db < 0)) {
-        const t = da / (da - db)
-        result.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t,
-          z: a.z + (b.z - a.z) * t, offset: a.offset + (b.offset - a.offset) * t })
-      }
-      if (db >= 0) result.push(b)
-      a = b; da = db
+  type Polygon = { points: Vertex[]; count: number }
+  // A triangle clipped to a square and a diagonal needs at most eight points.
+  // Keep fixed workspace across all cells, triangles and cooperative yields.
+  const polygon = (): Polygon => ({ points: Array.from({ length: 10 }, vertex), count: 0 })
+  const triangle = polygon(), first = polygon(), second = polygon()
+  const signed = (v: Vertex, plane: number, boundary: number): number => {
+    switch (plane) {
+      case 0: return v.x - boundary
+      case 1: return boundary - v.x
+      case 2: return v.z - boundary
+      case 3: return boundary - v.z
+      case 4: return boundary - v.x - v.z
+      default: return v.x + v.z - boundary
     }
-    return result
   }
-  const emit = (polygon: Vertex[]) => {
-    for (let j = 2; j < polygon.length; j++) {
-      const a = polygon[0]!, b = polygon[j - 1]!, c = polygon[j]!
+  const clip = (input: Polygon, output: Polygon, plane: number, boundary: number): void => {
+    let count = 0
+    if (input.count) {
+      let a = input.points[input.count - 1]!, da = signed(a, plane, boundary)
+      for (let j = 0; j < input.count; j++) {
+        const b = input.points[j]!, db = signed(b, plane, boundary)
+        if ((da < 0) !== (db < 0)) {
+          const t = da / (da - db), out = output.points[count++]!
+          out.x = a.x + (b.x - a.x) * t; out.y = a.y + (b.y - a.y) * t
+          out.z = a.z + (b.z - a.z) * t; out.offset = a.offset + (b.offset - a.offset) * t
+        }
+        if (db >= 0) {
+          const out = output.points[count++]!
+          out.x = b.x; out.y = b.y; out.z = b.z; out.offset = b.offset
+        }
+        a = b; da = db
+      }
+    }
+    output.count = count
+  }
+  const emit = (polygon: Polygon) => {
+    for (let j = 2; j < polygon.count; j++) {
+      const a = polygon.points[0]!, b = polygon.points[j - 1]!, c = polygon.points[j]!
       const ux = b.x - a.x, uy = b.y - a.y, uz = b.z - a.z
       const vx = c.x - a.x, vy = c.y - a.y, vz = c.z - a.z
       if (Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) < 1e-8) continue
       fitted.push(add(a), add(b), add(c))
     }
   }
+  let processed = 64
   for (let i = 0; i < indices.length; i += 3) {
-    if (i % 192 === 0) yield
-    const ids = [indices[i]!, indices[i + 1]!, indices[i + 2]!]
-    if (ids.some(id => offsets[id]! < 0)) { fitted.push(...ids); continue }
-    const triangle = ids.map(id => ({ x: positions[id * 3]!, y: positions[id * 3 + 1]!,
-      z: positions[id * 3 + 2]!, offset: offsets[id]! }))
-    if (planar(triangle)) { fitted.push(...ids); continue }
-    const minX = Math.floor((Math.min(...triangle.map(v => v.x)) + originX) / cell)
-    const maxX = Math.floor((Math.max(...triangle.map(v => v.x)) + originX) / cell)
-    const minZ = Math.floor((Math.min(...triangle.map(v => v.z)) + originZ) / cell)
-    const maxZ = Math.floor((Math.max(...triangle.map(v => v.z)) + originZ) / cell)
+    const ia = indices[i]!, ib = indices[i + 1]!, ic = indices[i + 2]!
+    if (processed >= 64) { yield; processed = 0 }
+    processed++
+    if (offsets[ia]! < 0 || offsets[ib]! < 0 || offsets[ic]! < 0) { fitted.push(ia, ib, ic); continue }
+    for (let j = 0; j < 3; j++) {
+      const id = indices[i + j]!, v = triangle.points[j]!
+      v.x = positions[id * 3]!; v.y = positions[id * 3 + 1]!
+      v.z = positions[id * 3 + 2]!; v.offset = offsets[id]!
+    }
+    triangle.count = 3
+    const [a, b, c] = triangle.points as [Vertex, Vertex, Vertex]
+    if (planar(triangle.points)) { fitted.push(ia, ib, ic); continue }
+    const minX = Math.floor((Math.min(a.x, b.x, c.x) + originX) / cell)
+    const maxX = Math.floor((Math.max(a.x, b.x, c.x) + originX) / cell)
+    const minZ = Math.floor((Math.min(a.z, b.z, c.z) + originZ) / cell)
+    const maxZ = Math.floor((Math.max(a.z, b.z, c.z) + originZ) / cell)
     for (let x = minX; x <= maxX; x++) for (let z = minZ; z <= maxZ; z++) {
       const left = x * cell - originX, top = z * cell - originZ
-      let polygon = triangle
-      for (const signed of [(v: Vertex) => v.x - left, (v: Vertex) => left + cell - v.x,
-        (v: Vertex) => v.z - top, (v: Vertex) => top + cell - v.z]) {
-        if (!polygon.length) break
-        polygon = clip(polygon, signed)
-      }
-      if (polygon.length < 3) continue
+      clip(triangle, first, 0, left)
+      clip(first, second, 1, left + cell)
+      clip(second, first, 2, top)
+      clip(first, second, 3, top + cell)
+      if (second.count < 3) continue
       const diagonal = left + top + cell
       // A vertical edge can lie exactly on the diagonal. Emit that face once.
-      if (polygon.every(v => Math.abs(v.x + v.z - diagonal) < 1e-8)) emit(polygon)
+      let onDiagonal = true
+      for (let j = 0; j < second.count; j++) {
+        const v = second.points[j]!
+        if (Math.abs(v.x + v.z - diagonal) >= 1e-8) { onDiagonal = false; break }
+      }
+      if (onDiagonal) emit(second)
       else {
-        emit(clip(polygon, v => diagonal - v.x - v.z))
-        emit(clip(polygon, v => v.x + v.z - diagonal))
+        clip(second, first, 4, diagonal); emit(first)
+        clip(second, first, 5, diagonal); emit(first)
       }
     }
   }

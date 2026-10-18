@@ -185,6 +185,9 @@ export class AirTrafficSystem {
       opacity: 0.78,
       depthWrite: false,
       side: DoubleSide,
+      // The uniformly tinted silhouette needs no back/front color sorting. Keep both sides
+      // visible without invalidating the material twice each flight frame.
+      forceSinglePass: true,
       toneMapped: false,
     })
     this.mesh = new InstancedMesh(this.geometry, this.material, AIR_TRAFFIC_COUNT)

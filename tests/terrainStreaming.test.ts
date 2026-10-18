@@ -1,4 +1,4 @@
-import { Group, Mesh, MeshStandardMaterial, Scene } from 'three'
+import { BackSide, DoubleSide, FrontSide, Group, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { generateTerrainGeometry, type TerrainGeometryData, type TerrainGeometrySteps } from '../src/world/TerrainGeometry'
 import { TERRAIN_ROOT_SIZE, tileKey } from '../src/world/TerrainLayout'
@@ -35,9 +35,13 @@ interface Internals {
   replacementKeys: Map<string, string[]>
   sampledChunkLookup: Map<string, unknown>
   groundMatFar: MeshStandardMaterial
+  groundMatNear: MeshStandardMaterial
   waterMat: MeshStandardMaterial
   ready: { job: TerrainBuildRequest; data: TerrainGeometryData }[]
   fallback: { job: TerrainBuildRequest; key: string; steps: TerrainGeometrySteps } | null
+  focusX: number
+  focusZ: number
+  scheduleAround(cx: number, cz: number): void
   dispatchWorkers(): void
   drainBuildQueue(): void
   install(job: TerrainBuildRequest, data: TerrainGeometryData): void
@@ -183,6 +187,70 @@ describe('terrain streaming integration', () => {
     expect(material(chunk).opacity).toBe(1)
     expect(chunk.settled).toBe(true)
     expect(material(chunk)).toBe(internal.groundMatFar)
+  })
+
+  it('retains ordered back/front near-terrain fades and one opaque pass through replacement', () => {
+    desire(5, 2)
+    internal.install(job(5, 0), fixture)
+    const old = internal.chunks.get(key(5))!
+    const front = old.root.getObjectByName('TerrainChunk') as Mesh
+    const back = old.root.getObjectByName('TerrainBackfaces') as Mesh
+    expect(back.id).toBeLessThan(front.id)
+    expect(back.geometry).toBe(front.geometry)
+    expect((front.material as MeshStandardMaterial).side).toBe(FrontSide)
+    expect((back.material as MeshStandardMaterial).side).toBe(BackSide)
+    internal.updateFades(0, 0, .325)
+    expect((front.material as MeshStandardMaterial).opacity).toBeCloseTo(.5)
+    expect((back.material as MeshStandardMaterial).opacity).toBeCloseTo(.5)
+    internal.updateFades(0, 0, .325)
+    expect(back.visible).toBe(false)
+    expect(front.material).toBe(internal.groundMatNear)
+    expect(internal.groundMatNear.side).toBe(DoubleSide)
+    internal.prepareChunkForFade(old)
+    expect(back.visible).toBe(true)
+    const privateBack = back.material as MeshStandardMaterial, disposed = vi.spyOn(privateBack, 'dispose')
+    desire(5, 12)
+    internal.install(job(5, 2), fixture)
+    expect(back.visible).toBe(false)
+    expect(disposed).toHaveBeenCalledOnce()
+    expect((front.material as MeshStandardMaterial).side).toBe(DoubleSide)
+    expect((front.material as MeshStandardMaterial).transparent).toBe(false)
+    internal.prepareChunkForFade(old)
+    expect(back.visible).toBe(true)
+    expect((front.material as MeshStandardMaterial).side).toBe(FrontSide)
+    expect((back.material as MeshStandardMaterial).side).toBe(BackSide)
+    expect((back.material as MeshStandardMaterial).onBeforeCompile)
+      .toBe((front.material as MeshStandardMaterial).onBeforeCompile)
+    const geometryDisposed = vi.spyOn(front.geometry, 'dispose')
+    terrain.clearAll()
+    expect(geometryDisposed).toHaveBeenCalledOnce()
+  })
+
+  it('shares entering water and isolates fallback bias without changing sibling offsets', () => {
+    desire(5, 12); desire(6, 12)
+    internal.install(job(5, 2), { ...fixture, water: fixture.ground })
+    internal.install(job(6, 2), { ...fixture, water: fixture.ground })
+    const old = internal.chunks.get(key(5))!, sibling = internal.chunks.get(key(6))!
+    const water = (chunk: Chunk) => (chunk.root.children.find(c => c.name === 'WaterSurface') as Mesh)
+      .material as MeshStandardMaterial
+    expect(water(old)).toBe(internal.waterMat)
+    expect(water(sibling)).toBe(internal.waterMat)
+    // Replace while the old tile is still entering, before it has settled.
+    desire(5, 4)
+    internal.install(job(5, 1), { ...fixture, water: fixture.ground })
+    const replacement = internal.chunks.get(key(5))!
+    const privateWater = water(old), dispose = vi.spyOn(privateWater, 'dispose')
+    expect(privateWater).not.toBe(internal.waterMat)
+    expect(privateWater.polygonOffsetFactor).toBe(0)
+    expect(privateWater.onBeforeCompile).toBe(internal.waterMat.onBeforeCompile)
+    expect(water(sibling)).toBe(internal.waterMat)
+    expect(water(replacement)).toBe(internal.waterMat)
+    expect(internal.waterMat.polygonOffsetFactor).toBe(-2)
+    internal.updateFades(0, 0, .65)
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(water(replacement)).toBe(internal.waterMat)
+    terrain.dispose()
+    expect(dispose).toHaveBeenCalledOnce()
   })
 
   it('keeps old LOD coverage until the replacement finishes its fade', () => {
@@ -511,4 +579,18 @@ describe('terrain streaming integration', () => {
     expect(nearDispose).toHaveBeenCalledOnce()
     expect(terrain.root.parent).toBeNull()
   })
+})
+
+it('retains contact tile identities through unrelated installs and distinguishes replacements and reseeds', () => {
+  desire(5, 12); internal.install(job(5, 2), fixture)
+  const x = 5 * CHUNK_SIZE + 20, z = 20, first = terrain.sampleMeshRevision(x, z)
+  expect(first).toBeGreaterThan(0)
+  desire(6, 12); internal.install(job(6, 2), fixture)
+  expect(terrain.sampleMeshRevision(x, z)).toBe(first)
+  desire(5, 4); internal.install(job(5, 1), fixture)
+  const replacement = terrain.sampleMeshRevision(x, z)
+  expect(replacement).toBeGreaterThan(first)
+  terrain.clearAll(); expect(terrain.sampleMeshRevision(x, z)).toBe(0)
+  desire(5, 4); internal.install({ ...job(5, 1), generation: 1 }, fixture)
+  expect(terrain.sampleMeshRevision(x, z)).toBeGreaterThan(replacement)
 })

@@ -1,0 +1,634 @@
+{
+  "navigationClockUs": 89131398011,
+  "mainThread": {
+    "pid": 1866249,
+    "tid": 1866249
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3619.8,
+      "endMs": 3903.1,
+      "ms": 283.2999999999997,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 0,
+      "gpuWaitMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "staged attachment",
+        "ms": 2.1
+      },
+      "methods": [
+        {
+          "name": "settlement.advanceAssembly",
+          "startMs": 3624.6,
+          "ms": 2.1,
+          "overlapMs": 2.1
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3624,
+          "ms": 2.9,
+          "overlapMs": 2.9
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 272.05
+        },
+        {
+          "name": "(idle) (:0)",
+          "sampledMs": 2.78
+        },
+        {
+          "name": "setFromMatrixPosition (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-ChbbEAoK.js:4782)",
+          "sampledMs": 2.18
+        },
+        {
+          "name": "createRoadGeometrySteps (src/world/SettlementSystem.ts:403)",
+          "sampledMs": 2.14
+        },
+        {
+          "name": "setHidden (src/ui/HUD.ts:2076)",
+          "sampledMs": 1.49
+        },
+        {
+          "name": "getProgramCacheKeyParameters (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-ChbbEAoK.js:45910)",
+          "sampledMs": 1.19
+        },
+        {
+          "name": "update (src/world/SurfaceDraper.ts:52)",
+          "sampledMs": 1.04
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 0.42
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 283.3
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 272.05
+        },
+        {
+          "name": "tick",
+          "sampledMs": 8.47
+        },
+        {
+          "name": "update",
+          "sampledMs": 5.09
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 3.6
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 3.38
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 3.38
+        },
+        {
+          "name": "(idle)",
+          "sampledMs": 2.78
+        },
+        {
+          "name": "setFromMatrixPosition",
+          "sampledMs": 2.18
+        },
+        {
+          "name": "setupView",
+          "sampledMs": 2.18
+        },
+        {
+          "name": "setupLightsView",
+          "sampledMs": 2.18
+        },
+        {
+          "name": "createRoadGeometrySteps",
+          "sampledMs": 2.14
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3632.03,
+          "ms": 8.86,
+          "overlapMs": 8.86,
+          "args": {
+            "beginData": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F"
+            },
+            "elementCount": 216
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3623.28,
+          "ms": 8.69,
+          "overlapMs": 8.69,
+          "args": {
+            "data": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "id": 110
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3623.3,
+          "ms": 8.66,
+          "overlapMs": 8.66,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3623.3,
+          "ms": 8.65,
+          "overlapMs": 8.65,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "functionName": "tick",
+              "isolate": "12561706332828968187",
+              "lineNumber": 1548,
+              "sampleTraceId": 5720169523266932,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3624,
+          "ms": 2.9,
+          "overlapMs": 2.9,
+          "args": {
+            "callTime": 89135024926,
+            "startTime": 3624,
+            "traceId": 1948325312
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3641.82,
+          "ms": 2.54,
+          "overlapMs": 2.54,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 4,
+              "nodeName": "#document"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3641.85,
+          "ms": 2.51,
+          "overlapMs": 2.51,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 33,
+              "nodeName": "HTML"
+            }
+          }
+        },
+        {
+          "name": "settlement.advanceAssembly",
+          "startMs": 3624.6,
+          "ms": 2.1,
+          "overlapMs": 2.1,
+          "args": {
+            "callTime": 89135024785,
+            "startTime": 3624.59999999404,
+            "traceId": 128520319
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3642.23,
+          "ms": 1.05,
+          "overlapMs": 1.05,
+          "args": {
+            "data": {
+              "clip": [
+                -2762,
+                -4000,
+                5677,
+                -4000,
+                5677,
+                4040,
+                -2762,
+                4040
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 44,
+              "nodeName": "DIV id='heading-tape-track'"
+            }
+          }
+        },
+        {
+          "name": "PrePaint",
+          "startMs": 3641.07,
+          "ms": 0.73,
+          "overlapMs": 0.73,
+          "args": {
+            "data": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "0E48199BFE1EA7B31561DE1838DF0B8F"
+            }
+          }
+        },
+        {
+          "name": "Layerize",
+          "startMs": 3644.41,
+          "ms": 0.6,
+          "overlapMs": 0.6,
+          "args": {
+            "data": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "0E48199BFE1EA7B31561DE1838DF0B8F"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3643.68,
+          "ms": 0.15,
+          "overlapMs": 0.15,
+          "args": {
+            "data": {
+              "clip": [
+                -3923,
+                -3923,
+                4205,
+                -3923,
+                4205,
+                4205,
+                -3923,
+                4205
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 45,
+              "nodeName": "DIV id='adi-ball'"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "phase": "flight",
+      "startMs": 23485.6,
+      "endMs": 23885.6,
+      "ms": 400,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 0,
+      "gpuWaitMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "layout",
+        "ms": 0.19
+      },
+      "methods": [],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 397.2
+        },
+        {
+          "name": "bindVertexArrayObject (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-ChbbEAoK.js:42425)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "copy (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-ChbbEAoK.js:4154)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "updateMatrixWorld (http://127.0.0.1:5173/node_modules/.vite/deps/three.module-ChbbEAoK.js:9897)",
+          "sampledMs": 0.67
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 400
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 397.2
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 2.8
+        },
+        {
+          "name": "tick",
+          "sampledMs": 2.8
+        },
+        {
+          "name": "bindVertexArrayObject",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "setup",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "copy",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "intersectsObject",
+          "sampledMs": 1.07
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 23496.81,
+          "ms": 3.56,
+          "overlapMs": 3.56,
+          "args": {
+            "data": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "id": 856
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 23496.82,
+          "ms": 3.54,
+          "overlapMs": 3.54,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 23496.82,
+          "ms": 3.53,
+          "overlapMs": 3.53,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "functionName": "tick",
+              "isolate": "12561706332828968187",
+              "lineNumber": 1548,
+              "sampleTraceId": 5720169523314633,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5173/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 23502.76,
+          "ms": 0.44,
+          "overlapMs": 0.44,
+          "args": {
+            "beginData": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F"
+            },
+            "elementCount": 5
+          }
+        },
+        {
+          "name": "Layerize",
+          "startMs": 23503.9,
+          "ms": 0.34,
+          "overlapMs": 0.34,
+          "args": {
+            "data": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "0E48199BFE1EA7B31561DE1838DF0B8F"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 23503.63,
+          "ms": 0.25,
+          "overlapMs": 0.25,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 4,
+              "nodeName": "#document"
+            }
+          }
+        },
+        {
+          "name": "Layout",
+          "startMs": 23503.21,
+          "ms": 0.19,
+          "overlapMs": 0.19,
+          "args": {
+            "beginData": {
+              "dirtyObjects": 6,
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "partialLayout": false,
+              "totalObjects": 423
+            },
+            "endData": {
+              "layoutRoots": [
+                {
+                  "depth": 1,
+                  "nodeId": 4,
+                  "nodeName": "#document",
+                  "quads": [
+                    [
+                      0,
+                      0,
+                      1280,
+                      0,
+                      1280,
+                      720,
+                      0,
+                      720
+                    ]
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "PrePaint",
+          "startMs": 23503.48,
+          "ms": 0.13,
+          "overlapMs": 0.13,
+          "args": {
+            "data": {
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "0E48199BFE1EA7B31561DE1838DF0B8F"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 23503.68,
+          "ms": 0.07,
+          "overlapMs": 0.07,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 48,
+              "nodeName": "DIV id='speed-juice' class='is-active boost'"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 23503.82,
+          "ms": 0.05,
+          "overlapMs": 0.05,
+          "args": {
+            "data": {
+              "clip": [
+                -8388608,
+                -8388608,
+                8388607,
+                -8388608,
+                8388607,
+                8388607,
+                -8388608,
+                8388607
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 54,
+              "nodeName": "DIV id='flight-path-marker'"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 23503.76,
+          "ms": 0.04,
+          "overlapMs": 0.04,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                148,
+                0,
+                148,
+                211,
+                0,
+                211
+              ],
+              "frame": "0E48199BFE1EA7B31561DE1838DF0B8F",
+              "layerId": 0,
+              "nodeId": 57,
+              "nodeName": "DIV id='hud-top-right'"
+            }
+          }
+        },
+        {
+          "name": "HitTest",
+          "startMs": 23496.71,
+          "ms": 0.04,
+          "overlapMs": 0.04,
+          "args": {
+            "endData": {
+              "move": true,
+              "nodeId": 40,
+              "nodeName": "PRE",
+              "rectilinear": true,
+              "x": 130,
+              "y": 646
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

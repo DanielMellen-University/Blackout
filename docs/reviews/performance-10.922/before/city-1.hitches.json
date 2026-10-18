@@ -1,0 +1,294 @@
+{
+  "navigationClockUs": 70605638463,
+  "mainThread": {
+    "pid": 1828030,
+    "tid": 1828030
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3787.1,
+      "endMs": 4020.4,
+      "ms": 233.30000000000018,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 0,
+      "gpuWaitMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "surface drape",
+        "ms": 6.9
+      },
+      "methods": [
+        {
+          "name": "drape.update",
+          "startMs": 3778.8,
+          "ms": 15.2,
+          "overlapMs": 6.9
+        },
+        {
+          "name": "settlement.advanceAssembly",
+          "startMs": 3794,
+          "ms": 2.5,
+          "overlapMs": 2.5
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3778.8,
+          "ms": 17.9,
+          "overlapMs": 9.6
+        },
+        {
+          "name": "settlement.advanceAssembly",
+          "startMs": 3803.7,
+          "ms": 3.3,
+          "overlapMs": 3.3
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3803.4,
+          "ms": 3.7,
+          "overlapMs": 3.7
+        }
+      ],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 213.65
+        },
+        {
+          "name": "computeVertexNormals (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:14216)",
+          "sampledMs": 4.3
+        },
+        {
+          "name": "prototype.<computed> (:7)",
+          "sampledMs": 3.53
+        },
+        {
+          "name": "add (src/world/RoadTerrainFit.ts:62)",
+          "sampledMs": 2.41
+        },
+        {
+          "name": "copy (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:13374)",
+          "sampledMs": 1.44
+        },
+        {
+          "name": "update (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:44077)",
+          "sampledMs": 1.36
+        },
+        {
+          "name": "upload (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:45006)",
+          "sampledMs": 1.13
+        },
+        {
+          "name": "setXYZ (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:12980)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "fromBufferAttribute (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:4894)",
+          "sampledMs": 1.07
+        },
+        {
+          "name": "sampleHydrologyInto (src/world/Hydrology.ts:189)",
+          "sampledMs": 1.06
+        },
+        {
+          "name": "projectObject (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:51577)",
+          "sampledMs": 1.06
+        },
+        {
+          "name": "updateMatrixWorld (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:9897)",
+          "sampledMs": 1.05
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 234.38
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 213.65
+        },
+        {
+          "name": "tick",
+          "sampledMs": 19.69
+        },
+        {
+          "name": "update",
+          "sampledMs": 15.01
+        },
+        {
+          "name": "prototype.<computed>",
+          "sampledMs": 13.65
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 6.04
+        },
+        {
+          "name": "computeVertexNormals",
+          "sampledMs": 5.54
+        },
+        {
+          "name": "fitRoadTerrainSteps",
+          "sampledMs": 3.46
+        },
+        {
+          "name": "createRoadGeometrySteps",
+          "sampledMs": 3.46
+        },
+        {
+          "name": "buildRegionalRoadSteps",
+          "sampledMs": 3.46
+        },
+        {
+          "name": "advanceAssembly",
+          "sampledMs": 3.46
+        },
+        {
+          "name": "projectObject",
+          "sampledMs": 2.5
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3778.08,
+          "ms": 23.86,
+          "overlapMs": 14.85,
+          "args": {
+            "data": {
+              "frame": "648021D36CA31AE38C8176D0F89E6BDD",
+              "id": 108
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3778.09,
+          "ms": 23.85,
+          "overlapMs": 14.84,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3778.1,
+          "ms": 23.84,
+          "overlapMs": 14.83,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "648021D36CA31AE38C8176D0F89E6BDD",
+              "functionName": "tick",
+              "isolate": "1998901045604259442",
+              "lineNumber": 1548,
+              "sampleTraceId": 2698900814463748,
+              "scriptId": "22",
+              "url": "http://127.0.0.1:5174/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3778.8,
+          "ms": 17.9,
+          "overlapMs": 9.6,
+          "args": {
+            "callTime": 70609435048,
+            "startTime": 3778.79999999702,
+            "traceId": 2413603618
+          }
+        },
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3802.83,
+          "ms": 7.28,
+          "overlapMs": 7.28,
+          "args": {
+            "data": {
+              "frame": "648021D36CA31AE38C8176D0F89E6BDD",
+              "id": 109
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3802.84,
+          "ms": 7.27,
+          "overlapMs": 7.27,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3802.84,
+          "ms": 7.26,
+          "overlapMs": 7.26,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "648021D36CA31AE38C8176D0F89E6BDD",
+              "functionName": "tick",
+              "isolate": "1998901045604259442",
+              "lineNumber": 1548,
+              "sampleTraceId": 2698900814463785,
+              "scriptId": "22",
+              "url": "http://127.0.0.1:5174/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "drape.update",
+          "startMs": 3778.8,
+          "ms": 15.2,
+          "overlapMs": 6.9,
+          "args": {
+            "callTime": 70609432395,
+            "startTime": 3778.79999999702,
+            "traceId": 505391661
+          }
+        },
+        {
+          "name": "settlement.update",
+          "startMs": 3803.4,
+          "ms": 3.7,
+          "overlapMs": 3.7,
+          "args": {
+            "callTime": 70609445469,
+            "startTime": 3803.399999991059,
+            "traceId": 2827619099
+          }
+        },
+        {
+          "name": "V8.OptimizeCode",
+          "startMs": 3787.74,
+          "ms": 3.67,
+          "overlapMs": 3.67,
+          "args": {}
+        },
+        {
+          "name": "V8.OptimizeConcurrentPrepare",
+          "startMs": 3787.75,
+          "ms": 3.65,
+          "overlapMs": 3.65,
+          "args": {}
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3810.17,
+          "ms": 3.6,
+          "overlapMs": 3.6,
+          "args": {
+            "beginData": {
+              "frame": "648021D36CA31AE38C8176D0F89E6BDD"
+            },
+            "elementCount": 216
+          }
+        }
+      ]
+    }
+  ]
+}

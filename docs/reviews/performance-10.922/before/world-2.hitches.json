@@ -1,0 +1,289 @@
+{
+  "navigationClockUs": 71028795053,
+  "mainThread": {
+    "pid": 1828838,
+    "tid": 1828838
+  },
+  "note": "CPU times are sampled evidence. Nested spans overlap and must not be added. Unattributed time is not evidence of GC or GPU work.",
+  "hitches": [
+    {
+      "phase": "startup",
+      "startMs": 3630.2,
+      "endMs": 3846.8,
+      "ms": 216.60000000000036,
+      "causes": [
+        "unresolved browser/driver/scheduling gap; no dominant captured main-thread phase"
+      ],
+      "traceCoverage": true,
+      "gcMs": 0,
+      "readbackMs": 0,
+      "gpuWaitMs": 0,
+      "dominantMeasuredPhase": {
+        "name": "worker reply handling",
+        "ms": 0.27
+      },
+      "methods": [],
+      "sampledSelf": [
+        {
+          "name": "(program) (:0)",
+          "sampledMs": 203.9
+        },
+        {
+          "name": "refreshUniformsCommon (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:49602)",
+          "sampledMs": 6.97
+        },
+        {
+          "name": "setValue (http://127.0.0.1:5174/node_modules/.vite/deps/three.module-ChbbEAoK.js?v=261c26cb:44949)",
+          "sampledMs": 3.73
+        },
+        {
+          "name": "formatRadarContacts (src/ui/HUD.ts:69)",
+          "sampledMs": 2.01
+        }
+      ],
+      "sampledInclusive": [
+        {
+          "name": "(root)",
+          "sampledMs": 216.6
+        },
+        {
+          "name": "(program)",
+          "sampledMs": 203.9
+        },
+        {
+          "name": "tick",
+          "sampledMs": 12.7
+        },
+        {
+          "name": "setProgram",
+          "sampledMs": 10.69
+        },
+        {
+          "name": "WebGLRenderer.renderBufferDirect",
+          "sampledMs": 10.69
+        },
+        {
+          "name": "renderObject",
+          "sampledMs": 10.69
+        },
+        {
+          "name": "renderObjects",
+          "sampledMs": 10.69
+        },
+        {
+          "name": "renderScene",
+          "sampledMs": 10.69
+        },
+        {
+          "name": "WebGLRenderer.render",
+          "sampledMs": 10.69
+        },
+        {
+          "name": "refreshUniformsCommon",
+          "sampledMs": 6.97
+        },
+        {
+          "name": "refreshMaterialUniforms",
+          "sampledMs": 6.97
+        },
+        {
+          "name": "setValue",
+          "sampledMs": 3.73
+        }
+      ],
+      "longestMainEvents": [
+        {
+          "name": "FireAnimationFrame",
+          "startMs": 3631.26,
+          "ms": 12.84,
+          "overlapMs": 12.84,
+          "args": {
+            "data": {
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "id": 89
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3631.27,
+          "ms": 12.81,
+          "overlapMs": 12.81,
+          "args": {}
+        },
+        {
+          "name": "FunctionCall",
+          "startMs": 3631.27,
+          "ms": 12.8,
+          "overlapMs": 12.8,
+          "args": {
+            "data": {
+              "columnNumber": 15,
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "functionName": "tick",
+              "isolate": "6009054986738124739",
+              "lineNumber": 1548,
+              "sampleTraceId": 8183135315617923,
+              "scriptId": "12",
+              "url": "http://127.0.0.1:5174/src/main.ts"
+            }
+          }
+        },
+        {
+          "name": "UpdateLayoutTree",
+          "startMs": 3644.18,
+          "ms": 6.21,
+          "overlapMs": 6.21,
+          "args": {
+            "beginData": {
+              "frame": "730936ED9A0B40862ADC33A68535F4F0"
+            },
+            "elementCount": 216
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3651.05,
+          "ms": 3.46,
+          "overlapMs": 3.46,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "layerId": 0,
+              "nodeId": 4,
+              "nodeName": "#document"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3651.07,
+          "ms": 3.43,
+          "overlapMs": 3.43,
+          "args": {
+            "data": {
+              "clip": [
+                0,
+                0,
+                1280,
+                0,
+                1280,
+                720,
+                0,
+                720
+              ],
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "layerId": 0,
+              "nodeId": 33,
+              "nodeName": "HTML"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3651.33,
+          "ms": 2.03,
+          "overlapMs": 2.03,
+          "args": {
+            "data": {
+              "clip": [
+                -2175,
+                -4000,
+                6263,
+                -4000,
+                6263,
+                4040,
+                -2175,
+                4040
+              ],
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "layerId": 0,
+              "nodeId": 44,
+              "nodeName": "DIV id='heading-tape-track'"
+            }
+          }
+        },
+        {
+          "name": "Layerize",
+          "startMs": 3654.56,
+          "ms": 0.9,
+          "overlapMs": 0.9,
+          "args": {
+            "data": {
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "730936ED9A0B40862ADC33A68535F4F0"
+            }
+          }
+        },
+        {
+          "name": "PrePaint",
+          "startMs": 3650.51,
+          "ms": 0.52,
+          "overlapMs": 0.52,
+          "args": {
+            "data": {
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "isMainFrame": true,
+              "isOutermostMainFrame": true,
+              "page": "730936ED9A0B40862ADC33A68535F4F0"
+            }
+          }
+        },
+        {
+          "name": "Paint",
+          "startMs": 3653.76,
+          "ms": 0.17,
+          "overlapMs": 0.17,
+          "args": {
+            "data": {
+              "clip": [
+                -3923,
+                -3923,
+                4205,
+                -3923,
+                4205,
+                4205,
+                -3923,
+                4205
+              ],
+              "frame": "730936ED9A0B40862ADC33A68535F4F0",
+              "layerId": 0,
+              "nodeId": 45,
+              "nodeName": "DIV id='adi-ball'"
+            }
+          }
+        },
+        {
+          "name": "HandlePostMessage",
+          "startMs": 3630.07,
+          "ms": 0.28,
+          "overlapMs": 0.15,
+          "args": {
+            "data": {
+              "traceId": "197334319665178736"
+            }
+          }
+        },
+        {
+          "name": "v8.callFunction",
+          "startMs": 3630.09,
+          "ms": 0.26,
+          "overlapMs": 0.15,
+          "args": {}
+        }
+      ]
+    }
+  ]
+}

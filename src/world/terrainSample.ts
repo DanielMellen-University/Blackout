@@ -707,6 +707,39 @@ function detailColor(r: number, g: number, b: number): ColorTuple {
 }
 const materialBiomes = Object.keys(materialWeightScratch) as Biome[]
 
+type MaterialBlend = { biomes: Biome[]; raw: number[]; squared: number[];
+  weight: Record<Biome, number>; normalization: number }
+// Climate grids reuse their mutable weight arrays. Weak ownership releases an
+// evicted grid; validation also handles in-place edits, reorder and duplicates.
+const materialBlendCache = new WeakMap<[Biome, number][], MaterialBlend>()
+function materialBlend(source: [Biome, number][]): MaterialBlend {
+  let blend = materialBlendCache.get(source)
+  if (blend && blend.raw.length === source.length) {
+    let same = true
+    for (let i = 0; i < source.length; i++) {
+      if (blend.biomes[i] !== source[i]![0] || blend.raw[i] !== source[i]![1]) { same = false; break }
+    }
+    if (same) return blend
+  }
+  if (!blend) {
+    blend = { biomes: [], raw: [], squared: [], weight: { ...materialWeightScratch }, normalization: 1 }
+    materialBlendCache.set(source, blend)
+  }
+  const weight = blend.weight
+  for (const candidate of materialBiomes) weight[candidate] = 0
+  let total = 0
+  blend.biomes.length = blend.raw.length = blend.squared.length = source.length
+  for (let i = 0; i < source.length; i++) {
+    const candidate = source[i]![0], raw = source[i]![1], w = raw * raw
+    blend.biomes[i] = candidate; blend.raw[i] = raw; blend.squared[i] = w
+    weight[candidate] += w; total += w
+  }
+  blend.normalization = 1 / Math.max(total, .00001)
+  for (const candidate of materialBiomes) weight[candidate] *= blend.normalization
+  return blend
+}
+
+
 function biomeColorSolidInto(
   out: ColorTuple,
   biome: Biome,
@@ -868,44 +901,43 @@ export function biomeColorInto(
     return col
   }
 
-  const weight = materialWeightScratch
-  for (const candidate of materialBiomes) weight[candidate] = 0
-  weight[biome] = 1
-  biomeColorSolidInto(col, biome, height, moisture, n, speck, land)
-  // Seamless cross-fade into neighboring biome color
-  if (biomeWeights?.length) {
-    col[0] = 0
-    col[1] = 0
-    col[2] = 0
-    let total = 0
-    weight[biome] = 0
-    for (const [candidate, rawWeight] of biomeWeights) {
-      const w = rawWeight * rawWeight
-      weight[candidate] += w
+  const blend = biomeWeights?.length ? materialBlend(biomeWeights) : null
+  const weight = blend?.weight ?? materialWeightScratch
+  if (blend) {
+    col[0] = 0; col[1] = 0; col[2] = 0
+    for (let i = 0; i < blend.squared.length; i++) {
+      const w = blend.squared[i]!
       if (w === 0) continue
-      biomeColorSolidInto(solidColorScratch, candidate, height, moisture, n, speck, land)
-      for (let i = 0; i < 3; i++) col[i]! += solidColorScratch[i]! * w
-      total += w
+      biomeColorSolidInto(solidColorScratch, blend.biomes[i]!, height, moisture, n, speck, land)
+      col[0] += solidColorScratch[0] * w
+      col[1] += solidColorScratch[1] * w
+      col[2] += solidColorScratch[2] * w
     }
-    const normalization = 1 / Math.max(total, .00001)
-    scaleColorInPlace(col, normalization)
-    for (const candidate of materialBiomes) weight[candidate] *= normalization
-  } else if (biomeMix > 0 && biomeB !== biome) {
-    biomeColorSolidInto(solidColorScratch, biomeB, height, moisture, n, speck, land)
-    const t = clamp01(biomeMix)
-    mixColorInPlace(col, solidColorScratch, t)
-    weight[biome] = 1 - t; weight[biomeB] += t
+    scaleColorInPlace(col, blend.normalization)
+  } else {
+    for (const candidate of materialBiomes) weight[candidate] = 0
+    weight[biome] = 1
+    biomeColorSolidInto(col, biome, height, moisture, n, speck, land)
+    if (biomeMix > 0 && biomeB !== biome) {
+      biomeColorSolidInto(solidColorScratch, biomeB, height, moisture, n, speck, land)
+      const t = clamp01(biomeMix)
+      mixColorInPlace(col, solidColorScratch, t)
+      weight[biome] = 1 - t; weight[biomeB] += t
+    }
   }
   const greenWeight = weight.plains + weight.forest + weight.rainforest + weight.swamp + weight.hills
   const texturedWeight = greenWeight + weight.savanna + weight.desert + weight.mesa + weight.volcanic
   const alpineWeight = weight.snow + weight.mountain
+  // Ash, lowland breakup and alpine exposure share this exact world field.
+  const regionalNoise = weight.volcanic > 0 || texturedWeight > 0 || (landform && alpineWeight > 0)
+    ? valueNoise(x / 520, z / 520) : 0
 
   // Volcanic provinces need more than one gray tone to read as cooled lava,
   // ash shelves, and occasional warm fissures from flight scale. Keep the
   // breakup deterministic and material-only so it costs no extra geometry or
   // draw call, and let caldera interiors carry the strongest warm accent.
   if (weight.volcanic > 0) {
-    const ashField = valueNoise(x / 520, z / 520)
+    const ashField = regionalNoise
     const cinder = (ashField - .5) * .2 * weight.volcanic
     col[0] = clamp01(col[0] + cinder * .9)
     col[1] = clamp01(col[1] + cinder * .82)
@@ -955,7 +987,7 @@ export function biomeColorInto(
   // variation without hard biome borders, extra textures, or new draw calls.
   // The signal is applied after biome blending so transitions stay continuous.
   if (texturedWeight > 0) {
-    const regional = valueNoise(x / 520, z / 520)
+    const regional = regionalNoise
     const patch = valueNoise(x / 155, z / 155)
     const broad = (regional - .5) * .11
     const fine = (patch - .5) * .035
@@ -1084,7 +1116,7 @@ export function biomeColorInto(
     // wind-scoured shoulders and caldera rims, while valley floors stay cool
     // blue instead of becoming noisy spikes or extra geometry.
     if (alpineWeight > 0) {
-      const strata = valueNoise(x / 520, z / 520)
+      const strata = regionalNoise
       const altitudeExposure = smoothstep(900, 2800, height)
       const exposure = clamp01((strata - .34) * 2.35 + landform.ridge * .34 +
         landform.caldera * .42 + altitudeExposure * .16)

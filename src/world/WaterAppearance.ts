@@ -1,3 +1,4 @@
+import { ShaderSourceCache } from '../core/ShaderSourceCache'
 import type { MeshStandardMaterial } from 'three'
 import { waterNormals } from './WaterNormals'
 
@@ -8,6 +9,7 @@ export interface WaterWeatherUniforms {
   windZ?: { value: number }
 }
 
+const waterShaderSource = new ShaderSourceCache()
 const DEFAULT_WATER_DETAIL_SCALE = { value: 1 }
 
 const DEFAULT_WEATHER: Required<WaterWeatherUniforms> = {
@@ -32,6 +34,8 @@ export function applyWaterAppearance(
     shader.uniforms.waterWindZ = weather.windZ ?? DEFAULT_WEATHER.windZ
     shader.uniforms.waterDetailScale = detailScale
     shader.uniforms.waterNormals = { value: waterNormals }
+    if (waterShaderSource.reuse(shader)) return
+    const vertexSource = shader.vertexShader, fragmentSource = shader.fragmentShader
     shader.vertexShader = 'attribute float waterDepth;\nattribute float waterFlow;\nattribute vec2 waterFlowDir;\nattribute float waterKind;\nattribute float waterDrop;\nvarying float vWaterDepth;\nvarying float vWaterFlow;\nvarying vec2 vWaterFlowDir;\nvarying float vWaterKind;\nvarying float vWaterDrop;\nvarying vec3 vWaterWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace(
       '#include <project_vertex>',
@@ -177,6 +181,7 @@ export function applyWaterAppearance(
       #endif
       totalEmissiveRadiance += reflectedSky * fresnel;`,
     )
+    waterShaderSource.remember(vertexSource, fragmentSource, shader)
   }
   material.customProgramCacheKey = () => 'calm-basin-water-weather-v20'
 }

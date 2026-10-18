@@ -380,7 +380,9 @@ function buildAfterburner(): Group {
   ] as const) {
     const material = new MeshBasicMaterial({
       name, color, opacity, transparent: true, blending: AdditiveBlending,
-      depthWrite: false, side: DoubleSide, toneMapped: name === 'abOuter',
+      // Additive shells show the same faces in either order. A single pass
+      // avoids Three.js flipping side/program state twice on every draw.
+      depthWrite: false, side: DoubleSide, forceSinglePass: true, toneMapped: name === 'abOuter',
     })
     // Fade the silhouette and both ends of each shell into the surrounding air.
     material.onBeforeCompile = shader => {

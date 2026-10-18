@@ -946,8 +946,9 @@ export class SettlementSystem {
   private readonly streamPadSnapshot: OpsPadSnapshot = { x: 0, z: 0, y: 0, yaw: 0 }
   private readonly draper: SurfaceDraper | null
 
-  constructor(scene: Scene, renderedHeight?: (x: number, z: number) => number | null) {
-    this.draper = renderedHeight ? new SurfaceDraper(renderedHeight, groundSamplerRevision) : null
+  constructor(scene: Scene, renderedHeight?: (x: number, z: number) => number | null,
+    heightRevision?: (x: number, z: number) => number) {
+    this.draper = renderedHeight ? new SurfaceDraper(renderedHeight, groundSamplerRevision, heightRevision) : null
     this.root.name = 'Settlements'
     this.root.matrixAutoUpdate = false
     scene.add(this.root)

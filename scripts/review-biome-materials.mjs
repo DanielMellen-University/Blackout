@@ -57,15 +57,17 @@ try {
     return { x: x + Math.floor(i / 4) % 20 * 140, z: z + Math.floor(i / 80) * 140 }
   }).map(p => ({ ...p, c: sampleClimate(p.x, p.z) }))
   const out = [0, 0, 0], timings = []
-  for (let run = 0; run < 16; run++) {
+  const colorWarmupRuns = Number(process.env.COLOR_WARMUP_RUNS ?? 4)
+  const colorSampleRuns = Number(process.env.COLOR_SAMPLE_RUNS ?? 12)
+  for (let run = 0; run < colorWarmupRuns + colorSampleRuns; run++) {
     const start = performance.now()
     for (const { x, z, c } of climates) biomeColorInto(out, c.biome, c.height, c.moisture, x, z,
       c.features, c.coastal, c.land, c.biomeB, c.biomeMix, c.biomeWeights, c.landform)
     timings.push(performance.now() - start)
   }
-  const warm = timings.slice(4).sort((a, b) => a - b)
+  const warm = timings.slice(colorWarmupRuns).sort((a, b) => a - b)
   const result = { scope: 'CPU color evaluation and terrain builds only, no FPS claim', node: process.version, baseline: !!baseline,
-    boundaries, pure, geometry, cpu: { callsPerRun: climates.length, timingsMs: timings,
+    boundaries, pure, geometry, cpu: { callsPerRun: climates.length, warmupRuns: colorWarmupRuns, sampleRuns: colorSampleRuns, timingsMs: timings,
       warmMedianMs: warm[Math.floor(warm.length / 2)], warmP95Ms: warm.at(-1) } }
   writeFileSync(process.argv[2], JSON.stringify(result, null, 2) + '\n')
 } finally { await loader.close() }

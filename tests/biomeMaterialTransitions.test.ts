@@ -40,3 +40,17 @@ it.each(pure)('preserves the independent 10.919 pure $biome material', ({ biome,
     for (let c = 0; c < 3; c++) expect(out[c]).toBeCloseTo(colors[i]![c]!, 12)
   }
 })
+
+it('invalidates cached material blends after in-place weight, biome, order and length edits', () => {
+  const weights: [Biome, number][] = [['plains', .4], ['snow', .6]]
+  const paint = (input: [Biome, number][]) => biomeColor('plains', 1400, .5, 520, 640,
+    features, 0, 1, 'snow', .4, input, landform)
+  const check = () => expect(paint(weights)).toEqual(paint(weights.map(([biome, w]) => [biome, w])))
+  check(); check()
+  weights[0]![1] = .9; check()
+  weights[0]![0] = 'volcanic'; check()
+  weights.reverse(); check()
+  weights.push(['snow', .3], ['desert', 0]); check()
+  weights.splice(0, 2); check()
+  weights.length = 0; check()
+})

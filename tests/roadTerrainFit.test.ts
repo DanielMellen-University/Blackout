@@ -70,3 +70,29 @@ it.each(['near', 'coarse', 'wet'])('keeps fitting a %s bend hidden between flat 
   while (!result.done) result = steps.next()
   expect(result.value.length).toBeGreaterThan(3)
 })
+
+it('keeps clip and weld scratch independent when rough fits are interleaved', () => {
+  const source = (shift: number) => {
+    const positions: number[] = [], offsets: number[] = [], indices: number[] = []
+    for (let i = 0; i <= 128; i++) {
+      const x = i * 24 + shift, z = Math.sin(i * .1) * 20
+      positions.push(x, 100 + i * .1, z - 5, x, 102 + i * .1, z + 5)
+      offsets.push(.3, .45)
+      if (i) { const a = (i - 1) * 2; indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3) }
+    }
+    return { positions, offsets, indices }
+  }
+  const a = source(0), b = source(113644.112), expectedA = source(0), expectedB = source(113644.112)
+  const run = (s: ReturnType<typeof source>) => fitRoadTerrainSteps(s.positions, s.offsets, s.indices, 0, 0)
+  const ga = run(a), gb = run(b)
+  let ra = ga.next(), rb = gb.next()
+  while (!ra.done || !rb.done) {
+    if (!rb.done) rb = gb.next()
+    if (!ra.done) ra = ga.next()
+  }
+  const ia = fit(expectedA.positions, expectedA.offsets, expectedA.indices).indices
+  const ib = fit(expectedB.positions, expectedB.offsets, expectedB.indices).indices
+  expect(a.positions).toEqual(expectedA.positions); expect(a.offsets).toEqual(expectedA.offsets)
+  expect(b.positions).toEqual(expectedB.positions); expect(b.offsets).toEqual(expectedB.offsets)
+  expect(ra.value).toEqual(ia); expect(rb.value).toEqual(ib)
+})

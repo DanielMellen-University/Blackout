@@ -1,9 +1,10 @@
 import { BufferAttribute, BufferGeometry, DynamicDrawUsage } from 'three'
+import { computeSurfaceNormals } from './SurfaceNormals'
 
 export const MAX_DRAPE_VERTICES_PER_FRAME = 1024
 const DRAPE_BUDGET_MS = .8
 type Surface = { geometry: BufferGeometry; x: number; y: number; z: number;
-  revision: number; cursor: number; targetRevision: number; changed: boolean; staged: Float32Array }
+  revision: number; cursor: number; targetRevision: number; changed: boolean; staged: Float32Array; owners: Float64Array | null; values: Float32Array | null; offsets: Float32Array | null }
 
 /** Refit only explicitly marked ground vertices to the same streamed surface
  * used by aircraft contact. Decks/fills remain engineered structures. Work is
@@ -13,8 +14,10 @@ export class SurfaceDraper {
   private next = 0
   private readonly height: (x: number, z: number) => number | null
   private readonly revision: () => number
-  constructor(height: (x: number, z: number) => number | null, revision: () => number) {
-    this.height = height; this.revision = revision
+  private readonly heightRevision?: (x: number, z: number) => number
+  constructor(height: (x: number, z: number) => number | null, revision: () => number,
+    heightRevision?: (x: number, z: number) => number) {
+    this.height = height; this.revision = revision; this.heightRevision = heightRevision
   }
 
   add(geometry: BufferGeometry, x: number, y: number, z: number): void {
@@ -24,8 +27,11 @@ export class SurfaceDraper {
     // X/Z never change during a refit. Stage only Y and publish it atomically.
     const staged = new Float32Array(positions.count)
     for (let i = 0; i < positions.count; i++) staged[i] = positions.getY(i)
+    const offsets = geometry.getAttribute('groundOffset')
     this.surfaces.push({ geometry, x, y, z, revision: -1, cursor: 0, targetRevision: -1, changed: false,
-      staged })
+      staged, owners: this.heightRevision ? new Float64Array(positions.count).fill(-1) : null,
+      values: positions.array instanceof Float32Array && !positions.normalized && positions.itemSize === 3 ? positions.array : null,
+      offsets: offsets instanceof BufferAttribute && offsets.array instanceof Float32Array && !offsets.normalized && offsets.itemSize === 1 ? offsets.array : null })
   }
 
   remove(geometry: BufferGeometry): void {
@@ -49,11 +55,19 @@ export class SurfaceDraper {
       const offsets = surface.geometry.getAttribute('groundOffset') as BufferAttribute
       if (!surface.cursor) { surface.targetRevision = revision; surface.changed = false }
       while (surface.cursor < positions.count && vertices < MAX_DRAPE_VERTICES_PER_FRAME) {
-        const i = surface.cursor++, offset = offsets.getX(i)
+        const i = surface.cursor++, offset = surface.offsets ? surface.offsets[i]! : offsets.getX(i)
         vertices++
         if (offset >= 0) {
-          const height = this.height(positions.getX(i) + surface.x, positions.getZ(i) + surface.z)
+          const x = (surface.values ? surface.values[i * 3]! : positions.getX(i)) + surface.x
+          const z = (surface.values ? surface.values[i * 3 + 2]! : positions.getZ(i)) + surface.z
+          const owner = this.heightRevision?.(x, z)
+          if (owner !== undefined && surface.owners![i] === owner) {
+            if (vertices % 32 === 0 && performance.now() >= deadline) break
+            continue
+          }
+          const height = this.height(x, z)
           if (height !== null && Number.isFinite(height)) {
+            if (owner !== undefined) surface.owners![i] = owner
             // Compare in the attribute's actual precision. Distant tile changes
             // must not republish identical roads and rebuild all their normals.
             const y = Math.fround(height + offset - surface.y)
@@ -67,9 +81,11 @@ export class SurfaceDraper {
       }
       if (surface.cursor === positions.count) {
         if (surface.changed) {
-          for (let i = 0; i < positions.count; i++) positions.setY(i, surface.staged[i]!)
+          if (surface.values) {
+            for (let i = 0; i < positions.count; i++) surface.values[i * 3 + 1] = surface.staged[i]!
+          } else for (let i = 0; i < positions.count; i++) positions.setY(i, surface.staged[i]!)
           positions.needsUpdate = true
-          surface.geometry.computeVertexNormals(); surface.geometry.computeBoundingSphere()
+          computeSurfaceNormals(surface.geometry); surface.geometry.computeBoundingSphere()
         }
         surface.revision = surface.targetRevision; surface.cursor = 0
         this.next = (this.next + 1) % this.surfaces.length; visited++

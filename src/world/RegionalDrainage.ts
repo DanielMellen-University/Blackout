@@ -1,5 +1,5 @@
 import { getWorldSeed, hash2, smoothstep, valueNoise } from './noise'
-import { sampleLandforms } from './Landforms'
+import { sampleLandformsInto, type LandformSample } from './Landforms'
 import { coastField } from './Coastline'
 import { registerRiverSurface, riverSurface } from './RiverSurface'
 import { refineLakeShore } from './LakeShore'
@@ -24,6 +24,8 @@ interface Node extends DrainageNode {
 interface LakeCandidate { radius: number; roll: number; pond: boolean; large: boolean; riverSink: boolean }
 let seed = NaN
 const nodes = new Map<string, Node>()
+// Each synchronous probe copies its scalar fields before another node lookup.
+const landScratch = {} as LandformSample
 function node(gx: number, gz: number): Node {
   if (seed !== getWorldSeed()) { nodes.clear(); seed = getWorldSeed() }
   const key = `${gx},${gz}`
@@ -31,7 +33,7 @@ function node(gx: number, gz: number): Node {
   if (n) return n
   const x = gx * STEP + (hash2(gx + 117, gz - 61) - .5) * 380
   const z = gz * STEP + (hash2(gx - 73, gz + 217) - .5) * 380
-  const land = sampleLandforms(x, z)
+  const land = sampleLandformsInto(landScratch, x, z)
   n = { gx, gz, x, z, height: land.height, moisture: land.moisture, coast: land.coast! }
   if (nodes.size >= 16384) nodes.delete(nodes.keys().next().value!)
   nodes.set(key, n)
@@ -191,7 +193,7 @@ function basin(n: Node): WaterBasin | null {
   for (let i = 0; i < 8; i++) {
     const a = i / 8 * Math.PI
     const x = Math.cos(a) * radius, z = Math.sin(a) * radius
-    const shoulders = sampleLandforms(n.x + x, n.z + z).height + sampleLandforms(n.x - x, n.z - z).height
+    const shoulders = sampleLandformsInto(landScratch, n.x + x, n.z + z).height + sampleLandformsInto(landScratch, n.x - x, n.z - z).height
     if (shoulders < lowestShoulders) { lowestShoulders = shoulders; valleyAngle = a }
   }
   const shape = hash2(n.gx - 113, n.gz + 461)
@@ -204,7 +206,7 @@ function basin(n: Node): WaterBasin | null {
     const valleyShape = 1 / Math.hypot(along / elongation, across * elongation)
     // Read the surrounding relief: shoulders shorten the shore, valleys open
     // long arms. The same cached contour drives carving and water geometry.
-    const probe = sampleLandforms(n.x + Math.cos(a) * radius, n.z + Math.sin(a) * radius)
+    const probe = sampleLandformsInto(landScratch, n.x + Math.cos(a) * radius, n.z + Math.sin(a) * radius)
     const relief = smoothstep(-120, 360, probe.height - level)
     // Coherent angular features, not one random radius per spoke. Independent
     // spokes made lakes look like pointed flowers rather than eroded basins.

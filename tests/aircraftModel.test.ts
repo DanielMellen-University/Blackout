@@ -1,4 +1,4 @@
-import { Box3, BoxGeometry, Euler, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
+import { AdditiveBlending, DoubleSide, Box3, BoxGeometry, Euler, Group, Mesh, MeshBasicMaterial, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, Raycaster, Vector3 } from 'three'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Aircraft,
@@ -91,6 +91,14 @@ describe('rebuilt aircraft', () => {
     const skin = body.material as MeshStandardMaterial
     expect(mark.color.getHex()).not.toBe(skin.color.getHex())
     expect(mark.emissiveIntensity).toBeGreaterThan(0.2)
+    for (const name of ['abOuter', 'abMid', 'abCore']) {
+      const plume = model.getObjectByName(name) as Mesh
+      const material = plume.material as MeshBasicMaterial
+      expect(material.side).toBe(DoubleSide)
+      expect(material.blending).toBe(AdditiveBlending)
+      expect(material.forceSinglePass).toBe(true)
+      expect(plume.geometry.getAttribute('position').count).toBeGreaterThan(0)
+    }
     const core = model.getObjectByName('abCore') as Mesh
     const coreMat = core.material as MeshBasicMaterial
     expect(coreMat.toneMapped).toBe(false)

@@ -1,9 +1,10 @@
+import { ShaderSourceCache } from '../core/ShaderSourceCache'
 import {
   BufferGeometry,
   Float32BufferAttribute,
   Color,
   type Camera,
-  DoubleSide,
+  BackSide, DoubleSide,
   Fog,
   FrontSide,
   Group,
@@ -192,7 +193,10 @@ interface Chunk {
   /** Last applied opacity - skip material walks when unchanged. */
   appliedAlpha: number
   /** Terrain and water meshes are cached so settled materials can be swapped without tree searches. */
+  surfaceRevision: number
   terrainMesh: Mesh
+  /** Fixed-side back pass shares geometry, avoiding per-draw side invalidations. */
+  backMesh: Mesh | null
   waterMesh: Mesh | null
   /** Settled chunks use shared opaque materials until they need to fade again. */
   settled: boolean
@@ -250,6 +254,8 @@ export class TerrainSystem {
   private readonly fadeRemovals: string[] = []
   private generation = 0
   private nextRequest = 0
+  /** Never reset on reseed: cached drape owners must distinguish replacements. */
+  private nextSurfaceRevision = 1
   private disposed = false
   private readonly workers: TerrainWorkerPool
   private uploadBudgetMs = DEFAULT_UPLOAD_BUDGET_MS
@@ -305,6 +311,7 @@ export class TerrainSystem {
   private readonly groundMatFar: MeshStandardMaterial
   /** One shared opaque water material for settled streamed tiles. */
   private readonly waterMat: MeshStandardMaterial
+  private readonly weatherShaderSource = new ShaderSourceCache()
   private readonly weatherRain = { value: 0 }
   private readonly weatherSnow = { value: 0 }
   private readonly weatherClouds = { value: 0 }
@@ -474,6 +481,8 @@ export class TerrainSystem {
       shader.uniforms.terrainTime = this.waterClock
       shader.uniforms.terrainWind = { value: this.weatherWind }
       shader.uniforms.terrainDetailScale = this.terrainDetailScale
+      if (this.weatherShaderSource.reuse(shader)) return
+      const vertexSource = shader.vertexShader, fragmentSource = shader.fragmentShader
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
         '#include <common>\nvarying float terrainHeight;\nvarying vec3 terrainWorld;\n',
@@ -524,6 +533,7 @@ export class TerrainSystem {
         diffuseColor.rgb *= 1.0 - terrainClouds * cloudShadow * .12;
         diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.76, 0.83, 0.91), snowCover);`,
       )
+      this.weatherShaderSource.remember(vertexSource, fragmentSource, shader)
     }
     material.customProgramCacheKey = () => 'terrain-weather-v6'
   }
@@ -669,6 +679,11 @@ export class TerrainSystem {
       segs: chunk.segs,
       vertices: chunk.heights.length,
     }
+  }
+
+  /** Immutable sampled tile identity, including its water/contact grid. */
+  sampleMeshRevision(x: number, z: number): number {
+    return this.sampledChunkAt(x, z)?.surfaceRevision ?? 0
   }
 
   sampleMeshHeight(x: number, z: number): number | null {
@@ -1091,6 +1106,14 @@ export class TerrainSystem {
     // coverage is ready. Making both surfaces transparent exposes hills and
     // sky behind them and changes their brightness during every LOD swap.
     this.prepareChunkForFade(chunk)
+    // Entering water shares the opaque source until this tile needs a private bias.
+    if (chunk.waterMesh?.material === this.waterMat) {
+      const water = this.waterMat.clone()
+      water.onBeforeCompile = this.waterMat.onBeforeCompile
+      water.customProgramCacheKey = this.waterMat.customProgramCacheKey
+      chunk.waterMesh.material = water
+      chunk.materials = chunk.materials.map(material => material === this.waterMat ? water : material)
+    }
     for (const material of chunk.materials) {
       material.transparent = false
       material.depthWrite = true
@@ -1102,6 +1125,13 @@ export class TerrainSystem {
       material.polygonOffsetFactor = source.polygonOffsetFactor + 2
       material.polygonOffsetUnits = source.polygonOffsetUnits + 2
       material.needsUpdate = true
+    }
+    const front = chunk.terrainMesh.material as MeshStandardMaterial
+    front.side = chunk.lod === 0 ? DoubleSide : FrontSide
+    if (chunk.backMesh) {
+      const back = chunk.backMesh.material as MeshStandardMaterial
+      chunk.materials = chunk.materials.filter(material => material !== back)
+      back.dispose(); chunk.backMesh.material = this.groundMatNear; chunk.backMesh.visible = false
     }
     chunk.fallbackOffset = true
   }
@@ -1311,17 +1341,24 @@ export class TerrainSystem {
     root.name = `chunk_${cx}_${cz}`
     const originX = cx * CHUNK_SIZE
     const originZ = cz * CHUNK_SIZE
-    const mesh = new Mesh(deserializeTerrainGeometry(data.ground), lod === 0 ? this.groundMatNear : this.groundMatFar)
+    const geometry = deserializeTerrainGeometry(data.ground)
+    // Construct the back pass first: transparent ties use object creation order,
+    // preserving the renderer's original back-then-front sequence for this tile.
+    const backMesh = lod === 0 ? new Mesh(geometry, this.groundMatNear) : null
+    const mesh = new Mesh(geometry, lod === 0 ? this.groundMatNear : this.groundMatFar)
     mesh.name = 'TerrainChunk'
     mesh.position.set(originX + CHUNK_SIZE * size / 2, 0, originZ + CHUNK_SIZE * size / 2)
     mesh.receiveShadow = lod === 0
+    if (backMesh) {
+      backMesh.name = 'TerrainBackfaces'; backMesh.position.copy(mesh.position)
+      backMesh.receiveShadow = true; root.add(backMesh)
+    }
     root.add(mesh)
     let water: Mesh | null = null
     if (data.water) {
-      water = new Mesh(deserializeTerrainGeometry(data.water), makeWaterMaterial(this.waterClock,
-        { rain: this.waterRain, snow: this.waterSnow, windX: this.waterWindX, windZ: this.waterWindZ },
-        -2,
-        this.waterDetailScale))
+      // Water is opaque throughout entry, so it can share the settled shader
+      // immediately. Only retiring coverage needs private polygon-offset state.
+      water = new Mesh(deserializeTerrainGeometry(data.water), this.waterMat)
       water.name = 'WaterSurface'
       water.position.copy(mesh.position)
       root.add(water)
@@ -1335,7 +1372,7 @@ export class TerrainSystem {
       key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
       cx, cz, root, lod, segs: data.segs, originX, originZ,
       heights: data.heights, alpha: 0, fadeAge: 0, targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
-      terrainMesh: mesh, waterMesh: water, settled: false, fallbackOffset: false,
+      surfaceRevision: this.nextSurfaceRevision++, terrainMesh: mesh, backMesh, waterMesh: water, settled: false, fallbackOffset: false,
       materials: root.children.flatMap(child => child instanceof Mesh
         ? (Array.isArray(child.material) ? child.material : [child.material])
           .filter((material): material is MeshStandardMaterial => material instanceof MeshStandardMaterial)
@@ -1358,11 +1395,10 @@ export class TerrainSystem {
     }
     const previous = chunk.materials
     chunk.terrainMesh.material = chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
+    if (chunk.backMesh) { chunk.backMesh.visible = false; chunk.backMesh.material = this.groundMatNear }
     if (chunk.waterMesh) chunk.waterMesh.material = this.waterMat
     for (const material of previous) {
-      if (material !== this.groundMatNear && material !== this.groundMatFar && material !== this.waterMat) {
-        material.dispose()
-      }
+      if (material !== this.groundMatNear && material !== this.groundMatFar && material !== this.waterMat) material.dispose()
     }
     chunk.materials = [chunk.terrainMesh.material as MeshStandardMaterial]
     if (chunk.waterMesh) chunk.materials.push(this.waterMat)
@@ -1377,45 +1413,51 @@ export class TerrainSystem {
   private prepareChunkForFade(chunk: Chunk): void {
     this.fadeKeys.add(chunk.key)
     if (chunk.fallbackOffset) {
+      // Release the retired private state before restoring ordinary fade sources.
       for (const material of chunk.materials) {
-        const water = chunk.waterMesh?.material === material
-        material.transparent = !water
-        material.depthWrite = water
-        material.opacity = water ? 1 : MathUtils.clamp(chunk.alpha, 0, 1)
-        const source = chunk.waterMesh?.material === material ? this.waterMat
-          : chunk.lod === 0 ? this.groundMatNear : this.groundMatFar
-        material.polygonOffset = source.polygonOffset
-        material.polygonOffsetFactor = source.polygonOffsetFactor
-        material.polygonOffsetUnits = source.polygonOffsetUnits
-        material.needsUpdate = true
+        if (material !== this.groundMatNear && material !== this.groundMatFar && material !== this.waterMat) material.dispose()
       }
-      chunk.fallbackOffset = false
+      if (chunk.backMesh) { chunk.backMesh.visible = false; chunk.backMesh.material = this.groundMatNear }
+      chunk.fallbackOffset = false; chunk.settled = true
     }
-    if (!chunk.settled) return
-    const clone = (source: MeshStandardMaterial, water = false): MeshStandardMaterial => {
+    if (!chunk.settled) { this.enableBackFade(chunk); return }
+    const clone = (source: MeshStandardMaterial): MeshStandardMaterial => {
       const material = source.clone()
       // Material.clone() does not copy shader hooks. Losing them makes a
       // retiring tile briefly dry/unlit water before the new surface settles.
       material.onBeforeCompile = source.onBeforeCompile
       material.customProgramCacheKey = source.customProgramCacheKey
-      // Ground blends over fallback coverage; water stays opaque/depth-writing
-      // so overlapping surfaces cannot double-blend or expose the riverbed.
-      material.transparent = !water
+      // Ground blends over fallback coverage; water shares its opaque source
+      // until offsetFallback needs to change its polygon offset.
+      material.transparent = true
+      material.side = FrontSide
       material.alphaHash = false
-      material.opacity = water ? 1 : MathUtils.clamp(chunk.alpha, 0, 1)
-      material.depthWrite = water
+      material.opacity = MathUtils.clamp(chunk.alpha, 0, 1)
+      material.depthWrite = false
       return material
     }
     const terrainMaterial = clone(chunk.lod === 0 ? this.groundMatNear : this.groundMatFar)
     chunk.terrainMesh.material = terrainMaterial
     const materials: MeshStandardMaterial[] = [terrainMaterial]
     if (chunk.waterMesh) {
-      const waterMaterial = clone(this.waterMat, true)
-      chunk.waterMesh.material = waterMaterial
-      materials.push(waterMaterial)
+      chunk.waterMesh.material = this.waterMat
+      materials.push(this.waterMat)
     }
     chunk.materials = materials
     chunk.settled = false
+    this.enableBackFade(chunk)
+  }
+
+  private enableBackFade(chunk: Chunk): void {
+    if (!chunk.backMesh || chunk.backMesh.visible) return
+    const front = chunk.terrainMesh.material as MeshStandardMaterial
+    const back = front.clone()
+    back.onBeforeCompile = front.onBeforeCompile
+    back.customProgramCacheKey = front.customProgramCacheKey
+    back.side = BackSide
+    chunk.backMesh.material = back; chunk.backMesh.visible = true
+    chunk.materials.push(back)
+    if (front.side !== FrontSide) { front.side = FrontSide; front.needsUpdate = true }
   }
 
   private stampChunkMeshes(root: Group | Mesh, opacity: number): void {
@@ -1447,13 +1489,14 @@ export class TerrainSystem {
         })
       } else {
         const c = obj.material.clone()
-        const smoothGroundFade = obj.name === 'TerrainChunk'
+        const smoothGroundFade = obj.name === 'TerrainChunk' || obj.name === 'TerrainBackfaces'
         c.transparent = smoothGroundFade
+        if (smoothGroundFade) c.side = obj.name === 'TerrainBackfaces' ? BackSide : FrontSide
         c.alphaHash = !smoothGroundFade
         c.opacity = opacity
         if (c instanceof MeshStandardMaterial) {
           c.depthWrite = !smoothGroundFade
-          if (obj.name === 'TerrainChunk') this.configureWeatherMaterial(c)
+          if (smoothGroundFade) this.configureWeatherMaterial(c)
         }
         obj.material = c
       }
@@ -1473,8 +1516,7 @@ export class TerrainSystem {
       // Materials were cloned per chunk for fade - free them
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
       for (const m of mats) {
-        if (m === this.groundMatNear || m === this.groundMatFar || m === this.waterMat) continue
-        m.dispose()
+        if (m !== this.groundMatNear && m !== this.groundMatFar && m !== this.waterMat) m.dispose()
       }
     })
     chunk.root.clear()

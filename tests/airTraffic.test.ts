@@ -1,4 +1,4 @@
-import { Group, InstancedMesh } from 'three'
+import { DoubleSide, Group, InstancedMesh, MeshBasicMaterial } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import {
   AIR_TRAFFIC_BEACON_COUNT,
@@ -206,6 +206,9 @@ describe('bounded air traffic', () => {
     const parent = new Group()
     const traffic = new AirTrafficSystem(parent)
     const mesh = parent.getObjectByName('AirTrafficSilhouettes') as InstancedMesh
+    expect((mesh.material as MeshBasicMaterial).side).toBe(DoubleSide)
+    expect((mesh.material as MeshBasicMaterial).forceSinglePass).toBe(true)
+    expect(mesh.count).toBe(AIR_TRAFFIC_COUNT)
     const geometryDispose = vi.spyOn(mesh.geometry, 'dispose')
     traffic.dispose()
     expect(parent.getObjectByName('AirTraffic')).toBeUndefined()

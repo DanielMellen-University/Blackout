@@ -88,3 +88,22 @@ describe('bounded streamed surface contact', () => {
     expect(geometry.getAttribute('position').getY(0)).toBe(42)
   })
 })
+
+it('skips unchanged immutable tile owners while refitting replacements within the same vertex budget', () => {
+  let revision = 1, leftOwner = 1, rightOwner = 2, left = 100, right = 200
+  const geometry = surface(6), p = geometry.getAttribute('position')
+  for (let i = 0; i < 6; i++) p.setX(i, i)
+  const sample = vi.fn((x: number) => x < 3 ? left : right)
+  const draper = new SurfaceDraper(sample, () => revision, x => x < 3 ? leftOwner : rightOwner)
+  draper.add(geometry, 0, 0, 0)
+  expect(draper.update()).toBe(6)
+  sample.mockClear(); revision++
+  expect(draper.update()).toBe(0); expect(sample).not.toHaveBeenCalled()
+  left = 300; leftOwner++; revision++
+  expect(draper.update()).toBe(3); expect(sample).toHaveBeenCalledTimes(3)
+  expect(p.getY(0)).toBeCloseTo(300.45); expect(p.getY(5)).toBeCloseTo(200.45)
+  right = 400; rightOwner++; revision++
+  expect(draper.update()).toBe(3)
+  expect(p.getY(5)).toBeCloseTo(400.45)
+  draper.clear(); geometry.dispose()
+})
