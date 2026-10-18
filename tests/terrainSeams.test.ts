@@ -136,12 +136,12 @@ it('publishes joins within the attachment cap and restores coverage after neighb
   } finally { terrain.dispose() }
 })
 
-it('clips a partially wet interval instead of leaving its dry portion uncovered', () => {
+it('clips a partially wet bank at the upper surface crossing', () => {
   const a = tile(0, 2, false), b = tile(420, 3, true)
   for (let x = 0; x <= 3; x++) b.waterLevels[x] = 60
   const joined = joinTerrainEdges(a, a.heights.length, [terrainEdgeJoin(a, b)!]), p = joined.getAttribute('position')
   const zs = Array.from({ length: p.count - a.heights.length }, (_, i) => p.getZ(i + a.heights.length) + 210)
-  expect(Math.min(...zs)).toBeCloseTo(140 * 32 / 60, 3)
+  expect(Math.min(...zs)).toBeCloseTo(140 * 15.02 / (60 + 8 * Math.sin(Math.PI / 3)), 3)
   expect(Math.max(...zs)).toBe(420)
   a.geometry.dispose(); b.geometry.dispose(); joined.dispose()
 })
@@ -177,4 +177,84 @@ it('checks distant neighbor bounds without reading their geometry or contact pay
     internal.queueEdgeJoins(owner)
     expect(internal.seamKeys.size).toBe(0)
   } finally { internal.chunks.clear(); system.dispose() }
+})
+
+it('joins the exposed shoreline bank down to water when the other bed is submerged', () => {
+  const a = tile(0, 2, false), b = tile(420, 3, true)
+  a.waterLevels.fill(35); b.waterLevels.fill(35)
+  const beforeA = [...a.heights], beforeB = [...b.heights]
+  const joined = joinTerrainEdges(a, a.heights.length, [terrainEdgeJoin(a, b)!])
+  const p = joined.getAttribute('position')
+  expect(p.count).toBeGreaterThan(a.heights.length)
+  const added = Array.from({ length: p.count - a.heights.length }, (_, i) => i + a.heights.length)
+  expect(Math.min(...added.map(i => p.getY(i)))).toBeCloseTo(35.02, 4)
+  expect(Math.max(...added.map(i => p.getY(i)))).toBeGreaterThan(50)
+  expect([...a.heights]).toEqual(beforeA); expect([...b.heights]).toEqual(beforeB)
+  a.geometry.dispose(); b.geometry.dispose(); joined.dispose()
+})
+
+it('closes near-water dry gaps without an artificial two metre exclusion band', () => {
+  const a = tile(0, 2, false), b = tile(420, 3, true)
+  a.waterLevels.fill(29); b.waterLevels.fill(29)
+  const joined = joinTerrainEdges(a, a.heights.length, [terrainEdgeJoin(a, b)!])
+  expect(joined.getAttribute('position').count).toBeGreaterThan(a.heights.length)
+  expect(Math.min(...Array.from(joined.getAttribute('position').array).filter((_, i) => i % 3 === 1))).toBe(30)
+  a.geometry.dispose(); b.geometry.dispose(); joined.dispose()
+})
+
+it('clips crossed water grades without covering submerged beds or protruding above the bank', () => {
+  const a = tile(0, 2, false), b = tile(420, 3, true)
+  for (let z = 0; z <= 2; z++) for (let x = 0; x <= 2; x++) a.waterLevels[z * 3 + x] = 55 - z * 20
+  for (let z = 0; z <= 3; z++) for (let x = 0; x <= 3; x++) b.waterLevels[z * 4 + x] = 15 + z * 40 / 3
+  const joined = joinTerrainEdges(a, a.heights.length, [terrainEdgeJoin(a, b)!]), p = joined.getAttribute('position')
+  const highAt = (t: number) => {
+    const q = t * 3 / 420, lo = Math.min(2, Math.floor(q)), f = q - lo
+    return b.heights[lo * 4]! * (1 - f) + b.heights[(lo + 1) * 4]! * f
+  }
+  let checked = 0
+  for (let i = a.heights.length; i < p.count; i++) {
+    const t = p.getZ(i) + 210, w = Math.max(55 - t * 40 / 420, 15 + t * 40 / 420)
+    expect(p.getY(i)).toBeGreaterThanOrEqual(w + .0199)
+    expect(p.getY(i)).toBeLessThanOrEqual(highAt(t) + .0001)
+    checked++
+  }
+  expect(checked).toBeGreaterThan(12)
+  // The switch of the two independent water grades is explicitly a knot.
+  expect(Array.from({ length: p.count - a.heights.length }, (_, i) => p.getZ(i + a.heights.length))
+    .some(z => Math.abs(z) < .001)).toBe(true)
+  a.geometry.dispose(); b.geometry.dispose(); joined.dispose()
+})
+
+it.each([
+  { seed: 2026, jobs: [[-178920, -162120, 2, 2], [-178080, -162120, 1, 2]], t: -161997, lo: .490585786955697, hi: .8367384374141691 },
+  { seed: 9001, jobs: [[-130620, -113400, 1, 1], [-130200, -113400, 1, 1]], t: -113007.5, lo: .35948909393378703, hi: .6951107308268547 },
+])('covers the actual near-water edge gap in seed $seed', ({ seed, jobs, t, lo, hi }) => {
+  setWorldSeed(seed); clearOpsPad()
+  const tiles = jobs.map(job => {
+    const d = generateTerrainGeometry(job[0]!, job[1]!, job[2]! as TerrainLod, job[3]!)
+    return { originX: job[0]!, originZ: job[1]!, size: job[3]!, segs: d.segs,
+      heights: d.heights, waterLevels: d.waterLevels, geometry: deserializeTerrainGeometry(d.ground) }
+  })
+  const [a, b] = tiles as [TerrainEdgeTile, TerrainEdgeTile]
+  const base = a.geometry.getAttribute('position').count
+  const joined = joinTerrainEdges(a, base, [terrainEdgeJoin(a, b)!])
+  const p = joined.getAttribute('position'), index = joined.index!
+  const along = (i: number) => p.getZ(i) + a.originZ + 420 * a.size / 2
+  for (const f of [.05, .25, .5, .75, .95]) {
+    const y = lo + (hi - lo) * f
+    let covered = false
+    for (let j = 0; j < index.count; j += 3) {
+      const u = index.getX(j), v = index.getX(j + 1), w = index.getX(j + 2)
+      if (Math.min(u, v, w) < base) continue
+      const ax = along(u), ay = p.getY(u), bx = along(v), by = p.getY(v), cx = along(w), cy = p.getY(w)
+      const det = (by - cy) * (ax - cx) + (cx - bx) * (ay - cy)
+      if (Math.abs(det) < 1e-8) continue
+      const s = ((by - cy) * (t - cx) + (cx - bx) * (y - cy)) / det
+      const r = ((cy - ay) * (t - cx) + (ax - cx) * (y - cy)) / det
+      if (Math.min(s, r, 1 - s - r) >= -1e-4) { covered = true; break }
+    }
+    expect(covered).toBe(true)
+  }
+  expect([...p.array].slice(0, base * 3)).toEqual([...a.geometry.getAttribute('position').array])
+  a.geometry.dispose(); b.geometry.dispose(); joined.dispose()
 })

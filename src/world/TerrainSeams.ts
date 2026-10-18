@@ -123,12 +123,16 @@ export function joinTerrainEdges(tile: TerrainEdgeTile, baseVertices: number,
       const bl = edgeSample(neighbor, opposite, l, samples[2]!), br = edgeSample(neighbor, opposite, r, samples[3]!)
       const dl = al[0]! - bl[0]!, dr = ar[0]! - br[0]!
       if (dl * dr < 0) crossings.push(l + (r - l) * dl / (dl - dr))
-      // Clip the join to portions clearing both interpolated water levels.
+      // Split every terrain/water crossing so the visible bank can be clipped
+      // exactly to the higher independent water surface, including mixed shores.
+      const waterDeltaL = al[1]! - bl[1]!, waterDeltaR = ar[1]! - br[1]!
+      if (waterDeltaL * waterDeltaR < 0)
+        crossings.push(l + (r - l) * waterDeltaL / (waterDeltaL - waterDeltaR))
       for (let h = 0; h < 2; h++) {
         const hl = h === 0 ? al[0]! : bl[0]!, hr = h === 0 ? ar[0]! : br[0]!
         for (let w = 0; w < 2; w++) {
           const wl = w === 0 ? al[1]! : bl[1]!, wr = w === 0 ? ar[1]! : br[1]!
-          const cl = hl - wl - 2, cr = hr - wr - 2
+          const cl = hl - wl - .02, cr = hr - wr - .02
           if (cl * cr < 0) crossings.push(l + (r - l) * cl / (cl - cr))
         }
       }
@@ -139,9 +143,15 @@ export function joinTerrainEdges(tile: TerrainEdgeTile, baseVertices: number,
       if (r - l < 1e-6) continue
       const al = edgeSample(tile, edge, l, samples[0]!), ar = edgeSample(tile, edge, r, samples[1]!)
       const bl = edgeSample(neighbor, opposite, l, samples[2]!), br = edgeSample(neighbor, opposite, r, samples[3]!)
-      // Preserve open wet edges and their independent shoreline clipping.
+      // Fully submerged edges remain open. Where only one bed is submerged,
+      // cover the exposed bank down to water instead of dropping the whole
+      // interval. The 2 cm clearance avoids coincident water/terrain pixels;
+      // contact grids and independent water vertices remain unchanged.
       const am = edgeSample(tile, edge, (l + r) / 2, samples[4]!), bm = edgeSample(neighbor, opposite, (l + r) / 2, samples[5]!)
-      if (Math.min(am[0]!, bm[0]!) <= Math.max(am[1]!, bm[1]!) + 2) continue
+      if (Math.max(am[0]!, bm[0]!) <= Math.max(am[1]!, bm[1]!) + .02) continue
+      const waterL = Math.max(al[1]!, bl[1]!) + .02, waterR = Math.max(ar[1]!, br[1]!) + .02
+      al[0] = Math.max(al[0]!, waterL); bl[0] = Math.max(bl[0]!, waterL)
+      ar[0] = Math.max(ar[0]!, waterR); br[0] = Math.max(br[0]!, waterR)
       const a = add(edge, l, al), b = add(edge, r, ar), c = add(edge, l, bl), d = add(edge, r, br)
       // Both windings keep a vertical join visible from either side under FrontSide.
       triangle(a, b, c); triangle(b, d, c); triangle(c, b, a); triangle(c, d, b)
