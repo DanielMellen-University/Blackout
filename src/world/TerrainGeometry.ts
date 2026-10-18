@@ -432,20 +432,20 @@ export function* generateTerrainGeometrySteps(
         for (let ix = 0; ix < stride; ix++) {
           const i = iz * stride + ix
           let dx = gradientX[i]!, dz = gradientZ[i]!
-          const climate = sampledGrid()[i]!
-          // Rock tint is material detail. A shared dry edge must not change
+          // Rock tint is material detail. A shared edge must not change
           // color when its neighbour samples the same slope at another LOD.
           // Physical heights stay on their original grid; lighting shares this derivative.
           if ((ix === 0 || iz === 0 || ix === segs || iz === segs) &&
-            climate.height > (climate.waterLevel ?? 0) + 2 && (cell !== TERRAIN_CONTACT_GRID || shoreBed)) {
+            (cell !== TERRAIN_CONTACT_GRID || shoreBed)) {
             const x = originX + ix * cell, z = originZ + iz * cell, d = TERRAIN_CONTACT_GRID
             dx = (Math.fround(sampleTerrainHeightFast(x + d, z)) - Math.fround(sampleTerrainHeightFast(x - d, z))) / (2 * d)
             dz = (Math.fround(sampleTerrainHeightFast(x, z + d)) - Math.fround(sampleTerrainHeightFast(x, z - d))) / (2 * d)
           }
-          // Lighting uses the same world-space dry-edge derivative as tint.
+          // Shore-bed corrections depend on tile spacing. Use the analytic
+          // derivative for wet banks too, without moving any contact vertex.
+          // Lighting uses the same world-space edge derivative as tint.
           // Store through Float32 just like the existing near gradient arrays.
-          if ((ix === 0 || iz === 0 || ix === segs || iz === segs) &&
-            climate.height > (climate.waterLevel ?? 0) + 2) {
+          if (ix === 0 || iz === 0 || ix === segs || iz === segs) {
             gradientX[i] = dx; gradientZ[i] = dz
           }
           const slope = Math.min(1, Math.hypot(dx, dz) / 2.2)

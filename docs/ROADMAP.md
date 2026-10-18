@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **10.931** is current. Previous ship: **10.930**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.932** is current. Previous ship: **10.931**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 10.932. Extend the common 17.5 m color and normal derivative to shoreline, lake and river-bank boundaries. Retain the 10.929 exposed-bank connectors and preserve contact heights, water surfaces, collision, landscape revision 29 and all budgets. Measure identical tile pairs and review four seeds in low-altitude chase/cockpit views. See docs/reviews/wet-edges-10.932/README.md for measurements, city-route FPS/stutter and verification limits. The active heap budget remains about 200 MB; no memory optimization is attempted. Paused systems remain excluded.
 
 Chunk 10.931. Set the heap diagnostic default to about 200 MB, support northeast and city routes, and keep allocation sampling opt-in. Capture one snapshot per route: northeast reaches the 200 MB trigger at 14.15 seconds; the city run peaks at 148.2 MB and falls back to a route-end snapshot. Post-collection main heaps are 76.8 and 74.4 MB; strong snapshot self totals are 87.28 and 87.30 MB. Native backing storage is the largest self category. No retained-memory optimization is justified below the revised target. The actual city peak snapshot and absolute northeast route peak remain unverified. See docs/reviews/memory-10.931/README.md for raw snapshots, rankings and limits. Preserve all budgets and paused exclusions.
 

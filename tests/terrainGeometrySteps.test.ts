@@ -63,7 +63,7 @@ describe('cooperative terrain geometry', () => {
       if (result.value === 'water-grid') break
     }
     generateTerrainGeometry(-6720, -6720, 2, 32)
-    expect(digest(finish(steps))).toBe('a8035efe576eef94178dabce16ac856b9cac2927ca6b358d46f5bccd6e4212e4')
+    expect(digest(finish(steps), true)).toBe('f01d189eb51041b302310822c8ff09de940179ba2eec9fa1dee7e77ff566a92f')
   })
 
   // Physical hashes independently reproduced on frozen 10.923 before the
@@ -116,6 +116,6 @@ describe('cooperative terrain geometry', () => {
     expect(materialDispose).toHaveBeenCalledTimes(phase === 'water' ? 1 : 0)
     steps.return(undefined as never)
     expect(geometryDispose.mock.calls.length - before).toBe(phase === 'ground' ? 1 : 2)
-    expect(digest(generateTerrainGeometry(-22050, -28350, 0))).toBe('a8035efe576eef94178dabce16ac856b9cac2927ca6b358d46f5bccd6e4212e4')
+    expect(digest(generateTerrainGeometry(-22050, -28350, 0), true)).toBe('f01d189eb51041b302310822c8ff09de940179ba2eec9fa1dee7e77ff566a92f')
   })
 })

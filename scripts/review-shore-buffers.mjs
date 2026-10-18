@@ -3,10 +3,12 @@ import { createServer } from 'vite'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 const baseline = process.env.SHORE_BASELINE_SOURCE ? readFileSync(process.env.SHORE_BASELINE_SOURCE, 'utf8') : null
+const geometryBaseline = process.env.TERRAIN_GEOMETRY_BASELINE_SOURCE ? readFileSync(process.env.TERRAIN_GEOMETRY_BASELINE_SOURCE, 'utf8') : null
 const loader = await createServer({ cacheDir: '/tmp/blackout-shore-buffer-cache',
   server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom',
-  plugins: baseline ? [{ name: 'frozen-shore-seams', enforce: 'pre', transform(code, id) {
-    if (id.endsWith('/TerrainSeams.ts')) return baseline
+  plugins: baseline || geometryBaseline ? [{ name: 'frozen-shore-seams', enforce: 'pre', transform(code, id) {
+    if (baseline && id.endsWith('/TerrainSeams.ts')) return baseline
+    if (geometryBaseline && id.endsWith('/TerrainGeometry.ts')) return geometryBaseline
   } }] : [] })
 const hash = arrays => {
   const h = createHash('sha256')
@@ -49,6 +51,6 @@ try {
         d.ground.index, ...Object.values(d.water?.attributes ?? {}).map(a => a.array), d.water?.index])) })
     tiles.forEach(t => t.geometry.dispose()); geometry.dispose()
   }
-  writeFileSync(process.argv[3], JSON.stringify({ baseline: !!baseline, results }, null, 2) + '\n')
+  writeFileSync(process.argv[3], JSON.stringify({ baseline: !!baseline, geometryBaseline: !!geometryBaseline, results }, null, 2) + '\n')
   console.log('fixtures', results.length, 'uncovered', results.filter(r => r.probes.some(p => !p.covered)).length)
 } finally { await loader.close() }

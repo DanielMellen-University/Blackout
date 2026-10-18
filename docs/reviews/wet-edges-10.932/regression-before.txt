@@ -1,0 +1,69 @@
+
+> blackout@0.12.0 test
+> vitest run tests/terrainEdgeColors.test.ts
+
+
+ RUN  v5.0.0 /home/daniel/Documents/GitHub/Blackout
+
+ ❯ tests/terrainEdgeColors.test.ts (8 tests | 4 failed) 1021ms
+   × matches wet lake edge attributes on seed 42 88ms
+   × matches wet river edge attributes on seed 42 173ms
+   × matches wet river edge attributes on seed 2026 163ms
+   × matches wet lake edge attributes on seed 9001 66ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/terrainEdgeColors.test.ts > matches wet lake edge attributes on seed 42
+AssertionError: expected 0.009887833148241043 to be less than 1e-7
+ ❯ tests/terrainEdgeColors.test.ts:41:123
+     39|     return ['color', 'normal'].map(name => Array.from(data.ground.attr…
+     40|   })
+     41|   for (let a = 0; a < 2; a++) expect(Math.max(...attributes[0]![a]!.ma…
+       |                                                                                                                           ^
+     42| })
+     43|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/terrainEdgeColors.test.ts > matches wet river edge attributes on seed 42
+AssertionError: expected 0.06234125420451164 to be less than 1e-7
+ ❯ tests/terrainEdgeColors.test.ts:41:123
+     39|     return ['color', 'normal'].map(name => Array.from(data.ground.attr…
+     40|   })
+     41|   for (let a = 0; a < 2; a++) expect(Math.max(...attributes[0]![a]!.ma…
+       |                                                                                                                           ^
+     42| })
+     43|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/terrainEdgeColors.test.ts > matches wet river edge attributes on seed 2026
+AssertionError: expected 0.0032263100147247314 to be less than 1e-7
+ ❯ tests/terrainEdgeColors.test.ts:41:123
+     39|     return ['color', 'normal'].map(name => Array.from(data.ground.attr…
+     40|   })
+     41|   for (let a = 0; a < 2; a++) expect(Math.max(...attributes[0]![a]!.ma…
+       |                                                                                                                           ^
+     42| })
+     43|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/terrainEdgeColors.test.ts > matches wet lake edge attributes on seed 9001
+AssertionError: expected 0.007486552000045776 to be less than 1e-7
+ ❯ tests/terrainEdgeColors.test.ts:41:123
+     39|     return ['color', 'normal'].map(name => Array.from(data.ground.attr…
+     40|   })
+     41|   for (let a = 0; a < 2; a++) expect(Math.max(...attributes[0]![a]!.ma…
+       |                                                                                                                           ^
+     42| })
+     43|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 4 passed (8)
+   Start at  14:13:03
+   Duration  1.56s (tests 72%, transform 21%, import 7%)
+
