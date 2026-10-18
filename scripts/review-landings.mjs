@@ -10,7 +10,7 @@ const hook=readFileSync('scripts/browser-landing-review.js','utf8')
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface']})
 const runs=[], captureSeconds=Number(process.env.LANDING_CAPTURE_SECONDS||18)
 try{
- for(const seed of (process.env.LANDING_SEEDS||'42,73,1337').split(',').map(Number))for(const course of (process.env.LANDING_COURSES||'free-flight,training-orbit').split(',')){
+ for(const seed of (process.env.LANDING_SEEDS||'42,73,1337').split(',').map(Number))for(const course of (process.env.LANDING_COURSES||'free-flight,training-orbit,thermal-run').split(',')){
   const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:1}),errors=[],consoleErrors=[]
   page.setDefaultTimeout(120000);page.on('pageerror',e=>{errors.push(String(e));console.error('PAGE',String(e))})
   page.on('console',m=>{if(m.type()==='error')consoleErrors.push(m.text().replace(/([?&]token=)[^&\s'\"]+/g,'$1[redacted]'))})
@@ -59,16 +59,16 @@ try{
   await page.waitForTimeout(2000)
   const final=await page.evaluate(()=>window.__landing.state()),samples=await page.evaluate(()=>window.__landing.samples())
   let debrief=null
-  if(course==='training-orbit'){
+  if(course!=='free-flight'){
    await writeFile(`${directory}/${label}-${seed}-${course}-pre-debrief.json`,JSON.stringify({final,samples,route:await page.evaluate(()=>window.__landing.route()),errors},null,2))
    await page.locator('#run-results').waitFor({state:'visible',timeout:30000})
    debrief=`${label}-${seed}-${course}-debrief.png`;await page.screenshot({path:`${directory}/${debrief}`})
   }
   await writeFile(`${directory}/${label}-${seed}-${course}-result.json`,JSON.stringify({seed,course,views,boundaries,fieldProbes,final,samples,route:await page.evaluate(()=>window.__landing.route()),errors},null,2))
-  if(views.some(v=>v.state.hudGlide!==v.state.guidance || v.state.hudTarget!=='base' || v.state.ratio!==1))throw Error('HUD does not match final guidance')
-  if(fieldProbes.some(p=>Math.max(Math.abs(p.nose),Math.abs(p.track))>30 ? p.state.hudGlide!==null : p.state.hudGlide!==p.state.guidance))throw Error('HUD cone mismatch')
+  if(views.some(v=>v.state.guidance===null || v.state.hudGlide!==v.state.guidance || v.state.hudTarget!=='base' || v.state.ratio!==1))throw Error('HUD does not match final guidance')
+  if(fieldProbes.some(p=>Math.max(Math.abs(p.nose),Math.abs(p.track))>30 ? p.state.hudGlide!==null : p.state.guidance===null || p.state.hudGlide!==p.state.guidance))throw Error('HUD cone mismatch')
   if(boundaries.some(b=>Math.abs(b.degrees)<=30 ? b.guidance===null : b.guidance!==null))throw Error('Inclusive final cone mismatch')
-  if(!['landed','roll'].includes(final.contact?.touch) || !final.onGround || final.status==='crashed')throw Error('Approach did not land safely')
+  if(!['landed','roll'].includes(final.contact?.touch) || final.status==='crashed' || (course==='free-flight' ? !final.onGround : final.phase!=='complete' || !final.resultsOpen))throw Error('Approach did not land safely')
   runs.push({seed,course,errors,consoleErrors,views,boundaries,fieldProbes,final,samples,route:await page.evaluate(()=>window.__landing.route()),debrief})
   await writeFile(`${directory}/${label}.json`,JSON.stringify({sources,hookSha256:createHash('sha256').update(hook).digest('hex'),viewport:[1280,720],pixelRatio:1,runs},null,2)+'\n')
   console.log('SAVED',seed,course,final.contact?.touch,final.contact?.failureReason,final.phase)

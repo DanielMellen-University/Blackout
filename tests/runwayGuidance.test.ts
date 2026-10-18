@@ -130,3 +130,16 @@ describe('shared runway guidance', () => {
     expect(landingGlideCue(out, Number.MAX_VALUE, 0, 50, -Number.MAX_VALUE, false)).toBeNull()
   })
 })
+
+it('keeps crab and drift independent at both inclusive cone boundaries and flight speeds', () => {
+  const out = { height: 25, distance: 500, inApproach: true }
+  for (const yaw of [-3, -.4, 1.7, 3]) for (const speed of [2, 42, 680]) {
+    for (const nose of [-30, 0, 30]) for (const track of [-30, 0, 30]) {
+      const cue = (n: number, t: number) => landingGlideCue(out, yaw + n * Math.PI / 180,
+        speed * Math.sin(yaw + t * Math.PI / 180), speed * Math.cos(yaw + t * Math.PI / 180), yaw, false)
+      expect(cue(nose, track)).toBe('on-slope')
+      if (nose) expect(cue(nose * 1.000001, track)).toBeNull()
+      if (track) expect(cue(nose, track * 1.000001)).toBeNull()
+    }
+  }
+})
