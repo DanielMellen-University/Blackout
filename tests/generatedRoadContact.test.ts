@@ -14,6 +14,8 @@ afterEach(() => { clearOpsPad(); vi.restoreAllMocks() })
 it.each([
   { seed: 73, cx: -3, cz: -2, focus: 'junction' },
   { seed: 1337, cx: 1, cz: 1, focus: 'junction' },
+  { seed: 42, cx: -6, cz: -4, focus: 'recovered-coastal' },
+  { seed: 808, cx: -7, cz: -3, focus: 'coastal-regional' },
   { seed: 1, cx: -7, cz: -5, focus: 'steep' },
   { seed: 73, cx: -5, cz: -3, focus: 'coastal' },
 ])('refits $focus seed-$seed asphalt and shoulders through far, near and far terrain', ({ seed, cx, cz, focus }) => {

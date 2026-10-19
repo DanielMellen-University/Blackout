@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.940** Pass the four-seed road integrity audit across 92 generated roads and 22,245 segments, with independent terrain, support, gap, attachment and planned street-end checks. Extend rendered far/near/far contact regressions to all four required seeds and inspect paired low-altitude chase/cockpit views. No production road defect is found; landscape revision 29, route revision 30, physics, collision, water, budgets and paused exclusions stay fixed. See docs/reviews/roads-10.940/README.md for audit numbers and limits.
 - **10.939** Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 - **10.938** Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

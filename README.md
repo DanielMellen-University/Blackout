@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.939**. Previous roadmap chunk: **10.938**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.940**. Previous roadmap chunk: **10.939**.
 
-Recent changes from **10.939**. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
+Recent changes from **10.940**. Pass the four-seed road integrity audit across 92 generated roads and 22,245 segments, with independent terrain, support, gap, attachment and planned street-end checks. Extend rendered far/near/far contact regressions to all four required seeds and inspect paired low-altitude chase/cockpit views. No production road defect is found; landscape revision 29, route revision 30, physics, collision, water, budgets and paused exclusions stay fixed. See docs/reviews/roads-10.940/README.md for audit numbers and limits.
 
 Recent changes from **10.926**. Remove measured mixed-LOD seam allocation churn without changing rendered buffers. Sampled diagnostic allocation falls from 14.414 to 1.516 GB; all 35 tile-pair attribute/index and restored-skirt hashes match 10.925. Fresh matched six-flight sets reduce intervals over 50 ms from 496 to 313, while pooled p95 and the 83.4 ms maximum stay unchanged. Northeast peak heap falls from 201.6 to 190.8 MB and still misses 155.4 MB; city peak is 222.7 versus 223.2 MB. The historical 400 ms gap is not reproduced and its cause remains unverified. Preserve contact/water, detail, all budgets, revision 28 and paused exclusions. The 123 focused checks, production build and paired low-altitude chase/cockpit review pass. See docs/reviews/performance-10.926/README.md for raw evidence and limits; memory and overall performance acceptance remain open.
 
