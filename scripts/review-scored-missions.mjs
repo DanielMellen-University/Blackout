@@ -11,6 +11,10 @@ const pilot = (await readFile('scripts/browser-training-review.js', 'utf8'))
   .replace("speed=150;gear=", 'speed=window.__reviewSpeed;gear=')
   .replace('spawn.x-fx*2200', "spawn.x-fx*(activeSortie.course.daily?1000:2200)").replace('spawn.z-fz*2200', "spawn.z-fz*(activeSortie.course.daily?1000:2200)")
   .replace('y:gate.y,z:gate.z', 'y:gate.y+(window.__gateOffset||0),z:gate.z')
+  .replace('const look=220',"const look=world.mission.routeProfile==='contour'?185+Math.max(0,200-(world.mission.gates.at(-1).pos.y-padY))*.85:220")
+  .replace(')),-.2,.38)', ")),training.stage==='approach'&&world.mission.routeProfile==='contour'?-.45:-.2,.38)")
+  .replace("training.stage==='approach'&&aircraft.altitudeAgl<8", "training.stage==='approach'&&aircraft.altitudeAgl<(world.mission.routeProfile==='contour'?6:8)")
+  .replace('(-aimAlong-450)', "(-aimAlong+(world.mission.routeProfile==='contour'?-180:-450))")
   .replace('  training.target=target', `  if(!gate&&training.holdRemaining>0){
    training.holdRemaining-=dt;training.stage='hold';speed=100;gear=false;
    if(!training.holdCenter)training.holdCenter={x:p.x+Math.cos(pose.heading)*280,z:p.z-Math.sin(pose.heading)*280,y:Math.max(p.y+300,spawn.y+600)};
@@ -64,7 +68,7 @@ try {
     }
     if(i%10===0)console.log(label,state.seconds.toFixed(1),state.next,state.stage,state.status)
     if(state.resultsOpen||state.status==='crashed'){
-     runs.push({label,speed,samples,final:state});await save();assert.equal(state.phase,'complete');assert.equal(state.next,5);assert.equal(state.status,'landed');assert.ok(state.score.result);done=true;console.log('RESULT',label,state.score.result.totalScore,state.score.result.medal,state.score.result.elapsedSec,state.score.result.paceLabel);break
+     runs.push({label,speed,samples,final:state});await save();assert.equal(state.phase,'complete');assert.equal(state.next,5);assert.equal(state.status,'landed');assert.ok(state.score.result);if(course==='contour-circuit')assert.ok(Math.hypot(state.position[0]-state.runway[0],state.position[2]-state.runway[2])<60,'Touch down on the generated runway');done=true;console.log('RESULT',label,state.score.result.totalScore,state.score.result.medal,state.score.result.elapsedSec,state.score.result.paceLabel);break
     }
    }
    assert.ok(done,'Flight timed out: '+label)

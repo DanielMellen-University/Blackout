@@ -39,7 +39,7 @@ describe('course library', () => {
   })
 
   it('keeps the random entry and fixed course contracts stable', () => {
-    expect(COURSE_LIBRARY).toHaveLength(75)
+    expect(COURSE_LIBRARY).toHaveLength(76)
     expect(courseDefinitionForId('missing').id).toBe('random')
     expect(courseSeedForId('random')).toBeUndefined()
     expect(courseSeedForId('free-flight')).toBeUndefined()

@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 10.944. Add the featured Contour circuit, with seed-based terrain choices and two gates aligned to the generated runway approach. Complete all five gates and runway contact on seeds 42, 73 and 808, using existing medals, debriefs, ghosts and record families. Preserve existing routes, landscape revision 29, route revision 30, physics, collision, water, resource budgets and paused exclusions. See docs/reviews/contour-10.944/README.md.
+
 Chunk 10.943. Show earned mission medals, distinguish complete-circuit time records from gate splits, and give generated routes a length-based time-score allowance. Verify nine real-physics Training and Daily completions, bronze/silver/gold outcomes, faster retries, time goals and populated six-family record retention. Preserve landscape revision 29, route revision 30, physics, collision, water, budgets and paused exclusions. See docs/reviews/missions-10.943/README.md.
 
 Chunk 10.942. City/roads/infrastructure redesign CLOSED. All four criteria are DONE: (1) village coverage, 10.939, fifteen connected and one deliberate skip; (2) road integrity, 10.940, 92 roads and 22,245 segments; (3) long-flight stability, 10.941, three verified Free flights over ten minutes; (4) visual pass, 10.942, 42 inspected chase/cockpit stills across seeds 42, 73, 808 and 1337. No production repair is required; known minor issues and evidence are recorded in docs/reviews/infrastructure-10.942/README.md. Preserve landscape revision 29, route revision 30, physics, collision, water, all budgets and paused exclusions. Heap target remains about 200 MB.
@@ -10,7 +12,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.943** is current. Previous ship: **10.942**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.944** is current. Previous ship: **10.943**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 

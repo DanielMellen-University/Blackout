@@ -1,5 +1,5 @@
 import { courseDefinitionForId, courseRunId, courseSessionId, dailyOpsDayKey,
-  monthlyOpsMonthKey, resolveCourseDefinition, weeklyOpsWeekKey,
+  monthlyOpsMonthKey, resolveCourseDefinition, resolveCourseReplaySeed, weeklyOpsWeekKey,
   type CourseDefinition, type CourseId } from '../systems/CourseLibrary'
 import type { MissionRouteProfile } from '../systems/Mission'
 
@@ -48,7 +48,7 @@ export class CourseSession {
 
   capture(courseId: CourseId, worldSeed: number, profile: MissionRouteProfile, seededRandom = false): ActiveSortie {
     const timestamp = this.timestampFor(courseId)
-    const course = Object.freeze({ ...resolveCourseDefinition(courseDefinitionForId(courseId), timestamp) })
+    const course = Object.freeze({ ...resolveCourseReplaySeed(resolveCourseDefinition(courseDefinitionForId(courseId), timestamp), worldSeed) })
     const periodKey = course.daily ? dailyOpsDayKey(timestamp)
       : course.weekly ? weeklyOpsWeekKey(timestamp) : course.monthly ? monthlyOpsMonthKey(timestamp) : undefined
     const periodLabel = periodKey ? `${course.daily ? 'DAY' : course.weekly ? 'WEEK' : 'MONTH'} ${periodKey}` : undefined

@@ -115,6 +115,20 @@ beforeEach(() => {
 afterEach(() => { picker.dispose(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('course picker interaction', () => {
+  it('keeps the new Contour mission featured through filtering and keyboard navigation', () => {
+    picker.setItems([...missionItems, { id: 'contour-circuit', label: 'Contour circuit', detail: 'Terrain gates and runway return', meta: '', stats: '' }], 'contour-circuit')
+    const featured = element('.course-picker-featured').children
+    expect(featured.map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'contour-circuit'])
+    expect(featured[3].getAttribute('aria-label')).toContain('Race the terrain')
+    key('ArrowDown', featured[3])
+    expect(documentState.activeElement?.dataset.courseId).toBe('ridge')
+    key('ArrowUp', documentState.activeElement!)
+    expect(documentState.activeElement?.dataset.courseId).toBe('contour-circuit')
+    picker.setFilter('no matches')
+    expect(options().some(node => node.dataset.courseId === 'contour-circuit')).toBe(true)
+    expect(featured[3].getAttribute('aria-checked')).toBe('true')
+  })
+
   it('features modes in fixed order, pins Random world, and filters/counts only ordinary missions', () => {
     picker.setItems(missionItems, 'training-orbit')
     expect(element('.course-picker-featured').children.map(node => node.dataset.courseId))

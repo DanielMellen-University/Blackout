@@ -105,6 +105,8 @@ import {
   COURSE_LIBRARY,
   readSelectedCourseId,
   resolveCourseDefinition,
+  resolveCourseReplaySeed,
+  type CourseDefinition,
   shouldResetSeededRandomWorldForStorageKey,
   writeSelectedCourseId,
   type CourseId,
@@ -435,16 +437,21 @@ export async function boot(): Promise<void> {
   })
   const protectedRecords = new Set<string>()
   if (courseSession.replayRecordId) protectedRecords.add(courseSession.replayRecordId)
-  const selectedCourse = () => resolveCourseDefinition(
-    courseDefinitionForId(selectedCourseId),
-    courseSession.timestampFor(selectedCourseId),
-  )
   let replaySeed = parseWorldSeed(
     replayParams?.get('seed'),
   )
   let replaySeedFallback = false
   if (replaySeed !== null || replayPeriodTimestamp !== null) selectedCourseId = courseDefinitionForId(replayCourseId).id
   if (titleSeedInput && replaySeed !== null) titleSeedInput.value = formatWorldSeed(replaySeed)
+
+  const catalogCourse = (course: CourseDefinition, timestamp: number): CourseDefinition => {
+    const resolved = resolveCourseDefinition(course, timestamp)
+    return course.id === selectedCourseId && !replaySeedFallback
+      ? resolveCourseReplaySeed(resolved, replaySeed) : resolved
+  }
+  const selectedCourse = () => catalogCourse(
+    courseDefinitionForId(selectedCourseId), courseSession.timestampFor(selectedCourseId),
+  )
 
   type CourseRecordSnapshot = {
     history: ReturnType<typeof repairCourseHistory>
@@ -469,8 +476,8 @@ export async function boot(): Promise<void> {
   const refreshCourseSelectorLabels = (): void => {
     const items = COURSE_LIBRARY.map((course) => {
       const opsTimestamp = courseSession.timestampFor(course.id)
-      const resolvedCourse = resolveCourseDefinition(course, opsTimestamp)
-      const runId = courseRunId(course, opsTimestamp)
+      const resolvedCourse = catalogCourse(course, opsTimestamp)
+      const runId = courseRunId(resolvedCourse, opsTimestamp)
       const record = runId ? readCourseRecord(runId) : null
       const recentRank = recentCourseIds.indexOf(course.id)
       const favoriteRank = favoriteCourseIds.indexOf(course.id)
@@ -591,7 +598,8 @@ export async function boot(): Promise<void> {
     }
     const styleVariety = new Set<string>()
     for (const course of curated) {
-      const runId = courseRunId(course, courseSession.timestampFor(course.id))
+      const timestamp = courseSession.timestampFor(course.id)
+      const runId = courseRunId(catalogCourse(course, timestamp), timestamp)
       if (!runId) continue
       const record = readCourseRecord(runId)
       const history = record.history
@@ -1530,7 +1538,7 @@ export async function boot(): Promise<void> {
         const seededRandomWorld = replaying && selectedCourseId === 'random'
         activeSortie = courseSession.capture(selectedCourseId, world.worldSeed, world.mission.routeProfile, seededRandomWorld)
         pruneCourseRecords()
-        replaySeed = null
+        if (course.id !== 'contour-circuit') replaySeed = null
       }
       if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''
@@ -1629,6 +1637,7 @@ export async function boot(): Promise<void> {
     if (titleSeedStatus) titleSeedStatus.textContent = ''
     writeSelectedCourseId(qualityStorage, selectedCourseId)
     rememberRecentCourse(selectedCourseId)
+    refreshCourseUi()
     for (const picker of coursePickers) picker.setValue(selectedCourseId)
   }
   for (const picker of coursePickers) {

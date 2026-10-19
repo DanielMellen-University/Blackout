@@ -1,6 +1,6 @@
 import type { CourseId } from '../systems/CourseLibrary'
 
-export const FEATURED_MISSION_IDS = ['free-flight', 'training-orbit', 'daily-ops'] as const
+export const FEATURED_MISSION_IDS = ['free-flight', 'training-orbit', 'daily-ops', 'contour-circuit'] as const
 export const HIDDEN_MISSION_IDS: readonly string[] = ['weekly-ops', 'monthly-ops']
 
 /** Saved selections are repaired for browsing, never for explicit replay links. */
@@ -19,7 +19,7 @@ export function dailyChallengeCountdown(nowMs: number): string {
     .map(value => String(value).padStart(2, '0')).join(':')
 }
 
-/** Move between the three featured columns and the independently sized mission grid. */
+/** Move between the featured row and the independently sized mission grid. */
 export function featuredMissionNavigationIndex(
   key: string, index: number, featured: number, grid: number, columns: number,
 ): number | null {

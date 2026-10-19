@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.943**. Previous roadmap chunk: **10.942**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.944**. Previous roadmap chunk: **10.943**.
+
+Recent changes from **10.944**. Add the featured Contour circuit, with seed-based terrain choices and two gates aligned to the generated runway approach. Complete all five gates and runway contact on seeds 42, 73 and 808, using existing medals, debriefs, ghosts and record families. Preserve existing routes, landscape revision 29, route revision 30, physics, collision, water, resource budgets and paused exclusions. See docs/reviews/contour-10.944/README.md.
 
 Recent changes from **10.943**. Show earned mission medals, distinguish complete-circuit time records from gate splits, and give generated routes a length-based time-score allowance. Verify nine real-physics Training and Daily completions, bronze/silver/gold outcomes, faster retries, time goals and populated six-family record retention. Preserve landscape revision 29, route revision 30, physics, collision, water, budgets and paused exclusions. See docs/reviews/missions-10.943/README.md.
 

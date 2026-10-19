@@ -143,6 +143,15 @@ export const COURSE_LIBRARY = [
     timeOfDay: 0.5,
   },
   {
+    id: 'contour-circuit',
+    label: 'Contour circuit',
+    detail: 'Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best.',
+    seed: 42,
+    profile: 'contour',
+    weather: 'clear',
+    timeOfDay: 0.5,
+  },
+  {
     id: 'range-sweep',
     label: 'Range sweep',
     detail: 'Wide route with long turns',
@@ -914,6 +923,12 @@ export function resolveCourseDefinition(
     weather,
     timeOfDay,
   }
+}
+
+/** Keep this featured mission's explicit seed replay in the existing selection/record family. */
+export function resolveCourseReplaySeed(course: CourseDefinition, seed: number | null): CourseDefinition {
+  if (course.id !== 'contour-circuit' || seed === null || !Number.isSafeInteger(seed)) return course
+  return { ...course, seed, detail: `${course.detail} · SEED ${seed}` }
 }
 
 export function courseSeedForId(id: string | null | undefined, nowMs = Date.now()): number | undefined {

@@ -69,7 +69,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -122,6 +122,7 @@ export interface MissionRouteValidation {
 }
 
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
+  contour: 'CONTOUR CIRCUIT',
   orbit: 'ORBIT',
   sweep: 'SWEEP',
   slalom: 'SLALOM',
@@ -299,7 +300,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'canyon') return 'precision'
   if (profile === 'coast') return 'range'
   if (profile === 'fjord') return 'range'
-  if (profile === 'river') return 'range'
+  if (profile === 'river' || profile === 'contour') return 'range'
   if (profile === 'volcanic') return 'altitude'
   if (profile === 'desert') return 'range'
   if (profile === 'alpine') return 'altitude'
@@ -394,6 +395,28 @@ export function buildMissionRoute(
       y: safeSpawnY + offset.height + i * (safeProfile === 'slalom' || safeProfile === 'canyon' || safeProfile === 'night' || safeProfile === 'badlands' ? 12 : safeProfile === 'ridge' || safeProfile === 'alpine' || safeProfile === 'thermal' ? 30 : safeProfile === 'volcanic' ? 44 : safeProfile === 'desert' || safeProfile === 'coast' || safeProfile === 'fjord' || safeProfile === 'river' || safeProfile === 'savanna' || safeProfile === 'tundra' || safeProfile === 'swamp' || safeProfile === 'monsoon' ? 16 : safeProfile === 'approach' ? 10 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
+
+  if (safeProfile === 'contour') {
+    // Five bounded choices reuse the existing orbit and gate corridor. Only
+    // this new profile adapts its centreline to the generated ground relief.
+    // Keep departure aligned with the runway and the same five-gate pool.
+    points = points.map((point, index) => {
+      const candidates = index === 0 || index >= 3 ? [0] : [-180, 0, 180]
+      let best = { ...point, y: Number.POSITIVE_INFINITY }
+      let bestCost = Number.POSITIVE_INFINITY
+      for (const lateral of candidates) {
+        const x = point.x + rightX * lateral
+        const z = point.z + rightZ * lateral
+        const ground = sampleTerrainSurfaceHeightFast(x, z)
+        const cost = ground + Math.abs(lateral) * 0.04
+        if (Number.isFinite(cost) && cost < bestCost) {
+          bestCost = cost
+          best = { x, y: ground + ROUTE_CLEARANCE + 10, z }
+        }
+      }
+      return Number.isFinite(best.y) ? best : point
+    })
+  }
 
   if (safeProfile === 'thermal') {
     const anchor = points[2]!
@@ -504,6 +527,15 @@ function routeOffsets(
     right: offset.right * cadence[index]!,
     height: offset.height + altitudeWave[index]!,
   })
+  if (profile === 'contour') {
+    return [
+      { forward: 1000, right: 0, height: 130 },
+      { forward: 400, right: 1300, height: 130 },
+      { forward: -900, right: 1100, height: 130 },
+      { forward: -1400, right: 0, height: 130 },
+      { forward: -800, right: 0, height: 130 },
+    ]
+  }
   if (profile === 'sweep') {
     const spread = 560 + seedPhase * 90
     return [

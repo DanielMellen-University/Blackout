@@ -1050,7 +1050,8 @@ export class CoursePicker {
       const subtitle = document.createElement('span')
       subtitle.className = 'course-featured-subtitle'
       subtitle.textContent = item.id === 'free-flight' ? 'Explore freely'
-        : item.id === 'training-orbit' ? 'Learn the basics' : 'New mission daily'
+        : item.id === 'training-orbit' ? 'Learn the basics'
+        : item.id === 'contour-circuit' ? 'Race the terrain' : 'New mission daily'
       button.setAttribute('aria-label', `${item.label}, ${subtitle.textContent}`)
       button.append(name, subtitle)
       if (item.id === 'daily-ops') {
