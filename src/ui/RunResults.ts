@@ -340,11 +340,12 @@ export class RunResults {
     for (const className of FUEL_CLASSES) this.fuel.classList.remove(className)
     this.fuel.classList.add(fuelClass)
     const outcome = crashed
-      ? landingName
+      ? (ditched ? 'DITCHED' : 'CRASH')
       : result.freeFlight
         ? 'SCENIC MISSION COMPLETE'
         : 'ROUTE COMPLETE'
-    this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES${gateMisses ? ` · ${gateMisses}` : ''} · ${landingName}`
+    const landingSummary = crashed && landingName === outcome ? '' : ` · ${landingName}`
+    this.summary.textContent = `${course}${conditions ? ` · ${conditions.replaceAll(' / ', ' · ')}` : ''} · ${outcome} · ${formatTime(result.elapsedSec)} · ${gatesLabel} GATES${gateMisses ? ` · ${gateMisses}` : ''}${landingSummary}`
     const summaryScore = Number.isFinite(result.totalScore)
       ? Math.max(0, Math.floor(result.totalScore))
       : 0
