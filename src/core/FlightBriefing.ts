@@ -108,7 +108,7 @@ export function flightBriefingHint(state: BriefingControls & {
   const gates = Number.isFinite(state.gatesPassed) ? Math.max(0, Math.floor(state.gatesPassed)) : 0
   if (state.onGround) {
     const controls = briefingControls(state)
-    return `${speed < 55 ? `${controls.power} POWER · ` : ''}${controls.rotate} ROTATE · GEAR AUTO`
+    return `${speed < 55 ? `${controls.power} POWER · ` : ''}AT 60 KT: ${controls.rotate} ROTATE · GEAR AUTO`
   }
   if (state.emergencyReturn || state.approachActive || (state.missionPhase === 'returning' && state.totalGates !== 0)) {
     const powerDown = state.inputSource === 'gamepad' ? 'LT / L2' : 'CTRL / 1'
@@ -123,9 +123,12 @@ export function flightBriefingHint(state: BriefingControls & {
     return 'LANDMARK SELECTED · FLY THE GATES TO COMPLETE THE COURSE'
   }
   if (gates === 0) {
+    const controls = briefingControls(state)
+    const turn = state.inputSource === 'gamepad' ? 'RIGHT STICK TURN'
+      : state.keyboardScheme === 'conventional' ? 'Q/E TURN' : 'A/D TURN'
     return altitude < 120
-      ? 'PITCH TO CLIMB · FOLLOW THE ARROW TO GATE 1'
-      : 'FOLLOW THE ARROW · FLY THROUGH GATE 1'
+      ? `${controls.rotate} CLIMB · ${turn} · FOLLOW GATE 1 ARROW`
+      : `${turn} · FLY THROUGH GATE 1`
   }
   const axes = state.inputSource === 'gamepad' ? 'LEFT STICK PITCH / ROLL · RIGHT STICK YAW'
     : keyboardControlSchemeLabel(state.keyboardScheme ?? 'arcade')

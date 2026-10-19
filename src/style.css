@@ -2835,3 +2835,16 @@ body,
 .nav-primary .nav-target { font-size: 0.65rem; }
 #nav-meta { justify-content: center; }
 .hud-minimal #nav-meta:not(:has(#nav-speed:not(:empty), #nav-glide:not(:empty))) { display: none; }
+/* Keep the first flight instructions and Launch together on ordinary laptops. */
+.takeoff-controller { color: var(--ink-dim); font-size: .65rem; line-height: 1.45; margin-top: 6px; }
+@media (max-height: 950px) and (min-width: 701px) {
+  .deck-blueprint { display: none; }
+  #deck-headline br { display: none; }
+  .title-takeoff { margin-bottom: 12px; }
+  .takeoff-steps { gap: 6px; margin-top: 4px; }
+}
+@media (max-width: 700px) {
+  .course-picker-featured .course-option-featured { padding-inline: 7px; }
+  .course-option-featured .course-option-name { font-size: .78rem; overflow-wrap: anywhere; }
+  .course-featured-subtitle { font-size: .65rem; }
+}

@@ -5,11 +5,19 @@ import { normalizeKeyboardBindings } from '../src/core/FlightPreferences'
 const takeoff = { onGround: true, speed: 12, altitudeM: 0, missionPhase: 'ready', gatesPassed: 0, gearDown: true }
 
 describe('flight briefing', () => {
+  it('shows the current climb and turn mappings before the first gate', () => {
+    const state = { ...takeoff, onGround: false, altitudeM: 40 }
+    expect(flightBriefingHint(state)).toBe('W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW')
+    expect(flightBriefingHint({ ...state, keyboardPitch: 'w-down', keyboardScheme: 'conventional' }))
+      .toBe('S CLIMB · Q/E TURN · FOLLOW GATE 1 ARROW')
+    expect(flightBriefingHint({ ...state, inputSource: 'gamepad' })).toContain('LEFT STICK UP CLIMB · RIGHT STICK TURN')
+  })
+
   it('uses the inverted pitch key and the repaired utility binding', () => {
     const keyboardBindings = normalizeKeyboardBindings({ boost: 'KeyG', airbrake: 'KeyF', gear: 'KeyH' })
     const options = { keyboardPitch: 'w-down' as const, keyboardBindings }
     expect(briefingControls(options)).toEqual({ power: 'SHIFT / 2', rotate: 'S', gear: 'H' })
-    expect(flightBriefingHint({ ...takeoff, ...options })).toBe('SHIFT / 2 POWER · S ROTATE · GEAR AUTO')
+    expect(flightBriefingHint({ ...takeoff, ...options })).toBe('SHIFT / 2 POWER · AT 60 KT: S ROTATE · GEAR AUTO')
     expect(flightBriefingHint({ ...takeoff, ...options, onGround: false, missionPhase: 'returning', gearDown: false }))
       .toBe('CTRL / 1 REDUCE POWER · H GEAR DOWN · FOLLOW BASE ARROW')
     for (const gear of ['Space', 'KeyB', 'KeyG', 'KeyF', 'KeyH', 'KeyJ', 'KeyK', 'KeyL', 'KeyU', 'KeyI']) {
@@ -20,7 +28,7 @@ describe('flight briefing', () => {
 
   it('describes the actual standard-controller mapping', () => {
     const state = { ...takeoff, inputSource: 'gamepad' as const }
-    expect(flightBriefingHint(state)).toBe('RT / R2 POWER · LEFT STICK UP ROTATE · GEAR AUTO')
+    expect(flightBriefingHint(state)).toBe('RT / R2 POWER · AT 60 KT: LEFT STICK UP ROTATE · GEAR AUTO')
     expect(flightBriefingHint({ ...state, onGround: false, missionPhase: 'returning', gearDown: false })).toContain('LT / L2 REDUCE POWER · X / SQUARE GEAR DOWN')
     expect(flightBriefingHint({ ...state, onGround: false, gatesPassed: 2 })).toContain('RIGHT STICK YAW')
   })

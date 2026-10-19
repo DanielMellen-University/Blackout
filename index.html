@@ -94,7 +94,7 @@
           </header>
           <section class="deck-hero" aria-labelledby="deck-headline">
             <p class="deck-eyebrow">No borders. Just altitude.</p>
-            <h2 id="deck-headline">Own<br />the sky.</h2>
+            <h2 id="deck-headline">Own <br />the sky.</h2>
             <p class="deck-description">An endless world. A single jet. Make your next flight the one to beat.</p>
             <svg class="deck-blueprint" viewBox="0 0 380 170" aria-hidden="true" focusable="false">
               <g class="blueprint-grid" fill="none">
@@ -105,6 +105,15 @@
               <circle class="blueprint-route" cx="326" cy="31" r="5" /><path class="blueprint-route" d="M272 64 294 43 321 32" fill="none" />
               <text x="18" y="157">AIRFRAME / F-35</text><text x="282" y="157">READY TO FLY</text>
             </svg>
+            <section class="title-takeoff" aria-label="Takeoff briefing">
+              <strong>02 / Takeoff brief</strong>
+              <ol class="takeoff-steps">
+                <li><kbd id="title-power-control">Shift / 2</kbd><span><b>Build speed</b>Hold for power. Stay straight until 60 kt.</span></li>
+                <li><kbd id="title-rotate-control">W</kbd><span><b>Lift off</b>At 60 kt, hold gently to climb.</span></li>
+                <li><kbd>AUTO</kbd><span><b>Fly the mission</b>Fly all five gates, then follow BASE to land. Gear is automatic; <kbd id="title-gear-control">G</kbd> overrides it.</span></li>
+              </ol>
+              <p class="takeoff-controller">Gamepad: RT / R2 power, left stick up to climb, right stick to turn. Full mappings in Controls.</p>
+            </section>
             <div class="title-actions">
               <button type="button" id="btn-play" class="btn-play" disabled>Launch flight <span aria-hidden="true">↗</span></button>
               <div class="deck-secondary-actions">
@@ -118,14 +127,7 @@
               <p id="title-progress" class="title-progress" aria-live="polite">COURSES 0/3 COMPLETE</p>
               <p id="title-commendations" class="title-commendations" aria-live="polite" hidden></p>
             </div>
-            <section class="title-takeoff" aria-label="Takeoff briefing">
-              <strong>02 / Takeoff brief</strong>
-              <ol class="takeoff-steps">
-                <li><kbd id="title-power-control">Shift / 2</kbd><span><b>Build speed</b>Hold for power. Keep straight on the runway.</span></li>
-                <li><kbd id="title-rotate-control">W</kbd><span><b>Lift off</b>Build speed, then pitch up gently.</span></li>
-                <li><kbd id="title-gear-control">G</kbd><span><b>Climb clear</b>Gear is automatic. Press to override.</span></li>
-              </ol>
-            </section>
+
           </section>
           <div class="deck-catalog">
             <div class="deck-section-heading"><span>01 / Flight plan</span><span>Choose your horizon</span></div>
@@ -894,7 +896,7 @@
           </div>
           <footer class="report-actions">
             <button type="button" id="btn-retry" class="btn-play">Retry same course</button>
-            <button type="button" id="btn-new-world" class="btn-ghost">New world</button>
+            <button type="button" id="btn-new-world" class="btn-ghost">Choose mission</button>
           </footer>
         </div>
       </div>

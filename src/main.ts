@@ -820,7 +820,7 @@ export async function boot(): Promise<void> {
     await world.settlements.warmupMaterials(renderer, cameras.camera, world.scene)
   })
   renderer.shadowMap.needsUpdate = true
-  if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS PLAY OR ENTER'
+  if (titleStatus) titleStatus.textContent = 'AIRFIELD READY · PRESS LAUNCH OR ENTER'
   if (playBtn) playBtn.disabled = false
   const airfieldReadyMs = import.meta.env.DEV ? performance.now() : 0
   const applyCameraSensitivity = (next: CameraSensitivity): void => {
@@ -1814,8 +1814,8 @@ export async function boot(): Promise<void> {
     syncInputContext()
   })
   uiListeners.add(document.getElementById('btn-new-world'), 'click', () => {
-    resetFlight(true, true)
-    syncInputContext()
+    quitToTitle()
+    playBtn?.focus({ preventScroll: true })
   })
   uiListeners.add(document.getElementById('menu-fullscreen'), 'click', () => {
     toggleGameFullscreen()
