@@ -14,6 +14,7 @@ window.__endurance = {
     endurance.start = aircraft.position.toArray()
     cameras.setMode('chase', aircraft)
   },
+  camera: mode => cameras.setMode(mode, aircraft),
   before: dt => {
     if (!endurance.active) return
     endurance.seconds += dt

@@ -1620,7 +1620,7 @@ export class HUD {
       if (altitudeChanged) {
         this.altitudeValue = altitude
         this.altitudeText = String(altitude)
-        this.altitudeAriaText = `${this.altitudeText} metres`
+        this.altitudeAriaText = `${this.altitudeText} metres above ground`
       }
       this.setText(this.posEl, this.altitudeText)
       this.setAttribute(this.posEl, 'aria-valuenow', String(Math.max(0, altitude)))

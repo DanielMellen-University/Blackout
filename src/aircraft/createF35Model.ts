@@ -239,9 +239,10 @@ export function createF35Model(): Group {
   beacon.name = 'antiCollisionBeacon'
   beacon.position.set(0, .88, -1.55)
   root.add(beacon)
+  // With the nose at +Z, port is +X. Rear chase projects +X to screen left.
   for (const [x, color, name] of [
-    [-5.22, 0xff3333, 'navLightLeft'],
-    [5.22, 0x55ffad, 'navLightRight'],
+    [5.22, 0xff3333, 'navLightLeft'],
+    [-5.22, 0x55ffad, 'navLightRight'],
   ] as const) {
     const nav = new Mesh(
       new SphereGeometry(.055, 8, 6),

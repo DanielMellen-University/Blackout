@@ -411,6 +411,10 @@ describe('rebuilt aircraft', () => {
     const model = createF35Model()
     const left = model.getObjectByName('navLightLeft') as Mesh
     const right = model.getObjectByName('navLightRight') as Mesh
+    expect(left.position.x).toBeGreaterThan(0)
+    expect(right.position.x).toBeLessThan(0)
+    expect((left.material as MeshBasicMaterial).color.getHex()).toBe(0xff3333)
+    expect((right.material as MeshBasicMaterial).color.getHex()).toBe(0x55ffad)
     expect(left).toBeTruthy()
     expect(right).toBeTruthy()
     expect((left.material as MeshBasicMaterial).transparent).toBe(true)

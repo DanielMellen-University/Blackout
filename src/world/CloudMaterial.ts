@@ -21,7 +21,7 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       varying float vCloudAlpha;
       varying vec3 vCloudNormal;
       varying vec3 vCloudLocal;
-      varying vec3 vCloudView;\n` + shader.vertexShader
+      varying vec3 vCloudLocalView;\n` + shader.vertexShader
     shader.vertexShader = 'varying vec3 vCloudWorld;\n' + shader.vertexShader
     shader.vertexShader = shader.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
       mvPosition.xyz += (viewMatrix * vec4(cloudDrift, 0.0)).xyz;
@@ -30,10 +30,14 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       vCloudTone = cloudTone;
       vCloudLocal = position;
       vCloudWorld = (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz + cloudDrift;
-      mat3 cloudTransform = mat3(instanceMatrix);
+      mat3 cloudTransform = mat3(modelMatrix * instanceMatrix);
       vec3 cloudNormal = normal / max(vec3(dot(cloudTransform[0], cloudTransform[0]), dot(cloudTransform[1], cloudTransform[1]), dot(cloudTransform[2], cloudTransform[2])), vec3(.000001));
-      vCloudNormal = normalize(mat3(modelMatrix) * cloudTransform * cloudNormal);
-      vCloudView = normalize(cameraPosition - (modelMatrix * instanceMatrix * vec4(position, 1.0)).xyz - cloudDrift);`)
+      vCloudNormal = normalize(cloudTransform * cloudNormal);
+      // Feather in ellipsoid space. World normals on a flattened deck stay
+      // almost vertical until the polygon edge, exposing hard sheet outlines.
+      vec3 cloudEye = cameraPosition - vCloudWorld;
+      vCloudLocalView = vec3(dot(cloudEye, cloudTransform[0]), dot(cloudEye, cloudTransform[1]), dot(cloudEye, cloudTransform[2])) /
+        max(vec3(dot(cloudTransform[0], cloudTransform[0]), dot(cloudTransform[1], cloudTransform[1]), dot(cloudTransform[2], cloudTransform[2])), vec3(.000001));`)
     shader.fragmentShader = `uniform vec3 cloudFlashPosition;
       uniform float cloudFlash;
       varying vec3 vCloudWorld;
@@ -43,10 +47,10 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       varying float vCloudAlpha;
       varying vec3 vCloudNormal;
       varying vec3 vCloudLocal;
-      varying vec3 vCloudView;\n` + shader.fragmentShader
+      varying vec3 vCloudLocalView;\n` + shader.fragmentShader
     shader.fragmentShader = shader.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
       vec3 n = normalize(vCloudNormal);
-      float facing = max(0.0, dot(n, normalize(vCloudView)));
+      float facing = max(0.0, dot(normalize(vCloudLocal), normalize(vCloudLocalView)));
       float billow = .84 + .16 * sin(vCloudLocal.x * 7.7 + sin(vCloudLocal.z * 5.1)) * sin(vCloudLocal.y * 6.9 + vCloudLocal.z * 4.7);
       float underside = smoothstep(-.65, .55, n.y);
       float sunlit = .5 + .5 * dot(n, cloudSun);
@@ -60,10 +64,14 @@ export function createCloudMaterial(sun: { value: Vector3 }, storm: { value: num
       // Approximate optical depth through a billow: dense core, soft boundary.
       // A steep facing-power erased most of each sphere and exposed separate
       // translucent discs; no ray marching or extra draw is needed here.
-      float edge = (1.0 - exp(-facing * 3.6)) * smoothstep(.08, .55, billow - (1.0 - facing) * .35);
+      // Fade before the lowest-radius mesh silhouette so coarse polygon
+      // outlines cannot appear on broad stratus decks. The local ray distance
+      // also feathers nonuniformly scaled puffs without adding geometry.
+      float rayRadius = length(cross(vCloudLocal, normalize(vCloudLocalView)));
+      float edge = (1.0 - exp(-facing * 3.6)) * (1.0 - smoothstep(.58, .86, rayRadius));
       diffuseColor.a *= vCloudAlpha * edge * (.8 + billow * .2);`)
   }
-  material.customProgramCacheKey = () => 'cloud-optical-depth-v6'
+  material.customProgramCacheKey = () => 'cloud-optical-depth-v7'
   return material
 }
 

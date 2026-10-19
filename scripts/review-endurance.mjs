@@ -8,6 +8,7 @@ const hook = await readFile(process.env.FLIGHT_HOOK || 'scripts/browser-enduranc
 const seeds = (process.env.FLIGHT_SEEDS || '73,1337,2026').split(',').map(Number)
 const servedSourceCommit = process.env.FLIGHT_SOURCE_COMMIT || execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
 const duration = Number(process.env.FLIGHT_SECONDS || 620)
+const sourceHashes = Object.fromEntries(await Promise.all(execFileSync('rg', ['--files', 'src'], {encoding:'utf8'}).trim().split('\n').map(async p => [p, createHash('sha256').update(await readFile(p)).digest('hex')])))
 for (const seed of seeds) {
   const browser = await chromium.launch({ headless: true,
     ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
@@ -44,11 +45,16 @@ for (const seed of seeds) {
       state = await page.evaluate(() => window.__endurance.state()); samples.push(state)
       console.log(seed, state.seconds.toFixed(1), state.status, 'agl', state.agl.toFixed(0), state.weather.id)
       if (state.seconds >= nextShot) {
-        const file = `${seed}-${nextShot}s.png`; await page.screenshot({ path: `${directory}/${file}` })
-        pictures.push({ file, sample: samples.length - 1 }); nextShot += 60
+        for (const mode of ['chase', 'cockpit']) {
+          await page.evaluate(mode => window.__endurance.camera(mode), mode)
+          await page.waitForTimeout(400)
+          const file = `${seed}-${nextShot}s-${mode}.png`; await page.screenshot({ path: `${directory}/${file}` })
+          pictures.push({ file, sample: samples.length - 1 })
+        }
+        await page.evaluate(() => window.__endurance.camera('chase')); nextShot += 60
       }
       await writeFile(`${directory}/${seed}.json`, JSON.stringify({ seed, duration, hookSha256: createHash('sha256').update(hook).digest('hex'),
-        servedSourceCommit,
+        servedSourceCommit, sourceHashes,
         method: 'One airborne reset, then controls only; real physics, collision, weather, streaming and HUD.',
         wallSeconds: (Date.now() - started) / 1000, errors, pictures, samples, final: state }, null, 2) + '\n')
       if (state.status === 'crashed' || state.onGround) throw Error('Flight hit ground: ' + seed)

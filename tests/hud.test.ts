@@ -850,7 +850,7 @@ describe('HUD value formatting', () => {
       missionPhase: 'ready',
       gatesPassed: 0,
       gearDown: true,
-    })).toBe('SHIFT / 2 POWER · W ROTATE · GEAR AUTO')
+    })).toBe('SHIFT / 2 POWER · AT 60 KT: W ROTATE · GEAR AUTO')
     expect(flightBriefingHint({
       onGround: false,
       speed: 180,
@@ -858,7 +858,7 @@ describe('HUD value formatting', () => {
       missionPhase: 'running',
       gatesPassed: 0,
       gearDown: true,
-    })).toBe('PITCH TO CLIMB · FOLLOW THE ARROW TO GATE 1')
+    })).toBe('W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW')
     expect(flightBriefingHint({
       onGround: false,
       speed: 220,
