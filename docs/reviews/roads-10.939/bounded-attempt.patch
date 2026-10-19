@@ -1,0 +1,13 @@
+diff --git a/src/world/RegionalRoads.ts b/tmp/blackout-939-attempt/RegionalRoads.ts
+index 210a6b3..13870d9 100644
+--- a/src/world/RegionalRoads.ts
++++ b/tmp/blackout-939-attempt/RegionalRoads.ts
+@@ -349,7 +349,7 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
+       }
+     }
+     if (endpointDebt || !initialRoad) {
+-      const inland = terrainRoadRoute(start, end, boundedSample, direction * distance * .025, false, clearance.allows, { inland: true })
++      const inland = terrainRoadRoute(start, end, boundedSample, -direction * distance * .05, false, clearance.allows, { inland: true })
+       if (inland) {
+         const smooth = roundRoadRoute(inland)
+         const road = validate(clearance.routeAllows(smooth) ? smooth : inland)
