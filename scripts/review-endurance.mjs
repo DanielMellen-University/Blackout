@@ -18,7 +18,9 @@ for (const seed of seeds) {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 })
     page.setDefaultTimeout(180000)
     page.on('pageerror', e => errors.push(String(e)))
-    page.on('console', m => { if (m.type() === 'error' && /shader|webglprogram/i.test(m.text())) errors.push(m.text()) })
+    page.on('crash', () => errors.push('Browser page crashed'))
+    await page.route('**/favicon.ico', route => route.fulfill({ status: 204, body: '' }))
+    page.on('console', m => { if (m.type() === 'error') errors.push(m.text()) })
     await page.addInitScript(() => {
       localStorage.setItem('blackout.renderQuality', 'balanced')
       HTMLElement.prototype.requestFullscreen = async () => {}
