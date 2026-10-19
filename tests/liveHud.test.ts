@@ -60,7 +60,7 @@ describe('live HUD budget', () => {
     const content = css.match(/\.report-content\s*\{[^}]*\}/)?.[0] ?? ''
     expect(content).toContain('overflow-y: auto')
     expect(html).toMatch(/class="report-share"[\s\S]*?<\/details>\s*<\/div>\s*<footer class="report-actions">/)
-    expect(html).toMatch(/<footer class="report-actions">\s*<button[^>]*id="btn-retry"[^>]*>[\s\S]*?id="btn-new-world"[\s\S]*?<\/footer>/)
+    expect(html).toMatch(/<footer class="report-actions">\s*<p class="result-summary">Controller:[^<]*<\/p>\s*<button[^>]*id="btn-retry"[^>]*>[\s\S]*?id="btn-new-world"[\s\S]*?<\/footer>/)
     expect(css).toContain('.report-mission { display: grid; gap: 6px; margin-bottom: 20px; }')
     expect(css).toContain('.report-mission > p { margin: 0; line-height: 1.5; }')
     for (const id of ['result-coaching', 'result-touchdown']) {

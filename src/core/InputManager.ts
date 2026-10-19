@@ -36,6 +36,7 @@ export class InputManager {
   private readonly keys = new Set<string>()
   private readonly controls: ControlState = createDefaultControls()
   private readonly target: Window
+  private debriefReady = false
   private gamepadPollIn = 0
   private gamepadPitch = 0
   private gamepadRoll = 0
@@ -173,6 +174,37 @@ export class InputManager {
     this.keys.clear()
     this.clearFlightState()
     this.clearQueued()
+  }
+
+  /** Debrief actions require a release after entry, so held flight buttons cannot retry. */
+  sampleDebriefAction(active: boolean): 'retry' | 'choose' | null {
+    if (this.disposed || !active) {
+      this.debriefReady = false
+      return null
+    }
+    let pads: readonly (Gamepad | null)[]
+    try {
+      const raw = typeof navigator !== 'undefined' ? navigator.getGamepads?.() : null
+      pads = Array.isArray(raw) ? raw : []
+    } catch {
+      this.debriefReady = false
+      return null
+    }
+    const pad = pads.find(candidate => candidate?.connected && candidate.mapping === 'standard')
+    if (!pad || !Array.isArray(pad.buttons)) {
+      this.debriefReady = false
+      return null
+    }
+    const retry = pad.buttons[0]?.pressed === true
+    const choose = pad.buttons[1]?.pressed === true
+    if (!retry && !choose) {
+      this.debriefReady = true
+      return null
+    }
+    if (!this.debriefReady) return null
+    this.debriefReady = false
+    this.inputSourceValue = 'gamepad'
+    return choose ? 'choose' : 'retry'
   }
 
   dispose(): void {

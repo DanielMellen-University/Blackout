@@ -1,0 +1,1440 @@
+{
+  "method": "One airborne setup at the generated airfield, then keyboard events or virtual standard gamepad through production InputManager. Unchanged physics, collision, contact and wheel braking. No pose or velocity writes after setup. Free flight permits actual rollout after touchdown.",
+  "seed": 45671,
+  "device": "gamepad",
+  "sourceHashes": {
+    "src/aircraft/FlightModel.ts": "f32b3844e31b65c94a6e46f616c5eca65013d252206ac539e43694c4f8b14fbd",
+    "src/aircraft/flightConfig.ts": "b61b600fb3c8183249daf2e69b2c9ed74b3c60eb7c14ad7bc8b0e85107424958",
+    "src/systems/Collision.ts": "a4a328a815b7654e8c773ac7c3205bed244a504bc943fcbe469bd17cc17ffb08",
+    "src/world/terrainSample.ts": "fd078d457ed4cfbb983b24a22a89acd4076e4454c300e9801e51f91fd5a04aca",
+    "src/core/InputManager.ts": "7c79c31be12c2d1b47dccb9273de3709ce08fb2c799d5fc9f85d3e9aa00124fe",
+    "src/main.ts": "3d6d1496b0b55f13f815a98a3a2572f7bf0176bfadaa70631d2e94577e306cbd"
+  },
+  "errors": [],
+  "pictures": [
+    "approach-chase.png",
+    "approach-cockpit.png",
+    "flare-chase.png",
+    "flare-cockpit.png",
+    "rollout-chase.png",
+    "stopped-chase.png"
+  ],
+  "samples": [
+    {
+      "seed": 45671,
+      "seconds": 0.7000000000000005,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5272.2532518011685,
+        "y": 154.72715867923228,
+        "z": 15137.135032472443
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5356.17362174829,
+        179.41742360669423,
+        14934.480692714844
+      ],
+      "velocity": [
+        15.111561145627784,
+        -4.137993382897826,
+        36.3999213406181
+      ],
+      "speed": 39.62873380639531,
+      "agl": 16.54471321939107,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.08373892198679578,
+        "roll": -0.0018736834487889673,
+        "heading": 0.39279077756590786
+      },
+      "controls": {
+        "pitch": -0.07110957283547448,
+        "roll": 0.0036887668856599286,
+        "yaw": 0,
+        "throttle": 0.15,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.15,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 131.68143377105218,
+        "maxSpeed": 680,
+        "maxAcceleration": 7.199999999999999,
+        "effectivePower": 0.11699999999999999,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.98718999999991,
+        "fraction": 0.9998718999999991
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 2.0499999999999976,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5252.022707474252,
+        "y": 154.72715867923228,
+        "z": 15186.002560430308
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5335.897424387594,
+        173.0157487638829,
+        14983.325320502741
+      ],
+      "velocity": [
+        15.02159448432524,
+        -4.665739825328168,
+        36.19778289912131
+      ],
+      "speed": 39.46766924687956,
+      "agl": 13.32195745450747,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.08037714351217112,
+        "roll": 0.00017298557597911576,
+        "heading": 0.39257184078329255
+      },
+      "controls": {
+        "pitch": -0.014789170709088759,
+        "roll": -0.0013975314561669074,
+        "yaw": 0,
+        "throttle": 0.12,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.12,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 117.77945491468365,
+        "maxSpeed": 680,
+        "maxAcceleration": 5.76,
+        "effectivePower": 0.0936,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.9618299999997,
+        "fraction": 0.999618299999997
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 2.7666666666666617,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5241.270443141602,
+        "y": 154.72715867923228,
+        "z": 15211.971415858801
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5325.128146052541,
+        169.8465163247579,
+        15009.282574898689
+      ],
+      "velocity": [
+        14.91887196368152,
+        -4.150677845432491,
+        35.96711584030708
+      ],
+      "speed": 39.159089482715956,
+      "agl": 11.464300379148796,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.06690791750477695,
+        "roll": 0.0015452967021004653,
+        "heading": 0.39239588819971666
+      },
+      "controls": {
+        "pitch": -0.012890687026558023,
+        "roll": -0.0036889833797488637,
+        "yaw": 0,
+        "throttle": 0.15,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.15,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 131.68143377105218,
+        "maxSpeed": 680,
+        "maxAcceleration": 7.199999999999999,
+        "effectivePower": 0.11699999999999999,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.94836166666624,
+        "fraction": 0.9994836166666624
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 3.483333333333326,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5230.502112202104,
+        "y": 154.72715867923228,
+        "z": 15237.975809630992
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5314.346259551632,
+        167.05367866394442,
+        15035.283284821218
+      ],
+      "velocity": [
+        14.953344435760153,
+        -3.6270292390667347,
+        36.06869973808144
+      ],
+      "speed": 39.21363221778111,
+      "agl": 9.758865305629485,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.05352868482073069,
+        "roll": 0.0023622347340401095,
+        "heading": 0.39221619044110256
+      },
+      "controls": {
+        "pitch": -0.014241093744161057,
+        "roll": -0.0049445886066581245,
+        "yaw": 0,
+        "throttle": 0.12,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.12,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 117.77945491468365,
+        "maxSpeed": 680,
+        "maxAcceleration": 5.76,
+        "effectivePower": 0.0936,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.9348233333328,
+        "fraction": 0.999348233333328
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 4.216666666666657,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5219.490662407934,
+        "y": 154.72715867923228,
+        "z": 15264.56394186907
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5303.325000412199,
+        164.56651302589586,
+        15061.874709907572
+      ],
+      "velocity": [
+        15.102706605661941,
+        -3.1822285649532533,
+        36.44819262893504
+      ],
+      "speed": 39.58142331160242,
+      "agl": 8.157199598560851,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.04238414916002515,
+        "roll": 0.0023415754957359126,
+        "heading": 0.39204002826322426
+      },
+      "controls": {
+        "pitch": -0.012353953554790322,
+        "roll": -0.004485992563220506,
+        "yaw": 0,
+        "throttle": 0.18,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.18,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 144.2497833620557,
+        "maxSpeed": 680,
+        "maxAcceleration": 8.64,
+        "effectivePower": 0.1404,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.92087166666603,
+        "fraction": 0.9992087166666603
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 4.9166666666666545,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5208.958705163619,
+        "y": 154.72715867923228,
+        "z": 15289.991268383717
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5292.79374629762,
+        162.4674041337357,
+        15087.29592612917
+      ],
+      "velocity": [
+        14.961612569287205,
+        -2.840590976297902,
+        36.12254335710321
+      ],
+      "speed": 39.20149163429728,
+      "agl": 7.040191866627026,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.034706231916485586,
+        "roll": 0.0015197389888586695,
+        "heading": 0.39189361215990315
+      },
+      "controls": {
+        "pitch": -0.005504301140896366,
+        "roll": -0.0025079453057092367,
+        "yaw": 0,
+        "throttle": 0.12,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.12,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 117.77945491468365,
+        "maxSpeed": 680,
+        "maxAcceleration": 5.76,
+        "effectivePower": 0.0936,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.90767666666592,
+        "fraction": 0.9990767666666592
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 6.333333333333316,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5187.636211078246,
+        "y": 154.72715867923228,
+        "z": 15341.464309435767
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5271.478084620327,
+        158.7731851671367,
+        15138.772730569697
+      ],
+      "velocity": [
+        14.977348397435978,
+        -2.3877271090199255,
+        36.17202410677735
+      ],
+      "speed": 39.222921025168546,
+      "agl": 4.096024522605433,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.023439448383301933,
+        "roll": -0.0012267614880752096,
+        "heading": 0.39181737664506194
+      },
+      "controls": {
+        "pitch": 0.01174026886322752,
+        "roll": 0.003126347284485053,
+        "yaw": 0.0010012577662187599,
+        "throttle": 0.15,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "base",
+      "navGlide": "high",
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.15,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 131.68143377105218,
+        "maxSpeed": 680,
+        "maxAcceleration": 7.199999999999999,
+        "effectivePower": 0.11699999999999999,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.88076833333238,
+        "fraction": 0.9988076833333238
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 7.04999999999998,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5176.837965781646,
+        "y": 154.72715867923228,
+        "z": 15367.531357635906
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5260.682980853285,
+        157.13099895773465,
+        15164.843244239104
+      ],
+      "velocity": [
+        15.024540059915628,
+        -2.3171470260644162,
+        36.282328987167176
+      ],
+      "speed": 39.3384464752415,
+      "agl": 2.4538383132033914,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.027330738656518243,
+        "roll": -0.0022293197663813026,
+        "heading": 0.39187807206246783
+      },
+      "controls": {
+        "pitch": -0.07050262359177276,
+        "roll": 0.004773177545062246,
+        "yaw": 0,
+        "throttle": 0.18,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.18,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 144.2497833620557,
+        "maxSpeed": 680,
+        "maxAcceleration": 8.64,
+        "effectivePower": 0.1404,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.86712499999895,
+        "fraction": 0.9986712499999895
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 7.766666666666644,
+      "stage": "approach",
+      "waypoint": 1,
+      "target": {
+        "x": -5166.052230966186,
+        "y": 154.72715867923228,
+        "z": 15393.569644834082
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5249.898783761484,
+        155.2042240065211,
+        15190.881514811339
+      ],
+      "velocity": [
+        15.01501592617612,
+        -2.9549364175910537,
+        36.24705969638734
+      ],
+      "speed": 39.34503385598741,
+      "agl": 0.527063361989832,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.04139281032495696,
+        "roll": -0.002436406776626377,
+        "heading": 0.39200877641182547
+      },
+      "controls": {
+        "pitch": -0.012407612365544806,
+        "roll": 0.004767950619851826,
+        "yaw": 0,
+        "throttle": 0.15,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0.15,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 131.68143377105218,
+        "maxSpeed": 680,
+        "maxAcceleration": 7.199999999999999,
+        "effectivePower": 0.11699999999999999,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.85351666666551,
+        "fraction": 0.9985351666666551
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 8.483333333333334,
+      "stage": "rollout",
+      "waypoint": 1,
+      "target": {
+        "x": -5159.874858410069,
+        "y": 154.72715867923228,
+        "z": 15408.480158512806
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5243.958329344194,
+        154.8568515968181,
+        15205.235063477163
+      ],
+      "velocity": [
+        1.1163146860243427,
+        0,
+        2.6981070990517697
+      ],
+      "speed": 2.919921299656411,
+      "agl": 0.1796909522868475,
+      "status": "ok",
+      "onGround": true,
+      "attitude": {
+        "pitch": -0.03931743230036259,
+        "roll": -0.0023624795175173786,
+        "heading": 0.39229475733340696
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": true,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 0,
+        "maxSpeed": 680,
+        "maxAcceleration": 0,
+        "effectivePower": 0,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.97964666666536,
+        "fraction": 0.9997964666666536
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    },
+    {
+      "seed": 45671,
+      "seconds": 9.433333333333382,
+      "stage": "rollout",
+      "waypoint": 1,
+      "target": {
+        "x": -5159.831433459268,
+        "y": 154.72715867923228,
+        "z": 15408.584965652393
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            -5366.714564542795,
+            181.32715867923227,
+            14909.074996619416
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        -5243.933562610326,
+        154.8568515968181,
+        15205.294924106887
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "speed": 0,
+      "agl": 0.1796909522868475,
+      "status": "ok",
+      "onGround": true,
+      "attitude": {
+        "pitch": -0.03931743228572476,
+        "roll": -0.0023624797612515473,
+        "heading": 0.39229476353414233
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": true,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": -5271.043706451523,
+        "y": 154.67715867923226,
+        "z": 15140.044879747238,
+        "yaw": 0.39269908169872414,
+        "biome": "desert"
+      },
+      "runway": [
+        -5253.822951995094,
+        153.32715867923227,
+        15181.619458710245
+      ],
+      "gates": [],
+      "next": 0,
+      "course": "free-flight",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "approach",
+        "hint": null
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "engine": {
+        "lever": 0,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 0,
+        "maxSpeed": 680,
+        "maxAcceleration": 0,
+        "effectivePower": 0,
+        "fuelAvailable": true
+      },
+      "fuel": {
+        "capacity": 100,
+        "remaining": 100,
+        "fraction": 1
+      },
+      "source": "gamepad",
+      "impact": null,
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"free-flight\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "free-flight"
+      }
+    }
+  ],
+  "final": {
+    "seed": 45671,
+    "seconds": 9.433333333333382,
+    "stage": "rollout",
+    "waypoint": 1,
+    "target": {
+      "x": -5159.831433459268,
+      "y": 154.72715867923228,
+      "z": 15408.584965652393
+    },
+    "events": [
+      {
+        "seconds": 0.016666666666666666,
+        "next": 0,
+        "position": [
+          -5366.714564542795,
+          181.32715867923227,
+          14909.074996619416
+        ],
+        "phase": "ready"
+      }
+    ],
+    "position": [
+      -5243.933562610326,
+      154.8568515968181,
+      15205.294924106887
+    ],
+    "velocity": [
+      0,
+      0,
+      0
+    ],
+    "speed": 0,
+    "agl": 0.1796909522868475,
+    "status": "ok",
+    "onGround": true,
+    "attitude": {
+      "pitch": -0.03931743228572476,
+      "roll": -0.0023624797612515473,
+      "heading": 0.39229476353414233
+    },
+    "controls": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0,
+      "throttle": 0,
+      "gearDown": true,
+      "boost": false,
+      "airbrake": true,
+      "stabilityAssist": true
+    },
+    "spawn": {
+      "x": -5271.043706451523,
+      "y": 154.67715867923226,
+      "z": 15140.044879747238,
+      "yaw": 0.39269908169872414,
+      "biome": "desert"
+    },
+    "runway": [
+      -5253.822951995094,
+      153.32715867923227,
+      15181.619458710245
+    ],
+    "gates": [],
+    "next": 0,
+    "course": "free-flight",
+    "phase": "running",
+    "briefing": {
+      "visible": true,
+      "stage": "approach",
+      "hint": null
+    },
+    "navTarget": "gate",
+    "navGlide": null,
+    "resultsOpen": false,
+    "paused": false,
+    "playing": true,
+    "camera": "chase",
+    "engine": {
+      "lever": 0,
+      "afterburnerRequested": false,
+      "afterburnerActive": false,
+      "afterburnerHeatLocked": false,
+      "targetSpeed": 0,
+      "maxSpeed": 680,
+      "maxAcceleration": 0,
+      "effectivePower": 0,
+      "fuelAvailable": true
+    },
+    "fuel": {
+      "capacity": 100,
+      "remaining": 100,
+      "fraction": 1
+    },
+    "source": "gamepad",
+    "impact": null,
+    "storage": {
+      "blackout.reducedMotion": "false",
+      "blackout.audioEffectsVolume": "1",
+      "blackout.stabilityAssist": "true",
+      "blackout.audioEnvironmentVolume": "1",
+      "blackout.renderQuality": "balanced",
+      "blackout.keyboardYaw": "a-left",
+      "blackout.keyboardScheme": "arcade",
+      "blackout.audioEngineVolume": "1",
+      "blackout.hudDisplay": "minimal",
+      "blackout.cameraSensitivity": "normal",
+      "blackout.keyboardPitch": "w-up",
+      "blackout.keyboardRoll": "q-right",
+      "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+      "blackout.course-recents": "[\"free-flight\"]",
+      "blackout.cameraAutoReturn": "true",
+      "blackout.cameraEffects": "true",
+      "blackout.cameraSpeedFraming": "standard",
+      "blackout.audioVolume": "1",
+      "blackout.course-selection": "free-flight"
+    }
+  }
+}

@@ -1864,6 +1864,8 @@ export async function boot(): Promise<void> {
         resetFlight(true, true)
         syncInputContext()
       } else if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+        // Let the focused debrief control receive its native activation.
+        if (results.open && e.target instanceof HTMLElement && e.target.closest('#run-results button, #run-results input, #run-results select, #run-results a')) return
         e.preventDefault()
         e.stopPropagation()
         resetFlight(false, true)
@@ -1962,6 +1964,8 @@ export async function boot(): Promise<void> {
 
     syncInputContext()
     overlay?.classList.toggle('cockpit-clean', cameras.mode === 'cockpit')
+    const debriefAction = input.sampleDebriefAction(playing && results.open && !menu.open)
+    if (debriefAction) document.getElementById(debriefAction === 'choose' ? 'btn-new-world' : 'btn-retry')?.click()
     let simLive = playing && !menu.paused && !results.open
     if (simLive && input.consumePauseToggle()) {
       menu.togglePause()

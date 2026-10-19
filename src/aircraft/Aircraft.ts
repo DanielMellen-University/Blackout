@@ -671,7 +671,7 @@ export class Aircraft {
     // contribution, so 30% power cannot produce a full-size afterburner.
     const engine = this.engineState
     const boost = engine.afterburnerActive
-    const throttlePower = this.status === 'crashed' ? 0 : engine.lever
+    const throttlePower = this.status === 'crashed' || !engine.fuelAvailable ? 0 : engine.lever
     this.updateNozzlePetals(throttlePower, boost)
 
     const ab = this.afterburner

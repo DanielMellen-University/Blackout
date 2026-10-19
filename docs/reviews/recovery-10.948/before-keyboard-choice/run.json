@@ -1,0 +1,2160 @@
+{
+  "device": "keyboard",
+  "scenario": "crash",
+  "sourceHashes": {
+    "src/main.ts": "81823711cf1d201a77b6d176669b5c0dd877be22c6fab93d9e5914c1e411826c",
+    "src/core/InputManager.ts": "511f43f6f76db85ba908ea6813a0a65197abc4b5de78475ace602369cad9040d",
+    "src/core/FlightBriefing.ts": "c26aa4490189bf712a84db3df2fec00dc5abdc079ed70453efc04079413616a4",
+    "src/ui/RunResults.ts": "bd30b937e92549f796c9d979a938d3348ad4d9774d4dda17c620eb39d633fe63",
+    "src/aircraft/FlightModel.ts": "f32b3844e31b65c94a6e46f616c5eca65013d252206ac539e43694c4f8b14fbd",
+    "src/world/terrainSample.ts": "fd078d457ed4cfbb983b24a22a89acd4076e4454c300e9801e51f91fd5a04aca"
+  },
+  "method": "DOM launch. Keyboard events or virtual standard gamepad through production InputManager. Real physics, gates, collision and landing. Crash deliberately flown by pitch input. Engine-out scenario uses one fuel remaining=0 fault injection on final, then mapped controls only. No pose, velocity, score or gate writes.",
+  "errors": [],
+  "pictures": [
+    "0-takeoff-0-ok.png",
+    "1-gates-0-ok.png",
+    "3-gates-1-ok.png",
+    "5-gates-1-crashed.png",
+    "6-gates-1-crashed.png"
+  ],
+  "samples": [
+    {
+      "seconds": 2.033333333333331,
+      "stage": "takeoff",
+      "waypoint": 0,
+      "target": {
+        "x": 3223.7034645473846,
+        "y": 366.6799648558492,
+        "z": -14158.672553236922
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        3929.831813207528,
+        213.2878518447001,
+        -13452.543663483528
+      ],
+      "velocity": [
+        -58.70595158424854,
+        8.812200431998807,
+        -58.67348598911207
+      ],
+      "speed": 83.46629011751023,
+      "agl": 6.607883582981344,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": 0.11631888931065222,
+        "roll": -0.005239762253246913,
+        "heading": -2.356530895232661
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 1,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 0,
+      "course": "contour-circuit",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "first-gate",
+        "hint": "W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 2.033333333333331,
+        "phase": "running",
+        "result": null,
+        "crash": false,
+        "resultsOpen": false,
+        "report": "\n        \n          \n          Blackout / Flight report\n          \n            MISSION\n            \n            \n          \n          COMPLETE RUN\n          ROUTE COMPLETE · ENTER RETRY · R NEW WORLD\n          \n            \n              SCORE\n              0\n            \n            \n              TIME\n              0:00.00\n            \n            \n              LANDING\n              0%\n              HARD\n            \n            \n              GATES\n              0\n            \n            \n              STREAK\n              NONE\n              NO COURSE STREAK\n            \n            \n              FUEL\n              100%\n              NO BURN\n            \n          \n          \n          \n          \n            Flight records & score breakdown\n            \n            \n            \n            BEST · 0\n          \n          \n            Share or revisit this flight\n            \n              Copy replay link\n              Copy mission summary\n              Copy world seed\n              Load seed on title\n            \n          \n          \n          \n            Retry same course\n            Choose mission\n          \n        \n      ",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.84653166666617,
+          "fraction": 0.9984653166666617
+        },
+        "engine": {
+          "lever": 1,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 340,
+          "maxSpeed": 680,
+          "maxAcceleration": 48,
+          "effectivePower": 0.78,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 83.46629011751023,
+        "position": [
+          3929.831813207528,
+          213.2878518447001,
+          -13452.543663483528
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 0,
+        "controls": {
+          "pitch": 0,
+          "roll": 0,
+          "yaw": 0,
+          "throttle": 1,
+          "gearDown": true,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    },
+    {
+      "seconds": 5.033333333333321,
+      "stage": "gates",
+      "waypoint": 0,
+      "target": {
+        "x": 3276.4442392376995,
+        "y": 364.4799648558489,
+        "z": -14105.99136568651
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        3658.3532703593473,
+        271.1496216233122,
+        -13724.144112917105
+      ],
+      "velocity": [
+        -103.02481389150181,
+        24.76436186012681,
+        -103.13536433633261
+      ],
+      "speed": 147.8657812764872,
+      "agl": 83.82927472992537,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": 0.16938550776132633,
+        "roll": -0.012827265587921912,
+        "heading": -2.3570466975751994
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 1,
+        "yaw": 0,
+        "throttle": 0.24999999999999936,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 0,
+      "course": "contour-circuit",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "first-gate",
+        "hint": "W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 5.033333333333321,
+        "phase": "running",
+        "result": null,
+        "crash": false,
+        "resultsOpen": false,
+        "report": "\n        \n          \n          Blackout / Flight report\n          \n            MISSION\n            \n            \n          \n          COMPLETE RUN\n          ROUTE COMPLETE · ENTER RETRY · R NEW WORLD\n          \n            \n              SCORE\n              0\n            \n            \n              TIME\n              0:00.00\n            \n            \n              LANDING\n              0%\n              HARD\n            \n            \n              GATES\n              0\n            \n            \n              STREAK\n              NONE\n              NO COURSE STREAK\n            \n            \n              FUEL\n              100%\n              NO BURN\n            \n          \n          \n          \n          \n            Flight records & score breakdown\n            \n            \n            \n            BEST · 0\n          \n          \n            Share or revisit this flight\n            \n              Copy replay link\n              Copy mission summary\n              Copy world seed\n              Load seed on title\n            \n          \n          \n          \n            Retry same course\n            Choose mission\n          \n        \n      ",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.692681666666,
+          "fraction": 0.99692681666666
+        },
+        "engine": {
+          "lever": 0.24999999999999936,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 169.99999999999977,
+          "maxSpeed": 680,
+          "maxAcceleration": 11.99999999999997,
+          "effectivePower": 0.1949999999999995,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 147.8657812764872,
+        "position": [
+          3658.3532703593473,
+          271.1496216233122,
+          -13724.144112917105
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 0,
+        "controls": {
+          "pitch": 0,
+          "roll": 1,
+          "yaw": 0,
+          "throttle": 0.24999999999999936,
+          "gearDown": false,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "W CLIMB · A/D TURN · FOLLOW GATE 1 ARROW",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    },
+    {
+      "seconds": 8.016666666666644,
+      "stage": "gates",
+      "waypoint": 0,
+      "target": {
+        "x": 3276.4442392376995,
+        "y": 364.4799648558489,
+        "z": -14105.99136568651
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        }
+      ],
+      "position": [
+        3348.9978036164453,
+        345.89456932022955,
+        -14033.7115085208
+      ],
+      "velocity": [
+        -104.57606447983899,
+        25.945228844292547,
+        -102.98860486185191
+      ],
+      "speed": 149.0501958846912,
+      "agl": 182.35164779048128,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": 0.17628232790377016,
+        "roll": -0.011298395078698186,
+        "heading": -2.3441288561252245
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0.21999999999999936,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 0,
+      "course": "contour-circuit",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "first-gate",
+        "hint": "A/D TURN · FLY THROUGH GATE 1"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 8.016666666666644,
+        "phase": "running",
+        "result": null,
+        "crash": false,
+        "resultsOpen": false,
+        "report": "\n        \n          \n          Blackout / Flight report\n          \n            MISSION\n            \n            \n          \n          COMPLETE RUN\n          ROUTE COMPLETE · ENTER RETRY · R NEW WORLD\n          \n            \n              SCORE\n              0\n            \n            \n              TIME\n              0:00.00\n            \n            \n              LANDING\n              0%\n              HARD\n            \n            \n              GATES\n              0\n            \n            \n              STREAK\n              NONE\n              NO COURSE STREAK\n            \n            \n              FUEL\n              100%\n              NO BURN\n            \n          \n          \n          \n          \n            Flight records & score breakdown\n            \n            \n            \n            BEST · 0\n          \n          \n            Share or revisit this flight\n            \n              Copy replay link\n              Copy mission summary\n              Copy world seed\n              Load seed on title\n            \n          \n          \n          \n            Retry same course\n            Choose mission\n          \n        \n      ",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.62154166666632,
+          "fraction": 0.9962154166666631
+        },
+        "engine": {
+          "lever": 0.21999999999999936,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 159.47413583399637,
+          "maxSpeed": 680,
+          "maxAcceleration": 10.55999999999997,
+          "effectivePower": 0.1715999999999995,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 149.0501958846912,
+        "position": [
+          3348.9978036164453,
+          345.89456932022955,
+          -14033.7115085208
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 0,
+        "controls": {
+          "pitch": 0,
+          "roll": 0,
+          "yaw": 0,
+          "throttle": 0.21999999999999936,
+          "gearDown": false,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "A/D TURN · FLY THROUGH GATE 1",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    },
+    {
+      "seconds": 9.850000000000069,
+      "stage": "gates",
+      "waypoint": 0,
+      "target": {
+        "x": 2654.1902717935372,
+        "y": 260.6438731647864,
+        "z": -12635.209260818492
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        },
+        {
+          "seconds": 8.733333333333347,
+          "next": 1,
+          "position": [
+            3275.7960180092555,
+            363.2060840081994,
+            -14105.987103655667
+          ],
+          "phase": "running"
+        }
+      ],
+      "position": [
+        3127.9251199975115,
+        369.118061255783,
+        -14173.286844872091
+      ],
+      "velocity": [
+        -148.74629868228155,
+        -6.09747893773795,
+        10.66798216103033
+      ],
+      "speed": 149.25296132560564,
+      "agl": 215.04263495036173,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.05302448740737298,
+        "roll": -0.0011273742639434522,
+        "heading": -1.3276584902755268
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 1,
+        "throttle": 0.18999999999999936,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": true
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 1,
+      "course": "contour-circuit",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "route",
+        "hint": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 9.850000000000069,
+        "phase": "running",
+        "result": null,
+        "crash": false,
+        "resultsOpen": false,
+        "report": "\n        \n          \n          Blackout / Flight report\n          \n            MISSION\n            \n            \n          \n          COMPLETE RUN\n          ROUTE COMPLETE · ENTER RETRY · R NEW WORLD\n          \n            \n              SCORE\n              0\n            \n            \n              TIME\n              0:00.00\n            \n            \n              LANDING\n              0%\n              HARD\n            \n            \n              GATES\n              0\n            \n            \n              STREAK\n              NONE\n              NO COURSE STREAK\n            \n            \n              FUEL\n              100%\n              NO BURN\n            \n          \n          \n          \n          \n            Flight records & score breakdown\n            \n            \n            \n            BEST · 0\n          \n          \n            Share or revisit this flight\n            \n              Copy replay link\n              Copy mission summary\n              Copy world seed\n              Load seed on title\n            \n          \n          \n          \n            Retry same course\n            Choose mission\n          \n        \n      ",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.57867666666668,
+          "fraction": 0.9957867666666668
+        },
+        "engine": {
+          "lever": 0.18999999999999936,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 148.20256408038264,
+          "maxSpeed": 680,
+          "maxAcceleration": 9.119999999999969,
+          "effectivePower": 0.1481999999999995,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 149.25296132560564,
+        "position": [
+          3127.9251199975115,
+          369.118061255783,
+          -14173.286844872091
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 1,
+        "controls": {
+          "pitch": 0,
+          "roll": 0,
+          "yaw": 1,
+          "throttle": 0.18999999999999936,
+          "gearDown": false,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          },
+          {
+            "seconds": 8.733333333333347,
+            "next": 1,
+            "position": [
+              3275.7960180092555,
+              363.2060840081994,
+              -14105.987103655667
+            ],
+            "phase": "running"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    },
+    {
+      "seconds": 13.183333333333568,
+      "stage": "gates",
+      "waypoint": 0,
+      "target": {
+        "x": 2654.1902717935372,
+        "y": 260.6438731647864,
+        "z": -12635.209260818492
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        },
+        {
+          "seconds": 8.733333333333347,
+          "next": 1,
+          "position": [
+            3275.7960180092555,
+            363.2060840081994,
+            -14105.987103655667
+          ],
+          "phase": "running"
+        }
+      ],
+      "position": [
+        2906.6386054669156,
+        297.6296165364079,
+        -13801.890243870806
+      ],
+      "velocity": [
+        -17.252984998889872,
+        -84.10402167466177,
+        77.07396219308181
+      ],
+      "speed": 115.37568028559788,
+      "agl": 125.99246579558542,
+      "status": "ok",
+      "onGround": false,
+      "attitude": {
+        "pitch": -0.9670647771036429,
+        "roll": -0.015214662603389363,
+        "heading": -0.21682917587464065
+      },
+      "controls": {
+        "pitch": -1,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0,
+        "gearDown": false,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": true
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 1,
+      "course": "contour-circuit",
+      "phase": "running",
+      "briefing": {
+        "visible": true,
+        "stage": "route",
+        "hint": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 13.183333333333568,
+        "phase": "running",
+        "result": null,
+        "crash": false,
+        "resultsOpen": false,
+        "report": "\n        \n          \n          Blackout / Flight report\n          \n            MISSION\n            \n            \n          \n          COMPLETE RUN\n          ROUTE COMPLETE · ENTER RETRY · R NEW WORLD\n          \n            \n              SCORE\n              0\n            \n            \n              TIME\n              0:00.00\n            \n            \n              LANDING\n              0%\n              HARD\n            \n            \n              GATES\n              0\n            \n            \n              STREAK\n              NONE\n              NO COURSE STREAK\n            \n            \n              FUEL\n              100%\n              NO BURN\n            \n          \n          \n          \n          \n            Flight records & score breakdown\n            \n            \n            \n            BEST · 0\n          \n          \n            Share or revisit this flight\n            \n              Copy replay link\n              Copy mission summary\n              Copy world seed\n              Load seed on title\n            \n          \n          \n          \n            Retry same course\n            Choose mission\n          \n        \n      ",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.52122166666668,
+          "fraction": 0.9952122166666668
+        },
+        "engine": {
+          "lever": 0,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 0,
+          "maxSpeed": 680,
+          "maxAcceleration": 0,
+          "effectivePower": 0,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 115.37568028559788,
+        "position": [
+          2906.6386054669156,
+          297.6296165364079,
+          -13801.890243870806
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 1,
+        "controls": {
+          "pitch": -1,
+          "roll": 0,
+          "yaw": 0,
+          "throttle": 0,
+          "gearDown": false,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          },
+          {
+            "seconds": 8.733333333333347,
+            "next": 1,
+            "position": [
+              3275.7960180092555,
+              363.2060840081994,
+              -14105.987103655667
+            ],
+            "phase": "running"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    },
+    {
+      "seconds": 14.416666666666963,
+      "stage": "gates",
+      "waypoint": 0,
+      "target": {
+        "x": 2654.1902717935372,
+        "y": 260.6438731647864,
+        "z": -12635.209260818492
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        },
+        {
+          "seconds": 8.733333333333347,
+          "next": 1,
+          "position": [
+            3275.7960180092555,
+            363.2060840081994,
+            -14105.987103655667
+          ],
+          "phase": "running"
+        }
+      ],
+      "position": [
+        2900.097054198134,
+        178.35398799768737,
+        -13772.673425461839
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "speed": 0,
+      "agl": 5.182478994542748,
+      "status": "crashed",
+      "onGround": false,
+      "attitude": {
+        "pitch": -1.0666025971869946,
+        "roll": 2.0951921168632106,
+        "heading": 2.8835777979201227
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": true
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 1,
+      "course": "contour-circuit",
+      "phase": "failed",
+      "briefing": {
+        "visible": true,
+        "stage": "route",
+        "hint": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": false,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 14.416666666666963,
+        "phase": "failed",
+        "result": {
+          "elapsedSec": 14.066666666666945,
+          "gatesCleared": 1,
+          "gatesTotal": 5,
+          "courseId": "seed:982451:contour",
+          "endedByCrash": true,
+          "ditched": false,
+          "failureReason": "ATTITUDE",
+          "gateScore": 0,
+          "timeScore": 0,
+          "landingScore": 0,
+          "landingQuality": 0,
+          "totalScore": 0,
+          "medal": "complete",
+          "bestScore": 0,
+          "isNewBest": false,
+          "freeFlight": false,
+          "contractKind": "clean",
+          "contractLabel": "CLEAN CIRCUIT",
+          "contractDetail": "CLEAR EVERY GATE WITHOUT A MISS / CURRENT 1 GATES",
+          "contractComplete": false,
+          "contractFailed": true,
+          "contractProgress": 0.2
+        },
+        "crash": true,
+        "resultsOpen": false,
+        "report": "\n        \n          \n          Blackout / Flight report\n          \n            MISSION\n            \n            \n          \n          COMPLETE RUN\n          ROUTE COMPLETE · ENTER RETRY · R NEW WORLD\n          \n            \n              SCORE\n              0\n            \n            \n              TIME\n              0:00.00\n            \n            \n              LANDING\n              0%\n              HARD\n            \n            \n              GATES\n              0\n            \n            \n              STREAK\n              NONE\n              NO COURSE STREAK\n            \n            \n              FUEL\n              100%\n              NO BURN\n            \n          \n          \n          \n          \n            Flight records & score breakdown\n            \n            \n            \n            BEST · 0\n          \n          \n            Share or revisit this flight\n            \n              Copy replay link\n              Copy mission summary\n              Copy world seed\n              Load seed on title\n            \n          \n          \n          \n            Retry same course\n            Choose mission\n          \n        \n      ",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.51135499999968,
+          "fraction": 0.9951135499999968
+        },
+        "engine": {
+          "lever": 0,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 0,
+          "maxSpeed": 680,
+          "maxAcceleration": 0,
+          "effectivePower": 0,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 0,
+        "position": [
+          2900.097054198134,
+          178.35398799768737,
+          -13772.673425461839
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 1,
+        "controls": {
+          "pitch": 0,
+          "roll": 0,
+          "yaw": 0,
+          "throttle": 0,
+          "gearDown": true,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          },
+          {
+            "seconds": 8.733333333333347,
+            "next": 1,
+            "position": [
+              3275.7960180092555,
+              363.2060840081994,
+              -14105.987103655667
+            ],
+            "phase": "running"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    },
+    {
+      "seconds": 14.416666666666963,
+      "stage": "gates",
+      "waypoint": 0,
+      "target": {
+        "x": 2654.1902717935372,
+        "y": 260.6438731647864,
+        "z": -12635.209260818492
+      },
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        },
+        {
+          "seconds": 8.733333333333347,
+          "next": 1,
+          "position": [
+            3275.7960180092555,
+            363.2060840081994,
+            -14105.987103655667
+          ],
+          "phase": "running"
+        }
+      ],
+      "position": [
+        2900.097054198134,
+        178.35398799768737,
+        -13772.673425461839
+      ],
+      "velocity": [
+        0,
+        0,
+        0
+      ],
+      "speed": 0,
+      "agl": 5.182478994542748,
+      "status": "crashed",
+      "onGround": false,
+      "attitude": {
+        "pitch": -1.0666025971869946,
+        "roll": 2.0951921168632106,
+        "heading": 2.8835777979201227
+      },
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "runway": [
+        3951.7312152708523,
+        205.32996485584925,
+        -13430.704389653358
+      ],
+      "gates": [
+        {
+          "position": [
+            3276.4442392376995,
+            364.4799648558489,
+            -14105.99136568651
+          ],
+          "fwd": [
+            -0.7071067811865478,
+            0,
+            -0.7071067811865474
+          ],
+          "passed": true
+        },
+        {
+          "position": [
+            2654.1902717935372,
+            260.6438731647864,
+            -12635.209260818492
+          ],
+          "fwd": [
+            -0.3896399908366985,
+            0,
+            0.9209672510685587
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            3842.1296641869367,
+            332.14694417456826,
+            -11984.671022126868
+          ],
+          "fwd": [
+            0.8770962678415015,
+            0,
+            0.48031462286558485
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4973.500514085414,
+            476.008357000258,
+            -12408.935090838797
+          ],
+          "fwd": [
+            0.9363291775690444,
+            0,
+            -0.3511234415883919
+          ],
+          "passed": false
+        },
+        {
+          "position": [
+            4549.2364453734845,
+            341.76512534211315,
+            -12833.199159550724
+          ],
+          "fwd": [
+            -0.7071067811865491,
+            0,
+            -0.707106781186546
+          ],
+          "passed": false
+        }
+      ],
+      "next": 1,
+      "course": "contour-circuit",
+      "phase": "failed",
+      "briefing": {
+        "visible": true,
+        "stage": "route",
+        "hint": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL"
+      },
+      "navTarget": "gate",
+      "navGlide": null,
+      "resultsOpen": true,
+      "paused": false,
+      "playing": true,
+      "camera": "chase",
+      "recovery": {
+        "active": {
+          "course": {
+            "id": "contour-circuit",
+            "label": "Contour circuit",
+            "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+            "seed": 982451,
+            "profile": "contour",
+            "weather": "clear",
+            "timeOfDay": 0.5
+          },
+          "recordId": "seed:982451:contour"
+        },
+        "seed": 982451,
+        "selected": "contour-circuit",
+        "seconds": 14.416666666666963,
+        "phase": "failed",
+        "result": {
+          "elapsedSec": 14.066666666666945,
+          "gatesCleared": 1,
+          "gatesTotal": 5,
+          "courseId": "seed:982451:contour",
+          "endedByCrash": true,
+          "ditched": false,
+          "failureReason": "ATTITUDE",
+          "gateScore": 0,
+          "timeScore": 0,
+          "landingScore": 0,
+          "landingQuality": 0,
+          "totalScore": 0,
+          "medal": "complete",
+          "bestScore": 0,
+          "isNewBest": false,
+          "freeFlight": false,
+          "contractKind": "clean",
+          "contractLabel": "CLEAN CIRCUIT",
+          "contractDetail": "CLEAR EVERY GATE WITHOUT A MISS / CURRENT 1 GATES",
+          "contractComplete": false,
+          "contractFailed": true,
+          "contractProgress": 0.2
+        },
+        "crash": false,
+        "resultsOpen": true,
+        "report": "BLACKOUT / FLIGHT REPORT\n\nCONTOUR CIRCUIT\n\nWEATHER CLEAR\n\nSEED 982451\n\nCRASH\n\nContour circuit · WEATHER CLEAR · ATTITUDE · 0:14.07 · 1/5 GATES · ATTITUDE\n\nSCORE\n0\nTIME\n0:14.07\nLANDING\nATTITUDE\nFLIGHT FAILURE\nGATES\n1/5\nSTREAK\nNONE\nNO COURSE STREAK\nFUEL\n100%\nNO BURN\n\nKeep the jet upright and use a shallow flare before touchdown.\n\nFlight records & score breakdown\nShare or revisit this flight\nRetry same course\nChoose mission",
+        "playing": true,
+        "paused": false,
+        "fuel": {
+          "capacity": 100,
+          "remaining": 99.51135499999968,
+          "fraction": 0.9951135499999968
+        },
+        "engine": {
+          "lever": 0,
+          "afterburnerRequested": false,
+          "afterburnerActive": false,
+          "afterburnerHeatLocked": false,
+          "targetSpeed": 0,
+          "maxSpeed": 680,
+          "maxAcceleration": 0,
+          "effectivePower": 0,
+          "fuelAvailable": true
+        },
+        "onGround": false,
+        "speed": 0,
+        "position": [
+          2900.097054198134,
+          178.35398799768737,
+          -13772.673425461839
+        ],
+        "spawn": {
+          "x": 3983.551020424247,
+          "y": 206.67996485584925,
+          "z": -13398.884584499963,
+          "yaw": 3.9269908169872414,
+          "biome": "plains"
+        },
+        "next": 1,
+        "controls": {
+          "pitch": 0,
+          "roll": 0,
+          "yaw": 0,
+          "throttle": 0,
+          "gearDown": true,
+          "boost": false,
+          "airbrake": false,
+          "stabilityAssist": true
+        },
+        "source": "keyboard",
+        "briefing": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL",
+        "navTarget": "gate",
+        "navGlide": null,
+        "events": [
+          {
+            "seconds": 0.016666666666666666,
+            "next": 0,
+            "position": [
+              3983.551020424247,
+              206.67996826171876,
+              -13398.884584499963
+            ],
+            "phase": "ready"
+          },
+          {
+            "seconds": 8.733333333333347,
+            "next": 1,
+            "position": [
+              3275.7960180092555,
+              363.2060840081994,
+              -14105.987103655667
+            ],
+            "phase": "running"
+          }
+        ],
+        "storage": {
+          "blackout.reducedMotion": "false",
+          "blackout.audioEffectsVolume": "1",
+          "blackout.stabilityAssist": "true",
+          "blackout.audioEnvironmentVolume": "1",
+          "blackout.renderQuality": "balanced",
+          "blackout.keyboardYaw": "a-left",
+          "blackout.keyboardScheme": "arcade",
+          "blackout.audioEngineVolume": "1",
+          "blackout.hudDisplay": "minimal",
+          "blackout.cameraSensitivity": "normal",
+          "blackout.keyboardPitch": "w-up",
+          "blackout.keyboardRoll": "q-right",
+          "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+          "blackout.course-recents": "[\"contour-circuit\"]",
+          "blackout.cameraAutoReturn": "true",
+          "blackout.cameraEffects": "true",
+          "blackout.cameraSpeedFraming": "standard",
+          "blackout.audioVolume": "1",
+          "blackout.course-selection": "contour-circuit"
+        }
+      }
+    }
+  ],
+  "final": {
+    "seconds": 14.416666666666963,
+    "stage": "gates",
+    "waypoint": 0,
+    "target": {
+      "x": 2654.1902717935372,
+      "y": 260.6438731647864,
+      "z": -12635.209260818492
+    },
+    "events": [
+      {
+        "seconds": 0.016666666666666666,
+        "next": 0,
+        "position": [
+          3983.551020424247,
+          206.67996826171876,
+          -13398.884584499963
+        ],
+        "phase": "ready"
+      },
+      {
+        "seconds": 8.733333333333347,
+        "next": 1,
+        "position": [
+          3275.7960180092555,
+          363.2060840081994,
+          -14105.987103655667
+        ],
+        "phase": "running"
+      }
+    ],
+    "position": [
+      2900.097054198134,
+      178.35398799768737,
+      -13772.673425461839
+    ],
+    "velocity": [
+      0,
+      0,
+      0
+    ],
+    "speed": 0,
+    "agl": 5.182478994542748,
+    "status": "crashed",
+    "onGround": false,
+    "attitude": {
+      "pitch": -1.0666025971869946,
+      "roll": 2.0951921168632106,
+      "heading": 2.8835777979201227
+    },
+    "controls": {
+      "pitch": 0,
+      "roll": 0,
+      "yaw": 0,
+      "throttle": 0,
+      "gearDown": true,
+      "boost": false,
+      "airbrake": false,
+      "stabilityAssist": true
+    },
+    "spawn": {
+      "x": 3983.551020424247,
+      "y": 206.67996485584925,
+      "z": -13398.884584499963,
+      "yaw": 3.9269908169872414,
+      "biome": "plains"
+    },
+    "runway": [
+      3951.7312152708523,
+      205.32996485584925,
+      -13430.704389653358
+    ],
+    "gates": [
+      {
+        "position": [
+          3276.4442392376995,
+          364.4799648558489,
+          -14105.99136568651
+        ],
+        "fwd": [
+          -0.7071067811865478,
+          0,
+          -0.7071067811865474
+        ],
+        "passed": true
+      },
+      {
+        "position": [
+          2654.1902717935372,
+          260.6438731647864,
+          -12635.209260818492
+        ],
+        "fwd": [
+          -0.3896399908366985,
+          0,
+          0.9209672510685587
+        ],
+        "passed": false
+      },
+      {
+        "position": [
+          3842.1296641869367,
+          332.14694417456826,
+          -11984.671022126868
+        ],
+        "fwd": [
+          0.8770962678415015,
+          0,
+          0.48031462286558485
+        ],
+        "passed": false
+      },
+      {
+        "position": [
+          4973.500514085414,
+          476.008357000258,
+          -12408.935090838797
+        ],
+        "fwd": [
+          0.9363291775690444,
+          0,
+          -0.3511234415883919
+        ],
+        "passed": false
+      },
+      {
+        "position": [
+          4549.2364453734845,
+          341.76512534211315,
+          -12833.199159550724
+        ],
+        "fwd": [
+          -0.7071067811865491,
+          0,
+          -0.707106781186546
+        ],
+        "passed": false
+      }
+    ],
+    "next": 1,
+    "course": "contour-circuit",
+    "phase": "failed",
+    "briefing": {
+      "visible": true,
+      "stage": "route",
+      "hint": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL"
+    },
+    "navTarget": "gate",
+    "navGlide": null,
+    "resultsOpen": true,
+    "paused": false,
+    "playing": true,
+    "camera": "chase",
+    "recovery": {
+      "active": {
+        "course": {
+          "id": "contour-circuit",
+          "label": "Contour circuit",
+          "detail": "Follow five terrain-shaped gates, beat the clock, then land at your generated home runway. Replay a seed to race your best. · SEED 982451",
+          "seed": 982451,
+          "profile": "contour",
+          "weather": "clear",
+          "timeOfDay": 0.5
+        },
+        "recordId": "seed:982451:contour"
+      },
+      "seed": 982451,
+      "selected": "contour-circuit",
+      "seconds": 14.416666666666963,
+      "phase": "failed",
+      "result": {
+        "elapsedSec": 14.066666666666945,
+        "gatesCleared": 1,
+        "gatesTotal": 5,
+        "courseId": "seed:982451:contour",
+        "endedByCrash": true,
+        "ditched": false,
+        "failureReason": "ATTITUDE",
+        "gateScore": 0,
+        "timeScore": 0,
+        "landingScore": 0,
+        "landingQuality": 0,
+        "totalScore": 0,
+        "medal": "complete",
+        "bestScore": 0,
+        "isNewBest": false,
+        "freeFlight": false,
+        "contractKind": "clean",
+        "contractLabel": "CLEAN CIRCUIT",
+        "contractDetail": "CLEAR EVERY GATE WITHOUT A MISS / CURRENT 1 GATES",
+        "contractComplete": false,
+        "contractFailed": true,
+        "contractProgress": 0.2
+      },
+      "crash": false,
+      "resultsOpen": true,
+      "report": "BLACKOUT / FLIGHT REPORT\n\nCONTOUR CIRCUIT\n\nWEATHER CLEAR\n\nSEED 982451\n\nCRASH\n\nContour circuit · WEATHER CLEAR · ATTITUDE · 0:14.07 · 1/5 GATES · ATTITUDE\n\nSCORE\n0\nTIME\n0:14.07\nLANDING\nATTITUDE\nFLIGHT FAILURE\nGATES\n1/5\nSTREAK\nNONE\nNO COURSE STREAK\nFUEL\n100%\nNO BURN\n\nKeep the jet upright and use a shallow flare before touchdown.\n\nFlight records & score breakdown\nShare or revisit this flight\nRetry same course\nChoose mission",
+      "playing": true,
+      "paused": false,
+      "fuel": {
+        "capacity": 100,
+        "remaining": 99.51135499999968,
+        "fraction": 0.9951135499999968
+      },
+      "engine": {
+        "lever": 0,
+        "afterburnerRequested": false,
+        "afterburnerActive": false,
+        "afterburnerHeatLocked": false,
+        "targetSpeed": 0,
+        "maxSpeed": 680,
+        "maxAcceleration": 0,
+        "effectivePower": 0,
+        "fuelAvailable": true
+      },
+      "onGround": false,
+      "speed": 0,
+      "position": [
+        2900.097054198134,
+        178.35398799768737,
+        -13772.673425461839
+      ],
+      "spawn": {
+        "x": 3983.551020424247,
+        "y": 206.67996485584925,
+        "z": -13398.884584499963,
+        "yaw": 3.9269908169872414,
+        "biome": "plains"
+      },
+      "next": 1,
+      "controls": {
+        "pitch": 0,
+        "roll": 0,
+        "yaw": 0,
+        "throttle": 0,
+        "gearDown": true,
+        "boost": false,
+        "airbrake": false,
+        "stabilityAssist": true
+      },
+      "source": "keyboard",
+      "briefing": "FOLLOW THE ARROW · A/D YAW · Q/E ROLL",
+      "navTarget": "gate",
+      "navGlide": null,
+      "events": [
+        {
+          "seconds": 0.016666666666666666,
+          "next": 0,
+          "position": [
+            3983.551020424247,
+            206.67996826171876,
+            -13398.884584499963
+          ],
+          "phase": "ready"
+        },
+        {
+          "seconds": 8.733333333333347,
+          "next": 1,
+          "position": [
+            3275.7960180092555,
+            363.2060840081994,
+            -14105.987103655667
+          ],
+          "phase": "running"
+        }
+      ],
+      "storage": {
+        "blackout.reducedMotion": "false",
+        "blackout.audioEffectsVolume": "1",
+        "blackout.stabilityAssist": "true",
+        "blackout.audioEnvironmentVolume": "1",
+        "blackout.renderQuality": "balanced",
+        "blackout.keyboardYaw": "a-left",
+        "blackout.keyboardScheme": "arcade",
+        "blackout.audioEngineVolume": "1",
+        "blackout.hudDisplay": "minimal",
+        "blackout.cameraSensitivity": "normal",
+        "blackout.keyboardPitch": "w-up",
+        "blackout.keyboardRoll": "q-right",
+        "blackout.keyboardBindings": "{\"boost\":\"Space\",\"airbrake\":\"KeyB\",\"gear\":\"KeyG\"}",
+        "blackout.course-recents": "[\"contour-circuit\"]",
+        "blackout.cameraAutoReturn": "true",
+        "blackout.cameraEffects": "true",
+        "blackout.cameraSpeedFraming": "standard",
+        "blackout.audioVolume": "1",
+        "blackout.course-selection": "contour-circuit"
+      }
+    }
+  }
+}

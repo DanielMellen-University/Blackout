@@ -26,6 +26,39 @@ function fakeWindow(): { target: Window; fire(type: string, code: string): void 
 }
 
 describe('flight input one-shot controls', () => {
+  it('requires released standard controller buttons before each debrief action', () => {
+    const buttons = [{ pressed: true }, { pressed: false }]
+    let pad: unknown = { connected: true, mapping: 'standard', buttons }
+    vi.stubGlobal('navigator', { getGamepads: () => [pad] })
+    const input = new InputManager(fakeWindow().target)
+    try {
+      expect(input.sampleDebriefAction(false)).toBeNull()
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      buttons[0]!.pressed = false
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      buttons[0]!.pressed = true
+      expect(input.sampleDebriefAction(true)).toBe('retry')
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      buttons[0]!.pressed = false
+      input.sampleDebriefAction(true)
+      buttons[1]!.pressed = true
+      expect(input.sampleDebriefAction(true)).toBe('choose')
+      input.sampleDebriefAction(false)
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      pad = null
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      pad = { connected: true, mapping: 'standard', buttons: null }
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      pad = { connected: true, mapping: '', buttons }
+      expect(input.sampleDebriefAction(true)).toBeNull()
+      input.dispose()
+      expect(input.sampleDebriefAction(true)).toBeNull()
+    } finally {
+      input.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('keeps hints on the last meaningful device, not idle controllers or menu typing', () => {
     let connected = true
     const axes = [0, 0, 0]

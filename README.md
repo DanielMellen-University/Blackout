@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.946**. Previous roadmap chunk: **10.945**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.947**. Previous roadmap chunk: **10.946**.
+
+Recent changes from **10.947**. Fix focused debrief activation, restore controller retry and mission selection with release gating, and extinguish fuel-empty exhaust. Verify crash recovery, go-around, engine-out landing and keyboard/controller rollout without changing flight physics or collision. See docs/reviews/recovery-10.948/README.md for evidence and limits.
 
 Recent changes from **10.946**. Polish cloud boundaries on existing meshes, correct port and starboard navigation lights, and label terrain-relative altitude AGL. Complete two ten-minute Free flights on seeds 31415 and 27182 with chase and cockpit stills every minute, plus matched before/after views. Preserve physics, collision, water, landscape revision 29, route revision 30, all resource budgets and paused exclusions. See docs/reviews/polish-10.946/README.md.
 

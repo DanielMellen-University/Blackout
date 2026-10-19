@@ -545,6 +545,27 @@ describe('rebuilt aircraft', () => {
     expect(glow!.emissiveIntensity).toBe(0)
   })
 
+  it('extinguishes exhaust and nozzle glow on fuel exhaustion with the lever still open', () => {
+    const aircraft = new Aircraft()
+    aircraft.position.set(0, 1000, 0)
+    aircraft.controls.throttle = 1
+    aircraft.controls.boost = true
+    aircraft.step(1 / 60)
+    const plume = aircraft.mesh.getObjectByName('afterburner')!
+    expect(plume.visible).toBe(true)
+    aircraft.fuel.remaining = 0
+    aircraft.step(1 / 60)
+    expect(aircraft.engineState.fuelAvailable).toBe(false)
+    expect(aircraft.engineState.lever).toBe(1)
+    expect(plume.visible).toBe(false)
+    aircraft.mesh.traverse(obj => {
+      if (obj instanceof Mesh && obj.material instanceof MeshStandardMaterial && obj.material.name === 'nozzleGlow') {
+        expect(obj.material.emissiveIntensity).toBe(0)
+      }
+    })
+    aircraft.dispose()
+  })
+
   it('keeps the anti-collision beacon brief and hidden between flashes', () => {
     const model = createF35Model()
     const beacon = model.getObjectByName('antiCollisionBeacon') as Mesh
