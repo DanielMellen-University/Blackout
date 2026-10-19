@@ -29,7 +29,7 @@ describe('digital flight instrument adapters', () => {
       hud.update({ ...frame, y: altitude, onGround: false })
       const shown = Number.isFinite(altitude) ? altitude : 0
       expect(read('hud-pos').textContent).toBe(String(shown))
-      expect(read('hud-pos').attributes.get('aria-valuetext')).toBe(`${shown} metres`)
+      expect(read('hud-pos').attributes.get('aria-valuetext')).toBe(`${shown} metres above ground`)
       expect(read('hud-pos').classes.has('clearance-caution')).toBe(false)
       expect(read('hud-pos').classes.has('clearance-warning')).toBe(false)
     }

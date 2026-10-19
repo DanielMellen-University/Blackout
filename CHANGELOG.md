@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.950** Repair CI by retaining the shipped accessible AGL description in instrument tests and trimming older README history to the changelog. Preserve neutral altitude readings, flight physics and all paused exclusions.
 - **10.949** Polish existing flight reports so crash and ditch outcomes are clear and each failure reason appears once, while preserving score, coaching, retry and record behavior. Correct the featured-mission documentation to include the already-shipped Contour circuit. Add no features or mission types. See docs/reviews/debrief-10.949/README.md for focused tests and browser evidence.
 - **10.948** Record six isolated, unprofiled 120-second city and northeast flights on the shipped 10.947 runtime. Pooled means are 39.01 and 38.33 FPS, p95 is 33.4 ms on both routes, and no flight interval exceeds 100 ms. Main-thread JS heap peaks range from 187.3 to 208.9 MB; one run exceeds the approximate 200 MB reference. Make no performance changes or improvement claim. See docs/reviews/performance-10.948/README.md for all runs and limits.
 - **10.947** Fix focused debrief activation, restore controller retry and mission selection with release gating, and extinguish fuel-empty exhaust. Verify crash recovery, go-around, engine-out landing and keyboard/controller rollout without changing flight physics or collision. See docs/reviews/recovery-10.948/README.md for evidence and limits.
