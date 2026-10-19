@@ -69,7 +69,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -123,6 +123,7 @@ export interface MissionRouteValidation {
 
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   contour: 'CONTOUR CIRCUIT',
+  weather: 'WEATHER APPROACH',
   orbit: 'ORBIT',
   sweep: 'SWEEP',
   slalom: 'SLALOM',
@@ -318,7 +319,7 @@ export function missionChallengeForProfile(profile: MissionRouteProfile): Missio
   if (profile === 'monsoon') return 'range'
   if (profile === 'archipelago') return 'range'
   if (profile === 'thermal') return 'altitude'
-  if (profile === 'approach') return 'approach'
+  if (profile === 'approach' || profile === 'weather') return 'approach'
   return 'approach'
 }
 
@@ -392,7 +393,7 @@ export function buildMissionRoute(
   const offsets = routeOffsets(safeProfile, seedPhase, safeModifier)
   let points = offsets.map((offset, i) => ({
     x: safeSpawnX + forwardX * offset.forward + rightX * offset.right,
-      y: safeSpawnY + offset.height + i * (safeProfile === 'slalom' || safeProfile === 'canyon' || safeProfile === 'night' || safeProfile === 'badlands' ? 12 : safeProfile === 'ridge' || safeProfile === 'alpine' || safeProfile === 'thermal' ? 30 : safeProfile === 'volcanic' ? 44 : safeProfile === 'desert' || safeProfile === 'coast' || safeProfile === 'fjord' || safeProfile === 'river' || safeProfile === 'savanna' || safeProfile === 'tundra' || safeProfile === 'swamp' || safeProfile === 'monsoon' ? 16 : safeProfile === 'approach' ? 10 : 22),
+      y: safeSpawnY + offset.height + i * (safeProfile === 'weather' ? 0 : safeProfile === 'slalom' || safeProfile === 'canyon' || safeProfile === 'night' || safeProfile === 'badlands' ? 12 : safeProfile === 'ridge' || safeProfile === 'alpine' || safeProfile === 'thermal' ? 30 : safeProfile === 'volcanic' ? 44 : safeProfile === 'desert' || safeProfile === 'coast' || safeProfile === 'fjord' || safeProfile === 'river' || safeProfile === 'savanna' || safeProfile === 'tundra' || safeProfile === 'swamp' || safeProfile === 'monsoon' ? 16 : safeProfile === 'approach' ? 10 : 22),
     z: safeSpawnZ + forwardZ * offset.forward + rightZ * offset.right,
   }))
 
@@ -527,6 +528,18 @@ function routeOffsets(
     right: offset.right * cadence[index]!,
     height: offset.height + altitudeWave[index]!,
   })
+  if (profile === 'weather') {
+    // A wider downwind and a long inbound leg provide space to establish the
+    // approach in reduced visibility. Reuse the same five gates and clearance.
+    const side = 1200 + seedPhase * 120
+    return [
+      { forward: 1000, right: 0, height: 140 },
+      { forward: 700, right: side, height: 180 },
+      { forward: -2200, right: side, height: 200 },
+      { forward: -2500, right: 0, height: 160 },
+      { forward: -1600, right: 0, height: 140 },
+    ]
+  }
   if (profile === 'contour') {
     return [
       { forward: 1000, right: 0, height: 130 },

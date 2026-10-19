@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.951**. Previous roadmap chunk: **10.950**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.952**. Previous roadmap chunk: **10.951**.
+
+Recent changes from **10.952**. Ship the parked Weather approach mission as is, using seeded weather, five gates, existing approach guidance, medals, records and ghosts. Keep current main fixes and omit the bulky parked review artifacts. Verify focused and full tests, the production build and a browser flight; see docs/reviews/weather-approach-10.952/README.md. Preserve flight physics and paused exclusions.
 
 Recent changes from **10.951**. Set the approved priority order to terrain, flight physics then nitro/boost, randomly generated terrain-shaped missions, and gameplay. Record the b18 through b21 plan, approval rule and current-mission polish freeze. Preserve paused exclusions, the approximate 200 MB heap target and closed city/roads redesign.
 
@@ -49,7 +51,7 @@ A mission is one flight attempt, from launch until landing or a crash. Clear the
 
 ## Mission picker
 
-Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**, **Contour circuit**. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a card prepares the mission without launching it. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
+Launch and Pause > Next mission share a featured row: **Free flight**, **Training orbit**, **Daily challenge**, **Contour circuit**, **Weather approach**. **Random world** stays first in the scrollable grid. Search, categories, sorting, counts, and empty messages apply only to the remaining missions; featured cards and Random world always remain visible. Choosing a card prepares the mission without launching it. Arrow keys follow the displayed rows; Home/End reach the first/last visible card, and Enter/Space select it.
 
 Regular mission cards have an independent star in the top-right: navy when unsaved, orange when favorited. Clicking a star never selects or launches that mission. Select a regular mission and press F, or Tab to its star and use Enter/Space. Favorites share existing saved data across both pickers. Featured modes and Random world have no stars. The launch panel stays centered and fully bounded; shorter windows scroll its columns internally. The takeoff brief below pilot rank follows your configured controls.
 

@@ -1051,6 +1051,7 @@ export class CoursePicker {
       subtitle.className = 'course-featured-subtitle'
       subtitle.textContent = item.id === 'free-flight' ? 'Explore freely'
         : item.id === 'training-orbit' ? 'Learn the basics'
+        : item.id === 'weather-approach' ? 'Land through the weather'
         : item.id === 'contour-circuit' ? 'Race the terrain' : 'New mission daily'
       button.setAttribute('aria-label', `${item.label}, ${subtitle.textContent}`)
       button.append(name, subtitle)

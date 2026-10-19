@@ -115,6 +115,26 @@ beforeEach(() => {
 afterEach(() => { picker.dispose(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 describe('course picker interaction', () => {
+  it('keeps Weather approach fifth and reachable with the full featured row', () => {
+    picker.setItems([...missionItems,
+      { id: 'contour-circuit', label: 'Contour circuit', detail: '', meta: '', stats: '' },
+      { id: 'weather-approach', label: 'Weather approach', detail: '', meta: '', stats: '' },
+    ], 'weather-approach')
+    const featured = element('.course-picker-featured').children
+    expect(featured.map(node => node.dataset.courseId)).toEqual(['free-flight', 'training-orbit', 'daily-ops', 'contour-circuit', 'weather-approach'])
+    expect(featured[4].getAttribute('aria-label')).toContain('Land through the weather')
+    key('ArrowRight', featured[3])
+    expect(documentState.activeElement).toBe(featured[4])
+    key('ArrowDown', featured[4])
+    expect(documentState.activeElement?.dataset.courseId).toBe('ridge')
+    key('ArrowUp', documentState.activeElement!)
+    expect(documentState.activeElement?.dataset.courseId).toBe('contour-circuit')
+    key('ArrowRight', documentState.activeElement!)
+    expect(documentState.activeElement).toBe(featured[4])
+    picker.setFilter('no matches')
+    expect(options().find(node => node.dataset.courseId === 'weather-approach')?.getAttribute('aria-checked')).toBe('true')
+  })
+
   it('keeps the new Contour mission featured through filtering and keyboard navigation', () => {
     picker.setItems([...missionItems, { id: 'contour-circuit', label: 'Contour circuit', detail: 'Terrain gates and runway return', meta: '', stats: '' }], 'contour-circuit')
     const featured = element('.course-picker-featured').children

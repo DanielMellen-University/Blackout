@@ -1538,7 +1538,7 @@ export async function boot(): Promise<void> {
         const seededRandomWorld = replaying && selectedCourseId === 'random'
         activeSortie = courseSession.capture(selectedCourseId, world.worldSeed, world.mission.routeProfile, seededRandomWorld)
         pruneCourseRecords()
-        if (course.id !== 'contour-circuit') replaySeed = null
+        if (course.id !== 'contour-circuit' && course.id !== 'weather-approach') replaySeed = null
       }
       if (replaying && !worldFallback) {
         if (titleSeedInput) titleSeedInput.value = ''

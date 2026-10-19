@@ -152,6 +152,14 @@ export const COURSE_LIBRARY = [
     timeOfDay: 0.5,
   },
   {
+    id: 'weather-approach',
+    label: 'Weather approach',
+    detail: 'Fly a seeded weather circuit, hold the inbound line through cloud or rain, then land. Replay your seed to beat your medal and complete-flight time.',
+    seed: 619,
+    profile: 'weather',
+    timeOfDay: 0.48,
+  },
+  {
     id: 'range-sweep',
     label: 'Range sweep',
     detail: 'Wide route with long turns',
@@ -882,6 +890,7 @@ export function resolveCourseDefinition(
   course: CourseDefinition,
   nowMs = Date.now(),
 ): CourseDefinition {
+  if (course.id === 'weather-approach') return resolveWeatherApproach(course)
   if (course.daily) {
     const seed = dailyOpsSeed(nowMs)
     const profile = dailyOpsProfile(nowMs)
@@ -925,10 +934,19 @@ export function resolveCourseDefinition(
   }
 }
 
+/** Existing weather fields and runway-relative wind, resolved once for a seeded sortie. */
+function resolveWeatherApproach(course: CourseDefinition): CourseDefinition {
+  const seed = course.seed ?? 619
+  const variant = ((seed % 3) + 3) % 3
+  const weather: WeatherId = variant === 0 ? 'cloudy' : variant === 1 ? 'rain' : 'fog'
+  return { ...course, weather, windSide: seed % 2 === 0 ? 'left' : 'right' }
+}
+
 /** Keep this featured mission's explicit seed replay in the existing selection/record family. */
 export function resolveCourseReplaySeed(course: CourseDefinition, seed: number | null): CourseDefinition {
-  if (course.id !== 'contour-circuit' || seed === null || !Number.isSafeInteger(seed)) return course
-  return { ...course, seed, detail: `${course.detail} · SEED ${seed}` }
+  if ((course.id !== 'contour-circuit' && course.id !== 'weather-approach') || seed === null || !Number.isSafeInteger(seed)) return course
+  const replay = { ...course, seed, detail: `${course.detail} · SEED ${seed}` }
+  return course.id === 'weather-approach' ? resolveWeatherApproach(replay) : replay
 }
 
 export function courseSeedForId(id: string | null | undefined, nowMs = Date.now()): number | undefined {
