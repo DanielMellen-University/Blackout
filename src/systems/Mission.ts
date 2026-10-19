@@ -1014,6 +1014,7 @@ export class MissionSystem {
     minClearanceMeters: ROUTE_CLEARANCE,
     maxAltitudeMeters: 0,
   }
+  timeAllowanceSec = 0
   private routeBriefingText = 'ROUTE ORBIT / APPROACH / STEADY / BALANCED / STANDARD / MIN CLR 120M / TURN 0° / TOP 0M'
   private readonly hudState: MissionHud = {
     status: 'idle',
@@ -1175,6 +1176,12 @@ export class MissionSystem {
     this.routeFallbackUsedValue = resolution.fallbackUsed
     const route = resolution.route
     const summary = resolution.summary
+    const last = route.at(-1)
+    // Cruise at 150 m/s plus a 45-second departure/approach allowance.
+    // This is scoring only; the route, gate pool and flight clock stay unchanged.
+    this.timeAllowanceSec = last ? 45 + (summary.lengthMeters + Math.hypot(
+      last.x - safeSpawnX, last.y - safeSpawnY, last.z - safeSpawnZ,
+    )) / 150 : 0
     const validation = resolution.validation
     if (!validation.valid) {
       this.status = 'idle'

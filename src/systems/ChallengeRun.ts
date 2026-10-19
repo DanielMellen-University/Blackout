@@ -86,6 +86,9 @@ export interface ChallengeResult {
   completionCount?: number
   /** Fastest completed time recorded for this course. */
   bestTimeSec?: number
+  previousBestTimeSec?: number
+  isNewBestTime?: boolean
+  timeAllowanceSec?: number
   /** Route-selected scoring emphasis used for this run. */
   scoringFocus?: ChallengeScoringFocus
   /** All mastery badges earned on this course after this run. */
@@ -997,6 +1000,7 @@ export class ChallengeRun {
   private contractFailureCuePending = false
   private readonly gateSplits: number[] = []
   private bestGateSplits: number[] = []
+  private timeAllowanceSec = 0
   private lastPaceDeltaSec = Number.NaN
   private gatePaceLabelDelta = Number.NaN
   private gatePaceLabelValue = 'FIRST RUN'
@@ -1015,9 +1019,11 @@ export class ChallengeRun {
     scoringFocus: ChallengeScoringFocus = 'balanced',
     contractSeed?: number,
     catalog = false,
+    timeAllowanceSec = 0,
   ): void {
     this.courseId = courseId
     this.totalGates = Math.max(0, Math.floor(totalGates))
+    this.timeAllowanceSec = Number.isFinite(timeAllowanceSec) ? Math.max(0, Math.min(3_600, timeAllowanceSec)) : 0
     this.scoringFocus = scoringFocus
     this.freeFlight = courseId === 'free-flight'
     this.altitudeMilestone = 0
@@ -1410,7 +1416,7 @@ export class ChallengeRun {
     const gateScore = Math.round(weights.gate * clamp01(gateQuality))
 
     // A brisk, clean circuit scores well; time can never erase completion.
-    const timeScore = Math.round(Math.max(weights.minimumTime, weights.time - elapsedSec * 320))
+    const timeScore = Math.round(Math.max(weights.minimumTime, weights.time - Math.max(0, elapsedSec - this.timeAllowanceSec) * 320))
 
     const landingQuality = landingQualityForMetrics(metrics)
     const landingScore = Math.round(weights.landing * landingQuality)
@@ -1449,7 +1455,8 @@ export class ChallengeRun {
     })
     const isNewBest = totalScore > previousBest
     const bestScore = Math.max(previousBest, totalScore)
-    const bestElapsedSec = this.bestGateSplits[this.totalGates - 1]
+    const bestElapsedSec = history.bestTimeSec
+    const isNewBestTime = elapsedSec < bestElapsedSec
     const paceDeltaSec = Number.isFinite(bestElapsedSec)
       ? elapsedSec - bestElapsedSec!
       : Number.NaN
@@ -1623,6 +1630,9 @@ export class ChallengeRun {
       paceLabel,
       completionCount: history.completionCount,
       bestTimeSec: history.bestTimeSec,
+      previousBestTimeSec: Number.isFinite(bestElapsedSec) ? bestElapsedSec : undefined,
+      isNewBestTime,
+      timeAllowanceSec: this.timeAllowanceSec,
       scoringFocus: this.scoringFocus,
       masteryBadges: allBadges,
       newMasteryBadges: newBadges,

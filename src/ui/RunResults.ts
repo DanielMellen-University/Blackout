@@ -1,5 +1,6 @@
 import {
   formatSplitTrace,
+  resultMedalClass,
   formatTime,
   MASTERY_BADGE_COUNT,
   masteryBadgeLabel,
@@ -276,7 +277,8 @@ export class RunResults {
       ? (ditched ? 'DITCHED' : 'CRASH')
       : result.freeFlight
         ? 'FREE FLIGHT COMPLETE'
-        : 'COMPLETE'
+        : result.medal === 'complete' ? 'COMPLETE' : `${result.medal.toUpperCase()} MEDAL`
+    if (!crashed && !result.freeFlight) this.root.classList.add(resultMedalClass(result.medal))
     this.score.textContent = result.totalScore.toLocaleString()
     this.score.setAttribute('aria-label', `Total score ${result.totalScore.toLocaleString()}`)
     this.time.textContent = formatTime(result.elapsedSec)
@@ -405,6 +407,7 @@ export class RunResults {
     if (result.courseBestMedal && result.courseBestMedal !== result.medal) {
       scoreParts.push(`COURSE ${result.courseBestMedal.toUpperCase()}`)
     }
+    if (Number.isFinite(result.timeAllowanceSec) && result.timeAllowanceSec! > 0) scoreParts.push(`TIME ALLOWANCE ${formatTime(result.timeAllowanceSec!)}`)
     if (result.paceLabel) scoreParts.push(`PACE ${result.paceLabel}`)
     if (gateMisses) scoreParts.push(gateMisses)
     if (result.scoringFocus) scoreParts.push(`${result.scoringFocus.toUpperCase()} FOCUS`)
@@ -649,7 +652,7 @@ export class RunResults {
       result.bestScore.toLocaleString(),
     ]
     if (Number.isFinite(result.completionCount)) bestBits.push(`RUN ${Math.max(1, Math.floor(result.completionCount!))}`)
-    if (Number.isFinite(result.bestTimeSec)) bestBits.push(`FASTEST ${formatTime(result.bestTimeSec!)}`)
+    if (Number.isFinite(result.bestTimeSec)) bestBits.push(`${result.isNewBestTime ? 'NEW FASTEST' : 'FASTEST'} ${formatTime(result.bestTimeSec!)}`)
     this.best.textContent = bestBits.join(' · ')
     this.best.classList.toggle('new-best', result.isNewBest)
     for (const section of this.root.querySelectorAll<HTMLElement>('.result-grid, .report-records, .report-share')) {

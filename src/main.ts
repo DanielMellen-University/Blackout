@@ -1572,6 +1572,7 @@ export async function boot(): Promise<void> {
       world.mission.scoringFocus,
       world.worldSeed,
       activeSortie.course.contractCatalog === true,
+      world.mission.timeAllowanceSec,
     )
     ghost.reset(activeCourseId)
     ghost.setVisible(playing && ghostVisible && activeSortie.course.profile !== 'free')
@@ -3050,6 +3051,7 @@ export async function boot(): Promise<void> {
         world.mission.scoringFocus,
         world.worldSeed,
         activeSortie.course.contractCatalog === true,
+      world.mission.timeAllowanceSec,
       )
   syncInputContext()
   // The procedural F-35 is the immediate playable path. If an optional GLB

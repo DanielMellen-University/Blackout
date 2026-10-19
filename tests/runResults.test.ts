@@ -162,6 +162,20 @@ const result = {
 }
 
 describe('run results focus flow', () => {
+  it.each(['bronze', 'silver', 'gold'] as const)('shows the %s medal and a time PB even when the score PB is unchanged', medal => {
+    vi.stubGlobal('HTMLElement', FakeElement)
+    const fixture = resultsFixture()
+    vi.stubGlobal('document', fixture.document)
+    const results = new RunResults(fixture.document as unknown as Document)
+    results.show({ ...result, medal, isNewBest: false, isNewBestTime: true, bestTimeSec: 41 })
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe(`${medal.toUpperCase()} MEDAL`)
+    expect(elementsFor(fixture.document, 'result-best')?.textContent).toContain('NEW FASTEST 0:41.00')
+    results.show({ ...result, endedByCrash: true })
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('CRASH')
+    results.dispose()
+    vi.unstubAllGlobals()
+  })
+
   it('shows calm touchdown coaching and clears it across crash and legacy results', () => {
     vi.stubGlobal('HTMLElement', FakeElement)
     const fixture = resultsFixture()
@@ -250,8 +264,8 @@ describe('run results focus flow', () => {
     expect(elementsFor(fixture.document, 'result-score-detail')?.textContent).toBe(
       'GATE +20,000 · TIME +70,000 · LAND +10,000 · STYLE BALANCED · BUTTER CIRCUIT · PB +100,000',
     )
-    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('COMPLETE')
-    expect(elementsFor(fixture.document, 'result-title')?.textContent).not.toContain('GOLD')
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toBe('GOLD MEDAL')
+    expect(elementsFor(fixture.document, 'result-title')?.textContent).toContain('GOLD')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).not.toContain('GOLD RUN')
     expect(elementsFor(fixture.document, 'result-gates')?.textContent).toBe('0')
     expect(elementsFor(fixture.document, 'result-summary')?.textContent).toBe(

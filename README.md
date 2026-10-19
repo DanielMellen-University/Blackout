@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.942**. Previous roadmap chunk: **10.941**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.943**. Previous roadmap chunk: **10.942**.
+
+Recent changes from **10.943**. Show earned mission medals, distinguish complete-circuit time records from gate splits, and give generated routes a length-based time-score allowance. Verify nine real-physics Training and Daily completions, bronze/silver/gold outcomes, faster retries, time goals and populated six-family record retention. Preserve landscape revision 29, route revision 30, physics, collision, water, budgets and paused exclusions. See docs/reviews/missions-10.943/README.md.
 
 Recent changes from **10.942**. City/roads/infrastructure redesign CLOSED. All four criteria are DONE: (1) village coverage, 10.939, fifteen connected and one deliberate skip; (2) road integrity, 10.940, 92 roads and 22,245 segments; (3) long-flight stability, 10.941, three verified Free flights over ten minutes; (4) visual pass, 10.942, 42 inspected chase/cockpit stills across seeds 42, 73, 808 and 1337. No production repair is required; known minor issues and evidence are recorded in docs/reviews/infrastructure-10.942/README.md. Preserve landscape revision 29, route revision 30, physics, collision, water, all budgets and paused exclusions. Heap target remains about 200 MB.
 
