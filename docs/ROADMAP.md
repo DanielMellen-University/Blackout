@@ -1,6 +1,8 @@
 # Roadmap
 
-Chunk **10.934** is current. Previous ship: **10.933**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.935** is current. Previous ship: **10.934**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+
+Chunk 10.935. Close coarse-LOD settlement foundation gaps by extending existing lower wall bodies into resident terrain. Keep roofs, placement plans and collision fixed; share the existing drape work allowance without adding draws or instances. Review matched low-altitude chase/cockpit views on three seeds and the historical seed-1337 coarse pose. Preserve route revision 30, landscape revision 29, physics, water, all resource caps and paused exclusions. See docs/reviews/foundations-10.935/README.md for evidence and limits.
 
 Chunk 10.934. Verify live Catalog and Ops behavior in the browser: a long-open UTC daily rollover, paused course selection, resume, same-mission retry, next-selection launch, historical Daily/Weekly/Monthly replay release and custom-seed release. Retain immutable active mission identity and exact protected record families. No production behavior change is needed in these exercised paths. See docs/reviews/catalog-10.934/README.md for browser states, screenshots, focused checks and remaining limits. Preserve route revision 30, physics, all budgets and paused exclusions.
 

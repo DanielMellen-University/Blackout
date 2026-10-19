@@ -1,6 +1,6 @@
 import {
-  BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, Float32BufferAttribute, Group,
-  InstancedMesh, MathUtils, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
+  BoxGeometry, BufferGeometry, Color, ConeGeometry, CylinderGeometry, DynamicDrawUsage, Float32BufferAttribute, Group,
+  InstancedMesh, MathUtils, Matrix4, Mesh, MeshStandardMaterial, Object3D, Scene, SphereGeometry,
   MeshBasicMaterial, type Camera,
 } from 'three'
 import { FOG_FAR } from './TerrainSystem'
@@ -1195,7 +1195,7 @@ export class SettlementSystem {
     fixtures.add(new Mesh(colored, this.groundMaterial))
     try { await warmupMaterials(renderer, fixtures, camera, scene) }
     finally {
-      fixtures.traverse(object => { if (object instanceof InstancedMesh) object.dispose() })
+      fixtures.traverse(object => { if (object instanceof InstancedMesh) { this.removeFoundation(object); object.dispose() } })
       colored.dispose()
     }
   }
@@ -1728,7 +1728,7 @@ export class SettlementSystem {
       const distanceSquared = dx * dx + dz * dz
       const loadRadius = LOAD_RADIUS + plan.radius
       const detailRadius = this.detailRadius + plan.radius
-      root.visible = distanceSquared < loadRadius * loadRadius && this.hasTerrainSupport(plan)
+      root.visible = distanceSquared < loadRadius * loadRadius && !root.userData.foundationsPending && this.hasTerrainSupport(plan)
       detail.visible = distanceSquared < detailRadius * detailRadius
     }
     for (const connection of this.connections.values()) {
@@ -2234,6 +2234,9 @@ export class SettlementSystem {
         // Roof silhouettes stay visible at distance too; only ground detail is culled.
         root.add(mesh)
       }
+      this.bindFoundations(root, body, regular, plan)
+      this.bindFoundations(root, towerBodies, towers, plan)
+      this.bindFoundations(root, stepBodies, stepped, plan, 2, .68)
       if (plan.anchor && landmarkRoof) {
         // One modest rooftop antenna identifies a protected landmark. Never
         // suspend a hundreds-of-metres cone above an unrelated origin point.
@@ -2400,8 +2403,63 @@ export class SettlementSystem {
     }
   }
 
-  /** Loaded transforms stay fixed; draping changes vertex attributes only.
-   * Keep world-matrix invalidation enabled so explicit parent moves still work. */
+  /** Extend only existing lower wall bodies into the streamed terrain. Roofs,
+   * plans and collision stay fixed. Perimeter samples share the ordinary
+   * drape vertex/time allowance; no foundation draws or instances are added. */
+  private bindFoundations(root: Group, mesh: InstancedMesh, buildings: SettlementBuilding[],
+    plan: SettlementPlan, stride = 1, heightScale = 1): void {
+    if (!this.draper || !buildings.length) return
+    const edgeSteps = 8, samples = edgeSteps * 4 + 1
+    const geometry = new BufferGeometry(), positions: number[] = []
+    for (const b of buildings) {
+      const c = Math.cos(b.yaw), s = Math.sin(b.yaw)
+      for (let iz = -4; iz <= 4; iz++) for (let ix = -4; ix <= 4; ix++) {
+        if (Math.abs(ix) !== 4 && Math.abs(iz) !== 4 && (ix || iz)) continue
+        const x = ix * b.width / edgeSteps, z = iz * b.depth / edgeSteps
+        positions.push(b.x - plan.x + c * x + s * z, NaN, b.z - plan.z - s * x + c * z)
+      }
+    }
+    geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    geometry.setAttribute('groundOffset', new Float32BufferAttribute(new Float32Array(positions.length / 3), 1))
+    mesh.userData.foundationSurface = geometry
+    root.userData.foundationsPending = (root.userData.foundationsPending ?? 0) + 1
+    let ready = false
+    const matrix = new Matrix4()
+    mesh.instanceMatrix.setUsage(DynamicDrawUsage)
+    this.draper.add(geometry, plan.x, plan.y, plan.z, () => {
+      const p = geometry.getAttribute('position')
+      let complete = true, changed = false
+      buildings.forEach((b, i) => {
+        let floor = b.y
+        for (let j = 0; j < samples; j++) {
+          const h = p.getY(i * samples + j) + plan.y
+          if (!Number.isFinite(h)) { complete = false; return }
+          floor = Math.min(floor, h - .3)
+        }
+        mesh.getMatrixAt(i * stride, matrix)
+        // Retain the deepest published floor through LOD swaps. A finer tile
+        // can bury the extra wall, but cannot expose a stale raised foundation.
+        const previousFloor = matrix.elements[13]! + plan.y - matrix.elements[5]! * .5
+        if (floor >= previousFloor - 1e-5) return
+        const top = b.y + b.height * heightScale
+        const height = Math.fround(top - floor), centre = Math.fround((top + floor) * .5 - plan.y)
+        if (matrix.elements[5] !== height || matrix.elements[13] !== centre) {
+          matrix.elements[5] = height; matrix.elements[13] = centre
+          mesh.setMatrixAt(i * stride, matrix); changed = true
+        }
+      })
+      if (changed) { mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere() }
+      if (complete && !ready) { ready = true; root.userData.foundationsPending-- }
+    })
+  }
+
+  private removeFoundation(mesh: InstancedMesh): void {
+    const surface = mesh.userData.foundationSurface as BufferGeometry | undefined
+    if (surface) { this.draper?.remove(surface); surface.dispose(); delete mesh.userData.foundationSurface }
+  }
+
+  /** Scene transforms stay fixed; draping updates surface attributes and lower
+   * wall instance matrices. Explicit parent moves still invalidate world matrices. */
 
   private attachStatic(root: Group): void {
     root.traverse(object => { object.updateMatrix(); object.matrixAutoUpdate = false })
@@ -2412,7 +2470,7 @@ export class SettlementSystem {
   private disposeAssemblyRoot(root: Group): void {
     root.removeFromParent()
     root.traverse(object => {
-      if (object instanceof InstancedMesh) object.dispose()
+      if (object instanceof InstancedMesh) { this.removeFoundation(object); object.dispose() }
       if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
         this.draper?.remove(object.geometry); object.geometry.dispose()
       }
@@ -2694,7 +2752,7 @@ export class SettlementSystem {
     if (index >= 0) this.roadCollisionPlans.splice(index, 1)
     road.root.removeFromParent()
     road.root.traverse(object => {
-      if (object instanceof InstancedMesh) object.dispose()
+      if (object instanceof InstancedMesh) { this.removeFoundation(object); object.dispose() }
       else if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
         this.draper?.remove(object.geometry); object.geometry.dispose()
       }
@@ -2708,7 +2766,7 @@ export class SettlementSystem {
     }
     settlement.root.removeFromParent()
     settlement.root.traverse(object => {
-      if (object instanceof InstancedMesh) object.dispose()
+      if (object instanceof InstancedMesh) { this.removeFoundation(object); object.dispose() }
       else if (object instanceof Mesh && !this.isSharedGeometry(object.geometry)) {
         this.draper?.remove(object.geometry); object.geometry.dispose()
       }

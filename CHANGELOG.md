@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **10.935** Close coarse-LOD settlement foundation gaps by extending existing lower wall bodies into resident terrain. Keep roofs, placement plans and collision fixed; share the existing drape work allowance without adding draws or instances. Review matched low-altitude chase/cockpit views on three seeds and the historical seed-1337 coarse pose. Preserve route revision 30, landscape revision 29, physics, water, all resource caps and paused exclusions. See docs/reviews/foundations-10.935/README.md for evidence and limits.
+
 - **10.934** Verify live Catalog and Ops behavior in the browser: a long-open UTC daily rollover, paused course selection, resume, same-mission retry, next-selection launch, historical Daily/Weekly/Monthly replay release and custom-seed release. Retain immutable active mission identity and exact protected record families. No production behavior change is needed in these exercised paths. See docs/reviews/catalog-10.934/README.md for browser states, screenshots, focused checks and remaining limits. Preserve route revision 30, physics, all budgets and paused exclusions.
 
 - **10.933** Fix first-gate inflation by ramping departure clearance to the full 120 m gate corridor over at most 800 m, with the same fixed probes and a small departure reserve. Verify Training Orbit from launch through takeoff, five real-physics gate crossings, return, final approach and landing without opening settings. Keep gate-to-gate clearance, flight physics, water, collision and budgets unchanged. Route revision 30 skips incompatible ghosts while preserving saved records. See docs/reviews/training-10.933/README.md for controls-only evidence and manual-handling limits. Paused systems remain excluded.

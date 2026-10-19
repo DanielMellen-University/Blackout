@@ -2,6 +2,7 @@ import { Group, InstancedMesh, Mesh, MeshStandardMaterial, Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import type { SettlementPlan } from '../src/world/SettlementPlan'
 import { hitsSettlement, SettlementSystem, settlementStreetLightPoints, settlementWaterfrontPoints } from '../src/world/SettlementSystem'
+import { invalidateGroundSamplerCaches } from '../src/world/ground'
 import { WORKER_STALL_SECONDS } from '../src/core/WorkerWatchdog'
 
 vi.mock('../src/world/SettlementPlan', () => ({
@@ -549,7 +550,8 @@ it('waits for terrain across the settlement footprint while retaining collision 
     expect(loaded.root.visible).toBe(false)
     expect(system.count).toBeGreaterThanOrEqual(1)
     expect(system.hitObstacle(p.buildings[0]!.x, p.buildings[0]!.y + 2, p.buildings[0]!.z)).toBe(true)
-    ready = true; system.update(p.x, p.z)
+    ready = true; invalidateGroundSamplerCaches()
+    for (let i = 0; i < 50 && !loaded.root.visible; i++) system.update(p.x, p.z)
     expect(loaded.root.visible).toBe(true)
     // A covered LOD change may change height, but must not hide a ready root.
     height.mockImplementation(() => 99); system.update(p.x, p.z)

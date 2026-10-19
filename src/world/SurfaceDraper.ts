@@ -4,7 +4,7 @@ import { computeSurfaceNormals } from './SurfaceNormals'
 export const MAX_DRAPE_VERTICES_PER_FRAME = 1024
 const DRAPE_BUDGET_MS = .8
 type Surface = { geometry: BufferGeometry; x: number; y: number; z: number;
-  revision: number; cursor: number; targetRevision: number; changed: boolean; staged: Float32Array; owners: Float64Array | null; values: Float32Array | null; offsets: Float32Array | null }
+  revision: number; cursor: number; targetRevision: number; changed: boolean; staged: Float32Array; owners: Float64Array | null; values: Float32Array | null; offsets: Float32Array | null; publish?: () => void }
 
 /** Refit only explicitly marked ground vertices to the same streamed surface
  * used by aircraft contact. Decks/fills remain engineered structures. Work is
@@ -20,7 +20,7 @@ export class SurfaceDraper {
     this.height = height; this.revision = revision; this.heightRevision = heightRevision
   }
 
-  add(geometry: BufferGeometry, x: number, y: number, z: number): void {
+  add(geometry: BufferGeometry, x: number, y: number, z: number, publish?: () => void): void {
     const positions = geometry.getAttribute('position')
     if (!(positions instanceof BufferAttribute) || !geometry.getAttribute('groundOffset')) return
     positions.setUsage(DynamicDrawUsage)
@@ -31,7 +31,7 @@ export class SurfaceDraper {
     this.surfaces.push({ geometry, x, y, z, revision: -1, cursor: 0, targetRevision: -1, changed: false,
       staged, owners: this.heightRevision ? new Float64Array(positions.count).fill(-1) : null,
       values: positions.array instanceof Float32Array && !positions.normalized && positions.itemSize === 3 ? positions.array : null,
-      offsets: offsets instanceof BufferAttribute && offsets.array instanceof Float32Array && !offsets.normalized && offsets.itemSize === 1 ? offsets.array : null })
+      publish, offsets: offsets instanceof BufferAttribute && offsets.array instanceof Float32Array && !offsets.normalized && offsets.itemSize === 1 ? offsets.array : null })
   }
 
   remove(geometry: BufferGeometry): void {
@@ -84,8 +84,11 @@ export class SurfaceDraper {
           if (surface.values) {
             for (let i = 0; i < positions.count; i++) surface.values[i * 3 + 1] = surface.staged[i]!
           } else for (let i = 0; i < positions.count; i++) positions.setY(i, surface.staged[i]!)
-          positions.needsUpdate = true
-          computeSurfaceNormals(surface.geometry); surface.geometry.computeBoundingSphere()
+          if (surface.publish) surface.publish()
+          else {
+            positions.needsUpdate = true
+            computeSurfaceNormals(surface.geometry); surface.geometry.computeBoundingSphere()
+          }
         }
         surface.revision = surface.targetRevision; surface.cursor = 0
         this.next = (this.next + 1) % this.surfaces.length; visited++
