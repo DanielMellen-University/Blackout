@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.947**. Previous roadmap chunk: **10.946**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.948**. Previous roadmap chunk: **10.947**.
+
+Recent changes from **10.948**. Record six isolated, unprofiled 120-second city and northeast flights on the shipped 10.947 runtime. Pooled means are 39.01 and 38.33 FPS, p95 is 33.4 ms on both routes, and no flight interval exceeds 100 ms. Main-thread JS heap peaks range from 187.3 to 208.9 MB; one run exceeds the approximate 200 MB reference. Make no performance changes or improvement claim. See docs/reviews/performance-10.948/README.md for all runs and limits.
 
 Recent changes from **10.947**. Fix focused debrief activation, restore controller retry and mission selection with release gating, and extinguish fuel-empty exhaust. Verify crash recovery, go-around, engine-out landing and keyboard/controller rollout without changing flight physics or collision. See docs/reviews/recovery-10.948/README.md for evidence and limits.
 
