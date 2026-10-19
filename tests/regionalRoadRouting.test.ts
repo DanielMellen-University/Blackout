@@ -67,9 +67,19 @@ describe('terrain-aware regional routing', () => {
     expect(invalid).not.toHaveBeenCalled()
   })
 
-  it('bounds local refinement and leaves the original profile untouched', () => {
+  it('rejects too many local patches before probing and leaves the original profile untouched', () => {
     const sample = (x: number) => ({ height: 120 + Math.sin(x / 150) * 100, waterLevel: 0 })
     const road = groundRoad([{ x: 0, z: 0 }, { x: 12_000, z: 0 }], 10, sample)!
+    const before = JSON.stringify(road), probes = vi.fn(sample)
+    expect(refineRoadRoute(road, probes)).toBeNull()
+    expect(probes).not.toHaveBeenCalled()
+    expect(probes.mock.calls.length).toBeLessThanOrEqual(MAX_ROUTE_REFINEMENT_PROBES)
+    expect(JSON.stringify(road)).toBe(before)
+  })
+
+  it('bounds the probes of an eligible local ridge repair without mutating its source', () => {
+    const sample = (x: number, z: number) => ({ height: 120 + Math.max(0, 120 - Math.abs(x - 1500) * .3 - Math.abs(z) * .5), waterLevel: 0 })
+    const road = groundRoad([{ x: 0, z: 0 }, { x: 3000, z: 0 }], 10, sample)!
     const before = JSON.stringify(road), probes = vi.fn(sample)
     refineRoadRoute(road, probes)
     expect(probes.mock.calls.length).toBeGreaterThan(0)

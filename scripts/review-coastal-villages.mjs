@@ -7,8 +7,9 @@ const fixed=JSON.parse(await readFile(process.env.COAST_VIEW_FIXTURES || process
 await mkdir(directory,{recursive:true});const results=[],errors=[]
 const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface']})
 try{
- for(const seed of survey.seeds){
-  const target=fixed.sites.find(s=>s.seed===seed&&!s.links.length)||fixed.sites.find(s=>s.seed===seed)
+ const targets=process.env.COAST_VIEW_SITES ? process.env.COAST_VIEW_SITES.split(';').map(key=>{const [seed,id]=key.split('/');const site=fixed.sites.find(s=>s.seed===Number(seed)&&s.id===id);if(!site)throw Error('Missing coastal fixture '+key);return site}) : survey.seeds.map(seed=>fixed.sites.find(s=>s.seed===seed&&!s.links.length)||fixed.sites.find(s=>s.seed===seed))
+ for(const target of targets){
+  const seed=target.seed
   const site=survey.sites.find(s=>s.seed===seed&&s.id===target.id),[cx,cz]=site.id.split(',').map(Number)
   const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:1,permissions:['local-network-access']});page.setDefaultTimeout(180000)
   page.on('pageerror',e=>errors.push(String(e)))
@@ -42,7 +43,7 @@ window.__coast = {
   const views=[]
   for(const mode of ['chase','cockpit']){
    const road=await page.evaluate(({id,mode,key})=>window.__coast.pose(id,mode,key),{id:site.id,mode,key:site.links[0]||null});await page.waitForTimeout(7000)
-   const filename=`${label}-${seed}-${mode}.png`;await page.locator('nav').evaluate(e=>e.style.visibility='hidden');await page.screenshot({path:`${directory}/${filename}`});await page.locator('nav').evaluate(e=>e.style.visibility='')
+   const filename=`${label}-${seed}-${target.id.replaceAll(',','_')}-${mode}.png`;await page.locator('nav').evaluate(e=>e.style.visibility='hidden');await page.screenshot({path:`${directory}/${filename}`});await page.locator('nav').evaluate(e=>e.style.visibility='')
    const state=await page.evaluate(()=>window.__coast.state());if(state.seed!==seed||state.ratio!==1||state.camera!==mode||(site.links.length&&!site.links.includes(state.road)))throw Error('Wrong review pose')
    views.push({filename,state,road})
   }

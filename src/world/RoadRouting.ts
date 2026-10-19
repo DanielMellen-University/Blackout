@@ -87,16 +87,16 @@ export function coastalRoadRoute(a: Position, b: Position, sample: RouteSampler,
  * it independent of terrain render distance. Store sampled values immediately:
  * the caller may reuse one mutable climate record for every probe. */
 export function terrainRoadRoute(a: Position, b: Position, sample: RouteSampler, guideBend = 0, fine = false,
-  allows?: RouteClearance): Position[] | null {
+  allows?: RouteClearance, options: { inland?: boolean; step?: number } = {}): Position[] | null {
   const dx = b.x - a.x, dz = b.z - a.z, distance = Math.hypot(dx, dz)
   if (!Number.isFinite(distance) || distance < 500 || !Number.isFinite(guideBend)) return null
   const nx = -dz / distance, nz = dx / distance
-  const stations = Math.min(MAX_REGIONAL_ROUTE_STATIONS, Math.max(12, Math.ceil(distance / (fine ? 120 : 700))))
+  const stations = Math.min(MAX_REGIONAL_ROUTE_STATIONS, Math.max(12, Math.ceil(distance / (fine ? options.step ?? 120 : 700))))
   const lanes = REGIONAL_ROUTE_LANES, center = (lanes - 1) / 2, size = (stations + 1) * lanes
   const x = new Float64Array(size), z = new Float64Array(size), height = new Float64Array(size)
   const penalties = new Float64Array(size), cost = new Float64Array(size).fill(Infinity)
   const previous = new Int16Array(size).fill(-1)
-  const span = Math.min(fine ? 600 : 6500, distance * (fine ? .35 : .16)), baseline = sample(a.x, a.z).height
+  const span = Math.min(fine ? 600 : options.inland ? 20000 : 6500, distance * (fine ? .35 : options.inland ? .8 : .16)), baseline = sample(a.x, a.z).height
   let probes = 1
   const penalty = (ground: Ground): number => {
     const wet = ground.height <= (ground.waterLevel ?? 0) + 1
@@ -167,20 +167,18 @@ export function roadGradeValid(road: SettlementRoad): boolean {
 /** Coarse routes can miss a small ridge or eroded river bank. Refine only
  * clustered bad sections found by the complete surface profile, not the whole
  * regional corridor. At most four local searches and 5,000 further probes. */
-export function refineRoadRoute(road: SettlementRoad, sample: RouteSampler, allows?: RouteClearance): Position[] | null {
+export function refineRoadRoute(road: SettlementRoad, sample: RouteSampler, allows?: RouteClearance, stationStep = 120): Position[] | null {
   const points = road.points
   const bad = (i: number): boolean => {
     const a = points[i - 1]!, b = points[i]!
     return Math.abs(b.y - a.y) > Math.hypot(b.x - a.x, b.z - a.z) * MAX_REGIONAL_ROAD_GRADE
   }
-  let probes = 0, patches = 0, copied = 0
-  const invalid = { height: Number.NaN }
-  const boundedSample: RouteSampler = (x, z) => probes >= MAX_ROUTE_REFINEMENT_PROBES
-    ? invalid : (probes++, sample(x, z))
-  const route: Position[] = []
+  // Plan all patches before spending probes on a route that cannot fit.
+  const patches: { start: number; end: number }[] = []
+  let copied = 0, stationCount = 0
   for (let i = 1; i < points.length; i++) {
     if (!bad(i)) continue
-    if (++patches > MAX_ROUTE_REFINEMENT_PATCHES) return null
+    if (patches.length >= MAX_ROUTE_REFINEMENT_PATCHES) return null
     const start = Math.max(copied, i - 20)
     let lastBad = i
     for (let j = i + 1; j < points.length && j < i + 80; j++) {
@@ -188,12 +186,25 @@ export function refineRoadRoute(road: SettlementRoad, sample: RouteSampler, allo
       if (bad(j)) lastBad = j
     }
     const end = Math.min(points.length - 1, lastBad + 20)
-    const local = terrainRoadRoute(points[start]!, points[end]!, boundedSample, 0, true, allows)
+    patches.push({ start, end }); copied = end + 1; i = end
+    const length = Math.hypot(points[end]!.x - points[start]!.x, points[end]!.z - points[start]!.z)
+    stationCount += Math.min(MAX_REGIONAL_ROUTE_STATIONS, Math.max(12, Math.ceil(length / stationStep)))
+  }
+  // Finer coastal patches reserve 30 percent for the original detour.
+  if (stationStep < 120 && stationCount * 44 > MAX_ROUTE_REFINEMENT_PROBES * .7) return null
+  let probes = 0
+  const invalid = { height: Number.NaN }
+  const boundedSample: RouteSampler = (x, z) => probes >= MAX_ROUTE_REFINEMENT_PROBES
+    ? invalid : (probes++, sample(x, z))
+  const route: Position[] = []
+  copied = 0
+  for (const { start, end } of patches) {
+    const local = terrainRoadRoute(points[start]!, points[end]!, boundedSample, 0, true, allows, { step: stationStep })
     if (!local) return null
     for (; copied < start; copied++) route.push(points[copied]!)
-    route.push(...roundRoadRoute(local)); copied = end + 1; i = end
+    route.push(...roundRoadRoute(local)); copied = end + 1
   }
-  if (!patches) return null
+  if (!patches.length) return null
   for (; copied < points.length; copied++) route.push(points[copied]!)
   return route
 }

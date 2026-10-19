@@ -7,6 +7,7 @@ const output=process.argv[2] || 'docs/reviews/roads-10.927/before.json'
 const seeds=(process.env.COAST_SEEDS || '73,42,808,1337').split(',').map(Number)
 const perSeed=Number(process.env.COAST_SITES || 2), rows=[], rejected=[]
 const loader=await createServer({cacheDir:'/tmp/blackout-927-coast-survey',server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',plugins:[{name:'coast-rejections',enforce:'pre',transform(code,id){
+ if(process.env.COAST_SOURCE_DIR&&['RegionalRoads.ts','RoadRouting.ts'].some(n=>id.endsWith('/'+n)))code=readFileSync(`${process.env.COAST_SOURCE_DIR}/${id.split('/').at(-1)}`,'utf8')
  if(!['RegionalRoads.ts','RoadSurface.ts','RoadRouting.ts'].some(name=>id.endsWith('/'+name)))return
  const file=id.split('/').at(-1)
  return code.split('\n').map((line,i)=>line.replace(/return null\b/g,`return (globalThis as any).__coastReject(${JSON.stringify(file)},${i+1})`)).join('\n')
@@ -49,6 +50,6 @@ try{
    rows.push({seed,id:p.id,x:p.x,y:p.y,z:p.z,coast:coastField(p.x,p.z),links:links.map(l=>l.key),attempts});console.log(seed,p.id,links.length?'connected':'cut off',attempts.map(a=>a.key+':'+a.accepted).join(' '))
   }
  }
- const sources=Object.fromEntries(['RegionalRoads','RoadRouting','RoadSurface','RoadClearance','SettlementPlan','terrainSample','noise'].map(n=>{const p=`src/world/${n}.ts`;return [p,createHash('sha256').update(readFileSync(p)).digest('hex')]}))
+ const sources=Object.fromEntries(['RegionalRoads','RoadRouting','RoadSurface','RoadClearance','SettlementPlan','terrainSample','noise'].map(n=>{const p=`src/world/${n}.ts`,source=process.env.COAST_SOURCE_DIR&&['RegionalRoads','RoadRouting'].includes(n)?`${process.env.COAST_SOURCE_DIR}/${n}.ts`:p;return [p,createHash('sha256').update(readFileSync(source)).digest('hex')]}))
  writeFileSync(output,JSON.stringify({sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sources,seeds,sites:rows},null,2)+'\n')
 }finally{delete globalThis.__coastReject;await loader.close()}

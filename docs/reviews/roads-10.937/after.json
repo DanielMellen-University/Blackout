@@ -1,0 +1,1365 @@
+{
+  "sourceCommit": "24530bec0ee456ab6dc19d209a8d003f514ceda7",
+  "sources": {
+    "src/world/RegionalRoads.ts": "d9f53d3eac40eaac6039e398a74392f4790a34272ed2a1c2ebf57e33560b66cb",
+    "src/world/RoadRouting.ts": "d9b0a95cb5b5bb956a6dd339082d31b6cb56a894b5cb553d24259e9be1bd3a09",
+    "src/world/RoadSurface.ts": "7b6d938411c8bcf9cdd956f4daf1f5a29bc0bb3c668de76b2b0e9135d9f996ef",
+    "src/world/RoadClearance.ts": "59be9141893743b373de3288651b9ce37bea0ce57bc72e3fc972a881a805820c",
+    "src/world/SettlementPlan.ts": "2b487a8c745a5c45ef0ae4d4a1cbb4eaf132c5d603d923e8ddd1bc46a70ccc5e",
+    "src/world/terrainSample.ts": "fd078d457ed4cfbb983b24a22a89acd4076e4454c300e9801e51f91fd5a04aca",
+    "src/world/noise.ts": "a4594edc9385dced3b1059a6b5585e980ec42772d94aa42fbc9d9ef092f967ed"
+  },
+  "seeds": [
+    73,
+    42,
+    808,
+    1337
+  ],
+  "sites": [
+    {
+      "seed": 73,
+      "id": "-5,-3",
+      "x": -113644.11213390242,
+      "y": 4.841669770500201,
+      "z": -55704.22178563972,
+      "coast": 0.0026898165391667783,
+      "links": [
+        "-5,-2|-5,-3"
+      ],
+      "attempts": [
+        {
+          "key": "-5,-2|-5,-3",
+          "from": "-5,-2",
+          "to": "-5,-3",
+          "attachments": {
+            "from": {
+              "x": -107500.423630353,
+              "y": 424.21006652441525,
+              "z": -41254.25507126778,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -113644.11213390242,
+              "y": 5.291669770500201,
+              "z": -55704.22178563972,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 614.2860355375682,
+            "to": 4.841669770500201
+          },
+          "accepted": true,
+          "ms": 195.88489000000118,
+          "failures": [
+            {
+              "file": "RoadRouting.ts",
+              "line": 152
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 152
+            }
+          ],
+          "validation": {
+            "points": 1001,
+            "supports": 3,
+            "maxWetSpan": 393.0786627329993,
+            "maxDrySpan": 23.26192230449617,
+            "maxHeight": 10.555343949070682,
+            "maxGrade": 0.1945060066992815,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "8fac42c234be780bb66d685478e0c1beee0a3ea39caea68690e6d3306df821de"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 73,
+      "id": "2,5",
+      "x": 57439.23884787936,
+      "y": 18.612029589081413,
+      "z": 126520.46041842102,
+      "coast": 0.010340016438378563,
+      "links": [
+        "2,5|2,6"
+      ],
+      "attempts": [
+        {
+          "key": "2,5|2,6",
+          "from": "2,5",
+          "to": "2,6",
+          "attachments": {
+            "from": {
+              "x": 57120.60804793511,
+              "y": 13.138696471068405,
+              "z": 126858.83603021131,
+              "structure": "ground"
+            },
+            "to": {
+              "x": 65257.6810409628,
+              "y": 867.8352285016485,
+              "z": 152206.57469164976,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 18.612029589081413,
+            "to": 732.9060638936622
+          },
+          "accepted": true,
+          "ms": 213.68193600000086,
+          "failures": [],
+          "validation": {
+            "points": 1365,
+            "supports": 0,
+            "maxWetSpan": 0,
+            "maxDrySpan": 0,
+            "maxHeight": 1.8016944171923228,
+            "maxGrade": 0.218405242860441,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "61784d457918ba387c1a752e8d8958c0f1424f226012aa03494fa00f528e3c2c"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 73,
+      "id": "-7,6",
+      "x": -150949.9911083305,
+      "y": 8.174907344774308,
+      "z": 151782.07510138905,
+      "coast": 0.004541615191541282,
+      "links": [
+        "-7,6|-8,5"
+      ],
+      "attempts": [
+        {
+          "key": "-7,6|-7,7",
+          "from": "-7,6",
+          "to": "-7,7",
+          "attachments": {
+            "from": {
+              "x": -150612.38753297593,
+              "y": 5.231486320182371,
+              "z": 151959.89317381152,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -152350.75329956732,
+              "y": 47.81032748720822,
+              "z": 173709.1985493406,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 8.174907344774308,
+            "to": 53.03694194908476
+          },
+          "accepted": false,
+          "ms": 507.7831559999977,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 312
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-7,6|-8,5",
+          "from": "-7,6",
+          "to": "-8,5",
+          "attachments": {
+            "from": {
+              "x": -151538.30056377218,
+              "y": 15.291608256580307,
+              "z": 151413.7119771196,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -179676.80442938211,
+              "y": 1203.8772770690418,
+              "z": 135846.24104272315,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 8.174907344774308,
+            "to": 1238.9944170064132
+          },
+          "accepted": true,
+          "ms": 151.25125000000116,
+          "failures": [],
+          "validation": {
+            "points": 1684,
+            "supports": 0,
+            "maxWetSpan": 0,
+            "maxDrySpan": 0,
+            "maxHeight": 4.242656157623287,
+            "maxGrade": 0.1905472080602568,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "855f5c9cb63b2daf98be4e686211861774104d4fcf6fdee73d3f3995491885e1"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 73,
+      "id": "-3,8",
+      "x": -57543.951582796086,
+      "y": 9.096327470808507,
+      "z": 199066.72573130508,
+      "coast": 0.005053515261560282,
+      "links": [],
+      "attempts": [
+        {
+          "key": "-3,8|-3,9",
+          "from": "-3,8",
+          "to": "-3,9",
+          "attachments": {
+            "from": {
+              "x": -57543.951582796086,
+              "y": 9.546327470808507,
+              "z": 199066.72573130508,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -56732.78906645076,
+              "y": 1010.208908993579,
+              "z": 229404.40905570562,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 9.096327470808507,
+            "to": 976.9239056975123
+          },
+          "accepted": false,
+          "ms": 963.9730070000005,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 91
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 318
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-3,6|-3,8",
+          "from": "-3,6",
+          "to": "-3,8",
+          "attachments": {
+            "from": {
+              "x": -58671.56386163317,
+              "y": 711.7209116221412,
+              "z": 157636.76514690972,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -56710.589883191846,
+              "y": 18.80628444932015,
+              "z": 198420.62909552886,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 710.5925492253156,
+            "to": 9.096327470808507
+          },
+          "accepted": false,
+          "ms": 683.8519210000013,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 91
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 181
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 91
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 91
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 318
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-2,10|-3,8",
+          "from": "-2,10",
+          "to": "-3,8",
+          "attachments": {
+            "from": {
+              "x": -41558.67006078069,
+              "y": 912.5824462776184,
+              "z": 252277.38291088503,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -57543.951582796086,
+              "y": 9.546327470808507,
+              "z": 199066.72573130508,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 910.8207646838356,
+            "to": 9.096327470808507
+          },
+          "accepted": false,
+          "ms": 1993.2059769999978,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 152
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 56
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 318
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 318
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        }
+      ]
+    },
+    {
+      "seed": 42,
+      "id": "4,-4",
+      "x": 112474.07162778713,
+      "y": 12.006896732835404,
+      "z": -85306.69631620363,
+      "coast": 0.006670498184908558,
+      "links": [
+        "4,-3|4,-4"
+      ],
+      "attempts": [
+        {
+          "key": "3,-4|4,-4",
+          "from": "3,-4",
+          "to": "4,-4",
+          "attachments": {
+            "from": {
+              "x": 85928.79552671907,
+              "y": 2097.9443822026283,
+              "z": -87765.26990476597,
+              "structure": "ground"
+            },
+            "to": {
+              "x": 111883.57405880107,
+              "y": 4.404086693617409,
+              "z": -84900.51322680915,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 2315.227103028736,
+            "to": 12.006896732835404
+          },
+          "accepted": false,
+          "ms": 471.71209799999997,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 98
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 312
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "4,-4|5,-5",
+          "from": "4,-4",
+          "to": "5,-5",
+          "attachments": {
+            "from": {
+              "x": 112907.59258100156,
+              "y": 20.702868273867185,
+              "z": -85567.48967976094,
+              "structure": "ground"
+            },
+            "to": {
+              "x": 126728.71120256341,
+              "y": 705.1793362925162,
+              "z": -109884.31392328152,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 12.006896732835404,
+            "to": 860.02630921544
+          },
+          "accepted": false,
+          "ms": 578.2536330000003,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 98
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 91
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 312
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "4,-3|4,-4",
+          "from": "4,-3",
+          "to": "4,-4",
+          "attachments": {
+            "from": {
+              "x": 106913.78853195976,
+              "y": 112.3652741514514,
+              "z": -56585.691221018395,
+              "structure": "ground"
+            },
+            "to": {
+              "x": 111867.77548074344,
+              "y": 59.6632819843767,
+              "z": -84243.49363346373,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 101.56191024683659,
+            "to": 12.006896732835404
+          },
+          "accepted": true,
+          "ms": 273.82658100000117,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 88
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 194
+            }
+          ],
+          "validation": {
+            "points": 2379,
+            "supports": 9,
+            "maxWetSpan": 0,
+            "maxDrySpan": 628.9505116077436,
+            "maxHeight": 27.81703442145198,
+            "maxGrade": 0.23520000000000224,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "76b252d16936d138ce3e2542e7635e9641e0f18052b92a4b01836565d69bc523"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 42,
+      "id": "-6,-4",
+      "x": -134788.7542113532,
+      "y": 22.80140276291761,
+      "z": -84403.6028348647,
+      "coast": 0.012667445979398673,
+      "links": [
+        "-6,-4|-7,-5"
+      ],
+      "attempts": [
+        {
+          "key": "-6,-4|-7,-5",
+          "from": "-6,-4",
+          "to": "-7,-5",
+          "attachments": {
+            "from": {
+              "x": -135895.78979840173,
+              "y": 60.44335933790152,
+              "z": -84209.50695976129,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -152227.6200142977,
+              "y": 6.275194760908392,
+              "z": -105548.88633126685,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 22.80140276291761,
+            "to": 5.658904090495365
+          },
+          "accepted": true,
+          "ms": 203.34792800000287,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 88
+            }
+          ],
+          "validation": {
+            "points": 1564,
+            "supports": 6,
+            "maxWetSpan": 0,
+            "maxDrySpan": 1006.4713018797827,
+            "maxHeight": 27.874524532600617,
+            "maxGrade": 0.23520000000000565,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "d8cb2163d448cca08fbebf020a5e5d6f484b4ffacdc14f84a9bc9abe024afd6a"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 42,
+      "id": "6,2",
+      "x": 151050.90024277437,
+      "y": 21.08243954956427,
+      "z": 61479.40153939817,
+      "coast": 0.011712466416424594,
+      "links": [
+        "5,2|6,2"
+      ],
+      "attempts": [
+        {
+          "key": "5,2|6,2",
+          "from": "5,2",
+          "to": "6,2",
+          "attachments": {
+            "from": {
+              "x": 132625.67513997524,
+              "y": 533.742885423309,
+              "z": 63197.750162975775,
+              "structure": "ground"
+            },
+            "to": {
+              "x": 150088.9196737495,
+              "y": 5.375322852358738,
+              "z": 60971.280281981126,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 500.7342430664691,
+            "to": 21.08243954956427
+          },
+          "accepted": true,
+          "ms": 48.72217300000193,
+          "failures": [],
+          "validation": {
+            "points": 866,
+            "supports": 0,
+            "maxWetSpan": 0,
+            "maxDrySpan": 0,
+            "maxHeight": 2.9605501147030964,
+            "maxGrade": 0.13547740442888284,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "2e2a7794de23c3170a225e75aedb15498d32ae6d1c77775f9d6f5cb637ddfb46"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 42,
+      "id": "-7,-5",
+      "x": -152647.01404912936,
+      "y": 5.658904090495365,
+      "z": -105908.87292769563,
+      "coast": 0.003143835605830758,
+      "links": [
+        "-6,-4|-7,-5"
+      ],
+      "attempts": [
+        {
+          "key": "-6,-4|-7,-5",
+          "from": "-6,-4",
+          "to": "-7,-5",
+          "attachments": {
+            "from": {
+              "x": -135895.78979840173,
+              "y": 60.44335933790152,
+              "z": -84209.50695976129,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -152227.6200142977,
+              "y": 6.275194760908392,
+              "z": -105548.88633126685,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 22.80140276291761,
+            "to": 5.658904090495365
+          },
+          "accepted": true,
+          "ms": 193.1082099999985,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 88
+            }
+          ],
+          "validation": {
+            "points": 1564,
+            "supports": 6,
+            "maxWetSpan": 0,
+            "maxDrySpan": 1006.4713018797827,
+            "maxHeight": 27.874524532600617,
+            "maxGrade": 0.23520000000000565,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "d8cb2163d448cca08fbebf020a5e5d6f484b4ffacdc14f84a9bc9abe024afd6a"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 808,
+      "id": "-3,3",
+      "x": -57919.523668105874,
+      "y": 24.622899913417218,
+      "z": 89010.67253740398,
+      "coast": 0.013679388840787343,
+      "links": [
+        "-3,3|-3,4"
+      ],
+      "attempts": [
+        {
+          "key": "-3,3|-3,4",
+          "from": "-3,3",
+          "to": "-3,4",
+          "attachments": {
+            "from": {
+              "x": -58085.71489686153,
+              "y": 26.06643182976909,
+              "z": 89438.58189675535,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -55153.42742179123,
+              "y": 553.4883162248195,
+              "z": 101423.53883193756,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 24.622899913417218,
+            "to": 486.69472327072094
+          },
+          "accepted": true,
+          "ms": 45.40696599999501,
+          "failures": [],
+          "validation": {
+            "points": 592,
+            "supports": 0,
+            "maxWetSpan": 0,
+            "maxDrySpan": 0,
+            "maxHeight": 1.931205941390317,
+            "maxGrade": 0.1494016379120728,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "4a8efb2f8f8306d81cfd5866b6828dffe48ca6a59a215cc1f798291d4e543ac5"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 808,
+      "id": "-7,-3",
+      "x": -155644.08293840723,
+      "y": 18.7494615845589,
+      "z": -62725.45351274841,
+      "coast": 0.010416367546977168,
+      "links": [
+        "-7,-3|-8,-3"
+      ],
+      "attempts": [
+        {
+          "key": "-7,-3|-8,-3",
+          "from": "-7,-3",
+          "to": "-8,-3",
+          "attachments": {
+            "from": {
+              "x": -156550.67242203976,
+              "y": 27.153065075232877,
+              "z": -62214.737215926856,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -179242.78888899196,
+              "y": 875.957269633195,
+              "z": -60545.15880411161,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 18.7494615845589,
+            "to": 801.892836058687
+          },
+          "accepted": true,
+          "ms": 180.04794499999844,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 91
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 194
+            }
+          ],
+          "validation": {
+            "points": 1435,
+            "supports": 8,
+            "maxWetSpan": 0,
+            "maxDrySpan": 599.5800418584266,
+            "maxHeight": 33.97363080614366,
+            "maxGrade": 0.23520000000000219,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "c9b54e600dfffddc1eba5139c0e78d07df1b4edd5b24c3b3b31cd602a5da072e"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 808,
+      "id": "-4,-7",
+      "x": -84592.76241062145,
+      "y": 17.065786447441756,
+      "z": -154483.5511096136,
+      "coast": 0.009480992470800975,
+      "links": [
+        "-4,-6|-4,-7"
+      ],
+      "attempts": [
+        {
+          "key": "-4,-6|-4,-7",
+          "from": "-4,-6",
+          "to": "-4,-7",
+          "attachments": {
+            "from": {
+              "x": -79382.31814649331,
+              "y": 1539.501768767397,
+              "z": -136223.43664582833,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -84505.72193787798,
+              "y": 44.854358048298664,
+              "z": -154058.81981345845,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 1573.7309065345662,
+            "to": 17.065786447441756
+          },
+          "accepted": true,
+          "ms": 116.491489,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            }
+          ],
+          "validation": {
+            "points": 1365,
+            "supports": 2,
+            "maxWetSpan": 0,
+            "maxDrySpan": 350.02476833479784,
+            "maxHeight": 14.961423437099484,
+            "maxGrade": 0.23520000000000404,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "47d51110c5927d7890fe25ed7a5b2d9d9eb3701ddba9a33a2782f32cef017f16"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 808,
+      "id": "-8,-5",
+      "x": -182428.39288173857,
+      "y": 15.1881325321914,
+      "z": -112510.8644095282,
+      "coast": 0.008437851406773,
+      "links": [
+        "-10,-5|-8,-5"
+      ],
+      "attempts": [
+        {
+          "key": "-8,-5|-8,-6",
+          "from": "-8,-5",
+          "to": "-8,-6",
+          "attachments": {
+            "from": {
+              "x": -182108.59300432238,
+              "y": 13.551337787812617,
+              "z": -112782.69842089785,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -176929.08959159616,
+              "y": 187.94478741924038,
+              "z": -137192.7548945923,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 15.1881325321914,
+            "to": 188.6148033509748
+          },
+          "accepted": false,
+          "ms": 479.8221179999964,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 147
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 147
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 312
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-8,-5|-9,-4",
+          "from": "-8,-5",
+          "to": "-9,-4",
+          "attachments": {
+            "from": {
+              "x": -183620.10337933036,
+              "y": 10.2832094822707,
+              "z": -112349.63352925563,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -197961.06139265557,
+              "y": 850.4420074108682,
+              "z": -85720.9680797759,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 15.1881325321914,
+            "to": 746.8435467620961
+          },
+          "accepted": false,
+          "ms": 289.8181420000037,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 88
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 181
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 98
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 318
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-10,-5|-8,-5",
+          "from": "-10,-5",
+          "to": "-8,-5",
+          "attachments": {
+            "from": {
+              "x": -220950.7055125063,
+              "y": 156.8939751942945,
+              "z": -106349.36392980562,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -183620.10337933036,
+              "y": 10.2832094822707,
+              "z": -112349.63352925563,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 151.14078537308433,
+            "to": 15.1881325321914
+          },
+          "accepted": true,
+          "ms": 527.679538999997,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            }
+          ],
+          "validation": {
+            "points": 2033,
+            "supports": 0,
+            "maxWetSpan": 0,
+            "maxDrySpan": 0,
+            "maxHeight": 1.3436970109323738,
+            "maxGrade": 0.1881904628859993,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "ff270cc17faa21ec4b8a73d121b1463bc7159bbcf7983c22940a3d69311e85b0"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1337,
+      "id": "-2,-4",
+      "x": -30077.57518081303,
+      "y": 8.719739789550584,
+      "z": -78055.41988811421,
+      "coast": 0.004844299883083658,
+      "links": [
+        "-1,-5|-2,-4"
+      ],
+      "attempts": [
+        {
+          "key": "-2,-4|-2,-5",
+          "from": "-2,-4",
+          "to": "-2,-5",
+          "attachments": {
+            "from": {
+              "x": -30107.193157937214,
+              "y": 17.605971340527486,
+              "z": -78375.8587430313,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -36775.16494721308,
+              "y": 9.71986253808053,
+              "z": -105684.684058598,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 8.719739789550584,
+            "to": 26.362191457690344
+          },
+          "accepted": false,
+          "ms": 313.48061599999346,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 88
+            },
+            {
+              "file": "RoadRouting.ts",
+              "line": 181
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 160
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 98
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-1,-5|-2,-4",
+          "from": "-1,-5",
+          "to": "-2,-4",
+          "attachments": {
+            "from": {
+              "x": -13236.836992082122,
+              "y": 896.1759406071892,
+              "z": -104036.11357199655,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -30107.193157937214,
+              "y": 17.605971340527486,
+              "z": -78375.8587430313,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 911.2112085651925,
+            "to": 8.719739789550584
+          },
+          "accepted": true,
+          "ms": 89.62246600000071,
+          "failures": [],
+          "validation": {
+            "points": 1544,
+            "supports": 4,
+            "maxWetSpan": 482.9199432798308,
+            "maxDrySpan": 22.413601278074736,
+            "maxHeight": 9.710996146257099,
+            "maxGrade": 0.14316850871369521,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "5cf153db8e0076cdf4998a4149a37b7cad80ecc8dd4931cece55a0ead8c64aac"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1337,
+      "id": "-4,-6",
+      "x": -81310.58303410841,
+      "y": 13.00851880133498,
+      "z": -128115.58974247023,
+      "coast": 0.0072269548896305436,
+      "links": [
+        "-4,-6|-5,-6"
+      ],
+      "attempts": [
+        {
+          "key": "-4,-5|-4,-6",
+          "from": "-4,-5",
+          "to": "-4,-6",
+          "attachments": {
+            "from": {
+              "x": -87695.55241169845,
+              "y": 1423.1441516275174,
+              "z": -113552.43209981255,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -81485.22615444956,
+              "y": 130.3835393821331,
+              "z": -127205.33540728467,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 1341.0764389961246,
+            "to": 13.00851880133498
+          },
+          "accepted": false,
+          "ms": 227.87772699999914,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 88
+            },
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 312
+            },
+            {
+              "file": "RegionalRoads.ts",
+              "line": 377
+            }
+          ],
+          "validation": null
+        },
+        {
+          "key": "-4,-6|-5,-6",
+          "from": "-4,-6",
+          "to": "-5,-6",
+          "attachments": {
+            "from": {
+              "x": -81874.05711863075,
+              "y": 28.642680182766544,
+              "z": -128181.22441107557,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -109071.60427478267,
+              "y": 648.8524878169442,
+              "z": -137771.52866348167,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 13.00851880133498,
+            "to": 711.9123960843358
+          },
+          "accepted": true,
+          "ms": 97.28724900000088,
+          "failures": [],
+          "validation": {
+            "points": 1476,
+            "supports": 3,
+            "maxWetSpan": 278.9556377409018,
+            "maxDrySpan": 350.2833273537858,
+            "maxHeight": 6.6446003179062245,
+            "maxGrade": 0.23520000000000246,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "63572f56eacd32f8575f6a366378279a6ebbaed532264dbb7d19244a1813c287"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1337,
+      "id": "6,-6",
+      "x": 158115.83120327487,
+      "y": 3.5466445395007207,
+      "z": -137579.5752676406,
+      "coast": 0.0019703580775004004,
+      "links": [
+        "6,-6|7,-6"
+      ],
+      "attempts": [
+        {
+          "key": "6,-6|7,-6",
+          "from": "6,-6",
+          "to": "7,-6",
+          "attachments": {
+            "from": {
+              "x": 158506.03704334513,
+              "y": 48.93439805083733,
+              "z": -138262.91552312608,
+              "structure": "ground"
+            },
+            "to": {
+              "x": 176689.92478665034,
+              "y": 1217.278738342517,
+              "z": -131909.9954672246,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 3.5466445395007207,
+            "to": 1219.0967383704328
+          },
+          "accepted": true,
+          "ms": 152.52084299999842,
+          "failures": [
+            {
+              "file": "RoadSurface.ts",
+              "line": 81
+            }
+          ],
+          "validation": {
+            "points": 1724,
+            "supports": 7,
+            "maxWetSpan": 358.01556080706507,
+            "maxDrySpan": 634.4355911667116,
+            "maxHeight": 32.82018025936543,
+            "maxGrade": 0.2352000000000011,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "cec491fea02448bde3a78d1b128dfadce1fceecdcd4f4c9ec10c306c849b378c"
+          }
+        }
+      ]
+    },
+    {
+      "seed": 1337,
+      "id": "-7,5",
+      "x": -159564.88696579775,
+      "y": 20.98703226818892,
+      "z": 132788.71161755192,
+      "coast": 0.011659462371216067,
+      "links": [
+        "-7,4|-7,5"
+      ],
+      "attempts": [
+        {
+          "key": "-7,4|-7,5",
+          "from": "-7,4",
+          "to": "-7,5",
+          "attachments": {
+            "from": {
+              "x": -160167.2949802745,
+              "y": 152.93919950142342,
+              "z": 108593.99681714745,
+              "structure": "ground"
+            },
+            "to": {
+              "x": -159554.1888413923,
+              "y": 18.709499396401544,
+              "z": 131852.36481051598,
+              "structure": "ground"
+            }
+          },
+          "elevations": {
+            "from": 158.64484300083603,
+            "to": 20.98703226818892
+          },
+          "accepted": true,
+          "ms": 89.31371700000454,
+          "failures": [],
+          "validation": {
+            "points": 1154,
+            "supports": 3,
+            "maxWetSpan": 262.03574179314444,
+            "maxDrySpan": 109.01953929647391,
+            "maxHeight": 20.294763289447104,
+            "maxGrade": 0.20267182333982858,
+            "canonical": true,
+            "dryEnds": true,
+            "hash": "3b3e0b78fda367c6f84db9cea9928cd9ed93fb75e631ed6f4c7b02181bde595f"
+          }
+        }
+      ]
+    }
+  ]
+}

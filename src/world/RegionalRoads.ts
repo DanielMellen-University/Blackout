@@ -282,7 +282,7 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
     // Every supported route lies in this corridor: coarse lanes/guide, broad
     // fallbacks, local refinement, plus maximum settlement radius and service
     // pads. Resolve blueprints independently of streamed/admitted meshes.
-    const margin = 10080 + 600 + Math.max(6500 + distance * .025, distance * .14 * 1.16)
+    const margin = 10080 + 600 + Math.max(20000 + distance * .025, distance * .14 * 1.16)
     const minX = Math.floor((Math.min(start.x, end.x) - margin) / SETTLEMENT_CELL_SIZE)
     const maxX = Math.floor((Math.max(start.x, end.x) + margin) / SETTLEMENT_CELL_SIZE)
     const minZ = Math.floor((Math.min(start.z, end.z) - margin) / SETTLEMENT_CELL_SIZE)
@@ -304,9 +304,19 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
   // A coastal village can attach on an uphill street above the shoreline band.
   // Keep its bounded two-way detour even when both chosen joins exceed 25 m.
   const coastal = Math.min(start.y, end.y) < 25 || Math.min(a.y, b.y) < 25
+  let profiles = 0, refinementProbes = 0
+  const invalid = { height: Number.NaN }
+  const boundedSample = (x: number, z: number) => refinementProbes < 5000
+    ? (refinementProbes++, sample(x, z)) : invalid
+  const profile = (points: readonly { x: number; z: number }[]) => {
+    if (profiles >= 4) return null
+    profiles++
+    return groundRoad(points, width, sample)
+  }
+  let initialRoad: SettlementRoad | null = null
   const validate = (points: readonly { x: number; z: number }[]): SettlementRoad | null => {
     if (!clearance.routeAllows(points)) return null
-    const road = groundRoad(points, width, sample)
+    const road = profile(points)
     return road && (roadGradeValid(road) || engineerRoadGrades(road, engineeringGrade)) ? road : null
   }
   // At most four full profiles, as before. The corridor can change direction
@@ -315,17 +325,42 @@ export function roadBetweenSettlements(a: SettlementAnchor, b: SettlementAnchor,
     const smooth = roundRoadRoute(corridor)
     // Rounding may cut a corner beside a building. Keep the safe corridor in
     // that case; neither smoothing nor engineering can waive clearance.
-    const rounded = groundRoad(clearance.routeAllows(smooth) ? smooth : corridor, width, sample)
+    const rounded = profile(clearance.routeAllows(smooth) ? smooth : corridor)
+    initialRoad = rounded
     if (rounded && roadGradeValid(rounded)) return rounded
     if (rounded && engineerRoadGrades(rounded, engineeringGrade)) return rounded
-    const refinement = !coastal && rounded && refineRoadRoute(rounded, sample, clearance.allows)
+    const refinement = !coastal && rounded && refineRoadRoute(rounded, boundedSample, clearance.allows)
     const refined = refinement && validate(refinement)
     if (refined) return refined
   }
   if (coastal) {
-    // Spend the existing refinement allowance on a two-way coastal detour.
-    // Keep the same four full-profile attempts and every physical rejection.
-    const detour = coastalRoadRoute(start, end, sample, clearance.allows)
+    let endpointDebt = false
+    if (initialRoad) {
+      const points = initialRoad.points
+      let distance = 0
+      for (let i = 1; i < points.length; i++) {
+        distance += Math.hypot(points[i]!.x - points[i-1]!.x, points[i]!.z - points[i-1]!.z)
+        if (points[i]!.y > points[0]!.y + distance * engineeringGrade + 1e-5) endpointDebt = true
+      }
+      distance = 0
+      for (let i = points.length - 2; i >= 0; i--) {
+        distance += Math.hypot(points[i]!.x - points[i+1]!.x, points[i]!.z - points[i+1]!.z)
+        if (points[i]!.y > points.at(-1)!.y + distance * engineeringGrade + 1e-5) endpointDebt = true
+      }
+    }
+    if (endpointDebt || !initialRoad) {
+      const inland = terrainRoadRoute(start, end, boundedSample, direction * distance * .025, false, clearance.allows, { inland: true })
+      if (inland) {
+        const smooth = roundRoadRoute(inland)
+        const road = validate(clearance.routeAllows(smooth) ? smooth : inland)
+        if (road) return road
+      }
+    } else if (initialRoad.points.every(point => !point.bridge)) {
+      const refinement = refineRoadRoute(initialRoad, boundedSample, clearance.allows, 40)
+      const road = refinement && validate(refinement)
+      if (road) return road
+    }
+    const detour = coastalRoadRoute(start, end, boundedSample, clearance.allows)
     if (detour) {
       const smooth = roundRoadRoute(detour)
       const road = validate(clearance.routeAllows(smooth) ? smooth : detour)
