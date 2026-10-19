@@ -189,6 +189,8 @@ interface Chunk {
   /** Current opacity 0–1 (lerped each frame). */
   alpha: number
   fadeAge: number
+  /** New presentation waits for its already-budgeted adjacent bank uploads. */
+  edgePending: Set<string> | null
   /** Desired opacity (distance fade or 0 while unloading). */
   targetAlpha: number
   /** Marked for removal after fade-out completes. */
@@ -1052,19 +1054,21 @@ export class TerrainSystem {
       this.ready.sort((a, b) => (b.dist ?? Infinity) - (a.dist ?? Infinity))
       this.readySorted = true
     }
-    while (this.ready.length && uploads < this.maxUploadsPerFrame &&
-      (uploads === 0 || performance.now() < deadline)) {
-      const result = this.ready.pop()!
-      this.install(result.job, result.data)
-      uploads++
-    }
-    // Edge publication shares the existing attachment deadline and upload cap.
+    // Publish queued banks before admitting more tiles. A ready-result stream
+    // must not starve the banks that release new fades and old fallback roots.
+    // Both kinds of publication share the same deadline and upload cap.
     while (this.seamKeys.size && uploads < this.maxUploadsPerFrame &&
       (uploads === 0 || performance.now() < deadline)) {
       const key = this.seamKeys.values().next().value!
       this.seamKeys.delete(key)
       const chunk = this.chunks.get(key)
-      if (chunk && !chunk.fadingOut) { this.publishEdgeJoins(chunk); uploads++ }
+      if (chunk) { this.publishEdgeJoins(chunk); uploads++ }
+    }
+    while (this.ready.length && uploads < this.maxUploadsPerFrame &&
+      (uploads === 0 || performance.now() < deadline)) {
+      const result = this.ready.pop()!
+      this.install(result.job, result.data)
+      uploads++
     }
     this.dispatchWorkers()
     if (this.workers.size > 0) return
@@ -1115,14 +1119,21 @@ export class TerrainSystem {
       heights: chunk.heights, waterLevels: chunk.waterLevels, geometry: chunk.terrainMesh.geometry }
   }
 
+  // A fading-out tile can still be fully opaque fallback while child builds
+  // finish. Keep its banks and accept new neighboring profiles until actual
+  // retirement removes it from chunks; that removal queues restoration too.
   private queueEdgeJoins(chunk: Chunk): void {
     const step = CHUNK_SIZE * chunk.size / chunk.segs
     for (const neighbor of this.chunks.values()) {
-      if (neighbor === chunk || neighbor.fadingOut) continue
+      if (neighbor === chunk) continue
       if (!terrainEdgeJoin(chunk, neighbor)) continue
       const otherStep = CHUNK_SIZE * neighbor.size / neighbor.segs
-      if (step > otherStep) this.seamKeys.add(chunk.key)
-      else if (otherStep > step) this.seamKeys.add(neighbor.key)
+      const owner = step > otherStep ? chunk : otherStep > step ? neighbor : null
+      if (owner) {
+        this.seamKeys.add(owner.key)
+        chunk.edgePending?.add(owner.key)
+        neighbor.edgePending?.add(owner.key)
+      }
     }
   }
 
@@ -1130,7 +1141,7 @@ export class TerrainSystem {
     const tile = this.edgeTile(chunk), step = CHUNK_SIZE * chunk.size / chunk.segs
     const joins: TerrainEdgeJoin[] = []
     for (const neighbor of this.chunks.values()) {
-      if (neighbor === chunk || neighbor.fadingOut || CHUNK_SIZE * neighbor.size / neighbor.segs >= step) continue
+      if (neighbor === chunk || CHUNK_SIZE * neighbor.size / neighbor.segs >= step) continue
       const join = terrainEdgeJoin(chunk, neighbor)
       if (join) joins.push({ ...join, neighbor: this.edgeTile(neighbor) })
     }
@@ -1267,6 +1278,12 @@ export class TerrainSystem {
         this.applyChunkAlpha(chunk)
         if (chunk.alpha <= .01) toRemove.push(key)
         continue
+      }
+      if (chunk.edgePending) {
+        let waiting = false
+        for (const owner of chunk.edgePending) if (this.seamKeys.has(owner)) { waiting = true; break }
+        if (waiting) continue
+        chunk.edgePending = null
       }
       chunk.fadeAge += dt
       if (!chunk.fadingOut && (refreshTargets || !chunk.settled)) {
@@ -1448,7 +1465,7 @@ export class TerrainSystem {
       key: tileKey(cx, cz, size), size, waterLevels: data.waterLevels,
       cx, cz, root, lod, segs: data.segs, originX, originZ,
       seamBaseVertices: geometry.getAttribute('position').count,
-      heights: data.heights, alpha: 0, fadeAge: 0, targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
+      heights: data.heights, alpha: 0, fadeAge: 0, edgePending: new Set(), targetAlpha: 1, fadingOut: false, appliedAlpha: -1,
       surfaceRevision: this.nextSurfaceRevision++, terrainMesh: mesh, backMesh, waterMesh: water, settled: false, fallbackOffset: false,
       materials: root.children.flatMap(child => child instanceof Mesh
         ? (Array.isArray(child.material) ? child.material : [child.material])

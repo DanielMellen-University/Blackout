@@ -1,0 +1,93 @@
+
+ RUN  v5.0.0 /home/daniel/Documents/GitHub/Blackout
+
+ ❯ tests/shorelineTransitions.test.ts (8 tests | 4 failed) 5939ms
+   × keeps an exposed wet-bank connector to an opaque neighbor held for unfinished replacement coverage 1138ms
+   × publishes a new fine-neighbor bank while its coarse owner is still held as opaque fallback 304ms
+   × holds new presentation for queued bank uploads without delaying contact or increasing the upload cap 199ms
+   × publishes queued banks ahead of a continuing ready-result stream within one upload 783ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/shorelineTransitions.test.ts > keeps an exposed wet-bank connector to an opaque neighbor held for unfinished replacement coverage
+AssertionError: expected 543 to be 811 // Object.is equality
+
+- Expected
++ Received
+
+- 811
++ 543
+
+ ❯ tests/shorelineTransitions.test.ts:41:67
+     39|     // old neighbor still supplies opaque coverage for missing child t…
+     40|     s.seamKeys.add(a.key); s.drainBuildQueue()
+     41|     expect(a.terrainMesh.geometry.getAttribute('position').count).toBe…
+       |                                                                   ^
+     42|     expect([...a.heights]).toEqual(physical); expect([...a.waterLevels…
+     43|     s.chunks.delete(b.key); s.queueEdgeJoins(b); s.drainBuildQueue()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/shorelineTransitions.test.ts > publishes a new fine-neighbor bank while its coarse owner is still held as opaque fallback
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/shorelineTransitions.test.ts:57:35
+     55|     const heights = [...a.heights]
+     56|     install(-178080, -162120, 1)
+     57|     expect(s.seamKeys.has(a.key)).toBe(true)
+       |                                   ^
+     58|     s.drainBuildQueue()
+     59|     expect(a.terrainMesh.geometry.getAttribute('position').count).toBe…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/shorelineTransitions.test.ts > holds new presentation for queued bank uploads without delaying contact or increasing the upload cap
+AssertionError: expected 0.1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 0.1
+
+ ❯ tests/shorelineTransitions.test.ts:74:23
+     72|     expect(s.seamKeys.has(a.key)).toBe(true)
+     73|     s.updateFades(0, 0, .1)
+     74|     expect(b.fadeAge).toBe(0); expect(b.alpha).toBe(0); expect(b.root.…
+       |                       ^
+     75|     expect(system.sampleMeshHeight(b.originX + 100, b.originZ + 100)).…
+     76|     s.drainBuildQueue(); s.updateFades(0, 0, .1)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/shorelineTransitions.test.ts > publishes queued banks ahead of a continuing ready-result stream within one upload
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/shorelineTransitions.test.ts:115:40
+    113|     expect(s.seamKeys.has(coarse.key)).toBe(true)
+    114|     s.drainBuildQueue()
+    115|     expect(s.seamKeys.has(coarse.key)).toBe(false)
+       |                                        ^
+    116|     expect(internal.ready).toHaveLength(1)
+    117|     expect(internal.chunks.has(key)).toBe(false)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 4 passed (8)
+   Start at  00:01:52
+   Duration  7.53s (tests 83%, transform 13%, import 4%)
+

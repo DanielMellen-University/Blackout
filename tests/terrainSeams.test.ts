@@ -132,7 +132,13 @@ it('publishes joins within the attachment cap and restores coverage after neighb
     fine.fadingOut = true
     internal.queueEdgeJoins(fine)
     internal.drainBuildQueue()
+    // Fallback still draws until replacement coverage permits actual retirement.
+    expect(coarse.terrainMesh.geometry.index!.count).toBeGreaterThan(original.index!.count)
+    internal.chunks.delete(fine.key)
+    internal.queueEdgeJoins(fine)
+    internal.drainBuildQueue()
     expect(coarse.terrainMesh.geometry.index!.count).toBe(original.index!.count)
+    internal.chunks.set(fine.key, fine) // retain cleanup ownership
   } finally { terrain.dispose() }
 })
 
