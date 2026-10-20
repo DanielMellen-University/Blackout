@@ -74,3 +74,11 @@ The ordinary production build and the synchronized 10.968 version checks pass. T
 Roadmap step 2 is DONE: the verified b20 physics overhaul and b21 nitro/boost delivery are complete. Step 3, missions, is next and pending explicit approval; no mission overhaul or current-mission polish starts here. Version, README, ROADMAP and CHANGELOG advance together to 10.969 with 10.968 as previous ship. Public release stays v0.12.0. Revision 32 remains current; old records and ghosts remain retained. The paused warning strip, vegetation and blackout/redout veils remain excluded, and the closed terrain and city/roads work stays closed. There are no open b21 production defects from this review; the coverage limits above still apply.
 
 Closure verification: the 10.969 production build, synchronized release check and three version identity checks pass. The strict 78-flight / 334-still validator still passes after the metadata-only update.
+
+## CI follow-up, 10.970
+
+The [final 10.969 Actions run](https://github.com/DanielMellen-University/Blackout/actions/runs/39422387813) failed in its test step. Detailed remote logs require authentication, so the exact CI command, `npm test -- --reporter=dot`, was reproduced locally. It exposed two failures: the added nitro paragraph increased README to 81 split lines against its strict under-80 limit, and the existing cold three-seed wetland/stream scan exceeded Vitest's default five-second timeout. The earlier full run used the documented 30-second command allowance and preceded that README paragraph.
+
+The nitro timings now share the existing Space control line, retaining the README limit and its assertion. Only the identified hydrology test gets a 30-second budget; its seeds, sample grid and assertions are unchanged. No terrain generation, physics, boost, mission or paused-system code changes. Step 2 remains done, step 3 remains pending approval, and release metadata advances together to 10.970.
+
+Repair verification: 25 focused README/hydrology/version checks pass, and the exact CI command now passes all 169 files / 1,656 tests with no global timeout override. The production build, release metadata check and strict 78-flight / 334-still validator pass.

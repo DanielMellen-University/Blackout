@@ -299,6 +299,7 @@ describe('natural drainage', () => {
     expect(Math.max(...seaRadii)).toBeLessThan(4201)
   })
 
+  // The cold three-seed catchment scan can exceed five seconds on parallel CI workers.
   it('emits larger wetland ponds and classifies narrow channels as streams', () => {
     let ponds = 0, streams = 0
     for (const seed of [1, 73, 1337]) {
@@ -316,7 +317,7 @@ describe('natural drainage', () => {
     }
     expect(ponds).toBeGreaterThan(0)
     expect(streams).toBeGreaterThan(0)
-  })
+  }, 30_000)
 
   it('keeps lakes clear of earlier basins by the squared overlap gate', () => {
     setWorldSeed(1)

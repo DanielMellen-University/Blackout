@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.969**. Previous roadmap chunk: **10.968**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.970**. Previous roadmap chunk: **10.969**.
+
+Recent changes from **10.970**. Repair final b21 CI: fold nitro timings into the existing README controls list to preserve its length limit, and allow the unchanged three-seed hydrology regression 30 seconds on parallel workers. Preserve every assertion, production terrain and flight behavior. Step 2 remains done and step 3 remains pending approval.
 
 Recent changes from **10.969**. Close approved roadmap step 2 after the verified b20 physics overhaul and b21 nitro and boost delivery. Mark missions as the next step pending explicit approval, preserve the current-mission polish freeze and all paused exclusions, and synchronize release metadata. See docs/reviews/nitro-b21/README.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.965**. Add the approved b21 nitro reserve, a stronger 6
 Recent changes from **10.964**. Close the approved b20 physics half of roadmap step 2 after the lift/drag/stall and control-rate retune, revision 31 record isolation, compatibility fixes and 78 verified browser flights. Keep nitro and boost OPEN for b21, preserve all paused exclusions and leave the closed terrain and city/roads work unchanged. Synchronize release metadata. See docs/reviews/physics-b20/README.md.
 
 Recent changes from **10.963**. Verify b20 in 78 production browser flights with 328 accepted stills: every one of the 76 non-Free mission entries completes five gates and lands, and Free flights on seeds 42 and 73 perform hard turns, stall/recovery, climbs/dives and full runway stops. Retain source/hook hashes, all excluded attempts and clean isolated audio repeats. Preserve missions, terrain, boost and paused exclusions. See docs/reviews/physics-b20/README.md.
-
-Recent changes from **10.962**. Fix two b20 compatibility regressions found in production browser review. Derive the 80 kt takeoff brief from the configured rotation speed and keep revision 31 Free flight unscored and open after landing. Preserve all physics numbers, routes, records and boost behavior. Browser completion evidence continues in docs/reviews/physics-b20/README.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
@@ -39,13 +39,11 @@ Default keyboard controls:
 
 - W / S pitch, A / D yaw, Q / E roll
 - Shift / Ctrl raise or lower throttle
-- Space afterburner; B speed brake and wheel brake
+- Space afterburner with nitro (12 s reserve, 45 s refill, +25% per gate); B speed brake and wheel brake
 - G landing gear; V light stability assist (trim resumes two seconds after releasing yaw/roll)
 - C cycles chase, orbit, and unobstructed first person; middle mouse looks around in external views
 - P or Escape pauses; R ends the flight and generates a new world
 - N cycles weather; T cycles radar targets; X toggles ghost replay
-
-Boost uses a full 12-second nitro reserve. It refills from empty in 45 seconds without boost, and accepted mission gates add 25%, capped at full. The HUD rail shows reserve, active boost and gate refill pulses. After an empty cutoff, boost waits for 15% reserve before restarting.
 
 Keyboard mappings, camera, graphics, audio, and reduced motion are adjustable in the pause menu. Standard gamepads also support the core flight controls.
 

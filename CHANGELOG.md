@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.970** Repair final b21 CI: fold nitro timings into the existing README controls list to preserve its length limit, and allow the unchanged three-seed hydrology regression 30 seconds on parallel workers. Preserve every assertion, production terrain and flight behavior. Step 2 remains done and step 3 remains pending approval.
 - **10.969** Close approved roadmap step 2 after the verified b20 physics overhaul and b21 nitro and boost delivery. Mark missions as the next step pending explicit approval, preserve the current-mission polish freeze and all paused exclusions, and synchronize release metadata. See docs/reviews/nitro-b21/README.md.
 - **10.968** Verify b21 in 78 production browser flights with 334 accepted stills: all 76 non-Free mission entries complete five gates with nitro refills and land, and Free flights on seeds 42 and 73 drain, refill, restart boost and stop on the runway. Retain source/hook hashes and excluded early-pilot attempts. Preserve gameplay and paused exclusions. See docs/reviews/nitro-b21/README.md.
 - **10.967** Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.

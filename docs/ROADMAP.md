@@ -1,5 +1,6 @@
 # Roadmap
 
+Chunk 10.970. Repair final b21 CI: fold nitro timings into the existing README controls list to preserve its length limit, and allow the unchanged three-seed hydrology regression 30 seconds on parallel workers. Preserve every assertion, production terrain and flight behavior. Step 2 remains done and step 3 remains pending approval.
 Chunk 10.969. Close approved roadmap step 2 after the verified b20 physics overhaul and b21 nitro and boost delivery. Mark missions as the next step pending explicit approval, preserve the current-mission polish freeze and all paused exclusions, and synchronize release metadata. See docs/reviews/nitro-b21/README.md.
 Chunk 10.968. Verify b21 in 78 production browser flights with 334 accepted stills: all 76 non-Free mission entries complete five gates with nitro refills and land, and Free flights on seeds 42 and 73 drain, refill, restart boost and stop on the runway. Retain source/hook hashes and excluded early-pilot attempts. Preserve gameplay and paused exclusions. See docs/reviews/nitro-b21/README.md.
 Chunk 10.967. Match the stronger nitro surge with a bass ignition rush, fuller sustained engine roar, smooth release and larger resolved afterburner plume. Reveal the exhaust with boost-only chase framing; retain clean first person and reduced-motion controls. See docs/reviews/nitro-b21/README.md.
@@ -53,7 +54,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.969** is current. Previous ship: **10.968**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.970** is current. Previous ship: **10.969**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
