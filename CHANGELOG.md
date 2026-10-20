@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.953** Audit terrain close-out b19 on six seeds in real-physics low-altitude chase and cockpit flights. Retain 36 stills, raw telemetry, source hashes and review-route corrections. No production terrain defect is reproduced. Keep roadmap step 1 open pending the fresh six-seed recheck, normal-altitude LOD review and three ten-minute flights. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/audit.md.
 - **10.952** Ship the parked Weather approach mission as is, using seeded weather, five gates, existing approach guidance, medals, records and ghosts. Keep current main fixes and omit the bulky parked review artifacts. Verify focused and full tests, the production build and a browser flight; see docs/reviews/weather-approach-10.952/README.md. Preserve flight physics and paused exclusions.
 - **10.951** Set the approved priority order to terrain, flight physics then nitro/boost, randomly generated terrain-shaped missions, and gameplay. Record the b18 through b21 plan, approval rule and current-mission polish freeze. Preserve paused exclusions, the approximate 200 MB heap target and closed city/roads redesign.
 - **10.950** Repair CI by retaining the shipped accessible AGL description in instrument tests and trimming older README history to the changelog. Preserve neutral altitude readings, flight physics and all paused exclusions.

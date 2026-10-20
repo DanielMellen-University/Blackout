@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.952**. Previous roadmap chunk: **10.951**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.953**. Previous roadmap chunk: **10.952**.
+
+Recent changes from **10.953**. Audit terrain close-out b19 on six seeds in real-physics low-altitude chase and cockpit flights. Retain 36 stills, raw telemetry, source hashes and review-route corrections. No production terrain defect is reproduced. Keep roadmap step 1 open pending the fresh six-seed recheck, normal-altitude LOD review and three ten-minute flights. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/audit.md.
 
 Recent changes from **10.952**. Ship the parked Weather approach mission as is, using seeded weather, five gates, existing approach guidance, medals, records and ghosts. Keep current main fixes and omit the bulky parked review artifacts. Verify focused and full tests, the production build and a browser flight; see docs/reviews/weather-approach-10.952/README.md. Preserve flight physics and paused exclusions.
 
@@ -13,10 +15,6 @@ Recent changes from **10.950**. Repair CI by retaining the shipped accessible AG
 Recent changes from **10.949**. Polish existing flight reports so crash and ditch outcomes are clear and each failure reason appears once, while preserving score, coaching, retry and record behavior. Correct the featured-mission documentation to include the already-shipped Contour circuit. Add no features or mission types. See docs/reviews/debrief-10.949/README.md for focused tests and browser evidence.
 
 Recent changes from **10.948**. Record six isolated, unprofiled 120-second city and northeast flights on the shipped 10.947 runtime. Pooled means are 39.01 and 38.33 FPS, p95 is 33.4 ms on both routes, and no flight interval exceeds 100 ms. Main-thread JS heap peaks range from 187.3 to 208.9 MB; one run exceeds the approximate 200 MB reference. Make no performance changes or improvement claim. See docs/reviews/performance-10.948/README.md for all runs and limits.
-
-Recent changes from **10.947**. Fix focused debrief activation, restore controller retry and mission selection with release gating, and extinguish fuel-empty exhaust. Verify crash recovery, go-around, engine-out landing and keyboard/controller rollout without changing flight physics or collision. See docs/reviews/recovery-10.948/README.md for evidence and limits.
-
-Recent changes from **10.946**. Polish cloud boundaries on existing meshes, correct port and starboard navigation lights, and label terrain-relative altitude AGL. Complete two ten-minute Free flights on seeds 31415 and 27182 with chase and cockpit stills every minute, plus matched before/after views. Preserve physics, collision, water, landscape revision 29, route revision 30, all resource budgets and paused exclusions. See docs/reviews/polish-10.946/README.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
