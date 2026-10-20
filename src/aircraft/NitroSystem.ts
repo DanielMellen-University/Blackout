@@ -13,11 +13,12 @@ export function resetNitro(state: NitroState): void {
 }
 /** Returns the resolved burner command. Only actual burning consumes reserve. */
 export function updateNitro(state: NitroState, dt: number, requested: boolean): boolean {
-  if (!Number.isFinite(dt) || dt <= 0) return false
+  if (!Number.isFinite(dt) || dt < 0) return false
   state.fraction = Number.isFinite(state.fraction) ? Math.max(0, Math.min(1, state.fraction)) : 0
   if (state.fraction <= 0) state.depleted = true
   if (state.depleted && state.fraction >= C.nitroRestartFraction) state.depleted = false
   const burning = requested && !state.depleted
+  if (dt === 0) return burning
   state.fraction = Math.max(0, Math.min(1, state.fraction + dt *
     (burning ? -C.nitroDrainPerSecond : C.nitroRefillPerSecond)))
   if (burning && state.fraction <= 1e-10) {

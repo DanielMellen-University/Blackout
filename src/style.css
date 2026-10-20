@@ -2849,3 +2849,24 @@ body,
   .course-option-featured .course-option-name { font-size: .78rem; overflow-wrap: anywhere; }
   .course-featured-subtitle { font-size: .65rem; }
 }
+
+/* Reserve stays beside engine telemetry in external views. */
+#nitro-panel {
+  grid-column: 1 / -1;
+  padding: 9px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  font-family: var(--mono);
+}
+.nitro-rail { height: 8px; margin-top: 7px; border-radius: 2px; background: rgba(var(--accent-rgb), .14); overflow: hidden; }
+#nitro-fill { height: 100%; width: 100%; background: var(--accent); transition: width .06s linear; }
+#nitro-panel.boost { border-color: var(--amber); }
+#nitro-panel.boost .instrument-status { color: var(--amber); }
+#nitro-panel.boost #nitro-fill { background: var(--amber); }
+#nitro-panel.gate-refill { border-color: var(--amber); animation: nitro-refill .65s ease-out; }
+@keyframes nitro-refill { 0%, 45% { border-color: var(--amber); } 100% { border-color: var(--panel-border); } }
+@media (prefers-reduced-motion: reduce) { #nitro-panel.gate-refill { animation: none; } #nitro-fill { transition: none; } }
+
+.reduced-motion #nitro-panel.gate-refill { animation: none; }
+.reduced-motion #nitro-fill { transition: none; }

@@ -22,3 +22,11 @@ Decisions: start each sortie full; drain only when fuel and throttle permit actu
 Revision 32 stores new records, retention manifests, Ops streaks and ghosts separately. Revision 31 and unversioned pre-b20 families are retained byte-for-byte and excluded from current-family pruning. Mission Records can show both historical families. No save deletion or migration.
 
 Focused checks cover drain, passive refill, gate refill and clamp, hysteresis while held, invalid time, resolved thrust/cutoff, burst speed, unchanged dry b20 probes and old/new record and ghost isolation. Verification: 137 affected physics/engine/course/retention/ghost checks and nine reserve/history checks pass; production build passes. The full suite also runs as a broader regression check.
+
+## Part B: HUD meter, 10.966
+
+A compact full-width reserve rail sits below the paired speed/engine instruments. Blue means reserve, pale orange marks actual boosting; the label reads BOOST with the percentage only during resolved burner activity. Accepted gate counters trigger a 650 ms border pulse, even if a full reserve clamps the refill. Reduced motion keeps the border confirmation without animation. Accessible meter values stay bounded; a sortie reset clears the prior pulse. Empty reserve remains a neutral percentage, without warning text.
+
+The existing unobstructed first-person view hides the entire HUD. This established behavior is retained; no cockpit veil or frame is added. Chase/orbit retain the reserve meter.
+
+Verification: 154 focused instrument, HUD, structure, paused-system, nitro and aircraft visual checks pass; production build passes. Browser stills and source hashes are in [hud/review.json](hud/review.json): [full](hud/full.jpg), [boosting](hud/boost-chase.jpg), [first person](hud/boost-cockpit.jpg), [gate pulse](hud/gate-refill.jpg), [settled](hud/refill-settled.jpg). The controls-only pilot burns reserve before crossing the first real gate. Images were inspected for placement, overlap and palette. A zero-time refresh regression discovered by the broader aircraft suite is fixed: resolving feedback with dt=0 preserves available boost without spending reserve. The initial unrestricted suite exposed two existing terrain test timeouts at five seconds under parallel load; a complete repeat uses the b20 30-second allowance.

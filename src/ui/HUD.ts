@@ -1073,6 +1073,11 @@ export class HUD {
   private readonly spdFill: HTMLElement | null
   private readonly speedStateEl: HTMLElement | null
   private readonly engFill: HTMLElement | null
+  private readonly nitroPanel: HTMLElement | null
+  private readonly nitroFill: HTMLElement | null
+  private readonly nitroStateEl: HTMLElement | null
+  private previousNitroRefills = 0
+  private nitroFlashUntil = 0
   private readonly engPanel: HTMLElement | null
   private readonly abStateEl: HTMLElement | null
   private readonly adiBall: HTMLElement | null
@@ -1364,6 +1369,9 @@ export class HUD {
     this.speedStateEl = root.getElementById('hud-speed-state')
     this.engFill = root.getElementById('eng-fill')
     this.engPanel = root.getElementById('eng-panel')
+    this.nitroPanel = root.getElementById('nitro-panel')
+    this.nitroFill = root.getElementById('nitro-fill')
+    this.nitroStateEl = root.getElementById('hud-nitro-state')
     this.abStateEl = root.getElementById('hud-ab-state')
     this.adiBall = root.getElementById('adi-ball')
     this.adiBankPtr = root.getElementById('adi-bank-ptr')
@@ -1491,6 +1499,8 @@ export class HUD {
     /** Level-flight equilibrium speed in metres per second for the current engine command. */
     targetSpeed?: number
     boost?: boolean
+    nitro?: number
+    nitroGateRefills?: number
     airbrake?: boolean
     /** Bounded engine stress fraction used by the compact temperature row. */
     engineHeat?: number
@@ -2285,6 +2295,24 @@ export class HUD {
       opts.navClosingSpeed,
     )
 
+    if (opts.nitro !== undefined) {
+      const percent = Math.round(Math.max(0, Math.min(1, Number.isFinite(opts.nitro) ? opts.nitro : 0)) * 100)
+      const now = Number.isFinite(opts.timeMs) ? opts.timeMs! : performance.now()
+      const refills = opts.nitroGateRefills ?? 0
+      if (refills > this.previousNitroRefills) this.nitroFlashUntil = now + 650
+      if (refills < this.previousNitroRefills) this.nitroFlashUntil = 0
+      this.previousNitroRefills = refills
+      if (this.nitroFill) {
+        this.setStyle(this.nitroFill, 'width', `${percent}%`)
+        this.setAttribute(this.nitroFill, 'aria-valuenow', String(percent))
+        this.setAttribute(this.nitroFill, 'aria-valuetext', `${percent} percent${opts.boost ? ', boosting' : ''}`)
+      }
+      if (this.nitroStateEl) this.setText(this.nitroStateEl, `${opts.boost ? 'BOOST ' : ''}${percent}%`)
+      if (this.nitroPanel) {
+        this.setClass(this.nitroPanel, 'boost', opts.boost === true)
+        this.setClass(this.nitroPanel, 'gate-refill', now < this.nitroFlashUntil)
+      }
+    }
     if (opts.throttle !== undefined) {
       this.updateEngine(opts.throttle, !!opts.boost)
     }

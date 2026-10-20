@@ -38,7 +38,8 @@ describe('b21 nitro', () => {
   })
   it('ignores invalid time without corrupting the reserve', () => {
     const s = createNitroState()
-    for (const dt of [0, -1, NaN, Infinity]) expect(updateNitro(s, dt, true)).toBe(false)
+    for (const dt of [-1, NaN, Infinity]) expect(updateNitro(s, dt, true)).toBe(false)
+    expect(updateNitro(s, 0, true)).toBe(true)
     expect(s.fraction).toBe(1)
   })
   it('delivers the stronger thrust through production physics and cuts all feedback at empty', () => {

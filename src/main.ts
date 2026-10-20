@@ -2938,6 +2938,8 @@ export async function boot(): Promise<void> {
       challenge.recordApproachPreview(approachPreviewScore)
       hudFrame.landingPreview = landingPreview
       hudFrame.thermalLift = aircraft.thermalLift
+      hudFrame.nitro = aircraft.nitro.fraction
+      hudFrame.nitroGateRefills = aircraft.nitro.gateRefills
       hudFrame.boost = aircraft.engineState.afterburnerActive
       hudFrame.afterburnerLock = afterburnerLockReason(
         aircraft.engineState.fuelAvailable,

@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.965**. Previous roadmap chunk: **10.964**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.966**. Previous roadmap chunk: **10.965**.
+
+Recent changes from **10.966**. Show nitro reserve and active boost beside the engine instruments, with a brief accepted-gate refill pulse and accessible meter values. Preserve the blue and pale-orange HUD palette and paused exclusions. See docs/reviews/nitro-b21/README.md.
 
 Recent changes from **10.965**. Add the approved b21 nitro reserve, a stronger 650 m/s boost, gate refills and empty-edge hysteresis. Separate revision 32 records and ghosts while retaining older families. Preserve dry b20 physics and paused exclusions. See docs/reviews/nitro-b21/README.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.961**. Retune jet lift, drag, stall progression and rol
 Recent changes from **10.960**. Remove the ripgrep dependency from terrain close-out evidence validation. Enumerate source files with Git, preserving the frozen-runtime hashes and every evidence acceptance rule. Verify focused evidence checks, the full suite and the production build before the b20 physics retune.
 
 Recent changes from **10.959**. Mark roadmap step 1 DONE for the scoped b19 terrain good-enough bar. Retain the six-seed appearance and normal-altitude LOD decisions, and three clean ten-minute flights on seeds 42, 73 and 1. Preserve the seed-1337 review-harness issue, excluded alternate-seed stalls and high-altitude image limitation in the final report. Synchronize release metadata without changing production physics or terrain. No b20 work starts. See docs/reviews/terrain-closeout-b19/final-report.md.
-
-Recent changes from **10.958**. Record the third clean 650-second flight on seed 1 with the original review pilot and acceptance rules. Exclude the full seed-2026 and seed-9001 attempts for timing gaps, retaining all 66 stills. Validate all 21 required records and guard alternate-route, diagnostic, duration, coverage and timing acceptance. Keep production physics and terrain unchanged. See docs/reviews/terrain-closeout-b19/b19s-endurance.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
