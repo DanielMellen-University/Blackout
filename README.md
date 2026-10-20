@@ -2,15 +2,15 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.957**. Previous roadmap chunk: **10.956**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.958**. Previous roadmap chunk: **10.957**.
+
+Recent changes from **10.958**. Record the third clean 650-second flight on seed 1 with the original review pilot and acceptance rules. Exclude the full seed-2026 and seed-9001 attempts for timing gaps, retaining all 66 stills. Validate all 21 required records and guard alternate-route, diagnostic, duration, coverage and timing acceptance. Keep production physics and terrain unchanged. See docs/reviews/terrain-closeout-b19/b19s-endurance.md.
 
 Recent changes from **10.957**. Attribute the recurring seed-1337 stall to a synchronous cold hydrology query in the injected review pilot. Archive a short reproduction, a separate CPU/GPU trace and method timings. Keep the production runtime unchanged and terrain step 1 open pending the authorized alternate-seed endurance flight. Retain seed 1337 as a known review performance issue. See docs/reviews/terrain-closeout-b19/hitch-1337.md.
 
 Recent changes from **10.956**. Publish the b19r terrain close-out report. The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass within the retained routes. Keep roadmap step 1 OPEN: only two of three required clean ten-minute flights pass, and both full seed-1337 retries contain unexplained timing gaps. Preserve production terrain, physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/final-report.md.
 
 Recent changes from **10.955**. Retain two full seed-1337 endurance attempts on the frozen 10.954 runtime. Both exceed 650 seconds without crashes, errors or coverage misses, but unexplained frame intervals exclude both from clean-flight acceptance. Archive all 44 stills and timing evidence. Keep terrain step 1 open for the third clean ten-minute flight. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/part-b.md.
-
-Recent changes from **10.954**. Validate the fresh six-seed terrain repeat, normal-altitude LOD recordings and two clean 650-second endurance flights. Retain mission loading smoke checks and archive interrupted seed-1337 evidence outside acceptance. Keep terrain step 1 open until a fresh full seed-1337 flight passes. Preserve the production runtime, flight physics and paused exclusions. See docs/reviews/terrain-closeout-b19/part-a.md.
 
 Recent changes from **10.952**. Ship the parked Weather approach mission as is, using seeded weather, five gates, existing approach guidance, medals, records and ghosts. Keep current main fixes and omit the bulky parked review artifacts. Verify focused and full tests, the production build and a browser flight; see docs/reviews/weather-approach-10.952/README.md. Preserve flight physics and paused exclusions.
 

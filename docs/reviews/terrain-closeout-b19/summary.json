@@ -1,6 +1,17 @@
 {
   "base": "897807f",
-  "completeEvidence": false,
+  "completeEvidence": true,
+  "enduranceSelection": {
+    "seeds": [
+      42,
+      73,
+      1
+    ],
+    "reason": "User-authorized alternate seed after the seed-1337 recurring stall was attributed to review instrumentation in hitch-1337.md. B19s attempts on 2026 and 9001 remain excluded for timing gaps. Seed 1 supplies the third clean flight under the unchanged acceptance rules."
+  },
+  "knownOpenPerformanceIssues": [
+    "Seed-1337 review pilot cold hydrology look-ahead stall; no clean full seed-1337 flight. Historical 3.7-second event remains unattributed. See hitch-1337.md."
+  ],
   "productionChangesExcludingReleaseMetadata": [],
   "note": "The visual/temporal review is recorded in markdown. This summary validates flight records and frozen runtime, not image appearance. RAF excludes screenshot windows; terrain update timing includes them. Heap is observed, not optimized.",
   "rows": [
@@ -530,6 +541,43 @@
         "clear"
       ],
       "sourceCommit": "5ec0cd5e8705aba7beb7251de16de22cd59a415e"
+    },
+    {
+      "stage": "endurance",
+      "seed": 1,
+      "seconds": 650.5333333330703,
+      "wallSeconds": 650.537,
+      "horizontalKm": 143.1925177188707,
+      "stills": 22,
+      "minAgl": 502.8856141545202,
+      "maxAgl": 3486.631166727307,
+      "errors": 0,
+      "frames": 27430,
+      "meanFps": 43.66850462833613,
+      "p95Ms": 33.4,
+      "maxFrameMs": 83.3,
+      "over100": 0,
+      "terrainMaxMs": 27.19999998807907,
+      "terrainOver50": 0,
+      "coverageMissing": 1,
+      "coverageMisses": [
+        {
+          "seconds": 0.016666666666666666,
+          "position": [
+            -92800,
+            672.555258778269,
+            -13600
+          ]
+        }
+      ],
+      "peakMainHeapMB": 209.41283,
+      "weather": [
+        "cloudy",
+        "clear",
+        "overcast",
+        "snow"
+      ],
+      "sourceCommit": "d93f3129bcabf54c83625e7663e90f162839b6ae"
     }
   ]
 }

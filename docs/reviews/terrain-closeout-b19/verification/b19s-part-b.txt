@@ -1,0 +1,83 @@
+
+> blackout@0.12.0 test
+> vitest run --reporter=dot tests/terrainCloseoutEvidence.test.ts tests/version.test.ts tests/readme.test.ts
+
+
+ RUN  v5.0.0 /home/daniel/Documents/GitHub/Blackout
+
+················
+
+ Test Files  3 passed (3)
+      Tests  16 passed (16)
+   Start at  00:28:29
+   Duration  1.15s (tests 89%, transform 7%, import 3%, worker 1%)
+
+
+> blackout@0.12.0 build
+> npm run version:check && tsc && vite build
+
+
+> blackout@0.12.0 version:check
+> node scripts/check-version.mjs
+
+Version check passed: v0.12.0
+vite v8.2.1 building client environment for production...
+[2Ktransforming...✓ 135 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                             59.15 kB │ gzip:  13.42 kB
+dist/assets/settlement.worker-CWknnpKS.js   65.60 kB
+dist/assets/terrain.worker-ChSu0vee.js     223.13 kB
+dist/assets/index-CisL2z6w.css              63.70 kB │ gzip:  13.24 kB
+dist/assets/ModalFocus-iuDBLqCz.js           0.51 kB │ gzip:   0.31 kB
+dist/assets/WorldSeed-BRIzLOEs.js            2.61 kB │ gzip:   1.03 kB
+dist/assets/DebugOverlay-Dv0e1gIA.js         2.98 kB │ gzip:   1.47 kB
+dist/assets/index-BpF9ZtKq.js                4.83 kB │ gzip:   2.03 kB
+dist/assets/GameMenu-DXv123JN.js             5.55 kB │ gzip:   1.75 kB
+dist/assets/flight-audio-Y9UjeCTw.js        12.94 kB │ gzip:   4.18 kB
+dist/assets/RunResults-BhErYJ3m.js          19.68 kB │ gzip:   5.51 kB
+dist/assets/RunwayGuidance-JAN7UBQ5.js      21.11 kB │ gzip:   7.68 kB
+dist/assets/CoursePicker-A7P18-uB.js        31.17 kB │ gzip:   9.27 kB
+dist/assets/WeatherDirector-QKk95aiZ.js     34.91 kB │ gzip:  11.48 kB
+dist/assets/three-addons-OflQxj0-.js        48.12 kB │ gzip:  14.12 kB
+dist/assets/terrainSample-Dfg9IMja.js       49.57 kB │ gzip:  19.38 kB
+dist/assets/HUD-BnomJBxd.js                 69.10 kB │ gzip:  18.26 kB
+dist/assets/game-content-DaOiwDJ8.js        85.56 kB │ gzip:  22.49 kB
+dist/assets/main-CUVBXXyt.js               432.51 kB │ gzip: 136.88 kB
+dist/assets/three-B7gxx9yV.js              568.52 kB │ gzip: 143.51 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 538ms
+┌─────────┬─────────────┬──────┬────────────────────┬────────────────────┬────────────────────┬─────────┬────────────────────┬────────────────┐
+│ (index) │ stage       │ seed │ seconds            │ minAgl             │ maxAgl             │ over100 │ terrainMaxMs       │ peakMainHeapMB │
+├─────────┼─────────────┼──────┼────────────────────┼────────────────────┼────────────────────┼─────────┼────────────────────┼────────────────┤
+│ 0       │ 'audit'     │ 42   │ 45.38333333333204  │ 138.852414133823   │ 362.83437644432297 │ 0       │ 23.700000017881393 │ 180.523259     │
+│ 1       │ 'audit'     │ 2026 │ 45.366666666665374 │ 35.98021372447852  │ 590.7129880257198  │ 0       │ 17.400000005960464 │ 213.318914     │
+│ 2       │ 'audit'     │ 9001 │ 45.73333333333202  │ 98.22412653545837  │ 201.90746233827167 │ 0       │ 16.799999982118607 │ 127.730272     │
+│ 3       │ 'audit'     │ 1    │ 45.73333333333202  │ 34.25990075095467  │ 361.3719051341393  │ 0       │ 20.200000017881393 │ 189.467412     │
+│ 4       │ 'audit'     │ 73   │ 45.866666666665346 │ 94.25818252429846  │ 239.44848080243395 │ 0       │ 27.900000005960464 │ 190.842648     │
+│ 5       │ 'audit'     │ 1337 │ 45.78333333333202  │ 289.6406951268667  │ 612.2977445535554  │ 0       │ 26.400000005960464 │ 120.928968     │
+│ 6       │ 'final'     │ 42   │ 45.949999999998674 │ 135.37113326680628 │ 360.6899877510332  │ 0       │ 28.69999998807907  │ 171.601461     │
+│ 7       │ 'final'     │ 2026 │ 45.99999999999867  │ 34.821060105358356 │ 594.9315943054972  │ 0       │ 28.099999994039536 │ 207.643478     │
+│ 8       │ 'final'     │ 9001 │ 45.31666666666538  │ 102.62832011033152 │ 201.775052827124   │ 0       │ 23.80000001192093  │ 181.277807     │
+│ 9       │ 'final'     │ 1    │ 45.23333333333205  │ 44.26648857108671  │ 360.29632515457143 │ 0       │ 30.599999994039536 │ 185.568115     │
+│ 10      │ 'final'     │ 73   │ 45.29999999999871  │ 95.5847962595416   │ 232.71293637545676 │ 0       │ 23.69999998807907  │ 187.141803     │
+│ 11      │ 'final'     │ 1337 │ 45.23333333333205  │ 290.35583976416854 │ 609.4824305064333  │ 0       │ 22.69999998807907  │ 188.150937     │
+│ 12      │ 'lod'       │ 42   │ 25.4666666666665   │ 615.4238461515133  │ 833.3257482900422  │ 0       │ 26.69999998807907  │ 184.786413     │
+│ 13      │ 'lod'       │ 2026 │ 25.93333333333314  │ 652.7067393145569  │ 773.8641977139021  │ 0       │ 22.30000001192093  │ 195.097316     │
+│ 14      │ 'lod'       │ 9001 │ 25.249999999999847 │ 577.0445751160644  │ 664.0793914327894  │ 0       │ 21.599999994039536 │ 184.879246     │
+│ 15      │ 'lod'       │ 1    │ 25.333333333333176 │ 648.4756918816886  │ 655.3230119107817  │ 0       │ 28.900000005960464 │ 184.400884     │
+│ 16      │ 'lod'       │ 73   │ 25.58333333333316  │ 565.3468566944981  │ 657.5912310477029  │ 0       │ 33.099999994039536 │ 183.063015     │
+│ 17      │ 'lod'       │ 1337 │ 25.43333333333317  │ 664.3916593379986  │ 908.514802802623   │ 0       │ 24.900000005960464 │ 135.445906     │
+│ 18      │ 'endurance' │ 42   │ 650.499999999737   │ 230.38457852426245 │ 2422.988591752454  │ 0       │ 27.30000001192093  │ 218.277768     │
+│ 19      │ 'endurance' │ 73   │ 650.3333333330705  │ 527.8726614710295  │ 2248.3045535867604 │ 0       │ 25.30000001192093  │ 236.851486     │
+│ 20      │ 'endurance' │ 1    │ 650.5333333330703  │ 502.8856141545202  │ 3486.631166727307  │ 0       │ 27.19999998807907  │ 209.41283      │
+└─────────┴─────────────┴──────┴────────────────────┴────────────────────┴────────────────────┴─────────┴────────────────────┴────────────────┘
+
+PASS: both complete excluded alternate-seed records validate source/hook hashes, original routes, 22 stills each, flight states and retained timing exclusions.
+PASS: exactly three full b19s attempts; only seed 1 is accepted.
+PASS: production source is unchanged except release metadata. All 66 new full-flight stills visually inspected; high-altitude image finding retained with its limits.

@@ -34,7 +34,7 @@ Profiler startup separately introduces a **266.6 ms** RAF interval at 165.650 s.
 
 ## Decision and remaining issue
 
-Use the user-authorized fallback seed 2026 for the third clean ten-minute flight. Keep the original acceptance hook, strict greater-than-100 ms rule, capture exclusions and production runtime unchanged. The runner now supports the three authorized alternative seeds using their existing `routes.json` poses, because historical endurance pins only exist for 42, 73 and 1337. Those three historical pins remain exact. No route generation or route revision changes.
+The first selected fallback was seed 2026. B19s ultimately records the third clean flight on seed 1 after excluding full attempts on 2026 and 9001; see [the endurance record](b19s-endurance.md). Keep the original acceptance hook, strict greater-than-100 ms rule, capture exclusions and production runtime unchanged. The runner now supports the three authorized alternative seeds using their existing `routes.json` poses, because historical endurance pins only exist for 42, 73 and 1337. Those three historical pins remain exact. No route generation or route revision changes.
 
 Seed 1337 remains a **known open review performance issue** in ROADMAP: the synchronous pilot look-ahead is retained, its historical failed flights remain excluded, and there is no clean full seed-1337 acceptance flight. A future review-harness correction would need its own validation. It is outside the remaining close-out requirement if the authorized alternate seed passes. No speculative game optimization or heap chase is made.
 

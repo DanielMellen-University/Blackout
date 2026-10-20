@@ -1,0 +1,15 @@
+import {chromium} from '/tmp/blackout-b19-tools/node_modules/playwright/index.mjs'
+import {writeFile} from 'node:fs/promises'
+const browser=await chromium.launch({headless:true,executablePath:'/home/daniel/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome',args:['--no-sandbox','--ignore-gpu-blocklist','--enable-gpu','--use-gl=angle','--use-angle=vulkan','--enable-features=Vulkan','--disable-vulkan-surface']})
+try{
+ const page=await browser.newPage({viewport:{width:1280,height:720}})
+ await page.addInitScript(()=>{localStorage.clear();localStorage.setItem('blackout.renderQuality','balanced');HTMLElement.prototype.requestFullscreen=async()=>{}})
+ await page.route('**/favicon.ico',r=>r.fulfill({status:204,body:''}))
+ await page.route('**/src/main.ts*',async r=>{const response=await r.fetch();let s=await response.text();s=s.replace(/const fixedReviewRatio = [^;]+;/,'const fixedReviewRatio = 1;').replace('const tick = (nowMs) => {',`window.__sceneProbe={world,renderer,cameras,hold:false};\nconst tick = (nowMs) => {\nif(window.__sceneProbe.hold){requestAnimationFrame(tick);const p=cameras.camera.position;world.update(p.x,p.y,p.z,1/60,0,0);renderer.render(world.scene,cameras.camera);return;}`);await r.fulfill({response,body:s})})
+ await page.goto('http://127.0.0.1:5173/?course=free-flight&seed=1');await page.locator('#btn-play').click();await page.locator('#startup-screen').waitFor({state:'hidden'});await page.waitForTimeout(5000)
+ await page.evaluate(()=>{const {world,cameras}=window.__sceneProbe;window.__sceneProbe.hold=true;const p=[30268.893729526197,2567.928826262734,37433.90694512919],heading=1.1778979280281348,pitch=-.14105663983829253;world.atmosphere.setAutomaticWeather(false);world.atmosphere.setWeather('clear',true);world.atmosphere.setWeatherLocked(true);world.atmosphere.timeOfDay=.46156;world.atmosphere.setTimeOfDayLocked(true);const camera=cameras.camera;camera.fov=74;camera.updateProjectionMatrix();camera.position.set(...p);camera.up.set(0,1,0);camera.lookAt(p[0]+Math.sin(heading)*Math.cos(pitch)*1000,p[1]+Math.sin(pitch)*1000,p[2]+Math.cos(heading)*Math.cos(pitch)*1000)})
+ await page.waitForTimeout(25000)
+ await page.locator('canvas').screenshot({path:'/tmp/blackout-b19s-patch-static.jpg'})
+ const result=await page.evaluate(async()=>{const {Raycaster,Vector2}=await import('/node_modules/.vite/deps/three.js');const {world,cameras}=window.__sceneProbe;const ray=new Raycaster();ray.setFromCamera(new Vector2((785/1280)*2-1,1-(590/720)*2),cameras.camera);const hits=ray.intersectObjects(world.scene.children,true).slice(0,8).map(hit=>({name:hit.object.name,point:hit.point.toArray(),distance:hit.distance,material:hit.object.material?.type,visible:hit.object.visible,parentVisible:hit.object.parent?.visible}));return {hits,ray:{origin:ray.ray.origin.toArray(),direction:ray.ray.direction.toArray()},camera:cameras.camera.position.toArray(),streaming:world.terrain.streamingStats}})
+ await writeFile('/tmp/blackout-b19s-patch-static.json',JSON.stringify(result,null,2));console.log(JSON.stringify(result))
+}finally{await browser.close()}
