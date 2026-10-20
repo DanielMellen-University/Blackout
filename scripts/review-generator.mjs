@@ -10,9 +10,10 @@ try {
   const dir = `docs/reviews/generator/${part}/${theme}-${seed}`
   await mkdir(dir,{recursive:true})
   const context = await browser.newContext({viewport:{width:1280,height:720},deviceScaleFactor:1})
-  const page=await context.newPage(),errors=[],samples=[],pictures=[]
+  const page=await context.newPage(),errors=[],knownFallback=[],samples=[],pictures=[]
   page.setDefaultTimeout(120000)
   page.on('pageerror',e=>errors.push(String(e)))
+  page.on('console',m=>{if(m.type()==='error'){if(m.location().url.endsWith('/models/f35.glb'))knownFallback.push(m.text());else errors.push(m.text())}})
   await page.route('**/favicon.ico',r=>r.fulfill({status:204,body:''}))
   await page.addInitScript(()=>{localStorage.clear();localStorage.setItem('blackout.renderQuality','balanced');HTMLElement.prototype.requestFullscreen=async()=>{}})
   await page.goto(`http://127.0.0.1:5176/?course=${theme}&seed=${seed}`)
@@ -53,7 +54,7 @@ try {
   })
   await page.evaluate(()=>window.__training.capture());await page.screenshot({path:`${dir}/final.jpg`,type:'jpeg',quality:87});pictures.push('final.jpg')
   const pass=errors.length===0&&final.course===theme&&(part==='a'||final.seed===Number(seed))&&(smoke?shot:final.status==='landed'&&final.phase==='complete'&&final.next===5&&final.resultsOpen)
-  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,pass,errors,pictures,metrics,build,final,samples},null,2)+'\n')
+  await writeFile(`${dir}/run.json`,JSON.stringify({theme,seed,part,smoke,pass,errors,knownFallback,pictures,metrics,build,final,samples},null,2)+'\n')
   console.log('RESULT',JSON.stringify({theme,seed,part,smoke,pass,metrics}))
   await context.close()
   if(!pass)throw Error(`Failed ${theme} ${seed}`)

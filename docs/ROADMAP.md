@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 10.974. Verify the approved generator and exactly two themes with six additional complete browser flights on seeds 1337, 2026 and 9001. Every flight clears five gates, refills nitro, lands and earns gold. Record full-cadence FPS, stutters, resident coverage, LOD and heap without changing budgets or flight tuning. Step 3 remains started; existing missions await their later overhaul. See docs/reviews/generator/completion-results.md.
+
 Chunk 10.973. Ship the approved Mountain valley run as the second and final new theme: a seeded wide valley floor between mountains over six kilometres above it, with five gates and a generated runway landing. Share existing world generation, medals and bounded records. Preserve b20 physics, b21 nitro, existing missions and paused exclusions. See docs/reviews/generator/README.md.
 
 Chunk 10.972. Ship the approved Desert run: each launch generates a seeded desert world with dunes, mesas, badlands, dry washes, sparse towns and warm haze. Fly five low gates and land on the generated runway using existing medals and records. Preserve original missions, b20 physics, b21 nitro and all paused exclusions. See docs/reviews/generator/README.md.
@@ -60,7 +62,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.973** is current. Previous ship: **10.972**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.974** is current. Previous ship: **10.973**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
@@ -270,11 +272,11 @@ Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle th
 
 ## Current priorities
 
-Every new feature, mission type, system or ROADMAP item needs Daniel's approval before work starts. Fixes to shipped features are allowed within approved scope. No polish on current missions: all current missions get overhauled in step 3.
+Every new feature, mission type, system or ROADMAP item needs Daniel's approval before work starts. Fixes to shipped features are allowed within approved scope. No polish on current missions in this batch: they remain functional and await a later approved overhaul within step 3.
 
 1. **Terrain generation good enough: DONE (b19/b19r/b19s, 10.959).** The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass within their reviewed routes. Three clean ten-minute flights now pass on seeds 42, 73 and 1 under the user-authorized alternate-seed option. See [the final report](reviews/terrain-closeout-b19/final-report.md) and [b19s endurance evidence](reviews/terrain-closeout-b19/b19s-endurance.md). Known open review performance issue: seed 1337's synchronous pilot hydrology look-ahead stall remains unfixed, with no clean full seed-1337 flight; its early 300 ms event and the excluded alternate-seed intervals remain unattributed. The report also retains an unresolved high-altitude image finding outside the appearance-route envelope.
 2. **Flight physics overhaul plus nitro and boost: DONE (b20/b21/b21r, 10.969).** The b20 lift, drag, stall progression, roll/pitch response and turn-energy retune remain verified. The stronger 650 m/s boost now uses a 12-second nitro reserve, a 45-second passive refill and 25% gate refills, with the HUD meter, refill pulse, surge audio and resolved afterburner visuals. Route/ghost revision 32 separates boost-era records while retaining revision 31 and older families. All 76 non-Free mission entries complete and land with checked gate refills; two Free flights drain, refill, restart boost, recover stalls and stop on the runway. See [the physics review](reviews/physics-b20/README.md) and [the nitro review](reviews/nitro-b21/README.md).
-3. **Missions: STARTED, 10.971.** Approved Oct 20: seeded generator plus exactly Desert run and Mountain valley run. Terrain overrides use the existing pipeline. Existing missions remain functional and frozen for later overhaul. Additional themes and any other new feature require separate approval.
+3. **Missions: STARTED, 10.971 through 10.974.** The Oct 20-approved seeded generator and exactly Desert run and Mountain valley run are delivered. Mission terrain parameters use the existing generation and worker pipeline. Both themes pass three-seed chase/cockpit visual checks and complete on three additional seeds with gates, medals and runway landings. Existing missions remain functional and frozen for later overhaul. Additional themes and any other new feature require separate approval. See [completion and performance evidence](reviews/generator/completion-results.md).
 4. **Gameplay overhaul.** Follow the terrain, physics, boost and mission work in that order. Any new feature still needs approval first.
 
 Approved batch plan:
@@ -282,7 +284,9 @@ Approved batch plan:
 - **b18:** Rewrite this roadmap and ship the parked weather-challenge approach mission as is, after CI repair. Verify it without redesign or polish. Preserve flight physics throughout this batch.
 - **b19, with b19r/b19s verification:** DONE at 10.959 for the scoped good-enough bar. Three clean ten-minute flights pass on 42, 73 and 1; appearance and normal-altitude LOD pass within their retained routes. Known limitations remain documented. See the endurance evidence and final report above. The acceptance bar remains: no visible seams, gaps or floating objects in low-altitude chase and cockpit views on six seeds; clearly distinct alpine, desert/badlands, green, volcanic and coastal biomes; no obvious LOD popping at normal flight altitude; three clean ten-minute flights.
 - **b20:** DONE at 10.964. Physics overhaul, revision 31 record/ghost separation and takeoff/Free flight compatibility fixes are verified with focused tests, production builds and 78 accepted browser flights with 328 stills. Old records and ghosts are retained. See the physics review above.
-- **b21, with b21r verification:** DONE at 10.969. Stronger boost, nitro drain/passive/gate refill and empty-edge hysteresis, the blue/pale-orange HUD meter and pulse, surge sound and afterburner visuals ship in 10.965 through 10.967. Part D at 10.968 verifies 78 production browser flights and 334 stills. Step 3 remains next, pending explicit approval; the mission overhaul has not started.
+- **b21, with b21r verification:** DONE at 10.969. Stronger boost, nitro drain/passive/gate refill and empty-edge hysteresis, the blue/pale-orange HUD meter and pulse, surge sound and afterburner visuals ship in 10.965 through 10.967. Part D at 10.968 verifies 78 production browser flights and 334 stills. Step 3 starts at 10.971 under the separate Oct 20 generator and two-theme approval.
+
+To add another theme: obtain approval first; define its seeded mission recipe, start/runway/gates and scoring goals; add biome weights and height shaping through the current terrain pipeline and serializable worker profile; add catalog/profile mapping and separate landscape/route record identities; cover determinism, valid corridors, seed replay, shared LOD geometry, cache isolation and existing records; then run focused tests, a production build, multi-seed chase/cockpit flights, completion flights and streaming/frame-time measurements. This lists requirements, not approval for another theme. Existing-mission overhauls remain later work.
 
 The heap target is about **200 MB**. No heap chase. City/roads redesign is **CLOSED** at 10.942; only real bugs there are in scope. See [the closure evidence](reviews/infrastructure-10.942/README.md). Vegetation, the warning strip and blackout/redout veils remain excluded under [Paused systems](#paused-systems).
 
@@ -296,7 +300,7 @@ The heap target is about **200 MB**. No heap chase. City/roads redesign is **CLO
 
 ## Non-goals
 
-No weapons, combat, multiplayer, Discord integration, or parallel world systems. Do not rewrite published commit history as part of source cleanup. Do not mark unverified or unshipped features complete.
+No weapons, combat, multiplayer, Discord integration, parallel record systems, or parallel world systems. Do not rewrite published commit history as part of source cleanup. Do not mark unverified or unshipped features complete.
 
 ## Paused systems
 

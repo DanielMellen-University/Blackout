@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **10.974** Verify the approved generator and exactly two themes with six additional complete browser flights on seeds 1337, 2026 and 9001. Every flight clears five gates, refills nitro, lands and earns gold. Record full-cadence FPS, stutters, resident coverage, LOD and heap without changing budgets or flight tuning. Step 3 remains started; existing missions await their later overhaul. See docs/reviews/generator/completion-results.md.
 - **10.973** Ship the approved Mountain valley run as the second and final new theme: a seeded wide valley floor between mountains over six kilometres above it, with five gates and a generated runway landing. Share existing world generation, medals and bounded records. Preserve b20 physics, b21 nitro, existing missions and paused exclusions. See docs/reviews/generator/README.md.
 - **10.972** Ship the approved Desert run: each launch generates a seeded desert world with dunes, mesas, badlands, dry washes, sparse towns and warm haze. Fly five low gates and land on the generated runway using existing medals and records. Preserve original missions, b20 physics, b21 nitro and all paused exclusions. See docs/reviews/generator/README.md.
 - **10.971** Start approved step 3 with a pure seeded mission spec and terrain profile carried through existing terrain and settlement workers. Exactly two theme recipes are reserved. Preserve b20 physics, b21 nitro, existing missions and paused exclusions; theme delivery follows in 10.972 and 10.973.
