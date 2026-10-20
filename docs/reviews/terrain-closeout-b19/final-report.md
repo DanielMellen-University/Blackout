@@ -1,5 +1,7 @@
 # Terrain close-out b19r, final report, 10.956
 
+B19s update, 10.957: [the hitch investigation](hitch-1337.md) attributes the recurring stall to the injected review pilot. The authorized alternate-seed endurance flight is still pending; the original b19r decisions and excluded records below remain historical evidence.
+
 **The complete good enough bar is not met. Roadmap step 1 stays OPEN.** The three appearance/LOD items pass within the reviewed routes. Seeds 42 and 73 supply two clean ten-minute flights, but both fresh full seed-1337 attempts have unexplained frame intervals and are excluded. No production terrain defect is causally established, and no terrain or physics change is made.
 
 ## Four bar decisions

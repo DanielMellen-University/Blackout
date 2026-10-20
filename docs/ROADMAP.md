@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 10.957. Attribute the recurring seed-1337 stall to a synchronous cold hydrology query in the injected review pilot. Archive a short reproduction, a separate CPU/GPU trace and method timings. Keep the production runtime unchanged and terrain step 1 open pending the authorized alternate-seed endurance flight. Retain seed 1337 as a known review performance issue. See docs/reviews/terrain-closeout-b19/hitch-1337.md.
+
 Chunk 10.956. Publish the b19r terrain close-out report. The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass within the retained routes. Keep roadmap step 1 OPEN: only two of three required clean ten-minute flights pass, and both full seed-1337 retries contain unexplained timing gaps. Preserve production terrain, physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/final-report.md.
 
 Chunk 10.955. Retain two full seed-1337 endurance attempts on the frozen 10.954 runtime. Both exceed 650 seconds without crashes, errors or coverage misses, but unexplained frame intervals exclude both from clean-flight acceptance. Archive all 44 stills and timing evidence. Keep terrain step 1 open for the third clean ten-minute flight. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/part-b.md.
@@ -32,7 +34,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.956** is current. Previous ship: **10.955**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.957** is current. Previous ship: **10.956**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
@@ -244,7 +246,7 @@ Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle th
 
 Every new feature, mission type, system or ROADMAP item needs Daniel's approval before work starts. Fixes to shipped features are allowed within approved scope. No polish on current missions: all current missions get overhauled in step 3.
 
-1. **Terrain generation good enough: OPEN.** The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass in b19/b19r. Two clean ten-minute flights pass on seeds 42 and 73. The only remaining bar item is a third clean ten-minute seed-1337 flight: both full b19r attempts contain unexplained frame intervals. Attribute the recurring event before changing terrain, then recheck the pinned route. See [the final b19r report](reviews/terrain-closeout-b19/final-report.md).
+1. **Terrain generation good enough: OPEN.** The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass in b19/b19r. Two clean ten-minute flights pass on seeds 42 and 73. The only remaining bar item is a third clean ten-minute flight. The b19s profile attributes the recurring seed-1337 stall to synchronous hydrology look-ahead in the injected review pilot; use the authorized alternate-seed flight without changing the production runtime. Known open review performance issue: seed 1337 still has no clean full flight, and its early 300 ms event remains unattributed. See [the hitch attribution](reviews/terrain-closeout-b19/hitch-1337.md). See [the final b19r report](reviews/terrain-closeout-b19/final-report.md).
 2. **Flight physics overhaul, then a much more powerful boost with a nitro meter.** Overhaul physics in b20 before nitro and boost in b21.
 3. **Missions.** Each mission is randomly generated and reshapes terrain generation to fit: a desert run makes the world a giant desert; a mountain valley run makes the course a giant valley with huge mountains. All current missions get overhauled here.
 4. **Gameplay overhaul.** Follow the terrain, physics, boost and mission work in that order. Any new feature still needs approval first.
