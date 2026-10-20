@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 10.964. Close the approved b20 physics half of roadmap step 2 after the lift/drag/stall and control-rate retune, revision 31 record isolation, compatibility fixes and 78 verified browser flights. Keep nitro and boost OPEN for b21, preserve all paused exclusions and leave the closed terrain and city/roads work unchanged. Synchronize release metadata. See docs/reviews/physics-b20/README.md.
+
 Chunk 10.963. Verify b20 in 78 production browser flights with 328 accepted stills: every one of the 76 non-Free mission entries completes five gates and lands, and Free flights on seeds 42 and 73 perform hard turns, stall/recovery, climbs/dives and full runway stops. Retain source/hook hashes, all excluded attempts and clean isolated audio repeats. Preserve missions, terrain, boost and paused exclusions. See docs/reviews/physics-b20/README.md.
 
 Chunk 10.962. Fix two b20 compatibility regressions found in production browser review. Derive the 80 kt takeoff brief from the configured rotation speed and keep revision 31 Free flight unscored and open after landing. Preserve all physics numbers, routes, records and boost behavior. Browser completion evidence continues in docs/reviews/physics-b20/README.md.
@@ -46,7 +48,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.963** is current. Previous ship: **10.962**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.964** is current. Previous ship: **10.963**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
@@ -259,7 +261,7 @@ Chunk 10.844 shares lightweight runway-local approach geometry and PAPI angle th
 Every new feature, mission type, system or ROADMAP item needs Daniel's approval before work starts. Fixes to shipped features are allowed within approved scope. No polish on current missions: all current missions get overhauled in step 3.
 
 1. **Terrain generation good enough: DONE (b19/b19r/b19s, 10.959).** The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass within their reviewed routes. Three clean ten-minute flights now pass on seeds 42, 73 and 1 under the user-authorized alternate-seed option. See [the final report](reviews/terrain-closeout-b19/final-report.md) and [b19s endurance evidence](reviews/terrain-closeout-b19/b19s-endurance.md). Known open review performance issue: seed 1337's synchronous pilot hydrology look-ahead stall remains unfixed, with no clean full seed-1337 flight; its early 300 ms event and the excluded alternate-seed intervals remain unattributed. The report also retains an unresolved high-altitude image finding outside the appearance-route envelope.
-2. **Flight physics overhaul, then a much more powerful boost with a nitro meter.** Overhaul physics in b20 before nitro and boost in b21.
+2. **Flight physics overhaul: DONE (b20, 10.964). Nitro and boost: OPEN (b21).** Lift, drag, stall progression, roll/pitch response and turn-energy retention are retuned and verified. Route/ghost revision 31 keeps old records and ghosts separate. All 76 non-Free mission entries complete and land, and two Free flights include maneuvers, stall recovery and full runway stops. See [the physics review](reviews/physics-b20/README.md). The much more powerful boost and nitro meter remain b21 work.
 3. **Missions.** Each mission is randomly generated and reshapes terrain generation to fit: a desert run makes the world a giant desert; a mountain valley run makes the course a giant valley with huge mountains. All current missions get overhauled here.
 4. **Gameplay overhaul.** Follow the terrain, physics, boost and mission work in that order. Any new feature still needs approval first.
 
@@ -267,8 +269,8 @@ Approved batch plan:
 
 - **b18:** Rewrite this roadmap and ship the parked weather-challenge approach mission as is, after CI repair. Verify it without redesign or polish. Preserve flight physics throughout this batch.
 - **b19, with b19r/b19s verification:** DONE at 10.959 for the scoped good-enough bar. Three clean ten-minute flights pass on 42, 73 and 1; appearance and normal-altitude LOD pass within their retained routes. Known limitations remain documented. See the endurance evidence and final report above. The acceptance bar remains: no visible seams, gaps or floating objects in low-altitude chase and cockpit views on six seeds; clearly distinct alpine, desert/badlands, green, volcanic and coastal biomes; no obvious LOD popping at normal flight altitude; three clean ten-minute flights.
-- **b20:** Flight physics overhaul covering lift, drag, stall, roll and pitch rates, and speed retention through turns. Bump the route revision; keep old records and ghosts, separated from the new revision.
-- **b21:** Nitro and boost: HUD nitro meter in the existing blue/pale-orange style; drain while boosting; refill over time and on passing gates; boost sound and afterburner visuals.
+- **b20:** DONE at 10.964. Physics overhaul, revision 31 record/ghost separation and takeoff/Free flight compatibility fixes are verified with focused tests, production builds and 78 accepted browser flights with 328 stills. Old records and ghosts are retained. See the physics review above.
+- **b21:** OPEN. Nitro and boost: HUD nitro meter in the existing blue/pale-orange style; drain while boosting; refill over time and on passing gates; boost sound and afterburner visuals.
 
 The heap target is about **200 MB**. No heap chase. City/roads redesign is **CLOSED** at 10.942; only real bugs there are in scope. See [the closure evidence](reviews/infrastructure-10.942/README.md). Vegetation, the warning strip and blackout/redout veils remain excluded under [Paused systems](#paused-systems).
 

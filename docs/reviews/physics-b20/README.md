@@ -93,4 +93,4 @@ Run `node scripts/build-physics-review.mjs`, serve `/tmp/blackout-b20-production
 
 ## Part C: roadmap close-out
 
-Physics verification is complete. Roadmap/release close-out follows in 10.964. Nitro and boost remain open for b21. All paused-system exclusions and the closed terrain and city/roads decisions remain in force. No heap work is included.
+DONE at 10.964: the physics half of roadmap step 2 is closed. Nitro and boost remain OPEN for b21. Version, README, ROADMAP and CHANGELOG identify the same release chunk. All paused-system exclusions and the closed terrain and city/roads decisions remain in force. No heap work is included. Final close-out checks pass: 168 test files / 1,646 tests, the production build, and the independent 78-flight / 328-still source/result validator.

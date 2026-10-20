@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.963**. Previous roadmap chunk: **10.962**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.964**. Previous roadmap chunk: **10.963**.
+
+Recent changes from **10.964**. Close the approved b20 physics half of roadmap step 2 after the lift/drag/stall and control-rate retune, revision 31 record isolation, compatibility fixes and 78 verified browser flights. Keep nitro and boost OPEN for b21, preserve all paused exclusions and leave the closed terrain and city/roads work unchanged. Synchronize release metadata. See docs/reviews/physics-b20/README.md.
 
 Recent changes from **10.963**. Verify b20 in 78 production browser flights with 328 accepted stills: every one of the 76 non-Free mission entries completes five gates and lands, and Free flights on seeds 42 and 73 perform hard turns, stall/recovery, climbs/dives and full runway stops. Retain source/hook hashes, all excluded attempts and clean isolated audio repeats. Preserve missions, terrain, boost and paused exclusions. See docs/reviews/physics-b20/README.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.959**. Mark roadmap step 1 DONE for the scoped b19 terr
 Recent changes from **10.958**. Record the third clean 650-second flight on seed 1 with the original review pilot and acceptance rules. Exclude the full seed-2026 and seed-9001 attempts for timing gaps, retaining all 66 stills. Validate all 21 required records and guard alternate-route, diagnostic, duration, coverage and timing acceptance. Keep production physics and terrain unchanged. See docs/reviews/terrain-closeout-b19/b19s-endurance.md.
 
 Recent changes from **10.957**. Attribute the recurring seed-1337 stall to a synchronous cold hydrology query in the injected review pilot. Archive a short reproduction, a separate CPU/GPU trace and method timings. Keep the production runtime unchanged and terrain step 1 open pending the authorized alternate-seed endurance flight. Retain seed 1337 as a known review performance issue. See docs/reviews/terrain-closeout-b19/hitch-1337.md.
-
-Recent changes from **10.956**. Publish the b19r terrain close-out report. The six-seed chase/cockpit appearance, five biome groups and normal-altitude LOD checks pass within the retained routes. Keep roadmap step 1 OPEN: only two of three required clean ten-minute flights pass, and both full seed-1337 retries contain unexplained timing gaps. Preserve production terrain, physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/final-report.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
