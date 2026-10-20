@@ -71,7 +71,7 @@ export interface MissionRoutePoint {
   fwdZ: number
 }
 
-export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'generated-desert' | 'generated-valley' | 'free'
+export type MissionRouteProfile = 'orbit' | 'sweep' | 'slalom' | 'ridge' | 'canyon' | 'coast' | 'fjord' | 'river' | 'volcanic' | 'desert' | 'alpine' | 'storm' | 'night' | 'timber' | 'glacier' | 'rainforest' | 'mesa' | 'badlands' | 'saltflat' | 'savanna' | 'tundra' | 'swamp' | 'monsoon' | 'archipelago' | 'thermal' | 'approach' | 'contour' | 'weather' | 'generated-desert' | 'generated-valley' | 'generated-coastal' | 'free'
 export type MissionRouteDifficulty = 'relaxed' | 'standard' | 'technical'
 export type MissionChallenge = 'approach' | 'range' | 'precision' | 'altitude'
 export type MissionRouteModifier = 'steady' | 'tempo' | 'altitude'
@@ -126,6 +126,7 @@ export interface MissionRouteValidation {
 const ROUTE_PROFILE_LABELS: Record<MissionRouteProfile, string> = {
   'generated-desert': 'DESERT RUN',
   'generated-valley': 'MOUNTAIN VALLEY RUN',
+  'generated-coastal': 'COASTAL ISLAND RUN',
   contour: 'CONTOUR CIRCUIT',
   weather: 'WEATHER APPROACH',
   orbit: 'ORBIT',

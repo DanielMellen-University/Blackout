@@ -114,6 +114,11 @@ export const COURSE_LIBRARY = [
     seed: null, profile: 'generated-valley', weather: 'clear', timeOfDay: .5,
   },
   {
+    id: 'coastal-island-run', label: 'Coastal island run',
+    detail: 'Follow five gates along beaches and sea cliffs, cross open island channels, then land at your generated coastal runway for a medal.',
+    seed: null, profile: 'generated-coastal', weather: 'clear', timeOfDay: .48,
+  },
+  {
     id: 'free-flight',
     label: 'Free flight',
     detail: 'Explore freely. Land and take off again whenever you like.',

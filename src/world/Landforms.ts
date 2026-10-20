@@ -127,6 +127,20 @@ export function sampleLandformsInto(out: LandformSample, x: number, z: number): 
     out.plateau = desertPlateau; out.badlands = profile.theme === 'desert-run' ? .8 : 0; out.dunes = profile.theme === 'desert-run' ? 1 : 0; out.alluvial = 0
     out.karst = 0; out.glacial = valleyWall; out.cold = profile.theme === 'mountain-valley-run' ? .3 : 0; out.hot = profile.theme === 'desert-run' ? 1 : 0; out.dry = 1
     out.ravine = 0; out.volcanic = 0; out.caldera = 0; out.salt = 0
+    if (profile.theme === 'coastal-island-run') {
+      const coast = coastField(x, z)
+      const shelf = smoothstep(0, .045, coast)
+      // Low sandy shelves, steeper headlands and a quiet runway/circuit shelf.
+      const cliffs = Math.max(smoothstep(1500, 2500, -right),
+        smoothstep(2700, 4200, right),
+        smoothstep(3000, 4200, forward) * (1 - smoothstep(0, 1300, right)))
+      const hills = fbm(right / 1600 + 51, forward / 1800, 3)
+      out.height = coast < 0 ? Math.max(-240, coast * 1800)
+        : shelf * profile.baseHeight + smoothstep(.015, .075, coast) * cliffs * profile.relief * (.65 + hills * .45)
+      out.coast = coast; out.moisture = .42; out.temperature = .62
+      out.highlands = 0; out.foothills = cliffs * shelf; out.ridge = 0
+      out.cold = 0; out.hot = .35; out.dry = .2
+    }
     return out
   }
   const wx = x + (fbm(x / 11000, z / 11000, 2) - .5) * 2200

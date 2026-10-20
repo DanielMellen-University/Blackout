@@ -21,7 +21,7 @@ window.__training={
    const lead=along>60 ? -300 : Math.max(0,100+along)
    target={x:gate.x+g.fwd.x*lead,y:gate.y,z:gate.z+g.fwd.z*lead}
   }else{
-   if(['contour','weather','generated-desert','generated-valley'].includes(world.mission.routeProfile))training.waypoint=1; const padY=world.runway.position.y,along=(p.x-spawn.x)*fx+(p.z-spawn.z)*fz
+   if(['contour','weather','generated-desert','generated-valley','generated-coastal'].includes(world.mission.routeProfile))training.waypoint=1; const padY=world.runway.position.y,along=(p.x-spawn.x)*fx+(p.z-spawn.z)*fz
    const approach={x:spawn.x-fx*2200,y:padY+135,z:spawn.z-fz*2200}
    approach.y=Math.max(approach.y,b21Ground(approach.x,approach.z)+220)
    if(training.waypoint===0&&Math.hypot(p.x-approach.x,p.z-approach.z)<300&&p.y<Math.max(approach.y+80,padY+900))training.waypoint=1
@@ -48,7 +48,7 @@ window.__training={
     }
    }
   }
-  if(!gate&&['contour','weather','generated-desert','generated-valley'].includes(world.mission.routeProfile))training.returnCleared=true
+  if(!gate&&['contour','weather','generated-desert','generated-valley','generated-coastal'].includes(world.mission.routeProfile))training.returnCleared=true
   if(!gate&&!training.returnCleared){
    if(training.returnClearY===undefined){
     training.returnClearY=p.y

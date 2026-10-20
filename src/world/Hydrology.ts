@@ -245,7 +245,10 @@ export function hydrologyWaterLevelAt(x: number, z: number): number {
 export function sampleHydrologyInto(out: HydrologySample, x: number, z: number, ground: number, coast?: number): HydrologySample {
   if (getTerrainProfile()?.dry) {
     out.height = ground; out.waterLevel = 0; out.river = 0; out.lake = 0
-    out.pond = 0; out.stream = 0; out.coastal = 0
+    out.pond = 0; out.stream = 0
+    // Ocean-only recipes skip inland drainage, retaining the ordinary sea.
+    out.coastal = getTerrainProfile()?.theme === 'coastal-island-run'
+      ? 1 - smoothstep(0, .025, Math.abs(coast ?? coastField(x, z))) : 0
     return out
   }
   const safeX = Number.isFinite(x) ? x : 0

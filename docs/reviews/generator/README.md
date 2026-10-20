@@ -1,10 +1,10 @@
-# Approved mission generator and two themes
+# Approved mission generator and four themes
 
-Approval: Oct 20, step 3 start, generator plus exactly Desert run and Mountain valley run. Current missions stay functional without polish. Physics b20, nitro b21, collision, water implementation, streaming caps and paused exclusions remain preserved.
+Approval: Oct 20, step 3 start, generator plus Desert run, Mountain valley run, Coastal island run and Volcanic run. Any further theme requires separate approval. Current missions stay functional without polish. Physics b20, nitro b21, collision, water implementation, streaming caps and paused exclusions remain preserved.
 
 ## Part A, 10.971
 
-The pure generator selects one of the two approved themes, or accepts an explicit theme. Its seed produces the same start, five-point course, landing runway, existing-medal goals and terrain parameters. The landing strip is the departure strip, reached after the circuit's final inbound leg. There is no second record or world system. The foundation reserves landscape revision 30 and route revision 33 for theme identities; existing families stay unchanged. Theme catalog activation follows in B and C.
+The pure generator selects a delivered approved theme, or accepts an explicit theme. The initial delivery covered two themes; the approved four-theme expansion is documented in [the expansion review](expansion.md). Its seed produces the same start, five-point course, landing runway, existing-medal goals and terrain parameters. The landing strip is the departure strip, reached after the circuit's final inbound leg. There is no second record or world system. The foundation reserves landscape revision 30 and route revision 33 for theme identities; existing families stay unchanged. Theme catalog activation follows in B and C.
 
 Terrain parameters enter Landforms, Geography and Hydrology through their ordinary samplers. The same serializable profile travels with terrain and settlement worker requests. Dry profiles have no standing water or live drainage; ordinary worlds retain the original water paths. No vegetation, warning strip or veils return.
 
@@ -24,7 +24,7 @@ Focused generator, original missions, catalog/session, record retention, b20 phy
 
 ## Part C, 10.973
 
-Mountain valley run is the second and final new catalog theme. A seeded bend carves a roughly 5.8 to 6.5 km-wide floor between mountain shoulders rising more than 6 km above it. The course uses the inner four kilometres of that floor with a wide downwind leg and a long aligned inbound leg. Floor relief stays below 30 m in the tested corridor; the normal corridor validator still probes the route. Existing elevation-driven rock and snow colors shade the immense walls. The generated dry valley uses the same landform, geography, hydrology, worker, collision and LOD paths as other terrain.
+Mountain valley run is the second approved catalog theme. A seeded bend carves a roughly 5.8 to 6.5 km-wide floor between mountain shoulders rising more than 6 km above it. The course uses the inner four kilometres of that floor with a wide downwind leg and a long aligned inbound leg. Floor relief stays below 30 m in the tested corridor; the normal corridor validator still probes the route. Existing elevation-driven rock and snow colors shade the immense walls. The generated dry valley uses the same landform, geography, hydrology, worker, collision and LOD paths as other terrain.
 
 Theme selection now participates in both settlement cache identities. This prevents a same-seed, same-pad theme switch from reusing the other world's towns or anchor plans. A focused regression exercises that switch. No city/roads redesign or budget change is included.
 
@@ -40,6 +40,6 @@ Resident coverage has zero sampled misses after ten seconds in a 200 m square ar
 
 The defects found while integrating the batch were fixed before final capture: fractional seed replay/record isolation and generated record retention in B, and same-seed cross-theme settlement cache reuse in C. No further production bug was reproduced in Part D. FlightModel, flightConfig, NitroSystem, Collision, WaterSystem and RenderQuality are unchanged from 10.970. The paused systems and all non-goals stay excluded. Contour circuit, Weather approach, Training orbit and the old catalog keep their existing behavior and await later overhaul.
 
-Final verification includes 79 focused checks across generator/LOD, catalog/session, records, original missions, b20 physics, b21 nitro, paused effects and version identity, plus the production build. The earlier full two-worker repeat passes 170 files / 1,672 checks, and CI is green on the pre-report 10.973 runtime. Final tip CI is checked after the 10.974 push. Step 3 is STARTED with this generator and exactly two delivered themes; it is not the completion of the wider mission overhaul. The roadmap lists the approval, recipe, pipeline, identity and verification work required before adding more themes.
+Final verification includes 79 focused checks across generator/LOD, catalog/session, records, original missions, b20 physics, b21 nitro, paused effects and version identity, plus the production build. The earlier full two-worker repeat passes 170 files / 1,672 checks, and CI is green on the pre-report 10.973 runtime. Final tip CI is checked after the 10.974 push. Step 3 is STARTED with this generator and the initial two delivered themes; it is not the completion of the wider mission overhaul. The roadmap lists the approval, recipe, pipeline, identity and verification work required before adding more themes.
 
 Reproduce completion flights with `REVIEW_PART=d REVIEW_COURSE=desert-run REVIEW_SEEDS=1337,2026,9001 node scripts/review-generator.mjs`, then the same command with `REVIEW_COURSE=mountain-valley-run`. Run them sequentially without a local test suite. The final validator requires all six and rejects smoke-only runs, runtime hash drift, wrong identities, failed completion/refills, missing stills and resident coverage misses.

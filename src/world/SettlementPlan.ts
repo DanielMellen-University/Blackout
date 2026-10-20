@@ -209,7 +209,7 @@ function anchorCell(kind: 'city' | 'village', pad: AnchorPad | null): [number, n
 export function settlementAnchorCells(
   kind: 'city' | 'village', pad: AnchorPad | null,
 ): [number, number][] {
-  if (getTerrainProfile()?.theme === 'desert-run' && kind === 'city') return []
+  if (['desert-run', 'coastal-island-run'].includes(getTerrainProfile()?.theme ?? '') && kind === 'city') return []
   const candidates = anchorCandidates(kind, pad)
   if (kind !== 'city' || !pad) return candidates
   const village = anchorCell('village', pad)
@@ -220,7 +220,7 @@ export function settlementAnchorCells(
 export function settlementAnchorForCell(
   cx: number, cz: number, pad: AnchorPad | null,
 ): 'city' | 'village' | null {
-  if (getTerrainProfile()?.theme === 'desert-run') return isAnchorCell(cx, cz, 'village', pad) ? 'village' : null
+  if (['desert-run', 'coastal-island-run'].includes(getTerrainProfile()?.theme ?? '')) return isAnchorCell(cx, cz, 'village', pad) ? 'village' : null
   if (isAnchorCell(cx, cz, 'city', pad)) return 'city'
   if (isAnchorCell(cx, cz, 'village', pad)) return 'village'
   return null
@@ -234,6 +234,13 @@ export function settlementAnchorForCell(
 function anchorLocation(
   kind: 'city' | 'village', pad: { x: number; z: number; yaw?: number }, attempt: number,
 ): { x: number; z: number } {
+  const coastal = getTerrainProfile()
+  if (coastal?.theme === 'coastal-island-run' && kind === 'village') {
+    const right = 1450 + Math.sin(attempt * 2.4 + coastal.phase) * 100
+    const forward = -2200 + Math.cos(attempt * 1.7 + coastal.phase) * 650
+    return { x: coastal.originX + Math.cos(coastal.yaw) * right + Math.sin(coastal.yaw) * forward,
+      z: coastal.originZ - Math.sin(coastal.yaw) * right + Math.cos(coastal.yaw) * forward }
+  }
   const cellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
   const cellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
   const salt = kind === 'city' ? 17311 : 12971
@@ -259,6 +266,7 @@ function anchorLocation(
 function anchorGridLocation(
   kind: 'city' | 'village', pad: { x: number; z: number }, attempt: number,
 ): { x: number; z: number } {
+  if (getTerrainProfile()?.theme === 'coastal-island-run' && kind === 'village') return anchorLocation(kind, pad, attempt + 96)
   const cellX = Math.floor(pad.x / SETTLEMENT_CELL_SIZE)
   const cellZ = Math.floor(pad.z / SETTLEMENT_CELL_SIZE)
   const sectors = 24
@@ -312,18 +320,19 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
   const cacheKey = `${id}:${forcedAnchor ?? 'normal'}`
   if (cache.has(cacheKey)) return cache.get(cacheKey)!
   const roll = hash2(cx * 131 + 8129, cz * 139 - 4513)
-  const desert = getTerrainProfile()?.theme === 'desert-run'
-  if (desert && forcedAnchor === 'city') return null
-  const cityAnchor = !desert && (forcedAnchor === 'city' || (forcedAnchor !== 'village' && isAnchorCell(cx, cz, 'city', pad)))
+  const coastal = getTerrainProfile()?.theme === 'coastal-island-run'
+  const sparse = ['desert-run', 'coastal-island-run'].includes(getTerrainProfile()?.theme ?? '')
+  if (sparse && forcedAnchor === 'city') return null
+  const cityAnchor = !sparse && (forcedAnchor === 'city' || (forcedAnchor !== 'village' && isAnchorCell(cx, cz, 'city', pad)))
   const villageAnchor = forcedAnchor === 'village' || (forcedAnchor !== 'city' && isAnchorCell(cx, cz, 'village', pad))
   // Cities stay exceptional. Villages have a much higher candidate rate than
   // cities because a 24 km cell plus terrain validation otherwise turns them
   // into once-per-session accidents instead of landmarks to fly toward.
-  const kind = cityAnchor ? 'city' : villageAnchor ? 'village' : !desert && roll < CITY_CHANCE ? 'city' : 'village'
+  const kind = cityAnchor ? 'city' : villageAnchor ? 'village' : !sparse && roll < CITY_CHANCE ? 'city' : 'village'
   let result: SettlementPlan | null = null
-  if (roll < (desert ? .08 : VILLAGE_CHANCE) || villageAnchor || cityAnchor) {
+  if (roll < (sparse ? .08 : VILLAGE_CHANCE) || villageAnchor || cityAnchor) {
     const rand = (n: number) => hash2(cx * 673 + n * 97 + 2843, cz * 701 - n * 131 - 9571)
-    const radius = kind === 'city' ? 8500 + rand(1) * 1500
+    const radius = coastal ? 450 + rand(1) * 200 : kind === 'city' ? 8500 + rand(1) * 1500
       : villageAnchor ? 1500 + rand(1) ** .72 * 2200 : 1050 + rand(1) ** .72 * 3950
     // Cities are allowed to straddle cell boundaries. Restricting their
     // center to radius+300 from every edge left a 9 km city with only a tiny
@@ -353,7 +362,7 @@ export function settlementForCell(cx: number, cz: number, forcedAnchor?: 'city' 
       }
       const x = anchored ? anchored.x : organicCoordinate(cx, rand(10 + attempt * 2))
       const z = anchored ? anchored.z : organicCoordinate(cz, rand(11 + attempt * 2))
-      const padClearance = kind === 'city' ? CITY_PAD_CLEARANCE_M : VILLAGE_PAD_CLEARANCE_M
+      const padClearance = coastal ? 1800 : kind === 'city' ? CITY_PAD_CLEARANCE_M : VILLAGE_PAD_CLEARANCE_M
       if (pad) {
         const padDx = x - pad.x
         const padDz = z - pad.z

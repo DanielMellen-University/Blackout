@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.974**. Previous roadmap chunk: **10.973**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.975**. Previous roadmap chunk: **10.974**.
 
-Recent changes from **10.974**. Verify the approved generator and exactly two themes with six additional complete browser flights on seeds 1337, 2026 and 9001. Every flight clears five gates, refills nitro, lands and earns gold. Record full-cadence FPS, stutters, resident coverage, LOD and heap without changing budgets or flight tuning. Step 3 remains started; existing missions await their later overhaul. See docs/reviews/generator/completion-results.md.
+Recent changes from **10.975**. Deliver the approved Coastal island run through the existing generator, terrain workers, ocean, settlements, five gates, medals and bounded theme records. Verify seeds 42, 73 and 808 in chase and cockpit. Four themes are approved; Volcanic run follows in 10.976 and completion evidence in 10.977. Further themes need separate approval. See docs/reviews/generator/expansion.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 
