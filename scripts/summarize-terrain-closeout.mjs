@@ -12,7 +12,7 @@ const fallback=selection.seeds.find(seed=>![42,73,1337].includes(seed))
 if(fallback){assert.ok(selection.reason?.trim(),'Fallback attribution required');await access(`${dir}/hitch-1337.md`)}
 const stages={audit:[42,2026,9001,1,73,1337],final:[42,2026,9001,1,73,1337],lod:[42,2026,9001,1,73,1337],endurance:selection.seeds}
 const rows=[];let baseline
-const currentFiles=execFileSync('rg',['--files','src'],{encoding:'utf8'}).trim().split('\n').sort()
+const currentFiles=[...new Set(execFileSync('git',['ls-files','--cached','--others','--exclude-standard','-z','--','src'],{encoding:'utf8'}).split('\0').filter(Boolean))].sort()
 const currentHashes=Object.fromEntries(await Promise.all(currentFiles.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])))
 for(const [stage,seeds] of Object.entries(stages))for(const seed of seeds){
  const path=`${dir}/${stage}/${seed}.json`

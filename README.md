@@ -2,7 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.959**. Previous roadmap chunk: **10.958**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.960**. Previous roadmap chunk: **10.959**.
+
+Recent changes from **10.960**. Remove the ripgrep dependency from terrain close-out evidence validation. Enumerate source files with Git, preserving the frozen-runtime hashes and every evidence acceptance rule. Verify focused evidence checks, the full suite and the production build before the b20 physics retune.
 
 Recent changes from **10.959**. Mark roadmap step 1 DONE for the scoped b19 terrain good-enough bar. Retain the six-seed appearance and normal-altitude LOD decisions, and three clean ten-minute flights on seeds 42, 73 and 1. Preserve the seed-1337 review-harness issue, excluded alternate-seed stalls and high-altitude image limitation in the final report. Synchronize release metadata without changing production physics or terrain. No b20 work starts. See docs/reviews/terrain-closeout-b19/final-report.md.
 
@@ -17,8 +19,6 @@ Recent changes from **10.952**. Ship the parked Weather approach mission as is, 
 Recent changes from **10.951**. Set the approved priority order to terrain, flight physics then nitro/boost, randomly generated terrain-shaped missions, and gameplay. Record the b18 through b21 plan, approval rule and current-mission polish freeze. Preserve paused exclusions, the approximate 200 MB heap target and closed city/roads redesign.
 
 Recent changes from **10.950**. Repair CI by retaining the shipped accessible AGL description in instrument tests and trimming older README history to the changelog. Preserve neutral altitude readings, flight physics and all paused exclusions.
-
-Recent changes from **10.949**. Polish existing flight reports so crash and ditch outcomes are clear and each failure reason appears once, while preserving score, coaching, retry and record behavior. Correct the featured-mission documentation to include the already-shipped Contour circuit. Add no features or mission types. See docs/reviews/debrief-10.949/README.md for focused tests and browser evidence.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

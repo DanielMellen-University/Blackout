@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, readdirSync, symlinkSync, rmSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync, readdirSync, existsSync, symlinkSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -29,7 +29,15 @@ function check(dir: string, record: unknown) {
 describe('terrain close-out evidence acceptance', () => {
   it('accepts all retained flights including the authorized alternative seed', () => {
     const { dir, record } = fixture()
-    const result = check(dir, record)
+    // Give the validator Git but no ripgrep, matching the CI dependency contract.
+    const bin = join(dir, 'bin')
+    mkdirSync(bin)
+    const git = process.env.PATH!.split(':').map(path => join(path, 'git')).find(path => existsSync(path))!
+    symlinkSync(git, join(bin, 'git'))
+    writeFileSync(join(dir, 'endurance/42.json'), JSON.stringify(record))
+    const result = spawnSync(process.execPath, ['scripts/summarize-terrain-closeout.mjs', dir, '--final'], {
+      encoding: 'utf8', env: { ...process.env, PATH: bin },
+    })
     expect(result.stderr).toBe('')
     expect(result.status).toBe(0)
     const summary = JSON.parse(readFileSync(join(dir, 'summary.json'), 'utf8'))
