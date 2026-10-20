@@ -32,4 +32,6 @@ const manifest = JSON.stringify({
   method: 'Production Vite build with external controls-only pilot and read-only observer injected before bundling. Normal dist is untouched. No physics, pose, velocity, gates, clock or results overrides.',
 }, null, 2) + '\n'
 await writeFile('docs/reviews/generator/hooks-build/browser-build.json', manifest)
-await writeFile(`docs/reviews/generator/hooks-build/hooks/${buildId}.json`, manifest)
+// A source/hook identity is immutable even when rebuilt from a later commit.
+await writeFile(`docs/reviews/generator/hooks-build/hooks/${buildId}.json`, manifest, { flag: 'wx' })
+  .catch(error => { if (error.code !== 'EEXIST') throw error })

@@ -1,6 +1,6 @@
 # Approved mission generator and four themes
 
-Approval: Oct 20, step 3 start, generator plus Desert run, Mountain valley run, Coastal island run and Volcanic run. Any further theme requires separate approval. Current missions stay functional without polish. Physics b20, nitro b21, collision, water implementation, streaming caps and paused exclusions remain preserved.
+Approval: Oct 20, step 3 start, generator plus Desert run, Mountain valley run, Coastal island run and Volcanic run. Any further theme, feature, mission type, system or roadmap item requires separate approval. The Oct 20 followup approves stutter repair and polish of these four existing themes only. Older missions stay functional without polish. Physics b20, nitro b21, collision, water implementation, streaming caps and paused exclusions remain preserved.
 
 ## Part A, 10.971
 
@@ -10,7 +10,7 @@ Terrain parameters enter Landforms, Geography and Hydrology through their ordina
 
 Focused generator, original Contour circuit, terrain and version checks pass, as does the production build. Playwright flies the existing Training orbit from the runway through gate one using the existing external controls-only review pilot. The paired chase/cockpit images under a/ were inspected. This is a foundation smoke check, not theme acceptance or an FPS claim. The original training course ignores a custom seed, as before.
 
-Reproduce the isolated minified review build with `node scripts/build-generator-review.mjs`, serve `/tmp/blackout-generator-production` with Vite preview on 5176, then run `node scripts/review-generator.mjs`. Build manifests retain source and pilot hashes. Normal `dist` has no injected pilot. Browser timing remains native wall time and production fixed-step physics.
+Reproduce the isolated minified review build with `node scripts/build-generator-review.mjs`, serve `/tmp/blackout-generator-production` with Vite preview on 5176, then run `node scripts/review-generator.mjs`. Full flights now default to capture OFF; use `REVIEW_CAPTURE=1` for separate visual sessions. The current [stutter review](stutter-10.978.md) documents the timing acceptance rules. Build manifests retain source and pilot hashes. Normal `dist` has no injected pilot. Browser timing remains native wall time and production fixed-step physics.
 
 ## Part B, 10.972
 

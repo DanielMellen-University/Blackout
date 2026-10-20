@@ -694,6 +694,10 @@ export async function boot(): Promise<void> {
 
   const renderer = new WebGLRenderer({
     canvas,
+    // Let the canvas present without a synchronous compositor snapshot. The
+    // browser may ignore this hint; all rendering quality settings stay intact.
+    context: canvas.getContext('webgl2', { alpha: false, desynchronized: true,
+      antialias: initialQualityProfile.antialias, powerPreference: 'high-performance' }) ?? undefined,
     // Multisample antialiasing is selected once at context creation. Low
     // quality should avoid paying that GPU cost on constrained devices.
     antialias: initialQualityProfile.antialias,

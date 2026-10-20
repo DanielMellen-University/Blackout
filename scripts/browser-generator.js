@@ -217,3 +217,15 @@ window.__training.state = () => ({ ...generatorObserve(), stream: world.terrain.
  lod: world.terrain.chunkStats(Math.floor(aircraft.position.x/420),Math.floor(aircraft.position.z/420)),
  heapMB: performance.memory?.usedJSHeapSize / 1048576,
 })
+
+// Observe actual drawing-buffer resizes without changing adaptive resolution.
+training.resizes = []
+const generatorSetPixelRatio = renderer.setPixelRatio.bind(renderer)
+renderer.setPixelRatio = ratio => {
+ const at = performance.now()
+ performance.mark('review-pixel-ratio-' + ratio)
+ generatorSetPixelRatio(ratio)
+ training.resizes.push({ at, ratio, ms: performance.now() - at })
+}
+const generatorResizeState = window.__training.state
+window.__training.state = () => ({ ...generatorResizeState(), resizes: training.resizes, contextAttributes: renderer.getContext().getContextAttributes() })

@@ -2,9 +2,9 @@
 
 Browser arcade flight game. Pilot an F-35, take off, fly a gate run, and land or crash. New pilots start in Training Orbit. Explore procedural mountains, waterways, cities, and villages, or chase medals and personal bests in authored courses and Daily challenge.
 
-Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.977**. Previous roadmap chunk: **10.976**.
+Current release: **v0.12.0** (`Systems expansion`). Roadmap chunk: **10.978**. Previous roadmap chunk: **10.977**.
 
-Recent changes from **10.977**. Verify all four delivered approved themes with eight complete browser flights: each new theme on 1337, 2026 and 9001 plus seed-42 Desert run and Mountain valley run regressions. Check every gate, nitro refill, runway landing and medal; retain full-cadence frame, stutter, coverage, LOD and heap evidence. Step 3 remains started; further themes require separate approval. See docs/reviews/generator/expansion-completion-results.md.
+Recent changes from **10.978**. Fix the early-flight compositor readback stall using the existing WebGL low-latency presentation path. Keep capture and camera changes out of timing acceptance. Preserve detail, distances, budgets, b20 physics and b21 nitro. Further themes and features require separate approval. See docs/reviews/generator/stutter-10.978.md.
 
 Earlier delivery notes are in [CHANGELOG.md](CHANGELOG.md).
 

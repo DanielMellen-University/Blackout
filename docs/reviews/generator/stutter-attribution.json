@@ -1,0 +1,28 @@
+{
+  "before": {
+    "readbackMs": 284.18,
+    "commitMs": 285.023,
+    "gpuWaitMs": 283.897
+  },
+  "after": {
+    "profiledDiagnosticOnly": true,
+    "observedMaxMs": 50.10000000000218,
+    "readbackCount": 520,
+    "maxReadbackMs": 23.882,
+    "maxMainTaskMs": 58.476,
+    "contextAttributes": {
+      "alpha": false,
+      "antialias": true,
+      "depth": true,
+      "desynchronized": true,
+      "failIfMajorPerformanceCaveat": false,
+      "powerPreference": "high-performance",
+      "premultipliedAlpha": true,
+      "preserveDrawingBuffer": false,
+      "stencil": false,
+      "xrCompatible": false
+    },
+    "traceSha256": "626c577eb5e43ed12a53bb9ff73682a6f55649ddfe50be738d9ef4787329798b"
+  },
+  "note": "Native compositor readback and nested GPU wait overlap. Profiling runs are excluded from flight acceptance. Raw capture-free acceptance uses separate unprofiled sessions."
+}
