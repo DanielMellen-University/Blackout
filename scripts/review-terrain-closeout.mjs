@@ -35,11 +35,12 @@ for(const route of routes){
   await page.evaluate(r=>window.__closeout.start(r),flight)
   const started=Date.now();let nextShot=long?5:5,nextLog=0,previous=-1,stalled=0
   while(Date.now()-started<(flight.seconds*2+180)*1000){
+   if(stage==='lod')await page.evaluate(()=>window.__closeout.camera(window.__closeout.state().seconds>=12.5?'cockpit':'chase'));
    await page.waitForTimeout(1000);final=await page.evaluate(()=>window.__closeout.state());samples.push(final)
    if(final.seconds>=nextLog){console.log(stage,route.seed,final.seconds.toFixed(1),final.status,'AGL',final.agl.toFixed(0),final.climate);nextLog+=15}
    if(final.seconds>=nextShot){
     for(const mode of ['chase','cockpit']){await page.evaluate(mode=>{window.__closeout.capture();window.__closeout.camera(mode)},mode);await page.waitForTimeout(300);const file=`${route.seed}-${Math.round(nextShot)}s-${mode}.jpg`;await page.screenshot({path:`${directory}/${stage}/${file}`,type:'jpeg',quality:88});pictures.push({file,state:await page.evaluate(()=>window.__closeout.state())})}
-    await page.evaluate(()=>window.__closeout.camera('chase'));nextShot+=long?60:15
+    await page.evaluate(mode=>window.__closeout.camera(mode),stage==='lod'?(final.seconds>=12.5?'cockpit':'chase'):(long&&Math.floor(final.seconds/60)%2?'cockpit':'chase'));nextShot+=long?60:15
    }
    metrics=await page.evaluate(()=>window.__closeout.metrics());wallSeconds=(Date.now()-started)/1000
    await writeFile(`${directory}/${stage}/${route.seed}.json`,JSON.stringify({sourceCommit,sourceHashes,runtime,hookSha256:createHash('sha256').update(hook).digest('hex'),route:flight,method:'One airborne reset before measurement, then control axes only. Production physics, collision, weather, streaming and cameras. Frame histogram excludes capture windows (1.5 seconds per screenshot); all terrain update costs retained.',errors,samples,pictures,final,wallSeconds,metrics},null,2)+'\n')

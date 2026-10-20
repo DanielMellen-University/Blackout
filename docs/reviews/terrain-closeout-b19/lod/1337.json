@@ -1,0 +1,2374 @@
+{
+  "sourceCommit": "5ec0cd5e8705aba7beb7251de16de22cd59a415e",
+  "sourceHashes": {
+    "src/audio/FlightAudio.ts": "ba6c2c77cec44346d9ed98ba992a403ca33c887476553c36912987174ad72f91",
+    "src/audio/AudioPreferences.ts": "12177f3e26ce5f0a1b8889bfb00118eaf08ca9bd206fbd3df6969b8ecbcd6a5b",
+    "src/aircraft/EngineHeatSystem.ts": "e43e0b076fb3ec4bdfb3b206e8b4ae8ecb1319198a6a16b6c98f5064b47914f5",
+    "src/aircraft/Aircraft.ts": "8d108f19115d183277c81c272c4c4c64da92553e5c909d1c38ec905f36d76437",
+    "src/aircraft/EngineState.ts": "b06adc13359bc90c59bb1629a60ccf57468ab84ce2e17f9d62fb16f499cbbfd0",
+    "src/aircraft/FuelSystem.ts": "08e79cd45881ca7b212d02bc5301b16c5ed2144fad8a6dcef71e94a178a59bff",
+    "src/aircraft/createF35Model.ts": "8de5d50b2eb7672d159c27e74207adf59af2b9bc38b02f308c8e5201d981e401",
+    "src/aircraft/FlightModel.ts": "f32b3844e31b65c94a6e46f616c5eca65013d252206ac539e43694c4f8b14fbd",
+    "src/aircraft/flightConfig.ts": "b61b600fb3c8183249daf2e69b2c9ed74b3c60eb7c14ad7bc8b0e85107424958",
+    "src/world/TerrainSeams.ts": "87281d9c8b97a176164ce9f05d4dccc8938aff458bbcf7b3d485b5bd2c1c1845",
+    "src/world/Runway.ts": "ffeae0de50d68ea94aa7bd093ec7f9db93ac37962f8e05b6507621c7b0f75ef2",
+    "src/world/WaterSystem.ts": "4ce1a615373539fc6679acda8f9bfd78f223996f6044cb53b1b7d88c7cf2bffb",
+    "src/world/Geography.ts": "957841b86577057cd975ee3a6342cff6204e7eb74686e0fa36bd1877d0b31b0e",
+    "src/world/RoadRouting.ts": "d9b0a95cb5b5bb956a6dd339082d31b6cb56a894b5cb553d24259e9be1bd3a09",
+    "src/world/Coastline.ts": "58d966bbbe12c6a19f15d21797aa41d5bade66fc36d4d0bb42386fb4ed8e8be1",
+    "src/world/CloudMaterial.ts": "fa578604e624e76924fb79e9579a71f4de08eee79dc1d53887c4022e914265f7",
+    "src/world/TerrainWorkerPool.ts": "43a58cb2df502310abd0ae85fa36a6cddcdd08ad4e93d5b6a067295e434e6cce",
+    "src/world/RoadClearance.ts": "59be9141893743b373de3288651b9ce37bea0ce57bc72e3fc972a881a805820c",
+    "src/world/RainShafts.ts": "156b09dfc7c836e35fb81721eda907b1ac86700545736c8ba6ff50a768163fa9",
+    "src/world/WaterAppearance.ts": "bbe78d0d916806011c5fa722ffff0335579999dd92d4c82f7f7cb7d1c8a6e37f",
+    "src/world/TerrainGeometry.ts": "ae2ba25a313c1a4fa643626979bac3f68bc8dfa79e5b95dff9590f0cf8d44d7e",
+    "src/world/terrainSample.ts": "fd078d457ed4cfbb983b24a22a89acd4076e4454c300e9801e51f91fd5a04aca",
+    "src/world/SnowField.ts": "2e8a6562387d3c00776a0db2283f7b6776362ae5950357f7a556e70622908bcc",
+    "src/world/WaterNormals.ts": "db10c3260dcc8a63c61a516f77b6e8393313e207abd10c1dcf48b76fd99a9c19",
+    "src/world/SettlementSystem.ts": "cea04bf7b3c6ecacf1e4fe9e9446aa62b928ac3d21257aab7b626c0f078049ef",
+    "src/world/SettlementGround.ts": "57f68fbc7e972f363329deec757faa32815c329a64a9ab22dd74cd01d3cb2f76",
+    "src/world/DrainageRouting.ts": "f179e3a6cb918a5e0b4254277de7dee6f0e2a20e6444dadd50e621b146dae1b8",
+    "src/world/Atmosphere.ts": "e7e60000519dd4e6450e304c5f549e9ec17e2b60e60e4312d9d3ff992fc9406d",
+    "src/world/RegionalRoads.ts": "d9f53d3eac40eaac6039e398a74392f4790a34272ed2a1c2ebf57e33560b66cb",
+    "src/world/TerrainWaterBed.ts": "c9aefb6a4ca1c3476177925c94d58c8cd383b0298bff1a85c9cb5a94d0739b95",
+    "src/world/StormEvents.ts": "f78b35dbfa1dfb5be4cc103a07c19dcea346dacd679e39eac71f28c436674f16",
+    "src/world/RoadTerrainFit.ts": "621833233605a85f947c94a7282353333290af8e07941d1465d49a8a1958e765",
+    "src/world/terrain.worker.ts": "bf7251c92ecb72e63219c17ce7ea06b953b4003a3477193cb51bd47e610abc38",
+    "src/world/RiverSurface.ts": "63271c986252e1cf0cf1b8057e030ad8ac57d54597a809404d58e6ae150dc365",
+    "src/world/SettlementLayout.ts": "c0398033832bfd2cce976422898a85a2c78d60a5bd4973e940b391cdb357a82b",
+    "src/world/Airfield.ts": "05519dc3353b2d4dfc32301ec492d3070aaf36d9255a707b99e69d011826ca2c",
+    "src/world/RegionalDrainage.ts": "3f2672cae61cc3dd31e2deb9d7d313ca0375f5a153ac99437e262c6fbb6bb781",
+    "src/world/SurfaceNormals.ts": "7bd5400dbed878562612e019c2916d6998ce8e4468b625cb5088adef17464bb7",
+    "src/world/LakeShore.ts": "7c25d603cf20cd99fe9dc6a73db46e3b97a6c17ad1a2fb3d186f2ad46fc9b124",
+    "src/world/WeatherDirector.ts": "406b1b474c1f5c23130c8e347327c4bd9a949a60af480f0f00707c8105e8a008",
+    "src/world/SurfaceDraper.ts": "22e3fcc3ddf8134b1db310340f764884a5aa572dc5448d7da1bcead1930e09ab",
+    "src/world/RegionalWeather.ts": "4c0b7922f64acba8aba9f65a3af2cb4d2f48f40532150bcd718e4b06fb1adb8a",
+    "src/world/TerrainSystem.ts": "e9f61d28dcaf92cf4497e256a270faae2b76e6376519657d99b6e74151c4d7ba",
+    "src/world/WeatherTransport.ts": "c32ee8794c6fa0ff3c7f059754179fe407bd6b1c5c02a8ad9570ed0af6beb0ab",
+    "src/world/SkyDome.ts": "9f2e7cd5a0d6527a5a54231a16505f1577ecc991c9b6281b52b1b9b260effcc8",
+    "src/world/noise.ts": "a4594edc9385dced3b1059a6b5585e980ec42772d94aa42fbc9d9ef092f967ed",
+    "src/world/RoadSurface.ts": "7b6d938411c8bcf9cdd956f4daf1f5a29bc0bb3c668de76b2b0e9135d9f996ef",
+    "src/world/CloudFormations.ts": "b4601d722345dd7a9302f5f5c5eba51380e360ace912c415e7f7208318fecece",
+    "src/world/TerrainLayout.ts": "9921804558fb05f6def8f7d48d12571e08996b7f6828a4992810c6d3596c9738",
+    "src/world/settlement.worker.ts": "4e4e1e32343571faa62ae8f4296aa653665d0266fc2adc54c1c5ebc5635d7b8a",
+    "src/world/BasinSurface.ts": "6c6006772986efcfe188e9383d169b14181d0be2097ca822bf045800360fdbad",
+    "src/world/Hydrology.ts": "2e178089f082194557677fa1c969caf73cf010c79734cfa22392678688886e40",
+    "src/world/Landforms.ts": "36a3d72a462e734ed934092f2e2ab0dd3daa63948a678b0fc48c44cfff4a78ea",
+    "src/world/SettlementPlan.ts": "2b487a8c745a5c45ef0ae4d4a1cbb4eaf132c5d603d923e8ddd1bc46a70ccc5e",
+    "src/world/ground.ts": "4f836f6794dfc30f0147f64b514da4add3711aac2b1419eab7e16b95a5654b29",
+    "src/world/AirTrafficSystem.ts": "31edf2b1485be032810e537b1ee692e57708ed3beb86a16c47a938b9afdd5fad",
+    "src/world/World.ts": "8479f8c16897471aaa2867c25939e9be2e7d7155700d7d9904c7bcdce1020e11",
+    "src/world/RoadProfileCache.ts": "5fcd6cb58759f13eaa0c156bb46bc92df3e7fde8963f4119a50d64fa26bc92ba",
+    "src/world/RainField.ts": "f80ec6105af22714e116de468b4348d80068c84de189396efc9fe704e217dab9",
+    "src/world/RiverUnion.ts": "857b458b2a66f56b8e59cbb70d619dd89ade91cc46d8f3f075a63631e31c42bb",
+    "src/systems/CourseLibrary.ts": "8c990eba2b517ed75ece8de75183584aa53f9b3e6a5b16f4849ba1b72511291f",
+    "src/systems/SortieContract.ts": "af6b4aa9af60f80dd60d7e33cb14becce3ec2c2be3af039f46a638bf9f8b0329",
+    "src/systems/Supersonic.ts": "01b4b3604311e93a8803674236f9b995620905dd90b6c035a36679e649f34e9f",
+    "src/systems/CareerProgression.ts": "632ce8ef7583b361534ec389c5238f3747a338ce38a267e35ba020a3d0a9c90b",
+    "src/systems/Collision.ts": "a4a328a815b7654e8c773ac7c3205bed244a504bc943fcbe469bd17cc17ffb08",
+    "src/systems/ChallengeRun.ts": "45928926f64747159498e93d9e7f41bd40d1d1c12baa107bcf8cc139d634e4ff",
+    "src/systems/GroundWakeFx.ts": "df48d14be372134120403ca0c1407f2677201ef224a4dcc50fe2de9c0975b4ed",
+    "src/systems/StuntTracker.ts": "b27696d9e51f8870cf247b48a0584a23768c090a81f13cdfb6e6dd9692b5689b",
+    "src/systems/LandingFx.ts": "5751cf1fd097dbf110f8f2efd2e958794a0f9183614991be04957aa98e860134",
+    "src/systems/RadarSystem.ts": "57d1ca831459d4e9db1b547d8dfc0f49dc532b6b017a82f9e604ac8cbeb35979",
+    "src/systems/LandingAssessment.ts": "395295bd8ff775f6e789a076f21e9aeae60656071064841a0b73f2d9ec46c1e9",
+    "src/systems/WaterWakeFx.ts": "6b7225a69c0e4c1e6606a963b617e3b7c8d5ebf11bda8be5039bd6e9541d5295",
+    "src/systems/WaterImpactFx.ts": "aa8c20141f600787c91757135e5e3d036d1217a92c919aa90f72b4103003dabf",
+    "src/systems/Mission.ts": "1f5c8dc2075d125cabbe7d9dbe845eea3e321cf5164e6fe195c320b406ec6d35",
+    "src/systems/ThermalLift.ts": "d4bdfbafef69451c32cbb763c8fffd6a0e07aadf0b6ddf4b7c848938b4c9c608",
+    "src/systems/StormBuffet.ts": "d738c1ce8c608a6abb51a1e2cbbe22caf3a560497f4b3dbc26ddb59a1f4e5878",
+    "src/systems/GhostReplay.ts": "a6eb988870d2db38cebbef80047c0c9f3eca0a69f952f02fa4ff0848d721e458",
+    "src/systems/FlightCombo.ts": "40b93d68bf4cbe832603c0996ced5a59da8491a39677179c929952ef05e06248",
+    "src/systems/FlightStyle.ts": "5bf6a7c0ea2a3915e812642c7923eff2599aeb364d6e763bdd6f8d280c72a88a",
+    "src/systems/CrashFx.ts": "9f30b62aa37201fb40e0390a7a86b568172f813fd9ea2c767521b2c1a3e0adcb",
+    "src/systems/CrashCinematic.ts": "b9ad6fe70b9a8d88c51e4bed7d9a1b359ec8259d924f01bc76da9a3ef8537a5c",
+    "src/systems/AltitudeMilestones.ts": "41656810b94177a5e5526cfd27ac11b86478322a7227d4e8929dc13b8de3d1da",
+    "src/main.ts": "fe725774430f11ea1c73924b72889f046ddc36a34040c469feaec938355cbadf",
+    "src/camera/FlightPathMarker.ts": "05bc9c7355f44b0873ef87d8dfb041cae508587dd82d8d4768545048301b35c3",
+    "src/camera/CameraSystem.ts": "24a4648a0b9a873561d954d22357238904b862ea932eaefebb0e0c688d7c186c",
+    "src/camera/CockpitMode.ts": "bb65ae9519721dd2f6cd3801725947008af90d0b1f457474634d2664cac7cced",
+    "src/ui/liveHudBudget.ts": "8058da4add8a20bd181bfa04f9e9f56ce868c2bd8ea30b0e914d60511a82a76e",
+    "src/ui/HUD.ts": "d9a967006a901bfd0966f54d66fd37ca1a5e3c637864ead3f965d51b507138fd",
+    "src/ui/MissionPickerLayout.ts": "1439354794846a73a7ece9465a7fc157ad9d3d5fdd2b2e60fc7cb30b70fb6290",
+    "src/ui/NativeSelect.ts": "2dff095d5e77d933b87af35d4dd6f52117818ec5dc485c80ad07ff8f6cf661f9",
+    "src/ui/settingsDeck.css": "44deb80f08fd50800e1b9d3208f5eb18b4c0fe65bb6f56979a289c140d64ce32",
+    "src/ui/pilotGuide.css": "54d0d3b6dcb082ae026c56d403ea74d9f9b7f597887278234b8bc189028e892f",
+    "src/ui/StartupScreen.ts": "0201eea600ab1e217039b7e61629602f82955831a09ba555b8a7145286c26c8f",
+    "src/ui/GameMenu.ts": "efd3638bc53da21ce2cd82687a9a501a77f7c1ec4c98489bbc1e4fddd2f3a0ee",
+    "src/ui/ModalFocus.ts": "f3e705afbfb09caf7379e13be277099b3bd68b38264888b0c218bda96e5c9f6d",
+    "src/ui/CourseBriefing.ts": "cb80ca9832a735bf243ec1542a4386bb33de0dc39bf76d5e30d270b1684bc6fd",
+    "src/ui/RunResults.ts": "85dce592e9e18a6885070b40c54ebe62de7cb45dbfeded01e4602fba55bf6efc",
+    "src/ui/CoursePicker.ts": "8aa36eafd1c6a7bf95bc153082ac26d6cb38bd5490d14312de3e7d936dce84c4",
+    "src/boot.ts": "bffe55897bbe847ced2f416269e7040f2ec0b246517791ab17ac40ee35a30cfe",
+    "src/style.css": "1f98e5c9e417860790c5e17d61b7689be882efadf6adb43a9e027218c0cd4314",
+    "src/debug/FlightReview.ts": "d02df3696685c31a0681c92a3d1ca2cc67d11841fe86d0ef5bd95e94389f044e",
+    "src/debug/RoadReview.ts": "d516b8e72c24dd2a3b871692f1f5be4f71f9628bdae80f52032cf4e4038d3e1d",
+    "src/debug/WeatherReviewRoutes.ts": "e395d78ae03fc2c8961d15a0674f31ad3b5363e424c27d839a208d0891f3df9a",
+    "src/debug/DebugOverlay.ts": "7e12cd37f86ca0ce80b3472a0e84ff9fe59301d21abfd95aede76afc7cf3d263",
+    "src/debug/debugFlags.ts": "a4f8890657d1dd1dd4d7b9a7db1b88dfee38bb89ab296f1f0a5dfe52f5fb9b8f",
+    "src/core/BannerClock.ts": "0322abf524618bb5b8eec032087d561ef0e14bf9ab8200c46606cc66fe3e67b6",
+    "src/core/CourseSession.ts": "715834d70dbe4a158446351ec01d4b08664a2cd1e829f07415ae708511e27493",
+    "src/core/startupFailure.ts": "26af5759a29f648fde5d20076b6970a03abab1c0e1daefa085b6253a06f5a33f",
+    "src/core/FlightPreferences.ts": "a9cd79b3a945965401616a00c29620010c07bdfac18f85c14dd39ef14fbbdd61",
+    "src/core/FlightBriefing.ts": "c26aa4490189bf712a84db3df2fec00dc5abdc079ed70453efc04079413616a4",
+    "src/core/PreferenceReset.ts": "8a7b6a9e194ddfb698e2f1cc62395484951506642fc37f72936a448699310208",
+    "src/core/ShaderSourceCache.ts": "f5ee02f9f545cd99a06367c8c8c052a5100eab5e97ba0574668ec611107fae1b",
+    "src/core/Time.ts": "63afb29b99f8993f5aa7ebab05e3d6c9d2eb4ad5a58faaef46e4a5116a31f55b",
+    "src/core/CourseFavorites.ts": "84f6686f1042b3000f594a4cac449707bfddee1ee7540038fe6bb002f7942285",
+    "src/core/attitude.ts": "8e7fe9333ed105b7b794f8b9a29b06a34baf1b823a6a091a3f9778f7d26104fe",
+    "src/core/CourseRecordRetention.ts": "5a2d92696ea0b1a5b687204d6d7eade2e6c601bde16e8654ed25df060f6ad948",
+    "src/core/dispose.ts": "2dd57e6126a2861c5f7b589a49b40a069fe8d85c2d2238b93570f5439c2ccbff",
+    "src/core/SceneExposure.ts": "348886c7f0ab79dd52f9f6bb3b35f173f3c86662ee7974e47b7fb5adf09addb0",
+    "src/core/RendererWarmup.ts": "0070677762329b5663ac71d176c114f9b23d96b9d4386e603567e6a3637ab845",
+    "src/core/WorldSeed.ts": "ec292023569499a972d0b98da0c85d6acbc3f77b6a285dee75d49fe368cdc9fb",
+    "src/core/Version.ts": "cebb0f7e4ca5e77124c5023f436f7dd1ac70fcde38a3da37c7464f63e18231bf",
+    "src/core/RunwayGuidance.ts": "5b1f921972a7b2edf79fb28d71358e1382f13f3a2b02667c6f685f3f05cb2728",
+    "src/core/InputManager.ts": "7c79c31be12c2d1b47dccb9273de3709ce08fb2c799d5fc9f85d3e9aa00124fe",
+    "src/core/AdaptiveResolution.ts": "ab217b089d6fe000aee3cc38a3cc9a5a047ca4607398dffde0b5e82dbc110fa6",
+    "src/core/CourseRecents.ts": "cfd993148623b7dcc5ff092803c43cdd0e1e2ce9b3bd37049d2b23aebc76f0da",
+    "src/core/types.ts": "066bcac2932b352c0e95abe12a7a48be9267044ce1e9b8c00cd5b4d06f011a70",
+    "src/core/ListenerBag.ts": "76626bc92ba6420de4991ee6abe769e41ad4d9349fce47e025a3871c360cf321",
+    "src/core/suppressBrowserUi.ts": "33c64ffbbd61ef0e2af3325b0b760613bc40927bd7d69b54dd15aa1f7b3a5af6",
+    "src/core/OpsStreak.ts": "fa6d5a3a740ed1d724761d99e9832135dbbe75f7b061d67e417b2676ace9990e",
+    "src/core/RenderQuality.ts": "066ddc35fd7b41db4477d3398326e4befc5a56d0716b62a438cf590de1019ec9",
+    "src/core/WorkerWatchdog.ts": "c261753c96ad158e15a4622f8a458b21c2f3a06477c2e49c24de5a2375400b0d",
+    "src/core/airspeed.ts": "cbcb6b5d43d8183f64281aefa456e71b14880963f1b89eab8624bc7c8828b01a"
+  },
+  "runtime": {
+    "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "renderer": "ANGLE (Intel, Vulkan 1.3.255 (Intel(R) Xe Graphics (TGL GT2) (0x00009A49)), Intel open-source Mesa driver)"
+  },
+  "hookSha256": "5e56e767f56ab99b1626e69b8b9686fef864e81bb63c9fbe661e803f8a9df6f6",
+  "route": {
+    "seed": 1337,
+    "biome": "city/green",
+    "x": 17700,
+    "z": 43100,
+    "clearance": 650,
+    "seconds": 25,
+    "yaw": 1.892546881191539,
+    "score": 103.02535363798629,
+    "maxRise": 7.882753985579711,
+    "points": [
+      {
+        "d": 0,
+        "height": 990.2361341811018,
+        "biome": "desert"
+      },
+      {
+        "d": 500,
+        "height": 998.1188881666815,
+        "biome": "desert"
+      },
+      {
+        "d": 1000,
+        "height": 973.5328611123139,
+        "biome": "desert"
+      },
+      {
+        "d": 1500,
+        "height": 916.8092813534741,
+        "biome": "desert"
+      },
+      {
+        "d": 2000,
+        "height": 883.6254673963518,
+        "biome": "desert"
+      },
+      {
+        "d": 2500,
+        "height": 859.5140970401167,
+        "biome": "desert"
+      },
+      {
+        "d": 3000,
+        "height": 811.6653449567659,
+        "biome": "desert"
+      },
+      {
+        "d": 3500,
+        "height": 785.4956830259207,
+        "biome": "desert"
+      },
+      {
+        "d": 4000,
+        "height": 745.5561573583755,
+        "biome": "desert"
+      },
+      {
+        "d": 4500,
+        "height": 643.5171080518353,
+        "biome": "savanna"
+      },
+      {
+        "d": 5000,
+        "height": 608.4224382588719,
+        "biome": "plains"
+      },
+      {
+        "d": 5500,
+        "height": 599.5578937821582,
+        "biome": "rainforest"
+      },
+      {
+        "d": 6000,
+        "height": 612.1847060589853,
+        "biome": "rainforest"
+      },
+      {
+        "d": 6500,
+        "height": 622.0099883435392,
+        "biome": "rainforest"
+      },
+      {
+        "d": 7000,
+        "height": 633.9273371150243,
+        "biome": "rainforest"
+      },
+      {
+        "d": 7500,
+        "height": 632.4751903184704,
+        "biome": "rainforest"
+      },
+      {
+        "d": 8000,
+        "height": 573.4942960091644,
+        "biome": "rainforest"
+      },
+      {
+        "d": 8500,
+        "height": 511.5064784579557,
+        "biome": "rainforest"
+      },
+      {
+        "d": 9000,
+        "height": 482.90245189771366,
+        "biome": "rainforest"
+      },
+      {
+        "d": 9500,
+        "height": 468.2696410393131,
+        "biome": "rainforest"
+      },
+      {
+        "d": 10000,
+        "height": 451.7481856965569,
+        "biome": "forest"
+      },
+      {
+        "d": 10500,
+        "height": 459.01559718949306,
+        "biome": "forest"
+      },
+      {
+        "d": 11000,
+        "height": 504.5088042484638,
+        "biome": "forest"
+      },
+      {
+        "d": 11500,
+        "height": 516.588436968052,
+        "biome": "forest"
+      },
+      {
+        "d": 12000,
+        "height": 501.8029188775686,
+        "biome": "forest"
+      },
+      {
+        "d": 12500,
+        "height": 496.4330500905745,
+        "biome": "tundra"
+      },
+      {
+        "d": 13000,
+        "height": 504.1445790472174,
+        "biome": "tundra"
+      },
+      {
+        "d": 13500,
+        "height": 530.8962767632795,
+        "biome": "tundra"
+      },
+      {
+        "d": 14000,
+        "height": 620.7138358514522,
+        "biome": "tundra"
+      }
+    ],
+    "climate": {
+      "height": 990.2361341811018,
+      "waterLevel": 0,
+      "moisture": 0.21067811463758968,
+      "temperature": 0.9221529635692048,
+      "biome": "desert",
+      "biomeB": "savanna",
+      "biomeMix": 0.4117647058823529,
+      "biomeWeights": [
+        [
+          "plains",
+          0.5317460246372502
+        ],
+        [
+          "hills",
+          0.5317460246372502
+        ],
+        [
+          "forest",
+          0
+        ],
+        [
+          "rainforest",
+          0
+        ],
+        [
+          "swamp",
+          0
+        ],
+        [
+          "desert",
+          1.6361416142684622
+        ],
+        [
+          "mesa",
+          0.000021342075592162595
+        ],
+        [
+          "savanna",
+          1.1452991299879234
+        ],
+        [
+          "tundra",
+          0
+        ],
+        [
+          "mountain",
+          0.36385838573153784
+        ],
+        [
+          "snow",
+          0
+        ],
+        [
+          "volcanic",
+          0
+        ],
+        [
+          "saltflat",
+          0
+        ]
+      ],
+      "river": 0,
+      "land": 1,
+      "coastal": 0,
+      "features": {
+        "river": 0,
+        "lake": 0,
+        "ravine": 0,
+        "pond": 0,
+        "stream": 0
+      },
+      "landform": {
+        "ridge": 0.000779301640689343,
+        "alpineValley": 0.0007571739234865783,
+        "plateau": 0.000015393983465814313,
+        "caldera": 0,
+        "foothills": 0.7667242695713874,
+        "dunes": 1,
+        "alluvial": 0,
+        "badlands": 0.000012623066441967736,
+        "karst": 0,
+        "glacial": 0
+      }
+    },
+    "long": false
+  },
+  "method": "One airborne reset before measurement, then control axes only. Production physics, collision, weather, streaming and cameras. Frame histogram excludes capture windows (1.5 seconds per screenshot); all terrain update costs retained.",
+  "errors": [],
+  "samples": [
+    {
+      "seconds": 1.0500000000000012,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        17864.9505106151,
+        1640.034135151194,
+        43045.09265582146
+      ],
+      "velocity": [
+        161.98443375182825,
+        -0.6705259728906788,
+        -53.907367623632105
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1617.8741886768714,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 671.2425476075041,
+      "attitude": {
+        "pitch": -0.0052781639953191385,
+        "roll": -0.0012075084359297837,
+        "heading": 1.8925267930563785
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1883.6367540473418,
+        "cloudTop": 2567.636754047342,
+        "precipitationBase": 1883.6367540473418,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 99035977,
+      "streaming": {
+        "loaded": 748,
+        "pending": 326,
+        "inFlight": 4,
+        "ready": 4,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 2.1833333333333305,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        18054.119123319808,
+        1638.5210761810138,
+        42982.13983341826
+      ],
+      "velocity": [
+        171.4537014263883,
+        -1.7071606498017025,
+        -57.05549251131956
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1622.6796423963717,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 664.3916593379986,
+      "attitude": {
+        "pitch": -0.009463054063307452,
+        "roll": 0.00015203620599765248,
+        "heading": 1.892466928224592
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1882.6082159877062,
+        "cloudTop": 2566.608215987706,
+        "precipitationBase": 1882.6082159877062,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 119802323,
+      "streaming": {
+        "loaded": 867,
+        "pending": 205,
+        "inFlight": 4,
+        "ready": 15,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 3.21666666666666,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        18235.24769382433,
+        1636.9130951659665,
+        42921.86701113349
+      ],
+      "velocity": [
+        178.79815272803094,
+        -1.3117752458249252,
+        -59.49572453968854
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1618.1830421374239,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 669.68704078557,
+      "attitude": {
+        "pitch": -0.006492203749734015,
+        "roll": 0.0014142810439527161,
+        "heading": 1.8924223765045893
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1871.366256026899,
+        "cloudTop": 2555.366256026899,
+        "precipitationBase": 1871.366256026899,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 96177035,
+      "streaming": {
+        "loaded": 932,
+        "pending": 144,
+        "inFlight": 1,
+        "ready": 18,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 4.29999999999999,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        18432.616180907633,
+        1635.5794896005075,
+        42856.19262364087
+      ],
+      "velocity": [
+        185.28433806032731,
+        -1.3405823621056303,
+        -61.65343666522767
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1603.6208681730081,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 683.2342236129795,
+      "attitude": {
+        "pitch": -0.0073697235565679765,
+        "roll": 0.0017922902926488149,
+        "heading": 1.8924001443180207
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1851.799721986993,
+        "cloudTop": 2535.799721986993,
+        "precipitationBase": 1851.799721986993,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 116193588,
+      "streaming": {
+        "loaded": 986,
+        "pending": 102,
+        "inFlight": 4,
+        "ready": 7,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 5.3833333333333195,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        18636.42698278018,
+        1633.625913675459,
+        42788.372310179926
+      ],
+      "velocity": [
+        190.74370164939864,
+        -2.3449680242555355,
+        -63.47531214014504
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1595.596918213322,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 686.9739045724001,
+      "attitude": {
+        "pitch": -0.012585082818256094,
+        "roll": 0.0009544229100461318,
+        "heading": 1.8924129863720576
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1840.6265256880822,
+        "cloudTop": 2524.6265256880824,
+        "precipitationBase": 1840.6265256880822,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 107972916,
+      "streaming": {
+        "loaded": 1020,
+        "pending": 82,
+        "inFlight": 0,
+        "ready": 19,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 7.516666666666645,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        19052.853393019752,
+        1626.7281347484238,
+        42649.76508074123
+      ],
+      "velocity": [
+        199.10215720160997,
+        -3.8828440696793423,
+        -66.28775230252188
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1582.4467825265867,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 699.4467168974004,
+      "attitude": {
+        "pitch": -0.018990366840692288,
+        "roll": -0.0016363539380596659,
+        "heading": 1.8925343291154695
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1817.3154143310735,
+        "cloudTop": 2501.3154143310735,
+        "precipitationBase": 1817.3154143310735,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 114936154,
+      "streaming": {
+        "loaded": 851,
+        "pending": 20,
+        "inFlight": 1,
+        "ready": 18,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 8.600000000000007,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        19270.369015929533,
+        1622.1378585450188,
+        42577.336330028855
+      ],
+      "velocity": [
+        202.31375962693477,
+        -4.631297195519033,
+        -67.37607118125014
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1561.4342310731518,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 715.8739459932052,
+      "attitude": {
+        "pitch": -0.02232039473995738,
+        "roll": -0.0016770801388686103,
+        "heading": 1.8926088861209311
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1793.485493633339,
+        "cloudTop": 2477.485493633339,
+        "precipitationBase": 1793.485493633339,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 135445906,
+      "streaming": {
+        "loaded": 646,
+        "pending": 6,
+        "inFlight": 4,
+        "ready": 12,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 9.633333333333391,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        19480.804420462086,
+        1616.9516984441157,
+        42507.24726410748
+      ],
+      "velocity": [
+        204.8623751860283,
+        -5.46358935539299,
+        -68.23985350776071
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1540.8900267666031,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 741.6039512266792,
+      "attitude": {
+        "pitch": -0.02613436678854752,
+        "roll": -0.0006471776461587728,
+        "heading": 1.8926640074101915
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1761.072505735646,
+        "cloudTop": 2445.072505735646,
+        "precipitationBase": 1761.072505735646,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 79199414,
+      "streaming": {
+        "loaded": 633,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 10.683333333333444,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        19697.08528318067,
+        1610.1382628961312,
+        42435.198543444436
+      ],
+      "velocity": [
+        206.99467047516185,
+        -8.011503812781347,
+        -68.95858558369315
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1489.2265638713727,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 794.5807657942382,
+      "attitude": {
+        "pitch": -0.03961231716932427,
+        "roll": 0.0008057160594497811,
+        "heading": 1.8926879062774085
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1698.3135089527148,
+        "cloudTop": 2382.313508952715,
+        "precipitationBase": 1698.3135089527148,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 97360879,
+      "streaming": {
+        "loaded": 612,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 11.716666666666828,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        19911.91824759209,
+        1599.5710149705537,
+        42363.62899540979
+      ],
+      "velocity": [
+        208.74162071446423,
+        -12.427971448195853,
+        -69.53856670299402
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1441.6892150353824,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 827.9141476833493,
+      "attitude": {
+        "pitch": -0.0594708246687522,
+        "roll": 0.001736495419039567,
+        "heading": 1.8926681435669288
+      },
+      "climate": "desert",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1648.1036984539007,
+        "cloudTop": 2332.1036984539005,
+        "precipitationBase": 1648.1036984539007,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 114601545,
+      "streaming": {
+        "loaded": 622,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 12.783333333333548,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        20135.442729099283,
+        1584.0074357620817,
+        42289.1699266388
+      ],
+      "velocity": [
+        210.30222865338035,
+        -16.667729089000936,
+        -70.04998496338068
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1360.46187125691,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 875.5891371039534,
+      "attitude": {
+        "pitch": -0.07810381896158732,
+        "roll": 0.0015661542168288597,
+        "heading": 1.8926236821734481
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1581.8702628473493,
+        "cloudTop": 2265.8702628473493,
+        "precipitationBase": 1581.8702628473493,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 92658212,
+      "streaming": {
+        "loaded": 612,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "chase"
+    },
+    {
+      "seconds": 13.850000000000268,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        20360.487855039355,
+        1563.7499072485523,
+        42214.215593219335
+      ],
+      "velocity": [
+        211.61736388675826,
+        -21.025680406198674,
+        -70.47628168747028
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1311.0378775289469,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 905.7543232217212,
+      "attitude": {
+        "pitch": -0.09675927848587496,
+        "roll": 0.0003642878049492169,
+        "heading": 1.8925690673547486
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1526.9774952917076,
+        "cloudTop": 2210.977495291708,
+        "precipitationBase": 1526.9774952917076,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 91084359,
+      "streaming": {
+        "loaded": 621,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 14.90000000000032,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        20583.354284586345,
+        1540.2542033097757,
+        42139.99931166649
+      ],
+      "velocity": [
+        212.874913075957,
+        -23.219451335985575,
+        -70.88283029181774
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1283.8213815764575,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 908.514802802623,
+      "attitude": {
+        "pitch": -0.10382681602921709,
+        "roll": -0.0010573698844009566,
+        "heading": 1.8925125360659982
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1490.4327294236662,
+        "cloudTop": 2174.4327294236664,
+        "precipitationBase": 1490.4327294236662,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 113242180,
+      "streaming": {
+        "loaded": 621,
+        "pending": 3,
+        "inFlight": 0,
+        "ready": 19,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 15.950000000000372,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        20807.527133530457,
+        1515.6333054400936,
+        42065.361911886605
+      ],
+      "velocity": [
+        214.0843055100477,
+        -23.45184696667939,
+        -71.27165053872272
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1272.6125279531325,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 892.9840822903021,
+      "attitude": {
+        "pitch": -0.10322686416619624,
+        "roll": -0.0018014916996059696,
+        "heading": 1.8924510944067825
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1477.8466495210214,
+        "cloudTop": 2161.8466495210214,
+        "precipitationBase": 1477.8466495210214,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 85535762,
+      "streaming": {
+        "loaded": 624,
+        "pending": 1,
+        "inFlight": 0,
+        "ready": 19,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 17.000000000000316,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        21032.900284655276,
+        1491.2895364455726,
+        41990.338310306564
+      ],
+      "velocity": [
+        215.15401713960009,
+        -22.83615028615969,
+        -71.61698226906456
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1268.7951347314838,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 872.6154347232828,
+      "attitude": {
+        "pitch": -0.0996507560465177,
+        "roll": -0.0013925800747110048,
+        "heading": 1.8924074523367693
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1470.7155635399417,
+        "cloudTop": 2154.7155635399417,
+        "precipitationBase": 1470.7155635399417,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 106512524,
+      "streaming": {
+        "loaded": 618,
+        "pending": 26,
+        "inFlight": 0,
+        "ready": 19,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 18.050000000000257,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        21259.307187743394,
+        1467.8133559634716,
+        41914.97807839625
+      ],
+      "velocity": [
+        216.0542143053376,
+        -21.846521698086622,
+        -71.91353840323045
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1262.3752538195517,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 857.2158038326787,
+      "attitude": {
+        "pitch": -0.09475354973715362,
+        "roll": -0.00009233235940856715,
+        "heading": 1.8923987196461607
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1459.7440926900586,
+        "cloudTop": 2143.7440926900586,
+        "precipitationBase": 1459.7440926900586,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 99283509,
+      "streaming": {
+        "loaded": 607,
+        "pending": 2,
+        "inFlight": 4,
+        "ready": 13,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 19.116666666666863,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        21490.21156185191,
+        1445.5437087494558,
+        41838.11889171017
+      ],
+      "velocity": [
+        216.90565490792534,
+        -19.091018886557624,
+        -72.2043467725251
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1324.9681920860849,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 849.8080231742631,
+      "attitude": {
+        "pitch": -0.07830610638249404,
+        "roll": 0.0012836002462929318,
+        "heading": 1.8924376444386808
+      },
+      "climate": "savanna",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1436.5395065299306,
+        "cloudTop": 2120.539506529931,
+        "precipitationBase": 1436.5395065299306,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 95029934,
+      "streaming": {
+        "loaded": 627,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 20.166666666666803,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        21718.410691258043,
+        1429.8035915944897,
+        41762.14478191299
+      ],
+      "velocity": [
+        217.64561202568134,
+        -10.616401824674183,
+        -72.47101993488467
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1393.0381273580729,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 859.1776991699608,
+      "attitude": {
+        "pitch": -0.039653775358962064,
+        "roll": 0.0018152423370425886,
+        "heading": 1.8925244645098314
+      },
+      "climate": "plains",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1405.2623410683104,
+        "cloudTop": 2089.2623410683104,
+        "precipitationBase": 1405.2623410683104,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 95592664,
+      "streaming": {
+        "loaded": 628,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 22.31666666666668,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        22186.469374326538,
+        1418.163037465617,
+        41606.259216336526
+      ],
+      "velocity": [
+        217.58317108868522,
+        -4.265486465338229,
+        -72.47716268192964
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1357.0161260802895,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 894.5535840339852,
+      "attitude": {
+        "pitch": -0.020133284574215267,
+        "roll": -0.0002742835035559143,
+        "heading": 1.8926298862559006
+      },
+      "climate": "plains",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1333.9197110717794,
+        "cloudTop": 2017.9197110717794,
+        "precipitationBase": 1333.9197110717794,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 95441562,
+      "streaming": {
+        "loaded": 637,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 23.33333333333329,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        22407.608233200077,
+        1412.4929290514767,
+        41532.59127349691
+      ],
+      "velocity": [
+        217.44648452548694,
+        -7.143367427895164,
+        -72.44408399435932
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1316.0350896561633,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 895.3662932524063,
+      "attitude": {
+        "pitch": -0.03388997004000113,
+        "roll": -0.001477371174849141,
+        "heading": 1.8926820660628871
+      },
+      "climate": "plains",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1315.6004637331998,
+        "cloudTop": 1999.6004637331998,
+        "precipitationBase": 1315.6004637331998,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 91917104,
+      "streaming": {
+        "loaded": 645,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 24.38333333333323,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        22635.896058809656,
+        1403.3341425150006,
+        41456.530330709684
+      ],
+      "velocity": [
+        217.4424707784344,
+        -9.18732221402306,
+        -72.44898900357478
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1348.4909998702774,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 893.0780966361003,
+      "attitude": {
+        "pitch": -0.037925932751298526,
+        "roll": -0.0017817914699246073,
+        "heading": 1.8926952109484605
+      },
+      "climate": "rainforest",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1296.429108465005,
+        "cloudTop": 1980.429108465005,
+        "precipitationBase": 1296.429108465005,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 105067693,
+      "streaming": {
+        "loaded": 639,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    },
+    {
+      "seconds": 25.43333333333317,
+      "seed": 1337,
+      "course": "free-flight",
+      "position": [
+        22864.270490251478,
+        1396.5240505637073,
+        41380.443551410055
+      ],
+      "velocity": [
+        217.50159080968393,
+        -3.11900205505617,
+        -72.45964522130116
+      ],
+      "start": [
+        17700,
+        1640.2361341811018,
+        43100
+      ],
+      "targetHeight": 1420.9862706288964,
+      "crashMessage": "CRASH - press R",
+      "failureReason": null,
+      "meshCoverage": true,
+      "impact": null,
+      "status": "ok",
+      "onGround": false,
+      "agl": 893.2631765145909,
+      "attitude": {
+        "pitch": -0.008303594957769922,
+        "roll": -0.0009467928633607283,
+        "heading": 1.89265585448637
+      },
+      "climate": "rainforest",
+      "weather": {
+        "fogNearMul": 1.15,
+        "fogFarMul": 1.12,
+        "sunMul": 1,
+        "hemiMul": 1,
+        "ambientMul": 1,
+        "rain": 0,
+        "snow": 0,
+        "haze": 0.02,
+        "lowClouds": 0.03,
+        "midClouds": 0.04,
+        "highClouds": 0.22,
+        "windMps": 4,
+        "gust": 0.08,
+        "lightning": 0,
+        "windX": 0.9606034143006931,
+        "windZ": 3.745812660697883,
+        "id": "clear",
+        "cloudBase": 1277.5470228521003,
+        "cloudTop": 1961.5470228521003,
+        "precipitationBase": 1277.5470228521003,
+        "visibilityM": 33868.8,
+        "convection": 0
+      },
+      "timeOfDay": 0.48,
+      "paused": false,
+      "playing": true,
+      "heapBytes": 88367989,
+      "streaming": {
+        "loaded": 642,
+        "pending": 0,
+        "inFlight": 0,
+        "ready": 0,
+        "workers": 4
+      },
+      "ratio": 1,
+      "camera": "cockpit"
+    }
+  ],
+  "pictures": [
+    {
+      "file": "1337-5s-chase.jpg",
+      "state": {
+        "seconds": 5.933333333333318,
+        "seed": 1337,
+        "course": "free-flight",
+        "position": [
+          18742.0367678099,
+          1632.1711155919745,
+          42753.226148994
+        ],
+        "velocity": [
+          193.1834088009674,
+          -2.905193192329095,
+          -64.2929963434597
+        ],
+        "start": [
+          17700,
+          1640.2361341811018,
+          43100
+        ],
+        "targetHeight": 1596.0604183222988,
+        "crashMessage": "CRASH - press R",
+        "failureReason": null,
+        "meshCoverage": true,
+        "impact": null,
+        "status": "ok",
+        "onGround": false,
+        "agl": 685.4522938207199,
+        "attitude": {
+          "pitch": -0.014970360690348353,
+          "roll": 0.00022046599460523325,
+          "heading": 1.89243536644746
+        },
+        "climate": "desert",
+        "weather": {
+          "fogNearMul": 1.15,
+          "fogFarMul": 1.12,
+          "sunMul": 1,
+          "hemiMul": 1,
+          "ambientMul": 1,
+          "rain": 0,
+          "snow": 0,
+          "haze": 0.02,
+          "lowClouds": 0.03,
+          "midClouds": 0.04,
+          "highClouds": 0.22,
+          "windMps": 4,
+          "gust": 0.08,
+          "lightning": 0,
+          "windX": 0.9606034143006931,
+          "windZ": 3.745812660697883,
+          "id": "clear",
+          "cloudBase": 1838.7160345056768,
+          "cloudTop": 2522.716034505677,
+          "precipitationBase": 1838.7160345056768,
+          "visibilityM": 33868.8,
+          "convection": 0
+        },
+        "timeOfDay": 0.48,
+        "paused": false,
+        "playing": true,
+        "heapBytes": 117694569,
+        "streaming": {
+          "loaded": 1035,
+          "pending": 100,
+          "inFlight": 0,
+          "ready": 19,
+          "workers": 4
+        },
+        "ratio": 1,
+        "camera": "chase"
+      }
+    },
+    {
+      "file": "1337-5s-cockpit.jpg",
+      "state": {
+        "seconds": 6.449999999999982,
+        "seed": 1337,
+        "course": "free-flight",
+        "position": [
+          18842.417412718652,
+          1630.5623809915262,
+          42719.81682772235
+        ],
+        "velocity": [
+          195.28943430055176,
+          -3.291966816216306,
+          -65.00099758723059
+        ],
+        "start": [
+          17700,
+          1640.2361341811018,
+          43100
+        ],
+        "targetHeight": 1594.8912854688679,
+        "crashMessage": "CRASH - press R",
+        "failureReason": null,
+        "meshCoverage": true,
+        "impact": null,
+        "status": "ok",
+        "onGround": false,
+        "agl": 686.432195364686,
+        "attitude": {
+          "pitch": -0.01649982187260164,
+          "roll": -0.0005084223646375637,
+          "heading": 1.8924636005712343
+        },
+        "climate": "desert",
+        "weather": {
+          "fogNearMul": 1.15,
+          "fogFarMul": 1.12,
+          "sunMul": 1,
+          "hemiMul": 1,
+          "ambientMul": 1,
+          "rain": 0,
+          "snow": 0,
+          "haze": 0.02,
+          "lowClouds": 0.03,
+          "midClouds": 0.04,
+          "highClouds": 0.22,
+          "windMps": 4,
+          "gust": 0.08,
+          "lightning": 0,
+          "windX": 0.9606034143006931,
+          "windZ": 3.745812660697883,
+          "id": "clear",
+          "cloudBase": 1835.6728262316672,
+          "cloudTop": 2519.6728262316674,
+          "precipitationBase": 1835.6728262316672,
+          "visibilityM": 33868.8,
+          "convection": 0
+        },
+        "timeOfDay": 0.48,
+        "paused": false,
+        "playing": true,
+        "heapBytes": 134821172,
+        "streaming": {
+          "loaded": 1100,
+          "pending": 30,
+          "inFlight": 4,
+          "ready": 6,
+          "workers": 4
+        },
+        "ratio": 1,
+        "camera": "cockpit"
+      }
+    },
+    {
+      "file": "1337-20s-chase.jpg",
+      "state": {
+        "seconds": 20.750000000000103,
+        "seed": 1337,
+        "course": "free-flight",
+        "position": [
+          21845.413418992892,
+          1424.9387235050147,
+          41719.85260210048
+        ],
+        "velocity": [
+          217.76090143469975,
+          -6.453932571214579,
+          -72.51941929229277
+        ],
+        "start": [
+          17700,
+          1640.2361341811018,
+          43100
+        ],
+        "targetHeight": 1399.0481344233647,
+        "crashMessage": "CRASH - press R",
+        "failureReason": null,
+        "meshCoverage": true,
+        "impact": null,
+        "status": "ok",
+        "onGround": false,
+        "agl": 869.491131065911,
+        "attitude": {
+          "pitch": -0.02366770470581264,
+          "roll": 0.0015996595990316568,
+          "heading": 1.8925614916952016
+        },
+        "climate": "plains",
+        "weather": {
+          "fogNearMul": 1.15,
+          "fogFarMul": 1.12,
+          "sunMul": 1,
+          "hemiMul": 1,
+          "ambientMul": 1,
+          "rain": 0,
+          "snow": 0,
+          "haze": 0.02,
+          "lowClouds": 0.03,
+          "midClouds": 0.04,
+          "highClouds": 0.22,
+          "windMps": 4,
+          "gust": 0.08,
+          "lightning": 0,
+          "windX": 0.9606034143006931,
+          "windZ": 3.745812660697883,
+          "id": "clear",
+          "cloudBase": 1383.9924984480695,
+          "cloudTop": 2067.9924984480695,
+          "precipitationBase": 1383.9924984480695,
+          "visibilityM": 33868.8,
+          "convection": 0
+        },
+        "timeOfDay": 0.48,
+        "paused": false,
+        "playing": true,
+        "heapBytes": 102228101,
+        "streaming": {
+          "loaded": 609,
+          "pending": 19,
+          "inFlight": 3,
+          "ready": 16,
+          "workers": 4
+        },
+        "ratio": 1,
+        "camera": "chase"
+      }
+    },
+    {
+      "file": "1337-20s-cockpit.jpg",
+      "state": {
+        "seconds": 21.250000000000075,
+        "seed": 1337,
+        "course": "free-flight",
+        "position": [
+          21954.292356028105,
+          1422.3194080791714,
+          41683.59174830775
+        ],
+        "velocity": [
+          217.74335925195206,
+          -4.368209189442536,
+          -72.51960918648805
+        ],
+        "start": [
+          17700,
+          1640.2361341811018,
+          43100
+        ],
+        "targetHeight": 1390.2168751860852,
+        "crashMessage": "CRASH - press R",
+        "failureReason": null,
+        "meshCoverage": true,
+        "impact": null,
+        "status": "ok",
+        "onGround": false,
+        "agl": 878.9153906442183,
+        "attitude": {
+          "pitch": -0.016980212925749184,
+          "roll": 0.0011493859388721297,
+          "heading": 1.8925835968449256
+        },
+        "climate": "plains",
+        "weather": {
+          "fogNearMul": 1.15,
+          "fogFarMul": 1.12,
+          "sunMul": 1,
+          "hemiMul": 1,
+          "ambientMul": 1,
+          "rain": 0,
+          "snow": 0,
+          "haze": 0.02,
+          "lowClouds": 0.03,
+          "midClouds": 0.04,
+          "highClouds": 0.22,
+          "windMps": 4,
+          "gust": 0.08,
+          "lightning": 0,
+          "windX": 0.9606034143006931,
+          "windZ": 3.745812660697883,
+          "id": "clear",
+          "cloudBase": 1370.4321513946802,
+          "cloudTop": 2054.43215139468,
+          "precipitationBase": 1370.4321513946802,
+          "visibilityM": 33868.8,
+          "convection": 0
+        },
+        "timeOfDay": 0.48,
+        "paused": false,
+        "playing": true,
+        "heapBytes": 114808798,
+        "streaming": {
+          "loaded": 635,
+          "pending": 0,
+          "inFlight": 0,
+          "ready": 0,
+          "workers": 4
+        },
+        "ratio": 1,
+        "camera": "cockpit"
+      }
+    }
+  ],
+  "final": {
+    "seconds": 25.43333333333317,
+    "seed": 1337,
+    "course": "free-flight",
+    "position": [
+      22864.270490251478,
+      1396.5240505637073,
+      41380.443551410055
+    ],
+    "velocity": [
+      217.50159080968393,
+      -3.11900205505617,
+      -72.45964522130116
+    ],
+    "start": [
+      17700,
+      1640.2361341811018,
+      43100
+    ],
+    "targetHeight": 1420.9862706288964,
+    "crashMessage": "CRASH - press R",
+    "failureReason": null,
+    "meshCoverage": true,
+    "impact": null,
+    "status": "ok",
+    "onGround": false,
+    "agl": 893.2631765145909,
+    "attitude": {
+      "pitch": -0.008303594957769922,
+      "roll": -0.0009467928633607283,
+      "heading": 1.89265585448637
+    },
+    "climate": "rainforest",
+    "weather": {
+      "fogNearMul": 1.15,
+      "fogFarMul": 1.12,
+      "sunMul": 1,
+      "hemiMul": 1,
+      "ambientMul": 1,
+      "rain": 0,
+      "snow": 0,
+      "haze": 0.02,
+      "lowClouds": 0.03,
+      "midClouds": 0.04,
+      "highClouds": 0.22,
+      "windMps": 4,
+      "gust": 0.08,
+      "lightning": 0,
+      "windX": 0.9606034143006931,
+      "windZ": 3.745812660697883,
+      "id": "clear",
+      "cloudBase": 1277.5470228521003,
+      "cloudTop": 1961.5470228521003,
+      "precipitationBase": 1277.5470228521003,
+      "visibilityM": 33868.8,
+      "convection": 0
+    },
+    "timeOfDay": 0.48,
+    "paused": false,
+    "playing": true,
+    "heapBytes": 88367989,
+    "streaming": {
+      "loaded": 642,
+      "pending": 0,
+      "inFlight": 0,
+      "ready": 0,
+      "workers": 4
+    },
+    "ratio": 1,
+    "camera": "cockpit"
+  },
+  "wallSeconds": 25.436,
+  "metrics": {
+    "frames": 917,
+    "histogram": {
+      "50": 57,
+      "33.3": 95,
+      "33.4": 54,
+      "66.7": 8,
+      "49.9": 11,
+      "16.7": 364,
+      "50.1": 17,
+      "16.6": 264,
+      "33.2": 7,
+      "66.6": 3,
+      "16.8": 35,
+      "16.5": 2
+    },
+    "hitches": [],
+    "terrainMaxMs": 24.900000005960464,
+    "terrainSlow": [
+      {
+        "seconds": 3.433333333333326,
+        "ms": 16.30000001192093
+      },
+      {
+        "seconds": 4.533333333333323,
+        "ms": 20.400000005960464
+      },
+      {
+        "seconds": 5.666666666666652,
+        "ms": 18.099999994039536
+      },
+      {
+        "seconds": 6.716666666666648,
+        "ms": 24.900000005960464
+      },
+      {
+        "seconds": 6.783333333333315,
+        "ms": 20.100000023841858
+      },
+      {
+        "seconds": 10.816666666666784,
+        "ms": 17.099999994039536
+      },
+      {
+        "seconds": 20.65000000000011,
+        "ms": 17.099999994039536
+      }
+    ],
+    "coverageMissing": 0,
+    "coverageChecks": 50,
+    "coverageMisses": []
+  }
+}

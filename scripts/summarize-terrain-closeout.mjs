@@ -5,20 +5,34 @@ import {execFileSync} from 'node:child_process'
 const dir=process.argv[2]||'docs/reviews/terrain-closeout-b19',complete=process.argv.includes('--final')
 const stages={audit:[42,2026,9001,1,73,1337],final:[42,2026,9001,1,73,1337],lod:[42,2026,9001,1,73,1337],endurance:[42,73,1337]}
 const rows=[];let baseline
+const currentFiles=execFileSync('rg',['--files','src'],{encoding:'utf8'}).trim().split('\n').sort()
+const currentHashes=Object.fromEntries(await Promise.all(currentFiles.map(async file=>[file,createHash('sha256').update(await readFile(file)).digest('hex')])))
 for(const [stage,seeds] of Object.entries(stages))for(const seed of seeds){
  const path=`${dir}/${stage}/${seed}.json`
  try{await access(path)}catch{assert.ok(!complete&&stage!=='audit',`Missing ${path}`);continue}
  const r=JSON.parse(await readFile(path,'utf8')),required=stage==='endurance'?650:stage==='lod'?25:45
  assert.ok(r.final.seconds>=required&&r.wallSeconds>=required,`Duration ${stage}/${seed}`)
+ assert.equal(r.route.seed,seed)
  assert.equal(r.final.status,'ok');assert.equal(r.final.onGround,false);assert.deepEqual(r.errors,[])
- assert.ok(r.samples.every(s=>s.seed===seed&&s.course==='free-flight'&&!s.paused&&s.playing&&s.ratio===1))
+ assert.ok(r.samples.every(s=>s.seed===seed&&s.course==='free-flight'&&!s.paused&&s.playing&&s.ratio===1&&s.status==='ok'&&!s.onGround))
  assert.equal(new Set(r.pictures.map(p=>p.state.camera)).size,2)
+ assert.equal(r.pictures.length,stage==='endurance'?22:stage==='lod'?4:6)
+ for(const picture of r.pictures)await access(`${dir}/${stage}/${picture.file}`)
+ assert.deepEqual(Object.keys(r.sourceHashes).sort(),currentFiles,'Source file set changed')
+ for(const file of currentFiles)if(file!=='src/core/Version.ts')assert.equal(r.sourceHashes[file],currentHashes[file],`Source differs from frozen runtime: ${file}`)
  assert.equal(createHash('sha256').update(await readFile(`${dir}/hooks/${r.hookSha256}.js`)).digest('hex'),r.hookSha256)
  baseline??=r.sourceHashes
  for(const [file,hash] of Object.entries(baseline))if(file!=='src/core/Version.ts')assert.equal(r.sourceHashes[file],hash,`Runtime changed: ${file}`)
  if(stage!=='audit'){
   assert.ok(!r.metrics.coverageMisses.some(m=>m.seconds>=5),`Missing terrain after reset warmup ${stage}/${seed}`)
   assert.ok(r.pictures.every(p=>p.state.meshCoverage),`Uncovered picture ${stage}/${seed}`)
+ }
+ if(stage==='endurance'){
+  assert.deepEqual(r.metrics.hitches,[],`Unexplained frame gap ${stage}/${seed}`)
+  assert.ok(!r.metrics.terrainSlow.some(s=>s.ms>50),`Slow terrain update ${stage}/${seed}`)
+  const pinned=JSON.parse(await readFile(`docs/reviews/stability-10.941/${seed}.json`,'utf8')).samples[0]
+  assert.equal(r.route.x,pinned.start[0]);assert.equal(r.route.z,pinned.start[2]);assert.equal(r.route.yaw,pinned.heading)
+  assert.equal(r.route.clearance,650);assert.equal(r.route.long,true)
  }
  if(stage==='lod')await access(`${dir}/${stage}/${seed}-flight.webm`)
  let horizontalM=0
