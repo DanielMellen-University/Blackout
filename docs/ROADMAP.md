@@ -1,5 +1,7 @@
 # Roadmap
 
+Chunk 10.955. Retain two full seed-1337 endurance attempts on the frozen 10.954 runtime. Both exceed 650 seconds without crashes, errors or coverage misses, but unexplained frame intervals exclude both from clean-flight acceptance. Archive all 44 stills and timing evidence. Keep terrain step 1 open for the third clean ten-minute flight. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/part-b.md.
+
 Chunk 10.954. Validate the fresh six-seed terrain repeat, normal-altitude LOD recordings and two clean 650-second endurance flights. Retain mission loading smoke checks and archive interrupted seed-1337 evidence outside acceptance. Keep terrain step 1 open until a fresh full seed-1337 flight passes. Preserve the production runtime, flight physics and paused exclusions. See docs/reviews/terrain-closeout-b19/part-a.md.
 
 Chunk 10.953. Audit terrain close-out b19 on six seeds in real-physics low-altitude chase and cockpit flights. Retain 36 stills, raw telemetry, source hashes and review-route corrections. No production terrain defect is reproduced. Keep roadmap step 1 open pending the fresh six-seed recheck, normal-altitude LOD review and three ten-minute flights. Preserve flight physics and all paused exclusions. See docs/reviews/terrain-closeout-b19/audit.md.
@@ -28,7 +30,7 @@ Chunk 10.940. Pass the four-seed road integrity audit across 92 generated roads 
 
 Chunk 10.939. Close surveyed village coverage at 16 of 16: fifteen connected and seed 73 at -3,8 deliberately skipped after one additional bounded attempt. Pin every site in generated coverage data and regression checks. Preserve all generation revisions, physical limits, resource budgets and paused exclusions. See docs/reviews/roads-10.939/README.md for evidence and the skip rationale.
 
-Chunk **10.954** is current. Previous ship: **10.953**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
+Chunk **10.955** is current. Previous ship: **10.954**. Public release stays **v0.12.0** (`Systems expansion`). Keep Version, README, ROADMAP, and CHANGELOG synchronized in each shipped batch.
 
 Chunk 10.938. Reproduce the seed-73 Free flight ridge strike at exactly 616.5 seconds, within 0.063 m of the original record. Capture the authoritative climbing impact and 26.249-degree slope, with resident/analytic ground agreeing within 7.5 mm. Preserve physics and collision; the existing eight-kilometre review pilot separately completes 653.7 seconds. Add generated contact/classification regressions and an isolated city-route FPS/stutter sample. Preserve landscape revision 29, route revision 30, water, all budgets and paused exclusions. See docs/reviews/ridge-10.938/README.md for evidence and limits.
 
